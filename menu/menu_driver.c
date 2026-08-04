@@ -5081,6 +5081,27 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
    return false;
 }
 
+
+/* True when a platform-native text-entry panel currently owns the
+ * keyboard line.  The built-in on-screen keyboard must not process
+ * input in that case: both paths write into input_st->keyboard_line,
+ * and input_event_osk_append() calls input_keyboard_line_append(),
+ * which can realloc the buffer out from under state the native path
+ * is holding.  Steam's OSK already had this guard open-coded at the
+ * two call sites; the iOS native keyboard needs the same. */
+static bool menu_input_native_kb_active(void)
+{
+#ifdef HAVE_MIST
+   if (steam_has_osk_open())
+      return true;
+#endif
+#ifdef HAVE_COCOATOUCH
+   if (ios_keyboard_active())
+      return true;
+#endif
+   return false;
+}
+
 bool menu_input_dialog_get_display_kb(void)
 {
    struct menu_state *menu_st     = &menu_driver_state;
@@ -5534,11 +5555,11 @@ unsigned menu_event(
 
    if (display_kb)
    {
-#ifdef HAVE_MIST
-      /* Do not process input events if the Steam OSK is open */
-      if (!steam_has_osk_open())
+      /* Menu navigation stays suppressed for the whole OSK session
+       * (the trigger clear below), but the built-in keyboard only
+       * consumes input when no native panel owns the line. */
+      if (!menu_input_native_kb_active())
       {
-#endif
       bool show_osk_symbols = input_event_osk_show_symbol_pages(menu_st->driver_data);
 
       input_event_osk_iterate(input_st->osk_grid, input_st->osk_idx);
@@ -5634,9 +5655,7 @@ unsigned menu_event(
             || BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_X))
          input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
 
-#ifdef HAVE_MIST
       }
-#endif
 
       BIT256_CLEAR_ALL_PTR(p_trigger_input);
    }
@@ -6226,15 +6245,14 @@ MENU_NOINLINE static int menu_input_post_iterate(
          /* On screen keyboard overrides normal menu input... */
          if (osk_active)
          {
-#ifdef HAVE_MIST
-         /* Disable OSK pointer input if the Steam OSK is used */
-         if (!steam_has_osk_open())
-         {
-#endif
             /* If pointer has been 'dragged', then it counts as
              * a miss. Only register 'release' event if pointer
-             * has remained stationary */
-            if (!(menu_input->pointer.flags & MENU_INP_PTR_FLG_DRAGGED))
+             * has remained stationary.  A native panel owning the
+             * line swallows the gesture outright - the enclosing
+             * branch still runs so it does not fall through to
+             * normal menu input. */
+            if (     !menu_input_native_kb_active()
+                  && !(menu_input->pointer.flags & MENU_INP_PTR_FLG_DRAGGED))
             {
                menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
                if (point.retcode > -1)
@@ -6252,9 +6270,6 @@ MENU_NOINLINE static int menu_input_post_iterate(
                         strlen(input_st->osk_grid[input_st->osk_ptr]));
                }
             }
-#ifdef HAVE_MIST
-            }
-#endif
          }
          /* Message boxes override normal menu input...
           * > If a message box is shown, any kind of pointer
