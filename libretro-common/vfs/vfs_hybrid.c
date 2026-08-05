@@ -160,6 +160,13 @@ static int64_t hyb_truncate( struct retro_vfs_file_handle *fh, int64_t length ) 
 		return -1;
 	if ( f->be == HYB_LOCAL )
 		return retro_vfs_file_truncate_impl( (libretro_vfs_implementation_file *)f->h, length );
+	/* truncate is v2. A frontend that advertised v1 has not filled
+	   this member, so it must not be called - unlike the v3 members
+	   below, which are unreachable by construction because a
+	   frontend-backed dir handle can only be created when the
+	   negotiated version is already 3. */
+	if ( hyb_front_version < 2 || !hyb_front->truncate )
+		return -1;
 	return hyb_front->truncate( (struct retro_vfs_file_handle *)f->h, length );
 }
 
@@ -256,8 +263,15 @@ static struct retro_vfs_dir_handle *hyb_opendir( const char *dir, bool include_h
 	if ( !h )
 		return NULL;
 	d = (hyb_dir_t *)calloc( 1, sizeof( *d ) );
-	if ( !d )
+	if ( !d ) {
+		/* the backend handle is already open; hyb_open() releases its
+		   own on this path and so must this one */
+		if ( be == HYB_LOCAL )
+			retro_vfs_closedir_impl( (libretro_vfs_implementation_dir *)h );
+		else
+			hyb_front->closedir( (struct retro_vfs_dir_handle *)h );
 		return NULL;
+	}
 	d->be = be;
 	d->h = h;
 	return (struct retro_vfs_dir_handle *)d;
