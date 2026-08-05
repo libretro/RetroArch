@@ -1978,6 +1978,17 @@ void video_driver_free_internal(void)
    if (video_st->data && vid && vid->free)
       vid->free(video_st->data);
 
+   /* The poke interface is a pointer into the driver's static vtable, so
+    * unlike video_st->data it survives free "working" - and
+    * video_context_driver_get_flags() consults poke->get_flags, so a
+    * stale poke lets a torn-down instance keep answering capability
+    * queries during an in-process core switch. That was harmless while
+    * every get_flags ignored its data argument; gl3's scRGB-gated
+    * 10-bit-source flag is instance state, and answering from a freed
+    * instance reported the capability absent, which is how HDR10
+    * negotiation broke on core switch. Dead instances answer nothing. */
+   video_st->poke = NULL;
+
    if (video_st->scaler_ptr)
       video_driver_pixel_converter_free(video_st->scaler_ptr);
    video_st->scaler_ptr = NULL;
@@ -4038,25 +4049,29 @@ static bool video_driver_ident_supports_10bit_source(const char *ident)
        || string_is_equal(ident, "glcore");
 }
 
-/* Whether a 10-bit source surface can be presented. Prefers the live
- * driver's own answer and only falls back to the static capability of
- * the configured driver when the drivers are not up yet.
+/* Whether a 10-bit source surface can be presented, judged by the
+ * *configured* driver alone - live instance state is deliberately never
+ * consulted.
  *
- * The fallback is deliberately optimistic: glcore, for instance, can
- * only present 10-bit on a context with an scRGB backbuffer, and that
- * is unknowable this early. Accepting and then discovering otherwise is
- * recoverable - the driver converts the frame for its actual output -
- * whereas refusing is not, because the core has already picked an SDR
- * format by the time anything better is known. */
+ * SET_PIXEL_FORMAT always precedes the (re)creation of the video driver
+ * for the session being started: on a cold start no instance exists,
+ * and on an in-process core switch the instance that exists belongs to
+ * the outgoing session and is mid-teardown - its flags describe the
+ * wrong session at best and a freed instance at worst (the reported
+ * failure: a stale poke->get_flags answering after video_driver_free).
+ * The question being asked is about the *next* session, and the only
+ * stable answer to that is the configured driver ident.
+ *
+ * This is deliberately optimistic where the capability is conditional:
+ * glcore can only present 10-bit on a context with an scRGB backbuffer,
+ * unknowable until that context exists. The two errors are not
+ * symmetric - accepting and discovering otherwise is recoverable (the
+ * driver tonemaps PQ for its actual output), refusing is final because
+ * the core has committed to an SDR format before anything better is
+ * known. */
 bool video_driver_supports_10bit_source(void)
 {
    settings_t *settings = config_get_ptr();
-   gfx_ctx_flags_t flags;
-   flags.flags = 0;
-
-   if (video_context_driver_get_flags(&flags))
-      return BIT32_GET(flags.flags, GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE);
-
    return settings && video_driver_ident_supports_10bit_source(
          settings->arrays.video_driver);
 }
