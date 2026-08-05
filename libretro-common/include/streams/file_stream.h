@@ -425,6 +425,9 @@ const char* filestream_get_path(RFILE *stream);
  */
 const uint8_t *filestream_get_mapped_ptr(RFILE *stream, int64_t *len);
 
+typedef const uint8_t *(*filestream_mapped_ptr_cb_t)(void *hfile, int64_t *len);
+void filestream_set_mapped_ptr_cb(filestream_mapped_ptr_cb_t cb);
+
 /**
  * Size of the window filestream_vscanf() reads and scans at a time,
  * i.e. the furthest a single conversion can reach.
