@@ -4343,6 +4343,8 @@ static bool gl2_frame(void *data, const void *frame,
       settings_t *settings = config_get_ptr();
       float nits           = 200.0f;
       bool ui_visible      = false;
+      bool pq              = gl->video_info.source_hdr10
+                          && gl->scrgb.ui_fbo != 0;
       static const float quad_pos[8] = {
          0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f
       };
@@ -4364,8 +4366,6 @@ static bool gl2_frame(void *data, const void *frame,
       if (widgets_active)
          ui_visible = true;
 #endif
-
-      bool pq = gl->video_info.source_hdr10 && gl->scrgb.ui_fbo != 0;
 
       /* SDR content keeps the existing behaviour, including scaling
        * the whole frame by Menu HDR Brightness when any UI is up. PQ

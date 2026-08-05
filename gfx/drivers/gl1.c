@@ -2511,6 +2511,9 @@ static bool gl1_frame(void *data, const void *frame,
       settings_t *settings = config_get_ptr();
       float nits           = 200.0f;
       bool ui_visible      = false;
+      bool pq              = gl1->source_hdr10
+                          && gl1_source_10bit_native(gl1)
+                          && gl1->scrgb.ui_fbo != 0;
 
 #ifdef HAVE_MENU
       if (gl1->flags & GL1_FLAG_MENU_TEXTURE_ENABLE)
@@ -2526,10 +2529,6 @@ static bool gl1_frame(void *data, const void *frame,
       if (widgets_active)
          ui_visible = true;
 #endif
-
-      bool pq = gl1->source_hdr10
-             && gl1_source_10bit_native(gl1)
-             && gl1->scrgb.ui_fbo != 0;
 
       /* PQ content carries its own absolute luminance - paper white
        * does not apply to it - and its UI is composited separately at
