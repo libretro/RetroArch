@@ -85,7 +85,23 @@ void main()
    vec4 src = texture(uTex, vTexCoord);
    vec3 lin;
 
-   if (global.hdr_params.z > 0.5)
+   if (global.hdr_params.z > 1.5)
+   {
+      /* Mode 2: PQ content, but the output is *not* HDR after all (the
+       * frontend accepted HDR10 before it could know whether this
+       * context would give an scRGB backbuffer). Decode to nits,
+       * normalize against paper white, roll the overshoot off with the
+       * same Reinhard shoulder the other drivers use, and re-encode to
+       * gamma so the picture is merely tonemapped rather than wrong. */
+      vec3 nits = ST2084ToLinear(src.rgb) * 10000.0;
+      vec3 sdr  = (nits * k2020to709) / max(global.hdr_params.x, 1.0);
+      float pk  = max(sdr.r, max(sdr.g, sdr.b));
+      if (pk > 1.0)
+         sdr  /= pk;
+      FragColor = vec4(pow(max(sdr, vec3(0.0)), vec3(1.0 / 2.4)), src.a);
+      return;
+   }
+   else if (global.hdr_params.z > 0.5)
       /* HDR10 PQ Rec.2020 at absolute luminance. 1.0 normalized linear
        * is 10,000 nits and scRGB 1.0 is 80, hence the 125x scalar. */
       lin = (ST2084ToLinear(src.rgb) * k2020to709) * (10000.0 / 80.0);

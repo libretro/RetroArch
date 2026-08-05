@@ -4073,9 +4073,20 @@ static void gl3_draw_menu_texture(gl3_t *gl,
 /* (Re)create the SDR offscreen the frame renders into under scRGB
  * output. Returns the FBO every final-target bind in the frame should
  * use: the offscreen when scRGB is active, the backbuffer otherwise. */
+/* True when the frame must go through the offscreen + encode pass even
+ * though there is no scRGB backbuffer: the core supplied PQ, which
+ * cannot be handed to an SDR presentation path as-is. See
+ * video_driver_supports_10bit_source() - the frontend has to accept or
+ * refuse HDR10 before it can know what this context will provide, so it
+ * accepts and the driver reconciles it here. */
+static bool gl3_needs_pq_downconvert(gl3_t *gl)
+{
+   return gl->video_info.source_hdr10 && !gl->scrgb.active;
+}
+
 static GLuint gl3_frame_target_fbo(gl3_t *gl, unsigned width, unsigned height)
 {
-   if (!gl->scrgb.active)
+   if (!gl->scrgb.active && !gl3_needs_pq_downconvert(gl))
       return 0;
 
    if (     !gl->scrgb.fbo
@@ -4171,7 +4182,8 @@ static GLuint gl3_ui_target_fbo(gl3_t *gl, unsigned width, unsigned height)
 {
    GLuint fbo = gl3_frame_target_fbo(gl, width, height);
 
-   if (gl->video_info.source_hdr10 && gl->scrgb.ui_fbo)
+   if (gl->video_info.source_hdr10 && gl->scrgb.ui_fbo
+         && !gl3_needs_pq_downconvert(gl))
    {
       glBindFramebuffer(GL_FRAMEBUFFER, gl->scrgb.ui_fbo);
       glDisable(GL_SCISSOR_TEST);
@@ -4375,6 +4387,76 @@ static void gl3_renderchain_render(
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
    gl->chain.coords.tex_coord = gl->chain.tex_info.coord;
+}
+
+/* Tonemap a PQ frame from the offscreen into the currently bound target
+ * (the backbuffer). Used only when the core supplied HDR10 but this
+ * context turned out to have no scRGB backbuffer; the UI is then drawn
+ * over the converted image in the ordinary SDR way, so none of the
+ * linear-light compositing applies. */
+static void gl3_encode_pq_to_sdr(gl3_t *gl, unsigned width, unsigned height)
+{
+   settings_t *settings = config_get_ptr();
+   float ubo_data[20];
+   static const float quad_pos[8] = {
+      0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f
+   };
+   static const float quad_tex[8] = {
+      0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f
+   };
+   static bool warned = false;
+
+   if (!gl->scrgb.fbo || !gl->pipelines.hdr_scrgb)
+      return;
+
+   if (!warned)
+   {
+      warned = true;
+      RARCH_WARN("[GLCore] Core supplied HDR10 PQ but this context has no scRGB backbuffer; tonemapping to SDR. Turn on HDR output, or set the core to a 24-bit colour format.\n");
+   }
+
+   memcpy(ubo_data, gl->mvp_no_rot.data, 16 * sizeof(float));
+   ubo_data[16] = settings
+         ? settings->floats.video_hdr_paper_white_nits : 200.0f;
+   ubo_data[17] = 0.0f;
+   ubo_data[18] = 2.0f;   /* PQ -> SDR */
+   ubo_data[19] = 0.0f;   /* no separate UI layer on this path */
+
+   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+   glViewport(0, 0, width, height);
+   glDisable(GL_BLEND);
+   glDisable(GL_SCISSOR_TEST);
+   glUseProgram(gl->pipelines.hdr_scrgb);
+
+   if (gl->pipelines.hdr_scrgb_loc.flat_ubo_vertex >= 0)
+      glUniform4fv(gl->pipelines.hdr_scrgb_loc.flat_ubo_vertex, 5, ubo_data);
+   if (gl->pipelines.hdr_scrgb_loc.flat_ubo_fragment >= 0)
+      glUniform4fv(gl->pipelines.hdr_scrgb_loc.flat_ubo_fragment, 5, ubo_data);
+
+   glActiveTexture(GL_TEXTURE1);
+   glBindTexture(GL_TEXTURE_2D, gl->scrgb.tex);
+   glActiveTexture(GL_TEXTURE2);
+   glBindTexture(GL_TEXTURE_2D, gl->scrgb.tex);
+
+   glEnableVertexAttribArray(0);
+   glEnableVertexAttribArray(1);
+   glDisableVertexAttribArray(2);
+   gl3_bind_scratch_vbo(gl, quad_pos, sizeof(quad_pos));
+   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE,
+         2 * sizeof(float), (void *)(uintptr_t)0);
+   gl3_bind_scratch_vbo(gl, quad_tex, sizeof(quad_tex));
+   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE,
+         2 * sizeof(float), (void *)(uintptr_t)0);
+
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+   glDisableVertexAttribArray(0);
+   glDisableVertexAttribArray(1);
+   glBindTexture(GL_TEXTURE_2D, 0);
+   glActiveTexture(GL_TEXTURE1);
+   glBindTexture(GL_TEXTURE_2D, 0);
+   glActiveTexture(GL_TEXTURE0);
+   glUseProgram(0);
 }
 
 static bool gl3_frame(void *data, const void *frame,
@@ -4769,6 +4851,14 @@ static bool gl3_frame(void *data, const void *frame,
    if (gl->scrgb.active)
       glBindFramebuffer(GL_FRAMEBUFFER,
             gl3_ui_target_fbo(gl, width, height));
+   else if (gl3_needs_pq_downconvert(gl))
+   {
+      /* Convert the PQ frame to SDR now, straight into the backbuffer,
+       * so the UI below draws over a displayable image in its own
+       * space - no UI layer, no linear composite, nothing else about
+       * the SDR path changes. */
+      gl3_encode_pq_to_sdr(gl, width, height);
+   }
 
 #ifdef HAVE_OVERLAY
    if ((gl->flags & GL3_FLAG_OVERLAY_ENABLE) && overlay_behind_menu)
@@ -4866,6 +4956,8 @@ static bool gl3_frame(void *data, const void *frame,
                : (ui_visible ? menu_nits : paper_white);
          ubo_data[17] = settings
                ? (float)settings->uints.video_hdr_expand_gamut : 0.0f;
+         /* 0 = SDR -> scRGB, 1 = PQ -> scRGB (2 is the SDR-output
+          * fallback, issued from gl3_encode_pq_to_sdr instead). */
          ubo_data[18] = pq ? 1.0f : 0.0f;
          ubo_data[19] = pq ? menu_nits : 0.0f;
       }

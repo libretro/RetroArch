@@ -4014,6 +4014,53 @@ bool video_context_driver_get_flags(gfx_ctx_flags_t *flags)
  * Poll both the video and context driver's flags and test
  * whether @testflag is set or not.
  **/
+/* Can the named video driver present a 10-bit source surface?
+ *
+ * This exists because the flag-based test cannot answer the question
+ * before drivers_init(): SET_PIXEL_FORMAT is issued from retro_load_game,
+ * i.e. during CMD_EVENT_CORE_INIT, which on a cold start (RetroArch
+ * launched straight into content) runs *before* any video driver or
+ * context driver exists. video_context_driver_get_flags() then reports
+ * nothing at all and every 10-bit request is refused, on all drivers,
+ * purely because of when the core happens to ask. Loading the same
+ * content from a running menu works, which made this look driver- or
+ * core-specific when it is neither.
+ *
+ * The list mirrors the drivers that set GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE
+ * from a live instance; it is only consulted when no instance exists. */
+static bool video_driver_ident_supports_10bit_source(const char *ident)
+{
+   if (string_is_empty(ident))
+      return false;
+   return string_is_equal(ident, "vulkan")
+       || string_is_equal(ident, "d3d11")
+       || string_is_equal(ident, "d3d12")
+       || string_is_equal(ident, "glcore");
+}
+
+/* Whether a 10-bit source surface can be presented. Prefers the live
+ * driver's own answer and only falls back to the static capability of
+ * the configured driver when the drivers are not up yet.
+ *
+ * The fallback is deliberately optimistic: glcore, for instance, can
+ * only present 10-bit on a context with an scRGB backbuffer, and that
+ * is unknowable this early. Accepting and then discovering otherwise is
+ * recoverable - the driver converts the frame for its actual output -
+ * whereas refusing is not, because the core has already picked an SDR
+ * format by the time anything better is known. */
+bool video_driver_supports_10bit_source(void)
+{
+   settings_t *settings = config_get_ptr();
+   gfx_ctx_flags_t flags;
+   flags.flags = 0;
+
+   if (video_context_driver_get_flags(&flags))
+      return BIT32_GET(flags.flags, GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE);
+
+   return settings && video_driver_ident_supports_10bit_source(
+         settings->arrays.video_driver);
+}
+
 bool video_driver_test_all_flags(enum display_flags testflag)
 {
    gfx_ctx_flags_t flags;
