@@ -6099,6 +6099,19 @@ static void gl2_unload_texture(void *data,
 static uint32_t gl2_get_flags(void *data)
 {
    uint32_t flags = 0;
+#if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+   gl2_t *gl      = (gl2_t*)data;
+
+   /* Advertise a 10-bit source path only when there is genuinely
+    * somewhere to present it: the scRGB FP16 backbuffer. Same gate and
+    * same rationale as gl3_get_flags; scrgb.active is cached at init,
+    * and querying the context here would recurse through
+    * video_context_driver_get_flags(). NULL-safe because the frontend
+    * clears the poke at teardown, but a freed instance must still not
+    * claim capabilities. */
+   if (gl && gl->scrgb.active)
+      BIT32_SET(flags, GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE);
+#endif
 
    BIT32_SET(flags, GFX_CTX_FLAGS_HARD_SYNC);
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);

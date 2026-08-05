@@ -4043,10 +4043,19 @@ static bool video_driver_ident_supports_10bit_source(const char *ident)
 {
    if (string_is_empty(ident))
       return false;
-   return string_is_equal(ident, "vulkan")
-       || string_is_equal(ident, "d3d11")
-       || string_is_equal(ident, "d3d12")
-       || string_is_equal(ident, "glcore");
+   if (     string_is_equal(ident, "vulkan")
+         || string_is_equal(ident, "d3d11")
+         || string_is_equal(ident, "d3d12")
+         || string_is_equal(ident, "glcore"))
+      return true;
+#if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+   /* gl2's 10-bit path is desktop-only (RGB10_A2 + packed 2-10-10-10
+    * upload are not in GLES2), so the ident only counts in builds
+    * where that path exists. */
+   if (string_is_equal(ident, "gl"))
+      return true;
+#endif
+   return false;
 }
 
 /* Whether a 10-bit source surface can be presented, judged by the
