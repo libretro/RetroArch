@@ -471,13 +471,19 @@ static bool sdl3_set_sensor_state(void *data, unsigned port,
 /* Gets the SDL_Window, if it exists. */
 static SDL_Window *sdl3_input_window(void)
 {
-   sdl3_video_t *video_ptr;
+   if (string_is_equal(video_driver_get_ident(), "sdl3"))
+   {
+      sdl3_video_t *video_ptr = (sdl3_video_t*)video_driver_get_ptr();
+      return video_ptr != NULL ? video_ptr->window : NULL;
+   }
 
-   if (string_is_not_equal(video_driver_get_ident(), "sdl3"))
-      return NULL;
-
-   if ((video_ptr = (sdl3_video_t*)video_driver_get_ptr()))
-      return video_ptr->window;
+   /* gl/gl1/glcore/vulkan running on the SDL3 context drivers. They
+    * register their SDL_Window as the display userdata via sdl3_set_handles. */
+   gfx_ctx_ident_t ident_info;
+   ident_info.ident = NULL;
+   video_context_driver_get_ident(&ident_info);
+   if (string_is_equal(ident_info.ident, "gl_sdl3") || string_is_equal(ident_info.ident, "vk_sdl3"))
+      return (SDL_Window*)video_driver_display_userdata_get();
 
    return NULL;
 }

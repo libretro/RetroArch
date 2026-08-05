@@ -3097,6 +3097,13 @@ static struct vk_buffer_chain vulkan_buffer_chain_init(
 }
 
 static const gfx_ctx_driver_t *gfx_ctx_vk_drivers[] = {
+#if defined(HAVE_SDL3)
+   /* Listed ahead of the native platform contexts: the SDL3
+    * input/joypad drivers only receive events when an SDL window
+    * exists, so SDL3 builds prefer SDL3 windowing. Override with
+    * video_context_driver if the native contexts are wanted. */
+   &gfx_ctx_sdl3_vk,
+#endif
 #if defined(__APPLE__)
    &gfx_ctx_cocoavk,
 #endif
