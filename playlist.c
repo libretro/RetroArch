@@ -2837,7 +2837,6 @@ static bool playlist_read_file(playlist_t *playlist)
    }
    else
    {
-      size_t i;
       size_t _len = RBUF_LEN(playlist->entries);
       /* Heap-held: at six entries this is 3 KiB even at the console
        * path length, on the playlist load path that runs from task
