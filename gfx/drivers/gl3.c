@@ -1896,7 +1896,15 @@ static bool gl3_init_hw_render(gl3_t *gl, unsigned width, unsigned height)
    glBindFramebuffer(GL_FRAMEBUFFER, gl->hw_render_fbo);
    glGenTextures(1, &gl->hw_render_texture);
    glBindTexture(GL_TEXTURE_2D, gl->hw_render_texture);
-   glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, width, height);
+   /* A core that declared RETRO_PIXEL_FORMAT_HDR10_2101010 renders PQ
+    * Rec.2020 code values here. Narrowing those to 8 bits is much worse
+    * than it is for SDR: PQ allocates its code space perceptually across
+    * 10,000 nits, so 8-bit PQ bands heavily in the darks. RGB10_A2 costs
+    * exactly the same bandwidth as RGBA8 and is the format the pixel
+    * format names, so there is no reason to make it optional. */
+   glTexStorage2D(GL_TEXTURE_2D, 1,
+         gl->video_info.source_hdr10 ? GL_RGB10_A2 : GL_RGBA8,
+         width, height);
    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl->hw_render_texture, 0);
 
    gl->hw_render_rb_ds = 0;
@@ -3087,6 +3095,16 @@ static void *gl3_init(const video_info_t *video,
       }
    }
 
+   /* Whether the source is PQ decides every later composition choice, it
+    * arrives only through video_info, and getting it wrong is silent --
+    * the image is merely graded oddly, with no error anywhere. State it
+    * once at init, as the Vulkan driver does. */
+   RARCH_LOG("[GLCore] Source is %s (%s), output %s.\n",
+         video->source_hdr10 ? "HDR10 PQ Rec.2020"
+                             : (video->source_10bit ? "10-bit SDR" : "SDR"),
+         video->rgb32 ? "32-bit" : "16-bit",
+         gl->scrgb.active ? "scRGB" : "SDR");
+
    RARCH_LOG("[GLCore] Vendor: %s, Renderer: %s.\n", vendor, renderer);
    RARCH_LOG("[GLCore] Version: %s.\n", version);
 
@@ -3920,14 +3938,21 @@ static void gl3_update_cpu_texture(gl3_t *gl,
       glGenTextures(1, &streamed->tex);
       glBindTexture(GL_TEXTURE_2D, streamed->tex);
       glTexStorage2D(GL_TEXTURE_2D, 1,
-            gl->video_info.rgb32
-            ? GL_RGBA8
-            : GL_RGB565,
+            gl->video_info.source_10bit
+            ? GL_RGB10_A2
+            : (gl->video_info.rgb32
+               ? GL_RGBA8
+               : GL_RGB565),
             width, height);
       streamed->width = width;
       streamed->height = height;
 
-      if (gl->video_info.rgb32)
+      /* Both 32-bit source formats arrive with the red and blue channels
+       * the other way round from what GL reads back out of the packed
+       * type (XRGB8888 vs GL_RGBA/UNSIGNED_BYTE, and XRGB2101010 =
+       * A2R10G10B10 vs GL_RGBA/UNSIGNED_INT_2_10_10_10_REV, which places
+       * A in 31:30 but R in 9:0), so both want the same view swizzle. */
+      if (gl->video_info.rgb32 || gl->video_info.source_10bit)
       {
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
@@ -3937,7 +3962,16 @@ static void gl3_update_cpu_texture(gl3_t *gl,
       glBindTexture(GL_TEXTURE_2D, streamed->tex);
 
    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-   if (gl->video_info.rgb32)
+   if (gl->video_info.source_10bit)
+   {
+      /* Packed 2-10-10-10, one word per pixel like the 8-bit path. */
+      glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch >> 2);
+      glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
+                      width, height, GL_RGBA,
+                      GL_UNSIGNED_INT_2_10_10_10_REV, frame);
+   }
+   else if (gl->video_info.rgb32)
    {
       glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch >> 2);
       glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
@@ -4418,7 +4452,8 @@ static bool gl3_frame(void *data, const void *frame,
    if (gl->flags & GL3_FLAG_HW_RENDER_ENABLE)
    {
       texture.image         = gl->hw_render_texture;
-      texture.format        = GL_RGBA8;
+      texture.format        = gl->video_info.source_hdr10
+         ? GL_RGB10_A2 : GL_RGBA8;
       texture.padded_width  = gl->hw_render_max_width;
       texture.padded_height = gl->hw_render_max_height;
 
@@ -4430,7 +4465,9 @@ static bool gl3_frame(void *data, const void *frame,
    else
    {
       texture.image         = streamed->tex;
-      texture.format        = gl->video_info.rgb32 ? GL_RGBA8 : GL_RGB565;
+      texture.format        = gl->video_info.source_10bit
+         ? GL_RGB10_A2
+         : (gl->video_info.rgb32 ? GL_RGBA8 : GL_RGB565);
       texture.padded_width  = streamed->width;
       texture.padded_height = streamed->height;
    }
