@@ -175,6 +175,13 @@ typedef struct gl3
    {
       GLuint   fbo;
       GLuint   tex;
+      /* Separate layer for the SDR UI (menu, overlays, widgets, OSD)
+       * when the content layer is PQ. The two cannot share a target:
+       * one encode pass cannot treat some pixels as Rec.2020 PQ and
+       * others as sRGB-ish gamma. Mirrors the Vulkan driver, which
+       * likewise composites the menu in its own HDR pass. */
+      GLuint   ui_fbo;
+      GLuint   ui_tex;
       unsigned width;
       unsigned height;
       bool     active;
@@ -1823,6 +1830,16 @@ static void gl3_destroy_resources(gl3_t *gl)
    {
       glDeleteTextures(1, &gl->scrgb.tex);
       gl->scrgb.tex = 0;
+   }
+   if (gl->scrgb.ui_fbo)
+   {
+      glDeleteFramebuffers(1, &gl->scrgb.ui_fbo);
+      gl->scrgb.ui_fbo = 0;
+   }
+   if (gl->scrgb.ui_tex)
+   {
+      glDeleteTextures(1, &gl->scrgb.ui_tex);
+      gl->scrgb.ui_tex = 0;
    }
 #ifdef HAVE_SHADERPIPELINE
    if (gl->pipelines.ribbon)
@@ -4071,8 +4088,15 @@ static GLuint gl3_frame_target_fbo(gl3_t *gl, unsigned width, unsigned height)
          glDeleteTextures(1, &gl->scrgb.tex);
       glGenTextures(1, &gl->scrgb.tex);
       glBindTexture(GL_TEXTURE_2D, gl->scrgb.tex);
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0,
-            GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+      /* PQ content needs 10 bits here for the same reason the hw render
+       * target does: this offscreen holds the frame between the shader
+       * chain's viewport pass and the encode, and 8-bit PQ bands. */
+      if (gl->video_info.source_hdr10)
+         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB10_A2, width, height, 0,
+               GL_RGBA, GL_UNSIGNED_INT_2_10_10_10_REV, NULL);
+      else
+         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0,
+               GL_RGBA, GL_UNSIGNED_BYTE, NULL);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -4096,8 +4120,66 @@ static GLuint gl3_frame_target_fbo(gl3_t *gl, unsigned width, unsigned height)
       glBindFramebuffer(GL_FRAMEBUFFER, 0);
       gl->scrgb.width  = width;
       gl->scrgb.height = height;
+
+      /* Sized and lifetimed with the content offscreen; only the PQ
+       * path allocates it (SDR keeps the single-target behaviour and
+       * its screenshot shortcut untouched). */
+      if (gl->scrgb.ui_fbo)
+      {
+         glDeleteFramebuffers(1, &gl->scrgb.ui_fbo);
+         gl->scrgb.ui_fbo = 0;
+      }
+      if (gl->scrgb.ui_tex)
+      {
+         glDeleteTextures(1, &gl->scrgb.ui_tex);
+         gl->scrgb.ui_tex = 0;
+      }
+      if (gl->video_info.source_hdr10)
+      {
+         glGenTextures(1, &gl->scrgb.ui_tex);
+         glBindTexture(GL_TEXTURE_2D, gl->scrgb.ui_tex);
+         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0,
+               GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+         glGenFramebuffers(1, &gl->scrgb.ui_fbo);
+         glBindFramebuffer(GL_FRAMEBUFFER, gl->scrgb.ui_fbo);
+         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+               GL_TEXTURE_2D, gl->scrgb.ui_tex, 0);
+         if (glCheckFramebufferStatus(GL_FRAMEBUFFER)
+               != GL_FRAMEBUFFER_COMPLETE)
+         {
+            RARCH_ERR("[GLCore] scRGB UI layer FBO incomplete; UI will be composited with the frame.\n");
+            glDeleteFramebuffers(1, &gl->scrgb.ui_fbo);
+            glDeleteTextures(1, &gl->scrgb.ui_tex);
+            gl->scrgb.ui_fbo = 0;
+            gl->scrgb.ui_tex = 0;
+         }
+      }
+      glBindFramebuffer(GL_FRAMEBUFFER, 0);
    }
    return gl->scrgb.fbo;
+}
+
+/* Target every UI draw should go to. Under PQ content that is the
+ * separate UI layer, cleared to transparent once per frame here; the
+ * encode pass composites it over the decoded content at its own
+ * brightness. Otherwise it is the frame target, unchanged. */
+static GLuint gl3_ui_target_fbo(gl3_t *gl, unsigned width, unsigned height)
+{
+   GLuint fbo = gl3_frame_target_fbo(gl, width, height);
+
+   if (gl->video_info.source_hdr10 && gl->scrgb.ui_fbo)
+   {
+      glBindFramebuffer(GL_FRAMEBUFFER, gl->scrgb.ui_fbo);
+      glDisable(GL_SCISSOR_TEST);
+      glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+      glClear(GL_COLOR_BUFFER_BIT);
+      return gl->scrgb.ui_fbo;
+   }
+   return fbo;
 }
 
 static void gl3_update_input_size(gl3_t *gl, unsigned width, unsigned height)
@@ -4686,7 +4768,7 @@ static bool gl3_frame(void *data, const void *frame,
     * invariant without chasing every restore site. No-op in SDR. */
    if (gl->scrgb.active)
       glBindFramebuffer(GL_FRAMEBUFFER,
-            gl3_frame_target_fbo(gl, width, height));
+            gl3_ui_target_fbo(gl, width, height));
 
 #ifdef HAVE_OVERLAY
    if ((gl->flags & GL3_FLAG_OVERLAY_ENABLE) && overlay_behind_menu)
@@ -4765,16 +4847,28 @@ static bool gl3_frame(void *data, const void *frame,
          ui_visible = true;
 #endif
 
-      memcpy(ubo_data, gl->mvp_no_rot.data, 16 * sizeof(float));
-      ubo_data[16] = settings
-            ? (ui_visible
-                  ? settings->floats.video_hdr_menu_nits
-                  : settings->floats.video_hdr_paper_white_nits)
-            : 200.0f;
-      ubo_data[17] = settings
-            ? (float)settings->uints.video_hdr_expand_gamut : 0.0f;
-      ubo_data[18] = 0.0f;
-      ubo_data[19] = 0.0f;
+      {
+         bool  pq         = gl->video_info.source_hdr10
+                         && gl->scrgb.ui_fbo != 0;
+         float paper_white = settings
+               ? settings->floats.video_hdr_paper_white_nits : 200.0f;
+         float menu_nits   = settings
+               ? settings->floats.video_hdr_menu_nits : 200.0f;
+
+         memcpy(ubo_data, gl->mvp_no_rot.data, 16 * sizeof(float));
+         /* SDR content keeps the existing single-target behaviour,
+          * including scaling the whole frame by Menu HDR Brightness
+          * when any UI is up. PQ content carries its own absolute
+          * luminance, so paper white does not apply to it and the UI
+          * is composited separately at the menu setting instead. */
+         ubo_data[16] = pq
+               ? paper_white
+               : (ui_visible ? menu_nits : paper_white);
+         ubo_data[17] = settings
+               ? (float)settings->uints.video_hdr_expand_gamut : 0.0f;
+         ubo_data[18] = pq ? 1.0f : 0.0f;
+         ubo_data[19] = pq ? menu_nits : 0.0f;
+      }
 
       glBindFramebuffer(GL_FRAMEBUFFER, 0);
       glViewport(0, 0, width, height);
@@ -4797,6 +4891,15 @@ static bool gl3_frame(void *data, const void *frame,
        * OSD font atlas, hence the upside-down red glyphs. */
       glActiveTexture(GL_TEXTURE1);
       glBindTexture(GL_TEXTURE_2D, gl->scrgb.tex);
+      /* uUITex is binding 2, hence texture unit 2 (see above). Bound to
+       * the content texture when there is no separate UI layer: the
+       * shader will not sample it (hdr_params.w == 0), but leaving a
+       * stale binding on the unit is what produced the upside-down red
+       * glyphs the comment above documents. */
+      glActiveTexture(GL_TEXTURE2);
+      glBindTexture(GL_TEXTURE_2D,
+            (gl->video_info.source_hdr10 && gl->scrgb.ui_tex)
+            ? gl->scrgb.ui_tex : gl->scrgb.tex);
 
       glEnableVertexAttribArray(0);
       glEnableVertexAttribArray(1);
@@ -4812,6 +4915,8 @@ static bool gl3_frame(void *data, const void *frame,
 
       glDisableVertexAttribArray(0);
       glDisableVertexAttribArray(1);
+      glBindTexture(GL_TEXTURE_2D, 0);
+      glActiveTexture(GL_TEXTURE1);
       glBindTexture(GL_TEXTURE_2D, 0);
       glActiveTexture(GL_TEXTURE0);
       glUseProgram(0);
@@ -4831,7 +4936,8 @@ static bool gl3_frame(void *data, const void *frame,
        * so SDR screenshots are roundtrip-free (no paper-white /
        * gamma / gamut inversion at all -- the other HDR drivers can
        * only approximate this with a tonemap). */
-      if (gl->scrgb.active && gl->scrgb.fbo)
+      if (gl->scrgb.active && gl->scrgb.fbo
+            && !gl->video_info.source_hdr10)
          glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->scrgb.fbo);
 #ifndef HAVE_OPENGLES
       else
@@ -4846,7 +4952,8 @@ static bool gl3_frame(void *data, const void *frame,
             (gl->vp.height > gl->video_height) ? gl->video_height : gl->vp.height,
             GL_RGBA, GL_UNSIGNED_BYTE,
             gl->readback_buffer_screenshot);
-      if (gl->scrgb.active && gl->scrgb.fbo)
+      if (gl->scrgb.active && gl->scrgb.fbo
+            && !gl->video_info.source_hdr10)
          glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
    }
    else if (gl->flags & GL3_FLAG_PBO_READBACK_ENABLE)
