@@ -91,6 +91,14 @@
 #ifndef GL_UNSIGNED_INT_8_8_8_8_REV
 #define GL_UNSIGNED_INT_8_8_8_8_REV       0x8367
 #endif
+/* 10-bit source support (desktop only; tokens may be absent from GLES2
+ * headers but the code paths using them are compiled out there). */
+#ifndef GL_RGB10_A2
+#define GL_RGB10_A2                       0x8059
+#endif
+#ifndef GL_UNSIGNED_INT_2_10_10_10_REV
+#define GL_UNSIGNED_INT_2_10_10_10_REV    0x8368
+#endif
 
 #if defined(HAVE_OPENGLES2)
 #define GL2_DEFAULT_SHADER_TYPE RARCH_SHADER_GLSL
@@ -4546,6 +4554,24 @@ static INLINE void gl2_set_texture_fmts(gl2_t *gl, bool rgb32)
          gl->internal_fmt = GL_RGBA;
          gl->texture_type = GL_RGBA;
       }
+#if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+      /* Native 10-bit sources (XRGB2101010 / HDR10_2101010) arrive as
+       * packed 2-10-10-10 words. GL_BGRA + UNSIGNED_INT_2_10_10_10_REV
+       * reads A from bits 31:30 and R from 29:20 - exactly the
+       * A2R10G10B10 layout of both formats - so unlike the glcore
+       * driver (GLES-shared, RGBA order + view swizzle) no swizzle is
+       * needed, which is fortunate as GL_TEXTURE_SWIZZLE_* is 3.3+.
+       * This one site also widens the hardware render target: the HW
+       * FBOs attach gl->texture[i] as their colour buffer, and PQ
+       * narrowed to 8 bits bands heavily in the darks. Same 32 bits
+       * per pixel, so no cost and no option. */
+      if (gl->video_info.source_10bit)
+      {
+         gl->internal_fmt = GL_RGB10_A2;
+         gl->texture_type = GL_BGRA;
+         gl->texture_fmt  = GL_UNSIGNED_INT_2_10_10_10_REV;
+      }
+#endif
    }
 #ifndef HAVE_OPENGLES
    else if (gl->flags & GL2_FLAG_HAVE_ES2_COMPAT)
@@ -4917,6 +4943,15 @@ static void *gl2_init(const video_info_t *video,
             RARCH_WARN("[GL] scRGB backbuffer present but the encode program could not be built; output will be dim (paper-white mapped).\n");
       }
    }
+
+   /* Whether the source is PQ decides every later composition choice,
+    * it arrives only through video_info, and getting it wrong is
+    * silent. State it once, as the glcore and Vulkan drivers do. */
+   RARCH_LOG("[GL] Source is %s (%s), output %s.\n",
+         video->source_hdr10 ? "HDR10 PQ Rec.2020"
+                             : (video->source_10bit ? "10-bit SDR" : "SDR"),
+         video->rgb32 ? "32-bit" : "16-bit",
+         gl->scrgb.active ? "scRGB" : "SDR");
 
    if (string_is_equal(ctx_driver->ident, "null"))
       goto error;

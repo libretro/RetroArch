@@ -146,6 +146,14 @@ struct gl2
       GLint  loc_expand;
       unsigned width;
       unsigned height;
+      /* Separate layer for the SDR UI when the content is PQ: one
+       * encode cannot treat some pixels as Rec.2020 PQ and others as
+       * gamma. Mirrors the glcore driver's ui_fbo/ui_tex. */
+      GLuint   ui_fbo;
+      GLuint   ui_tex;
+      GLint    loc_ui_tex;
+      GLint    loc_mode;
+      GLint    loc_ui_nits;
       bool   active;
    } scrgb;
 
