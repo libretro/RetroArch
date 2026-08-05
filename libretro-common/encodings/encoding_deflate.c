@@ -1960,6 +1960,29 @@ static void rd_fixed_lit_lengths(uint8_t *ll)
 #  endif
 #endif
 
+/* Clang moved the SSE4.2 CRC32 intrinsics out of the smmintrin.h /
+ * nmmintrin.h chain and into their own crc32intrin.h, which the umbrella
+ * headers pull in only when __CRC32__ (or __SSE4_2__) is already defined
+ * at the point of inclusion.  Neither is, in a translation unit that
+ * reaches the instruction through __attribute__((target("sse4.2")))
+ * rather than through a global -msse4.2 - so __has_include(<nmmintrin.h>)
+ * answered yes above, the declaration never arrived, and the build broke
+ * on _mm_crc32_u32 with clang telling us which header it wanted.  x86
+ * only: the ARM path below reaches its intrinsic through arm_acle.h.
+ *
+ * crc32intrin.h carries the target attribute on the intrinsics
+ * themselves, so including it directly is safe whether or not the TU is
+ * built for SSE4.2, and harmless on toolchains that never split it out. */
+#if (defined(RD_CRC32_HASH_DIRECT) || defined(RD_CRC32_HASH_RUNTIME)) \
+   && (defined(__x86_64__) || defined(__i386__) \
+    || defined(_M_X64)     || defined(_M_IX86))
+#  if defined(__has_include)
+#    if __has_include(<crc32intrin.h>)
+#      include <crc32intrin.h>
+#    endif
+#  endif
+#endif
+
 #if defined(RD_CRC32_HASH_RUNTIME)
 #include <nmmintrin.h>
 #include <features/features_cpu.h>
