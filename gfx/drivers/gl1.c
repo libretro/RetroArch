@@ -92,6 +92,13 @@
 #define GL_CLAMP                    GL_CLAMP_TO_EDGE
 #endif
 
+#ifndef GL_RGB10_A2
+#define GL_RGB10_A2                       0x8059
+#endif
+#ifndef GL_UNSIGNED_INT_2_10_10_10_REV
+#define GL_UNSIGNED_INT_2_10_10_10_REV    0x8368
+#endif
+
 #define RARCH_GL1_INTERNAL_FORMAT32 GL_RGBA8
 #define RARCH_GL1_TEXTURE_TYPE32    GL_BGRA_EXT
 #define RARCH_GL1_FORMAT32          GL_UNSIGNED_BYTE
@@ -257,7 +264,26 @@ typedef struct gl1
       unsigned height;
       bool   active;
    } scrgb;
+
+   /* Captured from video_info_t at init: whether the source frames are
+    * packed 2-10-10-10, and whether they are additionally PQ-encoded
+    * Rec.2020 (HDR10). Decides the upload format and, for PQ, which of
+    * the two reconciliation paths runs (GPU composite under scRGB, CPU
+    * tonemap otherwise). */
+   bool source_10bit;
+   bool source_hdr10;
 } gl1_t;
+
+/* The packed 2-10-10-10 upload needs GL 1.2 packed pixel types, BGRA
+ * ordering and the scRGB composite to be worth anything, so the native
+ * path is exactly the intersection of the three; everything outside it
+ * (true GL 1.1, Vita, missing BGRA) goes through the CPU. */
+static bool gl1_source_10bit_native(gl1_t *gl1)
+{
+   return (gl1->source_10bit || gl1->source_hdr10)
+       &&  gl1->scrgb.active
+       && (gl1->flags & GL1_FLAG_SUPPORTS_BGRA);
+}
 
 #ifndef VITA
 /* Defined with the scRGB helpers ahead of gl1_frame; called from
@@ -1440,6 +1466,16 @@ static void *gl1_init(const video_info_t *video,
    }
 #endif
 
+   gl1->source_10bit = video->source_10bit;
+   gl1->source_hdr10 = video->source_hdr10;
+   /* A wrong combination here is silent - the image is merely graded
+    * oddly - so state it once, as the other GL drivers do. */
+   RARCH_LOG("[GL1] Source is %s (%s), output %s.\n",
+         video->source_hdr10 ? "HDR10 PQ Rec.2020"
+                             : (video->source_10bit ? "10-bit SDR" : "SDR"),
+         video->rgb32 ? "32-bit" : "16-bit",
+         gl1->scrgb.active ? "scRGB" : "SDR");
+
    if (extensions && *extensions)
       gl1->extensions = string_split(extensions, " ");
 
@@ -1584,6 +1620,15 @@ static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, i
     * implementation lacks GL_EXT_bgra. */
    GLint  internalFormat  = fb_4444 ? GL_RGBA : GL_RGB8;
    bool   supports_native = (gl1->flags & GL1_FLAG_SUPPORTS_BGRA) ? true : false;
+   /* Core frames only (never the menu texture): packed 2-10-10-10
+    * words upload as GL_BGRA + UNSIGNED_INT_2_10_10_10_REV, which
+    * reads A from bits 31:30 and R from 29:20 - the A2R10G10B10
+    * layout of both 10-bit frontend formats - so like the gl driver
+    * (and unlike glcore) no swizzle is needed. GL 1.2, and the native
+    * predicate already requires BGRA, so the CPU-swizzle fallback
+    * below can never see these words (it would corrupt them). */
+   bool   src_10bit       = (tex == gl1->tex)
+                         && gl1_source_10bit_native(gl1);
    GLenum format          = fb_4444
                               ? GL_RGBA
                               : (supports_native ? GL_BGRA_EXT : GL_RGBA);
@@ -1643,7 +1688,7 @@ static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, i
    /* The BGRA-fallback swizzle below only applies to the 32bpp upload
     * path; the 16bpp 4444 path's bytes already match GL_RGBA channel
     * order. */
-   if (!fb_4444 && !supports_native)
+   if (!fb_4444 && !supports_native && !src_10bit)
    {
       frame_rgba = (uint8_t*)malloc(pot_width * pot_height * 4);
       if (frame_rgba)
@@ -1671,6 +1716,12 @@ static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, i
       }
    }
 
+   if (src_10bit)
+   {
+      internalFormat = GL_RGB10_A2;
+      format         = GL_BGRA_EXT;
+      type           = GL_UNSIGNED_INT_2_10_10_10_REV;
+   }
    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, pot_width, pot_height, 0, format, type, frame);
    if (frame_rgba)
        free(frame_rgba);
