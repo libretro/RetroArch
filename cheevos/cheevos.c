@@ -1942,6 +1942,20 @@ bool rcheevos_load(const void *data)
 #endif
 
       {
+         const uint8_t* data = (const uint8_t*)info->data;
+         size_t data_size = info->size;
+
+         if (data) {
+            const char* ext = path_get_extension(info->path);
+            if (string_is_equal_noncase(ext, "m3u") || string_is_equal_noncase(ext, "cue")) {
+               /* If the core doesn't specify needs_fullpath, the file will be loaded into
+                * memory. For m3u and cue files, we want to call the version of the hasher
+                * that reads files from disk, so pretend the data isn't loaded in memory. */
+               data = NULL;
+               data_size = 0;
+            }
+         }
+
 #ifdef HAVE_THREADS
          /* Capture the current load generation; the callback
           * compares this against the live value to detect a
@@ -1953,12 +1967,10 @@ bool rcheevos_load(const void *data)
          intptr_t gen = (intptr_t)retro_atomic_load_acquire_int(
                &rcheevos_locals.load_generation);
          rc_client_begin_identify_and_load_game(rcheevos_locals.client, console_id,
-            info->path, (const uint8_t*)info->data, info->size,
-            rcheevos_client_load_game_callback, (void*)gen);
+            info->path, data, data_size, rcheevos_client_load_game_callback, (void*)gen);
 #else
          rc_client_begin_identify_and_load_game(rcheevos_locals.client, console_id,
-            info->path, (const uint8_t*)info->data, info->size,
-            rcheevos_client_load_game_callback, NULL);
+            info->path, data, data_size, rcheevos_client_load_game_callback, NULL);
 #endif
       }
    }
