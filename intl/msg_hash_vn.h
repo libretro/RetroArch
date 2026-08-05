@@ -767,6 +767,9 @@ static const struct
    char s_700d45a9[30];
    char s_2a30a561[33];
    char s_6ae6f953[26];
+#ifdef ANDROID
+   char s_b573f90c[36];
+#endif
    char s_e28bc72f[25];
    char s_0b2a8528[61];
    char s_ea5757a0[13];
@@ -2725,6 +2728,9 @@ static const struct
    char s_5c8a1d63[137];
    char s_744c0f80[78];
    char s_2aa39081[65];
+#ifdef ANDROID
+   char s_50f43cfa[317];
+#endif
    char s_e85b309d[92];
    char s_cd94bb16[277];
    char s_a17a67e1[67];
@@ -5635,6 +5641,9 @@ static const struct
    "C\341\272\247n Analog ph\341\272\243i Y- (L\303\252n)",
    "C\341\272\247n Analog ph\341\272\243i Y+ (Xu\341\273\221ng)",
    "\304\220\341\273\231 nh\341\272\241y c\341\272\247n Analog",
+#ifdef ANDROID
+   "S\341\273\255 d\341\273\245ng b\303\240n ph\303\255m h\341\273\207 th\341\273\221ng",
+#endif
    "C\341\272\245u h\303\254nh t\341\273\261 \304\221\341\273\231ng",
    "T\341\273\261 \304\221\341\273\231ng b\341\272\255t ch\341\272\277 \304\221\341\273\231 'T\341"
    "\272\255p trung v\303\240o tr\303\262 ch\306\241i'",
@@ -8344,6 +8353,16 @@ static const struct
    "d\306\260\341\273\233i gi\303\241 tr\341\273\213 v\303\271ng ch\341\272\277t.",
    "\304\220i\341\273\201u ch\341\273\211nh \304\221\341\273\231 nh\341\272\241y c\341\273\247a c"
    "\341\272\247n \304\221i\341\273\201u khi\341\273\203n analog.",
+#ifdef ANDROID
+   "S\341\273\255 d\341\273\245ng b\303\240n ph\303\255m h\341\273\207 th\341\273\221ng Android \304"
+   "\221\341\273\203 nh\341\272\255p v\304\203n b\341\272\243n trong menu thay cho b\303\240n ph\303"
+   "\255m \341\272\243o t\303\255ch h\341\273\243p. H\341\273\227 tr\341\273\243 d\303\241n t\341"
+   "\273\253 b\341\272\243ng t\341\272\241m v\303\240 tr\303\254nh qu\341\272\243n l\303\275 m\341"
+   "\272\255t kh\341\272\251u. Y\303\252u c\341\272\247u c\303\263 m\303\240n h\303\254nh c\341\272"
+   "\243m \341\273\251ng ho\341\272\267c ph\306\260\306\241ng th\341\273\251c nh\341\272\255p li\341"
+   "\273\207u c\303\263 th\341\273\203 \304\221i\341\273\201u khi\341\273\203n b\341\272\261ng tay c"
+   "\341\272\247m ch\306\241i game.",
+#endif
    "T\341\273\261 \304\221\341\273\231ng c\341\272\245u h\303\254nh b\341\273\231 \304\221i\341\273"
    "\201u khi\341\273\203n c\303\263 c\341\272\245u h\303\254nh theo ki\341\273\203u C\341\272\257m "
    "v\303\240 Ch\341\272\241y.",
@@ -11884,6 +11903,9 @@ typedef char msg_hash_vn_blob_check[
        + 12u
        + 19u
 #endif
+#ifdef ANDROID
+       + 36u
+#endif
 #ifdef GEKKO
        + 18u
 #endif
@@ -12080,6 +12102,9 @@ typedef char msg_hash_vn_blob_check[
        + 27u
        + 27u
        + 19u
+#endif
+#ifdef ANDROID
+       + 317u
 #endif
 #ifdef GEKKO
        + 74u
@@ -12999,6 +13024,9 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
+#ifdef ANDROID
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANDROID_SYSTEM_KEYBOARD,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
@@ -14954,6 +14982,9 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
+#ifdef ANDROID
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANDROID_SYSTEM_KEYBOARD,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,

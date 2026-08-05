@@ -765,6 +765,9 @@ static const struct
    char s_700d45a9[26];
    char s_2a30a561[27];
    char s_6ae6f953[24];
+#ifdef ANDROID
+   char s_b573f90c[32];
+#endif
    char s_e28bc72f[26];
    char s_0b2a8528[50];
    char s_ea5757a0[7];
@@ -2718,6 +2721,9 @@ static const struct
    char s_5c8a1d63[135];
    char s_744c0f80[85];
    char s_2aa39081[49];
+#ifdef ANDROID
+   char s_50f43cfa[308];
+#endif
    char s_e85b309d[101];
    char s_cd94bb16[237];
    char s_a17a67e1[53];
@@ -5266,6 +5272,9 @@ static const struct
    "Anal\303\263gach Deas Y- (Suas)",
    "Anal\303\263gach Deas Y+ (S\303\255os)",
    "\303\215ogaireacht Anal\303\263gach",
+#ifdef ANDROID
+   "\303\232s\303\241id M\303\251archl\303\241r an Ch\303\263rais",
+#endif
    "Cumra\303\255ocht uathoibr\303\255och",
    "Cumasaigh M\303\263d 'F\303\263cas Cluiche' go huathoibr\303\255och",
    "Braith",
@@ -7473,6 +7482,13 @@ static const struct
    "D\303\251an neamhaird de ghluaiseachta\303\255 bata anal\303\263gacha faoi bhun luach an chrios "
    "marbh.",
    "Coigeartaigh \303\255ogaireacht na bata\303\255 anal\303\263gacha.",
+#ifdef ANDROID
+   "\303\232s\303\241id m\303\251archl\303\241r an ch\303\263rais Android le haghaidh iontr\303\241i"
+   "l t\303\251acs roghchl\303\241ir in ionad an mh\303\251archl\303\241ir sc\303\241ile\303\241in a"
+   "t\303\241 ionsuite. Cumasa\303\255onn s\303\251 greamaigh gearrthaisce agus bainisteoir\303\255 "
+   "pasfhocal. \303\211il\303\255onn s\303\251 sc\303\241ile\303\241n tadhaill n\303\263 modh ionchu"
+   "ir ar f\303\251idir nasclean\303\272int a dh\303\251anamh air le gamepad.",
+#endif
    "Cumra\303\255onn s\303\251 go huathoibr\303\255och rialt\303\263ir\303\255 a bhfuil pr\303\263if"
    "\303\255l acu, st\303\255l Breise\303\241n-agus-S\303\272gartha.",
    "Cumasaigh m\303\263d 'F\303\263cas Cluiche' i gc\303\263na\303\255 agus \303\241bhar \303\241 sh"
@@ -9887,6 +9903,9 @@ typedef char msg_hash_ga_blob_check[
        + 12u
        + 23u
 #endif
+#ifdef ANDROID
+       + 32u
+#endif
 #ifdef GEKKO
        + 14u
 #endif
@@ -10076,6 +10095,9 @@ typedef char msg_hash_ga_blob_check[
        + 20u
        + 20u
        + 23u
+#endif
+#ifdef ANDROID
+       + 308u
 #endif
 #ifdef GEKKO
        + 57u
@@ -10996,6 +11018,9 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
+#ifdef ANDROID
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANDROID_SYSTEM_KEYBOARD,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
@@ -12946,6 +12971,9 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
+#ifdef ANDROID
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANDROID_SYSTEM_KEYBOARD,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,

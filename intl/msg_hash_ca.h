@@ -2355,6 +2355,7 @@ static const struct
    char s_f4b6d13e[35];
    char s_25e89959[4];
    char s_a7468d68[32];
+   char s_b1d6fea6[9];
    char s_aa0659db[18];
    char s_49757b91[18];
    char s_660eb9c4[18];
@@ -2407,6 +2408,8 @@ static const struct
    char s_daf6d7e2[59];
    char s_042502c4[68];
    char s_90ae9a9f[115];
+   char s_81b79d5b_0[500];
+   char s_81b79d5b_1[9];
    char s_c9235dab[60];
    char s_330be970_0[500];
    char s_330be970_1[43];
@@ -3469,6 +3472,7 @@ static const struct
    char s_698d5124[109];
    char s_7e43d750[256];
    char s_87ca7bc6[150];
+   char s_cfa51e8c[302];
    char s_b62c2f7e[323];
    char s_456fcbc9[376];
    char s_82fab47a[39];
@@ -6721,6 +6725,7 @@ static const struct
    "Disposici\303\263 vertical de miniatures",
    "S\303\255",
    "Clau de transmissi\303\263 de Youtube",
+   "Mode HDR",
    "Shader predefinit",
    "Shader predefinit",
    "Shader predefinit",
@@ -6796,6 +6801,13 @@ static const struct
    "\240pid.",
    "Accelera l'\303\240udio a l'emprar l'avan\303\247ament r\303\240pid. Defugir\303\241 sorolls en "
    "l'\303\240udio per\303\262 canviant la seva tonalitat.",
+   "Fes servir un valor enter en comptes de decimal quan un nucli produeix \303\240udio a 16 bits. P"
+   "rodueix una sortida d'\303\240udio id\303\250ntica al bit en totes les plataformes. L'objectiu "
+   "\303\251s la reproducci\303\263 fidedigna, no la velocitat: si el processador t\303\251 una FPU "
+   "de vectors, el mostrejador \303\251s m\303\251s lent, perqu\303\250 es procesa amb nombres decim"
+   "als. Aquesta opci\303\263 no afecta a nuclis els quals la sortida d'\303\240udio sigui amb valor"
+   "s decimals i far\303\240 servir la ruta de valors decimals quan s'activi un filtre DSP incomp",
+   "latible.",
    "Els filtres d'\303\240udio DSP s'emmagatzemen en aquesta carpeta.",
    "El format de mostreig que sol\302\267licitar\303\240 el controlador d'\303\240udio del dispositi"
    "u de sortida. 'Decimal' sol\302\267licita un decimal de 32 bits, 'Int16' per enters de 16 bits. "
@@ -8429,6 +8441,10 @@ static const struct
    "ra.",
    "Utilitza el rang complet de color del monitor per crear-ne un de m\303\251s brillant i saturat. "
    "Per colors m\303\251s fidels al joc original, selecciona PREC\303\215S.",
+   "La brillantor m\303\240xima que pot oferir el teu monitor, en nits. Estableix el marge per poten"
+   "ciar la brillantor per aquells nuclis que poden renderitzar en HDR. Comprova les caracter\303"
+   "\255stiques del teu monitor i estableix 1000 en cas de dubte. Un valor m\303\251s alt pot sobres"
+   "aturar els detalls m\303\251s brillants.",
    "Selecciona el nivell de brillantor de HDR en nits. Es fa servir en combinaci\303\263 de la confi"
    "guraci\303\263 de brillantor del teu monitor. Pots comen\303\247ar per seleccionar un valor de 8"
    "0 i posar la brillantor del teu monitor al m\303\240xim. O tamb\303\251 pots posar el valor m"
@@ -9232,7 +9248,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (199189u
+      (sizeof(msg_hash_ca_blob) == (200009u
 #ifdef ANDROID
        + 281u
 #endif
@@ -11983,6 +11999,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_YES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_YOUTUBE_STREAM_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_HDR_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
@@ -12035,6 +12052,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTPATH_S16,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FILTER_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FORMAT_NEGOTIATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
@@ -13096,6 +13114,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,

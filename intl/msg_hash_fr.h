@@ -754,6 +754,9 @@ static const struct
    char s_700d45a9[27];
    char s_2a30a561[26];
    char s_6ae6f953[25];
+#ifdef ANDROID
+   char s_b573f90c[29];
+#endif
    char s_e28bc72f[26];
    char s_0b2a8528[54];
    char s_ea5757a0[10];
@@ -2695,6 +2698,9 @@ static const struct
    char s_5c8a1d63[120];
    char s_744c0f80[83];
    char s_2aa39081[48];
+#ifdef ANDROID
+   char s_50f43cfa[246];
+#endif
    char s_e85b309d[71];
    char s_cd94bb16[228];
    char s_a17a67e1[74];
@@ -5165,6 +5171,9 @@ static const struct
    "Analogique droit Y- (haut)",
    "Analogique droit Y+ (bas)",
    "Sensibilit\303\251 analogique ",
+#ifdef ANDROID
+   "Utiliser le clavier syst\303\250me",
+#endif
    "Configuration automatique",
    "Active automatiquement le mode de jeu au premier plan",
    "D\303\251tecter",
@@ -7292,6 +7301,11 @@ static const struct
    ", seul l'utilisateur 1 peut contr\303\264ler le menu.",
    "Ignorer les mouvements des sticks analogiques en dessous de la valeur de deadzone.",
    "R\303\251gler la sensibilit\303\251 des sticks analogiques.",
+#ifdef ANDROID
+   "Utiliser le clavier syst\303\250me Android pour la saisie dans les menus au lieu du clavier virt"
+   "uel int\303\251gr\303\251. Permet le collage depuis le presse-papiers et l'utilisation d'un gest"
+   "ionnaire de mots de passe. N\303\251cessite un \303\251cran tactile ou une manette.",
+#endif
    "Tente de configurer automatiquement les manettes, style Plug-and-Play.",
    "Toujours activer le mode 'Jeu au premier plan' lors du lancement et de la reprise du contenu. Lo"
    "rsque r\303\251gl\303\251 sur 'D\303\251tecter', l'option sera activ\303\251e si le c\305\223ur "
@@ -9520,6 +9534,9 @@ typedef char msg_hash_fr_blob_check[
        + 13u
        + 23u
 #endif
+#ifdef ANDROID
+       + 29u
+#endif
 #ifdef GEKKO
        + 22u
 #endif
@@ -9706,6 +9723,9 @@ typedef char msg_hash_fr_blob_check[
        + 22u
        + 22u
        + 23u
+#endif
+#ifdef ANDROID
+       + 246u
 #endif
 #ifdef GEKKO
        + 59u
@@ -10615,6 +10635,9 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
+#ifdef ANDROID
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANDROID_SYSTEM_KEYBOARD,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
@@ -12552,6 +12575,9 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
+#ifdef ANDROID
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANDROID_SYSTEM_KEYBOARD,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,

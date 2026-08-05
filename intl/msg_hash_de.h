@@ -732,6 +732,9 @@ static const struct
    char s_700d45a9[30];
    char s_2a30a561[31];
    char s_6ae6f953[22];
+#ifdef ANDROID
+   char s_b573f90c[25];
+#endif
    char s_e28bc72f[27];
    char s_0b2a8528[42];
    char s_ea5757a0[9];
@@ -1265,6 +1268,7 @@ static const struct
    char s_04e3886f[36];
    char s_1d4d1099[29];
    char s_c19bc96b[61];
+   char s_733174db[14];
    char s_fc6e3a57[27];
    char s_8594979d[22];
    char s_c4ab544b[17];
@@ -2619,6 +2623,9 @@ static const struct
    char s_5c8a1d63[108];
    char s_744c0f80[64];
    char s_2aa39081[50];
+#ifdef ANDROID
+   char s_50f43cfa[309];
+#endif
    char s_e85b309d[76];
    char s_cd94bb16[226];
    char s_a17a67e1[50];
@@ -5018,6 +5025,9 @@ static const struct
    "Rechter Analogstick Y- (oben)",
    "Rechter Analogstick Y+ (unten)",
    "Analogempfindlichkeit",
+#ifdef ANDROID
+   "Systemtastatur verwenden",
+#endif
    "Automatische Konfiguration",
    "'Spielfokus'-Modus automatisch aktivieren",
    "Erkennen",
@@ -5551,6 +5561,7 @@ static const struct
    "Server-Passwort f\303\274r Zuschauermodus",
    "Netzwerkspiel-Zuschauermodus",
    "Netzwerkspiel wird gestartet, sobald der Inhalt geladen ist.",
+   "Netzwerkspiel",
    "Netzwerkspiel-TCP/UDP-Port",
    "Relayserver verwenden",
    "Netzwerk-Befehle",
@@ -7043,6 +7054,12 @@ static const struct
    "er 1 das Men\303\274 steuern.",
    "Analogstickbewegungen unterhalb des Deadzone-Wertes ignorieren.",
    "Die Empfindlichkeit von analogen Sticks anpassen.",
+#ifdef ANDROID
+   "Die Android-Systemtastatur wird anstelle der integrierten Bildschirmtastatur f\303\274r die Eing"
+   "abe von Men\303\274texten verwendet. Erm\303\266glicht das Einf\303\274gen aus der Zwischenablag"
+   "e und die Verwendung von Passwort-Managern. Erfordert einen Touchscreen oder eine Eingabemethode"
+   ", die mit einem Gamepad bedient werden kann.",
+#endif
    "Konfiguriert automatisch Controller mit einem Profil im Plug-and-Play-Stil.",
    "Den 'Spielfokus'-Modus aktivieren, wenn Inhalte gestartet oder fortgesetzt werden. Wenn diese Op"
    "tion auf 'Erkennen' gesetzt ist, wird sie aktiviert, wenn der aktuelle Core \303\274ber die Fron"
@@ -9020,7 +9037,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (191727u
+      (sizeof(msg_hash_de_blob) == (191741u
 #ifdef ANDROID
        + 358u
 #endif
@@ -9069,6 +9086,9 @@ typedef char msg_hash_de_blob_check[
        + 18u
        + 18u
        + 27u
+#endif
+#ifdef ANDROID
+       + 25u
 #endif
 #ifdef GEKKO
        + 11u
@@ -9264,6 +9284,9 @@ typedef char msg_hash_de_blob_check[
        + 26u
        + 26u
        + 27u
+#endif
+#ifdef ANDROID
+       + 309u
 #endif
 #ifdef GEKKO
        + 62u
@@ -10154,6 +10177,9 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
+#ifdef ANDROID
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANDROID_SYSTEM_KEYBOARD,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
@@ -10687,6 +10713,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
@@ -12038,6 +12065,9 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
+#ifdef ANDROID
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANDROID_SYSTEM_KEYBOARD,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,

@@ -754,6 +754,9 @@ static const struct
    char s_700d45a9[29];
    char s_2a30a561[30];
    char s_6ae6f953[37];
+#ifdef ANDROID
+   char s_b573f90c[24];
+#endif
    char s_e28bc72f[20];
    char s_0b2a8528[44];
    char s_ea5757a0[9];
@@ -925,7 +928,7 @@ static const struct
    char s_4c92f60e[25];
    char s_9c702ee1[37];
    char s_b8b18b90[14];
-   char s_efa8d516[34];
+   char s_efa8d516[35];
    char s_d7c1d887[26];
    char s_8c49943c[26];
    char s_d2c6b214[26];
@@ -1016,7 +1019,7 @@ static const struct
    char s_83f3b962[44];
    char s_e2d223cc[13];
    char s_07c3b46e[16];
-   char s_69694866[28];
+   char s_69694866[27];
    char s_8a9a3ae4[11];
    char s_c42c1d33[43];
    char s_fad5d518[58];
@@ -1430,11 +1433,11 @@ static const struct
    char s_0f1d488a[11];
    char s_d10cfac6[61];
    char s_99eec88b[33];
-   char s_fd7b6a38[30];
+   char s_fd7b6a38[28];
    char s_d244fe96[19];
    char s_5e511971[23];
    char s_1aebff8d[10];
-   char s_fd7bb9e2[24];
+   char s_fd7bb9e2[31];
    char s_e9b3e6ae[37];
    char s_2fe091e5[7];
    char s_313105c8[23];
@@ -1452,9 +1455,9 @@ static const struct
    char s_7ea8ec8f[20];
    char s_e1606ab3[19];
    char s_7772fc51[35];
-   char s_29889f9f[24];
+   char s_29889f9f[22];
    char s_1360da58[12];
-   char s_99f3b063[8];
+   char s_99f3b063[19];
    char s_f632c879[7];
    char s_31fa147f[19];
    char s_db555f31[32];
@@ -1464,7 +1467,7 @@ static const struct
    char s_0f49d986[72];
    char s_bcc17320[55];
    char s_ce39f356[47];
-   char s_a8618aba[37];
+   char s_a8618aba[42];
    char s_5bbcf84b[9];
    char s_62c35c34[16];
    char s_9d544d44[42];
@@ -2666,6 +2669,9 @@ static const struct
    char s_5c8a1d63[120];
    char s_744c0f80[62];
    char s_2aa39081[52];
+#ifdef ANDROID
+   char s_50f43cfa[279];
+#endif
    char s_e85b309d[84];
    char s_cd94bb16[221];
    char s_a17a67e1[52];
@@ -2795,7 +2801,7 @@ static const struct
    char s_03e272fc[63];
    char s_5c2cc60f[83];
    char s_d6d8d4be[91];
-   char s_e86d2704[77];
+   char s_e86d2704[65];
    char s_dda608b5[330];
    char s_6f5a032a[58];
    char s_9530e802[124];
@@ -2866,7 +2872,7 @@ static const struct
    char s_91e03bff[33];
    char s_287215f6[217];
    char s_95424910[72];
-   char s_f4d41494[239];
+   char s_f4d41494[176];
    char s_cfb4dee1[101];
    char s_2b208bc6[215];
    char s_37ab0764[52];
@@ -3127,7 +3133,7 @@ static const struct
    char s_e0bdee74[170];
    char s_9fd2f8b9[238];
    char s_a5aeccdc[61];
-   char s_bfe5a026[63];
+   char s_bfe5a026[50];
    char s_bfe5efd0[51];
    char s_d72464dc[269];
    char s_6b2c2495[75];
@@ -3136,14 +3142,14 @@ static const struct
    char s_4113227d[59];
    char s_0a1cf5a1[177];
    char s_64e37a7f[97];
-   char s_cac7ba4d[75];
+   char s_cac7ba4d[57];
    char s_e124c89f[416];
    char s_70a53ed8[41];
    char s_78c7d8fd[144];
    char s_d86c49f4[134];
    char s_c84a34ce[204];
    char s_d4095cc4[181];
-   char s_49a0a568[152];
+   char s_49a0a568[137];
    char s_e75f4bb2[165];
    char s_00a68235[213];
    char s_e33b9334[95];
@@ -5099,6 +5105,9 @@ static const struct
    "Anal\303\263gico direito Y- (cima)",
    "Anal\303\263gico direito Y+ (baixo)",
    "Sensibilidade do controle anal\303\263gico",
+#ifdef ANDROID
+   "Usar teclado do sistema",
+#endif
    "Auto configura\303\247\303\243o",
    "Ative automaticamente o modo \"Foco do jogo\"",
    "Detectar",
@@ -5270,7 +5279,7 @@ static const struct
    "Remapeamentos de entrada",
    "Remapear controles para este n\303\272cleo",
    "Porta mapeada",
-   "Ordenar remapeamento por controle",
+   "Separar remapeamentos por controle",
    "Vincula\303\247\303\265es do RetroPad",
    "Intensidade da vibra\303\247\303\243o",
    "Salvar perfil de controle",
@@ -5361,7 +5370,7 @@ static const struct
    "Nome Personalizado da Lista de Reprodu\303\247\303\243o",
    "<Diret\303\263rio>",
    "<Personalizado>",
-   "Validar entradas existentes",
+   "Verificar itens existentes",
    "Mapeamento",
    "Girar automaticamente barra de navega\303\247\303\243o",
    "Mostrar Miniatura Secund\303\241ria em Visualiza\303\247\303\265es de Lista",
@@ -5778,11 +5787,11 @@ static const struct
    "Desempenho",
    "Permitir Todos os Tipos de Imagem Suportadas para Miniaturas",
    "Compactar listas de reprodu\303\247\303\243o",
-   "Permitir a remo\303\247\303\243o de itens",
+   "Permitir remo\303\247\303\243o de itens",
    "Todas as playlists",
    "Hist\303\263rico e favoritos",
    "DESLIGADO",
-   "Permitir renomear itens",
+   "Permitir renomea\303\247\303\243o de itens",
    "Correspond\303\252ncia de arquivos difusos",
    "Sempre",
    "Hist\303\263rico e favoritos",
@@ -5800,9 +5809,9 @@ static const struct
    "Gerenciar playlists",
    "Atualizar playlist",
    "Restaurar associa\303\247\303\265es do n\303\272cleo",
-   "Modo de classifica\303\247\303\243o",
+   "Modo de organiza\303\247\303\243o",
    "Alfab\303\251tico",
-   "Padr\303\243o",
+   "Padr\303\243o do sistema",
    "Nenhum",
    "Padr\303\243o do sistema",
    "Lista de reprodu\303\247\303\243o port\303\241til",
@@ -5812,7 +5821,7 @@ static const struct
    "Mostrar \303\255cones espec\303\255ficos do conte\303\272do no hist\303\263rico e nos favoritos",
    "Mostrar n\303\272cleos associados nas listas de reprodu\303\247\303\243o",
    "Mostrar sub-etiquetas da lista de reprodu\303\247\303\243o",
-   "Ordenar listas por ordem alfab\303\251tica",
+   "Organizar playlists por ordem alfab\303\251tica",
    "N\303\272cleo:",
    "\303\232ltimo acesso:",
    "Estilo da data e hora do \"\303\232ltimo acesso\"",
@@ -7172,6 +7181,12 @@ static const struct
    "\241rio 1 poder\303\241 controlar o menu.",
    "Ignora o direcional anal\303\263gico abaixo do valor da zona morta.",
    "Ajusta a sensibilidade dos direcionais anal\303\263gicos.",
+#ifdef ANDROID
+   "Usa o teclado do sistema Android para entrada de texto em vez do teclado virtual integrado. Perm"
+   "ite colar o conte\303\272do da \303\241rea de transfer\303\252ncia e gerenciar senhas. Requer um"
+   "a tela sens\303\255vel ao toque (touchscreen) ou um m\303\251todo de entrada que possa ser naveg"
+   "ado com um controle.",
+#endif
    "Configura automaticamente os controles que possuem um perfil, estilo Plug-and-Play.",
    "Sempre ative o modo \"Foco no Jogo\" ao iniciar e retomar o conte\303\272do. Quando definido com"
    "o \"Detectar\", a op\303\247\303\243o ser\303\241 ativada se o n\303\272cleo atual implementar a"
@@ -7368,7 +7383,7 @@ static const struct
    "ual.",
    "Especifica qual porta do n\303\272cleo receber\303\241 a entrada da porta de controle da interfa"
    "ce %u.",
-   "Os remapeamento s\303\263 ser\303\243o aplicados ao controle ativo no qual foram salvos.",
+   "Aplica os remapeamentos somente no controle usado no salvamento.",
    "Altere como o RetroPad virtual \303\251 mapeado para um dispositivo de entrada f\303\255sico. Se"
    " um dispositivo de entrada for reconhecido e configurado automaticamente corretamente, provavelm"
    "ente n\303\243o ser\303\241 necess\303\241rio usar este menu.\nNota: para altera\303\247\303\265"
@@ -7479,9 +7494,9 @@ static const struct
    "r as miniaturas da lista. A configura\303\247\303\243o autom\303\241tica usar\303\241 o mesmo no"
    "me do banco de dados correspondente ou do diret\303\263rio de conte\303\272do.",
    "Nome personalizado da lista de reprodu\303\247\303\243o para o conte\303\272do escaneado.",
-   "Quando ativado, as entradas existentes em qualquer lista de reprodu\303\247\303\243o ser\303\243"
-   "o verificadas antes da leitura dos novos conte\303\272dos. Ser\303\243o removidas todas as entra"
-   "das referentes ao conte\303\272do ausente e/ou arquivos com extens\303\265es inv\303\241lidas.",
+   "Os itens de todas as playlists ser\303\243o verificados antes de analisar novos conte\303\272dos"
+   ". Os itens com conte\303\272do faltando e/ou arquivos com extens\303\265es inv\303\241lidas ser"
+   "\303\243o removidos.",
    "Move automaticamente a barra de navega\303\247\303\243o no lado direito da tela na orienta\303"
    "\247\303\243o em modo retrato.",
    "Exibe uma miniatura secund\303\241ria ao usar formatos de lista de miniaturas nas listas de repr"
@@ -7906,7 +7921,7 @@ static const struct
    "uivo e o tempo de carregamento \303\240s custas do (insignificante) aumento do uso da CPU. Pode "
    "ser usado com listas de reprodu\303\247\303\243o de formato antigo ou novo.",
    "As listas de reprodu\303\247\303\243o s\303\243o armazenadas neste diret\303\263rio.",
-   "Permite que os itens da lista de reprodu\303\247\303\243o sejam removidos.",
+   "Permite que os itens da playlist sejam removidos.",
    "Permite que os itens da playlist sejam renomeados.",
    "Ao pesquisar nas listas de reprodu\303\247\303\243o por itens associados a arquivos compactados,"
    " corresponder apenas ao nome do arquivo em vez de [nome do arquivo]+[conte\303\272do]. Habilite "
@@ -7924,7 +7939,7 @@ static const struct
    " lista de reprodu\303\247\303\243o.",
    "Remova as associa\303\247\303\265es existentes dos n\303\272cleos para todas as entradas da list"
    "a de reprodu\303\247\303\243o.",
-   "Determina como as entradas s\303\243o classificadas nesta lista de reprodu\303\247\303\243o.",
+   "Determina como os itens s\303\243o organizados nesta playlist.",
    "Quando ativado e o diret\303\263rio do \"Navegador de arquivos\" \303\251 escolhido, o valor atu"
    "al do par\303\242metro \"Navegador de arquivos\" \303\251 salvo na lista de reprodu\303\247\303"
    "\243o. Quando a lista \303\251 carregada em outro sistema onde a mesma op\303\247\303\243o est"
@@ -7942,9 +7957,8 @@ static const struct
    "Mostra informa\303\247\303\265es adicionais para cada item da lista de reprodu\303\247\303\243o,"
    " como associa\303\247\303\243o principal atual e tempo de jogo (se dispon\303\255vel). Tem um im"
    "pacto de desempenho vari\303\241vel.",
-   "Ordena as listas de reprodu\303\247\303\243o de conte\303\272do em ordem alfab\303\251tica, excl"
-   "uindo as listas de reprodu\303\247\303\243o \"Hist\303\263rico\", \"Imagens\", \"M\303\272sica\""
-   " e \"V\303\255deos\".",
+   "Organiza as playlists de conte\303\272do em ordem alfab\303\251tica, com exce\303\247\303\243o d"
+   "as playlists de \"Hist\303\263rico\", \"Imagens\", \"M\303\272sicas\" e \"V\303\255deos\".",
    "Define o estilo da data e hora exibidas nas informa\303\247\303\265es do \"\303\232ltimo acesso"
    "\". As op\303\247\303\265es \"(AM/PM)\" ter\303\243o um pequeno impacto de desempenho em algumas"
    " plataformas.",
@@ -9231,7 +9245,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_br_blob_check[
-      (sizeof(msg_hash_pt_br_blob) == (193336u
+      (sizeof(msg_hash_pt_br_blob) == (193234u
 #ifdef ANDROID
        + 352u
 #endif
@@ -9283,6 +9297,9 @@ typedef char msg_hash_pt_br_blob_check[
        + 20u
        + 20u
        + 20u
+#endif
+#ifdef ANDROID
+       + 24u
 #endif
 #ifdef GEKKO
        + 16u
@@ -9476,6 +9493,9 @@ typedef char msg_hash_pt_br_blob_check[
        + 22u
        + 24u
        + 20u
+#endif
+#ifdef ANDROID
+       + 279u
 #endif
 #ifdef GEKKO
        + 69u
@@ -10387,6 +10407,9 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
+#ifdef ANDROID
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANDROID_SYSTEM_KEYBOARD,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
@@ -12297,6 +12320,9 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
+#ifdef ANDROID
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANDROID_SYSTEM_KEYBOARD,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,

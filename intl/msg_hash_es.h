@@ -760,6 +760,9 @@ static const struct
    char s_700d45a9[29];
    char s_2a30a561[28];
    char s_6ae6f953[24];
+#ifdef ANDROID
+   char s_b573f90c[29];
+#endif
    char s_e28bc72f[27];
    char s_0b2a8528[55];
    char s_ea5757a0[9];
@@ -2703,6 +2706,9 @@ static const struct
    char s_5c8a1d63[125];
    char s_744c0f80[90];
    char s_2aa39081[50];
+#ifdef ANDROID
+   char s_50f43cfa[274];
+#endif
    char s_e85b309d[102];
    char s_cd94bb16[223];
    char s_a17a67e1[87];
@@ -5150,6 +5156,9 @@ static const struct
    "Anal\303\263gico dcho. Y- (arriba)",
    "Anal\303\263gico dcho. Y+ (abajo)",
    "Sensibilidad anal\303\263gica",
+#ifdef ANDROID
+   "Utilizar teclado del sistema",
+#endif
    "Configuraci\303\263n autom\303\241tica",
    "Activar autom\303\241ticamente el modo de prioridad al juego",
    "Detectar",
@@ -7259,6 +7268,12 @@ static const struct
    "desactivada, solo podr\303\241 hacerlo el usuario 1.",
    "Ignora los movimientos del stick anal\303\263gico si su valor es inferior al de la zona muerta.",
    "Ajusta la sensibilidad de los sticks anal\303\263gicos.",
+#ifdef ANDROID
+   "Utiliza el teclado del sistema de Android para introducir textos en los men\303\272s en vez del "
+   "integrado. Permite usar el portapapeles y los administradores de contrase\303\261as. Es necesari"
+   "o tener una pantalla t\303\241ctil o un m\303\251todo de entrada en el que se pueda navegar con "
+   "un mando.",
+#endif
    "Configura de forma autom\303\241tica aquellos mandos para los que exista un perfil, a lo \302"
    "\253Plug and Play\302\273.",
    "Activa el modo de prioridad al juego al iniciar y reanudar contenidos de forma autom\303\241tica"
@@ -9396,6 +9411,9 @@ typedef char msg_hash_es_blob_check[
        + 10u
        + 20u
 #endif
+#ifdef ANDROID
+       + 29u
+#endif
 #ifdef GEKKO
        + 18u
 #endif
@@ -9585,6 +9603,9 @@ typedef char msg_hash_es_blob_check[
        + 20u
        + 20u
        + 23u
+#endif
+#ifdef ANDROID
+       + 274u
 #endif
 #ifdef GEKKO
        + 79u
@@ -10501,6 +10522,9 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
+#ifdef ANDROID
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANDROID_SYSTEM_KEYBOARD,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
@@ -12441,6 +12465,9 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
+#ifdef ANDROID
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANDROID_SYSTEM_KEYBOARD,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
