@@ -203,6 +203,7 @@
 #include <libretro.h>
 #if defined(HAVE_MMAP)
 #include <memmap.h>
+#include <sys/mman.h>
 #endif
 #include <encodings/utf.h>
 #include <compat/fopen_utf8.h>
@@ -298,7 +299,7 @@ int64_t retro_vfs_file_seek_internal(
       return fseek(stream->fp, (long)offset, whence) != 0 ? -1 : 0;
 #endif
    }
-#ifdef HAVE_MMAP
+#ifdef VFS_HAVE_FILE_MAPPING
    /* Need to check stream->mapped because this function is
     * called in filestream_open() */
    if (stream->mapped && (stream->hints &
@@ -418,7 +419,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
    if (path)
       stream->orig_path = strdup(path);
 
-#ifdef HAVE_MMAP
+#ifdef VFS_HAVE_FILE_MAPPING
    if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS && mode == RETRO_VFS_FILE_ACCESS_READ)
       stream->hints |= RFILE_HINT_UNBUFFERED;
    else
@@ -654,7 +655,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
       if (stream->fd == -1)
          goto error;
 
-#ifdef HAVE_MMAP
+#ifdef VFS_HAVE_FILE_MAPPING
       if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)
       {
          stream->mappos  = 0;
@@ -668,12 +669,40 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
 
          retro_vfs_file_seek_internal(stream, 0, SEEK_SET);
 
+#if defined(HAVE_MMAP)
          if ((stream->mapped = (uint8_t*)mmap((void*)0,
                stream->mapsize, PROT_READ,  MAP_SHARED, stream->fd, 0)) == MAP_FAILED)
          {
             stream->mapped = NULL;
             stream->hints &= ~RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS;
          }
+#else
+         {
+            /* Win32 file mapping.  A zero-length file cannot be mapped
+             * (CreateFileMapping rejects it), and a failed mapping of
+             * any kind - including a >4GB file on a 32-bit process,
+             * where MapViewOfFile cannot find address space - degrades
+             * to the ordinary descriptor path by dropping the hint,
+             * exactly as the POSIX branch does. */
+            HANDLE fh = (HANDLE)_get_osfhandle(stream->fd);
+            stream->map_handle = NULL;
+            if (fh != INVALID_HANDLE_VALUE && stream->mapsize > 0)
+               stream->map_handle = CreateFileMapping(fh, NULL,
+                     PAGE_READONLY, 0, 0, NULL);
+            if (stream->map_handle)
+            {
+               stream->mapped = (uint8_t*)MapViewOfFile(stream->map_handle,
+                     FILE_MAP_READ, 0, 0, 0);
+               if (!stream->mapped)
+               {
+                  CloseHandle(stream->map_handle);
+                  stream->map_handle = NULL;
+               }
+            }
+            if (!stream->mapped)
+               stream->hints &= ~RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS;
+         }
+#endif
       }
 #endif
    }
@@ -730,9 +759,20 @@ int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
    }
    else
    {
-#ifdef HAVE_MMAP
+#ifdef VFS_HAVE_FILE_MAPPING
       if (stream->mapped && (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS))
+      {
+#if defined(HAVE_MMAP)
          munmap(stream->mapped, stream->mapsize);
+#else
+         UnmapViewOfFile(stream->mapped);
+         if (stream->map_handle)
+         {
+            CloseHandle(stream->map_handle);
+            stream->map_handle = NULL;
+         }
+#endif
+      }
 #endif
    }
 
@@ -848,7 +888,7 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
       return ftell(stream->fp);
 #endif
    }
-#ifdef HAVE_MMAP
+#ifdef VFS_HAVE_FILE_MAPPING
    /* Need to check stream->mapped because this function
     * is called in filestream_open() */
    if (stream->mapped && (stream->hints &
@@ -882,7 +922,7 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream,
 #endif
       return fread(s, 1, (size_t)len, stream->fp);
    }
-#ifdef HAVE_MMAP
+#ifdef VFS_HAVE_FILE_MAPPING
    if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)
    {
       if (stream->mappos >= stream->mapsize)
@@ -944,7 +984,7 @@ int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file *stream, cons
 
       return ret;
    }
-#ifdef HAVE_MMAP
+#ifdef VFS_HAVE_FILE_MAPPING
    if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)
       return -1;
 #endif
@@ -1120,7 +1160,7 @@ const uint8_t *retro_vfs_file_get_mapped_ptr_impl(
 {
    if (len)
       *len = 0;
-#ifdef HAVE_MMAP
+#ifdef VFS_HAVE_FILE_MAPPING
    /* Gate on the hint as well as the pointer, matching the read and
     * seek paths: those consult 'mapped' only under the hint, so the
     * map is authoritative for the file contents only when the hint
