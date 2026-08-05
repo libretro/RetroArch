@@ -52,6 +52,8 @@ enum
 {
    RDEFLATE_PROCESS_ERROR = -2,
    RDEFLATE_PROCESS_END   =  1,
+   /* stop-at-block: a deflate block just ended and another follows */
+   RDEFLATE_PROCESS_BLOCK = 2,
    RDEFLATE_PROCESS_NEXT  =  0
 };
 
@@ -85,6 +87,13 @@ void  rinflate_set_out(void *stream, uint8_t *out, size_t out_size);
  * history. Raw streams (negative window_bits) only.
  */
 void  rinflate_set_dictionary(void *stream, const uint8_t *dict, size_t len);
+
+/** Report RDEFLATE_PROCESS_BLOCK at each interior block boundary. */
+void     rinflate_set_stop_at_block(void *stream, int stop);
+/** Exact input position in bits, relative to the current input window. */
+uint64_t rinflate_tell_bits(const void *stream);
+/** Discard 0..7 bits at stream start: resume mid-byte at a boundary. */
+void     rinflate_set_start_bit(void *stream, int bits);
 
 /* Decompress.  Writes the number of input bytes consumed to *read and the
  * number of output bytes produced to *wrote (either may be NULL).  Returns
