@@ -404,9 +404,14 @@ check_val '' SDL2 -lSDL2 SDL2 sdl2 2.0.0 '' true
 check_val '' SDL3 -lSDL3 SDL3 sdl3 3.2.20 '' true
 
 if [ "$HAVE_SDL3" = 'yes' ] && { [ "$HAVE_SDL2" = 'yes' ] || [ "$HAVE_SDL" = 'yes' ]; }; then
-   die : 'Notice: SDL drivers will be replaced by SDL3 ones.'
-   HAVE_SDL=no
-   HAVE_SDL2=no
+   if [ "$USER_SDL2" = 'yes' ] && [ "$USER_SDL3" != 'yes' ]; then
+      die : 'Notice: SDL2 was explicitly enabled, disabling SDL3 drivers.'
+      HAVE_SDL3=no
+   else
+      die : 'Notice: SDL drivers will be replaced by SDL3 ones.'
+      HAVE_SDL=no
+      HAVE_SDL2=no
+   fi
 fi
 if [ "$HAVE_SDL2" = 'yes' ] && [ "$HAVE_SDL" = 'yes' ]; then
    die : 'Notice: SDL drivers will be replaced by SDL2 ones.'
