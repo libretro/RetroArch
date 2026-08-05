@@ -5076,6 +5076,25 @@ static bool gl3_frame(void *data, const void *frame,
 static uint32_t gl3_get_flags(void *data)
 {
    uint32_t flags = 0;
+#ifdef HAVE_SLANG
+   gl3_t *gl      = (gl3_t*)data;
+
+   /* Advertise a 10-bit source path only when there is genuinely
+    * somewhere to present it: the scRGB FP16 backbuffer. This is what
+    * SET_PIXEL_FORMAT tests before accepting HDR10_2101010 from a core,
+    * and unlike the D3D and Vulkan drivers - which have an HDR
+    * swapchain wherever they have HDR at all - glcore's HDR output
+    * exists only on contexts that advertise
+    * GFX_CTX_FLAGS_SCRGB_FRAMEBUFFER. Advertising unconditionally would
+    * make cores hand PQ frames to an SDR presentation path, which grades
+    * badly wrong rather than merely coarse.
+    *
+    * scrgb.active is cached at init from the context driver's flags;
+    * querying the context here instead would recurse, since this
+    * function is called from video_context_driver_get_flags(). */
+   if (gl && gl->scrgb.active)
+      BIT32_SET(flags, GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE);
+#endif
 
    BIT32_SET(flags, GFX_CTX_FLAGS_HARD_SYNC);
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
