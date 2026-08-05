@@ -94,7 +94,12 @@ void main()
        * same Reinhard shoulder the other drivers use, and re-encode to
        * gamma so the picture is merely tonemapped rather than wrong. */
       vec3 nits = ST2084ToLinear(src.rgb) * 10000.0;
-      vec3 sdr  = (nits * k2020to709) / max(global.hdr_params.x, 1.0);
+      /* M * v: this file stores its matrices column-major for that
+       * order (see the SDR path above), unlike hdr_common.glsl, whose
+       * row-major storage pairs with v * M. Mixing the idioms applies
+       * the transpose, which pushes whites red (row sums 1.52 / 0.44 /
+       * 1.04) and crushes greens. */
+      vec3 sdr  = (k2020to709 * nits) / max(global.hdr_params.x, 1.0);
       float pk  = max(sdr.r, max(sdr.g, sdr.b));
       if (pk > 1.0)
          sdr  /= pk;
@@ -104,7 +109,7 @@ void main()
    else if (global.hdr_params.z > 0.5)
       /* HDR10 PQ Rec.2020 at absolute luminance. 1.0 normalized linear
        * is 10,000 nits and scRGB 1.0 is 80, hence the 125x scalar. */
-      lin = (ST2084ToLinear(src.rgb) * k2020to709) * (10000.0 / 80.0);
+      lin = (k2020to709 * ST2084ToLinear(src.rgb)) * (10000.0 / 80.0);
    else
       lin = SDRToscRGB(src.rgb, global.hdr_params.x);
 
