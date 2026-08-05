@@ -4204,7 +4204,6 @@ bool menu_entries_append(
       rarch_setting_t *setting)
 {
    menu_ctx_list_t list_info;
-   size_t i;
    size_t idx, lbl_len;
    const char *menu_path       = NULL;
    menu_file_list_cbs_t *cbs   = NULL;
@@ -4308,7 +4307,6 @@ void menu_entries_prepend(file_list_t *list,
 {
    size_t lbl_len;
    menu_ctx_list_t list_info;
-   size_t i;
    size_t idx                  = 0;
    const char *menu_path       = NULL;
    menu_file_list_cbs_t *cbs   = NULL;
