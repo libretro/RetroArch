@@ -4055,6 +4055,11 @@ static bool video_driver_ident_supports_10bit_source(const char *ident)
    if (string_is_equal(ident, "gl"))
       return true;
 #endif
+   /* gl1 is unconditional: its PQ handling degrades through a pure-CPU
+    * tonemap that has no GL requirements at all, so acceptance is safe
+    * even on the GL 1.1 software rasterizers that driver exists for. */
+   if (string_is_equal(ident, "gl1"))
+      return true;
    return false;
 }
 

@@ -3153,6 +3153,20 @@ static void gl1_set_texture_enable(void *data, bool state, bool full_screen)
 static uint32_t gl1_get_flags(void *data)
 {
    uint32_t flags = 0;
+#ifndef VITA
+   gl1_t *gl1     = (gl1_t*)data;
+
+   /* Advertise a 10-bit source path only when the native upload and
+    * the scRGB composite genuinely exist - this is what the frontend's
+    * XRGB2101010 down-convert decision consults at frame time. HDR10
+    * acceptance is decided separately by ident and stays valid off
+    * this path because of the CPU tonemap. NULL-safe: the frontend
+    * clears the poke at teardown, and a freed instance must not claim
+    * capabilities. */
+   if (gl1 && gl1->scrgb.active
+         && (gl1->flags & GL1_FLAG_SUPPORTS_BGRA))
+      BIT32_SET(flags, GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE);
+#endif
 
    BIT32_SET(flags, GFX_CTX_FLAGS_HARD_SYNC);
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
