@@ -75,6 +75,17 @@ void  rinflate_reset(void *stream, int window_bits);
 void  rinflate_set_in(void *stream, const uint8_t *in, size_t in_size);
 void  rinflate_set_out(void *stream, uint8_t *out, size_t out_size);
 
+/**
+ * rinflate_set_dictionary:
+ *
+ * Primes the 32KB back-reference window with the tail of @dict, so a
+ * raw-deflate decode can resume mid-stream given the preceding
+ * plaintext - the indexed-gzip random access pattern. Only the last
+ * 32768 bytes of @dict are used; the call replaces any existing
+ * history. Raw streams (negative window_bits) only.
+ */
+void  rinflate_set_dictionary(void *stream, const uint8_t *dict, size_t len);
+
 /* Decompress.  Writes the number of input bytes consumed to *read and the
  * number of output bytes produced to *wrote (either may be NULL).  Returns
  * one of the RDEFLATE_PROCESS_* codes. */

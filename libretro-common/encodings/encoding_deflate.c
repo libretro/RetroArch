@@ -814,6 +814,27 @@ void rinflate_set_out(void *data, uint8_t *out, size_t size)
    s->out = out; s->out_size = size; s->out_pos = 0;
 }
 
+/* Prime the back-reference window with the tail of @dict, for resuming
+ * raw-deflate decode mid-stream (indexed random access into gzip
+ * members: the index stores the 32KB of plaintext preceding each entry
+ * point, and decode restarts at a block boundary with that history).
+ * Matches zlib inflateSetDictionary() semantics for the raw case: only
+ * the last 32768 bytes matter, and the call replaces any history. */
+void rinflate_set_dictionary(void *data, const uint8_t *dict, size_t len)
+{
+   struct rinflate *s = (struct rinflate *)data;
+   if (!s || !dict)
+      return;
+   if (len > 32768)
+   {
+      dict += len - 32768;
+      len   = 32768;
+   }
+   memcpy(s->window, dict, len);
+   s->whave = (uint32_t)len;
+   s->wnext = (uint32_t)(len & 32767);
+}
+
 int rinflate_process(void *data, size_t *read, size_t *wrote)
 {
    struct rinflate *s = (struct rinflate*)data;
