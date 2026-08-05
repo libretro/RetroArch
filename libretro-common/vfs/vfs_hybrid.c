@@ -232,6 +232,30 @@ static int hyb_stat( const char *path, int32_t *size ) {
 	return 0;
 }
 
+/* ---- v4: 64-bit stat ---- */
+
+static int hyb_stat_64( const char *path, int64_t *size ) {
+	if ( !hyb_is_uri( path ) ) {
+		int r = retro_vfs_stat_64_impl( path, size );
+		if ( r != 0 || !( hyb_front && HYB_SANDBOXED ) )
+			return r;
+	}
+	/* stat_64 is v4. A frontend that advertised less has not filled
+	   this member, so it must not be called; sandboxed content on
+	   such a frontend falls back to the 32-bit stat above, which the
+	   callers of the 64-bit path already treat as best-effort. */
+	if ( hyb_front && hyb_front_version >= 4 && hyb_front->stat_64 )
+		return hyb_front->stat_64( path, size );
+	if ( hyb_front && hyb_front_version >= 3 && hyb_front->stat ) {
+		int32_t s32 = 0;
+		int r = hyb_front->stat( path, size ? &s32 : NULL );
+		if ( size )
+			*size = (int64_t)s32;
+		return r;
+	}
+	return 0;
+}
+
 static int hyb_mkdir( const char *dir ) {
 	if ( !hyb_is_uri( dir ) ) {
 		int r = retro_vfs_mkdir_impl( dir );
@@ -336,15 +360,21 @@ static struct retro_vfs_interface hyb_iface = {
 	hyb_truncate,
 	/* v3 */
 	hyb_stat, hyb_mkdir, hyb_opendir, hyb_readdir,
-	hyb_dirent_get_name, hyb_dirent_is_dir, hyb_closedir
+	hyb_dirent_get_name, hyb_dirent_is_dir, hyb_closedir,
+	/* v4 */
+	hyb_stat_64
 };
 
 void vfs_hybrid_init( retro_environment_t env_cb, retro_log_printf_t log ) {
 	struct retro_vfs_interface_info info;
 
-	info.required_interface_version = 3;
+	info.required_interface_version = 4;
 	info.iface = NULL;
 	if ( !env_cb( RETRO_ENVIRONMENT_GET_VFS_INTERFACE, &info ) || !info.iface ) {
+		info.required_interface_version = 3;
+		info.iface = NULL;
+	}
+	if ( !info.iface && ( !env_cb( RETRO_ENVIRONMENT_GET_VFS_INTERFACE, &info ) || !info.iface ) ) {
 		info.required_interface_version = 1;
 		info.iface = NULL;
 		if ( !env_cb( RETRO_ENVIRONMENT_GET_VFS_INTERFACE, &info ) || !info.iface ) {
@@ -358,7 +388,7 @@ void vfs_hybrid_init( retro_environment_t env_cb, retro_log_printf_t log ) {
 
 	{
 		struct retro_vfs_interface_info ours;
-		ours.required_interface_version = 3;
+		ours.required_interface_version = 4;
 		ours.iface = &hyb_iface;
 		filestream_vfs_init( &ours );
 		path_vfs_init( &ours );
