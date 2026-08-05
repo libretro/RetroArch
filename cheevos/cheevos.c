@@ -1942,6 +1942,9 @@ bool rcheevos_load(const void *data)
 #endif
 
       {
+#ifdef HAVE_THREADS
+         intptr_t gen;
+#endif
          const uint8_t* data = (const uint8_t*)info->data;
          size_t data_size = info->size;
 
@@ -1964,7 +1967,7 @@ bool rcheevos_load(const void *data)
           * loses information only if HAVE_THREADS is enabled
           * and a generation counter overflows intptr_t, which
           * would require ~2^31 (or ~2^63) load events. */
-         intptr_t gen = (intptr_t)retro_atomic_load_acquire_int(
+         gen = (intptr_t)retro_atomic_load_acquire_int(
                &rcheevos_locals.load_generation);
          rc_client_begin_identify_and_load_game(rcheevos_locals.client, console_id,
             info->path, data, data_size, rcheevos_client_load_game_callback, (void*)gen);
