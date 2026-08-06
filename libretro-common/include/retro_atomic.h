@@ -54,6 +54,12 @@
  *   retro_atomic_fetch_or       - acq_rel RMW, int only, returns old value
  *   retro_atomic_fetch_and      - acq_rel RMW, int only, returns old value
  *   retro_atomic_inc / dec      - acq_rel RMW, return void
+ *   retro_atomic_exchange_int   - acq_rel swap, returns old value
+ *   retro_atomic_cas_int        - strong CAS, non-zero on success
+ *   retro_atomic_*_ptr          - pointer-width load/store/exchange
+ *   retro_atomic_thread_fence_* - acquire / release fences
+ *   (extended ops absent on the volatile fallback; gate with
+ *    RETRO_ATOMIC_HAS_CAS / RETRO_ATOMIC_HAS_PTR)
  *
  * Backend selection (in order):
  *   1. C11 <stdatomic.h>            (modern GCC/Clang/MSVC with /std:c11)
@@ -768,6 +774,212 @@ static INLINE int retro_atomic_fetch_and_int_fb(retro_atomic_int_t *p, int v)
 #define retro_atomic_fetch_sub_size(p, v)        ((*(p) -= (v)) + (v))
 
 #endif /* backend selection */
+
+/* ---- Extended operations ----------------------------------------------
+ * Exchange and compare-and-swap on int, pointer-width
+ * load/store/exchange, and acquire/release thread fences, following
+ * the same per-backend ladder as the core surface.  Added for callers
+ * migrating off std::atomic wholesale (libretro-pcsx2), whose remaining
+ * sites need exactly these: a read-and-clear (exchange), one CAS loop,
+ * lock-free pointer handoff, and a pair of fences.
+ *
+ * cas_int is strong and evaluates to non-zero on success; there is no
+ * expected-out parameter - on failure the caller re-reads - keeping
+ * every backend expressible without touching caller locals.
+ *
+ * The volatile fallback cannot express CAS or a real fence and defines
+ * none of these; gate with RETRO_ATOMIC_HAS_CAS / RETRO_ATOMIC_HAS_PTR. */
+
+#if defined(RETRO_ATOMIC_BACKEND_C11)
+
+typedef _Atomic(void*) retro_atomic_ptr_t;
+#define retro_atomic_ptr_init(p, v)    atomic_init((p), (v))
+#define retro_atomic_exchange_int(p, v) \
+   atomic_exchange_explicit((p), (v), memory_order_acq_rel)
+static INLINE int retro_atomic_cas_int_impl_(retro_atomic_int_t *p, int expected, int desired)
+{
+   int e = expected;
+   return atomic_compare_exchange_strong_explicit(p, &e, desired,
+         memory_order_acq_rel, memory_order_acquire);
+}
+#define retro_atomic_cas_int(p, expected, desired) \
+   retro_atomic_cas_int_impl_((p), (expected), (desired))
+#define retro_atomic_load_acquire_ptr(p) \
+   atomic_load_explicit((p), memory_order_acquire)
+#define retro_atomic_store_release_ptr(p, v) \
+   atomic_store_explicit((p), (v), memory_order_release)
+#define retro_atomic_exchange_ptr(p, v) \
+   atomic_exchange_explicit((p), (v), memory_order_acq_rel)
+#define retro_atomic_thread_fence_acquire() \
+   atomic_thread_fence(memory_order_acquire)
+#define retro_atomic_thread_fence_release() \
+   atomic_thread_fence(memory_order_release)
+#define RETRO_ATOMIC_HAS_CAS 1
+#define RETRO_ATOMIC_HAS_PTR 1
+
+#elif defined(RETRO_ATOMIC_BACKEND_CXX11)
+
+typedef std::atomic<void*> retro_atomic_ptr_t;
+#define retro_atomic_ptr_init(p, v)    ((p)->store((v), std::memory_order_relaxed))
+#define retro_atomic_exchange_int(p, v) \
+   ((p)->exchange((v), std::memory_order_acq_rel))
+static INLINE int retro_atomic_cas_int_impl_(retro_atomic_int_t *p, int expected, int desired)
+{
+   int e = expected;
+   return (int)p->compare_exchange_strong(e, desired,
+         std::memory_order_acq_rel, std::memory_order_acquire);
+}
+#define retro_atomic_cas_int(p, expected, desired) \
+   retro_atomic_cas_int_impl_((p), (expected), (desired))
+#define retro_atomic_load_acquire_ptr(p) \
+   ((p)->load(std::memory_order_acquire))
+#define retro_atomic_store_release_ptr(p, v) \
+   ((p)->store((v), std::memory_order_release))
+#define retro_atomic_exchange_ptr(p, v) \
+   ((p)->exchange((v), std::memory_order_acq_rel))
+#define retro_atomic_thread_fence_acquire() \
+   std::atomic_thread_fence(std::memory_order_acquire)
+#define retro_atomic_thread_fence_release() \
+   std::atomic_thread_fence(std::memory_order_release)
+#define RETRO_ATOMIC_HAS_CAS 1
+#define RETRO_ATOMIC_HAS_PTR 1
+
+#elif defined(RETRO_ATOMIC_BACKEND_GCC_NEW)
+
+typedef void* retro_atomic_ptr_t;
+#define retro_atomic_ptr_init(p, v)    (*(p) = (v))
+#define retro_atomic_exchange_int(p, v) \
+   __atomic_exchange_n((p), (v), __ATOMIC_ACQ_REL)
+static INLINE int retro_atomic_cas_int_impl_(retro_atomic_int_t *p, int expected, int desired)
+{
+   int e = expected;
+   return __atomic_compare_exchange_n(p, &e, desired, 0,
+         __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
+}
+#define retro_atomic_cas_int(p, expected, desired) \
+   retro_atomic_cas_int_impl_((p), (expected), (desired))
+#define retro_atomic_load_acquire_ptr(p) \
+   __atomic_load_n((p), __ATOMIC_ACQUIRE)
+#define retro_atomic_store_release_ptr(p, v) \
+   __atomic_store_n((p), (v), __ATOMIC_RELEASE)
+#define retro_atomic_exchange_ptr(p, v) \
+   __atomic_exchange_n((p), (v), __ATOMIC_ACQ_REL)
+#define retro_atomic_thread_fence_acquire() \
+   __atomic_thread_fence(__ATOMIC_ACQUIRE)
+#define retro_atomic_thread_fence_release() \
+   __atomic_thread_fence(__ATOMIC_RELEASE)
+#define RETRO_ATOMIC_HAS_CAS 1
+#define RETRO_ATOMIC_HAS_PTR 1
+
+#elif defined(RETRO_ATOMIC_BACKEND_MSVC)
+
+typedef void* volatile retro_atomic_ptr_t;
+#define retro_atomic_ptr_init(p, v)    (*(p) = (v))
+#define retro_atomic_exchange_int(p, v) \
+   ((int)InterlockedExchange((volatile LONG*)(p), (LONG)(v)))
+static INLINE int retro_atomic_cas_int_impl_(retro_atomic_int_t *p, int expected, int desired)
+{
+   return InterlockedCompareExchange((volatile LONG*)p, (LONG)desired,
+         (LONG)expected) == (LONG)expected;
+}
+#define retro_atomic_cas_int(p, expected, desired) \
+   retro_atomic_cas_int_impl_((p), (expected), (desired))
+/* CAS-with-identical-values is the canonical Interlocked atomic load. */
+#define retro_atomic_load_acquire_ptr(p) \
+   InterlockedCompareExchangePointer((void* volatile*)(p), NULL, NULL)
+#define retro_atomic_store_release_ptr(p, v) \
+   ((void)InterlockedExchangePointer((void* volatile*)(p), (void*)(v)))
+#define retro_atomic_exchange_ptr(p, v) \
+   InterlockedExchangePointer((void* volatile*)(p), (void*)(v))
+#define retro_atomic_thread_fence_acquire() MemoryBarrier()
+#define retro_atomic_thread_fence_release() MemoryBarrier()
+#define RETRO_ATOMIC_HAS_CAS 1
+#define RETRO_ATOMIC_HAS_PTR 1
+
+#elif defined(RETRO_ATOMIC_BACKEND_APPLE)
+
+typedef void* volatile retro_atomic_ptr_t;
+#define retro_atomic_ptr_init(p, v)    (*(p) = (v))
+static INLINE int retro_atomic_exchange_int_impl_(retro_atomic_int_t *p, int v)
+{
+   int old;
+   do { old = *p; } while (!OSAtomicCompareAndSwapIntBarrier(old, v, (volatile int*)p));
+   return old;
+}
+#define retro_atomic_exchange_int(p, v) \
+   retro_atomic_exchange_int_impl_((p), (v))
+#define retro_atomic_cas_int(p, expected, desired) \
+   OSAtomicCompareAndSwapIntBarrier((expected), (desired), (volatile int*)(p))
+static INLINE void* retro_atomic_load_acquire_ptr_impl_(retro_atomic_ptr_t *p)
+{
+   void* v = *p;
+   OSMemoryBarrier();
+   return v;
+}
+#define retro_atomic_load_acquire_ptr(p) \
+   retro_atomic_load_acquire_ptr_impl_((p))
+static INLINE void retro_atomic_store_release_ptr_impl_(retro_atomic_ptr_t *p, void* v)
+{
+   OSMemoryBarrier();
+   *p = v;
+}
+#define retro_atomic_store_release_ptr(p, v) \
+   retro_atomic_store_release_ptr_impl_((p), (void*)(v))
+static INLINE void* retro_atomic_exchange_ptr_impl_(retro_atomic_ptr_t *p, void* v)
+{
+   void* old;
+   do { old = *p; } while (!OSAtomicCompareAndSwapPtrBarrier(old, v, (void* volatile*)p));
+   return old;
+}
+#define retro_atomic_exchange_ptr(p, v) \
+   retro_atomic_exchange_ptr_impl_((p), (void*)(v))
+#define retro_atomic_thread_fence_acquire() OSMemoryBarrier()
+#define retro_atomic_thread_fence_release() OSMemoryBarrier()
+#define RETRO_ATOMIC_HAS_CAS 1
+#define RETRO_ATOMIC_HAS_PTR 1
+
+#elif defined(RETRO_ATOMIC_BACKEND_SYNC)
+
+typedef void* volatile retro_atomic_ptr_t;
+#define retro_atomic_ptr_init(p, v)    (*(p) = (v))
+static INLINE int retro_atomic_exchange_int_impl_(retro_atomic_int_t *p, int v)
+{
+   int old;
+   do { old = *p; } while (__sync_val_compare_and_swap(p, old, v) != old);
+   return old;
+}
+#define retro_atomic_exchange_int(p, v) \
+   retro_atomic_exchange_int_impl_((p), (v))
+#define retro_atomic_cas_int(p, expected, desired) \
+   __sync_bool_compare_and_swap((p), (expected), (desired))
+static INLINE void* retro_atomic_load_acquire_ptr_impl_(retro_atomic_ptr_t *p)
+{
+   void* v = *(void* volatile*)p;
+   __sync_synchronize();
+   return v;
+}
+#define retro_atomic_load_acquire_ptr(p) \
+   retro_atomic_load_acquire_ptr_impl_((p))
+#define retro_atomic_store_release_ptr(p, v) \
+   do { __sync_synchronize(); *(p) = (v); __sync_synchronize(); } while (0)
+static INLINE void* retro_atomic_exchange_ptr_impl_(retro_atomic_ptr_t *p, void* v)
+{
+   void* old;
+   do { old = *(void* volatile*)p; } while (!__sync_bool_compare_and_swap((void* volatile*)p, old, v));
+   return old;
+}
+#define retro_atomic_exchange_ptr(p, v) \
+   retro_atomic_exchange_ptr_impl_((p), (void*)(v))
+#define retro_atomic_thread_fence_acquire() __sync_synchronize()
+#define retro_atomic_thread_fence_release() __sync_synchronize()
+#define RETRO_ATOMIC_HAS_CAS 1
+#define RETRO_ATOMIC_HAS_PTR 1
+
+#else
+/* RETRO_ATOMIC_BACKEND_VOLATILE: no CAS, no fences, no pointer ops.
+ * RETRO_ATOMIC_HAS_CAS / RETRO_ATOMIC_HAS_PTR stay undefined. */
+#endif
+
 
 /* ---- Convenience wrappers (backend-agnostic) -------------------------- */
 
