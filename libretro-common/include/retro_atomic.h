@@ -980,6 +980,155 @@ static INLINE void* retro_atomic_exchange_ptr_impl_(retro_atomic_ptr_t *p, void*
  * RETRO_ATOMIC_HAS_CAS / RETRO_ATOMIC_HAS_PTR stay undefined. */
 #endif
 
+/* ---- 64-bit operations -------------------------------------------------
+ * load-acquire / store-release / exchange / strong CAS on a 64-bit
+ * word.  Every real backend can express these (OSAtomic and
+ * Interlocked both have 64-bit CAS; cmpxchg8b covers 32-bit x86), but
+ * old 32-bit __sync targets may not - RETRO_ATOMIC_HAS_64 gates.
+ * Callers on the volatile fallback get nothing, as with CAS/PTR. */
+
+#if defined(RETRO_ATOMIC_BACKEND_C11)
+
+#include <stdint.h>
+typedef _Atomic(int64_t) retro_atomic_64_t;
+#define retro_atomic_64_init(p, v)     atomic_init((p), (v))
+#define retro_atomic_load_acquire_64(p) \
+   atomic_load_explicit((p), memory_order_acquire)
+#define retro_atomic_store_release_64(p, v) \
+   atomic_store_explicit((p), (v), memory_order_release)
+#define retro_atomic_exchange_64(p, v) \
+   atomic_exchange_explicit((p), (v), memory_order_acq_rel)
+static INLINE int retro_atomic_cas_64_impl_(retro_atomic_64_t *p, int64_t expected, int64_t desired)
+{
+   int64_t e = expected;
+   return atomic_compare_exchange_strong_explicit(p, &e, desired,
+         memory_order_acq_rel, memory_order_acquire);
+}
+#define retro_atomic_cas_64(p, expected, desired) \
+   retro_atomic_cas_64_impl_((p), (expected), (desired))
+#define RETRO_ATOMIC_HAS_64 1
+
+#elif defined(RETRO_ATOMIC_BACKEND_CXX11)
+
+#include <cstdint>
+typedef std::atomic<int64_t> retro_atomic_64_t;
+#define retro_atomic_64_init(p, v)     ((p)->store((v), std::memory_order_relaxed))
+#define retro_atomic_load_acquire_64(p) \
+   ((p)->load(std::memory_order_acquire))
+#define retro_atomic_store_release_64(p, v) \
+   ((p)->store((v), std::memory_order_release))
+#define retro_atomic_exchange_64(p, v) \
+   ((p)->exchange((v), std::memory_order_acq_rel))
+static INLINE int retro_atomic_cas_64_impl_(retro_atomic_64_t *p, int64_t expected, int64_t desired)
+{
+   int64_t e = expected;
+   return (int)p->compare_exchange_strong(e, desired,
+         std::memory_order_acq_rel, std::memory_order_acquire);
+}
+#define retro_atomic_cas_64(p, expected, desired) \
+   retro_atomic_cas_64_impl_((p), (expected), (desired))
+#define RETRO_ATOMIC_HAS_64 1
+
+#elif defined(RETRO_ATOMIC_BACKEND_GCC_NEW)
+
+#include <stdint.h>
+typedef int64_t retro_atomic_64_t;
+#define retro_atomic_64_init(p, v)     (*(p) = (v))
+#define retro_atomic_load_acquire_64(p) \
+   __atomic_load_n((p), __ATOMIC_ACQUIRE)
+#define retro_atomic_store_release_64(p, v) \
+   __atomic_store_n((p), (v), __ATOMIC_RELEASE)
+#define retro_atomic_exchange_64(p, v) \
+   __atomic_exchange_n((p), (v), __ATOMIC_ACQ_REL)
+static INLINE int retro_atomic_cas_64_impl_(retro_atomic_64_t *p, int64_t expected, int64_t desired)
+{
+   int64_t e = expected;
+   return __atomic_compare_exchange_n(p, &e, desired, 0,
+         __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
+}
+#define retro_atomic_cas_64(p, expected, desired) \
+   retro_atomic_cas_64_impl_((p), (expected), (desired))
+#define RETRO_ATOMIC_HAS_64 1
+
+#elif defined(RETRO_ATOMIC_BACKEND_MSVC)
+
+typedef LONGLONG volatile retro_atomic_64_t;
+#define retro_atomic_64_init(p, v)     (*(p) = (v))
+/* Interlocked 64-bit CAS exists on 32-bit x86 too (cmpxchg8b). */
+#define retro_atomic_load_acquire_64(p) \
+   InterlockedCompareExchange64((volatile LONGLONG*)(p), 0, 0)
+#define retro_atomic_store_release_64(p, v) \
+   ((void)InterlockedExchange64((volatile LONGLONG*)(p), (LONGLONG)(v)))
+#define retro_atomic_exchange_64(p, v) \
+   InterlockedExchange64((volatile LONGLONG*)(p), (LONGLONG)(v))
+static INLINE int retro_atomic_cas_64_impl_(retro_atomic_64_t *p, LONGLONG expected, LONGLONG desired)
+{
+   return InterlockedCompareExchange64((volatile LONGLONG*)p, desired,
+         expected) == expected;
+}
+#define retro_atomic_cas_64(p, expected, desired) \
+   retro_atomic_cas_64_impl_((p), (expected), (desired))
+#define RETRO_ATOMIC_HAS_64 1
+
+#elif defined(RETRO_ATOMIC_BACKEND_APPLE)
+
+#include <stdint.h>
+typedef int64_t volatile retro_atomic_64_t;
+#define retro_atomic_64_init(p, v)     (*(p) = (v))
+static INLINE int64_t retro_atomic_load_acquire_64_impl_(retro_atomic_64_t *p)
+{
+   int64_t v;
+   do { v = *p; } while (!OSAtomicCompareAndSwap64Barrier(v, v, (volatile int64_t*)p));
+   return v;
+}
+#define retro_atomic_load_acquire_64(p) \
+   retro_atomic_load_acquire_64_impl_((p))
+static INLINE void retro_atomic_store_release_64_impl_(retro_atomic_64_t *p, int64_t v)
+{
+   int64_t old;
+   do { old = *p; } while (!OSAtomicCompareAndSwap64Barrier(old, v, (volatile int64_t*)p));
+}
+#define retro_atomic_store_release_64(p, v) \
+   retro_atomic_store_release_64_impl_((p), (v))
+static INLINE int64_t retro_atomic_exchange_64_impl_(retro_atomic_64_t *p, int64_t v)
+{
+   int64_t old;
+   do { old = *p; } while (!OSAtomicCompareAndSwap64Barrier(old, v, (volatile int64_t*)p));
+   return old;
+}
+#define retro_atomic_exchange_64(p, v) \
+   retro_atomic_exchange_64_impl_((p), (v))
+#define retro_atomic_cas_64(p, expected, desired) \
+   OSAtomicCompareAndSwap64Barrier((expected), (desired), (volatile int64_t*)(p))
+#define RETRO_ATOMIC_HAS_64 1
+
+#elif defined(RETRO_ATOMIC_BACKEND_SYNC)
+
+#if defined(__GCC_HAVE_SYNC_COMPARE_AND_SWAP_8)
+#include <stdint.h>
+typedef int64_t volatile retro_atomic_64_t;
+#define retro_atomic_64_init(p, v)     (*(p) = (v))
+#define retro_atomic_load_acquire_64(p) \
+   __sync_fetch_and_add((int64_t volatile*)(p), (int64_t)0)
+#define retro_atomic_store_release_64(p, v) \
+   do { __sync_synchronize(); *(p) = (v); __sync_synchronize(); } while (0)
+static INLINE int64_t retro_atomic_exchange_64_impl_(retro_atomic_64_t *p, int64_t v)
+{
+   int64_t old;
+   do { old = *p; } while (__sync_val_compare_and_swap(p, old, v) != old);
+   return old;
+}
+#define retro_atomic_exchange_64(p, v) \
+   retro_atomic_exchange_64_impl_((p), (v))
+#define retro_atomic_cas_64(p, expected, desired) \
+   __sync_bool_compare_and_swap((p), (expected), (desired))
+#define RETRO_ATOMIC_HAS_64 1
+#endif /* __GCC_HAVE_SYNC_COMPARE_AND_SWAP_8 */
+
+#else
+/* volatile fallback: RETRO_ATOMIC_HAS_64 stays undefined. */
+#endif
+
 
 /* ---- Convenience wrappers (backend-agnostic) -------------------------- */
 
