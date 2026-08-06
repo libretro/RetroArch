@@ -185,6 +185,7 @@ HAVE_RWEBP=yes             # RWEBP support
 HAVE_RWEBM=yes             # RWEBM (WebM/Matroska demuxer) support
 HAVE_RMP4=yes              # RMP4 (MP4/ISO-BMFF demuxer) support
 HAVE_RVP9=yes              # RVP9 (VP9 video decoder) support
+HAVE_RMPEG1=yes            # RMPEG1 (MPEG-1 program stream / video) support
 HAVE_WEBMPLAYER=no         # Built-in WebM/MP4 movie player
 HAVE_RWAV=yes              # WAV support
 HAVE_HID=no                # Low-level HID (Human Interface Device) support

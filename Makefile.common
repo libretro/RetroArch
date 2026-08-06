@@ -2323,6 +2323,14 @@ ifeq ($(HAVE_RVP9), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/formats/image/image_hdr_blit.o
 endif
 
+ifeq ($(HAVE_RMPEG1), 1)
+   DEFINES += -DHAVE_RMPEG1
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/mpeg1/rmpeg1_ps.o \
+          $(LIBRETRO_COMM_DIR)/formats/mpeg1/rmpeg1_video.o
+   # MPEG-1 audio is layer II, which rmp3 already decodes; a consumer that
+   # wants sound from an MPEG-1 stream needs HAVE_RMP3 as well.
+endif
+
 ifeq ($(HAVE_WEBMPLAYER), 1)
    DEFINES += -DHAVE_WEBMPLAYER
    OBJ += cores/libretro-webm/webm_core.o

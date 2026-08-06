@@ -6,8 +6,8 @@ them up.
 
 The layout mirrors the tree they test: `tools/chd` for
 `formats/chd`, `tools/cdfs` for `formats/cdfs`, `tools/flac` for
-`formats/flac`, `tools/encodings` for `encodings`, `tools/formats` for
-the rest of `formats`. `tools/cheevos` is the exception and tests
+`formats/flac`, `tools/mpeg1` for `formats/mpeg1`, `tools/encodings`
+for `encodings`, `tools/formats` for the rest of `formats`. `tools/cheevos` is the exception and tests
 `deps/rcheevos` as this tree feeds it.
 
 None of these are part of any build. Each is a standalone program or
@@ -60,6 +60,43 @@ The two builders exist because nothing in this tree produces a `.mka` or
 an Ogg FLAC stream, so the container paths could otherwise only be built
 and not run — and a file recorded elsewhere is not reproducible. The
 Matroska one found a real defect on first use.
+
+## mpeg1
+
+| | |
+|---|---|
+| `gen_tables.py` | Generates `formats/mpeg1/rmpeg1_tables.h` from the Annex B text of ITU-T H.262, which carries the same variable length code tables as ISO/IEC 11172-2. Takes `pdftotext -layout` output. |
+| `idct_accuracy.c` | Measures the IDCT against a double-precision reference in the style of IEEE 1180-1990 — peak error, mean square error, mean error and worst per-position mean error over several coefficient ranges. |
+| `fuzz_demux.c` | Drives the demuxer through truncations, mid-stream entry points, byte corruption and pure random input, checking it never stalls, over-reads or emits an empty packet. |
+| `diff_video.c` | Decodes every frame and compares geometry and per-plane pixels against another decoder, with a per-frame breakdown and a dump of the worst macroblock. |
+| `bench.c` | Times the demuxer and the video decoder against another implementation on the same stream. |
+
+`gen_tables.py` proves each table prefix-free, checks its Kraft sum and
+asserts completeness before emitting anything. That is not decoration: it
+caught a regex that could not match a single-character code, and an en-dash
+minus sign in the specification text that dropped every negative
+`motion_code`. Both produced tables that were still prefix-free and quietly
+missing entries — which a decoder fails on in a way that looks like a
+bitstream fault rather than a table fault.
+
+Both DCT tables sum to 4095/4096 rather than 1. The twelve-zero prefix is
+left unassigned so no code can emulate a start code prefix, so a DCT table
+summing to exactly 1 would be wrong.
+
+`diff_video.c` compares every frame rather than the first because a P
+picture is built on its predecessor: a prediction fault accumulates down the
+GOP, and a frame-zero check passes a decoder whose motion compensation is
+subtly wrong. `idct_accuracy.c` is the authority on pixel values, since
+agreeing with another decoder says only that the two agree.
+
+`diff_video.c` and `bench.c` need a comparison decoder, which is not a
+dependency of this tree; both were written against pl_mpeg (MIT), fetched
+into a scratch directory and pointed at with `-I`. The other three are
+self-contained.
+
+Reference streams come from ffmpeg — `-target ntsc-vcd` and `-target
+pal-vcd` for the two Video CD shapes, and `-c:v mpeg1video -bf 2` for a
+stream carrying B pictures, which neither VCD profile produces.
 
 ## encodings
 

@@ -493,6 +493,11 @@ VIDEO IMAGE
 #ifdef HAVE_RVP9
 #include "../libretro-common/formats/vp9/rvp9.c"
 #endif
+
+#ifdef HAVE_RMPEG1
+#include "../libretro-common/formats/mpeg1/rmpeg1_ps.c"
+#include "../libretro-common/formats/mpeg1/rmpeg1_video.c"
+#endif
 #if defined(HAVE_RVP9) || defined(HAVE_RMP4)
 /* Shared 10-bit / HDR I420->RGB blits: used by the webm/mp4 rvp9 paths
  * and by rmp4_video's H.265 Main10 arm, so RMP4 alone needs them too. */
