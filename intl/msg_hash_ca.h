@@ -755,6 +755,9 @@ static const struct
    char s_700d45a9[26];
    char s_2a30a561[26];
    char s_6ae6f953[24];
+#ifdef ANDROID
+   char s_b573f90c[50];
+#endif
    char s_e28bc72f[15];
    char s_0b2a8528[35];
    char s_ea5757a0[8];
@@ -2677,6 +2680,9 @@ static const struct
    char s_5c8a1d63[106];
    char s_744c0f80[85];
    char s_2aa39081[54];
+#ifdef ANDROID
+   char s_50f43cfa[285];
+#endif
    char s_e85b309d[89];
    char s_cd94bb16[212];
    char s_a17a67e1[59];
@@ -5109,6 +5115,9 @@ static const struct
    "Anal\303\262gic dret Y- (amunt)",
    "Anal\303\262gic dret Y+ (avall)",
    "Sensibilitat anal\303\262gica",
+#ifdef ANDROID
+   "Fes servir la configuraci\303\263 de teclat del sistema",
+#endif
    "Auto-configura",
    "Auto-activa el mode 'Focus de joc'",
    "Detecta",
@@ -7188,6 +7197,12 @@ static const struct
    "t controlar el men\303\272.",
    "Ignora els moviments de la palanca anal\303\262gica per devall del valor de la zona morta.",
    "Ajusta la sensibilitat de les palanques anal\303\262giques.",
+#ifdef ANDROID
+   "Fes servir la configuraci\303\263 de text d'Android per les entrades de text en comptes del tecl"
+   "at en pantalla. Permet activar copiar/enganxar des del bloc de notes i els gestors de contraseny"
+   "es. Cal tenir una pantalla t\303\240ctil o un m\303\250tode d'entrada que es pugui navegar amb u"
+   "n controlador.",
+#endif
    "Configura autom\303\240ticament els controladors que tenen un perfil, a l'estil Plug-and-Play.",
    "Activa sempre el mode 'Focus de joc' en iniciar i reprendre el contingut. Si s'estableix a 'Dete"
    "cta', l'opci\303\263 s'activar\303\240 si el nucli actual implementa la funcionalitat de crida d"
@@ -9298,6 +9313,9 @@ typedef char msg_hash_ca_blob_check[
        + 18u
        + 21u
 #endif
+#ifdef ANDROID
+       + 50u
+#endif
 #ifdef GEKKO
        + 19u
 #endif
@@ -9487,6 +9505,9 @@ typedef char msg_hash_ca_blob_check[
        + 23u
        + 23u
        + 21u
+#endif
+#ifdef ANDROID
+       + 285u
 #endif
 #ifdef GEKKO
        + 74u
@@ -10400,6 +10421,9 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
+#ifdef ANDROID
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANDROID_SYSTEM_KEYBOARD,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
@@ -12319,6 +12343,9 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
+#ifdef ANDROID
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANDROID_SYSTEM_KEYBOARD,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
