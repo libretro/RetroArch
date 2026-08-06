@@ -533,7 +533,7 @@ struct menu_state
    /* int16_t alignment */
    menu_input_pointer_hw_state_t input_pointer_hw_state;
 
-   uint16_t flags;
+   uint32_t flags;
 #ifdef HAVE_OVERLAY
    uint16_t overlay_types;
 #endif
