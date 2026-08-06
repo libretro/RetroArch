@@ -21,6 +21,7 @@
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/sysmacros.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <ctype.h>
@@ -42,6 +43,7 @@
 #include <string/stdstring.h>
 
 #include "../font_driver.h"
+#include "../../verbosity.h"
 
 #include "../../configuration.h"
 #include "../../driver.h"
@@ -85,7 +87,7 @@ typedef struct omapfb_data
 
 static const char *omapfb_get_fb_device(void)
 {
-   static char fbname[12] = {0};
+   static char fbname[24] = {0};
    settings_t   *settings = config_get_ptr();
    const int        fbidx = settings->uints.video_monitor_index;
 
@@ -99,7 +101,7 @@ static const char *omapfb_get_fb_device(void)
 
 static omapfb_page_t *omapfb_get_page(omapfb_data_t *pdata)
 {
-   unsigned i;
+   int i;
    omapfb_page_t *page = NULL;
 
    for (i = 0; i < pdata->num_pages; ++i)
@@ -811,7 +813,7 @@ static void omap_free(void *data)
    free(vid);
 }
 
-static void omap_init_font(omap_video_t *vid, const char *font_path, unsigned font_size)
+static void omap_init_font(omap_video_t *vid)
 {
    int r, g, b;
    settings_t *settings   = config_get_ptr();
@@ -863,6 +865,7 @@ static void omap_render_msg(omap_video_t *vid, const char *msg)
    {
       int base_x, base_y;
       int glyph_width, glyph_height;
+      int max_width, max_height;
       const uint8_t *src = NULL;
       const struct font_glyph *glyph =
          vid->font_driver->get_glyph(vid->font, (uint8_t)*msg);
@@ -872,9 +875,8 @@ static void omap_render_msg(omap_video_t *vid, const char *msg)
 
       base_x               = msg_base_x + glyph->draw_offset_x;
       base_y               = msg_base_y + glyph->draw_offset_y;
-
-      const int max_width  = vid->width - base_x;
-      const int max_height = vid->height - base_y;
+      max_width            = vid->width - base_x;
+      max_height           = vid->height - base_y;
 
       glyph_width          = glyph->width;
       glyph_height         = glyph->height;
@@ -955,7 +957,7 @@ static void *omap_init(const video_info_t *video,
    if (input && input_data)
       *input = NULL;
 
-   omap_init_font(vid, settings->paths.path_font, settings->video.font_size);
+   omap_init_font(vid);
 
    vid->menu.frame = calloc(vid->width * vid->height, vid->bytes_per_pixel);
    if (!vid->menu.frame)

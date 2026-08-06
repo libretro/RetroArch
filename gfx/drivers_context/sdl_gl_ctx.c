@@ -246,7 +246,7 @@ static bool sdl_ctx_set_video_mode(void *data,
 
    if (sdl->ctx)
    {
-      video_state_get_ptr()->flags |= VIDEO_FLAG_CACHE_CONTEXT_ACK;
+      video_driver_cache_context_ack_set();
       RARCH_LOG("[SDL GL] Using cached GL context.\n");
    }
    else

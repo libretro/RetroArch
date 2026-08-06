@@ -26,6 +26,8 @@
 
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
+#include <math.h>
 
 #include <encodings/utf.h>
 #include <retro_miscellaneous.h>
@@ -90,6 +92,13 @@
 #define GL_CLAMP                    GL_CLAMP_TO_EDGE
 #endif
 
+#ifndef GL_RGB10_A2
+#define GL_RGB10_A2                       0x8059
+#endif
+#ifndef GL_UNSIGNED_INT_2_10_10_10_REV
+#define GL_UNSIGNED_INT_2_10_10_10_REV    0x8368
+#endif
+
 #define RARCH_GL1_INTERNAL_FORMAT32 GL_RGBA8
 #define RARCH_GL1_TEXTURE_TYPE32    GL_BGRA_EXT
 #define RARCH_GL1_FORMAT32          GL_UNSIGNED_BYTE
@@ -115,6 +124,61 @@ enum gl1_flags
     * RGUI's RGBA4444 framebuffer to BGRA8888 on the CPU. */
    GL1_FLAG_SUPPORTS_PACKED_PIXELS  = (1 << 13)
 };
+
+/* Self-contained GL entry-point typedefs for the scRGB encode; no
+ * dependency on platform glext PFN typedefs (VITA's vitaGL headers do
+ * not carry them). APIENTRY matters on 32-bit Windows (stdcall). */
+#ifndef APIENTRY
+#define APIENTRY
+#endif
+typedef GLuint (APIENTRY *gl1_scrgb_glCreateShader_t)(GLenum type);
+typedef void   (APIENTRY *gl1_scrgb_glShaderSource_t)(GLuint shader, GLsizei count, const char **string, const GLint *length);
+typedef void   (APIENTRY *gl1_scrgb_glCompileShader_t)(GLuint shader);
+typedef void   (APIENTRY *gl1_scrgb_glGetShaderiv_t)(GLuint shader, GLenum pname, GLint *params);
+typedef GLuint (APIENTRY *gl1_scrgb_glCreateProgram_t)(void);
+typedef void   (APIENTRY *gl1_scrgb_glAttachShader_t)(GLuint program, GLuint shader);
+typedef void   (APIENTRY *gl1_scrgb_glLinkProgram_t)(GLuint program);
+typedef void   (APIENTRY *gl1_scrgb_glGetProgramiv_t)(GLuint program, GLenum pname, GLint *params);
+typedef void   (APIENTRY *gl1_scrgb_glDeleteShader_t)(GLuint shader);
+typedef void   (APIENTRY *gl1_scrgb_glDeleteProgram_t)(GLuint program);
+typedef void   (APIENTRY *gl1_scrgb_glUseProgram_t)(GLuint program);
+typedef GLint  (APIENTRY *gl1_scrgb_glGetUniformLocation_t)(GLuint program, const char *name);
+typedef void   (APIENTRY *gl1_scrgb_glUniform1i_t)(GLint location, GLint v0);
+typedef void   (APIENTRY *gl1_scrgb_glUniform1f_t)(GLint location, GLfloat v0);
+typedef void   (APIENTRY *gl1_scrgb_glGenFramebuffers_t)(GLsizei n, GLuint *framebuffers);
+typedef void   (APIENTRY *gl1_scrgb_glBindFramebuffer_t)(GLenum target, GLuint framebuffer);
+typedef void   (APIENTRY *gl1_scrgb_glFramebufferTexture2D_t)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
+typedef GLenum (APIENTRY *gl1_scrgb_glCheckFramebufferStatus_t)(GLenum target);
+typedef void   (APIENTRY *gl1_scrgb_glDeleteFramebuffers_t)(GLsizei n, const GLuint *framebuffers);
+typedef void   (APIENTRY *gl1_scrgb_glActiveTexture_t)(GLenum texture);
+
+#ifndef GL_FRAGMENT_SHADER
+#define GL_FRAGMENT_SHADER      0x8B30
+#endif
+#ifndef GL_VERTEX_SHADER
+#define GL_VERTEX_SHADER        0x8B31
+#endif
+#ifndef GL_COMPILE_STATUS
+#define GL_COMPILE_STATUS       0x8B81
+#endif
+#ifndef GL_LINK_STATUS
+#define GL_LINK_STATUS          0x8B82
+#endif
+#ifndef GL_FRAMEBUFFER
+#define GL_FRAMEBUFFER          0x8D40
+#endif
+#ifndef GL_COLOR_ATTACHMENT0
+#define GL_COLOR_ATTACHMENT0    0x8CE0
+#endif
+#ifndef GL_FRAMEBUFFER_COMPLETE
+#define GL_FRAMEBUFFER_COMPLETE 0x8CD5
+#endif
+#ifndef GL_RGBA8
+#define GL_RGBA8                0x8058
+#endif
+#ifndef GL_CLAMP_TO_EDGE
+#define GL_CLAMP_TO_EDGE        0x812F
+#endif
 
 typedef struct gl1
 {
@@ -162,7 +226,80 @@ typedef struct gl1
    GLuint texture[GFX_MAX_TEXTURES];
 
    uint16_t flags;
+
+   /* scRGB (FP16) default framebuffer support (Windows/WGL HDR).
+    * The gl1 driver rides the same context-level pixel-format and
+    * menu plumbing as gl/glcore; the encode itself needs GLSL and
+    * FBO entry points, resolved at runtime via the context's
+    * get_proc_address. Any machine driving Windows Advanced Color
+    * has them; a true GL 1.x-only context cannot reach HDR output
+    * and falls back to direct (dim) rendering with a warning. */
+   struct
+   {
+      gl1_scrgb_glCreateShader_t          CreateShader;
+      gl1_scrgb_glShaderSource_t          ShaderSource;
+      gl1_scrgb_glCompileShader_t         CompileShader;
+      gl1_scrgb_glGetShaderiv_t           GetShaderiv;
+      gl1_scrgb_glCreateProgram_t         CreateProgram;
+      gl1_scrgb_glAttachShader_t          AttachShader;
+      gl1_scrgb_glLinkProgram_t           LinkProgram;
+      gl1_scrgb_glGetProgramiv_t          GetProgramiv;
+      gl1_scrgb_glDeleteShader_t          DeleteShader;
+      gl1_scrgb_glDeleteProgram_t         DeleteProgram;
+      gl1_scrgb_glUseProgram_t            UseProgram;
+      gl1_scrgb_glGetUniformLocation_t    GetUniformLocation;
+      gl1_scrgb_glUniform1i_t             Uniform1i;
+      gl1_scrgb_glUniform1f_t             Uniform1f;
+      gl1_scrgb_glGenFramebuffers_t       GenFramebuffers;
+      gl1_scrgb_glBindFramebuffer_t       BindFramebuffer;
+      gl1_scrgb_glFramebufferTexture2D_t  FramebufferTexture2D;
+      gl1_scrgb_glCheckFramebufferStatus_t CheckFramebufferStatus;
+      gl1_scrgb_glDeleteFramebuffers_t    DeleteFramebuffers;
+      GLuint fbo;
+      GLuint tex;
+      /* Separate layer for the SDR UI when the content is PQ: one
+       * encode cannot treat some pixels as Rec.2020 PQ and others as
+       * gamma. Mirrors the gl/glcore drivers. */
+      GLuint ui_fbo;
+      GLuint ui_tex;
+      GLuint program;
+      GLint  loc_tex;
+      GLint  loc_nits;
+      GLint  loc_expand;
+      GLint  loc_ui_tex;
+      GLint  loc_mode;
+      GLint  loc_ui_nits;
+      gl1_scrgb_glActiveTexture_t ActiveTexture;
+      unsigned width;
+      unsigned height;
+      bool   active;
+   } scrgb;
+
+   /* Captured from video_info_t at init: whether the source frames are
+    * packed 2-10-10-10, and whether they are additionally PQ-encoded
+    * Rec.2020 (HDR10). Decides the upload format and, for PQ, which of
+    * the two reconciliation paths runs (GPU composite under scRGB, CPU
+    * tonemap otherwise). */
+   bool source_10bit;
+   bool source_hdr10;
 } gl1_t;
+
+/* The packed 2-10-10-10 upload needs GL 1.2 packed pixel types, BGRA
+ * ordering and the scRGB composite to be worth anything, so the native
+ * path is exactly the intersection of the three; everything outside it
+ * (true GL 1.1, Vita, missing BGRA) goes through the CPU. */
+static bool gl1_source_10bit_native(gl1_t *gl1)
+{
+   return (gl1->source_10bit || gl1->source_hdr10)
+       &&  gl1->scrgb.active
+       && (gl1->flags & GL1_FLAG_SUPPORTS_BGRA);
+}
+
+#ifndef VITA
+/* Defined with the scRGB helpers ahead of gl1_frame; called from
+ * gl1_init above them. */
+static bool gl1_scrgb_init_program(gl1_t *gl1);
+#endif
 
 /* TODO: Move viewport side effects to the caller: it's a source of bugs. */
 
@@ -170,13 +307,7 @@ typedef struct gl1
    font_vertex[     2 * (6 * i + c) + 0]       = (x + (delta_x + off_x + vx * width) * scale) * inv_win_width; \
    font_vertex[     2 * (6 * i + c) + 1]       = (y + (delta_y - off_y - vy * height) * scale) * inv_win_height; \
    font_tex_coords[ 2 * (6 * i + c) + 0]       = (tex_x + vx * width) * inv_tex_size_x; \
-   font_tex_coords[ 2 * (6 * i + c) + 1]       = (tex_y + vy * height) * inv_tex_size_y; \
-   font_color[      4 * (6 * i + c) + 0]       = color[0]; \
-   font_color[      4 * (6 * i + c) + 1]       = color[1]; \
-   font_color[      4 * (6 * i + c) + 2]       = color[2]; \
-   font_color[      4 * (6 * i + c) + 3]       = color[3]; \
-   font_lut_tex_coord[    2 * (6 * i + c) + 0] = gl->coords.lut_tex_coord[0]; \
-   font_lut_tex_coord[    2 * (6 * i + c) + 1] = gl->coords.lut_tex_coord[1]
+   font_tex_coords[ 2 * (6 * i + c) + 1]       = (tex_y + vy * height) * inv_tex_size_y
 
 #define IS_POT(x) (((x) & (x - 1)) == 0)
 
@@ -290,17 +421,22 @@ static void gfx_display_gl1_draw(gfx_display_ctx_draw_t *draw,
       unsigned video_height)
 {
    const GLfloat *mvp_matrix;
+   video_coords_t     coords;
    gl1_t             *gl1          = (gl1_t*)data;
 
    if (!gl1 || !draw)
       return;
 
-   if (!draw->coords->vertex)
-      draw->coords->vertex         = &gl1_menu_vertexes[0];
-   if (!draw->coords->tex_coord)
-      draw->coords->tex_coord      = &gl1_menu_tex_coords[0];
-   if (!draw->coords->lut_tex_coord)
-      draw->coords->lut_tex_coord  = &gl1_menu_tex_coords[0];
+   /* Default the absent streams into a local copy rather than back
+    * into the caller's struct; see gfx_display_gl2_draw(). */
+   coords                          = *draw->coords;
+
+   if (!coords.vertex)
+      coords.vertex                = &gl1_menu_vertexes[0];
+   if (!coords.tex_coord)
+      coords.tex_coord             = &gl1_menu_tex_coords[0];
+   if (!coords.lut_tex_coord)
+      coords.lut_tex_coord         = &gl1_menu_tex_coords[0];
    if (!draw->texture)
       return;
 
@@ -332,25 +468,25 @@ static void gfx_display_gl1_draw(gfx_display_ctx_draw_t *draw,
 
       if (vertices3)
          free(vertices3);
-      vertices3 = (float*)malloc(sizeof(float) * 3 * draw->coords->vertices);
-      for (i = 0; i < draw->coords->vertices; i++)
+      vertices3 = (float*)malloc(sizeof(float) * 3 * coords.vertices);
+      for (i = 0; i < coords.vertices; i++)
       {
          memcpy(&vertices3[i * 3],
-               &draw->coords->vertex[i * 2],
+               &coords.vertex[i * 2],
                sizeof(float) * 2);
          vertices3[i * 3 + 2]  = 0.0f;
       }
       glVertexPointer(3, GL_FLOAT, 0, vertices3);
    }
 #else
-   glVertexPointer(2, GL_FLOAT, 0, draw->coords->vertex);
+   glVertexPointer(2, GL_FLOAT, 0, coords.vertex);
 #endif
 
-   glColorPointer(4, GL_FLOAT, 0, draw->coords->color);
-   glTexCoordPointer(2, GL_FLOAT, 0, draw->coords->tex_coord);
+   glColorPointer(4, GL_FLOAT, 0, coords.color);
+   glTexCoordPointer(2, GL_FLOAT, 0, coords.tex_coord);
 
    /* Menu draws use a triangle-strip layout. */
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, draw->coords->vertices);
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, coords.vertices);
 
    glDisableClientState(GL_COLOR_ARRAY);
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -425,30 +561,50 @@ static void gl1_raster_font_free(void *data,
    free(font);
 }
 
-static void gl1_raster_font_upload_atlas(gl1_raster_t *font)
+/* Convert the atlas rows [y0, y1) to LUMINANCE_ALPHA and upload them.
+ * Full-width row bands are used (rather than an x/y sub-rectangle)
+ * because GL_UNPACK_ROW_LENGTH is unavailable on some gl1 targets.
+ * When 'respecify' is set the texture is (re)created at full size,
+ * otherwise the band is updated in place with glTexSubImage2D. */
+static void gl1_raster_font_upload_atlas(gl1_raster_t *font,
+      unsigned y0, unsigned y1, bool respecify)
 {
    unsigned i, j;
    GLint  gl_internal = GL_LUMINANCE_ALPHA;
    GLenum gl_format   = GL_LUMINANCE_ALPHA;
    size_t ncomponents = 2;
-   uint8_t *tmp       = (uint8_t*)calloc(font->tex_height, font->tex_width * ncomponents);
+   unsigned band      = respecify ? font->tex_height : (y1 - y0);
+   uint8_t *tmp;
+
+   if (!respecify && (y1 <= y0 || y1 > (unsigned)font->atlas->height))
+      return;
+
+   tmp = (uint8_t*)calloc(band, font->tex_width * ncomponents);
+   if (!tmp)
+      return;
+
+   if (respecify)
+   {
+      y0 = 0;
+      y1 = font->atlas->height;
+   }
 
    switch (ncomponents)
    {
       case 1:
-         for (i = 0; i < font->atlas->height; ++i)
+         for (i = y0; i < y1; ++i)
          {
             const uint8_t *src = &font->atlas->buffer[i * font->atlas->width];
-            uint8_t       *dst = &tmp[i * font->tex_width * ncomponents];
+            uint8_t       *dst = &tmp[(i - y0) * font->tex_width * ncomponents];
 
             memcpy(dst, src, font->atlas->width);
          }
          break;
       case 2:
-         for (i = 0; i < font->atlas->height; ++i)
+         for (i = y0; i < y1; ++i)
          {
             const uint8_t *src = &font->atlas->buffer[i * font->atlas->width];
-            uint8_t       *dst = &tmp[i * font->tex_width * ncomponents];
+            uint8_t       *dst = &tmp[(i - y0) * font->tex_width * ncomponents];
 
             for (j = 0; j < font->atlas->width; ++j)
             {
@@ -478,8 +634,14 @@ static void gl1_raster_font_upload_atlas(gl1_raster_t *font)
    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 #endif
 
-   glTexImage2D(GL_TEXTURE_2D, 0, gl_internal, font->tex_width, font->tex_height,
-         0, gl_format, GL_UNSIGNED_BYTE, tmp);
+   if (respecify)
+      glTexImage2D(GL_TEXTURE_2D, 0, gl_internal,
+            font->tex_width, font->tex_height,
+            0, gl_format, GL_UNSIGNED_BYTE, tmp);
+   else
+      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, (GLint)y0,
+            font->tex_width, band,
+            gl_format, GL_UNSIGNED_BYTE, tmp);
 
    free(tmp);
 }
@@ -521,7 +683,7 @@ static void *gl1_raster_font_init(void *data,
    font->tex_width  = next_pow2(font->atlas->width);
    font->tex_height = next_pow2(font->atlas->height);
 
-   gl1_raster_font_upload_atlas(font);
+   gl1_raster_font_upload_atlas(font, 0, 0, true);
 
    font->atlas->dirty = false;
 
@@ -577,7 +739,8 @@ static void gl1_raster_font_draw_vertices(
 
    if (font->atlas->dirty)
    {
-      gl1_raster_font_upload_atlas(font);
+      gl1_raster_font_upload_atlas(font,
+            font->atlas->dirty_y0, font->atlas->dirty_y1, false);
       font->atlas->dirty   = false;
    }
 
@@ -646,7 +809,8 @@ static void gl1_raster_font_render_line(gl1_t *gl,
    GLfloat font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
-   GLfloat font_lut_tex_coord[2 * 6 * MAX_MSG_LEN_CHUNK];
+   GLfloat color_block[4 * 6];
+   int n;
    const char* msg_end  = msg + msg_len;
    int x                = pre_x;
    int y                = roundf(pos_y * gl->vp.height);
@@ -680,6 +844,14 @@ static void gl1_raster_font_render_line(gl1_t *gl,
          x -= (int)(width_accum * scale) / 2;
    }
 
+   for (n = 0; n < 6; n++)
+   {
+      color_block[4 * n + 0] = color[0];
+      color_block[4 * n + 1] = color[1];
+      color_block[4 * n + 2] = color[2];
+      color_block[4 * n + 3] = color[3];
+   }
+
    while (msg < msg_end)
    {
       i = 0;
@@ -709,6 +881,9 @@ static void gl1_raster_font_render_line(gl1_t *gl,
          GL1_RASTER_FONT_EMIT(4, 0, 0); /* Top-left */
          GL1_RASTER_FONT_EMIT(5, 1, 1); /* Bottom-right */
 
+         memcpy(&font_color[4 * 6 * i], color_block,
+               sizeof(color_block));
+
          i++;
 
          delta_x += glyph->advance_x;
@@ -719,7 +894,7 @@ static void gl1_raster_font_render_line(gl1_t *gl,
       coords.vertex        = font_vertex;
       coords.color         = font_color;
       coords.vertices      = i * 6;
-      coords.lut_tex_coord = font_lut_tex_coord;
+      coords.lut_tex_coord = NULL;
 
       if (font->block)
          video_coord_array_append(&font->block->carr, &coords, coords.vertices);
@@ -1140,7 +1315,6 @@ static void *gl1_init(const video_info_t *video,
    unsigned temp_width = 0, temp_height = 0;
    settings_t *settings                 = config_get_ptr();
    bool video_smooth                    = settings->bools.video_smooth;
-   bool video_font_enable               = settings->bools.video_font_enable;
    const char *video_context_driver     = settings->arrays.video_context_driver;
    const char *vendor                   = NULL;
    const char *renderer                 = NULL;
@@ -1284,6 +1458,34 @@ static void *gl1_init(const video_info_t *video,
          gl1->version_minor = (int)strtol(end + 1, NULL, 10);
    }
 
+#ifndef VITA
+   {
+      gfx_ctx_flags_t ctx_flags;
+      ctx_flags.flags = 0;
+      video_context_driver_get_flags(&ctx_flags);
+      if (BIT32_GET(ctx_flags.flags, GFX_CTX_FLAGS_SCRGB_FRAMEBUFFER))
+      {
+         if (gl1_scrgb_init_program(gl1))
+         {
+            gl1->scrgb.active = true;
+            RARCH_LOG("[GL1] scRGB backbuffer active; SDR content will be encoded for HDR output.\n");
+         }
+         else
+            RARCH_WARN("[GL1] scRGB backbuffer present but GLSL/FBO entry points are unavailable; output will be dim (paper-white mapped).\n");
+      }
+   }
+#endif
+
+   gl1->source_10bit = video->source_10bit;
+   gl1->source_hdr10 = video->source_hdr10;
+   /* A wrong combination here is silent - the image is merely graded
+    * oddly - so state it once, as the other GL drivers do. */
+   RARCH_LOG("[GL1] Source is %s (%s), output %s.\n",
+         video->source_hdr10 ? "HDR10 PQ Rec.2020"
+                             : (video->source_10bit ? "10-bit SDR" : "SDR"),
+         video->rgb32 ? "32-bit" : "16-bit",
+         gl1->scrgb.active ? "scRGB" : "SDR");
+
    if (extensions && *extensions)
       gl1->extensions = string_split(extensions, " ");
 
@@ -1302,7 +1504,6 @@ static void *gl1_init(const video_info_t *video,
             input, input_data);
    }
 
-   if (video_font_enable)
       font_driver_init_osd(gl1,
             video,
             false,
@@ -1415,6 +1616,91 @@ static void gl1_set_viewport(gl1_t *gl1,
    }
 }
 
+/* CPU PQ Rec.2020 -> SDR gamma Rec.709 tonemap of packed A2R10G10B10
+ * rows into the BGRA8888 staging buffer. LUT-driven: 1024-entry ST.2084
+ * EOTF (exact per 10-bit code) and a 4096-entry gamma 1/2.4 encode; the
+ * only per-pixel float work is the 3x3 rotation and the Reinhard-style
+ * peak normalization, matching the shader fallback in the gl driver. */
+static void gl1_tonemap_pq_rows(gl1_t *gl1, const void *frame,
+      unsigned width, unsigned height, unsigned pitch, unsigned pot_width)
+{
+   static float   lut_pq[1024];
+   static uint8_t lut_gamma[4096];
+   static bool    luts_ready = false;
+   static bool    warned     = false;
+   settings_t *settings      = config_get_ptr();
+   float paper_white         = settings
+         ? settings->floats.video_hdr_paper_white_nits : 200.0f;
+   unsigned x, y;
+
+   if (paper_white < 1.0f)
+      paper_white = 1.0f;
+
+   if (!warned)
+   {
+      warned = true;
+      RARCH_WARN("[GL1] Core supplied HDR10 PQ but there is no scRGB path; tonemapping to SDR on the CPU. Turn on HDR output, or set the core to a 24-bit colour format.\n");
+   }
+
+   if (!luts_ready)
+   {
+      int i;
+      for (i = 0; i < 1024; i++)
+      {
+         /* ST.2084 EOTF, in nits. */
+         double e = (double)i / 1023.0;
+         double p = pow(e, 1.0 / 78.84375);
+         double n = p - 0.8359375;
+         double d = 18.8515625 - 18.6875 * p;
+         if (n < 0.0)
+            n = 0.0;
+         lut_pq[i] = (float)(pow(n / d, 1.0 / 0.1593017578) * 10000.0);
+      }
+      for (i = 0; i < 4096; i++)
+         lut_gamma[i] = (uint8_t)(pow((double)i / 4095.0, 1.0 / 2.4)
+               * 255.0 + 0.5);
+      luts_ready = true;
+   }
+
+   for (y = 0; y < height; y++)
+   {
+      const uint32_t *src = (const uint32_t*)
+            ((const uint8_t*)frame + (size_t)pitch * y);
+      uint8_t        *dst = gl1->video_buf + (size_t)pot_width * 4 * y;
+
+      for (x = 0; x < width; x++)
+      {
+         uint32_t w = src[x];
+         float r20  = lut_pq[(w >> 20) & 0x3FF];
+         float g20  = lut_pq[(w >> 10) & 0x3FF];
+         float b20  = lut_pq[ w        & 0x3FF];
+         /* Rec.2020 -> Rec.709 (row form), then normalize to paper
+          * white and roll the overshoot off. */
+         float r = ( 1.6604910f * r20 - 0.5876411f * g20 - 0.0728499f * b20) / paper_white;
+         float gc= (-0.1245505f * r20 + 1.1328999f * g20 - 0.0083494f * b20) / paper_white;
+         float b = (-0.0181508f * r20 - 0.1005789f * g20 + 1.1187297f * b20) / paper_white;
+         float pk = r;
+         if (gc > pk) pk = gc;
+         if (b  > pk) pk = b;
+         if (pk > 1.0f)
+         {
+            r  /= pk;
+            gc /= pk;
+            b  /= pk;
+         }
+         if (r  < 0.0f) r  = 0.0f;
+         if (gc < 0.0f) gc = 0.0f;
+         if (b  < 0.0f) b  = 0.0f;
+         /* BGRA8888 byte order, matching the ordinary 32bpp source
+          * convention this buffer is uploaded (or CPU-swizzled) as. */
+         dst[4 * x + 0] = lut_gamma[(int)(b  * 4095.0f + 0.5f)];
+         dst[4 * x + 1] = lut_gamma[(int)(gc * 4095.0f + 0.5f)];
+         dst[4 * x + 2] = lut_gamma[(int)(r  * 4095.0f + 0.5f)];
+         dst[4 * x + 3] = 0xFF;
+      }
+   }
+}
+
 static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, int height, GLuint tex, const void *frame_to_copy, bool fb_4444)
 {
    uint8_t *frame         = NULL;
@@ -1429,6 +1715,15 @@ static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, i
     * implementation lacks GL_EXT_bgra. */
    GLint  internalFormat  = fb_4444 ? GL_RGBA : GL_RGB8;
    bool   supports_native = (gl1->flags & GL1_FLAG_SUPPORTS_BGRA) ? true : false;
+   /* Core frames only (never the menu texture): packed 2-10-10-10
+    * words upload as GL_BGRA + UNSIGNED_INT_2_10_10_10_REV, which
+    * reads A from bits 31:30 and R from 29:20 - the A2R10G10B10
+    * layout of both 10-bit frontend formats - so like the gl driver
+    * (and unlike glcore) no swizzle is needed. GL 1.2, and the native
+    * predicate already requires BGRA, so the CPU-swizzle fallback
+    * below can never see these words (it would corrupt them). */
+   bool   src_10bit       = (tex == gl1->tex)
+                         && gl1_source_10bit_native(gl1);
    GLenum format          = fb_4444
                               ? GL_RGBA
                               : (supports_native ? GL_BGRA_EXT : GL_RGBA);
@@ -1488,7 +1783,7 @@ static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, i
    /* The BGRA-fallback swizzle below only applies to the 32bpp upload
     * path; the 16bpp 4444 path's bytes already match GL_RGBA channel
     * order. */
-   if (!fb_4444 && !supports_native)
+   if (!fb_4444 && !supports_native && !src_10bit)
    {
       frame_rgba = (uint8_t*)malloc(pot_width * pot_height * 4);
       if (frame_rgba)
@@ -1516,6 +1811,12 @@ static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, i
       }
    }
 
+   if (src_10bit)
+   {
+      internalFormat = GL_RGB10_A2;
+      format         = GL_BGRA_EXT;
+      type           = GL_UNSIGNED_INT_2_10_10_10_REV;
+   }
    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, pot_width, pot_height, 0, format, type, frame);
    if (frame_rgba)
        free(frame_rgba);
@@ -1596,7 +1897,16 @@ static void gl1_readback(gl1_t *gl1,
 #ifndef VITA
    glPixelStorei(GL_PACK_ALIGNMENT, alignment);
    glPixelStorei(GL_PACK_ROW_LENGTH, 0);
-   glReadBuffer(GL_BACK);
+   /* Under scRGB, read the pre-encode SDR offscreen -- roundtrip-free
+    * SDR capture, same as the gl/glcore drivers. */
+   if (gl1->scrgb.active && gl1->scrgb.fbo
+         && !(gl1->source_hdr10 && gl1_source_10bit_native(gl1)))
+   {
+      gl1->scrgb.BindFramebuffer(GL_FRAMEBUFFER, gl1->scrgb.fbo);
+      glReadBuffer(GL_COLOR_ATTACHMENT0);
+   }
+   else
+      glReadBuffer(GL_BACK);
 #endif
 
    glReadPixels(
@@ -1605,7 +1915,288 @@ static void gl1_readback(gl1_t *gl1,
          (gl1->vp.width  > video_width)  ? video_width  : gl1->vp.width,
          (gl1->vp.height > video_height) ? video_height : gl1->vp.height,
          (GLenum)fmt, (GLenum)type, (GLvoid*)src);
+
+#ifndef VITA
+   if (gl1->scrgb.active && gl1->scrgb.fbo
+         && !(gl1->source_hdr10 && gl1_source_10bit_native(gl1)))
+      gl1->scrgb.BindFramebuffer(GL_FRAMEBUFFER, 0);
+#endif
 }
+
+#ifndef VITA
+/* Same GLSL 1.20 encode as the gl driver, but using the built-in
+ * compatibility attributes (gl_Vertex / gl_MultiTexCoord0) so the
+ * quad can be submitted with plain immediate mode -- no generic
+ * attribute state to manage in a fixed-function driver. */
+/* String arrays for the same C90 509-character literal limit reason
+ * as the gl driver. */
+static const char *gl1_scrgb_vert_src[] = {
+   "varying vec2 vTex;\n"
+   "void main()\n"
+   "{\n"
+   "   gl_Position = vec4(gl_Vertex.xy, 0.0, 1.0);\n"
+   "   vTex = gl_MultiTexCoord0.xy;\n"
+   "}\n"
+};
+
+static const char *gl1_scrgb_frag_src[] = {
+   "uniform sampler2D uTex;\n"
+   "uniform sampler2D uUITex;\n"
+   "uniform float uNits;\n"
+   "uniform float uExpand;\n"
+   /* 0 = SDR -> scRGB, 1 = PQ -> scRGB. */
+   "uniform float uMode;\n"
+   /* <= 0 disables the separate UI composite. */
+   "uniform float uUINits;\n"
+   "varying vec2 vTex;\n"
+   "const mat3 k709to2020 = mat3(\n"
+   "   0.6274040, 0.0690970, 0.0163916,\n"
+   "   0.3292820, 0.9195400, 0.0880132,\n"
+   "   0.0433136, 0.0113612, 0.8955950);\n"
+   "const mat3 kExpanded709to2020 = mat3(\n"
+   "   0.6274040, 0.0457456, -0.00121055,\n"
+   "   0.3292820, 0.9417770,  0.0176041,\n"
+   "   0.0433136, 0.0124772,  0.9836070);\n",
+   "const mat3 kP3to2020 = mat3(\n"
+   "   0.753833,  0.045744, -0.001210,\n"
+   "   0.198597,  0.941777,  0.017602,\n"
+   "   0.047570,  0.012479,  0.983609);\n"
+   "const mat3 k2020to709 = mat3(\n"
+   "    1.6604910, -0.1245505, -0.0181508,\n"
+   "   -0.5876411,  1.1328999, -0.1005789,\n"
+   "   -0.0728499, -0.0083494,  1.1187297);\n",
+   /* ST.2084 (PQ) -> normalized linear. */
+   "vec3 pqToLinear(vec3 e)\n"
+   "{\n"
+   "   vec3 p = pow(abs(e), vec3(1.0 / 78.84375));\n"
+   "   vec3 n = max(p - 0.8359375, vec3(0.0));\n"
+   "   vec3 d = 18.8515625 - 18.6875 * p;\n"
+   "   return pow(abs(n / d), vec3(1.0 / 0.1593017578));\n"
+   "}\n",
+   /* The old main() body verbatim: SDR gamma 2.4 -> linear scRGB. */
+   "vec3 sdrToScrgb(vec3 c, float nits)\n"
+   "{\n"
+   "   vec3 lin = pow(abs(c), vec3(2.4));\n"
+   "   if (uExpand < 0.5)\n"
+   "      lin = k709to2020 * lin;\n"
+   "   else if (uExpand < 1.5)\n"
+   "      lin = kExpanded709to2020 * lin;\n"
+   "   else if (uExpand < 2.5)\n"
+   "      lin = kP3to2020 * lin;\n"
+   "   lin = max(lin, vec3(0.0));\n"
+   "   lin = k2020to709 * lin;\n"
+   "   return lin * (nits / 80.0);\n"
+   "}\n",
+   /* Rotations are matrix * vector: this file stores its matrices
+    * column-major for that order, unlike hdr_common.glsl (row-major,
+    * vector * matrix). Copying idioms between the files transposes
+    * the rotation, which reads as a strong red cast. */
+   "void main()\n"
+   "{\n"
+   "   vec4 src = texture2D(uTex, vTex);\n"
+   "   vec3 lin;\n"
+   "   if (uMode > 0.5)\n"
+   /*    HDR10 PQ Rec.2020 at absolute luminance; 10000/80 = 125. */
+   "      lin = (k2020to709 * pqToLinear(src.rgb)) * 125.0;\n"
+   "   else\n"
+   "      lin = sdrToScrgb(src.rgb, uNits);\n"
+   /* SDR UI over PQ content, in linear light at its own brightness;
+    * the layer is premultiplied (transparent clear + src-alpha), so
+    * un-premultiply around the transfer function. */
+   "   if (uUINits > 0.0)\n"
+   "   {\n"
+   "      vec4 ui = texture2D(uUITex, vTex);\n"
+   "      if (ui.a > 0.0)\n"
+   "      {\n"
+   "         vec3 uil = sdrToScrgb(ui.rgb / ui.a, uUINits) * ui.a;\n"
+   "         lin      = uil + lin * (1.0 - ui.a);\n"
+   "      }\n"
+   "   }\n"
+   "   gl_FragColor = vec4(lin, src.a);\n"
+   "}\n"
+};
+
+static bool gl1_scrgb_resolve(gl1_t *gl1)
+{
+   const gfx_ctx_driver_t *ctx = gl1->ctx_driver;
+   if (!ctx || !ctx->get_proc_address)
+      return false;
+#define GL1_SCRGB_RESOLVE(field, name, type) \
+   if (!(gl1->scrgb.field = (type)ctx->get_proc_address(name))) \
+      return false
+   GL1_SCRGB_RESOLVE(CreateShader,           "glCreateShader",           gl1_scrgb_glCreateShader_t);
+   GL1_SCRGB_RESOLVE(ShaderSource,           "glShaderSource",           gl1_scrgb_glShaderSource_t);
+   GL1_SCRGB_RESOLVE(CompileShader,          "glCompileShader",          gl1_scrgb_glCompileShader_t);
+   GL1_SCRGB_RESOLVE(GetShaderiv,            "glGetShaderiv",            gl1_scrgb_glGetShaderiv_t);
+   GL1_SCRGB_RESOLVE(CreateProgram,          "glCreateProgram",          gl1_scrgb_glCreateProgram_t);
+   GL1_SCRGB_RESOLVE(AttachShader,           "glAttachShader",           gl1_scrgb_glAttachShader_t);
+   GL1_SCRGB_RESOLVE(LinkProgram,            "glLinkProgram",            gl1_scrgb_glLinkProgram_t);
+   GL1_SCRGB_RESOLVE(GetProgramiv,           "glGetProgramiv",           gl1_scrgb_glGetProgramiv_t);
+   GL1_SCRGB_RESOLVE(DeleteShader,           "glDeleteShader",           gl1_scrgb_glDeleteShader_t);
+   GL1_SCRGB_RESOLVE(DeleteProgram,          "glDeleteProgram",          gl1_scrgb_glDeleteProgram_t);
+   GL1_SCRGB_RESOLVE(UseProgram,             "glUseProgram",             gl1_scrgb_glUseProgram_t);
+   GL1_SCRGB_RESOLVE(GetUniformLocation,     "glGetUniformLocation",     gl1_scrgb_glGetUniformLocation_t);
+   GL1_SCRGB_RESOLVE(Uniform1i,              "glUniform1i",              gl1_scrgb_glUniform1i_t);
+   GL1_SCRGB_RESOLVE(Uniform1f,              "glUniform1f",              gl1_scrgb_glUniform1f_t);
+   GL1_SCRGB_RESOLVE(GenFramebuffers,        "glGenFramebuffers",        gl1_scrgb_glGenFramebuffers_t);
+   GL1_SCRGB_RESOLVE(BindFramebuffer,        "glBindFramebuffer",        gl1_scrgb_glBindFramebuffer_t);
+   GL1_SCRGB_RESOLVE(FramebufferTexture2D,   "glFramebufferTexture2D",   gl1_scrgb_glFramebufferTexture2D_t);
+   GL1_SCRGB_RESOLVE(CheckFramebufferStatus, "glCheckFramebufferStatus", gl1_scrgb_glCheckFramebufferStatus_t);
+   GL1_SCRGB_RESOLVE(DeleteFramebuffers,     "glDeleteFramebuffers",     gl1_scrgb_glDeleteFramebuffers_t);
+   GL1_SCRGB_RESOLVE(ActiveTexture,          "glActiveTexture",          gl1_scrgb_glActiveTexture_t);
+#undef GL1_SCRGB_RESOLVE
+   return true;
+}
+
+static GLuint gl1_scrgb_compile_stage(gl1_t *gl1, GLenum stage,
+      const char **src, GLsizei count)
+{
+   GLint status = 0;
+   GLuint sh;
+   if (!(sh = gl1->scrgb.CreateShader(stage)))
+      return 0;
+   gl1->scrgb.ShaderSource(sh, count, src, NULL);
+   gl1->scrgb.CompileShader(sh);
+   gl1->scrgb.GetShaderiv(sh, GL_COMPILE_STATUS, &status);
+   if (!status)
+   {
+      gl1->scrgb.DeleteShader(sh);
+      return 0;
+   }
+   return sh;
+}
+
+static bool gl1_scrgb_init_program(gl1_t *gl1)
+{
+   GLint status = 0;
+   GLuint vs, fs, prog;
+
+   if (!gl1_scrgb_resolve(gl1))
+      return false;
+
+   if (!(vs = gl1_scrgb_compile_stage(gl1, GL_VERTEX_SHADER,
+               gl1_scrgb_vert_src,
+               (GLsizei)ARRAY_SIZE(gl1_scrgb_vert_src))))
+      return false;
+   if (!(fs = gl1_scrgb_compile_stage(gl1, GL_FRAGMENT_SHADER,
+               gl1_scrgb_frag_src,
+               (GLsizei)ARRAY_SIZE(gl1_scrgb_frag_src))))
+   {
+      gl1->scrgb.DeleteShader(vs);
+      return false;
+   }
+   prog = gl1->scrgb.CreateProgram();
+   gl1->scrgb.AttachShader(prog, vs);
+   gl1->scrgb.AttachShader(prog, fs);
+   gl1->scrgb.LinkProgram(prog);
+   gl1->scrgb.DeleteShader(vs);
+   gl1->scrgb.DeleteShader(fs);
+   gl1->scrgb.GetProgramiv(prog, GL_LINK_STATUS, &status);
+   if (!status)
+   {
+      gl1->scrgb.DeleteProgram(prog);
+      return false;
+   }
+   gl1->scrgb.program     = prog;
+   gl1->scrgb.loc_tex     = gl1->scrgb.GetUniformLocation(prog, "uTex");
+   gl1->scrgb.loc_nits    = gl1->scrgb.GetUniformLocation(prog, "uNits");
+   gl1->scrgb.loc_expand  = gl1->scrgb.GetUniformLocation(prog, "uExpand");
+   gl1->scrgb.loc_ui_tex  = gl1->scrgb.GetUniformLocation(prog, "uUITex");
+   gl1->scrgb.loc_mode    = gl1->scrgb.GetUniformLocation(prog, "uMode");
+   gl1->scrgb.loc_ui_nits = gl1->scrgb.GetUniformLocation(prog, "uUINits");
+   return true;
+}
+
+static GLuint gl1_frame_target_fbo(gl1_t *gl1,
+      unsigned width, unsigned height)
+{
+   if (!gl1->scrgb.active)
+      return 0;
+
+   if (     !gl1->scrgb.fbo
+         || gl1->scrgb.width  != width
+         || gl1->scrgb.height != height)
+   {
+      if (gl1->scrgb.fbo)
+         gl1->scrgb.DeleteFramebuffers(1, &gl1->scrgb.fbo);
+      if (gl1->scrgb.tex)
+         glDeleteTextures(1, &gl1->scrgb.tex);
+      glGenTextures(1, &gl1->scrgb.tex);
+      glBindTexture(GL_TEXTURE_2D, gl1->scrgb.tex);
+      /* PQ content needs 10 bits between blit and encode; 8-bit PQ
+       * bands in the darks. Native predicate implies GL 1.2+. */
+      if (gl1_source_10bit_native(gl1) && gl1->source_hdr10)
+         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB10_A2,
+               width, height, 0, GL_BGRA_EXT,
+               GL_UNSIGNED_INT_2_10_10_10_REV, NULL);
+      else
+         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
+               width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+      gl1->scrgb.GenFramebuffers(1, &gl1->scrgb.fbo);
+      gl1->scrgb.BindFramebuffer(GL_FRAMEBUFFER, gl1->scrgb.fbo);
+      gl1->scrgb.FramebufferTexture2D(GL_FRAMEBUFFER,
+            GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl1->scrgb.tex, 0);
+      if (gl1->scrgb.CheckFramebufferStatus(GL_FRAMEBUFFER)
+            != GL_FRAMEBUFFER_COMPLETE)
+      {
+         RARCH_ERR("[GL1] scRGB offscreen FBO incomplete; falling back to direct rendering.\n");
+         gl1->scrgb.BindFramebuffer(GL_FRAMEBUFFER, 0);
+         gl1->scrgb.DeleteFramebuffers(1, &gl1->scrgb.fbo);
+         glDeleteTextures(1, &gl1->scrgb.tex);
+         gl1->scrgb.fbo    = 0;
+         gl1->scrgb.tex    = 0;
+         gl1->scrgb.active = false;
+         return 0;
+      }
+      gl1->scrgb.BindFramebuffer(GL_FRAMEBUFFER, 0);
+      gl1->scrgb.width  = width;
+      gl1->scrgb.height = height;
+
+      /* UI layer, sized and lifetimed with the content offscreen;
+       * only the PQ composite needs it. */
+      if (gl1->scrgb.ui_fbo)
+      {
+         gl1->scrgb.DeleteFramebuffers(1, &gl1->scrgb.ui_fbo);
+         gl1->scrgb.ui_fbo = 0;
+      }
+      if (gl1->scrgb.ui_tex)
+      {
+         glDeleteTextures(1, &gl1->scrgb.ui_tex);
+         gl1->scrgb.ui_tex = 0;
+      }
+      if (gl1->source_hdr10 && gl1_source_10bit_native(gl1))
+      {
+         glGenTextures(1, &gl1->scrgb.ui_tex);
+         glBindTexture(GL_TEXTURE_2D, gl1->scrgb.ui_tex);
+         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
+               width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+         gl1->scrgb.GenFramebuffers(1, &gl1->scrgb.ui_fbo);
+         gl1->scrgb.BindFramebuffer(GL_FRAMEBUFFER, gl1->scrgb.ui_fbo);
+         gl1->scrgb.FramebufferTexture2D(GL_FRAMEBUFFER,
+               GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gl1->scrgb.ui_tex, 0);
+         if (gl1->scrgb.CheckFramebufferStatus(GL_FRAMEBUFFER)
+               != GL_FRAMEBUFFER_COMPLETE)
+         {
+            RARCH_ERR("[GL1] scRGB UI layer FBO incomplete; UI will be composited with the frame.\n");
+            gl1->scrgb.DeleteFramebuffers(1, &gl1->scrgb.ui_fbo);
+            glDeleteTextures(1, &gl1->scrgb.ui_tex);
+            gl1->scrgb.ui_fbo = 0;
+            gl1->scrgb.ui_tex = 0;
+         }
+         gl1->scrgb.BindFramebuffer(GL_FRAMEBUFFER, 0);
+      }
+   }
+   return gl1->scrgb.fbo;
+}
+#endif /* !VITA */
 
 static bool gl1_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height, uint64_t frame_count,
@@ -1659,6 +2250,16 @@ static bool gl1_frame(void *data, const void *frame,
             video_width, video_height, false, true);
    }
 
+#ifndef VITA
+   /* scRGB: route the whole frame (core blit, menu, overlays, OSD,
+    * widgets) into the SDR offscreen; the encode at end of frame
+    * writes the FP16 backbuffer. Nothing else in this driver binds
+    * FBOs, so this single bind holds for the entire frame. */
+   if (gl1->scrgb.active)
+      gl1->scrgb.BindFramebuffer(GL_FRAMEBUFFER,
+            gl1_frame_target_fbo(gl1, video_width, video_height));
+#endif
+
    if (     !frame
          || (frame == RETRO_HW_FRAME_BUFFER_VALID)
          || (
@@ -1702,7 +2303,16 @@ static bool gl1_frame(void *data, const void *frame,
 
    if (draw && gl1->video_buf)
    {
-      if (bits == 32)
+      if (bits == 32 && gl1->source_hdr10 && !gl1_source_10bit_native(gl1))
+         /* PQ frames with no way to composite them on the GPU (no
+          * scRGB backbuffer, or a context too old for the 10-bit
+          * upload): tonemap on the CPU into ordinary BGRA8888 during
+          * the staging copy. Everything downstream is then plain SDR,
+          * with no GL requirement at all - this is what keeps HDR10
+          * acceptance safe on this driver's actual population, which
+          * includes GL 1.1 software rasterizers. */
+         gl1_tonemap_pq_rows(gl1, frame, width, height, pitch, pot_width);
+      else if (bits == 32)
       {
          int y;
          /* copy lines into top-left portion of larger (power-of-two) buffer */
@@ -1739,6 +2349,23 @@ static bool gl1_frame(void *data, const void *frame,
          gl1_draw_tex(gl1, pot_width, pot_height,
                width, height, gl1->tex, frame_to_copy, false);
    }
+
+#ifndef VITA
+   /* PQ content: everything below (menu, overlays, OSD, widgets) is
+    * SDR and goes into its own layer, cleared to transparent here;
+    * the encode composites it over the decoded content at Menu HDR
+    * Brightness. Runs on dupe frames too - the content offscreen
+    * keeps the last frame, the UI layer must not. */
+   if (     gl1->source_hdr10
+         && gl1_source_10bit_native(gl1)
+         && gl1->scrgb.ui_fbo)
+   {
+      gl1->scrgb.BindFramebuffer(GL_FRAMEBUFFER, gl1->scrgb.ui_fbo);
+      glDisable(GL_SCISSOR_TEST);
+      glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+      glClear(GL_COLOR_BUFFER_BIT);
+   }
+#endif
 
 #ifdef HAVE_MENU
    if (gl1->menu_frame && menu_is_alive)
@@ -1874,6 +2501,97 @@ static bool gl1_frame(void *data, const void *frame,
             gl1->ctx_data);
 
    /* Screenshots. */
+#ifndef VITA
+   /* scRGB: encode the SDR offscreen into the FP16 backbuffer.
+    * Menu HDR Brightness semantics match the other HDR paths:
+    * menu_nits when any UI is composited this frame, paper white
+    * otherwise; both read live per frame. */
+   if (gl1->scrgb.active && gl1->scrgb.fbo && gl1->scrgb.program)
+   {
+      settings_t *settings = config_get_ptr();
+      float nits           = 200.0f;
+      bool ui_visible      = false;
+      bool pq              = gl1->source_hdr10
+                          && gl1_source_10bit_native(gl1)
+                          && gl1->scrgb.ui_fbo != 0;
+
+#ifdef HAVE_MENU
+      if (gl1->flags & GL1_FLAG_MENU_TEXTURE_ENABLE)
+         ui_visible = true;
+#endif
+#ifdef HAVE_OVERLAY
+      if (gl1->flags & GL1_FLAG_OVERLAY_ENABLE)
+         ui_visible = true;
+#endif
+      if ((msg && *msg) || video_info->statistics_show)
+         ui_visible = true;
+#ifdef HAVE_GFX_WIDGETS
+      if (widgets_active)
+         ui_visible = true;
+#endif
+
+      /* PQ content carries its own absolute luminance - paper white
+       * does not apply to it - and its UI is composited separately at
+       * the menu setting; SDR content keeps the existing whole-frame
+       * behaviour. */
+      if (settings)
+         nits = (!pq && ui_visible)
+               ? settings->floats.video_hdr_menu_nits
+               : settings->floats.video_hdr_paper_white_nits;
+
+      gl1->scrgb.BindFramebuffer(GL_FRAMEBUFFER, 0);
+      glViewport(0, 0, video_width, video_height);
+      glDisable(GL_BLEND);
+      glDisable(GL_DEPTH_TEST);
+      gl1->scrgb.UseProgram(gl1->scrgb.program);
+      if (gl1->scrgb.loc_tex >= 0)
+         gl1->scrgb.Uniform1i(gl1->scrgb.loc_tex, 0);
+      if (gl1->scrgb.loc_ui_tex >= 0)
+         gl1->scrgb.Uniform1i(gl1->scrgb.loc_ui_tex, 1);
+      if (gl1->scrgb.loc_nits >= 0)
+         gl1->scrgb.Uniform1f(gl1->scrgb.loc_nits, nits);
+      if (gl1->scrgb.loc_expand >= 0)
+         gl1->scrgb.Uniform1f(gl1->scrgb.loc_expand, settings
+               ? (float)settings->uints.video_hdr_expand_gamut : 0.0f);
+      if (gl1->scrgb.loc_mode >= 0)
+         gl1->scrgb.Uniform1f(gl1->scrgb.loc_mode, pq ? 1.0f : 0.0f);
+      if (gl1->scrgb.loc_ui_nits >= 0)
+         gl1->scrgb.Uniform1f(gl1->scrgb.loc_ui_nits,
+               (pq && settings)
+               ? settings->floats.video_hdr_menu_nits : 0.0f);
+
+      /* Unit 1 must hold something valid even when the shader will not
+       * sample it. ActiveTexture is guaranteed resolved here: the
+       * program only exists if the full resolve succeeded. */
+      gl1->scrgb.ActiveTexture(GL_TEXTURE1);
+      glBindTexture(GL_TEXTURE_2D,
+            pq ? gl1->scrgb.ui_tex : gl1->scrgb.tex);
+      gl1->scrgb.ActiveTexture(GL_TEXTURE0);
+      glBindTexture(GL_TEXTURE_2D, gl1->scrgb.tex);
+
+      glBegin(GL_QUADS);
+      glTexCoord2f(0.0f, 0.0f); glVertex2f(-1.0f, -1.0f);
+      glTexCoord2f(1.0f, 0.0f); glVertex2f( 1.0f, -1.0f);
+      glTexCoord2f(1.0f, 1.0f); glVertex2f( 1.0f,  1.0f);
+      glTexCoord2f(0.0f, 1.0f); glVertex2f(-1.0f,  1.0f);
+      glEnd();
+
+      gl1->scrgb.UseProgram(0);
+      gl1->scrgb.ActiveTexture(GL_TEXTURE1);
+      glBindTexture(GL_TEXTURE_2D, 0);
+      gl1->scrgb.ActiveTexture(GL_TEXTURE0);
+
+      /* Restore the aspect-correct viewport the composite just
+       * clobbered. glViewport is context state, not per-FBO, and
+       * gl1_frame only establishes it under GL1_FLAG_SHOULD_RESIZE --
+       * so without this the next frame blits into the offscreen with
+       * the full window viewport still latched and the image is
+       * stretched to fill, ignoring the aspect ratio. Same convention
+       * as the fullscreen menu-texture branch above. */
+      glViewport(gl1->vp.x, gl1->vp.y, gl1->vp.width, gl1->vp.height);
+   }
+#endif
+
    if (gl1->readback_buffer_screenshot)
       gl1_readback(gl1,
             4,
@@ -1891,7 +2609,7 @@ static bool gl1_frame(void *data, const void *frame,
       gl1->ctx_driver->swap_buffers(gl1->ctx_data);
 
  /* Emscripten has to do black frame insertion in its main loop */
-#ifndef EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
    if (
@@ -2030,6 +2748,25 @@ static void gl1_free(void *data)
 
    if (!gl1)
       return;
+
+#ifndef VITA
+   if (gl1->scrgb.program && gl1->scrgb.DeleteProgram)
+      gl1->scrgb.DeleteProgram(gl1->scrgb.program);
+   if (gl1->scrgb.fbo && gl1->scrgb.DeleteFramebuffers)
+      gl1->scrgb.DeleteFramebuffers(1, &gl1->scrgb.fbo);
+   if (gl1->scrgb.tex)
+      glDeleteTextures(1, &gl1->scrgb.tex);
+   if (gl1->scrgb.ui_fbo && gl1->scrgb.DeleteFramebuffers)
+      gl1->scrgb.DeleteFramebuffers(1, &gl1->scrgb.ui_fbo);
+   if (gl1->scrgb.ui_tex)
+      glDeleteTextures(1, &gl1->scrgb.ui_tex);
+   gl1->scrgb.program = 0;
+   gl1->scrgb.fbo     = 0;
+   gl1->scrgb.tex     = 0;
+   gl1->scrgb.ui_fbo  = 0;
+   gl1->scrgb.ui_tex  = 0;
+   gl1->scrgb.active  = false;
+#endif
 
    if (gl1->menu_frame)
       free(gl1->menu_frame);
@@ -2415,6 +3152,20 @@ static void gl1_set_texture_enable(void *data, bool state, bool full_screen)
 static uint32_t gl1_get_flags(void *data)
 {
    uint32_t flags = 0;
+#ifndef VITA
+   gl1_t *gl1     = (gl1_t*)data;
+
+   /* Advertise a 10-bit source path only when the native upload and
+    * the scRGB composite genuinely exist - this is what the frontend's
+    * XRGB2101010 down-convert decision consults at frame time. HDR10
+    * acceptance is decided separately by ident and stays valid off
+    * this path because of the CPU tonemap. NULL-safe: the frontend
+    * clears the poke at teardown, and a freed instance must not claim
+    * capabilities. */
+   if (gl1 && gl1->scrgb.active
+         && (gl1->flags & GL1_FLAG_SUPPORTS_BGRA))
+      BIT32_SET(flags, GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE);
+#endif
 
    BIT32_SET(flags, GFX_CTX_FLAGS_HARD_SYNC);
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
@@ -2603,6 +3354,133 @@ static bool gl1_has_windowed(void *data)
    return false;
 }
 
+#ifndef VITA
+/* CPU-side scRGB -> PQ helpers; same (vulkan-verbatim) math as the
+ * other drivers' native HDR read-backs. */
+static float gl1_hdr_pq_encode(float v)
+{
+   const float m1 = 0.1593017578125f, m2 = 78.84375f;
+   const float c1 = 0.8359375f, c2 = 18.8515625f, c3 = 18.6875f;
+   float yp;
+   if (v < 0.0f) v = 0.0f;
+   else if (v > 1.0f) v = 1.0f;
+   yp = powf(v, m1);
+   return powf((c1 + c2 * yp) / (1.0f + c3 * yp), m2);
+}
+
+static uint16_t gl1_hdr_scrgb_to_pq16(float scrgb)
+{
+   float nits = scrgb * 80.0f;
+   float pq;
+   if (nits < 0.0f) nits = 0.0f;
+   else if (nits > 10000.0f) nits = 10000.0f;
+   pq = gl1_hdr_pq_encode(nits / 10000.0f);
+   if (pq < 0.0f) pq = 0.0f;
+   else if (pq > 1.0f) pq = 1.0f;
+   return (uint16_t)(pq * 65535.0f + 0.5f);
+}
+#endif /* !VITA */
+
+/* Native (no tone-map) HDR read-back of the encoded FP16 scRGB
+ * backbuffer, row by row as floats; GL rows arrive bottom-up matching
+ * the 48-bit buffer convention. Metadata matches the shared scRGB
+ * tagging. */
+static bool gl1_read_viewport_hdr(void *data, uint16_t *buffer,
+      bool is_idle, struct rpng_hdr_metadata *out_meta)
+{
+#ifdef VITA
+   return false;
+#else
+   gl1_t *gl1 = (gl1_t*)data;
+   int      vp_x, vp_y;
+   unsigned w, h, x;
+   size_t   y;
+   float   *row;
+   float    max_cll  = 0.0f;
+   double   sum_fall = 0.0;
+   unsigned vw, vh;
+
+   if (!gl1 || !(gl1->scrgb.active) || !buffer)
+      return false;
+
+   if (!is_idle)
+      video_driver_cached_frame();
+
+   vw   = gl1->screen_width;
+   vh   = gl1->screen_height;
+   vp_x = (gl1->vp.x > 0) ? gl1->vp.x : 0;
+   vp_y = (gl1->vp.y > 0) ? gl1->vp.y : 0;
+   w    = (gl1->vp.width  > vw) ? vw : gl1->vp.width;
+   h    = (gl1->vp.height > vh) ? vh : gl1->vp.height;
+   if (!w || !h)
+      return false;
+
+   row = (float*)malloc((size_t)w * 4 * sizeof(float));
+   if (!row)
+      return false;
+
+   gl1->scrgb.BindFramebuffer(GL_FRAMEBUFFER, 0);
+   glPixelStorei(GL_PACK_ALIGNMENT, 4);
+   glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+   glReadBuffer(GL_BACK);
+
+   for (y = 0; y < h; y++)
+   {
+      uint16_t *dst = buffer + y * (size_t)w * 3;
+      glReadPixels(vp_x, vp_y + (int)y, w, 1, GL_RGBA, GL_FLOAT, row);
+      for (x = 0; x < w; x++)
+      {
+         float r        = row[4 * x + 0];
+         float g        = row[4 * x + 1];
+         float b        = row[4 * x + 2];
+         float lvl;
+         dst[3 * x + 0] = gl1_hdr_scrgb_to_pq16(r);
+         dst[3 * x + 1] = gl1_hdr_scrgb_to_pq16(g);
+         dst[3 * x + 2] = gl1_hdr_scrgb_to_pq16(b);
+         lvl = r;
+         if (g > lvl)
+            lvl = g;
+         if (b > lvl)
+            lvl = b;
+         lvl *= 80.0f;
+         if (lvl < 0.0f)
+            lvl = 0.0f;
+         else if (lvl > 10000.0f)
+            lvl = 10000.0f;
+         if (lvl > max_cll)
+            max_cll = lvl;
+         sum_fall += lvl;
+      }
+   }
+
+   free(row);
+
+   if (out_meta)
+   {
+      memset(out_meta, 0, sizeof(*out_meta));
+      out_meta->colour_primaries      = 1;  /* BT.709 (scRGB) */
+      out_meta->transfer_function     = 16; /* SMPTE ST 2084 (PQ) */
+      out_meta->matrix_coefficients   = 0;  /* RGB */
+      out_meta->video_full_range_flag = 1;
+      out_meta->max_cll               = max_cll;
+      out_meta->max_fall              = (float)(sum_fall
+            / ((double)w * (double)h));
+      out_meta->write_mdcv            = 1;
+      out_meta->primary_chromaticity[0][0] = 0.640f;
+      out_meta->primary_chromaticity[0][1] = 0.330f;
+      out_meta->primary_chromaticity[1][0] = 0.300f;
+      out_meta->primary_chromaticity[1][1] = 0.600f;
+      out_meta->primary_chromaticity[2][0] = 0.150f;
+      out_meta->primary_chromaticity[2][1] = 0.060f;
+      out_meta->white_point[0] = 0.3127f;
+      out_meta->white_point[1] = 0.3290f; /* D65 */
+      out_meta->max_luminance  = 1000.0f;
+      out_meta->min_luminance  = 0.001f;
+   }
+   return true;
+#endif /* VITA */
+}
+
 video_driver_t video_gl1 = {
    gl1_init,
    gl1_frame,
@@ -2627,6 +3505,8 @@ video_driver_t video_gl1 = {
    NULL, /* shader_load_begin */
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   gl1_widgets_enabled
+   gl1_widgets_enabled,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   gl1_read_viewport_hdr
 };

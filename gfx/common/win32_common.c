@@ -1993,10 +1993,273 @@ void win32_destroy_window(void)
    main_window.hwnd = NULL;
 }
 
+/* --- HDR (scRGB) pixel format support -------------------------------
+ *
+ * Selecting an FP16 backbuffer needs wglChoosePixelFormatARB, which can
+ * only be resolved with a live GL context, while SetPixelFormat is
+ * once-per-window: the classic WGL bootstrap problem.  It is solved the
+ * classic way, with a throwaway hidden window + legacy context used only
+ * to resolve the ARB entry points, torn down before the real window's
+ * format is set.
+ *
+ * Backwards compatibility is the primary constraint here: the legacy
+ * ChoosePixelFormat path below is byte-for-byte untouched and remains
+ * the default.  The float path only runs when (1) the caller is a GL
+ * context, (2) the user enabled HDR, (3) the display is actually in HDR
+ * mode (probed through the dynamically-loaded DXGI helper, so no new
+ * link-time imports and no behavior on systems without it), and (4) the
+ * ARB float-pixel-format extensions resolve and produce a format.  Any
+ * failure at any step leaves the window untouched and falls through to
+ * the legacy path. */
+
+static bool win32_scrgb_backbuffer = false;
+
+bool win32_backbuffer_is_scrgb(void)
+{
+   return win32_scrgb_backbuffer;
+}
+
+#if !defined(_XBOX) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGL_CORE) || defined(HAVE_OPENGL1))
+
+#ifndef WGL_DRAW_TO_WINDOW_ARB
+#define WGL_DRAW_TO_WINDOW_ARB    0x2001
+#endif
+#ifndef WGL_ACCELERATION_ARB
+#define WGL_ACCELERATION_ARB      0x2003
+#endif
+#ifndef WGL_SUPPORT_OPENGL_ARB
+#define WGL_SUPPORT_OPENGL_ARB    0x2010
+#endif
+#ifndef WGL_DOUBLE_BUFFER_ARB
+#define WGL_DOUBLE_BUFFER_ARB     0x2011
+#endif
+#ifndef WGL_PIXEL_TYPE_ARB
+#define WGL_PIXEL_TYPE_ARB        0x2013
+#endif
+#ifndef WGL_RED_BITS_ARB
+#define WGL_RED_BITS_ARB          0x2015
+#endif
+#ifndef WGL_GREEN_BITS_ARB
+#define WGL_GREEN_BITS_ARB        0x2017
+#endif
+#ifndef WGL_BLUE_BITS_ARB
+#define WGL_BLUE_BITS_ARB         0x2019
+#endif
+#ifndef WGL_ALPHA_BITS_ARB
+#define WGL_ALPHA_BITS_ARB        0x201B
+#endif
+#ifndef WGL_DEPTH_BITS_ARB
+#define WGL_DEPTH_BITS_ARB        0x2022
+#endif
+#ifndef WGL_STENCIL_BITS_ARB
+#define WGL_STENCIL_BITS_ARB      0x2023
+#endif
+#ifndef WGL_FULL_ACCELERATION_ARB
+#define WGL_FULL_ACCELERATION_ARB 0x2027
+#endif
+/* WGL_ARB_pixel_format_float; WGL_ATI_pixel_format_float uses the
+ * same token value. */
+#ifndef WGL_TYPE_RGBA_FLOAT_ARB
+#define WGL_TYPE_RGBA_FLOAT_ARB   0x21A0
+#endif
+/* WGL_EXT_colorspace */
+#ifndef WGL_COLORSPACE_EXT
+#define WGL_COLORSPACE_EXT        0x309D
+#endif
+#ifndef WGL_COLORSPACE_LINEAR_EXT
+#define WGL_COLORSPACE_LINEAR_EXT 0x308A
+#endif
+
+#if defined(HAVE_D3D10) || defined(HAVE_D3D11) || defined(HAVE_D3D12)
+/* Implemented in dxgi_common.c; declared here rather than by including
+ * dxgi_common.h, so this TU pulls no COM/DXGI headers: their
+ * C-interface setup (CINTERFACE / COBJMACROS before any Windows
+ * include) differs from what the rest of this file establishes, and
+ * MSVC against the real SDK headers rejects the mix -- MinGW's
+ * headers are lenient and masked it. */
+bool dxgi_display_hdr_active(HWND hwnd);
+#endif
+
+/* Display-in-HDR-mode probe.  Goes through the DXGI helper, which
+ * dylib_loads dxgi.dll at runtime -- no new imports; on systems
+ * without DXGI 1.6 / HDR it simply reports false and the legacy
+ * pixel format is used. */
+bool win32_display_hdr_active(HWND hwnd)
+{
+#if defined(HAVE_D3D10) || defined(HAVE_D3D11) || defined(HAVE_D3D12)
+   return dxgi_display_hdr_active(hwnd);
+#else
+   /* No DXGI in this build: no way to know the display is in HDR
+    * mode, so never select the float format. */
+   return false;
+#endif
+}
+
+/* Resolve wglChoosePixelFormatARB via a throwaway window + context and
+ * pick an FP16 format for target_hdc.  Returns the pixel format index,
+ * or 0 on any failure (extension missing, no format, etc.); the dummy
+ * window and context are always torn down. */
+static int win32_try_scrgb_pixel_format(HDC target_hdc)
+{
+   typedef BOOL (WINAPI *choose_fmt_t)(HDC, const int*, const FLOAT*,
+         UINT, int*, UINT*);
+   typedef const char *(WINAPI *get_exts_t)(HDC);
+   WNDCLASSEXA  wc;
+   HWND         dummy_wnd = NULL;
+   HDC          dummy_dc  = NULL;
+   HGLRC        dummy_rc  = NULL;
+   HDC          prev_dc   = NULL;
+   HGLRC        prev_rc   = NULL;
+   int          result    = 0;
+   static const char *probe_class = "RetroArch-WGL-Probe";
+
+   memset(&wc, 0, sizeof(wc));
+   wc.cbSize        = sizeof(wc);
+   wc.style         = CS_OWNDC;
+   wc.lpfnWndProc   = DefWindowProcA;
+   wc.hInstance     = GetModuleHandle(NULL);
+   wc.lpszClassName = probe_class;
+
+   if (!RegisterClassExA(&wc))
+      return 0;
+
+   dummy_wnd = CreateWindowExA(0, probe_class, "", WS_OVERLAPPED,
+         0, 0, 1, 1, NULL, NULL, wc.hInstance, NULL);
+   if (dummy_wnd)
+      dummy_dc = GetDC(dummy_wnd);
+
+   if (dummy_dc)
+   {
+      int pf;
+      PIXELFORMATDESCRIPTOR pfd = {0};
+      pfd.nSize      = sizeof(PIXELFORMATDESCRIPTOR);
+      pfd.nVersion   = 1;
+      pfd.dwFlags    = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL
+                     | PFD_DOUBLEBUFFER;
+      pfd.iPixelType = PFD_TYPE_RGBA;
+      pfd.cColorBits = 32;
+      pfd.iLayerType = PFD_MAIN_PLANE;
+
+      pf = ChoosePixelFormat(dummy_dc, &pfd);
+      if (pf && SetPixelFormat(dummy_dc, pf, &pfd))
+      {
+         prev_dc  = wglGetCurrentDC();
+         prev_rc  = wglGetCurrentContext();
+         dummy_rc = wglCreateContext(dummy_dc);
+         if (dummy_rc && wglMakeCurrent(dummy_dc, dummy_rc))
+         {
+            get_exts_t   get_exts   = (get_exts_t)
+                  wglGetProcAddress("wglGetExtensionsStringARB");
+            choose_fmt_t choose_fmt = (choose_fmt_t)
+                  wglGetProcAddress("wglChoosePixelFormatARB");
+            const char  *exts       = get_exts
+                  ? get_exts(dummy_dc) : NULL;
+
+            if (     choose_fmt && exts
+                  && strstr(exts, "WGL_ARB_pixel_format")
+                  && (   strstr(exts, "WGL_ARB_pixel_format_float")
+                      || strstr(exts, "WGL_ATI_pixel_format_float")))
+            {
+               int  fmt      = 0;
+               UINT num_fmts = 0;
+               int  attribs[26];
+               int  n        = 0;
+
+               attribs[n++] = WGL_DRAW_TO_WINDOW_ARB; attribs[n++] = 1;
+               attribs[n++] = WGL_SUPPORT_OPENGL_ARB; attribs[n++] = 1;
+               attribs[n++] = WGL_DOUBLE_BUFFER_ARB;  attribs[n++] = 1;
+               attribs[n++] = WGL_ACCELERATION_ARB;
+               attribs[n++] = WGL_FULL_ACCELERATION_ARB;
+               attribs[n++] = WGL_PIXEL_TYPE_ARB;
+               attribs[n++] = WGL_TYPE_RGBA_FLOAT_ARB;
+               attribs[n++] = WGL_RED_BITS_ARB;       attribs[n++] = 16;
+               attribs[n++] = WGL_GREEN_BITS_ARB;     attribs[n++] = 16;
+               attribs[n++] = WGL_BLUE_BITS_ARB;      attribs[n++] = 16;
+               attribs[n++] = WGL_ALPHA_BITS_ARB;     attribs[n++] = 16;
+               attribs[n++] = WGL_DEPTH_BITS_ARB;     attribs[n++] = 0;
+               attribs[n++] = WGL_STENCIL_BITS_ARB;   attribs[n++] = 0;
+               /* Formalize the linear (scRGB) interpretation of the
+                * float buffer where the driver supports saying so.
+                * Linear is also the extension's documented default, so
+                * this cannot change behavior on conforming drivers --
+                * and it is only passed when advertised, since unknown
+                * attributes can fail the choose call on others. */
+               if (strstr(exts, "WGL_EXT_colorspace"))
+               {
+                  attribs[n++] = WGL_COLORSPACE_EXT;
+                  attribs[n++] = WGL_COLORSPACE_LINEAR_EXT;
+               }
+               attribs[n]   = 0;
+
+               if (     choose_fmt(target_hdc, attribs, NULL,
+                              1, &fmt, &num_fmts)
+                     && num_fmts >= 1)
+                  result = fmt;
+            }
+         }
+      }
+   }
+
+   /* Tear down the probe completely, restoring whatever context was
+    * current before (normally none this early). */
+   wglMakeCurrent(prev_dc, prev_rc);
+   if (dummy_rc)
+      wglDeleteContext(dummy_rc);
+   if (dummy_dc)
+      ReleaseDC(dummy_wnd, dummy_dc);
+   if (dummy_wnd)
+      DestroyWindow(dummy_wnd);
+   UnregisterClassA(probe_class, wc.hInstance);
+
+   return result;
+}
+#endif /* !_XBOX && GL */
+
 void win32_setup_pixel_format(HDC hdc, bool supports_gl)
 {
    int pf;
    PIXELFORMATDESCRIPTOR pfd = {0};
+
+   win32_scrgb_backbuffer = false;
+
+#if !defined(_XBOX) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGL_CORE) || defined(HAVE_OPENGL1))
+   /* HDR: try an FP16 (scRGB) backbuffer, strictly opt-in and with the
+    * legacy path as the fallback for every possible failure.  Windows
+    * has no WGL colorspace API; the vendor contract is that an FP16
+    * backbuffer under an HDR display is composited as scRGB
+    * (1.0 = 80 nits). */
+   if (supports_gl)
+   {
+      settings_t *settings = config_get_ptr();
+      if (settings && settings->uints.video_hdr_mode > 0)
+      {
+         if (win32_display_hdr_active(WindowFromDC(hdc)))
+         {
+            int fpf = win32_try_scrgb_pixel_format(hdc);
+            if (fpf)
+            {
+               PIXELFORMATDESCRIPTOR fpfd = {0};
+               fpfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+               DescribePixelFormat(hdc, fpf, sizeof(fpfd), &fpfd);
+               if (SetPixelFormat(hdc, fpf, &fpfd))
+               {
+                  win32_scrgb_backbuffer = true;
+                  RARCH_LOG("[Win32] Using FP16 scRGB backbuffer for HDR.\n");
+                  if (settings->uints.video_hdr_mode == 1)
+                     RARCH_LOG("[Win32] OpenGL HDR output is scRGB-only; HDR10 setting maps to scRGB.\n");
+                  return;
+               }
+               RARCH_WARN("[Win32] FP16 SetPixelFormat failed; using SDR pixel format.\n");
+            }
+            else
+               RARCH_LOG("[Win32] FP16 pixel format unavailable; using SDR pixel format.\n");
+         }
+         else
+            RARCH_LOG("[Win32] HDR requested but display is not in HDR mode; using SDR pixel format.\n");
+      }
+   }
+#endif
+
    pfd.nSize        = sizeof(PIXELFORMATDESCRIPTOR);
    pfd.nVersion     = 1;
    pfd.dwFlags      = PFD_DRAW_TO_WINDOW | PFD_DOUBLEBUFFER;

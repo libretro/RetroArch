@@ -84,6 +84,9 @@ enum event_command
    CMD_EVENT_QUIT,
    /* Reinitialize all drivers. */
    CMD_EVENT_REINIT_FROM_TOGGLE,
+   /* Re-evaluate the on-screen notification (gfx_widgets) system to
+    * match current settings, without a full driver reinit. */
+   CMD_EVENT_OSD_NOTIFICATION_TOGGLE,
    /* Reinitialize all drivers. */
    CMD_EVENT_REINIT,
    /* Toggles cheevos hardcore mode. */
@@ -358,7 +361,7 @@ command_t* command_stdin_new(void);
 #ifdef HAVE_LAKKA
 command_t* command_uds_new(void);
 #endif
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 command_t* command_emscripten_new(void);
 #endif
 
@@ -447,6 +450,13 @@ bool command_write_ram(command_t *cmd, const char *arg);
 bool command_read_memory(command_t *cmd, const char *arg);
 bool command_write_memory(command_t *cmd, const char *arg);
 bool command_load_core(command_t *cmd, const char* arg);
+bool command_start_core(command_t *cmd, const char* arg);
+bool command_load_content(command_t *cmd, const char* arg);
+bool command_close_content(command_t *cmd, const char* arg);
+bool command_unload_core(command_t *cmd, const char* arg);
+bool command_video_reinit(command_t *cmd, const char* arg);
+bool command_audio_reinit(command_t *cmd, const char* arg);
+bool command_drivers_reinit(command_t *cmd, const char* arg);
 
 static const struct cmd_action_map action_map[] = {
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -474,12 +484,18 @@ static const struct cmd_action_map action_map[] = {
    { "LOAD_FILES", command_load_savefiles, "No argument"},
 
    { "LOAD_CORE", command_load_core, "<core path>"},
+   { "START_CORE", command_start_core, "No argument"},
+   { "LOAD_CONTENT", command_load_content, "<core path>|<content path>"},
+   { "CLOSE_CONTENT", command_close_content, "No argument"},
+   { "UNLOAD_CORE", command_unload_core, "No argument"},
+   { "VIDEO_REINIT", command_video_reinit, "No argument"},
+   { "AUDIO_REINIT", command_audio_reinit, "No argument"},
+   { "DRIVERS_REINIT", command_drivers_reinit, "No argument"},
 };
 
 static const struct cmd_map map[] = {
    { "MENU_TOGGLE",            RARCH_MENU_TOGGLE },
    { "QUIT",                   RARCH_QUIT_KEY },
-   { "CLOSE_CONTENT",          RARCH_CLOSE_CONTENT_KEY },
    { "RESET",                  RARCH_RESET },
 
    { "FAST_FORWARD",           RARCH_FAST_FORWARD_KEY },

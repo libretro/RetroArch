@@ -33,9 +33,9 @@
  * swapchain_images, swapchain_fences, the four
  * swapchain_*_semaphores arrays, readback.staging[] and
  * vk->swapchain[] are all sized at compile time to
- * VULKAN_MAX_SWAPCHAIN_IMAGES (8).  If a driver returned more
+ * VULKAN_MAX_SWAPCHAIN_IMAGES (16).  If a driver returned more
  * images than that on the count query, the second call wrote
- * past swapchain_images[8], and every loop bounded by
+ * past swapchain_images[16], and every loop bounded by
  * num_swapchain_images (~12 sites across init/deinit/textures/
  * buffers/descriptor pools/command buffers/readback and direct
  * vk->swapchain[i] access) walked past its compile-time-sized
@@ -68,7 +68,7 @@
 /* Match the production constant exactly.  Defined in
  * gfx/common/vulkan_common.h.  If that header changes, this
  * mirror must follow. */
-#define VULKAN_MAX_SWAPCHAIN_IMAGES 8
+#define VULKAN_MAX_SWAPCHAIN_IMAGES 16
 
 /* Match the production layout of `struct vulkan_context` for the
  * fields the post-fix predicate touches.  We don't model the
@@ -237,12 +237,8 @@ static void test_at_capacity_boundary(void)
    free(ctx);
 }
 
-/* Probe: driver returns 9 images (MAX + 1).  Pre-fix, the
- * second mock call would write 9 entries into a slot-8 array,
- * trampling whatever sits past it.  Post-fix, the clamp drops
- * the count to 8 before the second call.  ASan provides the
- * actual bounds check; we additionally verify the final count
- * truthfully reports 8. */
+/* Probe: driver returns 9 images. This is above the old capacity but
+ * must remain fully represented by the expanded per-image arrays. */
 static void test_driver_returns_nine_images(void)
 {
    struct mock_vk_context *ctx = (struct mock_vk_context *)
@@ -253,15 +249,14 @@ static void test_driver_returns_nine_images(void)
 
    run_postfix_sequence(ctx, &drv);
 
-   if (ctx->num_swapchain_images != VULKAN_MAX_SWAPCHAIN_IMAGES)
+   if (ctx->num_swapchain_images != 9)
    {
-      printf("[ERROR] over-cap driver: count=%u, expected clamped to %u\n",
-            ctx->num_swapchain_images,
-            (unsigned)VULKAN_MAX_SWAPCHAIN_IMAGES);
+      printf("[ERROR] 9-image driver: count=%u, expected 9\n",
+            ctx->num_swapchain_images);
       failures++;
    }
    else
-      printf("[SUCCESS] driver returned 9 images, clamped to %u, no OOB write\n",
+      printf("[SUCCESS] driver returned %u images, all images retained\n",
             ctx->num_swapchain_images);
 
    free(ctx);
@@ -269,7 +264,7 @@ static void test_driver_returns_nine_images(void)
 
 /* Probe: pathological driver returns 64 images.  Stress case
  * for the post-fix clamp -- pre-fix would be a 56-slot OOB write
- * (64 - 8) into adjacent heap memory.  Post-fix, count becomes 8. */
+ * (64 - 16) into adjacent heap memory. Post-fix, count becomes 16. */
 static void test_driver_returns_many_images(void)
 {
    struct mock_vk_context *ctx = (struct mock_vk_context *)
@@ -307,10 +302,12 @@ static void test_request_cap(void)
    } cases[] = {
       { 1,  1,  "input=1 (under cap)" },
       { 3,  3,  "input=3 (typical)" },
-      { 8,  8,  "input=8 (at cap)" },
-      { 9,  8,  "input=9 (over cap)" },
-      { 64, 8,  "input=64 (way over)" },
-      { (uint32_t)-1, 8, "input=UINT32_MAX (extreme)" }
+      { 8,  8,  "input=8 (under cap)" },
+      { 9,  9,  "input=9 (Mali)" },
+      { 16, 16, "input=16 (at cap)" },
+      { 17, 16, "input=17 (over cap)" },
+      { 64, 16, "input=64 (way over)" },
+      { (uint32_t)-1, 16, "input=UINT32_MAX (extreme)" }
    };
    const unsigned n_cases = sizeof(cases) / sizeof(cases[0]);
    unsigned i;

@@ -13,7 +13,6 @@ MBEDTLS_BUILTIN_FLAG = -DHAVE_BUILTINMBEDTLS
 OTHER_CFLAGS = $(inherited) $(GLSLANG_BUILTIN_FLAG)
 OTHER_CFLAGS = $(inherited) $(MBEDTLS_BUILTIN_FLAG)
 
-OTHER_CFLAGS = $(inherited) -DFLAC__HAS_OGG=0
 OTHER_CFLAGS = $(inherited) -DHAVE_7ZIP
 OTHER_CFLAGS = $(inherited) -DHAVE_ACCESSIBILITY
 OTHER_CFLAGS = $(inherited) -DHAVE_AL
@@ -38,7 +37,6 @@ OTHER_CFLAGS = $(inherited) -DHAVE_DSP_FILTER
 OTHER_CFLAGS = $(inherited) -DHAVE_DYNAMIC
 OTHER_CFLAGS = $(inherited) -DHAVE_EASTEREGG
 OTHER_CFLAGS = $(inherited) -DHAVE_FILTERS_BUILTIN
-OTHER_CFLAGS = $(inherited) -DHAVE_FLAC
 OTHER_CFLAGS = $(inherited) -DHAVE_GCD
 OTHER_CFLAGS = $(inherited) -DHAVE_GFX_WIDGETS
 OTHER_CFLAGS = $(inherited) -DHAVE_GIT_VERSION
@@ -61,13 +59,14 @@ OTHER_CFLAGS = $(inherited) -DHAVE_NETPLAYDISCOVERY_NSNET
 OTHER_CFLAGS = $(inherited) -DHAVE_NETWORKGAMEPAD
 OTHER_CFLAGS = $(inherited) -DHAVE_NETWORKING
 OTHER_CFLAGS = $(inherited) -DHAVE_NETWORK_CMD
-OTHER_CFLAGS = $(inherited) -DHAVE_NO_BUILTINZLIB
+OTHER_CFLAGS = $(inherited)
 OTHER_CFLAGS = $(inherited) -DHAVE_OPENGL
 OTHER_CFLAGS = $(inherited) -DHAVE_OVERLAY
 OTHER_CFLAGS = $(inherited) -DHAVE_OZONE
 OTHER_CFLAGS = $(inherited) -DHAVE_PATCH
 OTHER_CFLAGS = $(inherited) -DHAVE_RBMP
 OTHER_CFLAGS = $(inherited) -DHAVE_REWIND
+OTHER_CFLAGS = $(inherited) -DHAVE_RFLAC
 OTHER_CFLAGS = $(inherited) -DHAVE_RGUI
 OTHER_CFLAGS = $(inherited) -DHAVE_RJPEG
 OTHER_CFLAGS = $(inherited) -DHAVE_RPNG
@@ -81,7 +80,7 @@ OTHER_CFLAGS = $(inherited) -DHAVE_SLANG
 OTHER_CFLAGS = $(inherited) -DHAVE_SPIRV_CROSS
 OTHER_CFLAGS = $(inherited) -DHAVE_SSL
 OTHER_CFLAGS = $(inherited) -DHAVE_STB_FONT
-OTHER_CFLAGS = $(inherited) -DHAVE_STB_VORBIS
+OTHER_CFLAGS = $(inherited) -DHAVE_RVORBIS
 OTHER_CFLAGS = $(inherited) -DHAVE_SWIFT
 OTHER_CFLAGS = $(inherited) -DHAVE_THREADS
 OTHER_CFLAGS = $(inherited) -DHAVE_THREAD_STORAGE
@@ -93,14 +92,14 @@ OTHER_CFLAGS = $(inherited) -DHAVE_VIDEO_FILTER
 OTHER_CFLAGS = $(inherited) -DHAVE_VULKAN
 OTHER_CFLAGS = $(inherited) -DHAVE_XDELTA
 OTHER_CFLAGS = $(inherited) -DHAVE_XMB
-OTHER_CFLAGS = $(inherited) -DHAVE_ZLIB
-OTHER_CFLAGS = $(inherited) -DHAVE_ZSTD
+OTHER_CFLAGS = $(inherited)
+OTHER_CFLAGS = $(inherited) -DHAVE_RZSTD
 OTHER_CFLAGS = $(inherited) -DINLINE=inline
 OTHER_CFLAGS = $(inherited) -DRARCH_INTERNAL
 OTHER_CFLAGS = $(inherited) -DRC_DISABLE_LUA
 OTHER_CFLAGS = $(inherited) -DWANT_RAW_DATA_SECTOR=1
 OTHER_CFLAGS = $(inherited) -DWANT_SUBCODE=1
-OTHER_CFLAGS = $(inherited) -D_7ZIP_ST
+OTHER_CFLAGS = $(inherited)
 OTHER_CFLAGS = $(inherited) -D__LIBRETRO__
 
 OTHER_CFLAGS[arch=x86_64] = $(inherited) -DHAVE_SSE
@@ -163,6 +162,9 @@ LD_RUNPATH_SEARCH_PATHS[sdk=macosx*][config=Debug] = $(inherited) /opt/homebrew/
 // (debug symbols still go to dSYM files)
 STRIP_STYLE[config=Release] = debugging
 
+// actool's device-thinned compile flattens the layered tvOS icon wrong (black when unfocused)
+ENABLE_ONLY_ACTIVE_RESOURCES[sdk=appletvos*] = NO
+
 SRCBASE  = $(SRCROOT)/../..
 DEPS_DIR = $(SRCBASE)/deps
 
@@ -170,7 +172,6 @@ HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)
 HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/7zip
 HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/SPIRV-Cross
 HEADER_SEARCH_PATHS = $(inherited) $(GLSLANG_BUILTIN_HEADER_SEARCH_PATHS)
-HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/libFLAC/include
 HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/rcheevos/include
 HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/stb
 HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/zstd/lib

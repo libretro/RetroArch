@@ -140,14 +140,18 @@ void ui_companion_driver_init_first(
 {
    uico_driver_state_t *uico_st        = &uico_driver_st;
 #ifdef HAVE_QT
-#ifdef HAVE_QT6  /* FIXME: deferred initialization after loading/unloading content */
-   if (desktop_menu_enable)
-#else
+   /* Defer Qt companion (WIMP) initialization until the desktop menu
+    * is actually toggled on. Constructing QApplication at startup
+    * (which happens here only when desktop_menu_enable is set) aborts
+    * the process on headless / KMS / Wayland-only systems with no
+    * usable Qt platform plugin, as QApplication calls qFatal()
+    * internally on platform-plugin init failure. This matches the
+    * pre-1.21 behaviour for both Qt5 and Qt6. */
    if (desktop_menu_enable && ui_companion_toggle)
-#endif
    {
       uico_st->qt_data                 = ui_companion_qt.init();
-      uico_st->flags                  |= UICO_ST_FLAG_QT_IS_INITED;
+      if (uico_st->qt_data)
+         uico_st->flags               |= UICO_ST_FLAG_QT_IS_INITED;
    }
 #endif
    uico_st->drv                        = (ui_companion_driver_t*)ui_companion_drivers[0];

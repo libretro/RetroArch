@@ -67,6 +67,26 @@
  * unit reference size for all UI elements.
  * 212 px corresponds to the the baseline standard
  * 22 inch, 96 DPI display */
+/* Force a render phase out of line even though it has a single call
+ * site.  Follows the RXML_NOINLINE precedent in
+ * libretro-common/formats/xml/rxml.c.
+ *
+ * materialui_frame() is already factored into named phases, but at -O3
+ * the ones called exactly once are inlined straight back into it, so
+ * branches that are not taken on a given frame still occupy the
+ * fall-through path in L1i.  Under -Os the compiler already optimises
+ * for size and the forced outlining only adds call overhead, so it is
+ * disabled there. */
+#if defined(__OPTIMIZE_SIZE__)
+#define MUI_NOINLINE
+#elif defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
+#define MUI_NOINLINE __attribute__((noinline))
+#elif defined(_MSC_VER)
+#define MUI_NOINLINE __declspec(noinline)
+#else
+#define MUI_NOINLINE
+#endif
+
 #define MUI_DIP_BASE_UNIT_SIZE (212.0f)
 
 /* Spacer for left scrolling ticker text */
@@ -2601,7 +2621,7 @@ static void materialui_context_reset_textures(materialui_handle_t *mui)
             mui->icons_path, materialui_texture_path(i),
             sizeof(texpath));
       gfx_display_reset_icon_texture(texpath,
-         &mui->textures.list[i], TEXTURE_FILTER_LINEAR,
+         &mui->textures.list[i], gfx_display_texture_filter(),
          NULL, NULL);
    }
 }
@@ -2810,6 +2830,7 @@ static void materialui_render_messagebox(
       unsigned video_height,
       int y_centre,
       const char *msg,
+      bool draw_caret,
       math_matrix_4x4 *mymat)
 {
    int i;
@@ -2822,6 +2843,8 @@ static void materialui_render_messagebox(
    int slice_y                = 0;
    int slice_w                = 0;
    int slice_h                = 0;
+   unsigned cursor_line       = 0;
+   int cursor_x               = 0;
    size_t wrapped_len         = 0;
    char wrapped_msg[MENU_LABEL_MAX_LENGTH];
    const char *lines[64];
@@ -2895,6 +2918,55 @@ static void materialui_render_messagebox(
    if (confirm_dialog && longest_width < (int)video_width / 4)
       longest_width = video_width / 4;
 
+   if (draw_caret)
+   {
+      input_driver_state_t *input_st = input_state_get_ptr();
+      input_keyboard_line_t *line    = &input_st->keyboard_line;
+      const char *input              = strchr(msg, '\n');
+
+      draw_caret = false;
+
+      if (input && line->buffer
+            && ((menu_driver_get_current_time() / 500000) & 1))
+      {
+         char cursor_msg[MENU_LABEL_MAX_LENGTH];
+         size_t len = (size_t)(input - msg + 1);
+         size_t ptr = line->ptr;
+
+         if (ptr > line->size)
+            ptr = line->size;
+         if (len < sizeof(cursor_msg))
+         {
+            if (ptr >= sizeof(cursor_msg) - len)
+               ptr = sizeof(cursor_msg) - len - 1;
+
+            memcpy(cursor_msg, msg, len);
+            memcpy(cursor_msg + len, line->buffer, ptr);
+            cursor_msg[len + ptr] = '\0';
+
+            (mui->word_wrap)(
+                  cursor_msg, sizeof(cursor_msg),
+                  cursor_msg, strlen(cursor_msg),
+                  usable_width / (int)mui->font_data.list.glyph_width,
+                  mui->font_data.list.wideglyph_width, 0);
+
+            input = cursor_msg;
+            while ((input = strchr(input, '\n')))
+            {
+               cursor_line++;
+               input++;
+            }
+            input    = strrchr(cursor_msg, '\n');
+            input    = input ? input + 1 : cursor_msg;
+            cursor_x = font_driver_get_message_width(
+                  mui->font_data.list.font,
+                  input, strlen(input), 1.0f);
+
+            draw_caret = true;
+         }
+      }
+   }
+
    slice_x                 = x - longest_width / 2.0 - mui->margin * 2.0;
    slice_y                 = y - mui->margin * 2.0;
    slice_w                 = longest_width + mui->margin * 4.0;
@@ -2932,6 +3004,21 @@ static void materialui_render_messagebox(
                video_width, video_height, mui->colors.list_text,
                TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, true);
    }
+
+   if (draw_caret && (cursor_line < (unsigned)line_count))
+      gfx_display_draw_quad(
+            p_disp,
+            userdata,
+            video_width,
+            video_height,
+            x - longest_width / 2.0f + cursor_x,
+            y + (cursor_line * mui->font_data.list.line_height),
+            2,
+            mui->font_data.list.line_ascender,
+            video_width,
+            video_height,
+            mui->colors.list_icon,
+            NULL);
 
    if (confirm_dialog)
    {
@@ -3817,6 +3904,15 @@ static bool materialui_render_process_entry_playlist_thumb_list(
    gfx_animation_t *p_anim = anim_get_ptr();
    bool on_screen          = first_entry_found && !last_entry_found;
 
+   /* Advance animated thumbnails for on-screen entries (no-op for
+    * still images) */
+   if (on_screen)
+   {
+      gfx_thumbnail_animate(&node->thumbnails.primary);
+      if (mui->flags & MUI_FLAG_SECONDARY_THUMBNAIL_ENABLED)
+         gfx_thumbnail_animate(&node->thumbnails.secondary);
+   }
+
    /* Load thumbnails for all on-screen entries
     * and free thumbnails for all off-screen entries */
    if (mui->flags & MUI_FLAG_SECONDARY_THUMBNAIL_ENABLED)
@@ -3859,6 +3955,14 @@ static bool materialui_render_process_entry_playlist_dual_icon(
 {
    gfx_animation_t *p_anim = anim_get_ptr();
    bool on_screen          = first_entry_found && !last_entry_found;
+
+   /* Advance animated thumbnails for on-screen entries (no-op for
+    * still images) */
+   if (on_screen)
+   {
+      gfx_thumbnail_animate(&node->thumbnails.primary);
+      gfx_thumbnail_animate(&node->thumbnails.secondary);
+   }
 
    /* Load thumbnails for all on-screen entries
     * and free thumbnails for all off-screen entries
@@ -3908,6 +4012,14 @@ static bool materialui_render_process_entry_playlist_desktop(
     * smoother fullscreen thumbnail browsing */
    bool is_on_screen = is_selected
          || (entry_idx == mui->desktop_thumbnail_last_selection);
+
+   /* Advance animated thumbnails for on-screen entries (no-op for
+    * still images) */
+   if (is_on_screen)
+   {
+      gfx_thumbnail_animate(&node->thumbnails.primary);
+      gfx_thumbnail_animate(&node->thumbnails.secondary);
+   }
 
    /* Load thumbnails for selected (and last
     * selected) entry and free thumbnails for
@@ -4932,6 +5044,7 @@ static void materialui_render_menu_entry_default(
                   entry_value_len      = entry_value_len_max;
 
                mui->ticker.s           = value_buf;
+               mui->ticker.s_len       = sizeof(value_buf);
                mui->ticker.len         = entry_value_len;
                mui->ticker.str         = entry_value;
 
@@ -5037,6 +5150,7 @@ static void materialui_render_menu_entry_default(
          {
             /* Label */
             mui->ticker.s        = label_buf;
+            mui->ticker.s_len    = sizeof(label_buf);
             mui->ticker.len      = (size_t)(label_width / mui->font_data.list.glyph_width);
             mui->ticker.str      = entry_label;
 
@@ -5263,6 +5377,7 @@ static void materialui_render_menu_entry_playlist_list(
          {
             /* Label */
             mui->ticker.s        = label_buf;
+            mui->ticker.s_len    = sizeof(label_buf);
             mui->ticker.len      = (size_t)(usable_width / mui->font_data.list.glyph_width);
             mui->ticker.str      = entry_label;
 
@@ -5445,6 +5560,7 @@ static void materialui_render_menu_entry_playlist_dual_icon(
          {
             /* Label */
             mui->ticker.s   = label_buf;
+            mui->ticker.s_len = sizeof(label_buf);
             mui->ticker.len = (size_t)(usable_width / mui->font_data.list.glyph_width);
             mui->ticker.str = entry_label;
 
@@ -5556,6 +5672,7 @@ static void materialui_render_menu_entry_playlist_desktop(
          {
             mui->ticker.selected = entry_selected;
             mui->ticker.s        = label_buf;
+            mui->ticker.s_len    = sizeof(label_buf);
             mui->ticker.len      = (size_t)(usable_width / mui->font_data.list.glyph_width);
             mui->ticker.str      = entry_label;
 
@@ -5790,6 +5907,7 @@ static void materialui_render_menu_entry_savestate_list(
                   entry_value_len      = entry_value_len_max;
 
                mui->ticker.s           = value_buf;
+               mui->ticker.s_len       = sizeof(value_buf);
                mui->ticker.len         = entry_value_len;
                mui->ticker.str         = entry_value;
 
@@ -5875,6 +5993,7 @@ static void materialui_render_menu_entry_savestate_list(
          {
             mui->ticker.selected = entry_selected;
             mui->ticker.s        = label_buf;
+            mui->ticker.s_len    = sizeof(label_buf);
             mui->ticker.len      = (size_t)(usable_width / mui->font_data.list.glyph_width);
             mui->ticker.str      = entry_label;
 
@@ -6160,6 +6279,7 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
          {
             mui->ticker.selected = true;
             mui->ticker.s        = metadata_buf;
+            mui->ticker.s_len    = sizeof(metadata_buf);
             mui->ticker.len      = (size_t)(text_width / mui->font_data.hint.glyph_width);
             mui->ticker.str      = mui->status_bar.str;
 
@@ -6349,7 +6469,7 @@ static void (*materialui_render_selected_entry_aux)(
  * ============================== */
 
 /* Draws current menu list */
-static void materialui_render_menu_list(
+MUI_NOINLINE static void materialui_render_menu_list(
       materialui_handle_t *mui, gfx_display_t *p_disp,
       void *userdata, size_t selection,
       unsigned video_width, unsigned video_height,
@@ -6470,7 +6590,7 @@ static size_t materialui_list_get_size(void *data, enum menu_list_type type)
    return 0;
 }
 
-static void materialui_render_background(
+MUI_NOINLINE static void materialui_render_background(
       materialui_handle_t *mui,
       uintptr_t tex_bg,
       gfx_display_t *p_disp,
@@ -6547,7 +6667,7 @@ static void materialui_render_background(
    }
 }
 
-static void materialui_render_landscape_border(
+MUI_NOINLINE static void materialui_render_landscape_border(
       materialui_handle_t *mui,
       gfx_display_t *p_disp,
       void *userdata,
@@ -6682,7 +6802,7 @@ static void materialui_render_selection_highlight(
    }
 }
 
-static void materialui_render_entry_touch_feedback(
+MUI_NOINLINE static void materialui_render_entry_touch_feedback(
       materialui_handle_t *mui,
       gfx_display_t *p_disp, void *userdata,
       menu_input_t *menu_input,
@@ -6785,7 +6905,7 @@ static void materialui_render_entry_touch_feedback(
    }
 }
 
-static void materialui_render_header(
+MUI_NOINLINE static void materialui_render_header(
       materialui_handle_t *mui,
       const uintptr_t *tex_list,
       struct menu_state *menu_st,
@@ -7043,6 +7163,7 @@ static void materialui_render_header(
       else
       {
          mui->ticker.s        = core_title_buf;
+         mui->ticker.s_len    = sizeof(core_title_buf);
          mui->ticker.len      = (unsigned)(usable_sys_bar_width / mui->font_data.hint.glyph_width);
          mui->ticker.str      = core_title;
          mui->ticker.selected = true;
@@ -7174,6 +7295,7 @@ static void materialui_render_header(
    else
    {
       mui->ticker.s        = menu_title_buf;
+      mui->ticker.s_len    = sizeof(menu_title_buf);
       mui->ticker.len      = (unsigned)(usable_title_bar_width / mui->font_data.title.glyph_width) - 1;
       mui->ticker.str      = menu_title;
       mui->ticker.selected = true;
@@ -7457,7 +7579,7 @@ static void materialui_render_nav_bar_right(materialui_handle_t *mui,
    }
 }
 
-static void materialui_render_nav_bar(materialui_handle_t *mui,
+MUI_NOINLINE static void materialui_render_nav_bar(materialui_handle_t *mui,
       const uintptr_t *tex_list,
       gfx_display_t *p_disp, void *userdata,
       unsigned video_width, unsigned video_height,
@@ -7617,7 +7739,7 @@ static void materialui_show_fullscreen_thumbnails(
    mui->flags                         |= MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS;
 }
 
-static void materialui_draw_no_thumbnail_available(
+MUI_NOINLINE static void materialui_draw_no_thumbnail_available(
       materialui_handle_t *mui,
       gfx_display_t *p_disp,
       void *userdata,
@@ -7671,7 +7793,7 @@ static void materialui_draw_no_thumbnail_available(
          true);
 }
 
-static void materialui_render_fullscreen_thumbnails(materialui_handle_t *mui,
+MUI_NOINLINE static void materialui_render_fullscreen_thumbnails(materialui_handle_t *mui,
       gfx_display_t *p_disp, void *userdata,
       unsigned video_width, unsigned video_height,
       unsigned header_height, size_t selection)
@@ -8385,8 +8507,9 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    {
       size_t _len;
       char msg[NAME_MAX_LENGTH];
-      const char *str             = menu_input_dialog_get_buffer();
-      const char *label           = menu_st->input_dialog_kb_label;
+      input_driver_state_t *input_st = input_state_get_ptr();
+      const char *str                = menu_input_dialog_get_buffer();
+      const char *label              = menu_st->input_dialog_kb_label;
 
       /* Darken screen */
       gfx_display_set_alpha(
@@ -8406,16 +8529,15 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       _len = 0;
       strlcpy_append(msg, sizeof(msg), &_len, label);
       strlcpy_append(msg, sizeof(msg), &_len, "\n");
-      strlcpy_append(msg, sizeof(msg), &_len, str);
+      strlcpy_append(msg, sizeof(msg), &_len, (str && *str) ? str : " ");
       materialui_render_messagebox(mui,
             p_disp,
             userdata, video_width, video_height,
-            video_height / 4, msg,
+            video_height / 4, msg, true,
             &mymat);
 
       /* Draw onscreen keyboard */
       {
-         input_driver_state_t *input_st = input_state_get_ptr();
          gfx_display_draw_keyboard(
                p_disp,
                userdata,
@@ -8454,7 +8576,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       materialui_render_messagebox(mui,
             p_disp,
             userdata, video_width, video_height,
-            video_height / 2, mui->msgbox,
+            video_height / 2, mui->msgbox, false,
             &mymat);
       mui->msgbox[0] = '\0';
 
@@ -9665,7 +9787,7 @@ static bool materialui_load_image(void *userdata,
    {
       materialui_context_bg_destroy(mui);
       video_driver_texture_load(data,
-            TEXTURE_FILTER_LINEAR, &mui->textures.bg);
+            gfx_display_texture_filter(), &mui->textures.bg);
       gfx_display_deinit_white_texture();
       gfx_display_init_white_texture();
    }
@@ -10283,6 +10405,7 @@ static void materialui_context_reset(void *data, bool is_threaded)
    if (path_is_valid(path_menu_wallpaper))
       task_push_image_load(path_menu_wallpaper,
             (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA), 0,
+            0,
             menu_display_handle_wallpaper_upload, NULL);
 
    if (mui->textures.playlist.size >= 1)
@@ -11651,23 +11774,15 @@ static void materialui_list_insert(void *userdata,
       node->x                                = 0.0f;
       node->y                                = 0.0f;
 
-      node->thumbnails.primary.status        = GFX_THUMBNAIL_STATUS_UNKNOWN;
-      node->thumbnails.primary.texture       = 0;
-      node->thumbnails.primary.width         = 0;
-      node->thumbnails.primary.height        = 0;
-      node->thumbnails.primary.alpha         = 0.0f;
-      node->thumbnails.primary.delay_timer   = 0.0f;
-      node->thumbnails.primary.flags         = 0;
-      node->thumbnails.primary.flags        &= ~GFX_THUMB_FLAG_FADE_ACTIVE;
-
-      node->thumbnails.secondary.status      = GFX_THUMBNAIL_STATUS_UNKNOWN;
-      node->thumbnails.secondary.texture     = 0;
-      node->thumbnails.secondary.width       = 0;
-      node->thumbnails.secondary.height      = 0;
-      node->thumbnails.secondary.alpha       = 0.0f;
-      node->thumbnails.secondary.delay_timer = 0.0f;
-      node->thumbnails.secondary.flags       = 0;
-      node->thumbnails.secondary.flags      &= ~GFX_THUMB_FLAG_FADE_ACTIVE;
+      /* Full blank init: the manual field list predated the
+       * animation state and left 'anim'/'anim_buf' as malloc
+       * garbage, which gfx_thumbnail_reset later freed on the
+       * node-reuse path - the Android startup abort in scudo.
+       * gfx_thumbnail_init_blank covers every field, including
+       * the atomically-typed status, and stays correct when
+       * fields are added. */
+      gfx_thumbnail_init_blank(&node->thumbnails.primary);
+      gfx_thumbnail_init_blank(&node->thumbnails.secondary);
    }
    else
    {
@@ -11923,7 +12038,7 @@ static void materialui_list_insert(void *userdata,
             }
             else if (
                      string_is_equal(label, MENU_ENUM_LABEL_DATABASE_MANAGER_LIST_STR)
-                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CURSOR_MANAGER_LIST))
+                  || string_is_equal(label, "cursor_manager_list")
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_DATABASE;
@@ -12356,9 +12471,9 @@ static void materialui_list_insert(void *userdata,
                   || string_is_equal(label, MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_NETPLAY_KICK_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_NETPLAY_BAN_STR)
-                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS))
-                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_THUMBNAILS_MATERIALUI))
-                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LEFT_THUMBNAILS_MATERIALUI))
+                  || string_is_equal(label, MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS_STR)
+                  || string_is_equal(label, MENU_ENUM_LABEL_THUMBNAILS_STR)
+                  || string_is_equal(label, MENU_ENUM_LABEL_LEFT_THUMBNAILS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_PLAYLIST_MANAGER_LIST_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_CORE_MANAGER_LIST_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_SETTINGS_STR)

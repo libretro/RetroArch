@@ -56,7 +56,7 @@
  * All bytes are crafted in C rather than committed as binary fixtures.
  *
  * Build with AddressSanitizer for full coverage:
- *   make CFLAGS='-fsanitize=address -g -O0' LDFLAGS='-fsanitize=address'
+ *   make SANITIZER=address
  */
 
 #include <stdio.h>
@@ -125,6 +125,94 @@ static size_t write_minimal_lfh(uint8_t *dst, const char *name)
    if (namelen > 0)
       memcpy(dst + 30, name, namelen);
    return 30 + namelen;
+}
+
+static size_t write_stored_lfh(uint8_t *dst, const char *name,
+      const uint8_t *payload, size_t payload_len, uint32_t crc32)
+{
+   size_t namelen = name ? strlen(name) : 0;
+   put_u32(dst + 0,  LFH_SIG);
+   put_u16(dst + 4,  20);        /* version needed to extract          */
+   put_u16(dst + 6,  0);         /* flags                              */
+   put_u16(dst + 8,  0);         /* method = STORED                    */
+   put_u16(dst + 10, 0);         /* mtime                              */
+   put_u16(dst + 12, 0);         /* mdate                              */
+   put_u32(dst + 14, crc32);
+   put_u32(dst + 18, (uint32_t)payload_len);
+   put_u32(dst + 22, (uint32_t)payload_len);
+   put_u16(dst + 26, (uint16_t)namelen);
+   put_u16(dst + 28, 0);         /* extra length                       */
+   if (namelen > 0)
+      memcpy(dst + 30, name, namelen);
+   if (payload_len > 0)
+      memcpy(dst + 30 + namelen, payload, payload_len);
+   return 30 + namelen + payload_len;
+}
+
+static size_t write_stored_cfh(uint8_t *dst, const char *name,
+      size_t payload_len, uint32_t crc32, uint32_t lfh_offset)
+{
+   size_t namelen = name ? strlen(name) : 0;
+   put_u32(dst + 0,  CFH_SIG);
+   put_u16(dst + 4,  20);        /* version made by                    */
+   put_u16(dst + 6,  20);        /* version needed to extract          */
+   put_u16(dst + 8,  0);         /* flags                              */
+   put_u16(dst + 10, 0);         /* method = STORED                    */
+   put_u16(dst + 12, 0);         /* mtime                              */
+   put_u16(dst + 14, 0);         /* mdate                              */
+   put_u32(dst + 16, crc32);
+   put_u32(dst + 20, (uint32_t)payload_len);
+   put_u32(dst + 24, (uint32_t)payload_len);
+   put_u16(dst + 28, (uint16_t)namelen);
+   put_u16(dst + 30, 0);         /* extra length                       */
+   put_u16(dst + 32, 0);         /* comment length                     */
+   put_u16(dst + 34, 0);         /* disk number start                  */
+   put_u16(dst + 36, 0);         /* internal attributes                */
+   put_u32(dst + 38, 0);         /* external attributes                */
+   put_u32(dst + 42, lfh_offset);
+   if (namelen > 0)
+      memcpy(dst + 46, name, namelen);
+   return 46 + namelen;
+}
+
+static size_t write_appledouble_collision_zip(uint8_t *dst)
+{
+   static const char *names[]        = {
+      "__MACOSX/regular.nes",
+      "folder/._sidecar.nes",
+      "folder\\._backslash.nes",
+      "__MACOSX/._game.nes",
+      "game.nes"
+   };
+   static const char metadata[]      = "METADATA";
+   static const char rom[]           = "ROMDATA";
+   uint32_t lfh_offsets[5]           = {0};
+   uint32_t cdir_offset              = 0;
+   uint32_t cdir_size                = 0;
+   size_t len                        = 0;
+   size_t i;
+
+   for (i = 0; i < 4; i++)
+   {
+      lfh_offsets[i] = (uint32_t)len;
+      len += write_stored_lfh(dst + len, names[i],
+            (const uint8_t*)metadata, sizeof(metadata) - 1, 0x8927a858u);
+   }
+
+   lfh_offsets[4] = (uint32_t)len;
+   len += write_stored_lfh(dst + len, names[4],
+         (const uint8_t*)rom, sizeof(rom) - 1, 0xcd69c26au);
+
+   cdir_offset = (uint32_t)len;
+   for (i = 0; i < 4; i++)
+      len += write_stored_cfh(dst + len, names[i],
+            sizeof(metadata) - 1, 0x8927a858u, lfh_offsets[i]);
+   len += write_stored_cfh(dst + len, names[4],
+         sizeof(rom) - 1, 0xcd69c26au, lfh_offsets[4]);
+   cdir_size = (uint32_t)len - cdir_offset;
+
+   len += write_eocd(dst + len, 5, cdir_size, cdir_offset);
+   return len;
 }
 
 /* --- test harness -------------------------------------------------- */
@@ -342,6 +430,226 @@ static void test_directory_size_overflow(void)
          buf, len);
 }
 
+/* ================================================================== */
+/* Case F: macOS AppleDouble metadata before the real content file.
+ * The archive list must skip the metadata entry, and explicit member
+ * reads must match "game.nes" exactly instead of substring-matching
+ * "__MACOSX/._game.nes".                                             */
+/* ================================================================== */
+static void test_appledouble_exact_member_selection(void)
+{
+   uint8_t  zip_bytes[1024];
+   uint8_t  source_bytes[16];
+   int      failures_before           = failures;
+   size_t   len                       = 0;
+   void    *read_buf                  = NULL;
+   int64_t  read_len                  = 0;
+   int64_t  source_size               = 0;
+   int64_t  source_read               = 0;
+   char     archive_path[128];
+   const char *tmp_path               = "rarch_zip_regression_test.zip";
+   const char *member_path            = "rarch_zip_regression_test.zip#game.nes";
+   const char *rom_name               = "game.nes";
+   const char *rom_payload            = "ROMDATA";
+   struct string_list *list           = NULL;
+   file_archive_entry_source_t *src   = NULL;
+   const struct file_archive_file_backend *zip_backend =
+         file_archive_get_zlib_file_backend();
+
+   memset(zip_bytes, 0, sizeof(zip_bytes));
+   memset(source_bytes, 0, sizeof(source_bytes));
+
+   len = write_appledouble_collision_zip(zip_bytes);
+   write_file(tmp_path, zip_bytes, len);
+
+   if (!zip_backend)
+   {
+      printf("[FAIL] AppleDouble regression requires the ZIP backend\n");
+      failures++;
+   }
+   else if (file_archive_get_file_backend(tmp_path) != zip_backend)
+   {
+      printf("[FAIL] AppleDouble regression did not select the ZIP backend\n");
+      failures++;
+   }
+
+   list = file_archive_get_file_list(tmp_path, "nes");
+   if (!list)
+   {
+      printf("[FAIL] AppleDouble archive produced no file list\n");
+      failures++;
+   }
+   else if (list->size != 1
+         || strcmp(list->elems[0].data, rom_name) != 0)
+   {
+      const char *selected = list->size ? list->elems[0].data : "<empty>";
+      printf("[FAIL] AppleDouble archive selected \"%s\" instead of \"%s\"\n",
+            selected, rom_name);
+      failures++;
+   }
+   if (list)
+      string_list_free(list);
+   list = NULL;
+
+   list = file_archive_get_file_list(tmp_path, NULL);
+   if (!list)
+   {
+      printf("[FAIL] Unfiltered AppleDouble archive produced no file list\n");
+      failures++;
+   }
+   else if (list->size != 1
+         || strcmp(list->elems[0].data, rom_name) != 0)
+   {
+      const char *selected = list->size ? list->elems[0].data : "<empty>";
+      printf("[FAIL] Unfiltered AppleDouble archive selected \"%s\" instead of \"%s\"\n",
+            selected, rom_name);
+      failures++;
+   }
+   if (list)
+      string_list_free(list);
+   list = NULL;
+
+   if (!file_archive_compressed_read(member_path, &read_buf, NULL, &read_len)
+         || read_len != (int64_t)strlen(rom_payload)
+         || memcmp(read_buf, rom_payload, (size_t)read_len) != 0)
+   {
+      printf("[FAIL] compressed read did not select exact ZIP member\n");
+      failures++;
+   }
+
+   snprintf(archive_path, sizeof(archive_path), "%s", member_path);
+   src = file_archive_entry_source_open(archive_path, &source_size);
+   if (!src || source_size != (int64_t)strlen(rom_payload))
+   {
+      printf("[FAIL] entry source did not open exact ZIP member\n");
+      failures++;
+   }
+   else
+   {
+      source_read = file_archive_entry_source_read(src,
+            source_bytes, sizeof(source_bytes));
+      if (source_read != (int64_t)strlen(rom_payload)
+            || memcmp(source_bytes, rom_payload, (size_t)source_read) != 0)
+      {
+         printf("[FAIL] entry source did not read exact ZIP member\n");
+         failures++;
+      }
+   }
+
+   if (failures == failures_before)
+      printf("[SUCCESS] AppleDouble metadata ignored during ZIP member selection\n");
+
+   if (src)
+      file_archive_entry_source_close(src);
+   if (read_buf)
+      free(read_buf);
+   remove(tmp_path);
+}
+
+static void test_init_failure_cleanup(void)
+{
+   uint8_t buf[22];
+   int failures_before = failures;
+   bool returnerr = true;
+   const char *tmp_path = "rarch_zip_regression_test.zip";
+   file_archive_transfer_t state;
+   struct archive_extract_userdata userdata;
+
+   memset(buf, 0, sizeof(buf));
+   write_eocd(buf, 0, 20, 20);
+   write_file(tmp_path, buf, sizeof(buf));
+
+   memset(&state, 0, sizeof(state));
+   memset(&userdata, 0, sizeof(userdata));
+   state.type        = ARCHIVE_TRANSFER_INIT;
+   userdata.transfer = &state;
+
+   if (file_archive_parse_file_iterate(&state, &returnerr,
+            tmp_path, NULL, NULL, &userdata) != -1
+         || returnerr
+         || state.type != ARCHIVE_TRANSFER_DEINIT_ERROR
+         || state.archive_file
+         || state.context
+         || userdata.transfer)
+   {
+      printf("[FAIL] archive init failure did not clean up immediately\n");
+      failures++;
+   }
+#ifdef HAVE_MMAP
+   if (state.archive_mmap_data || state.archive_mmap_fd != 0)
+   {
+      printf("[FAIL] archive init failure retained mmap ownership\n");
+      failures++;
+   }
+#endif
+
+   if (state.archive_file)
+      file_archive_parse_file_iterate_stop(&state);
+
+   memset(&state, 0, sizeof(state));
+   state.type = ARCHIVE_TRANSFER_INIT;
+
+   if (file_archive_parse_file_iterate(&state, NULL,
+            tmp_path, NULL, NULL, NULL) != -1
+         || state.archive_file
+         || state.context)
+   {
+      printf("[FAIL] archive init cleanup requires an error-result pointer\n");
+      failures++;
+   }
+
+   if (state.archive_file)
+      file_archive_parse_file_iterate_stop(&state);
+
+   remove(tmp_path);
+
+   if (failures == failures_before)
+      printf("[SUCCESS] archive init failure cleaned up immediately\n");
+}
+
+/* file_archive_get_file_crc32_and_size() used to loop with no way out.
+ * Its iterate call is guarded on the transfer still being in ITERATE,
+ * but nothing broke once it left that state, and the name tests then
+ * re-read a current_file_path that could no longer change - so asking
+ * for a member the archive does not hold spun at full CPU forever.
+ *
+ * An archive that fails to open produces an empty walk and lands in
+ * exactly the same place, which is how it was found: a directory of
+ * 7z files stopped a scan dead rather than being skipped.
+ *
+ * A regression here does not fail this test so much as hang it. That
+ * is deliberate - there is no portable way to bound the call from
+ * inside - and a stuck test is a visible failure either way. */
+static void test_missing_member_terminates(void)
+{
+   const char *tmp_path = "rarch_zip_regression_test.zip";
+   uint8_t     buf[512];
+   size_t      len = 0;
+   char        member[256];
+   uint64_t    size = 12345;
+   uint32_t    crc;
+
+   /* One stored entry named "present.bin", built the same way as the
+    * cases above. */
+   len += write_minimal_lfh(buf + len, "present.bin");
+   len += write_eocd(buf + len, 1, 0, (uint32_t)len);
+
+   write_file(tmp_path, buf, len);
+
+   snprintf(member, sizeof(member), "%s#absent.bin", tmp_path);
+   crc = file_archive_get_file_crc32_and_size(member, &size);
+   remove(tmp_path);
+
+   if (crc != 0 || size != 0)
+   {
+      printf("FAIL  missing member reported crc=%08X size=%llu, "
+             "expected nothing\n", crc, (unsigned long long)size);
+      failures++;
+   }
+   else
+      printf("ok    missing member returns nothing rather than hanging\n");
+}
+
 int main(void)
 {
    test_truncated_entry();
@@ -349,6 +657,9 @@ int main(void)
    test_empty_filename();
    test_combined_offset_size_overflow();
    test_directory_size_overflow();
+   test_appledouble_exact_member_selection();
+   test_init_failure_cleanup();
+   test_missing_member_terminates();
 
    if (failures)
    {

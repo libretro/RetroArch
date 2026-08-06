@@ -23,11 +23,13 @@
 #include <string.h>
 
 #include <boolean.h>
+#include <retro_miscellaneous.h>
 
 #include <compat/msvc.h>
 #include <compat/strl.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
+#include <string/stdstring.h>
 
 #include <encodings/crc32.h>
 
@@ -35,9 +37,10 @@
 #include "../msg_hash.h"
 #include "../verbosity.h"
 #include "../configuration.h"
+#include "patch_stream.h"
 
 #ifdef HAVE_XDELTA
-#include "../deps/xdelta3/xdelta3.h"
+#include <encodings/encoding_vcdiff.h>
 #endif
 
 enum bps_mode
@@ -79,7 +82,6 @@ struct bps_data
    size_t source_relative_offset;
    size_t target_relative_offset;
    size_t output_offset;
-   uint32_t modify_checksum;
    uint32_t source_checksum;
    uint32_t target_checksum;
 };
@@ -95,7 +97,6 @@ struct ups_data
    unsigned patch_offset;
    unsigned source_offset;
    unsigned target_offset;
-   unsigned patch_checksum;
    unsigned source_checksum;
    unsigned target_checksum;
 };
@@ -105,10 +106,17 @@ typedef enum patch_error (*patch_func_t)(const uint8_t*, uint64_t,
 
 static uint8_t bps_read(struct bps_data *bps)
 {
-   uint8_t data         = bps->modify_data[bps->modify_offset++];
-   bps->modify_checksum = ~(encoding_crc32(
-         ~bps->modify_checksum, &data, 1));
-   return data;
+   /* Reads past the end yield zeroes rather than walking off the
+    * buffer: a malformed varint near the trailer could otherwise
+    * drive bps_decode() arbitrarily far past modify_length (the
+    * UPS reader below already guards the same way).  The rolling
+    * per-byte checksum that used to live here is gone - the patch
+    * bytes are one contiguous span, so the modify checksum is
+    * folded in one call at the point it is compared. */
+   if (bps->modify_offset < bps->modify_length)
+      return bps->modify_data[bps->modify_offset++];
+   bps->modify_offset++;
+   return 0x00;
 }
 
 static uint64_t bps_decode(struct bps_data *bps)
@@ -155,9 +163,8 @@ static enum patch_error bps_apply_patch(
    bps.modify_offset          = 0;
    bps.source_offset          = 0;
    bps.target_offset          = 0;
-   bps.modify_checksum        = ~0;
    bps.source_checksum        = 0;
-   bps.target_checksum        = ~0;
+   bps.target_checksum        = 0;
    bps.source_relative_offset = 0;
    bps.target_relative_offset = 0;
    bps.output_offset          = 0;
@@ -248,12 +255,9 @@ static enum patch_error bps_apply_patch(
              * bound applies to source_data too. */
             if (bps.output_offset + _len > bps.source_length)
                return PATCH_SOURCE_INVALID;
-            while (_len--)
-            {
-               uint8_t data = bps.source_data[bps.output_offset];
-               bps.target_data[bps.output_offset++] = data;
-               bps.target_checksum = ~(encoding_crc32(~bps.target_checksum, &data, 1));
-            }
+            memcpy(bps.target_data + bps.output_offset,
+                   bps.source_data + bps.output_offset, _len);
+            bps.output_offset += _len;
             break;
 
          case TARGET_READ:
@@ -265,12 +269,10 @@ static enum patch_error bps_apply_patch(
              * past modify_length. */
             if (bps.modify_offset + _len > bps.modify_length - 12)
                return PATCH_PATCH_INVALID;
-            while (_len--)
-            {
-               uint8_t data = bps_read(&bps);
-               bps.target_data[bps.output_offset++] = data;
-               bps.target_checksum = ~(encoding_crc32(~bps.target_checksum, &data, 1));
-            }
+            memcpy(bps.target_data + bps.output_offset,
+                   bps.modify_data + bps.modify_offset, _len);
+            bps.output_offset += _len;
+            bps.modify_offset += _len;
             break;
 
          case SOURCE_COPY:
@@ -300,12 +302,10 @@ static enum patch_error bps_apply_patch(
                if (   bps.source_offset > bps.source_length
                    || _len              > bps.source_length - bps.source_offset)
                   return PATCH_SOURCE_INVALID;
-               while (_len--)
-               {
-                  uint8_t data = bps.source_data[bps.source_offset++];
-                  bps.target_data[bps.output_offset++] = data;
-                  bps.target_checksum = ~(encoding_crc32(~bps.target_checksum, &data, 1));
-               }
+               memcpy(bps.target_data + bps.output_offset,
+                      bps.source_data + bps.source_offset, _len);
+               bps.output_offset += _len;
+               bps.source_offset += _len;
             }
             else
             {
@@ -317,11 +317,22 @@ static enum patch_error bps_apply_patch(
                if (   bps.target_offset > bps.target_length
                    || _len              > bps.target_length - bps.target_offset)
                   return PATCH_TARGET_INVALID;
-               while (_len--)
+               /* TARGET_COPY may deliberately overlap its own output
+                * (an LZ-style repeating run), which memcpy cannot
+                * express; only non-overlapping spans take the bulk
+                * path. */
+               if (bps.output_offset - bps.target_offset >= _len)
                {
-                  uint8_t data = bps.target_data[bps.target_offset++];
-                  bps.target_data[bps.output_offset++] = data;
-                  bps.target_checksum = ~(encoding_crc32(~bps.target_checksum, &data, 1));
+                  memcpy(bps.target_data + bps.output_offset,
+                         bps.target_data + bps.target_offset, _len);
+                  bps.output_offset += _len;
+                  bps.target_offset += _len;
+               }
+               else
+               {
+                  while (_len--)
+                     bps.target_data[bps.output_offset++] =
+                           bps.target_data[bps.target_offset++];
                }
                break;
             }
@@ -331,17 +342,27 @@ static enum patch_error bps_apply_patch(
    }
 
    for (i = 0; i < 32; i += 8)
-      modify_source_checksum |= bps_read(&bps) << i;
+      modify_source_checksum |= (uint32_t)bps_read(&bps) << i;
    for (i = 0; i < 32; i += 8)
-      modify_target_checksum |= bps_read(&bps) << i;
+      modify_target_checksum |= (uint32_t)bps_read(&bps) << i;
 
-   checksum = ~bps.modify_checksum;
+   /* The modify and target checksums are plain CRC-32s of byte
+    * spans that sit whole in memory - the patch bytes consumed so
+    * far and the target bytes emitted so far - so each is one fold
+    * here instead of a one-byte fold per byte moved, the same shape
+    * the source checksum below has always had.  The reader yields
+    * zeroes without advancing into the fold past modify_length, so
+    * the folded span is clamped the same way. */
+   checksum = encoding_crc32(0, bps.modify_data,
+         (bps.modify_offset < bps.modify_length)
+               ? bps.modify_offset : bps.modify_length);
    for (i = 0; i < 32; i += 8)
-      modify_modify_checksum |= bps_read(&bps) << i;
+      modify_modify_checksum |= (uint32_t)bps_read(&bps) << i;
 
    bps.source_checksum = encoding_crc32(0,
          bps.source_data, bps.source_length);
-   bps.target_checksum = ~bps.target_checksum;
+   bps.target_checksum = encoding_crc32(0,
+         bps.target_data, bps.output_offset);
 
    if (bps.source_checksum != modify_source_checksum)
       return PATCH_SOURCE_CHECKSUM_INVALID;
@@ -357,39 +378,58 @@ static enum patch_error bps_apply_patch(
    return PATCH_SUCCESS;
 }
 
+/* The rolling per-byte checksums that used to live in these readers
+ * are gone: every UPS checksum covers a byte span that sits whole in
+ * memory, so each is folded in one call at the point it is compared.
+ * The readers keep their exact bounds behaviour - reads past the end
+ * yield zeroes, the patch and source cursors only advance in bounds,
+ * and the target cursor counts on past the end while writes stop. */
 static uint8_t ups_patch_read(struct ups_data *data)
 {
    if (data && data->patch_offset < data->patch_length)
-   {
-      uint8_t n = data->patch_data[data->patch_offset++];
-      data->patch_checksum =
-         ~(encoding_crc32(~data->patch_checksum, &n, 1));
-      return n;
-   }
+      return data->patch_data[data->patch_offset++];
    return 0x00;
 }
 
 static uint8_t ups_source_read(struct ups_data *data)
 {
    if (data && data->source_offset < data->source_length)
-   {
-      uint8_t n = data->source_data[data->source_offset++];
-      data->source_checksum =
-         ~(encoding_crc32(~data->source_checksum, &n, 1));
-      return n;
-   }
+      return data->source_data[data->source_offset++];
    return 0x00;
 }
 
 static void ups_target_write(struct ups_data *data, uint8_t n)
 {
    if (data->target_offset < data->target_length)
-   {
       data->target_data[data->target_offset] = n;
-      data->target_checksum =
-         ~(encoding_crc32(~data->target_checksum, &n, 1));
-   }
    data->target_offset++;
+}
+
+/* Copy n bytes source -> target in bulk with the byte loop's exact
+ * cursor semantics: the source cursor stops at source_length and
+ * yields zeroes, the target cursor counts all n on while only
+ * in-bounds bytes land.  This replaces the one-call-per-byte walks
+ * for the skip runs and the end-of-patch drains, which cover the
+ * whole unchanged remainder of the file. */
+static void ups_copy_run(struct ups_data *data, size_t n)
+{
+   size_t s_take = 0, t_room = 0, m;
+   if (data->source_offset < data->source_length)
+      s_take = data->source_length - data->source_offset;
+   if (s_take > n)
+      s_take = n;
+   if (data->target_offset < data->target_length)
+      t_room = data->target_length - data->target_offset;
+   if (t_room > n)
+      t_room = n;
+   m = (s_take < t_room) ? s_take : t_room;
+   memcpy(data->target_data + data->target_offset,
+          data->source_data + data->source_offset, m);
+   if (t_room > s_take)
+      memset(data->target_data + data->target_offset + s_take,
+             0, t_room - s_take);
+   data->source_offset += (unsigned)s_take;
+   data->target_offset += (unsigned)n;
 }
 
 static uint64_t ups_decode(struct ups_data *data)
@@ -432,9 +472,8 @@ static enum patch_error ups_apply_patch(
    data.patch_offset    = 0;
    data.source_offset   = 0;
    data.target_offset   = 0;
-   data.patch_checksum  = ~0;
-   data.source_checksum = ~0;
-   data.target_checksum = ~0;
+   data.source_checksum = 0;
+   data.target_checksum = 0;
 
    if (data.patch_length < 18)
       return PATCH_PATCH_INVALID;
@@ -472,8 +511,7 @@ static enum patch_error ups_apply_patch(
    while (data.patch_offset < data.patch_length - 12)
    {
       unsigned __len = (unsigned)ups_decode(&data);
-      while (__len--)
-         ups_target_write(&data, ups_source_read(&data));
+      ups_copy_run(&data, __len);
 
       for (;;)
       {
@@ -484,22 +522,26 @@ static enum patch_error ups_apply_patch(
       }
    }
 
-   while (data.source_offset < data.source_length)
-      ups_target_write(&data, ups_source_read(&data));
-   while (data.target_offset < data.target_length)
-      ups_target_write(&data, ups_source_read(&data));
+   if (data.source_offset < data.source_length)
+      ups_copy_run(&data, data.source_length - data.source_offset);
+   if (data.target_offset < data.target_length)
+      ups_copy_run(&data, data.target_length - data.target_offset);
 
    for (i = 0; i < 4; i++)
-      source_read_checksum |= ups_patch_read(&data) << (i * 8);
+      source_read_checksum |= (uint32_t)ups_patch_read(&data) << (i * 8);
    for (i = 0; i < 4; i++)
-      target_read_checksum |= ups_patch_read(&data) << (i * 8);
+      target_read_checksum |= (uint32_t)ups_patch_read(&data) << (i * 8);
 
-   patch_result_checksum = ~data.patch_checksum;
-   data.source_checksum  = ~data.source_checksum;
-   data.target_checksum  = ~data.target_checksum;
+   patch_result_checksum = encoding_crc32(0,
+         data.patch_data, data.patch_offset);
+   data.source_checksum  = encoding_crc32(0,
+         data.source_data, data.source_offset);
+   data.target_checksum  = encoding_crc32(0, data.target_data,
+         (data.target_offset < data.target_length)
+               ? data.target_offset : data.target_length);
 
    for (i = 0; i < 4; i++)
-      patch_read_checksum |= ups_patch_read(&data) << (i * 8);
+      patch_read_checksum |= (uint32_t)ups_patch_read(&data) << (i * 8);
 
    if (patch_result_checksum != patch_read_checksum)
       return PATCH_PATCH_INVALID;
@@ -692,109 +734,28 @@ static enum patch_error ips_apply_patch(
 }
 
 #if defined(HAVE_PATCH) && defined(HAVE_XDELTA)
+/* .xdelta patches are VCDIFF (RFC 3284); the decoder lives in
+ * libretro-common and this is only the shape adapter. */
 static enum patch_error xdelta_apply_patch(
         const uint8_t *patchdata, uint64_t patchlen,
         const uint8_t *sourcedata, uint64_t sourcelength,
         uint8_t **targetdata, uint64_t *targetlength)
 {
-   int ret;
-   enum patch_error error_patch = PATCH_SUCCESS;
-   xd3_stream stream;
-   xd3_config config;
-   xd3_source source;
+   uint8_t *out = NULL;
+   size_t   len = 0;
 
-   /* Validate the magic number, as given by RFC 3284 section 4.1 */
-   if (   patchlen      < 8
-       || patchdata[0] != 0xD6
-       || patchdata[1] != 0xC3
-       || patchdata[2] != 0xC4
-       || patchdata[3] != 0x00)
-      return PATCH_PATCH_INVALID_HEADER;
+   if (      patchlen     > (uint64_t)((size_t)-1)
+         ||  sourcelength > (uint64_t)((size_t)-1))
+      return PATCH_PATCH_INVALID;
 
-   xd3_init_config(&config, XD3_SKIP_EMIT);
-   /* The first pass is just to compute the buffer size,
-    * no need to emit patched data yet */
+   if (!vcdiff_decode(patchdata, (size_t)patchlen,
+            sourcedata, (size_t)sourcelength, &out, &len))
+      return PATCH_PATCH_INVALID;
 
-   if (xd3_config_stream(&stream, &config) != 0)
-      return PATCH_UNKNOWN;
-
-   memset(&source, 0, sizeof(source));
-   source.blksize  = sourcelength;
-   source.onblk    = sourcelength;
-   source.curblk   = sourcedata;
-   source.curblkno = 0;
-   xd3_set_source_and_size(&stream, &source, sourcelength);
-
-   do
-   { /* Make a first pass over the patch, to compute the target size.
-      * XDelta3 doesn't store the target size in the patch file,
-      * so we have to either compute it ourselves
-      * or keep reallocating a buffer as we go.
-      * I went with the former because it's simpler and fails sooner.
-      */
-      switch (ret = xd3_decode_input(&stream))
-      { /* xd3 works like a zlib-styled state machine (stream is the machine) */
-         case XD3_INPUT: /* When starting the first pass, provide the input */
-            xd3_avail_input(&stream, patchdata, patchlen);
-            RARCH_DBG("[xdelta] Provided %lu bytes of input to xd3_stream\n", patchlen);
-            break;
-         case XD3_GOTHEADER:
-         case XD3_WINSTART:
-            *targetlength += stream.winsize;
-            RARCH_DBG("[xdelta] Discovered a window of %lu bytes (target filesize is %lu bytes)\n", stream.winsize, *targetlength);
-            /* xdelta updates the active stream window in the GOTHEADER and WINSTART states */
-            break;
-         case XD3_OUTPUT:
-            xd3_consume_output(&stream); /* Need to call this after every output */
-            break;
-         case XD3_INVALID_INPUT:
-            error_patch = PATCH_PATCH_INVALID;
-            RARCH_ERR("[xdelta] Invalid input in xd3_stream (%s)\n", xd3_errstring(&stream));
-            goto cleanup_stream;
-         case XD3_INTERNAL:
-            error_patch = PATCH_UNKNOWN;
-            RARCH_ERR("[xdelta] Internal error in xd3_stream (%s)\n", xd3_errstring(&stream));
-            goto cleanup_stream;
-         case XD3_WINFINISH:
-            RARCH_DBG("[xdelta] Finished processing window #%d\n", stream.current_window);
-            break;
-         default:
-            RARCH_DBG("[xdelta] xd3_decode_input returned %ld (%s; %s)\n", ret, xd3_strerror(ret), stream.msg);
-      }
-   } while (stream.avail_in);
-
-   *targetdata = (uint8_t*)malloc(*targetlength);
-   /* NULL-check: xd3_decode_memory writes into *targetdata.
-    * Passing NULL is either a crash or an opaque xdelta error
-    * depending on the library version.  On OOM set
-    * PATCH_TARGET_ALLOC_FAILED to match the explicit ENOSPC
-    * error path below and skip the decode. */
-   if (!*targetdata)
-   {
-      error_patch = PATCH_TARGET_ALLOC_FAILED;
-      goto cleanup_stream;
-   }
-   switch (xd3_decode_memory(
-           patchdata, patchlen,
-           sourcedata, sourcelength,
-           *targetdata, targetlength, *targetlength, 0))
-   {
-      case 0: /* Success */
-         break;
-      case ENOSPC:
-         error_patch = PATCH_TARGET_ALLOC_FAILED;
-         free(*targetdata);
-         break;
-      default:
-         error_patch = PATCH_UNKNOWN;
-         free(*targetdata);
-         break;
-   }
-
-cleanup_stream:
-   xd3_close_stream(&stream);
-   xd3_free_stream(&stream);
-   return error_patch;
+   free(*targetdata);
+   *targetdata   = out;
+   *targetlength = (uint64_t)len;
+   return PATCH_SUCCESS;
 }
 #endif
 
@@ -955,6 +916,169 @@ static bool try_xdelta_patch(bool allow_xdelta,
  * Apply patch to the content file in-memory.
  *
  **/
+/* Does an indexed continuation patch exist for any format?  patch_content
+ * applies "<name>1", "<name>2", ... on top of the first patch, each as a
+ * further whole-buffer pass over the previous result.  A streamed first
+ * patch cannot carry that chain, so its presence disqualifies the
+ * streaming path and the caller falls back to the whole-buffer flow. */
+static bool patch_stream_indexed_exists(const char *name)
+{
+   char probe[PATH_MAX_LENGTH];
+   size_t _len;
+
+   if (string_is_empty(name))
+      return false;
+
+   _len = strlcpy(probe, name, sizeof(probe));
+   if (_len + 2 > sizeof(probe))
+      return false;
+   probe[_len]     = '1';
+   probe[_len + 1] = '\0';
+   return path_is_valid(probe);
+}
+
+/* Resolve which patch a load would apply and open a streaming applier for
+ * it, so the patch can advance as the content arrives instead of running
+ * as a separate pass afterwards.
+ *
+ * The selection rules are patch_content's, and deliberately so: the same
+ * preference gating, the same IPS -> BPS -> UPS attempt order.  Nothing
+ * here depends on the content itself - only on the preference flags and
+ * which patch files exist - which is exactly why the decision can be
+ * hoisted ahead of the load.
+ *
+ * Returns NULL, leaving the caller on the existing whole-buffer path,
+ * when there is nothing to apply, when the resolved patch is a format
+ * with no streaming applier for this build (xdelta, where support was
+ * compiled out), when indexed continuation patches are present, or on
+ * any read/parse failure.  In every one of those
+ * cases the caller loads as before and calls patch_content, so the
+ * fallback is the untouched original flow rather than a reimplementation
+ * of it.
+ *
+ * On success the caller owns the returned stream and must also free
+ * *patch_data, which the stream borrows and therefore needs alive until
+ * patch_stream_finish. */
+patch_stream_t *patch_content_stream_open(
+      bool is_ips_pref,
+      bool is_bps_pref,
+      bool is_ups_pref,
+      bool is_xdelta_pref,
+      const char *name_ips,
+      const char *name_bps,
+      const char *name_ups,
+      const char *name_xdelta,
+      size_t src_len,
+      void **patch_data,
+      const char **patch_path)
+{
+   bool allow_ups    = !is_bps_pref && !is_ips_pref && !is_xdelta_pref;
+   bool allow_ips    = !is_ups_pref && !is_bps_pref && !is_xdelta_pref;
+   bool allow_bps    = !is_ups_pref && !is_ips_pref && !is_xdelta_pref;
+   bool allow_xdelta = !is_bps_pref && !is_ups_pref && !is_ips_pref;
+   const char     *name = NULL;
+   patch_stream_t *ps   = NULL;
+   int64_t patch_size   = 0;
+   int     which        = -1; /* 0 ips, 1 bps, 2 ups */
+
+   const char *fmt = NULL;
+
+   *patch_data = NULL;
+   if (patch_path)
+      *patch_path = NULL;
+
+   /* Several explicitly-defined preferences: patch_content refuses the
+    * whole operation, so there is nothing to stream. */
+   if (    (unsigned)is_ips_pref
+         + (unsigned)is_bps_pref
+         + (unsigned)is_ups_pref
+         + (unsigned)is_xdelta_pref > 1)
+      return NULL;
+
+   /* patch_content's attempt order. */
+   if (allow_ips && !string_is_empty(name_ips) && path_is_valid(name_ips))
+   {
+      name  = name_ips;
+      which = 0;
+   }
+   else if (allow_bps && !string_is_empty(name_bps) && path_is_valid(name_bps))
+   {
+      name  = name_bps;
+      which = 1;
+   }
+   else if (allow_ups && !string_is_empty(name_ups) && path_is_valid(name_ups))
+   {
+      name  = name_ups;
+      which = 2;
+   }
+   else if (allow_xdelta && !string_is_empty(name_xdelta)
+         && path_is_valid(name_xdelta))
+   {
+      name  = name_xdelta;
+      which = 3;
+   }
+   else
+      return NULL;
+
+   /* An indexed continuation of any format means the whole-buffer chain
+    * has to run; do not stream the first patch out from under it. */
+   if (     patch_stream_indexed_exists(name_ips)
+         || patch_stream_indexed_exists(name_bps)
+         || patch_stream_indexed_exists(name_ups)
+         || patch_stream_indexed_exists(name_xdelta))
+      return NULL;
+
+   if (!filestream_read_file(name, patch_data, &patch_size))
+      return NULL;
+   if (patch_size <= 0)
+   {
+      free(*patch_data);
+      *patch_data = NULL;
+      return NULL;
+   }
+
+   switch (which)
+   {
+      case 0:
+         ps  = patch_stream_ips_open((const uint8_t*)*patch_data,
+               (size_t)patch_size, src_len);
+         fmt = "IPS";
+         break;
+      case 1:
+         ps  = patch_stream_bps_open((const uint8_t*)*patch_data,
+               (size_t)patch_size, src_len);
+         fmt = "BPS";
+         break;
+      case 2:
+         ps  = patch_stream_ups_open((const uint8_t*)*patch_data,
+               (size_t)patch_size, src_len);
+         fmt = "UPS";
+         break;
+      default:
+         /* Returns NULL when built without xdelta support, which the
+          * caller already reads as "not streamable" and answers with
+          * the whole-buffer pass. */
+         ps  = patch_stream_xdelta_open((const uint8_t*)*patch_data,
+               (size_t)patch_size, src_len);
+         fmt = "xdelta";
+         break;
+   }
+
+   if (!ps)
+   {
+      free(*patch_data);
+      *patch_data = NULL;
+      return NULL;
+   }
+
+   if (patch_path)
+      *patch_path = name;
+
+   RARCH_LOG("[Patch] Found \"%s\" file in \"%s\", streaming with content...\n",
+         fmt, name);
+   return ps;
+}
+
 bool patch_content(
       bool is_ips_pref,
       bool is_bps_pref,

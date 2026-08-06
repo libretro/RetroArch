@@ -21,7 +21,6 @@
 
 #include <fcntl.h>
 #include <rga/RgaApi.h>
-#include <rga/RockchipRgaMacro.h>
 #include <xf86drm.h>
 #include <xf86drmMode.h>
 #include <drm/drm_fourcc.h>
@@ -481,11 +480,11 @@ static bool render_msg(oga_video_t* vid, const char* msg)
          atlas->width  + g->atlas_offset_x;
       dest   = fb + dest_y * dest_stride + dest_x;
 
-      for (y = 0; y < g->height; y++)
+      for (y = 0; y < (int)g->height; y++)
       {
-         for (x = 0; x < g->advance_x; x++)
+         for (x = 0; x < (int)g->advance_x; x++)
          {
-            uint32_t px = (x < g->width) ? *(source++) : 0x00;
+            uint32_t px = (x < (int)g->width) ? *(source++) : 0x00;
             *(dest++)   = (0xCD << 24) | (px << 16) | (px << 8) | px;
          }
          dest   += dest_stride - g->advance_x;
@@ -640,11 +639,10 @@ static void oga_set_texture_frame(void *data, const void *frame, bool rgb32,
     * in an 8888 format. */
    unsigned int src_pitch        = width * 2;
    unsigned int dst_pitch        = width * 4;
-   unsigned int dst_width        = width;
-   uint32_t line[dst_width];
    char *frame_output;
 
-   if (vid->menu_surface->width != width || vid->menu_surface->height != height)
+   if (     vid->menu_surface->width  != (int)width
+         || vid->menu_surface->height != (int)height)
    {
       oga_destroy_surface(vid->menu_surface);
       vid->menu_surface = oga_create_surface(vid->fd, width, height,
@@ -656,17 +654,20 @@ static void oga_set_texture_frame(void *data, const void *frame, bool rgb32,
 
    for (i = 0; i < height; i++)
    {
+      const uint16_t *src_row = (const uint16_t*)frame + (src_pitch / 2 * i);
+      uint32_t *dst_row       = (uint32_t*)(void*)
+         (frame_output + (dst_pitch * i));
+
       for (j = 0; j < src_pitch / 2; j++)
       {
-         uint16_t src_pix = *((uint16_t*)frame + (src_pitch / 2 * i) + j);
+         uint16_t src_pix = src_row[j];
          /* The hex AND is for keeping only the part
           * we need for each component. */
          uint32_t R       = (src_pix << 8) & 0x00FF0000;
          uint32_t G       = (src_pix << 4) & 0x0000FF00;
          uint32_t B       = (src_pix << 0) & 0x000000FF;
-         line[j]          = (0x00 | R | G | B);
+         dst_row[j]       = (0x00 | R | G | B);
       }
-      memcpy(frame_output + (dst_pitch * i), (char*)line, dst_pitch);
    }
 }
 

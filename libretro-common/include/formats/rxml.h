@@ -22,6 +22,8 @@
 #ifndef __LIBRETRO_SDK_FORMAT_RXML_H__
 #define __LIBRETRO_SDK_FORMAT_RXML_H__
 
+#include <stddef.h>
+
 #include <retro_common_api.h>
 
 RETRO_BEGIN_DECLS
@@ -54,10 +56,37 @@ typedef struct rxml_node
 
    struct rxml_node *children;
    struct rxml_node *next;
+
+   /* Source position of the element's start tag: the byte offset of
+    * its '<' into the document by default, converted in place to a
+    * 1-based source line number when RXML_OPT_LINES is passed to
+    * rxml_load_document_string_opts. */
+   unsigned line;
 } rxml_node_t;
+
+/* Reject documents that end inside an open construct instead of
+ * returning the partial tree built so far (the historical behavior,
+ * kept as the default). */
+#define RXML_OPT_STRICT_EOF 1
+/* Record the source line of every element in rxml_node::line.  Costs
+ * one pass over the document after a successful parse; the parse
+ * itself is unaffected. */
+#define RXML_OPT_LINES      2
+
+typedef struct rxml_parse_error
+{
+   size_t   offset; /* byte offset of the failure in the input */
+   unsigned line;   /* 1-based */
+   unsigned col;    /* 1-based, in bytes */
+} rxml_parse_error_t;
 
 rxml_document_t *rxml_load_document(const char *path);
 rxml_document_t *rxml_load_document_string(const char *str);
+
+/* As rxml_load_document_string, with parse options; on failure, *err
+ * (when non-NULL) receives the position the parser stopped at. */
+rxml_document_t *rxml_load_document_string_opts(const char *str,
+      unsigned opts, rxml_parse_error_t *err);
 void rxml_free_document(rxml_document_t *doc);
 
 struct rxml_node *rxml_root_node(rxml_document_t *doc);

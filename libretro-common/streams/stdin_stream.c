@@ -41,6 +41,19 @@
 #if (defined(_WIN32) && defined(_XBOX)) || defined(__WINRT__) || !defined(__PSL1GHT__) && defined(__PS3__)
 size_t read_stdin(char *s, size_t len) { return 0; } /* not implemented */
 #elif defined(_WIN32)
+/* Peek window for the console key probe, in INPUT_RECORD entries.
+ * sizeof(INPUT_RECORD) is 20 on x64, so the 256 entries this used to
+ * ask for put a 5 KiB array on the stack - most of an 8 KiB thread
+ * stack - for a buffer that never carries data and only ever answers
+ * "is a key waiting". The keystroke itself is read straight into the
+ * caller's buffer by ReadFile() below.
+ *
+ * Shortening the window cannot strand a keypress: the scan stops at
+ * the first key event, and when it finds none it flushes the input
+ * buffer, so non-key records (mouse, focus, buffer-resize) are never
+ * left sitting in front of a later key across polls. */
+#define STDIN_PEEK_RECORDS 64
+
 size_t read_stdin(char *s, size_t len)
 {
    DWORD i;
@@ -58,7 +71,7 @@ size_t read_stdin(char *s, size_t len)
    /* If not a pipe, check if we're running in a console. */
    if (!PeekNamedPipe(hnd, NULL, 0, NULL, &avail, NULL))
    {
-      INPUT_RECORD recs[256];
+      INPUT_RECORD recs[STDIN_PEEK_RECORDS];
       bool has_key   = false;
       DWORD mode     = 0;
       DWORD has_read = 0;

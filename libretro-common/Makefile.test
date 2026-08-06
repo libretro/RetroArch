@@ -1,7 +1,14 @@
 
 OBJDIR = ../obj-unix
 
-TEST_UNIT_CFLAGS = $(CFLAGS) -Iinclude $(LDFLAGS) -lcheck $(LIBCHECK_CFLAGS) -Werror -Wdeclaration-after-statement -fsanitize=address -fsanitize=undefined -ftest-coverage -fprofile-arcs -ggdb
+# libcheck's link line is more than -lcheck on most distributions --
+# Debian and Ubuntu need -lcheck_pic -lsubunit -lrt -lm -pthread -- so
+# ask pkg-config and fall back to the bare flag only if it cannot
+# answer.  Overridable for platforms without pkg-config.
+LIBCHECK_CFLAGS ?= $(shell pkg-config --cflags check 2>/dev/null)
+LIBCHECK_LIBS   ?= $(shell pkg-config --libs check 2>/dev/null || echo -lcheck)
+
+TEST_UNIT_CFLAGS = $(CFLAGS) -Iinclude $(LDFLAGS) $(LIBCHECK_CFLAGS) -Werror -Wdeclaration-after-statement -fsanitize=address -fsanitize=undefined -ftest-coverage -fprofile-arcs -ggdb
 
 TEST_GENERIC_QUEUE = test/queues/test_generic_queue
 TEST_GENERIC_QUEUE_SRC = test/queues/test_generic_queue.c queues/generic_queue.c
@@ -9,61 +16,105 @@ TEST_GENERIC_QUEUE_SRC = test/queues/test_generic_queue.c queues/generic_queue.c
 TEST_LINKED_LIST = test/lists/test_linked_list
 TEST_LINKED_LIST_SRC = test/lists/test_linked_list.c lists/linked_list.c
 
+TEST_FILE_LIST = test/lists/test_file_list
+TEST_FILE_LIST_SRC = test/lists/test_file_list.c lists/file_list.c \
+		     compat/compat_strcasestr.c
+
 TEST_STDSTRING = test/string/test_stdstring
 TEST_STDSTRING_SRC = test/string/test_stdstring.c string/stdstring.c encodings/encoding_utf.c \
-		     compat/compat_strl.c
+		     compat/compat_strl.c compat/compat_strldup.c
 
 TEST_UTILS = test/utils/test_utils
 TEST_UTILS_SRC = test/utils/test_utils.c utils/md5.c encodings/encoding_crc32.c \
+		features/features_cpu.c \
 		streams/file_stream.c vfs/vfs_implementation.c file/file_path.c \
+		file/file_path_io.c \
 		compat/compat_strl.c time/rtime.c string/stdstring.c encodings/encoding_utf.c
 
 TEST_HASH = test/hash/test_hash
 TEST_HASH_SRC = test/hash/test_hash.c hash/lrc_hash.c \
 		streams/file_stream.c vfs/vfs_implementation.c file/file_path.c \
+		file/file_path_io.c \
 		compat/compat_strl.c time/rtime.c string/stdstring.c encodings/encoding_utf.c
+
+TEST_RWAV = test/formats/test_rwav
+TEST_RWAV_SRC = test/formats/test_rwav.c formats/wav/rwav.c
+
+TEST_RJPEG = test/formats/test_rjpeg
+TEST_RJPEG_SRC = test/formats/test_rjpeg.c formats/jpeg/rjpeg.c \
+		streams/file_stream.c vfs/vfs_implementation.c file/file_path.c \
+		file/file_path_io.c features/features_cpu.c \
+		compat/compat_strl.c time/rtime.c string/stdstring.c encodings/encoding_utf.c
+
+# Not a libcheck suite: a plain main() that prints its own verdict and
+# returns non-zero on failure.
+TEST_RWEBM_AUDIO = test/formats/test_rwebm_audio
+TEST_RWEBM_AUDIO_SRC = test/formats/test_rwebm_audio.c \
+		encodings/encoding_crc32.c features/features_cpu.c
 
 TEST_RPNG = test/formats/test_rpng
 TEST_RPNG_SRC = test/formats/test_rpng.c formats/png/rpng.c \
-		streams/trans_stream.c streams/trans_stream_zlib.c \
+		streams/trans_stream.c streams/trans_stream_deflate.c \
+		encodings/encoding_deflate.c \
+		features/features_cpu.c \
 		streams/trans_stream_pipe.c
 TEST_RPNG_LIBS = -lz
 
 all:
 	# Build and execute tests in order, to avoid coverage file collision
 	# string
-	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_STDSTRING_SRC) -o $(TEST_STDSTRING)
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_STDSTRING_SRC) $(LIBCHECK_LIBS) -o $(TEST_STDSTRING)
 	$(TEST_STDSTRING)
 	lcov -c -d . -o `dirname $(TEST_STDSTRING)`/coverage.info
 	# utils
-	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_UTILS_SRC) -o $(TEST_UTILS)
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_UTILS_SRC) $(LIBCHECK_LIBS) -o $(TEST_UTILS)
 	$(TEST_UTILS)
 	lcov -c -d . -o `dirname $(TEST_UTILS)`/coverage.info
 	# utils
-	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_HASH_SRC) -o $(TEST_HASH)
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_HASH_SRC) $(LIBCHECK_LIBS) -o $(TEST_HASH)
 	$(TEST_HASH)
 	lcov -c -d . -o `dirname $(TEST_HASH)`/coverage.info
 	# list
-	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_LINKED_LIST_SRC) -o $(TEST_LINKED_LIST)
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_LINKED_LIST_SRC) $(LIBCHECK_LIBS) -o $(TEST_LINKED_LIST)
 	$(TEST_LINKED_LIST)
 	lcov -c -d . -o `dirname $(TEST_LINKED_LIST)`/coverage.info
+	# file list
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_FILE_LIST_SRC) $(LIBCHECK_LIBS) -o $(TEST_FILE_LIST)
+	$(TEST_FILE_LIST)
+	lcov -c -d . -o `dirname $(TEST_FILE_LIST)`/file_list_coverage.info
 	# queue
-	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_GENERIC_QUEUE_SRC) -o $(TEST_GENERIC_QUEUE)
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_GENERIC_QUEUE_SRC) $(LIBCHECK_LIBS) -o $(TEST_GENERIC_QUEUE)
 	$(TEST_GENERIC_QUEUE)
 	lcov -c -d . -o `dirname $(TEST_GENERIC_QUEUE)`/coverage.info
 	# rpng
-	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_RPNG_SRC) $(TEST_RPNG_LIBS) -o $(TEST_RPNG)
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_RPNG_SRC) $(TEST_RPNG_LIBS) $(LIBCHECK_LIBS) -o $(TEST_RPNG)
 	$(TEST_RPNG)
 	lcov -c -d . -o `dirname $(TEST_RPNG)`/coverage.info
+	# rwav
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_RWAV_SRC) $(LIBCHECK_LIBS) -o $(TEST_RWAV)
+	$(TEST_RWAV)
+	# rjpeg
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_RJPEG_SRC) $(LIBCHECK_LIBS) -o $(TEST_RJPEG)
+	$(TEST_RJPEG)
+	# rwebm audio
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_RWEBM_AUDIO_SRC) $(LIBCHECK_LIBS) -o $(TEST_RWEBM_AUDIO)
+	$(TEST_RWEBM_AUDIO)
 	
 	lcov -o test/coverage.info \
 	     -a test/utils/coverage.info \
 	     -a test/string/coverage.info \
 	     -a test/lists/coverage.info \
+	     -a test/lists/file_list_coverage.info \
 	     -a test/queues/coverage.info \
 	     -a test/formats/coverage.info
 	genhtml -o test/coverage/ test/coverage.info
 
 clean:
 	rm -f *.gcda *.gcno
+	rm -f $(TEST_STDSTRING) $(TEST_UTILS) $(TEST_HASH) \
+	      $(TEST_LINKED_LIST) $(TEST_FILE_LIST) $(TEST_GENERIC_QUEUE) \
+	      $(TEST_RPNG) $(TEST_RWAV) $(TEST_RJPEG) $(TEST_RWEBM_AUDIO)
+	rm -f test/*/*.gcda test/*/*.gcno test/*/coverage.info \
+	      test/lists/file_list_coverage.info test/coverage.info
+	rm -rf test/coverage
 

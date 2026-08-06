@@ -58,7 +58,7 @@
 #include "../../menu/menu_entries.h"
 
 #if defined(HW_RVL)
-#include "../../memory/wii/mem2_manager.h"
+#include <memory/mem2_manager.h>
 #endif
 #endif
 
@@ -561,28 +561,6 @@ static void frontend_gx_shutdown(bool unused)
 #endif
 }
 
-static uint64_t frontend_gx_get_total_mem(void)
-{
-#if defined(HW_RVL) && !defined(IS_SALAMANDER)
-   return SYSMEM1_SIZE + gx_mem2_total();
-#else
-   return SYSMEM1_SIZE;
-#endif
-}
-
-static uint64_t frontend_gx_get_free_mem(void)
-{
-   /* SYS_GetArena1Size() reports remaining MEM1 directly;
-    * the previous expression was SYSMEM1_SIZE - (SYSMEM1_SIZE - that),
-    * which the compiler folds anyway but reads as if it meant
-    * something. */
-   uint64_t total = SYS_GetArena1Size();
-#if defined(HW_RVL) && !defined(IS_SALAMANDER)
-   total += (gx_mem2_total() - gx_mem2_used());
-#endif
-   return total;
-}
-
 frontend_ctx_driver_t frontend_ctx_gx = {
    frontend_gx_get_env,             /* get_env */
    frontend_gx_init,
@@ -602,8 +580,6 @@ frontend_ctx_driver_t frontend_ctx_gx = {
    frontend_gx_get_arch,            /* get_architecture */
    NULL,                            /* get_powerstate */
    frontend_gx_parse_drive_list,    /* parse_drive_list */
-   frontend_gx_get_total_mem,       /* get_total_mem */
-   frontend_gx_get_free_mem,        /* get_free_mem */
    NULL,                            /* install_signal_handler */
    NULL,                            /* get_sighandler_state */
    NULL,                            /* set_sighandler_state */

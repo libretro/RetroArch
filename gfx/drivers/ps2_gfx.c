@@ -70,6 +70,7 @@ typedef struct
    GSTEXTURE *texture;
    const font_renderer_driver_t* font_driver;
    void* font_data;
+   struct font_atlas* atlas;
 } ps2_font_t;
 
 typedef struct ps2_video
@@ -136,7 +137,7 @@ static void* ps2_font_init(void* data, const char* font_path,
    int text_size, clut_size;
    uint8_t *tex8;
    uint32_t *clut32;
-   const struct font_atlas* atlas = NULL;
+   struct font_atlas* atlas = NULL;
    ps2_font_t* font = (ps2_font_t*)calloc(1, sizeof(*font));
 
    if (!font)
@@ -151,6 +152,7 @@ static void* ps2_font_init(void* data, const char* font_path,
    }
 
    atlas                  = font->font_driver->get_atlas(font->font_data);
+   font->atlas            = atlas;
    font->texture          = (GSTEXTURE*)calloc(1, sizeof(GSTEXTURE));
    font->texture->Width   = atlas->width;
    font->texture->Height  = atlas->height;
@@ -430,6 +432,41 @@ static void ps2_font_render_msg(
       drop_y                  = -1;
       drop_mod                = 0.0f;
       drop_alpha              = 0.75f;
+   }
+
+   /* The 8-bit texture copy is made once at init; when the font
+    * renderer has rasterized new glyphs since then, refresh the
+    * changed rows and invalidate the texture so the TexManager
+    * re-sends it, otherwise glyphs added after init (anything
+    * beyond the pre-cached first 256 code points) render from a
+    * stale texture. Only the dirty rectangle tracked by the font
+    * renderers is copied on the EE side; gsKit re-sends the whole
+    * texture on invalidate, which it does for every other texture
+    * as well. */
+   if (font->atlas->dirty && font->texture->Mem)
+   {
+      unsigned j;
+      uint8_t *tex8              = (uint8_t*)font->texture->Mem;
+      const struct font_atlas *a = font->atlas;
+      unsigned x0                = a->dirty_x0;
+      unsigned y0                = a->dirty_y0;
+      unsigned x1                = a->dirty_x1;
+      unsigned y1                = a->dirty_y1;
+
+      if (x1 <= x0 || y1 <= y0 || x1 > a->width || y1 > a->height)
+      {
+         x0 = 0;
+         y0 = 0;
+         x1 = a->width;
+         y1 = a->height;
+      }
+
+      for (j = y0; j < y1; j++)
+         memcpy(tex8 + (size_t)j * a->width + x0,
+                a->buffer + (size_t)j * a->width + x0, x1 - x0);
+
+      gsKit_TexManager_invalidate(ps2->gsGlobal, font->texture);
+      font->atlas->dirty = false;
    }
 
    gsKit_TexManager_bind(ps2->gsGlobal, font->texture);
@@ -818,7 +855,6 @@ static void *ps2_init(const video_info_t *video,
       return NULL;
 
    init_ps2_video(ps2);
-   if (video->font_enable)
       font_driver_init_osd(ps2,
             video, false,
             video->is_threaded,

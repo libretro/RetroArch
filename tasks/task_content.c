@@ -57,6 +57,7 @@
 #include <compat/posix_string.h>
 #include <file/file_path.h>
 #include <file/archive_file.h>
+#include <formats/data_transfer.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <lists/string_list.h>
@@ -88,7 +89,9 @@
 #endif
 
 #include "task_content.h"
+#include "patch_stream.h"
 #include "tasks_internal.h"
+#include "task_content_prefetch.h"
 
 #include "../command.h"
 #include "../core_info.h"
@@ -783,6 +786,158 @@ static void content_information_ctx_free(
 #define BLCK_REQUIRED      4
 #define BLCK_PERSISTENT    8
 
+#ifdef HAVE_COMPRESSION
+/* data_transfer source bridge for archive entries */
+static int64_t content_file_entry_source_read(void *ud, uint8_t *dst,
+      size_t n)
+{
+   return file_archive_entry_source_read(
+         (file_archive_entry_source_t*)ud, dst, (int64_t)n);
+}
+#endif
+
+/* data_transfer source bridge for a plain file */
+static int64_t content_file_plain_source_read(void *ud, uint8_t *dst,
+      size_t n)
+{
+   return filestream_read((RFILE*)ud, dst, (int64_t)n);
+}
+
+#ifdef HAVE_PATCH
+/* Open a streaming applier for whatever patch this load would apply, or
+ * NULL to leave the load on the existing whole-buffer patch pass. */
+static patch_stream_t *content_file_patch_stream_open(
+      content_information_ctx_t *content_ctx,
+      size_t idx,
+      enum rarch_content_type first_content_type,
+      size_t src_len,
+      void **patch_data,
+      const char **patch_path)
+{
+   if (      idx != 0
+         ||  first_content_type != RARCH_CONTENT_NONE
+         || (content_ctx->flags & CONTENT_INFO_FLAG_PATCH_IS_BLOCKED))
+   {
+      *patch_data = NULL;
+      *patch_path = NULL;
+      return NULL;
+   }
+
+   return patch_content_stream_open(
+         content_ctx->flags & CONTENT_INFO_FLAG_IS_IPS_PREF,
+         content_ctx->flags & CONTENT_INFO_FLAG_IS_BPS_PREF,
+         content_ctx->flags & CONTENT_INFO_FLAG_IS_UPS_PREF,
+         content_ctx->flags & CONTENT_INFO_FLAG_IS_XDELTA_PREF,
+         content_ctx->name_ips,
+         content_ctx->name_bps,
+         content_ctx->name_ups,
+         content_ctx->name_xdelta,
+         src_len, patch_data, patch_path);
+}
+#endif
+
+#ifdef HAVE_PATCH
+/* Abandon a streaming patch whose source never fully arrived.
+ *
+ * A stream that has seen only part of its source must never be
+ * finished: the appliers treat a short source as a legitimately short
+ * one and zero-fill the rest, so finishing here would silently replace
+ * the content with a patch applied to a truncated ROM.  Dropping the
+ * stream instead leaves the load to its fallback read, after which the
+ * ordinary whole-buffer pass patches the complete buffer. */
+static void content_file_patch_stream_drop(void **ps, void **patch_data)
+{
+   if (*ps)
+   {
+      patch_stream_free((patch_stream_t*)*ps);
+      *ps = NULL;
+   }
+   free(*patch_data);
+   *patch_data = NULL;
+}
+#endif
+
+/* Drive a source-mode transfer to completion, advancing a streaming
+ * patch (if any) over each span as it arrives, and detach the filled
+ * buffer.  Shared by the archive-entry and plain-file loads so both get
+ * the same interleaving and the same ownership handoff.
+ *
+ * Returns the detached buffer (caller frees) or NULL, in which case the
+ * transfer has already been released. */
+static uint8_t *content_file_pump_source(data_transfer_t *dt,
+      void *patch_stream, size_t *out_len)
+{
+   uint8_t *out   = NULL;
+   size_t   avail = 0;
+#ifdef HAVE_PATCH
+   patch_stream_t *ps     = (patch_stream_t*)patch_stream;
+   const uint8_t  *base   = NULL;
+   size_t          fed    = 0;
+   size_t          total  = 0;
+
+   if (ps)
+      base = data_transfer_ptr(dt, &total);
+#else
+   (void)patch_stream;
+#endif
+
+   while (     !data_transfer_complete(dt)
+            && !data_transfer_failed(dt))
+   {
+      avail = data_transfer_iterate(dt, 0);
+#ifdef HAVE_PATCH
+      if (ps && avail > fed)
+      {
+         patch_stream_feed(ps, base + fed, avail - fed);
+         fed = avail;
+         /* Once the stream is dead its finish will fail anyway, so
+          * stop pushing the rest of the content through it - the load
+          * itself still has to complete. */
+         if (patch_stream_failed(ps))
+            ps = NULL;
+      }
+#endif
+   }
+
+#ifdef HAVE_PATCH
+   if (ps)
+   {
+      avail = data_transfer_avail(dt);
+      if (avail > fed)
+         patch_stream_feed(ps, base + fed, avail - fed);
+   }
+#endif
+
+   if (!(out = (uint8_t*)data_transfer_source_detach(dt, out_len)))
+      data_transfer_free(dt);
+   return out;
+}
+
+/* ---- prefetch cache: bytes read ahead of the load ---- */
+
+/* Take (transfer ownership of) a prefetched buffer for this exact
+ * path, if the prefetch task deposited one. */
+static uint8_t *content_file_prefetch_take(content_state_t *p_content,
+      const char *path, size_t *size)
+{
+   size_t i;
+   for (i = 0; i < p_content->prefetch_count; i++)
+   {
+      if (     p_content->prefetch[i].path
+            && string_is_equal(p_content->prefetch[i].path, path))
+      {
+         uint8_t *data = p_content->prefetch[i].data;
+         *size         = p_content->prefetch[i].size;
+         free(p_content->prefetch[i].path);
+         p_content->prefetch[i].path = NULL;
+         p_content->prefetch[i].data = NULL;
+         p_content->prefetch[i].size = 0;
+         return data;
+      }
+   }
+   return NULL;
+}
+
 /**
  * content_file_load_into_memory:
  * @content_path : path of the content file.
@@ -806,41 +961,211 @@ static size_t content_file_load_into_memory(
 {
    uint8_t *content_data = NULL;
    int64_t content_size  = 0;
+#ifdef HAVE_PATCH
+   /* Soft patching normally runs as a separate pass once the whole file
+    * is resident.  When the patch can be resolved ahead of the load - it
+    * depends only on the preference flags and which patch files exist,
+    * never on the content - the applier is opened here and advanced over
+    * each span as it arrives, so the patch keeps pace with the load
+    * instead of following it.  NULL means there is nothing streamable
+    * and the existing patch_content pass below runs unchanged. */
+   void           *patch_data = NULL;
+   const char     *patch_src  = NULL;
+   bool            streamed   = false;
+#endif
+   /* Streaming patch handle, kept opaque and declared unconditionally so
+    * the load paths can hand it to the pump without a HAVE_PATCH branch
+    * of their own.  Always NULL when patching is compiled out. */
+   void           *patch_ps   = NULL;
 
    RARCH_LOG("[Content] %s: \"%s\".\n",
          msg_hash_to_str(MSG_LOADING_CONTENT_FILE), content_path);
 
+   /* A prefetched buffer for this exact path short-circuits the
+    * read entirely: the bytes streamed in ahead of the load, a
+    * budgeted slice per task tick, while the frontend kept
+    * running. */
+   {
+      size_t pre_size = 0;
+      if ((content_data = content_file_prefetch_take(p_content,
+            content_path, &pre_size)))
+         content_size = (int64_t)pre_size;
+   }
    /* Read content from file into memory buffer */
 #ifdef HAVE_COMPRESSION
-   if (content_compressed)
+   if (content_data)
    {
-      if (!file_archive_compressed_read(content_path,
-            (void**)&content_data, NULL, &content_size))
-         return 0;
+      /* prefetched above */
+   }
+   else if (content_compressed)
+   {
+      /* Prefer the incremental entry source on the data_transfer
+       * spine: the entry inflates chunk by chunk directly into the
+       * exact-size destination as it is read - decompression and
+       * loading interleave instead of running as one opaque gulp -
+       * and the pump takes a byte budget, so this read is ready to
+       * be sliced across task ticks once the surrounding load flow
+       * is.  (Today it is still pumped to completion in place:
+       * behaviour and bytes are identical to the classic path.)
+       * Backends without independently decodable entries (7z solid
+       * blocks) and anything unexpected fall back to the classic
+       * whole-entry read below. */
+      int64_t src_usize                 = 0;
+      file_archive_entry_source_t *src  =
+            file_archive_entry_source_open(content_path, &src_usize);
+      if (src)
+      {
+         if (src_usize > 0)
+         {
+            data_transfer_t *dt = data_transfer_open_source(
+                  (size_t)src_usize, content_file_entry_source_read,
+                  src);
+            if (dt)
+            {
+               size_t out_len = 0;
+#ifdef HAVE_PATCH
+               patch_ps = content_file_patch_stream_open(content_ctx,
+                     idx, first_content_type, (size_t)src_usize,
+                     &patch_data, &patch_src);
+#endif
+               if ((content_data = content_file_pump_source(dt,
+                     patch_ps, &out_len)))
+                  content_size = (int64_t)out_len;
+#ifdef HAVE_PATCH
+               else
+                  content_file_patch_stream_drop(&patch_ps, &patch_data);
+#endif
+            }
+         }
+         file_archive_entry_source_close(src);
+      }
+      if (!content_data)
+      {
+         if (!file_archive_compressed_read(content_path,
+               (void**)&content_data, NULL, &content_size))
+            return 0;
+      }
    }
    else
 #endif
-      if (!filestream_read_file(content_path,
-            (void**)&content_data, &content_size))
-         return 0;
+   if (!content_data)
+   {
+      /* Plain file: pump it through the same source-mode transfer the
+       * archive path uses, rather than one blocking whole-file read.
+       * That puts uncompressed content - the common case - on the
+       * sliceable spine too, and lets a patch advance alongside the
+       * read instead of running as a pass afterwards.
+       *
+       * Falls back to filestream_read_file if the file cannot be
+       * opened, sized, or transferred, so nothing that loaded before
+       * stops loading now. */
+      RFILE *fp = filestream_open(content_path,
+            RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+      if (fp)
+      {
+         int64_t fsize = filestream_get_size(fp);
+
+         if (fsize > 0)
+         {
+            data_transfer_t *dt = data_transfer_open_source((size_t)fsize,
+                  content_file_plain_source_read, fp);
+
+            if (dt)
+            {
+               size_t out_len = 0;
+#ifdef HAVE_PATCH
+               patch_ps = content_file_patch_stream_open(content_ctx,
+                     idx, first_content_type, (size_t)fsize,
+                     &patch_data, &patch_src);
+#endif
+               if ((content_data = content_file_pump_source(dt,
+                     patch_ps, &out_len)))
+                  content_size = (int64_t)out_len;
+#ifdef HAVE_PATCH
+               else
+                  content_file_patch_stream_drop(&patch_ps, &patch_data);
+#endif
+            }
+         }
+         filestream_close(fp);
+      }
+
+      if (!content_data)
+      {
+         if (!filestream_read_file(content_path,
+               (void**)&content_data, &content_size))
+            return 0;
+      }
+   }
 
    if (content_size < 0)
+   {
+      /* Nothing downstream can use this, and the patch stream must not
+       * outlive the function that owns it. */
+#ifdef HAVE_PATCH
+      content_file_patch_stream_drop(&patch_ps, &patch_data);
+#endif
+      free(content_data);
       return 0;
+   }
+
+#ifdef HAVE_PATCH
+   /* Complete a streamed patch.  The source is still fully resident here
+    * (the transfer buffer we just detached), so a patch that turns out to
+    * be malformed costs nothing: keep the unpatched buffer and let the
+    * normal pass below try again, which is exactly what happens today
+    * when an applier rejects a patch. */
+   if (patch_ps)
+   {
+      uint8_t *patched = NULL;
+      size_t   patched_len = 0;
+
+      if (      content_data
+            &&  patch_stream_finish((patch_stream_t*)patch_ps,
+                     &patched, &patched_len)
+            &&  patched)
+      {
+         free(content_data);
+         content_data = patched;
+         content_size = (int64_t)patched_len;
+         streamed     = true;
+
+         if (config_get_ptr()->bools.notification_show_patch_applied)
+         {
+            /* Same wording as the whole-buffer path: the patch's
+             * file name, not the format it happens to be. */
+            char msg[128];
+            const char *patch_filename = patch_src
+                  ? path_basename_nocompression(patch_src) : NULL;
+            size_t _len = snprintf(msg, sizeof(msg),
+                  msg_hash_to_str(MSG_APPLYING_PATCH),
+                  patch_filename ? patch_filename :
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN));
+            runloop_msg_queue_push(msg, _len, 1, 180, false, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         }
+      }
+      patch_stream_free((patch_stream_t*)patch_ps);
+      patch_ps = NULL;
+      free(patch_data);
+      patch_data = NULL;
+   }
+#endif
 
    /* First content file is significant: attempt to do
     * soft patching, CRC checking, etc. */
    if (idx == 0)
    {
-      /* If we have a media type, ignore patches/CRC32
-       * calculation. */
+      /* If we have a media type, ignore patches. */
       if (first_content_type == RARCH_CONTENT_NONE)
       {
-         bool has_patch = false;
-
 #ifdef HAVE_PATCH
-         /* Attempt to apply a patch. */
-         if (!(content_ctx->flags & CONTENT_INFO_FLAG_PATCH_IS_BLOCKED))
-            has_patch = patch_content(
+         /* Attempt to apply a patch, unless one was already streamed
+          * alongside the load above. */
+         if (     !streamed
+               && !(content_ctx->flags & CONTENT_INFO_FLAG_PATCH_IS_BLOCKED))
+            patch_content(
                   content_ctx->flags & CONTENT_INFO_FLAG_IS_IPS_PREF,
                   content_ctx->flags & CONTENT_INFO_FLAG_IS_BPS_PREF,
                   content_ctx->flags & CONTENT_INFO_FLAG_IS_UPS_PREF,
@@ -852,32 +1177,7 @@ static size_t content_file_load_into_memory(
                   (uint8_t**)&content_data,
                   (void*)&content_size);
 #endif
-         /* If content is compressed or a patch has been
-          * applied, must determine CRC value using the
-          * actual data buffer, since the content path
-          * cannot be used for this purpose...
-          * In all other cases, cache the content path
-          * and defer CRC calculation until the value is
-          * actually needed */
-         if (content_compressed || has_patch)
-         {
-            p_content->rom_crc = encoding_crc32(0, content_data,
-                  (size_t)content_size);
-            RARCH_LOG("[Content] CRC32: 0x%x.\n",
-                  (unsigned)p_content->rom_crc);
-         }
-         else
-         {
-            /* We don't have the content ready inside a memory buffer,
-               so we have to read it from file later (deferred)
-               and then encode the CRC32 hash */
-            strlcpy(p_content->pending_rom_crc_path, content_path,
-                  sizeof(p_content->pending_rom_crc_path));
-            p_content->flags |= CONTENT_ST_FLAG_PENDING_ROM_CRC;
-         }
       }
-      else
-         p_content->rom_crc = 0;
    }
 
    *data      = content_data;
@@ -1241,15 +1541,6 @@ static bool content_file_load(
              * until value is used */
             if (i == 0)
             {
-               /* If we have a media type, ignore CRC32 calculation. */
-               if (first_content_type == RARCH_CONTENT_NONE)
-               {
-                  strlcpy(p_content->pending_rom_crc_path, content_path,
-                        sizeof(p_content->pending_rom_crc_path));
-                  p_content->flags |= CONTENT_ST_FLAG_PENDING_ROM_CRC;
-               }
-               else
-                  p_content->rom_crc = 0;
             }
          }
       }
@@ -2306,6 +2597,164 @@ end:
    return ret;
 }
 
+#if defined(HAVE_DYNAMIC) && defined(HAVE_MENU)
+/* ---- deferred menu load: prefetch, then the identical remainder ---- */
+
+struct content_deferred_menu_load
+{
+   char *fullpath;
+   enum rarch_core_type type;
+   content_ctx_info_t info;      /* argv-free by the deferral gate */
+};
+
+/* The continuation parked by the prefetch's done callback, consumed
+ * by task_content_deferred_load_check() from the runloop.  One
+ * deferral at a time (the CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING
+ * gate), so a single pointer is the whole queue. */
+static struct content_deferred_menu_load *deferred_menu_load_ready = NULL;
+
+/* Fires when the prefetch task completes.  The remainder of the
+ * load cannot run here: content_load() reaches
+ * retroarch_init_task_queue(), which tears down and recreates the
+ * task queue - fatal from inside the queue's own dispatch (and,
+ * under the threaded queue, this may not be the main thread).  So
+ * the continuation is parked, and runloop_iterate() performs it at
+ * the top of the next frame - the same call depth the synchronous
+ * path ran it from. */
+static void task_content_deferred_menu_load_done(void *ud, bool all_ok)
+{
+   deferred_menu_load_ready = (struct content_deferred_menu_load*)ud;
+}
+
+/* Drop whatever the load did not consume. */
+static void content_file_prefetch_free(content_state_t *p_content)
+{
+   size_t i;
+   for (i = 0; i < p_content->prefetch_count; i++)
+   {
+      free(p_content->prefetch[i].path);
+      free(p_content->prefetch[i].data);
+      p_content->prefetch[i].path = NULL;
+      p_content->prefetch[i].data = NULL;
+      p_content->prefetch[i].size = 0;
+   }
+   p_content->prefetch_count = 0;
+}
+
+
+/* Called once per frame from runloop_iterate(): performs the
+ * remainder of task_push_load_content_with_new_core_from_menu for a
+ * completed prefetch, byte-for-byte the sequence the synchronous
+ * path runs - content_load, history, quick menu.  A prefetch that
+ * skipped files changed nothing; the load's ordinary reads cover
+ * whatever is not in the cache. */
+void task_content_deferred_load_check(void)
+{
+   struct content_deferred_menu_load *d = deferred_menu_load_ready;
+   content_state_t *p_content;
+
+   if (!d)
+      return;
+   deferred_menu_load_ready  = NULL;
+   p_content                 = content_state_get_ptr();
+   p_content->flags         &= ~CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING;
+
+   if (!content_load(&d->info, p_content))
+   {
+      content_file_prefetch_free(p_content);
+      retroarch_menu_running();
+   }
+   else
+   {
+      task_push_to_history_list(p_content, true, false, false);
+      if (d->type != CORE_TYPE_DUMMY)
+         menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
+   }
+   content_file_prefetch_free(p_content);   /* leftovers, if any */
+   free(d->fullpath);
+   free(d);
+}
+
+/* Deposit callback for task_push_content_prefetch.  ud carries the
+ * deferred-load continuation for the done callback, not the content
+ * state - the state is a singleton and is fetched here, never cast
+ * from ud. */
+static void content_file_prefetch_deposit(void *ud, const char *path,
+      uint8_t *data, size_t size)
+{
+   content_state_t *p_content = content_state_get_ptr();
+   if (p_content->prefetch_count
+         >= ARRAY_SIZE(p_content->prefetch))
+   {
+      free(data);
+      return;
+   }
+   if (!(p_content->prefetch[p_content->prefetch_count].path
+         = strdup(path)))
+   {
+      free(data);
+      return;
+   }
+   p_content->prefetch[p_content->prefetch_count].data = data;
+   p_content->prefetch[p_content->prefetch_count].size = size;
+   p_content->prefetch_count++;
+}
+
+
+/* Returns true when the load was taken over by the deferred path. */
+static bool task_content_defer_menu_load(content_state_t *p_content,
+      const char *fullpath, enum rarch_core_type type,
+      content_ctx_info_t *content_info)
+{
+   struct content_deferred_menu_load *d = NULL;
+   const char *paths[1];
+
+   if (type != CORE_TYPE_PLAIN)
+      return false;
+   if (!fullpath || !*fullpath)
+      return false;                /* contentless: nothing to read */
+   if (content_info->argc || content_info->argv || content_info->args)
+      return false;                /* only the plain menu shape     */
+   if (p_content->flags & CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING)
+      return false;                /* one deferral at a time        */
+   /* The prefetch keys on this exact path, but the load rewrites
+    * some paths before reading them: a content:// SAF URI becomes a
+    * VFS path, and a bare archive ("foo.zip") becomes an explicit
+    * entry ("foo.zip#first").  Deferring either would prefetch under
+    * a key the load never looks up - a silent miss and a wasted
+    * read.  Decline them; they take the synchronous path, exactly as
+    * before this feature existed.  A path already carrying its entry
+    * ("foo.zip#rom") is stable and may defer. */
+   if (!strncmp(fullpath, "content://", STRLEN_CONST("content://")))
+      return false;
+   if (       path_is_compressed_file(fullpath)
+       && !path_contains_compressed_file(fullpath))
+      return false;                /* bare archive: load picks entry */
+
+   if (!(d = (struct content_deferred_menu_load*)calloc(1, sizeof(*d))))
+      return false;
+   if (!(d->fullpath = strdup(fullpath)))
+   {
+      free(d);
+      return false;
+   }
+   d->type = type;
+   d->info = *content_info;        /* argv-free: shallow is whole   */
+
+   paths[0] = d->fullpath;
+   if (!task_push_content_prefetch(paths, 1,
+         content_file_prefetch_deposit,
+         task_content_deferred_menu_load_done, d))
+   {
+      free(d->fullpath);
+      free(d);
+      return false;
+   }
+   p_content->flags |= CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING;
+   return true;
+}
+#endif
+
 bool task_push_load_content_with_new_core_from_menu(
       const char *core_path,
       const char *fullpath,
@@ -2345,6 +2794,21 @@ bool task_push_load_content_with_new_core_from_menu(
    /* Load content */
    if (!content_info->environ_get)
       content_info->environ_get = menu_content_environment_get;
+
+   /* Stream the content's bytes in ahead of the load, a budgeted
+    * slice per task tick, so the menu keeps running instead of
+    * freezing for one long read.  The deferral is taken only in the
+    * exact shape this menu path produces (no argv, plain core type,
+    * no deferral already in flight); anything else keeps the
+    * synchronous path below, and if the prefetch cannot even be
+    * pushed, so does everything.  The continuation performs the
+    * identical remainder of this function. */
+   if (task_content_defer_menu_load(p_content, fullpath, type,
+         content_info))
+   {
+      content_information_ctx_free(&content_ctx);
+      return true;
+   }
 
    /* Loads content into currently selected core. */
    if (!(ret = content_load(content_info, p_content)))
@@ -2698,73 +3162,8 @@ void content_unset_does_not_need_content(void)
    p_content->flags &= ~CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT;
 }
 
-#ifndef CRC32_BUFFER_SIZE
-#define CRC32_BUFFER_SIZE 1048576
-#endif
 
-#ifndef CRC32_MAX_MB
-#define CRC32_MAX_MB 64
-#endif
 
-/**
- * Calculate a CRC32 from the first part of the given file.
- * "first part" being the first (CRC32_BUFFER_SIZE * CRC32_MAX_MB)
- * bytes.
- *
- * @return The calculated CRC32 hash, or 0 if there was an error.
- */
-static uint32_t file_crc32(uint32_t crc, const char *path)
-{
-   size_t i;
-   RFILE *file        = NULL;
-   unsigned char *buf = NULL;
-   if (!path)
-      return 0;
-
-   if (!(file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, 0)))
-      return 0;
-
-   if (!(buf = (unsigned char*)malloc(CRC32_BUFFER_SIZE)))
-   {
-      filestream_close(file);
-      return 0;
-   }
-
-   for (i = 0; i < CRC32_MAX_MB; i++)
-   {
-      int64_t nread = filestream_read(file, buf, CRC32_BUFFER_SIZE);
-      if (nread < 0)
-      {
-         free(buf);
-         filestream_close(file);
-         return 0;
-      }
-
-      crc = encoding_crc32(crc, buf, (size_t)nread);
-      if (filestream_eof(file))
-         break;
-   }
-   free(buf);
-   filestream_close(file);
-   return crc;
-}
-
-uint32_t content_get_crc(void)
-{
-   content_state_t *p_content = content_state_get_ptr();
-   if (p_content->flags & CONTENT_ST_FLAG_PENDING_ROM_CRC)
-   {
-      p_content->flags   &= ~CONTENT_ST_FLAG_PENDING_ROM_CRC;
-      /* TODO/FIXME - file_crc32 has a 64MB max limit -
-       * get rid of this function and find a better
-       * way to calculate CRC based on the file */
-      p_content->rom_crc  = file_crc32(0,
-            (const char*)p_content->pending_rom_crc_path);
-      RARCH_LOG("[Content] CRC32: 0x%x.\n",
-            (unsigned)p_content->rom_crc);
-   }
-   return p_content->rom_crc;
-}
 
 char* content_get_subsystem_rom(unsigned index)
 {
@@ -2786,9 +3185,7 @@ void content_deinit(void)
    content_file_list_free(p_content->content_list);
 
    p_content->content_list = NULL;
-   p_content->rom_crc      = 0;
-   p_content->flags       &= ~(CONTENT_ST_FLAG_PENDING_ROM_CRC
-                             | CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT
+   p_content->flags       &= ~(CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT
                              | CONTENT_ST_FLAG_IS_INITED);
 }
 

@@ -116,6 +116,12 @@ DXGI_FORMAT* dxgi_get_format_fallback_list(DXGI_FORMAT format)
                                           DXGI_FORMAT_UNKNOWN };
          return formats;
       }
+      case DXGI_FORMAT_R10G10B10A2_UNORM:
+      {
+         static DXGI_FORMAT formats[] = { DXGI_FORMAT_R10G10B10A2_UNORM,
+                                          DXGI_FORMAT_UNKNOWN };
+         return formats;
+      }
       case DXGI_FORMAT_EX_A4R4G4B4_UNORM:
       case DXGI_FORMAT_B4G4R4A4_UNORM:
       {
@@ -2407,6 +2413,46 @@ void dxgi_copy(
          break;
       }
 
+      case DXGI_FORMAT_R10G10B10A2_UNORM:
+      {
+         /* Native 10-bit source. The ABI's XRGB2101010 packs R in bits
+          * [29:20], G in [19:10], B in [9:0]; DXGI_FORMAT_R10G10B10A2_UNORM
+          * expects R in the LOW 10 bits and B in the high 10 bits, so R and B
+          * must be swapped during the copy (there is no B-first 10-bit DXGI
+          * format). Alpha is forced opaque (3 = max for a 2-bit channel). */
+         switch ((unsigned)dst_format)
+         {
+            case DXGI_FORMAT_R10G10B10A2_UNORM:
+            {
+               const UINT32* src_ptr = (const UINT32*)src_data;
+               UINT32*       dst_ptr = (UINT32*)dst_data;
+               int sp = src_pitch;
+               int dp = dst_pitch;
+               if (sp)
+                  sp -= width * sizeof(*src_ptr);
+               if (dp)
+                  dp -= width * sizeof(*dst_ptr);
+               for (i = 0; i < height; i++)
+               {
+                  for (j = 0; j < width; j++)
+                  {
+                     UINT32 src_val = *src_ptr++;
+                     unsigned r = (src_val >> 20) & 0x3ff;
+                     unsigned g = (src_val >> 10) & 0x3ff;
+                     unsigned b =  src_val        & 0x3ff;
+                     *dst_ptr++ = r | (g << 10) | (b << 20) | (0x3u << 30);
+                  }
+                  src_ptr = (UINT32*)((UINT8*)src_ptr + sp);
+                  dst_ptr = (UINT32*)((UINT8*)dst_ptr + dp);
+               }
+               break;
+            }
+            default:
+               break;
+         }
+         break;
+      }
+
       default:
          break;
    }
@@ -2510,6 +2556,32 @@ inline static int dxgi_compute_intersection_area(
            * MAX(0, MIN(ay2, by2) - MAX(ay1, by1));
 }
 
+/* Self-contained display-in-HDR-mode probe for callers that must not
+ * pull COM/DXGI headers into their own translation unit (win32_common
+ * compiles without the CINTERFACE / COBJMACROS arrangement the d3d
+ * driver TUs set up before including any Windows header, which breaks
+ * MSVC against the real SDK headers -- MinGW's are lenient and masked
+ * it). Creates a factory via the dynamically-loaded entry point, runs
+ * the support check (which also performs the display-flag bookkeeping)
+ * and releases it. */
+bool dxgi_display_hdr_active(HWND hwnd)
+{
+#ifdef __WINRT__
+   DXGIFactory2 factory = NULL;
+   bool         ret     = false;
+   if (FAILED(DXGICreateFactory2(&factory)) || !factory)
+      return false;
+#else
+   DXGIFactory1 factory = NULL;
+   bool         ret     = false;
+   if (FAILED(DXGICreateFactory1(&factory)) || !factory)
+      return false;
+#endif
+   ret = dxgi_check_display_hdr_support(factory, hwnd);
+   Release(factory);
+   return ret;
+}
+
 #ifdef __WINRT__
 bool dxgi_check_display_hdr_support(DXGIFactory2 factory, HWND hwnd)
 #else
@@ -2562,14 +2634,9 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
 #endif
    {
       UINT i = 0;
-#ifdef __cplusplus
-      while (  dxgi_adapter->EnumOutputs(i, &current_output)
-            != DXGI_ERROR_NOT_FOUND)
-#else
-      while (  dxgi_adapter->lpVtbl->EnumOutputs(dxgi_adapter, i, &current_output)
-            != DXGI_ERROR_NOT_FOUND)
-#endif
+      for (;;)
       {
+         HRESULT hr;
          RECT r, rect;
          DXGI_OUTPUT_DESC desc;
          int intersect_area;
@@ -2578,6 +2645,21 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
          int ay1               = 0;
          int ax2               = 0;
          int ay2               = 0;
+
+#ifdef __cplusplus
+         hr                     = dxgi_adapter->EnumOutputs(i, &current_output);
+#else
+         hr                     = dxgi_adapter->lpVtbl->EnumOutputs(
+               dxgi_adapter, i, &current_output);
+#endif
+         /* Stop at the end of the output list (DXGI_ERROR_NOT_FOUND) or on
+          * any other failure. Some drivers can return a failure HRESULT
+          * other than DXGI_ERROR_NOT_FOUND together with a NULL output,
+          * which must never be dereferenced. */
+         if (FAILED(hr) || !current_output)
+            break;
+
+         i++;
 
          if (win32_get_client_rect(&rect))
          {
@@ -2595,7 +2677,12 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
 #endif
          {
             RARCH_ERR("[DXGI] Failed to get DXGI output description.\n");
-            i++;
+#ifdef __cplusplus
+            current_output->Release();
+#else
+            Release(current_output);
+#endif
+            current_output      = NULL;
             continue;
          }
 
@@ -2629,7 +2716,13 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
             best_intersect_area = (float)intersect_area;
          }
 
-         i++;
+         /* Release this iteration's reference; best_output holds its own. */
+#ifdef __cplusplus
+         current_output->Release();
+#else
+         Release(current_output);
+#endif
+         current_output         = NULL;
       }
 
       if (current_output)
@@ -2889,6 +2982,7 @@ void dxgi_set_hdr_metadata(
 
 #include <math.h>
 #include <stdint.h>
+#include <formats/rpng.h>
 
 /* IEEE 754 binary16 -> binary32.  Used to decode FP16 scRGB samples. */
 static INLINE float dxgi_half_to_float(uint16_t h)
@@ -3103,5 +3197,157 @@ bool dxgi_hdr_readback_to_bgr24(
    }
 
    return false;
+}
+
+/* ST.2084 (PQ) inverse-EOTF: normalised linear [0,1] -> PQ code [0,1].
+ * Constants match dxgi_st2084_to_linear above and the forward HDR
+ * shader pipeline. */
+static INLINE float dxgi_st2084_encode(float v)
+{
+   const float m1 = 0.1593017578125f;
+   const float m2 = 78.84375f;
+   const float c1 = 0.8359375f;
+   const float c2 = 18.8515625f;
+   const float c3 = 18.6875f;
+   float yp;
+   if (v < 0.0f) v = 0.0f;
+   else if (v > 1.0f) v = 1.0f;
+   yp = powf(v, m1);
+   return powf((c1 + c2 * yp) / (1.0f + c3 * yp), m2);
+}
+
+bool dxgi_hdr_readback_to_rgb16(
+      DXGI_FORMAT  src_format,
+      const void*  src_data,
+      unsigned     src_pitch,
+      unsigned     src_x,
+      unsigned     src_y,
+      unsigned     width,
+      unsigned     height,
+      uint16_t*    dst_rgb48,
+      float*       out_max_cll,
+      float*       out_max_fall)
+{
+   unsigned y, x;
+   float    max_cll  = 0.0f;
+   double   sum_fall = 0.0;
+
+   if (!src_data || !dst_rgb48 || !width || !height)
+      return false;
+
+   if (src_format == DXGI_FORMAT_R10G10B10A2_UNORM)
+   {
+      const uint8_t* src_row = (const uint8_t*)src_data
+            + (size_t)src_pitch * src_y;
+
+      for (y = 0; y < height; y++, src_row += src_pitch)
+      {
+         uint16_t* dst = dst_rgb48 + 3 * (size_t)(height - y - 1) * width;
+         const uint32_t* src = (const uint32_t*)src_row + src_x;
+         for (x = 0; x < width; x++)
+         {
+            /* R10G10B10A2_UNORM: R[9:0] G[19:10] B[29:20] A[31:30] --
+             * same channel placement as Vulkan's A2B10G10R10. */
+            uint32_t px = src[x];
+            uint32_t r  = (px      ) & 0x3FFu;
+            uint32_t g  = (px >> 10) & 0x3FFu;
+            uint32_t b  = (px >> 20) & 0x3FFu;
+            uint32_t mx;
+            float    lvl;
+            /* 10->16 bit, replicating high bits so 0x3FF -> 0xFFFF. */
+            dst[3 * x + 0] = (uint16_t)((r << 6) | (r >> 4));
+            dst[3 * x + 1] = (uint16_t)((g << 6) | (g >> 4));
+            dst[3 * x + 2] = (uint16_t)((b << 6) | (b >> 4));
+            /* Light level = brightest channel decoded from PQ to nits. */
+            mx  = r; if (g > mx) mx = g; if (b > mx) mx = b;
+            lvl = dxgi_st2084_to_linear((float)mx * (1.0f / 1023.0f))
+                  * 10000.0f;
+            if (lvl > max_cll) max_cll = lvl;
+            sum_fall += lvl;
+         }
+      }
+   }
+   else if (src_format == DXGI_FORMAT_R16G16B16A16_FLOAT)
+   {
+      const uint8_t* src_row = (const uint8_t*)src_data
+            + (size_t)src_pitch * src_y;
+
+      for (y = 0; y < height; y++, src_row += src_pitch)
+      {
+         uint16_t* dst = dst_rgb48 + 3 * (size_t)(height - y - 1) * width;
+         const uint16_t* src = (const uint16_t*)src_row + (size_t)src_x * 4;
+         for (x = 0; x < width; x++)
+         {
+            /* scRGB: linear Rec.709, 1.0 = 80 nits.  Decode the halves,
+             * scale to absolute nits, PQ-encode into 16 bit.  Extended
+             * range (negatives, >10000 nits) clamps -- unavoidable for
+             * a UNORM PNG. */
+            float r = dxgi_half_to_float(src[x * 4 + 0]);
+            float g = dxgi_half_to_float(src[x * 4 + 1]);
+            float b = dxgi_half_to_float(src[x * 4 + 2]);
+            float lvl;
+            float nr = r * (80.0f / 10000.0f);
+            float ng = g * (80.0f / 10000.0f);
+            float nb = b * (80.0f / 10000.0f);
+            dst[3 * x + 0] = (uint16_t)(dxgi_st2084_encode(nr) * 65535.0f + 0.5f);
+            dst[3 * x + 1] = (uint16_t)(dxgi_st2084_encode(ng) * 65535.0f + 0.5f);
+            dst[3 * x + 2] = (uint16_t)(dxgi_st2084_encode(nb) * 65535.0f + 0.5f);
+            lvl = r; if (g > lvl) lvl = g; if (b > lvl) lvl = b;
+            lvl *= 80.0f;
+            if (lvl < 0.0f) lvl = 0.0f;
+            else if (lvl > 10000.0f) lvl = 10000.0f;
+            if (lvl > max_cll) max_cll = lvl;
+            sum_fall += lvl;
+         }
+      }
+   }
+   else
+      return false;
+
+   if (out_max_cll)
+      *out_max_cll  = max_cll;
+   if (out_max_fall)
+      *out_max_fall = (float)(sum_fall / ((double)width * (double)height));
+   return true;
+}
+
+void dxgi_hdr_meta_fill(
+      struct rpng_hdr_metadata *meta,
+      bool         is_scrgb,
+      float        max_cll,
+      float        max_fall,
+      float        max_luminance,
+      float        min_luminance)
+{
+   if (!meta)
+      return;
+
+   memset(meta, 0, sizeof(*meta));
+   meta->colour_primaries      = is_scrgb ? 1 : 9;
+   meta->transfer_function     = 16; /* SMPTE ST 2084 (PQ) */
+   meta->matrix_coefficients   = 0;  /* RGB (must be 0 for PNG) */
+   meta->video_full_range_flag = 1;
+
+   meta->max_cll  = max_cll;
+   meta->max_fall = max_fall;
+
+   meta->write_mdcv = 1;
+   if (is_scrgb)
+   {
+      /* Rec.709 primaries. */
+      meta->primary_chromaticity[0][0] = 0.640f; meta->primary_chromaticity[0][1] = 0.330f;
+      meta->primary_chromaticity[1][0] = 0.300f; meta->primary_chromaticity[1][1] = 0.600f;
+      meta->primary_chromaticity[2][0] = 0.150f; meta->primary_chromaticity[2][1] = 0.060f;
+   }
+   else
+   {
+      /* Rec.2020 primaries. */
+      meta->primary_chromaticity[0][0] = 0.708f; meta->primary_chromaticity[0][1] = 0.292f;
+      meta->primary_chromaticity[1][0] = 0.170f; meta->primary_chromaticity[1][1] = 0.797f;
+      meta->primary_chromaticity[2][0] = 0.131f; meta->primary_chromaticity[2][1] = 0.046f;
+   }
+   meta->white_point[0] = 0.3127f; meta->white_point[1] = 0.3290f; /* D65 */
+   meta->max_luminance  = max_luminance;
+   meta->min_luminance  = min_luminance;
 }
 #endif

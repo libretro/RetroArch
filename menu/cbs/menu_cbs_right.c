@@ -1472,8 +1472,7 @@ int menu_cbs_init_bind_right(menu_file_list_cbs_t *cbs,
 
    if (cbs->setting)
    {
-      if (     cbs->setting->type == ST_GROUP
-            && string_is_equal(cbs->setting->parent_group, MENU_ENUM_LABEL_MAIN_MENU_STR))
+      if (cbs->setting->free_flags & SD_FREE_FLAG_MAIN_MENU_GROUP)
       {
          BIND_ACTION_RIGHT(cbs, action_right_scroll);
          return 0;

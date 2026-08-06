@@ -181,7 +181,12 @@ struct cheat_manager
    unsigned num_matches;
    unsigned browse_address;
    char working_desc[CHEAT_DESC_SCRATCH_SIZE];
-   char working_code[CHEAT_CODE_SCRATCH_SIZE];
+   /* Sixteen kilobytes of cheat-editor scratch; allocated on first
+    * use and deliberately never freed: menu rows bind its address
+    * and outlive any one content session, exactly as they did the
+    * old static array. cheat_manager_working_code_ensure() must run
+    * before any use. */
+   char *working_code;
    bool big_endian;
    bool memory_initialized;
    bool memory_search_initialized;
@@ -237,6 +242,8 @@ void cheat_manager_state_free(void);
 void cheat_manager_alloc_if_empty(void);
 
 bool cheat_manager_copy_idx_to_working(unsigned idx);
+
+bool cheat_manager_working_code_ensure(void);
 
 bool cheat_manager_copy_working_to_idx(unsigned idx);
 

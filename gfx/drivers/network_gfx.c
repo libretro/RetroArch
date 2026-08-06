@@ -98,7 +98,6 @@ static void *network_gfx_init(const video_info_t *video,
    struct addrinfo *addr = NULL, *next_addr = NULL;
    settings_t *settings                 = config_get_ptr();
    network_video_t *network             = (network_video_t*)calloc(1, sizeof(*network));
-   bool video_font_enable               = settings->bools.video_font_enable;
    const char *joypad_driver            = settings->arrays.input_joypad_driver;
 
    *input                               = NULL;
@@ -115,7 +114,6 @@ static void *network_gfx_init(const video_info_t *video,
    gfx_ctx_network_input_driver(joypad_driver,
          input, input_data);
 
-   if (video_font_enable)
       font_driver_init_osd(network,
             video,
             false,

@@ -880,40 +880,6 @@ static void frontend_win32_env_get(int *argc, char *argv[],
 #endif
 }
 
-static uint64_t frontend_win32_get_total_mem(void)
-{
-   /* OSes below 2000 don't have the Ex version,
-    * and non-Ex cannot work with >4GB RAM */
-#if _WIN32_WINNT >= 0x0500
-   MEMORYSTATUSEX mem_info;
-   mem_info.dwLength = sizeof(MEMORYSTATUSEX);
-   GlobalMemoryStatusEx(&mem_info);
-   return mem_info.ullTotalPhys;
-#else
-   MEMORYSTATUS mem_info;
-   mem_info.dwLength = sizeof(MEMORYSTATUS);
-   GlobalMemoryStatus(&mem_info);
-   return mem_info.dwTotalPhys;
-#endif
-}
-
-static uint64_t frontend_win32_get_free_mem(void)
-{
-   /* OSes below 2000 don't have the Ex version,
-    * and non-Ex cannot work with >4GB RAM */
-#if _WIN32_WINNT >= 0x0500
-   MEMORYSTATUSEX mem_info;
-   mem_info.dwLength = sizeof(MEMORYSTATUSEX);
-   GlobalMemoryStatusEx(&mem_info);
-   return mem_info.ullAvailPhys;
-#else
-   MEMORYSTATUS mem_info;
-   mem_info.dwLength = sizeof(MEMORYSTATUS);
-   GlobalMemoryStatus(&mem_info);
-   return mem_info.dwAvailPhys;
-#endif
-}
-
 static void frontend_win32_attach_console(void)
 {
 #ifdef _WIN32
@@ -1238,7 +1204,7 @@ static bool accessibility_speak_windows(int speed,
 
    if (g_plat_win32_flags & PLAT_WIN32_FLAG_USE_POWERSHELL)
    {
-      const char *template_lang = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.SelectVoice(\\\"%s\\\"); $synth.Rate = %s; $synth.Speak($input);\"";
+      const char *template_lang = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; try { $synth.SelectVoice(\\\"%s\\\") } catch { }; $synth.Rate = %s; $synth.Speak($input);\"";
       const char *template_nolang = "powershell.exe -NoProfile -WindowStyle Hidden -Command \"Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = %s; $synth.Speak($input);\"";
       if (language && language[0] != '\0')
          snprintf(cmd, sizeof(cmd), template_lang, language, speeds[speed-1]);
@@ -1339,8 +1305,6 @@ frontend_ctx_driver_t frontend_ctx_win32 = {
    frontend_win32_get_arch,        /* get_architecture          */
    frontend_win32_get_powerstate,
    frontend_win32_parse_drive_list,
-   frontend_win32_get_total_mem,
-   frontend_win32_get_free_mem,
    NULL,                            /* install_signal_handler   */
    NULL,                            /* get_sighandler_state     */
    NULL,                            /* set_sighandler_state     */
@@ -1366,3 +1330,34 @@ frontend_ctx_driver_t frontend_ctx_win32 = {
    "win32",                         /* ident               */
    NULL                             /* get_video_driver    */
 };
+
+/* Windows GUI-subsystem entry point.
+ *
+ * RetroArch links as a GUI-subsystem app (-mwindows) so no console
+ * window appears. The C runtime startup that this pulls in calls
+ * WinMain rather than main on some toolchains (notably MSYS2's
+ * mingw-w64, via crtexewin.o). RetroArch's actual entry is main()
+ * (in retroarch.c, or ui_qt.cpp for Qt builds); that WinMain used to
+ * be supplied by SDL's shim library (libSDL2main), but RetroArch now
+ * sets SDL_MAIN_HANDLED and does not link -lSDL*main, so we provide
+ * the one-line bridge ourselves here.
+ *
+ * This lives in platform_win32.c because it is compiled exactly once
+ * for every Win32 desktop build regardless of which file owns main()
+ * and regardless of whether SDL is enabled. main() always has C
+ * linkage (the language gives it that specially), so no extern "C"
+ * dance is needed even under CXX_BUILD. */
+#if !defined(_XBOX) && !defined(__WINRT__)
+#include <stdlib.h> /* __argc, __argv */
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
+      LPSTR lpCmdLine, int nShowCmd)
+{
+   int main(int argc, char *argv[]);
+   (void)hInstance;
+   (void)hPrevInstance;
+   (void)lpCmdLine;
+   (void)nShowCmd;
+   return main(__argc, __argv);
+}
+#endif

@@ -379,7 +379,7 @@ command_t* command_stdin_new(void)
    command_t *cmd;
    command_stdin_t *stdincmd;
 
-#if !(defined(_WIN32) || defined(EMSCRIPTEN))
+#if !(defined(_WIN32) || defined(__EMSCRIPTEN__))
 #ifdef HAVE_NETWORKING
    if (!socket_nonblock(STDIN_FILENO))
       return NULL;
@@ -409,7 +409,7 @@ command_t* command_stdin_new(void)
 }
 #endif
 
-#if defined(EMSCRIPTEN)
+#if defined(__EMSCRIPTEN__)
 #include "frontend/drivers/platform_emscripten.h"
 typedef struct
 {
@@ -831,14 +831,14 @@ bool command_load_state_slot(command_t *cmd, const char *arg)
    bool ret                     = false;
    _len  = strlcpy(reply, "LOAD_STATE_SLOT ", sizeof(reply));
    _len += snprintf(reply + _len, sizeof(reply) - _len, "%d", slot);
-   if (savestates_enabled)
-   {
-      size_t info_size;
-      runloop_get_savestate_path(state_path, sizeof(state_path), slot);
-
-      info_size          = core_serialize_size();
-      savestates_enabled = (info_size > 0);
-   }
+   runloop_get_savestate_path(state_path, sizeof(state_path), slot);
+   /* For LOADING, an existing state file outranks metadata and
+    * save-capability probes: core_serialize_size() measures whether the
+    * core can SAVE right now (0 at e.g. a game's own main menu), which
+    * says nothing about whether it can restore. Let the load task and
+    * retro_unserialize() arbitrate. */
+   if (!savestates_enabled)
+      savestates_enabled = path_is_valid(state_path);
    if (savestates_enabled)
    {
       if ((ret = content_load_state(state_path, false, false)))
@@ -1067,11 +1067,175 @@ bool command_version(command_t *cmd, const char* arg)
    return true;
 }
 
+/* LOAD_CORE <core path>
+ *
+ * Mirrors selecting a core in the menu's core list / file browser,
+ * action_ok_load_core() -> generic_action_ok()'s ACTION_OK_LOAD_CORE
+ * branch.  Same task_push_load_new_core() call with the same arguments;
+ * the result is propagated rather than discarded so a bad core path is
+ * reported as a failed command instead of a silent no-op. */
 bool command_load_core(command_t *cmd, const char* arg)
 {
    content_ctx_info_t content_info = {0};
-   task_push_load_new_core(arg, NULL,
+
+   if (!arg || !*arg)
+      return false;
+
+#ifdef IOS
+   {
+      char exp[PATH_MAX_LENGTH];
+      fill_pathname_expand_special(exp, arg, sizeof(exp));
+      return task_push_load_new_core(exp, NULL,
+            &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+   }
+#else
+   return task_push_load_new_core(arg, NULL,
          &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+#endif
+}
+
+/* START_CORE
+ *
+ * Mirrors the Main Menu "Start Core" entry, action_ok_start_core():
+ * clears the content path and starts the currently loaded core without
+ * content.  The list_cache() call that entry makes first is menu
+ * animation bookkeeping and has no equivalent here. */
+bool command_start_core(command_t *cmd, const char* arg)
+{
+   content_ctx_info_t content_info = {0};
+
+   path_clear(RARCH_PATH_BASENAME);
+
+   return task_push_start_current_core(&content_info);
+}
+
+/* LOAD_CONTENT <core path>|<content path>
+ *
+ * The separator is '|' rather than a space because both operands are
+ * filesystem paths and may legitimately contain spaces.  Routed through
+ * the companion UI entry point so that the command interface takes the
+ * same content load path as any other frontend-external requester,
+ * rather than duplicating the menu-only variant. */
+bool command_load_content(command_t *cmd, const char* arg)
+{
+   char core_path[PATH_MAX_LENGTH];
+   content_ctx_info_t content_info = {0};
+   const char *sep                 = NULL;
+   size_t _len                     = 0;
+
+   if (!arg || !*arg)
+      return false;
+   if (!(sep = strchr(arg, '|')))
+      return false;
+
+   _len = (size_t)(sep - arg);
+   if (_len == 0 || _len >= sizeof(core_path))
+      return false;
+   if (!*(sep + 1))
+      return false;
+
+   memcpy(core_path, arg, _len);
+   core_path[_len] = '\0';
+
+#ifdef IOS
+   {
+      char exp[PATH_MAX_LENGTH];
+      fill_pathname_expand_special(exp, sep + 1, sizeof(exp));
+      return task_push_load_content_with_new_core_from_companion_ui(
+            core_path, exp, NULL, NULL, NULL, &content_info, NULL, NULL);
+   }
+#else
+   return task_push_load_content_with_new_core_from_companion_ui(
+         core_path, sep + 1, NULL, NULL, NULL, &content_info, NULL, NULL);
+#endif
+}
+
+/* CLOSE_CONTENT
+ *
+ * On HAVE_MENU builds this is CMD_EVENT_CLOSE_CONTENT, the same event the
+ * Quick Menu "Close Content" entry issues.
+ *
+ * On builds without a menu, CMD_EVENT_CLOSE_CONTENT is defined as
+ * CMD_EVENT_QUIT -- reasonable for a hotkey on a frontend that has
+ * nowhere to return to, but wrong here: a command interface consumer
+ * asking to close content is not asking to terminate the process, and
+ * has no way to discover that the two are the same on this build.  Use
+ * CMD_EVENT_UNLOAD_CORE instead, which unloads the core and starts the
+ * dummy core.  That is as close to "content closed" as a menuless build
+ * gets, and it leaves the process alive to accept further commands.
+ *
+ * This was previously a map[] entry driving RARCH_CLOSE_CONTENT_KEY,
+ * which is not what the menu entry does either: the hotkey path in
+ * runloop_iterate() also applies the 'confirm_close' double press timer,
+ * and nothing external can produce the second press inside the window,
+ * so with that setting enabled the command was silently swallowed.  The
+ * menu entry's confirmation is a dialog rather than a timer and is
+ * equally unreachable over the command interface, so neither form of
+ * confirmation applies on this path. */
+bool command_close_content(command_t *cmd, const char* arg)
+{
+#ifdef HAVE_MENU
+   return command_event(CMD_EVENT_CLOSE_CONTENT, NULL);
+#else
+   return command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+#endif
+}
+
+/* UNLOAD_CORE
+ *
+ * CMD_EVENT_UNLOAD_CORE releases the core and starts the dummy core, and
+ * is not menu dependent.  The Main Menu "Unload Core" entry issues the
+ * same event and then clears the last core path; that clear is a
+ * frontend path operation rather than a menu one, so it belongs here
+ * too.  Only the entry refresh afterwards is menu state. */
+bool command_unload_core(command_t *cmd, const char* arg)
+{
+   if (!command_event(CMD_EVENT_UNLOAD_CORE, NULL))
+      return false;
+
+   path_clear(RARCH_PATH_CORE_LAST);
+
+#ifdef HAVE_MENU
+   {
+      struct menu_state *menu_st = menu_state_get_ptr();
+      if (menu_st)
+         menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                         |  MENU_ST_FLAG_PREVENT_POPULATE;
+   }
+#endif
+
+   return true;
+}
+
+/* VIDEO_REINIT / AUDIO_REINIT / DRIVERS_REINIT
+ *
+ * Driver reinit, split by scope.  None has a menu equivalent; they exist
+ * so that a driver teardown and rebuild can be triggered on its own,
+ * rather than only as a side effect of loading content.
+ *
+ * CMD_EVENT_REINIT takes an optional driver mask through its data
+ * pointer and falls back to DRIVERS_CMD_ALL when passed NULL, so
+ * VIDEO_REINIT passes DRIVER_VIDEO_MASK explicitly rather than relying on
+ * the default -- otherwise it would tear down audio, input, MIDI and the
+ * rest as well, and would not be a video reinit at all.  A video-only
+ * mask through video_driver_reinit() is what the CRT switch path already
+ * does.  DRIVERS_REINIT keeps the all-drivers behaviour under a name that
+ * says so. */
+bool command_video_reinit(command_t *cmd, const char* arg)
+{
+   int flags = DRIVER_VIDEO_MASK;
+   command_event(CMD_EVENT_REINIT, &flags);
+   return true;
+}
+
+bool command_audio_reinit(command_t *cmd, const char* arg)
+{
+   return command_event(CMD_EVENT_AUDIO_REINIT, NULL);
+}
+
+bool command_drivers_reinit(command_t *cmd, const char* arg)
+{
+   command_event(CMD_EVENT_REINIT, NULL);
    return true;
 }
 
@@ -1215,8 +1379,7 @@ bool command_get_status(command_t *cmd, const char* arg)
       else
          strlcpy_append(reply, sizeof(reply), &_len, "UNKNOWN");
 
-      _len += snprintf(reply + _len, sizeof(reply) - _len,
-            ",crc32=%lx\n", (unsigned long)content_get_crc());
+      strlcpy_append(reply, sizeof(reply), &_len, "\n");
    }
    else
       _len = strlcpy(reply, "GET_STATUS CONTENTLESS", sizeof(reply));
@@ -1601,8 +1764,8 @@ bool command_event_load_entry_state(settings_t *settings)
    runloop_state_t *runloop_st     = runloop_state_get_ptr();
    bool ret                        = false;
 
-   if (!core_info_current_supports_savestate())
-      return false;
+   /* No early save-capability gate here: content_load_state() decides,
+    * and an existing entry-state file outranks stale metadata. */
 
 #ifdef HAVE_CHEEVOS
    if (rcheevos_hardcore_active())
@@ -1650,8 +1813,8 @@ bool command_event_load_auto_state(void)
    const char *name_savestate      = runloop_st->name.savestate;
    bool ret                        = false;
 
-   if (!core_info_current_supports_savestate())
-      return false;
+   /* No early save-capability gate here: content_load_state() decides,
+    * and an existing .auto state file outranks stale metadata. */
 
 #ifdef HAVE_CHEEVOS
    if (rcheevos_hardcore_active())
@@ -1915,14 +2078,18 @@ void command_event_set_savestate_auto_index(settings_t *settings)
    bool savestate_auto_index = settings->bools.savestate_auto_index;
    if (savestate_auto_index)
    {
+      int prev_slot          = settings->ints.state_slot;
       command_scan_states(
             settings->bools.show_hidden_files,
             settings->uints.savestate_max_keep,
             settings->ints.state_slot, &max_idx, NULL);
       configuration_set_int(settings, settings->ints.state_slot, max_idx);
-      RARCH_LOG("[State] %s: #%d.\n",
+      RARCH_LOG("[State] %s: #%d (slot reset %d -> %u from on-disk scan, "
+            "max_keep %u). If the previous slot was higher, earlier saves "
+            "may be missing on disk.\n",
             msg_hash_to_str(MSG_FOUND_LAST_STATE_SLOT),
-            max_idx);
+            max_idx, prev_slot, max_idx,
+            settings->uints.savestate_max_keep);
    }
    else
       /* Reset savestate index to 0 when loading content. */
@@ -2426,7 +2593,18 @@ bool command_event_main_state(unsigned cmd)
                      settings->bools.frame_time_counter_auto_reset;
 
                if (cmd == CMD_EVENT_SAVE_STATE)
-                  content_save_state(state_path, true);
+               {
+                  bool queued = content_save_state(state_path, true);
+                  RARCH_LOG("[State] save dispatch for slot %d, path "
+                        "\"%s\": content_save_state queued=%s "
+                        "(auto_index=%s, max_keep=%u). NOTE: actual disk "
+                        "write is asynchronous; success is only known when "
+                        "the save task completes.\n",
+                        settings->ints.state_slot, state_path,
+                        queued ? "yes" : "NO",
+                        savestate_auto_index ? "on" : "off",
+                        savestate_max_keep);
+               }
                else
                   content_save_state_to_ram();
 

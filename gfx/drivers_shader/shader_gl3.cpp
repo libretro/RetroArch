@@ -2497,6 +2497,8 @@ bool gl3_filter_chain::compile_full_pass(unsigned pass_idx,
          output.meta.rt_format = SLANG_FORMAT_R8G8B8A8_SRGB;
       else if (pass->fbo.flags & FBO_SCALE_FLAG_FP_FBO)
          output.meta.rt_format = SLANG_FORMAT_R16G16B16A16_SFLOAT;
+      else if (pass->fbo.flags & FBO_SCALE_FLAG_RGB10_FBO)
+         output.meta.rt_format = SLANG_FORMAT_A2B10G10R10_UNORM_PACK32;
 
       p_info.rt_format =
          gl3_shader::convert_glslang_format(output.meta.rt_format);
@@ -2843,6 +2845,15 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
 
    shader->num_parameters = 0;
 
+   /* One include cache for every pass of this preset.  The passes share
+    * helper .inc files, so without this each pass re-reads them: a
+    * 24-pass preset over 8 shared helpers issues 216 reads for 32
+    * distinct files.  The guard frees it on every exit from here,
+    * including the error paths below. */
+   {
+   glslang_include_cache_guard include_cache_guard;
+   void *include_cache = include_cache_guard.handle;
+
    for (i = 0; i < shader->passes; i++)
    {
       glslang_output output;
@@ -2861,7 +2872,8 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
       pass_info.address       = GLSLANG_FILTER_CHAIN_ADDRESS_REPEAT;
       pass_info.max_levels    = 0;
 
-      if (!glslang_compile_shader(pass->source.path, &output))
+      if (!glslang_compile_shader_cached(pass->source.path, &output,
+               include_cache))
       {
          RARCH_ERR("[GLCore] Failed to compile shader: \"%s\".\n",
                pass->source.path);
@@ -3008,6 +3020,8 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
             output.meta.rt_format = SLANG_FORMAT_R8G8B8A8_SRGB;
          else if (pass->fbo.flags & FBO_SCALE_FLAG_FP_FBO)
             output.meta.rt_format = SLANG_FORMAT_R16G16B16A16_SFLOAT;
+         else if (pass->fbo.flags & FBO_SCALE_FLAG_RGB10_FBO)
+            output.meta.rt_format = SLANG_FORMAT_A2B10G10R10_UNORM_PACK32;
 
          pass_info.rt_format = gl3_shader::convert_glslang_format(output.meta.rt_format);
          RARCH_LOG("[GLCore] Using render target format %s for pass output #%u.\n",
@@ -3052,6 +3066,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
 
       chain->set_pass_info(i, pass_info);
    }
+   }   /* include cache scope: freed here, and on any early return above */
 
    if (last_pass_is_fbo)
    {

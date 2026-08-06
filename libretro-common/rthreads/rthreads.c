@@ -70,6 +70,20 @@
 #if defined(__MACH__) && defined(__APPLE__)
 #include <mach/clock.h>
 #include <mach/mach.h>
+#include <TargetConditionals.h>
+#include <AvailabilityMacros.h> /* MAC_OS_X_VERSION_MIN_REQUIRED (since 10.2) */
+/* The pthread QoS override API (pthread_override_qos_class_start_np, used by
+ * sthread_priority_override_*) exists only on macOS 10.10+ / iOS 8.0+, and
+ * RetroArch still ships deployment targets below that (OS X 10.5, iOS 6)
+ * where the symbol is absent in both SDK and runtime. Gate on the
+ * deployment-target version. TARGET_OS_* keeps the macOS check from firing
+ * on iOS; numeric literals are used because the MAC_OS_X_VERSION_10_10 /
+ * __IPHONE_8_0 constants are undefined on old SDKs (and would expand to 0). */
+#if (TARGET_OS_OSX && defined(MAC_OS_X_VERSION_MIN_REQUIRED) && MAC_OS_X_VERSION_MIN_REQUIRED >= 101000) || \
+    (TARGET_OS_IPHONE && defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && __IPHONE_OS_VERSION_MIN_REQUIRED >= 80000)
+#define RTHREADS_HAVE_QOS_OVERRIDE 1
+#include <pthread/qos.h>
+#endif
 #endif
 
 struct thread_data
@@ -158,7 +172,7 @@ sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
 }
 
 /* TODO/FIXME - this needs to be implemented for Switch/3DS */
-#if !defined(SWITCH) && !defined(USE_WIN32_THREADS) && !defined(_3DS) && !defined(GEKKO) && !defined(__HAIKU__) && !defined(EMSCRIPTEN)
+#if !defined(SWITCH) && !defined(USE_WIN32_THREADS) && !defined(_3DS) && !defined(GEKKO) && !defined(__HAIKU__) && !defined(__EMSCRIPTEN__)
 #define HAVE_THREAD_ATTR
 #endif
 
@@ -785,6 +799,18 @@ bool sthread_tls_create(sthread_tls_t *tls)
 #endif
 }
 
+bool sthread_tls_create_with_dtor(sthread_tls_t *tls,
+      void (*destructor)(void *value))
+{
+#ifdef USE_WIN32_THREADS
+   /* TlsAlloc() provides no destructor callback; created without one. */
+   (void)destructor;
+   return (*tls = TlsAlloc()) != TLS_OUT_OF_INDEXES;
+#else
+   return pthread_key_create((pthread_key_t*)tls, destructor) == 0;
+#endif
+}
+
 bool sthread_tls_delete(sthread_tls_t *tls)
 {
 #ifdef USE_WIN32_THREADS
@@ -826,5 +852,67 @@ uintptr_t sthread_get_current_thread_id(void)
    return (uintptr_t)GetCurrentThreadId();
 #else
    return (uintptr_t)pthread_self();
+#endif
+}
+
+bool sthread_is_main_thread(void)
+{
+#if defined(__APPLE__)
+   /* BSD/Darwin extension reporting whether the caller is the initial
+    * thread. pthread.h is already included on this backend. */
+   return pthread_main_np() != 0;
+#else
+   /* No native predicate on this backend; current callers are Apple-only.
+    * See the header note for the portable captured-id alternative. */
+   return false;
+#endif
+}
+
+/* pthread_cancel / pthread_setcancelstate are POSIX but not universally
+ * available: notably absent on Android/Bionic, and meaningless on the
+ * non-pthread backends. Enable only where the backend provides them. */
+#if !defined(USE_WIN32_THREADS) && !defined(GEKKO) && !defined(_3DS) && !defined(__ANDROID__)
+#define RTHREADS_HAVE_CANCEL 1
+#endif
+
+void sthread_set_cancel_enable(bool enable)
+{
+#ifdef RTHREADS_HAVE_CANCEL
+   pthread_setcancelstate(
+         enable ? PTHREAD_CANCEL_ENABLE : PTHREAD_CANCEL_DISABLE, NULL);
+#else
+   (void)enable;
+#endif
+}
+
+bool sthread_cancel(sthread_t *thread)
+{
+#ifdef RTHREADS_HAVE_CANCEL
+   if (thread)
+      return pthread_cancel(thread->id) == 0;
+   return false;
+#else
+   (void)thread;
+   return false;
+#endif
+}
+
+void *sthread_priority_override_begin(void)
+{
+#ifdef RTHREADS_HAVE_QOS_OVERRIDE
+   return (void*)pthread_override_qos_class_start_np(
+         pthread_self(), QOS_CLASS_USER_INTERACTIVE, 0);
+#else
+   return NULL;
+#endif
+}
+
+void sthread_priority_override_end(void *ovr)
+{
+#ifdef RTHREADS_HAVE_QOS_OVERRIDE
+   if (ovr)
+      pthread_override_qos_class_end_np((pthread_override_t)ovr);
+#else
+   (void)ovr;
 #endif
 }

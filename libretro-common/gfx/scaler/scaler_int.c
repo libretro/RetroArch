@@ -86,7 +86,9 @@ void scaler_argb8888_vert(const struct scaler_ctx *ctx, void *output_, int strid
          for (y = 0; (y + 1) < ctx->vert.filter_len; y += 2,
                input_base_y += (ctx->scaled.stride >> 2))
          {
-            __m128i coeff = _mm_set_epi64x(filter_vert[y + 1] * 0x0001000100010001ll, filter_vert[y + 0] * 0x0001000100010001ll);
+            __m128i coeff = _mm_unpacklo_epi64(
+                  _mm_set1_epi16(filter_vert[y + 0]),
+                  _mm_set1_epi16(filter_vert[y + 1]));
             __m128i col   = _mm_set_epi64x(input_base_y[ctx->scaled.stride >> 3], input_base_y[0]);
 
             res           = _mm_adds_epi16(_mm_mulhi_epi16(col, coeff), res);
@@ -94,7 +96,7 @@ void scaler_argb8888_vert(const struct scaler_ctx *ctx, void *output_, int strid
 
          for (; y < ctx->vert.filter_len; y++, input_base_y += (ctx->scaled.stride >> 3))
          {
-            __m128i coeff = _mm_set_epi64x(0, filter_vert[y] * 0x0001000100010001ll);
+            __m128i coeff = _mm_set1_epi16(filter_vert[y]);
             __m128i col   = _mm_set_epi64x(0, input_base_y[0]);
 
             res           = _mm_adds_epi16(_mm_mulhi_epi16(col, coeff), res);
@@ -171,7 +173,9 @@ void scaler_argb8888_horiz(const struct scaler_ctx *ctx, const void *input_, int
 #endif
          for (x = 0; (x + 1) < ctx->horiz.filter_len; x += 2)
          {
-            __m128i coeff = _mm_set_epi64x(filter_horiz[x + 1] * 0x0001000100010001ll, filter_horiz[x + 0] * 0x0001000100010001ll);
+            __m128i coeff = _mm_unpacklo_epi64(
+                  _mm_set1_epi16(filter_horiz[x + 0]),
+                  _mm_set1_epi16(filter_horiz[x + 1]));
 
             __m128i col   = _mm_unpacklo_epi8(_mm_set_epi64x(0,
                      ((uint64_t)input_base_x[x + 1] << 32) | input_base_x[x + 0]), _mm_setzero_si128());
@@ -182,7 +186,7 @@ void scaler_argb8888_horiz(const struct scaler_ctx *ctx, const void *input_, int
 
          for (; x < ctx->horiz.filter_len; x++)
          {
-            __m128i coeff = _mm_set_epi64x(0, filter_horiz[x] * 0x0001000100010001ll);
+            __m128i coeff = _mm_set1_epi16(filter_horiz[x]);
             __m128i col   = _mm_unpacklo_epi8(_mm_set_epi32(0, 0, 0, input_base_x[x]), _mm_setzero_si128());
 
             col           = _mm_slli_epi16(col, 7);
@@ -257,5 +261,274 @@ void scaler_argb8888_point_special(const struct scaler_ctx *ctx,
 
       for (w = 0; w < out_width; w++, x += x_step)
          output[w] = inp[x >> 16];
+   }
+}
+
+/* XRGB2101010 scalers.
+ *
+ * Same fixed-point chain as the 8-bit pair above, retuned for 10-bit
+ * channels.  A channel is expanded to occupy 15 bits with the sign bit
+ * left empty for the signed multiply, so the shift is 5 rather than 7
+ * (1023 << 5 == 32736, which still fits int16).  The mulhi chain costs
+ * 2 bits per pass exactly as before - 15 -> 13 after horiz, 13 -> 11
+ * after vert - so the final shift is (5 - 2 - 2) == 1, landing 10 bits.
+ *
+ * The packed layout is the one the 10-bit upload paths and rpng agree
+ * on: A in [31:30], R in [29:20], G in [19:10], B in [9:0].  Alpha is
+ * only two bits, so it is not filtered - it is carried through as fully
+ * opaque, matching conv/blit behaviour for this format.
+ *
+ * The intermediate (ctx->scaled.frame) holds 16 bits per channel and is
+ * shared with the 8-bit path unchanged; only the pack/unpack ends
+ * differ. */
+
+static INLINE uint16_t clamp_10bit(int val)
+{
+   if (val > 1023)
+      return 1023;
+   if (val < 0)
+      return 0;
+   return (uint16_t)val;
+}
+
+/* Vectorised across taps, not across output pixels.
+ *
+ * Going across pixels needs a per-pixel _mm_set_epi16 of three
+ * shifted-and-masked fields, and that lane assembly costs more than the
+ * multiply it feeds - measured, it loses.  Going across taps needs no
+ * lane assembly at all: eight consecutive taps are eight consecutive
+ * input pixels, so the three 10-bit fields fall out of shifts and masks
+ * on packed dwords, and (r * coeff) >> 16 is exactly _mm_mulhi_epi16.
+ *
+ * The per-pixel reduction has to stay in registers.  Spilling the
+ * accumulators to a scratch array and summing them scalar-side gives
+ * back more than the vector loop wins, because sinc runs only 8 or 16
+ * taps and the reduction is then most of the work. */
+void scaler_xrgb2101010_horiz(const struct scaler_ctx *ctx,
+      const void *input_, int stride)
+{
+   int h, w, x;
+   const uint32_t *input = (const uint32_t*)input_;
+   uint64_t *output      = ctx->scaled.frame;
+
+#if defined(__SSE2__)
+   /* Sinc runs 8 or 16 taps; bilinear runs 2 and point runs 1.  The
+    * choice is made out here rather than inside the pixel loop so the
+    * short-filter path keeps exactly the code it had - a per-pixel
+    * branch on filter_len costs bilinear about 7%. */
+   if (ctx->horiz.filter_len >= 8)
+   {
+      const int filter_len = ctx->horiz.filter_len;
+      const __m128i mask10 = _mm_set1_epi32(0x3ff);
+      const __m128i ones   = _mm_set1_epi16(1);
+
+      for (h = 0; h < ctx->scaled.height; h++, input += stride >> 2,
+            output += ctx->scaled.stride >> 3)
+      {
+         const int16_t *filter_horiz = ctx->horiz.filter;
+
+         for (w = 0; w < ctx->scaled.width; w++,
+               filter_horiz += ctx->horiz.filter_stride)
+         {
+            const uint32_t *input_base_x = input + ctx->horiz.filter_pos[w];
+            __m128i acc_r = _mm_setzero_si128();
+            __m128i acc_g = _mm_setzero_si128();
+            __m128i acc_b = _mm_setzero_si128();
+            __m128i sum;
+            int16_t res_r, res_g, res_b;
+
+            for (x = 0; x + 8 <= filter_len; x += 8)
+            {
+               __m128i p0 = _mm_loadu_si128(
+                     (const __m128i*)(const void*)(input_base_x + x));
+               __m128i p1 = _mm_loadu_si128(
+                     (const __m128i*)(const void*)(input_base_x + x + 4));
+               __m128i c  = _mm_loadu_si128(
+                     (const __m128i*)(const void*)(filter_horiz + x));
+               /* every field is below 1024 << 5, so packs_epi32 never
+                * saturates and the int16 view is exact */
+               __m128i r  = _mm_packs_epi32(
+                     _mm_slli_epi32(_mm_and_si128(
+                           _mm_srli_epi32(p0, 20), mask10), 5),
+                     _mm_slli_epi32(_mm_and_si128(
+                           _mm_srli_epi32(p1, 20), mask10), 5));
+               __m128i g  = _mm_packs_epi32(
+                     _mm_slli_epi32(_mm_and_si128(
+                           _mm_srli_epi32(p0, 10), mask10), 5),
+                     _mm_slli_epi32(_mm_and_si128(
+                           _mm_srli_epi32(p1, 10), mask10), 5));
+               __m128i b  = _mm_packs_epi32(
+                     _mm_slli_epi32(_mm_and_si128(p0, mask10), 5),
+                     _mm_slli_epi32(_mm_and_si128(p1, mask10), 5));
+
+               /* mulhi_epi16 is exactly (a * b) >> 16 for signed 16-bit */
+               acc_r = _mm_add_epi16(acc_r, _mm_mulhi_epi16(r, c));
+               acc_g = _mm_add_epi16(acc_g, _mm_mulhi_epi16(g, c));
+               acc_b = _mm_add_epi16(acc_b, _mm_mulhi_epi16(b, c));
+            }
+
+            /* summing the lanes in 32-bit and truncating leaves the same
+             * low 16 bits as the scalar accumulator's wrapping adds */
+            sum   = _mm_madd_epi16(acc_r, ones);
+            sum   = _mm_add_epi32(sum, _mm_shuffle_epi32(sum, 0x4e));
+            sum   = _mm_add_epi32(sum, _mm_shuffle_epi32(sum, 0xb1));
+            res_r = (int16_t)_mm_cvtsi128_si32(sum);
+
+            sum   = _mm_madd_epi16(acc_g, ones);
+            sum   = _mm_add_epi32(sum, _mm_shuffle_epi32(sum, 0x4e));
+            sum   = _mm_add_epi32(sum, _mm_shuffle_epi32(sum, 0xb1));
+            res_g = (int16_t)_mm_cvtsi128_si32(sum);
+
+            sum   = _mm_madd_epi16(acc_b, ones);
+            sum   = _mm_add_epi32(sum, _mm_shuffle_epi32(sum, 0x4e));
+            sum   = _mm_add_epi32(sum, _mm_shuffle_epi32(sum, 0xb1));
+            res_b = (int16_t)_mm_cvtsi128_si32(sum);
+
+            for (; x < filter_len; x++)
+            {
+               uint32_t col   = input_base_x[x];
+               int16_t r      = (int16_t)(((col >> 20) & 0x3ff) << 5);
+               int16_t g      = (int16_t)(((col >> 10) & 0x3ff) << 5);
+               int16_t b      = (int16_t)(( col        & 0x3ff) << 5);
+               int16_t coeff  = filter_horiz[x];
+               res_r         += (r * coeff) >> 16;
+               res_g         += (g * coeff) >> 16;
+               res_b         += (b * coeff) >> 16;
+            }
+
+            output[w]         = (
+                  (uint64_t)0     << 48)  |
+                  ((uint64_t)(uint16_t)res_r << 32)  |
+                  ((uint64_t)(uint16_t)res_g << 16)  |
+                  ((uint64_t)(uint16_t)res_b << 0);
+         }
+      }
+      return;
+   }
+#endif
+
+   for (h = 0; h < ctx->scaled.height; h++, input += stride >> 2,
+         output += ctx->scaled.stride >> 3)
+   {
+      const int16_t *filter_horiz = ctx->horiz.filter;
+
+      for (w = 0; w < ctx->scaled.width; w++,
+            filter_horiz += ctx->horiz.filter_stride)
+      {
+         const uint32_t *input_base_x = input + ctx->horiz.filter_pos[w];
+         int16_t res_r = 0;
+         int16_t res_g = 0;
+         int16_t res_b = 0;
+
+         for (x = 0; x < ctx->horiz.filter_len; x++)
+         {
+            uint32_t col   = input_base_x[x];
+
+            int16_t r      = (int16_t)(((col >> 20) & 0x3ff) << 5);
+            int16_t g      = (int16_t)(((col >> 10) & 0x3ff) << 5);
+            int16_t b      = (int16_t)(( col        & 0x3ff) << 5);
+
+            int16_t coeff  = filter_horiz[x];
+
+            res_r         += (r * coeff) >> 16;
+            res_g         += (g * coeff) >> 16;
+            res_b         += (b * coeff) >> 16;
+         }
+
+         output[w]         = (
+               (uint64_t)0     << 48)  |
+               ((uint64_t)(uint16_t)res_r << 32)  |
+               ((uint64_t)(uint16_t)res_g << 16)  |
+               ((uint64_t)(uint16_t)res_b << 0);
+
+      }
+   }
+}
+
+void scaler_xrgb2101010_vert(const struct scaler_ctx *ctx,
+      void *output_, int stride)
+{
+   int h, w, y;
+   const uint64_t      *input = ctx->scaled.frame;
+   uint32_t           *output = (uint32_t*)output_;
+
+   const int16_t *filter_vert = ctx->vert.filter;
+
+   for (h = 0; h < ctx->out_height; h++,
+         filter_vert += ctx->vert.filter_stride, output += stride >> 2)
+   {
+      const uint64_t *input_base = input + ctx->vert.filter_pos[h]
+         * (ctx->scaled.stride >> 3);
+
+      for (w = 0; w < ctx->out_width; w++)
+      {
+         const uint64_t *input_base_y = input_base + w;
+#if defined(__SSE2__)
+         int16_t res_r, res_g, res_b;
+         __m128i res = _mm_setzero_si128();
+
+         /* Two source rows per iteration, as the 8-bit path does.
+          * The result cannot go through _mm_packus_epi16 - that
+          * saturates to 8 bits - so the channels are extracted and
+          * clamped to 10 bits individually below. */
+         for (y = 0; (y + 1) < ctx->vert.filter_len; y += 2,
+               input_base_y += (ctx->scaled.stride >> 2))
+         {
+            __m128i coeff = _mm_unpacklo_epi64(
+                  _mm_set1_epi16(filter_vert[y + 0]),
+                  _mm_set1_epi16(filter_vert[y + 1]));
+            __m128i col   = _mm_set_epi64x(
+                  input_base_y[ctx->scaled.stride >> 3], input_base_y[0]);
+
+            res           = _mm_adds_epi16(_mm_mulhi_epi16(col, coeff), res);
+         }
+
+         for (; y < ctx->vert.filter_len; y++,
+               input_base_y += (ctx->scaled.stride >> 3))
+         {
+            __m128i coeff = _mm_set1_epi16(filter_vert[y]);
+            __m128i col   = _mm_set_epi64x(0, input_base_y[0]);
+
+            res           = _mm_adds_epi16(_mm_mulhi_epi16(col, coeff), res);
+         }
+
+         res   = _mm_adds_epi16(_mm_srli_si128(res, 8), res);
+         res   = _mm_srai_epi16(res, (5 - 2 - 2));
+
+         res_b = (int16_t)_mm_extract_epi16(res, 0);
+         res_g = (int16_t)_mm_extract_epi16(res, 1);
+         res_r = (int16_t)_mm_extract_epi16(res, 2);
+#else
+         int16_t res_r = 0;
+         int16_t res_g = 0;
+         int16_t res_b = 0;
+
+         for (y = 0; y < ctx->vert.filter_len; y++,
+               input_base_y += (ctx->scaled.stride >> 3))
+         {
+            uint64_t col   = *input_base_y;
+
+            int16_t r      = (int16_t)((col >> 32) & 0xffff);
+            int16_t g      = (int16_t)((col >> 16) & 0xffff);
+            int16_t b      = (int16_t)((col >>  0) & 0xffff);
+
+            int16_t coeff  = filter_vert[y];
+
+            res_r         += (r * coeff) >> 16;
+            res_g         += (g * coeff) >> 16;
+            res_b         += (b * coeff) >> 16;
+         }
+
+         res_r           >>= (5 - 2 - 2);
+         res_g           >>= (5 - 2 - 2);
+         res_b           >>= (5 - 2 - 2);
+#endif
+
+         output[w]         =
+            (0x3u                  << 30) |
+            (clamp_10bit(res_r)    << 20) |
+            (clamp_10bit(res_g)    << 10) |
+            (clamp_10bit(res_b)    <<  0);
+      }
    }
 }

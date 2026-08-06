@@ -505,8 +505,8 @@ static void *win32_display_server_get_resolution_list(
 {
    DEVMODE dm                 = {0};
    unsigned i                 = 0;
-   unsigned j                 = 0;
    unsigned count             = 0;
+   unsigned capacity          = 64;
    unsigned curr_width        = 0;
    unsigned curr_height       = 0;
    unsigned curr_bpp          = 0;
@@ -529,6 +529,18 @@ static void *win32_display_server_get_resolution_list(
 #endif
    }
 
+   /* Each win32_get_video_output() call is an EnumDisplaySettingsEx()
+    * round-trip into the display driver, and modern GPU/monitor
+    * combinations expose hundreds of modes; enumerate the mode list
+    * once and grow the result array as needed instead of walking the
+    * list twice (count pass + fill pass). */
+   if (!(conf = (struct video_display_config*)
+         calloc(capacity, sizeof(*conf))))
+   {
+      *len = 0;
+      return NULL;
+   }
+
    for (i = 0; win32_get_video_output(&dm, i); i++)
    {
       if (dm.dmBitsPerPel != curr_bpp)
@@ -540,50 +552,47 @@ static void *win32_display_server_get_resolution_list(
          continue;
 #endif
 
+      if (count == capacity)
+      {
+         struct video_display_config *tmp = NULL;
+         capacity *= 2;
+         if (!(tmp = (struct video_display_config*)realloc(
+               conf, capacity * sizeof(*conf))))
+         {
+            free(conf);
+            *len = 0;
+            return NULL;
+         }
+         conf = tmp;
+      }
+
+      conf[count].width            = dm.dmPelsWidth;
+      conf[count].height           = dm.dmPelsHeight;
+      conf[count].bpp              = dm.dmBitsPerPel;
+      conf[count].refreshrate      = dm.dmDisplayFrequency;
+      /* It may be possible to get exact refresh rate via different API - for now, it is integer only */
+      conf[count].refreshrate_float = 0.0f;
+      conf[count].idx              = count;
+      conf[count].current          = false;
+#if _WIN32_WINNT >= 0x0500
+      conf[count].interlaced       = (dm.dmDisplayFlags & DM_INTERLACED) ? true : false;
+#else
+      conf[count].interlaced       = false;
+#endif
+      conf[count].dblscan          = false; /* no flag for doublescan on this platform */
+
+      if (   (conf[count].width       == curr_width)
+          && (conf[count].height      == curr_height)
+          && (conf[count].bpp         == curr_bpp)
+          && (conf[count].refreshrate == curr_refreshrate)
+          && (conf[count].interlaced  == curr_interlaced)
+         )
+         conf[count].current       = true;
+
       count++;
    }
 
    *len = count;
-   if (!(conf = (struct video_display_config*)
-      calloc(*len, sizeof(struct video_display_config))))
-      return NULL;
-
-   for (i = 0, j = 0; win32_get_video_output(&dm, i); i++)
-   {
-      if (dm.dmBitsPerPel != curr_bpp)
-         continue;
-#if _WIN32_WINNT >= 0x0500
-      if (dm.dmDisplayOrientation != curr_orientation)
-         continue;
-      if (dm.dmDisplayFixedOutput != DMDFO_DEFAULT)
-         continue;
-#endif
-
-      conf[j].width            = dm.dmPelsWidth;
-      conf[j].height           = dm.dmPelsHeight;
-      conf[j].bpp              = dm.dmBitsPerPel;
-      conf[j].refreshrate      = dm.dmDisplayFrequency;
-      /* It may be possible to get exact refresh rate via different API - for now, it is integer only */
-      conf[j].refreshrate_float = 0.0f;
-      conf[j].idx              = j;
-      conf[j].current          = false;
-#if _WIN32_WINNT >= 0x0500
-      conf[j].interlaced       = (dm.dmDisplayFlags & DM_INTERLACED) ? true : false;
-#else
-      conf[j].interlaced       = false;
-#endif
-      conf[j].dblscan          = false; /* no flag for doublescan on this platform */
-
-      if (   (conf[j].width       == curr_width)
-          && (conf[j].height      == curr_height)
-          && (conf[j].bpp         == curr_bpp)
-          && (conf[j].refreshrate == curr_refreshrate)
-          && (conf[j].interlaced  == curr_interlaced)
-         )
-         conf[j].current       = true;
-
-      j++;
-   }
 
    qsort(
          conf, count,

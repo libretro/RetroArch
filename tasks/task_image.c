@@ -18,8 +18,18 @@
 #include <string.h>
 #include <math.h>
 
-#include <file/nbio.h>
+#include <formats/data_transfer.h>
+#ifdef HAVE_RWEBP
+#include <formats/rwebp.h>
+#endif
+#ifdef HAVE_RPNG
+#include <formats/rpng.h>
+#endif
+#ifdef HAVE_RJPEG
+#include <formats/rjpeg.h>
+#endif
 #include <formats/image.h>
+#include <gfx/scaler/scaler.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
 #include <features/features_cpu.h>
@@ -29,6 +39,7 @@
 
 #include "../configuration.h"
 #include "../gfx/video_driver.h"
+#include "../gfx/gfx_display.h"
 
 enum image_status_enum
 {
@@ -55,12 +66,74 @@ struct nbio_image_handle
    int processing_final_state;
    unsigned frame_duration;
    unsigned upscale_threshold;
+   unsigned downscale_cap;
    enum image_type_enum type;
    enum image_status_enum status;
    uint8_t flags;
 };
 
 #define UPSCALE_MAX_PIXELS (256u * 1024u * 1024u)
+
+/* Decode-time window, shared by every image task in a tick.
+ *
+ * The transfer and process loops below spin against frame_duration
+ * per task, and retro_task_regular_gather() runs every running
+ * task's handler once per frame, so a per-task budget multiplies
+ * exactly the way the file-I/O slice in task_file_transfer.c used
+ * to: eight concurrent large decodes could each legitimately consume
+ * a frame of CPU in a single gather.  Same fix, same shape: a shared
+ * allowance of frame_duration per window, with each task keeping its
+ * first iteration (the do/while bodies run once before consulting
+ * the deadline), so a queue whose window is already spent still
+ * progresses.
+ *
+ * The period is twice the allowance, and the ratio is load-bearing.
+ * With period == allowance, a task that consumes its whole allowance
+ * has by definition advanced wall time a full period, so the next
+ * task in the same gather finds the window expired, resets it, and
+ * takes a full allowance too: the multiplication survives intact.
+ * (Caught by simulation, not inspection.  The I/O slice never hits
+ * this only because its allowance is a quarter of its period.)  At
+ * allowance <= period/2 a mid-gather reset is impossible - the
+ * spender cannot age the window past the period on its own - while
+ * gathers a frame apart still find it expired and replenished.
+ *
+ * A single task is unchanged: the same frame_duration per gather it
+ * always had, at the same sustained rate - the elapsed frame plus
+ * the allowance it spent age the window past the period by the next
+ * gather.
+ *
+ * Declined under a threaded task queue for the reason the I/O slice
+ * declines: there the handler runs on the worker thread, there is no
+ * frame to protect, and a shared static across threads would be a
+ * race for no benefit. */
+static retro_time_t image_decode_slice_start;
+static retro_time_t image_decode_slice_used;
+
+static retro_time_t task_image_decode_slice_open(
+      unsigned frame_duration, retro_time_t *start)
+{
+   retro_time_t now = cpu_features_get_time_usec();
+   *start           = now;
+   if (task_queue_is_threaded())
+      return (retro_time_t)frame_duration;
+   if (now - image_decode_slice_start
+         >= (retro_time_t)frame_duration * 2)
+   {
+      image_decode_slice_start = now;
+      image_decode_slice_used  = 0;
+   }
+   return (image_decode_slice_used < (retro_time_t)frame_duration)
+      ? (retro_time_t)frame_duration - image_decode_slice_used
+      : 0;
+}
+
+static void task_image_decode_slice_close(retro_time_t start)
+{
+   if (task_queue_is_threaded())
+      return;
+   image_decode_slice_used += cpu_features_get_time_usec() - start;
+}
 
 static int cb_image_upload_generic(void *data, size_t len)
 {
@@ -109,6 +182,7 @@ static int task_image_process(
 
    image->ti.width  = *width;
    image->ti.height = *height;
+   image->ti.pix10  = image_transfer_is_10bit(image->handle, image->type);
 
    return retval;
 }
@@ -144,18 +218,30 @@ static int task_image_iterate_process_transfer(struct nbio_image_handle *image)
    int retval                      = 0;
    unsigned width                  = 0;
    unsigned height                 = 0;
-   retro_time_t start_time         = cpu_features_get_time_usec();
+   retro_time_t start_time;
+   retro_time_t allowance          = task_image_decode_slice_open(
+         image->frame_duration, &start_time);
 
    do
    {
       if ((retval = task_image_process(image, &width, &height)) 
           != IMAGE_PROCESS_NEXT)
          break;
-   }while (cpu_features_get_time_usec() - start_time
-         < image->frame_duration);
+   }while (cpu_features_get_time_usec() - start_time < allowance);
+   task_image_decode_slice_close(start_time);
 
    if (retval == IMAGE_PROCESS_NEXT)
       return 0;
+
+   if (retval == IMAGE_PROCESS_WAIT)
+      /* Partial read: the decoder needs bytes that have not arrived.
+       * Stay in the processing state - the handler raises the
+       * decoder's avail each tick as the read progresses - and above
+       * all do NOT let WAIT become processing_final_state:
+       * cb_image_upload_generic treats any non-error final state as a
+       * successful decode and would finish the task with an empty
+       * texture. */
+      return 1;
 
    image->processing_final_state = retval;
    return -1;
@@ -182,10 +268,13 @@ static void task_image_cleanup(nbio_handle_t *nbio)
       free(nbio->path);
    if (nbio->data)
       free(nbio->data);
-   nbio_free(nbio->handle);
+   /* The video early-completion path can finish the task with the
+    * read still in flight; both spines cancel it before releasing -
+    * for an unwanted (never-detached) thumbnail that is the pay-off:
+    * the rest of the file is simply never read. */
+   nbio_xfer_close(nbio);
    nbio->path        = NULL;
    nbio->data        = NULL;
-   nbio->handle      = NULL;
 }
 
 static void task_image_load_free(retro_task_t *task)
@@ -199,10 +288,18 @@ static void task_image_load_free(retro_task_t *task)
    }
 }
 
-static int cb_nbio_image_thumbnail(void *data, size_t len)
+/* Create the image_transfer handle over the nbio buffer and start the
+ * transfer.  Called from cb_nbio_image_thumbnail when the read
+ * completes, and - for the video types, whose still decoders can work
+ * against a growing buffer - early, while the read is still running
+ * ('partial'): the buffer pointer is stable (every backend sizes or
+ * maps it up front), the decoder is told how much has arrived via
+ * image_transfer_set_avail, and nbio->is_finished is left unset so
+ * the task keeps pumping the file. */
+static int task_image_thumbnail_setup(nbio_handle_t *nbio, bool partial)
 {
    void *ptr                       = NULL;
-   nbio_handle_t *nbio             = (nbio_handle_t*)data;
+   size_t len                      = 0;
    struct nbio_image_handle *image = nbio  ? (struct nbio_image_handle*)nbio->data : NULL;
    void *handle                    = image ? image_transfer_new(image->type)       : NULL;
    settings_t *settings            = config_get_ptr();
@@ -215,12 +312,57 @@ static int cb_nbio_image_thumbnail(void *data, size_t len)
    image->handle                   = handle;
    image->cb                       = &cb_image_thumbnail;
 
-   ptr                             = nbio_get_ptr(nbio->handle, &len);
+   ptr                             = (void*)nbio_xfer_ptr(nbio, &len);
+
+   if (partial && image->type == IMAGE_TYPE_WEBP)
+   {
+      /* The webp decoder has no avail wall of its own: freeze its
+       * view of the buffer at the bytes actually read.  The early-
+       * start gate only fires once the still's chunk lies wholly
+       * inside them, and the chunk walk must never cross the prefix
+       * guard. */
+      size_t done = 0, total = 0;
+      nbio_xfer_progress(nbio, &done, &total);
+      len = done;
+   }
 
    image_transfer_set_buffer_ptr(image->handle, image->type, ptr, len);
 
+   if (partial && image->type != IMAGE_TYPE_WEBP)
+   {
+      /* Declare how much of the buffer has actually been read; the
+       * video still decoders return IMAGE_PROCESS_WAIT at the wall
+       * and the handler raises this each tick as bytes arrive. */
+      size_t done = 0, total = 0;
+      nbio_xfer_progress(nbio, &done, &total);
+      image_transfer_set_avail(image->handle, image->type, done);
+   }
+
+   /* Ask video thumbnail decoders for native 10-bit output, but only when the
+    * active video driver can sample a 10-bit texture; otherwise the decoded
+    * buffer would just be narrowed again at upload for no benefit. */
+   if (video_driver_test_all_flags(GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE))
+      image_transfer_set_want_10bit(image->handle, image->type, 1);
+
    /* Set image size */
    image->size                     = len;
+
+   /* The decoders bake the output channel order from supports_rgba.
+    * It was captured when this load was queued, but VIDEO_FLAG_USE_RGBA
+    * is cleared on every video reinit (core start/stop), so a value
+    * sampled in that window can disagree with the driver's actual upload
+    * format and yield R/B-swapped images.  Re-sample it here, once, at
+    * decode start (after any reinit has settled) - not in the per-chunk
+    * decode loop, where it would lock display_lock on every iteration. */
+   image->ti.supports_rgba = (video_driver_get_disp_flags()
+         & VIDEO_FLAG_USE_RGBA) ? true : false;
+
+   /* Hand the byte order to the transfer layer now: the JPEG fused
+    * iterate+resample emits final pixels during transfer, before any
+    * image_transfer_process call could latch it. */
+   image_transfer_set_rgba(image->handle, image->type,
+         image->ti.supports_rgba);
+
 
    /* Set task iteration duration */
    if (settings)
@@ -238,9 +380,37 @@ static int cb_nbio_image_thumbnail(void *data, size_t len)
 
    image->flags                   &= ~IMAGE_FLAG_IS_BLOCKING;
    image->flags                   &= ~IMAGE_FLAG_IS_FINISHED;
-   nbio->is_finished               = true;
+   if (!partial)
+      nbio->is_finished            = true;
 
    return 0;
+}
+
+static int cb_nbio_image_thumbnail(void *data, size_t len)
+{
+   nbio_handle_t *nbio             = (nbio_handle_t*)data;
+   struct nbio_image_handle *image = nbio ? (struct nbio_image_handle*)nbio->data : NULL;
+
+   if (!image)
+      return -1;
+   if (image->handle)
+   {
+      /* The early path already set the transfer up while the read was
+       * running; the read has now completed - tell the decoder the
+       * whole buffer is valid and let the task's normal completion gate
+       * see the read as done.  Recreating the handle here would leak it
+       * and restart a decode already in flight.
+       *
+       * The decoder may still be mid-walk (it was stalled at the byte
+       * frontier when the last bytes landed); that is fine, because the
+       * frontier is now the whole buffer and the next tick resumes and
+       * completes it.  What must not happen is the transfer being
+       * abandoned here - the status machine owns finishing it. */
+      image_transfer_set_avail(image->handle, image->type, (size_t)-1);
+      nbio->is_finished = true;
+      return 0;
+   }
+   return task_image_thumbnail_setup(nbio, false);
 }
 
 static bool upscale_image(
@@ -248,7 +418,7 @@ static bool upscale_image(
       struct texture_image *image_src,
       struct texture_image *image_dst)
 {
-   unsigned y_src;
+   struct scaler_ctx ctx;
    size_t total_pixels;
 
    /* Sanity check */
@@ -266,48 +436,207 @@ static bool upscale_image(
    if (total_pixels == 0 || total_pixels > UPSCALE_MAX_PIXELS)
       return false;
 
-   /* Allocate pixel buffer.
-    * malloc (not calloc) is sufficient: the loop below writes every
-    * destination pixel before returning — first by building the top
-    * row of each scale_factor-high block via the x_src expansion
-    * loop, then by memcpy'ing that row into the remaining rows of
-    * the block. No pixel is ever read before being written, so the
-    * zero-fill that calloc would do is wasted work. */
    if (!(image_dst->pixels = (uint32_t*)malloc(total_pixels * sizeof(uint32_t))))
       return false;
 
-   /* Fast path for integer scale factors: expand each source pixel
-    * into a scale_factor-wide run, then memcpy to duplicate rows */
-   for (y_src = 0; y_src < image_src->height; y_src++)
+   /* Interpolate rather than duplicate.  This used to expand each
+    * source pixel into a scale_factor-wide run and memcpy the row
+    * scale_factor times, which does not improve the picture - it
+    * only makes it bigger, every pixel repeated with a hard step
+    * between runs.  At 4x that leaves 77% of pixels identical to
+    * their left neighbour and edges stepping 5 levels at once,
+    * against 28% and 2 through the scaler.
+    *
+    * Bilinear rather than sinc: the source is by definition below
+    * the upscale threshold, so it is small, and sinc costs twice as
+    * much for a result that is no better on an image with no high
+    * frequency detail left to reconstruct. */
+   memset(&ctx, 0, sizeof(ctx));
+   ctx.in_width    = image_src->width;
+   ctx.in_height   = image_src->height;
+   ctx.in_stride   = image_src->width  * sizeof(uint32_t);
+   ctx.out_width   = image_dst->width;
+   ctx.out_height  = image_dst->height;
+   ctx.out_stride  = image_dst->width  * sizeof(uint32_t);
+   ctx.in_fmt      = image_src->pix10
+         ? SCALER_FMT_XRGB2101010 : SCALER_FMT_ARGB8888;
+   ctx.out_fmt     = ctx.in_fmt;
+   ctx.scaler_type = SCALER_TYPE_BILINEAR;
+
+   if (!scaler_ctx_gen_filter(&ctx))
    {
-      unsigned x_src;
-      uint32_t *src_row     = image_src->pixels
-                            + ((size_t)y_src * image_src->width);
-      uint32_t *dst_first   = image_dst->pixels
-                            + ((size_t)y_src * scale_factor * image_dst->width);
-      size_t dst_row_bytes  = (size_t)image_dst->width * sizeof(uint32_t);
+      free(image_dst->pixels);
+      image_dst->pixels = NULL;
+      return false;
+   }
 
-      /* Build the first scaled row by expanding each source pixel */
-      for (x_src = 0; x_src < image_src->width; x_src++)
+   scaler_ctx_scale(&ctx, image_dst->pixels, image_src->pixels);
+   scaler_ctx_gen_reset(&ctx);
+
+   return true;
+}
+
+static uint32_t *downscale_box(const uint32_t *src,
+      unsigned sw, unsigned sh, unsigned f, bool pix10,
+      unsigned *dw, unsigned *dh)
+{
+   unsigned x, y, i, j;
+   unsigned n  = f * f;
+   uint32_t *d;
+
+   *dw = sw / f;
+   *dh = sh / f;
+
+   if ((*dw < 1) || (*dh < 1))
+      return NULL;
+
+   if (!(d = (uint32_t*)malloc((size_t)*dw * *dh * sizeof(uint32_t))))
+      return NULL;
+
+   for (y = 0; y < *dh; y++)
+   {
+      for (x = 0; x < *dw; x++)
       {
-         unsigned k;
-         uint32_t px        = src_row[x_src];
-         uint32_t *dst_px   = dst_first + (size_t)x_src * scale_factor;
+         unsigned a = 0, r = 0, g = 0, b = 0;
 
-         for (k = 0; k < scale_factor; k++)
-            dst_px[k] = px;
-      }
-
-      /* Duplicate the first scaled row for the remaining (scale_factor-1) rows */
-      {
-         unsigned row_copy;
-         for (row_copy = 1; row_copy < scale_factor; row_copy++)
+         for (j = 0; j < f; j++)
          {
-            uint32_t *dst_dup = dst_first + (size_t)row_copy * image_dst->width;
-            memcpy(dst_dup, dst_first, dst_row_bytes);
+            const uint32_t *row = src + (size_t)(y * f + j) * sw + x * f;
+
+            if (pix10)
+            {
+               for (i = 0; i < f; i++)
+               {
+                  uint32_t p  = row[i];
+                  r          += (p >> 20) & 0x3ff;
+                  g          += (p >> 10) & 0x3ff;
+                  b          +=  p        & 0x3ff;
+               }
+            }
+            else
+            {
+               for (i = 0; i < f; i++)
+               {
+                  uint32_t p  = row[i];
+                  a          += (p >> 24) & 0xff;
+                  r          += (p >> 16) & 0xff;
+                  g          += (p >>  8) & 0xff;
+                  b          +=  p        & 0xff;
+               }
+            }
          }
+
+         if (pix10)
+            d[(size_t)y * *dw + x] = 0xc0000000u
+                  | ((r / n) << 20) | ((g / n) << 10) | (b / n);
+         else
+            d[(size_t)y * *dw + x] =
+                  ((a / n) << 24) | ((r / n) << 16)
+                | ((g / n) <<  8) |  (b / n);
       }
    }
+
+   return d;
+}
+
+/* Cap a decoded image to 'cap' pixels on its longest side, preserving
+ * aspect ratio.
+ *
+ * The sidebar thumbnail and the fullscreen view share one texture -
+ * going fullscreen only raises a flag and fades alpha, it never
+ * re-requests the image - so the cap has to be the size the larger of
+ * the two views can use, which is the display, not the sidebar box.
+ * At display size the fullscreen view is unchanged, since it can
+ * never be drawn larger than the panel, and the sidebar downsamples
+ * from it on the GPU for free.  Sizing to the sidebar instead would
+ * make the fullscreen view soft.
+ *
+ * Returns true if the image was replaced. */
+static bool downscale_image(unsigned cap, struct texture_image *img)
+{
+   struct scaler_ctx ctx;
+   unsigned sw, sh, dw, dh, f;
+   uint32_t *mid = NULL;
+   uint32_t *out = NULL;
+   const uint32_t *src;
+   double ratio;
+
+   if (!cap || !img || !img->pixels)
+      return false;
+   if ((img->width < 1) || (img->height < 1))
+      return false;
+   if ((img->width <= cap) && (img->height <= cap))
+      return false;
+
+   ratio = (img->width > img->height)
+         ? (double)cap / (double)img->width
+         : (double)cap / (double)img->height;
+
+   dw    = (unsigned)(img->width  * ratio);
+   dh    = (unsigned)(img->height * ratio);
+
+   if ((dw < 1) || (dh < 1))
+      return false;
+
+   src   = img->pixels;
+   sw    = img->width;
+   sh    = img->height;
+
+   /* Stage 1: decimate as far as can be done without undershooting
+    * the target, leaving the sinc stage a ratio below 2 - and so its
+    * minimum 8-tap kernel.  Stopping earlier (at a ratio of 2 or
+    * more) widens the kernel to 16 taps or beyond and costs another
+    * LSB of DC per step, since the accumulate truncates once per
+    * tap. */
+   for (f = 1; (sw / (f * 2)) >= dw; f *= 2) ;
+
+   if (f > 1)
+   {
+      unsigned bw, bh;
+
+      if ((mid = downscale_box(src, sw, sh, f, img->pix10, &bw, &bh)))
+      {
+         src = mid;
+         sw  = bw;
+         sh  = bh;
+      }
+   }
+
+   /* Stage 2: sinc to the exact target. */
+   if (!(out = (uint32_t*)malloc((size_t)dw * dh * sizeof(uint32_t))))
+   {
+      free(mid);
+      return false;
+   }
+
+   memset(&ctx, 0, sizeof(ctx));
+   ctx.in_width    = sw;
+   ctx.in_height   = sh;
+   ctx.in_stride   = sw * sizeof(uint32_t);
+   ctx.out_width   = dw;
+   ctx.out_height  = dh;
+   ctx.out_stride  = dw * sizeof(uint32_t);
+   ctx.in_fmt      = img->pix10
+         ? SCALER_FMT_XRGB2101010 : SCALER_FMT_ARGB8888;
+   ctx.out_fmt     = ctx.in_fmt;
+   ctx.scaler_type = SCALER_TYPE_SINC;
+
+   if (!scaler_ctx_gen_filter(&ctx))
+   {
+      free(out);
+      free(mid);
+      return false;
+   }
+
+   scaler_ctx_scale(&ctx, out, src);
+   scaler_ctx_gen_reset(&ctx);
+
+   free(mid);
+   free(img->pixels);
+
+   img->pixels = out;
+   img->width  = dw;
+   img->height = dh;
 
    return true;
 }
@@ -326,9 +655,84 @@ bool task_image_load_handler(retro_task_t *task)
 
    if (image)
    {
+      bool is_video = (image->type == IMAGE_TYPE_WEBM)
+                   || (image->type == IMAGE_TYPE_MP4);
+      /* Types whose decoders decode against a growing buffer with a
+       * resident-frontier wall: video stills, and (avail-aware) PNG and
+       * JPEG.  Their avail must be raised each tick as the read
+       * advances.  WEBP is excluded - it has no wall and instead starts
+       * only once its still chunk is wholly resident. */
+      bool is_prefix = is_video
+#ifdef HAVE_RPNG
+                    || (image->type == IMAGE_TYPE_PNG)
+#endif
+#ifdef HAVE_RJPEG
+                    || (image->type == IMAGE_TYPE_JPEG)
+#endif
+                    ;
+
+      /* Prefix decoders decode against the growing buffer: keep the
+       * decoder's byte wall in step with the read.  Cheap (two field
+       * reads and a monotonic store) and a no-op once the read has
+       * completed. */
+      if (is_prefix && image->handle && !nbio->is_finished
+            && nbio->xfer)
+      {
+         size_t done = 0, total = 0;
+         if (nbio_xfer_progress(nbio, &done, &total))
+            image_transfer_set_avail(image->handle, image->type, done);
+      }
+
       switch (image->status)
       {
          case IMAGE_STATUS_WAIT:
+            /* For the prefix types, start decoding while the file is
+             * still being read: the still usually needs only the
+             * header and the first keyframe (video) or paints/gathers
+             * incrementally (PNG/JPEG), so decode overlaps the read
+             * instead of waiting for the completion callback.  Other
+             * types keep waiting for the completion callback. */
+            if (!image->handle
+                  && (is_prefix || image->type == IMAGE_TYPE_WEBP)
+                  && nbio->xfer
+                  && !nbio->is_finished)
+            {
+               size_t done = 0, total = 0;
+               int ready = 0;
+               if (nbio_xfer_progress(nbio, &done, &total) && done > 0)
+               {
+                  ready = is_video;
+#ifdef HAVE_RWEBP
+                  /* webp starts only when the still's chunk is wholly
+                   * within the prefix: its decode has no partial-
+                   * buffer wall to wait at */
+                  if (!ready && image->type == IMAGE_TYPE_WEBP)
+                     ready = rwebp_still_ready(
+                           nbio_xfer_ptr(nbio, NULL), done);
+#endif
+#ifdef HAVE_RPNG
+                  /* PNG starts once the signature and IHDR are resident;
+                   * the chunk walk then gathers IDAT with per-chunk
+                   * need_more waits as the read advances. */
+                  if (!ready && image->type == IMAGE_TYPE_PNG)
+                     ready = rpng_header_ready(
+                           nbio_xfer_ptr(nbio, NULL), done);
+#endif
+#ifdef HAVE_RJPEG
+                  /* Baseline JPEG starts once the header through the SOS
+                   * scan segment is resident; the MCU-row driver then
+                   * paints rows from the prefix, walling at the resident
+                   * frontier.  Single-component/progressive scans
+                   * decline (rjpeg_header_ready returns false) and load
+                   * whole-buffer as before. */
+                  if (!ready && image->type == IMAGE_TYPE_JPEG)
+                     ready = rjpeg_header_ready(
+                           nbio_xfer_ptr(nbio, NULL), done);
+#endif
+               }
+               if (ready)
+                  task_image_thumbnail_setup(nbio, true);
+            }
             return true;
          case IMAGE_STATUS_PROCESS_TRANSFER:
             if (task_image_iterate_process_transfer(image) == -1)
@@ -348,16 +752,32 @@ bool task_image_load_handler(retro_task_t *task)
             if (     !(image->flags & IMAGE_FLAG_IS_BLOCKING)
                   && !(image->flags & IMAGE_FLAG_IS_FINISHED))
             {
-               retro_time_t start_time = cpu_features_get_time_usec();
+               retro_time_t start_time;
+               retro_time_t allowance  = task_image_decode_slice_open(
+                     image->frame_duration, &start_time);
                do
                {
                   if (!image_transfer_iterate(image->handle, image->type))
                   {
+                     /* iterate() returns false both when the transfer
+                      * has finished AND when an avail-aware decoder
+                      * stalled at the resident byte frontier (PNG/JPEG
+                      * started early against a read still in flight).
+                      * Advancing to TRANSFER_PARSE on a stall would
+                      * decode a partially gathered image and fail the
+                      * task, leaving the thumbnail as a placeholder.
+                      * Stay in TRANSFER: the per-tick avail bump above
+                      * raises the frontier as bytes arrive and the next
+                      * tick resumes the walk. */
+                     if (image_transfer_need_more(image->handle,
+                              image->type))
+                        break;
                      image->status = IMAGE_STATUS_TRANSFER_PARSE;
                      break;
                   }
                }while (cpu_features_get_time_usec() - start_time
-                     < image->frame_duration);
+                     < allowance);
+               task_image_decode_slice_close(start_time);
             }
             break;
          case IMAGE_STATUS_PROCESS_TRANSFER_PARSE:
@@ -382,6 +802,11 @@ bool task_image_load_handler(retro_task_t *task)
 
       if (img)
       {
+         /* malloc (not calloc) above: this is a raw-built image that never
+          * goes through image_texture_load, so the compressed descriptor
+          * must be cleared explicitly or video_driver_texture_load() will
+          * dereference a garbage pointer. */
+         img->compressed = NULL;
          if (image->upscale_threshold > 0)
          {
             if (   ((image->ti.width  > 0)
@@ -400,6 +825,9 @@ bool task_image_load_handler(retro_task_t *task)
                   false
                };
 
+               /* 10-bit needs no special case here: upscale_image()
+                * selects the packed format for the scaler and filters
+                * it natively. */
                if (upscale_image(scale_factor_int, &image->ti, &img_resampled))
                {
                   image->ti.width  = img_resampled.width;
@@ -412,10 +840,21 @@ bool task_image_load_handler(retro_task_t *task)
             }
          }
 
+         /* Cap oversized images before they reach the GPU.  The
+          * still path uploaded at full resolution regardless of how
+          * small it would be drawn: an 11000x11000 PNG cost ~462 MB
+          * of RGBA to occupy a few hundred pixels.  Applies to
+          * 10-bit as well - a 16-bit PNG, which rpng packs as
+          * XRGB2101010, is exactly the kind of file that gets this
+          * large. */
+         if (image->downscale_cap > 0)
+            downscale_image(image->downscale_cap, &image->ti);
+
          img->width         = image->ti.width;
          img->height        = image->ti.height;
          img->pixels        = image->ti.pixels;
          img->supports_rgba = image->ti.supports_rgba;
+         img->pix10         = image->ti.pix10;
 
          /* Transfer pixel ownership to the output image so
           * cleanup does not double-free */
@@ -430,8 +869,57 @@ bool task_image_load_handler(retro_task_t *task)
    return true;
 }
 
+bool task_image_detach_video_stream(retro_task_t *task,
+      void **stream, enum image_type_enum *type,
+      struct data_transfer **xfer_owner, void **buf, size_t *len)
+{
+   nbio_handle_t *nbio;
+   struct nbio_image_handle *image;
+   void *s;
+   void *ptr;
+   size_t l                        = 0;
+
+   if (!task || !stream || !type || !xfer_owner || !buf || !len)
+      return false;
+   if (!(nbio = (nbio_handle_t*)task->state))
+      return false;
+   /* nbio->data is only a struct nbio_image_handle for image-load
+    * tasks; the audio mixer tasks share nbio_handle_t with a different
+    * payload. */
+   if (!BIT32_GET(nbio->status_flags, NBIO_FLAG_IMAGE_TASK))
+      return false;
+   if (!(image = (struct nbio_image_handle*)nbio->data))
+      return false;
+   if (!image->handle)
+      return false;
+   /* The stream borrows the transfer's buffer, so without a transfer
+    * to hand over there is nothing to detach onto: leave the stream
+    * attached (image_transfer_free closes it).  Video loads always
+    * travel the data_transfer spine. */
+   if (!nbio->xfer)
+      return false;
+   if (!(ptr = (void*)data_transfer_ptr(nbio->xfer, &l)) || !l)
+      return false;
+
+   if (!(s = image_transfer_detach_anim_stream(image->handle,
+         image->type)))
+      return false;
+
+   *stream       = s;
+   *type         = image->type;
+   *buf          = ptr;
+   *len          = l;
+   /* Hand over the transfer: the buffer the stream borrows lives
+    * inside it, and its fill may still be in flight (the adopter
+    * pumps it on).  task_image_cleanup tolerates the NULL. */
+   *xfer_owner   = nbio->xfer;
+   nbio->xfer    = NULL;
+   return true;
+}
+
 bool task_push_image_load(const char *fullpath,
       bool supports_rgba, unsigned upscale_threshold,
+      unsigned downscale_cap,
       retro_task_callback_t cb, void *user_data)
 {
    nbio_handle_t             *nbio   = NULL;
@@ -453,11 +941,12 @@ bool task_push_image_load(const char *fullpath,
    nbio->pos_increment = 0;
    nbio->status_flags  = 0;
    nbio->data          = NULL;
-   nbio->handle        = NULL;
+   nbio->xfer          = NULL;
    nbio->cb            = &cb_nbio_image_thumbnail;
 
    if (supports_rgba)
       BIT32_SET(nbio->status_flags, NBIO_FLAG_IMAGE_SUPPORTS_RGBA);
+   BIT32_SET(nbio->status_flags, NBIO_FLAG_IMAGE_TASK);
 
    if (!(image = (struct nbio_image_handle*)malloc(sizeof(*image))))
    {
@@ -481,6 +970,7 @@ bool task_push_image_load(const char *fullpath,
    image->frame_duration             = 0;
    image->size                       = 0;
    image->upscale_threshold          = upscale_threshold;
+   image->downscale_cap              = downscale_cap;
    image->handle                     = NULL;
    image->cb                         = NULL;
 
@@ -489,6 +979,8 @@ bool task_push_image_load(const char *fullpath,
    image->ti.width                   = 0;
    image->ti.height                  = 0;
    image->ti.pixels                  = NULL;
+   image->ti.compressed              = NULL;
+   image->ti.pix10                   = false;
    /* NOTE: Come back to this if this causes problems */
    image->ti.supports_rgba           = supports_rgba;
 
@@ -508,6 +1000,12 @@ bool task_push_image_load(const char *fullpath,
          break;
       case IMAGE_TYPE_WEBP:
          nbio->type = NBIO_TYPE_WEBP;
+         break;
+      case IMAGE_TYPE_WEBM:
+         nbio->type = NBIO_TYPE_WEBM;
+         break;
+      case IMAGE_TYPE_MP4:
+         nbio->type = NBIO_TYPE_MP4;
          break;
       default:
          nbio->type = NBIO_TYPE_NONE;
@@ -576,7 +1074,7 @@ static void cb_task_icon_load(retro_task_t *task,
    if (!img || img->width < 1 || img->height < 1 || !img->pixels)
       goto end;
 
-   video_driver_texture_load(img, TEXTURE_FILTER_LINEAR,
+   video_driver_texture_load(img, gfx_display_texture_filter(),
          tag->target);
 
 end:
@@ -616,6 +1114,7 @@ bool task_push_icon_load(const char *fullpath,
    tag->generation_ptr = generation_ptr;
 
    if (!task_push_image_load(fullpath, supports_rgba, 0,
+         0,
          cb_task_icon_load, tag))
    {
       free(tag);

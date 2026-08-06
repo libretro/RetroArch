@@ -730,40 +730,6 @@ static int frontend_darwin_parse_drive_list(void *data, bool load_content)
    return ret;
 }
 
-static uint64_t frontend_darwin_get_total_mem(void)
-{
-#if defined(OSX)
-    uint64_t size;
-    int mib[2]     = { CTL_HW, HW_MEMSIZE };
-    u_int namelen  = ARRAY_SIZE(mib);
-    size_t _len    = sizeof(size);
-    if (sysctl(mib, namelen, &size, &_len, NULL, 0) >= 0)
-       return size;
-#elif defined(IOS)
-    task_vm_info_data_t vm_info;
-    mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
-    if (task_info(mach_task_self(), TASK_VM_INFO, (task_info_t) &vm_info, &count) == KERN_SUCCESS)
-       return vm_info.phys_footprint + vm_info.limit_bytes_remaining;
-#endif
-    return 0;
-}
-
-static uint64_t frontend_darwin_get_free_mem(void)
-{
-#if (defined(OSX) && (MAC_OS_X_VERSION_MAX_ALLOWED >= 101200))
-   task_vm_info_data_t vm_info;
-   mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
-   if (task_info(mach_task_self(), TASK_VM_INFO, (task_info_t) &vm_info, &count) == KERN_SUCCESS)
-        return frontend_darwin_get_total_mem() - vm_info.phys_footprint;
-#elif defined(IOS)
-    task_vm_info_data_t vm_info;
-    mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
-    if (task_info(mach_task_self(), TASK_VM_INFO, (task_info_t) &vm_info, &count) == KERN_SUCCESS)
-        return vm_info.limit_bytes_remaining;
-#endif
-    return 0;
-}
-
 static const char* frontend_darwin_get_cpu_model_name(void)
 {
    cpu_features_get_model_name(darwin_cpu_model_name,
@@ -1272,8 +1238,6 @@ frontend_ctx_driver_t frontend_ctx_darwin = {
    frontend_darwin_get_arch,        /* get_architecture     */
    frontend_darwin_get_powerstate,  /* get_powerstate       */
    frontend_darwin_parse_drive_list,/* parse_drive_list     */
-   frontend_darwin_get_total_mem,   /* get_total_mem        */
-   frontend_darwin_get_free_mem,    /* get_free_mem         */
    NULL,                            /* install_signal_handler */
    NULL,                            /* get_sighandler_state */
    NULL,                            /* set_sighandler_state */

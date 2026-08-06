@@ -70,7 +70,10 @@ typedef struct
    bool handled;
 } input_test_step_t;
 
-static input_test_step_t input_test_steps[MAX_TEST_STEPS];
+/* Allocated when the test driver or core actually starts; a static
+ * array here is load-resident forever on platforms without demand
+ * paging, for a feature almost no session activates. */
+static input_test_step_t *input_test_steps;
 
 static unsigned current_test_step     = 0;
 static unsigned last_test_step        = MAX_TEST_STEPS + 1;
@@ -326,6 +329,12 @@ static void *test_joypad_init(void *data)
    settings_t *settings = config_get_ptr();
    unsigned i;
 
+   if (!input_test_steps)
+      input_test_steps = (input_test_step_t*)
+            calloc(MAX_TEST_STEPS, sizeof(*input_test_steps));
+   if (!input_test_steps)
+      return NULL;
+
    input_test_file_read(settings->paths.test_input_file_joypad);
    if (last_test_step > MAX_TEST_STEPS)
       last_test_step = 0;
@@ -481,7 +490,12 @@ static bool test_joypad_query_pad(unsigned pad)
    return (pad < MAX_USERS);
 }
 
-static void test_joypad_destroy(void) { }
+static void test_joypad_destroy(void)
+{
+   if (input_test_steps)
+      free(input_test_steps);
+   input_test_steps = NULL;
+}
 
 input_device_driver_t test_joypad = {
    test_joypad_init,

@@ -47,7 +47,11 @@
 #include <libchdr/cdrom.h>
 #include <libchdr/huffman.h>
 #include <libchdr/libchdr_zlib.h>
+#ifdef CHD_HAVE_ZLIB
 #include <zlib.h>
+#else
+#include <encodings/deflate.h>
+#endif
 
 #include <retro_inline.h>
 #include <streams/file_stream.h>
@@ -60,6 +64,7 @@
     zlib_codec_init - initialize the ZLIB codec
 -------------------------------------------------*/
 
+#ifdef CHD_HAVE_ZLIB
 chd_error zlib_codec_init(void *codec, uint32_t hunkbytes)
 {
 	int zerr;
@@ -87,12 +92,26 @@ chd_error zlib_codec_init(void *codec, uint32_t hunkbytes)
 
 	return err;
 }
+#else /* built-in DEFLATE backend */
+chd_error zlib_codec_init(void *codec, uint32_t hunkbytes)
+{
+	zlib_codec_data *data = (zlib_codec_data*)codec;
+	(void)hunkbytes;
+
+	/* The decoder is (re)created per hunk in zlib_codec_decompress, matching
+	 * the zlib backend which resets before each decode.  Just start clean. */
+	memset(data, 0, sizeof(zlib_codec_data));
+
+	return CHDERR_NONE;
+}
+#endif
 
 /*-------------------------------------------------
     zlib_codec_free - free data for the ZLIB
     codec
 -------------------------------------------------*/
 
+#ifdef CHD_HAVE_ZLIB
 void zlib_codec_free(void *codec)
 {
 	zlib_codec_data *data = (zlib_codec_data *)codec;
@@ -106,12 +125,25 @@ void zlib_codec_free(void *codec)
 		zlib_allocator_free(&data->allocator);
 	}
 }
+#else /* built-in DEFLATE backend */
+void zlib_codec_free(void *codec)
+{
+	zlib_codec_data *data = (zlib_codec_data *)codec;
+
+	if (data != NULL && data->inflater != NULL)
+	{
+		rinflate_free(data->inflater);
+		data->inflater = NULL;
+	}
+}
+#endif
 
 /*-------------------------------------------------
     zlib_codec_decompress - decompress data using
     the ZLIB codec
 -------------------------------------------------*/
 
+#ifdef CHD_HAVE_ZLIB
 chd_error zlib_codec_decompress(void *codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen)
 {
 	zlib_codec_data *data = (zlib_codec_data *)codec;
@@ -135,7 +167,47 @@ chd_error zlib_codec_decompress(void *codec, const uint8_t *src, uint32_t comple
 
 	return CHDERR_NONE;
 }
+#else /* built-in DEFLATE backend */
+chd_error zlib_codec_decompress(void *codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen)
+{
+	zlib_codec_data *data  = (zlib_codec_data *)codec;
+	size_t           total = 0;
 
+	/* A fresh handle per hunk keeps the semantics identical to the zlib path,
+	 * which resets before every decompress.  Creation is cheap. */
+	if (data->inflater)
+		rinflate_free(data->inflater);
+	data->inflater = rinflate_new(-15);
+	if (!data->inflater)
+		return CHDERR_DECOMPRESSION_ERROR;
+
+	rinflate_set_in(data->inflater, src, complen);
+	rinflate_set_out(data->inflater, dest, destlen);
+
+	/* run to completion; the codec suspends only on buffer exhaustion, which
+	 * for a whole-hunk one-shot means end of input or a full output buffer. */
+	for (;;)
+	{
+		size_t rd = 0, wr = 0;
+		int    st = rinflate_process(data->inflater, &rd, &wr);
+		total += wr;
+		if (st == RDEFLATE_PROCESS_END)
+			break;
+		if (st == RDEFLATE_PROCESS_ERROR)
+			return CHDERR_DECOMPRESSION_ERROR;
+		/* RDEFLATE_PROCESS_NEXT with no progress would spin: guard it */
+		if (rd == 0 && wr == 0)
+			return CHDERR_DECOMPRESSION_ERROR;
+	}
+
+	if (total != destlen)
+		return CHDERR_DECOMPRESSION_ERROR;
+
+	return CHDERR_NONE;
+}
+#endif
+
+#ifdef CHD_HAVE_ZLIB
 /*-------------------------------------------------
     zlib_fast_alloc - fast malloc for ZLIB, which
     allocates and frees memory frequently
@@ -224,6 +296,7 @@ void zlib_allocator_free(voidpf opaque)
 		if (alloc->allocptr[i])
 			free(alloc->allocptr[i]);
 }
+#endif /* CHD_HAVE_ZLIB */
 
 
 /* cdzl */

@@ -91,8 +91,14 @@ if [ "$HAVE_VIDEOCORE" = 'yes' ]; then
    fi
 fi
 
-if [ "$HAVE_7ZIP" = "yes" ]; then
-   add_dirs INCLUDE ./deps/7zip
+# The dispmanx video driver is built against the legacy Broadcom VideoCore
+# firmware stack (bcm_host.h, libbcm_host) from /opt/vc, which is absent on
+# the Raspberry Pi 4 and later (they use the open-source Mesa/DRM-KMS path).
+# Without VideoCore the driver cannot compile, so auto-disable it here with a
+# clear notice rather than failing later with "bcm_host.h: No such file".
+if [ "$HAVE_DISPMANX" = 'yes' ] && [ "$HAVE_VIDEOCORE" != 'yes' ]; then
+   HAVE_DISPMANX='no'
+   die : 'Notice: Dispmanx support disabled, VideoCore (bcm_host) was not found.'
 fi
 
 if [ "$HAVE_PRESERVE_DYLIB" = "yes" ]; then
@@ -139,7 +145,10 @@ if [ "$HAVE_EGL" = 'yes' ]; then
    EGL_LIBS="$EGL_LIBS $EXTRA_GL_LIBS"
 fi
 
-check_header '' XDELTA lzma.h
+# .xdelta softpatching is a self-contained VCDIFF decoder in
+# libretro-common now; it has no external dependency, so there is
+# nothing to probe for.
+[ "$HAVE_XDELTA" = 'auto' ] && HAVE_XDELTA='yes'
 check_lib '' SSA '-lfribidi -lass' ass_library_init
 check_lib '' SSE '-msse -msse2'
 check_pkgconf EXYNOS libdrm_exynos
@@ -205,6 +214,9 @@ if [ "$HAVE_NETWORKING" != 'no' ]; then
 else
    add_opt NETWORK_CMD no
 fi
+
+check_enabled RWEBM WEBMPLAYER 'the WebM player' 'RWEBM is' false
+check_enabled RVP9 WEBMPLAYER 'the WebM player' 'RVP9 is' false
 
 check_enabled NETWORKING CHEEVOS cheevos 'Networking is' false
 check_enabled NETWORKING DISCORD discord 'Networking is' false
@@ -377,11 +389,6 @@ if [ "$OS" = 'Darwin' ]; then
    HAVE_X11=no # X11 breaks on recent OSXes even if present.
    HAVE_SDL=no
    HAVE_SW2=no
-   # Prefer the system zlib on macOS. The vendored copy in deps/libz
-   # (zlib 1.3) no longer compiles against recent macOS SDKs because
-   # its zutil.h defines fdopen() as a macro that collides with the
-   # fdopen declaration in <stdio.h>. The system libz works fine.
-   [ "$HAVE_BUILTINZLIB" = 'auto' ] && HAVE_BUILTINZLIB=no
 else
    check_lib '' AL -lopenal alcOpenDevice
 fi
@@ -458,8 +465,6 @@ if [ "$HAVE_QT" != 'no' ]; then
 
    check_pkgconf OPENSSL openssl 1.0.0
 fi
-
-check_enabled FLAC BUILTINFLAC 'builtin flac' 'flac is' true
 
 check_val '' FLAC '-lFLAC' '' flac '' '' false
 
@@ -540,7 +545,16 @@ if [ "$HAVE_BLISSBOX" != 'no' ]; then
    fi
 fi
 
-if [ "$HAVE_OPENGL" != 'no' ] && [ "$HAVE_OPENGLES" != 'yes' ]; then
+# Detect the desktop OpenGL libraries whenever OpenGL is enabled, even if
+# OpenGLES is also enabled. Both can be requested together (e.g. distro
+# packaging that wants a feature-complete build), and the desktop GL driver
+# still needs to link against -lGL. Previously this block was skipped as soon
+# as HAVE_OPENGLES=yes, so OPENGL_LIBS was left empty while HAVE_OPENGL stayed
+# 'yes' (when forced via --enable-opengl), causing a link failure that only
+# went away by adding -lGL by hand. check_lib disables OpenGL on its own if
+# the library is not present, so GLES-only systems without desktop GL are
+# unaffected.
+if [ "$HAVE_OPENGL" != 'no' ]; then
    if [ "$OS" = 'Darwin' ]; then
       check_header '' OPENGL "OpenGL/gl.h"
       check_lib '' OPENGL "-framework OpenGL"
@@ -589,8 +603,6 @@ fi
 
 check_enabled 'OPENGL OPENGLES OPENGLES3' GLSL GLSL \
    'OpenGL and OpenGLES are' false
-
-check_enabled ZLIB BUILTINZLIB 'builtin zlib' 'zlib is' true
 
 check_val '' ZLIB '-lz' '' zlib '' '' false
 check_val '' MPV -lmpv '' mpv '' '' false
@@ -701,7 +713,8 @@ if [ "$OS" != 'Win32' ] && [ "$OS" != 'Linux' ]; then
    check_lib '' STRL "$CLIB" strlcpy
 fi
 
-check_lib '' STRCASESTR "$CLIB" strcasestr
+# strcasestr: not probed - compat_strcasestr is used by name on every
+# platform, so whether the C library has one is irrelevant.
 check_lib '' MMAP "$CLIB" mmap
 check_lib '' MEMFD_CREATE "$CLIB" memfd_create
 
@@ -780,6 +793,23 @@ check_enabled CXX GLSLANG glslang 'The C++ compiler is' false
 check_enabled CXX SPIRV_CROSS SPIRV-Cross 'The C++ compiler is' false
 
 check_enabled GLSLANG BUILTINGLSLANG 'builtin glslang' 'glslang is' true
+
+check_enabled SPIRV_CROSS BUILTINSPIRV_CROSS 'builtin spirv-cross' 'spirv-cross is' true
+
+if [ "$HAVE_SPIRV_CROSS" != no ] && [ "$HAVE_BUILTINSPIRV_CROSS" = no ]; then
+   check_pkgconf SPIRV_CROSS spirv-cross-c-shared
+
+   if [ "$HAVE_SPIRV_CROSS" = no ]; then
+      check_header cxx SPIRV_CROSS spirv_cross/spirv_cross.hpp
+      check_lib cxx SPIRV_CROSS -lspirv-cross-core '' '-lspirv-cross-glsl'
+   fi
+
+   if [ "$HAVE_SPIRV_CROSS" = no ]; then
+      die : 'Notice: System SPIRV-Cross not found, enabling builtin SPIRV-Cross.'
+      HAVE_BUILTINSPIRV_CROSS=yes
+      HAVE_SPIRV_CROSS=yes
+   fi
+fi
 
 if [ "$HAVE_GLSLANG" != no ]; then
    check_header cxx GLSLANG \
@@ -863,7 +893,6 @@ if [ "$HAVE_DEBUG" = 'yes' ]; then
    fi
 fi
 
-check_enabled 'ZLIB BUILTINZLIB' RPNG RPNG 'zlib is' false
 check_enabled V4L2 VIDEOPROCESSOR 'video processor' 'Video4linux2 is' true
 
 if [ "$HAVE_CXX11" = 'yes' ]; then

@@ -247,7 +247,6 @@ static void *caca_init(const video_info_t *video,
       return NULL;
    }
 
-   if (video->font_enable)
       font_driver_init_osd(caca, video,
             false, video->is_threaded,
             FONT_DRIVER_RENDER_CACA);

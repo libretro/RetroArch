@@ -19,9 +19,18 @@
 #include <SLES/OpenSLES_Android.h>
 #endif
 
+#include <retro_atomic.h>
 #include <rthreads/rthreads.h>
 
 #include "../audio_driver.h"
+
+/* Upper bound on how long a blocking write will wait for the buffer
+ * queue callback before giving up and reporting a short write.  Never
+ * reached in normal operation - the callback fires as each enqueued
+ * block finishes - so the value only decides how long a device that
+ * has stopped consuming takes to be noticed.  Matches the flat
+ * bail-out timeouts in sdl_audio.c and wasapi.c. */
+#define OPENSL_STALL_TIMEOUT_US 256000
 
 /* Helper macros, COM-style. */
 #define SLObjectItf_Realize(a, ...) ((*(a))->Realize(a, __VA_ARGS__))
@@ -52,7 +61,12 @@ typedef struct sl
    unsigned buf_count;
    unsigned buffer_index;
    unsigned buffer_ptr;
-   volatile unsigned buffered_blocks;
+   /* Blocks currently enqueued on the device.  Decremented by
+    * opensl_callback on the OpenSL engine thread, incremented and
+    * read by the writer thread.  Android is always weakly-ordered
+    * ARM/AArch64, so the reads need acquire semantics to pair with
+    * the acq_rel RMWs - the previous plain volatile reads had none. */
+   retro_atomic_int_t buffered_blocks;
    bool nonblock;
    bool is_paused;
 } sl_t;
@@ -60,7 +74,7 @@ typedef struct sl
 static void opensl_callback(SLAndroidSimpleBufferQueueItf bq, void *ctx)
 {
    sl_t *sl = (sl_t*)ctx;
-   __sync_fetch_and_sub(&sl->buffered_blocks, 1);
+   retro_atomic_fetch_sub_int(&sl->buffered_blocks, 1);
    scond_signal(sl->cond);
 }
 
@@ -115,6 +129,10 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency,
    (void)device;
    if (!sl)
       goto error;
+
+   /* calloc zero-fill is not a portable initializer for an atomic -
+    * initialize it explicitly before anything can touch it. */
+   retro_atomic_int_init(&sl->buffered_blocks, 0);
 
    RARCH_LOG("[OpenSL] Requested audio latency: %u ms.\n", latency);
 
@@ -183,7 +201,8 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency,
    (*sl->buffer_queue)->RegisterCallback(sl->buffer_queue, opensl_callback, sl);
 
    /* Enqueue a bit to get stuff rolling. */
-   sl->buffered_blocks    = sl->buf_count;
+   retro_atomic_store_release_int(&sl->buffered_blocks,
+         (int)sl->buf_count);
    sl->buffer_index       = 0;
 
    for (i = 0; i < sl->buf_count; i++)
@@ -244,15 +263,40 @@ static ssize_t sl_write(void *data, const void *s, size_t len)
 
       if (sl->nonblock)
       {
-         if (sl->buffered_blocks == sl->buf_count)
+         if (retro_atomic_load_acquire_int(&sl->buffered_blocks)
+               == (int)sl->buf_count)
             break;
       }
       else
       {
+         bool signalled = true;
          slock_lock(sl->lock);
-         while (sl->buffered_blocks == sl->buf_count)
-            scond_wait(sl->cond, sl->lock);
+         /* Bounded.  opensl_callback is the only thing in this file
+          * that ever signals sl->cond, and it does not hold sl->lock
+          * while doing so - the predicate is buffered_blocks, updated
+          * with an atomic fetch_sub - so a signal raised between the
+          * test above and this wait reaches no waiter.  While the
+          * device keeps consuming blocks the next callback covers
+          * that.  If it has stopped consuming - device loss, a player
+          * error - there is no next callback, no shutdown or error
+          * signal anywhere in this driver, and the one `return -1`
+          * below sits past the wait where a blocked thread can never
+          * reach it.  An untimed wait here parked the thread the core
+          * runs on for good. */
+         while (retro_atomic_load_acquire_int(&sl->buffered_blocks)
+               == (int)sl->buf_count)
+         {
+            if (!(signalled = scond_wait_timeout(sl->cond, sl->lock,
+                        OPENSL_STALL_TIMEOUT_US)))
+               break;
+         }
          slock_unlock(sl->lock);
+
+         /* Report what was enqueued so far, exactly as the nonblock
+          * path above does when the queue is full.  Any partial block
+          * stays in sl->buffer_ptr for the next call. */
+         if (!signalled)
+            break;
       }
 
       avail_write = MIN(sl->buf_size - sl->buffer_ptr, len);
@@ -270,7 +314,7 @@ static ssize_t sl_write(void *data, const void *s, size_t len)
       {
          SLresult res     = (*sl->buffer_queue)->Enqueue(sl->buffer_queue, sl->buffer[sl->buffer_index], sl->buf_size);
          sl->buffer_index = (sl->buffer_index + 1) % sl->buf_count;
-         __sync_fetch_and_add(&sl->buffered_blocks, 1);
+         retro_atomic_fetch_add_int(&sl->buffered_blocks, 1);
          sl->buffer_ptr   = 0;
 
          if (res != SL_RESULT_SUCCESS)
@@ -286,8 +330,9 @@ static ssize_t sl_write(void *data, const void *s, size_t len)
 
 static size_t sl_write_avail(void *data)
 {
-   sl_t *sl = (sl_t*)data;
-   return ((sl->buf_count - (int)sl->buffered_blocks - 1) * sl->buf_size + (sl->buf_size - (int)sl->buffer_ptr));
+   sl_t *sl     = (sl_t*)data;
+   int buffered = retro_atomic_load_acquire_int(&sl->buffered_blocks);
+   return ((sl->buf_count - buffered - 1) * sl->buf_size + (sl->buf_size - (int)sl->buffer_ptr));
 }
 
 static size_t sl_buffer_size(void *data)

@@ -94,8 +94,6 @@ typedef struct frontend_ctx_driver
    enum frontend_architecture (*get_architecture)(void);
    enum frontend_powerstate (*get_powerstate)(int *seconds, int *percent);
    int  (*parse_drive_list)(void*, bool);
-   uint64_t (*get_total_mem)(void);
-   uint64_t (*get_free_mem)(void);
    void (*install_signal_handler)(void);
    int (*get_signal_handler_state)(void);
    void (*set_signal_handler_state)(int value);
@@ -182,9 +180,7 @@ size_t frontend_driver_get_core_extension(char *s, size_t len);
 
 bool frontend_driver_get_salamander_basename(char *s, size_t len);
 
-uint64_t frontend_driver_get_total_memory(void);
 
-uint64_t frontend_driver_get_free_memory(void);
 
 void frontend_driver_install_signal_handler(void);
 

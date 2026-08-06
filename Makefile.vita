@@ -14,7 +14,7 @@ PC_DEVELOPMENT_UDP_PORT	   =
 OBJ :=
 
 SCE_LIBC_SIZE := 4194304
-DEFINES := -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_STB_VORBIS
+DEFINES := -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS
 INCDIRS :=
 
 ifeq ($(GRIFFIN_BUILD), 1)
@@ -30,8 +30,9 @@ ifeq ($(GRIFFIN_BUILD), 1)
 		   -DHAVE_MATERIALUI \
 		   -DHAVE_LIBRETRODB \
 		   -DHAVE_KEYMAPPER \
-		   -DHAVE_ZLIB \
 		   -DHAVE_RPNG \
+		   -DHAVE_RWEBP \
+		   -DHAVE_RDDS \
 		   -DHAVE_RJPEG \
 		   -DHAVE_RBMP \
 		   -DHAVE_RTGA \
@@ -41,10 +42,7 @@ ifeq ($(GRIFFIN_BUILD), 1)
 		DEFINES += -DHAVE_NETLOGGER
 	endif
 	INCDIRS += -I. \
-		   -Ideps/7zip \
-		   -Ilibretro-common/include \
-		   -Ilibretro-common/include/compat/zlib \
-		   -Ideps/stb
+		   -Ilibretro-common/include
 else
 	HAVE_REWIND		:= 1
 	HAVE_UPDATE_ASSETS      := 1
@@ -59,10 +57,9 @@ else
 	HAVE_RJPEG		:= 1
 	HAVE_RBMP		:= 1
 	HAVE_RTGA		:= 1
-	HAVE_ZLIB		:= 1
 	HAVE_7ZIP		:= 1
    ifeq ($(HAVE_VITAGLES), 1)
-	HAVE_VITA2D		:= 0
+	HAVE_GXM		:= 0
 	HAVE_VITAGL		:= 0
 	HAVE_VITAGLES 		:= 1
 	HAVE_OPENGL 		:= 1
@@ -72,7 +69,7 @@ else
 	HAVE_GLSL 		:= 1
 	HAVE_SHADERPIPELINE 	:= 1
    else
-	HAVE_VITA2D		:= 1
+	HAVE_GXM		:= 1
 	HAVE_VITAGL		:= 0
    endif
 	HAVE_NETWORKING		:= 1
@@ -102,6 +99,7 @@ else
 	HAVE_STATIC_AUDIO_FILTERS = 1
 	HAVE_AUDIOMIXER 	:= 1
 	HAVE_RWAV       	:= 1
+	HAVE_RVORBIS    	:= 1
 	HAVE_CORE_INFO_CACHE    := 1
 
 	ifeq ($(DEBUG), 1)
@@ -172,8 +170,8 @@ CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions
 
 VITA_LIBS := -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub -lSceAppUtil_stub \
 	-lSceSysmodule_stub -lSceCtrl_stub -lSceHid_stub -lSceTouch_stub -lSceAudio_stub \
-	-lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lScePgf_stub -lSceMotion_stub \
-	-lSceFiber_stub -lSceMotion_stub -lSceAppMgr_stub -lpthread -lpng -lz -lSceShaccCg_stub
+	-lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lSceMotion_stub \
+	-lSceFiber_stub -lSceMotion_stub -lSceAppMgr_stub -lpthread -lSceShaccCg_stub
 
 ifeq ($(HAVE_VITAGLES), 1)
    VITA_LIBS += -llibScePiglet_stub -ltaihen_stub
@@ -253,10 +251,10 @@ endif
 %.depend: ;
 
 liblibScePiglet_stub.a:
-	mkdir -p deps/Pigs-In-A-Blanket/piglet_stub/libScePiglet
-	vita-libs-gen deps/Pigs-In-A-Blanket/piglet_stub/nids.yml deps/Pigs-In-A-Blanket/piglet_stub/libScePiglet
-	make -C deps/Pigs-In-A-Blanket/piglet_stub/libScePiglet ARCH=arm-vita-eabi
-	cp deps/Pigs-In-A-Blanket/piglet_stub/libScePiglet/liblibScePiglet_stub.a .
+	mkdir -p gfx/drivers_context/vita_pib/piglet_stub/libScePiglet
+	vita-libs-gen gfx/drivers_context/vita_pib/piglet_stub/nids.yml gfx/drivers_context/vita_pib/piglet_stub/libScePiglet
+	make -C gfx/drivers_context/vita_pib/piglet_stub/libScePiglet ARCH=arm-vita-eabi
+	cp gfx/drivers_context/vita_pib/piglet_stub/libScePiglet/liblibScePiglet_stub.a .
 
 $(TARGET).elf: $(OBJ) liblibScePiglet_stub.a
 	@$(if $(Q), $(shell echo echo LD $@),)
@@ -277,7 +275,7 @@ $(TARGET).elf: $(OBJ) liblibScePiglet_stub.a
 clean:
 	@$(if $(Q), echo $@,)
 	$(Q)rm -f $(OBJ) $(TARGET).elf $(TARGET).elf.unstripped.elf $(TARGET).velf $(TARGET).self param.sfo $(TARGET).vpk 
-	$(Q)rm -rf  deps/Pigs-In-A-Blanket/piglet_stub/libScePiglet
+	$(Q)rm -rf  gfx/drivers_context/vita_pib/piglet_stub/libScePiglet
 	$(Q)rm -f $(OBJ:.o=.depend)
 
 # Useful for developers

@@ -35,6 +35,32 @@
 /* TODO/FIXME - global */
 static void *video_font_driver = NULL;
 
+/* Monotonic counter incremented whenever any font instance is
+ * freed. Consumers that cache per-font derived data (e.g. the
+ * smooth ticker glyph width cache in gfx_animation.c) key their
+ * entries on this value: font_data_t pointers can be recycled by
+ * the allocator across free/create cycles, so pointer equality
+ * alone cannot prove a cached entry still describes a live font */
+static uint32_t font_driver_generation = 0;
+
+uint32_t font_driver_get_generation(void)
+{
+   return font_driver_generation;
+}
+
+static enum font_atlas_format font_atlas_preferred_format =
+      FONT_ATLAS_FORMAT_A8;
+
+void font_renderer_set_preferred_atlas_format(enum font_atlas_format fmt)
+{
+   font_atlas_preferred_format = fmt;
+}
+
+enum font_atlas_format font_renderer_get_preferred_atlas_format(void)
+{
+   return font_atlas_preferred_format;
+}
+
 int font_renderer_create_default(
       const font_renderer_driver_t **drv,
       void **handle, const char *font_path, unsigned font_size)
@@ -47,11 +73,7 @@ int font_renderer_create_default(
       &coretext_font_renderer,
 #endif
 #ifdef HAVE_STB_FONT
-#if defined(VITA) || defined(ORBIS) || defined(WIIU) || defined(ANDROID) || (defined(_WIN32) && !defined(_XBOX) && !defined(_MSC_VER) && _MSC_VER >= 1400) || (defined(_WIN32) && !defined(_XBOX) && defined(_MSC_VER)) || defined(HAVE_LIBNX) || defined(__linux__) || defined (HAVE_EMSCRIPTEN) || defined(__APPLE__) || defined(HAVE_ODROIDGO2) || defined(__PS3__)
-      &stb_unicode_font_renderer,
-#else
-      &stb_unicode_font_renderer,
-#endif
+      &stb_font_renderer,
 #endif
       &bitmap_font_renderer,
       NULL
@@ -159,6 +181,7 @@ static bool font_init_first(
                return true;
             }
          }
+         break;
 #endif
 #ifdef HAVE_SDL2
 #if SDL_VERSION_ATLEAST(2, 0, 18)
@@ -175,6 +198,20 @@ static bool font_init_first(
          }
          break;
 #endif
+#endif
+#ifdef HAVE_SDL3
+      case FONT_DRIVER_RENDER_SDL3:
+         {
+            void *data = sdl3_raster_font.init(video_data,
+                  font_path, font_size, is_threaded);
+            if (data)
+            {
+               *font_driver = &sdl3_raster_font;
+               *font_handle = data;
+               return true;
+            }
+         }
+         break;
 #endif
 #ifdef HAVE_D3D8
       case FONT_DRIVER_RENDER_D3D8_API:
@@ -270,14 +307,14 @@ static bool font_init_first(
          }
          break;
 #endif
-#ifdef HAVE_VITA2D
-      case FONT_DRIVER_RENDER_VITA2D:
+#ifdef HAVE_GXM
+      case FONT_DRIVER_RENDER_GXM:
          {
-            void *data = vita2d_vita_font.init(
+            void *data = gxm_font.init(
                   video_data, font_path, font_size, is_threaded);
             if (data)
             {
-               *font_driver = &vita2d_vita_font;
+               *font_driver = &gxm_font;
                *font_handle = data;
                return true;
             }
@@ -472,7 +509,7 @@ static INLINE unsigned is_misc_ws(const unsigned char* src)
 }
 
 static INLINE unsigned font_get_arabic_replacement(
-      const char* src, const char* start)
+      const char* src, const char* start, const char* end)
 {
    /* 0x0620 to 0x064F */
    static const unsigned arabic_shape_map[0x100][0x4] = {
@@ -616,7 +653,11 @@ static INLINE unsigned font_get_arabic_replacement(
    const char*   prev           = src - 2;
    const char*   next           = src + 2;
 
-   if (IS_ARABIC(prev) && (prev >= start))
+   /* prev/next straddle src by one Arabic character (2 bytes). Bounds
+    * must be tested before IS_ARABIC dereferences them: prev can point
+    * before start when src is at the first character, and the forward
+    * scan must not read past the terminator. */
+   if ((prev >= start) && IS_ARABIC(prev))
    {
       unsigned char prev_id = GET_ID_ARABIC(prev);
 
@@ -636,7 +677,7 @@ static INLINE unsigned font_get_arabic_replacement(
          const char*   prev2    = prev - 2;
 
          if (prev2 >= start)
-            prev2_id            = (prev2[0] << 6) | (prev2[1] & 0x3F);
+            prev2_id            = GET_ID_ARABIC(prev2);
 
          /* nonspacing diacritics 0x4b -- 0x5f */
          while (prev2_id > 0x4A && prev2_id < 0x60)
@@ -665,7 +706,7 @@ static INLINE unsigned font_get_arabic_replacement(
       prev_connected = !!arabic_shape_map[prev_id][2];
    }
 
-   if (IS_ARABIC(next))
+   if ((next + 1 < end) && IS_ARABIC(next))
    {
       unsigned char next_id = GET_ID_ARABIC(next);
 
@@ -673,7 +714,7 @@ static INLINE unsigned font_get_arabic_replacement(
       while (next_id > 0x4A && next_id < 0x60)
       {
          next += 2;
-         if (!IS_ARABIC(next))
+         if ((next + 1 >= end) || !IS_ARABIC(next))
             break;
          next_id = GET_ID_ARABIC(next);
       }
@@ -738,7 +779,7 @@ static char* font_driver_reshape_msg(const char* msg, size_t msg_len,
             if (IS_ARABIC(src))
             {
                unsigned replacement = font_get_arabic_replacement(
-                     (const char*)src, msg);
+                     (const char*)src, msg, (const char*)msg + msg_len);
 
                if (replacement)
                {
@@ -1003,9 +1044,15 @@ void font_driver_free(font_data_t *font)
    if (font)
    {
       bool is_threaded        = false;
+
+      /* Invalidate any externally cached per-font derived data */
+      font_driver_generation++;
+
 #ifdef HAVE_THREADS
-      bool *is_threaded_tmp   = video_driver_get_threaded();
-      is_threaded             = *is_threaded_tmp;
+      /* Ask for the real threaded state, not the video_threaded
+       * setting. The two differ when a hw-render core is loaded,
+       * since that forces the video driver to run non-threaded. */
+      is_threaded = video_driver_is_threaded();
 #endif
 
       font_driver_release_renderer_state(font->renderer,

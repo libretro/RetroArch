@@ -57,6 +57,14 @@ typedef struct
 } vfs_cdrom_t;
 #endif
 
+/* File mapping is available through POSIX mmap (HAVE_MMAP, chosen by
+ * the build) or through Win32 file mappings (always available there).
+ * Consumers gate on this umbrella so the two backends stay one code
+ * path everywhere except the actual map/unmap calls. */
+#if defined(HAVE_MMAP) || (defined(_WIN32) && !defined(_XBOX))
+#define VFS_HAVE_FILE_MAPPING 1
+#endif
+
 enum vfs_scheme
 {
    VFS_SCHEME_NONE = 0,
@@ -72,15 +80,14 @@ struct retro_vfs_file_handle
 struct libretro_vfs_implementation_file
 #endif
 {
-#ifdef HAVE_CDROM
-   vfs_cdrom_t cdrom; /* int64_t alignment */
-#endif
    int64_t size;
    uint64_t mappos;
    uint64_t mapsize;
    FILE *fp;
 #ifdef _WIN32
    HANDLE fh;
+   /* CreateFileMapping handle backing `mapped`; NULL when unmapped */
+   HANDLE map_handle;
 #endif
    char *buf;
    char* orig_path;
@@ -88,6 +95,20 @@ struct libretro_vfs_implementation_file
    int fd;
    unsigned hints;
    enum vfs_scheme scheme;
+#ifdef HAVE_CDROM
+   /* Allocated by retro_vfs_file_open_impl() only when the path
+    * carries the cdrom:// scheme, and freed by
+    * retro_vfs_file_close_impl(). It used to be an inline member at
+    * the head of this struct, which is a poor trade: vfs_cdrom_t
+    * embeds a 2352-byte sector cache, so every open file handle in a
+    * build with HAVE_CDROM cost 2464 bytes instead of 72, and the
+    * fields the read/seek paths actually touch (mappos, mapsize,
+    * mapped, hints) were pushed past offset 2392 and split across two
+    * cache lines instead of sharing one. Every consumer already gates
+    * on 'scheme == VFS_SCHEME_CDROM' before reaching for it, so a
+    * NULL here is unreachable on those paths. */
+   vfs_cdrom_t *cdrom;
+#endif
 #ifdef HAVE_SMBCLIENT
    intptr_t smb_fh;
    intptr_t smb_ctx;

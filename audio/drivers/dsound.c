@@ -35,7 +35,7 @@
 #include <rthreads/rthreads.h>
 #endif
 #include <lists/string_list.h>
-#include <queues/fifo_queue.h>
+#include <retro_spsc.h>
 #include <string/stdstring.h>
 
 #if defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0600 /*_WIN32_WINNT_VISTA */)
@@ -50,6 +50,7 @@
 #endif
 
 #include "../audio_driver.h"
+#include "../../configuration.h"
 #include "../../verbosity.h"
 
 #ifdef _XBOX
@@ -67,11 +68,16 @@
 
 typedef struct dsound
 {
+   /* Read-mostly after init.  Both threads load ds and dsb on every
+    * iteration of their respective loops. */
    LPDIRECTSOUND ds;
    LPDIRECTSOUNDBUFFER dsb;
 
-   fifo_buffer_t *buffer;
-   CRITICAL_SECTION crit;
+   /* Lock-free SPSC between dsound_write (producer, emulator thread)
+    * and dsound_thread (consumer).  Embedded by value so its lifetime
+    * tracks dsound_t; initialised in dsound_init, released in
+    * dsound_free after the worker has been joined. */
+   retro_spsc_t ring;
 
    HANDLE      event;
 #ifdef HAVE_THREADS
@@ -187,10 +193,17 @@ static void *dsound_device_list_new(void *u)
    return sl;
 }
 
+/* Both pointers are already reduced modulo buffer_size, so the sum is
+ * strictly below 2 * buffer_size and a conditional subtract is exact.
+ * The equal case yields buffer_size, which folds to 0 - same as the
+ * modulo it replaces. */
 static INLINE unsigned _dsound_write_avail(unsigned read_ptr,
       unsigned write_ptr, unsigned buffer_size)
 {
-   return (read_ptr + buffer_size - write_ptr) % buffer_size;
+   unsigned avail = read_ptr + buffer_size - write_ptr;
+   if (avail >= buffer_size)
+      avail -= buffer_size;
+   return avail;
 }
 
 static bool dsound_grab_region(dsound_t *ds, uint32_t write_ptr,
@@ -240,7 +253,9 @@ static DWORD CALLBACK dsound_thread(PVOID data)
    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
 
    IDirectSoundBuffer_GetCurrentPosition(ds->dsb, NULL, &write_ptr);
-   write_ptr = (write_ptr + ds->buffer_size / 2) % ds->buffer_size;
+   write_ptr += ds->buffer_size / 2;
+   if (write_ptr >= ds->buffer_size)
+      write_ptr -= ds->buffer_size;
 
    while (ds->thread_alive)
    {
@@ -252,9 +267,10 @@ static DWORD CALLBACK dsound_thread(PVOID data)
       IDirectSoundBuffer_GetCurrentPosition(ds->dsb, &read_ptr, NULL);
       avail = _dsound_write_avail(read_ptr, write_ptr, ds->buffer_size);
 
-      EnterCriticalSection(&ds->crit);
-      fifo_avail = FIFO_READ_AVAIL(ds->buffer);
-      LeaveCriticalSection(&ds->crit);
+      /* Consumer-side query; only this thread advances the read
+       * cursor, so the value cannot shrink under us between here and
+       * the drain below. */
+      fifo_avail = (DWORD)retro_spsc_read_avail(&ds->ring);
 
       if (avail < CHUNK_SIZE || ((fifo_avail < CHUNK_SIZE) && (avail < ds->buffer_size / 2)))
       {
@@ -289,27 +305,49 @@ static DWORD CALLBACK dsound_thread(PVOID data)
       }
       else
       {
-         /* All is good. Pull from it and notify FIFO. */
-         EnterCriticalSection(&ds->crit);
+         /* All is good. Pull from it and notify the producer. */
+         size_t got1 = 0;
+         size_t got2 = 0;
+
          if (region.chunk1)
-            fifo_read(ds->buffer, region.chunk1, region.size1);
+            got1 = retro_spsc_read(&ds->ring, region.chunk1, region.size1);
          if (region.chunk2)
-            fifo_read(ds->buffer, region.chunk2, region.size2);
-         LeaveCriticalSection(&ds->crit);
+            got2 = retro_spsc_read(&ds->ring, region.chunk2, region.size2);
+
+         /* fifo_avail >= CHUNK_SIZE == size1 + size2 was established
+          * above and only this thread consumes, so a short read is not
+          * reachable.  Silence any remainder anyway rather than commit
+          * whatever the DirectSound buffer happened to hold - the old
+          * fifo_read had no length feedback at all, so this class of
+          * bug could not even be detected. */
+         if (region.chunk1 && got1 < region.size1)
+            memset((uint8_t*)region.chunk1 + got1, 0, region.size1 - got1);
+         if (region.chunk2 && got2 < region.size2)
+            memset((uint8_t*)region.chunk2 + got2, 0, region.size2 - got2);
 
          is_pull = true;
       }
 
       IDirectSoundBuffer_Unlock(ds->dsb, region.chunk1,
             region.size1, region.chunk2, region.size2);
-      write_ptr = (write_ptr + region.size1 + region.size2)
-         % ds->buffer_size;
+      /* write_ptr < buffer_size and the locked region is CHUNK_SIZE,
+       * which buffer_size is both a multiple of and at least four
+       * times, so one conditional subtract is enough. */
+      write_ptr += region.size1 + region.size2;
+      if (write_ptr >= ds->buffer_size)
+         write_ptr -= ds->buffer_size;
 
       if (is_pull)
          SetEvent(ds->event);
    }
 
-   ExitThread(0);
+   /* Return normally: under HAVE_THREADS this function runs inside the
+    * sthread wrapper, which frees its thunk allocation after the
+    * function returns - ExitThread here skipped that epilogue and
+    * leaked the thunk on every driver teardown. */
+#ifndef HAVE_THREADS
+   return 0;
+#endif
 }
 
 static void dsound_stop_thread(dsound_t *ds)
@@ -372,7 +410,6 @@ static void dsound_free(void *data)
    dsound_imm_stop_thread(ds);
 #endif
    dsound_stop_thread(ds);
-   DeleteCriticalSection(&ds->crit);
 
    if (ds->dsb)
    {
@@ -386,8 +423,9 @@ static void dsound_free(void *data)
    if (ds->event)
       CloseHandle(ds->event);
 
-   if (ds->buffer)
-      fifo_free(ds->buffer);
+   /* Safe here and only here: dsound_stop_thread has joined the
+    * consumer, so the ring has no live reader. */
+   retro_spsc_free(&ds->ring);
 
    free(ds);
 }
@@ -434,12 +472,13 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
    LPGUID selected_device = NULL;
    WAVEFORMATEX wf        = {0};
    DSBUFFERDESC bufdesc   = {0};
+   bool want_float        = (config_get_ptr()->uints.audio_format_negotiation
+         == AUDIO_FORMAT_NEGOTIATION_FLOAT);
    dsound_t *ds           = (dsound_t*)calloc(1, sizeof(*ds));
 
    if (!ds)
       return NULL;
 
-   InitializeCriticalSection(&ds->crit);
 
    if (dev)
    {
@@ -493,7 +532,7 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
       goto error;
 #endif
 
-   dsound_set_format(&wf, true, 2, rate);
+   dsound_set_format(&wf, want_float, 2, rate);
    RARCH_DBG("[DirectSound] Requesting %u-bit %u-channel client with %s samples at %uHz %ums.\n",
          wf.wBitsPerSample,
          wf.nChannels,
@@ -522,13 +561,13 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
    if (!ds->event)
       goto error;
 
-   ds->fifo_bufsize = 4 * 1024;
-   ds->buffer = fifo_new(ds->fifo_bufsize);
-   if (!ds->buffer)
-      goto error;
-
    if (IDirectSound_CreateSoundBuffer(ds->ds, &bufdesc, &ds->dsb, 0) != DS_OK)
    {
+      /* Only a float request has a lower format to fall back to. An int16
+       * request that fails has nowhere lower to go, so it errors out. */
+      if (!want_float)
+         goto error;
+
       RARCH_WARN("[DirectSound] Failed to create float buffer, falling back to 16-bit PCM.\n");
 
       dsound_set_format(&wf, false, 2, rate);
@@ -548,7 +587,29 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
       ds->use_float = false;
    }
    else
-      ds->use_float = true;
+      ds->use_float = want_float;
+
+   /* Staging fifo between dsound_write and the feeder thread.  This is
+    * the only occupancy rate control can observe (write_avail /
+    * buffer_size report it), so it must span a useful measurement
+    * window: the previous fixed 4 KiB was 10.7 ms of float at 48 kHz -
+    * smaller than a single video frame's write, which slammed the
+    * controller's occupancy signal rail-to-rail on every batch.
+    * Mirror the DirectSound ring (latency-scaled, format-aware via
+    * nAvgBytesPerSec, already CHUNK_SIZE-aligned), sized after the
+    * float->int16 fallback so both agree on the final format.  Keep
+    * the old 4 KiB as the floor for very low latency settings. */
+   ds->fifo_bufsize = ds->buffer_size;
+   if (ds->fifo_bufsize < 4 * 1024)
+      ds->fifo_bufsize = 4 * 1024;
+   if (!retro_spsc_init(&ds->ring, ds->fifo_bufsize))
+      goto error;
+   /* retro_spsc_init rounds capacity up to a power of 2.  Report the
+    * true capacity as the driver buffer size, so rate control computes
+    * its setpoint against the ring's real bounds rather than the
+    * pre-rounding request.  An empty ring's write avail is exactly its
+    * capacity. */
+   ds->fifo_bufsize = retro_spsc_write_avail(&ds->ring);
 
    RARCH_LOG("[DirectSound] Initialized %u-bit %s buffer, %u bytes, latency %u ms.\n",
          wf.wBitsPerSample,
@@ -625,13 +686,11 @@ static ssize_t dsound_write(void *data, const void *buf_, size_t len)
       {
          size_t avail;
 
-         EnterCriticalSection(&ds->crit);
-         avail = FIFO_WRITE_AVAIL(ds->buffer);
+         avail = retro_spsc_write_avail(&ds->ring);
          if (avail > len)
             avail = len;
 
-         fifo_write(ds->buffer, buf, avail);
-         LeaveCriticalSection(&ds->crit);
+         retro_spsc_write(&ds->ring, buf, avail);
 
          _len += avail;
       }
@@ -642,13 +701,11 @@ static ssize_t dsound_write(void *data, const void *buf_, size_t len)
       {
          size_t avail;
 
-         EnterCriticalSection(&ds->crit);
-         avail = FIFO_WRITE_AVAIL(ds->buffer);
+         avail = retro_spsc_write_avail(&ds->ring);
          if (avail > len)
             avail = len;
 
-         fifo_write(ds->buffer, buf, avail);
-         LeaveCriticalSection(&ds->crit);
+         retro_spsc_write(&ds->ring, buf, avail);
 
          buf  += avail;
          _len += avail;
@@ -670,9 +727,7 @@ static size_t dsound_write_avail(void *data)
    size_t avail;
    dsound_t *ds = (dsound_t*)data;
 
-   EnterCriticalSection(&ds->crit);
-   avail = FIFO_WRITE_AVAIL(ds->buffer);
-   LeaveCriticalSection(&ds->crit);
+   avail = retro_spsc_write_avail(&ds->ring);
    return avail;
 }
 

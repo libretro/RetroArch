@@ -33,11 +33,10 @@
 
 #define CINTERFACE
 
-#define HAVE_IBXM 1
-
-#if defined(HAVE_ZLIB) || defined(HAVE_7ZIP)
+/* The ZIP archive backend and the DEFLATE trans_stream backend both fall
+ * back to the built-in inflate/deflate codec, so compression support is
+ * always available regardless of whether zlib or 7zip is compiled in. */
 #define HAVE_COMPRESSION 1
-#endif
 
 #if defined(HAVE_OPENGL) && defined(HAVE_ANGLE)
 #ifndef HAVE_OPENGLES
@@ -86,9 +85,7 @@ COMPATIBILITY
 #include "../compat/compat_getopt.c"
 #endif
 
-#ifndef HAVE_STRCASESTR
 #include "../compat/compat_strcasestr.c"
-#endif
 
 #ifndef HAVE_STRL
 #include "../compat/compat_strl.c"
@@ -106,6 +103,10 @@ COMPATIBILITY
 #include "../libretro-common/compat/compat_strldup.c"
 #include "../libretro-common/compat/fopen_utf8.c"
 #include "../libretro-common/memmap/memalign.c"
+#include "../libretro-common/memmap/memcpy_nt.c"
+/* data_transfer's streaming window reserves address space through
+ * memreserve()/memcommit(); those live here. */
+#include "../libretro-common/memmap/memmap.c"
 
 /*============================================================
 CONSOLE EXTENSIONS
@@ -140,15 +141,15 @@ ARCHIVE FILE
 ============================================================ */
 #include "../libretro-common/file/archive_file.c"
 
-#ifdef HAVE_ZLIB
+/* Always built: decodes ZIP DEFLATE via zlib when present, else via the
+ * built-in inflate. */
 #include "../libretro-common/file/archive_file_zlib.c"
-#endif
 
 #ifdef HAVE_7ZIP
 #include "../libretro-common/file/archive_file_7z.c"
 #endif
 
-#ifdef HAVE_ZSTD
+#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
 #include "../libretro-common/file/archive_file_zstd.c"
 #endif
 
@@ -158,10 +159,15 @@ COMPRESSION
 #include "../libretro-common/streams/stdin_stream.c"
 #include "../libretro-common/streams/trans_stream.c"
 #include "../libretro-common/streams/trans_stream_pipe.c"
+#include "../libretro-common/encodings/encoding_deflate.c"
+#ifdef HAVE_RZSTD
+#include "../libretro-common/encodings/encoding_rzstd.c"
+#endif
+#include "../libretro-common/streams/trans_stream_deflate.c"
+#include "../libretro-common/streams/rzip_stream.c"
 
 #ifdef HAVE_ZLIB
 #include "../libretro-common/streams/trans_stream_zlib.c"
-#include "../libretro-common/streams/rzip_stream.c"
 #endif
 
 /*============================================================
@@ -175,6 +181,7 @@ ENCODINGS
 PERFORMANCE
 ============================================================ */
 #include "../libretro-common/features/features_cpu.c"
+#include "../libretro-common/memory/mem_stats.c"
 
 /*============================================================
 CONFIG FILE
@@ -187,6 +194,7 @@ CONFIG FILE
 
 #ifdef HAVE_CONFIGFILE
 #include "../libretro-common/file/config_file.c"
+#include "../libretro-common/file/config_file_io.c"
 #include "../libretro-common/file/config_file_userdata.c"
 #endif
 
@@ -221,7 +229,9 @@ ACHIEVEMENTS
 #include "../cheevos/cheevos_menu.c"
 
 #if defined(HAVE_CHEEVOS_RVZ)
+#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
 #include "../cheevos/cheevos_rvz.c"
+#endif
 #endif
 
 #include "../deps/rcheevos/src/rc_client.c"
@@ -312,7 +322,7 @@ VIDEO CONTEXT
 #include "../gfx/display_servers/dispserv_android.c"
 #elif defined(__QNX__)
 #include "../gfx/drivers_context/qnx_ctx.c"
-#elif defined(EMSCRIPTEN)
+#elif defined(__EMSCRIPTEN__)
 #include "../gfx/drivers_context/emscriptenegl_ctx.c"
 #elif defined(__PS3__)
 #include "../gfx/drivers_context/ps3_ctx.c"
@@ -426,9 +436,31 @@ VIDEO IMAGE
 #include "../cores/libretro-imageviewer/image_core.c"
 #endif
 
+#include "../libretro-common/formats/audio_transfer.c"
+
+/* The arms in audio_transfer.c are enabled by their own HAVE_, not by
+ * the mixer's, so the decoders behind them have to be built on the same
+ * condition.  They used to sit inside HAVE_AUDIOMIXER, which left a
+ * build with a codec enabled and the mixer disabled compiling calls to
+ * decoders nothing had compiled. */
+
+#ifdef HAVE_ROPUS
+#include "../libretro-common/formats/opus/ropus.c"
+#endif
+
+#ifdef HAVE_RAAC
+#include "../libretro-common/formats/aac/raac.c"
+#endif
+
+#ifdef HAVE_RMODTRACKER
+#include "../libretro-common/formats/mod/rmodtracker.c"
+#endif
+
 #include "../libretro-common/formats/image_transfer.c"
+#include "../libretro-common/formats/data_transfer.c"
 #ifdef HAVE_RPNG
 #include "../libretro-common/formats/png/rpng.c"
+#include "../libretro-common/formats/png/rpng_apng.c"
 #include "../libretro-common/formats/png/rpng_encode.c"
 #endif
 #ifdef HAVE_RJPEG
@@ -440,8 +472,38 @@ VIDEO IMAGE
 #ifdef HAVE_RWEBP
 #include "../libretro-common/formats/webp/rwebp.c"
 #endif
+#if defined(HAVE_RWEBP) || defined(HAVE_RWEBM) || defined(HAVE_RMP4)
+#include "../libretro-common/formats/vp8/rvp8.c"
+#endif
+
+#ifdef HAVE_RWEBM
+#include "../libretro-common/formats/webm/rwebm.c"
+#include "../libretro-common/formats/webm/rwebm_video.c"
+#include "../libretro-common/formats/webm/rwebm_audio.c"
+#endif
+
+#ifdef HAVE_RMP4
+#include "../libretro-common/formats/h264/rh264.c"
+#include "../libretro-common/formats/h265/rh265.c"
+#include "../libretro-common/formats/mp4/rmp4.c"
+#include "../libretro-common/formats/mp4/rmp4_video.c"
+#include "../libretro-common/formats/mp4/rmp4_audio.c"
+#endif
+
+#ifdef HAVE_RVP9
+#include "../libretro-common/formats/vp9/rvp9.c"
+#endif
+#if defined(HAVE_RVP9) || defined(HAVE_RMP4)
+/* Shared 10-bit / HDR I420->RGB blits: used by the webm/mp4 rvp9 paths
+ * and by rmp4_video's H.265 Main10 arm, so RMP4 alone needs them too. */
+#include "../libretro-common/formats/image/image_hdr_blit.c"
+#endif
+#ifdef HAVE_RDDS
+#include "../libretro-common/formats/dds/rdds.c"
+#endif
 
 #include "../libretro-common/formats/bmp/rbmp_encode.c"
+
 #ifdef HAVE_RWAV
 #include "../libretro-common/formats/wav/rwav.c"
 #endif
@@ -495,7 +557,7 @@ VIDEO DRIVER
 #if defined(GEKKO)
 #ifdef HW_RVL
 #include "../gfx/drivers/gx_gfx_vi_encoder.c"
-#include "../memory/wii/mem2_manager.c"
+#include "../libretro-common/memory/mem2_manager.c"
 #endif
 #endif
 
@@ -572,13 +634,8 @@ VIDEO DRIVER
 #include "../gfx/drivers/psp1_gfx.c"
 #elif defined(PS2)
 #include "../gfx/drivers/ps2_gfx.c"
-#elif defined(HAVE_VITA2D)
-#include "../deps/libvita2d/source/vita2d.c"
-#include "../deps/libvita2d/source/vita2d_texture.c"
-#include "../deps/libvita2d/source/vita2d_draw.c"
-#include "../deps/libvita2d/source/utils.c"
-
-#include "../gfx/drivers/vita2d_gfx.c"
+#elif defined(HAVE_GXM)
+#include "../gfx/drivers/gxm_gfx.c"
 #elif defined(_3DS)
 #include "../gfx/drivers/ctr_gfx.c"
 #elif defined(XENON)
@@ -592,8 +649,6 @@ VIDEO DRIVER
 #include "../gfx/drivers/gdi_gfx.c"
 #endif
 #endif
-
-#include "../deps/ibxm/ibxm.c"
 
 /*============================================================
 FONTS
@@ -609,7 +664,6 @@ FONTS
 #include "../gfx/font_driver.c"
 
 #if defined(HAVE_STB_FONT)
-#include "../gfx/drivers_font_renderer/stb_unicode.c"
 #include "../gfx/drivers_font_renderer/stb.c"
 #endif
 
@@ -702,7 +756,7 @@ INPUT
 #elif defined(__QNX__)
 #include "../input/drivers/qnx_input.c"
 #include "../input/drivers_joypad/qnx_joypad.c"
-#elif defined(EMSCRIPTEN)
+#elif defined(__EMSCRIPTEN__)
 #include "../input/drivers/rwebinput_input.c"
 #include "../input/drivers_joypad/rwebpad_joypad.c"
 #elif defined(DJGPP)
@@ -822,11 +876,14 @@ AUDIO RESAMPLER
 ============================================================ */
 #include "../libretro-common/audio/resampler/audio_resampler.c"
 #include "../libretro-common/audio/resampler/drivers/sinc_resampler.c"
+#include "../libretro-common/audio/resampler/drivers/sinc_resampler_int16.c"
 #ifdef HAVE_NEAREST_RESAMPLER
 #include "../libretro-common/audio/resampler/drivers/nearest_resampler.c"
+#include "../libretro-common/audio/resampler/drivers/nearest_resampler_int16.c"
 #endif
 #ifdef HAVE_CC_RESAMPLER
 #include "../audio/drivers_resampler/cc_resampler.c"
+#include "../audio/drivers_resampler/cc_resampler_int16.c"
 #endif
 
 /*============================================================
@@ -835,7 +892,7 @@ CAMERA
 #include "../camera/camera_driver.c"
 #if defined(ANDROID)
 #include "../camera/drivers/android.c"
-#elif defined(EMSCRIPTEN)
+#elif defined(__EMSCRIPTEN__)
 #include "../camera/drivers/rwebcam.c"
 #endif
 
@@ -916,6 +973,9 @@ AUDIO
 
 #if defined(HAVE_SDL3)
 #include "../input/drivers_joypad/sdl3_joypad.c"
+#include "../input/drivers/sdl3_input.c"
+#include "../gfx/drivers/sdl3_gfx.c"
+#include "../gfx/common/sdl3_common.c"
 #elif defined(HAVE_SDL2)
 #include "../audio/drivers/sdl_audio.c"
 #include "../input/drivers/sdl_input.c"
@@ -946,7 +1006,6 @@ AUDIO
 #else
 #include "../audio/drivers/alsa.c"
 #include "../audio/common/alsa.c"
-#include "../audio/drivers/alsathread.c"
 #endif
 #endif
 
@@ -992,8 +1051,24 @@ DRIVERS
 #include "../gfx/gfx_animation.c"
 #include "../gfx/gfx_display.c"
 #include "../gfx/gfx_thumbnail.c"
+
+/* rflac is used by the audio mixer (HAVE_RFLAC) and by the CHD FLAC
+ * decoder in libchdr (HAVE_CHD). Include its implementation once, ahead
+ * of both consumers, whenever either of them is present. */
+#if defined(HAVE_RFLAC) || defined(HAVE_CHD)
+#include "../libretro-common/formats/flac/rflac.c"
+#endif
+
 #ifdef HAVE_AUDIOMIXER
 #include "../libretro-common/audio/audio_mixer.c"
+#endif
+
+#if defined(HAVE_RVORBIS)
+#include "../libretro-common/formats/vorbis/rvorbis.c"
+#endif
+
+#if defined(HAVE_RMP3)
+#include "../libretro-common/formats/mp3/rmp3.c"
 #endif
 
 /*============================================================
@@ -1074,6 +1149,10 @@ CORES
 #include "../cores/libretro-ffmpeg/ffmpeg_core.c"
 #endif
 
+#ifdef HAVE_WEBMPLAYER
+#include "../cores/libretro-webm/webm_core.c"
+#endif
+
 #if defined(HAVE_MPV)
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 #include "../cores/libretro-mpv/mpv-libretro.c"
@@ -1113,17 +1192,12 @@ FILE
 #endif
 
 #include "../libretro-common/string/stdstring.c"
-#include "../libretro-common/file/nbio/nbio_stdio.c"
 #if defined(__linux__)
-#include "../libretro-common/file/nbio/nbio_linux.c"
 #endif
 #if defined(HAVE_MMAP) && defined(BSD)
-#include "../libretro-common/file/nbio/nbio_unixmmap.c"
 #endif
 #if defined(HAVE_MMAP_WIN32)
-#include "../libretro-common/file/nbio/nbio_windowsmmap.c"
 #endif
-#include "../libretro-common/file/nbio/nbio_intf.c"
 
 /*============================================================
 MESSAGE
@@ -1314,25 +1388,19 @@ DATA RUNLOOP
 #include "../tasks/task_content_disc.c"
 #endif
 #ifdef HAVE_PATCH
+#include "../tasks/patch_stream.c"
 #include "../tasks/task_patch.c"
 #ifdef HAVE_XDELTA
-#define adler32(...) xdelta_adler32(__VA_ARGS__)
-#include "../deps/xdelta3/xdelta3.c"
-#undef adler32
-#ifdef Q
-#undef Q
-#endif
-#ifdef W
-#undef W
-#endif
-#ifdef Z
-#undef Z
-#endif
+/* The VCDIFF decoder defines no macros of its own, so the unity build
+ * needs no cleanup after it - xdelta3 leaked adler32, Q, W and Z into
+ * every translation unit that followed. */
+#include "../libretro-common/encodings/encoding_vcdiff.c"
 #endif
 #endif
 #include "../save.c"
 #include "../tasks/task_save.c"
 #include "../tasks/task_movie.c"
+#include "../tasks/task_content_prefetch.c"
 #include "../tasks/task_image.c"
 #include "../tasks/task_file_transfer.c"
 #include "../tasks/task_playlist_manager.c"
@@ -1340,7 +1408,7 @@ DATA RUNLOOP
 #ifdef HAVE_TRANSLATE
 #include "../tasks/task_translation.c"
 #endif
-#ifdef HAVE_ZLIB
+#ifdef HAVE_COMPRESSION
 #include "../tasks/task_decompress.c"
 #endif
 #include "../tasks/task_database.c"
@@ -1407,6 +1475,7 @@ MENU
 #ifdef HAVE_LIBRETRODB
 #include "../menu/menu_explore.c"
 #include "../tasks/task_menu_explore.c"
+#include "../tasks/task_database_info.c"
 #endif
 #endif
 
@@ -1437,84 +1506,50 @@ MENU
 /*============================================================
 DEPENDENCIES
 ============================================================ */
-#ifdef HAVE_FLAC
-#include "../deps/libFLAC/bitmath.c"
-#include "../deps/libFLAC/bitreader.c"
-#include "../deps/libFLAC/cpu.c"
-#include "../deps/libFLAC/crc.c"
-#include "../deps/libFLAC/fixed.c"
-#include "../deps/libFLAC/float.c"
-#include "../deps/libFLAC/format.c"
-#include "../deps/libFLAC/lpc.c"
-#include "../deps/libFLAC/lpc_intrin_avx2.c"
-#include "../deps/libFLAC/lpc_intrin_sse2.c"
-#include "../deps/libFLAC/lpc_intrin_sse41.c"
-#include "../deps/libFLAC/lpc_intrin_sse.c"
-#include "../deps/libFLAC/md5.c"
-#include "../deps/libFLAC/memory.c"
-#include "../deps/libFLAC/stream_decoder.c"
-#endif
-
-#ifdef HAVE_ZLIB
-#ifndef HAVE_NO_BUILTINZLIB
-#include "../deps/libz/adler32.c"
-#include "../deps/libz/compress.c"
-#include "../deps/libz/libz-crc32.c"
-#include "../deps/libz/deflate.c"
-#include "../deps/libz/gzclose.c"
-#include "../deps/libz/gzlib.c"
-#include "../deps/libz/gzread.c"
-#include "../deps/libz/gzwrite.c"
-#include "../deps/libz/inffast.c"
-#include "../deps/libz/inflate.c"
-#include "../deps/libz/inftrees.c"
-#include "../deps/libz/trees.c"
-#include "../deps/libz/uncompr.c"
-#include "../deps/libz/zutil.c"
-#endif
-
 #ifdef HAVE_CHD
+#ifdef HAVE_RCHD
+/* The built-in reader, and the codecs it calls directly. Huffman is not
+ * optional: a version 5 map is Huffman-coded, so it is needed to open
+ * an image at all. libchdr's own huffman is a different interface and
+ * does not serve -- it exports huffman_*, this wants rhuff_*. */
+#include "../libretro-common/encodings/encoding_huffman.c"
+#include "../libretro-common/formats/chd/rchd.c"
+#else
 #include "../libretro-common/formats/libchdr/libchdr_zlib.c"
 #include "../libretro-common/formats/libchdr/libchdr_bitstream.c"
 #include "../libretro-common/formats/libchdr/libchdr_cdrom.c"
 #include "../libretro-common/formats/libchdr/libchdr_chd.c"
 #include "../libretro-common/formats/libchdr/libchdr_huffman.c"
 
-#ifdef HAVE_FLAC
+#if defined(HAVE_FLAC) || defined(HAVE_RFLAC)
 #include "../libretro-common/formats/libchdr/libchdr_flac.c"
 #include "../libretro-common/formats/libchdr/libchdr_flac_codec.c"
 #endif
 
-#ifdef HAVE_7ZIP
+/* CHD decodes LZMA through r7z_lzma, which no longer has anything to
+ * do with whether the 7z archive backend is built. */
 #include "../libretro-common/formats/libchdr/libchdr_lzma.c"
-#endif
+#define GRIFFIN_HAVE_R7Z_LZMA 1
+#include "../libretro-common/formats/7z/r7z_lzma.c"
 
 #ifdef HAVE_ZSTD
 #include "../libretro-common/formats/libchdr/libchdr_zstd.c"
 #endif
+#endif  /* !HAVE_RCHD */
 
 #include "../libretro-common/streams/chd_stream.c"
 #endif
-#endif
 
 #ifdef HAVE_7ZIP
-#include "../deps/7zip/7zArcIn.c"
-#include "../deps/7zip/7zBuf.c"
-#include "../deps/7zip/7zCrc.c"
-#include "../deps/7zip/7zCrcOpt.c"
-#include "../deps/7zip/7zDec.c"
-#include "../deps/7zip/CpuArch.c"
-#include "../deps/7zip/Delta.c"
-#include "../deps/7zip/LzFind.c"
-#include "../deps/7zip/LzmaDec.c"
-#include "../deps/7zip/Lzma2Dec.c"
-#include "../deps/7zip/LzmaEnc.c"
-#include "../deps/7zip/Bra.c"
-#include "../deps/7zip/Bra86.c"
-#include "../deps/7zip/BraIA64.c"
-#include "../deps/7zip/Bcj2.c"
-#include "../deps/7zip/7zFile.c"
-#include "../deps/7zip/7zStream.c"
+#ifndef GRIFFIN_HAVE_R7Z_LZMA
+#include "../libretro-common/formats/7z/r7z_lzma.c"
+#define GRIFFIN_HAVE_R7Z_LZMA 1
+#endif
+#include "../libretro-common/formats/7z/r7z_archive.c"
+#include "../libretro-common/formats/7z/r7z_lzma_stream.c"
+#include "../libretro-common/formats/7z/r7z_lzma2.c"
+#include "../libretro-common/formats/7z/r7z_bcj2.c"
+#include "../libretro-common/formats/7z/r7z_filters.c"
 #endif
 
 #ifdef HAVE_ZSTD
@@ -1568,7 +1603,6 @@ XML
 ============================================================ */
 #include "../libretro-common/formats/xml/rxml.c"
 #include "../libretro-common/formats/logiqx_dat/logiqx_dat.c"
-#include "../deps/yxml/yxml.c"
 
 /*============================================================
  AUDIO UTILS
@@ -1755,6 +1789,12 @@ GAME AI
 SMB CLIENT
 ============================================================ */
 #ifdef HAVE_BUILTINSMBCLIENT
+/* libsmb2 sources expect autoconf-style unused-param marker and
+ * GNU C (typeof in alloc.c). Platforms that compile griffin as
+ * ISO C99 must pass -std=gnu99 (or equivalent) as well. */
+#ifndef _U_
+#define _U_ __attribute__((unused))
+#endif
 #include "../deps/libsmb2/lib/aes.c"
 #include "../deps/libsmb2/lib/aes_apple.c"
 #include "../deps/libsmb2/lib/aes128ccm.c"

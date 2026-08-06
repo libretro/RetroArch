@@ -87,6 +87,15 @@ typedef struct rarch_sinc_resampler
    uint32_t time;
    float subphase_mod;
    float kaiser_beta;
+   /* Per-instance kernel. The global sinc_resampler vtable is shared by
+    * every instance (game audio, microphone, mixer voices), so the kernel
+    * choice must live here: window types lay out phase_table differently
+    * (Kaiser interleaves coeff+delta rows at stride taps*2, Lanczos rows
+    * are stride taps), and letting a later init of one window type rewrite
+    * a shared function pointer makes an earlier instance of the other type
+    * read its table at the wrong stride - deltas get used as coefficients,
+    * collapsing output level on a per-phase basis. */
+   void (*process)(void *re, struct resampler_data *data);
 } rarch_sinc_resampler_t;
 
 /*
@@ -874,19 +883,18 @@ static void *resampler_sinc_new(const struct resampler_config *config,
       re->taps = (unsigned)ceil(re->taps / bandwidth_mod);
    }
 
-   /* Be SIMD-friendly. */
-#if defined(__AVX__)
-   if (enable_avx)
-      re->taps = (re->taps + 7) & ~7;
-   else
-#endif
-   {
-#if (defined(__ARM_NEON__) || defined(HAVE_NEON))
-      re->taps = (re->taps + 7) & ~7;
-#else
-      re->taps = (re->taps + 3) & ~3;
-#endif
-   }
+   /* Be SIMD-friendly: round taps up to a multiple of 8 on every platform.
+    * NEON and AVX builds always required this; SSE/scalar builds only
+    * required a multiple of 4, which made LOWEST a different filter per
+    * platform: 4 taps on x86, 8 on ARM (identical to LOWER there).  The
+    * 4-tap variant carries 0.117 dB of per-phase DC gain ripple - audible
+    * as slow amplitude wobble on sustained tones as rate control sweeps
+    * the phase - while the 8-tap variant measures 0.003 dB.  A uniform
+    * multiple of 8 gives every platform the same filter and retires the
+    * one quality tier with audible gain ripple.  LOWEST thereby becomes
+    * an alias of LOWER for upsampling, matching what ARM and AVX builds
+    * have always shipped. */
+   re->taps = (re->taps + 7) & ~7;
 
    phase_elems = ((1 << re->phase_bits) * re->taps);
    if (window_type == SINC_WINDOW_KAISER)
@@ -917,24 +925,24 @@ static void *resampler_sinc_new(const struct resampler_config *config,
          goto error;
    }
 
-   sinc_resampler.process = resampler_sinc_process_c;
+   re->process = resampler_sinc_process_c;
    if (window_type == SINC_WINDOW_KAISER)
-      sinc_resampler.process    = resampler_sinc_process_c_kaiser;
+      re->process    = resampler_sinc_process_c_kaiser;
 
    if (mask & RESAMPLER_SIMD_AVX && enable_avx)
    {
 #if defined(__AVX__)
-      sinc_resampler.process    = resampler_sinc_process_avx;
+      re->process    = resampler_sinc_process_avx;
       if (window_type == SINC_WINDOW_KAISER)
-         sinc_resampler.process = resampler_sinc_process_avx_kaiser;
+         re->process = resampler_sinc_process_avx_kaiser;
 #endif
    }
    else if (mask & RESAMPLER_SIMD_SSE)
    {
 #if defined(__SSE__)
-      sinc_resampler.process = resampler_sinc_process_sse;
+      re->process = resampler_sinc_process_sse;
       if (window_type == SINC_WINDOW_KAISER)
-         sinc_resampler.process = resampler_sinc_process_sse_kaiser;
+         re->process = resampler_sinc_process_sse_kaiser;
 #endif
    }
    else if (mask & RESAMPLER_SIMD_NEON)
@@ -942,11 +950,11 @@ static void *resampler_sinc_new(const struct resampler_config *config,
 #if (defined(__ARM_NEON__) || defined(HAVE_NEON))
 #ifdef HAVE_ARM_NEON_ASM_OPTIMIZATIONS
       if (window_type != SINC_WINDOW_KAISER)
-         sinc_resampler.process = resampler_sinc_process_neon;
+         re->process = resampler_sinc_process_neon;
 #else
-      sinc_resampler.process = resampler_sinc_process_neon;
+      re->process = resampler_sinc_process_neon;
       if (window_type == SINC_WINDOW_KAISER)
-         sinc_resampler.process = resampler_sinc_process_neon_kaiser;
+         re->process = resampler_sinc_process_neon_kaiser;
 #endif
 #endif
    }
@@ -958,9 +966,17 @@ error:
    return NULL;
 }
 
+/* Thin dispatcher: the vtable is shared across all live instances, so the
+ * actual kernel is read from the instance itself.  One indirect call per
+ * process() invocation (per chunk, not per sample) - no measurable cost. */
+static void resampler_sinc_process(void *re_, struct resampler_data *data)
+{
+   ((rarch_sinc_resampler_t*)re_)->process(re_, data);
+}
+
 retro_resampler_t sinc_resampler = {
    resampler_sinc_new,
-   resampler_sinc_process_c,
+   resampler_sinc_process,
    resampler_sinc_free,
    RESAMPLER_API_VERSION,
    "sinc",

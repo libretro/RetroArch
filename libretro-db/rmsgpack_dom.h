@@ -99,6 +99,21 @@ void rmsgpack_dom_reader_state_free(struct rmsgpack_dom_reader_state *state);
 
 int rmsgpack_dom_write(intfstream_t *stream, const struct rmsgpack_dom_value *obj);
 
+/* Field descriptors for rmsgpack_dom_read_into(). The caller states
+ * the type it expects so that the number of varargs consumed for a
+ * key is fixed by the call site rather than by the file being read.
+ * See the comment above rmsgpack_dom_read_into() in rmsgpack_dom.c. */
+enum rmsgpack_dom_field_type
+{
+   RDF_UINT = 0,   /* uint64_t *out                        */
+   RDF_INT,        /* int64_t  *out                        */
+   RDF_BOOL,       /* int      *out                        */
+   RDF_STRING,     /* char *buf, uint64_t *inout_capacity  */
+   RDF_BINARY      /* void *buf, uint64_t *inout_capacity  */
+};
+
+/* varargs: (const char *key, enum rmsgpack_dom_field_type, <out...>)
+ * repeated, terminated by a NULL key. */
 int rmsgpack_dom_read_into(intfstream_t *stream, ...);
 
 RETRO_END_DECLS

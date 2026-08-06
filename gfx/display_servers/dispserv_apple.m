@@ -163,6 +163,15 @@ static bool apple_display_server_set_resolution(void *data,
       CFArrayRef displayModes = CGDisplayCopyAllDisplayModes(mainDisplayID, NULL);
       CGDisplayModeRef bestMode = NULL;
 
+      /* Returns NULL for an invalid display, which CGMainDisplayID()
+       * can hand back on a headless Mac or across a hotplug between
+       * the two calls.  CFArrayGetCount(NULL) is not tolerant. */
+      if (!displayModes)
+      {
+         RARCH_ERR("[Video] Could not enumerate display modes\n");
+         return false;
+      }
+
       RARCH_LOG("[Video] Looking for display mode: %ux%u @ %.3f Hz\n", width, height, hz);
 
       /* Find the best matching display mode */
@@ -275,6 +284,15 @@ static void *apple_display_server_get_resolution_list(
 #ifdef RARCH_HAS_CGDISPLAYMODE_API
    CGDirectDisplayID mainDisplayID = CGMainDisplayID();
    CGDisplayModeRef currentMode = CGDisplayCopyDisplayMode(mainDisplayID);
+
+   /* NULL for an invalid display; every accessor below dereferences
+    * it. */
+   if (!currentMode)
+   {
+      *len = 0;
+      return NULL;
+   }
+
    currentRate = CGDisplayModeGetRefreshRate(currentMode);
 
    /* Use pixel dimensions when available (macOS 10.8+), otherwise fall back to logical dimensions */
@@ -292,6 +310,13 @@ static void *apple_display_server_get_resolution_list(
 
    CFArrayRef displayModes = CGDisplayCopyAllDisplayModes(mainDisplayID, NULL);
    NSMutableSet *resolutions = [NSMutableSet set];
+
+   if (!displayModes)
+   {
+      CFRelease(currentMode);
+      *len = 0;
+      return NULL;
+   }
 
    for (CFIndex i = 0; i < CFArrayGetCount(displayModes); i++)
    {
@@ -543,8 +568,11 @@ static void *apple_display_server_init(void)
 #if defined(OSX) && defined(RARCH_HAS_CGDISPLAYMODE_API)
    /* Store original display mode for restoration */
    apple->display_id = CGMainDisplayID();
-   apple->original_mode = CGDisplayCopyDisplayMode(apple->display_id);
-   RARCH_LOG("[Video] Stored original display mode for restoration\n");
+   if ((apple->original_mode = CGDisplayCopyDisplayMode(apple->display_id)))
+      RARCH_LOG("[Video] Stored original display mode for restoration\n");
+   else
+      RARCH_WARN("[Video] Could not read the current display mode;"
+            " it will not be restored on exit\n");
 #endif
 
    /* Sync the display link to the configured refresh rate.

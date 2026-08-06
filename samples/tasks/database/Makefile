@@ -4,7 +4,6 @@ use_neon     := 0
 release	    := release
 EXE_EXT	    :=
 TARGET       := database_task
-HAVE_ZLIB    := 1
 HAVE_7ZIP    := 1
 HAVE_THREADS := 1
 
@@ -90,6 +89,7 @@ flags   += -std=c99
 
 SOURCES_C := \
 	$(CORE_DIR)/samples/tasks/database/main.c \
+	$(LIBRETRO_COMM_DIR)/memory/mem_stats.c \
 	$(CORE_DIR)/tasks/task_database.c \
 	$(CORE_DIR)/tasks/task_database_cue.c \
 	$(CORE_DIR)/database_info.c \
@@ -107,6 +107,7 @@ SOURCES_C := \
 	$(CORE_DIR)/libretro-db/rmsgpack_dom.c \
 	$(LIBRETRO_COMM_DIR)/file/archive_file.c \
 	$(LIBRETRO_COMM_DIR)/file/config_file.c \
+	$(LIBRETRO_COMM_DIR)/file/config_file_io.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path_io.c \
 	$(LIBRETRO_COMM_DIR)/file/retro_dirent.c \
@@ -115,8 +116,8 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_strldup.c \
 	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
-	$(DEPS_DIR)/yxml/yxml.c \
 	$(LIBRETRO_COMM_DIR)/formats/json/rjson.c \
 	$(LIBRETRO_COMM_DIR)/formats/xml/rxml.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
@@ -131,44 +132,29 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/streams/rzip_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c \
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream_deflate.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
+	$(LIBRETRO_COMM_DIR)/file/archive_file_zlib.c \
 	$(LIBRETRO_COMM_DIR)/string/stdstring.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 
 DEFINES    = -DHAVE_LIBRETRODB -DHAVE_COMPRESSION
 
-ifeq ($(HAVE_ZLIB), 1)
-SOURCES_C += \
-				 $(LIBRETRO_COMM_DIR)/file/archive_file_zlib.c \
-				 $(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.c
-DEFINES += -DHAVE_ZLIB
-LIBS += -lz
 LIBS += -lm
-endif
 
 ifeq ($(HAVE_7ZIP), 1)
 SOURCES_C +=  \
 				 $(LIBRETRO_COMM_DIR)/file/archive_file_7z.c
-DEFINES += -DHAVE_7ZIP -D_7ZIP_ST
+DEFINES += -DHAVE_7ZIP
 INCDIRS += -I$(DEPS_DIR)
 
-SOURCES_C += $(DEPS_DIR)/7zip/7zArcIn.c \
-				 $(DEPS_DIR)/7zip/7zBuf.c \
-				 $(DEPS_DIR)/7zip/7zCrc.c \
-				 $(DEPS_DIR)/7zip/7zCrcOpt.c \
-				 $(DEPS_DIR)/7zip/7zDec.c \
-				 $(DEPS_DIR)/7zip/7zFile.c \
-				 $(DEPS_DIR)/7zip/7zStream.c \
-				 $(DEPS_DIR)/7zip/Bcj2.c \
-				 $(DEPS_DIR)/7zip/Bra.c \
-				 $(DEPS_DIR)/7zip/Bra86.c \
-				 $(DEPS_DIR)/7zip/BraIA64.c \
-				 $(DEPS_DIR)/7zip/CpuArch.c \
-				 $(DEPS_DIR)/7zip/Delta.c \
-				 $(DEPS_DIR)/7zip/LzFind.c \
-				 $(DEPS_DIR)/7zip/Lzma2Dec.c \
-				 $(DEPS_DIR)/7zip/LzmaDec.c \
-				 $(DEPS_DIR)/7zip/LzmaEnc.c
+SOURCES_C += $(LIBRETRO_COMM_DIR)/formats/7z/r7z_archive.c \
+				 $(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma.c \
+				 $(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma_stream.c \
+				 $(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma2.c \
+				 $(LIBRETRO_COMM_DIR)/formats/7z/r7z_bcj2.c \
+				 $(LIBRETRO_COMM_DIR)/formats/7z/r7z_filters.c
 endif
 
 ifeq ($(HAVE_THREADS), 1)
@@ -189,6 +175,18 @@ CXXFLAGS  += $(DEFINES)
 
 OBJECTS    = $(SOURCES_C:.c=.o)
 
+# The index pairing test links the same objects but its own entry
+# point, so the scanner's main() is swapped out for it.
+SCAN_TEST         := database_scan_test
+SCAN_TEST_MAIN    := $(CORE_DIR)/samples/tasks/database/database_scan_test.o
+SCAN_TEST_OBJECTS  = $(filter-out $(CORE_DIR)/samples/tasks/database/main.o,$(OBJECTS)) \
+	$(SCAN_TEST_MAIN)
+
+INDEX_TEST        := database_index_test
+INDEX_TEST_MAIN   := $(CORE_DIR)/samples/tasks/database/database_index_test.o
+INDEX_TEST_OBJECTS = $(filter-out $(CORE_DIR)/samples/tasks/database/main.o,$(OBJECTS)) \
+	$(INDEX_TEST_MAIN)
+
 OBJOUT   = -o
 LINKOUT  = -o
 
@@ -208,6 +206,17 @@ all: $(TARGET)$(EXE_EXT)
 $(TARGET)$(EXE_EXT): $(OBJECTS)
 	$(LD)  $(LINKOUT)$@ $(SHARED) $(OBJECTS) $(LDFLAGS) $(LIBS)
 
+$(INDEX_TEST)$(EXE_EXT): $(INDEX_TEST_OBJECTS)
+	$(LD)  $(LINKOUT)$@ $(SHARED) $(INDEX_TEST_OBJECTS) $(LDFLAGS) $(LIBS)
+
+# Builds its own databases, so it needs nothing but a writable dir.
+$(SCAN_TEST)$(EXE_EXT): $(SCAN_TEST_OBJECTS)
+	$(LD)  $(LINKOUT)$@ $(SHARED) $(SCAN_TEST_OBJECTS) $(LDFLAGS) $(LIBS)
+
+check: $(INDEX_TEST)$(EXE_EXT) $(SCAN_TEST)$(EXE_EXT)
+	./$(INDEX_TEST)$(EXE_EXT)
+	./$(SCAN_TEST)$(EXE_EXT)
+
 %.o: %.c
 	$(CC) $(INCFLAGS) $(CFLAGS) -c $(OBJOUT)$@ $<
 
@@ -215,4 +224,7 @@ $(TARGET)$(EXE_EXT): $(OBJECTS)
 	$(CXX) $(INCFLAGS) $(CXXFLAGS) -c $(OBJOUT)$@ $<
 
 clean:
-	rm -f $(OBJECTS)
+	rm -f $(OBJECTS) $(INDEX_TEST_MAIN) $(SCAN_TEST_MAIN) \
+	      $(TARGET)$(EXE_EXT) $(INDEX_TEST)$(EXE_EXT) $(SCAN_TEST)$(EXE_EXT)
+
+.PHONY: all check clean

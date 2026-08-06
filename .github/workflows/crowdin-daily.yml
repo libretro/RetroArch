@@ -37,5 +37,9 @@ jobs:
           git config user.name github-actions
           git config user.email github-actions@github.com
           git add .
-          git commit -m "Fetch translations from Crowdin"
-          git push
+          if git diff --cached --quiet; then
+            echo "No translation changes to commit."
+          else
+            git commit -m "Fetch translations from Crowdin"
+            git push
+          fi

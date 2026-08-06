@@ -112,12 +112,27 @@ static dat_converter_list_t* dat_converter_list_create(
 {
    dat_converter_list_t* list = (dat_converter_list_t*)malloc(sizeof(*list));
 
+   /* Neither allocation was checked; the field writes below and the
+    * indexed stores in dat_converter_list_append() both go through a
+    * NULL on OOM. */
+   if (!list)
+   {
+      printf("fatal error: out of memory\n");
+      dat_converter_exit(1);
+   }
+
    list->type                 = type;
    list->count                = 0;
    list->capacity             = (1 << 2);
    list->bt_root              = NULL;
    list->values               = (dat_converter_list_item_t*)malloc(
          sizeof(*list->values) * list->capacity);
+
+   if (!list->values)
+   {
+      printf("fatal error: out of memory\n");
+      dat_converter_exit(1);
+   }
 
    return list;
 }
@@ -214,8 +229,21 @@ static void dat_converter_list_append(dat_converter_list_t* dst, void* item)
 {
    if (dst->count == dst->capacity)
    {
+      /* realloc-to-tmp: assigning the result straight back drops the
+       * only reference to the old block on failure, and left capacity
+       * claiming the larger size while the allocation was still the
+       * old one. */
+      dat_converter_list_item_t *tmp = (dat_converter_list_item_t*)
+         realloc(dst->values, sizeof(*dst->values) * (dst->capacity << 1));
+
+      if (!tmp)
+      {
+         printf("fatal error: out of memory\n");
+         dat_converter_exit(1);
+      }
+
+      dst->values    = tmp;
       dst->capacity <<= 1;
-      dst->values = realloc(dst->values, sizeof(*dst->values) * dst->capacity);
    }
 
    switch (dst->type)
@@ -325,13 +353,44 @@ static dat_converter_list_t* dat_converter_lexer(
    return token_list;
 }
 
+/* Deepest table nesting accepted from a DAT.  dat_parser_table()
+ * recurses once per '(' and had no limit, so a file consisting of
+ * nested tables exhausted the stack rather than being reported:
+ * 100000 levels (a ~1 MB DAT) gives
+ *
+ *   AddressSanitizer: stack-overflow
+ *
+ * Real DAT files nest three deep at most (the root table, a game
+ * table, and a rom table inside it), so this is far above anything
+ * legitimate. */
+#define DAT_CONVERTER_MAX_DEPTH 64
+
+static dat_converter_list_t* dat_parser_table_depth(
+      dat_converter_list_item_t** start_token, unsigned depth);
+
 static dat_converter_list_t* dat_parser_table(
       dat_converter_list_item_t** start_token)
+{
+   return dat_parser_table_depth(start_token, 0);
+}
+
+static dat_converter_list_t* dat_parser_table_depth(
+      dat_converter_list_item_t** start_token, unsigned depth)
 {
    dat_converter_list_t* parsed_table =
       dat_converter_list_create(DAT_CONVERTER_MAP_LIST);
    dat_converter_map_t map            = {0};
    dat_converter_list_item_t* current = *start_token;
+
+   if (depth >= DAT_CONVERTER_MAX_DEPTH)
+   {
+      printf("%s:%d:%d: fatal error: tables nested deeper than %d\n",
+             current->token.fname,
+             current->token.line_no,
+             current->token.column,
+             DAT_CONVERTER_MAX_DEPTH);
+      dat_converter_exit(1);
+   }
 
    while (current->token.label)
    {
@@ -364,7 +423,7 @@ static dat_converter_list_t* dat_parser_table(
          {
             current++;
             map.type = DAT_CONVERTER_LIST_MAP;
-            map.value.list = dat_parser_table(&current);
+            map.value.list = dat_parser_table_depth(&current, depth + 1);
             dat_converter_list_append(parsed_table, &map);
          }
          else if (string_is_equal(current->token.label, ")"))

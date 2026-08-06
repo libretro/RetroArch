@@ -44,6 +44,17 @@
 
 #define MAGIC_NUMBER "RARCHDB"
 
+/* Must match MAX_ERROR_LEN in query.c */
+#define LIBRETRODB_QUERY_ERR_LEN 256
+
+/* Sliding window used for the cursor walk.  Has to comfortably exceed
+ * the largest backwards jump the cursor makes - a rewind to the start
+ * of the record being inspected - so that the rewind stays inside the
+ * window and costs nothing. */
+#ifndef LIBRETRODB_WINDOW_SIZE
+#define LIBRETRODB_WINDOW_SIZE (64 * 1024)
+#endif
+
 /* MsgPack type bytes — needed by the fast cursor read path */
 #define _MPF_FIXMAP   0x80
 #define _MPF_FIXARRAY 0x90
@@ -64,12 +75,24 @@ struct node_iter_ctx
 struct libretrodb
 {
    intfstream_t *fd;
+   /* Scratch for libretrodb_query_compile()'s error text.  It used to
+    * be a function-scope static, so the pointer handed back through
+    * err_string was shared by every caller in the process and two
+    * concurrent compiles overwrote each other's message.  Tying it to
+    * the db handle keeps the pointer valid for as long as the caller
+    * can meaningfully use it while making it per-handle. */
+   char query_err[LIBRETRODB_QUERY_ERR_LEN];
    char *path;
    bool can_write;
    uint64_t root;
    uint64_t count;
    uint64_t first_index_offset;
 };
+
+/* Widest index key the format is expected to carry (SHA-1 is 20
+ * bytes).  Used to reject nonsense key sizes from a malformed index
+ * header before they reach binsearch(). */
+#define LIBRETRODB_MAX_KEY_SIZE 256
 
 struct libretrodb_index
 {
@@ -124,7 +147,7 @@ static int libretrodb_validate_document(const struct rmsgpack_dom_value *doc)
       if (value.type != RDT_MAP)
          continue;
 
-      if ((rv == libretrodb_validate_document(&value)) != 0)
+      if ((rv = libretrodb_validate_document(&value)) != 0)
          return rv;
    }
 
@@ -217,7 +240,11 @@ int libretrodb_open(const char *path, libretrodb_t *db, bool write)
    db->path  = strdup(path);
    db->root  = intfstream_tell(fd);
 
-   if ((int)intfstream_read(fd, &header, sizeof(header)) == -1)
+   /* intfstream_read() signals EOF as a short read, not as -1, so a
+    * file smaller than the header used to leave the tail of 'header'
+    * uninitialised and then feed it to strncmp() below.  Require the
+    * full header. */
+   if (intfstream_read(fd, &header, sizeof(header)) != (int64_t)sizeof(header))
       goto error;
 
    if (strncmp(header.magic_number, MAGIC_NUMBER, sizeof(MAGIC_NUMBER)) != 0)
@@ -245,7 +272,7 @@ int libretrodb_open(const char *path, libretrodb_t *db, bool write)
          RETRO_VFS_SEEK_POSITION_START) < 0)
       goto error;
 
-   if (rmsgpack_dom_read_into(fd, "count", &md.count, NULL) < 0)
+   if (rmsgpack_dom_read_into(fd, "count", RDF_UINT, &md.count, NULL) < 0)
       goto error;
 
    db->count              = md.count;
@@ -291,11 +318,11 @@ static int libretrodb_find_index(libretrodb_t *db, const char *index_name,
       uint64_t name_len = 50;
       /* Read index header */
       if (rmsgpack_dom_read_into(db->fd,
-            "name",     idx->name, &name_len,
-            "key_size", &idx->key_size,
-            "next",     &idx->next,
-            "count",    &idx->count,
-                                 NULL) < 0)
+            "name",     RDF_STRING, idx->name, &name_len,
+            "key_size", RDF_UINT,   &idx->key_size,
+            "next",     RDF_UINT,   &idx->next,
+            "count",    RDF_UINT,   &idx->count,
+                                    NULL) < 0)
       {
         printf("Invalid index header\n");
         break;
@@ -304,35 +331,76 @@ static int libretrodb_find_index(libretrodb_t *db, const char *index_name,
       if (strncmp(index_name, idx->name, strlen(idx->name)) == 0)
          return 0;
 
-      intfstream_seek(db->fd, (ssize_t)idx->next,
-            RETRO_VFS_SEEK_POSITION_CURRENT);
+      /* idx->next is a file-supplied relative seek.  Zero re-reads
+       * the same header forever and a value that wraps negative
+       * seeks backwards, so intfstream_eof() is never reached and
+       * the lookup hangs.  Require forward progress. */
+      if (idx->next == 0 || idx->next > (uint64_t)INT64_MAX)
+         break;
+
+      if (intfstream_seek(db->fd, (ssize_t)idx->next,
+            RETRO_VFS_SEEK_POSITION_CURRENT) < 0)
+         break;
    }
 
    return -1;
 }
 
+/**
+ * binsearch:
+ *
+ * Locate @item in the @count fixed-size entries at @buff and return
+ * the record offset stored alongside it.  Each entry is @field_size
+ * key bytes followed by a uint64 offset.
+ *
+ * The previous recursive form had three defects, all reachable from
+ * a malformed index header:
+ *
+ *  - the memcmp() ran before the "count == 0" test, so an empty
+ *    sub-range was compared against buff[0..field_size) - a read past
+ *    the end of the allocation whenever the search narrowed to
+ *    nothing;
+ *  - the tail call passed "count - mid", and mid is 0 when count is
+ *    1, so a one-element range recursed on itself forever, walking
+ *    further past the buffer on each step until it faulted;
+ *  - the offset was read with *(uint64_t*)(current + field_size).
+ *    field_size comes from the file, so unless it is a multiple of
+ *    eight every entry after the first is misaligned - undefined
+ *    behaviour that UBSan flags and that faults outright on
+ *    strict-alignment targets.
+ *
+ * Iterative, half-open [lo, hi), and the offset is assembled with
+ * memcpy so alignment never matters.
+ */
 static int binsearch(const void *buff, const void *item,
-      uint64_t count, uint8_t field_size, uint64_t *offset)
+      uint64_t count, uint64_t field_size, uint64_t *offset)
 {
-   int mid            = (int)(count / 2);
-   int item_size      = field_size + sizeof(uint64_t);
-   uint8_t *current   = ((uint8_t *)buff + (mid * item_size));
-   int rv             = memcmp(current, item, field_size);
+   uint64_t lo        = 0;
+   uint64_t hi        = count;
+   uint64_t item_size = field_size + sizeof(uint64_t);
 
-   if (rv == 0)
-   {
-      *offset         = *(uint64_t *)(current + field_size);
-      return 0;
-   }
-
-   if (count == 0)
+   if (field_size == 0)
       return -1;
 
-   if (rv > 0)
-      return binsearch(buff, item, mid, field_size, offset);
+   while (lo < hi)
+   {
+      uint64_t mid           = lo + ((hi - lo) / 2);
+      const uint8_t *current = (const uint8_t *)buff + (mid * item_size);
+      int rv                 = memcmp(current, item, (size_t)field_size);
 
-   return binsearch(current + item_size, item,
-         count - mid, field_size, offset);
+      if (rv == 0)
+      {
+         memcpy(offset, current + field_size, sizeof(uint64_t));
+         return 0;
+      }
+
+      if (rv > 0)
+         hi = mid;
+      else
+         lo = mid + 1;
+   }
+
+   return -1;
 }
 
 int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
@@ -342,19 +410,38 @@ int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
    int rv;
    uint8_t *buff;
    uint64_t offset;
-   ssize_t bufflen, nread = 0;
+   uint64_t item_size;
+   uint64_t bufflen;
+   int64_t  nread = 0;
 
    if (libretrodb_find_index(db, index_name, &idx) < 0)
       return -1;
 
-   bufflen        = idx.next;
-   if (!(buff = (uint8_t*)malloc(bufflen)))
+   /* idx.next, idx.count and idx.key_size all come from the file
+    * with no relationship enforced between them.  binsearch() walks
+    * idx.count entries of (key_size + 8) bytes, so without this
+    * check a small "next" and a large "count" send it off the end of
+    * the allocation.  Require the payload the header describes to
+    * actually fit in the payload the header reserved, and reject
+    * degenerate key sizes outright. */
+   if (idx.key_size == 0 || idx.key_size > LIBRETRODB_MAX_KEY_SIZE)
       return -1;
 
-   while (nread < bufflen)
+   item_size = idx.key_size + sizeof(uint64_t);
+   if (idx.count > idx.next / item_size)
+      return -1;
+
+   bufflen        = idx.next;
+   if (bufflen == 0 || bufflen > (uint64_t)INT64_MAX)
+      return -1;
+   if (!(buff = (uint8_t*)malloc((size_t)bufflen)))
+      return -1;
+
+   while (nread < (int64_t)bufflen)
    {
       void *buff_ = (buff + nread);
-      rv          = (int)intfstream_read(db->fd, buff_, bufflen - nread);
+      rv          = (int)intfstream_read(db->fd, buff_,
+            (uint64_t)((int64_t)bufflen - nread));
 
       if (rv <= 0)
       {
@@ -364,7 +451,7 @@ int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
       nread += rv;
    }
 
-   rv = binsearch(buff, key, idx.count, (ssize_t)idx.key_size, &offset);
+   rv = binsearch(buff, key, idx.count, idx.key_size, &offset);
    free(buff);
 
    if (rv == 0)
@@ -404,7 +491,7 @@ static int32_t rmsgpack_read_map_header(intfstream_t *fd)
    uint8_t  type = 0;
    uint64_t len  = 0;
 
-   if (intfstream_read(fd, &type, 1) == -1)
+   if (intfstream_read(fd, &type, 1) != 1)
       return -1;
 
    if (type == _MPF_NIL)
@@ -442,7 +529,7 @@ static int32_t rmsgpack_read_key_string(intfstream_t *fd,
    uint8_t  type = 0;
    uint64_t len  = 0;
 
-   if (intfstream_read(fd, &type, 1) == -1)
+   if (intfstream_read(fd, &type, 1) != 1)
       return -1;
 
    /* fixstr: length embedded in type byte */
@@ -475,7 +562,7 @@ static int32_t rmsgpack_read_key_string(intfstream_t *fd,
       return -1;
    }
 
-   if (intfstream_read(fd, buf, (size_t)len) == -1)
+   if (intfstream_read(fd, buf, (size_t)len) != (int64_t)len)
       return -1;
 
    buf[len] = '\0';
@@ -485,6 +572,278 @@ static int32_t rmsgpack_read_key_string(intfstream_t *fd,
 /* Maximum number of map fields in a single record for the
  * fast path. Typical .rdb records have 10-15 fields. */
 #define CURSOR_MAX_MAP_FIELDS    24
+
+/**
+ * libretrodb_scan_field:
+ *
+ * Walk the database once, reporting the binary value of @field and
+ * the offset of the record carrying it.  Records without the field,
+ * or carrying it as something other than binary, are skipped.
+ *
+ * This exists so a caller can build its own lookup structure in one
+ * pass instead of re-walking the whole database for every key it
+ * wants to test.  Nothing is parsed beyond the field itself: values
+ * the caller did not ask for are stepped over, not decoded.
+ *
+ * @cb is called for each match and may return non-zero to stop the
+ * scan, which is then reported as success.
+ *
+ * Returns: 0 when the database was walked, -1 on a malformed stream.
+ */
+/**
+ * rmsgpack_read_bin_inplace:
+ *
+ * Read a MsgPack binary value into a caller buffer.  Returns -1 and
+ * leaves the stream positioned after the value when it is not binary
+ * or does not fit, so the caller can carry on scanning.
+ */
+static int rmsgpack_read_bin_inplace(intfstream_t *fd, uint8_t *buf,
+      size_t buf_size, uint64_t *len)
+{
+   uint8_t  type = 0;
+   uint64_t n    = 0;
+
+   if (intfstream_read(fd, &type, 1) != 1)
+      return -1;
+
+   switch (type)
+   {
+      case 0xc4:
+         if (rmsgpack_read_uint(fd, &n, 1) == -1)
+            return -1;
+         break;
+      case 0xc5:
+         if (rmsgpack_read_uint(fd, &n, 2) == -1)
+            return -1;
+         break;
+      case 0xc6:
+         if (rmsgpack_read_uint(fd, &n, 4) == -1)
+            return -1;
+         break;
+      default:
+         /* Not binary: step back over the type byte and let the
+          * generic skip deal with the whole value. */
+         if (intfstream_seek(fd, -1, RETRO_VFS_SEEK_POSITION_CURRENT) < 0)
+            return -1;
+         if (rmsgpack_skip_value(fd) < 0)
+            return -1;
+         return -1;
+   }
+
+   if (n > buf_size)
+   {
+      if (intfstream_seek(fd, (int64_t)n,
+               RETRO_VFS_SEEK_POSITION_CURRENT) < 0)
+         return -1;
+      return -1;
+   }
+
+   if (n && intfstream_read(fd, buf, n) != (int64_t)n)
+      return -1;
+
+   *len = n;
+   return 0;
+}
+
+/**
+ * rmsgpack_read_uint_inplace:
+ *
+ * Read a MsgPack unsigned (or non-negative signed) value.  Returns -1
+ * and leaves the stream positioned after the value for anything else,
+ * so the caller can carry on scanning.
+ */
+static int rmsgpack_read_uint_inplace(intfstream_t *fd, uint64_t *out)
+{
+   uint8_t  type = 0;
+   uint64_t n    = 0;
+
+   if (intfstream_read(fd, &type, 1) != 1)
+      return -1;
+
+   /* positive fixint */
+   if (type < 0x80)
+   {
+      *out = type;
+      return 0;
+   }
+
+   switch (type)
+   {
+      case 0xcc: case 0xcd: case 0xce: case 0xcf:
+         if (rmsgpack_read_uint(fd, &n, (size_t)(1 << (type - 0xcc))) == -1)
+            return -1;
+         *out = n;
+         return 0;
+      default:
+         break;
+   }
+
+   if (intfstream_seek(fd, -1, RETRO_VFS_SEEK_POSITION_CURRENT) < 0)
+      return -1;
+   if (rmsgpack_skip_value(fd) < 0)
+      return -1;
+   return -1;
+}
+
+int libretrodb_scan_field(libretrodb_t *db, const char *field,
+      const char *aux_field, libretrodb_scan_cb cb, void *ctx)
+{
+   intfstream_t *fd;
+   size_t        field_len;
+   size_t        aux_len = 0;
+   int           rv      = -1;
+
+   if (!db || !db->path || !*db->path || !field || !*field || !cb)
+      return -1;
+
+   field_len = strlen(field);
+   if (aux_field && *aux_field)
+      aux_len = strlen(aux_field);
+
+   if (!(fd = intfstream_open_buffered(db->path, LIBRETRODB_WINDOW_SIZE)))
+      if (!(fd = intfstream_open_file(db->path,
+                  RETRO_VFS_FILE_ACCESS_READ,
+                  RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+         return -1;
+
+   if (intfstream_seek(fd, (int64_t)(db->root + sizeof(libretrodb_header_t)),
+            RETRO_VFS_SEEK_POSITION_START) < 0)
+      goto end;
+
+   for (;;)
+   {
+      int64_t record_start = intfstream_tell(fd);
+      int32_t  map_len;
+      int32_t  i;
+      int      stop        = 0;
+      int      have_key    = 0;
+      int      have_aux    = 0;
+      uint8_t  key_val[LIBRETRODB_MAX_KEY_SIZE];
+      uint64_t key_val_len = 0;
+      uint64_t aux_val     = 0;
+
+      if (record_start < 0)
+         goto end;
+
+      map_len = rmsgpack_read_map_header(fd);
+
+      if (map_len == -2)   /* nil sentinel: end of records */
+      {
+         rv = 0;
+         goto end;
+      }
+      if (map_len < 0)
+         goto end;
+
+      /* The field and its companion can sit either way round in the
+       * map, so both are collected before the record is reported. */
+      have_key = 0;
+      have_aux = 0;
+
+      for (i = 0; i < map_len; i++)
+      {
+         char    key_buf[64];
+         int32_t key_len = rmsgpack_read_key_string(fd, key_buf,
+               sizeof(key_buf));
+
+         if (key_len < 0)
+         {
+            /* Key was unreadable or too long for the buffer; its
+             * value still has to be stepped over. */
+            if (rmsgpack_skip_value(fd) < 0)
+               goto end;
+            continue;
+         }
+
+         if (     !have_key
+               && (size_t)key_len == field_len
+               && memcmp(key_buf, field, field_len) == 0)
+         {
+            /* Not binary, or wider than any key we index: the reader
+             * has already stepped past the value. */
+            if (rmsgpack_read_bin_inplace(fd, key_val, sizeof(key_val),
+                     &key_val_len) == 0)
+               have_key = 1;
+            continue;
+         }
+
+         if (     aux_len
+               && !have_aux
+               && (size_t)key_len == aux_len
+               && memcmp(key_buf, aux_field, aux_len) == 0)
+         {
+            if (rmsgpack_read_uint_inplace(fd, &aux_val) == 0)
+               have_aux = 1;
+            continue;
+         }
+
+         if (rmsgpack_skip_value(fd) < 0)
+            goto end;
+      }
+
+      /* A record carrying the companion field but not the key is still
+       * reported, with a zero-length key, so a caller accumulating
+       * something over the companion - a size range, say - sees every
+       * record rather than only the ones it can index.  Reporting only
+       * on the key gave a range narrower than the data, which is the
+       * wrong direction for a range used to decide what to skip. */
+      if (have_key || have_aux)
+      {
+         int64_t resume = intfstream_tell(fd);
+
+         if (cb(ctx, have_key ? key_val : NULL,
+                  have_key ? (size_t)key_val_len : 0,
+                  (uint64_t)record_start, have_aux ? &aux_val : NULL))
+            stop = 1;
+
+         if (resume < 0
+               || intfstream_seek(fd, resume,
+                  RETRO_VFS_SEEK_POSITION_START) < 0)
+            goto end;
+         if (stop)
+         {
+            rv = 0;
+            goto end;
+         }
+      }
+   }
+
+end:
+   intfstream_close(fd);
+   free(fd);
+   return rv;
+}
+
+/**
+ * libretrodb_read_at:
+ *
+ * Read the record beginning at @offset, which must have come from
+ * libretrodb_scan_field().  Lets a caller that kept only offsets
+ * fetch a record without walking to it.
+ */
+int libretrodb_read_at(libretrodb_t *db, uint64_t offset,
+      struct rmsgpack_dom_value *out)
+{
+   intfstream_t *fd;
+   int rv = -1;
+
+   if (!db || !db->path || !*db->path || !out)
+      return -1;
+
+   if (!(fd = intfstream_open_buffered(db->path, LIBRETRODB_WINDOW_SIZE)))
+      if (!(fd = intfstream_open_file(db->path,
+                  RETRO_VFS_FILE_ACCESS_READ,
+                  RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+         return -1;
+
+   if (intfstream_seek(fd, (int64_t)offset,
+            RETRO_VFS_SEEK_POSITION_START) >= 0)
+      rv = (rmsgpack_dom_read(fd, out) < 0) ? -1 : 0;
+
+   intfstream_close(fd);
+   free(fd);
+   return rv;
+}
 
 int libretrodb_cursor_read_item(libretrodb_cursor_t *cursor,
       struct rmsgpack_dom_value *out)
@@ -727,13 +1086,20 @@ int libretrodb_cursor_open(libretrodb_t *db,
       libretrodb_query_t *q)
 {
    intfstream_t *fd = NULL;
+
    if (!db || !db->path || !*db->path)
       return -1;
 
-   if (!(fd = intfstream_open_file(db->path,
-                                   RETRO_VFS_FILE_ACCESS_READ,
-                                   RETRO_VFS_FILE_ACCESS_HINT_NONE)))
-      return -1;
+   /* Walking the record stream is what a content scan spends its time
+    * on, and most of that is the per-read trip through
+    * filestream/VFS/fread rather than parsing.  A sliding window turns
+    * those reads into a memcpy while keeping the resident cost fixed
+    * at LIBRETRODB_WINDOW_SIZE instead of the size of the database. */
+   if (!(fd = intfstream_open_buffered(db->path, LIBRETRODB_WINDOW_SIZE)))
+      if (!(fd = intfstream_open_file(db->path,
+                  RETRO_VFS_FILE_ACCESS_READ,
+                  RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+         return -1;
 
    cursor->fd       = fd;
    cursor->db       = db;
@@ -742,8 +1108,27 @@ int libretrodb_cursor_open(libretrodb_t *db,
    cursor->query    = q;
 
    if (q)
+   {
       libretrodb_query_inc_ref(q);
+      /* min()/max() accumulate across the rows a cursor yields, so
+       * their state belongs to the walk, not to the compiled query.
+       * Reset it here as well as at compile time: a query outlives
+       * the cursor that references it, and a second walk over the
+       * same query used to inherit the first walk's extreme. */
+      libretrodb_query_reset_accumulator(q);
+   }
 
+   return 0;
+}
+
+/* bintree stores values by pointer and does not own them, so the
+ * key buffers handed to bintree_insert() have to be released here.
+ * They were not, leaking (key_size + 8) bytes per indexed record -
+ * 240 KB for a 20000-record index. */
+static int node_free_iter(void *value, void *ctx)
+{
+   (void)ctx;
+   free(value);
    return 0;
 }
 
@@ -802,9 +1187,15 @@ int libretrodb_create_index(libretrodb_t *db,
       if (item.type != RDT_MAP)
          goto clean;
 
-      /* Field not found in item? */
+      /* Field not found in item?  The free at the end of the loop is
+       * skipped by this continue, so do it here. */
       if (!(field = rmsgpack_dom_value_map_value(&item, &key)))
-        continue;
+      {
+         rmsgpack_dom_value_free(&item);
+         item.type = RDT_NULL;
+         item_loc  = intfstream_tell(cur.fd);
+         continue;
+      }
 
       /* Field is not binary? */
       if (field->type != RDT_BINARY)
@@ -872,7 +1263,10 @@ clean:
    if (cur.is_valid)
       libretrodb_cursor_close(&cur);
    if (tree && tree->root)
+   {
+      bintree_iterate(tree->root, node_free_iter, NULL);
       bintree_free(tree->root);
+   }
    free(tree);
    return rval;
 }
@@ -920,4 +1314,16 @@ void libretrodb_free(libretrodb_t *db)
 {
    if (db)
       free(db);
+}
+
+/* Accessor for query.c, which owns the formatting but not the
+ * storage.  Returns NULL when there is no db handle to borrow from;
+ * the caller then falls back to a fixed message. */
+char *libretrodb_query_err_buf(libretrodb_t *db, size_t *len)
+{
+   if (!db)
+      return NULL;
+   if (len)
+      *len = sizeof(db->query_err);
+   return db->query_err;
 }

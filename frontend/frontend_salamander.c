@@ -196,6 +196,9 @@ int salamander_main(int argc, char *argv[])
 int main(int argc, char *argv[])
 #endif
 {
+   /* File access for the config parser (see config_file.h). */
+   config_file_set_io_default(config_file_io_filestream());
+
    char libretro_path[PATH_MAX_LENGTH] = {0};
    void *args                          = NULL;
    struct rarch_main_wrap *wrap_args   = NULL;

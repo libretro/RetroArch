@@ -2,12 +2,10 @@ TARGET := rxml
 
 LIBRETRO_XML_DIR  := ../../../formats/xml
 LIBRETRO_COMM_DIR := ../../../
-LIBRETRO_DEPS_DIR := ../../../../deps
 
 SOURCES := \
 	rxml_test.c \
 	$(LIBRETRO_XML_DIR)/rxml.c \
-	$(LIBRETRO_DEPS_DIR)/yxml/yxml.c \
 	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
@@ -20,6 +18,16 @@ SOURCES := \
 OBJS := $(SOURCES:.c=.o)
 
 CFLAGS += -DRXML_TEST -Wall -pedantic -std=gnu99 -g -I$(LIBRETRO_COMM_DIR)/include
+
+# The samples workflow passes SANITIZER=address,undefined to every
+# sample dir.  Without this block the variable was accepted and
+# ignored, so these targets built unsanitized while the workflow
+# reported them as checked.
+ifneq ($(SANITIZER),)
+   CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
+   LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
+endif
+
 
 all: $(TARGET)
 

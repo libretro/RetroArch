@@ -1691,8 +1691,8 @@ static size_t menu_action_setting_disp_set_label_achievement_information(
    rarch_setting_t *setting  = cbs->setting;
    *w                        = 2;
 
-   if (setting && setting->get_string_representation)
-      _len = setting->get_string_representation(setting, s, len);
+   if (setting && setting->actions->repr)
+      _len = setting->actions->repr(setting, s, len);
    else
       *s                     = '\0';
 
@@ -1845,8 +1845,8 @@ static size_t menu_action_setting_disp_set_label(file_list_t* list,
 
    *w                        = 19;
 
-   if (setting && setting->get_string_representation)
-      _len = setting->get_string_representation(setting, s, len);
+   if (setting && setting->actions->repr)
+      _len = setting->actions->repr(setting, s, len);
    else
       *s                     = '\0';
    if (path && *path)
@@ -2446,7 +2446,7 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
       }
    }
 
-   if (cbs->setting && !cbs->setting->get_string_representation)
+   if (cbs->setting && !cbs->setting->actions->repr)
    {
       switch (cbs->setting->type)
       {

@@ -183,6 +183,13 @@ bool core_info_init_list(const char *path_info, const char *dir_cores,
       const char *exts, bool show_hidden_files,
       bool enable_cache, bool *cache_supported);
 
+/* Returns true if the current core info list was built with the
+ * given parameters, i.e. a rescan with these parameters would be
+ * redundant. */
+bool core_info_list_is_current(const char *path_info,
+      const char *dir_cores, bool dir_show_hidden_files,
+      bool enable_cache);
+
 bool core_info_get_list(core_info_list_t **core);
 
 /* Returns number of installed cores */
@@ -209,6 +216,16 @@ bool core_info_list_get_info(core_info_list_t *core_info_list,
  * the currently loaded core. If no core is
  * loaded, will return 'true' (since full
  * savestate functionality is assumed by default) */
+/* Runtime savestate probe seam. The frontend may register a callback that
+ * reports whether the currently running core can serialize its state (a
+ * nonzero retro_serialize_size()). When registered, it lets a running core
+ * override stale info-file metadata for BASIC savestate support. It is
+ * optional: core_info.c stays linkable without the runloop/retroarch
+ * backend (e.g. the database-task CI sample) when no probe is set. */
+typedef bool (*core_info_savestate_probe_t)(void);
+
+void core_info_set_savestate_probe(core_info_savestate_probe_t probe);
+
 bool core_info_current_supports_savestate(void);
 bool core_info_current_supports_rewind(void);
 bool core_info_current_supports_netplay(void);

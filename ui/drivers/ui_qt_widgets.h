@@ -119,7 +119,7 @@ public:
       if (!setting)
          return false;
 
-      ui_type = setting->ui_type;
+      ui_type = (enum ui_setting_type)setting->ui_type;
 
       switch (ui_type)
       {
@@ -196,7 +196,7 @@ public:
       if (!setting)
          return false;
 
-      ui_type = setting->ui_type;
+      ui_type = (enum ui_setting_type)setting->ui_type;
 
       switch (ui_type)
       {
@@ -748,6 +748,7 @@ class ShaderPass
 {
 public:
    ShaderPass(struct video_shader_pass *passToCopy = NULL);
+   ShaderPass(const ShaderPass &other);
    ~ShaderPass();
    ShaderPass& operator=(const ShaderPass &other);
    struct video_shader_pass *pass;

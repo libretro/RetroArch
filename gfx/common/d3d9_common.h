@@ -26,6 +26,8 @@
 #endif
 #include <d3d9.h>
 
+#include <formats/image.h>
+
 #include "d3d_common.h"
 #include "../../verbosity.h"
 
@@ -118,6 +120,13 @@ void d3d9_deinitialize_symbols(void);
 
 void d3d9_make_d3dpp(d3d9_video_t *d3d,
       const video_info_t *info, void *_d3dpp);
+
+bool d3d9_supports_texture_format(void *data,
+      enum texture_gpu_format fmt);
+
+uintptr_t d3d9_load_texture_compressed(void *data,
+      const struct texture_compressed *tc, bool threaded,
+      enum texture_filter_type filter_type);
 
 RETRO_END_DECLS
 

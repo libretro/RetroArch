@@ -56,6 +56,7 @@ jobs:
             compat_fnmatch_test
             snprintf
             unbase64_test
+            crc32_test
             archive_zip_test
             archive_zstd_test
             config_file_test
@@ -64,8 +65,18 @@ jobs:
             nbio_test
             rpng
             rzip_chunk_size_test
+            rzip_matches_buf_test
+            data_transfer_source_test
+            data_transfer_prefix_test
+            data_transfer_window_test
+            audio_transfer_window_test
+            rjpeg_test
+            r7z_lzma_props_test
+            vcdiff_test
             net_ifinfo
             vfs_read_overflow_test
+            vfs_mapped_ptr_test
+            vfs_hybrid_test
             cdrom_cuesheet_overflow_test
             cdfs_dir_record_test
             chd_meta_overflow_test
@@ -76,22 +87,41 @@ jobs:
             rbmp_test
             rpng_chunk_overflow_test
             rpng_roundtrip_test
+            rpng_decode_corpus_test
             word_wrap_overflow_test
             task_queue_title_error_test
             tpool_wait_test
+            data_transfer_pool_scrub_test
             retro_atomic_test
             retro_atomic_extern_c_linkage_test
             retro_atomic_extern_c_linkage_test_cxx
             retro_spsc_test
+            audio_mixer_loop_test
+          )
+
+          # Targets that are built but deliberately not executed, each
+          # for a reason that is not "we forgot".  Anything built and
+          # listed in neither this nor RUN_TARGETS is an error below,
+          # because a silent "not in run allowlist" skip is
+          # indistinguishable from an omission - which is how seven
+          # self-contained regression tests came to be compiled every
+          # run and never executed.
+          declare -a NORUN_TARGETS=(
+            # CLI tools that print usage and exit non-zero without
+            # arguments; they have no self-test mode.
+            rzip
+            # Performs real HTTP requests against an external host, so
+            # running it would make this job depend on a third party
+            # being up.
+            http_test
           )
 
           # Per-binary run command (overrides ./<binary> if present).
-          # config_file_test has pre-existing sample leaks unrelated to
-          # any regression so we disable the ASan leak detector -- if a
-          # real leak shows up elsewhere it will be flagged during build
-          # of ASan-enabled configurations, not here.
+          # config_file_test's leak exemption is gone: the harness now
+          # frees everything it allocates and the parser's own include
+          # leak is fixed, so LeakSanitizer runs at full strictness and
+          # any surviving allocation is a real config_file regression.
           declare -A RUN_ENV=(
-            [config_file_test]="ASAN_OPTIONS=detect_leaks=0"
           )
 
           # Samples that are build-only (either they require command-line
@@ -165,7 +195,12 @@ jobs:
 
             for t in "${targets[@]}"; do
               if ! is_in "$t" "${RUN_TARGETS[@]}"; then
-                printf '[skip-run] %s/%s (not in run allowlist)\n' "$rel" "$t"
+                if is_in "$t" "${NORUN_TARGETS[@]}"; then
+                  printf '[skip-run] %s/%s (deliberately not run)\n' "$rel" "$t"
+                  continue
+                fi
+                printf '::error title=Target not classified::%s/%s is built but appears in neither RUN_TARGETS nor NORUN_TARGETS. Add it to one of them.\n' "$rel" "$t"
+                fails=$((fails+1))
                 continue
               fi
 
@@ -361,6 +396,26 @@ jobs:
 
           TSAN_OPTIONS=halt_on_error=1 ./retro_spsc_test
 
+      - name: Run crc32_test under Clang + ThreadSanitizer
+        shell: bash
+        working-directory: libretro-common/samples/encodings/crc32
+        run: |
+          # encoding_crc32() caches x86 feature detection on first use.
+          # The failure that matters is publishing that result without
+          # release/acquire ordering, which is invisible to the value
+          # checks -- every thread still computes the right number on
+          # x86 TSO -- and only shows up as a race.  The test holds its
+          # threads on a gate so they all make their first dispatching
+          # call at once; see the comment above crc_first_touch_worker
+          # for why that section makes exactly one call per thread.
+          set -u
+          set -o pipefail
+
+          make clean
+          CC=clang make all SANITIZER=thread
+
+          TSAN_OPTIONS=halt_on_error=1 ./crc32_test
+
   # Cross-architecture validation lane for retro_atomic_test.
   #
   # The samples job above runs on x86_64, which is a strongly-ordered
@@ -384,6 +439,62 @@ jobs:
   # Win11/ARM64 atomic ordering bug, found only on real silicon),
   # but qemu catches most categorical errors and is much cheaper than
   # provisioning ARM runners.
+  config-file-fuzz-smoke:
+    name: config_file differential fuzz (smoke)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y clang
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Build fuzz target
+        shell: bash
+        working-directory: libretro-common/samples/file/config_file
+        run: |
+          set -eu
+          LC=../../..
+          clang -O1 -g -fsanitize=fuzzer,address,undefined \
+            -fno-sanitize-recover=all \
+            -I$LC/include -o config_file_fuzz config_file_fuzz.c \
+            $LC/file/config_file.c \
+            $LC/file/file_path.c \
+            $LC/compat/compat_strl.c \
+            $LC/compat/compat_strcasestr.c \
+            $LC/compat/compat_posix_string.c \
+            $LC/encodings/encoding_utf.c \
+            $LC/lists/string_list.c \
+            $LC/time/rtime.c
+
+      - name: Run fuzz smoke
+        shell: bash
+        working-directory: libretro-common/samples/file/config_file
+        run: |
+          set -eu
+          # Seed corpus: representative config shapes plus the byte
+          # patterns the target's invariants care about (embedded NUL,
+          # comment-in-literal, directives, duplicate keys, CRLF).
+          # Generated here rather than committed so no binary files
+          # live in the tree.
+          mkdir -p corpus
+          printf 'video_driver = "vulkan"\nvideo_fullscreen = "true"\naudio_rate = "48000"\n' > corpus/basic
+          printf '# comment\nkey = "has # inside"\ndup = "a"\ndup = "b"\n   spaced   =   bare\r\nempty = ""\n' > corpus/edge
+          printf '#include "sub.cfg"\n#reference "other.cfg"\nafter = "1"\n' > corpus/directives
+          python3 -c "import sys; sys.stdout.buffer.write(b'a = \"1\"\nb\x00c = \"2\"\nd = \"3\"\n')" > corpus/embedded_nul
+          # 60 seconds of coverage-guided differential fuzzing:
+          # every input is parsed whole and again through the
+          # streaming push API in input-derived packet splits, then
+          # entry-list equality, hash-map coherence and tail
+          # validity are enforced (see config_file_fuzz.c).  Any
+          # divergence or sanitizer report fails the job.
+          ./config_file_fuzz -max_len=512 -max_total_time=60 \
+            -print_final_stats=1 corpus/
+
   retro-atomic-cross:
     name: Cross-arch retro_atomic_test (${{ matrix.arch }})
     runs-on: ubuntu-latest
@@ -460,3 +571,101 @@ jobs:
             echo '::error title=No barrier instructions emitted::retro_atomic_test.s contains no acquire/release/barrier mnemonics for ${{ matrix.arch }}; retro_atomic.h may have fallen through to a no-barrier backend.'
             exit 1
           fi
+
+  # encoding_crc32() picks a different implementation per target: the
+  # ARMv8 CRC32 instructions when the compiler advertises +crc, a
+  # PCLMULQDQ fold on x86, and a slicing-by-8 table everywhere else.
+  # The table path reads the input as little-endian 32-bit words and
+  # byte-swaps under MSB_FIRST, so a big-endian target is the only
+  # place a missing or wrong swap is visible -- on x86 the swap
+  # compiles away and every test still passes.  powerpc is carried
+  # here for exactly that reason, and is the only big-endian lane in
+  # the sample suite.
+  #
+  # aarch64 appears twice on purpose.  Stock aarch64 gcc does not
+  # define __ARM_FEATURE_CRC32, so a default build exercises the table
+  # path; only Makefile.libnx passes +crc today, and the second entry
+  # is what covers the intrinsic path at all.
+  #
+  # qemu-user cannot run the sanitizer runtimes, so these lanes rely on
+  # the test's own bitwise reference and its guard-page section, which
+  # catches an overread as a SIGSEGV rather than a redzone hit.
+  crc32-cross:
+    name: Cross-arch crc32_test (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: aarch64
+            cc: aarch64-linux-gnu-gcc
+            cflags: ""
+            apt_pkgs: gcc-aarch64-linux-gnu
+            qemu: qemu-aarch64-static
+            sysroot: /usr/aarch64-linux-gnu
+          - name: aarch64+crc
+            cc: aarch64-linux-gnu-gcc
+            cflags: "-march=armv8-a+crc"
+            apt_pkgs: gcc-aarch64-linux-gnu
+            qemu: qemu-aarch64-static
+            sysroot: /usr/aarch64-linux-gnu
+          - name: armv7
+            cc: arm-linux-gnueabihf-gcc
+            cflags: ""
+            apt_pkgs: gcc-arm-linux-gnueabihf
+            qemu: qemu-arm-static
+            sysroot: /usr/arm-linux-gnueabihf
+          - name: powerpc-big-endian
+            cc: powerpc-linux-gnu-gcc
+            cflags: ""
+            apt_pkgs: gcc-powerpc-linux-gnu
+            qemu: qemu-ppc-static
+            sysroot: /usr/powerpc-linux-gnu
+
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y build-essential ${{ matrix.apt_pkgs }} qemu-user-static
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Build crc32_test for ${{ matrix.name }}
+        working-directory: libretro-common/samples/encodings/crc32
+        run: |
+          set -u
+          set -o pipefail
+          # HAVE_THREADS=0: rthreads needs a target libpthread that the
+          # cross toolchains here do not reliably provide.  The threaded
+          # sections are covered by the native Clang/TSan lane above;
+          # what these lanes are for is the per-architecture arithmetic.
+          make clean
+          CC="${{ matrix.cc }}" CFLAGS="${{ matrix.cflags }}" make all HAVE_THREADS=0
+
+      - name: Run crc32_test under qemu-user
+        working-directory: libretro-common/samples/encodings/crc32
+        run: |
+          set -u
+          set -o pipefail
+          ${{ matrix.qemu }} -L ${{ matrix.sysroot }} ./crc32_test
+
+      - name: Run vfs_mapped_ptr_test without mappings (MMAP=0)
+        shell: bash
+        working-directory: libretro-common/samples/file/vfs
+        run: |
+          set -eu
+          # The default build has HAVE_MMAP, where filestream_matches_buf()
+          # compares against the memory map in a single memcmp and its
+          # windowed fallback never executes - so the window-boundary
+          # cases in the run above assert on code that did not run.
+          # This lane is where that path is actually under test, and it
+          # is also the only coverage the platforms without mappings
+          # get.  Verified to fail here with the window advance off by
+          # one, which the mapped lane does not notice at all.
+          make clean all MMAP=0 SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 120 \
+             ./vfs_mapped_ptr_test
+          echo "[pass] vfs_mapped_ptr_test (MMAP=0, ASan)"

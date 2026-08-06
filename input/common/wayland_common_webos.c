@@ -493,7 +493,7 @@ void gfx_ctx_wl_update_title_webos(void *data)
 }
 
 bool gfx_ctx_wl_init_webos(
-      const toplevel_listener_t *toplevel_listener, gfx_ctx_wayland_data_t **wwl)
+      driver_configure_handler_t driver_configure_handler, gfx_ctx_wayland_data_t **wwl)
 {
    int i;
    gfx_ctx_wayland_data_t *wl;
@@ -847,12 +847,6 @@ void wl_keyboard_handle_key_webos(void *data,
       case KEY_WAYLAND_WEBOS_BLUE:
          keysym = KEY_A;
          break;
-      case KEY_ENTER:
-         /* When in menu and in virtual keyboard entry,
-          * map magic remote wheel button click to LCTRL for character selection */
-         if (input_st && (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED))
-            keysym = KEY_LEFTCTRL;
-         break;
       case KEY_OK:
       case KEY_SELECT:
          keysym = KEY_ENTER;
@@ -868,6 +862,23 @@ void wl_keyboard_handle_key_webos(void *data,
       BIT_SET(wl->input.key_state, keysym);
    else if (state == WL_KEYBOARD_KEY_STATE_RELEASED)
       BIT_CLEAR(wl->input.key_state, keysym);
+
+   /* OSK: D-pad / Enter navigate and confirm the grid; do not inject
+    * text-cursor moves or '\n' line submission from those keys. */
+   if (input_st && (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED))
+   {
+      switch (keysym)
+      {
+         case KEY_UP:
+         case KEY_DOWN:
+         case KEY_LEFT:
+         case KEY_RIGHT:
+         case KEY_ENTER:
+            return;
+         default:
+            break;
+      }
+   }
 
 #ifdef HAVE_XKBCOMMON
    if (handle_xkb(keysym, value) == 0)

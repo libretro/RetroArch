@@ -1,0 +1,81 @@
+name: CI Linux libretro-common tests
+
+# libretro-common/Makefile.test builds and runs the libcheck unit
+# suites under -fsanitize=address -fsanitize=undefined.  Nothing ran
+# it, which is how three of its suites came to reference sources that
+# had moved and one referenced a library it never linked: a suite that
+# cannot be built reads exactly like a suite that passes.
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+jobs:
+  libretro-common-tests:
+    name: Build and run libretro-common/Makefile.test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y build-essential check pkg-config \
+            zlib1g-dev lcov
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Build and run the unit test suites
+        shell: bash
+        working-directory: libretro-common
+        run: |
+          set -eu
+          # The recipe builds each suite, runs it, and collects
+          # coverage, in order -- coverage files collide otherwise.
+          # Any suite failing to build, or any check failing, or any
+          # sanitizer report, fails the job.
+          make -f Makefile.test \
+             LIBCHECK_CFLAGS="$(pkg-config --cflags check)" \
+             CFLAGS="$(pkg-config --cflags check)"
+          echo "[pass] libretro-common unit test suites"
+
+      - name: Check VFS backend symbol parity
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # vfs_implementation_uwp.cpp replaces vfs_implementation.c on
+          # UWP rather than extending it, so a function added to the C
+          # backend and called from the shared file_stream.c compiles
+          # everywhere and fails to link on UWP alone - at the end of a
+          # long MSVC build, on a runner most contributors do not have.
+          # That is how retro_vfs_file_get_mapped_ptr_impl reached the
+          # branch broken.  This is the same check at source level, for
+          # free, on Linux.
+          python3 tools/vfs_backend_parity.py
+
+      - name: Check stack frame budget
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # PSP and GX threads get 8 KiB of stack (STACKSIZE in
+          # rthreads/psp_pthread.h and rthreads/gx_pthread.h).  Nothing
+          # warns when a local buffer outgrows that: it builds
+          # everywhere and overflows only on a target most contributors
+          # cannot build.  config_file_write() carried a 16 KiB stdio
+          # buffer as a local - twice that stack - on a path reached
+          # from a task handler, and nothing noticed.
+          python3 tools/stack_budget.py

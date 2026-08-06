@@ -1680,9 +1680,12 @@ static void d3d9_font_render_msg(
       /* If the atlas dimensions changed (grew), we must recreate
        * the texture to match, otherwise glyphs added after init
        * will have wrong UVs or missing data. */
+      bool respecified = false;
+
       if (   font->atlas->width  != font->tex_width
           || font->atlas->height != font->tex_height)
       {
+         respecified      = true;
          if (font->texture)
             IDirect3DTexture9_Release(font->texture);
 
@@ -1700,15 +1703,41 @@ static void d3d9_font_render_msg(
       {
          unsigned i, j;
          D3DLOCKED_RECT lr;
+         RECT rect;
+         unsigned x0 = font->atlas->dirty_x0;
+         unsigned y0 = font->atlas->dirty_y0;
+         unsigned x1 = font->atlas->dirty_x1;
+         unsigned y1 = font->atlas->dirty_y1;
+
+         /* A recreated texture has no previous contents, so the whole
+          * atlas must be converted; otherwise only the dirty
+          * rectangle tracked by the font renderers needs it. Managed
+          * pool textures track locked sub-rects natively. */
+         if (     respecified
+               || x1 <= x0 || y1 <= y0
+               || x1 > (unsigned)font->atlas->width
+               || y1 > (unsigned)font->atlas->height)
+         {
+            x0 = 0;
+            y0 = 0;
+            x1 = font->atlas->width;
+            y1 = font->atlas->height;
+         }
+         rect.left   = (LONG)x0;
+         rect.top    = (LONG)y0;
+         rect.right  = (LONG)x1;
+         rect.bottom = (LONG)y1;
 
          if (SUCCEEDED(IDirect3DTexture9_LockRect(
-                     font->texture, 0, &lr, NULL, 0)))
+                     font->texture, 0, &lr, &rect, 0)))
          {
-            for (j = 0; j < font->atlas->height; j++)
+            /* lr.pBits addresses the top-left of the locked rect */
+            for (j = 0; j < y1 - y0; j++)
             {
                uint32_t       *dst = (uint32_t*)((uint8_t*)lr.pBits + j * lr.Pitch);
-               const uint8_t  *src = font->atlas->buffer + j * font->atlas->width;
-               for (i = 0; i < font->atlas->width; i++)
+               const uint8_t  *src = font->atlas->buffer
+                     + (size_t)(y0 + j) * font->atlas->width + x0;
+               for (i = 0; i < x1 - x0; i++)
                   dst[i] = D3DCOLOR_ARGB(src[i], 0xFF, 0xFF, 0xFF);
             }
             IDirect3DTexture9_UnlockRect(font->texture, 0);
@@ -4063,19 +4092,9 @@ static char *d3d9_hlsl_decompose_struct_samplers(const char *source)
       /* Remove sampler member lines from sampler-containing structs.
        * Look for lines containing 'sampler' followed by ';' */
       {
-         bool skip_sampler_line = false;
-         if (strncmp(p, "sampler", 7) == 0 || (p > source && p[-1] != '\n'
-               && strstr(p, "sampler") == p))
-         {
-            /* Actually, let's detect sampler lines more carefully:
-             * at the start of a line (after whitespace), check if we see
-             * 'sampler2D' followed by '_texture' and ';' */
-         }
-
          /* Simpler approach: detect 'sampler2D _texture;' or 'sampler2D _texture ;'
           * as a standalone line (with optional leading whitespace) */
          {
-            const char *line_start = p;
             /* Check if we're at line start */
             if (p == source || p[-1] == '\n')
             {
@@ -5349,12 +5368,6 @@ static bool d3d9_hlsl_compile_cg_compat(
    D3DBlob error_blob = NULL;
    HRESULT hr;
 
-   /* D3D_SHADER_MACRO compatible: { Name, Definition }, null-terminated */
-   struct { const char *n; const char *d; } cg_defines[] = {
-      { "CG", "1" },
-      { NULL, NULL }
-   };
-
    if (!out_blob)
       return false;
 
@@ -5788,7 +5801,6 @@ static char *d3d9_hlsl_convert_macro_loops(const char *source)
                                  && s[(size_t)(nm_end - nm)] == '(')
                            {
                               /* Check if this starts a consecutive run from 0 */
-                              const char *call = s;
                               const char *after_name = s + (size_t)(nm_end - nm);
                               /* Parse the argument */
                               if (after_name[0] == '(' && after_name[1] == '0'
@@ -6063,7 +6075,6 @@ static bool d3d9_hlsl_load_program_from_file_ex(
       char *p = resolved;
       while ((p = strstr(p, "#pragma parameter")) != NULL)
       {
-         const char *line_start = p;
          const char *pp = p + 17; /* skip "#pragma parameter" */
          const char *name_start, *name_end;
          size_t name_len;
@@ -8177,7 +8188,9 @@ static const video_poke_interface_t d3d9_hlsl_poke_interface = {
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
-   NULL  /* set_hdr_subpixel_layout */
+   NULL, /* set_hdr_subpixel_layout */
+   d3d9_supports_texture_format,
+   d3d9_load_texture_compressed
 };
 
 static void d3d9_hlsl_get_poke_interface(void *data,

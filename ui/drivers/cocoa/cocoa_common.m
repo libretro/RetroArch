@@ -16,7 +16,11 @@
 
 #import <AvailabilityMacros.h>
 #include <sys/stat.h>
+#include <dispatch/dispatch.h>
+#include <CoreFoundation/CoreFoundation.h>
 
+#include <retro_atomic.h>
+#include <rthreads/rthreads.h>
 #include <compat/apple_compat.h>
 #include <string/stdstring.h>
 #include <defines/cocoa_defines.h>
@@ -33,6 +37,7 @@
 #import "WebServer.h"
 #if TARGET_OS_TV
 #import <TVServices/TVServices.h>
+#import <CommonCrypto/CommonDigest.h>
 #import "../../pkg/apple/RetroArchTopShelfExtension/ContentProvider.h"
 #endif
 #if TARGET_OS_IOS
@@ -115,7 +120,7 @@ static CocoaView* g_instance;
 void *glkitview_init(void);
 void cocoa_file_load_with_detect_core(const char *filename);
 
-@interface CocoaView()<GCDWebUploaderDelegate, UIGestureRecognizerDelegate
+@interface CocoaView()<GCDWebUploaderDelegate, GCDWebDAVServerDelegate, UIGestureRecognizerDelegate
 #if TARGET_OS_IOS
 ,UIDocumentPickerDelegate
 #endif
@@ -547,6 +552,15 @@ void rarch_stop_draw_observer(void)
    void cocoa_gl_gfx_ctx_update(void);
    cocoa_gl_gfx_ctx_update();
 #endif
+#if defined(HAVE_VULKAN)
+   /* Main thread: refresh the Vulkan ctx published backing size so a
+    * threaded-video worker observes the resize. No-op when Vulkan is not
+    * the active driver (value goes unread). */
+   {
+      void cocoa_vk_gfx_ctx_publish_size(void);
+      cocoa_vk_gfx_ctx_publish_size();
+   }
+#endif
 }
 
 /* Stop the annoying sound when pressing a key. */
@@ -686,6 +700,21 @@ void rarch_stop_draw_observer(void)
 - (void)viewWillLayoutSubviews
 {
    [self adjustViewFrameForSafeArea];
+#if defined(HAVE_OPENGL)
+   /* Runs on the main thread; refresh the published backing size so a
+    * threaded-video worker observes orientation/safe-area changes. Safe
+    * to call when GL is not the active driver (value goes unread). */
+   {
+      void cocoa_gl_gfx_ctx_publish_size(void);
+      cocoa_gl_gfx_ctx_publish_size();
+   }
+#endif
+#if defined(HAVE_VULKAN)
+   {
+      void cocoa_vk_gfx_ctx_publish_size(void);
+      cocoa_vk_gfx_ctx_publish_size();
+   }
+#endif
 }
 
 /* NOTE: This version runs on iOS6+. */
@@ -792,6 +821,7 @@ void rarch_stop_draw_observer(void)
 #if !TARGET_OS_SIMULATOR
     [[WebServer sharedInstance] startServers];
     [WebServer sharedInstance].webUploader.delegate = self;
+    [WebServer sharedInstance].webDAVServer.delegate = self;
 #endif
 }
 
@@ -828,6 +858,7 @@ void rarch_stop_draw_observer(void)
 #if TARGET_OS_IOS
         [alert addAction:[UIAlertAction actionWithTitle:@"Stop Server" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             [[WebServer sharedInstance] webUploader].delegate = nil;
+            [[WebServer sharedInstance] webDAVServer].delegate = nil;
             [[WebServer sharedInstance] stopServers];
            struct menu_state *menu_st = menu_state_get_ptr();
            menu_st->flags &= ~MENU_ST_FLAG_BLOCK_ALL_INPUT;;
@@ -839,6 +870,15 @@ void rarch_stop_draw_observer(void)
         }];
     });
 #endif
+}
+
+#pragma mark GCDWebDAVServerDelegate
+- (void)davServer:(GCDWebDAVServer*)server didUploadFileAtPath:(NSString*)path
+{
+    /* Delete AppleDouble and .DS_Store files created by macOS */
+    NSString *filename = [path lastPathComponent];
+    if ([filename hasPrefix:@"._"] || [filename isEqualToString:@".DS_Store"])
+        [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
 }
 
 #endif
@@ -874,23 +914,148 @@ void *cocoa_screen_get_chosen(void)
     return ((BRIDGE void*)[screens objectAtIndex:monitor_index]);
 }
 
+/* Main-thread trampoline for threaded video.
+ *
+ * AppKit/UIKit calls (context/view attachment, window surgery, NSCursor,
+ * ...) are main-thread-only, but with threaded video the underlying
+ * driver's init/set_video_mode/destroy run on the video worker thread.
+ * cocoa_main_thread_sync() runs func(userdata) on the main thread and
+ * blocks the caller until it completes; when already on the main thread
+ * it simply calls straight through, so the non-threaded path is
+ * unchanged.
+ *
+ * The block is scheduled in BOTH kCFRunLoopCommonModes and a private
+ * runloop mode:
+ *  - common modes drain it whenever the main loop is running normally
+ *    (e.g. show_mouse from the worker mid-session);
+ *  - the private mode is pumped by video_thread_wait_reply() in
+ *    gfx/video_thread_wrapper.c while the main thread is blocked
+ *    waiting on the worker's command reply (CMD_INIT etc.).  Pumping
+ *    only the private mode there guarantees no observers/timers/sources
+ *    from other modes (in particular the RetroArch draw observer) run
+ *    reentrantly under the wait.
+ * The mode string literal below must stay in sync with the one in
+ * video_thread_wrapper.c. */
+void cocoa_main_thread_sync(void (*func)(void *userdata), void *userdata);
+void cocoa_main_thread_sync(void (*func)(void *userdata), void *userdata)
+{
+   dispatch_semaphore_t done;
+   CFRunLoopRef main_loop;
+   CFArrayRef modes;
+   const void *mode_entries[2];
+
+   if (sthread_is_main_thread())
+   {
+      func(userdata);
+      return;
+   }
+
+   done            = dispatch_semaphore_create(0);
+   main_loop       = CFRunLoopGetMain();
+   mode_entries[0] = kCFRunLoopCommonModes;
+   mode_entries[1] = CFSTR("com.libretro.RetroArch.MainThreadTrampoline");
+   modes           = CFArrayCreate(kCFAllocatorDefault, mode_entries, 2,
+         &kCFTypeArrayCallBacks);
+
+   CFRunLoopPerformBlock(main_loop, modes, ^{
+      func(userdata);
+      dispatch_semaphore_signal(done);
+   });
+   CFRunLoopWakeUp(main_loop);
+
+   /* Wait for completion.  Waiting forever (with periodic diagnostics)
+    * is deliberate: falling back to running func() on this thread after
+    * a timeout would risk double-execution once the main thread finally
+    * drains the block, which is far worse than a loggable stall. */
+   while (dispatch_semaphore_wait(done,
+            dispatch_time(DISPATCH_TIME_NOW, (int64_t)5 * NSEC_PER_SEC)))
+      RARCH_ERR("[Cocoa]: Main-thread trampoline stalled; main runloop is not draining scheduled blocks.\n");
+
+   CFRelease(modes);
+#if OS_OBJECT_USE_OBJC
+   RARCH_RELEASE(done);
+#else
+   dispatch_release(done);
+#endif
+}
+
+/* One condvar-wait iteration for a caller that may be the main thread and
+ * must let the worker's cocoa_main_thread_sync() blocks drain.  On the main
+ * thread: a bounded timed wait, pumping the private trampoline runloop mode
+ * on timeout so those marshaled blocks run (otherwise the worker blocks
+ * waiting for the main thread while the main thread blocks on the reply ->
+ * deadlock).  Off the main thread: returns false so the caller performs a
+ * plain blocking scond_wait().  Pumping ONLY the private mode keeps draw
+ * observers, timers and input sources from running reentrantly under the
+ * wait.  'lock' is held on entry and on return.  Shares the trampoline mode
+ * string with cocoa_main_thread_sync() above -- single source of truth. */
+bool cocoa_main_thread_cond_wait_pump(scond_t *cond, slock_t *lock);
+bool cocoa_main_thread_cond_wait_pump(scond_t *cond, slock_t *lock)
+{
+   if (!sthread_is_main_thread())
+      return false;
+   if (!scond_wait_timeout(cond, lock, 1000))
+   {
+      slock_unlock(lock);
+      CFRunLoopRunInMode(
+            CFSTR("com.libretro.RetroArch.MainThreadTrampoline"),
+            0.001, false);
+      slock_lock(lock);
+   }
+   return true;
+}
+
+#ifdef OSX
+static void cocoa_show_mouse_mainthread_show(void *userdata)
+{
+   [NSCursor unhide];
+}
+
+static void cocoa_show_mouse_mainthread_hide(void *userdata)
+{
+   [NSCursor hide];
+}
+#endif
+
 bool cocoa_has_focus(void *data)
 {
 #if defined(HAVE_COCOATOUCH)
     /* if we are running, we are foregrounded */
     return true;
 #else
-    return [NSApp isActive];
+    /* -[NSApplication isActive] is AppKit and main-thread-only, but with
+     * threaded video this is queried from the video worker thread every
+     * frame.  Main thread: query live and publish; worker thread: read
+     * the last published value lock-free.  Encoding: 0 = never published
+     * (treated as focused, matching the safe iOS behaviour), 1 = not
+     * focused, 2 = focused.
+     * KNOWN LIMITATION (threaded video): if nothing on the main thread
+     * calls this, the cache stays at 0 and focus reads as always-true,
+     * i.e. pause-on-focus-loss may not trigger.  Proper fix is
+     * publishing from NSApplication did-become/resign-active
+     * notifications; kept out of this validation patch. */
+    static retro_atomic_size_t focus_state;
+    if (sthread_is_main_thread())
+    {
+       size_t v = [NSApp isActive] ? 2 : 1;
+       retro_atomic_store_release_size(&focus_state, v);
+       return (v == 2);
+    }
+    return (retro_atomic_load_acquire_size(&focus_state) != 1);
 #endif
 }
 
 void cocoa_show_mouse(void *data, bool state)
 {
 #ifdef OSX
+    /* NSCursor is AppKit and must be driven from the main thread; with
+     * threaded video this can be reached from the video worker thread,
+     * so route it through the trampoline (direct call when already on
+     * the main thread). */
     if (state)
-        [NSCursor unhide];
+        cocoa_main_thread_sync(cocoa_show_mouse_mainthread_show, NULL);
     else
-        [NSCursor hide];
+        cocoa_main_thread_sync(cocoa_show_mouse_mainthread_hide, NULL);
 #endif
 }
 
@@ -1008,28 +1173,58 @@ float cocoa_get_refresh_rate(void)
    return (rate > 0.0) ? (float)rate : 60.0f;
 #endif
 #else /* iOS / tvOS */
-   CADisplayLink *dl = [CocoaView get].displayLink;
-   if (dl)
+   /* Prefer the panel's own capability over the CADisplayLink's
+    * preferred rate.
+    *
+    * apple_display_server_init() stamps
+    * settings->floats.video_refresh_rate onto the display link at
+    * startup, so reading that link back here closes a feedback
+    * loop: "Set Display-Reported Refresh Rate" only ever echoes the
+    * value the user already has configured, and a ProMotion panel
+    * reports 60 Hz forever because 60 is DEFAULT_REFRESH_RATE.
+    *
+    * maximumFramesPerSecond is the iOS/tvOS analogue of the
+    * CGDisplayModeGetRefreshRate() query the macOS branch above
+    * makes - a property of the display, not of our own timer.
+    *
+    * It only exists on iOS 10.3 / tvOS 10.2, and it is known to
+    * answer 0 on some simulators, so this is an extra rung on top
+    * of the ladder rather than a replacement for it.  Every path
+    * below stays reachable and unchanged: 10.0 - 10.2 still gets
+    * preferredFramesPerSecond, pre-10.0 still gets frameInterval,
+    * and a 0 answer here still falls through to them. */
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 100300 || __TV_OS_VERSION_MAX_ALLOWED >= 100200
+   if (@available(iOS 10.3, tvOS 10.2, *))
    {
+      NSInteger max_fps = [[UIScreen mainScreen] maximumFramesPerSecond];
+      if (max_fps > 0)
+         return (float)max_fps;
+   }
+#endif
+   {
+      CADisplayLink *dl = [CocoaView get].displayLink;
+      if (dl)
+      {
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000 || __TV_OS_VERSION_MAX_ALLOWED >= 150000
-      if (@available(iOS 15.0, tvOS 15.0, *))
-         return dl.preferredFrameRateRange.preferred;
+         if (@available(iOS 15.0, tvOS 15.0, *))
+            return dl.preferredFrameRateRange.preferred;
 #endif
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 100000 || __TV_OS_VERSION_MAX_ALLOWED >= 100000
-      if (@available(iOS 10.0, tvOS 10.0, *))
-         return dl.preferredFramesPerSecond;
+         if (@available(iOS 10.0, tvOS 10.0, *))
+            return dl.preferredFramesPerSecond;
 #endif
-      /* iOS 6 - 9 / tvOS < 10: only frameInterval exists.  It is
-       * the number of screen refreshes between callbacks, so
-       * convert to Hz assuming a 60 Hz panel (accurate for every
-       * pre-iOS-10 device - ProMotion is iPad Pro 2017+). */
+         /* iOS 6 - 9 / tvOS < 10: only frameInterval exists.  It is
+          * the number of screen refreshes between callbacks, so
+          * convert to Hz assuming a 60 Hz panel (accurate for every
+          * pre-iOS-10 device - ProMotion is iPad Pro 2017+). */
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-      {
-         NSInteger fi = dl.frameInterval;
-         return 60.0f / (float)(fi > 0 ? fi : 1);
-      }
+         {
+            NSInteger fi = dl.frameInterval;
+            return 60.0f / (float)(fi > 0 ? fi : 1);
+         }
 #pragma clang diagnostic pop
+      }
    }
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 100300 || __TV_OS_VERSION_MAX_ALLOWED >= 100200
    if (@available(iOS 10.3, tvOS 10.2, *))
@@ -1271,27 +1466,356 @@ void write_userdefaults_config_file(void)
 }
 
 #if TARGET_OS_TV
-static NSDictionary *topshelfDictForEntry(const struct playlist_entry *entry, gfx_thumbnail_path_data_t *path_data)
+#define TOPSHELF_BLUR_SIZE 24.0
+#define TOPSHELF_MISS_TTL  (7 * 24 * 60 * 60)
+
+static const struct { const char *name; CGFloat w, h; } topshelf_shapes[] = {
+   { "square", 500, 500 },
+   { "poster", 334, 500 },
+   { "hdtv",   890, 500 },
+};
+
+static unsigned topshelfShapeForSize(CGSize size)
 {
-   NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithDictionary:@{
-      @"id": [NSString stringWithUTF8String:entry->path],
-      @"title": [NSString stringWithUTF8String:
-                             ((!entry->label || !*entry->label) ? path_basename(entry->path) : entry->label)],
+   CGFloat ratio = size.width / size.height;
+   if (ratio < 0.85)
+      return 1;
+   if (ratio > 1.6)
+      return 2;
+   return 0;
+}
+
+static NSURL *topshelfGroupCacheDir(void)
+{
+   NSFileManager *fm = [NSFileManager defaultManager];
+   NSURL *group = [fm containerURLForSecurityApplicationGroupIdentifier:kRetroArchAppGroup];
+   NSURL *dir;
+   if (!group)
+      return nil;
+   /* On device, only Library/Caches inside the group container is writable */
+   dir = [group URLByAppendingPathComponent:@"Library/Caches/TopShelf" isDirectory:YES];
+   if (![fm createDirectoryAtURL:dir withIntermediateDirectories:YES attributes:nil error:nil])
+      return nil;
+   return dir;
+}
+
+static NSString *topshelfCacheHash(NSString *remote)
+{
+   int i;
+   unsigned char digest[CC_SHA256_DIGEST_LENGTH];
+   const char *cstr = [remote UTF8String];
+   NSMutableString *name = [NSMutableString stringWithCapacity:2 * CC_SHA256_DIGEST_LENGTH];
+   CC_SHA256(cstr, (CC_LONG)strlen(cstr), digest);
+   for (i = 0; i < CC_SHA256_DIGEST_LENGTH; i++)
+      [name appendFormat:@"%02x", digest[i]];
+   return name;
+}
+
+static NSString *topshelfCacheFileName(NSString *hash, unsigned shape)
+{
+   return [NSString stringWithFormat:@"%@_%s.png", hash, topshelf_shapes[shape].name];
+}
+
+/* Percent-encode: pre-tvOS-17 NSURL rejects raw spaces in URL strings */
+static NSString *topshelfRemoteURL(const char *db_name, const char *img_name, const char *type)
+{
+   NSCharacterSet *cs = [NSCharacterSet URLPathAllowedCharacterSet];
+   NSString *db = [[NSString stringWithUTF8String:db_name] stringByAddingPercentEncodingWithAllowedCharacters:cs];
+   NSString *img = [[NSString stringWithUTF8String:img_name] stringByAddingPercentEncodingWithAllowedCharacters:cs];
+   return [NSString stringWithFormat:@"https://thumbnails.libretro.com/%@/%s/%@", db, type, img];
+}
+
+static NSURL *topshelfMissFile(NSURL *cacheDir, NSString *hash, NSString *tag)
+{
+   return [cacheDir URLByAppendingPathComponent:[NSString stringWithFormat:@"%@_%@.miss", hash, tag]];
+}
+
+static BOOL topshelfMissFresh(NSURL *cacheDir, NSString *hash, NSString *tag)
+{
+   NSURL *file = topshelfMissFile(cacheDir, hash, tag);
+   NSDate *mtime = [[NSFileManager defaultManager] attributesOfItemAtPath:[file path] error:nil][NSFileModificationDate];
+   return mtime && -[mtime timeIntervalSinceNow] < TOPSHELF_MISS_TTL;
+}
+
+static NSData *topshelfFetch(NSString *urlString, BOOL *notFound)
+{
+   NSURL *url = [NSURL URLWithString:urlString];
+   dispatch_semaphore_t sem;
+   __block NSData *result = nil;
+   __block BOOL nf = NO;
+   if (!url)
+      return nil;
+   sem = dispatch_semaphore_create(0);
+   [[[NSURLSession sharedSession] dataTaskWithURL:url
+                                completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+      NSHTTPURLResponse *http = ([response isKindOfClass:[NSHTTPURLResponse class]]) ? (NSHTTPURLResponse *)response : nil;
+      if (!error && (!http || [http statusCode] == 200))
+         result = data;
+      else if (http && [http statusCode] == 404)
+         nf = YES;
+      dispatch_semaphore_signal(sem);
+   }] resume];
+   dispatch_semaphore_wait(sem, DISPATCH_TIME_FOREVER);
+   *notFound = nf;
+   return result;
+}
+
+static UIImage *topshelfPlaceholderImage(NSString *title)
+{
+   CGSize canvas = CGSizeMake(topshelf_shapes[0].w, topshelf_shapes[0].h);
+   UIGraphicsImageRendererFormat *fmt = [UIGraphicsImageRendererFormat preferredFormat];
+   UIGraphicsImageRenderer *renderer;
+   fmt.opaque = YES;
+   fmt.scale = 1.0;
+   renderer = [[UIGraphicsImageRenderer alloc] initWithSize:canvas format:fmt];
+   return [renderer imageWithActions:^(UIGraphicsImageRendererContext *ctx) {
+      [[UIColor colorWithWhite:0.15 alpha:1.0] setFill];
+      [ctx fillRect:CGRectMake(0, 0, canvas.width, canvas.height)];
+      if ([title length])
+      {
+         NSMutableParagraphStyle *ps = [[NSMutableParagraphStyle alloc] init];
+         ps.alignment = NSTextAlignmentCenter;
+         NSDictionary *attrs = @{ NSFontAttributeName: [UIFont boldSystemFontOfSize:44],
+                                  NSForegroundColorAttributeName: [UIColor colorWithWhite:0.85 alpha:1.0],
+                                  NSParagraphStyleAttributeName: ps };
+         CGRect box = CGRectInset(CGRectMake(0, 0, canvas.width, canvas.height), 40, 40);
+         CGRect needed = [title boundingRectWithSize:box.size
+                                             options:NSStringDrawingUsesLineFragmentOrigin
+                                          attributes:attrs
+                                             context:nil];
+         [title drawInRect:CGRectMake(box.origin.x, (canvas.height - needed.size.height) / 2,
+                                      box.size.width, needed.size.height)
+            withAttributes:attrs];
+      }
    }];
-   if (path_data->content_db_name && *path_data->content_db_name)
-   {
-      const char *img_name = path_data->content_img;
-      if (img_name && *img_name)
-         dict[@"img"] = [NSString stringWithFormat:@"https://thumbnails.libretro.com/%s/Named_Boxarts/%s",
-                         path_data->content_db_name, img_name];
+}
+
+static UIImage *topshelfCompositeImage(UIImage *src, CGSize canvas)
+{
+   CGSize tiny = CGSizeMake(TOPSHELF_BLUR_SIZE, TOPSHELF_BLUR_SIZE);
+   UIGraphicsImageRendererFormat *fmt;
+   UIGraphicsImageRenderer *renderer;
+   UIImage *blurred;
+   CGFloat scale;
+   CGRect rect;
+
+   fmt = [UIGraphicsImageRendererFormat preferredFormat];
+   fmt.opaque = YES;
+   fmt.scale = 1.0;
+
+   /* Cheap blur: aspect-fill a tiny buffer, let the upscale smear it */
+   scale = fmax(tiny.width / src.size.width, tiny.height / src.size.height);
+   rect = CGRectMake((tiny.width - src.size.width * scale) / 2,
+                     (tiny.height - src.size.height * scale) / 2,
+                     src.size.width * scale, src.size.height * scale);
+   renderer = [[UIGraphicsImageRenderer alloc] initWithSize:tiny format:fmt];
+   blurred = [renderer imageWithActions:^(UIGraphicsImageRendererContext *ctx) {
+      [src drawInRect:rect];
+   }];
+
+   scale = fmin(canvas.width / src.size.width, canvas.height / src.size.height);
+   rect = CGRectMake((canvas.width - src.size.width * scale) / 2,
+                     (canvas.height - src.size.height * scale) / 2,
+                     src.size.width * scale, src.size.height * scale);
+   renderer = [[UIGraphicsImageRenderer alloc] initWithSize:canvas format:fmt];
+   return [renderer imageWithActions:^(UIGraphicsImageRendererContext *ctx) {
+      [blurred drawInRect:CGRectMake(0, 0, canvas.width, canvas.height)];
+      [[UIColor colorWithWhite:0.0 alpha:0.2] setFill];
+      [ctx fillRect:CGRectMake(0, 0, canvas.width, canvas.height)];
+      [src drawInRect:rect];
+   }];
+}
+
+static NSString *topshelfWriteComposite(NSData *data, NSURL *cacheDir, NSString *hash, NSString **shapeName)
+{
+   @autoreleasepool {
+      UIImage *src = data ? [UIImage imageWithData:data] : nil;
+      if (!src || src.size.width < 1 || src.size.height < 1)
+         return nil;
+      unsigned shape = topshelfShapeForSize(src.size);
+      UIImage *composited = topshelfCompositeImage(src,
+            CGSizeMake(topshelf_shapes[shape].w, topshelf_shapes[shape].h));
+      NSData *png = composited ? UIImagePNGRepresentation(composited) : nil;
+      NSString *name = topshelfCacheFileName(hash, shape);
+      if (!png || ![png writeToURL:[cacheDir URLByAppendingPathComponent:name] atomically:YES])
+         return nil;
+      *shapeName = [NSString stringWithUTF8String:topshelf_shapes[shape].name];
+      return name;
    }
+}
+
+static void topshelfPruneCache(NSURL *cacheDir, NSSet *hashes)
+{
+   NSFileManager *fm = [NSFileManager defaultManager];
+   for (NSURL *file in [fm contentsOfDirectoryAtURL:cacheDir includingPropertiesForKeys:nil options:0 error:nil])
+   {
+      BOOL live = NO;
+      NSString *name = [file lastPathComponent];
+      for (NSString *hash in hashes)
+         if ([name hasPrefix:hash])
+         {
+            live = YES;
+            break;
+         }
+      if (!live)
+         [fm removeItemAtURL:file error:nil];
+   }
+}
+
+static void topshelfSetPlayAction(NSMutableDictionary *dict, const struct playlist_entry *entry)
+{
    NSURLComponents *play = [[NSURLComponents alloc] initWithString:@"retroarch://topshelf"];
    [play setQueryItems:@[
       [[NSURLQueryItem alloc] initWithName:@"path" value:[NSString stringWithUTF8String:entry->path]],
       [[NSURLQueryItem alloc] initWithName:@"core_path" value:[NSString stringWithUTF8String:entry->core_path]],
    ]];
    dict[@"play"] = [play string];
+}
+
+static NSDictionary *topshelfDictForEntry(const struct playlist_entry *entry, gfx_thumbnail_path_data_t *path_data,
+                                          const char *dir_thumbnails, NSURL *cacheDir,
+                                          NSMutableArray *pending, NSMutableSet *hashes)
+{
+   NSFileManager *fm = [NSFileManager defaultManager];
+   const char *db_name = NULL, *img_name = NULL;
+   NSString *remote = nil;
+   NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithDictionary:@{
+      @"id": [NSString stringWithUTF8String:entry->path],
+      @"title": [NSString stringWithUTF8String:
+                             ((!entry->label || !*entry->label) ? path_basename(entry->path) : entry->label)],
+   }];
+   topshelfSetPlayAction(dict, entry);
+   if (path_data->content_db_name[0] && path_data->content_img[0])
+   {
+      db_name = path_data->content_db_name;
+      img_name = path_data->content_img;
+      remote = topshelfRemoteURL(db_name, img_name, "Named_Boxarts");
+      dict[@"img"] = remote;
+   }
+   if (cacheDir)
+   {
+      unsigned shape;
+      NSString *hash = topshelfCacheHash(remote ? remote : @(entry->path));
+      NSString *phName = [hash stringByAppendingString:@"_placeholder.png"];
+      NSMutableArray *candidates = [NSMutableArray array];
+      [hashes addObject:hash];
+      for (shape = 0; shape < sizeof(topshelf_shapes) / sizeof(topshelf_shapes[0]); shape++)
+      {
+         NSString *name = topshelfCacheFileName(hash, shape);
+         if ([fm fileExistsAtPath:[[cacheDir URLByAppendingPathComponent:name] path]])
+         {
+            dict[@"imgfile"] = name;
+            dict[@"shape"] = @(topshelf_shapes[shape].name);
+            return dict;
+         }
+      }
+      if (db_name)
+      {
+         if (dir_thumbnails && *dir_thumbnails)
+         {
+            NSString *local = [NSString stringWithFormat:@"%s/%s/Named_Boxarts/%s",
+                               dir_thumbnails, db_name, img_name];
+            if ([fm fileExistsAtPath:local])
+               [candidates addObject:@{ @"local": local }];
+         }
+         if (!topshelfMissFresh(cacheDir, hash, @"boxart"))
+            [candidates addObject:@{ @"remote": remote, @"miss": @"boxart" }];
+         if (dir_thumbnails && *dir_thumbnails)
+         {
+            NSString *local = [NSString stringWithFormat:@"%s/%s/Named_Titles/%s",
+                               dir_thumbnails, db_name, img_name];
+            if ([fm fileExistsAtPath:local])
+               [candidates addObject:@{ @"local": local }];
+         }
+         if (!topshelfMissFresh(cacheDir, hash, @"title"))
+            [candidates addObject:@{ @"remote": topshelfRemoteURL(db_name, img_name, "Named_Titles"),
+                                     @"miss": @"title" }];
+      }
+      if ([fm fileExistsAtPath:[[cacheDir URLByAppendingPathComponent:phName] path]])
+      {
+         dict[@"imgfile"] = phName;
+         dict[@"shape"] = @"square";
+         if (![candidates count])
+            return dict;
+      }
+      [pending addObject:@{ @"item": dict, @"hash": hash, @"title": dict[@"title"],
+                            @"candidates": candidates }];
+   }
    return dict;
+}
+
+
+static void topshelfProcessPending(NSArray *pending, NSDictionary *contentDict, NSSet *hashes,
+                                   NSUserDefaults *ud, NSURL *cacheDir, void (^completion)(void))
+{
+   dispatch_group_t group = dispatch_group_create();
+   dispatch_queue_t patchq = dispatch_queue_create("com.libretro.RetroArch.topshelf", DISPATCH_QUEUE_SERIAL);
+   __block BOOL updated = NO;
+
+   for (NSDictionary *work in pending)
+   {
+      dispatch_group_enter(group);
+      dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
+         NSData *data = nil;
+         NSString *hash = work[@"hash"];
+         NSString *name = nil, *shape = nil;
+         for (NSDictionary *cand in work[@"candidates"])
+         {
+            NSString *local = cand[@"local"];
+            if (local)
+               data = [NSData dataWithContentsOfFile:local];
+            else
+            {
+               BOOL notFound = NO;
+               data = topshelfFetch(cand[@"remote"], &notFound);
+               if (notFound)
+                  [[NSData data] writeToURL:topshelfMissFile(cacheDir, hash, cand[@"miss"]) atomically:YES];
+            }
+            if (data)
+               break;
+         }
+         if (data)
+            name = topshelfWriteComposite(data, cacheDir, hash, &shape);
+         if (!name)
+         {
+            NSURL *file;
+            name = [hash stringByAppendingString:@"_placeholder.png"];
+            shape = @"square";
+            file = [cacheDir URLByAppendingPathComponent:name];
+            if (![[NSFileManager defaultManager] fileExistsAtPath:[file path]])
+            {
+               @autoreleasepool {
+                  UIImage *ph = topshelfPlaceholderImage(work[@"title"]);
+                  NSData *png = ph ? UIImagePNGRepresentation(ph) : nil;
+                  if (!png || ![png writeToURL:file atomically:YES])
+                     name = nil;
+               }
+            }
+         }
+         if (name)
+            dispatch_sync(patchq, ^{
+               NSMutableDictionary *item = work[@"item"];
+               if (![name isEqualToString:item[@"imgfile"]])
+               {
+                  item[@"imgfile"] = name;
+                  item[@"shape"] = shape;
+                  updated = YES;
+               }
+            });
+         dispatch_group_leave(group);
+      });
+   }
+
+   dispatch_group_notify(group, dispatch_get_main_queue(), ^{
+      if (updated)
+      {
+         [ud setObject:contentDict forKey:@"topshelf"];
+         [TVTopShelfContentProvider topShelfContentDidChange];
+      }
+      topshelfPruneCache(cacheDir, hashes);
+      if (completion)
+         completion();
+   });
 }
 
 void update_topshelf(void)
@@ -1305,9 +1829,13 @@ void update_topshelf(void)
       NSMutableDictionary *contentDict = [NSMutableDictionary dictionaryWithCapacity:2];
       const struct playlist_entry *entry;
       gfx_thumbnail_path_data_t *thumbnail_path_data = gfx_thumbnail_path_init();
+      NSURL *cacheDir = topshelfGroupCacheDir();
+      NSMutableArray *pending = [NSMutableArray array];
+      NSMutableSet *hashes = [NSMutableSet set];
 
-      settings_t *settings     = config_get_ptr();
-      bool history_list_enable = settings->bools.history_list_enable;
+      settings_t *settings       = config_get_ptr();
+      bool history_list_enable   = settings->bools.history_list_enable;
+      const char *dir_thumbnails = settings->paths.directory_thumbnails;
       if (history_list_enable && playlist_size(g_defaults.content_history) > 0)
       {
          NSMutableArray *array = [NSMutableArray arrayWithCapacity:playlist_size(g_defaults.content_history)];
@@ -1317,7 +1845,7 @@ void update_topshelf(void)
             gfx_thumbnail_path_reset(thumbnail_path_data);
             gfx_thumbnail_set_content_playlist(thumbnail_path_data, g_defaults.content_history, i);
             playlist_get_index(g_defaults.content_history, i, &entry);
-            [array addObject:topshelfDictForEntry(entry, thumbnail_path_data)];
+            [array addObject:topshelfDictForEntry(entry, thumbnail_path_data, dir_thumbnails, cacheDir, pending, hashes)];
          }
          contentDict[key] = array;
       }
@@ -1331,13 +1859,32 @@ void update_topshelf(void)
             gfx_thumbnail_path_reset(thumbnail_path_data);
             gfx_thumbnail_set_content_playlist(thumbnail_path_data, g_defaults.content_favorites, i);
             playlist_get_index(g_defaults.content_favorites, i, &entry);
-            [array addObject:topshelfDictForEntry(entry, thumbnail_path_data)];
+            [array addObject:topshelfDictForEntry(entry, thumbnail_path_data, dir_thumbnails, cacheDir, pending, hashes)];
          }
          contentDict[key] = array;
       }
+      free(thumbnail_path_data);
 
       [ud setObject:contentDict forKey:@"topshelf"];
       [TVTopShelfContentProvider topShelfContentDidChange];
+
+      if ([pending count] && cacheDir)
+      {
+         __block UIBackgroundTaskIdentifier bgtask =
+            [[UIApplication sharedApplication] beginBackgroundTaskWithExpirationHandler:^{
+               [[UIApplication sharedApplication] endBackgroundTask:bgtask];
+               bgtask = UIBackgroundTaskInvalid;
+            }];
+         topshelfProcessPending(pending, contentDict, hashes, ud, cacheDir, ^{
+            if (bgtask != UIBackgroundTaskInvalid)
+            {
+               [[UIApplication sharedApplication] endBackgroundTask:bgtask];
+               bgtask = UIBackgroundTaskInvalid;
+            }
+         });
+      }
+      else if (cacheDir)
+         topshelfPruneCache(cacheDir, hashes);
    }
 }
 #endif

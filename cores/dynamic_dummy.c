@@ -67,7 +67,6 @@ void libretro_dummy_retro_init(void)
 #if defined(HAVE_MENU) && defined(HAVE_RGUI)
    settings_t *settings = config_get_ptr();
 #endif
-   unsigned i;
 
    /* Sensible defaults */
    frame_buf_width = 320;
@@ -98,13 +97,18 @@ void libretro_dummy_retro_init(void)
    }
 #endif
 
-   dummy_frame_buf = (uint16_t*)calloc(frame_buf_width * frame_buf_height, sizeof(uint16_t));
-
-   if (dummy_frame_buf)
-   {
-      for (i = 0; i < (unsigned)(frame_buf_width * frame_buf_height); i++)
-         dummy_frame_buf[i] = 4 << 5;
-   }
+   /* No pixel buffer is allocated here.  retro_run() is what needs
+    * one, and it is never reached in a normal RetroArch build: the
+    * menu cannot be dismissed while CORE_TYPE_DUMMY is loaded [see
+    * the core_type_is_dummy gate in runloop_check_state()], so
+    * core_run() is never called.  Only a HAVE_STATIC_DUMMY build,
+    * where this file supplies the retro_* entry points directly,
+    * actually presents frames.  Defer the allocation to the first
+    * retro_run() so the common case costs nothing.
+    *
+    * The two dimensions above are the real output of this function -
+    * retro_get_system_av_info() derives geometry.aspect_ratio from
+    * them, and RGUI sizes its own framebuffer against that. */
 }
 
 void libretro_dummy_retro_deinit(void)
@@ -193,7 +197,29 @@ void libretro_dummy_retro_set_video_refresh(retro_video_refresh_t cb)
 void libretro_dummy_retro_run(void)
 {
    dummy_input_poll_cb();
-   dummy_video_cb(dummy_frame_buf, frame_buf_width, frame_buf_height, 2 * frame_buf_width);
+
+   /* Allocated on first use rather than in retro_init(); see the note
+    * there.  calloc() zeroes it, and 0x0000 is black in RGB565, so
+    * the buffer needs no further initialisation - it is handed to the
+    * frontend as-is and never written to again.
+    *
+    * A full-size buffer is required: libretro has the frontend read
+    * height rows of width pixels at the given pitch, and a
+    * single-row-with-pitch-0 trick would break every driver that
+    * sizes a copy or cache flush as pitch * height [ctr_gfx, gl2,
+    * psp1_gfx, rsx_gfx, sdl_dingux_gfx all do].
+    *
+    * If the allocation fails, skip the callback; that reads to the
+    * frontend as a duped frame, which is the right degradation for a
+    * core whose entire output is one static colour. */
+   if (!dummy_frame_buf)
+      dummy_frame_buf = (uint16_t*)calloc(
+            (size_t)frame_buf_width * (size_t)frame_buf_height,
+            sizeof(uint16_t));
+
+   if (dummy_frame_buf)
+      dummy_video_cb(dummy_frame_buf, frame_buf_width, frame_buf_height,
+            2 * frame_buf_width);
 }
 
 /* This should never be called, it's only used as a placeholder. */

@@ -74,6 +74,12 @@ typedef struct
    fifo_buffer_t      *buffer;
    size_t engine_buffer_size;
    unsigned char frame_size;          /* 4 or 8 only */
+   /* log2(frame_size), i.e. 2 or 3.  Invariant: the two are set
+    * together in wasapi_init and frame_size == 1u << frame_shift.
+    * Exists so the byte-count-to-frame-count conversions on the write
+    * path are shifts rather than 64-bit hardware divides.  Fits in the
+    * struct's existing tail padding, so wasapi_t stays 64 bytes. */
+   unsigned char frame_shift;
    uint8_t flags;
 } wasapi_t;
 
@@ -857,15 +863,45 @@ static int wasapi_microphone_read(void *driver_context, void *mic_context, void 
       return wasapi_microphone_read_buffered(mic, s, len, 0);
 
    /* Both exclusive and shared modes use the same blocking read loop;
-    * the distinction is handled inside wasapi_microphone_read_buffered. */
-   for (; (size_t)bytes_read < len; bytes_read += read)
+    * the distinction is handled inside wasapi_microphone_read_buffered.
+    *
+    * WASAPI_TIMEOUT rather than INFINITE: every other wait in this
+    * driver is bounded, and an unbounded one here parks the thread the
+    * core runs on with no way out if the device stops signalling its
+    * capture event - an unplug, a driver reset, a format
+    * renegotiation.  It also made the timeout branch of
+    * wasapi_microphone_wait_for_capture_event, message and all,
+    * unreachable.
+    *
+    * Stopping on a zero-length read matters just as much.
+    * wasapi_microphone_fetch_fifo returns the queue's fill level, and
+    * that is legitimately still zero when GetBuffer hands back no
+    * frames, or when the packet is larger than the whole queue and
+    * gets dropped - which is reachable whenever the shared-buffer
+    * length setting is smaller than one device packet.  The old loop
+    * only ever left on error or on a full read, so either case span
+    * forever on an event that kept firing while no data ever arrived.
+    *
+    * A short count is not a failure the caller has to guess at:
+    * microphone_driver_flush treats <= 0 as "no frames this time" and
+    * microphone_driver_read counts the stalls, substituting silence
+    * once they pile up.  Looping here defeated that.  Errors are still
+    * reported as errors, but only when nothing was read at all -
+    * otherwise the bytes already collected are worth more to the core
+    * than the error code. */
+   while ((size_t)bytes_read < len)
    {
       read = wasapi_microphone_read_buffered(mic,
             (char *)s   + bytes_read,
             len         - bytes_read,
-            INFINITE);
-      if (read == -1)
-         return -1;
+            WASAPI_TIMEOUT);
+
+      if (read < 0)
+         return (bytes_read > 0) ? bytes_read : -1;
+      if (read == 0)
+         break;
+
+      bytes_read += read;
    }
    return bytes_read;
 }
@@ -1119,7 +1155,8 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    REFERENCE_TIME dev_period = 0;
    BYTE *dest                = NULL;
    settings_t *settings      = config_get_ptr();
-   bool float_format         = settings->bools.audio_wasapi_float_format;
+   bool float_format         = (settings->uints.audio_format_negotiation
+         == AUDIO_FORMAT_NEGOTIATION_FLOAT);
    bool exclusive_mode       = settings->bools.audio_wasapi_exclusive_mode;
    bool audio_sync           = settings->bools.audio_sync;
    unsigned sh_buffer_length = settings->uints.audio_wasapi_sh_buffer_length;
@@ -1145,6 +1182,7 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
       goto error;
 
    w->frame_size             = float_format ? 8 : 4;
+   w->frame_shift            = float_format ? 3 : 2;
    w->engine_buffer_size     = frame_count * w->frame_size;
 
    if (w->flags & WASAPI_FLG_EXCLUSIVE)
@@ -1249,7 +1287,7 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
             BYTE *dest         = NULL;
             if (WaitForSingleObject(w->write_event, WASAPI_TIMEOUT) != WAIT_OBJECT_0)
                return 0;
-            frame_count        = w->engine_buffer_size / w->frame_size;
+            frame_count        = w->engine_buffer_size >> w->frame_shift;
             if (FAILED(_IAudioRenderClient_GetBuffer(
                         w->renderer, frame_count, &dest)))
                return -1;
@@ -1275,7 +1313,7 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
                if (WaitForSingleObject(w->write_event, WASAPI_TIMEOUT) == WAIT_OBJECT_0)
                {
                   BYTE *dest = NULL;
-                  UINT32 frame_count = w->engine_buffer_size / w->frame_size;
+                  UINT32 frame_count = w->engine_buffer_size >> w->frame_shift;
                   if (FAILED(_IAudioRenderClient_GetBuffer(
                               w->renderer, frame_count, &dest)))
                      return -1;
@@ -1296,59 +1334,35 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
    {
       if (flg & WASAPI_FLG_NONBLOCK)
       {
-         size_t write_avail = 0;
+         size_t write_avail = FIFO_WRITE_AVAIL(w->buffer);
          UINT32 padding     = 0;
-         if (w->buffer)
+         if (!write_avail)
          {
-            write_avail = FIFO_WRITE_AVAIL(w->buffer);
-            if (!write_avail)
-            {
-               size_t read_avail = 0;
-               if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
-                  return -1;
-               read_avail  = FIFO_READ_AVAIL(w->buffer);
-               write_avail = w->engine_buffer_size - padding * w->frame_size;
-               _len        = read_avail < write_avail ? read_avail : write_avail;
-               if (_len)
-               {
-                  BYTE *dest         = NULL;
-                  UINT32 frame_count = _len / w->frame_size;
-                  if (FAILED(_IAudioRenderClient_GetBuffer(
-                              w->renderer, frame_count, &dest)))
-                     return -1;
-                  fifo_read(w->buffer, dest, _len);
-                  if (FAILED(_IAudioRenderClient_ReleaseBuffer(
-                              w->renderer, frame_count, 0)))
-                     return -1;
-               }
-               write_avail = FIFO_WRITE_AVAIL(w->buffer);
-            }
-            _len = len < write_avail ? len : write_avail;
-            if (_len)
-               fifo_write(w->buffer, data, _len);
-         }
-         else
-         {
+            size_t read_avail = 0;
             if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
                return -1;
-            if (!(write_avail = w->engine_buffer_size - padding * w->frame_size))
-               return 0;
-            _len = (len < write_avail) ? len : write_avail;
+            read_avail  = FIFO_READ_AVAIL(w->buffer);
+            write_avail = w->engine_buffer_size - padding * w->frame_size;
+            _len        = read_avail < write_avail ? read_avail : write_avail;
             if (_len)
             {
                BYTE *dest         = NULL;
-               UINT32 frame_count = _len / w->frame_size;
+               UINT32 frame_count = _len >> w->frame_shift;
                if (FAILED(_IAudioRenderClient_GetBuffer(
                            w->renderer, frame_count, &dest)))
                   return -1;
-               memcpy(dest, data, _len);
+               fifo_read(w->buffer, dest, _len);
                if (FAILED(_IAudioRenderClient_ReleaseBuffer(
                            w->renderer, frame_count, 0)))
                   return -1;
             }
+            write_avail = FIFO_WRITE_AVAIL(w->buffer);
          }
+         _len = len < write_avail ? len : write_avail;
+         if (_len)
+            fifo_write(w->buffer, data, _len);
       }
-      else if (w->buffer)
+      else
       {
          while (_len < len)
          {
@@ -1369,7 +1383,7 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
                if (ir)
                {
                   BYTE *dest         = NULL;
-                  UINT32 frame_count = ir / w->frame_size;
+                  UINT32 frame_count = ir >> w->frame_shift;
                   if (FAILED(_IAudioRenderClient_GetBuffer(
                               w->renderer, frame_count, &dest)))
                      return -1;
@@ -1386,37 +1400,6 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
                const void *_data = (char*)data + _len;
                fifo_write(w->buffer, _data, ir);
                _len += ir;
-            }
-         }
-      }
-      else
-      {
-         while (_len < len)
-         {
-            size_t write_avail = 0;
-            UINT32 padding     = 0;
-            if (!(WaitForSingleObject(w->write_event, WASAPI_TIMEOUT) == WAIT_OBJECT_0))
-               return -1;
-            if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
-               return -1;
-            if ((write_avail = w->engine_buffer_size - padding * w->frame_size))
-            {
-               size_t __len      = len - _len;
-               size_t ir         = (__len < write_avail) ? __len : write_avail;
-               if (ir)
-               {
-                  BYTE *dest         = NULL;
-                  const void *_data  = (char*)data + _len;
-                  UINT32 frame_count = ir / w->frame_size;
-                  if (FAILED(_IAudioRenderClient_GetBuffer(
-                              w->renderer, frame_count, &dest)))
-                     return -1;
-                  memcpy(dest, _data, ir);
-                  if (FAILED(_IAudioRenderClient_ReleaseBuffer(
-                              w->renderer, frame_count, 0)))
-                     return -1;
-                  _len += ir;
-               }
             }
          }
       }
@@ -1516,22 +1499,34 @@ static size_t wasapi_write_avail(void *wh)
    wasapi_t *w    = (wasapi_t*)wh;
    UINT32 padding = 0;
 
-   if (w->flags & WASAPI_FLG_EXCLUSIVE && w->buffer)
+   if (w->flags & WASAPI_FLG_EXCLUSIVE)
       return FIFO_WRITE_AVAIL(w->buffer);
    if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
       return 0;
-   if (w->buffer) /* Exaggerate available size for best results.. */
-      return FIFO_WRITE_AVAIL(w->buffer) + padding;
-   return w->engine_buffer_size - padding * w->frame_size;
+   /* Free space across the whole pipeline the writer can fill:
+    * free fifo bytes plus free engine-buffer bytes.  The previous
+    * form added GetCurrentPadding() directly - a frame count
+    * (1/8 scale for float frames) added to a byte count, and a
+    * measure of *queued* data rather than free space, so a fuller
+    * engine reported more room.  Rate control consumed that as a
+    * mis-scaled, inverted, period-rate noise term in its occupancy
+    * measurement. */
+   return FIFO_WRITE_AVAIL(w->buffer)
+         + (w->engine_buffer_size - padding * w->frame_size);
 }
 
 static size_t wasapi_buffer_size(void *wh)
 {
    wasapi_t *w = (wasapi_t*)wh;
 
-   if (w->buffer)
+   /* Must bound what write_avail reports: exclusive mode's avail spans
+    * the fifo only (the engine double buffer is the device's own), and
+    * shared mode's spans fifo + engine.  Reporting only the fifo in
+    * shared mode let avail exceed the "buffer size", pushing the rate
+    * controller's direction term past its intended +-1 range. */
+   if (w->flags & WASAPI_FLG_EXCLUSIVE)
       return w->buffer->size;
-   return w->engine_buffer_size;
+   return w->buffer->size + w->engine_buffer_size;
 }
 
 audio_driver_t audio_wasapi = {
