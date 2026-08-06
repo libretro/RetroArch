@@ -35,6 +35,7 @@
 #include <file/file_path.h>
 
 #include <compat/strl.h>
+#include <string/stdstring.h>
 #include <retro_dirent.h>
 
 #include <retro_miscellaneous.h>
@@ -245,6 +246,17 @@ static int dir_list_read_ctx(size_t dir_len, struct dir_list_ctx *ctx)
       if (_len && path[_len - 1] != '/' && path[_len - 1] != '\\')
          path[_len++] = '/';
       _len += strlcpy(path + _len, name, PATH_MAX_LENGTH - _len);
+
+#if defined(WEBOS)
+      /* Skip virtual / dangerous FS nodes under jail root — readdir+stat
+       * on /proc or /sys can stall the main thread for a long time. */
+      if (   (string_is_equal(dir, "/") || string_is_equal(dir, "//"))
+          && (   string_is_equal(name, "proc")
+              || string_is_equal(name, "sys")
+              || string_is_equal(name, "dev")
+              || string_is_equal(name, "run")))
+         continue;
+#endif
 
       if (retro_dirent_is_dir(entry, NULL))
       {
