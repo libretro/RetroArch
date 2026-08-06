@@ -405,7 +405,11 @@ typedef struct vk
       VkSemaphore *semaphores;
       VkSemaphore signal_semaphore; /* ptr alignment */
 
-      struct retro_hw_render_interface_vulkan iface;
+      /* The retro_hw_render_interface_vulkan the core is handed used
+       * to live here.  It now has static storage - see
+       * vulkan_hw_iface - because the pointer returned by
+       * vulkan_get_hw_render_interface() must outlive this
+       * allocation. */
 
       unsigned capacity_cmd;
       unsigned last_width;
@@ -4825,6 +4829,38 @@ static void vulkan_destroy_hdr_buffer(VkDevice device, struct vk_image *img)
 }
 #endif
 
+/* The interface handed to the core by
+ * vulkan_get_hw_render_interface().  It used to be a member of vk_t,
+ * so what the core received was an interior pointer into an
+ * allocation vulkan_free() releases.
+ *
+ * A core that submits from its own thread - PPSSPP's
+ * VulkanRenderManager runs a dedicated render thread - caches that
+ * pointer and keeps using it across a video_driver_reinit().  In the
+ * cache_context path the core is never told the interface went away:
+ * video_driver_free_internal() skips video_driver_free_hw_context(),
+ * so context_destroy() does not run, while vulkan_free() frees the
+ * vk_t regardless and vulkan_init() allocates a new one.  The render
+ * thread then dereferences freed memory - first with the block still
+ * largely intact, faulting on a cleared handle inside
+ * vulkan_lock_queue(), and later, once the block has been reused,
+ * with a cleared lock_queue, which is a call through a null function
+ * pointer.  Both signatures turn up in iOS reports, where a rotation
+ * or a return from background reinitialises the driver underneath a
+ * running core.
+ *
+ * Static storage keeps the address the core holds valid for the
+ * process lifetime.  It is published by vulkan_init_hw_render() and
+ * unpublished by vulkan_free(), which clears the handle rather than
+ * the entry points: a submission landing in the window between
+ * teardown and the next context_reset then takes the guarded no-op
+ * path in the callbacks above instead of faulting.  Losing the queue
+ * lock for that window is survivable precisely because this is the
+ * cache_context path - the device and the queue are cached and
+ * outlive the vk_t - and it is what the core was already doing
+ * unsynchronised by racing the teardown at all. */
+static struct retro_hw_render_interface_vulkan vulkan_hw_iface;
+
 static void vulkan_free(void *data)
 {
    vk_t *vk = (vk_t*)data;
@@ -4882,18 +4918,31 @@ static void vulkan_free(void *data)
 
    scaler_ctx_gen_reset(&vk->readback.scaler_bgr);
    scaler_ctx_gen_reset(&vk->readback.scaler_rgb);
+
+   /* Unpublish before the free, so a core thread that reads the
+    * handle from here on reads NULL rather than a dangling vk_t.
+    * Tested against this vk, not unconditionally: a driver teardown
+    * that races an init must not clear an interface the init has
+    * already republished. */
+   if (vulkan_hw_iface.handle == vk)
+      vulkan_hw_iface.handle = NULL;
+
    free(vk);
 }
 
 static uint32_t vulkan_get_sync_index(void *handle)
 {
    vk_t *vk = (vk_t*)handle;
+   if (!vk || !vk->context)
+      return 0;
    return vk->context->current_frame_index;
 }
 
 static uint32_t vulkan_get_sync_index_mask(void *handle)
 {
    vk_t *vk = (vk_t*)handle;
+   if (!vk || !vk->context)
+      return 0;
    return (1 << vk->context->num_swapchain_images) - 1;
 }
 
@@ -4904,6 +4953,9 @@ static void vulkan_set_image(void *handle,
       uint32_t src_queue_family)
 {
    vk_t *vk              = (vk_t*)handle;
+
+   if (!vk)
+      return;
 
    vk->hw.image          = image;
    vk->hw.num_semaphores = num_semaphores;
@@ -4960,6 +5012,10 @@ static void vulkan_set_command_buffers(void *handle, uint32_t num_cmd,
 {
    vk_t *vk                   = (vk_t*)handle;
    unsigned required_capacity = num_cmd + 1;
+
+   if (!vk)
+      return;
+
    if (required_capacity > vk->hw.capacity_cmd)
    {
       VkCommandBuffer *hw_cmd = (VkCommandBuffer*)
@@ -4991,7 +5047,8 @@ static void vulkan_lock_queue(void *handle)
 {
 #ifdef HAVE_THREADS
    vk_t *vk = (vk_t*)handle;
-   slock_lock(vk->context->queue_lock);
+   if (vk && vk->context && vk->context->queue_lock)
+      slock_lock(vk->context->queue_lock);
 #endif
 }
 
@@ -4999,13 +5056,16 @@ static void vulkan_unlock_queue(void *handle)
 {
 #ifdef HAVE_THREADS
    vk_t *vk = (vk_t*)handle;
-   slock_unlock(vk->context->queue_lock);
+   if (vk && vk->context && vk->context->queue_lock)
+      slock_unlock(vk->context->queue_lock);
 #endif
 }
 
 static void vulkan_set_signal_semaphore(void *handle, VkSemaphore semaphore)
 {
    vk_t *vk = (vk_t*)handle;
+   if (!vk)
+      return;
    vk->hw.signal_semaphore = semaphore;
 }
 
@@ -5055,7 +5115,7 @@ static void vulkan_invalidate_hw_render_cache(void *data)
 static void vulkan_init_hw_render(vk_t *vk)
 {
    struct retro_hw_render_interface_vulkan *iface   =
-      &vk->hw.iface;
+      &vulkan_hw_iface;
    struct retro_hw_render_callback *hwr =
       video_driver_get_hw_context();
 
@@ -7903,7 +7963,7 @@ static bool vulkan_get_hw_render_interface(void *data,
       const struct retro_hw_render_interface **iface)
 {
    vk_t *vk = (vk_t*)data;
-   *iface   = (const struct retro_hw_render_interface*)&vk->hw.iface;
+   *iface   = (const struct retro_hw_render_interface*)&vulkan_hw_iface;
    return ((vk->flags & VK_FLAG_HW_ENABLE) > 0);
 }
 
