@@ -1,9 +1,14 @@
 package com.retroarch.browser.retroactivity;
 
+import android.graphics.Rect;
 import android.util.Log;
+import android.view.DisplayCutout;
+import android.view.Gravity;
 import android.view.PointerIcon;
 import android.view.View;
+import android.view.WindowInsets;
 import android.view.WindowManager;
+import android.view.WindowMetrics;
 import android.content.Intent;
 import android.content.Context;
 import android.hardware.input.InputManager;
@@ -112,17 +117,93 @@ public final class RetroActivityFuture extends RetroActivityCamera {
       }
     }
 
-    // Checks if Android versions is above 9.0 (28) and enable the screen to write over notch if the user desires
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-      ConfigFile configFile = new ConfigFile(UserPreferences.getDefaultConfigPath(this));
-      try {
-        if (configFile.getBoolean("video_notch_write_over_enable")) {
-          getWindow().getAttributes().layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
-        }
-      } catch (Exception e) {
-        Log.w("RetroActivityFuture", "Key doesn't exist yet: " + e.getMessage());
-      }
+    updateDisplayCutoutMode();
+  }
+
+  private void updateDisplayCutoutMode() {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P)
+      return;
+
+    boolean writeOverNotch = false;
+    ConfigFile configFile = new ConfigFile(UserPreferences.getDefaultConfigPath(this));
+
+    try {
+      writeOverNotch = configFile.getBoolean("video_notch_write_over_enable");
+    } catch (Exception e) {
+      Log.w("RetroActivityFuture", "Key doesn't exist yet: " + e.getMessage());
     }
+
+    WindowManager.LayoutParams params = getWindow().getAttributes();
+    params.layoutInDisplayCutoutMode = writeOverNotch
+        ? WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+        : WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER;
+    getWindow().setAttributes(params);
+
+    /* Android 15 forces non-floating activities targeting API 35 or later
+     * into every display cutout mode. NativeActivity renders directly into
+     * the window surface, so resize the window to the system-provided safe
+     * area when drawing over the cutout is disabled. */
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM
+        && getApplicationInfo().targetSdkVersion >= Build.VERSION_CODES.VANILLA_ICE_CREAM)
+      updateDisplayCutoutSafeWindow(!writeOverNotch);
+  }
+
+  private void updateDisplayCutoutSafeWindow(boolean avoidDisplayCutout) {
+    if (!avoidDisplayCutout) {
+      mDecorView.setOnApplyWindowInsetsListener(null);
+      setDisplayCutoutSafeWindow(0, 0, 0, 0);
+      return;
+    }
+
+    mDecorView.setOnApplyWindowInsetsListener(
+        new View.OnApplyWindowInsetsListener() {
+          @Override
+          public WindowInsets onApplyWindowInsets(View view, WindowInsets insets) {
+            DisplayCutout cutout = insets.getDisplayCutout();
+
+            if (cutout != null)
+              setDisplayCutoutSafeWindow(
+                  cutout.getSafeInsetLeft(),
+                  cutout.getSafeInsetTop(),
+                  cutout.getSafeInsetRight(),
+                  cutout.getSafeInsetBottom());
+
+            return insets;
+          }
+        });
+    mDecorView.requestApplyInsets();
+  }
+
+  private void setDisplayCutoutSafeWindow(
+      int left, int top, int right, int bottom) {
+    WindowMetrics metrics = getWindowManager().getMaximumWindowMetrics();
+    Rect bounds = metrics.getBounds();
+    boolean fullDisplay =
+        left == 0 && top == 0 && right == 0 && bottom == 0;
+    int width = fullDisplay
+        ? WindowManager.LayoutParams.MATCH_PARENT
+        : bounds.width() - left - right;
+    int height = fullDisplay
+        ? WindowManager.LayoutParams.MATCH_PARENT
+        : bounds.height() - top - bottom;
+    WindowManager.LayoutParams params = getWindow().getAttributes();
+    int gravity = Gravity.TOP | Gravity.LEFT;
+
+    if (params.width == width
+        && params.height == height
+        && params.x == left
+        && params.y == top
+        && params.gravity == gravity)
+      return;
+
+    params.width = width;
+    params.height = height;
+    params.x = left;
+    params.y = top;
+    params.gravity = gravity;
+    params.layoutInDisplayCutoutMode =
+        WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
+    getWindow().setAttributes(params);
   }
 
   @Override
