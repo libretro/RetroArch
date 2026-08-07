@@ -33,8 +33,9 @@
  * mmdevice_common.c and gfx/gfx_thumbnail.c.  The surface is intentionally
  * narrow: load, store, fetch_add, fetch_sub, fetch_or, fetch_and, plus
  * inc/dec convenience wrappers.  Everything is on plain machine words
- * (int and size_t); no compare-exchange, no double-word ops, no
- * thread-fences.  Add only when a real caller needs it.
+ * (int and size_t).  Compare-exchange, double-word ops and standalone
+ * thread-fences were added when real callers needed them; anything
+ * further should follow the same rule.
  *
  * fetch_or / fetch_and are int-width only, deliberately.  They exist for
  * flag words, which are 32-bit everywhere in the tree, and the Apple
@@ -976,8 +977,32 @@ static INLINE void* retro_atomic_exchange_ptr_impl_(retro_atomic_ptr_t *p, void*
 #define RETRO_ATOMIC_HAS_PTR 1
 
 #else
-/* RETRO_ATOMIC_BACKEND_VOLATILE: no CAS, no fences, no pointer ops.
- * RETRO_ATOMIC_HAS_CAS / RETRO_ATOMIC_HAS_PTR stay undefined. */
+/* RETRO_ATOMIC_BACKEND_VOLATILE: no CAS, no pointer ops.
+ * RETRO_ATOMIC_HAS_CAS / RETRO_ATOMIC_HAS_PTR stay undefined.
+ *
+ * Fences ARE defined here, unlike CAS/PTR, because they have a
+ * meaningful degraded form and no feature gate: a caller cannot
+ * write "fence if available" the way it can branch on
+ * RETRO_ATOMIC_HAS_CAS, so leaving them undefined turns any user of
+ * this header into a compile error on this backend rather than a
+ * detectable capability gap.  A compiler barrier is the honest
+ * degradation - correct on x86/x64 TSO and on single-core, NOT
+ * correct on weakly-ordered SMP, exactly the caveat that already
+ * applies to every load/store on this backend.  Callers whose
+ * correctness depends on real barriers gate on
+ * RETRO_ATOMIC_LOCK_FREE or set RETRO_ATOMIC_REQUIRE_LOCK_FREE. */
+#if defined(__GNUC__)
+#define retro_atomic_thread_fence_acquire() \
+   __asm__ __volatile__("" ::: "memory")
+#define retro_atomic_thread_fence_release() \
+   __asm__ __volatile__("" ::: "memory")
+#elif defined(_MSC_VER)
+#define retro_atomic_thread_fence_acquire() _ReadWriteBarrier()
+#define retro_atomic_thread_fence_release() _ReadWriteBarrier()
+#else
+#define retro_atomic_thread_fence_acquire() ((void)0)
+#define retro_atomic_thread_fence_release() ((void)0)
+#endif
 #endif
 
 /* ---- 64-bit operations -------------------------------------------------
