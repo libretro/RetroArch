@@ -402,7 +402,11 @@ void frontend_android_get_version_sdk(int32_t *sdk);
 bool is_screen_reader_enabled(void);
 
 #ifdef HAVE_SAF
+struct retro_vfs_authorized_locations;
+
 void android_show_saf_tree_picker(void);
+bool android_get_vfs_authorized_locations(
+      struct retro_vfs_authorized_locations *locations);
 #endif
 
 #endif

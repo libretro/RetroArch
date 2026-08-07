@@ -100,6 +100,11 @@
 #include "play_feature_delivery/play_feature_delivery.h"
 #endif
 
+#if defined(ANDROID) && defined(HAVE_SAF)
+bool android_get_vfs_authorized_locations(
+      struct retro_vfs_authorized_locations *locations);
+#endif
+
 #ifdef HAVE_PRESENCE
 #include "network/presence.h"
 #endif
@@ -3191,6 +3196,16 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             return false;
          }
          break;
+      }
+
+      case RETRO_ENVIRONMENT_GET_VFS_AUTHORIZED_LOCATIONS:
+      {
+#if defined(ANDROID) && defined(HAVE_SAF)
+         return android_get_vfs_authorized_locations(
+               (struct retro_vfs_authorized_locations*)data);
+#else
+         return false;
+#endif
       }
 
       case RETRO_ENVIRONMENT_GET_LED_INTERFACE:
