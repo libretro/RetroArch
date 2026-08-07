@@ -115,14 +115,6 @@ typedef struct
 #include <sys/sysctl.h>
 #include <mach/mach.h>
 #include <mach/mach_host.h>
-/* mach_port_deallocate.  mach/mach.h reaches it through
- * mach/mach_interface.h on the SDKs that ship that header, but not on
- * all of them, and the ones that do not leave the call implicitly
- * declared - an error, not a warning, under -Werror.  Ask for it
- * directly: mach_task_self() and mach_host_self() are macros over
- * externs from mach/mach_init.h and resolve either way, so this is the
- * one name in the file that depends on the chain holding. */
-#include <mach/mach_port.h>
 #elif defined(MEM_STATS_WIN32)
 #include <windows.h>
 #elif defined(MEM_STATS_PROC)
