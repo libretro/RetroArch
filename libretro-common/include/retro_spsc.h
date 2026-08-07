@@ -274,6 +274,81 @@ size_t retro_spsc_read(retro_spsc_t *q, void *data, size_t bytes);
  */
 size_t retro_spsc_peek(const retro_spsc_t *q, void *data, size_t bytes);
 
+/**
+ * retro_spsc_write_begin:
+ * @q   : The queue.
+ * @ptr : Receives a pointer to the contiguous writable region at the
+ *        current head.
+ *
+ * Producer-side zero-copy reservation.  Returns the number of bytes
+ * that can be written CONTIGUOUSLY at *@ptr - this is min(total free
+ * space, distance to the physical end of the ring), so it can be
+ * smaller than retro_spsc_write_avail() when the head is near the
+ * wrap point.  No cursor moves; call retro_spsc_write_end() with the
+ * number of bytes actually written (which may be 0, and must not
+ * exceed the returned span).  A caller needing more than the span can
+ * fall back to retro_spsc_write(), which handles the split copy.
+ *
+ * The pointer stays valid until write_end; the consumer cannot enter
+ * this region because head has not moved.  Alignment of *@ptr is
+ * whatever the caller's own write granularity guarantees: the ring
+ * is byte-addressed, so producers that always write N-byte records
+ * keep every span N-aligned.
+ *
+ * Returns: contiguous writable byte count (0 when full or when the
+ * head sits exactly at the wrap point of a full lap).
+ *
+ * SAFETY: producer thread only.  At most one begin outstanding.
+ */
+size_t retro_spsc_write_begin(retro_spsc_t *q, void **ptr);
+
+/**
+ * retro_spsc_write_end:
+ * @q     : The queue.
+ * @bytes : Bytes actually written into the span from write_begin.
+ *
+ * Publishes @bytes with a release-store on head, making them visible
+ * to the consumer.  Passing 0 abandons the reservation.
+ *
+ * SAFETY: producer thread only; @bytes must not exceed the span
+ * returned by the matching retro_spsc_write_begin.
+ */
+void retro_spsc_write_end(retro_spsc_t *q, size_t bytes);
+
+/**
+ * retro_spsc_read_begin:
+ * @q   : The queue.
+ * @ptr : Receives a pointer to the contiguous readable region at the
+ *        current tail.
+ *
+ * Consumer-side zero-copy drain.  Returns the number of bytes
+ * readable CONTIGUOUSLY at *@ptr - min(total buffered, distance to
+ * the physical end of the ring).  Wrapped data needs a second
+ * begin/end round after consuming the first span.  No cursor moves;
+ * call retro_spsc_read_end() with the bytes actually consumed.
+ *
+ * The region stays stable until read_end: the producer cannot write
+ * into it because tail has not moved.
+ *
+ * Returns: contiguous readable byte count (0 when empty).
+ *
+ * SAFETY: consumer thread only.  At most one begin outstanding.
+ */
+size_t retro_spsc_read_begin(retro_spsc_t *q, const void **ptr);
+
+/**
+ * retro_spsc_read_end:
+ * @q     : The queue.
+ * @bytes : Bytes actually consumed from the span from read_begin.
+ *
+ * Frees @bytes back to the producer with a release-store on tail.
+ * Passing 0 abandons the read.
+ *
+ * SAFETY: consumer thread only; @bytes must not exceed the span
+ * returned by the matching retro_spsc_read_begin.
+ */
+void retro_spsc_read_end(retro_spsc_t *q, size_t bytes);
+
 RETRO_END_DECLS
 
 #endif /* __LIBRETRO_SDK_SPSC_H */
