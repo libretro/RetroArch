@@ -37,7 +37,7 @@
 #include <libretro_vulkan.h>
 
 #ifdef HAVE_SDL3
-/* Included after vulkan.h so that SDL_vulkan.h can pick up the Must come after the Vulkan headers so SDL_vulkan.h picks up the
+/* Must come after the Vulkan headers so SDL_vulkan.h picks up the
  * real Vk* types instead of forward-declaring its own. */
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>

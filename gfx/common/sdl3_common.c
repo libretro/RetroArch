@@ -270,6 +270,8 @@ bool sdl3_window_set_video_mode(SDL_Window **win,
 void sdl3_window_get_video_size(SDL_Window *win,
       unsigned *width, unsigned *height)
 {
+   const SDL_DisplayMode *mode;
+
    if (win)
    {
       int w, h;
@@ -280,7 +282,7 @@ void sdl3_window_get_video_size(SDL_Window *win,
    }
 
    /* The window doesn't exist yet, so report the desktop size. */
-   const SDL_DisplayMode *mode = SDL_GetCurrentDisplayMode(SDL_GetPrimaryDisplay());
+   mode = SDL_GetCurrentDisplayMode(SDL_GetPrimaryDisplay());
    if (mode)
    {
       *width = mode->w;

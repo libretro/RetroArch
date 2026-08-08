@@ -67,7 +67,7 @@ void sdl3_set_handles(SDL_Window *window);
 
 /* Processes the SDL event queue, and cleans up the ones that
  * are handled elsewhere. For example: quit / window / display
- * events, etc. The eyboard/mouse events are left in the queue
+ * events, etc. The keyboard/mouse events are left in the queue
  * for the SDL input driver to handle itself. */
 void sdl3_pump_window_events(bool *quit, bool *resize);
 

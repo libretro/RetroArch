@@ -1676,7 +1676,9 @@ ifeq ($(HAVE_SDL3), 1)
           gfx/drivers/sdl3_gfx.o \
           gfx/common/sdl3_common.o
 
-   ifeq ($(HAVE_GL_CONTEXT), 1)
+   # Must match the gfx_ctx_sdl3_gl guard in gfx/video_driver.c and
+   # griffin/griffin.c (HAVE_GL_CONTEXT alone misses HAVE_OPENGL_CORE).
+   ifneq ($(filter 1,$(HAVE_OPENGL) $(HAVE_OPENGL1) $(HAVE_OPENGL_CORE) $(HAVE_OPENGLES)),)
       OBJ += gfx/drivers_context/sdl3_gl_ctx.o
    endif
 
