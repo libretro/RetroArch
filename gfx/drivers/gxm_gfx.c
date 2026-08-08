@@ -1650,7 +1650,7 @@ static void *gxm_font_init(void *data,
 
    if (!font_renderer_create_default(
             &font->font_driver,
-            &font->font_data, font_path, font_size))
+            &font->font_data, font_path, font_size, FONT_ATLAS_FORMAT_A8))
       goto error;
 
    font->atlas   = font->font_driver->get_atlas(font->font_data);

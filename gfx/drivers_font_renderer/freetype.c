@@ -316,7 +316,8 @@ static const struct font_glyph *font_renderer_ft_get_glyph(
    return &atlas_slot->glyph;
 }
 
-static bool font_renderer_create_atlas(ft_font_renderer_t *handle, float font_size)
+static bool font_renderer_create_atlas(ft_font_renderer_t *handle,
+      float font_size, enum font_atlas_format fmt)
 {
    unsigned i, x, y;
    unsigned max_width, max_height;
@@ -354,7 +355,7 @@ static bool font_renderer_create_atlas(ft_font_renderer_t *handle, float font_si
    atlas_height = (max_height + FT_ATLAS_PADDING) * FT_ATLAS_ROWS;
    /* Higher-precision coverage when the video driver asked for it
     * (HDR output); the atlas then stores uint16_t samples. */
-   handle->atlas.format = font_renderer_get_preferred_atlas_format();
+   handle->atlas.format = fmt;
    atlas_buffer = (uint8_t*)calloc((size_t)atlas_height,
          (size_t)atlas_width *
          ((handle->atlas.format == FONT_ATLAS_FORMAT_A16) ? 2 : 1));
@@ -386,7 +387,8 @@ static bool font_renderer_create_atlas(ft_font_renderer_t *handle, float font_si
    return true;
 }
 
-static void *font_renderer_ft_init(const char *font_path, float font_size)
+static void *font_renderer_ft_init(const char *font_path, float font_size,
+      enum font_atlas_format fmt)
 {
    FT_Error err;
 
@@ -541,7 +543,7 @@ fc_done:
    if ((err = FT_Set_Pixel_Sizes(handle->face, 0, font_size)))
       goto error;
 
-   if (!font_renderer_create_atlas(handle, font_size))
+   if (!font_renderer_create_atlas(handle, font_size, fmt))
       goto error;
 
    handle->line_metrics.ascender  = (float)handle->face->size->metrics.ascender / 64.0f;

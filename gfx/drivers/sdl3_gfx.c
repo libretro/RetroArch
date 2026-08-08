@@ -1316,7 +1316,7 @@ static void *sdl3_raster_font_init(void *data, const char *font_path,
 
    if (!font_renderer_create_default(
             &font->font_driver, &font->font_data,
-            font_path, font_size))
+            font_path, font_size, FONT_ATLAS_FORMAT_A8))
    {
       RARCH_WARN("[SDL3] sdl3_raster_font_init: font_renderer_create_default "
             "failed for path \"%s\" size %.1f.\n",

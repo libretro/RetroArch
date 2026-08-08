@@ -170,7 +170,8 @@ static void char_to_texture(bm_renderer_t *handle, uint8_t letter,
    handle->atlas.dirty = true;
 }
 
-static void *font_renderer_bmp_init(const char *font_path, float font_size)
+static void *font_renderer_bmp_init(const char *font_path, float font_size,
+      enum font_atlas_format fmt)
 {
    unsigned i;
    bm_renderer_t *handle   = (bm_renderer_t*)calloc(1, sizeof(*handle));

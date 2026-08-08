@@ -1369,7 +1369,6 @@ static void * d3d12_font_init(void* data, const char* font_path,
    d3d12_video_t* d3d12       = (d3d12_video_t*)data;
    d3d12_font_t*  font        = (d3d12_font_t*)calloc(1, sizeof(*font));
    bool           want_a16    = false;
-   enum font_atlas_format prev_fmt;
 
    if (!font)
       return NULL;
@@ -1382,19 +1381,14 @@ static void * d3d12_font_init(void* data, const char* font_path,
       || (d3d12->chain.current_rt_format == DXGI_FORMAT_R16G16B16A16_FLOAT);
 #endif
 
-   prev_fmt = font_renderer_get_preferred_atlas_format();
-   if (want_a16)
-      font_renderer_set_preferred_atlas_format(FONT_ATLAS_FORMAT_A16);
-
    if (!font_renderer_create_default(
             &font->font_driver,
-            &font->font_data, font_path, font_size))
+            &font->font_data, font_path, font_size,
+            want_a16 ? FONT_ATLAS_FORMAT_A16 : FONT_ATLAS_FORMAT_A8))
    {
-      font_renderer_set_preferred_atlas_format(prev_fmt);
       free(font);
       return NULL;
    }
-   font_renderer_set_preferred_atlas_format(prev_fmt);
 
    font->d3d12               = d3d12;
    font->atlas               = font->font_driver->get_atlas(font->font_data);

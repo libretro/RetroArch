@@ -2269,8 +2269,7 @@ static void *vulkan_font_init(void *data,
    font->vk = (vk_t*)data;
 
    {
-      enum font_atlas_format prev_fmt =
-            font_renderer_get_preferred_atlas_format();
+      enum font_atlas_format fmt = FONT_ATLAS_FORMAT_A8;
 #ifdef VULKAN_HDR_SWAPCHAIN
       /* When the swapchain is HDR, ask for a higher-precision
        * coverage atlas (same policy as the d3d12 driver). */
@@ -2279,17 +2278,15 @@ static void *vulkan_font_init(void *data,
                      == VK_FORMAT_R16G16B16A16_SFLOAT
                || font->vk->context->swapchain_format
                      == VK_FORMAT_A2B10G10R10_UNORM_PACK32))
-         font_renderer_set_preferred_atlas_format(FONT_ATLAS_FORMAT_A16);
+         fmt = FONT_ATLAS_FORMAT_A16;
 #endif
       if (!font_renderer_create_default(
                &font->font_driver,
-               &font->font_data, font_path, font_size))
+               &font->font_data, font_path, font_size, fmt))
       {
-         font_renderer_set_preferred_atlas_format(prev_fmt);
          free(font);
          return NULL;
       }
-      font_renderer_set_preferred_atlas_format(prev_fmt);
    }
 
    font->atlas   = font->font_driver->get_atlas(font->font_data);

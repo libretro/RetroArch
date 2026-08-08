@@ -196,7 +196,9 @@ static void font_renderer_ct_free(void *data)
    free(handle);
 }
 
-static bool coretext_font_renderer_create_atlas(CTFontRef face, ct_font_renderer_t *handle, float font_size)
+static bool coretext_font_renderer_create_atlas(CTFontRef face,
+      ct_font_renderer_t *handle, float font_size,
+      enum font_atlas_format fmt)
 {
    unsigned i, x, y;
    coretext_atlas_slot_t* slot = NULL;
@@ -216,7 +218,7 @@ static bool coretext_font_renderer_create_atlas(CTFontRef face, ct_font_renderer
 
    /* Higher-precision coverage when the video driver asked for it
     * (HDR output); the atlas then stores uint16_t samples. */
-   handle->atlas.format        = font_renderer_get_preferred_atlas_format();
+   handle->atlas.format        = fmt;
    handle->atlas.buffer        = (uint8_t*)calloc(
          (size_t)handle->atlas.height,
          (size_t)handle->atlas.width *
@@ -517,7 +519,8 @@ static bool coretext_font_renderer_render_glyph(CTFontRef face, ct_font_renderer
    return true;
 }
 
-static void *font_renderer_ct_init(const char *font_path, float font_size)
+static void *font_renderer_ct_init(const char *font_path, float font_size,
+      enum font_atlas_format fmt)
 {
    char err                       = 0;
    CFStringRef cf_font_path       = NULL;
@@ -591,7 +594,7 @@ static void *font_renderer_ct_init(const char *font_path, float font_size)
       goto error;
    }
 
-   if (!coretext_font_renderer_create_atlas(face, handle, font_size))
+   if (!coretext_font_renderer_create_atlas(face, handle, font_size, fmt))
    {
       err = 1;
       goto error;

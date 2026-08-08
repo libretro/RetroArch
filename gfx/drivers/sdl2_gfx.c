@@ -94,7 +94,7 @@ static void sdl2_init_font(sdl2_video_t *vid, const char *font_path,
 
    if (!font_renderer_create_default(
             &vid->font_driver, &vid->font_data,
-            *font_path ? font_path : NULL, font_size))
+            *font_path ? font_path : NULL, font_size, FONT_ATLAS_FORMAT_A8))
    {
       RARCH_WARN("[SDL2] Could not initialize fonts.\n");
       return;
@@ -1553,7 +1553,7 @@ static void *sdl2_raster_font_init(void *data, const char *font_path,
 
    if (!font_renderer_create_default(
             &font->font_driver, &font->font_data,
-            font_path, font_size))
+            font_path, font_size, FONT_ATLAS_FORMAT_A8))
    {
       RARCH_WARN("[SDL2] sdl2_raster_font_init: font_renderer_create_default "
             "failed for path '%s' size %.1f\n",

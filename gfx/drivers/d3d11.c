@@ -1052,7 +1052,6 @@ static void * d3d11_font_init(void* data, const char* font_path,
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
    d3d11_font_t*  font  = (d3d11_font_t*)calloc(1, sizeof(*font));
    bool           want_a16 = false;
-   enum font_atlas_format prev_fmt;
 
    if (!font)
       return NULL;
@@ -1063,18 +1062,13 @@ static void * d3d11_font_init(void* data, const char* font_path,
    want_a16 = (d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE) ? true : false;
 #endif
 
-   prev_fmt = font_renderer_get_preferred_atlas_format();
-   if (want_a16)
-      font_renderer_set_preferred_atlas_format(FONT_ATLAS_FORMAT_A16);
-
    if (!font_renderer_create_default(
-             &font->font_driver, &font->font_data, font_path, font_size))
+             &font->font_driver, &font->font_data, font_path, font_size,
+             want_a16 ? FONT_ATLAS_FORMAT_A16 : FONT_ATLAS_FORMAT_A8))
    {
-      font_renderer_set_preferred_atlas_format(prev_fmt);
       free(font);
       return NULL;
    }
-   font_renderer_set_preferred_atlas_format(prev_fmt);
 
    font->atlas               = font->font_driver->get_atlas(font->font_data);
    font->texture.sampler     = d3d11->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_BORDER];

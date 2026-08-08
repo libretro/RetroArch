@@ -185,7 +185,7 @@ static void xv_init_font(xv_t *xv, const char *font_path, unsigned font_size)
             &xv->font_driver,
             &xv->font, *path_font
             ? path_font : NULL,
-            video_font_size))
+            video_font_size, FONT_ATLAS_FORMAT_A8))
    {
       int r = msg_color_r * 255;
       int g = msg_color_g * 255;

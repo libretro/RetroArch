@@ -3343,18 +3343,12 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
          /* When outputting HDR (scRGB or HDR10), ask the font
           * renderer for a higher-precision coverage atlas; same
           * policy as the d3d12 and vulkan drivers. */
-         enum font_atlas_format prev_fmt =
-               font_renderer_get_preferred_atlas_format();
-         if (_context.hdrEnabled)
-            font_renderer_set_preferred_atlas_format(FONT_ATLAS_FORMAT_A16);
          if (!font_renderer_create_default(
                   &_font_driver,
-                  &_font_data, font_path, font_size))
-         {
-            font_renderer_set_preferred_atlas_format(prev_fmt);
+                  &_font_data, font_path, font_size,
+                  _context.hdrEnabled
+                  ? FONT_ATLAS_FORMAT_A16 : FONT_ATLAS_FORMAT_A8))
             return nil;
-         }
-         font_renderer_set_preferred_atlas_format(prev_fmt);
       }
 
       _uniforms.projectionMatrix = matrix_proj_ortho(0, 1, 0, 1);

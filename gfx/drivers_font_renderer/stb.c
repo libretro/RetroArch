@@ -1492,8 +1492,9 @@ static const struct font_glyph *font_renderer_stb_get_glyph(
    return &atlas_slot->glyph;
 }
 
-static bool font_renderer_stb_create_atlas(
-      stb_font_renderer_t *self, float font_size)
+static bool font_renderer_stb_create_atlas_fmt(
+      stb_font_renderer_t *self, float font_size,
+      enum font_atlas_format fmt)
 {
    unsigned i, x, y;
    stb_atlas_slot_t* slot = NULL;
@@ -1517,7 +1518,7 @@ static bool font_renderer_stb_create_atlas(
    self->atlas.height             = (self->max_glyph_height + STB_ATLAS_PADDING) * STB_ATLAS_ROWS;
    /* Higher-precision coverage when the video driver asked for it
     * (HDR output); the atlas then stores uint16_t samples. */
-   self->atlas.format             = font_renderer_get_preferred_atlas_format();
+   self->atlas.format             = fmt;
 
    /* Pass the two dimensions separately so the C library's calloc overflow
     * check applies, rather than pre-multiplying into a single argument. */
@@ -1550,7 +1551,8 @@ static bool font_renderer_stb_create_atlas(
    return true;
 }
 
-static void *font_renderer_stb_init(const char *font_path, float font_size)
+static void *font_renderer_stb_init(const char *font_path, float font_size,
+      enum font_atlas_format fmt)
 {
    int ascent, descent, line_gap;
    stb_font_renderer_t *self =
@@ -1617,7 +1619,7 @@ static void *font_renderer_stb_init(const char *font_path, float font_size)
    self->line_metrics.descender = 0.5f + ((float)(-descent) * self->scale_factor);
    self->line_metrics.height    = 0.5f + (float)(ascent - descent + line_gap) * self->scale_factor;
 
-   if (!font_renderer_stb_create_atlas(self, font_size))
+   if (!font_renderer_stb_create_atlas_fmt(self, font_size, fmt))
       goto error;
 
    return self;

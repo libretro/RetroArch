@@ -51,7 +51,8 @@ typedef struct font_renderer
 
 typedef struct font_renderer_driver
 {
-   void *(*init)(const char *font_path, float font_size);
+   void *(*init)(const char *font_path, float font_size,
+         enum font_atlas_format fmt);
 
    struct font_atlas *(*get_atlas)(void *data);
 
@@ -100,19 +101,18 @@ static INLINE void font_unbind(font_data_impl_t *font_data)
    font_driver_bind_block(font_data->font, NULL);
 }
 
-/* font_path can be NULL for default font. */
-/* Video drivers that want higher-precision glyph coverage (HDR
- * output) set the preferred atlas format before creating their
- * fonts; renderers consult it when allocating the atlas. The hint is
- * process-global, so callers set it around font creation and restore
- * it afterwards. Renderers without 16-bit support ignore it. */
-void font_renderer_set_preferred_atlas_format(enum font_atlas_format fmt);
-enum font_atlas_format font_renderer_get_preferred_atlas_format(void);
+/* font_path can be NULL for default font.
+ *
+ * @fmt is the glyph coverage precision the caller wants in the atlas.
+ * Video drivers producing HDR output ask for FONT_ATLAS_FORMAT_A16;
+ * everything else passes FONT_ATLAS_FORMAT_A8. Renderers without
+ * 16-bit support ignore it. */
 
 int font_renderer_create_default(
       const font_renderer_driver_t **drv,
       void **handle,
-      const char *font_path, unsigned font_size);
+      const char *font_path, unsigned font_size,
+      enum font_atlas_format fmt);
 
 void font_driver_render_msg(void *data,
       const char *msg, size_t msg_len,
