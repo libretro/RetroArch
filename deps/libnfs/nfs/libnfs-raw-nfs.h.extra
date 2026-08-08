@@ -1,0 +1,56 @@
+#include <nfsc/libnfs.h>
+
+#if defined(WIN32) && defined(libnfs_EXPORTS)
+#define EXTERN __declspec( dllexport )
+#else
+#ifndef EXTERN
+#define EXTERN
+#endif
+#endif
+
+typedef struct {
+        u_int ace_count;
+        struct nfsacl_ace *ace;
+        u_int default_ace_count;
+        struct nfsacl_ace *default_ace;
+} fattr3_acl;
+
+/*
+ * NFSv3 ACL
+ */
+/*
+ * Async nfs3 get acl
+ * Function returns
+ *  0 : The command was queued successfully. The callback will be invoked once
+ *      the command completes.
+ * <0 : An error occured when trying to queue the command.
+ *      The callback will not be invoked.
+ *
+ * When the callback is invoked, status indicates the result:
+ *      0 : Success.
+ *          data is fattr3_acl *
+ * -errno : An error occured.
+ *          data is the error string.
+ */
+EXTERN int nfs3_getacl_async(struct nfs_context *nfs, struct nfsfh *nfsfh,
+                             nfs_cb cb, void *private_data);
+
+/*
+ * Sync nfs3 get acl
+ * Function returns
+ *      0 : The operation was successful.
+ * -errno : The command failed.
+ *
+ * If the command was successful, the returned data in nfs3acl must be freed
+ * by calling nfs3_acl_free()
+ */
+EXTERN int nfs3_getacl(struct nfs_context *nfs, struct nfsfh *nfsfh,
+                       fattr3_acl *nfs3acl);
+
+EXTERN void nfs3_acl_free(fattr3_acl *nfs3acl);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* !_NFS_H_RPCGEN */

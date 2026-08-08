@@ -127,6 +127,26 @@ CFLAGS += $(DEF_FLAGS)
 CXXFLAGS += $(DEF_FLAGS) -D__STDC_CONSTANT_MACROS
 OBJCFLAGS :=  $(CFLAGS) -D__STDC_CONSTANT_MACROS
 
+# libsmb2 and libnfs both ship include/slist.h with different macros
+# (SMB2_LIST_* vs LIBNFS_LIST_*).  Prepend libnfs include dirs for its
+# own objects so "#include \"slist.h\"" resolves correctly when both
+# clients are enabled.
+#
+# Vendored libnfs is not C89-clean (trailing commas, // comments).  Strip
+# C89_BUILD pedantic flags for libnfs TUs and the RetroArch NFS VFS shim
+# that includes <nfsc/libnfs.h>.
+ifneq (,$(filter 1,$(HAVE_NFSCLIENT) $(HAVE_BUILTINNFSCLIENT)))
+LIBNFS_CFLAGS_FILTER := -std=c89 -ansi -pedantic -Werror=pedantic -Werror=declaration-after-statement
+$(OBJDIR)/deps/libnfs/%.o: CFLAGS := \
+   -I$(DEPS_DIR)/libnfs/include -I$(DEPS_DIR)/libnfs/win32 -I$(DEPS_DIR)/libnfs \
+   $(filter-out $(LIBNFS_CFLAGS_FILTER),$(CFLAGS)) \
+   -std=gnu99 -Wno-pedantic
+# LIBRETRO_COMM_DIR is "./libretro-common", so the object path keeps "./".
+$(OBJDIR)/$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation_nfs.o: CFLAGS := \
+   $(filter-out $(LIBNFS_CFLAGS_FILTER),$(CFLAGS)) \
+   -std=gnu99 -Wno-pedantic
+endif
+
 ifeq ($(HAVE_CXX), 1)
    ifeq ($(CXX_BUILD), 1)
       LINK = $(CXX)

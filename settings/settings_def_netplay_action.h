@@ -10,3 +10,9 @@ S_ACTION(SMB_CLIENT_SETTINGS,
       "SMB Network Settings",
       "Configure SMB network share settings.")
 #endif
+#ifdef HAVE_NFSCLIENT
+S_ACTION(NFS_CLIENT_SETTINGS,
+      "nfs_client_settings",
+      "NFS Network Settings",
+      "Configure NFS network share settings.")
+#endif

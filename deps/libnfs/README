@@ -1,0 +1,283 @@
+--- Read this first
+This version 2 of the libnfs API. It is not compatible with the earlier API.
+All rpc_<protocol>_<function>_async() functions have been changed to
+rpc_<protocol>_<dunction>_task().
+The _task() functions return a struct rpc_pdu * which can later be used
+to cancel an inflight command.
+
+nfs_[]read and nfs_[p]write functions have new signatures.
+Pay attention to any compiler warnings when compiling against this new API.
+
+The symbol LIBNFS_API_V2 can be used to identify that the library uses the new
+API.
+
+This version of the library supports zero-copy read and write for NFS v3/4
+---
+
+
+LIBNFS is a client library for accessing NFS shares over a network.
+
+LIBNFS offers three different APIs, for different use :
+1, RAW : A fully async low level RPC library for NFS protocols
+This API is described in include/libnfs-raw.h
+it offers a fully async interface to raw XDR encoded blobs.
+This API provides very flexible and precise control of the RPC issued.
+
+examples/nfsclient-raw.c provides examples on how to use the raw API
+
+2, NFS ASYNC : A fully asynchronous library for high level vfs functions
+This API is described by the *_async() functions in include/libnfs.h.
+This API provides a fully async access to posix vfs like functions such as
+stat(), read(), ...
+
+examples/nfsclient-async.c provides examples on how to use this API
+
+
+3, NFS SYNC : A synchronous library for high level vfs functions
+This API is described by the *_sync() functions in include/libnfs.h.
+This API provides access to posix vfs like functions such as
+stat(), read(), ...
+
+examples/nfsclient-sync.c provides examples on how to use this API
+
+NFSv4:
+======
+NFSv3 is the default but NFSv4 can be selected either by using the URL argument
+version=4 or programatically calling nfs_set_version(nfs, NFS_V4) before
+connecting to the server/share.
+
+SERVER SUPPORT:
+===============
+Libnfs supports building RPC servers.
+Examples/portmapper-server.c is a small "portmapper" example written using
+libnfs.
+
+URL-FORMAT:
+===========
+Libnfs uses RFC2224 style URLs extended with some minor libnfs extensions.
+The basic syntax of these URLs is :
+
+nfs://[<username>@]<server|ipv4|ipv6>[:<port>]/path[?arg=val[&arg=val]*]
+
+Special characters in 'path' are escaped using %-hex-hex syntax.
+
+For example '?' must be escaped if it occurs in a path as '?' is also used to
+separate the path from the optional list of url arguments.
+
+Example:
+nfs://127.0.0.1/my?path/?version=4
+must be escaped as
+nfs://127.0.0.1/my%3Fpath/?version=4
+
+Arguments supported by libnfs are :
+ tcp-syncnt=<int>  : Number of SYNs to send during the session establish
+                     before failing setting up the tcp connection to the
+                     server.
+ uid=<int>         : UID value to use when talking to the server.
+                     default it 65534 on Windows and getuid() on unixen.
+ gid=<int>         : GID value to use when talking to the server.
+                     default it 65534 on Windows and getgid() on unixen.
+ debug=<int>       : Debug level used by libnfs. Default is 0 which is quiet.
+                     Higher values increase verbosity.
+ timeo=<int>       : The time in deciseconds (tenths of a second) libnfs client
+                     will wait for a response before it retries an RPC request.
+                     Default value of 'timeo' is 600, i.e., 60 seconds.
+                     Values less than 100, i.e., 10 seconds, are not allowed.
+ retrans=<int>     : After 'retrans' failed retries libnfs will generate a
+                     "server not responding" message and then attempt further
+                     recovery action. If no successful RPC response has been
+                     received over the connection for the last 'timeo' period,
+                     then the connection would be terminated and all queued RPCs
+                     will be retried over the new connection. If other RPC
+                     responses are being received then it means connection is
+                     fine and this is likely a problem with this specific RPC,
+                     in that case it'll simply keep retrying the RPC for ever at
+                     'timeo' interval. This mimics the 'hard' mount behaviour of
+                     NFS clients.
+                     If 'retrans' is 0, then RPC is not retried on timeout but
+                     instead failed with RPC_STATUS_TIMEOUT. This will roughly
+                     mimic the 'soft' mount behaviour of NFS clients.
+                     Default value of 'retrans' is 2.
+ sec=<krb5|krb5i|krb5p>
+                   : Specify the security mode.
+ xprtsec=<none|tls|mtls>
+                   : Specify the transport security mode.
+                     none : No TLS security. This is the default.
+                     tls  : TLS with server authentication only.
+                     mtls : Mutual TLS, both server and client authentication.
+
+                     See CERTIFICATES for details about specifying certificates/keys
+                     that libnfs must use when using "tls" or "mtls" security.
+ auto-traverse-mounts=<0|1>
+                   : Should libnfs try to traverse across nested mounts
+                     automatically or not. Default is 1 == enabled.
+ dircache=<0|1>    : Disable/enable directory caching. Enabled by default.
+ readonly	   : Set the mount to readonly.
+ autoreconnect=<-1|0|>=1>
+                   : Control the auto-reconnect behaviour to the NFS session.
+                    -1 : Try to reconnect forever on session failures.
+                         Just like normal NFS clients do.
+                     0 : Disable auto-reconnect completely and immediately
+                         return a failure to the application.
+                   >=1 : Retry to connect back to the server this many
+                         times before failing and returing an error back
+                         to the application.
+ if=<interface>    : Interface name (e.g., eth1) to bind; requires `root`
+ version=<3|4>     : NFS Version. Default is 3.
+ nfsport=<port>    : Use this port for NFS instead of using the portmapper.
+ mountport=<port>  : Use this port for the MOUNT protocol instead of
+                     using portmapper. This argument is ignored for NFSv4
+                     as it does not use the MOUNT protocol.
+ rsize=<int>       : This is the maximum number of bytes libnfs client will
+                     ask in a single READ request. The actual value is the
+                     minimum of this and the 'rtmax' value shared by the
+                     server in the FSINFO response. The largest rsize value
+                     supported is 4,194,304 bytes, i.e., 4MiB. The smallest
+                     rsize value supported is 8192 bytes, i.e., 8KiB. The
+                     provided value must be a multiple of 4096, else it's
+                     rounded down to the nearest 4096 bytes.
+                     Default value used when rsize option is not specified,
+                     is 1,048,576 bytes, i.e., 1MiB.
+ wsize=<int>       : This is the maximum number of bytes libnfs client will
+                     send in a single WRITE request. The actual value is the
+                     minimum of this and the 'wtmax' value shared by the
+                     server in the FSINFO response. The largest wsize value
+                     supported is 4,194,304 bytes, i.e., 4MiB. The smallest
+                     wsize value supported is 8192 bytes, i.e., 8KiB. The
+                     provided value must be a multiple of 4096, else it's
+                     rounded down to the nearest 4096 bytes.
+                     Default value used when wsize option is not specified,
+                     is 1,048,576 bytes, i.e., 1MiB.
+ readdir-buffer=<count> | readdir-buffer=<dircount>,<maxcount>
+                   : Set the buffer size for READDIRPLUS, where dircount is
+                     the maximum amount of bytes the server should use to
+                     retrieve the entry names and maxcount is the maximum
+                     size of the response buffer (including attributes).
+                     If only one <count> is given it will be used for both.
+                     The provided value(s) must be multiple of 4096, else
+                     they are rounded down to the nearest 4096 bytes.
+                     The actual value is the minimum of this and the 'dtpref'
+                     value shared by the server in the FSINFO response.
+                     Default is 8192 for both.
+
+Auto_traverse_mounts
+====================
+Normally in NFSv3 if a server has nested exports, for example if it would
+export both /data and /data/tmp then a client would need to mount
+both these exports as well.
+The reason is because the NFSv3 protocol does not allow a client request
+to return data for an object in a different filesystem/mount.
+(legacy, but it is what it is. One reason for this restriction is to
+guarantee that inodes are unique across the mounted system.)
+
+This option, when enabled, will make libnfs perform all these mounts
+internally for you. This means that one libnfs mount may now have files
+with duplicate inode values so if you cache files based on inode
+make sure you cache files based on BOTH st.st_ino and st.st_dev.
+
+
+ROOT vs NON-ROOT
+================
+When running as root, libnfs tries to allocate a system port for its connection
+to the NFS server. When running as non-root it will use a normal
+ephemeral port.
+Many NFS servers default to a mode where they do not allow non-system
+ports from connecting.
+These servers require you use the "insecure" export option in /etc/exports
+in order to allow libnfs clients to be able to connect.
+
+On Linux we can get around this restriction by setting the NET_BIND_SERVICE
+capability for the application binary.
+
+This is set up by running
+    sudo setcap 'cap_net_bind_service=+ep' /path/to/executable
+This capability allows the binary to use systems ports like this even when
+not running as root. Thus if you set this capability for your application
+you no longer need to edit the export on the NFS server to set "insecure".
+
+
+I do not know what equivalent "capability" support is available on other
+platforms. Please drop me an email if your os of choice has something similar
+and I can add it to the README.
+
+
+CERTIFICATES
+============
+libnfs reads CA certs from the following places, so make sure your server's CA
+cert is present in at least one of these:
+
+- default system trust store (/etc/ssl/certs/ca-certificates.crt on most systems).
+- all PEM format certs in the directory specified by env variable LIBNFS_TLS_TRUSTED_CA_DIR.
+- cert(s) present in the PEM file specified by env variable LIBNFS_TLS_TRUSTED_CA_PEM.
+
+If you want to use mutual TLS (xprtsec=mtls) then you will need a client certificate
+too. You need to provide the client's public certificate and the private key using
+the following environment variables.
+
+- LIBNFS_TLS_CLIENT_CERT_PEM - this is the public certificate.
+- LIBNFS_TLS_CLIENT_KEY_PEM  - this is the private key.
+
+
+DOCUMENTATION
+=============
+libnfs sources ship with prebuilt manpage(s) in the doc directory.
+If you change the manpage sources you need to manually regenerate the new
+manpages by running
+  cd doc
+  make doc
+
+
+PLATFORM support
+=================
+This is a truly multiplatform library.
+
+Linux:  - tested with Ubuntu 10.04 - should work with others as well
+Cygwin: - tested under 64bit win2k8.
+MacOSX: - tested with SDK 10.4 (under Snow Leopard) - should also work with later SDKs and 64Bit
+iOS:    - tested with iOS SDK 4.2 - running on iOS 4.3.x
+FreeBSD:- tested with 8.2
+Solaris
+Windows:- tested on Windows 7 64 and Windows XP 32 using Visual Studio 10
+        - tested on Windows 7 64 using MingW on Linux to cross-compile (Debian and Ubuntu tested)
+Android:- tested with NDK r10e - running on Android 4.4 (should work starting from 2.3.3)
+AROS: - Build with 'make -f aros/Makefile.AROS'
+Playstation 2: - Build and install with 'cd ps2_ee; make -f Makefile.PS2_EE install'
+PlayStation 3: - Build and install the library with 'make -f ps3_ppu/Makefile.PS3_PPU install'
+
+
+LD_PRELOAD
+==========
+examples/ld_nfs.c contains a LD_PRELOADable module that can be used to make
+several standard utilities nfs aware.
+It is still very incomplete but can be used for basic things such as cat and cp.
+Patches to add more coverage is welcome.
+
+Compile with :
+gcc -fPIC -shared -o ld_nfs.so examples/ld_nfs.c -ldl -lnfs
+
+Then try things like
+LD_NFS_DEBUG=9 LD_PRELOAD=./ld_nfs.so cat nfs://127.0.0.1//data/tmp/foo123
+
+LD_NFS_DEBUG=9 LD_PRELOAD=./ld_nfs.so cp nfs://127.0.0.1//data/tmp/foo123 nfs://127.0.0.1//data/tmp/foo123.copy
+
+LD_NFS_UID and LD_NFS_GID can be used to fake the uid and the gid in the nfs context.
+This can be useful on "insecure" enabled NFS share to make the server trust you as a root.
+You can try to run as a normal user things like :
+LD_NFS_DEBUG=9 LD_NFS_UID=0 LD_NFS_GID=0 LD_PRELOAD=./ld_nfs.so chown root:root nfs://127.0.0.1//data/tmp/foo123
+
+This is just a toy preload module. Don't open bugs if it does not work. Send
+patches to make it better instead.
+
+
+RELEASE TARBALLS
+================
+Release tarballs are available at
+https://sites.google.com/site/libnfstarballs/li
+
+
+
+MAILING LIST
+============
+A libnfs mailing list is available at http://groups.google.com/group/libnfs
+Announcements of new versions of libnfs will be posted to this list.
+

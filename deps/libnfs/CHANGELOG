@@ -1,0 +1,161 @@
+Changes since 5.0.2
+drop *BSD support from github workflows
+workflow: indicate that the linux workflow also runs the tests
+Add workflow to build PS2
+Add workflow running make test
+ps2 bonus: Remove old implementations
+ps2: Fix linkage with a missing file
+Fix ps2 warnings and remove read macros
+update INSTALL build with cmake and debugging enable
+Update waitpdu_len when a pdu times out.
+ci: Build examples and run tests on Linux
+Fix building examples/nfsclient-raw.c
+Allow setting a limit on the number of commands in-flight.
+Always close the socket.
+Handle small reads for record marker field.
+Reset state on reconnect.
+Check return value from adjust_inbuf.
+README: Document that new development has shifted to libnfs-next-gen branch
+fix compiler warning
+Patch to support NLM Share
+rpc: re-add fragment handling when reading from socket.
+change read_from_socket to use a state machine
+Write multiple pdus at once.
+Added NFS4.1 EXCHANGE_ID and BIND_CONN_TO_SESSION
+Added poll_timeout parameter
+Completed NFS 4.1 defintion of open_claim4
+NFS3: we do not need to provide an alloc-hint to write3
+Fix deprecation warnings on modern macOS
+Restore Cygwin CI (official GH action from Cygwin maintainers).
+Change Windows writev & readv polyfills to static inline.
+Fix integer size for readdir's dircount/maxcount
+Add OpenBSD back to the workflow
+Add windows workflow and add missing readv/writev replacements to win32
+Remove BSD from the github workflows.
+Remove CYGWIN github workflow. The cygwin action is abandonware
+Modify LD_PRELOAD toy doc
+Add options to set dircount/maxcount for readdir()
+compile fix for mac
+write3: make sure we do not add too many iovectors
+Change WRITE3 to become zero-copy usinf iovectors for the data.
+Switch writing PDUs to the socket use iovectors.
+Add CodeQL workflow for GitHub code scanning
+github: switch openbsd to 7.0 and try again
+github: switch OpenBSD workflow to use 7.2 instead of 6.9
+multithreading.c: do not wake up immediately if there are no events to process
+Reduced memory allocations.
+Expose further configuration options
+tests: disable test_8000 for now
+rpm: fix building RPMs
+rpc: fix use after free on init_context failure
+tests: fix failure in 0201
+rpc: only scan for tiemout out RPCs every second instead of every I/O
+rpc: make it possible to tweak the number of lists we hash to for waitpdu
+libnfs-sync: fail all pdus before returning error from wait_for_nfs_reply
+cmake: update utils to be installed
+socket: remove debugging printf
+Deduplicate paths in CMakeLists.txt.
+Add -no-undefined linker flag for shared library
+Link shared library with ws2_32
+
+	
+Changes since 5.0.1
+Various small multithreading fixes
+Add opaque pointer to service_proc to make it easier to build server apps.
+BSD compile fix
+OpenBSD support
+fix double free in nfs3_pread_mcb()
+
+Changes since 5.0.0
+Fix non-pthread build
+	
+Changes since 4.0.0
+	
+Multithread support for Linux and Windows
+Fix NFS4 behavior of chmod/chown/utimes
+Add marshalling / unmarshalling of various NFSv4.1 structures (but not 4.1 support)
+PS3 support
+PS2 EE support
+Support escaped characters in the URL
+Fix MINGW build
+
+Changes since 3.0.0
+
+Fix the versioning in makerpms.sh
+Fix some compile issues in the test programs.
+NFSv3: skip commit on close if the file has not been written to.
+Add nfs_umount() to NFSv3
+Add nfs_statvfs64()
+Fix invalid shift of pid_t when generating rpc->xid
+Compile fixes for Mac OSX
+Fix for dup2() on Windows
+NFSv4 fix for directory handling
+Improvements to configure/bulding
+
+Changes since 2.0.0
+
+NFSv4 support.
+lockf() support (NFSv4 only).
+fcntl() support for locking (NFSv4 only).
+Add CMake support.
+URL arguments to select NFS version.
+URL argument to set nfsport. This allows NFSv4 to work for
+ servers without portmapper support.
+URL argument to set he mount port.
+NFSv4: use getpwnam to map NFSv4 (Ganesha) when passing uid/gid
+ as a user/group name insead of as a uid/gid.
+Added nfs-fh: a simle utility to print the filehandle for a nfs file.
+Win32 build fixes.
+Add a new open2() function that takes a mode argument.
+Add a testsuite for libnfs.
+	
+
+
+Changes since 1.11.0
+
+BUGS
+====
+Fix NULL pointer crash in nfs_link().
+
+Clamp read/write size for servers (Ganesha) that offer very large io sizes
+instead of failing to connect to the export.
+
+Tell the server to commit all data to stable storage when we close files.
+
+Double free fix: don't call rpc_free_pdu() after rpc_queue_pdu() failure.
+
+Fix for memory leak in rpc_allocate_*().
+
+Fixes to build nfs-ls and nfs-cp on win32.
+
+Abort the mount process correctly if MOUNT/MNT returns error or is cancelled.
+
+Fix memory leak in error path in nfs_create_2_cb().
+
+Fix leak of rpc->inbuf if we destroy the context while we still have PDUs
+in flight.
+
+
+FEATURES
+========
+Add O_NOFOLLOW support for nfs_open()
+
+Add a new mkdir2 command that also takes a mode argument.
+
+Add a new readlink2 command that avoids having to preallocate the buffer.
+
+Add support for RPC timeouts for both the sync and async interfaces.
+
+Build fixes for Mingw and Cygwin
+
+Update README to document two new Windows builds
+
+Use SOCK_CLOEXEC for the sockets
+
+Make rpc_set{g|u}id() public
+
+Performance optimization: socket: Batch pdu read in rpc_read_from_socket
+
+Low level support for NFSv4 and some examples
+
+Support for building RPC servers

@@ -12428,6 +12428,9 @@ static void materialui_list_insert(void *userdata,
 #ifdef HAVE_SMBCLIENT
                   || string_is_equal(label, MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS_STR)
 #endif
+#ifdef HAVE_NFSCLIENT
+                  || string_is_equal(label, MENU_ENUM_LABEL_NFS_CLIENT_SETTINGS_STR)
+#endif
                   || string_is_equal(label, MENU_ENUM_LABEL_ACCESSIBILITY_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_ACHIEVEMENT_LIST_STR)

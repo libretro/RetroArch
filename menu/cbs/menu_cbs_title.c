@@ -890,6 +890,10 @@ DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_core_game_ai_options_list,       ME
 DEFAULT_TITLE_MACRO(action_get_smb_client_settings_list,                      MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS)
 #endif
 
+#ifdef HAVE_NFSCLIENT
+DEFAULT_TITLE_MACRO(action_get_nfs_client_settings_list,                      MENU_ENUM_LABEL_VALUE_NFS_CLIENT_SETTINGS)
+#endif
+
 static int action_get_title_deferred_database_manager_list(
       const char *path, const char *label,
       unsigned menu_type, char *s, size_t len)
@@ -1069,6 +1073,9 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_SMBCLIENT
       {MENU_ENUM_LABEL_DEFERRED_SMB_CLIENT_SETTINGS_LIST,             action_get_smb_client_settings_list},
 #endif
+#ifdef HAVE_NFSCLIENT
+      {MENU_ENUM_LABEL_DEFERRED_NFS_CLIENT_SETTINGS_LIST,             action_get_nfs_client_settings_list},
+#endif
 #ifdef HAVE_LAKKA
       {MENU_ENUM_LABEL_DEFERRED_LAKKA_SERVICES_LIST,                  action_get_lakka_services_list},
 #endif
@@ -1106,6 +1113,10 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_SMBCLIENT
       {MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS,
          action_get_smb_client_settings_list},
+#endif
+#ifdef HAVE_NFSCLIENT
+      {MENU_ENUM_LABEL_NFS_CLIENT_SETTINGS,
+         action_get_nfs_client_settings_list},
 #endif
    };
 

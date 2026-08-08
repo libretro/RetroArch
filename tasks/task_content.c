@@ -63,6 +63,9 @@
 #include <lists/string_list.h>
 #include <lists/dir_list.h>
 #include <vfs/vfs_implementation.h>
+#ifdef HAVE_NFSCLIENT
+#include "../libretro-common/vfs/vfs_implementation_nfs.h"
+#endif
 #include <array/rbuf.h>
 #include "../msg_hash_lbl_str.h"
 
@@ -1235,6 +1238,252 @@ static bool content_file_extract_from_archive(
 }
 #endif
 
+/* Whether content_path must be staged to a local cache file before
+ * memory load / archive extract / core open.
+ *
+ * Local paths never stage here (extract handles archives separately).
+ * Network VFS URLs stage when:
+ *  - nfs:// or smb:// with archive#entry (those VFS backends cannot
+ *    open #entry — stage the archive, then reattach #entry), or
+ *  - need_fullpath && core does not support VFS (any :// scheme).
+ *
+ * Cores with supports_vfs + need_fullpath may open nfs/smb URLs
+ * directly (stream CHD etc.). In-memory loads use frontend
+ * filestream/VFS without a disk stage. */
+static bool content_path_needs_stage(
+      const char *content_path,
+      bool need_fullpath,
+      bool supports_vfs)
+{
+   bool is_nfs_or_smb;
+
+   if (!content_path || !*content_path)
+      return false;
+   if (!strstr(content_path, "://"))
+      return false;
+
+   is_nfs_or_smb =
+         string_starts_with_case_insensitive(content_path, "nfs://")
+      || string_starts_with_case_insensitive(content_path, "smb://");
+
+   if (is_nfs_or_smb && path_get_archive_delim(content_path))
+      return true;
+
+   return need_fullpath && !supports_vfs;
+}
+
+/* Shared stage path for VFS URLs (nfs://, smb://, and other :// schemes).
+ * Copies to a local cache file when content_path_needs_stage() says so.
+ * Keeps the file in cache (not temporary_files) so a failed load still
+ * leaves evidence, and Settings → Cache is the place to look. */
+static bool content_file_copy_vfs_url_to_cache(
+      content_information_ctx_t *content_ctx,
+      content_state_t *p_content,
+      const char **content_path,
+      char **err_string)
+{
+   RFILE *fp_src = NULL;
+   RFILE *fp_dst = NULL;
+   char new_path[PATH_MAX_LENGTH];
+   char new_basedir[DIR_MAX_LENGTH];
+   char archive_path[PATH_MAX_LENGTH];
+   char staged_with_entry[PATH_MAX_LENGTH];
+   char buf[64 * 1024];
+   const char *basename_ptr;
+   const char *open_path;
+   const char *archive_delim;
+   const char *result_path;
+   int64_t n;
+   int64_t total = 0;
+   static char *staged_path = NULL;
+
+   (void)p_content;
+
+   if (!content_path || !*content_path || !**content_path)
+      return false;
+
+   if (!strstr(*content_path, "://"))
+      return true;
+
+   /* nfs/smb cannot open archive#entry paths — stage the archive only,
+    * then reattach #entry so local extract/load can run. */
+   open_path      = *content_path;
+   archive_delim  = path_get_archive_delim(*content_path);
+   archive_path[0] = '\0';
+   if (archive_delim)
+   {
+      size_t archive_len = (size_t)(archive_delim - *content_path);
+      if (archive_len == 0 || archive_len >= sizeof(archive_path))
+      {
+         char msg[PATH_MAX_LENGTH];
+         snprintf(msg, sizeof(msg),
+               "%s: bad archive path \"%.200s\"\n",
+               msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
+               *content_path);
+         *err_string = strdup(msg);
+         return false;
+      }
+      memcpy(archive_path, *content_path, archive_len);
+      archive_path[archive_len] = '\0';
+      open_path = archive_path;
+   }
+
+   new_basedir[0] = '\0';
+   if (content_ctx->directory_cache && *content_ctx->directory_cache)
+      strlcpy(new_basedir, content_ctx->directory_cache, sizeof(new_basedir));
+#if defined(WEBOS)
+   if (!*new_basedir)
+   {
+      const char *home = getenv("HOME");
+      if (home && *home)
+         fill_pathname_join_special(new_basedir, home, "cache",
+               sizeof(new_basedir));
+   }
+#endif
+#if !defined(_WIN32) && !defined(__WINRT__)
+   if (!*new_basedir)
+      strlcpy(new_basedir, "/tmp", sizeof(new_basedir));
+#endif
+
+   if (!*new_basedir)
+   {
+      char msg[PATH_MAX_LENGTH];
+      snprintf(msg, sizeof(msg),
+            "%s: \"%.160s\". (cache directory not set — set Directories → Cache)\n",
+            msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
+            *content_path);
+      *err_string = strdup(msg);
+      return false;
+   }
+
+   if (!path_is_directory(new_basedir) && !path_mkdir(new_basedir))
+   {
+      char msg[PATH_MAX_LENGTH];
+      snprintf(msg, sizeof(msg),
+            "%s: cannot create cache dir \"%.200s\".\n",
+            msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
+            new_basedir);
+      *err_string = strdup(msg);
+      return false;
+   }
+
+   /* Keep network staged files under a dedicated subdir. */
+   {
+      char staged_dir[DIR_MAX_LENGTH];
+      fill_pathname_join_special(staged_dir, new_basedir, "vfs_stage",
+            sizeof(staged_dir));
+      strlcpy(new_basedir, staged_dir, sizeof(new_basedir));
+   }
+
+   if (!path_is_directory(new_basedir) && !path_mkdir(new_basedir))
+   {
+      char msg[PATH_MAX_LENGTH];
+      snprintf(msg, sizeof(msg),
+            "%s: cannot create \"%.200s\".\n",
+            msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
+            new_basedir);
+      *err_string = strdup(msg);
+      return false;
+   }
+
+   basename_ptr = path_basename(open_path);
+   if (!basename_ptr || !*basename_ptr)
+      basename_ptr = "content.bin";
+
+   fill_pathname_join_special(new_path, new_basedir,
+         basename_ptr, sizeof(new_path));
+
+   RARCH_LOG("[Content] Staging VFS URL to cache: \"%s\" -> \"%s\"\n",
+         open_path, new_path);
+
+   fp_src = filestream_open(open_path,
+         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   if (!fp_src)
+   {
+      char msg[PATH_MAX_LENGTH];
+#if defined(HAVE_NFSCLIENT)
+      const char *nfs_err = NULL;
+      if (string_starts_with_case_insensitive(open_path, "nfs://"))
+         nfs_err = nfs_get_last_error();
+      if (nfs_err && *nfs_err)
+         snprintf(msg, sizeof(msg),
+               "%s: open \"%.160s\" failed (%.80s)\n",
+               msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
+               open_path, nfs_err);
+      else
+#endif
+      snprintf(msg, sizeof(msg),
+            "%s: open \"%.200s\" failed\n",
+            msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
+            open_path);
+      *err_string = strdup(msg);
+      return false;
+   }
+
+   fp_dst = filestream_open(new_path,
+         RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   if (!fp_dst)
+   {
+      char msg[PATH_MAX_LENGTH];
+      filestream_close(fp_src);
+      snprintf(msg, sizeof(msg),
+            "%s: cannot write \"%.200s\"\n",
+            msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
+            new_path);
+      *err_string = strdup(msg);
+      return false;
+   }
+
+   while ((n = filestream_read(fp_src, buf, sizeof(buf))) > 0)
+   {
+      if (filestream_write(fp_dst, buf, n) != n)
+      {
+         char msg[PATH_MAX_LENGTH];
+         filestream_close(fp_src);
+         filestream_close(fp_dst);
+         snprintf(msg, sizeof(msg),
+               "%s: write failed at %lld bytes -> \"%.180s\"\n",
+               msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
+               (long long)total, new_path);
+         *err_string = strdup(msg);
+         return false;
+      }
+      total += n;
+   }
+
+   filestream_close(fp_src);
+   filestream_close(fp_dst);
+
+   if (total <= 0)
+   {
+      char msg[PATH_MAX_LENGTH];
+      snprintf(msg, sizeof(msg),
+            "%s: read 0 bytes from \"%.200s\"\n",
+            msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
+            open_path);
+      *err_string = strdup(msg);
+      return false;
+   }
+
+   result_path = new_path;
+   if (archive_delim)
+   {
+      strlcpy(staged_with_entry, new_path, sizeof(staged_with_entry));
+      strlcat(staged_with_entry, archive_delim, sizeof(staged_with_entry));
+      result_path = staged_with_entry;
+   }
+
+   free(staged_path);
+   staged_path = strdup(result_path);
+   if (!staged_path)
+      return false;
+
+   *content_path = staged_path;
+   RARCH_LOG("[Content] Staged %lld bytes at \"%s\".\n",
+         (long long)total, result_path);
+   return true;
+}
+
 static void content_file_get_path(
       struct string_list *content,
       size_t idx,
@@ -1384,9 +1633,7 @@ static bool content_file_load(
    size_t i;
    retro_ctx_load_content_info_t load_info;
    bool used_vfs_fallback_copy                = false;
-#ifdef __WINRT__
    rarch_system_info_t *sys_info              = &runloop_state_get_ptr()->system;
-#endif
    enum rarch_content_type first_content_type = RARCH_CONTENT_NONE;
 
    for (i = 0; i < content->size; i++)
@@ -1424,6 +1671,30 @@ static bool content_file_load(
           * handling overrides */
          if (p_content->content_override_list)
             content_file_apply_overrides(p_content, content, i, content_path);
+
+         /* One stage path for local+nfs+smb (and other :// schemes):
+          * decide via content_path_needs_stage(), then either continue
+          * with the (possibly remote) path or a local cache copy.
+          * After staging, local extract/memory load runs unchanged. */
+         {
+            bool need_fullpath = ((content->elems[i].attr.i
+                     & BLCK_NEED_FULLPATH) != 0);
+            bool supports_vfs  = (sys_info && sys_info->supports_vfs);
+
+            if (content_path_needs_stage(content_path,
+                     need_fullpath, supports_vfs))
+            {
+               if (!content_file_copy_vfs_url_to_cache(content_ctx, p_content,
+                        &content_path, err_string))
+                  return false;
+               /* Match prior fallback-copy error reporting: only when
+                * staging was required because the core lacks VFS. */
+               if (need_fullpath && !supports_vfs)
+                  used_vfs_fallback_copy = true;
+               content_compressed = path_is_compressed_file(content_path)
+                     || path_contains_compressed_file(content_path);
+            }
+         }
 
          /* If core does not require 'fullpath', load
           * the content into memory */
@@ -2726,6 +2997,12 @@ static bool task_content_defer_menu_load(content_state_t *p_content,
     * before this feature existed.  A path already carrying its entry
     * ("foo.zip#rom") is stable and may defer. */
    if (!strncmp(fullpath, "content://", STRLEN_CONST("content://")))
+      return false;
+   /* Network VFS URLs need synchronous staging in content_file_load;
+    * prefetch reads them raw and skips on size/open failure, which
+    * leaves a confusing "core failed" style load. */
+   if (string_starts_with_case_insensitive(fullpath, "nfs://")
+         || string_starts_with_case_insensitive(fullpath, "smb://"))
       return false;
    if (       path_is_compressed_file(fullpath)
        && !path_contains_compressed_file(fullpath))

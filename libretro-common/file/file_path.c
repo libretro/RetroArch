@@ -730,7 +730,7 @@ bool path_is_absolute(const char *path)
    {
       if (path[0] == '/')
          return true;
-      /* VFS URL schemes (smb://, cdrom://, saf://, ...) are absolute. */
+      /* VFS URL schemes (smb://, nfs://, cdrom://, saf://, ...) are absolute. */
       {
          const char *scheme = strstr(path, "://");
          if (scheme && scheme > path)
@@ -774,7 +774,14 @@ char *path_resolve_realpath(char *s, size_t len, bool resolve_symlinks)
 #if !defined(RARCH_CONSOLE) && defined(RARCH_INTERNAL)
 #ifdef _WIN32
    char *ret         = NULL;
-   wchar_t *rel_path = utf8_to_utf16_string_alloc(s);
+   wchar_t *rel_path;
+
+   /* Leave VFS URL schemes alone — collapsing nfs:// to nfs:/ (etc.)
+    * breaks network path dispatch. */
+   if (s && strstr(s, "://"))
+      return s;
+
+   rel_path = utf8_to_utf16_string_alloc(s);
    if (rel_path)
    {
       wchar_t abs_path[PATH_MAX_LENGTH];
@@ -797,6 +804,12 @@ char *path_resolve_realpath(char *s, size_t len, bool resolve_symlinks)
    char *p;
    const char *next;
    const char *buf_end;
+
+   /* Leave VFS URL schemes alone — collapsing nfs:// to nfs:/ (etc.)
+    * breaks network path dispatch. */
+   if (s && strstr(s, "://"))
+      return s;
+
    if (resolve_symlinks)
    {
       char *real_path;

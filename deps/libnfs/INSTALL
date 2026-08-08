@@ -1,0 +1,19 @@
+To install
+
+- mkdir build && cd build
+- cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr ..
+- make && sudo make install
+
+To build with support debugging that enable example and test cases.
+
+- mkdir build && cd build
+- cmake -DENABLE_UTILS=yes \
+      -DENABLE_EXAMPLES=yes \ 
+      -DENABLE_TESTS=yes \
+      -DCMAKE_BUILD_TYPE=Debug \
+      -DCMAKE_VERBOSE_MAKEFILE=yes ..
+
+To build with multithreading support add -DENABLE_MULTITHREADING=yes
+
+- make 
+- make test
