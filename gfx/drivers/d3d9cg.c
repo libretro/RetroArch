@@ -3356,7 +3356,6 @@ static void d3d9_cg_deinitialize(d3d9_video_t *d3d)
    if (!d3d)
       return;
 
-   font_driver_free_osd();
 
    d3d9_cg_deinit_chain(d3d);
    d3d9_vertex_buffer_free(d3d->menu_display.buffer,
@@ -3781,10 +3780,6 @@ static bool d3d9_cg_initialize(d3d9_video_t *d3d, const video_info_t *info)
    d3d9_cg_set_viewport(d3d,
       d3d->vp.full_width, d3d->vp.full_height, false, true);
 
-   font_driver_init_osd(d3d, info,
-         false,
-         info->is_threaded,
-         &d3d9_cg_font);
 
    {
       static const D3DVERTEXELEMENT9 VertexElements[4] = {
@@ -5046,6 +5041,9 @@ video_driver_t video_d3d9_cg = {
    NULL, /* shader_load_begin */
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   d3d9_cg_gfx_widgets_enabled
+   d3d9_cg_gfx_widgets_enabled,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &d3d9_cg_font
 };

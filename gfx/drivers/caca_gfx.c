@@ -247,9 +247,6 @@ static void *caca_init(const video_info_t *video,
       return NULL;
    }
 
-      font_driver_init_osd(caca, video,
-            false, video->is_threaded,
-            &caca_font);
 
    return caca;
 }
@@ -462,6 +459,9 @@ video_driver_t video_caca = {
    NULL, /* shader_load_begin */
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   NULL  /* gfx_widgets_enabled */
+   NULL  /* gfx_widgets_enabled */,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &caca_font
 };

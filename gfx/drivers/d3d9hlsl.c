@@ -6605,7 +6605,6 @@ static uint32_t d3d9_hlsl_get_flags(void *data)
 
 static void d3d9_hlsl_deinitialize(d3d9_video_t *d3d)
 {
-   font_driver_free_osd();
 
    hlsl_d3d9_renderchain_free(d3d->renderchain_data);
 
@@ -7046,10 +7045,6 @@ static bool d3d9_hlsl_initialize(
    d3d9_hlsl_set_viewport(d3d,
       d3d->vp.full_width, d3d->vp.full_height, false, true);
 
-   font_driver_init_osd(d3d, info,
-         false,
-         info->is_threaded,
-         &d3d9_font);
 
    {
       static const D3DVERTEXELEMENT9 VertexElements[4] = {
@@ -8414,6 +8409,9 @@ video_driver_t video_d3d9_hlsl = {
    NULL, /* shader_load_begin */
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   d3d9_hlsl_gfx_widgets_enabled
+   d3d9_hlsl_gfx_widgets_enabled,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &d3d9_font
 };

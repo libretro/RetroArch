@@ -4217,11 +4217,6 @@ static void metal_pull_cached_frame_cb(void *userdata,
       /* Overlay view */
       _overlay = [[Overlay alloc] initWithContext:_context];
 
-      font_driver_init_osd((__bridge void *)self,
-            video,
-            false,
-            video->is_threaded,
-            &metal_raster_font);
 
       /* Tell Context to allocate HDR offscreen + readback textures and
        * compile its composite/tonemap pipelines.  By this point the CAMetalLayer's
@@ -4294,7 +4289,6 @@ static void metal_pull_cached_frame_cb(void *userdata,
       free(_viewport);
       _viewport = nil;
    }
-   font_driver_free_osd();
 
    /* Tear down the GPU list we published to the frontend.  We clear
     * the slot first so any later code paths (e.g. the menu cbs) that
@@ -6718,5 +6712,6 @@ video_driver_t video_metal = {
    metal_widgets_enabled,
 #endif
    NULL, /* invalidate_hw_render_cache */
-   metal_read_viewport_hdr
+   metal_read_viewport_hdr,
+   &metal_raster_font
 };

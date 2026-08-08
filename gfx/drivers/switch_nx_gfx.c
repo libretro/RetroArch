@@ -555,11 +555,6 @@ static void *switch_init(const video_info_t *video,
         *input_data          = switchinput;
     }
 
-    font_driver_init_osd(sw,
-          video,
-          false,
-          video->is_threaded,
-          &switch_font);
 
     clear_screen(sw);
 
@@ -1005,8 +1000,11 @@ video_driver_t video_switch = {
    NULL, /* shader_load_begin */
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   NULL  /* gfx_widgets_enabled */
+   NULL  /* gfx_widgets_enabled */,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &switch_font
 };
 
 /* vim: set ts=3 sw=3 */

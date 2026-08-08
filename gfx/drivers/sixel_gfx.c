@@ -309,11 +309,6 @@ static void *sixel_gfx_init(const video_info_t *video,
       *input_data = NULL;
    }
 
-      font_driver_init_osd(sixel,
-            video,
-            false,
-            video->is_threaded,
-            &sixel_font);
 
    return sixel;
 }
@@ -534,7 +529,6 @@ static void sixel_gfx_free(void *data)
       sixel_temp_buf = NULL;
    }
 
-   font_driver_free_osd();
 
    if (sixel)
       free(sixel);
@@ -668,6 +662,9 @@ video_driver_t video_sixel = {
    NULL, /* shader_load_begin */
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   NULL  /* gfx_widgets_enabled */
+   NULL  /* gfx_widgets_enabled */,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &sixel_font
 };

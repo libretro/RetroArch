@@ -4606,7 +4606,6 @@ static void gl2_free(void *data)
             (gl2_renderchain_data_t*)
             gl->renderchain_data);
 
-   font_driver_free_osd();
 
    gl->shader->deinit(gl->shader_data);
 
@@ -5469,10 +5468,6 @@ static void *gl2_init(const video_info_t *video,
             input, input_data);
    }
 
-      font_driver_init_osd(gl, video,
-            false,
-            video->is_threaded,
-            &gl2_raster_font);
 
    /* Only bother with PBO readback if we're doing GPU recording.
     * Check recording_st->enable and not
@@ -6463,5 +6458,6 @@ video_driver_t video_gl2 = {
    gl2_gfx_widgets_enabled,
 #endif
    NULL, /* invalidate_hw_render_cache */
-   gl2_read_viewport_hdr
+   gl2_read_viewport_hdr,
+   &gl2_raster_font
 };

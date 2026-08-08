@@ -2260,7 +2260,6 @@ static void d3d10_gfx_free(void* data)
    Release(d3d10->adapter); 
 #endif
 
-   font_driver_free_osd();
 
 #if 0
    video_st_flags = video_st->flags;
@@ -2699,11 +2698,6 @@ static void *d3d10_gfx_init(const video_info_t* video,
 
    d3d10->device->lpVtbl->RSSetState(d3d10->device, d3d10->state);
 
-      font_driver_init_osd(d3d10,
-            video,
-            false,
-            video->is_threaded,
-            &d3d10_font);
 
 
 #if 0
@@ -4011,6 +4005,9 @@ video_driver_t video_d3d10 = {
    d3d10_shader_load_begin,
    d3d10_shader_load_step,
 #if defined(HAVE_GFX_WIDGETS)
-   d3d10_gfx_widgets_enabled
+   d3d10_gfx_widgets_enabled,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &d3d10_font
 };

@@ -2569,11 +2569,6 @@ static void *gdi_init(const video_info_t *video,
 
    gfx_ctx_gdi_input_driver(input, input_data);
 
-      font_driver_init_osd(gdi,
-            video,
-            false,
-            video->is_threaded,
-            &gdi_font);
 
    RARCH_LOG("[GDI] Init complete.\n");
 
@@ -3282,7 +3277,6 @@ static void gdi_free(void *data)
       gdi->winDC = 0;
    }
 
-   font_driver_free_osd();
    gfx_ctx_gdi_destroy();
    free(gdi);
 }
@@ -3909,6 +3903,9 @@ video_driver_t video_gdi = {
    NULL, /* shader_load_begin */
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   gdi_gfx_widgets_enabled
+   gdi_gfx_widgets_enabled,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &gdi_font
 };

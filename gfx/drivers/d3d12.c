@@ -3760,7 +3760,6 @@ static void d3d12_gfx_free(void* data)
    if (d3d12->flags & D3D12_ST_FLAG_WAITABLE_SWAPCHAINS)
       CloseHandle(d3d12->chain.frameLatencyWaitableObject);
 
-   font_driver_free_osd();
 
 #ifdef HAVE_OVERLAY
    d3d12_free_overlays(d3d12);
@@ -4719,11 +4718,6 @@ static void *d3d12_gfx_init(const video_info_t* video,
    d3d12_release_texture(&d3d12->frame.texture[0]);
    d3d12_init_texture(d3d12->device, &d3d12->frame.texture[0]);
 
-   font_driver_init_osd(d3d12,
-         video,
-         false,
-         video->is_threaded,
-         &d3d12_font);
 
    if (video_driver_get_hw_context()->context_type  == RETRO_HW_CONTEXT_D3D12)
    {
@@ -8069,8 +8063,9 @@ video_driver_t video_d3d12 = {
 #endif
    NULL, /* invalidate_hw_render_cache */
 #ifdef HAVE_DXGI_HDR
-   d3d12_gfx_read_viewport_hdr
+   d3d12_gfx_read_viewport_hdr,
 #else
-   NULL /* read_viewport_hdr */
+   NULL, /* read_viewport_hdr */
 #endif
+   &d3d12_font
 };

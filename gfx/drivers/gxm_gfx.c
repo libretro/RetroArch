@@ -2084,11 +2084,6 @@ static void *gxm_gfx_init(const video_info_t *video,
 #ifdef HAVE_OVERLAY
    vita->overlay_enable     = false;
 #endif
-   font_driver_init_osd(vita,
-         video,
-         false,
-         video->is_threaded,
-         &gxm_font);
 
    return vita;
 }
@@ -2441,7 +2436,6 @@ static void gxm_free(void *data)
       vita->texture = NULL;
    }
 
-   font_driver_free_osd();
 }
 
 static void gxm_set_projection(vita_video_t *vita,
@@ -3034,6 +3028,9 @@ video_driver_t video_gxm = {
    NULL, /* shader_load_begin */
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   gxm_widgets_enabled
+   gxm_widgets_enabled,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &gxm_font
 };

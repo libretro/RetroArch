@@ -1915,7 +1915,6 @@ static void d3d8_deinitialize(d3d8_video_t *d3d)
    if (!d3d)
       return;
    chain                     = (d3d8_renderchain_t*)d3d->renderchain_data;
-   font_driver_free_osd();
 
    if (chain)
    {
@@ -2315,10 +2314,6 @@ static bool d3d8_initialize(d3d8_video_t *d3d, const video_info_t *info)
    d3d8_set_viewport(d3d,
 	   d3d->vp.full_width, d3d->vp.full_height, false, true);
 
-   font_driver_init_osd(d3d, info,
-         false,
-         info->is_threaded,
-         &d3d8_font);
 
    d3d->menu_display.offset = 0;
    d3d->menu_display.size   = 1024;
@@ -3399,6 +3394,9 @@ video_driver_t video_d3d8 = {
    NULL, /* shader_load_begin */
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   d3d8_gfx_widgets_enabled
+   d3d8_gfx_widgets_enabled,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &d3d8_font
 };

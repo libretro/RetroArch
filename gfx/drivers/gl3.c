@@ -3190,11 +3190,6 @@ static void *gl3_init(const video_info_t *video,
       goto error;
    }
 
-      font_driver_init_osd(gl,
-            video,
-            false,
-            video->is_threaded,
-            &gl3_raster_font);
 
    if (video_gpu_record
       && recording_state_get_ptr()->enable)
@@ -3424,7 +3419,6 @@ static void gl3_free(void *data)
 
    if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
-   font_driver_free_osd();
    gl3_destroy_resources(gl);
    if (gl->ctx_driver && gl->ctx_driver->destroy)
       gl->ctx_driver->destroy(gl->ctx_data);
@@ -5717,5 +5711,6 @@ video_driver_t video_gl3 = {
    gl3_gfx_widgets_enabled,
 #endif
    NULL, /* invalidate_hw_render_cache */
-   gl3_read_viewport_hdr
+   gl3_read_viewport_hdr,
+   &gl3_raster_font
 };

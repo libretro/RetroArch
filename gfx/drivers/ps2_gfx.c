@@ -855,10 +855,6 @@ static void *ps2_init(const video_info_t *video,
       return NULL;
 
    init_ps2_video(ps2);
-      font_driver_init_osd(ps2,
-            video, false,
-            video->is_threaded,
-            &ps2_font);
 
    ps2->PSM          = (video->rgb32 ? GS_PSM_CT32 : GS_PSM_CT16);
    ps2->tex_filter   = video->smooth ? GS_FILTER_LINEAR : GS_FILTER_NEAREST;
@@ -1043,7 +1039,6 @@ static void ps2_free(void *data)
    gsKit_clear(ps2->gsGlobal, GS_BLACK);
    gsKit_vram_clear(ps2->gsGlobal);
 
-   font_driver_free_osd();
 
    ps2_deinit_texture(ps2->menuTexture);
    ps2_deinit_texture(ps2->coreTexture);
@@ -1218,6 +1213,9 @@ video_driver_t video_ps2 = {
    NULL, /* shader_load_begin */
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   NULL  /* gfx_widgets_enabled */
+   NULL  /* gfx_widgets_enabled */,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &ps2_font
 };

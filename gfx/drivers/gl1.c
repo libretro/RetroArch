@@ -1504,11 +1504,6 @@ static void *gl1_init(const video_info_t *video,
             input, input_data);
    }
 
-      font_driver_init_osd(gl1,
-            video,
-            false,
-            video->is_threaded,
-            &gl1_raster_font);
 
    if (video_smooth)
       gl1->flags     |= GL1_FLAG_SMOOTH;
@@ -2800,7 +2795,6 @@ static void gl1_free(void *data)
       string_list_free(gl1->extensions);
    gl1->extensions = NULL;
 
-   font_driver_free_osd();
    if (gl1->ctx_driver && gl1->ctx_driver->destroy)
       gl1->ctx_driver->destroy(gl1->ctx_data);
    video_context_driver_free();
@@ -3508,5 +3502,6 @@ video_driver_t video_gl1 = {
    gl1_widgets_enabled,
 #endif
    NULL, /* invalidate_hw_render_cache */
-   gl1_read_viewport_hdr
+   gl1_read_viewport_hdr,
+   &gl1_raster_font
 };

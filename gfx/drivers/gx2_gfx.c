@@ -1392,11 +1392,6 @@ static void *gx2_init(const video_info_t *video,
 
    driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &refresh_rate);
 
-   font_driver_init_osd(wiiu,
-         video,
-         false,
-         video->is_threaded,
-         &wiiu_font);
 
    {
       enum rarch_shader_type type;
@@ -2708,6 +2703,9 @@ video_driver_t video_wiiu =
    NULL, /* shader_load_begin */
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   gx2_widgets_enabled
+   gx2_widgets_enabled,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &wiiu_font
 };

@@ -465,8 +465,6 @@ static void *sdl2_gfx_init(const video_info_t *video,
     * We also gain a working render_msg path for any other RA
     * subsystem that calls font_driver_render_msg with NULL font -
     * this is the same wiring every other modern driver does. */
-      font_driver_init_osd(vid, video, false, video->is_threaded,
-            &sdl2_raster_font);
 #endif
 
    *input      = NULL;
@@ -763,14 +761,9 @@ static void sdl2_gfx_free(void *data)
    if (!vid)
       return;
 
-#if SDL_VERSION_ATLEAST(2, 0, 18)
-   /* Mirror font_driver_init_osd in sdl2_gfx_init.  Must run before
-    * SDL_DestroyRenderer because the OSD font owns SDL_Textures
-    * created against vid->renderer; tearing the renderer down first
-    * would leave the font driver holding dangling texture pointers
-    * for the next free() call. */
-   font_driver_free_osd();
-#endif
+   /* The OSD font owns SDL_Textures created against vid->renderer and
+    * must go before SDL_DestroyRenderer below. It does:
+    * video_driver_free_internal() releases it before calling this. */
 
 #ifdef HAVE_OVERLAY
    /* Same constraint - overlay textures are owned by vid->renderer.
@@ -2205,9 +2198,12 @@ video_driver_t video_sdl2 = {
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
 #if SDL_VERSION_ATLEAST(2, 0, 18)
-   sdl2_gfx_widgets_enabled
+   sdl2_gfx_widgets_enabled,
 #else
-   NULL  /* widgets need SDL_RenderGeometry */
+   NULL,  /* widgets need SDL_RenderGeometry */
 #endif
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &sdl2_raster_font
 };

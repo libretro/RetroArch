@@ -2914,7 +2914,6 @@ static void d3d11_gfx_free(void* data)
    if (d3d11->flags & D3D11_ST_FLAG_WAITABLE_SWAPCHAINS)
       CloseHandle(d3d11->frameLatencyWaitableObject);
 
-   font_driver_free_osd();
 
 #ifdef HAVE_OVERLAY
    d3d11_free_overlays(d3d11);
@@ -3891,11 +3890,6 @@ static void *d3d11_gfx_init(const video_info_t* video,
             &d3d11->scissor_disabled);
    }
 
-   font_driver_init_osd(d3d11,
-         video,
-         false,
-         video->is_threaded,
-         &d3d11_font);
 
    if (video_driver_get_hw_context()->context_type  == RETRO_HW_CONTEXT_D3D11)
    {
@@ -6227,8 +6221,9 @@ video_driver_t video_d3d11 = {
 #endif
    NULL, /* invalidate_hw_render_cache */
 #ifdef HAVE_DXGI_HDR
-   d3d11_gfx_read_viewport_hdr
+   d3d11_gfx_read_viewport_hdr,
 #else
-   NULL /* read_viewport_hdr */
+   NULL, /* read_viewport_hdr */
 #endif
+   &d3d11_font
 };

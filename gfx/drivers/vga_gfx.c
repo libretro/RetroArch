@@ -217,10 +217,6 @@ static void *vga_gfx_init(const video_info_t *video,
 
    vga_gfx_create();
 
-      font_driver_init_osd(NULL,
-            video,
-            false,
-            video->is_threaded, &vga_font);
 
    return vga;
 }
@@ -531,6 +527,9 @@ video_driver_t video_vga = {
    NULL, /* shader_load_begin */
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   NULL  /* gfx_widgets_enabled */
+   NULL  /* gfx_widgets_enabled */,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &vga_font
 };
