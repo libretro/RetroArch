@@ -335,7 +335,6 @@ endif
 
 OBJ += \
        gfx/drivers_font_renderer/bitmap.o \
-       gfx/drivers_font_renderer/bitmapfont.o \
        gfx/drivers_font_renderer/bitmapfont_10x10.o \
        gfx/drivers_font_renderer/bitmapfont_6x10.o \
        tasks/task_autodetect.o \

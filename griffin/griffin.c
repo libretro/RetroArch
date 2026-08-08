@@ -660,7 +660,6 @@ FONTS
 ============================================================ */
 
 #include "../gfx/drivers_font_renderer/bitmap.c"
-#include "../gfx/drivers_font_renderer/bitmapfont.c"
 
 #ifdef HAVE_LANGEXTRA
 #include "../gfx/drivers_font_renderer/bitmapfont_10x10.c"
