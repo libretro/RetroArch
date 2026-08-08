@@ -68,6 +68,8 @@ font_renderer_t fake_font = {
 
 /* --- scenarios --- */
 int read_should_fail = 0;
+extern unsigned test_language;
+#define TEST_LANG_KOREAN 10   /* RETRO_LANGUAGE_KOREAN */
 static int fails = 0;
 #define CHECK(c, msg) do { if (!(c)) { printf("  FAIL: %s\n", msg); fails++; } } while (0)
 
@@ -168,6 +170,32 @@ int main(void)
                "impl metrics recomputed after a rebuild");
          CHECK(impl.wideglyph_width > 0, "wideglyph width recomputed");
       }
+   }
+
+   /* 8. a language-following font re-resolves rather than re-reads */
+   {
+      font_data_t *L = mk("/assets/ozone/bold.ttf", 16.0f);
+      CHECK(L != NULL, "language font created");
+      font_driver_set_language_font(L, "/assets/pkg", "/assets/ozone/bold.ttf");
+
+      /* English: no special font, so the default path stands */
+      test_language = 0;
+      font_driver_reload_fonts();
+      CHECK(L->path && !strcmp(L->path, "/assets/ozone/bold.ttf"),
+            "english keeps the default face");
+
+      /* Korean: the path must change, not merely be re-read */
+      test_language = TEST_LANG_KOREAN;
+      font_driver_reload_fonts();
+      CHECK(L->path && strstr(L->path, "korean-fallback-font.ttf") != NULL,
+            "korean re-resolves to the korean face");
+
+      /* and back */
+      test_language = 0;
+      font_driver_reload_fonts();
+      CHECK(L->path && !strcmp(L->path, "/assets/ozone/bold.ttf"),
+            "switching back restores the default face");
+      font_driver_free(L);
    }
 
    font_driver_free(a);

@@ -4,7 +4,13 @@ SAN     ?= address,undefined
 CFLAGS  := -std=gnu99 -g -O1 -fsanitize=$(SAN) -DHAVE_STB_FONT -DRARCH_INTERNAL \
            -I$(RA) -I$(RA)/libretro-common/include -I$(RA)/gfx/include \
            -I$(RA)/deps -I$(RA)/deps/stb
-SRC     := $(RA)/gfx/font_driver.c
+SRC     := $(RA)/gfx/font_driver.c \
+           $(RA)/libretro-common/file/file_path.c \
+           $(RA)/libretro-common/compat/compat_strl.c \
+           $(RA)/libretro-common/string/stdstring.c \
+           $(RA)/libretro-common/encodings/encoding_utf.c \
+           $(RA)/libretro-common/lists/string_list.c \
+           $(RA)/libretro-common/time/rtime.c
 all: lifecycle create
 lifecycle: font_lifecycle_test.c stubs_retroarch.c $(SRC)
 	$(CC) $(CFLAGS) -o $@ $^ -lm

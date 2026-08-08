@@ -88,6 +88,38 @@ const char *font_driver_language_font_file(void)
    return NULL;
 }
 
+void font_driver_set_language_font(font_data_t *font,
+      const char *pkg_dir, const char *default_path)
+{
+   if (!font)
+      return;
+
+   free(font->lang_pkg_dir);
+   free(font->lang_default_path);
+   font->lang_pkg_dir      = (pkg_dir && *pkg_dir)
+      ? strdup(pkg_dir) : NULL;
+   font->lang_default_path = (default_path && *default_path)
+      ? strdup(default_path) : NULL;
+}
+
+/* The path this font should be using now. For a language-following
+ * font that is worked out again from the current language; for any
+ * other it is the path it already has. */
+static const char *font_driver_resolve_path(font_data_t *font,
+      char *s, size_t len)
+{
+   const char *lang_font;
+
+   if (!font->lang_pkg_dir || !font->lang_default_path)
+      return font->path;
+
+   if (!(lang_font = font_driver_language_font_file()))
+      return font->lang_default_path;
+
+   fill_pathname_join_special(s, font->lang_pkg_dir, lang_font, len);
+   return s;
+}
+
 unsigned font_driver_reload_fonts(void)
 {
    font_data_t *font;
@@ -106,9 +138,22 @@ unsigned font_driver_reload_fonts(void)
       /* The backend's own init does the resolving and the reading, so
        * this is the same call that created the font in the first
        * place - just against whatever the path now points at. */
-      if (!(fresh = renderer->init(font->video_data, font->path,
-                  font->size, font->is_threaded)))
-         continue;      /* keep the old font rather than lose text */
+      {
+         char resolved[PATH_MAX_LENGTH];
+         const char *want = font_driver_resolve_path(font,
+               resolved, sizeof(resolved));
+
+         if (!(fresh = renderer->init(font->video_data, want,
+                     font->size, font->is_threaded)))
+            continue;   /* keep the old font rather than lose text */
+
+         /* Remember what it is actually built from now. */
+         if (want != font->path)
+         {
+            free(font->path);
+            font->path = strdup(want);
+         }
+      }
 
       /* Swap in place: the font_data_t address does not change, so
        * every holder of the pointer stays valid. Only the renderer
@@ -864,7 +909,11 @@ void font_driver_free(font_data_t *font)
       }
 
       free(font->path);
-      font->path = NULL;
+      free(font->lang_pkg_dir);
+      free(font->lang_default_path);
+      font->path              = NULL;
+      font->lang_pkg_dir      = NULL;
+      font->lang_default_path = NULL;
 
 #ifdef HAVE_THREADS
       /* Ask for the real threaded state, not the video_threaded
@@ -916,6 +965,8 @@ font_data_t *font_driver_init_first(
          font->video_data    = video_data;
          font->path          = (font_path && *font_path)
             ? strdup(font_path) : NULL;
+         font->lang_pkg_dir      = NULL;
+         font->lang_default_path = NULL;
          font->is_threaded   = is_threaded;
 
          font_driver_cache_metrics(font);

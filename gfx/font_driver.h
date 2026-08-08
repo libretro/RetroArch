@@ -92,6 +92,11 @@ typedef struct font_data
    struct font_data *next;          /* list of live fonts */
    void *video_data;
    char *path;                      /* NULL when the renderer chose */
+   /* Set for a font whose file depends on the menu language. Kept so
+    * the path can be worked out again rather than merely re-read: a
+    * language change wants a different face, not the same one. */
+   char *lang_pkg_dir;
+   char *lang_default_path;
    bool is_threaded;
    /* Line metrics, read from the renderer once when the font is
     * created. Renderers fill these at init and never change them, so
@@ -158,6 +163,14 @@ unsigned font_driver_reload_fonts(void);
  * gfx_widgets and file_path_special each carried the same switch -
  * which is three places to forget when a language is added. */
 const char *font_driver_language_font_file(void);
+
+/* Declare that this font's file follows the menu language, and give
+ * the two things needed to work it out again: the assets pkg
+ * directory the language fonts live in, and the path to use when the
+ * language needs no special font. font_driver_reload_fonts() then
+ * re-resolves instead of re-reading. */
+void font_driver_set_language_font(font_data_t *font,
+      const char *pkg_dir, const char *default_path);
 
 /* Returns a monotonic counter incremented on every font free;
  * see font_driver.c for rationale. Used to validate externally

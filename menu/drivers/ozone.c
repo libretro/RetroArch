@@ -10049,6 +10049,7 @@ static void ozone_set_layout(
    const char *path_menu_font                       = settings->paths.path_menu_ozone_font;
    char tmp_dir[DIR_MAX_LENGTH];
    char font_path[PATH_MAX_LENGTH];
+   char default_font_path[PATH_MAX_LENGTH];
    bool font_inited                                 = false;
    float scale_factor                               = ozone->last_scale_factor;
    float padding_factor                             = settings->floats.ozone_padding_factor;
@@ -10117,13 +10118,14 @@ static void ozone_set_layout(
    {
       const char *lang_font = font_driver_language_font_file();
 
+      fill_pathname_join_special(tmp_dir, path_directory_assets, "pkg", sizeof(tmp_dir));
+      fill_pathname_join_special(default_font_path, ozone->assets_path, "bold.ttf",
+            sizeof(default_font_path));
+
       if (lang_font)
-      {
-         fill_pathname_join_special(tmp_dir, path_directory_assets, "pkg", sizeof(tmp_dir));
          fill_pathname_join_special(font_path, tmp_dir, lang_font, sizeof(font_path));
-      }
       else
-         fill_pathname_join_special(font_path, ozone->assets_path, "bold.ttf", sizeof(font_path));
+         strlcpy(font_path, default_font_path, sizeof(font_path));
    }
 
    if (path_menu_font && *path_menu_font)
@@ -10137,13 +10139,14 @@ static void ozone_set_layout(
    {
       const char *lang_font = font_driver_language_font_file();
 
+      fill_pathname_join_special(tmp_dir, path_directory_assets, "pkg", sizeof(tmp_dir));
+      fill_pathname_join_special(default_font_path, ozone->assets_path, "regular.ttf",
+            sizeof(default_font_path));
+
       if (lang_font)
-      {
-         fill_pathname_join_special(tmp_dir, path_directory_assets, "pkg", sizeof(tmp_dir));
          fill_pathname_join_special(font_path, tmp_dir, lang_font, sizeof(font_path));
-      }
       else
-         fill_pathname_join_special(font_path, ozone->assets_path, "regular.ttf", sizeof(font_path));
+         strlcpy(font_path, default_font_path, sizeof(font_path));
    }
 
    if (path_menu_font && *path_menu_font)
@@ -10180,6 +10183,32 @@ static void ozone_set_layout(
          is_threaded, font_path, FONT_SIZE_FOOTER * scale_factor * font_scale_factor_global * font_scale_factor_footer);
    if (!(((ozone->flags & OZONE_FLAG_HAS_ALL_ASSETS) > 0) && font_inited))
       ozone->flags &= ~OZONE_FLAG_HAS_ALL_ASSETS;
+
+   /* Mark every font as following the menu language, so a language
+    * change can rebuild them in place instead of asking for a
+    * restart. The title takes the bold face, the rest the regular
+    * one; both are overridden by an explicit menu font setting, in
+    * which case there is nothing to re-resolve. */
+   if (!(path_menu_font && *path_menu_font))
+   {
+      char bold_path[PATH_MAX_LENGTH];
+
+      fill_pathname_join_special(bold_path, ozone->assets_path,
+            "bold.ttf", sizeof(bold_path));
+
+      font_driver_set_language_font(ozone->fonts.title.font,
+            tmp_dir, bold_path);
+      font_driver_set_language_font(ozone->fonts.sidebar.font,
+            tmp_dir, default_font_path);
+      font_driver_set_language_font(ozone->fonts.entries_label.font,
+            tmp_dir, default_font_path);
+      font_driver_set_language_font(ozone->fonts.entries_sublabel.font,
+            tmp_dir, default_font_path);
+      font_driver_set_language_font(ozone->fonts.time.font,
+            tmp_dir, default_font_path);
+      font_driver_set_language_font(ozone->fonts.footer.font,
+            tmp_dir, default_font_path);
+   }
 
    /* Cache footer text labels
     * > Fonts have been (re)initialised, so need
