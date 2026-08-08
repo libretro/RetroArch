@@ -97,6 +97,11 @@ int font_driver_get_message_width(void *font_data, const char *msg,
    return (int)(len * 10 * (scale > 0.0f ? scale : 1.0f));
 }
 
+/* Bumped by the real font_driver when a font is freed or rebuilt;
+ * gfx_widgets_font_sync() watches it. Constant here: the stub fonts
+ * never change underneath. */
+uint32_t font_driver_get_generation(void) { return 1; }
+
 void font_driver_bind_block(void *font_data, void *block)
 { (void)font_data; (void)block; }
 void font_driver_free(font_data_t *font) { (void)font; }

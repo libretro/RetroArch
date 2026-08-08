@@ -843,7 +843,16 @@ void gfx_widgets_flush_text(
 {
    /* Flushing is slow - only do it if font
     * has actually been used */
-   if (!font_data || (font_data->usage_count == 0))
+   if (!font_data)
+      return;
+
+   /* A rebuilt font has different metrics; pick them up before
+    * anything is drawn with the old ones. Done here rather than only
+    * when there is something to flush, so a widget that drew nothing
+    * this frame still lays out correctly on the next. */
+   gfx_widgets_font_sync(font_data);
+
+   if (font_data->usage_count == 0)
       return;
 
    if (font_data->font && font_data->font->renderer && font_data->font->renderer->flush)
@@ -950,6 +959,27 @@ static void gfx_widgets_font_init(
     * no implicit font to fall back on any more, so the approximate
     * glyph width set above has to stand on its own. */
    if (font_data->font)
+      gfx_widgets_font_sync(font_data);
+
+   font_data->usage_count        = 0;
+}
+
+/* Recompute the derived metrics if the font has been rebuilt since
+ * they were last worked out. Cheap when nothing has changed. The menu
+ * drivers get this from font_flush() via font_driver_sync_impl(), but
+ * widgets keep their own font struct and flush directly. */
+void gfx_widgets_font_sync(gfx_widget_font_data_t *font_data)
+{
+   int glyph_width;
+   uint32_t gen = font_driver_get_generation();
+
+   if (!font_data || !font_data->font)
+      return;
+   if (font_data->metrics_generation == gen)
+      return;
+
+   font_data->metrics_generation = gen;
+
    {
       glyph_width                = font_driver_get_message_width(
             font_data->font, "a", 1, 1.0f);
@@ -962,8 +992,6 @@ static void gfx_widgets_font_init(
       font_data->line_centre_offset = roundf((font_data->font->metrics.ascender
             - font_data->font->metrics.descender) * 0.5f);
    }
-
-   font_data->usage_count        = 0;
 }
 
 static void gfx_widgets_layout(

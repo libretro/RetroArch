@@ -152,7 +152,13 @@ typedef struct
    float line_ascender;
    float line_descender;
    float line_centre_offset;
+   /* font_driver generation the values above were computed at. A font
+    * rebuilt underneath - a language switch picks a different face -
+    * moves the generation and they are worked out again. */
+   uint32_t metrics_generation;
 } gfx_widget_font_data_t;
+
+void gfx_widgets_font_sync(gfx_widget_font_data_t *font_data);
 
 /* Font data */
 typedef struct
