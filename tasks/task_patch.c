@@ -299,34 +299,55 @@ static enum patch_error bps_apply_patch(
          case TARGET_COPY:
          {
             uint64_t decoded_offset;
-            int      offset;
-            bool negative;
+            uint64_t distance;
+            bool     negative;
 
             if (!bps_decode(&bps, &decoded_offset))
                return PATCH_PATCH_INVALID;
-            offset = (int)decoded_offset;
-            negative = offset & 1;
 
-            offset >>= 1;
+            /* The seek is sign-magnitude inside the varint itself -
+             * "number negative | (abs(offset) << 1)" - so it has to
+             * stay unsigned all the way to the cursor.  Routing it
+             * through int did two things wrong.  It truncated any
+             * magnitude at 2^31, and, before that, (int)(uint64) is
+             * implementation-defined once the value passes INT_MAX:
+             * on a two's-complement compiler a magnitude of 2^30
+             * became a negative int whose arithmetic >>1 handed back
+             * the magnitude with the sign flipped, so a copy 1 GiB
+             * into a disc image seeked backwards instead of forwards
+             * and the patch failed its target checksum.  The format
+             * itself has no size ceiling, and neither does the
+             * decoder, so neither should this. */
+            negative = (decoded_offset & 1) ? true : false;
+            distance = decoded_offset >> 1;
 
-            if (negative)
-               offset = -offset;
+            /* size_t is the cursor type; on a 32-bit host a distance
+             * wider than that cannot be represented, let alone be in
+             * bounds. */
+            if (distance > (uint64_t)SIZE_MAX)
+               return (mode == SOURCE_COPY) ? PATCH_SOURCE_INVALID
+                                            : PATCH_TARGET_INVALID;
 
             if (mode == SOURCE_COPY)
             {
-               bps.source_offset += offset;
-               /* Validate the resulting source_offset and the
-                * full read range against source_length.  Pre-
-                * this-patch a malicious offset could push
-                * source_offset past source_length (or, with a
-                * negative offset, underflow it to a huge size_t),
-                * driving source_data[source_offset++] reads
-                * arbitrarily far OOB.  An attacker who can read
-                * past source_data into adjacent heap leaks heap
-                * contents into target_data and the checksum
-                * calculation. */
-               if (   bps.source_offset > bps.source_length
-                   || _len              > bps.source_length - bps.source_offset)
+               /* Apply the seek without ever leaving the buffer:
+                * source_offset <= source_length holds on entry, so
+                * both arms below are computed in-range rather than
+                * wrapped and caught afterwards. */
+               if (negative)
+               {
+                  if (distance > (uint64_t)bps.source_offset)
+                     return PATCH_SOURCE_INVALID;
+                  bps.source_offset -= (size_t)distance;
+               }
+               else
+               {
+                  if (distance > (uint64_t)(bps.source_length
+                           - bps.source_offset))
+                     return PATCH_SOURCE_INVALID;
+                  bps.source_offset += (size_t)distance;
+               }
+               if (_len > bps.source_length - bps.source_offset)
                   return PATCH_SOURCE_INVALID;
                memcpy(bps.target_data + bps.output_offset,
                       bps.source_data + bps.source_offset, _len);
@@ -335,13 +356,20 @@ static enum patch_error bps_apply_patch(
             }
             else
             {
-               bps.target_offset += offset;
-               /* TARGET_COPY both reads from and writes to
-                * target_data; bound the read pointer the same
-                * way as SOURCE_COPY above.  output_offset is
-                * already bounded by the top-of-loop check. */
-               if (   bps.target_offset > bps.target_length
-                   || _len              > bps.target_length - bps.target_offset)
+               if (negative)
+               {
+                  if (distance > (uint64_t)bps.target_offset)
+                     return PATCH_TARGET_INVALID;
+                  bps.target_offset -= (size_t)distance;
+               }
+               else
+               {
+                  if (distance > (uint64_t)(bps.target_length
+                           - bps.target_offset))
+                     return PATCH_TARGET_INVALID;
+                  bps.target_offset += (size_t)distance;
+               }
+               if (_len > bps.target_length - bps.target_offset)
                   return PATCH_TARGET_INVALID;
                /* TARGET_COPY may deliberately overlap its own output
                 * (an LZ-style repeating run), which memcpy cannot

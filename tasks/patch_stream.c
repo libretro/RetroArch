@@ -799,28 +799,54 @@ static void patch_stream_bps_run(patch_stream_t *ps)
          default: /* SourceCopy / TargetCopy */
          {
             uint64_t decoded;
-            int64_t  raw;
+            uint64_t distance;
             int      neg;
-            int64_t  off;
 
             if (!patch_stream_decode(ps, &decoded))
             {
                ps->failed = 1;
                return;
             }
-            raw = (int64_t)decoded;
-            neg = (int)(raw & 1);
 
-            raw >>= 1;
-            off   = neg ? -raw : raw;
+            /* Sign-magnitude in the varint, so it stays unsigned -
+             * see the matching note in tasks/task_patch.c.  Going
+             * through int64_t here was correct up to a magnitude of
+             * 2^62, but (int64_t)(uint64) above INT64_MAX and the
+             * right shift of the negative result it produces are both
+             * implementation-defined, and a patch can encode that. */
+            neg      = (int)(decoded & 1);
+            distance = decoded >> 1;
+
+            if (distance > (uint64_t)(size_t)-1)
+            {
+               ps->failed = 1;
+               return;
+            }
 
             if (mode == 2)
             {
-               int64_t so = (int64_t)ps->s_off + off;
+               size_t so = ps->s_off;
 
-               if (     so < 0
-                     || (uint64_t)so > (uint64_t)ps->src_len
-                     || len > (uint64_t)ps->src_len - (uint64_t)so)
+               if (neg)
+               {
+                  if (distance > (uint64_t)so)
+                  {
+                     ps->failed = 1;
+                     return;
+                  }
+                  so -= (size_t)distance;
+               }
+               else
+               {
+                  if (distance > (uint64_t)(ps->src_len - so))
+                  {
+                     ps->failed = 1;
+                     return;
+                  }
+                  so += (size_t)distance;
+               }
+
+               if (len > (uint64_t)(ps->src_len - so))
                {
                   ps->failed = 1;
                   return;
@@ -833,7 +859,7 @@ static void patch_stream_bps_run(patch_stream_t *ps)
                   ps->bt_off = save_t;
                   return;
                }
-               ps->s_off = (size_t)so;
+               ps->s_off = so;
                for (k = 0; k < len; k++)
                {
                   uint8_t v = ps->src_buf[ps->s_off++];
@@ -844,16 +870,33 @@ static void patch_stream_bps_run(patch_stream_t *ps)
             }
             else
             {
-               int64_t to = (int64_t)ps->bt_off + off;
+               size_t to = ps->bt_off;
 
-               if (     to < 0
-                     || (uint64_t)to > (uint64_t)ps->tgt_len
-                     || len > (uint64_t)ps->tgt_len - (uint64_t)to)
+               if (neg)
+               {
+                  if (distance > (uint64_t)to)
+                  {
+                     ps->failed = 1;
+                     return;
+                  }
+                  to -= (size_t)distance;
+               }
+               else
+               {
+                  if (distance > (uint64_t)(ps->tgt_len - to))
+                  {
+                     ps->failed = 1;
+                     return;
+                  }
+                  to += (size_t)distance;
+               }
+
+               if (len > (uint64_t)(ps->tgt_len - to))
                {
                   ps->failed = 1;
                   return;
                }
-               ps->bt_off = (size_t)to;
+               ps->bt_off = to;
                for (k = 0; k < len; k++)
                {
                   uint8_t v = ps->out[ps->bt_off++];
