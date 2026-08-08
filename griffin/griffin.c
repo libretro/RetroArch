@@ -662,8 +662,6 @@ FONTS
 #include "../gfx/drivers_font_renderer/bitmap.c"
 
 #ifdef HAVE_LANGEXTRA
-#include "../gfx/drivers_font_renderer/bitmapfont_10x10.c"
-#include "../gfx/drivers_font_renderer/bitmapfont_6x10.c"
 #endif
 
 #include "../gfx/font_driver.c"
@@ -1483,6 +1481,7 @@ MENU
 #endif
 
 #ifdef HAVE_RGUI
+#include "../menu/drivers/rgui_bitmapfont.c"
 #include "../menu/drivers/rgui.c"
 #endif
 

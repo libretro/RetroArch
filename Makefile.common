@@ -335,8 +335,6 @@ endif
 
 OBJ += \
        gfx/drivers_font_renderer/bitmap.o \
-       gfx/drivers_font_renderer/bitmapfont_10x10.o \
-       gfx/drivers_font_renderer/bitmapfont_6x10.o \
        tasks/task_autodetect.o \
        input/input_autodetect_builtin.o \
        input/input_keymaps.o \
@@ -1036,7 +1034,8 @@ ifeq ($(HAVE_MENU), 1)
    endif
 
    ifeq ($(HAVE_RGUI), 1)
-      OBJ += menu/drivers/rgui.o
+      OBJ += menu/drivers/rgui.o \
+             menu/drivers/rgui_bitmapfont.o
       DEFINES += -DHAVE_RGUI
    endif
 

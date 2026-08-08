@@ -18,6 +18,7 @@
 #define __RARCH_FONT_BITMAP_H
 
 #include <stdint.h>
+#include <boolean.h>
 
 #define FONT_WIDTH 5
 #define FONT_HEIGHT 10

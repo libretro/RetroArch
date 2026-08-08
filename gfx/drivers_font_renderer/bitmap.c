@@ -21,7 +21,6 @@
  * that header want only the FONT_* metrics. */
 
 #include <stdlib.h>
-#include <boolean.h>
 
 #include "bitmap.h"
 
