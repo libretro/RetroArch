@@ -371,6 +371,13 @@ static char* font_driver_reshape_msg(const char* msg, size_t msg_len,
    /* worst case transformations are 2 bytes to 4 bytes -- aliaspider */
    size_t               _len       = (msg_len * 2) + 1;
    unsigned char       *dst        = s;
+   /* Highest dst that can still take the longest sequence emitted
+    * below (4 bytes) plus the terminator. The 2x estimate above only
+    * holds while the walk moves forward; the reverse pass can step
+    * back over bytes it has already emitted, so output length is not
+    * actually bounded by the input length and the buffer has to be
+    * bounded directly. */
+   unsigned char       *dst_max    = s + len - 5;
 
    if (len < _len)
    {
@@ -399,7 +406,7 @@ static char* font_driver_reshape_msg(const char* msg, size_t msg_len,
 
    src = (const unsigned char*)msg;
 
-   while (*src || reverse)
+   while ((*src || reverse) && dst < dst_max)
    {
       if (reverse)
       {
@@ -446,7 +453,7 @@ static char* font_driver_reshape_msg(const char* msg, size_t msg_len,
             }
 
             *dst++ = *src++;
-            while (IS_MBCONT(src))
+            while (IS_MBCONT(src) && dst < dst_max)
                *dst++ = *src++;
             src--;
 
