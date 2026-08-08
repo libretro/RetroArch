@@ -8376,9 +8376,15 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       goto ctx_destroyed;
 
    /* Clear text */
-   font_bind(&mui->font_data.title);
-   font_bind(&mui->font_data.list);
-   font_bind(&mui->font_data.hint);
+   font_driver_bind_block(mui->font_data.title.font,
+         &mui->font_data.title.raster_block);
+   mui->font_data.title.raster_block.carr.coords.vertices = 0;
+   font_driver_bind_block(mui->font_data.list.font,
+         &mui->font_data.list.raster_block);
+   mui->font_data.list.raster_block.carr.coords.vertices = 0;
+   font_driver_bind_block(mui->font_data.hint.font,
+         &mui->font_data.hint.raster_block);
+   mui->font_data.hint.raster_block.carr.coords.vertices = 0;
 
    /* Single-click playlist button hold delay */
    if (mui->transition_alpha_lock && mui->draw_entry_delay)
@@ -8628,9 +8634,9 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    mui->flags &= ~MUI_FLAG_FIRST_FRAME;
 
    /* Unbind fonts */
-   font_unbind(&mui->font_data.title);
-   font_unbind(&mui->font_data.list);
-   font_unbind(&mui->font_data.hint);
+   font_driver_bind_block(mui->font_data.title.font, NULL);
+   font_driver_bind_block(mui->font_data.list.font, NULL);
+   font_driver_bind_block(mui->font_data.hint.font, NULL);
 
    if (video_st->current_video && video_st->current_video->set_viewport)
       video_st->current_video->set_viewport(

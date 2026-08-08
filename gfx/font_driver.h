@@ -96,17 +96,6 @@ typedef struct
 
 void font_driver_bind_block(void *font_data, void *block);
 
-static INLINE void font_bind(font_data_impl_t *font_data)
-{
-   font_driver_bind_block(font_data->font, &font_data->raster_block);
-   font_data->raster_block.carr.coords.vertices = 0;
-}
-
-static INLINE void font_unbind(font_data_impl_t *font_data)
-{
-   font_driver_bind_block(font_data->font, NULL);
-}
-
 /* font_path can be NULL for default font.
  *
  * @fmt is the glyph coverage precision the caller wants in the atlas.

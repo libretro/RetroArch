@@ -12419,12 +12419,24 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
       goto ctx_destroyed;
 
    /* Clear text */
-   font_bind(&ozone->fonts.footer);
-   font_bind(&ozone->fonts.title);
-   font_bind(&ozone->fonts.time);
-   font_bind(&ozone->fonts.entries_label);
-   font_bind(&ozone->fonts.entries_sublabel);
-   font_bind(&ozone->fonts.sidebar);
+   font_driver_bind_block(ozone->fonts.footer.font,
+         &ozone->fonts.footer.raster_block);
+   ozone->fonts.footer.raster_block.carr.coords.vertices = 0;
+   font_driver_bind_block(ozone->fonts.title.font,
+         &ozone->fonts.title.raster_block);
+   ozone->fonts.title.raster_block.carr.coords.vertices = 0;
+   font_driver_bind_block(ozone->fonts.time.font,
+         &ozone->fonts.time.raster_block);
+   ozone->fonts.time.raster_block.carr.coords.vertices = 0;
+   font_driver_bind_block(ozone->fonts.entries_label.font,
+         &ozone->fonts.entries_label.raster_block);
+   ozone->fonts.entries_label.raster_block.carr.coords.vertices = 0;
+   font_driver_bind_block(ozone->fonts.entries_sublabel.font,
+         &ozone->fonts.entries_sublabel.raster_block);
+   ozone->fonts.entries_sublabel.raster_block.carr.coords.vertices = 0;
+   font_driver_bind_block(ozone->fonts.sidebar.font,
+         &ozone->fonts.sidebar.raster_block);
+   ozone->fonts.sidebar.raster_block.carr.coords.vertices = 0;
 
    /* Single-click playlist button hold delay */
    if (ozone->animations.list_alpha == 0.0f && ozone->draw_entry_delay)
@@ -12738,12 +12750,12 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    }
 
    /* Unbind fonts */
-   font_unbind(&ozone->fonts.footer);
-   font_unbind(&ozone->fonts.title);
-   font_unbind(&ozone->fonts.time);
-   font_unbind(&ozone->fonts.entries_label);
-   font_unbind(&ozone->fonts.entries_sublabel);
-   font_unbind(&ozone->fonts.sidebar);
+   font_driver_bind_block(ozone->fonts.footer.font, NULL);
+   font_driver_bind_block(ozone->fonts.title.font, NULL);
+   font_driver_bind_block(ozone->fonts.time.font, NULL);
+   font_driver_bind_block(ozone->fonts.entries_label.font, NULL);
+   font_driver_bind_block(ozone->fonts.entries_sublabel.font, NULL);
+   font_driver_bind_block(ozone->fonts.sidebar.font, NULL);
 
    if (video_st->current_video && video_st->current_video->set_viewport)
       video_st->current_video->set_viewport(
