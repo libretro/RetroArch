@@ -15,6 +15,7 @@
 - APPLE: Add jollycv, skyemu, gearlynx, amiarcadia, o2em, uzem , applewin, azahar cores to App Store builds
 - APPLE: Add Apple on-device OCR / translation to AI service
 - APPLE: Add avfoundation record driver
+- APPLE: Add Extra Menu Bars
 - COMMAND: Fix null pointer exception in COMMAND_GET_STATUS
 - COMMAND: Only allow pause when there is a core running
 - CHEEVOS: Update to rcheevos 12.3
