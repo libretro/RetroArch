@@ -184,10 +184,24 @@ chd_error cdzs_codec_decompress(void *codec, const uint8_t *src, uint32_t comple
 	uint32_t ecc_bytes = (frames + 7) / 8;
 	uint32_t header_bytes = ecc_bytes + complen_bytes;
 
+
+	/* header_bytes and complen_base are both taken from the hunk, so
+	 * neither can be trusted before it is checked. Without this, a
+	 * complen_base larger than the hunk makes
+	 * `complen - complen_base - header_bytes` underflow to near 2^32 and
+	 * `&src[header_bytes + complen_base]` point past the end, handing the
+	 * subcode decompressor an out-of-bounds pointer and an enormous
+	 * length - a heap overread straight off a malformed image. Reading
+	 * the length bytes at src[ecc_bytes..] needs the first check too. */
+	if (complen < header_bytes)
+		return CHDERR_DECOMPRESSION_ERROR;
 	/* extract compressed length of base */
 	uint32_t complen_base = (src[ecc_bytes + 0] << 8) | src[ecc_bytes + 1];
 	if (complen_bytes > 2)
 		complen_base = (complen_base << 8) | src[ecc_bytes + 2];
+
+	if (complen_base > complen - header_bytes)
+		return CHDERR_DECOMPRESSION_ERROR;
 
 	/* reset and decode */
 	zstd_codec_decompress(&cdzs->base_decompressor, &src[header_bytes], complen_base, &cdzs->buffer[0], frames * CD_MAX_SECTOR_DATA);
