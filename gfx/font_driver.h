@@ -159,7 +159,6 @@ int font_driver_get_line_centre_offset(font_data_t *font, float scale);
 extern font_renderer_driver_t stb_font_renderer;
 extern font_renderer_driver_t freetype_font_renderer;
 extern font_renderer_driver_t coretext_font_renderer;
-extern font_renderer_driver_t bitmap_font_renderer;
 
 RETRO_END_DECLS
 

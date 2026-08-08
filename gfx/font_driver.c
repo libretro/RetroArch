@@ -51,7 +51,6 @@ int font_renderer_create_default(
       &coretext_font_renderer,
 #endif
       &stb_font_renderer,
-      &bitmap_font_renderer,
       NULL
    };
    unsigned i;
