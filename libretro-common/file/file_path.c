@@ -59,8 +59,6 @@
 #endif
 #endif
 
-#include <compat/legacy_win32.h>
-
 /* Time format strings with AM-PM designation require special
  * handling due to platform dependence */
 size_t strftime_am_pm(char *s, size_t len, const char* format,
@@ -1348,7 +1346,7 @@ size_t fill_pathname_application_path(char *s, size_t len)
 #if defined(LEGACY_WIN32_RUNTIME)
       DWORD ret;
 
-      if (retro_win32_is_legacy())
+      if (win32_needs_local_encoding())
          ret = GetModuleFileNameA(NULL, s, len);
       else
       {

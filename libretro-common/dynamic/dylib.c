@@ -43,8 +43,6 @@
 #endif
 #endif
 
-#include <compat/legacy_win32.h>
-
 #ifdef _WIN32
 static char last_dyn_err[512];
 
@@ -103,7 +101,7 @@ dylib_t dylib_load(const char *path)
 #elif defined(LEGACY_WIN32_RUNTIME)
    dylib_t lib        = NULL;
 
-   if (retro_win32_is_legacy())
+   if (win32_needs_local_encoding())
       lib             = LoadLibraryA(path);
    else
    {

@@ -76,7 +76,7 @@ TEST_RPNG_LIBS = -lz
 # branch is executed, not merely parsed.  What wine cannot do is make
 # the probe say ANSI - it implements the W entry points, so a
 # HAVE_WIN9X_RUNTIME build correctly chooses wide there.  Only real 9x
-# exercises retro_win32_is_legacy() returning 1.
+# exercises win32_needs_local_encoding() returning 1.
 #
 # Both tools are optional.  Absent either one, the affected steps say
 # so and pass; a contributor without a cross-compiler is not blocked.

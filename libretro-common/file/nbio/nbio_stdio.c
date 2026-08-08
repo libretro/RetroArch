@@ -29,8 +29,6 @@
 #include <file/nbio.h>
 #include <encodings/utf.h>
 
-#include <compat/legacy_win32.h>
-
 #if defined(_WIN32)
 #if defined(_MSC_VER) && _MSC_VER >= 1400
 #define ATLEAST_VC2005
@@ -103,7 +101,7 @@ static void *nbio_stdio_open(const char * filename, unsigned mode)
 #if defined(LEGACY_WIN32_RUNTIME)
    FILE* f;
 
-   if (retro_win32_is_legacy())
+   if (win32_needs_local_encoding())
       f                        = fopen(filename, stdio_modes[mode]);
    else
    {

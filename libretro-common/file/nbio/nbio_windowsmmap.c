@@ -47,8 +47,6 @@
 
 #include <windows.h>
 
-#include <compat/legacy_win32.h>
-
 #ifndef FILE_SHARE_ALL
 #define FILE_SHARE_ALL (FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE)
 #endif
@@ -77,7 +75,7 @@ static void *nbio_mmap_win32_open(const char * filename, unsigned mode)
 #if defined(LEGACY_WIN32_RUNTIME)
    HANDLE file;
 
-   if (retro_win32_is_legacy())
+   if (win32_needs_local_encoding())
       file                           = CreateFileA(filename, access, FILE_SHARE_ALL, NULL, dispositions[mode], FILE_ATTRIBUTE_NORMAL, NULL);
    else
    {

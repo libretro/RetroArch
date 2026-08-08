@@ -211,8 +211,6 @@
 #include <unistd.h> /* stat() is defined here */
 #endif
 
-#include <compat/legacy_win32.h>
-
 #if defined(_WIN32)
 #if defined(_MSC_VER) && _MSC_VER >= 1400
 #define ATLEAST_VC2005
@@ -875,7 +873,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
             {
 #if defined(_WIN32) && !defined(_XBOX)
 #if defined(LEGACY_WIN32_RUNTIME)
-               if (retro_win32_is_legacy())
+               if (win32_needs_local_encoding())
                {
                   char *path_local    = utf8_to_local_string_alloc(path);
                   stream->fd          = open(path_local, flags, 0);
@@ -1584,7 +1582,7 @@ int retro_vfs_stat_64_impl(const char *path, int64_t *size)
          stat_path = path_buf;
       }
 #if defined(LEGACY_WIN32_RUNTIME)
-      if (retro_win32_is_legacy())
+      if (win32_needs_local_encoding())
       {
          if (!vfs_stat_win32_ansi(stat_path, &stat_buf, &file_info))
             return 0;
@@ -1702,7 +1700,7 @@ int retro_vfs_mkdir_impl(const char *dir)
 #if defined(LEGACY_WIN32_RUNTIME)
       int ret        = -1;
 
-      if (retro_win32_is_legacy())
+      if (win32_needs_local_encoding())
          ret         = _mkdir(dir);
       else
       {
@@ -1901,7 +1899,7 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(
    path_buf[_len    ]      = '*';
    path_buf[_len + 1]      = '\0';
 #if defined(LEGACY_WIN32_RUNTIME)
-   if (retro_win32_is_legacy())
+   if (win32_needs_local_encoding())
    {
       path_local           = utf8_to_local_string_alloc(path_buf);
       rdir->directory      = FindFirstFileA(path_local, &rdir->entry.a);
@@ -1943,7 +1941,7 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(
 #if defined(LEGACY_WIN32_RUNTIME)
    /* Same field, same offset in both arms of the union - but C wants
     * one of them named, so follow whichever the handle is using. */
-   if (retro_win32_is_legacy())
+   if (win32_needs_local_encoding())
    {
       if (include_hidden)
          rdir->entry.a.dwFileAttributes |= FILE_ATTRIBUTE_HIDDEN;
@@ -1998,7 +1996,7 @@ bool retro_vfs_readdir_impl(libretro_vfs_implementation_dir *rdir)
    if (rdir->next)
 #if defined(LEGACY_WIN32_RUNTIME)
    {
-      if (retro_win32_is_legacy())
+      if (win32_needs_local_encoding())
          return (FindNextFileA(rdir->directory, &rdir->entry.a) != 0);
       return (FindNextFileW(rdir->directory, &rdir->entry.w) != 0);
    }
@@ -2039,7 +2037,7 @@ const char *retro_vfs_dirent_get_name_impl(libretro_vfs_implementation_dir *rdir
       void  *buf;
       size_t buf_len;
 
-      if (retro_win32_is_legacy())
+      if (win32_needs_local_encoding())
       {
          name          = local_to_utf8_string_alloc(rdir->entry.a.cFileName);
          buf           = rdir->entry.a.cFileName;

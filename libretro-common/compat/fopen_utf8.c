@@ -34,8 +34,6 @@
 #include <fcntl.h>
 #endif
 
-#include <compat/legacy_win32.h>
-
 #ifdef _WIN32
 #undef fopen
 
@@ -139,7 +137,7 @@ static void *fopen_utf8_wide(const char * filename, const char * mode)
 void *fopen_utf8(const char * filename, const char * mode)
 {
 #if defined(LEGACY_WIN32_RUNTIME)
-   if (retro_win32_is_legacy())
+   if (win32_needs_local_encoding())
       return fopen_utf8_ansi(filename, mode);
    return fopen_utf8_wide(filename, mode);
 #elif defined(LEGACY_WIN32)
