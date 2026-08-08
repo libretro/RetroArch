@@ -28,6 +28,7 @@
 
 #include "sdl3_common.h"
 #include "../../configuration.h"
+#include "../../input/input_driver.h"
 #include "../../retroarch.h"
 
 /* Keeps track of the window position to allow video_window_save_positions. */
@@ -77,6 +78,18 @@ void sdl3_pump_window_events(bool *quit, bool *resize)
    {
       if (event.type == SDL_EVENT_DISPLAY_CONTENT_SCALE_CHANGED)
          *resize = true;
+   }
+
+   /* The SDL3 input driver normally drains keyboard/mouse/text events
+    * and flushes finger/pen events from this queue. When another input
+    * driver is active (e.g. udev), nothing consumes them, so they pile
+    * up until SDL's queue cap starts dropping the events we do need
+    * (quit, resize). Flush them here in that case. */
+   if (input_state_get_ptr()->current_driver != &input_sdl3)
+   {
+      SDL_FlushEvents(SDL_EVENT_KEY_DOWN,         SDL_EVENT_MOUSE_REMOVED);
+      SDL_FlushEvents(SDL_EVENT_FINGER_DOWN,      SDL_EVENT_FINGER_CANCELED);
+      SDL_FlushEvents(SDL_EVENT_PEN_PROXIMITY_IN, SDL_EVENT_PEN_AXIS);
    }
 }
 
