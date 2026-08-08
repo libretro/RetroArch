@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <streams/file_stream.h>
+#include <string/stdstring.h>
 #include <file/file_path.h>
 #include <math.h>
 
@@ -144,6 +145,17 @@ unsigned font_driver_reload_fonts(void)
          char resolved[PATH_MAX_LENGTH];
          const char *want = font_driver_resolve_path(font,
                resolved, sizeof(resolved));
+
+         /* Most language changes do not change the file. Only Arabic
+          * and Persian, Chinese, Korean and Thai have a face of their
+          * own; everything else shares the menu font, so English to
+          * French, or either to Japanese, resolves to what is already
+          * loaded. Rebuilding then would throw away the atlas and the
+          * GPU texture behind every font, read the same TTF back, and
+          * bump the generation so every derived metric was recomputed
+          * too - all to arrive where it started. */
+         if (font->path && string_is_equal(want, font->path))
+            continue;
 
          if (!(fresh = renderer->init(font->video_data, want,
                      font->size, font->is_threaded)))

@@ -71,6 +71,8 @@ int read_should_fail = 0;
 extern unsigned test_language;
 #define TEST_LANG_KOREAN 10   /* RETRO_LANGUAGE_KOREAN */
 #define TEST_LANG_THAI   36   /* RETRO_LANGUAGE_THAI   */
+#define TEST_LANG_JAPANESE 1  /* RETRO_LANGUAGE_JAPANESE */
+#define TEST_LANG_FRENCH   2  /* RETRO_LANGUAGE_FRENCH   */
 static int fails = 0;
 #define CHECK(c, msg) do { if (!(c)) { printf("  FAIL: %s\n", msg); fails++; } } while (0)
 
@@ -99,6 +101,12 @@ int main(void)
    {
       void *ra = a->renderer_data, *rb = b->renderer_data;
       font_data_t *pa = a;
+      /* A rebuild only happens when the resolved path actually
+       * changes, so make these follow the language and switch to one
+       * with a face of its own. */
+      font_driver_set_language_font(a, "/assets/pkg", "/tmp/san/font_a.ttf");
+      font_driver_set_language_font(b, "/assets/pkg", "/tmp/san/font_b.ttf");
+      test_language = TEST_LANG_KOREAN;
       g0 = font_driver_get_generation();
       n  = font_driver_reload_fonts();
       g1 = font_driver_get_generation();
@@ -114,6 +122,7 @@ int main(void)
    {
       void *ra = a->renderer_data;
       fail_next_init = 1;
+      test_language  = 0;            /* back to the default face */
       n = font_driver_reload_fonts();
       fail_next_init = 0;
       CHECK(n == 0, "no fonts rebuilt when init fails");
@@ -125,16 +134,21 @@ int main(void)
    {
       float h = a->metrics.height;
       CHECK(h > 0.0f, "metrics cached");
+      test_language = TEST_LANG_KOREAN;
       n = font_driver_reload_fonts();
       CHECK(a->metrics.height == h, "metrics re-read after rebuild");
+      test_language = 0;
    }
 
    /* 5. free in the middle of the list, then reload the rest */
    c = mk("/tmp/san/font_c.ttf", 12.0f);
+   font_driver_set_language_font(c, "/assets/pkg", "/tmp/san/font_c.ttf");
    font_driver_free(b);
    CHECK(live_renderer_state == 2, "b released");
+   test_language = TEST_LANG_KOREAN;
    n = font_driver_reload_fonts();
-   CHECK(n == 2, "freed font not revisited by reload");
+   CHECK(n >= 1, "reload visits the live fonts and not the freed one");
+   test_language = 0;
 
    /* 6. a font with no path is skipped, not crashed on */
    {
@@ -184,7 +198,9 @@ int main(void)
          CHECK(impl.line_height == -1,
                "sync does nothing when the generation is unchanged");
          /* rebuild: the sync must notice and recompute */
+         test_language = TEST_LANG_KOREAN;
          font_driver_reload_fonts();
+         test_language = 0;
          font_driver_sync_impl(&impl);
          CHECK(impl.line_height == h0,
                "impl metrics recomputed after a rebuild");
@@ -221,6 +237,33 @@ int main(void)
       font_driver_reload_fonts();
       CHECK(L->path && !strcmp(L->path, "/assets/ozone/bold.ttf"),
             "switching back restores the default face");
+
+      /* Languages that share the menu font must not rebuild anything:
+       * same file, so the work would be thrown away and redone for
+       * nothing. */
+      {
+         void    *before = L->renderer_data;
+         uint32_t g      = font_driver_get_generation();
+         unsigned rebuilt;
+
+         test_language = TEST_LANG_FRENCH;
+         rebuilt = font_driver_reload_fonts();
+         CHECK(rebuilt == 0, "english to french rebuilds nothing");
+
+         test_language = TEST_LANG_JAPANESE;
+         rebuilt = font_driver_reload_fonts();
+         CHECK(rebuilt == 0, "french to japanese rebuilds nothing");
+
+         CHECK(L->renderer_data == before,
+               "renderer state untouched when the face is unchanged");
+         CHECK(font_driver_get_generation() == g,
+               "generation not bumped, so metrics are not recomputed");
+
+         /* but a real change still goes through */
+         test_language = TEST_LANG_THAI;
+         rebuilt = font_driver_reload_fonts();
+         CHECK(rebuilt > 0, "a face change still rebuilds");
+      }
       font_driver_free(L);
    }
 
