@@ -934,7 +934,6 @@ static void gfx_widgets_font_init(
       gfx_widget_font_data_t *font_data,
       bool is_threaded, char *font_path, float font_size)
 {
-   int glyph_width               = 0;
    float scaled_size             = font_size * p_dispwidget->last_scale_factor;
 
    /* Limit minimum font size to keep it readable */

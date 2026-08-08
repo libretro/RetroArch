@@ -102,6 +102,10 @@ int font_driver_get_message_width(void *font_data, const char *msg,
  * never change underneath. */
 uint32_t font_driver_get_generation(void) { return 1; }
 
+/* gfx_widgets asks which font the menu language wants. English here:
+ * these tests are about widget layout, not the language mapping. */
+const char *font_driver_language_font_file(void) { return NULL; }
+
 void font_driver_bind_block(void *font_data, void *block)
 { (void)font_data; (void)block; }
 void font_driver_free(font_data_t *font) { (void)font; }
