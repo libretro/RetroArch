@@ -205,35 +205,31 @@ int font_renderer_create_default(
       unsigned    face      = 0;
 
       /* Ask the renderer where to look. It gets the requested path so
-       * it can resolve against it - freetype hands it to fontconfig -
-       * and answers with candidates and the face to use. Doing the
-       * lookup and the read here is what keeps file I/O out of the
-       * renderers entirely. */
+       * it can resolve against it - freetype hands it to fontconfig,
+       * which answers with a system font when a fallback was asked
+       * for - and returns NULL to accept the request as it stands.
+       * Doing the lookup and the read here is what keeps file I/O out
+       * of the renderers entirely. */
       {
          const char * const *cand = font_backends[i]->get_default_fonts
             ? font_backends[i]->get_default_fonts(font_path, &face)
             : NULL;
 
-         if (cand)
+         for (; cand && *cand; cand++)
          {
-            for (path = NULL; *cand; cand++)
+            /* An empty entry means the renderer has an internal or
+             * system source and wants no file. */
+            if (!**cand || path_is_valid(*cand))
             {
-               /* An empty entry means the renderer has an internal or
-                * system source and wants no file. */
-               if (!**cand || path_is_valid(*cand))
-               {
-                  path = *cand;
-                  break;
-               }
+               path = *cand;
+               break;
             }
          }
 
-         /* Nothing offered and nothing asked for: this backend has
+         /* Nothing asked for and nothing offered: this backend has
           * nothing to work with. */
-         if (!path && !font_path)
-            continue;
          if (!path)
-            path = font_path;
+            continue;
       }
 
       if (path && *path)

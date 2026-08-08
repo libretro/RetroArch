@@ -640,8 +640,12 @@ static const char * const *font_renderer_ct_get_default_fonts(
     * font_renderer_create_default() will not find this on disk, which
     * matches the previous behaviour - init() rejected it too. */
    static const char * const names[] = { "Verdana", NULL };
-   (void)requested;
+
    (void)face_index;
+
+   /* An explicit request wins; this is only the no-path default. */
+   if (requested && *requested)
+      return NULL;
    return names;
 }
 

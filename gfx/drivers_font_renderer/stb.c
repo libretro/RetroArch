@@ -1777,8 +1777,13 @@ static const char * const *font_renderer_stb_get_default_fonts(
       NULL
    };
 
-   (void)requested;
    (void)face_index;
+
+   /* An explicit request is the caller's choice and this renderer has
+    * no reason to second-guess it. Answering with candidates here
+    * replaced the menu font with the first system font on the list. */
+   if (requested && *requested)
+      return NULL;
 
    /* The empty entry is the fallback: no file, built-in glyphs. */
    return paths;

@@ -41,6 +41,23 @@ int main(void)
       drv->free(handle);
    }
 
+   /* 3. an explicit path must be honoured, not replaced by whatever
+    *    the renderer would have picked on its own. Asking the
+    *    resolver unconditionally once swapped the menu font for the
+    *    first system font on stb's candidate list. */
+   {
+      extern const char *last_read_path;
+      read_should_fail = 0;
+      last_read_path   = NULL;
+      ok = font_renderer_create_default(&drv, &handle,
+            "/some/explicit/menu-font.ttf", 16, FONT_ATLAS_FORMAT_A8);
+      CHECK(last_read_path
+            && !strcmp(last_read_path, "/some/explicit/menu-font.ttf"),
+            "explicit path is the one read, not a renderer default");
+      if (ok)
+         drv->free(handle);
+   }
+
    printf("%s (%d failures)\n", fails ? "FAILURES" : "all checks passed", fails);
    return fails ? 1 : 0;
 }

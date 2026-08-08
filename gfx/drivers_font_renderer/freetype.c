@@ -580,7 +580,11 @@ static const char * const *font_renderer_ft_get_default_fonts(
    return fc_result;
 #else
    /* Selection happens in font_renderer_create_default(), which is
-    * what keeps path lookups out of this file. */
+    * what keeps path lookups out of this file. An explicit request
+    * wins over the list. */
+   (void)face_index;
+   if (requested && *requested)
+      return NULL;
    return font_paths;
 #endif
 }

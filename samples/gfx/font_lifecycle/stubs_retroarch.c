@@ -10,9 +10,11 @@ extern int read_should_fail;
 
 bool path_is_valid(const char *path) { (void)path; return true; }
 
+const char *last_read_path = NULL;
+
 bool filestream_read_file(const char *path, void **buf, int64_t *len)
 {
-   (void)path;
+   last_read_path = path;
    if (read_should_fail)
    {
       *buf = NULL;
