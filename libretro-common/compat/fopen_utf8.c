@@ -34,18 +34,14 @@
 #include <fcntl.h>
 #endif
 
-#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || (defined(_XBOX) && !defined(__WINRT__))
-#ifndef LEGACY_WIN32
-#define LEGACY_WIN32
-#endif
-#endif
+#include <compat/legacy_win32.h>
 
 #ifdef _WIN32
 #undef fopen
 
-void *fopen_utf8(const char * filename, const char * mode)
+#if defined(LEGACY_WIN32) || defined(LEGACY_WIN32_RUNTIME)
+static void *fopen_utf8_ansi(const char * filename, const char * mode)
 {
-#if defined(LEGACY_WIN32)
    char * filename_local = utf8_to_local_string_alloc(filename);
    if (filename_local)
    {
@@ -53,7 +49,13 @@ void *fopen_utf8(const char * filename, const char * mode)
       free(filename_local);
       return ret;
    }
-#else
+   return NULL;
+}
+#endif
+
+#if !defined(LEGACY_WIN32) || defined(LEGACY_WIN32_RUNTIME)
+static void *fopen_utf8_wide(const char * filename, const char * mode)
+{
    wchar_t * filename_w  = utf8_to_utf16_string_alloc(filename);
    if (filename_w)
    {
@@ -130,7 +132,20 @@ void *fopen_utf8(const char * filename, const char * mode)
       free(filename_w);
       return ret;
    }
-#endif
    return NULL;
+}
+#endif
+
+void *fopen_utf8(const char * filename, const char * mode)
+{
+#if defined(LEGACY_WIN32_RUNTIME)
+   if (retro_win32_is_legacy())
+      return fopen_utf8_ansi(filename, mode);
+   return fopen_utf8_wide(filename, mode);
+#elif defined(LEGACY_WIN32)
+   return fopen_utf8_ansi(filename, mode);
+#else
+   return fopen_utf8_wide(filename, mode);
+#endif
 }
 #endif

@@ -20,6 +20,33 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+/* Large-file support is requested here rather than by the build,
+ * because a build flag is one more thing every consumer of this file
+ * has to get right and the failure when one does not is silent: a
+ * 32-bit off_t truncates a seek into a read somewhere else in the
+ * file.  These must precede every header in the translation unit.
+ *
+ * Not on Android: bionic did not support _FILE_OFFSET_BITS=64 until
+ * API 24, and asking for it on an older level removes mmap() and
+ * friends from the ABI rather than widening them.  Android instead
+ * takes the explicit lseek64() path below, which bionic has always
+ * had at every API level.
+ *
+ * Not on Windows either, where the CRT has no such knob - off_t is
+ * long there and stays 32 bits even in a 64-bit build.  Windows uses
+ * the _lseeki64 path below. */
+#if !defined(_WIN32)
+#if !defined(__ANDROID__) && !defined(_FILE_OFFSET_BITS)
+#define _FILE_OFFSET_BITS 64
+#endif
+#if !defined(_LARGEFILE_SOURCE)
+#define _LARGEFILE_SOURCE 1
+#endif
+#if !defined(_LARGEFILE64_SOURCE)
+#define _LARGEFILE64_SOURCE 1
+#endif
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -184,14 +211,7 @@
 #include <unistd.h> /* stat() is defined here */
 #endif
 
-/* Assume W-functions do not work below Win2K and Xbox platforms */
-#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX)
-
-#ifndef LEGACY_WIN32
-#define LEGACY_WIN32
-#endif
-
-#endif
+#include <compat/legacy_win32.h>
 
 #if defined(_WIN32)
 #if defined(_MSC_VER) && _MSC_VER >= 1400
@@ -228,6 +248,233 @@
 #endif
 
 #define RFILE_HINT_UNBUFFERED (1 << 8)
+
+/* 64-bit seek on the descriptor path.
+ *
+ * The buffered path seeks with _fseeki64/fseeko.  The descriptor path
+ * - the one RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS selects, and
+ * the only one a memory-mapped file ever uses - seeked with lseek()
+ * and off_t.  off_t is 32 bits on every Windows build, 64-bit ones
+ * included (long is 32-bit there), and on any Unix built without
+ * large-file support.  A file of 2 GiB or more therefore could not be
+ * seeked, and because retro_vfs_file_open_impl() sizes a new handle by
+ * seeking to its end, the failure landed on stream->size and
+ * stream->mapsize at open: the whole file came back as size 0 or a
+ * negative one, and the mapping was skipped.  Disc images are exactly
+ * the files that cross that line.
+ *
+ * The width is settled at compile time, in this order:
+ *
+ *   Windows    SetFilePointer with the high-order dword, on the
+ *              handle behind the descriptor.  Deliberately not the
+ *              CRT's _lseeki64: that arrived with Visual C++ 4 and is
+ *              exported by the msvcrt.dll of that era onwards, but
+ *              Windows 95 shipped without an msvcrt.dll at all and
+ *              which one a 9x box ended up with came down to what an
+ *              installer happened to drop there.  SetFilePointer has
+ *              no such history - it is the original Win32 seek, in
+ *              kernel32 since NT 3.1 and Windows 95 RTM, and it is
+ *              what the CRT's own _lseeki64 calls underneath.  (Not
+ *              SetFilePointerEx, which is XP and up and would be the
+ *              one call here that 9x could not make.)  The Xbox XDKs
+ *              have it too, alongside the _get_osfhandle this file
+ *              already uses for the Win32 mapping path, so no console
+ *              needs a case of its own.  Note that on the original
+ *              Xbox the buffered path is stuck at 32 bits regardless:
+ *              that CRT has fseek(long) and no _fseeki64, so a large
+ *              file there is reachable only through this path.
+ *
+ *              INVALID_SET_FILE_POINTER is also a legitimate low
+ *              dword for a file this size, hence the SetLastError
+ *              dance rather than a bare comparison.
+ *
+ *              Store/UWP targets, where SetFilePointer is outside the
+ *              app API partition, take _lseeki64 instead - every CRT
+ *              new enough to build for that target has it.
+ *
+ *   Android    lseek64.  Always present, at every API level, and the
+ *              reason the macros at the top of this file leave
+ *              _FILE_OFFSET_BITS alone there.
+ *
+ *   otherwise  lseek, whose off_t those same macros have widened to
+ *              64 bits wherever the platform has large-file support -
+ *              which is everywhere with an mmap() to reach this path
+ *              in the first place.  Where it has none, an offset off_t
+ *              cannot represent is refused rather than silently
+ *              truncated, and a seek that lands past its range is
+ *              reported as the failure it is.
+ */
+/* 64-bit seek on the buffered path.
+ *
+ * The existing ladder asked for _fseeki64 only under ATLEAST_VC2005
+ * (an _MSC_VER test, so never true for MinGW) and otherwise for
+ * fseeko under HAVE_64BIT_OFFSETS, whose POSIX feature macros no
+ * Windows toolchain defines by itself.  A MinGW build that did not
+ * happen to pass -D_FILE_OFFSET_BITS=64 therefore fell all the way
+ * through to fseek(fp, (long)offset, whence) and could not seek a
+ * stream past 2 GiB - the same failure as the descriptor path, in the
+ * path callers reach without asking for any hint at all.  Measured on
+ * an unfixed tree, both Windows targets: size -1073741824, seeks
+ * failing, tell reporting the truncation.
+ *
+ * Windows tiers, widest provenance last:
+ *
+ *   _fseeki64      MSVC 2005 and up, and MinGW/MinGW-w64, which
+ *                  declare it and import it from msvcrt.
+ *   fgetpos/       C89, in every CRT that has ever existed, including
+ *   fsetpos        the 2002 Xbox one - and on Windows fpos_t is a
+ *                  64-bit scalar (__int64) rather than the struct the
+ *                  standard permits, so it carries the whole range.
+ *                  This is the tier VC6 and the Xbox XDK land on.
+ *                  SEEK_END needs a length, taken from the handle
+ *                  with GetFileSize rather than from a CRT call, for
+ *                  the same reason SetFilePointer was chosen below.
+ *   fseek          Anything else: unchanged behaviour, with an
+ *                  unrepresentable offset refused rather than
+ *                  silently truncated.
+ */
+#if defined(_WIN32)
+#if defined(ATLEAST_VC2005) || defined(__MINGW32__)
+#define RETRO_VFS_HAVE_FSEEKI64 1
+#elif !defined(__STDC__) && defined(_INTEGRAL_MAX_BITS) && _INTEGRAL_MAX_BITS >= 64
+#define RETRO_VFS_HAVE_FPOS64 1
+#endif
+#endif
+
+#if defined(_WIN32) && !defined(RETRO_VFS_HAVE_FSEEKI64) && defined(RETRO_VFS_HAVE_FPOS64)
+static int64_t retro_vfs_fp_length64(FILE *fp)
+{
+   HANDLE h;
+   DWORD  lo, hi = 0;
+
+   fflush(fp);
+   h = (HANDLE)_get_osfhandle(_fileno(fp));
+   if (h == INVALID_HANDLE_VALUE)
+      return -1;
+
+   SetLastError(NO_ERROR);
+   lo = GetFileSize(h, &hi);
+   if (lo == INVALID_FILE_SIZE && GetLastError() != NO_ERROR)
+      return -1;
+
+   return (int64_t)(((uint64_t)hi << 32) | (uint64_t)lo);
+}
+#endif
+
+static int retro_vfs_fp_seek64(FILE *fp, int64_t offset, int whence)
+{
+#if defined(RETRO_VFS_HAVE_FSEEKI64)
+   return _fseeki64(fp, offset, whence);
+#elif defined(RETRO_VFS_HAVE_FPOS64)
+   fpos_t pos;
+
+   switch (whence)
+   {
+      case SEEK_SET:
+         break;
+      case SEEK_CUR:
+         if (fgetpos(fp, &pos) != 0)
+            return -1;
+         offset += (int64_t)pos;
+         break;
+      case SEEK_END:
+         {
+            const int64_t len = retro_vfs_fp_length64(fp);
+            if (len < 0)
+               return -1;
+            offset += len;
+         }
+         break;
+      default:
+         return -1;
+   }
+
+   if (offset < 0)
+      return -1;
+   pos = (fpos_t)offset;
+   return fsetpos(fp, &pos) == 0 ? 0 : -1;
+#elif defined(HAVE_64BIT_OFFSETS)
+   return fseeko(fp, (off_t)offset, whence);
+#else
+   if (sizeof(long) < sizeof(int64_t))
+   {
+      if (     offset >  (int64_t)LONG_MAX
+            || offset < -(int64_t)LONG_MAX - 1)
+         return -1;
+   }
+   return fseek(fp, (long)offset, whence) != 0 ? -1 : 0;
+#endif
+}
+
+static int64_t retro_vfs_fp_tell64(FILE *fp)
+{
+#if defined(RETRO_VFS_HAVE_FSEEKI64)
+   return _ftelli64(fp);
+#elif defined(RETRO_VFS_HAVE_FPOS64)
+   fpos_t pos;
+   if (fgetpos(fp, &pos) != 0)
+      return -1;
+   return (int64_t)pos;
+#elif defined(HAVE_64BIT_OFFSETS)
+   return ftello(fp);
+#else
+   return ftell(fp);
+#endif
+}
+
+static int64_t retro_vfs_fd_seek64(int fd, int64_t offset, int whence)
+{
+#if defined(_WIN32) && (!defined(WINAPI_FAMILY) || defined(_CRT_USE_WINAPI_FAMILY_DESKTOP_APP))
+   HANDLE h = (HANDLE)_get_osfhandle(fd);
+   LONG   hi;
+   DWORD  lo;
+   DWORD  method;
+
+   if (h == INVALID_HANDLE_VALUE)
+      return -1;
+
+   switch (whence)
+   {
+      case SEEK_SET:
+         method = FILE_BEGIN;
+         break;
+      case SEEK_CUR:
+         method = FILE_CURRENT;
+         break;
+      case SEEK_END:
+         method = FILE_END;
+         break;
+      default:
+         return -1;
+   }
+
+   /* Two's complement split: a negative offset relative to CURRENT or
+    * END arrives as a sign-extended high dword, which is what
+    * SetFilePointer's signed PLONG wants. */
+   hi = (LONG)(offset >> 32);
+   SetLastError(NO_ERROR);
+   lo = SetFilePointer(h, (LONG)(DWORD)(offset & 0xFFFFFFFFu), &hi, method);
+   if (lo == INVALID_SET_FILE_POINTER && GetLastError() != NO_ERROR)
+      return -1;
+
+   return (int64_t)(((uint64_t)(DWORD)hi << 32) | (uint64_t)lo);
+#elif defined(_WIN32)
+   return (int64_t)_lseeki64(fd, (__int64)offset, whence);
+#elif defined(__ANDROID__)
+   return (int64_t)lseek64(fd, (off64_t)offset, whence);
+#else
+   /* Compile-time: the cast is lossless exactly when off_t is wide
+    * enough, and the guard costs nothing when it is (the comparison
+    * folds away). */
+   if (sizeof(off_t) < sizeof(int64_t))
+   {
+      if (     offset >  (int64_t)LONG_MAX
+            || offset < -(int64_t)LONG_MAX - 1)
+         return -1;
+   }
+   return (int64_t)lseek(fd, (off_t)offset, whence);
+#endif
+}
 
 /* Keeps a cold path that needs a PATH_MAX_LENGTH scratch buffer out of
  * a caller that would otherwise not need a frame at all. Under -Os the
@@ -290,14 +537,7 @@ int64_t retro_vfs_file_seek_internal(
       if (stream->scheme == VFS_SCHEME_SMB)
          return retro_vfs_file_seek_smb(stream, offset, whence);
 #endif
-#ifdef ATLEAST_VC2005
-      /* VC2005 and up have a special 64-bit fseek */
-      return _fseeki64(stream->fp, offset, whence);
-#elif defined(HAVE_64BIT_OFFSETS)
-      return fseeko(stream->fp, (off_t)offset, whence);
-#else
-      return fseek(stream->fp, (long)offset, whence) != 0 ? -1 : 0;
-#endif
+      return retro_vfs_fp_seek64(stream->fp, offset, whence);
    }
 #ifdef VFS_HAVE_FILE_MAPPING
    /* Need to check stream->mapped because this function is
@@ -340,7 +580,7 @@ int64_t retro_vfs_file_seek_internal(
    }
 #endif
 
-   return lseek(stream->fd, (off_t)offset, whence) == -1 ? -1 : 0;
+   return retro_vfs_fd_seek64(stream->fd, offset, whence) == -1 ? -1 : 0;
 }
 
 /**
@@ -634,7 +874,22 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
          default:
             {
 #if defined(_WIN32) && !defined(_XBOX)
-#if defined(LEGACY_WIN32)
+#if defined(LEGACY_WIN32_RUNTIME)
+               if (retro_win32_is_legacy())
+               {
+                  char *path_local    = utf8_to_local_string_alloc(path);
+                  stream->fd          = open(path_local, flags, 0);
+                  if (path_local)
+                     free(path_local);
+               }
+               else
+               {
+                  wchar_t * path_wide = utf8_to_utf16_string_alloc(path);
+                  stream->fd          = _wopen(path_wide, flags, 0);
+                  if (path_wide)
+                     free(path_wide);
+               }
+#elif defined(LEGACY_WIN32)
                char *path_local    = utf8_to_local_string_alloc(path);
                stream->fd          = open(path_local, flags, 0);
                if (path_local)
@@ -670,8 +925,21 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
          retro_vfs_file_seek_internal(stream, 0, SEEK_SET);
 
 #if defined(HAVE_MMAP)
-         if ((stream->mapped = (uint8_t*)mmap((void*)0,
-               stream->mapsize, PROT_READ,  MAP_SHARED, stream->fd, 0)) == MAP_FAILED)
+         /* mmap() takes a size_t.  On a 32-bit host a file larger than
+          * the address space would truncate to its low bits on the way
+          * in - and a truncated length can still map successfully,
+          * leaving a short mapping while mapsize goes on claiming the
+          * whole file, so every read past the cut would fault instead
+          * of coming up short.  Refuse the mapping and let the
+          * descriptor path below serve the file, exactly as a failed
+          * mmap() does.  Folds away where size_t is 64 bits. */
+         if (stream->mapsize > (uint64_t)(size_t)-1)
+         {
+            stream->mapped = NULL;
+            stream->hints &= ~RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS;
+         }
+         else if ((stream->mapped = (uint8_t*)mmap((void*)0,
+               (size_t)stream->mapsize, PROT_READ,  MAP_SHARED, stream->fd, 0)) == MAP_FAILED)
          {
             stream->mapped = NULL;
             stream->hints &= ~RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS;
@@ -879,14 +1147,7 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
       if (stream->scheme == VFS_SCHEME_SMB)
          return retro_vfs_file_tell_smb(stream);
 #endif
-#ifdef ATLEAST_VC2005
-      /* VC2005 and up have a special 64-bit ftell */
-      return _ftelli64(stream->fp);
-#elif defined(HAVE_64BIT_OFFSETS)
-      return ftello(stream->fp);
-#else
-      return ftell(stream->fp);
-#endif
+      return retro_vfs_fp_tell64(stream->fp);
    }
 #ifdef VFS_HAVE_FILE_MAPPING
    /* Need to check stream->mapped because this function
@@ -895,7 +1156,7 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
          RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS))
       return stream->mappos;
 #endif
-   return lseek(stream->fd, 0, SEEK_CUR);
+   return retro_vfs_fd_seek64(stream->fd, 0, SEEK_CUR);
 }
 
 int64_t retro_vfs_file_seek_impl(libretro_vfs_implementation_file *stream,
@@ -1179,6 +1440,66 @@ const uint8_t *retro_vfs_file_get_mapped_ptr_impl(
    return NULL;
 }
 
+#if defined(_WIN32) && !defined(VITA) && !defined(__PSL1GHT__) && !defined(__PS3__)
+#if defined(LEGACY_WIN32) || defined(LEGACY_WIN32_RUNTIME)
+/* Use _stat64 explicitly to match the struct _stat64 buffer the caller
+ * declares.  The bare _stat is a macro that expands to _stat64i32 on
+ * VS2005+ (or _stat32 with _USE_32BIT_TIME_T), neither of which match
+ * struct _stat64 -- passing the wrong struct silently truncates
+ * st_size.  _stat64 has been in MSVC since VS2003 (_MSC_VER >= 1300)
+ * and is provided by mingw-w64.  VC6 has no 64-bit time_t at all;
+ * _stati64 is the only match. */
+static int vfs_stat_win32_ansi(const char *path,
+      struct _stat64 *stat_buf, DWORD *file_info)
+{
+   char *path_local = utf8_to_local_string_alloc(path);
+
+   if (!path_local)
+      return 0;
+
+   *file_info       = GetFileAttributes(path_local);
+
+#if defined(_MSC_VER) && _MSC_VER < 1300
+   if (     *file_info == INVALID_FILE_ATTRIBUTES
+         || _stati64(path_local, (struct _stati64*)stat_buf) != 0)
+#else
+   if (     *file_info == INVALID_FILE_ATTRIBUTES
+         || _stat64(path_local, stat_buf) != 0)
+#endif
+   {
+      free(path_local);
+      return 0;
+   }
+
+   free(path_local);
+   return 1;
+}
+#endif
+
+#if !defined(LEGACY_WIN32) || defined(LEGACY_WIN32_RUNTIME)
+static int vfs_stat_win32_wide(const char *path,
+      struct _stat64 *stat_buf, DWORD *file_info)
+{
+   wchar_t *path_wide = utf8_to_utf16_string_alloc(path);
+
+   if (!path_wide)
+      return 0;
+
+   *file_info         = GetFileAttributesW(path_wide);
+
+   if (     *file_info == INVALID_FILE_ATTRIBUTES
+         || _wstat64(path_wide, stat_buf) != 0)
+   {
+      free(path_wide);
+      return 0;
+   }
+
+   free(path_wide);
+   return 1;
+}
+#endif
+#endif
+
 int retro_vfs_stat_64_impl(const char *path, int64_t *size)
 {
    int ret                   = RETRO_VFS_STAT_IS_VALID;
@@ -1243,11 +1564,6 @@ int retro_vfs_stat_64_impl(const char *path, int64_t *size)
       char path_buf[PATH_MAX_LENGTH];
       const char *stat_path = path;
       DWORD file_info;
-#if defined(LEGACY_WIN32)
-      char *path_local;
-#else
-      wchar_t *path_wide;
-#endif
       size_t _len = strlcpy(path_buf, path, sizeof(path_buf));
 
       if (_len > 0 && _len < sizeof(path_buf))
@@ -1267,50 +1583,20 @@ int retro_vfs_stat_64_impl(const char *path, int64_t *size)
 
          stat_path = path_buf;
       }
-#if defined(LEGACY_WIN32)
-      path_local                = utf8_to_local_string_alloc(stat_path);
-
-      if (!path_local)
-         return 0;
-
-      file_info                 = GetFileAttributes(path_local);
-
-      /* Use _stat64 explicitly to match the struct _stat64 buffer
-       * declared above. The bare _stat is a macro that expands to
-       * _stat64i32 on VS2005+ (or _stat32 with _USE_32BIT_TIME_T),
-       * neither of which match struct _stat64 -- passing the wrong
-       * struct silently truncates st_size. _stat64 has been in MSVC
-       * since VS2003 (_MSC_VER >= 1300) and is provided by mingw-w64.
-       * VC6 has no 64-bit time_t at all; _stati64 is the only match. */
-#if defined(_MSC_VER) && _MSC_VER < 1300
-      if (file_info == INVALID_FILE_ATTRIBUTES
-            || _stati64(path_local, (struct _stati64*)&stat_buf) != 0)
-#else
-      if (file_info == INVALID_FILE_ATTRIBUTES
-            || _stat64(path_local, &stat_buf) != 0)
-#endif
+#if defined(LEGACY_WIN32_RUNTIME)
+      if (retro_win32_is_legacy())
       {
-         free(path_local);
-         return 0;
+         if (!vfs_stat_win32_ansi(stat_path, &stat_buf, &file_info))
+            return 0;
       }
-
-      free(path_local);
+      else if (!vfs_stat_win32_wide(stat_path, &stat_buf, &file_info))
+         return 0;
+#elif defined(LEGACY_WIN32)
+      if (!vfs_stat_win32_ansi(stat_path, &stat_buf, &file_info))
+         return 0;
 #else
-      path_wide                 = utf8_to_utf16_string_alloc(stat_path);
-
-      if (!path_wide)
+      if (!vfs_stat_win32_wide(stat_path, &stat_buf, &file_info))
          return 0;
-
-      file_info                 = GetFileAttributesW(path_wide);
-
-      if (file_info == INVALID_FILE_ATTRIBUTES
-            || _wstat64(path_wide, &stat_buf) != 0)
-      {
-         free(path_wide);
-         return 0;
-      }
-
-      free(path_wide);
 #endif
 
       if (size)
@@ -1413,7 +1699,22 @@ int retro_vfs_mkdir_impl(const char *dir)
 #endif
    {
 #if defined(_WIN32)
-#ifdef LEGACY_WIN32
+#if defined(LEGACY_WIN32_RUNTIME)
+      int ret        = -1;
+
+      if (retro_win32_is_legacy())
+         ret         = _mkdir(dir);
+      else
+      {
+         wchar_t *dir_w = utf8_to_utf16_string_alloc(dir);
+
+         if (dir_w)
+         {
+            ret = _wmkdir(dir_w);
+            free(dir_w);
+         }
+      }
+#elif defined(LEGACY_WIN32)
       int ret        = _mkdir(dir);
 #else
       wchar_t *dir_w = utf8_to_utf16_string_alloc(dir);
@@ -1468,7 +1769,17 @@ struct libretro_vfs_implementation_dir
 {
    char* orig_path;
 #if defined(_WIN32)
-#if defined(LEGACY_WIN32)
+#if defined(LEGACY_WIN32_RUNTIME)
+   /* Unlike every other site, the difference here is a type, not a
+    * call: the handle carries the find-data across retro_readdir()
+    * calls.  A union costs the larger of the two (the W form, by the
+    * width of cFileName) and lets both live in one handle. */
+   union
+   {
+      WIN32_FIND_DATA  a;
+      WIN32_FIND_DATAW w;
+   } entry;
+#elif defined(LEGACY_WIN32)
    WIN32_FIND_DATA entry;
 #else
    WIN32_FIND_DATAW entry;
@@ -1515,9 +1826,10 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(
 #if defined(_WIN32)
    char path_buf[1024];
    size_t _len;
-#if defined(LEGACY_WIN32)
+#if defined(LEGACY_WIN32) || defined(LEGACY_WIN32_RUNTIME)
    char *path_local   = NULL;
-#else
+#endif
+#if !defined(LEGACY_WIN32) || defined(LEGACY_WIN32_RUNTIME)
    wchar_t *path_wide = NULL;
 #endif
 #endif
@@ -1588,7 +1900,22 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(
 
    path_buf[_len    ]      = '*';
    path_buf[_len + 1]      = '\0';
-#if defined(LEGACY_WIN32)
+#if defined(LEGACY_WIN32_RUNTIME)
+   if (retro_win32_is_legacy())
+   {
+      path_local           = utf8_to_local_string_alloc(path_buf);
+      rdir->directory      = FindFirstFileA(path_local, &rdir->entry.a);
+      if (path_local)
+         free(path_local);
+   }
+   else
+   {
+      path_wide            = utf8_to_utf16_string_alloc(path_buf);
+      rdir->directory      = FindFirstFileW(path_wide, &rdir->entry.w);
+      if (path_wide)
+         free(path_wide);
+   }
+#elif defined(LEGACY_WIN32)
    path_local              = utf8_to_local_string_alloc(path_buf);
    rdir->directory         = FindFirstFile(path_local, &rdir->entry);
    if (path_local)
@@ -1613,10 +1940,29 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(
 #endif
 
 #ifdef _WIN32
+#if defined(LEGACY_WIN32_RUNTIME)
+   /* Same field, same offset in both arms of the union - but C wants
+    * one of them named, so follow whichever the handle is using. */
+   if (retro_win32_is_legacy())
+   {
+      if (include_hidden)
+         rdir->entry.a.dwFileAttributes |= FILE_ATTRIBUTE_HIDDEN;
+      else
+         rdir->entry.a.dwFileAttributes &= ~FILE_ATTRIBUTE_HIDDEN;
+   }
+   else
+   {
+      if (include_hidden)
+         rdir->entry.w.dwFileAttributes |= FILE_ATTRIBUTE_HIDDEN;
+      else
+         rdir->entry.w.dwFileAttributes &= ~FILE_ATTRIBUTE_HIDDEN;
+   }
+#else
    if (include_hidden)
       rdir->entry.dwFileAttributes |= FILE_ATTRIBUTE_HIDDEN;
    else
       rdir->entry.dwFileAttributes &= ~FILE_ATTRIBUTE_HIDDEN;
+#endif
 #else
    (void)include_hidden;
 #endif
@@ -1650,7 +1996,13 @@ bool retro_vfs_readdir_impl(libretro_vfs_implementation_dir *rdir)
 
 #if defined(_WIN32)
    if (rdir->next)
-#if defined(LEGACY_WIN32)
+#if defined(LEGACY_WIN32_RUNTIME)
+   {
+      if (retro_win32_is_legacy())
+         return (FindNextFileA(rdir->directory, &rdir->entry.a) != 0);
+      return (FindNextFileW(rdir->directory, &rdir->entry.w) != 0);
+   }
+#elif defined(LEGACY_WIN32)
       return (FindNextFile(rdir->directory, &rdir->entry) != 0);
 #else
       return (FindNextFileW(rdir->directory, &rdir->entry) != 0);
@@ -1682,17 +2034,50 @@ const char *retro_vfs_dirent_get_name_impl(libretro_vfs_implementation_dir *rdir
 #endif
    {
 #if defined(_WIN32)
-#if defined(LEGACY_WIN32)
+#if defined(LEGACY_WIN32_RUNTIME)
+      char *name;
+      void  *buf;
+      size_t buf_len;
+
+      if (retro_win32_is_legacy())
+      {
+         name          = local_to_utf8_string_alloc(rdir->entry.a.cFileName);
+         buf           = rdir->entry.a.cFileName;
+         buf_len       = sizeof(rdir->entry.a.cFileName);
+      }
+      else
+      {
+         name          = utf16_to_utf8_string_alloc(rdir->entry.w.cFileName);
+         buf           = rdir->entry.w.cFileName;
+         buf_len       = sizeof(rdir->entry.w.cFileName);
+      }
+
+      if (!name)
+         return NULL;
+      /* As in the compile-time paths: the decoded UTF-8 is written back
+       * over the find-data's own name buffer, which outlives this call
+       * and is always at least as large as the name it held. */
+      memset(buf, 0, buf_len);
+      strlcpy((char*)buf, name, buf_len);
+      free(name);
+      return (char*)buf;
+#elif defined(LEGACY_WIN32)
       char *name       = local_to_utf8_string_alloc(rdir->entry.cFileName);
-#else
-      char *name       = utf16_to_utf8_string_alloc(rdir->entry.cFileName);
-#endif
       if (!name)
          return NULL;
       memset(rdir->entry.cFileName, 0, sizeof(rdir->entry.cFileName));
       strlcpy((char*)rdir->entry.cFileName, name, sizeof(rdir->entry.cFileName));
       free(name);
       return (char*)rdir->entry.cFileName;
+#else
+      char *name       = utf16_to_utf8_string_alloc(rdir->entry.cFileName);
+      if (!name)
+         return NULL;
+      memset(rdir->entry.cFileName, 0, sizeof(rdir->entry.cFileName));
+      strlcpy((char*)rdir->entry.cFileName, name, sizeof(rdir->entry.cFileName));
+      free(name);
+      return (char*)rdir->entry.cFileName;
+#endif
 #elif defined(VITA) || defined(__PSL1GHT__) || defined(__PS3__)
       return rdir->entry.d_name;
 #else
