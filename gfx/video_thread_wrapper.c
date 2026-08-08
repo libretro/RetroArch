@@ -201,6 +201,15 @@ static bool video_thread_handle_packet(
                   thr->input, thr->input_data);
             if (thr->driver_data && thr->driver->viewport_info)
                thr->driver->viewport_info(thr->driver_data, &thr->vp);
+            /* Drivers that have handed the OSD font lifecycle up get
+             * it created here rather than in video_driver.c, because
+             * this runs on the video thread that owns the graphics
+             * context. Unmigrated drivers still do it themselves,
+             * also from here, inside their own init(). */
+            if (     thr->driver_data
+                  && thr->driver->font_api != FONT_DRIVER_RENDER_DONT_CARE)
+               font_driver_init_osd(thr->driver_data, &thr->info,
+                     false, true, thr->driver->font_api);
          }
          else
             thr->driver_data = NULL;
@@ -209,6 +218,11 @@ static bool video_thread_handle_packet(
          break;
 
       case CMD_FREE:
+         /* Before the driver goes: the font owns GPU objects created
+          * against it, and this is the thread they belong to. */
+         if (     thr->driver
+               && thr->driver->font_api != FONT_DRIVER_RENDER_DONT_CARE)
+            font_driver_free_osd();
          if (thr->driver_data && thr->driver && thr->driver->free)
             thr->driver->free(thr->driver_data);
          thr->driver_data = NULL;

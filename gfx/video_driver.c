@@ -44,6 +44,7 @@
 
 #ifdef HAVE_THREADS
 #include "video_thread_wrapper.h"
+#include "font_driver.h"
 #endif
 
 #ifdef HAVE_MENU
@@ -1973,6 +1974,19 @@ void video_driver_free_internal(void)
          d->state       = SHADER_LOAD_IDLE;
          d->driver_data = NULL;
       }
+   }
+
+   /* Drop the OSD font before the driver that owns its GPU objects
+    * goes away. Only for drivers that have handed the lifecycle up;
+    * the rest still free it inside their own free(). Under threaded
+    * video the wrapper does this from CMD_FREE, on the video thread,
+    * so it must not also happen here. */
+#ifdef HAVE_THREADS
+   if (!is_threaded)
+#endif
+   {
+      if (vid && vid->font_api != FONT_DRIVER_RENDER_DONT_CARE)
+         font_driver_free_osd();
    }
 
    if (video_st->data && vid && vid->free)
@@ -4546,6 +4560,21 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
       RARCH_ERR("[Video] Cannot open video driver. Exiting...\n");
       return false;
    }
+
+   /* Create the OSD font for drivers that have handed the lifecycle
+    * up. Threaded video is excluded: the wrapper creates it from
+    * CMD_INIT on the video thread, where the graphics context lives.
+    *
+    * Pairing creation and destruction here rather than inside each
+    * driver is what makes the font's lifetime match the driver
+    * instance. When a driver owns it, a teardown path that does not
+    * reach the driver's free() leaves the font alive across the
+    * reinit, holding GPU handles from a device that is gone -
+    * font_driver_init_osd() then no-ops because the pointer is still
+    * set, and the stale object keeps drawing. */
+   if (video_st->current_video->font_api != FONT_DRIVER_RENDER_DONT_CARE)
+      font_driver_init_osd(video_st->data, &video, false,
+            video.is_threaded, video_st->current_video->font_api);
 
    video_st->poke = NULL;
    if (video_st->current_video->poke_interface)

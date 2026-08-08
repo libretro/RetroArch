@@ -4890,8 +4890,6 @@ static void vulkan_free(void *data)
       /* No need to init this since textures are create on-demand. */
       vulkan_deinit_menu(vk);
 
-      font_driver_free_osd();
-
       vulkan_deinit_static_resources(vk);
 #ifdef HAVE_OVERLAY
       vulkan_overlay_free(vk);
@@ -5219,26 +5217,6 @@ static void *vulkan_init(const video_info_t *video,
    settings_t *settings               = config_get_ptr();
    vk_t *vk;
 
-   /* Drop the OSD font before building the new driver instance.
-    *
-    * font_driver_init_osd() only creates a font when video_font_driver
-    * is NULL, and vulkan_free() is not always reached on the reinit
-    * path - the old vk_t can simply be abandoned. When that happens
-    * the font survives with font->vk pointing at the previous
-    * instance and VkImage/VkImageView handles from a device that is
-    * gone, whose handle values the new device then recycles. The font
-    * draw samples whatever now owns them, which is why the glyphs
-    * fill solid at correct geometry and why nothing done to the
-    * atlas, its format, its upload path or the font renderer changes
-    * anything.
-    *
-    * Freeing here rather than in vulkan_free() is deliberate: at this
-    * point the old device is still alive, so the font can release its
-    * own GPU objects. MSU-1 content on snes9x reaches this because
-    * the 44.1 kHz switch issues SET_SYSTEM_AV_INFO and forces reinits
-    * mid-session. */
-   font_driver_free_osd();
-
    if (!(vk = (vk_t*)calloc(1, sizeof(*vk))))
       return NULL;
    ctx_driver                         = vulkan_get_context(vk, settings);
@@ -5494,12 +5472,6 @@ static void *vulkan_init(const video_info_t *video,
             vk->ctx_data, joypad_name,
             input, input_data);
    }
-
-      font_driver_init_osd(vk,
-            video,
-            false,
-            video->is_threaded,
-            FONT_DRIVER_RENDER_VULKAN_API);
 
    /* The MoltenVK driver needs this, particularly after driver reinit
       Also it is required for HDR to not break during reinit, while not ideal it
@@ -9514,8 +9486,9 @@ video_driver_t video_vulkan = {
 #endif
    vulkan_invalidate_hw_render_cache,
 #ifdef VULKAN_HDR_SWAPCHAIN
-   vulkan_read_viewport_hdr
+   vulkan_read_viewport_hdr,
 #else
-   NULL /* read_viewport_hdr */
+   NULL, /* read_viewport_hdr */
 #endif
+   FONT_DRIVER_RENDER_VULKAN_API
 };
