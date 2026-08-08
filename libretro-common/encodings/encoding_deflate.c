@@ -406,6 +406,7 @@ struct rinflate
    int            wrapped; /* wrap != RINF_WRAP_RAW                      */
    int            stop_at_block; /* report each block boundary            */
    int            block_ready;   /* boundary reached, not yet reported    */
+   int            first_block_reported;
    int            skip_bits;     /* bits to discard at stream start       */
    int            bfinal;  /* current block is the last                  */
    int            btype;
@@ -1088,11 +1089,17 @@ int rinflate_process(void *data, size_t *read, size_t *wrote)
             break;
 
          case RINF_BLOCK_HDR:
+            if (s->stop_at_block && !s->first_block_reported)
+            {
+               s->first_block_reported = 1;
+               status = RDEFLATE_PROCESS_BLOCK;
+               goto done;
+            }
             if (s->block_ready)
             {
                s->block_ready = 0;
                status = RDEFLATE_PROCESS_BLOCK;
-               goto suspend;
+               goto done;
             }
             if (!rinf_need(s, 3)) goto suspend;
             s->bfinal = rinf_getbits(s, 1);
