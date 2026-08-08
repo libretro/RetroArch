@@ -1367,22 +1367,6 @@ static void gfx_display_d3d9_hlsl_scissor_end(void *data,
    IDirect3DDevice9_SetScissorRect(d3d9->dev, &rect);
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_d3d9_hlsl = {
-   gfx_display_d3d9_hlsl_draw,
-   gfx_display_d3d9_hlsl_draw_pipeline,
-   gfx_display_d3d9_hlsl_blend_begin,
-   gfx_display_d3d9_hlsl_blend_end,
-   NULL,                                     /* get_default_mvp        */
-   NULL,                                     /* get_default_vertices   */
-   NULL,                                     /* get_default_tex_coords */
-   &d3d9_font,
-   GFX_VIDEO_DRIVER_DIRECT3D9_HLSL,
-   "d3d9_hlsl",
-   true,
-   gfx_display_d3d9_hlsl_scissor_begin,
-   gfx_display_d3d9_hlsl_scissor_end
-};
-
 /*
  * FONT DRIVER
  */
@@ -2002,18 +1986,6 @@ static bool d3d9_font_get_line_metrics(
    }
    return false;
 }
-
-font_renderer_t d3d9_font = {
-   d3d9_font_init,
-   d3d9_font_free,
-   d3d9_font_render_msg,
-   "d3d9_hlsl",
-   d3d9_font_get_glyph,
-   NULL, /* bind_block */
-   NULL, /* flush */
-   d3d9_font_get_message_width,
-   d3d9_font_get_line_metrics
-};
 
 /*
  * VIDEO DRIVER
@@ -8381,6 +8353,18 @@ static bool d3d9_hlsl_has_windowed(void *data)
 #endif
 }
 
+static font_renderer_t d3d9_hlsl_font = {
+   d3d9_font_init,
+   d3d9_font_free,
+   d3d9_font_render_msg,
+   "d3d9_hlsl",
+   d3d9_font_get_glyph,
+   NULL, /* bind_block */
+   NULL, /* flush */
+   d3d9_font_get_message_width,
+   d3d9_font_get_line_metrics
+};
+
 video_driver_t video_d3d9_hlsl = {
    d3d9_hlsl_init,
    d3d9_hlsl_frame,
@@ -8413,5 +8397,21 @@ video_driver_t video_d3d9_hlsl = {
 #endif
    NULL, /* invalidate_hw_render_cache */
    NULL, /* read_viewport_hdr */
-   &d3d9_font
+   &d3d9_hlsl_font
+};
+
+gfx_display_ctx_driver_t gfx_display_ctx_d3d9_hlsl = {
+   gfx_display_d3d9_hlsl_draw,
+   gfx_display_d3d9_hlsl_draw_pipeline,
+   gfx_display_d3d9_hlsl_blend_begin,
+   gfx_display_d3d9_hlsl_blend_end,
+   NULL,                                     /* get_default_mvp        */
+   NULL,                                     /* get_default_vertices   */
+   NULL,                                     /* get_default_tex_coords */
+   &d3d9_hlsl_font,
+   GFX_VIDEO_DRIVER_DIRECT3D9_HLSL,
+   "d3d9_hlsl",
+   true,
+   gfx_display_d3d9_hlsl_scissor_begin,
+   gfx_display_d3d9_hlsl_scissor_end
 };

@@ -2178,26 +2178,6 @@ static void gfx_display_vk_scissor_end(void *data,
    vk->tracker.dirty       |=  VULKAN_DIRTY_DYNAMIC_BIT;
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_vulkan = {
-   gfx_display_vk_draw,
-#ifdef HAVE_SHADERPIPELINE
-   gfx_display_vk_draw_pipeline,
-#else
-   NULL,                                  /* draw_pipeline */
-#endif
-   gfx_display_vk_blend_begin,
-   gfx_display_vk_blend_end,
-   gfx_display_vk_get_default_mvp,
-   gfx_display_vk_get_default_vertices,
-   gfx_display_vk_get_default_tex_coords,
-   &vulkan_raster_font,
-   GFX_VIDEO_DRIVER_VULKAN,
-   "vulkan",
-   false,
-   gfx_display_vk_scissor_begin,
-   gfx_display_vk_scissor_end
-};
-
 /**
  * FONT DRIVER
  */
@@ -3054,18 +3034,6 @@ static bool vulkan_font_get_line_metrics(void* data,
    }
    return false;
 }
-
-font_renderer_t vulkan_raster_font = {
-   vulkan_font_init,
-   vulkan_font_free,
-   vulkan_font_render_msg,
-   "vulkan",
-   vulkan_font_get_glyph,
-   NULL,                            /* bind_block */
-   NULL,                            /* flush_block */
-   vulkan_font_get_message_width,
-   vulkan_font_get_line_metrics
-};
 
 /*
  * VIDEO DRIVER
@@ -9488,6 +9456,19 @@ static bool vulkan_focus(void *data)
    return true;
 }
 
+static font_renderer_t vulkan_raster_font = {
+   vulkan_font_init,
+   vulkan_font_free,
+   vulkan_font_render_msg,
+   "vulkan",
+   vulkan_font_get_glyph,
+   NULL,                            /* bind_block */
+   NULL,                            /* flush_block */
+   vulkan_font_get_message_width,
+   vulkan_font_get_line_metrics
+};
+
+
 video_driver_t video_vulkan = {
    vulkan_init,
    vulkan_frame,
@@ -9521,4 +9502,24 @@ video_driver_t video_vulkan = {
    NULL, /* read_viewport_hdr */
 #endif
    &vulkan_raster_font
+};
+
+gfx_display_ctx_driver_t gfx_display_ctx_vulkan = {
+   gfx_display_vk_draw,
+#ifdef HAVE_SHADERPIPELINE
+   gfx_display_vk_draw_pipeline,
+#else
+   NULL,                                  /* draw_pipeline */
+#endif
+   gfx_display_vk_blend_begin,
+   gfx_display_vk_blend_end,
+   gfx_display_vk_get_default_mvp,
+   gfx_display_vk_get_default_vertices,
+   gfx_display_vk_get_default_tex_coords,
+   &vulkan_raster_font,
+   GFX_VIDEO_DRIVER_VULKAN,
+   "vulkan",
+   false,
+   gfx_display_vk_scissor_begin,
+   gfx_display_vk_scissor_end
 };

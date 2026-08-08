@@ -509,18 +509,6 @@ static bool ps2_font_get_line_metrics(void* data, struct font_line_metrics **met
    return false;
 }
 
-font_renderer_t ps2_font = {
-   ps2_font_init,
-   ps2_font_free,
-   ps2_font_render_msg,
-   "ps2",
-   ps2_font_get_glyph,
-   NULL,                      /* bind_block */
-   NULL,                      /* flush */
-   ps2_font_get_message_width,
-   ps2_font_get_line_metrics
-};
-
 /*
  * VIDEO DRIVER
  */
@@ -1188,6 +1176,18 @@ static void ps2_get_poke_interface(void *data,
 {
    *iface = &ps2_poke_interface;
 }
+
+static font_renderer_t ps2_font = {
+   ps2_font_init,
+   ps2_font_free,
+   ps2_font_render_msg,
+   "ps2",
+   ps2_font_get_glyph,
+   NULL,                      /* bind_block */
+   NULL,                      /* flush */
+   ps2_font_get_message_width,
+   ps2_font_get_line_metrics
+};
 
 video_driver_t video_ps2 = {
    ps2_init,

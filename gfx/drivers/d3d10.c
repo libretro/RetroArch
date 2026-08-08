@@ -852,22 +852,6 @@ void gfx_display_d3d10_scissor_end(void *data,
    d3d10->device->lpVtbl->RSSetScissorRects(d3d10->device, 1, &rect);
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_d3d10 = {
-   gfx_display_d3d10_draw,
-   gfx_display_d3d10_draw_pipeline,
-   gfx_display_d3d10_blend_begin,
-   gfx_display_d3d10_blend_end,
-   NULL,                                     /* get_default_mvp        */
-   NULL,                                     /* get_default_vertices   */
-   NULL,                                     /* get_default_tex_coords */
-   &d3d10_font,
-   GFX_VIDEO_DRIVER_DIRECT3D10,
-   "d3d10",
-   true,
-   gfx_display_d3d10_scissor_begin,
-   gfx_display_d3d10_scissor_end
-};
-
 /*
  * FONT DRIVER
  */
@@ -1321,18 +1305,6 @@ static bool d3d10_font_get_line_metrics(void* data,
    }
    return false;
 }
-
-font_renderer_t d3d10_font = {
-   d3d10_font_init,
-   d3d10_font_free,
-   d3d10_font_render_msg,
-   "d3d10",
-   d3d10_font_get_glyph,
-   NULL, /* bind_block */
-   NULL, /* flush */
-   d3d10_font_get_message_width,
-   d3d10_font_get_line_metrics
-};
 
 /*
  * VIDEO DRIVER
@@ -3981,6 +3953,18 @@ static bool d3d10_gfx_widgets_enabled(void *data)
 }
 #endif
 
+static font_renderer_t d3d10_font = {
+   d3d10_font_init,
+   d3d10_font_free,
+   d3d10_font_render_msg,
+   "d3d10",
+   d3d10_font_get_glyph,
+   NULL, /* bind_block */
+   NULL, /* flush */
+   d3d10_font_get_message_width,
+   d3d10_font_get_line_metrics
+};
+
 video_driver_t video_d3d10 = {
    d3d10_gfx_init,
    d3d10_gfx_frame,
@@ -4010,4 +3994,20 @@ video_driver_t video_d3d10 = {
    NULL, /* invalidate_hw_render_cache */
    NULL, /* read_viewport_hdr */
    &d3d10_font
+};
+
+gfx_display_ctx_driver_t gfx_display_ctx_d3d10 = {
+   gfx_display_d3d10_draw,
+   gfx_display_d3d10_draw_pipeline,
+   gfx_display_d3d10_blend_begin,
+   gfx_display_d3d10_blend_end,
+   NULL,                                     /* get_default_mvp        */
+   NULL,                                     /* get_default_vertices   */
+   NULL,                                     /* get_default_tex_coords */
+   &d3d10_font,
+   GFX_VIDEO_DRIVER_DIRECT3D10,
+   "d3d10",
+   true,
+   gfx_display_d3d10_scissor_begin,
+   gfx_display_d3d10_scissor_end
 };

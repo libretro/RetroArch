@@ -3269,22 +3269,6 @@ static void gfx_display_metal_scissor_end(void *data,
       [md.display clearScissorRect];
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_metal = {
-   gfx_display_metal_draw,
-   gfx_display_metal_draw_pipeline,
-   gfx_display_metal_blend_begin,
-   gfx_display_metal_blend_end,
-   gfx_display_metal_get_default_mvp,
-   gfx_display_metal_get_default_vertices,
-   gfx_display_metal_get_default_tex_coords,
-   &metal_raster_font,
-   GFX_VIDEO_DRIVER_METAL,
-   "metal",
-   false,
-   gfx_display_metal_scissor_begin,
-   gfx_display_metal_scissor_end
-};
-
 /*
  * FONT DRIVER
  */
@@ -3888,18 +3872,6 @@ static bool metal_get_line_metrics(void *data,
       return [r getLineMetrics:metrics];
    return false;
 }
-
-font_renderer_t metal_raster_font = {
-   metal_raster_font_init,
-   metal_raster_font_free,
-   metal_raster_font_render_msg,
-   "metal",
-   metal_raster_font_get_glyph,
-   NULL, /* bind_block  */
-   NULL, /* flush_block */
-   metal_raster_font_get_message_width,
-   metal_get_line_metrics
-};
 
 /*
  * VIDEO DRIVER
@@ -6616,7 +6588,6 @@ static void metal_get_poke_interface(void *data,
 }
 
 #ifdef HAVE_OVERLAY
-
 static void metal_overlay_enable(void *data, bool state)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
@@ -6678,12 +6649,23 @@ static void metal_get_overlay_interface(void *data,
 {
    *iface = &metal_overlay_interface;
 }
-
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
 static bool metal_widgets_enabled(void *data) { return true; }
 #endif
+
+static font_renderer_t metal_raster_font = {
+   metal_raster_font_init,
+   metal_raster_font_free,
+   metal_raster_font_render_msg,
+   "metal",
+   metal_raster_font_get_glyph,
+   NULL, /* bind_block  */
+   NULL, /* flush_block */
+   metal_raster_font_get_message_width,
+   metal_get_line_metrics
+};
 
 video_driver_t video_metal = {
    metal_init,
@@ -6714,4 +6696,20 @@ video_driver_t video_metal = {
    NULL, /* invalidate_hw_render_cache */
    metal_read_viewport_hdr,
    &metal_raster_font
+};
+
+gfx_display_ctx_driver_t gfx_display_ctx_metal = {
+   gfx_display_metal_draw,
+   gfx_display_metal_draw_pipeline,
+   gfx_display_metal_blend_begin,
+   gfx_display_metal_blend_end,
+   gfx_display_metal_get_default_mvp,
+   gfx_display_metal_get_default_vertices,
+   gfx_display_metal_get_default_tex_coords,
+   &metal_raster_font,
+   GFX_VIDEO_DRIVER_METAL,
+   "metal",
+   false,
+   gfx_display_metal_scissor_begin,
+   gfx_display_metal_scissor_end
 };

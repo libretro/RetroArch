@@ -1743,34 +1743,6 @@ static bool d3d8_font_get_line_metrics(
    return false;
 }
 
-font_renderer_t d3d8_font = {
-   d3d8_font_init,
-   d3d8_font_free,
-   d3d8_font_render_msg,
-   "d3d8",
-   d3d8_font_get_glyph,
-   NULL, /* bind_block */
-   NULL, /* flush */
-   d3d8_font_get_message_width,
-   d3d8_font_get_line_metrics
-};
-
-gfx_display_ctx_driver_t gfx_display_ctx_d3d8 = {
-   gfx_display_d3d8_draw,
-   gfx_display_d3d8_draw_pipeline,
-   gfx_display_d3d8_blend_begin,
-   gfx_display_d3d8_blend_end,
-   gfx_display_d3d8_get_default_mvp,
-   gfx_display_d3d8_get_default_vertices,
-   gfx_display_d3d8_get_default_tex_coords,
-   &d3d8_font,
-   GFX_VIDEO_DRIVER_DIRECT3D8,
-   "d3d8",
-   false,
-   gfx_display_d3d8_scissor_begin,
-   gfx_display_d3d8_scissor_end
-};
-
 /*
  * VIDEO DRIVER
  */
@@ -3366,6 +3338,18 @@ static bool d3d8_gfx_widgets_enabled(void *data)
 }
 #endif
 
+static font_renderer_t d3d8_font = {
+   d3d8_font_init,
+   d3d8_font_free,
+   d3d8_font_render_msg,
+   "d3d8",
+   d3d8_font_get_glyph,
+   NULL, /* bind_block */
+   NULL, /* flush */
+   d3d8_font_get_message_width,
+   d3d8_font_get_line_metrics
+};
+
 video_driver_t video_d3d8 = {
    d3d8_init,
    d3d8_frame,
@@ -3400,3 +3384,20 @@ video_driver_t video_d3d8 = {
    NULL, /* read_viewport_hdr */
    &d3d8_font
 };
+
+gfx_display_ctx_driver_t gfx_display_ctx_d3d8 = {
+   gfx_display_d3d8_draw,
+   gfx_display_d3d8_draw_pipeline,
+   gfx_display_d3d8_blend_begin,
+   gfx_display_d3d8_blend_end,
+   gfx_display_d3d8_get_default_mvp,
+   gfx_display_d3d8_get_default_vertices,
+   gfx_display_d3d8_get_default_tex_coords,
+   &d3d8_font,
+   GFX_VIDEO_DRIVER_DIRECT3D8,
+   "d3d8",
+   false,
+   gfx_display_d3d8_scissor_begin,
+   gfx_display_d3d8_scissor_end
+};
+

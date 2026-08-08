@@ -1613,22 +1613,6 @@ static void gfx_display_gxm_scissor_end(
          0xFF);
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_gxm = {
-   gfx_display_gxm_draw,
-   NULL,                                        /* draw_pipeline */
-   NULL,                                        /* blend_begin   */
-   NULL,                                        /* blend_end     */
-   gfx_display_gxm_get_default_mvp,
-   gfx_display_gxm_get_default_vertices,
-   gfx_display_gxm_get_default_tex_coords,
-   &gxm_font,
-   GFX_VIDEO_DRIVER_GXM,
-   "vita2d",
-   true,
-   gfx_display_gxm_scissor_begin,
-   gfx_display_gxm_scissor_end
-};
-
 /*
  * FONT DRIVER
  */
@@ -2002,18 +1986,6 @@ static bool gxm_font_get_line_metrics(void* data,
    }
    return false;
 }
-
-font_renderer_t gxm_font = {
-   gxm_font_init,
-   gxm_font_free,
-   gxm_font_render_msg,
-   "vita2d",
-   gxm_font_get_glyph,
-   NULL,                      /* bind_block */
-   NULL,                      /* flush */
-   gxm_font_get_message_width,
-   gxm_font_get_line_metrics
-};
 
 /*
  * VIDEO DRIVER
@@ -3004,6 +2976,18 @@ static void gxm_get_overlay_interface(void *data, const video_overlay_interface_
 }
 #endif
 
+static font_renderer_t gxm_font = {
+   gxm_font_init,
+   gxm_font_free,
+   gxm_font_render_msg,
+   "vita2d",
+   gxm_font_get_glyph,
+   NULL,                      /* bind_block */
+   NULL,                      /* flush */
+   gxm_font_get_message_width,
+   gxm_font_get_line_metrics
+};
+
 video_driver_t video_gxm = {
    gxm_gfx_init,
    gxm_frame,
@@ -3033,4 +3017,20 @@ video_driver_t video_gxm = {
    NULL, /* invalidate_hw_render_cache */
    NULL, /* read_viewport_hdr */
    &gxm_font
+};
+
+gfx_display_ctx_driver_t gfx_display_ctx_gxm = {
+   gfx_display_gxm_draw,
+   NULL,                                        /* draw_pipeline */
+   NULL,                                        /* blend_begin   */
+   NULL,                                        /* blend_end     */
+   gfx_display_gxm_get_default_mvp,
+   gfx_display_gxm_get_default_vertices,
+   gfx_display_gxm_get_default_tex_coords,
+   &gxm_font,
+   GFX_VIDEO_DRIVER_GXM,
+   "vita2d",
+   true,
+   gfx_display_gxm_scissor_begin,
+   gfx_display_gxm_scissor_end
 };

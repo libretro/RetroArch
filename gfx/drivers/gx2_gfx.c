@@ -632,22 +632,6 @@ static void gfx_display_wiiu_scissor_end(
    GX2SetScissor(0, 0, video_width, video_height);
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_wiiu = {
-   gfx_display_wiiu_draw,
-   gfx_display_wiiu_draw_pipeline,
-   NULL,                                     /* blend_begin            */
-   NULL,                                     /* blend_end              */
-   NULL,                                     /* get_default_mvp        */
-   NULL,                                     /* get_default_vertices   */
-   NULL,                                     /* get_default_tex_coords */
-   &wiiu_font,
-   GFX_VIDEO_DRIVER_WIIU,
-   "gx2",
-   true,
-   gfx_display_wiiu_scissor_begin,
-   gfx_display_wiiu_scissor_end
-};
-
 /*
  * FONT DRIVER
  */
@@ -1026,19 +1010,6 @@ static bool gx2_font_get_line_metrics(void* data, struct font_line_metrics **met
    }
    return false;
 }
-
-font_renderer_t wiiu_font =
-{
-   gx2_font_init,
-   gx2_font_free,
-   gx2_font_render_msg,
-   "gx2",
-   gx2_font_get_glyph,
-   NULL,                   /* bind_block */
-   NULL,                   /* flush */
-   gx2_font_get_message_width,
-   gx2_font_get_line_metrics
-};
 
 /*
  * VIDEO DRIVER
@@ -2678,6 +2649,20 @@ static void gx2_get_poke_interface(void *data,
 static bool gx2_widgets_enabled(void *data) { return true; }
 #endif
 
+static font_renderer_t gx2_font =
+{
+   gx2_font_init,
+   gx2_font_free,
+   gx2_font_render_msg,
+   "gx2",
+   gx2_font_get_glyph,
+   NULL,                   /* bind_block */
+   NULL,                   /* flush */
+   gx2_font_get_message_width,
+   gx2_font_get_line_metrics
+};
+
+
 video_driver_t video_wiiu =
 {
    gx2_init,
@@ -2707,5 +2692,21 @@ video_driver_t video_wiiu =
 #endif
    NULL, /* invalidate_hw_render_cache */
    NULL, /* read_viewport_hdr */
-   &wiiu_font
+   &gx2_font
+};
+
+gfx_display_ctx_driver_t gfx_display_ctx_wiiu = {
+   gfx_display_wiiu_draw,
+   gfx_display_wiiu_draw_pipeline,
+   NULL,                                     /* blend_begin            */
+   NULL,                                     /* blend_end              */
+   NULL,                                     /* get_default_mvp        */
+   NULL,                                     /* get_default_vertices   */
+   NULL,                                     /* get_default_tex_coords */
+   &gx2_font,
+   GFX_VIDEO_DRIVER_WIIU,
+   "gx2",
+   true,
+   gfx_display_wiiu_scissor_begin,
+   gfx_display_wiiu_scissor_end
 };

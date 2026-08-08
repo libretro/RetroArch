@@ -1340,28 +1340,65 @@ static void gfx_display_d3d12_scissor_end(void *data,
    cmd->lpVtbl->RSSetScissorRects(cmd, 1, &rect);
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_d3d12 = {
-   gfx_display_d3d12_draw,
-   gfx_display_d3d12_draw_pipeline,
-   gfx_display_d3d12_blend_begin,
-   gfx_display_d3d12_blend_end,
-   NULL,                                     /* get_default_mvp        */
-   NULL,                                     /* get_default_vertices   */
-   NULL,                                     /* get_default_tex_coords */
-   &d3d12_font,
-   GFX_VIDEO_DRIVER_DIRECT3D12,
-   "d3d12",
-   true,
-   gfx_display_d3d12_scissor_begin,
-   gfx_display_d3d12_scissor_end
-};
-
 /*
  * FONT DRIVER
  */
 
+/* Stage only the atlas dirty rectangle into the persistent upload
+ * buffer; previous contents are preserved, so untouched rows remain
+ * valid. The matching boxed GPU copy is issued at draw time by
+ * d3d12_font_upload_region(); the generic d3d12_update_texture() /
+ * d3d12_upload_texture() pair re-transfers the whole surface. */
 static void d3d12_font_update_atlas_region(d3d12_font_t *font,
-      unsigned x0, unsigned y0, unsigned x1, unsigned y1);
+      unsigned x0, unsigned y0, unsigned x1, unsigned y1)
+{
+   unsigned y;
+   uint8_t *dst;
+   D3D12_RANGE read_range;
+   ID3D12Resource *resource = (ID3D12Resource*)font->texture.upload_buffer;
+   unsigned row_pitch       = font->texture.layout.Footprint.RowPitch;
+
+   if (     !resource
+         || x1 <= x0 || y1 <= y0
+         || x1 > (unsigned)font->atlas->width
+         || y1 > (unsigned)font->atlas->height)
+      return;
+
+   read_range.Begin = 0;
+   read_range.End   = 0;
+   if (FAILED(resource->lpVtbl->Map(resource, 0, &read_range, (void**)&dst))
+         || !dst)
+      return;
+
+   {
+      size_t esz = (font->atlas->format == FONT_ATLAS_FORMAT_A16)
+            ? sizeof(uint16_t) : sizeof(uint8_t);
+      for (y = y0; y < y1; y++)
+         memcpy(dst + (size_t)y * row_pitch + (size_t)x0 * esz,
+                font->atlas->buffer
+                      + ((size_t)y * font->atlas->width + x0) * esz,
+                (size_t)(x1 - x0) * esz);
+   }
+
+   resource->lpVtbl->Unmap(resource, 0, NULL);
+
+   if (!font->region_pending)
+   {
+      font->region_x0      = x0;
+      font->region_y0      = y0;
+      font->region_x1      = x1;
+      font->region_y1      = y1;
+      font->region_pending = true;
+   }
+   else
+   {
+      if (x0 < font->region_x0) font->region_x0 = x0;
+      if (y0 < font->region_y0) font->region_y0 = y0;
+      if (x1 > font->region_x1) font->region_x1 = x1;
+      if (y1 > font->region_y1) font->region_y1 = y1;
+   }
+}
+
 
 static void * d3d12_font_init(void* data, const char* font_path,
       float font_size, bool is_threaded)
@@ -1497,61 +1534,6 @@ static int d3d12_font_get_message_width(void* data,
    }
 
    return delta_x * scale;
-}
-
-/* Stage only the atlas dirty rectangle into the persistent upload
- * buffer; previous contents are preserved, so untouched rows remain
- * valid. The matching boxed GPU copy is issued at draw time by
- * d3d12_font_upload_region(); the generic d3d12_update_texture() /
- * d3d12_upload_texture() pair re-transfers the whole surface. */
-static void d3d12_font_update_atlas_region(d3d12_font_t *font,
-      unsigned x0, unsigned y0, unsigned x1, unsigned y1)
-{
-   unsigned y;
-   uint8_t *dst;
-   D3D12_RANGE read_range;
-   ID3D12Resource *resource = (ID3D12Resource*)font->texture.upload_buffer;
-   unsigned row_pitch       = font->texture.layout.Footprint.RowPitch;
-
-   if (     !resource
-         || x1 <= x0 || y1 <= y0
-         || x1 > (unsigned)font->atlas->width
-         || y1 > (unsigned)font->atlas->height)
-      return;
-
-   read_range.Begin = 0;
-   read_range.End   = 0;
-   if (FAILED(resource->lpVtbl->Map(resource, 0, &read_range, (void**)&dst))
-         || !dst)
-      return;
-
-   {
-      size_t esz = (font->atlas->format == FONT_ATLAS_FORMAT_A16)
-            ? sizeof(uint16_t) : sizeof(uint8_t);
-      for (y = y0; y < y1; y++)
-         memcpy(dst + (size_t)y * row_pitch + (size_t)x0 * esz,
-                font->atlas->buffer
-                      + ((size_t)y * font->atlas->width + x0) * esz,
-                (size_t)(x1 - x0) * esz);
-   }
-
-   resource->lpVtbl->Unmap(resource, 0, NULL);
-
-   if (!font->region_pending)
-   {
-      font->region_x0      = x0;
-      font->region_y0      = y0;
-      font->region_x1      = x1;
-      font->region_y1      = y1;
-      font->region_pending = true;
-   }
-   else
-   {
-      if (x0 < font->region_x0) font->region_x0 = x0;
-      if (y0 < font->region_y0) font->region_y0 = y0;
-      if (x1 > font->region_x1) font->region_x1 = x1;
-      if (y1 > font->region_y1) font->region_y1 = y1;
-   }
 }
 
 /* Issue the boxed copy for the staged rectangle */
@@ -1924,18 +1906,6 @@ static bool d3d12_font_get_line_metrics(void* data, struct font_line_metrics **m
    }
    return false;
 }
-
-font_renderer_t d3d12_font = {
-   d3d12_font_init,
-   d3d12_font_free,
-   d3d12_font_render_msg,
-   "d3d12",
-   d3d12_font_get_glyph,
-   NULL, /* bind_block */
-   NULL, /* flush */
-   d3d12_font_get_message_width,
-   d3d12_font_get_line_metrics
-};
 
 /*
  * VIDEO DRIVER
@@ -8035,6 +8005,18 @@ static void d3d12_gfx_get_poke_interface(void* data, const video_poke_interface_
 static bool d3d12_gfx_widgets_enabled(void *data) { return true; }
 #endif
 
+static font_renderer_t d3d12_font = {
+   d3d12_font_init,
+   d3d12_font_free,
+   d3d12_font_render_msg,
+   "d3d12",
+   d3d12_font_get_glyph,
+   NULL, /* bind_block */
+   NULL, /* flush */
+   d3d12_font_get_message_width,
+   d3d12_font_get_line_metrics
+};
+
 video_driver_t video_d3d12 = {
    d3d12_gfx_init,
    d3d12_gfx_frame,
@@ -8068,4 +8050,20 @@ video_driver_t video_d3d12 = {
    NULL, /* read_viewport_hdr */
 #endif
    &d3d12_font
+};
+
+gfx_display_ctx_driver_t gfx_display_ctx_d3d12 = {
+   gfx_display_d3d12_draw,
+   gfx_display_d3d12_draw_pipeline,
+   gfx_display_d3d12_blend_begin,
+   gfx_display_d3d12_blend_end,
+   NULL,                                     /* get_default_mvp        */
+   NULL,                                     /* get_default_vertices   */
+   NULL,                                     /* get_default_tex_coords */
+   &d3d12_font,
+   GFX_VIDEO_DRIVER_DIRECT3D12,
+   "d3d12",
+   true,
+   gfx_display_d3d12_scissor_begin,
+   gfx_display_d3d12_scissor_end
 };

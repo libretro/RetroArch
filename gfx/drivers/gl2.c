@@ -789,22 +789,6 @@ static void gfx_display_gl2_scissor_end(
 #endif
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_gl = {
-   gfx_display_gl2_draw,
-   gfx_display_gl2_draw_pipeline,
-   gfx_display_gl2_blend_begin,
-   gfx_display_gl2_blend_end,
-   gfx_display_gl2_get_default_mvp,
-   gfx_display_gl2_get_default_vertices,
-   gfx_display_gl2_get_default_tex_coords,
-   &gl2_raster_font,
-   GFX_VIDEO_DRIVER_OPENGL,
-   "gl",
-   false,
-   gfx_display_gl2_scissor_begin,
-   gfx_display_gl2_scissor_end
-};
-
 /**
  * FONT DRIVER
  */
@@ -1323,18 +1307,6 @@ static bool gl2_raster_font_get_line_metrics(void* data, struct font_line_metric
    }
    return false;
 }
-
-font_renderer_t gl2_raster_font = {
-   gl2_raster_font_init,
-   gl2_raster_font_free,
-   gl2_raster_font_render_msg,
-   "gl",
-   gl2_raster_font_get_glyph,
-   gl2_raster_font_bind_block,
-   gl2_raster_font_flush_block,
-   gl2_raster_font_get_message_width,
-   gl2_raster_font_get_line_metrics
-};
 
 /*
  * VIDEO DRIVER
@@ -6427,6 +6399,18 @@ static bool gl2_read_viewport_hdr(void *data, uint16_t *buffer,
    return true;
 }
 
+static font_renderer_t gl2_raster_font = {
+   gl2_raster_font_init,
+   gl2_raster_font_free,
+   gl2_raster_font_render_msg,
+   "gl",
+   gl2_raster_font_get_glyph,
+   gl2_raster_font_bind_block,
+   gl2_raster_font_flush_block,
+   gl2_raster_font_get_message_width,
+   gl2_raster_font_get_line_metrics
+};
+
 video_driver_t video_gl2 = {
    gl2_init,
    gl2_frame,
@@ -6460,4 +6444,20 @@ video_driver_t video_gl2 = {
    NULL, /* invalidate_hw_render_cache */
    gl2_read_viewport_hdr,
    &gl2_raster_font
+};
+
+gfx_display_ctx_driver_t gfx_display_ctx_gl = {
+   gfx_display_gl2_draw,
+   gfx_display_gl2_draw_pipeline,
+   gfx_display_gl2_blend_begin,
+   gfx_display_gl2_blend_end,
+   gfx_display_gl2_get_default_mvp,
+   gfx_display_gl2_get_default_vertices,
+   gfx_display_gl2_get_default_tex_coords,
+   &gl2_raster_font,
+   GFX_VIDEO_DRIVER_OPENGL,
+   "gl",
+   false,
+   gfx_display_gl2_scissor_begin,
+   gfx_display_gl2_scissor_end
 };

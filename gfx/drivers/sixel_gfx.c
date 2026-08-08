@@ -120,18 +120,6 @@ static void sixel_font_render_msg(
       const char *msg, size_t msg_len,
       const struct font_params *_params) { }
 
-font_renderer_t sixel_font = {
-   sixel_font_init,
-   sixel_font_free,
-   sixel_font_render_msg,
-   "sixel",
-   sixel_font_get_glyph,
-   NULL,                       /* bind_block */
-   NULL,                       /* flush */
-   sixel_font_get_message_width,
-   NULL                        /* get_line_metrics */
-};
-
 /*
  * VIDEO DRIVER
  */
@@ -637,6 +625,19 @@ bool sixel_has_menu_frame(void)
 {
    return (sixel_menu_frame != NULL);
 }
+
+static font_renderer_t sixel_font = {
+   sixel_font_init,
+   sixel_font_free,
+   sixel_font_render_msg,
+   "sixel",
+   sixel_font_get_glyph,
+   NULL,                       /* bind_block */
+   NULL,                       /* flush */
+   sixel_font_get_message_width,
+   NULL                        /* get_line_metrics */
+};
+
 
 video_driver_t video_sixel = {
    sixel_gfx_init,

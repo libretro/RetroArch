@@ -107,18 +107,6 @@ static void vga_font_render_msg(
       void *data, const char *msg, size_t msg_len,
       const struct font_params *params) { }
 
-font_renderer_t vga_font = {
-   vga_font_init,
-   vga_font_render_free,
-   vga_font_render_msg,
-   "vga",
-   vga_font_get_glyph,         /* get_glyph */
-   NULL,                       /* bind_block */
-   NULL,                       /* flush */
-   vga_font_get_message_width, /* get_message_width */
-   NULL                        /* get_line_metrics */
-};
-
 /*
  * VIDEO DRIVER
  */
@@ -502,6 +490,18 @@ static void vga_gfx_viewport_info(void *data, struct video_viewport *vp)
    vp->width  = vp->full_width  = VGA_WIDTH;
    vp->height = vp->full_height = VGA_HEIGHT;
 }
+
+static font_renderer_t vga_font = {
+   vga_font_init,
+   vga_font_render_free,
+   vga_font_render_msg,
+   "vga",
+   vga_font_get_glyph,         /* get_glyph */
+   NULL,                       /* bind_block */
+   NULL,                       /* flush */
+   vga_font_get_message_width, /* get_message_width */
+   NULL                        /* get_line_metrics */
+};
 
 video_driver_t video_vga = {
    vga_gfx_init,

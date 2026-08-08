@@ -174,18 +174,6 @@ static void caca_font_render_msg(
    caca_refresh_display(font->caca->display);
 }
 
-font_renderer_t caca_font = {
-   caca_font_init,
-   caca_font_free,
-   caca_font_render_msg,
-   "caca",
-   caca_font_get_glyph,
-   NULL,                      /* bind_block */
-   NULL,                      /* flush */
-   caca_font_get_message_width,
-   NULL                       /* get_line_metrics */
-};
-
 /*
  * VIDEO DRIVER
  */
@@ -434,6 +422,19 @@ static void caca_get_poke_interface(void *data,
       const video_poke_interface_t **iface) { *iface = &caca_poke_interface; }
 static void caca_set_viewport(void *data, unsigned vp_width,
       unsigned vp_height, bool force_full, bool allow_rotate) { }
+
+static font_renderer_t caca_font = {
+   caca_font_init,
+   caca_font_free,
+   caca_font_render_msg,
+   "caca",
+   caca_font_get_glyph,
+   NULL,                      /* bind_block */
+   NULL,                      /* flush */
+   caca_font_get_message_width,
+   NULL                       /* get_line_metrics */
+};
+
 
 video_driver_t video_caca = {
    caca_init,

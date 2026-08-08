@@ -1428,22 +1428,6 @@ static void gfx_display_sdl2_draw_pipeline(
    (void)video_height;
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_sdl2 = {
-   gfx_display_sdl2_draw,
-   gfx_display_sdl2_draw_pipeline,
-   gfx_display_sdl2_blend_begin,
-   gfx_display_sdl2_blend_end,
-   gfx_display_sdl2_get_default_mvp,
-   NULL, /* get_default_vertices */
-   NULL, /* get_default_tex_coords */
-   &sdl2_raster_font,
-   GFX_VIDEO_DRIVER_SDL2,
-   "sdl2",
-   false,
-   gfx_display_sdl2_scissor_begin,
-   gfx_display_sdl2_scissor_end
-};
-
 /*
  * FONT DRIVER
  *
@@ -1880,7 +1864,7 @@ static bool sdl2_raster_font_get_line_metrics(void *data,
    return false;
 }
 
-font_renderer_t sdl2_raster_font = {
+static font_renderer_t sdl2_raster_font = {
    sdl2_raster_font_init,
    sdl2_raster_font_free,
    sdl2_raster_font_render_msg,
@@ -2210,4 +2194,20 @@ video_driver_t video_sdl2 = {
 #else
    NULL  /* sdl2_raster_font needs SDL_RenderGeometry */
 #endif
+};
+
+gfx_display_ctx_driver_t gfx_display_ctx_sdl2 = {
+   gfx_display_sdl2_draw,
+   gfx_display_sdl2_draw_pipeline,
+   gfx_display_sdl2_blend_begin,
+   gfx_display_sdl2_blend_end,
+   gfx_display_sdl2_get_default_mvp,
+   NULL, /* get_default_vertices */
+   NULL, /* get_default_tex_coords */
+   &sdl2_raster_font,
+   GFX_VIDEO_DRIVER_SDL2,
+   "sdl2",
+   false,
+   gfx_display_sdl2_scissor_begin,
+   gfx_display_sdl2_scissor_end
 };

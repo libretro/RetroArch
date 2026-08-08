@@ -519,22 +519,6 @@ static void gfx_display_gl1_scissor_end(
    glDisable(GL_SCISSOR_TEST);
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_gl1 = {
-   gfx_display_gl1_draw,
-   NULL, /* draw_pipeline */
-   gfx_display_gl1_blend_begin,
-   gfx_display_gl1_blend_end,
-   gfx_display_gl1_get_default_mvp,
-   gfx_display_gl1_get_default_vertices,
-   gfx_display_gl1_get_default_tex_coords,
-   &gl1_raster_font,
-   GFX_VIDEO_DRIVER_OPENGL1,
-   "gl1",
-   false,
-   gfx_display_gl1_scissor_begin,
-   gfx_display_gl1_scissor_end
-};
-
 /**
  * FONT DRIVER
  */
@@ -1136,18 +1120,6 @@ static bool gl1_raster_font_get_line_metrics(void* data, struct font_line_metric
    }
    return false;
 }
-
-font_renderer_t gl1_raster_font = {
-   gl1_raster_font_init,
-   gl1_raster_font_free,
-   gl1_raster_font_render_msg,
-   "gl1",
-   gl1_raster_font_get_glyph,
-   gl1_raster_font_bind_block,
-   gl1_raster_font_flush_block,
-   gl1_raster_font_get_message_width,
-   gl1_raster_font_get_line_metrics
-};
 
 /*
  * VIDEO DRIVER
@@ -3475,6 +3447,18 @@ static bool gl1_read_viewport_hdr(void *data, uint16_t *buffer,
 #endif /* VITA */
 }
 
+static font_renderer_t gl1_raster_font = {
+   gl1_raster_font_init,
+   gl1_raster_font_free,
+   gl1_raster_font_render_msg,
+   "gl1",
+   gl1_raster_font_get_glyph,
+   gl1_raster_font_bind_block,
+   gl1_raster_font_flush_block,
+   gl1_raster_font_get_message_width,
+   gl1_raster_font_get_line_metrics
+};
+
 video_driver_t video_gl1 = {
    gl1_init,
    gl1_frame,
@@ -3505,3 +3489,20 @@ video_driver_t video_gl1 = {
    gl1_read_viewport_hdr,
    &gl1_raster_font
 };
+
+gfx_display_ctx_driver_t gfx_display_ctx_gl1 = {
+   gfx_display_gl1_draw,
+   NULL, /* draw_pipeline */
+   gfx_display_gl1_blend_begin,
+   gfx_display_gl1_blend_end,
+   gfx_display_gl1_get_default_mvp,
+   gfx_display_gl1_get_default_vertices,
+   gfx_display_gl1_get_default_tex_coords,
+   &gl1_raster_font,
+   GFX_VIDEO_DRIVER_OPENGL1,
+   "gl1",
+   false,
+   gfx_display_gl1_scissor_begin,
+   gfx_display_gl1_scissor_end
+};
+

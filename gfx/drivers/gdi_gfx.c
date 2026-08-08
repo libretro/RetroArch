@@ -1584,22 +1584,6 @@ static void gfx_display_gdi_draw(gfx_display_ctx_draw_t *draw,
 #endif
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_gdi = {
-   gfx_display_gdi_draw,
-   NULL,                                     /* draw_pipeline   */
-   gfx_display_gdi_blend_begin,
-   gfx_display_gdi_blend_end,
-   NULL,                                     /* get_default_mvp */
-   gfx_display_gdi_get_default_vertices,
-   gfx_display_gdi_get_default_tex_coords,
-   &gdi_font,
-   GFX_VIDEO_DRIVER_GDI,
-   "gdi",
-   false,
-   gfx_display_gdi_scissor_begin,
-   gfx_display_gdi_scissor_end
-};
-
 /*
  * FONT DRIVER
  *
@@ -2325,18 +2309,6 @@ static void gdi_font_render_msg(
 
    SelectObject(dst_dc, dst_old);
 }
-
-font_renderer_t gdi_font = {
-   gdi_font_init,
-   gdi_font_free,
-   gdi_font_render_msg,
-   "gdi",
-   gdi_font_get_glyph,        /* get_glyph */
-   NULL,                      /* bind_block */
-   NULL,                      /* flush */
-   gdi_font_get_message_width,
-   gdi_font_get_line_metrics
-};
 
 /*
  * VIDEO DRIVER
@@ -3879,6 +3851,18 @@ static void gdi_get_overlay_interface(void *data,
 }
 #endif
 
+static font_renderer_t gdi_font = {
+   gdi_font_init,
+   gdi_font_free,
+   gdi_font_render_msg,
+   "gdi",
+   gdi_font_get_glyph,        /* get_glyph */
+   NULL,                      /* bind_block */
+   NULL,                      /* flush */
+   gdi_font_get_message_width,
+   gdi_font_get_line_metrics
+};
+
 video_driver_t video_gdi = {
    gdi_init,
    gdi_frame,
@@ -3908,4 +3892,20 @@ video_driver_t video_gdi = {
    NULL, /* invalidate_hw_render_cache */
    NULL, /* read_viewport_hdr */
    &gdi_font
+};
+
+gfx_display_ctx_driver_t gfx_display_ctx_gdi = {
+   gfx_display_gdi_draw,
+   NULL,                                     /* draw_pipeline   */
+   gfx_display_gdi_blend_begin,
+   gfx_display_gdi_blend_end,
+   NULL,                                     /* get_default_mvp */
+   gfx_display_gdi_get_default_vertices,
+   gfx_display_gdi_get_default_tex_coords,
+   &gdi_font,
+   GFX_VIDEO_DRIVER_GDI,
+   "gdi",
+   false,
+   gfx_display_gdi_scissor_begin,
+   gfx_display_gdi_scissor_end
 };

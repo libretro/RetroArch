@@ -470,22 +470,6 @@ static void gfx_display_rsx_blend_end(void *data)
 #endif
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_rsx = {
-   gfx_display_rsx_draw,
-   NULL,                                        /* draw_pipeline */
-   gfx_display_rsx_blend_begin,
-   gfx_display_rsx_blend_end,
-   gfx_display_rsx_get_default_mvp,
-   gfx_display_rsx_get_default_vertices,
-   gfx_display_rsx_get_default_tex_coords,
-   &rsx_font,
-   GFX_VIDEO_DRIVER_RSX,
-   "rsx",
-   true,
-   gfx_display_rsx_scissor_begin,
-   gfx_display_rsx_scissor_end
-};
-
 /*
  * FONT DRIVER
  */
@@ -1072,18 +1056,6 @@ static bool rsx_font_get_line_metrics(void* data, struct font_line_metrics **met
    }
    return false;
 }
-
-font_renderer_t rsx_font = {
-   rsx_font_init,
-   rsx_font_free,
-   rsx_font_render_msg,
-   "rsx",
-   rsx_font_get_glyph,
-   rsx_font_bind_block,
-   rsx_font_flush_block,
-   rsx_font_get_message_width,
-   rsx_font_get_line_metrics
-};
 
 /*
  * VIDEO DRIVER
@@ -2681,6 +2653,18 @@ static bool rsx_set_shader(void* data,
 static bool rsx_widgets_enabled(void *data)          { return true;  }
 #endif
 
+static font_renderer_t rsx_font = {
+   rsx_font_init,
+   rsx_font_free,
+   rsx_font_render_msg,
+   "rsx",
+   rsx_font_get_glyph,
+   rsx_font_bind_block,
+   rsx_font_flush_block,
+   rsx_font_get_message_width,
+   rsx_font_get_line_metrics
+};
+
 video_driver_t video_gcm =
 {
    rsx_init,
@@ -2711,4 +2695,20 @@ video_driver_t video_gcm =
    NULL, /* invalidate_hw_render_cache */
    NULL, /* read_viewport_hdr */
    &rsx_font
+};
+
+gfx_display_ctx_driver_t gfx_display_ctx_rsx = {
+   gfx_display_rsx_draw,
+   NULL,                                        /* draw_pipeline */
+   gfx_display_rsx_blend_begin,
+   gfx_display_rsx_blend_end,
+   gfx_display_rsx_get_default_mvp,
+   gfx_display_rsx_get_default_vertices,
+   gfx_display_rsx_get_default_tex_coords,
+   &rsx_font,
+   GFX_VIDEO_DRIVER_RSX,
+   "rsx",
+   true,
+   gfx_display_rsx_scissor_begin,
+   gfx_display_rsx_scissor_end
 };

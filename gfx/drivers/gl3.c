@@ -876,22 +876,6 @@ static void gfx_display_gl3_scissor_end(
    glDisable(GL_SCISSOR_TEST);
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_gl3 = {
-   gfx_display_gl3_draw,
-   gfx_display_gl3_draw_pipeline,
-   gfx_display_gl3_blend_begin,
-   gfx_display_gl3_blend_end,
-   gfx_display_gl3_get_default_mvp,
-   gfx_display_gl3_get_default_vertices,
-   gfx_display_gl3_get_default_tex_coords,
-   &gl3_raster_font,
-   GFX_VIDEO_DRIVER_OPENGL_CORE,
-   "glcore",
-   false,
-   gfx_display_gl3_scissor_begin,
-   gfx_display_gl3_scissor_end
-};
-
 /**
  * FONT DRIVER
  */
@@ -1456,18 +1440,6 @@ static bool gl3_raster_font_get_line_metrics(void* data, struct font_line_metric
    }
    return false;
 }
-
-font_renderer_t gl3_raster_font = {
-   gl3_raster_font_init,
-   gl3_raster_font_free,
-   gl3_raster_font_render_msg,
-   "glcore",
-   gl3_raster_font_get_glyph,
-   gl3_raster_font_bind_block,
-   gl3_raster_font_flush_block,
-   gl3_raster_font_get_message_width,
-   gl3_raster_font_get_line_metrics
-};
 
 /**
  * VIDEO DRIVER
@@ -5675,6 +5647,18 @@ static bool gl3_focus(void *data)
    return true;
 }
 
+static font_renderer_t gl3_raster_font = {
+   gl3_raster_font_init,
+   gl3_raster_font_free,
+   gl3_raster_font_render_msg,
+   "glcore",
+   gl3_raster_font_get_glyph,
+   gl3_raster_font_bind_block,
+   gl3_raster_font_flush_block,
+   gl3_raster_font_get_message_width,
+   gl3_raster_font_get_line_metrics
+};
+
 video_driver_t video_gl3 = {
    gl3_init,
    gl3_frame,
@@ -5713,4 +5697,20 @@ video_driver_t video_gl3 = {
    NULL, /* invalidate_hw_render_cache */
    gl3_read_viewport_hdr,
    &gl3_raster_font
+};
+
+gfx_display_ctx_driver_t gfx_display_ctx_gl3 = {
+   gfx_display_gl3_draw,
+   gfx_display_gl3_draw_pipeline,
+   gfx_display_gl3_blend_begin,
+   gfx_display_gl3_blend_end,
+   gfx_display_gl3_get_default_mvp,
+   gfx_display_gl3_get_default_vertices,
+   gfx_display_gl3_get_default_tex_coords,
+   &gl3_raster_font,
+   GFX_VIDEO_DRIVER_OPENGL_CORE,
+   "glcore",
+   false,
+   gfx_display_gl3_scissor_begin,
+   gfx_display_gl3_scissor_end
 };
