@@ -68,7 +68,7 @@ typedef struct font_renderer_driver
    void (*get_line_metrics)(void* data, struct font_line_metrics **metrics);
 } font_renderer_driver_t;
 
-typedef struct
+typedef struct font_data
 {
    const font_renderer_t *renderer;
    void *renderer_data;

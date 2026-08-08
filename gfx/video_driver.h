@@ -967,6 +967,16 @@ typedef struct
     * native 10-bit source surface. Allocated lazily on first use. */
    uint32_t *pix10_convert_buf;
    size_t    pix10_convert_cap;
+
+   /* The OSD font, and the video driver instance it was built
+    * against. Created and destroyed alongside that instance by
+    * video_driver_init_internal()/video_driver_free_internal(), or by
+    * the threaded wrapper's CMD_INIT/CMD_FREE. font_driver.c reads it
+    * as the implicit font when a caller passes NULL, and keys
+    * creation and destruction on the owner so that a teardown running
+    * out of order cannot strand or steal it. */
+   struct font_data *osd_font;
+   void             *osd_font_owner;
 } video_driver_state_t;
 
 typedef struct video_frame_delay_auto

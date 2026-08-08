@@ -32,13 +32,6 @@
 #include "font_driver.h"
 #include "video_thread_wrapper.h"
 
-/* TODO/FIXME - global */
-static void *video_font_driver = NULL;
-/* The video driver instance video_font_driver was built against. A
- * font holds GPU objects created through that instance and is not
- * reusable by any other, so ownership - not mere presence - is what
- * decides whether it can be kept or must be freed. */
-static void *video_font_driver_owner = NULL;
 
 /* Monotonic counter incremented whenever any font instance is
  * freed. Consumers that cache per-font derived data (e.g. the
@@ -508,7 +501,7 @@ void font_driver_render_msg(void *data, const char *msg, size_t msg_len,
       const struct font_params *params, void *font_data)
 {
    font_data_t                *font = (font_data_t*)(font_data
-         ? font_data : video_font_driver);
+         ? font_data : (void*)video_state_get_ptr()->osd_font);
    const font_renderer_t *renderer  = (font && msg && msg_len)
    ? font->renderer : NULL;
 
@@ -532,7 +525,8 @@ void font_driver_render_msg(void *data, const char *msg, size_t msg_len,
 
 void font_driver_bind_block(void *font_data, void *block)
 {
-   font_data_t *font = (font_data_t*)(font_data ? font_data : video_font_driver);
+   font_data_t *font               = (font_data_t*)(font_data
+         ? font_data : (void*)video_state_get_ptr()->osd_font);
    const font_renderer_t *renderer = font ? font->renderer : NULL;
    if (renderer && renderer->bind_block)
       renderer->bind_block(font->renderer_data, block);
@@ -555,7 +549,8 @@ void font_flush(
 int font_driver_get_message_width(void *font_data,
       const char *msg, size_t len, float scale)
 {
-   font_data_t *font = (font_data_t*)(font_data ? font_data : video_font_driver);
+   font_data_t *font               = (font_data_t*)(font_data
+         ? font_data : (void*)video_state_get_ptr()->osd_font);
    const font_renderer_t *renderer = font ? font->renderer : NULL;
    if (renderer && renderer->get_message_width)
       return renderer->get_message_width(font->renderer_data, msg, len, scale);
@@ -774,20 +769,22 @@ void font_driver_init_osd(
     * its images belong to a device that is gone, whose handles the
     * new one will recycle. Drop it rather than keep it. Guarding on
     * presence alone is what let a stale font survive a reinit. */
-   if (video_font_driver && video_font_driver_owner != video_data)
+   video_driver_state_t *video_st = video_state_get_ptr();
+
+   if (video_st->osd_font && video_st->osd_font_owner != video_data)
       font_driver_free_osd();
 
    /* threading_hint is false: both callers - video_driver_init_internal()
     * and the threaded wrapper's CMD_INIT - already run on the thread that
     * owns the graphics context, so there is nothing to marshal. The hint
     * exists for callers that do not, such as gfx_display. */
-   if (!video_font_driver && video_info)
-      video_font_driver = font_driver_init_first(video_data,
+   if (!video_st->osd_font && video_info)
+      video_st->osd_font = font_driver_init_first(video_data,
             *video_info->path_font ? video_info->path_font : NULL,
             video_info->font_size, false, is_threaded, backend);
 
-   if (video_font_driver)
-      video_font_driver_owner = video_data;
+   if (video_st->osd_font)
+      video_st->osd_font_owner = video_data;
 }
 
 void font_driver_free_osd_for(void *video_data)
@@ -795,15 +792,19 @@ void font_driver_free_osd_for(void *video_data)
    /* Only the owner may free it. Teardown of an instance that no
     * longer owns the font - a stale or deferred free - must leave the
     * live one alone. */
-   if (video_font_driver && video_font_driver_owner == video_data)
+   video_driver_state_t *video_st = video_state_get_ptr();
+
+   if (video_st->osd_font && video_st->osd_font_owner == video_data)
       font_driver_free_osd();
 }
 
 void font_driver_free_osd(void)
 {
-   if (video_font_driver)
-      font_driver_free((font_data_t*)video_font_driver);
+   video_driver_state_t *video_st = video_state_get_ptr();
 
-   video_font_driver       = NULL;
-   video_font_driver_owner = NULL;
+   if (video_st->osd_font)
+      font_driver_free((font_data_t*)video_st->osd_font);
+
+   video_st->osd_font       = NULL;
+   video_st->osd_font_owner = NULL;
 }
