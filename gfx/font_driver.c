@@ -178,14 +178,16 @@ int font_renderer_create_default(
 
       *handle = font_backends[i]->init(path, data, (size_t)len,
             font_size, fmt);
+      /* Ownership passes to the renderer the moment init() is called,
+       * not when it succeeds: a renderer can take the buffer and then
+       * fail - stb stores it, then rejects a malformed font and frees
+       * it on the way out of init(). Freeing here as well was a double
+       * free on any unreadable or truncated font file. */
       if (*handle)
       {
-         /* The renderer owns data now. */
          *drv = font_backends[i];
          return 1;
       }
-
-      free(data);
    }
 
    *drv    = NULL;

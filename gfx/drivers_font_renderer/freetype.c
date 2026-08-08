@@ -535,14 +535,15 @@ fc_done:
 #endif
    {
       /* Bytes come from font_renderer_create_default(); no file I/O
-       * here. Ownership transfers on success. */
+       * here. Take ownership before the face is built, not after, so
+       * the error path releases them when FT rejects the font. */
       if (!font_data_in || !font_data_in_len)
          goto error;
+      handle->file_data = font_data_in;
       if ((err = FT_New_Memory_Face(handle->lib,
             (const FT_Byte*)font_data_in,
             (FT_Long)font_data_in_len, (FT_Long)0, &handle->face)))
          goto error;
-      handle->file_data = font_data_in;
    }
 
    if ((err = FT_Select_Charmap(handle->face, FT_ENCODING_UNICODE)))
