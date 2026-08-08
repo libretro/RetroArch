@@ -22,16 +22,8 @@
 #include "../config.h"
 #endif
 
-#ifdef HAVE_SDL2
-/* For the SDL_VERSION_ATLEAST gate around the SDL2 font case in
- * font_driver_init_first - sdl2_raster_font is only emitted by
- * sdl2_gfx.c when SDL >= 2.0.18 (SDL_RenderGeometry availability). */
-#include <SDL_version.h>
-#endif
-
 #include "font_driver.h"
 #include "video_thread_wrapper.h"
-
 
 /* Monotonic counter incremented whenever any font instance is
  * freed. Consumers that cache per-font derived data (e.g. the
