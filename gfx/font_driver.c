@@ -767,7 +767,6 @@ font_data_t *font_driver_init_first(
 void font_driver_init_osd(
       void *video_data,
       const video_info_t *video_info,
-      bool threading_hint,
       bool is_threaded,
       const font_renderer_t *backend)
 {
@@ -778,10 +777,14 @@ void font_driver_init_osd(
    if (video_font_driver && video_font_driver_owner != video_data)
       font_driver_free_osd();
 
+   /* threading_hint is false: both callers - video_driver_init_internal()
+    * and the threaded wrapper's CMD_INIT - already run on the thread that
+    * owns the graphics context, so there is nothing to marshal. The hint
+    * exists for callers that do not, such as gfx_display. */
    if (!video_font_driver && video_info)
       video_font_driver = font_driver_init_first(video_data,
             *video_info->path_font ? video_info->path_font : NULL,
-            video_info->font_size, threading_hint, is_threaded, backend);
+            video_info->font_size, false, is_threaded, backend);
 
    if (video_font_driver)
       video_font_driver_owner = video_data;

@@ -209,7 +209,7 @@ static bool video_thread_handle_packet(
             if (     thr->driver_data
                   && thr->driver->font_backend)
                font_driver_init_osd(thr->driver_data, &thr->info,
-                     false, true, thr->driver->font_backend);
+                     true, thr->driver->font_backend);
          }
          else
             thr->driver_data = NULL;

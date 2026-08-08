@@ -4574,7 +4574,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
     * font_driver_init_osd() then no-ops because the pointer is still
     * set, and the stale object keeps drawing. */
    if (video_st->current_video->font_backend)
-      font_driver_init_osd(video_st->data, &video, false,
+      font_driver_init_osd(video_st->data, &video,
             video.is_threaded, video_st->current_video->font_backend);
 
    video_st->poke = NULL;

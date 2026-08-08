@@ -143,7 +143,6 @@ font_data_t *font_driver_init_first(
 void font_driver_init_osd(
       void *video_data,
       const video_info_t *video_info,
-      bool threading_hint,
       bool is_threaded,
       const font_renderer_t *backend);
 
