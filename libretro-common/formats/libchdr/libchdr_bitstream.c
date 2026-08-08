@@ -52,7 +52,13 @@ uint32_t bitstream_peek(struct bitstream* bitstream, int numbits)
 		while (bitstream->bits <= 24)
 		{
 			if (bitstream->doffset < bitstream->dlength)
-				bitstream->buffer |= bitstream->read[bitstream->doffset] << (24 - bitstream->bits);
+				/* Cast before shifting. read[] is a uint8_t, promoted to
+				 * int, so a byte from 0x80 up shifted left by 24 - which is
+				 * the shift used whenever the accumulator is empty -
+				 * overflows a signed int. This is the huffman map decoder's
+				 * inner loop, so it runs over every byte of a compressed
+				 * CHD's map. */
+				bitstream->buffer |= (uint32_t)bitstream->read[bitstream->doffset] << (24 - bitstream->bits);
 			bitstream->doffset++;
 			bitstream->bits += 8;
 		}
