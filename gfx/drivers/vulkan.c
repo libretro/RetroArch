@@ -2241,13 +2241,17 @@ static void vulkan_font_free(void *data, bool is_threaded)
    if (font->font_driver && font->font_data)
       font->font_driver->free(font->font_data);
 
-   vkQueueWaitIdle(font->vk->context->queue);
-   if (font->upload_fence != VK_NULL_HANDLE)
-      vkDestroyFence(font->vk->context->device, font->upload_fence, NULL);
-   vulkan_destroy_texture(
-         font->vk->context->device, &font->texture);
-   vulkan_destroy_texture(
-         font->vk->context->device, &font->texture_optimal);
+   if (font->vk && font->vk->context && font->vk->context->device)
+   {
+      vkQueueWaitIdle(font->vk->context->queue);
+      if (font->upload_fence != VK_NULL_HANDLE)
+         vkDestroyFence(font->vk->context->device,
+               font->upload_fence, NULL);
+      vulkan_destroy_texture(
+            font->vk->context->device, &font->texture);
+      vulkan_destroy_texture(
+            font->vk->context->device, &font->texture_optimal);
+   }
 
    free(font);
 }
@@ -5213,8 +5217,29 @@ static void *vulkan_init(const video_info_t *video,
    bool force_fullscreen              = false;
    const gfx_ctx_driver_t *ctx_driver = NULL;
    settings_t *settings               = config_get_ptr();
-   vk_t *vk                           = (vk_t*)calloc(1, sizeof(*vk));
-   if (!vk)
+   vk_t *vk;
+
+   /* Drop the OSD font before building the new driver instance.
+    *
+    * font_driver_init_osd() only creates a font when video_font_driver
+    * is NULL, and vulkan_free() is not always reached on the reinit
+    * path - the old vk_t can simply be abandoned. When that happens
+    * the font survives with font->vk pointing at the previous
+    * instance and VkImage/VkImageView handles from a device that is
+    * gone, whose handle values the new device then recycles. The font
+    * draw samples whatever now owns them, which is why the glyphs
+    * fill solid at correct geometry and why nothing done to the
+    * atlas, its format, its upload path or the font renderer changes
+    * anything.
+    *
+    * Freeing here rather than in vulkan_free() is deliberate: at this
+    * point the old device is still alive, so the font can release its
+    * own GPU objects. MSU-1 content on snes9x reaches this because
+    * the 44.1 kHz switch issues SET_SYSTEM_AV_INFO and forces reinits
+    * mid-session. */
+   font_driver_free_osd();
+
+   if (!(vk = (vk_t*)calloc(1, sizeof(*vk))))
       return NULL;
    ctx_driver                         = vulkan_get_context(vk, settings);
    if (!ctx_driver)
