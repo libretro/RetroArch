@@ -585,7 +585,15 @@ static INLINE void put_bigendian_uint48(uint8_t *base, uint64_t value)
 
 static INLINE uint32_t get_bigendian_uint32_t(const uint8_t *base)
 {
-	return (base[0] << 24) | (base[1] << 16) | (base[2] << 8) | base[3];
+	/* Each byte is cast before shifting. base[0] is a uint8_t, which the
+	 * usual arithmetic conversions promote to int, so base[0] << 24 is a
+	 * signed shift that overflows for any byte from 0x80 up - undefined
+	 * behaviour, and it fires on ordinary data rather than exotic input:
+	 * a CRC or a SHA-1 byte has a one-in-two chance of tripping it. The
+	 * uint64 and uint48 readers above already cast for exactly this
+	 * reason, so this one was an oversight rather than a decision. */
+	return ((uint32_t)base[0] << 24) | ((uint32_t)base[1] << 16) |
+	       ((uint32_t)base[2] <<  8) |  (uint32_t)base[3];
 }
 
 /*-------------------------------------------------
