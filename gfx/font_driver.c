@@ -363,6 +363,39 @@ static INLINE unsigned font_get_arabic_replacement(
 }
 /* clang-format on */
 
+/* True if any byte has bit 7 set.
+ *
+ * Everything the reshaper reacts to needs one: IS_MBCONT is 0x80-0xBF,
+ * IS_HEBREW 0xD6-0xD7, IS_ARABIC 0xD8-0xDB. IS_DIR_NEUTRAL does match
+ * ASCII 0x20-0x3F, but it is only consulted after an IS_RTL hit has
+ * set reverse or entered a skip loop, which plain ASCII cannot reach.
+ * So a message with no high bytes leaves the reshaper byte-identical
+ * to the way it went in. */
+static INLINE bool font_msg_has_high_byte(const char *msg, size_t msg_len)
+{
+   const unsigned char *p = (const unsigned char*)msg;
+   const unsigned char *e = p + msg_len;
+   const size_t      mask = (size_t)~(size_t)0 / 0xFF * 0x80;
+
+   while (p < e && ((uintptr_t)p & (sizeof(size_t) - 1)))
+      if (*p++ & 0x80)
+         return true;
+
+   while (p + sizeof(size_t) <= e)
+   {
+      size_t w;
+      memcpy(&w, p, sizeof(w));
+      if (w & mask)
+         return true;
+      p += sizeof(size_t);
+   }
+
+   while (p < e)
+      if (*p++ & 0x80)
+         return true;
+   return false;
+}
+
 static char* font_driver_reshape_msg(const char* msg, size_t msg_len,
       unsigned char *s, size_t len, size_t *out_len)
 {
@@ -378,6 +411,15 @@ static char* font_driver_reshape_msg(const char* msg, size_t msg_len,
     * actually bounded by the input length and the buffer has to be
     * bounded directly. */
    unsigned char       *dst_max    = s + len - 5;
+
+   /* Nothing to reshape: hand back the input and skip both the walk
+    * and the copy into s. This is every English HUD string, including
+    * the statistics block s is sized for. */
+   if (!font_msg_has_high_byte(msg, msg_len))
+   {
+      *out_len = msg_len;
+      return (char*)msg;
+   }
 
    if (len < _len)
    {
