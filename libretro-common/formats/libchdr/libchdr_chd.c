@@ -823,6 +823,22 @@ static chd_error decompress_v5_map(chd_file* chd, chd_header* header)
 			else
 				rawmap[0] = lastcomp = val;
 		}
+
+		/* hunkcount comes from logicalbytes / hunkbytes, both header
+		 * fields, so a two-kilobyte image can claim a terabyte and send
+		 * these loops around a quarter of a billion times. Once the map
+		 * bitstream is exhausted every further read returns zero and the
+		 * remaining iterations decode nothing, so this is not an
+		 * arbitrary cap - a well-formed map never overflows, and one
+		 * that does cannot describe the hunks it claims. Measured at 64
+		 * seconds on a 2 KB file before this check. */
+		if (bitstream_overflow(bitbuf))
+		{
+			free(compressed_ptr);
+			free(bitbuf);
+			delete_huffman_decoder(decoder);
+			return CHDERR_DECOMPRESSION_ERROR;
+		}
 	}
 
 	/* then iterate through the hunks and extract the needed data */
@@ -886,6 +902,15 @@ static chd_error decompress_v5_map(chd_file* chd, chd_header* header)
 
 		/* crc16 */
 		put_bigendian_uint16(&rawmap[10], crc);
+
+		/* Same reasoning as the type loop above. */
+		if (bitstream_overflow(bitbuf))
+		{
+			free(compressed_ptr);
+			free(bitbuf);
+			delete_huffman_decoder(decoder);
+			return CHDERR_DECOMPRESSION_ERROR;
+		}
 	}
 
 	/* free memory */
