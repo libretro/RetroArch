@@ -397,7 +397,11 @@ else ifeq ($(platform), windows_msvc6_x86)
    CXX = cl.exe
    LD = link.exe
 
-   PLATCFLAGS += -D_WIN32 -D_WIN32_WINNT=0x0351 -D__STDC_CONSTANT_MACROS -D_MBCS
+   # _WIN32_WINDOWS says this build runs on 9x, which is what selects
+   # libretro-common's ANSI Win32 path.  It used to fall out of the low
+   # _WIN32_WINNT below, but that is the NT scale and NT is
+   # Unicode-native; the two are independent minimums and both apply.
+   PLATCFLAGS += -D_WIN32 -D_WIN32_WINNT=0x0351 -D_WIN32_WINDOWS=0x0400 -D__STDC_CONSTANT_MACROS -D_MBCS
    LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib
 
    VCDIR ?= $(shell reg query "HKLM\SOFTWARE\Wow6432Node\Microsoft\DevStudio\6.0\Products\Microsoft Visual C++" -v "ProductDir" | grep -io '[A-Z]:\\.*')
@@ -445,7 +449,9 @@ else ifeq ($(platform), windows_msvc2003_x86)
    CXX = cl.exe
    LD = link.exe
 
-   PLATCFLAGS += -D_WIN32 -DWINVER=0x0400 -D_WIN32_WINNT=0x0400 -D__STDC_CONSTANT_MACROS -D_MBCS -D_VC80_UPGRADE=0x0710
+   # See the msvc6 target: _WIN32_WINDOWS is the 9x minimum, _WIN32_WINNT
+   # the NT one.
+   PLATCFLAGS += -D_WIN32 -DWINVER=0x0400 -D_WIN32_WINNT=0x0400 -D_WIN32_WINDOWS=0x0400 -D__STDC_CONSTANT_MACROS -D_MBCS -D_VC80_UPGRADE=0x0710
    PLATCFLAGS += -DHAVE_GFX_WIDGETS
    LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib
 
@@ -508,7 +514,11 @@ else ifeq ($(platform), windows_msvc2005_x86)
    CXX = cl.exe
    LD = link.exe
 
-   PLATCFLAGS += -D_WIN32 -D_WIN32_WINNT=0x0410 -D__STDC_CONSTANT_MACROS -D_MBCS
+   # 0x0410 is Windows 98 - a _WIN32_WINDOWS value.  On the NT scale it
+   # reads as "NT 4.1", a version that does not exist; every SDK gate it
+   # passes is an NT 4.0 gate, so moving it to the macro it was always
+   # meant for changes no API exposure and states the actual target.
+   PLATCFLAGS += -D_WIN32 -D_WIN32_WINNT=0x0400 -D_WIN32_WINDOWS=0x0410 -D__STDC_CONSTANT_MACROS -D_MBCS
    PLATCFLAGS += -DHAVE_OPENGL -DHAVE_OPENGL1 -DHAVE_GLSL -DHAVE_OZONE -DHAVE_GFX_WIDGETS -DHAVE_CC_RESAMPLER
    PLATCFLAGS += -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_UPDATE_CORES 
    PLATCFLAGS += -DHAVE_UPDATE_CORE_INFO 
