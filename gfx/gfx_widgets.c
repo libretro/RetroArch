@@ -1027,6 +1027,14 @@ static void gfx_widgets_layout(
       gfx_widgets_font_init(p_disp, p_dispwidget,
             &p_dispwidget->gfx_widget_fonts.msg_queue,
             is_threaded, font_file, MSG_QUEUE_FONT_SIZE);
+
+      /* Only the message-queue font follows the language; the regular
+       * and bold ones are always the ozone faces. Marking it lets a
+       * language change rebuild it in place. */
+      font_driver_set_language_font(
+            p_dispwidget->gfx_widget_fonts.msg_queue.font,
+            p_dispwidget->assets_pkg_dir,
+            p_dispwidget->ozone_regular_font_path);
    }
    else
    {

@@ -7602,6 +7602,8 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
 {
    char iconpath[PATH_MAX_LENGTH];
    char fontpath[PATH_MAX_LENGTH];
+   char default_fontpath[PATH_MAX_LENGTH];
+   char pkg_dir[DIR_MAX_LENGTH];
    gfx_display_t *p_disp               = disp_get_ptr();
    struct menu_state *menu_st          = menu_state_get_ptr();
    const char *wideglyph_str           = msg_hash_get_wideglyph_str();
@@ -7625,12 +7627,40 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
       xmb->font2 = NULL;
    }
 
+   /* The theme's font, then the language override on top of it. Both
+    * are kept: the first is what to fall back to when the language
+    * wants nothing special, and telling the font driver both is what
+    * lets a language change rebuild these in place. */
    fill_pathname_application_special(
-         fontpath, sizeof(fontpath), APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT);
-   xmb->font            = gfx_display_font_file(p_disp,
-         fontpath, xmb->font_size, is_threaded);
-   xmb->font2           = gfx_display_font_file(p_disp,
-         fontpath, xmb->font2_size, is_threaded);
+         default_fontpath, sizeof(default_fontpath),
+         APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT);
+   {
+      settings_t *settings   = config_get_ptr();
+      const char *lang_font  = font_driver_language_font_file();
+      const char *menu_font  = settings->paths.path_menu_xmb_font;
+
+      fill_pathname_join_special(pkg_dir,
+            settings->paths.directory_assets, "pkg", sizeof(pkg_dir));
+
+      /* An explicit menu font wins, and there is nothing to
+       * re-resolve in that case. */
+      if (lang_font && !(menu_font && *menu_font))
+         fill_pathname_join_special(fontpath, pkg_dir, lang_font,
+               sizeof(fontpath));
+      else
+         strlcpy(fontpath, default_fontpath, sizeof(fontpath));
+
+      xmb->font            = gfx_display_font_file(p_disp,
+            fontpath, xmb->font_size, is_threaded);
+      xmb->font2           = gfx_display_font_file(p_disp,
+            fontpath, xmb->font2_size, is_threaded);
+
+      if (!(menu_font && *menu_font))
+      {
+         font_driver_set_language_font(xmb->font, pkg_dir, default_fontpath);
+         font_driver_set_language_font(xmb->font2, pkg_dir, default_fontpath);
+      }
+   }
 
    xmb->wideglyph_str        = wideglyph_str;
    xmb->wideglyph_generation = 0;

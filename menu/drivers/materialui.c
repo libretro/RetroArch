@@ -9312,7 +9312,9 @@ static void materialui_init_font(gfx_display_t *p_disp,
    bool video_is_threaded, const char *str_latin)
 {
    char tmp_dir[DIR_MAX_LENGTH];
+   char pkg_dir[DIR_MAX_LENGTH];
    char fontpath[PATH_MAX_LENGTH];
+   char default_fontpath[PATH_MAX_LENGTH];
    const char *wideglyph_str = msg_hash_get_wideglyph_str();
    settings_t *settings      = config_get_ptr();
    const char *dir_assets    = settings->paths.directory_assets;
@@ -9330,23 +9332,25 @@ static void materialui_init_font(gfx_display_t *p_disp,
    {
       const char *lang_font = font_driver_language_font_file();
 
+      fill_pathname_join_special(pkg_dir,
+            settings->paths.directory_assets, "pkg", sizeof(pkg_dir));
+      fill_pathname_join_special(tmp_dir, dir_assets, "glui", sizeof(tmp_dir));
+      fill_pathname_join_special(default_fontpath, tmp_dir, FILE_PATH_TTF_FONT,
+            sizeof(default_fontpath));
+
       if (lang_font)
-      {
-         fill_pathname_join_special(tmp_dir,
-               settings->paths.directory_assets, "pkg", sizeof(tmp_dir));
-         fill_pathname_join_special(fontpath, tmp_dir, lang_font,
+         fill_pathname_join_special(fontpath, pkg_dir, lang_font,
                sizeof(fontpath));
-      }
       else
-      {
-         fill_pathname_join_special(tmp_dir, dir_assets, "glui", sizeof(tmp_dir));
-         fill_pathname_join_special(fontpath, tmp_dir, FILE_PATH_TTF_FONT,
-               sizeof(fontpath));
-      }
+         strlcpy(fontpath, default_fontpath, sizeof(fontpath));
    }
 
    font_data->font = gfx_display_font_file(p_disp,
          fontpath, font_size, video_is_threaded);
+
+   /* Follow the menu language, so a language change can rebuild this
+    * where it stands instead of asking for a restart. */
+   font_driver_set_language_font(font_data->font, pkg_dir, default_fontpath);
 
    if (font_data->font)
    {

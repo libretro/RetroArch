@@ -379,24 +379,17 @@ size_t fill_pathname_application_special(char *s,
                _len = strlcpy(s, path_menu_xmb_font, len);
             else
             {
+               /* The theme's own font. The language override is not
+                * applied here: xmb asks for it separately so it can
+                * tell the font driver both paths, which is what lets
+                * a language change rebuild the font in place. */
                char tmp_dir[DIR_MAX_LENGTH];
+               char tmp_dir2[DIR_MAX_LENGTH];
+               const char *dir_assets = settings->paths.directory_assets;
 
-               const char *lang_font = font_driver_language_font_file();
-
-               if (lang_font)
-               {
-                  fill_pathname_join_special(tmp_dir,
-                        settings->paths.directory_assets, "pkg", sizeof(tmp_dir));
-                  _len = fill_pathname_join_special(s, tmp_dir, lang_font, len);
-               }
-               else
-               {
-                  char tmp_dir2[DIR_MAX_LENGTH];
-                  const char *dir_assets = settings->paths.directory_assets;
-                  fill_pathname_join_special(tmp_dir2, dir_assets, "xmb", sizeof(tmp_dir2));
-                  fill_pathname_join_special(tmp_dir, tmp_dir2, xmb_theme_ident(), sizeof(tmp_dir));
-                  _len = fill_pathname_join_special(s, tmp_dir, FILE_PATH_TTF_FONT, len);
-               }
+               fill_pathname_join_special(tmp_dir2, dir_assets, "xmb", sizeof(tmp_dir2));
+               fill_pathname_join_special(tmp_dir, tmp_dir2, xmb_theme_ident(), sizeof(tmp_dir));
+               _len = fill_pathname_join_special(s, tmp_dir, FILE_PATH_TTF_FONT, len);
             }
          }
 #endif

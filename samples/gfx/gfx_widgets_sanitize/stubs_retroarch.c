@@ -104,6 +104,14 @@ uint32_t font_driver_get_generation(void) { return 1; }
 
 /* gfx_widgets asks which font the menu language wants. English here:
  * these tests are about widget layout, not the language mapping. */
+/* Records that a font follows the menu language. Nothing to record
+ * here: the stub fonts are never rebuilt. */
+void font_driver_set_language_font(font_data_t *font,
+      const char *pkg_dir, const char *default_path)
+{
+   (void)font; (void)pkg_dir; (void)default_path;
+}
+
 const char *font_driver_language_font_file(void) { return NULL; }
 
 void font_driver_bind_block(void *font_data, void *block)
