@@ -759,6 +759,20 @@ font_data_t *font_driver_init_first(
    return NULL;
 }
 
+/* Unconditional release. Callers outside this file must go through
+ * font_driver_free_osd_for(), which will not touch a font belonging to
+ * another driver instance. */
+static void font_driver_free_osd(void)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+
+   if (video_st->osd_font)
+      font_driver_free((font_data_t*)video_st->osd_font);
+
+   video_st->osd_font       = NULL;
+   video_st->osd_font_owner = NULL;
+}
+
 void font_driver_init_osd(
       void *video_data,
       const video_info_t *video_info,
@@ -796,15 +810,4 @@ void font_driver_free_osd_for(void *video_data)
 
    if (video_st->osd_font && video_st->osd_font_owner == video_data)
       font_driver_free_osd();
-}
-
-void font_driver_free_osd(void)
-{
-   video_driver_state_t *video_st = video_state_get_ptr();
-
-   if (video_st->osd_font)
-      font_driver_free((font_data_t*)video_st->osd_font);
-
-   video_st->osd_font       = NULL;
-   video_st->osd_font_owner = NULL;
 }

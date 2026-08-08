@@ -146,8 +146,6 @@ void font_driver_init_osd(
       bool is_threaded,
       const font_renderer_t *backend);
 
-void font_driver_free_osd(void);
-
 /* Frees the OSD font only if it was built against @video_data. Use
  * this from any teardown that may run out of order with respect to the
  * next init. */
