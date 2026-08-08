@@ -20,33 +20,6 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-/* Large-file support is requested here rather than by the build,
- * because a build flag is one more thing every consumer of this file
- * has to get right and the failure when one does not is silent: a
- * 32-bit off_t truncates a seek into a read somewhere else in the
- * file.  These must precede every header in the translation unit.
- *
- * Not on Android: bionic did not support _FILE_OFFSET_BITS=64 until
- * API 24, and asking for it on an older level removes mmap() and
- * friends from the ABI rather than widening them.  Android instead
- * takes the explicit lseek64() path below, which bionic has always
- * had at every API level.
- *
- * Not on Windows either, where the CRT has no such knob - off_t is
- * long there and stays 32 bits even in a 64-bit build.  Windows uses
- * the _lseeki64 path below. */
-#if !defined(_WIN32)
-#if !defined(__ANDROID__) && !defined(_FILE_OFFSET_BITS)
-#define _FILE_OFFSET_BITS 64
-#endif
-#if !defined(_LARGEFILE_SOURCE)
-#define _LARGEFILE_SOURCE 1
-#endif
-#if !defined(_LARGEFILE64_SOURCE)
-#define _LARGEFILE64_SOURCE 1
-#endif
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -290,17 +263,29 @@
  *              app API partition, take _lseeki64 instead - every CRT
  *              new enough to build for that target has it.
  *
- *   Android    lseek64.  Always present, at every API level, and the
- *              reason the macros at the top of this file leave
- *              _FILE_OFFSET_BITS alone there.
+ *   Android    lseek64.  Bionic declares it in <unistd.h> at every
+ *              API level with no feature macro required, which is the
+ *              point: _FILE_OFFSET_BITS=64 is not usable on Android
+ *              before API 24, where asking for it removes mmap() from
+ *              the ABI rather than widening it.
  *
- *   otherwise  lseek, whose off_t those same macros have widened to
- *              64 bits wherever the platform has large-file support -
- *              which is everywhere with an mmap() to reach this path
- *              in the first place.  Where it has none, an offset off_t
- *              cannot represent is refused rather than silently
- *              truncated, and a seek that lands past its range is
- *              reported as the failure it is.
+ *   otherwise  lseek with off_t, whose width is the build's business
+ *              and not this file's.  An earlier version of this tried
+ *              to widen it here by defining _FILE_OFFSET_BITS and
+ *              _LARGEFILE64_SOURCE above the includes, which was wrong
+ *              twice: this file is #included into griffin.c as the
+ *              424th member of that translation unit, so "before every
+ *              header" is not a promise it can keep, and the macros it
+ *              set were read further down as capability tests -
+ *              _LARGEFILE64_SOURCE selecting struct stat64/stat64(),
+ *              which 3DS, PSP, DJGPP and Darwin do not have, and
+ *              _FILE_OFFSET_BITS forcing HAVE_64BIT_OFFSETS and its
+ *              fseeko/ftello onto every non-Windows target.  A build
+ *              wanting a wider off_t passes -D_FILE_OFFSET_BITS=64
+ *              itself, which is the only place it can be set
+ *              consistently for a whole program anyway.  Where off_t
+ *              is narrow, an offset it cannot represent is refused
+ *              here rather than silently truncated.
  */
 /* 64-bit seek on the buffered path.
  *
@@ -1626,7 +1611,13 @@ int retro_vfs_stat_64_impl(const char *path, int64_t *size)
          ret |= RETRO_VFS_STAT_IS_CHARACTER_SPECIAL;
 #else
       /* Every other platform */
-#if defined(_LARGEFILE64_SOURCE)
+/* _LARGEFILE64_SOURCE is a request for the LFS64 API, not evidence
+ * that it exists: Darwin, the 3DS and PSP toolchains, DJGPP and musl
+ * from 1.2.4 have no stat64 to offer whoever asks.  Paired with a libc
+ * known to carry it, so that a build defining the macro for its own
+ * reasons cannot turn this into a compile error. */
+#if defined(_LARGEFILE64_SOURCE) \
+      && (defined(__GLIBC__) || defined(__ANDROID__) || defined(__UCLIBC__))
       struct stat64 stat_buf;
       if (stat64(path, &stat_buf) < 0)
          return 0;

@@ -115,8 +115,22 @@ win32-configs:
 	      echo "ok:   $$cc [$${cfg:-default}] builds"; \
 	   done; \
 	done; \
+	wine_ok=0; \
 	if command -v $(WIN32_CC) >/dev/null 2>&1 \
 	      && command -v $(WINE) >/dev/null 2>&1; then \
+	   printf 'int main(void){return 0;}\n' > /tmp/lrc_aw_probe.c; \
+	   if $(WIN32_CC) -o /tmp/lrc_aw_probe.exe /tmp/lrc_aw_probe.c 2>/dev/null \
+	         && (cd /tmp && WINEDEBUG=-all $(WINE) /tmp/lrc_aw_probe.exe \
+	               >/dev/null 2>/tmp/lrc_aw_probe.log); then \
+	      wine_ok=1; \
+	   else \
+	      echo "skip: wine is installed but cannot run a Windows binary here"; \
+	      echo "      (configurations were built; none were executed)"; \
+	      sed 's/^/      /' /tmp/lrc_aw_probe.log 2>/dev/null | head -5; \
+	   fi; \
+	   rm -f /tmp/lrc_aw_probe.c /tmp/lrc_aw_probe.exe /tmp/lrc_aw_probe.log; \
+	fi; \
+	if [ $$wine_ok -eq 1 ]; then \
 	   for cfg in "" "-DLEGACY_WIN32" "-DHAVE_WIN9X_RUNTIME"; do \
 	      if ! $(WIN32_CC) -O2 -Iinclude $$cfg \
 	            -DLEGACY_WIN32_NO_MIGRATION_NOTE \
@@ -126,16 +140,18 @@ win32-configs:
 	         fails=`expr $$fails + 1`; continue; \
 	      fi; \
 	      if (cd /tmp && WINEDEBUG=-all $(WINE) /tmp/lrc_aw_test.exe \
-	            >/tmp/lrc_aw_out.txt 2>/dev/null); then \
+	            >/tmp/lrc_aw_out.txt 2>/tmp/lrc_aw_err.txt); then \
 	         echo "ok:   [$${cfg:-default}] runs under wine"; \
 	      else \
 	         echo "FAIL: [$${cfg:-default}] failed under wine"; \
-	         cat /tmp/lrc_aw_out.txt; fails=`expr $$fails + 1`; \
+	         cat /tmp/lrc_aw_out.txt; \
+	         sed 's/^/      /' /tmp/lrc_aw_err.txt | head -10; \
+	         fails=`expr $$fails + 1`; \
 	      fi; \
-	      rm -f /tmp/lrc_aw_test.exe /tmp/lrc_aw_out.txt; \
+	      rm -f /tmp/lrc_aw_test.exe /tmp/lrc_aw_out.txt /tmp/lrc_aw_err.txt; \
 	   done; \
-	else \
-	   echo "skip: wine or $(WIN32_CC) missing - configurations built, not run"; \
+	elif ! command -v $(WINE) >/dev/null 2>&1; then \
+	   echo "skip: wine not installed - configurations built, not run"; \
 	fi; \
 	if [ $$fails -ne 0 ]; then echo "$$fails Windows configuration check(s) failed"; exit 1; fi; \
 	echo "Windows A/W configuration matrix: all checks passed"
