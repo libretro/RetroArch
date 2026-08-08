@@ -2684,6 +2684,15 @@ static void vulkan_font_render_msg(
    {
       struct vk_texture *dynamic_tex = &font->texture_optimal;
       struct vk_texture *staging_tex = &font->texture;
+      /* Bytes per texel of the atlas: R8_UNORM normally, R16_UNORM
+       * for the A16 atlas an HDR swapchain asks for. The mapped-range
+       * flush and the buffer-image copy must agree on this, or the
+       * flushed span does not cover the bytes the copy reads. */
+      unsigned bpp                   = vulkan_format_to_bpp(
+            staging_tex->format);
+
+      if (!bpp)
+         bpp                         = 1;
 
       if (  (staging_tex->flags
                & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
@@ -2701,10 +2710,10 @@ static void vulkan_font_render_msg(
           * as required by the spec (§12.1). */
          VkDeviceSize flush_offset = (VkDeviceSize)font->dirty_y_min 
                       * staging_tex->stride
-                      + font->dirty_x_min;
+                      + (VkDeviceSize)font->dirty_x_min * bpp;
          VkDeviceSize flush_end    = (VkDeviceSize)(font->dirty_y_max > 0
                       ? (font->dirty_y_max - 1) : 0) * staging_tex->stride
-                      + font->dirty_x_max;
+                      + (VkDeviceSize)font->dirty_x_max * bpp;
          if (flush_end <= flush_offset)
             flush_end = flush_offset + 1;
          flush_size   = flush_end - flush_offset;
@@ -2732,10 +2741,15 @@ static void vulkan_font_render_msg(
          unsigned dw = font->dirty_x_max - dx;
          unsigned dh = font->dirty_y_max - dy;
 
-         if (dx + dw > staging_tex->width)
-            dw = staging_tex->width - dx;
-         if (dy + dh > staging_tex->height)
-            dh = staging_tex->height - dy;
+         if (dx >= staging_tex->width || dy >= staging_tex->height)
+            dw = dh = 0;
+         else
+         {
+            if (dx + dw > staging_tex->width)
+               dw = staging_tex->width - dx;
+            if (dy + dh > staging_tex->height)
+               dh = staging_tex->height - dy;
+         }
 
          if (dw > 0 && dh > 0)
          {
@@ -2744,6 +2758,18 @@ static void vulkan_font_render_msg(
             VkCommandBufferAllocateInfo cmd_info;
             VkCommandBufferBeginInfo begin_info;
             VkBufferImageCopy region;
+            /* UNDEFINED as oldLayout lets the implementation discard
+             * the whole image. That is only sound when the copy
+             * rewrites every texel - the initial full-atlas upload.
+             * Later uploads are incremental rects covering a single
+             * glyph, and must preserve what lies outside them. */
+            bool full_copy              = (   dx == 0
+                                           && dy == 0
+                                           && dw == dynamic_tex->width
+                                           && dh == dynamic_tex->height);
+            VkImageLayout old_layout    = full_copy
+               ? VK_IMAGE_LAYOUT_UNDEFINED
+               : dynamic_tex->layout;
 
             cmd_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
             cmd_info.pNext              = NULL;
@@ -2759,29 +2785,33 @@ static void vulkan_font_render_msg(
             begin_info.pInheritanceInfo = NULL;
             vkBeginCommandBuffer(staging_cmd, &begin_info);
 
+            /* Naming the real source scope also gives this barrier a
+             * non-empty first synchronisation scope, which covers
+             * commands submitted earlier to the same queue and so
+             * orders the transfer against frames still in flight that
+             * are sampling the atlas. TOP_OF_PIPE ordered nothing. */
             VULKAN_IMAGE_LAYOUT_TRANSITION(
                   staging_cmd,
                   dynamic_tex->image,
-                  VK_IMAGE_LAYOUT_UNDEFINED,
+                  old_layout,
                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                  0,
+                  (old_layout == VK_IMAGE_LAYOUT_UNDEFINED)
+                     ? 0
+                     : VK_ACCESS_SHADER_READ_BIT,
                   VK_ACCESS_TRANSFER_WRITE_BIT,
-                  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                  (old_layout == VK_IMAGE_LAYOUT_UNDEFINED)
+                     ? VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT
+                     : VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
                   VK_PIPELINE_STAGE_TRANSFER_BIT);
 
             /* bufferOffset is in bytes; bufferRowLength is in
              * TEXELS. For R8 the two coincide with the byte stride,
              * for R16 they do not. */
-            {
-               unsigned bpp = vulkan_format_to_bpp(staging_tex->format);
-               if (!bpp)
-                  bpp = 1;
-               region.bufferOffset              =
-                  (VkDeviceSize)dy * staging_tex->stride
-                     + (VkDeviceSize)dx * bpp;
-               region.bufferRowLength           =
-                  (uint32_t)(staging_tex->stride / bpp);
-            }
+            region.bufferOffset                    =
+               (VkDeviceSize)dy * staging_tex->stride
+                  + (VkDeviceSize)dx * bpp;
+            region.bufferRowLength                 =
+               (uint32_t)(staging_tex->stride / bpp);
             region.bufferImageHeight               = 0;
             region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
             region.imageSubresource.mipLevel       = 0;
@@ -2864,14 +2894,17 @@ static void vulkan_font_render_msg(
 
             dynamic_tex->layout =
                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+            /* Reset only on a real upload. Clearing the dirty box
+             * after a rect that clamped away stranded that glyph's
+             * staging write permanently. */
+            font->dirty_x_min  = font->atlas->width;
+            font->dirty_y_min  = font->atlas->height;
+            font->dirty_x_max  = 0;
+            font->dirty_y_max  = 0;
+            font->needs_update = false;
          }
       }
-
-      font->dirty_x_min  = font->atlas->width;
-      font->dirty_y_min  = font->atlas->height;
-      font->dirty_x_max  = 0;
-      font->dirty_y_max  = 0;
-      font->needs_update = false;
    }
 
    /* Transition the font atlas texture for shader reads.
