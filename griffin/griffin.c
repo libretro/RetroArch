@@ -659,7 +659,7 @@ VIDEO DRIVER
 FONTS
 ============================================================ */
 
-#include "../gfx/drivers_font_renderer/bitmap.c"
+#include "../gfx/bitmapfont.c"
 
 #ifdef HAVE_LANGEXTRA
 #endif

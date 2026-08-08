@@ -55,7 +55,7 @@
 #include "../../input/input_osk.h"
 #include "../../tasks/tasks_internal.h"
 
-#include "../../gfx/drivers_font_renderer/bitmap.h"
+#include "../../gfx/bitmapfont.h"
 #ifdef HAVE_LANGEXTRA
 #include "rgui_bitmapfont.h"
 #endif

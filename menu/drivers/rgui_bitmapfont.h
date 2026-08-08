@@ -20,7 +20,7 @@
 #ifndef __RGUI_BITMAPFONT_H
 #define __RGUI_BITMAPFONT_H
 
-#include "../../gfx/drivers_font_renderer/bitmap.h"
+#include "../../gfx/bitmapfont.h"
 
 /* Fixed-size glyph tables loaded from the RGUI font assets. These
  * are not font renderers: they read the prebuilt .bin tables that

@@ -334,7 +334,7 @@ OBJ     += state_manager.o
 endif
 
 OBJ += \
-       gfx/drivers_font_renderer/bitmap.o \
+       gfx/bitmapfont.o \
        tasks/task_autodetect.o \
        input/input_autodetect_builtin.o \
        input/input_keymaps.o \

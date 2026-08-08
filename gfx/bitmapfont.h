@@ -14,8 +14,8 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __RARCH_FONT_BITMAP_H
-#define __RARCH_FONT_BITMAP_H
+#ifndef __RARCH_FONT_BITMAPFONT_H
+#define __RARCH_FONT_BITMAPFONT_H
 
 #include <stdint.h>
 #include <boolean.h>

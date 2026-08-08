@@ -22,7 +22,7 @@
 
 #include <stdlib.h>
 
-#include "bitmap.h"
+#include "bitmapfont.h"
 
 /* The built-in glyphs are laid out as a 16x16 grid, so the LUT
  * below carries one entry per code point in 0x00-0xFF. */

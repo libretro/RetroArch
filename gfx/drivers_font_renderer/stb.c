@@ -1278,7 +1278,7 @@ static void rtt_render_glyph(const rtt_font_t *f, void *dst,
 /* ==================== end cleanroom TrueType ==================== */
 
 
-#include "bitmap.h"
+#include "../bitmapfont.h"
 
 #define STB_ATLAS_ROWS 16
 #define STB_ATLAS_COLS 16
