@@ -1599,14 +1599,7 @@ static void* rsx_init(const video_info_t* video,
    rsx_context_bind_hw_render(rsx, true);
 
    if (video->font_enable)
-   {
-      font_driver_init_osd(rsx,
-            video,
-            false,
-            video->is_threaded,
-            &rsx_font);
       rsx->msg_rendering_enabled = true;
-   }
 
    return rsx;
 }
@@ -2713,6 +2706,9 @@ video_driver_t video_gcm =
    NULL, /* shader_load_begin */
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   rsx_widgets_enabled
+   rsx_widgets_enabled,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &rsx_font
 };

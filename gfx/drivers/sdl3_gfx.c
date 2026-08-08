@@ -284,14 +284,6 @@ static void *sdl3_gfx_init(const video_info_t *video,
 
    sdl3_refresh_viewport(vid);
 
-   /* Set up the global OSD font (video_font_driver) using our
-    * sdl3_raster_font. Required for the "Display Statistics" overlay
-    * and any other subsystem that calls font_driver_render_msg with
-    * a NULL font - the same wiring every other modern driver does. */
-   if (video->font_enable)
-      font_driver_init_osd(vid, video, false, video->is_threaded,
-            &sdl3_raster_font);
-
    /* The frontend selects the input driver separately. */
    *input      = NULL;
    *input_data = NULL;
@@ -607,7 +599,6 @@ static void sdl3_gfx_free(void *data)
       return;
 
    /* Make sure the on-screen display font is cleared out. */
-   font_driver_free_osd();
 
    sdl3_tex_zero(&vid->frame);
    sdl3_tex_zero(&vid->menu);
@@ -1718,6 +1709,9 @@ video_driver_t video_sdl3 = {
    NULL,                        /* shader_load_begin */
    NULL,                        /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   sdl3_gfx_widgets_enabled
+   sdl3_gfx_widgets_enabled,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &sdl3_raster_font
 };
