@@ -9374,9 +9374,10 @@ static void materialui_init_font(gfx_display_t *p_disp,
       }
 
       /* Get line metrics */
-      font_data->line_height        = font_driver_get_line_height(font_data->font, 1.0f);
-      font_data->line_ascender      = font_driver_get_line_ascender(font_data->font, 1.0f);
-      font_data->line_centre_offset = font_driver_get_line_centre_offset(font_data->font, 1.0f);
+      font_data->line_height        = (int)roundf(font_data->font->metrics.height);
+      font_data->line_ascender      = (int)roundf(font_data->font->metrics.ascender);
+      font_data->line_centre_offset = (int)roundf((font_data->font->metrics.ascender
+            - font_data->font->metrics.descender) * 0.5f);
    }
 }
 

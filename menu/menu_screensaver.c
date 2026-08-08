@@ -528,8 +528,9 @@ static bool menu_screensaver_update_state(
       /* If font was created successfully, fetch metadata */
       if (screensaver->font_data.font)
          screensaver->font_data.y_centre_offset =
-               (float)font_driver_get_line_centre_offset(
-                     screensaver->font_data.font, 1.0f);
+               roundf((screensaver->font_data.font->metrics.ascender
+                     - screensaver->font_data.font->metrics.descender)
+                     * 0.5f);
       /* In case of error, warn and disable
        * further attempts to create fonts */
       else

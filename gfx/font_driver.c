@@ -546,64 +546,6 @@ int font_driver_get_message_width(void *font_data,
    return -1;
 }
 
-int font_driver_get_line_height(font_data_t *font, float scale)
-{
-   struct font_line_metrics *metrics = NULL;
-   const font_renderer_t *renderer   = font ? font->renderer : NULL;
-   /* First try the line metrics implementation */
-   if (renderer && renderer->get_line_metrics)
-      if ((renderer->get_line_metrics(
-                  font->renderer_data, &metrics)))
-         return (int)roundf(metrics->height * scale);
-   /* Else return an approximation
-    * (uses a fudge of standard font metrics - mostly garbage...)
-    * > font_size = (width of 'a') / 0.6
-    * > line_height = font_size * 1.7f */
-   return (int)roundf(1.7f * (float)font_driver_get_message_width(font, "a", 1, scale) / 0.6f);
-}
-
-int font_driver_get_line_ascender(font_data_t *font, float scale)
-{
-   struct font_line_metrics *metrics = NULL;
-   const font_renderer_t *renderer   = font ? font->renderer : NULL;
-   /* First try the line metrics implementation */
-   if (renderer && renderer->get_line_metrics)
-      if ((renderer->get_line_metrics(font->renderer_data, &metrics)))
-         return (int)roundf(metrics->ascender * scale);
-   /* Else return an approximation
-    * (uses a fudge of standard font metrics - mostly garbage...)
-    * > font_size = (width of 'a') / 0.6
-    * > ascender = 1.58 * font_size * 0.75 */
-   return (int)roundf(1.58f * 0.75f * (float)font_driver_get_message_width(font, "a", 1, scale) / 0.6f);
-}
-
-int font_driver_get_line_descender(font_data_t *font, float scale)
-{
-   struct font_line_metrics *metrics = NULL;
-   const font_renderer_t *renderer   = font ? font->renderer : NULL;
-   /* First try the line metrics implementation */
-   if (renderer && renderer->get_line_metrics)
-      if ((renderer->get_line_metrics(font->renderer_data, &metrics)))
-         return (int)roundf(metrics->descender * scale);
-   /* Else return an approximation
-    * (uses a fudge of standard font metrics - mostly garbage...)
-    * > font_size = (width of 'a') / 0.6
-    * > descender = 1.58 * font_size * 0.25 */
-   return (int)roundf(1.58f * 0.25f * (float)font_driver_get_message_width(font, "a", 1, scale) / 0.6f);
-}
-
-int font_driver_get_line_centre_offset(font_data_t *font, float scale)
-{
-   struct font_line_metrics *metrics = NULL;
-   const font_renderer_t *renderer   = font ? font->renderer : NULL;
-   /* First try the line metrics implementation */
-   if (renderer && renderer->get_line_metrics)
-      if ((renderer->get_line_metrics(font->renderer_data, &metrics)))
-         return (int)roundf((metrics->ascender - metrics->descender) * 0.5f * scale);
-   /* Else return an approximation... */
-   return (int)roundf((1.58f * 0.5f * (float)font_driver_get_message_width(font, "a", 1, scale) / 0.6f) / 2.0f);
-}
-
 #ifdef HAVE_THREADS
 typedef struct
 {
@@ -726,9 +668,33 @@ font_data_t *font_driver_init_first(
 
       if (font)
       {
+         struct font_line_metrics *m = NULL;
+
          font->renderer      = (const font_renderer_t*)font_driver;
          font->renderer_data = font_handle;
          font->size          = font_size;
+
+         if (     font->renderer->get_line_metrics
+               && font->renderer->get_line_metrics(font->renderer_data, &m)
+               && m)
+            font->metrics    = *m;
+         else
+         {
+            /* Renderer has no metrics of its own. Approximate from
+             * the width of 'a', which is what the old
+             * font_driver_get_line_*() helpers fell back to:
+             *   font_size = width('a') / 0.6
+             *   height    = font_size * 1.7
+             *   ascender  = font_size * 1.58 * 0.75
+             *   descender = font_size * 1.58 * 0.25 */
+            float sz = 0.0f;
+            if (font->renderer->get_message_width)
+               sz = (float)font->renderer->get_message_width(
+                     font->renderer_data, "a", 1, 1.0f) / 0.6f;
+            font->metrics.height    = sz * 1.7f;
+            font->metrics.ascender  = sz * 1.58f * 0.75f;
+            font->metrics.descender = sz * 1.58f * 0.25f;
+         }
          return font;
       }
 

@@ -73,6 +73,12 @@ typedef struct font_data
    const font_renderer_t *renderer;
    void *renderer_data;
    float size;
+   /* Line metrics, read from the renderer once when the font is
+    * created. Renderers fill these at init and never change them, so
+    * callers can use them directly instead of asking again - which
+    * some did per frame, from inside ticker animations. Scale them
+    * yourself if you are drawing at other than 1.0. */
+   struct font_line_metrics metrics;
 } font_data_t;
 
 /* This structure holds all objects + metadata
@@ -150,11 +156,6 @@ void font_driver_init_osd(
  * this from any teardown that may run out of order with respect to the
  * next init. */
 void font_driver_free_osd_for(void *video_data);
-
-int font_driver_get_line_height(font_data_t *font, float scale);
-int font_driver_get_line_ascender(font_data_t *font, float scale);
-int font_driver_get_line_descender(font_data_t *font, float scale);
-int font_driver_get_line_centre_offset(font_data_t *font, float scale);
 
 extern font_renderer_driver_t stb_font_renderer;
 extern font_renderer_driver_t freetype_font_renderer;

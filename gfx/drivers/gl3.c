@@ -4857,13 +4857,7 @@ static bool gl3_frame(void *data, const void *frame,
 #endif
 
    if (msg && *msg)
-   {
-#if 0
-      if (msg_bgcolor_enable)
-         gl3_render_osd_background(gl, video_info, msg);
-#endif
       font_driver_render_msg(gl, msg, strlen(msg), NULL, NULL);
-   }
 
    /* scRGB output: everything above rendered into the SDR offscreen;
     * encode it into the FP16 backbuffer in one pass (gamma 2.4

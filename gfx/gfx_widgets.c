@@ -946,14 +946,22 @@ static void gfx_widgets_font_init(
    font_data->font               = gfx_display_font_file(p_disp,
          font_path, scaled_size, is_threaded);
 
-   /* Get font metadata */
-   glyph_width = font_driver_get_message_width(font_data->font, "a", 1, 1.0f);
-   if (glyph_width > 0)
-      font_data->glyph_width     = (float)glyph_width;
-   font_data->line_height        = (float)font_driver_get_line_height(font_data->font, 1.0f);
-   font_data->line_ascender      = (float)font_driver_get_line_ascender(font_data->font, 1.0f);
-   font_data->line_descender     = (float)font_driver_get_line_descender(font_data->font, 1.0f);
-   font_data->line_centre_offset = (float)font_driver_get_line_centre_offset(font_data->font, 1.0f);
+   /* Get font metadata. gfx_display_font_file() can fail, and there is
+    * no implicit font to fall back on any more, so the approximate
+    * glyph width set above has to stand on its own. */
+   if (font_data->font)
+   {
+      glyph_width                = font_driver_get_message_width(
+            font_data->font, "a", 1, 1.0f);
+      if (glyph_width > 0)
+         font_data->glyph_width  = (float)glyph_width;
+
+      font_data->line_height        = (float)(int)roundf(font_data->font->metrics.height);
+      font_data->line_ascender      = (float)(int)roundf(font_data->font->metrics.ascender);
+      font_data->line_descender     = (float)(int)roundf(font_data->font->metrics.descender);
+      font_data->line_centre_offset = roundf((font_data->font->metrics.ascender
+            - font_data->font->metrics.descender) * 0.5f);
+   }
 
    font_data->usage_count        = 0;
 }

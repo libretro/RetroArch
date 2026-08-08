@@ -97,15 +97,6 @@ int font_driver_get_message_width(void *font_data, const char *msg,
    return (int)(len * 10 * (scale > 0.0f ? scale : 1.0f));
 }
 
-int font_driver_get_line_height(font_data_t *font, float scale)
-{ (void)font; return (int)(20 * (scale > 0.0f ? scale : 1.0f)); }
-int font_driver_get_line_ascender(font_data_t *font, float scale)
-{ (void)font; return (int)(15 * (scale > 0.0f ? scale : 1.0f)); }
-int font_driver_get_line_descender(font_data_t *font, float scale)
-{ (void)font; return (int)(5 * (scale > 0.0f ? scale : 1.0f)); }
-int font_driver_get_line_centre_offset(font_data_t *font, float scale)
-{ (void)font; return (int)(8 * (scale > 0.0f ? scale : 1.0f)); }
-
 void font_driver_bind_block(void *font_data, void *block)
 { (void)font_data; (void)block; }
 void font_driver_free(font_data_t *font) { (void)font; }

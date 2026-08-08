@@ -5360,8 +5360,8 @@ XMB_NOINLINE static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_ani
       word_wrap_func      = word_wrap;
 
    /* > Height */
-   if ((glyph_height = font_driver_get_line_height(
-         line_ticker->font, line_ticker->font_scale)) <= 0)
+   if ((glyph_height = (int)roundf(line_ticker->font->metrics.height
+               * line_ticker->font_scale)) <= 0)
       goto fail;
 
    /* Determine line wrap parameters */
