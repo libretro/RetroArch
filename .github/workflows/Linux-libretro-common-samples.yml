@@ -76,6 +76,9 @@ jobs:
             net_ifinfo
             vfs_read_overflow_test
             vfs_mapped_ptr_test
+            vfs_large_file_test
+            vfs_seek_contract_test
+            vfs_hybrid_test
             cdrom_cuesheet_overflow_test
             cdfs_dir_record_test
             chd_meta_overflow_test

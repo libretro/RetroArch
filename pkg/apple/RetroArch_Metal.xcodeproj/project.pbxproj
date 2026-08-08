@@ -279,7 +279,6 @@
 		05A8C60920DB72F000FF7857 /* pipeline_xmb_ribbon_simple.cg.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pipeline_xmb_ribbon_simple.cg.h; sourceTree = "<group>"; };
 		05A8C60A20DB72F000FF7857 /* core_alpha_blend.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = core_alpha_blend.glsl.frag.h; sourceTree = "<group>"; };
 		05A8C60B20DB72F000FF7857 /* modern_alpha_blend.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = modern_alpha_blend.glsl.vert.h; sourceTree = "<group>"; };
-		05A8C60C20DB72F000FF7857 /* opaque.cg.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = opaque.cg.h; sourceTree = "<group>"; };
 		05A8C60F20DB72F000FF7857 /* modern_opaque.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = modern_opaque.glsl.vert.h; sourceTree = "<group>"; };
 		05A8C61020DB72F000FF7857 /* modern_opaque.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = modern_opaque.glsl.frag.h; sourceTree = "<group>"; };
 		05A8C61320DB72F000FF7857 /* pipeline_snowflake.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pipeline_snowflake.glsl.frag.h; sourceTree = "<group>"; };
@@ -347,7 +346,6 @@
 		05A8C76820DB72F100FF7857 /* vulkan_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = vulkan_common.h; sourceTree = "<group>"; };
 		05A8C76F20DB72F100FF7857 /* gl_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = gl_common.h; sourceTree = "<group>"; };
 		05A8C77020DB72F100FF7857 /* d3d_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = d3d_common.h; sourceTree = "<group>"; };
-		05A8C77720DB72F100FF7857 /* d3d10_common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = d3d10_common.c; sourceTree = "<group>"; };
 		05A8C77A20DB72F100FF7857 /* video_display_server.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = video_display_server.h; sourceTree = "<group>"; };
 		05A8C78D20DB72F100FF7857 /* video_filter.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = video_filter.c; sourceTree = "<group>"; };
 		05A8C79020DB72F100FF7857 /* glslang_util.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = glslang_util.h; sourceTree = "<group>"; };
@@ -356,7 +354,6 @@
 		05A8C79420DB72F100FF7857 /* slang_process.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = slang_process.cpp; sourceTree = "<group>"; };
 		05A8C79520DB72F100FF7857 /* shader_vulkan.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = shader_vulkan.cpp; sourceTree = "<group>"; };
 		05A8C79720DB72F100FF7857 /* shader_glsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = shader_glsl.h; sourceTree = "<group>"; };
-		05A8C79920DB72F100FF7857 /* glslang_util_cxx.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = glslang_util_cxx.cpp; sourceTree = "<group>"; };
 		05A8C79B20DB72F100FF7857 /* shader_gl_cg.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = shader_gl_cg.c; sourceTree = "<group>"; };
 		05A8C79C20DB72F100FF7857 /* shader_vulkan.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = shader_vulkan.h; sourceTree = "<group>"; };
 		05A8C79D20DB72F100FF7857 /* video_crt_switch.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = video_crt_switch.h; sourceTree = "<group>"; };
@@ -366,12 +363,9 @@
 		05A8C7A720DB72F100FF7857 /* font_driver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = font_driver.h; sourceTree = "<group>"; };
 		05A8C7A820DB72F100FF7857 /* video_defines.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = video_defines.h; sourceTree = "<group>"; };
 		05A8C7AB20DB72F100FF7857 /* freetype.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = freetype.c; sourceTree = "<group>"; };
-		05A8C7AC20DB72F100FF7857 /* bitmap.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; path = bitmap.bmp; sourceTree = "<group>"; };
 		05A8C7AD20DB72F100FF7857 /* coretext.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = coretext.c; sourceTree = "<group>"; };
-		05A8C7AE20DB72F100FF7857 /* bitmap.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = bitmap.bin; sourceTree = "<group>"; };
-		05A8C7AF20DB72F100FF7857 /* stb_unicode.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = stb_unicode.c; sourceTree = "<group>"; };
 		05A8C7B020DB72F100FF7857 /* bitmapfont.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = bitmapfont.c; sourceTree = "<group>"; };
-		05A8C7B120DB72F100FF7857 /* bitmap.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bitmap.h; sourceTree = "<group>"; };
+		05A8C7B120DB72F100FF7857 /* bitmapfont.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bitmapfont.h; sourceTree = "<group>"; };
 		05A8C7B220DB72F100FF7857 /* stb.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = stb.c; sourceTree = "<group>"; };
 		05A8E23720A63CB40084ABDA /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
 		05A8E23920A63CED0084ABDA /* IOSurface.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOSurface.framework; path = System/Library/Frameworks/IOSurface.framework; sourceTree = SDKROOT; };
@@ -845,6 +839,8 @@
 		05A8C5D420DB72F000FF7857 /* gfx */ = {
 			isa = PBXGroup;
 			children = (
+				05A8C7B020DB72F100FF7857 /* bitmapfont.c */,
+				05A8C7B120DB72F100FF7857 /* bitmapfont.h */,
 				05A8C73A20DB72F100FF7857 /* common */,
 				05A8C5EC20DB72F000FF7857 /* drivers */,
 				05A8C5D620DB72F000FF7857 /* drivers_context */,
@@ -904,7 +900,6 @@
 				05A8C60920DB72F000FF7857 /* pipeline_xmb_ribbon_simple.cg.h */,
 				05A8C60A20DB72F000FF7857 /* core_alpha_blend.glsl.frag.h */,
 				05A8C60B20DB72F000FF7857 /* modern_alpha_blend.glsl.vert.h */,
-				05A8C60C20DB72F000FF7857 /* opaque.cg.h */,
 				05A8C60F20DB72F000FF7857 /* modern_opaque.glsl.vert.h */,
 				05A8C61020DB72F000FF7857 /* modern_opaque.glsl.frag.h */,
 				05A8C61320DB72F000FF7857 /* pipeline_snowflake.glsl.frag.h */,
@@ -980,7 +975,6 @@
 				05A8C74520DB72F100FF7857 /* metal */,
 				05A8C75E20DB72F100FF7857 /* d3d_common.c */,
 				05A8C77020DB72F100FF7857 /* d3d_common.h */,
-				05A8C77720DB72F100FF7857 /* d3d10_common.c */,
 				0538874D20DDD5C600769232 /* dxgi_common.c */,
 				0538874E20DDD5C600769232 /* dxgi_common.h */,
 				05A8C75D20DB72F100FF7857 /* gl_common.c */,
@@ -1004,7 +998,6 @@
 		05A8C78E20DB72F100FF7857 /* drivers_shader */ = {
 			isa = PBXGroup;
 			children = (
-				05A8C79920DB72F100FF7857 /* glslang_util_cxx.cpp */,
 				05A8C79020DB72F100FF7857 /* glslang_util.h */,
 				05A8C79B20DB72F100FF7857 /* shader_gl_cg.c */,
 				05A8C79120DB72F100FF7857 /* shader_glsl.c */,
@@ -1021,12 +1014,7 @@
 			isa = PBXGroup;
 			children = (
 				05A8C7AB20DB72F100FF7857 /* freetype.c */,
-				05A8C7AC20DB72F100FF7857 /* bitmap.bmp */,
 				05A8C7AD20DB72F100FF7857 /* coretext.c */,
-				05A8C7AE20DB72F100FF7857 /* bitmap.bin */,
-				05A8C7AF20DB72F100FF7857 /* stb_unicode.c */,
-				05A8C7B020DB72F100FF7857 /* bitmapfont.c */,
-				05A8C7B120DB72F100FF7857 /* bitmap.h */,
 				05A8C7B220DB72F100FF7857 /* stb.c */,
 			);
 			path = drivers_font_renderer;

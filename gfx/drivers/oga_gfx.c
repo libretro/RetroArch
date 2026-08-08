@@ -398,11 +398,13 @@ static void *oga_init(const video_info_t *video,
    vid->msg_surface   = oga_create_surface(vid->fd, vid->drm_width, vid->drm_height, RK_FORMAT_BGRA_8888);
    vid->last_msg[0]   = 0;
 
-   /* bitmap only for now */
    if (settings->bools.video_font_enable)
    {
-      vid->font_driver = &bitmap_font_renderer;
-      vid->font        = vid->font_driver->init("", settings->floats.video_font_size);
+      /* An empty path asks stb for its built-in glyphs, which is what
+       * this driver used to get from bitmap_font_renderer. */
+      vid->font_driver = &stb_font_renderer;
+      vid->font        = vid->font_driver->init("",
+            settings->floats.video_font_size, FONT_ATLAS_FORMAT_A8);
    }
 
    for (i = 0; i < NUM_PAGES; ++i)

@@ -1247,22 +1247,6 @@ static void gfx_display_d3d9_cg_scissor_end(void *data,
    IDirect3DDevice9_SetScissorRect(d3d9->dev, &rect);
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_d3d9_cg = {
-   gfx_display_d3d9_cg_draw,
-   gfx_display_d3d9_cg_draw_pipeline,
-   gfx_display_d3d9_cg_blend_begin,
-   gfx_display_d3d9_cg_blend_end,
-   NULL,                                     /* get_default_mvp        */
-   NULL,                                     /* get_default_vertices   */
-   NULL,                                     /* get_default_tex_coords */
-   FONT_DRIVER_RENDER_D3D9_CG_API,
-   GFX_VIDEO_DRIVER_DIRECT3D9_CG,
-   "d3d9_cg",
-   true,
-   gfx_display_d3d9_cg_scissor_begin,
-   gfx_display_d3d9_cg_scissor_end
-};
-
 /*
  * FONT DRIVER
  */
@@ -1293,7 +1277,7 @@ static void *d3d9_cg_font_init(void *data,
 
    if (!font_renderer_create_default(
             &font->font_driver, &font->font_data,
-            font_path, font_size))
+            font_path, font_size, FONT_ATLAS_FORMAT_A8))
    {
       free(font);
       return NULL;
@@ -1932,18 +1916,6 @@ static bool d3d9_cg_font_get_line_metrics(
    }
    return false;
 }
-
-font_renderer_t d3d9_cg_font = {
-   d3d9_cg_font_init,
-   d3d9_cg_font_free,
-   d3d9_cg_font_render_msg,
-   "d3d9_cg",
-   d3d9_cg_font_get_glyph,
-   NULL, /* bind_block */
-   NULL, /* flush */
-   d3d9_cg_font_get_message_width,
-   d3d9_cg_font_get_line_metrics
-};
 
 /*
  * VIDEO DRIVER
@@ -3356,7 +3328,6 @@ static void d3d9_cg_deinitialize(d3d9_video_t *d3d)
    if (!d3d)
       return;
 
-   font_driver_free_osd();
 
    d3d9_cg_deinit_chain(d3d);
    d3d9_vertex_buffer_free(d3d->menu_display.buffer,
@@ -3781,10 +3752,6 @@ static bool d3d9_cg_initialize(d3d9_video_t *d3d, const video_info_t *info)
    d3d9_cg_set_viewport(d3d,
       d3d->vp.full_width, d3d->vp.full_height, false, true);
 
-   font_driver_init_osd(d3d, info,
-         false,
-         info->is_threaded,
-         FONT_DRIVER_RENDER_D3D9_CG_API);
 
    {
       static const D3DVERTEXELEMENT9 VertexElements[4] = {
@@ -5022,6 +4989,18 @@ static bool d3d9_cg_has_windowed(void *data)
    return true;
 }
 
+static font_renderer_t d3d9_cg_font = {
+   d3d9_cg_font_init,
+   d3d9_cg_font_free,
+   d3d9_cg_font_render_msg,
+   "d3d9_cg",
+   d3d9_cg_font_get_glyph,
+   NULL, /* bind_block */
+   NULL, /* flush */
+   d3d9_cg_font_get_message_width,
+   d3d9_cg_font_get_line_metrics
+};
+
 video_driver_t video_d3d9_cg = {
    d3d9_cg_init,
    d3d9_cg_frame,
@@ -5046,6 +5025,25 @@ video_driver_t video_d3d9_cg = {
    NULL, /* shader_load_begin */
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   d3d9_cg_gfx_widgets_enabled
+   d3d9_cg_gfx_widgets_enabled,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &d3d9_cg_font
+};
+
+gfx_display_ctx_driver_t gfx_display_ctx_d3d9_cg = {
+   gfx_display_d3d9_cg_draw,
+   gfx_display_d3d9_cg_draw_pipeline,
+   gfx_display_d3d9_cg_blend_begin,
+   gfx_display_d3d9_cg_blend_end,
+   NULL,                                     /* get_default_mvp        */
+   NULL,                                     /* get_default_vertices   */
+   NULL,                                     /* get_default_tex_coords */
+   &d3d9_cg_font,
+   GFX_VIDEO_DRIVER_DIRECT3D9_CG,
+   "d3d9_cg",
+   true,
+   gfx_display_d3d9_cg_scissor_begin,
+   gfx_display_d3d9_cg_scissor_end
 };

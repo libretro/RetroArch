@@ -97,14 +97,22 @@ int font_driver_get_message_width(void *font_data, const char *msg,
    return (int)(len * 10 * (scale > 0.0f ? scale : 1.0f));
 }
 
-int font_driver_get_line_height(font_data_t *font, float scale)
-{ (void)font; return (int)(20 * (scale > 0.0f ? scale : 1.0f)); }
-int font_driver_get_line_ascender(font_data_t *font, float scale)
-{ (void)font; return (int)(15 * (scale > 0.0f ? scale : 1.0f)); }
-int font_driver_get_line_descender(font_data_t *font, float scale)
-{ (void)font; return (int)(5 * (scale > 0.0f ? scale : 1.0f)); }
-int font_driver_get_line_centre_offset(font_data_t *font, float scale)
-{ (void)font; return (int)(8 * (scale > 0.0f ? scale : 1.0f)); }
+/* Bumped by the real font_driver when a font is freed or rebuilt;
+ * gfx_widgets_font_sync() watches it. Constant here: the stub fonts
+ * never change underneath. */
+uint32_t font_driver_get_generation(void) { return 1; }
+
+/* gfx_widgets asks which font the menu language wants. English here:
+ * these tests are about widget layout, not the language mapping. */
+/* Records that a font follows the menu language. Nothing to record
+ * here: the stub fonts are never rebuilt. */
+void font_driver_set_language_font(font_data_t *font,
+      const char *pkg_dir, const char *default_path)
+{
+   (void)font; (void)pkg_dir; (void)default_path;
+}
+
+const char *font_driver_language_font_file(void) { return NULL; }
 
 void font_driver_bind_block(void *font_data, void *block)
 { (void)font_data; (void)block; }

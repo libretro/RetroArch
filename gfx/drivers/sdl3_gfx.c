@@ -260,14 +260,6 @@ static void *sdl3_gfx_init(const video_info_t *video,
 
    sdl3_refresh_viewport(vid);
 
-   /* Set up the global OSD font (video_font_driver) using our
-    * sdl3_raster_font. Required for the "Display Statistics" overlay
-    * and any other subsystem that calls font_driver_render_msg with
-    * a NULL font - the same wiring every other modern driver does. */
-   if (video->font_enable)
-      font_driver_init_osd(vid, video, false, video->is_threaded,
-            FONT_DRIVER_RENDER_SDL3);
-
    /* The frontend selects the input driver separately. */
    *input      = NULL;
    *input_data = NULL;
@@ -554,7 +546,6 @@ static void sdl3_gfx_free(void *data)
       return;
 
    /* Make sure the on-screen display font is cleared out. */
-   font_driver_free_osd();
 
    sdl3_tex_zero(&vid->frame);
    sdl3_tex_zero(&vid->menu);
@@ -1121,24 +1112,6 @@ static void gfx_display_sdl3_draw(gfx_display_ctx_draw_t *draw,
 #undef SDL3_DRAW_COORD_LIMIT
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_sdl3 = {
-   gfx_display_sdl3_draw,
-   /* Pipeline draws (XMB ribbon, snow, bokeh) need a programmable
-    * pipeline, which SDL_Renderer doesn't expose - the menu renders
-    * without the animated background. */
-   NULL, /* draw_pipeline */
-   gfx_display_sdl3_blend_begin,
-   gfx_display_sdl3_blend_end,
-   NULL, /* get_default_mvp - SDL_Renderer has no MVP concept */
-   NULL, /* get_default_vertices */
-   NULL, /* get_default_tex_coords */
-   FONT_DRIVER_RENDER_SDL3,
-   GFX_VIDEO_DRIVER_SDL3,
-   "sdl3",
-   false,
-   gfx_display_sdl3_scissor_begin,
-   gfx_display_sdl3_scissor_end
-};
 
 /*
  * FONT DRIVER
@@ -1245,7 +1218,7 @@ static void *sdl3_raster_font_init(void *data, const char *font_path,
 
    if (!font_renderer_create_default(
             &font->font_driver, &font->font_data,
-            font_path, font_size))
+            font_path, font_size, FONT_ATLAS_FORMAT_A8))
    {
       RARCH_WARN("[SDL3] sdl3_raster_font_init: font_renderer_create_default "
             "failed for path \"%s\" size %.1f.\n",
@@ -1647,6 +1620,28 @@ video_driver_t video_sdl3 = {
    NULL,                        /* shader_load_begin */
    NULL,                        /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   sdl3_gfx_widgets_enabled
+   sdl3_gfx_widgets_enabled,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &sdl3_raster_font
+};
+
+gfx_display_ctx_driver_t gfx_display_ctx_sdl3 = {
+   gfx_display_sdl3_draw,
+   /* Pipeline draws (XMB ribbon, snow, bokeh) need a programmable
+    * pipeline, which SDL_Renderer doesn't expose - the menu renders
+    * without the animated background. */
+   NULL, /* draw_pipeline */
+   gfx_display_sdl3_blend_begin,
+   gfx_display_sdl3_blend_end,
+   NULL, /* get_default_mvp - SDL_Renderer has no MVP concept */
+   NULL, /* get_default_vertices */
+   NULL, /* get_default_tex_coords */
+   &sdl3_raster_font,
+   GFX_VIDEO_DRIVER_SDL3,
+   "sdl3",
+   false,
+   gfx_display_sdl3_scissor_begin,
+   gfx_display_sdl3_scissor_end
 };

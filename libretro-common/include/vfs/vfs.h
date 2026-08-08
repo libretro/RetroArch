@@ -57,6 +57,14 @@ typedef struct
 } vfs_cdrom_t;
 #endif
 
+/* File mapping is available through POSIX mmap (HAVE_MMAP, chosen by
+ * the build) or through Win32 file mappings (always available there).
+ * Consumers gate on this umbrella so the two backends stay one code
+ * path everywhere except the actual map/unmap calls. */
+#if defined(HAVE_MMAP) || (defined(_WIN32) && !defined(_XBOX))
+#define VFS_HAVE_FILE_MAPPING 1
+#endif
+
 enum vfs_scheme
 {
    VFS_SCHEME_NONE = 0,
@@ -78,6 +86,8 @@ struct libretro_vfs_implementation_file
    FILE *fp;
 #ifdef _WIN32
    HANDLE fh;
+   /* CreateFileMapping handle backing `mapped`; NULL when unmapped */
+   HANDLE map_handle;
 #endif
    char *buf;
    char* orig_path;

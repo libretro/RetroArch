@@ -94,7 +94,7 @@ static void sdl2_init_font(sdl2_video_t *vid, const char *font_path,
 
    if (!font_renderer_create_default(
             &vid->font_driver, &vid->font_data,
-            *font_path ? font_path : NULL, font_size))
+            *font_path ? font_path : NULL, font_size, FONT_ATLAS_FORMAT_A8))
    {
       RARCH_WARN("[SDL2] Could not initialize fonts.\n");
       return;
@@ -465,8 +465,6 @@ static void *sdl2_gfx_init(const video_info_t *video,
     * We also gain a working render_msg path for any other RA
     * subsystem that calls font_driver_render_msg with NULL font -
     * this is the same wiring every other modern driver does. */
-      font_driver_init_osd(vid, video, false, video->is_threaded,
-            FONT_DRIVER_RENDER_SDL2);
 #endif
 
    *input      = NULL;
@@ -763,14 +761,9 @@ static void sdl2_gfx_free(void *data)
    if (!vid)
       return;
 
-#if SDL_VERSION_ATLEAST(2, 0, 18)
-   /* Mirror font_driver_init_osd in sdl2_gfx_init.  Must run before
-    * SDL_DestroyRenderer because the OSD font owns SDL_Textures
-    * created against vid->renderer; tearing the renderer down first
-    * would leave the font driver holding dangling texture pointers
-    * for the next free() call. */
-   font_driver_free_osd();
-#endif
+   /* The OSD font owns SDL_Textures created against vid->renderer and
+    * must go before SDL_DestroyRenderer below. It does:
+    * video_driver_free_internal() releases it before calling this. */
 
 #ifdef HAVE_OVERLAY
    /* Same constraint - overlay textures are owned by vid->renderer.
@@ -892,7 +885,7 @@ static void sdl2_poke_set_osd_msg(void *data, const char *msg, size_t msg_len,
     * 2. gfx_display_draw_text path (used by all menu drivers and
     *    by widgets via gfx_widgets_draw_text).  `font` is a valid
     *    font_data_t* whose renderer was selected via
-    *    FONT_DRIVER_RENDER_SDL2 - i.e. our sdl2_raster_font.  We
+    *    sdl2_raster_font as the font backend.  We
     *    must dispatch to that font driver's render_msg, otherwise
     *    every menu/widget text call falls through to the OSD font
     *    and lands in the wrong place with the wrong glyphs.
@@ -1435,22 +1428,6 @@ static void gfx_display_sdl2_draw_pipeline(
    (void)video_height;
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_sdl2 = {
-   gfx_display_sdl2_draw,
-   gfx_display_sdl2_draw_pipeline,
-   gfx_display_sdl2_blend_begin,
-   gfx_display_sdl2_blend_end,
-   gfx_display_sdl2_get_default_mvp,
-   NULL, /* get_default_vertices */
-   NULL, /* get_default_tex_coords */
-   FONT_DRIVER_RENDER_SDL2,
-   GFX_VIDEO_DRIVER_SDL2,
-   "sdl2",
-   false,
-   gfx_display_sdl2_scissor_begin,
-   gfx_display_sdl2_scissor_end
-};
-
 /*
  * FONT DRIVER
  *
@@ -1553,7 +1530,7 @@ static void *sdl2_raster_font_init(void *data, const char *font_path,
 
    if (!font_renderer_create_default(
             &font->font_driver, &font->font_data,
-            font_path, font_size))
+            font_path, font_size, FONT_ATLAS_FORMAT_A8))
    {
       RARCH_WARN("[SDL2] sdl2_raster_font_init: font_renderer_create_default "
             "failed for path '%s' size %.1f\n",
@@ -1887,7 +1864,7 @@ static bool sdl2_raster_font_get_line_metrics(void *data,
    return false;
 }
 
-font_renderer_t sdl2_raster_font = {
+static font_renderer_t sdl2_raster_font = {
    sdl2_raster_font_init,
    sdl2_raster_font_free,
    sdl2_raster_font_render_msg,
@@ -2205,9 +2182,34 @@ video_driver_t video_sdl2 = {
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
 #if SDL_VERSION_ATLEAST(2, 0, 18)
-   sdl2_gfx_widgets_enabled
+   sdl2_gfx_widgets_enabled,
 #else
-   NULL  /* widgets need SDL_RenderGeometry */
+   NULL,  /* widgets need SDL_RenderGeometry */
 #endif
+#endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+#if SDL_VERSION_ATLEAST(2, 0, 18)
+   &sdl2_raster_font
+#else
+   NULL  /* sdl2_raster_font needs SDL_RenderGeometry */
 #endif
 };
+
+#if SDL_VERSION_ATLEAST(2, 0, 18)
+gfx_display_ctx_driver_t gfx_display_ctx_sdl2 = {
+   gfx_display_sdl2_draw,
+   gfx_display_sdl2_draw_pipeline,
+   gfx_display_sdl2_blend_begin,
+   gfx_display_sdl2_blend_end,
+   gfx_display_sdl2_get_default_mvp,
+   NULL, /* get_default_vertices */
+   NULL, /* get_default_tex_coords */
+   &sdl2_raster_font,
+   GFX_VIDEO_DRIVER_SDL2,
+   "sdl2",
+   false,
+   gfx_display_sdl2_scissor_begin,
+   gfx_display_sdl2_scissor_end
+};
+#endif

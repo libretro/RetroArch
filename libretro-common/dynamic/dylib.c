@@ -43,15 +43,6 @@
 #endif
 #endif
 
-/* Assume W-functions do not work below Win2K and Xbox platforms */
-#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX)
-
-#ifndef LEGACY_WIN32
-#define LEGACY_WIN32
-#endif
-
-#endif
-
 #ifdef _WIN32
 static char last_dyn_err[512];
 
@@ -107,6 +98,17 @@ dylib_t dylib_load(const char *path)
    path_wide = utf8_to_utf16_string_alloc(relative_path);
    lib       = LoadPackagedLibrary(path_wide, 0);
    free(path_wide);
+#elif defined(LEGACY_WIN32_RUNTIME)
+   dylib_t lib        = NULL;
+
+   if (win32_needs_local_encoding())
+      lib             = LoadLibraryA(path);
+   else
+   {
+      wchar_t *path_wide = utf8_to_utf16_string_alloc(path);
+      lib             = LoadLibraryW(path_wide);
+      free(path_wide);
+   }
 #elif defined(LEGACY_WIN32)
    dylib_t lib        = LoadLibrary(path);
 #else

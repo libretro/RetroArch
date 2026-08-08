@@ -1305,18 +1305,32 @@ done:
    return match;
 }
 
+/* Optional extension: a VFS provider that CAN expose a mapping for
+ * some of its handles (a local-first hybrid, say) registers this and
+ * answers per handle; NULL from the callback means unmapped, same as
+ * everywhere else. Without a registration, an installed VFS keeps the
+ * conservative answer below. */
+static filestream_mapped_ptr_cb_t filestream_mapped_ptr_cb;
+
+void filestream_set_mapped_ptr_cb(filestream_mapped_ptr_cb_t cb)
+{
+   filestream_mapped_ptr_cb = cb;
+}
+
 const uint8_t *filestream_get_mapped_ptr(RFILE *stream, int64_t *len)
 {
    if (len)
       *len = 0;
    if (!stream)
       return NULL;
-   /* A frontend- or core-supplied VFS is driven entirely through the
-    * callbacks below and has no mapping this side of them, so there
-    * is nothing to hand back.  Answer NULL rather than reaching into
-    * a handle this layer does not own. */
    if (filestream_read_cb)
+   {
+      if (filestream_mapped_ptr_cb)
+         return filestream_mapped_ptr_cb(stream->hfile, len);
+      /* A frontend- or core-supplied VFS is driven entirely through
+       * the callbacks and has no mapping this side of them. */
       return NULL;
+   }
    return retro_vfs_file_get_mapped_ptr_impl(
          (libretro_vfs_implementation_file*)stream->hfile, len);
 }

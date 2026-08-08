@@ -1065,7 +1065,7 @@ static int exynos_init_font(struct exynos_video *vid)
 
    if (font_renderer_create_default(&vid->font_driver, &vid->font,
             *font_path ? font_path : NULL,
-            video_font_size))
+            video_font_size, FONT_ATLAS_FORMAT_A8))
    {
       const int r = video_msg_color_r * 15;
       const int g = video_msg_color_g * 15;

@@ -1,5 +1,7 @@
 TARGET      := vfs_read_overflow_test
 TARGET_TEST := vfs_mapped_ptr_test
+TARGET_TEST2 := vfs_large_file_test
+TARGET_TEST3 := vfs_seek_contract_test
 
 LIBRETRO_COMM_DIR := ../../..
 
@@ -14,7 +16,8 @@ COMMON_SOURCES := \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 
 COMMON_OBJS := $(COMMON_SOURCES:.c=.o)
-OBJS        := vfs_read_overflow_test.o vfs_mapped_ptr_test.o $(COMMON_OBJS)
+OBJS        := vfs_read_overflow_test.o vfs_mapped_ptr_test.o \
+	vfs_large_file_test.o vfs_seek_contract_test.o $(COMMON_OBJS)
 
 # -DHAVE_MMAP is required for vfs_read_overflow_test to exercise the
 # patched code path; without it the implementation falls back to
@@ -42,7 +45,7 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-all: $(TARGET) $(TARGET_TEST)
+all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -53,7 +56,20 @@ $(TARGET): vfs_read_overflow_test.o $(COMMON_OBJS)
 $(TARGET_TEST): vfs_mapped_ptr_test.o $(COMMON_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
+# vfs_large_file_test builds sparse fixtures of 3 GiB and 5 GiB.  They
+# cost no space on a filesystem with sparse files and are removed
+# afterwards; where the filesystem cannot hold them the test skips.
+$(TARGET_TEST2): vfs_large_file_test.o $(COMMON_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+# vfs_seek_contract_test runs its contract checks on a 4 KiB fixture
+# first, so a machine that cannot hold the 4 GiB one still tests the
+# properties instead of skipping the run.
+$(TARGET_TEST3): vfs_seek_contract_test.o $(COMMON_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
 clean:
-	rm -f $(TARGET) $(TARGET_TEST) $(OBJS)
+	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(OBJS)
+	rm -f large_3gib.bin large_5gib.bin seek_small.bin seek_4gib.bin
 
 .PHONY: clean

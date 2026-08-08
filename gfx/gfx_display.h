@@ -130,7 +130,7 @@ typedef struct gfx_display_ctx_driver
    const float *(*get_default_vertices)(void);
    /* Get the default texture coordinates matrix */
    const float *(*get_default_tex_coords)(void);
-   enum font_driver_render_api  font_type;
+   const struct font_renderer  *font_backend;
    enum gfx_display_driver_type type;
    const char *ident;
    bool handles_transform;

@@ -20,6 +20,7 @@
 /* TODO/FIXME - turn this into actual task */
 
 #include <stdint.h>
+#include <limits.h>
 #include <string.h>
 
 #include <boolean.h>
@@ -104,36 +105,67 @@ struct ups_data
 typedef enum patch_error (*patch_func_t)(const uint8_t*, uint64_t,
       const uint8_t*, uint64_t, uint8_t**, uint64_t*);
 
+/* BPS and UPS both close with a CRC-32 of the patch file's own bytes,
+ * little endian, in the last four.  It depends on nothing but the
+ * patch, which is already whole in memory, so it can be settled before
+ * anything the patch merely *claims* is acted on.  That matters because
+ * the declared target length is attacker-controlled and is turned into
+ * a malloc long before either applier reaches its trailer: a 20-byte
+ * file can ask for the whole 4 GiB a UPS length field can name.
+ * Checking here costs one fold over a file measured in kilobytes and
+ * throws out anything that is not a patch at all before it can name a
+ * size.  Both appliers still verify it again in place at the end - this
+ * is a gate, not a replacement. */
+static bool patch_self_checksum_ok(const uint8_t *patch, uint64_t patch_len)
+{
+   uint32_t want = 0;
+   unsigned i;
+
+   if (patch_len < 4)
+      return false;
+   for (i = 0; i < 4; i++)
+      want |= (uint32_t)patch[patch_len - 4 + i] << (i * 8);
+   return encoding_crc32(0, patch, (size_t)(patch_len - 4)) == want;
+}
+
 static uint8_t bps_read(struct bps_data *bps)
 {
    /* Reads past the end yield zeroes rather than walking off the
-    * buffer: a malformed varint near the trailer could otherwise
-    * drive bps_decode() arbitrarily far past modify_length (the
-    * UPS reader below already guards the same way).  The rolling
-    * per-byte checksum that used to live here is gone - the patch
-    * bytes are one contiguous span, so the modify checksum is
-    * folded in one call at the point it is compared. */
+    * buffer. The rolling per-byte checksum that used to live here is
+    * gone - the patch bytes are one contiguous span, so the modify
+    * checksum is folded in one call at the point it is compared. */
    if (bps->modify_offset < bps->modify_length)
       return bps->modify_data[bps->modify_offset++];
    bps->modify_offset++;
    return 0x00;
 }
 
-static uint64_t bps_decode(struct bps_data *bps)
+static bool bps_decode(struct bps_data *bps, uint64_t *out)
 {
    uint64_t data = 0, shift = 1;
 
    for (;;)
    {
-      uint8_t x  = bps_read(bps);
+      uint8_t x;
+
+      if (bps->modify_offset >= bps->modify_length)
+         return false;
+      x = bps->modify_data[bps->modify_offset++];
+      if ((uint64_t)(x & 0x7f) > (UINT64_MAX - data) / shift)
+         return false;
       data      += (x & 0x7f) * shift;
       if (x & 0x80)
-         break;
+      {
+         *out = data;
+         return true;
+      }
+      if (shift > UINT64_MAX >> 7)
+         return false;
       shift    <<= 7;
+      if (data > UINT64_MAX - shift)
+         return false;
       data      += shift;
    }
-
-   return data;
 }
 
 static enum patch_error bps_apply_patch(
@@ -153,6 +185,9 @@ static enum patch_error bps_apply_patch(
 
    if (modify_length < 19)
       return PATCH_PATCH_TOO_SMALL;
+
+   if (!patch_self_checksum_ok(modify_data, modify_length))
+      return PATCH_PATCH_CHECKSUM_INVALID;
 
    bps.modify_data            = modify_data;
    bps.source_data            = source_data;
@@ -176,9 +211,14 @@ static enum patch_error bps_apply_patch(
       return PATCH_PATCH_INVALID_HEADER;
 
    {
-      uint64_t raw_source = bps_decode(&bps);
-      uint64_t raw_target = bps_decode(&bps);
-      uint64_t raw_markup = bps_decode(&bps);
+      uint64_t raw_source;
+      uint64_t raw_target;
+      uint64_t raw_markup;
+
+      if (   !bps_decode(&bps, &raw_source)
+          || !bps_decode(&bps, &raw_target)
+          || !bps_decode(&bps, &raw_markup))
+         return PATCH_PATCH_INVALID;
 
       /* All three sizes are decoded from attacker-controlled
        * variable-length integers in the patch file with no
@@ -229,8 +269,14 @@ static enum patch_error bps_apply_patch(
 
    while (bps.modify_offset < bps.modify_length - 12)
    {
-      size_t _len   = bps_decode(&bps);
-      unsigned mode = _len & 3;
+      uint64_t decoded_len;
+      size_t _len;
+      unsigned mode;
+
+      if (!bps_decode(&bps, &decoded_len))
+         return PATCH_PATCH_INVALID;
+      _len = (size_t)decoded_len;
+      mode = _len & 3;
 
       _len          = (_len >> 2) + 1;
 
@@ -278,29 +324,56 @@ static enum patch_error bps_apply_patch(
          case SOURCE_COPY:
          case TARGET_COPY:
          {
-            int    offset = (int)bps_decode(&bps);
-            bool negative = offset & 1;
+            uint64_t decoded_offset;
+            uint64_t distance;
+            bool     negative;
 
-            offset >>= 1;
+            if (!bps_decode(&bps, &decoded_offset))
+               return PATCH_PATCH_INVALID;
 
-            if (negative)
-               offset = -offset;
+            /* The seek is sign-magnitude inside the varint itself -
+             * "number negative | (abs(offset) << 1)" - so it has to
+             * stay unsigned all the way to the cursor.  Routing it
+             * through int did two things wrong.  It truncated any
+             * magnitude at 2^31, and, before that, (int)(uint64) is
+             * implementation-defined once the value passes INT_MAX:
+             * on a two's-complement compiler a magnitude of 2^30
+             * became a negative int whose arithmetic >>1 handed back
+             * the magnitude with the sign flipped, so a copy 1 GiB
+             * into a disc image seeked backwards instead of forwards
+             * and the patch failed its target checksum.  The format
+             * itself has no size ceiling, and neither does the
+             * decoder, so neither should this. */
+            negative = (decoded_offset & 1) ? true : false;
+            distance = decoded_offset >> 1;
+
+            /* size_t is the cursor type; on a 32-bit host a distance
+             * wider than that cannot be represented, let alone be in
+             * bounds. */
+            if (distance > (uint64_t)SIZE_MAX)
+               return (mode == SOURCE_COPY) ? PATCH_SOURCE_INVALID
+                                            : PATCH_TARGET_INVALID;
 
             if (mode == SOURCE_COPY)
             {
-               bps.source_offset += offset;
-               /* Validate the resulting source_offset and the
-                * full read range against source_length.  Pre-
-                * this-patch a malicious offset could push
-                * source_offset past source_length (or, with a
-                * negative offset, underflow it to a huge size_t),
-                * driving source_data[source_offset++] reads
-                * arbitrarily far OOB.  An attacker who can read
-                * past source_data into adjacent heap leaks heap
-                * contents into target_data and the checksum
-                * calculation. */
-               if (   bps.source_offset > bps.source_length
-                   || _len              > bps.source_length - bps.source_offset)
+               /* Apply the seek without ever leaving the buffer:
+                * source_offset <= source_length holds on entry, so
+                * both arms below are computed in-range rather than
+                * wrapped and caught afterwards. */
+               if (negative)
+               {
+                  if (distance > (uint64_t)bps.source_offset)
+                     return PATCH_SOURCE_INVALID;
+                  bps.source_offset -= (size_t)distance;
+               }
+               else
+               {
+                  if (distance > (uint64_t)(bps.source_length
+                           - bps.source_offset))
+                     return PATCH_SOURCE_INVALID;
+                  bps.source_offset += (size_t)distance;
+               }
+               if (_len > bps.source_length - bps.source_offset)
                   return PATCH_SOURCE_INVALID;
                memcpy(bps.target_data + bps.output_offset,
                       bps.source_data + bps.source_offset, _len);
@@ -309,13 +382,20 @@ static enum patch_error bps_apply_patch(
             }
             else
             {
-               bps.target_offset += offset;
-               /* TARGET_COPY both reads from and writes to
-                * target_data; bound the read pointer the same
-                * way as SOURCE_COPY above.  output_offset is
-                * already bounded by the top-of-loop check. */
-               if (   bps.target_offset > bps.target_length
-                   || _len              > bps.target_length - bps.target_offset)
+               if (negative)
+               {
+                  if (distance > (uint64_t)bps.target_offset)
+                     return PATCH_TARGET_INVALID;
+                  bps.target_offset -= (size_t)distance;
+               }
+               else
+               {
+                  if (distance > (uint64_t)(bps.target_length
+                           - bps.target_offset))
+                     return PATCH_TARGET_INVALID;
+                  bps.target_offset += (size_t)distance;
+               }
+               if (_len > bps.target_length - bps.target_offset)
                   return PATCH_TARGET_INVALID;
                /* TARGET_COPY may deliberately overlap its own output
                 * (an LZ-style repeating run), which memcpy cannot
@@ -432,21 +512,33 @@ static void ups_copy_run(struct ups_data *data, size_t n)
    data->target_offset += (unsigned)n;
 }
 
-static uint64_t ups_decode(struct ups_data *data)
+static bool ups_decode(struct ups_data *data, uint64_t *out)
 {
    uint64_t offset = 0, shift = 1;
 
    for (;;)
    {
-      uint8_t x = ups_patch_read(data);
+      uint8_t x;
+
+      if (data->patch_offset >= data->patch_length)
+         return false;
+      x = data->patch_data[data->patch_offset++];
+      if ((uint64_t)(x & 0x7f) > (UINT64_MAX - offset) / shift)
+         return false;
       offset   += (x & 0x7f) * shift;
 
       if (x & 0x80)
-         break;
+      {
+         *out = offset;
+         return true;
+      }
+      if (shift > UINT64_MAX >> 7)
+         return false;
       shift <<= 7;
+      if (offset > UINT64_MAX - shift)
+         return false;
       offset += shift;
    }
-   return offset;
 }
 
 static enum patch_error ups_apply_patch(
@@ -456,6 +548,8 @@ static enum patch_error ups_apply_patch(
 {
    size_t i;
    struct ups_data data;
+   uint64_t decoded_source_length;
+   uint64_t decoded_target_length;
    unsigned source_read_length;
    unsigned target_read_length;
    uint32_t patch_result_checksum = 0;
@@ -486,8 +580,16 @@ static enum patch_error ups_apply_patch(
       )
       return PATCH_PATCH_INVALID;
 
-   source_read_length = (unsigned)ups_decode(&data);
-   target_read_length = (unsigned)ups_decode(&data);
+   if (!patch_self_checksum_ok(patchdata, patchlength))
+      return PATCH_PATCH_CHECKSUM_INVALID;
+
+   if (   !ups_decode(&data, &decoded_source_length)
+       || !ups_decode(&data, &decoded_target_length)
+       || decoded_source_length > UINT_MAX
+       || decoded_target_length > UINT_MAX)
+      return PATCH_PATCH_INVALID;
+   source_read_length = (unsigned)decoded_source_length;
+   target_read_length = (unsigned)decoded_target_length;
 
    if (     (data.source_length != source_read_length)
          && (data.source_length != target_read_length))
@@ -510,7 +612,12 @@ static enum patch_error ups_apply_patch(
 
    while (data.patch_offset < data.patch_length - 12)
    {
-      unsigned __len = (unsigned)ups_decode(&data);
+      uint64_t decoded_len;
+      unsigned __len;
+
+      if (!ups_decode(&data, &decoded_len) || decoded_len > UINT_MAX)
+         return PATCH_PATCH_INVALID;
+      __len = (unsigned)decoded_len;
       ups_copy_run(&data, __len);
 
       for (;;)

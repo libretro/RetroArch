@@ -55,10 +55,9 @@
 #include "../../input/input_osk.h"
 #include "../../tasks/tasks_internal.h"
 
-#include "../../gfx/drivers_font_renderer/bitmap.h"
+#include "../../gfx/bitmapfont.h"
 #ifdef HAVE_LANGEXTRA
-#include "../../gfx/drivers_font_renderer/bitmapfont_10x10.h"
-#include "../../gfx/drivers_font_renderer/bitmapfont_6x10.h"
+#include "rgui_bitmapfont.h"
 #endif
 
 #ifdef HAVE_AUDIOMIXER

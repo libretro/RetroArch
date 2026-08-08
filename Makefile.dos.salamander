@@ -56,7 +56,6 @@ HAVE_NETWORKING = 0
 HAVE_IFINFO = 0
 HAVE_NETPLAYDISCOVERY = 0
 HAVE_OVERLAY             := 1
-HAVE_STB_FONT = 1
 HAVE_COMMAND             := 1
 HAVE_STDIN_CMD           := 1
 HAVE_CMD                 := 1

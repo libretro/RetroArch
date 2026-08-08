@@ -1014,21 +1014,6 @@ void gfx_display_d3d11_scissor_end(void *data,
    d3d11->context->lpVtbl->RSSetScissorRects(d3d11->context, 1, &rect);
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_d3d11 = {
-   gfx_display_d3d11_draw,
-   gfx_display_d3d11_draw_pipeline,
-   gfx_display_d3d11_blend_begin,
-   gfx_display_d3d11_blend_end,
-   NULL,                                     /* get_default_mvp */
-   NULL,                                     /* get_default_vertices */
-   NULL,                                     /* get_default_tex_coords */
-   FONT_DRIVER_RENDER_D3D11_API,
-   GFX_VIDEO_DRIVER_DIRECT3D11,
-   "d3d11",
-   true,
-   gfx_display_d3d11_scissor_begin,
-   gfx_display_d3d11_scissor_end
-};
 
 /*
  * FONT DRIVER
@@ -1052,7 +1037,6 @@ static void * d3d11_font_init(void* data, const char* font_path,
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
    d3d11_font_t*  font  = (d3d11_font_t*)calloc(1, sizeof(*font));
    bool           want_a16 = false;
-   enum font_atlas_format prev_fmt;
 
    if (!font)
       return NULL;
@@ -1063,18 +1047,13 @@ static void * d3d11_font_init(void* data, const char* font_path,
    want_a16 = (d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE) ? true : false;
 #endif
 
-   prev_fmt = font_renderer_get_preferred_atlas_format();
-   if (want_a16)
-      font_renderer_set_preferred_atlas_format(FONT_ATLAS_FORMAT_A16);
-
    if (!font_renderer_create_default(
-             &font->font_driver, &font->font_data, font_path, font_size))
+             &font->font_driver, &font->font_data, font_path, font_size,
+             want_a16 ? FONT_ATLAS_FORMAT_A16 : FONT_ATLAS_FORMAT_A8))
    {
-      font_renderer_set_preferred_atlas_format(prev_fmt);
       free(font);
       return NULL;
    }
-   font_renderer_set_preferred_atlas_format(prev_fmt);
 
    font->atlas               = font->font_driver->get_atlas(font->font_data);
    font->texture.sampler     = d3d11->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_BORDER];
@@ -1594,18 +1573,6 @@ static bool d3d11_font_get_line_metrics(void* data, struct font_line_metrics **m
    }
    return false;
 }
-
-font_renderer_t d3d11_font = {
-   d3d11_font_init,
-   d3d11_font_free,
-   d3d11_font_render_msg,
-   "d3d11",
-   d3d11_font_get_glyph,
-   NULL, /* bind_block */
-   NULL, /* flush */
-   d3d11_font_get_message_width,
-   d3d11_font_get_line_metrics
-};
 
 /*
  * VIDEO DRIVER
@@ -2920,7 +2887,6 @@ static void d3d11_gfx_free(void* data)
    if (d3d11->flags & D3D11_ST_FLAG_WAITABLE_SWAPCHAINS)
       CloseHandle(d3d11->frameLatencyWaitableObject);
 
-   font_driver_free_osd();
 
 #ifdef HAVE_OVERLAY
    d3d11_free_overlays(d3d11);
@@ -3897,11 +3863,6 @@ static void *d3d11_gfx_init(const video_info_t* video,
             &d3d11->scissor_disabled);
    }
 
-   font_driver_init_osd(d3d11,
-         video,
-         false,
-         video->is_threaded,
-         FONT_DRIVER_RENDER_D3D11_API);
 
    if (video_driver_get_hw_context()->context_type  == RETRO_HW_CONTEXT_D3D11)
    {
@@ -4905,7 +4866,7 @@ static bool d3d11_gfx_frame(
    if((d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE) && 
       (d3d11->flags & D3D11_ST_FLAG_MENU_ENABLE))
    {
-      static const float clear_colour[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+      static const float clear_colour[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
       context->lpVtbl->OMSetRenderTargets(context, 1,
             &d3d11->back_buffer.rt_view, NULL);
 
@@ -6205,6 +6166,19 @@ static void d3d11_gfx_get_poke_interface(void* data,
 static bool d3d11_gfx_widgets_enabled(void *data) { return true; }
 #endif
 
+static font_renderer_t d3d11_font = {
+   d3d11_font_init,
+   d3d11_font_free,
+   d3d11_font_render_msg,
+   "d3d11",
+   d3d11_font_get_glyph,
+   NULL, /* bind_block */
+   NULL, /* flush */
+   d3d11_font_get_message_width,
+   d3d11_font_get_line_metrics
+};
+
+
 video_driver_t video_d3d11 = {
    d3d11_gfx_init,
    d3d11_gfx_frame,
@@ -6233,8 +6207,25 @@ video_driver_t video_d3d11 = {
 #endif
    NULL, /* invalidate_hw_render_cache */
 #ifdef HAVE_DXGI_HDR
-   d3d11_gfx_read_viewport_hdr
+   d3d11_gfx_read_viewport_hdr,
 #else
-   NULL /* read_viewport_hdr */
+   NULL, /* read_viewport_hdr */
 #endif
+   &d3d11_font
+};
+
+gfx_display_ctx_driver_t gfx_display_ctx_d3d11 = {
+   gfx_display_d3d11_draw,
+   gfx_display_d3d11_draw_pipeline,
+   gfx_display_d3d11_blend_begin,
+   gfx_display_d3d11_blend_end,
+   NULL,                                     /* get_default_mvp */
+   NULL,                                     /* get_default_vertices */
+   NULL,                                     /* get_default_tex_coords */
+   &d3d11_font,
+   GFX_VIDEO_DRIVER_DIRECT3D11,
+   "d3d11",
+   true,
+   gfx_display_d3d11_scissor_begin,
+   gfx_display_d3d11_scissor_end
 };

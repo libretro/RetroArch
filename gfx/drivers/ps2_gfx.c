@@ -145,7 +145,7 @@ static void* ps2_font_init(void* data, const char* font_path,
 
    if (!font_renderer_create_default(
             &font->font_driver,
-            &font->font_data, font_path, font_size))
+            &font->font_data, font_path, font_size, FONT_ATLAS_FORMAT_A8))
    {
       free(font);
       return NULL;
@@ -509,18 +509,6 @@ static bool ps2_font_get_line_metrics(void* data, struct font_line_metrics **met
    return false;
 }
 
-font_renderer_t ps2_font = {
-   ps2_font_init,
-   ps2_font_free,
-   ps2_font_render_msg,
-   "ps2",
-   ps2_font_get_glyph,
-   NULL,                      /* bind_block */
-   NULL,                      /* flush */
-   ps2_font_get_message_width,
-   ps2_font_get_line_metrics
-};
-
 /*
  * VIDEO DRIVER
  */
@@ -855,10 +843,6 @@ static void *ps2_init(const video_info_t *video,
       return NULL;
 
    init_ps2_video(ps2);
-      font_driver_init_osd(ps2,
-            video, false,
-            video->is_threaded,
-            FONT_DRIVER_RENDER_PS2);
 
    ps2->PSM          = (video->rgb32 ? GS_PSM_CT32 : GS_PSM_CT16);
    ps2->tex_filter   = video->smooth ? GS_FILTER_LINEAR : GS_FILTER_NEAREST;
@@ -1043,7 +1027,6 @@ static void ps2_free(void *data)
    gsKit_clear(ps2->gsGlobal, GS_BLACK);
    gsKit_vram_clear(ps2->gsGlobal);
 
-   font_driver_free_osd();
 
    ps2_deinit_texture(ps2->menuTexture);
    ps2_deinit_texture(ps2->coreTexture);
@@ -1194,6 +1177,18 @@ static void ps2_get_poke_interface(void *data,
    *iface = &ps2_poke_interface;
 }
 
+static font_renderer_t ps2_font = {
+   ps2_font_init,
+   ps2_font_free,
+   ps2_font_render_msg,
+   "ps2",
+   ps2_font_get_glyph,
+   NULL,                      /* bind_block */
+   NULL,                      /* flush */
+   ps2_font_get_message_width,
+   ps2_font_get_line_metrics
+};
+
 video_driver_t video_ps2 = {
    ps2_init,
    ps2_frame,
@@ -1218,6 +1213,9 @@ video_driver_t video_ps2 = {
    NULL, /* shader_load_begin */
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   NULL  /* gfx_widgets_enabled */
+   NULL  /* gfx_widgets_enabled */,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &ps2_font
 };

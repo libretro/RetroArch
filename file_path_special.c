@@ -379,38 +379,17 @@ size_t fill_pathname_application_special(char *s,
                _len = strlcpy(s, path_menu_xmb_font, len);
             else
             {
+               /* The theme's own font. The language override is not
+                * applied here: xmb asks for it separately so it can
+                * tell the font driver both paths, which is what lets
+                * a language change rebuild the font in place. */
                char tmp_dir[DIR_MAX_LENGTH];
+               char tmp_dir2[DIR_MAX_LENGTH];
+               const char *dir_assets = settings->paths.directory_assets;
 
-               switch (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE))
-               {
-                  case RETRO_LANGUAGE_ARABIC:
-                  case RETRO_LANGUAGE_PERSIAN:
-                     fill_pathname_join_special(tmp_dir,
-                           settings->paths.directory_assets, "pkg", sizeof(tmp_dir));
-                     _len = fill_pathname_join_special(s, tmp_dir, "fallback-font.ttf", len);
-                     break;
-                  case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
-                  case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-                     fill_pathname_join_special(tmp_dir,
-                           settings->paths.directory_assets, "pkg", sizeof(tmp_dir));
-                     _len = fill_pathname_join_special(s, tmp_dir, "chinese-fallback-font.ttf", len);
-                     break;
-                  case RETRO_LANGUAGE_KOREAN:
-                     fill_pathname_join_special(tmp_dir,
-                           settings->paths.directory_assets, "pkg", sizeof(tmp_dir));
-                     _len = fill_pathname_join_special(s, tmp_dir, "korean-fallback-font.ttf", len);
-                     break;
-                  default:
-                     {
-                        char tmp_dir2[DIR_MAX_LENGTH];
-                        settings_t *settings     = config_get_ptr();
-                        const char *dir_assets   = settings->paths.directory_assets;
-                        fill_pathname_join_special(tmp_dir2, dir_assets, "xmb", sizeof(tmp_dir2));
-                        fill_pathname_join_special(tmp_dir, tmp_dir2, xmb_theme_ident(), sizeof(tmp_dir));
-                        _len = fill_pathname_join_special(s, tmp_dir, FILE_PATH_TTF_FONT, len);
-                     }
-                     break;
-               }
+               fill_pathname_join_special(tmp_dir2, dir_assets, "xmb", sizeof(tmp_dir2));
+               fill_pathname_join_special(tmp_dir, tmp_dir2, xmb_theme_ident(), sizeof(tmp_dir));
+               _len = fill_pathname_join_special(s, tmp_dir, FILE_PATH_TTF_FONT, len);
             }
          }
 #endif

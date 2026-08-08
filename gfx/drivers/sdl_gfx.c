@@ -98,7 +98,7 @@ static void sdl_init_font(sdl_video_t *vid,
    if (!font_renderer_create_default(
             &vid->font_driver, &vid->font,
             *path_font ? path_font : NULL,
-            video_font_size))
+            video_font_size, FONT_ATLAS_FORMAT_A8))
    {
       RARCH_LOG("[SDL] Could not initialize fonts.\n");
       return;

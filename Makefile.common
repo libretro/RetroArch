@@ -334,9 +334,7 @@ OBJ     += state_manager.o
 endif
 
 OBJ += \
-       gfx/drivers_font_renderer/bitmapfont.o \
-       gfx/drivers_font_renderer/bitmapfont_10x10.o \
-       gfx/drivers_font_renderer/bitmapfont_6x10.o \
+       gfx/bitmapfont.o \
        tasks/task_autodetect.o \
        input/input_autodetect_builtin.o \
        input/input_keymaps.o \
@@ -1036,7 +1034,8 @@ ifeq ($(HAVE_MENU), 1)
    endif
 
    ifeq ($(HAVE_RGUI), 1)
-      OBJ += menu/drivers/rgui.o
+      OBJ += menu/drivers/rgui.o \
+             menu/drivers/rgui_bitmapfont.o
       DEFINES += -DHAVE_RGUI
    endif
 
@@ -1157,10 +1156,7 @@ ifeq ($(HAVE_OVERLAY), 1)
           led/drivers/led_overlay.o
 endif
 
-ifeq ($(HAVE_STB_FONT), 1)
-   OBJ += gfx/drivers_font_renderer/stb.o
-   DEFINES += -DHAVE_STB_FONT
-endif
+OBJ += gfx/drivers_font_renderer/stb.o
 
 ifeq ($(HAVE_FREETYPE), 1)
    OBJ += gfx/drivers_font_renderer/freetype.o
@@ -2331,6 +2327,14 @@ ifeq ($(HAVE_RVP9), 1)
    # Shared 10-bit / HDR I420->RGB blits, used by both the webm and mp4
    # rvp9 paths; kept demuxer-independent so neither has to link the other.
    OBJ += $(LIBRETRO_COMM_DIR)/formats/image/image_hdr_blit.o
+endif
+
+ifeq ($(HAVE_RMPEG1), 1)
+   DEFINES += -DHAVE_RMPEG1
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/mpeg1/rmpeg1_ps.o \
+          $(LIBRETRO_COMM_DIR)/formats/mpeg1/rmpeg1_video.o
+   # MPEG-1 audio is layer II, which rmp3 already decodes; a consumer that
+   # wants sound from an MPEG-1 stream needs HAVE_RMP3 as well.
 endif
 
 ifeq ($(HAVE_WEBMPLAYER), 1)

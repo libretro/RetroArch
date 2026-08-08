@@ -32,7 +32,19 @@ jobs:
         run: |
           sudo apt-get update -y
           sudo apt-get install -y build-essential check pkg-config \
-            zlib1g-dev lcov
+            zlib1g-dev lcov \
+            gcc-mingw-w64-x86-64 gcc-mingw-w64-i686 wine wine64
+          # mingw and wine are for the Windows A/W configuration matrix
+          # in Makefile.test.  libretro-common selects between the ANSI
+          # and the wide Win32 entry points three ways and, until these
+          # were installed, no job built two of them: the ANSI branch
+          # was compiled by nothing, so nothing noticed when it stopped
+          # compiling.  wine takes it past a build check - an ANSI build
+          # under wine really does call CreateFileA and
+          # GetFileAttributesA, so the branch is executed rather than
+          # merely parsed.  Both are optional to the recipe: without
+          # them it says which tool is missing and passes, so a
+          # contributor's local run is not blocked.
 
       - name: Checkout
         uses: actions/checkout@v3
@@ -40,6 +52,11 @@ jobs:
       - name: Build and run the unit test suites
         shell: bash
         working-directory: libretro-common
+        env:
+          # Keep wine quiet and out of $HOME; the first invocation
+          # creates the prefix.
+          WINEDEBUG: "-all"
+          WINEPREFIX: "/tmp/wineprefix"
         run: |
           set -eu
           # The recipe builds each suite, runs it, and collects

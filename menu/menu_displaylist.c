@@ -2565,9 +2565,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 #ifdef HAVE_FREETYPE
          {SUPPORTS_FREETYPE, "FreeType"},
 #endif
-#ifdef HAVE_STB_FONT
          {SUPPORTS_STBFONT, "STB TrueType"},
-#endif
 #ifdef HAVE_V4L2
          {SUPPORTS_V4L2, "Video4Linux2"},
 #endif

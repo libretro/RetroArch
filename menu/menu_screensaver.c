@@ -40,7 +40,8 @@
 
 /* Determines whether current platform has
  * Unicode character support */
-#if defined(HAVE_FREETYPE) || (defined(__APPLE__) && defined(HAVE_CORETEXT)) || (defined(HAVE_STB_FONT) && (defined(VITA) || defined(WIIU) || defined(ANDROID) || (defined(_WIN32) && !defined(_XBOX) && !defined(_MSC_VER) && _MSC_VER >= 1400) || (defined(_WIN32) && !defined(_XBOX) && defined(_MSC_VER)) || defined(HAVE_LIBNX) || defined(__linux__) || defined (__EMSCRIPTEN__) || defined(__APPLE__) || defined(HAVE_ODROIDGO2) || defined(__PS3__)))
+/* stb_truetype is always built, so a font renderer is always present */
+#if 1
 #define MENU_SS_UNICODE_ENABLED true
 #else
 #define MENU_SS_UNICODE_ENABLED false
@@ -267,8 +268,6 @@ void menu_screensaver_free(menu_screensaver_t *screensaver)
       font_driver_free(screensaver->font_data.font);
       video_coord_array_free(&screensaver->font_data.raster_block.carr);
       screensaver->font_data.font = NULL;
-
-      font_driver_bind_block(NULL, NULL);
    }
 
    /* Free particle array */
@@ -494,7 +493,8 @@ static bool menu_screensaver_update_state(
        &&  screensaver->font_enabled)
    {
       char font_file[PATH_MAX_LENGTH];
-#if defined(HAVE_FREETYPE) || (defined(__APPLE__) && defined(HAVE_CORETEXT)) || defined(HAVE_STB_FONT)
+/* stb_truetype is always built, so a font renderer is always present */
+#if 1
       char pkg_path[PATH_MAX_LENGTH];
       /* Get font file path */
       if (dir_assets && *dir_assets)
@@ -526,8 +526,9 @@ static bool menu_screensaver_update_state(
       /* If font was created successfully, fetch metadata */
       if (screensaver->font_data.font)
          screensaver->font_data.y_centre_offset =
-               (float)font_driver_get_line_centre_offset(
-                     screensaver->font_data.font, 1.0f);
+               roundf((screensaver->font_data.font->metrics.ascender
+                     - screensaver->font_data.font->metrics.descender)
+                     * 0.5f);
       /* In case of error, warn and disable
        * further attempts to create fonts */
       else

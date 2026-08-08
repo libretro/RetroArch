@@ -828,7 +828,7 @@ static void omap_init_font(omap_video_t *vid)
       return;
 
    if (!(font_renderer_create_default(&vid->font_driver, &vid->font,
-               *path_font ? path_font : NULL, video_font_size)))
+               *path_font ? path_font : NULL, video_font_size, FONT_ATLAS_FORMAT_A8)))
    {
       RARCH_ERR("[Omap] Font init failed.\n");
       return;

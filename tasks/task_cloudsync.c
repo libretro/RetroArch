@@ -154,6 +154,9 @@ static INLINE enum task_cloud_sync_phase task_cloud_sync_phase_get(
 /* Forward declarations for conflict resolution */
 static void task_cloud_sync_upload_current_file(task_cloud_sync_state_t *sync_state);
 static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_state);
+/* Defined below task_cloud_sync_write_updated_manifest(), used above it
+ * by the server-manifest upload callback. */
+static void task_cloud_sync_commit_local_manifest(task_cloud_sync_state_t *sync_state);
 
 static void task_cloud_sync_begin_handler(void *user_data, const char *path, bool success, RFILE *file)
 {
@@ -415,7 +418,41 @@ static void task_cloud_sync_manifest_append_dir(file_list_t *manifest,
 static struct string_list *task_cloud_sync_directory_map(void)
 {
    static struct string_list *list = NULL;
+   /* What the cached list was built from.  The list is kept because it
+    * is walked several times per sync and rebuilt state would be
+    * wasteful, but it used to be built once per process and never
+    * reconsidered: a sync fires at startup under
+    * CLOUD_SYNC_MODE_AUTOMATIC, so the map was already populated before
+    * the user could reach the menu, and turning "Sync: Saves/States" on
+    * afterwards did nothing at all until RetroArch was restarted.  The
+    * sync then completed successfully having considered zero files,
+    * which looks exactly like a sync that has nothing to do. */
+   static bool cached_configs = false;
+   static bool cached_saves   = false;
+   static bool cached_thumbs  = false;
+   static bool cached_system  = false;
    settings_t *settings = config_get_ptr();
+
+   if (   list
+       && (   cached_configs != settings->bools.cloud_sync_sync_configs
+           || cached_saves   != settings->bools.cloud_sync_sync_saves
+           || cached_thumbs  != settings->bools.cloud_sync_sync_thumbs
+           || cached_system  != settings->bools.cloud_sync_sync_system))
+   {
+      /* string_list_free() releases elems[i].userdata as well as
+       * elems[i].data, and the directory strings hung off userdata are
+       * strdup'd, so this does not leak them. */
+      string_list_free(list);
+      list = NULL;
+   }
+
+   if (!list)
+   {
+      cached_configs = settings->bools.cloud_sync_sync_configs;
+      cached_saves   = settings->bools.cloud_sync_sync_saves;
+      cached_thumbs  = settings->bools.cloud_sync_sync_thumbs;
+      cached_system  = settings->bools.cloud_sync_sync_system;
+   }
 
    if (!list)
    {
@@ -1229,7 +1266,24 @@ static void task_cloud_sync_update_manifest_cb(void *user_data, const char *path
    if (!sync_state)
       return;
 
-   RARCH_LOG(CSPFX "Uploading updated manifest succeeded.\n");
+   /* `success` used to be ignored here: a failed server-manifest upload
+    * was logged as a success and never set ->failures, so the task
+    * finished titled "Cloud Sync finished" while the server's record of
+    * what this device holds was left behind.  Every other completion
+    * callback in this file honours it. */
+   if (success)
+   {
+      RARCH_LOG(CSPFX "Uploading updated manifest succeeded.\n");
+      /* Only now is the local manifest true.  See
+       * task_cloud_sync_commit_local_manifest(). */
+      task_cloud_sync_commit_local_manifest(sync_state);
+   }
+   else
+   {
+      RARCH_ERR(CSPFX "Uploading updated manifest failed.\n");
+      sync_state->failures = true;
+   }
+
    task_cloud_sync_phase_set(sync_state, CLOUD_SYNC_PHASE_END);
    task_cloud_sync_waiting_set(sync_state, 0);
 }
@@ -1299,15 +1353,43 @@ static RFILE *task_cloud_sync_write_updated_manifest(file_list_t *manifest, char
    return file;
 }
 
+/**
+ * task_cloud_sync_commit_local_manifest:
+ *
+ * Writes the "what this device had at the end of the last sync" record.
+ *
+ * Deliberately not called before the server manifest upload has
+ * completed.  It used to be written first, unconditionally, and a
+ * failed server upload then left the local manifest asserting hashes
+ * the server had never been told about.  The next sync reads that as
+ * local == current and local != server, concludes the server changed,
+ * and fetches - so a transient upload failure could pull an older
+ * server copy over a newer local file.  Leaving the local manifest
+ * behind instead means the next sync re-examines the same files and
+ * re-uploads, which is wasteful and safe rather than quiet and lossy.
+ */
+static void task_cloud_sync_commit_local_manifest(task_cloud_sync_state_t *sync_state)
+{
+   char   manifest_path[PATH_MAX_LENGTH];
+   RFILE *file;
+
+   task_cloud_sync_manifest_filename(manifest_path, sizeof(manifest_path), false);
+
+   if ((file = task_cloud_sync_write_updated_manifest(
+               sync_state->updated_local_manifest, manifest_path)))
+   {
+      filestream_close(file);
+      return;
+   }
+
+   RARCH_ERR(CSPFX "Failed to write local manifest to \"%s\".\n", manifest_path);
+   sync_state->failures = true;
+}
+
 static void task_cloud_sync_update_manifests(task_cloud_sync_state_t *sync_state)
 {
    char   manifest_path[PATH_MAX_LENGTH];
    RFILE *file   = NULL;
-
-   task_cloud_sync_manifest_filename(manifest_path, sizeof(manifest_path), false);
-   file = task_cloud_sync_write_updated_manifest(sync_state->updated_local_manifest, manifest_path);
-   if (file)
-      filestream_close(file);
 
    if (sync_state->need_manifest_uploaded)
    {
@@ -1318,8 +1400,7 @@ static void task_cloud_sync_update_manifests(task_cloud_sync_state_t *sync_state
        * manifest cannot be opened for writing or the json writer cannot
        * be attached to it. filestream_seek() dereferences the stream
        * without a NULL check, so bail out the same way a failed upload
-       * does instead of crashing the task thread. The local manifest
-       * write above is already guarded this way. */
+       * does instead of crashing the task thread. */
       if (!file)
       {
          RARCH_ERR(CSPFX "Failed to write updated manifest to \"%s\".\n",
@@ -1336,12 +1417,17 @@ static void task_cloud_sync_update_manifests(task_cloud_sync_state_t *sync_state
          filestream_close(file);
          task_cloud_sync_waiting_set(sync_state, 0);
          sync_state->failures = true;
+         /* Dispatch failed, so the callback will not run and the local
+          * manifest is deliberately left unwritten. */
          task_cloud_sync_phase_set(sync_state, CLOUD_SYNC_PHASE_END);
       }
       return;
    }
-   else
-      task_cloud_sync_phase_set(sync_state, CLOUD_SYNC_PHASE_END);
+
+   /* Nothing to tell the server, so nothing to wait for: the local
+    * manifest is already true and can be written here. */
+   task_cloud_sync_commit_local_manifest(sync_state);
+   task_cloud_sync_phase_set(sync_state, CLOUD_SYNC_PHASE_END);
 }
 
 static void task_cloud_sync_end_handler(void *user_data, const char *path, bool success, RFILE *file)
@@ -1367,13 +1453,15 @@ static void task_cloud_sync_end_handler(void *user_data, const char *path, bool 
          strlcpy(title + _len, "conflicts", sizeof(title) - _len);
       task_free_title(task);
       task_set_title(task, strdup(title));
+
+      /* Inside the guard: every field below belongs to sync_state, and
+       * the branch above exists precisely because task->state can be
+       * NULL here. */
+      RARCH_LOG(CSPFX "Finished after %lld.%06lld seconds, %d files uploaded, %d files downloaded.\n",
+            (end_time - sync_state->start_time) / 1000 / 1000,
+            (end_time - sync_state->start_time) % (1000 * 1000),
+            sync_state->uploads, sync_state->downloads);
    }
-
-
-   RARCH_LOG(CSPFX "Finished after %lld.%06lld seconds, %d files uploaded, %d files downloaded.\n",
-         (end_time - sync_state->start_time) / 1000 / 1000,
-         (end_time - sync_state->start_time) % (1000 * 1000),
-         sync_state->uploads, sync_state->downloads);
 
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }

@@ -14,23 +14,23 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __RARCH_FONT_BITMAP_H
-#define __RARCH_FONT_BITMAP_H
+/* The built-in 5x10 glyph set. Defined here rather than in
+ * bitmap.h so that the three translation units using it -
+ * stb.c, bitmapfont.c and gx_gfx.c - share one copy instead
+ * of emitting 1792 bytes each. The five other includers of
+ * that header want only the FONT_* metrics. */
 
-#include <stdint.h>
+#include <stdlib.h>
 
-#define FONT_WIDTH 5
-#define FONT_HEIGHT 10
-/* FONT_HEIGHT_BASELINE_OFFSET:
- * Distance in pixels from top of character
- * to baseline */
-#define FONT_HEIGHT_BASELINE_OFFSET 8
-#define FONT_WIDTH_STRIDE (FONT_WIDTH + 1)
-#define FONT_HEIGHT_STRIDE (FONT_HEIGHT + 1)
+#include "bitmapfont.h"
 
-#define FONT_OFFSET(x) ((x) * ((FONT_HEIGHT * FONT_WIDTH + 7) / 8))
+/* The built-in glyphs are laid out as a 16x16 grid, so the LUT
+ * below carries one entry per code point in 0x00-0xFF. */
+#define BMP_ATLAS_COLS 16
+#define BMP_ATLAS_ROWS 16
+#define BMP_ATLAS_SIZE (BMP_ATLAS_COLS * BMP_ATLAS_ROWS)
 
-static const unsigned char bitmap_bin[1792] = {
+const unsigned char bitmap_bin[1792] = {
    0x00,0x00,0x00,0x00,0x00,0x00,0x00, /* code=0x00 */
    0x00,0x00,0x00,0x00,0x00,0x00,0x00, /* code=0x01 */
    0x00,0x00,0x00,0x00,0x00,0x00,0x00, /* code=0x02 */
@@ -289,13 +289,6 @@ static const unsigned char bitmap_bin[1792] = {
    0x40,0x81,0x18,0x63,0xF4,0xD0,0x01  /* code=0xff */
 };
 
-typedef struct
-{
-   bool **lut;
-   uint16_t glyph_min;
-   uint16_t glyph_max;
-} bitmapfont_lut_t;
-
 /* Generates a boolean LUT:
  *   lut[num_glyphs][glyph_width * glyph_height]
  * LUT value is 'true' if glyph pixel has a
@@ -303,8 +296,78 @@ typedef struct
  * Returned object must be freed using
  * bitmapfont_free_lut().
  * Returns NULL in the event of an error. */
-bitmapfont_lut_t *bitmapfont_get_lut(void);
+bitmapfont_lut_t *bitmapfont_get_lut(void)
+{
+   bitmapfont_lut_t *font = NULL;
+   size_t symbol_index;
+   size_t i, j;
 
-void bitmapfont_free_lut(bitmapfont_lut_t *font);
+   /* Initialise font struct */
+   if (!(font = (bitmapfont_lut_t*)calloc(1, sizeof(bitmapfont_lut_t))))
+      goto error;
 
-#endif
+   font->glyph_min = 0;
+   font->glyph_max = BMP_ATLAS_SIZE - 1;
+
+   /* Note: Need to use a calloc() here, otherwise
+    * we'll get undefined behaviour when calling
+    * bitmapfont_free_lut() if the following loop fails */
+   font->lut = (bool**)calloc(1, BMP_ATLAS_SIZE * sizeof(bool*));
+   if (!font->lut)
+      goto error;
+
+   /* Loop over all possible characters */
+   for (symbol_index = 0; symbol_index < BMP_ATLAS_SIZE; symbol_index++)
+   {
+      /* Allocate memory for current symbol */
+      font->lut[symbol_index] = (bool*)malloc(FONT_WIDTH *
+            FONT_HEIGHT * sizeof(bool));
+      if (!font->lut[symbol_index])
+         goto error;
+
+      for (j = 0; j < FONT_HEIGHT; j++)
+      {
+         for (i = 0; i < FONT_WIDTH; i++)
+         {
+            uint8_t rem     = 1 << ((i + j * FONT_WIDTH) & 7);
+            size_t offset   = (i + j * FONT_WIDTH) >> 3;
+
+            /* LUT value is 'true' if specified glyph
+             * position contains a pixel */
+            font->lut[symbol_index][i + (j * FONT_WIDTH)] =
+                  (bitmap_bin[FONT_OFFSET(symbol_index) + offset] & rem) > 0;
+         }
+      }
+   }
+
+   return font;
+
+error:
+   if (font)
+      bitmapfont_free_lut(font);
+
+   return NULL;
+}
+
+void bitmapfont_free_lut(bitmapfont_lut_t *font)
+{
+   if (!font)
+      return;
+
+   if (font->lut)
+   {
+      size_t i;
+      size_t num_glyphs = (font->glyph_max - font->glyph_min) + 1;
+
+      for (i = 0; i < num_glyphs; i++)
+      {
+         if (font->lut[i])
+            free(font->lut[i]);
+         font->lut[i] = NULL;
+      }
+
+      free(font->lut);
+   }
+
+   free(font);
+}

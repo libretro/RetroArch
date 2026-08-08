@@ -1584,22 +1584,6 @@ static void gfx_display_gdi_draw(gfx_display_ctx_draw_t *draw,
 #endif
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_gdi = {
-   gfx_display_gdi_draw,
-   NULL,                                     /* draw_pipeline   */
-   gfx_display_gdi_blend_begin,
-   gfx_display_gdi_blend_end,
-   NULL,                                     /* get_default_mvp */
-   gfx_display_gdi_get_default_vertices,
-   gfx_display_gdi_get_default_tex_coords,
-   FONT_DRIVER_RENDER_GDI,
-   GFX_VIDEO_DRIVER_GDI,
-   "gdi",
-   false,
-   gfx_display_gdi_scissor_begin,
-   gfx_display_gdi_scissor_end
-};
-
 /*
  * FONT DRIVER
  *
@@ -1804,7 +1788,7 @@ static void *gdi_font_init(void *data,
 
    if (!font_renderer_create_default(
             &font->font_driver,
-            &font->font_data, font_path, font_size))
+            &font->font_data, font_path, font_size, FONT_ATLAS_FORMAT_A8))
    {
       free(font);
       return NULL;
@@ -2326,18 +2310,6 @@ static void gdi_font_render_msg(
    SelectObject(dst_dc, dst_old);
 }
 
-font_renderer_t gdi_font = {
-   gdi_font_init,
-   gdi_font_free,
-   gdi_font_render_msg,
-   "gdi",
-   gdi_font_get_glyph,        /* get_glyph */
-   NULL,                      /* bind_block */
-   NULL,                      /* flush */
-   gdi_font_get_message_width,
-   gdi_font_get_line_metrics
-};
-
 /*
  * VIDEO DRIVER
  */
@@ -2569,11 +2541,6 @@ static void *gdi_init(const video_info_t *video,
 
    gfx_ctx_gdi_input_driver(input, input_data);
 
-      font_driver_init_osd(gdi,
-            video,
-            false,
-            video->is_threaded,
-            FONT_DRIVER_RENDER_GDI);
 
    RARCH_LOG("[GDI] Init complete.\n");
 
@@ -3282,7 +3249,6 @@ static void gdi_free(void *data)
       gdi->winDC = 0;
    }
 
-   font_driver_free_osd();
    gfx_ctx_gdi_destroy();
    free(gdi);
 }
@@ -3885,6 +3851,18 @@ static void gdi_get_overlay_interface(void *data,
 }
 #endif
 
+static font_renderer_t gdi_font = {
+   gdi_font_init,
+   gdi_font_free,
+   gdi_font_render_msg,
+   "gdi",
+   gdi_font_get_glyph,        /* get_glyph */
+   NULL,                      /* bind_block */
+   NULL,                      /* flush */
+   gdi_font_get_message_width,
+   gdi_font_get_line_metrics
+};
+
 video_driver_t video_gdi = {
    gdi_init,
    gdi_frame,
@@ -3909,6 +3887,25 @@ video_driver_t video_gdi = {
    NULL, /* shader_load_begin */
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   gdi_gfx_widgets_enabled
+   gdi_gfx_widgets_enabled,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &gdi_font
+};
+
+gfx_display_ctx_driver_t gfx_display_ctx_gdi = {
+   gfx_display_gdi_draw,
+   NULL,                                     /* draw_pipeline   */
+   gfx_display_gdi_blend_begin,
+   gfx_display_gdi_blend_end,
+   NULL,                                     /* get_default_mvp */
+   gfx_display_gdi_get_default_vertices,
+   gfx_display_gdi_get_default_tex_coords,
+   &gdi_font,
+   GFX_VIDEO_DRIVER_GDI,
+   "gdi",
+   false,
+   gfx_display_gdi_scissor_begin,
+   gfx_display_gdi_scissor_end
 };

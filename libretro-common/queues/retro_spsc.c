@@ -206,3 +206,55 @@ size_t retro_spsc_peek(const retro_spsc_t *q, void *data, size_t bytes)
    /* No tail update: peek does not consume. */
    return bytes;
 }
+
+size_t retro_spsc_write_begin(retro_spsc_t *q, void **ptr)
+{
+   size_t mask, head_idx, span;
+   size_t head  = retro_atomic_load_acquire_size(&q->head);
+   size_t tail  = retro_atomic_load_acquire_size(&q->tail);
+   size_t avail = q->capacity - (head - tail);
+
+   mask     = q->capacity - 1;
+   head_idx = head & mask;
+   span     = q->capacity - head_idx;
+   if (span > avail)
+      span = avail;
+   *ptr = q->buffer + head_idx;
+   return span;
+}
+
+void retro_spsc_write_end(retro_spsc_t *q, size_t bytes)
+{
+   if (bytes == 0)
+      return;
+   /* Release: the caller's stores into the span happen-before the
+    * consumer's acquire-load of head, same pairing as retro_spsc_write. */
+   retro_atomic_store_release_size(&q->head,
+         retro_atomic_load_acquire_size(&q->head) + bytes);
+}
+
+size_t retro_spsc_read_begin(retro_spsc_t *q, const void **ptr)
+{
+   size_t mask, tail_idx, span;
+   size_t head  = retro_atomic_load_acquire_size(&q->head);
+   size_t tail  = retro_atomic_load_acquire_size(&q->tail);
+   size_t avail = head - tail;
+
+   mask     = q->capacity - 1;
+   tail_idx = tail & mask;
+   span     = q->capacity - tail_idx;
+   if (span > avail)
+      span = avail;
+   *ptr = q->buffer + tail_idx;
+   return span;
+}
+
+void retro_spsc_read_end(retro_spsc_t *q, size_t bytes)
+{
+   if (bytes == 0)
+      return;
+   /* Release: our reads of the span happen-before the producer's
+    * acquire-load of tail sees the space as free. */
+   retro_atomic_store_release_size(&q->tail,
+         retro_atomic_load_acquire_size(&q->tail) + bytes);
+}

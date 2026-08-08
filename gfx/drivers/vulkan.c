@@ -405,7 +405,11 @@ typedef struct vk
       VkSemaphore *semaphores;
       VkSemaphore signal_semaphore; /* ptr alignment */
 
-      struct retro_hw_render_interface_vulkan iface;
+      /* The retro_hw_render_interface_vulkan the core is handed used
+       * to live here.  It now has static storage - see
+       * vulkan_hw_iface - because the pointer returned by
+       * vulkan_get_hw_render_interface() must outlive this
+       * allocation. */
 
       unsigned capacity_cmd;
       unsigned last_width;
@@ -2174,26 +2178,6 @@ static void gfx_display_vk_scissor_end(void *data,
    vk->tracker.dirty       |=  VULKAN_DIRTY_DYNAMIC_BIT;
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_vulkan = {
-   gfx_display_vk_draw,
-#ifdef HAVE_SHADERPIPELINE
-   gfx_display_vk_draw_pipeline,
-#else
-   NULL,                                  /* draw_pipeline */
-#endif
-   gfx_display_vk_blend_begin,
-   gfx_display_vk_blend_end,
-   gfx_display_vk_get_default_mvp,
-   gfx_display_vk_get_default_vertices,
-   gfx_display_vk_get_default_tex_coords,
-   FONT_DRIVER_RENDER_VULKAN_API,
-   GFX_VIDEO_DRIVER_VULKAN,
-   "vulkan",
-   false,
-   gfx_display_vk_scissor_begin,
-   gfx_display_vk_scissor_end
-};
-
 /**
  * FONT DRIVER
  */
@@ -2237,13 +2221,17 @@ static void vulkan_font_free(void *data, bool is_threaded)
    if (font->font_driver && font->font_data)
       font->font_driver->free(font->font_data);
 
-   vkQueueWaitIdle(font->vk->context->queue);
-   if (font->upload_fence != VK_NULL_HANDLE)
-      vkDestroyFence(font->vk->context->device, font->upload_fence, NULL);
-   vulkan_destroy_texture(
-         font->vk->context->device, &font->texture);
-   vulkan_destroy_texture(
-         font->vk->context->device, &font->texture_optimal);
+   if (font->vk && font->vk->context && font->vk->context->device)
+   {
+      vkQueueWaitIdle(font->vk->context->queue);
+      if (font->upload_fence != VK_NULL_HANDLE)
+         vkDestroyFence(font->vk->context->device,
+               font->upload_fence, NULL);
+      vulkan_destroy_texture(
+            font->vk->context->device, &font->texture);
+      vulkan_destroy_texture(
+            font->vk->context->device, &font->texture_optimal);
+   }
 
    free(font);
 }
@@ -2261,8 +2249,7 @@ static void *vulkan_font_init(void *data,
    font->vk = (vk_t*)data;
 
    {
-      enum font_atlas_format prev_fmt =
-            font_renderer_get_preferred_atlas_format();
+      enum font_atlas_format fmt = FONT_ATLAS_FORMAT_A8;
 #ifdef VULKAN_HDR_SWAPCHAIN
       /* When the swapchain is HDR, ask for a higher-precision
        * coverage atlas (same policy as the d3d12 driver). */
@@ -2271,17 +2258,15 @@ static void *vulkan_font_init(void *data,
                      == VK_FORMAT_R16G16B16A16_SFLOAT
                || font->vk->context->swapchain_format
                      == VK_FORMAT_A2B10G10R10_UNORM_PACK32))
-         font_renderer_set_preferred_atlas_format(FONT_ATLAS_FORMAT_A16);
+         fmt = FONT_ATLAS_FORMAT_A16;
 #endif
       if (!font_renderer_create_default(
                &font->font_driver,
-               &font->font_data, font_path, font_size))
+               &font->font_data, font_path, font_size, fmt))
       {
-         font_renderer_set_preferred_atlas_format(prev_fmt);
          free(font);
          return NULL;
       }
-      font_renderer_set_preferred_atlas_format(prev_fmt);
    }
 
    font->atlas   = font->font_driver->get_atlas(font->font_data);
@@ -2679,6 +2664,15 @@ static void vulkan_font_render_msg(
    {
       struct vk_texture *dynamic_tex = &font->texture_optimal;
       struct vk_texture *staging_tex = &font->texture;
+      /* Bytes per texel of the atlas: R8_UNORM normally, R16_UNORM
+       * for the A16 atlas an HDR swapchain asks for. The mapped-range
+       * flush and the buffer-image copy must agree on this, or the
+       * flushed span does not cover the bytes the copy reads. */
+      unsigned bpp                   = vulkan_format_to_bpp(
+            staging_tex->format);
+
+      if (!bpp)
+         bpp                         = 1;
 
       if (  (staging_tex->flags
                & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
@@ -2696,10 +2690,10 @@ static void vulkan_font_render_msg(
           * as required by the spec (§12.1). */
          VkDeviceSize flush_offset = (VkDeviceSize)font->dirty_y_min 
                       * staging_tex->stride
-                      + font->dirty_x_min;
+                      + (VkDeviceSize)font->dirty_x_min * bpp;
          VkDeviceSize flush_end    = (VkDeviceSize)(font->dirty_y_max > 0
                       ? (font->dirty_y_max - 1) : 0) * staging_tex->stride
-                      + font->dirty_x_max;
+                      + (VkDeviceSize)font->dirty_x_max * bpp;
          if (flush_end <= flush_offset)
             flush_end = flush_offset + 1;
          flush_size   = flush_end - flush_offset;
@@ -2727,10 +2721,15 @@ static void vulkan_font_render_msg(
          unsigned dw = font->dirty_x_max - dx;
          unsigned dh = font->dirty_y_max - dy;
 
-         if (dx + dw > staging_tex->width)
-            dw = staging_tex->width - dx;
-         if (dy + dh > staging_tex->height)
-            dh = staging_tex->height - dy;
+         if (dx >= staging_tex->width || dy >= staging_tex->height)
+            dw = dh = 0;
+         else
+         {
+            if (dx + dw > staging_tex->width)
+               dw = staging_tex->width - dx;
+            if (dy + dh > staging_tex->height)
+               dh = staging_tex->height - dy;
+         }
 
          if (dw > 0 && dh > 0)
          {
@@ -2739,6 +2738,18 @@ static void vulkan_font_render_msg(
             VkCommandBufferAllocateInfo cmd_info;
             VkCommandBufferBeginInfo begin_info;
             VkBufferImageCopy region;
+            /* UNDEFINED as oldLayout lets the implementation discard
+             * the whole image. That is only sound when the copy
+             * rewrites every texel - the initial full-atlas upload.
+             * Later uploads are incremental rects covering a single
+             * glyph, and must preserve what lies outside them. */
+            bool full_copy              = (   dx == 0
+                                           && dy == 0
+                                           && dw == dynamic_tex->width
+                                           && dh == dynamic_tex->height);
+            VkImageLayout old_layout    = full_copy
+               ? VK_IMAGE_LAYOUT_UNDEFINED
+               : dynamic_tex->layout;
 
             cmd_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
             cmd_info.pNext              = NULL;
@@ -2754,29 +2765,33 @@ static void vulkan_font_render_msg(
             begin_info.pInheritanceInfo = NULL;
             vkBeginCommandBuffer(staging_cmd, &begin_info);
 
+            /* Naming the real source scope also gives this barrier a
+             * non-empty first synchronisation scope, which covers
+             * commands submitted earlier to the same queue and so
+             * orders the transfer against frames still in flight that
+             * are sampling the atlas. TOP_OF_PIPE ordered nothing. */
             VULKAN_IMAGE_LAYOUT_TRANSITION(
                   staging_cmd,
                   dynamic_tex->image,
-                  VK_IMAGE_LAYOUT_UNDEFINED,
+                  old_layout,
                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                  0,
+                  (old_layout == VK_IMAGE_LAYOUT_UNDEFINED)
+                     ? 0
+                     : VK_ACCESS_SHADER_READ_BIT,
                   VK_ACCESS_TRANSFER_WRITE_BIT,
-                  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                  (old_layout == VK_IMAGE_LAYOUT_UNDEFINED)
+                     ? VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT
+                     : VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
                   VK_PIPELINE_STAGE_TRANSFER_BIT);
 
             /* bufferOffset is in bytes; bufferRowLength is in
              * TEXELS. For R8 the two coincide with the byte stride,
              * for R16 they do not. */
-            {
-               unsigned bpp = vulkan_format_to_bpp(staging_tex->format);
-               if (!bpp)
-                  bpp = 1;
-               region.bufferOffset              =
-                  (VkDeviceSize)dy * staging_tex->stride
-                     + (VkDeviceSize)dx * bpp;
-               region.bufferRowLength           =
-                  (uint32_t)(staging_tex->stride / bpp);
-            }
+            region.bufferOffset                    =
+               (VkDeviceSize)dy * staging_tex->stride
+                  + (VkDeviceSize)dx * bpp;
+            region.bufferRowLength                 =
+               (uint32_t)(staging_tex->stride / bpp);
             region.bufferImageHeight               = 0;
             region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
             region.imageSubresource.mipLevel       = 0;
@@ -2859,14 +2874,17 @@ static void vulkan_font_render_msg(
 
             dynamic_tex->layout =
                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+            /* Reset only on a real upload. Clearing the dirty box
+             * after a rect that clamped away stranded that glyph's
+             * staging write permanently. */
+            font->dirty_x_min  = font->atlas->width;
+            font->dirty_y_min  = font->atlas->height;
+            font->dirty_x_max  = 0;
+            font->dirty_y_max  = 0;
+            font->needs_update = false;
          }
       }
-
-      font->dirty_x_min  = font->atlas->width;
-      font->dirty_y_min  = font->atlas->height;
-      font->dirty_x_max  = 0;
-      font->dirty_y_max  = 0;
-      font->needs_update = false;
    }
 
    /* Transition the font atlas texture for shader reads.
@@ -3016,18 +3034,6 @@ static bool vulkan_font_get_line_metrics(void* data,
    }
    return false;
 }
-
-font_renderer_t vulkan_raster_font = {
-   vulkan_font_init,
-   vulkan_font_free,
-   vulkan_font_render_msg,
-   "vulkan",
-   vulkan_font_get_glyph,
-   NULL,                            /* bind_block */
-   NULL,                            /* flush_block */
-   vulkan_font_get_message_width,
-   vulkan_font_get_line_metrics
-};
 
 /*
  * VIDEO DRIVER
@@ -4832,6 +4838,38 @@ static void vulkan_destroy_hdr_buffer(VkDevice device, struct vk_image *img)
 }
 #endif
 
+/* The interface handed to the core by
+ * vulkan_get_hw_render_interface().  It used to be a member of vk_t,
+ * so what the core received was an interior pointer into an
+ * allocation vulkan_free() releases.
+ *
+ * A core that submits from its own thread - PPSSPP's
+ * VulkanRenderManager runs a dedicated render thread - caches that
+ * pointer and keeps using it across a video_driver_reinit().  In the
+ * cache_context path the core is never told the interface went away:
+ * video_driver_free_internal() skips video_driver_free_hw_context(),
+ * so context_destroy() does not run, while vulkan_free() frees the
+ * vk_t regardless and vulkan_init() allocates a new one.  The render
+ * thread then dereferences freed memory - first with the block still
+ * largely intact, faulting on a cleared handle inside
+ * vulkan_lock_queue(), and later, once the block has been reused,
+ * with a cleared lock_queue, which is a call through a null function
+ * pointer.  Both signatures turn up in iOS reports, where a rotation
+ * or a return from background reinitialises the driver underneath a
+ * running core.
+ *
+ * Static storage keeps the address the core holds valid for the
+ * process lifetime.  It is published by vulkan_init_hw_render() and
+ * unpublished by vulkan_free(), which clears the handle rather than
+ * the entry points: a submission landing in the window between
+ * teardown and the next context_reset then takes the guarded no-op
+ * path in the callbacks above instead of faulting.  Losing the queue
+ * lock for that window is survivable precisely because this is the
+ * cache_context path - the device and the queue are cached and
+ * outlive the vk_t - and it is what the core was already doing
+ * unsynchronised by racing the teardown at all. */
+static struct retro_hw_render_interface_vulkan vulkan_hw_iface;
+
 static void vulkan_free(void *data)
 {
    vk_t *vk = (vk_t*)data;
@@ -4856,8 +4894,6 @@ static void vulkan_free(void *data)
 
       /* No need to init this since textures are create on-demand. */
       vulkan_deinit_menu(vk);
-
-      font_driver_free_osd();
 
       vulkan_deinit_static_resources(vk);
 #ifdef HAVE_OVERLAY
@@ -4889,18 +4925,31 @@ static void vulkan_free(void *data)
 
    scaler_ctx_gen_reset(&vk->readback.scaler_bgr);
    scaler_ctx_gen_reset(&vk->readback.scaler_rgb);
+
+   /* Unpublish before the free, so a core thread that reads the
+    * handle from here on reads NULL rather than a dangling vk_t.
+    * Tested against this vk, not unconditionally: a driver teardown
+    * that races an init must not clear an interface the init has
+    * already republished. */
+   if (vulkan_hw_iface.handle == vk)
+      vulkan_hw_iface.handle = NULL;
+
    free(vk);
 }
 
 static uint32_t vulkan_get_sync_index(void *handle)
 {
    vk_t *vk = (vk_t*)handle;
+   if (!vk || !vk->context)
+      return 0;
    return vk->context->current_frame_index;
 }
 
 static uint32_t vulkan_get_sync_index_mask(void *handle)
 {
    vk_t *vk = (vk_t*)handle;
+   if (!vk || !vk->context)
+      return 0;
    return (1 << vk->context->num_swapchain_images) - 1;
 }
 
@@ -4911,6 +4960,9 @@ static void vulkan_set_image(void *handle,
       uint32_t src_queue_family)
 {
    vk_t *vk              = (vk_t*)handle;
+
+   if (!vk)
+      return;
 
    vk->hw.image          = image;
    vk->hw.num_semaphores = num_semaphores;
@@ -4967,6 +5019,10 @@ static void vulkan_set_command_buffers(void *handle, uint32_t num_cmd,
 {
    vk_t *vk                   = (vk_t*)handle;
    unsigned required_capacity = num_cmd + 1;
+
+   if (!vk)
+      return;
+
    if (required_capacity > vk->hw.capacity_cmd)
    {
       VkCommandBuffer *hw_cmd = (VkCommandBuffer*)
@@ -4998,7 +5054,8 @@ static void vulkan_lock_queue(void *handle)
 {
 #ifdef HAVE_THREADS
    vk_t *vk = (vk_t*)handle;
-   slock_lock(vk->context->queue_lock);
+   if (vk && vk->context && vk->context->queue_lock)
+      slock_lock(vk->context->queue_lock);
 #endif
 }
 
@@ -5006,13 +5063,16 @@ static void vulkan_unlock_queue(void *handle)
 {
 #ifdef HAVE_THREADS
    vk_t *vk = (vk_t*)handle;
-   slock_unlock(vk->context->queue_lock);
+   if (vk && vk->context && vk->context->queue_lock)
+      slock_unlock(vk->context->queue_lock);
 #endif
 }
 
 static void vulkan_set_signal_semaphore(void *handle, VkSemaphore semaphore)
 {
    vk_t *vk = (vk_t*)handle;
+   if (!vk)
+      return;
    vk->hw.signal_semaphore = semaphore;
 }
 
@@ -5062,7 +5122,7 @@ static void vulkan_invalidate_hw_render_cache(void *data)
 static void vulkan_init_hw_render(vk_t *vk)
 {
    struct retro_hw_render_interface_vulkan *iface   =
-      &vk->hw.iface;
+      &vulkan_hw_iface;
    struct retro_hw_render_callback *hwr =
       video_driver_get_hw_context();
 
@@ -5160,8 +5220,9 @@ static void *vulkan_init(const video_info_t *video,
    bool force_fullscreen              = false;
    const gfx_ctx_driver_t *ctx_driver = NULL;
    settings_t *settings               = config_get_ptr();
-   vk_t *vk                           = (vk_t*)calloc(1, sizeof(*vk));
-   if (!vk)
+   vk_t *vk;
+
+   if (!(vk = (vk_t*)calloc(1, sizeof(*vk))))
       return NULL;
    ctx_driver                         = vulkan_get_context(vk, settings);
    if (!ctx_driver)
@@ -5416,12 +5477,6 @@ static void *vulkan_init(const video_info_t *video,
             vk->ctx_data, joypad_name,
             input, input_data);
    }
-
-      font_driver_init_osd(vk,
-            video,
-            false,
-            video->is_threaded,
-            FONT_DRIVER_RENDER_VULKAN_API);
 
    /* The MoltenVK driver needs this, particularly after driver reinit
       Also it is required for HDR to not break during reinit, while not ideal it
@@ -7910,7 +7965,7 @@ static bool vulkan_get_hw_render_interface(void *data,
       const struct retro_hw_render_interface **iface)
 {
    vk_t *vk = (vk_t*)data;
-   *iface   = (const struct retro_hw_render_interface*)&vk->hw.iface;
+   *iface   = (const struct retro_hw_render_interface*)&vulkan_hw_iface;
    return ((vk->flags & VK_FLAG_HW_ENABLE) > 0);
 }
 
@@ -9408,6 +9463,19 @@ static bool vulkan_focus(void *data)
    return true;
 }
 
+static font_renderer_t vulkan_raster_font = {
+   vulkan_font_init,
+   vulkan_font_free,
+   vulkan_font_render_msg,
+   "vulkan",
+   vulkan_font_get_glyph,
+   NULL,                            /* bind_block */
+   NULL,                            /* flush_block */
+   vulkan_font_get_message_width,
+   vulkan_font_get_line_metrics
+};
+
+
 video_driver_t video_vulkan = {
    vulkan_init,
    vulkan_frame,
@@ -9436,8 +9504,29 @@ video_driver_t video_vulkan = {
 #endif
    vulkan_invalidate_hw_render_cache,
 #ifdef VULKAN_HDR_SWAPCHAIN
-   vulkan_read_viewport_hdr
+   vulkan_read_viewport_hdr,
 #else
-   NULL /* read_viewport_hdr */
+   NULL, /* read_viewport_hdr */
 #endif
+   &vulkan_raster_font
+};
+
+gfx_display_ctx_driver_t gfx_display_ctx_vulkan = {
+   gfx_display_vk_draw,
+#ifdef HAVE_SHADERPIPELINE
+   gfx_display_vk_draw_pipeline,
+#else
+   NULL,                                  /* draw_pipeline */
+#endif
+   gfx_display_vk_blend_begin,
+   gfx_display_vk_blend_end,
+   gfx_display_vk_get_default_mvp,
+   gfx_display_vk_get_default_vertices,
+   gfx_display_vk_get_default_tex_coords,
+   &vulkan_raster_font,
+   GFX_VIDEO_DRIVER_VULKAN,
+   "vulkan",
+   false,
+   gfx_display_vk_scissor_begin,
+   gfx_display_vk_scissor_end
 };

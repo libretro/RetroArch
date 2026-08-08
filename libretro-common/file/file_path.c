@@ -59,15 +59,6 @@
 #endif
 #endif
 
-/* Assume W-functions do not work below Win2K and Xbox platforms */
-#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX)
-
-#ifndef LEGACY_WIN32
-#define LEGACY_WIN32
-#endif
-
-#endif
-
 /* Time format strings with AM-PM designation require special
  * handling due to platform dependence */
 size_t strftime_am_pm(char *s, size_t len, const char* format,
@@ -1352,7 +1343,26 @@ size_t fill_pathname_application_path(char *s, size_t len)
    if (len)
    {
 #if defined(_WIN32)
-#ifdef LEGACY_WIN32
+#if defined(LEGACY_WIN32_RUNTIME)
+      DWORD ret;
+
+      if (win32_needs_local_encoding())
+         ret = GetModuleFileNameA(NULL, s, len);
+      else
+      {
+         wchar_t wstr[PATH_MAX_LENGTH] = {0};
+         ret = GetModuleFileNameW(NULL, wstr, ARRAY_SIZE(wstr));
+         if (*wstr)
+         {
+            char *str = utf16_to_utf8_string_alloc(wstr);
+            if (str)
+            {
+               strlcpy(s, str, len);
+               free(str);
+            }
+         }
+      }
+#elif defined(LEGACY_WIN32)
       DWORD ret = GetModuleFileNameA(NULL, s, len);
 #else
       wchar_t wstr[PATH_MAX_LENGTH] = {0};

@@ -1051,8 +1051,10 @@ static enum scan_verdict database_info_list_iterate_found_match(
       database_info_get_current_name(db_state);
    const char         *entry_path =
       database_info_get_current_element_name(_db->content_list, _db->content_list_index);
-   database_info_t *db_info_entry =
-      &db_state->info->list[db_state->entry_index];
+   database_info_t *db_info_entry = (db_state->info
+         && db_state->entry_index < db_state->info->count)
+      ? &db_state->info->list[db_state->entry_index]
+      : NULL;
 
    /* NULL-check both mallocs: the 'db_crc[0] = ...' /
     * 'entry_path_str[0] = ...' writes below NULL-deref on OOM.
@@ -1068,8 +1070,19 @@ static enum scan_verdict database_info_list_iterate_found_match(
     * fed straight into path_basename_nocompression()/fill_pathname()
     * below, where strrchr()/strlcpy() dereference it and crash. With
     * no database name there is no meaningful playlist filename to
-    * build, so treat it like the OOM case and skip this entry. */
-   if (!db_crc || !entry_path_str || !db_path)
+    * build, so treat it like the OOM case and skip this entry.
+    *
+    * db_info_entry likewise: the matched entry used to be taken as
+    * &info->list[entry_index] unconditionally, which reads info and
+    * indexes list on nothing but the caller's word.  Every caller
+    * does test both - each of the four reaches this function from
+    * inside an "info && entry_index < info->count" - so this is the
+    * invariant being stated where it is relied on rather than a
+    * reachable fault.  It is the same shape as the two the callers
+    * were given after they were found dereferencing list[0] on an
+    * empty result, and the only place left in the file taking that
+    * address without a bound. */
+   if (!db_crc || !entry_path_str || !db_path || !db_info_entry)
    {
       if (db_crc != db_crc_buf)
          free(db_crc);

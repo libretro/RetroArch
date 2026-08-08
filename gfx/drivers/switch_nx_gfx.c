@@ -74,22 +74,6 @@ static const float *gfx_display_switch_get_default_tex_coords(void)
    return &dummy[0];
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_switch = {
-   gfx_display_switch_draw,
-   NULL,                                        /* draw_pipeline   */
-   NULL,                                        /* blend_begin     */
-   NULL,                                        /* blend_end       */
-   NULL,                                        /* get_default_mvp */
-   gfx_display_switch_get_default_vertices,
-   gfx_display_switch_get_default_tex_coords,
-   FONT_DRIVER_RENDER_SWITCH,
-   GFX_VIDEO_DRIVER_SWITCH,
-   "switch",
-   false,
-   NULL,                                         /* scissor_begin */
-   NULL                                          /* scissor_end   */
-};
-
 /*
  * FONT DRIVER
  */
@@ -113,7 +97,7 @@ static void *switch_font_init(void *data, const char *font_path,
       return NULL;
 
    if (!font_renderer_create_default(&font->font_driver,
-            &font->font_data, font_path, font_size))
+            &font->font_data, font_path, font_size, FONT_ATLAS_FORMAT_A8))
    {
       free(font);
       return NULL;
@@ -371,19 +355,6 @@ static bool switch_font_get_line_metrics(void* data, struct font_line_metrics **
    return false;
 }
 
-font_renderer_t switch_font =
-{
-   switch_font_init,
-   switch_font_free,
-   switch_font_render_msg,
-   "switch",
-   switch_font_get_glyph,
-   NULL, /* bind_block  */
-   NULL, /* flush_block */
-   switch_font_get_message_width,
-   switch_font_get_line_metrics
-};
-
 /*
  * VIDEO DRIVER
  */
@@ -555,11 +526,6 @@ static void *switch_init(const video_info_t *video,
         *input_data          = switchinput;
     }
 
-    font_driver_init_osd(sw,
-          video,
-          false,
-          video->is_threaded,
-          FONT_DRIVER_RENDER_SWITCH);
 
     clear_screen(sw);
 
@@ -981,6 +947,19 @@ static void switch_get_poke_interface(void *data,
     *iface = &switch_poke_interface;
 }
 
+static font_renderer_t switch_font =
+{
+   switch_font_init,
+   switch_font_free,
+   switch_font_render_msg,
+   "switch",
+   switch_font_get_glyph,
+   NULL, /* bind_block  */
+   NULL, /* flush_block */
+   switch_font_get_message_width,
+   switch_font_get_line_metrics
+};
+
 video_driver_t video_switch = {
    switch_init,
    switch_frame,
@@ -1005,8 +984,28 @@ video_driver_t video_switch = {
    NULL, /* shader_load_begin */
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   NULL  /* gfx_widgets_enabled */
+   NULL  /* gfx_widgets_enabled */,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &switch_font
 };
+
+gfx_display_ctx_driver_t gfx_display_ctx_switch = {
+   gfx_display_switch_draw,
+   NULL,                                        /* draw_pipeline   */
+   NULL,                                        /* blend_begin     */
+   NULL,                                        /* blend_end       */
+   NULL,                                        /* get_default_mvp */
+   gfx_display_switch_get_default_vertices,
+   gfx_display_switch_get_default_tex_coords,
+   &switch_font,
+   GFX_VIDEO_DRIVER_SWITCH,
+   "switch",
+   false,
+   NULL,                                         /* scissor_begin */
+   NULL                                          /* scissor_end   */
+};
+
 
 /* vim: set ts=3 sw=3 */

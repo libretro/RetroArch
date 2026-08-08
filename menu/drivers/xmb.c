@@ -437,6 +437,12 @@ typedef struct xmb_handle
    int icon_size;
    int cursor_size;
    int wideglyph_width;
+   /* The string wideglyph_width was measured from, and the
+    * font_driver generation it was measured at. A font rebuilt
+    * underneath - a language switch picks a different face - moves
+    * the generation and the width is worked out again. */
+   const char *wideglyph_str;
+   uint32_t wideglyph_generation;
 
    unsigned categories_active_idx;
    unsigned categories_active_idx_old;
@@ -5360,8 +5366,8 @@ XMB_NOINLINE static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_ani
       word_wrap_func      = word_wrap;
 
    /* > Height */
-   if ((glyph_height = font_driver_get_line_height(
-         line_ticker->font, line_ticker->font_scale)) <= 0)
+   if ((glyph_height = (int)roundf(line_ticker->font->metrics.height
+               * line_ticker->font_scale)) <= 0)
       goto fail;
 
    /* Determine line wrap parameters */
@@ -7479,6 +7485,34 @@ static const char *xmb_texture_path(unsigned id)
 }
 
 
+/* xmb keeps no font_data_impl_t, so it does not get the refresh
+ * font_flush() gives ozone and materialui. Only wideglyph_width is
+ * derived from the face here, so that is all there is to redo. */
+static void xmb_sync_wideglyph(xmb_handle_t *xmb)
+{
+   uint32_t gen = font_driver_get_generation();
+
+   if (!xmb || !xmb->font)
+      return;
+   if (xmb->wideglyph_generation == gen)
+      return;
+
+   xmb->wideglyph_generation = gen;
+   xmb->wideglyph_width      = 100;
+
+   if (xmb->wideglyph_str)
+   {
+      int char_width      = font_driver_get_message_width(
+            xmb->font, "a", 1, 1.0f);
+      int wideglyph_width = font_driver_get_message_width(
+            xmb->font, xmb->wideglyph_str,
+            strlen(xmb->wideglyph_str), 1.0f);
+
+      if (wideglyph_width > 0 && char_width > 0)
+         xmb->wideglyph_width = wideglyph_width * 100 / char_width;
+   }
+}
+
 static void xmb_context_reset_textures(
       xmb_handle_t *xmb,
       const char *iconpath,
@@ -7568,6 +7602,8 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
 {
    char iconpath[PATH_MAX_LENGTH];
    char fontpath[PATH_MAX_LENGTH];
+   char default_fontpath[PATH_MAX_LENGTH];
+   char pkg_dir[DIR_MAX_LENGTH];
    gfx_display_t *p_disp               = disp_get_ptr();
    struct menu_state *menu_st          = menu_state_get_ptr();
    const char *wideglyph_str           = msg_hash_get_wideglyph_str();
@@ -7591,25 +7627,44 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
       xmb->font2 = NULL;
    }
 
+   /* The theme's font, then the language override on top of it. Both
+    * are kept: the first is what to fall back to when the language
+    * wants nothing special, and telling the font driver both is what
+    * lets a language change rebuild these in place. */
    fill_pathname_application_special(
-         fontpath, sizeof(fontpath), APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT);
-   xmb->font            = gfx_display_font_file(p_disp,
-         fontpath, xmb->font_size, is_threaded);
-   xmb->font2           = gfx_display_font_file(p_disp,
-         fontpath, xmb->font2_size, is_threaded);
-
-   xmb->wideglyph_width = 100;
-
-   if (wideglyph_str)
+         default_fontpath, sizeof(default_fontpath),
+         APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT);
    {
-      int char_width      = font_driver_get_message_width(
-            xmb->font, "a", 1, 1.0f);
-      int wideglyph_width = font_driver_get_message_width(
-            xmb->font, wideglyph_str, strlen(wideglyph_str), 1.0f);
+      settings_t *settings   = config_get_ptr();
+      const char *lang_font  = font_driver_language_font_file();
+      const char *menu_font  = settings->paths.path_menu_xmb_font;
 
-      if (wideglyph_width > 0 && char_width > 0)
-         xmb->wideglyph_width = wideglyph_width * 100 / char_width;
+      fill_pathname_join_special(pkg_dir,
+            settings->paths.directory_assets, "pkg", sizeof(pkg_dir));
+
+      /* An explicit menu font wins, and there is nothing to
+       * re-resolve in that case. */
+      if (lang_font && !(menu_font && *menu_font))
+         fill_pathname_join_special(fontpath, pkg_dir, lang_font,
+               sizeof(fontpath));
+      else
+         strlcpy(fontpath, default_fontpath, sizeof(fontpath));
+
+      xmb->font            = gfx_display_font_file(p_disp,
+            fontpath, xmb->font_size, is_threaded);
+      xmb->font2           = gfx_display_font_file(p_disp,
+            fontpath, xmb->font2_size, is_threaded);
+
+      if (!(menu_font && *menu_font))
+      {
+         font_driver_set_language_font(xmb->font, pkg_dir, default_fontpath);
+         font_driver_set_language_font(xmb->font2, pkg_dir, default_fontpath);
+      }
    }
+
+   xmb->wideglyph_str        = wideglyph_str;
+   xmb->wideglyph_generation = 0;
+   xmb_sync_wideglyph(xmb);
 
    if (reinit_textures)
    {
@@ -10035,6 +10090,10 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
     * death mid-frame leaves the flag set for the retry. */
    xmb->is_first_frame = false;
 
+   /* Pick up a font rebuilt since the last frame before the next one
+    * lays out with a stale width. */
+   xmb_sync_wideglyph(xmb);
+
    if (xmb->font && xmb->font->renderer && xmb->font->renderer->flush)
       xmb->font->renderer->flush(video_width,
             video_height, xmb->font->renderer_data);
@@ -10337,7 +10396,6 @@ static void xmb_free(void *data)
    }
 
    gfx_display_deinit_white_texture();
-   font_driver_bind_block(NULL, NULL);
 }
 
 static void xmb_context_bg_destroy(xmb_handle_t *xmb)

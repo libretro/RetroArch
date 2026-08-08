@@ -44,6 +44,7 @@
 
 #ifdef HAVE_THREADS
 #include "video_thread_wrapper.h"
+#include "font_driver.h"
 #endif
 
 #ifdef HAVE_MENU
@@ -1982,8 +1983,33 @@ void video_driver_free_internal(void)
       }
    }
 
+   /* Drop the OSD font before the driver that owns its GPU objects
+    * goes away. Only for drivers that have handed the lifecycle up;
+    * the rest still free it inside their own free(). Keyed on
+    * ownership so that a teardown arriving after the next driver is
+    * already up cannot take the live font with it. Under threaded
+    * video the wrapper does this from CMD_FREE, on the video thread. */
+#ifdef HAVE_THREADS
+   if (!is_threaded)
+#endif
+   {
+      if (vid && vid->font_backend)
+         font_driver_free_osd_for(video_st->data);
+   }
+
    if (video_st->data && vid && vid->free)
       vid->free(video_st->data);
+
+   /* The poke interface is a pointer into the driver's static vtable, so
+    * unlike video_st->data it survives free "working" - and
+    * video_context_driver_get_flags() consults poke->get_flags, so a
+    * stale poke lets a torn-down instance keep answering capability
+    * queries during an in-process core switch. That was harmless while
+    * every get_flags ignored its data argument; gl3's scRGB-gated
+    * 10-bit-source flag is instance state, and answering from a freed
+    * instance reported the capability absent, which is how HDR10
+    * negotiation broke on core switch. Dead instances answer nothing. */
+   video_st->poke = NULL;
 
    if (video_st->scaler_ptr)
       video_driver_pixel_converter_free(video_st->scaler_ptr);
@@ -4021,6 +4047,71 @@ bool video_context_driver_get_flags(gfx_ctx_flags_t *flags)
  * Poll both the video and context driver's flags and test
  * whether @testflag is set or not.
  **/
+/* Can the named video driver present a 10-bit source surface?
+ *
+ * This exists because the flag-based test cannot answer the question
+ * before drivers_init(): SET_PIXEL_FORMAT is issued from retro_load_game,
+ * i.e. during CMD_EVENT_CORE_INIT, which on a cold start (RetroArch
+ * launched straight into content) runs *before* any video driver or
+ * context driver exists. video_context_driver_get_flags() then reports
+ * nothing at all and every 10-bit request is refused, on all drivers,
+ * purely because of when the core happens to ask. Loading the same
+ * content from a running menu works, which made this look driver- or
+ * core-specific when it is neither.
+ *
+ * The list mirrors the drivers that set GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE
+ * from a live instance; it is only consulted when no instance exists. */
+static bool video_driver_ident_supports_10bit_source(const char *ident)
+{
+   if (string_is_empty(ident))
+      return false;
+   if (     string_is_equal(ident, "vulkan")
+         || string_is_equal(ident, "d3d11")
+         || string_is_equal(ident, "d3d12")
+         || string_is_equal(ident, "glcore"))
+      return true;
+#if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+   /* gl2's 10-bit path is desktop-only (RGB10_A2 + packed 2-10-10-10
+    * upload are not in GLES2), so the ident only counts in builds
+    * where that path exists. */
+   if (string_is_equal(ident, "gl"))
+      return true;
+#endif
+   /* gl1 is unconditional: its PQ handling degrades through a pure-CPU
+    * tonemap that has no GL requirements at all, so acceptance is safe
+    * even on the GL 1.1 software rasterizers that driver exists for. */
+   if (string_is_equal(ident, "gl1"))
+      return true;
+   return false;
+}
+
+/* Whether a 10-bit source surface can be presented, judged by the
+ * *configured* driver alone - live instance state is deliberately never
+ * consulted.
+ *
+ * SET_PIXEL_FORMAT always precedes the (re)creation of the video driver
+ * for the session being started: on a cold start no instance exists,
+ * and on an in-process core switch the instance that exists belongs to
+ * the outgoing session and is mid-teardown - its flags describe the
+ * wrong session at best and a freed instance at worst (the reported
+ * failure: a stale poke->get_flags answering after video_driver_free).
+ * The question being asked is about the *next* session, and the only
+ * stable answer to that is the configured driver ident.
+ *
+ * This is deliberately optimistic where the capability is conditional:
+ * glcore can only present 10-bit on a context with an scRGB backbuffer,
+ * unknowable until that context exists. The two errors are not
+ * symmetric - accepting and discovering otherwise is recoverable (the
+ * driver tonemaps PQ for its actual output), refusing is final because
+ * the core has committed to an SDR format before anything better is
+ * known. */
+bool video_driver_supports_10bit_source(void)
+{
+   settings_t *settings = config_get_ptr();
+   return settings && video_driver_ident_supports_10bit_source(
+         settings->arrays.video_driver);
+}
+
 bool video_driver_test_all_flags(enum display_flags testflag)
 {
    gfx_ctx_flags_t flags;
@@ -4478,6 +4569,21 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
       RARCH_ERR("[Video] Cannot open video driver. Exiting...\n");
       return false;
    }
+
+   /* Create the OSD font for drivers that have handed the lifecycle
+    * up. Threaded video is excluded: the wrapper creates it from
+    * CMD_INIT on the video thread, where the graphics context lives.
+    *
+    * Pairing creation and destruction here rather than inside each
+    * driver is what makes the font's lifetime match the driver
+    * instance. When a driver owns it, a teardown path that does not
+    * reach the driver's free() leaves the font alive across the
+    * reinit, holding GPU handles from a device that is gone -
+    * font_driver_init_osd() then no-ops because the pointer is still
+    * set, and the stale object keeps drawing. */
+   if (video_st->current_video->font_backend)
+      font_driver_init_osd(video_st->data, &video,
+            video.is_threaded, video_st->current_video->font_backend);
 
    video_st->poke = NULL;
    if (video_st->current_video->poke_interface)

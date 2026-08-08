@@ -843,7 +843,16 @@ void gfx_widgets_flush_text(
 {
    /* Flushing is slow - only do it if font
     * has actually been used */
-   if (!font_data || (font_data->usage_count == 0))
+   if (!font_data)
+      return;
+
+   /* A rebuilt font has different metrics; pick them up before
+    * anything is drawn with the old ones. Done here rather than only
+    * when there is something to flush, so a widget that drew nothing
+    * this frame still lays out correctly on the next. */
+   gfx_widgets_font_sync(font_data);
+
+   if (font_data->usage_count == 0)
       return;
 
    if (font_data->font && font_data->font->renderer && font_data->font->renderer->flush)
@@ -925,7 +934,6 @@ static void gfx_widgets_font_init(
       gfx_widget_font_data_t *font_data,
       bool is_threaded, char *font_path, float font_size)
 {
-   int glyph_width               = 0;
    float scaled_size             = font_size * p_dispwidget->last_scale_factor;
 
    /* Limit minimum font size to keep it readable */
@@ -946,16 +954,43 @@ static void gfx_widgets_font_init(
    font_data->font               = gfx_display_font_file(p_disp,
          font_path, scaled_size, is_threaded);
 
-   /* Get font metadata */
-   glyph_width = font_driver_get_message_width(font_data->font, "a", 1, 1.0f);
-   if (glyph_width > 0)
-      font_data->glyph_width     = (float)glyph_width;
-   font_data->line_height        = (float)font_driver_get_line_height(font_data->font, 1.0f);
-   font_data->line_ascender      = (float)font_driver_get_line_ascender(font_data->font, 1.0f);
-   font_data->line_descender     = (float)font_driver_get_line_descender(font_data->font, 1.0f);
-   font_data->line_centre_offset = (float)font_driver_get_line_centre_offset(font_data->font, 1.0f);
+   /* Get font metadata. gfx_display_font_file() can fail, and there is
+    * no implicit font to fall back on any more, so the approximate
+    * glyph width set above has to stand on its own. */
+   if (font_data->font)
+      gfx_widgets_font_sync(font_data);
 
    font_data->usage_count        = 0;
+}
+
+/* Recompute the derived metrics if the font has been rebuilt since
+ * they were last worked out. Cheap when nothing has changed. The menu
+ * drivers get this from font_flush() via font_driver_sync_impl(), but
+ * widgets keep their own font struct and flush directly. */
+void gfx_widgets_font_sync(gfx_widget_font_data_t *font_data)
+{
+   int glyph_width;
+   uint32_t gen = font_driver_get_generation();
+
+   if (!font_data || !font_data->font)
+      return;
+   if (font_data->metrics_generation == gen)
+      return;
+
+   font_data->metrics_generation = gen;
+
+   {
+      glyph_width                = font_driver_get_message_width(
+            font_data->font, "a", 1, 1.0f);
+      if (glyph_width > 0)
+         font_data->glyph_width  = (float)glyph_width;
+
+      font_data->line_height        = (float)(int)roundf(font_data->font->metrics.height);
+      font_data->line_ascender      = (float)(int)roundf(font_data->font->metrics.ascender);
+      font_data->line_descender     = (float)(int)roundf(font_data->font->metrics.descender);
+      font_data->line_centre_offset = roundf((font_data->font->metrics.ascender
+            - font_data->font->metrics.descender) * 0.5f);
+   }
 }
 
 static void gfx_widgets_layout(
@@ -979,26 +1014,27 @@ static void gfx_widgets_layout(
             is_threaded, p_dispwidget->ozone_bold_font_path, BASE_FONT_SIZE);
 
       /* Create msg_queue font */
-      switch (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE))
       {
-         case RETRO_LANGUAGE_ARABIC:
-         case RETRO_LANGUAGE_PERSIAN:
-            fill_pathname_join_special(font_file, p_dispwidget->assets_pkg_dir, "fallback-font.ttf", sizeof(font_file));
-            break;
-         case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
-         case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-            fill_pathname_join_special(font_file, p_dispwidget->assets_pkg_dir, "chinese-fallback-font.ttf", sizeof(font_file));
-            break;
-         case RETRO_LANGUAGE_KOREAN:
-            fill_pathname_join_special(font_file, p_dispwidget->assets_pkg_dir, "korean-fallback-font.ttf", sizeof(font_file));
-            break;
-         default:
-            strlcpy(font_file, p_dispwidget->ozone_regular_font_path, sizeof(font_file));
-            break;
+         const char *lang_font = font_driver_language_font_file();
+
+         if (lang_font)
+            fill_pathname_join_special(font_file,
+                  p_dispwidget->assets_pkg_dir, lang_font, sizeof(font_file));
+         else
+            strlcpy(font_file, p_dispwidget->ozone_regular_font_path,
+                  sizeof(font_file));
       }
       gfx_widgets_font_init(p_disp, p_dispwidget,
             &p_dispwidget->gfx_widget_fonts.msg_queue,
             is_threaded, font_file, MSG_QUEUE_FONT_SIZE);
+
+      /* Only the message-queue font follows the language; the regular
+       * and bold ones are always the ozone faces. Marking it lets a
+       * language change rebuild it in place. */
+      font_driver_set_language_font(
+            p_dispwidget->gfx_widget_fonts.msg_queue.font,
+            p_dispwidget->assets_pkg_dir,
+            p_dispwidget->ozone_regular_font_path);
    }
    else
    {
@@ -2190,8 +2226,6 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
          &p_dispwidget->gfx_widget_fonts.bold.raster_block.carr);
    video_coord_array_free(
          &p_dispwidget->gfx_widget_fonts.msg_queue.raster_block.carr);
-
-   font_driver_bind_block(NULL, NULL);
 }
 
 static void gfx_widgets_context_reset(

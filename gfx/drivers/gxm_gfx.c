@@ -1613,22 +1613,6 @@ static void gfx_display_gxm_scissor_end(
          0xFF);
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_gxm = {
-   gfx_display_gxm_draw,
-   NULL,                                        /* draw_pipeline */
-   NULL,                                        /* blend_begin   */
-   NULL,                                        /* blend_end     */
-   gfx_display_gxm_get_default_mvp,
-   gfx_display_gxm_get_default_vertices,
-   gfx_display_gxm_get_default_tex_coords,
-   FONT_DRIVER_RENDER_GXM,
-   GFX_VIDEO_DRIVER_GXM,
-   "vita2d",
-   true,
-   gfx_display_gxm_scissor_begin,
-   gfx_display_gxm_scissor_end
-};
-
 /*
  * FONT DRIVER
  */
@@ -1650,7 +1634,7 @@ static void *gxm_font_init(void *data,
 
    if (!font_renderer_create_default(
             &font->font_driver,
-            &font->font_data, font_path, font_size))
+            &font->font_data, font_path, font_size, FONT_ATLAS_FORMAT_A8))
       goto error;
 
    font->atlas   = font->font_driver->get_atlas(font->font_data);
@@ -2003,18 +1987,6 @@ static bool gxm_font_get_line_metrics(void* data,
    return false;
 }
 
-font_renderer_t gxm_font = {
-   gxm_font_init,
-   gxm_font_free,
-   gxm_font_render_msg,
-   "vita2d",
-   gxm_font_get_glyph,
-   NULL,                      /* bind_block */
-   NULL,                      /* flush */
-   gxm_font_get_message_width,
-   gxm_font_get_line_metrics
-};
-
 /*
  * VIDEO DRIVER
  */
@@ -2084,11 +2056,6 @@ static void *gxm_gfx_init(const video_info_t *video,
 #ifdef HAVE_OVERLAY
    vita->overlay_enable     = false;
 #endif
-   font_driver_init_osd(vita,
-         video,
-         false,
-         video->is_threaded,
-         FONT_DRIVER_RENDER_GXM);
 
    return vita;
 }
@@ -2441,7 +2408,6 @@ static void gxm_free(void *data)
       vita->texture = NULL;
    }
 
-   font_driver_free_osd();
 }
 
 static void gxm_set_projection(vita_video_t *vita,
@@ -3010,6 +2976,18 @@ static void gxm_get_overlay_interface(void *data, const video_overlay_interface_
 }
 #endif
 
+static font_renderer_t gxm_font = {
+   gxm_font_init,
+   gxm_font_free,
+   gxm_font_render_msg,
+   "vita2d",
+   gxm_font_get_glyph,
+   NULL,                      /* bind_block */
+   NULL,                      /* flush */
+   gxm_font_get_message_width,
+   gxm_font_get_line_metrics
+};
+
 video_driver_t video_gxm = {
    gxm_gfx_init,
    gxm_frame,
@@ -3034,6 +3012,25 @@ video_driver_t video_gxm = {
    NULL, /* shader_load_begin */
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   gxm_widgets_enabled
+   gxm_widgets_enabled,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &gxm_font
+};
+
+gfx_display_ctx_driver_t gfx_display_ctx_gxm = {
+   gfx_display_gxm_draw,
+   NULL,                                        /* draw_pipeline */
+   NULL,                                        /* blend_begin   */
+   NULL,                                        /* blend_end     */
+   gfx_display_gxm_get_default_mvp,
+   gfx_display_gxm_get_default_vertices,
+   gfx_display_gxm_get_default_tex_coords,
+   &gxm_font,
+   GFX_VIDEO_DRIVER_GXM,
+   "vita2d",
+   true,
+   gfx_display_gxm_scissor_begin,
+   gfx_display_gxm_scissor_end
 };

@@ -29,15 +29,6 @@
 #include <file/nbio.h>
 #include <encodings/utf.h>
 
-/* Assume W-functions do not work below Win2K and Xbox platforms */
-#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX)
-
-#ifndef LEGACY_WIN32
-#define LEGACY_WIN32
-#endif
-
-#endif
-
 #if defined(_WIN32)
 #if defined(_MSC_VER) && _MSC_VER >= 1400
 #define ATLEAST_VC2005
@@ -71,10 +62,11 @@ struct nbio_stdio_t
    signed char mode;
 };
 
-#if !defined(_WIN32) || defined(LEGACY_WIN32)
-static const char    *stdio_modes[] = { "rb", "wb", "r+b", "rb", "wb", "r+b" };
-#else
-static const wchar_t *stdio_modes[] = { L"rb", L"wb", L"r+b", L"rb", L"wb", L"r+b" };
+#if !defined(_WIN32) || defined(LEGACY_WIN32) || defined(LEGACY_WIN32_RUNTIME)
+static const char    *stdio_modes[]  = { "rb", "wb", "r+b", "rb", "wb", "r+b" };
+#endif
+#if defined(_WIN32) && (!defined(LEGACY_WIN32) || defined(LEGACY_WIN32_RUNTIME))
+static const wchar_t *stdio_modes_w[] = { L"rb", L"wb", L"r+b", L"rb", L"wb", L"r+b" };
 #endif
 
 static int64_t fseek_wrap(FILE *f, int64_t offset, int origin)
@@ -106,11 +98,24 @@ static void *nbio_stdio_open(const char * filename, unsigned mode)
    void *buf                   = NULL;
    struct nbio_stdio_t* handle = NULL;
    int64_t len                 = 0;
-#if !defined(_WIN32) || defined(LEGACY_WIN32)
+#if defined(LEGACY_WIN32_RUNTIME)
+   FILE* f;
+
+   if (win32_needs_local_encoding())
+      f                        = fopen(filename, stdio_modes[mode]);
+   else
+   {
+      wchar_t *filename_wide   = utf8_to_utf16_string_alloc(filename);
+      f                        = _wfopen(filename_wide, stdio_modes_w[mode]);
+
+      if (filename_wide)
+         free(filename_wide);
+   }
+#elif !defined(_WIN32) || defined(LEGACY_WIN32)
    FILE* f                     = fopen(filename, stdio_modes[mode]);
 #else
    wchar_t *filename_wide      = utf8_to_utf16_string_alloc(filename);
-   FILE* f                     = _wfopen(filename_wide, stdio_modes[mode]);
+   FILE* f                     = _wfopen(filename_wide, stdio_modes_w[mode]);
 
    if (filename_wide)
       free(filename_wide);
@@ -356,7 +361,7 @@ static void nbio_stdio_set_chunk_size(void *data, size_t chunk_size)
 
 static int nbio_stdio_get_fd(void *data)
 {
-#if !defined(_WIN32) || defined(LEGACY_WIN32)
+#if !defined(_WIN32) || defined(LEGACY_WIN32) || defined(LEGACY_WIN32_RUNTIME)
    struct nbio_stdio_t *handle = (struct nbio_stdio_t*)data;
    if (handle && handle->f)
       return fileno(handle->f);

@@ -22,7 +22,6 @@
 
 #include <ft2build.h>
 
-#include <file/file_path.h>
 #include <streams/file_stream.h>
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
@@ -316,7 +315,8 @@ static const struct font_glyph *font_renderer_ft_get_glyph(
    return &atlas_slot->glyph;
 }
 
-static bool font_renderer_create_atlas(ft_font_renderer_t *handle, float font_size)
+static bool font_renderer_create_atlas(ft_font_renderer_t *handle,
+      float font_size, enum font_atlas_format fmt)
 {
    unsigned i, x, y;
    unsigned max_width, max_height;
@@ -354,7 +354,7 @@ static bool font_renderer_create_atlas(ft_font_renderer_t *handle, float font_si
    atlas_height = (max_height + FT_ATLAS_PADDING) * FT_ATLAS_ROWS;
    /* Higher-precision coverage when the video driver asked for it
     * (HDR output); the atlas then stores uint16_t samples. */
-   handle->atlas.format = font_renderer_get_preferred_atlas_format();
+   handle->atlas.format = fmt;
    atlas_buffer = (uint8_t*)calloc((size_t)atlas_height,
          (size_t)atlas_width *
          ((handle->atlas.format == FONT_ATLAS_FORMAT_A16) ? 2 : 1));
@@ -386,7 +386,9 @@ static bool font_renderer_create_atlas(ft_font_renderer_t *handle, float font_si
    return true;
 }
 
-static void *font_renderer_ft_init(const char *font_path, float font_size)
+static void *font_renderer_ft_init(const char *font_path,
+      uint8_t *font_data_in, size_t font_data_in_len,
+      float font_size, enum font_atlas_format fmt)
 {
    FT_Error err;
 
@@ -403,7 +405,8 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
       goto error;
 
 #ifdef WIIU
-   if (!*font_path)
+   /* No bytes arrived, so use the OS shared font. */
+   if (!font_data_in)
    {
       void* font_data         = NULL;
       uint32_t font_data_size = 0;
@@ -418,9 +421,18 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
    }
    else
 #elif defined(HAVE_FONTCONFIG_SUPPORT)
-   /* if fallback font is requested, instead of loading it, we find the full font in the system */
-   if (!*font_path || strstr(font_path, "fallback"))
+   /* If no bytes arrived, or a fallback font was asked for, look the
+    * real font up in the system instead. The path is consulted here
+    * because "fallback" is a property of what was requested, not of
+    * whether a file was found. */
+   if (!font_data_in || (font_path && strstr(font_path, "fallback")))
    {
+      /* fontconfig supplies its own bytes, so release anything the
+       * caller read for us rather than holding it for the lifetime of
+       * the font. Ownership passed to us either way. */
+      free(font_data_in);
+      font_data_in = NULL;
+
       FcValue locale_boxed;
       uint8_t* font_data     = NULL;
       int64_t font_data_size = 0;
@@ -476,6 +488,10 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
       if (FcPatternGetInteger(found, FC_INDEX, 0,
                &face_index) != FcResultMatch)
          goto fc_cleanup;
+      /* The one read left in this directory. fontconfig resolves a
+       * path here, from the locale and the system configuration, so
+       * font_renderer_create_default() cannot have pre-read it from a
+       * static candidate list. */
       if (!filestream_read_file((const char*)_font_path,
                (void**)&font_data,
                &font_data_size))
@@ -518,21 +534,16 @@ fc_done:
    else
 #endif
    {
-      uint8_t* font_data     = NULL;
-      int64_t font_data_size = 0;
-      /* No path_is_valid() first: filestream_read_file() opens the
-       * file itself and returns 0 when it cannot, so the stat only
-       * repeats the open's own lookup. */
-      if (!filestream_read_file(font_path,
-               (void**)&font_data, &font_data_size))
+      /* Bytes come from font_renderer_create_default(); no file I/O
+       * here. Take ownership before the face is built, not after, so
+       * the error path releases them when FT rejects the font. */
+      if (!font_data_in || !font_data_in_len)
          goto error;
-      if ((err = FT_New_Memory_Face(handle->lib, (const FT_Byte*)font_data,
-            (FT_Long)font_data_size, (FT_Long)0, &handle->face)))
-      {
-         free(font_data);
+      handle->file_data = font_data_in;
+      if ((err = FT_New_Memory_Face(handle->lib,
+            (const FT_Byte*)font_data_in,
+            (FT_Long)font_data_in_len, (FT_Long)0, &handle->face)))
          goto error;
-      }
-      handle->file_data = font_data;
    }
 
    if ((err = FT_Select_Charmap(handle->face, FT_ENCODING_UNICODE)))
@@ -541,7 +552,7 @@ fc_done:
    if ((err = FT_Set_Pixel_Sizes(handle->face, 0, font_size)))
       goto error;
 
-   if (!font_renderer_create_atlas(handle, font_size))
+   if (!font_renderer_create_atlas(handle, font_size, fmt))
       goto error;
 
    handle->line_metrics.ascender  = (float)handle->face->size->metrics.ascender / 64.0f;
@@ -558,8 +569,8 @@ error:
 /* Not the cleanest way to do things for sure,
  * but should hopefully work ... */
 
-static const char *font_paths[] = {
-   /* Assets directory OSD Font, @see font_renderer_ft_get_default_font() */
+static const char * const font_paths[] = {
+   /* Assets directory OSD Font, @see font_renderer_ft_get_default_fonts() */
    "assets://pkg/osd-font.ttf",
 #if defined(_WIN32)
    "C:\\Windows\\Fonts\\consola.ttf",
@@ -586,25 +597,23 @@ static const char *font_paths[] = {
    "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf", /* Debian, Ubuntu */
 #endif
    "osd-font.ttf", /* Magic font to search for, useful for distribution. */
+   NULL
 };
 
 /* Highly OS/platform dependent. */
-static const char *font_renderer_ft_get_default_font(void)
+static const char * const *font_renderer_ft_get_default_fonts(void)
 {
 /* Since fontconfig will return parameters more than a simple path
    we will process these in the init function */
 #if defined(WIIU) || defined(HAVE_FONTCONFIG_SUPPORT)
-   return "";
+   /* Resolved in init() - fontconfig returns more than a path, and
+    * WiiU uses the shared system font. */
+   static const char * const none[] = { "", NULL };
+   return none;
 #else
-   size_t i;
-
-   for (i = 0; i < ARRAY_SIZE(font_paths); i++)
-   {
-      if (path_is_valid(font_paths[i]))
-         return font_paths[i];
-   }
-
-   return NULL;
+   /* Selection happens in font_renderer_create_default(), which is
+    * what keeps path lookups out of this file. */
+   return font_paths;
 #endif
 }
 
@@ -622,7 +631,7 @@ font_renderer_driver_t freetype_font_renderer = {
    font_renderer_ft_get_atlas,
    font_renderer_ft_get_glyph,
    font_renderer_ft_free,
-   font_renderer_ft_get_default_font,
+   font_renderer_ft_get_default_fonts,
    "font_renderer_ft",
    font_renderer_ft_get_line_metrics
 };

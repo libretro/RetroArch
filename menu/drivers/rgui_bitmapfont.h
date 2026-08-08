@@ -17,11 +17,16 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __RARCH_FONT_BITMAP_6X10_H
-#define __RARCH_FONT_BITMAP_6X10_H
+#ifndef __RGUI_BITMAPFONT_H
+#define __RGUI_BITMAPFONT_H
 
-#include "bitmap.h"
+#include "../../gfx/bitmapfont.h"
 
+/* Fixed-size glyph tables loaded from the RGUI font assets. These
+ * are not font renderers: they read the prebuilt .bin tables that
+ * ship alongside RetroArch and hand back a bitmapfont_lut_t. RGUI
+ * is the only caller, which is why they live here rather than in
+ * gfx/drivers_font_renderer/. */
 #define FONT_6X10_WIDTH  6
 #define FONT_6X10_HEIGHT 10
 /* FONT_HEIGHT_BASELINE_OFFSET:
@@ -39,6 +44,20 @@
  * Returns NULL if language is invalid or
  * font file is missing */
 bitmapfont_lut_t *bitmapfont_6x10_load(unsigned language);
+#define FONT_10X10_WIDTH  10
+#define FONT_10X10_HEIGHT 10
+/* FONT_HEIGHT_BASELINE_OFFSET:
+ * Distance in pixels from top of character
+ * to baseline */
+#define FONT_10X10_HEIGHT_BASELINE_OFFSET 8
+#define FONT_10X10_WIDTH_STRIDE (FONT_10X10_WIDTH + 1)
+#define FONT_10X10_HEIGHT_STRIDE (FONT_10X10_HEIGHT + 1)
+
+/* Loads a font of the specified language.
+ * Returned object must be freed using
+ * bitmapfont_free_lut().
+ * Returns NULL if language is invalid or
+ * font file is missing */
+bitmapfont_lut_t *bitmapfont_10x10_load(unsigned language);
 
 #endif
-

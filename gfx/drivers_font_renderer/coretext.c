@@ -32,7 +32,6 @@
 #include <ApplicationServices/ApplicationServices.h>
 #endif
 
-#include <file/file_path.h>
 
 #include "../font_driver.h"
 
@@ -196,7 +195,9 @@ static void font_renderer_ct_free(void *data)
    free(handle);
 }
 
-static bool coretext_font_renderer_create_atlas(CTFontRef face, ct_font_renderer_t *handle, float font_size)
+static bool coretext_font_renderer_create_atlas(CTFontRef face,
+      ct_font_renderer_t *handle, float font_size,
+      enum font_atlas_format fmt)
 {
    unsigned i, x, y;
    coretext_atlas_slot_t* slot = NULL;
@@ -216,7 +217,7 @@ static bool coretext_font_renderer_create_atlas(CTFontRef face, ct_font_renderer
 
    /* Higher-precision coverage when the video driver asked for it
     * (HDR output); the atlas then stores uint16_t samples. */
-   handle->atlas.format        = font_renderer_get_preferred_atlas_format();
+   handle->atlas.format        = fmt;
    handle->atlas.buffer        = (uint8_t*)calloc(
          (size_t)handle->atlas.height,
          (size_t)handle->atlas.width *
@@ -517,7 +518,9 @@ static bool coretext_font_renderer_render_glyph(CTFontRef face, ct_font_renderer
    return true;
 }
 
-static void *font_renderer_ct_init(const char *font_path, float font_size)
+static void *font_renderer_ct_init(const char *font_path,
+      uint8_t *font_data, size_t font_data_len,
+      float font_size, enum font_atlas_format fmt)
 {
    char err                       = 0;
    CFStringRef cf_font_path       = NULL;
@@ -527,11 +530,18 @@ static void *font_renderer_ct_init(const char *font_path, float font_size)
    CGFontRef theCGFont            = NULL;
    ct_font_renderer_t *handle     = (ct_font_renderer_t*)calloc(1, sizeof(*handle));
 
-   if (!handle || !path_is_valid(font_path))
+   /* font_data being non-NULL is proof the path exists - it was read
+    * by font_renderer_create_default() - so no stat is needed here.
+    * CoreText loads by URL, so the bytes themselves are not used;
+    * release them rather than hold them for the font's lifetime. */
+   if (!handle || !font_data || !font_data_len)
    {
+      free(font_data);
       err = 1;
       goto error;
    }
+   free(font_data);
+   font_data = NULL;
 
    if (!(cf_font_path = CFStringCreateWithCString(
                      NULL, font_path, kCFStringEncodingUTF8)))
@@ -591,7 +601,7 @@ static void *font_renderer_ct_init(const char *font_path, float font_size)
       goto error;
    }
 
-   if (!coretext_font_renderer_create_atlas(face, handle, font_size))
+   if (!coretext_font_renderer_create_atlas(face, handle, font_size, fmt))
    {
       err = 1;
       goto error;
@@ -637,12 +647,14 @@ error:
    return handle;
 }
 
-static const char *font_renderer_ct_get_default_font(void)
+static const char * const *font_renderer_ct_get_default_fonts(void)
 {
-   /* We can't tell if a font is going to be there until we actually
-      initialize CoreText and the best way to get fonts is by name, not
-      by path. */
-   return "Verdana";
+   /* A name rather than a path: CoreText looks fonts up by name, and
+    * there is no way to know one is present without initialising it.
+    * font_renderer_create_default() will not find this on disk, which
+    * matches the previous behaviour - init() rejected it too. */
+   static const char * const names[] = { "Verdana", NULL };
+   return names;
 }
 
 static void font_renderer_ct_get_line_metrics(
@@ -659,7 +671,7 @@ font_renderer_driver_t coretext_font_renderer = {
    font_renderer_ct_get_atlas,
    font_renderer_ct_get_glyph,
    font_renderer_ct_free,
-   font_renderer_ct_get_default_font,
+   font_renderer_ct_get_default_fonts,
    "font_renderer_ct",
    font_renderer_ct_get_line_metrics
 };

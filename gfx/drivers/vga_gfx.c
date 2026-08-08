@@ -78,7 +78,7 @@ static void *vga_font_init(void *data,
 
    if (!font_renderer_create_default(
             &font->font_driver,
-            &font->font_data, font_path, font_size))
+            &font->font_data, font_path, font_size, FONT_ATLAS_FORMAT_A8))
       return NULL;
 
    return font;
@@ -106,18 +106,6 @@ static void vga_font_render_msg(
       void *userdata,
       void *data, const char *msg, size_t msg_len,
       const struct font_params *params) { }
-
-font_renderer_t vga_font = {
-   vga_font_init,
-   vga_font_render_free,
-   vga_font_render_msg,
-   "vga",
-   vga_font_get_glyph,         /* get_glyph */
-   NULL,                       /* bind_block */
-   NULL,                       /* flush */
-   vga_font_get_message_width, /* get_message_width */
-   NULL                        /* get_line_metrics */
-};
 
 /*
  * VIDEO DRIVER
@@ -217,10 +205,6 @@ static void *vga_gfx_init(const video_info_t *video,
 
    vga_gfx_create();
 
-      font_driver_init_osd(NULL,
-            video,
-            false,
-            video->is_threaded, FONT_DRIVER_RENDER_VGA);
 
    return vga;
 }
@@ -507,6 +491,18 @@ static void vga_gfx_viewport_info(void *data, struct video_viewport *vp)
    vp->height = vp->full_height = VGA_HEIGHT;
 }
 
+static font_renderer_t vga_font = {
+   vga_font_init,
+   vga_font_render_free,
+   vga_font_render_msg,
+   "vga",
+   vga_font_get_glyph,         /* get_glyph */
+   NULL,                       /* bind_block */
+   NULL,                       /* flush */
+   vga_font_get_message_width, /* get_message_width */
+   NULL                        /* get_line_metrics */
+};
+
 video_driver_t video_vga = {
    vga_gfx_init,
    vga_gfx_frame,
@@ -531,6 +527,9 @@ video_driver_t video_vga = {
    NULL, /* shader_load_begin */
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   NULL  /* gfx_widgets_enabled */
+   NULL  /* gfx_widgets_enabled */,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &vga_font
 };

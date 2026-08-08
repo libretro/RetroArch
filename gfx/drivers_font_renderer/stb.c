@@ -20,8 +20,6 @@
 #include <math.h>
 #include <stdint.h>
 
-#include <file/file_path.h>
-#include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <retro_miscellaneous.h>
 
@@ -98,19 +96,14 @@ static uint16_t rtt__u16(const rtt_font_t *f, uint32_t off)
    return (uint16_t)((f->data[off] << 8) | f->data[off + 1]);
 }
 
-static int16_t rtt__s16(const rtt_font_t *f, uint32_t off)
-{
-   return (int16_t)rtt__u16(f, off);
-}
-
 static uint32_t rtt__u32(const rtt_font_t *f, uint32_t off)
 {
    if (off + 4 > f->size || off + 4 < off)
       return 0;
-   return ((uint32_t)f->data[off]     << 24) |
-          ((uint32_t)f->data[off + 1] << 16) |
-          ((uint32_t)f->data[off + 2] <<  8) |
-          ((uint32_t)f->data[off + 3]);
+   return  ( (uint32_t)f->data[off]     << 24)
+          | ((uint32_t)f->data[off + 1] << 16)
+          | ((uint32_t)f->data[off + 2] <<  8)
+          | ((uint32_t)f->data[off + 3]);
 }
 
 /* ------------------------------------------------------------------ */
@@ -250,7 +243,7 @@ static int rtt_init(rtt_font_t *f, const uint8_t *data, size_t size,
    f->head         = head;
    f->hhea         = hhea;
    f->units_per_em = rtt__u16(f, head + 18);
-   f->loca_long    = rtt__s16(f, head + 50) != 0;
+   f->loca_long    = (int16_t)rtt__u16(f, head + 50) != 0;
    f->num_glyphs   = rtt__u16(f, maxp + 4);
    f->num_hmetrics = rtt__u16(f, hhea + 34);
 
@@ -379,12 +372,12 @@ static void rtt_glyph_hmetrics(const rtt_font_t *f, int gi,
    if (gi < nh)
    {
       if (advance) *advance = rtt__u16(f, f->hmtx + 4 * (uint32_t)gi);
-      if (lsb)     *lsb     = rtt__s16(f, f->hmtx + 4 * (uint32_t)gi + 2);
+      if (lsb)     *lsb     = (int16_t)rtt__u16(f, f->hmtx + 4 * (uint32_t)gi + 2);
    }
    else
    {
       if (advance) *advance = rtt__u16(f, f->hmtx + 4 * ((uint32_t)nh - 1));
-      if (lsb)     *lsb     = rtt__s16(f, f->hmtx + 4 * (uint32_t)nh
+      if (lsb)     *lsb     = (int16_t)rtt__u16(f, f->hmtx + 4 * (uint32_t)nh
             + 2 * ((uint32_t)gi - (uint32_t)nh));
    }
 }
@@ -418,24 +411,24 @@ static int rtt_glyph_box(const rtt_font_t *f, int gi,
    uint32_t g = rtt__glyf_offset(f, gi, &glen);
    if (!g || glen < 10)
       return 0;
-   if (x0) *x0 = rtt__s16(f, g + 2);
-   if (y0) *y0 = rtt__s16(f, g + 4);
-   if (x1) *x1 = rtt__s16(f, g + 6);
-   if (y1) *y1 = rtt__s16(f, g + 8);
+   if (x0) *x0 = (int16_t)rtt__u16(f, g + 2);
+   if (y0) *y0 = (int16_t)rtt__u16(f, g + 4);
+   if (x1) *x1 = (int16_t)rtt__u16(f, g + 6);
+   if (y1) *y1 = (int16_t)rtt__u16(f, g + 8);
    return 1;
 }
 
 static void rtt_vmetrics(const rtt_font_t *f, int *ascent, int *descent,
       int *line_gap)
 {
-   if (ascent)   *ascent   = rtt__s16(f, f->hhea + 4);
-   if (descent)  *descent  = rtt__s16(f, f->hhea + 6);
-   if (line_gap) *line_gap = rtt__s16(f, f->hhea + 8);
+   if (ascent)   *ascent   = (int16_t)rtt__u16(f, f->hhea + 4);
+   if (descent)  *descent  = (int16_t)rtt__u16(f, f->hhea + 6);
+   if (line_gap) *line_gap = (int16_t)rtt__u16(f, f->hhea + 8);
 }
 
 static float rtt_scale_for_pixel_height(const rtt_font_t *f, float h)
 {
-   int fh = rtt__s16(f, f->hhea + 4) - rtt__s16(f, f->hhea + 6);
+   int fh = (int16_t)rtt__u16(f, f->hhea + 4) - (int16_t)rtt__u16(f, f->hhea + 6);
    if (fh == 0)
       return 0.0f;
    return h / (float)fh;
@@ -937,7 +930,7 @@ static int rtt__walk_glyph(const rtt_font_t *f, rtt__raster_t *r,
    if (!g || glen < 10 || depth > RTT_MAX_COMPOSITE_DEPTH)
       return 0;
 
-   ncont = rtt__s16(f, g);
+   ncont = (int16_t)rtt__u16(f, g);
 
    if (ncont >= 0)
    {
@@ -991,7 +984,7 @@ static int rtt__walk_glyph(const rtt_font_t *f, rtt__raster_t *r,
             }
             else if (!(fl & 0x10))
             {
-               v += rtt__s16(f, p);
+               v += (int16_t)rtt__u16(f, p);
                p += 2;
             }
             xs[i] = (float)v;
@@ -1010,7 +1003,7 @@ static int rtt__walk_glyph(const rtt_font_t *f, rtt__raster_t *r,
             }
             else if (!(fl & 0x20))
             {
-               v += rtt__s16(f, p);
+               v += (int16_t)rtt__u16(f, p);
                p += 2;
             }
             ys[i] = (float)v;
@@ -1133,8 +1126,8 @@ simple_done:
          {
             if (fl & 0x0002) /* ARGS_ARE_XY_VALUES */
             {
-               dx = (float)rtt__s16(f, p);
-               dy = (float)rtt__s16(f, p + 2);
+               dx = (float)(int16_t)rtt__u16(f, p);
+               dy = (float)(int16_t)rtt__u16(f, p + 2);
             }
             p += 4;
          }
@@ -1153,21 +1146,21 @@ simple_done:
          cm.b = cm.c = 0.0f;
          if (fl & 0x0008) /* WE_HAVE_A_SCALE */
          {
-            cm.a = cm.d = (float)rtt__s16(f, p) / 16384.0f;
+            cm.a = cm.d = (float)(int16_t)rtt__u16(f, p) / 16384.0f;
             p += 2;
          }
          else if (fl & 0x0040) /* X_AND_Y_SCALE */
          {
-            cm.a = (float)rtt__s16(f, p)     / 16384.0f;
-            cm.d = (float)rtt__s16(f, p + 2) / 16384.0f;
+            cm.a = (float)(int16_t)rtt__u16(f, p)     / 16384.0f;
+            cm.d = (float)(int16_t)rtt__u16(f, p + 2) / 16384.0f;
             p += 4;
          }
          else if (fl & 0x0080) /* 2x2 */
          {
-            cm.a = (float)rtt__s16(f, p)     / 16384.0f;
-            cm.b = (float)rtt__s16(f, p + 2) / 16384.0f;
-            cm.c = (float)rtt__s16(f, p + 4) / 16384.0f;
-            cm.d = (float)rtt__s16(f, p + 6) / 16384.0f;
+            cm.a = (float)(int16_t)rtt__u16(f, p)     / 16384.0f;
+            cm.b = (float)(int16_t)rtt__u16(f, p + 2) / 16384.0f;
+            cm.c = (float)(int16_t)rtt__u16(f, p + 4) / 16384.0f;
+            cm.d = (float)(int16_t)rtt__u16(f, p + 6) / 16384.0f;
             p += 8;
          }
 
@@ -1278,6 +1271,8 @@ static void rtt_render_glyph(const rtt_font_t *f, void *dst,
 /* ==================== end cleanroom TrueType ==================== */
 
 
+#include "../bitmapfont.h"
+
 #define STB_ATLAS_ROWS 16
 #define STB_ATLAS_COLS 16
 #define STB_ATLAS_SIZE (STB_ATLAS_ROWS * STB_ATLAS_COLS)
@@ -1315,7 +1310,82 @@ typedef struct
    unsigned usage_counter;
    float scale_factor;
    struct font_line_metrics line_metrics; /* float alignment */
+   /* No usable TTF was found, so the atlas holds the built-in 5x10
+    * glyphs instead. All 256 are rasterised up front, nothing is
+    * evicted, and get_glyph never reaches the TrueType path. */
+   bool builtin;
 } stb_font_renderer_t;
+
+/* Built-in fallback: the 5x10 bitmap in bitmap.h, scaled to the
+ * requested size. Used when no TrueType font can be found, so that
+ * on-screen text still appears on a system with no fonts installed
+ * and no assets downloaded. STB_ATLAS_SIZE is 256, which is exactly
+ * the number of glyphs the bitmap holds, so the existing slot array
+ * carries them and no separate allocation is needed. */
+static bool font_renderer_stb_init_builtin(
+      stb_font_renderer_t *self, float font_size)
+{
+   unsigned i, scale;
+
+   if (!(scale = (unsigned)roundf(font_size / FONT_HEIGHT)))
+      scale = 1;
+
+   self->atlas.width  = (1 + (FONT_WIDTH  * scale)) * STB_ATLAS_COLS;
+   self->atlas.height = (1 + (FONT_HEIGHT * scale)) * STB_ATLAS_ROWS;
+   self->atlas.format = FONT_ATLAS_FORMAT_A8;
+
+   if (!(self->atlas.buffer = (uint8_t*)calloc(
+               (size_t)self->atlas.width * self->atlas.height, 1)))
+      return false;
+
+   for (i = 0; i < STB_ATLAS_SIZE; i++)
+   {
+      stb_atlas_slot_t *slot = &self->atlas_slots[i];
+      unsigned ax            = (i % STB_ATLAS_COLS) * (1 + (scale * FONT_WIDTH));
+      unsigned ay            = (i / STB_ATLAS_COLS) * (1 + (scale * FONT_HEIGHT));
+      unsigned x, y;
+
+      for (y = 0; y < FONT_HEIGHT; y++)
+      {
+         for (x = 0; x < FONT_WIDTH; x++)
+         {
+            unsigned px    = x + y * FONT_WIDTH;
+            uint8_t  col   = (bitmap_bin[FONT_OFFSET(i) + (px >> 3)]
+                              & (1 << (px & 7))) ? 0xff : 0;
+            uint8_t *dst   = self->atlas.buffer
+                           + (ax + x * scale)
+                           + (size_t)(ay + y * scale) * self->atlas.width;
+            unsigned xo, yo;
+
+            for (yo = 0; yo < scale; yo++)
+               for (xo = 0; xo < scale; xo++)
+                  dst[xo + (size_t)yo * self->atlas.width] = col;
+         }
+      }
+
+      slot->charcode              = i;
+      slot->last_used             = 1;
+      slot->glyph.width           = FONT_WIDTH  * scale;
+      slot->glyph.height          = FONT_HEIGHT * scale;
+      slot->glyph.atlas_offset_x  = ax;
+      slot->glyph.atlas_offset_y  = ay;
+      slot->glyph.draw_offset_x   = 0;
+      slot->glyph.draw_offset_y   = 1 - FONT_HEIGHT_BASELINE_OFFSET * (int)scale;
+      slot->glyph.advance_x       = FONT_WIDTH_STRIDE * scale;
+      slot->glyph.advance_y       = 0;
+
+      slot->next                  = self->uc_map[STB_HASH(i)];
+      self->uc_map[STB_HASH(i)]   = slot;
+   }
+
+   self->line_metrics.ascender  = (float)FONT_HEIGHT_BASELINE_OFFSET * scale;
+   self->line_metrics.descender = (float)(FONT_HEIGHT
+         - FONT_HEIGHT_BASELINE_OFFSET) * scale;
+   self->line_metrics.height    = (float)FONT_HEIGHT_STRIDE * scale;
+   self->atlas.dirty            = true;
+   self->builtin                = true;
+   return true;
+}
 
 static struct font_atlas *font_renderer_stb_get_atlas(void *data)
 {
@@ -1416,6 +1486,19 @@ static const struct font_glyph *font_renderer_stb_get_glyph(
    map_id                               = STB_HASH(charcode);
    atlas_slot                           = self->uc_map[map_id];
 
+   if (self->builtin)
+   {
+      /* Every glyph the built-in font has is already in the atlas, so
+       * a miss means the codepoint is simply not representable. */
+      while (atlas_slot)
+      {
+         if (atlas_slot->charcode == charcode)
+            return &atlas_slot->glyph;
+         atlas_slot = atlas_slot->next;
+      }
+      return NULL;
+   }
+
    while (atlas_slot)
    {
       if (atlas_slot->charcode == charcode)
@@ -1492,8 +1575,9 @@ static const struct font_glyph *font_renderer_stb_get_glyph(
    return &atlas_slot->glyph;
 }
 
-static bool font_renderer_stb_create_atlas(
-      stb_font_renderer_t *self, float font_size)
+static bool font_renderer_stb_create_atlas_fmt(
+      stb_font_renderer_t *self, float font_size,
+      enum font_atlas_format fmt)
 {
    unsigned i, x, y;
    stb_atlas_slot_t* slot = NULL;
@@ -1517,7 +1601,7 @@ static bool font_renderer_stb_create_atlas(
    self->atlas.height             = (self->max_glyph_height + STB_ATLAS_PADDING) * STB_ATLAS_ROWS;
    /* Higher-precision coverage when the video driver asked for it
     * (HDR output); the atlas then stores uint16_t samples. */
-   self->atlas.format             = font_renderer_get_preferred_atlas_format();
+   self->atlas.format             = fmt;
 
    /* Pass the two dimensions separately so the C library's calloc overflow
     * check applies, rather than pre-multiplying into a single argument. */
@@ -1550,11 +1634,16 @@ static bool font_renderer_stb_create_atlas(
    return true;
 }
 
-static void *font_renderer_stb_init(const char *font_path, float font_size)
+static void *font_renderer_stb_init(const char *font_path,
+      uint8_t *font_data, size_t font_data_len,
+      float font_size, enum font_atlas_format fmt)
 {
    int ascent, descent, line_gap;
    stb_font_renderer_t *self =
       (stb_font_renderer_t*)calloc(1, sizeof(*self));
+
+   /* font_path is unused: what matters is whether bytes arrived. */
+   (void)font_path;
 
    if (!self || font_size < 1.0f)
       goto error;
@@ -1564,7 +1653,7 @@ static void *font_renderer_stb_init(const char *font_path, float font_size)
    font_size = -font_size;
 
 #ifdef WIIU
-   if (!*font_path)
+   if (!font_data)
    {
       uint32_t size = 0;
       /* OS-owned shared memory: borrowed, not owned - must not be freed. */
@@ -1575,16 +1664,21 @@ static void *font_renderer_stb_init(const char *font_path, float font_size)
    }
    else
 #endif
+   if (!font_data || !font_data_len)
    {
-      int64_t len = 0;
-      /* filestream_read_file() opens the file and returns 0 if it
-       * cannot, so a path_is_valid() stat first only repeats that
-       * lookup. */
-      if (!filestream_read_file(font_path, (void**)&self->font_data, &len))
+      /* Nothing was loaded for us - either no candidate existed or it
+       * could not be read - so fall back to the built-in glyphs. The
+       * path is not consulted: this renderer does no file I/O, so the
+       * bytes are the only thing that says whether a font arrived. */
+      if (!font_renderer_stb_init_builtin(self, -font_size))
          goto error;
-      if (len <= 0)
-         goto error;
-      self->font_data_size  = (size_t)len;
+      return self;
+   }
+   else
+   {
+      /* Ownership transfers on success. */
+      self->font_data       = font_data;
+      self->font_data_size  = font_data_len;
       self->font_data_owned = true;
    }
 
@@ -1617,7 +1711,7 @@ static void *font_renderer_stb_init(const char *font_path, float font_size)
    self->line_metrics.descender = 0.5f + ((float)(-descent) * self->scale_factor);
    self->line_metrics.height    = 0.5f + (float)(ascent - descent + line_gap) * self->scale_factor;
 
-   if (!font_renderer_stb_create_atlas(self, font_size))
+   if (!font_renderer_stb_create_atlas_fmt(self, font_size, fmt))
       goto error;
 
    return self;
@@ -1628,12 +1722,14 @@ error:
    return NULL;
 }
 
-static const char *font_renderer_stb_get_default_font(void)
+static const char * const *font_renderer_stb_get_default_fonts(void)
 {
 #ifdef WIIU
-   return "";
+   /* The shared system font, fetched in init(); no file to open. */
+   static const char * const wiiu_paths[] = { "", NULL };
+   return wiiu_paths;
 #else
-   static const char *paths[] = {
+   static const char * const paths[] = {
 #if defined(_WIN32) && !defined(__WINRT__)
       "C:\\Windows\\Fonts\\consola.ttf",
       "C:\\Windows\\Fonts\\verdana.ttf",
@@ -1672,16 +1768,12 @@ static const char *font_renderer_stb_get_default_font(void)
       "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
       "osd-font.ttf",
 #endif
+      "",              /* built-in glyphs, no file needed */
       NULL
    };
 
-   const char **p;
-
-   for (p = paths; *p; ++p)
-      if (path_is_valid(*p))
-         return *p;
-
-   return NULL;
+   /* The empty entry is the fallback: no file, built-in glyphs. */
+   return paths;
 #endif
 }
 
@@ -1697,7 +1789,7 @@ font_renderer_driver_t stb_font_renderer = {
    font_renderer_stb_get_atlas,
    font_renderer_stb_get_glyph,
    font_renderer_stb_free,
-   font_renderer_stb_get_default_font,
+   font_renderer_stb_get_default_fonts,
    "font_renderer_stb",
    font_renderer_stb_get_line_metrics
 };

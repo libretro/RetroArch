@@ -228,6 +228,12 @@ START_TEST (test_strlcat)
    ck_assert(!memcmp(buf1, "foooooo\0", 8));
    ck_assert_uint_eq(13, strlcat(buf1, "123456", sizeof(buf1)));
    ck_assert(!memcmp(buf1, "foooooo\0", 8));
+   /* No NUL within sizeof(buf1): the destination must not be read
+    * past its end, nothing is written, and the return value is
+    * sizeof(buf1) + strlen(source). */
+   memset(buf1, 'f', sizeof(buf1));
+   ck_assert_uint_eq(11, strlcat(buf1, "foo", sizeof(buf1)));
+   ck_assert(!memcmp(buf1, "ffffffff", 8));
 }
 END_TEST
 

@@ -2127,8 +2127,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                            "refused (HDR output is off).\n");
                      return false;
                   }
-                  if (!video_driver_test_all_flags(
-                           GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE))
+                  if (!video_driver_supports_10bit_source())
                   {
                      RARCH_LOG("[Environ] SET_PIXEL_FORMAT: HDR10_2101010 "
                            "refused (video driver has no 10-bit source "

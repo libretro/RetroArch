@@ -6,7 +6,8 @@ layout(location = 0) out vec2 vTexCoord;
 layout(set = 0, binding = 0, std140) uniform UBO
 {
    mat4 MVP;
-   vec4 hdr_params; /* x = paper white nits, y = expand gamut mode */
+   /* See hdr_scrgb.frag; layout must match. */
+   vec4 hdr_params;
 } global;
 
 void main()

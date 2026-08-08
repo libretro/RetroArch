@@ -350,11 +350,7 @@
 #define SUPPORTS_FREETYPE false
 #endif
 
-#ifdef HAVE_STB_FONT
 #define SUPPORTS_STBFONT true
-#else
-#define SUPPORTS_STBFONT false
-#endif
 
 #ifdef HAVE_NETWORKING
 #define SUPPORTS_NETPLAY true

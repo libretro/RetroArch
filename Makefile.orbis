@@ -66,7 +66,6 @@ else
 	HAVE_MENU							:= 1
 	HAVE_MENU_COMMON			:= 1
 	HAVE_RGUI							:= 1
-	HAVE_STB_FONT					:= 1
 	HAVE_RVORBIS				:= 1
 	HAVE_RFLAC					:= 1
 	HAVE_RMP3						:= 1

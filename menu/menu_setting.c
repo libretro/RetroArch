@@ -8934,16 +8934,24 @@ static void general_write_handler(rarch_setting_t *setting)
      case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
          core_set_poll_type(*setting->value.target.integer);
          break;
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && defined(HAVE_MENU)
       case MENU_ENUM_LABEL_USER_LANGUAGE:
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && defined(HAVE_MENU)
          /* The native Win32 menubar bakes translated strings at
           * menu-creation time (popup headers in particular have no
           * resource ID and so are not walked by win32_localize_menu
           * afterwards). Rebuild the whole menubar so every string -
           * including popup headers - reflects the new language. */
          win32_menubar_rebuild();
-         break;
 #endif
+         /* Arabic and Persian, Chinese and Korean each want a
+          * different face. Rebuild the fonts that follow the language
+          * where they stand: each font_data_t keeps its address, so
+          * nothing holding one has to be told, and the generation bump
+          * makes the derived metrics recompute on the next frame.
+          * A context reset would do it too, at the cost of tearing
+          * down video, audio and input to change a typeface. */
+         font_driver_reload_fonts();
+         break;
       case MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER:
          {
             video_driver_state_t *video_st       = video_state_get_ptr();

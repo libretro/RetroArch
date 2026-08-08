@@ -5262,19 +5262,8 @@ bool input_core_set_sensor_state(unsigned port,
          break;
    }
 
-   /* For accel/gyro, the poll loop reconciles core/shader/frontend
-    * state and manages driver enable/disable. For other sensor types,
-    * pass through to the driver directly. */
-   switch (action)
-   {
-      case RETRO_SENSOR_ACCELEROMETER_ENABLE:
-      case RETRO_SENSOR_ACCELEROMETER_DISABLE:
-      case RETRO_SENSOR_GYROSCOPE_ENABLE:
-      case RETRO_SENSOR_GYROSCOPE_DISABLE:
-         return true;
-      default:
-         return input_set_sensor_state(port, action, rate);
-   }
+   /* pass through to the driver directly. */
+   return input_set_sensor_state(port, action, rate);
 }
 
 float input_core_get_sensor_state(unsigned port, unsigned id)

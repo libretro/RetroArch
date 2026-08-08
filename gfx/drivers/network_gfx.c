@@ -114,11 +114,6 @@ static void *network_gfx_init(const video_info_t *video,
    gfx_ctx_network_input_driver(joypad_driver,
          input, input_data);
 
-      font_driver_init_osd(network,
-            video,
-            false,
-            video->is_threaded,
-            FONT_DRIVER_RENDER_NETWORK_VIDEO);
 
    strlcpy(network->address, xstr(NETWORK_VIDEO_HOST), sizeof(network->address));
    network->port = NETWORK_VIDEO_PORT;
@@ -369,7 +364,6 @@ static void network_gfx_free(void *data)
    network_menu_frame_cap = 0;
    network_video_temp_buf = NULL;
 
-   font_driver_free_osd();
 
    if (network->fd >= 0)
       socket_close(network->fd);

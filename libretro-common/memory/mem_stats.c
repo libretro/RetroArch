@@ -493,12 +493,17 @@ uint64_t mem_stats_free(void)
       vm_statistics_data_t   vm_stat;
       mach_msg_type_number_t count     = HOST_VM_INFO_COUNT;
       mach_port_t            host      = mach_host_self();
+      uint64_t               avail     = 0;
       if (     host_page_size(host, &page_size) == KERN_SUCCESS
             && host_statistics(host, HOST_VM_INFO, (host_info_t)&vm_stat,
                   &count) == KERN_SUCCESS)
-         return ((uint64_t)vm_stat.free_count
+         avail = ((uint64_t)vm_stat.free_count
                + (uint64_t)vm_stat.inactive_count) * (uint64_t)page_size;
-      return 0;
+      /* mach_host_self() hands back a send right the caller owns. Both
+       * exits used to return without releasing it, leaking a user
+       * reference on the host port every time the memory readout ran. */
+      mach_port_deallocate(mach_task_self(), host);
+      return avail;
    }
 #else /* the iOS family */
    {
