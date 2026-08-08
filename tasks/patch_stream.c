@@ -501,7 +501,7 @@ static void patch_stream_ups_run(patch_stream_t *ps)
          return;
       }
 
-      while (skip--)
+      while (skip)
       {
          if (ps->s_off < ps->src_len && !patch_stream_ups_src_ready(ps))
          {
@@ -510,7 +510,23 @@ static void patch_stream_ups_run(patch_stream_t *ps)
             ps->t_off = save_t;
             return;
          }
+
+         /* Once both cursors are past their buffers the body of this
+          * walk reads nothing and writes nothing - patch_stream_ups_src
+          * returns 0 without touching the carry and
+          * patch_stream_ups_out drops the byte - so it is pure cursor
+          * arithmetic whose result no later step can observe, and the
+          * remaining iterations can be dropped.  Rejecting the skip
+          * outright is not an option: the whole-buffer applier lets a
+          * run overshoot the target and this reader has to match it.
+          * Without the fold, a skip varint is bounded only by the
+          * decoder, and a well-formed one encoding 2^60 walks for
+          * hours - a 27-byte UPS file hangs content loading. */
+         if (ps->s_off >= ps->src_len && ps->t_off >= ps->tgt_len)
+            break;
+
          patch_stream_ups_out(ps, patch_stream_ups_src(ps));
+         skip--;
       }
 
       for (;;)
