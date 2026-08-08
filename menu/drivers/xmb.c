@@ -437,6 +437,12 @@ typedef struct xmb_handle
    int icon_size;
    int cursor_size;
    int wideglyph_width;
+   /* The string wideglyph_width was measured from, and the
+    * font_driver generation it was measured at. A font rebuilt
+    * underneath - a language switch picks a different face - moves
+    * the generation and the width is worked out again. */
+   const char *wideglyph_str;
+   uint32_t wideglyph_generation;
 
    unsigned categories_active_idx;
    unsigned categories_active_idx_old;
@@ -7479,6 +7485,34 @@ static const char *xmb_texture_path(unsigned id)
 }
 
 
+/* xmb keeps no font_data_impl_t, so it does not get the refresh
+ * font_flush() gives ozone and materialui. Only wideglyph_width is
+ * derived from the face here, so that is all there is to redo. */
+static void xmb_sync_wideglyph(xmb_handle_t *xmb)
+{
+   uint32_t gen = font_driver_get_generation();
+
+   if (!xmb || !xmb->font)
+      return;
+   if (xmb->wideglyph_generation == gen)
+      return;
+
+   xmb->wideglyph_generation = gen;
+   xmb->wideglyph_width      = 100;
+
+   if (xmb->wideglyph_str)
+   {
+      int char_width      = font_driver_get_message_width(
+            xmb->font, "a", 1, 1.0f);
+      int wideglyph_width = font_driver_get_message_width(
+            xmb->font, xmb->wideglyph_str,
+            strlen(xmb->wideglyph_str), 1.0f);
+
+      if (wideglyph_width > 0 && char_width > 0)
+         xmb->wideglyph_width = wideglyph_width * 100 / char_width;
+   }
+}
+
 static void xmb_context_reset_textures(
       xmb_handle_t *xmb,
       const char *iconpath,
@@ -7598,18 +7632,9 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
    xmb->font2           = gfx_display_font_file(p_disp,
          fontpath, xmb->font2_size, is_threaded);
 
-   xmb->wideglyph_width = 100;
-
-   if (wideglyph_str)
-   {
-      int char_width      = font_driver_get_message_width(
-            xmb->font, "a", 1, 1.0f);
-      int wideglyph_width = font_driver_get_message_width(
-            xmb->font, wideglyph_str, strlen(wideglyph_str), 1.0f);
-
-      if (wideglyph_width > 0 && char_width > 0)
-         xmb->wideglyph_width = wideglyph_width * 100 / char_width;
-   }
+   xmb->wideglyph_str        = wideglyph_str;
+   xmb->wideglyph_generation = 0;
+   xmb_sync_wideglyph(xmb);
 
    if (reinit_textures)
    {
@@ -10034,6 +10059,10 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
     * Cleared after the last ctx-destroyed guard so that a context
     * death mid-frame leaves the flag set for the retry. */
    xmb->is_first_frame = false;
+
+   /* Pick up a font rebuilt since the last frame before the next one
+    * lays out with a stale width. */
+   xmb_sync_wideglyph(xmb);
 
    if (xmb->font && xmb->font->renderer && xmb->font->renderer->flush)
       xmb->font->renderer->flush(video_width,
