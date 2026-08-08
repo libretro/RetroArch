@@ -339,7 +339,7 @@ void cdzl_codec_free(void *codec)
 
 chd_error cdzl_codec_decompress(void *codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen)
 {
-	uint32_t framenum;
+	uint32_t framenum, complen_base;
 	cdzl_codec_data* cdzl = (cdzl_codec_data*)codec;
 
 	/* determine header bytes */
@@ -360,7 +360,7 @@ chd_error cdzl_codec_decompress(void *codec, const uint8_t *src, uint32_t comple
 	if (complen < header_bytes)
 		return CHDERR_DECOMPRESSION_ERROR;
 	/* extract compressed length of base */
-	uint32_t complen_base = (src[ecc_bytes + 0] << 8) | src[ecc_bytes + 1];
+	complen_base = (src[ecc_bytes + 0] << 8) | src[ecc_bytes + 1];
 	if (complen_bytes > 2)
 		complen_base = (complen_base << 8) | src[ecc_bytes + 2];
 
