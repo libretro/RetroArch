@@ -656,9 +656,18 @@ static INLINE void map_extract(const uint8_t *base, map_entry *entry)
 /*-------------------------------------------------
     map_size_v5 - calculate CHDv5 map size
 -------------------------------------------------*/
-static INLINE int map_size_v5(chd_header* header)
+static INLINE uint64_t map_size_v5(chd_header* header)
 {
-	return header->hunkcount * header->mapentrybytes;
+	/* Computed in 64 bits and returned as such. hunkcount is derived from
+	 * logicalbytes and hunkbytes, both attacker-controlled header fields,
+	 * so it reaches into the billions; multiplied by mapentrybytes the
+	 * product overflowed the uint32_t arithmetic and was then converted to
+	 * a signed int, frequently landing negative. malloc() and core_fread()
+	 * take size_t, so a negative int widened to an enormous request -
+	 * observed asking for 0xffffffffc0000000 bytes off a corrupt image.
+	 * In 64 bits there is no overflow and an implausible size simply fails
+	 * the allocation, which callers already handle. */
+	return (uint64_t)header->hunkcount * (uint64_t)header->mapentrybytes;
 }
 
 
@@ -692,15 +701,17 @@ static chd_error decompress_v5_map(chd_file* chd, chd_header* header)
 	struct huffman_decoder* decoder;
 	enum huffman_error err;
 	uint64_t curoffset;
-	int rawmapsize = map_size_v5(header);
+	uint64_t rawmapsize = map_size_v5(header);
 
 	if (!chd_compressed(header))
 	{
-		header->rawmap = (uint8_t*)malloc(rawmapsize);
+		if (rawmapsize > (uint64_t)((size_t)-1))
+			return CHDERR_INVALID_DATA;
+		header->rawmap = (uint8_t*)malloc((size_t)rawmapsize);
 		if (header->rawmap == NULL)
 			return CHDERR_OUT_OF_MEMORY;
 		core_fseek(chd->file, header->mapoffset, SEEK_SET);
-		core_fread(chd->file, header->rawmap, rawmapsize);
+		core_fread(chd->file, header->rawmap, (size_t)rawmapsize);
 		return CHDERR_NONE;
 	}
 
@@ -714,14 +725,59 @@ static chd_error decompress_v5_map(chd_file* chd, chd_header* header)
 	selfbits = rawbuf[13];
 	parentbits = rawbuf[14];
 
+	/* These are single bytes from the image, so 0..255, and they are fed
+	 * straight to bitstream_read() below as the bit count. bitstream_peek
+	 * computes `buffer >> (32 - numbits)` on a uint32_t accumulator, so
+	 * anything above 32 is a negative shift and undefined behaviour.
+	 * Widths above 32 are meaningless for a 32-bit read in any case.
+	 *
+	 * Unlike the other two problems addressed here this one is reasoned
+	 * rather than reproduced: reaching the reads requires a valid huffman
+	 * tree earlier in the map, which the fuzzer did not manage to
+	 * construct, so it is guarded on principle rather than on a
+	 * reproducer. No writer emits these values - the widths are derived
+	 * from hunk counts and lengths - so rejecting them cannot turn away a
+	 * legitimate image. */
+	if (lengthbits > 32 || selfbits > 32 || parentbits > 32)
+		return CHDERR_INVALID_DATA;
+
 	/* now read the map */
+	{
+		/* mapbytes is a 32-bit field taken straight from the image, so a
+		 * few hundred bytes of file can ask for up to 4 GB. Taking it at
+		 * face value is wrong twice over: the allocation alone is a
+		 * memory-exhaustion denial of service, and core_fread's count is
+		 * discarded below, so a short read leaves the tail of the buffer
+		 * uninitialised and the bitstream decoder consumes whatever the
+		 * heap happened to hold - uninitialised memory steering control
+		 * flow. mapoffset is unvalidated too, so the seek can land past
+		 * the end and leave the buffer entirely uninitialised.
+		 *
+		 * Bound it by what the file actually contains, the same check
+		 * read_metadata already makes against core_fsize. The subtraction
+		 * is ordered so it cannot wrap. */
+		uint64_t filesize = (uint64_t)core_fsize(chd->file);
+		uint64_t mapstart = header->mapoffset + 16;
+
+		if (mapstart > filesize || (uint64_t)mapbytes > filesize - mapstart)
+			return CHDERR_INVALID_DATA;
+	}
+
 	compressed_ptr = (uint8_t*)malloc(sizeof(uint8_t) * mapbytes);
 	if (compressed_ptr == NULL)
 		return CHDERR_OUT_OF_MEMORY;
 	core_fseek(chd->file, header->mapoffset + 16, SEEK_SET);
 	core_fread(chd->file, compressed_ptr, mapbytes);
 	bitbuf = create_bitstream(compressed_ptr, sizeof(uint8_t) * mapbytes);
-	header->rawmap = (uint8_t*)malloc(rawmapsize);
+	/* Guard the narrowing to size_t: on a 32-bit host a 64-bit size that
+	 * does not fit would wrap on the way into malloc. */
+	if (rawmapsize > (uint64_t)((size_t)-1))
+	{
+		free(compressed_ptr);
+		free(bitbuf);
+		return CHDERR_INVALID_DATA;
+	}
+	header->rawmap = (uint8_t*)malloc((size_t)rawmapsize);
 	if (header->rawmap == NULL)
 	{
 		free(compressed_ptr);
