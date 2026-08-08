@@ -36,6 +36,13 @@
 #include "vksym.h"
 #include <libretro_vulkan.h>
 
+#ifdef HAVE_SDL3
+/* Must come after the Vulkan headers so SDL_vulkan.h picks up the
+ * real Vk* types instead of forward-declaring its own. */
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_vulkan.h>
+#endif
+
 #include "../../verbosity.h"
 #include "../../configuration.h"
 
@@ -1071,11 +1078,13 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
    gfx_ctx_vulkan_data_t *vk        = (gfx_ctx_vulkan_data_t *)opaque;
    VkInstanceCreateInfo info        = *create_info;
    VkInstance instance              = VK_NULL_HANDLE;
-   const char **instance_extensions = (const char**)malloc((info.enabledExtensionCount + 3
+   const char **instance_extensions = (const char**)malloc((info.enabledExtensionCount + 8
                                                           + ARRAY_SIZE(vulkan_optional_device_extensions)) * sizeof(const char *));
    const char **instance_layers     = (const char**)malloc((info.enabledLayerCount     + 1)                * sizeof(const char *));
 
-   const char *required_extensions[3];
+   /* Room for VK_KHR_surface + the WSI's own extensions (SDL3 can
+    * report several) + the debug extension. */
+   const char *required_extensions[8];
    uint32_t required_extension_count = 0;
 
    /* Both mallocs must have succeeded before the memcpy / field
@@ -1129,6 +1138,22 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
       case VULKAN_WSI_MVK_IOS:
          required_extensions[required_extension_count++] = "VK_EXT_metal_surface";
          break;
+#ifdef HAVE_SDL3
+      case VULKAN_WSI_SDL3:
+      {
+         Uint32 sdl_ext_count = 0;
+         const char * const *sdl_extensions = SDL_Vulkan_GetInstanceExtensions(&sdl_ext_count);
+         for (i = 0; sdl_extensions && i < sdl_ext_count; i++)
+         {
+            /* VK_KHR_surface already added above. */
+            if (string_is_equal(sdl_extensions[i], "VK_KHR_surface"))
+               continue;
+            if (required_extension_count < ARRAY_SIZE(required_extensions) - 1)
+               required_extensions[required_extension_count++] = sdl_extensions[i];
+         }
+         break;
+      }
+#endif
       case VULKAN_WSI_NONE:
       default:
          break;
@@ -1787,6 +1812,18 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             if (create(vk->context.instance, &surf_info, NULL, &vk->vk_surface)
                 != VK_SUCCESS)
                return false;
+         }
+#endif
+         break;
+      case VULKAN_WSI_SDL3:
+#ifdef HAVE_SDL3
+         /* The SDL3 context driver passes its SDL_Window through the
+          * 'surface' parameter; SDL picks the platform surface path. */
+         if (!SDL_Vulkan_CreateSurface((SDL_Window*)surface, vk->context.instance, NULL, &vk->vk_surface))
+         {
+            RARCH_ERR("[Vulkan] Failed to create SDL3 surface: %s.\n",
+                  SDL_GetError());
+            return false;
          }
 #endif
          break;
@@ -2625,7 +2662,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
    /* TODO/FIXME:
     * Weird shenanigans necessary for Apple otherwise the following happens:
-    * The menu sometimes refuses to display, but still responds to input. 
+    * The menu sometimes refuses to display, but still responds to input.
     * This happens about 1/5 times on macOS but 100% in the quick menu on iOS
     */
 #ifdef __APPLE__

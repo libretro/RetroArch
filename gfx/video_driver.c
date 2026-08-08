@@ -169,6 +169,13 @@ static const gfx_ctx_driver_t *gfx_ctx_gl_drivers[] = {
 #if defined(__WINRT__) && defined(HAVE_OPENGLES)
    &gfx_ctx_uwp,
 #endif
+#if defined(HAVE_SDL3) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE) || defined(HAVE_OPENGLES)) && !defined(HAVE_COCOA)
+   /* Listed ahead of the native wayland/x contexts: the SDL3
+    * input/joypad drivers only receive events when an SDL window
+    * exists, so SDL3 builds prefer SDL3 windowing. Override with
+    * video_context_driver if the native contexts are wanted. */
+   &gfx_ctx_sdl3_gl,
+#endif
 #if defined(HAVE_WAYLAND)
    &gfx_ctx_wayland,
 #endif
@@ -4328,7 +4335,8 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 #endif
       {
 #if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||  \
-    (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH))
+    (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)) ||     \
+    defined(HAVE_SDL3)
          bool window_custom_size_enable = settings->bools.video_window_save_positions;
 #else
          bool window_custom_size_enable = settings->bools.video_window_custom_size_enable;
