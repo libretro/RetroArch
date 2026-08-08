@@ -458,16 +458,6 @@ typedef struct
    VkFence upload_fence;
 
    bool needs_update;
-
-   /* Batching. When a block is bound the glyph loop writes into
-    * batch[] instead of a mapped VBO range, and nothing is drawn until
-    * vulkan_font_flush_block(). That turns one descriptor set
-    * allocation, one vkUpdateDescriptorSets, two buffer sub-allocations
-    * and one draw *per message* into one of each per frame. */
-   video_font_raster_block_t *block;
-   struct vk_vertex          *batch;
-   unsigned                   batch_len;
-   unsigned                   batch_cap;
 } vulkan_raster_t;
 
 #ifdef VULKAN_DEBUG_TEXTURE_ALLOC
@@ -2228,11 +2218,6 @@ static void vulkan_font_free(void *data, bool is_threaded)
    if (!font)
       return;
 
-   free(font->batch);
-   font->batch     = NULL;
-   font->batch_cap = 0;
-   font->batch_len = 0;
-
    if (font->font_driver && font->font_data)
       font->font_driver->free(font->font_data);
 
@@ -2364,13 +2349,303 @@ static int vulkan_font_get_message_width(void *data, const char *msg,
    return delta_x * scale;
 }
 
-/* Atlas upload plus the pipeline/descriptor/draw sequence for whatever
- * is currently in font->range. Shared by the immediate path in
- * vulkan_font_render_msg() and by vulkan_font_flush_block(), which runs
- * it once for a whole frame's worth of batched text. */
-static void vulkan_font_draw_range(vk_t *vk, vulkan_raster_t *font,
-      unsigned width, unsigned height)
+static void vulkan_font_render_msg(
+      void *userdata,
+      void *data,
+      const char *msg, size_t msg_len,
+      const struct font_params *params)
 {
+   float line_height;
+   struct font_line_metrics *line_metrics = NULL;
+   float color[4];
+   int drop_x, drop_y;
+   bool full_screen;
+   unsigned width, height;
+   enum text_alignment text_align;
+   const struct font_glyph *glyph_q;
+   float x, y, scale, drop_mod, drop_alpha;
+   float inv_tex_size_x, inv_tex_size_y, inv_win_width, inv_win_height;
+   float scale_iww, scale_iwh;           /* pre-multiplied scale * inv_win */
+   const struct font_glyph *(*get_glyph)(void*, uint32_t);
+   void *font_data;
+   int has_drop, needs_align;
+   vulkan_raster_t *font            = (vulkan_raster_t*)data;
+   settings_t *settings             = config_get_ptr();
+   float video_msg_pos_x            = settings->floats.video_msg_pos_x;
+   float video_msg_pos_y            = settings->floats.video_msg_pos_y;
+   float video_msg_color_r          = settings->floats.video_msg_color_r;
+   float video_msg_color_g          = settings->floats.video_msg_color_g;
+   float video_msg_color_b          = settings->floats.video_msg_color_b;
+   vk_t *vk                         = (vk_t*)userdata;
+
+   if (!font || !msg || !*msg || !vk)
+      return;
+
+   width          = vk->video_width;
+   height         = vk->video_height;
+
+   if (params)
+   {
+      x           = params->x;
+      y           = params->y;
+      scale       = params->scale;
+      full_screen = params->full_screen;
+      text_align  = params->text_align;
+      drop_x      = params->drop_x;
+      drop_y      = params->drop_y;
+      drop_mod    = params->drop_mod;
+      drop_alpha  = params->drop_alpha;
+
+      if (params->color_hp)
+      {
+         color[0]    = params->color_hp[0];
+         color[1]    = params->color_hp[1];
+         color[2]    = params->color_hp[2];
+         color[3]    = params->color_hp[3];
+      }
+      else
+      {
+         color[0]    = FONT_COLOR_GET_RED(params->color)   / 255.0f;
+         color[1]    = FONT_COLOR_GET_GREEN(params->color) / 255.0f;
+         color[2]    = FONT_COLOR_GET_BLUE(params->color)  / 255.0f;
+         color[3]    = FONT_COLOR_GET_ALPHA(params->color) / 255.0f;
+      }
+
+      /* If alpha is 0.0f, turn it into default 1.0f */
+      if (color[3] <= 0.0f)
+         color[3] = 1.0f;
+   }
+   else
+   {
+      x           = video_msg_pos_x;
+      y           = video_msg_pos_y;
+      scale       = 1.0f;
+      full_screen = true;
+      text_align  = TEXT_ALIGN_LEFT;
+      drop_x      = -2;
+      drop_y      = -2;
+      drop_mod    = 0.3f;
+      drop_alpha  = 1.0f;
+
+      color[0]    = video_msg_color_r;
+      color[1]    = video_msg_color_g;
+      color[2]    = video_msg_color_b;
+      color[3]    = 1.0f;
+   }
+
+   vulkan_set_viewport(vk, width, height, full_screen, false);
+
+   /* Compute max glyphs for VBO allocation.
+    * Line scan below discovers actual length; this uses strlen
+    * only for the allocation upper bound. */
+   {
+      size_t max_glyphs = msg_len;
+      if (drop_x || drop_y)
+         max_glyphs *= 2;
+
+      if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo,
+            4 * sizeof(struct vk_vertex) * max_glyphs, &font->range))
+         return;
+   }
+
+   font->vertices   = 0;
+   font->pv         = (struct vk_vertex*)font->range.data;
+   glyph_q          = (font->font_driver)
+      ? font->font_driver->get_glyph(font->font_data, '?') : NULL;
+
+   /* Pair the fallback-glyph lookup with an upload like every other
+    * lookup, in case '?' was just (re)rasterized after eviction. */
+   if (glyph_q && font->atlas->dirty)
+   {
+      vulkan_font_update_glyph(font, glyph_q);
+      font->atlas->dirty = false;
+      font->needs_update = true;
+   }
+   font->font_driver->get_line_metrics(font->font_data, &line_metrics);
+   line_height      = line_metrics->height * scale / vk->vp.height;
+
+   /* Hoist reciprocals, function pointer, and pre-multiplied factors. */
+   inv_tex_size_x   = 1.0f / font->texture.width;
+   inv_tex_size_y   = 1.0f / font->texture.height;
+   inv_win_width    = 1.0f / vk->vp.width;
+   inv_win_height   = 1.0f / vk->vp.height;
+   scale_iww        = scale * inv_win_width;
+   scale_iwh        = scale * inv_win_height;
+   get_glyph        = font->font_driver->get_glyph;
+   font_data        = font->font_data;
+
+   has_drop         = (drop_x || drop_y);
+   needs_align      = (text_align != TEXT_ALIGN_LEFT);
+
+   /* Pre-compute per-pass constants: base X in NDC (pixel-snapped),
+    * shadow color, and shadow Y origin. */
+   {
+      struct vk_color vk_color, vk_color_dark = {0.0f, 0.0f, 0.0f, 0.0f};
+      float fg_base_x, sh_base_x, sh_y_origin;
+      int line_num;
+      const char *m;
+
+      vk_color.r       = color[0];
+      vk_color.g       = color[1];
+      vk_color.b       = color[2];
+      vk_color.a       = color[3];
+
+      fg_base_x        = roundf(x * vk->vp.width) * inv_win_width;
+
+      sh_base_x        = 0.0f;
+      sh_y_origin      = 0.0f;
+      if (has_drop)
+      {
+         vk_color_dark.r = color[0] * drop_mod;
+         vk_color_dark.g = color[1] * drop_mod;
+         vk_color_dark.b = color[2] * drop_mod;
+         vk_color_dark.a = color[3] * drop_alpha;
+         sh_base_x       = roundf((x + scale * drop_x
+                              * inv_win_width) * vk->vp.width)
+                              * inv_win_width;
+         sh_y_origin     = y + scale * drop_y * inv_win_height;
+      }
+
+      /* Single pass over the string: for each line, emit interleaved
+       * shadow + foreground quads from one glyph lookup.  This halves
+       * cache/TLB pressure on the glyph table compared to two separate
+       * passes, and shares tex-coord and glyph-size computations. */
+      m        = msg;
+      line_num = 0;
+
+      for (;;)
+      {
+         const char *delim       = m;
+         const char *line_start;
+         size_t line_len;
+         float align_ndc, fg_y, fg_x, sh_y, sh_x;
+         int delta_x, delta_y;
+
+         while (*delim != '\n' && *delim != '\0')
+            delim++;
+         line_start = m;
+         line_len   = (size_t)(delim - m);
+
+         /* Alignment: skip the width pre-scan for TEXT_ALIGN_LEFT,
+          * which is the overwhelmingly common case (OSD, notifications). */
+         align_ndc = 0.0f;
+         if (needs_align)
+         {
+            int width_accum  = 0;
+            const char *scan = line_start;
+            const char *scan_end = scan + line_len;
+            while (scan < scan_end)
+            {
+               const struct font_glyph *glyph;
+               uint32_t code = utf8_walk(&scan);
+               if (!(glyph = get_glyph(font_data, code)))
+                  if (!(glyph = glyph_q))
+                     continue;
+
+               if (font->atlas->dirty)
+               {
+                  vulkan_font_update_glyph(font, glyph);
+                  font->atlas->dirty = false;
+                  font->needs_update = true;
+               }
+
+               width_accum += glyph->advance_x;
+            }
+            {
+               float total = width_accum * scale_iww;
+               align_ndc   = (text_align == TEXT_ALIGN_RIGHT)
+                  ? total : total * 0.5f;
+            }
+         }
+
+         /* Per-line Y in NDC (pixel-snapped), X adjusted for alignment. */
+         {
+            float fg_pos_y = y - (float)line_num * line_height;
+            fg_y = roundf((1.0f - fg_pos_y) * vk->vp.height)
+               * inv_win_height;
+            fg_x = fg_base_x - align_ndc;
+         }
+
+         sh_y = 0.0f;
+         sh_x = 0.0f;
+         if (has_drop)
+         {
+            float sh_pos_y = sh_y_origin - (float)line_num * line_height;
+            sh_y = roundf((1.0f - sh_pos_y) * vk->vp.height)
+               * inv_win_height;
+            sh_x = sh_base_x - align_ndc;
+         }
+
+         /* Emit glyphs: 1 lookup → shadow quad + foreground quad.
+          * Tex coords and glyph dimensions are computed once and
+          * shared between both quads. */
+         delta_x = 0;
+         delta_y = 0;
+         {
+            const char *gm  = line_start;
+            const char *gme = gm + line_len;
+
+            while (gm < gme)
+            {
+               const struct font_glyph *glyph;
+               uint32_t code = utf8_walk(&gm);
+
+               if (!(glyph = get_glyph(font_data, code)))
+                  if (!(glyph = glyph_q))
+                     continue;
+
+               if (font->atlas->dirty)
+               {
+                  vulkan_font_update_glyph(font, glyph);
+                  font->atlas->dirty = false;
+                  font->needs_update = true;
+               }
+
+               {
+                  /* Texture coordinates — shared between shadow and fg. */
+                  float ftx = glyph->atlas_offset_x * inv_tex_size_x;
+                  float fty = glyph->atlas_offset_y * inv_tex_size_y;
+                  float ftw = glyph->width  * inv_tex_size_x;
+                  float fth = glyph->height * inv_tex_size_y;
+
+                  /* Pre-scaled glyph size and per-glyph offset. */
+                  float fw  = glyph->width  * scale_iww;
+                  float fh  = glyph->height * scale_iwh;
+                  float gox = (glyph->draw_offset_x + delta_x) * scale_iww;
+                  float goy = (glyph->draw_offset_y + delta_y) * scale_iwh;
+
+                  if (has_drop)
+                  {
+                     struct vk_vertex *pv = font->pv + font->vertices;
+                     VULKAN_WRITE_QUAD_VBO(pv,
+                           sh_x + gox, sh_y + goy,
+                           fw, fh, ftx, fty, ftw, fth,
+                           &vk_color_dark);
+                     font->vertices += 4;
+                  }
+
+                  {
+                     struct vk_vertex *pv = font->pv + font->vertices;
+                     VULKAN_WRITE_QUAD_VBO(pv,
+                           fg_x + gox, fg_y + goy,
+                           fw, fh, ftx, fty, ftw, fth,
+                           &vk_color);
+                     font->vertices += 4;
+                  }
+               }
+
+               delta_x += glyph->advance_x;
+               delta_y += glyph->advance_y;
+            }
+         }
+
+         if (*delim == '\0')
+            break;
+         m = delim + 1;
+         line_num++;
+      }
+   }
+
    /* ── Flush: atlas upload + draw ─────────────────────────────────
     * Inlined from the former vulkan_font_flush().  By issuing the
     * Vulkan commands directly we eliminate:
@@ -2726,344 +3001,6 @@ static void vulkan_font_draw_range(vk_t *vk, vulkan_raster_t *font,
    }
    else
       vkCmdDraw(vk->cmd, font->vertices, 1, 0, 0);
-}
-
-static void vulkan_font_render_msg(
-      void *userdata,
-      void *data,
-      const char *msg, size_t msg_len,
-      const struct font_params *params)
-{
-   float line_height;
-   struct font_line_metrics *line_metrics = NULL;
-   float color[4];
-   int drop_x, drop_y;
-   bool full_screen;
-   unsigned width, height;
-   enum text_alignment text_align;
-   const struct font_glyph *glyph_q;
-   float x, y, scale, drop_mod, drop_alpha;
-   float inv_tex_size_x, inv_tex_size_y, inv_win_width, inv_win_height;
-   float scale_iww, scale_iwh;           /* pre-multiplied scale * inv_win */
-   const struct font_glyph *(*get_glyph)(void*, uint32_t);
-   void *font_data;
-   int has_drop, needs_align;
-   vulkan_raster_t *font            = (vulkan_raster_t*)data;
-   settings_t *settings             = config_get_ptr();
-   float video_msg_pos_x            = settings->floats.video_msg_pos_x;
-   float video_msg_pos_y            = settings->floats.video_msg_pos_y;
-   float video_msg_color_r          = settings->floats.video_msg_color_r;
-   float video_msg_color_g          = settings->floats.video_msg_color_g;
-   float video_msg_color_b          = settings->floats.video_msg_color_b;
-   vk_t *vk                         = (vk_t*)userdata;
-
-   if (!font || !msg || !*msg || !vk)
-      return;
-
-   width          = vk->video_width;
-   height         = vk->video_height;
-
-   if (params)
-   {
-      x           = params->x;
-      y           = params->y;
-      scale       = params->scale;
-      full_screen = params->full_screen;
-      text_align  = params->text_align;
-      drop_x      = params->drop_x;
-      drop_y      = params->drop_y;
-      drop_mod    = params->drop_mod;
-      drop_alpha  = params->drop_alpha;
-
-      if (params->color_hp)
-      {
-         color[0]    = params->color_hp[0];
-         color[1]    = params->color_hp[1];
-         color[2]    = params->color_hp[2];
-         color[3]    = params->color_hp[3];
-      }
-      else
-      {
-         color[0]    = FONT_COLOR_GET_RED(params->color)   / 255.0f;
-         color[1]    = FONT_COLOR_GET_GREEN(params->color) / 255.0f;
-         color[2]    = FONT_COLOR_GET_BLUE(params->color)  / 255.0f;
-         color[3]    = FONT_COLOR_GET_ALPHA(params->color) / 255.0f;
-      }
-
-      /* If alpha is 0.0f, turn it into default 1.0f */
-      if (color[3] <= 0.0f)
-         color[3] = 1.0f;
-   }
-   else
-   {
-      x           = video_msg_pos_x;
-      y           = video_msg_pos_y;
-      scale       = 1.0f;
-      full_screen = true;
-      text_align  = TEXT_ALIGN_LEFT;
-      drop_x      = -2;
-      drop_y      = -2;
-      drop_mod    = 0.3f;
-      drop_alpha  = 1.0f;
-
-      color[0]    = video_msg_color_r;
-      color[1]    = video_msg_color_g;
-      color[2]    = video_msg_color_b;
-      color[3]    = 1.0f;
-   }
-
-   vulkan_set_viewport(vk, width, height, full_screen, false);
-
-   /* Compute max glyphs for the vertex allocation.
-    * Line scan below discovers actual length; this uses msg_len only
-    * for the upper bound. */
-   {
-      size_t max_glyphs = msg_len;
-      if (drop_x || drop_y)
-         max_glyphs *= 2;
-
-      if (font->block)
-      {
-         /* Batched: append to the CPU batch, which has to hold what is
-          * already there plus this message. */
-         unsigned need = font->batch_len + (unsigned)(4 * max_glyphs);
-
-         if (need > font->batch_cap)
-         {
-            unsigned cap        = font->batch_cap ? font->batch_cap : 1024;
-            struct vk_vertex *b;
-
-            while (cap < need)
-               cap *= 2;
-            if (!(b = (struct vk_vertex*)realloc(font->batch,
-                        cap * sizeof(*b))))
-               return;
-            font->batch     = b;
-            font->batch_cap = cap;
-         }
-
-         font->vertices = font->batch_len;
-         font->pv       = font->batch;
-      }
-      else
-      {
-         if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo,
-               4 * sizeof(struct vk_vertex) * max_glyphs, &font->range))
-            return;
-
-         font->vertices = 0;
-         font->pv       = (struct vk_vertex*)font->range.data;
-      }
-   }
-
-   glyph_q          = (font->font_driver)
-      ? font->font_driver->get_glyph(font->font_data, '?') : NULL;
-
-   /* Pair the fallback-glyph lookup with an upload like every other
-    * lookup, in case '?' was just (re)rasterized after eviction. */
-   if (glyph_q && font->atlas->dirty)
-   {
-      vulkan_font_update_glyph(font, glyph_q);
-      font->atlas->dirty = false;
-      font->needs_update = true;
-   }
-   font->font_driver->get_line_metrics(font->font_data, &line_metrics);
-   line_height      = line_metrics->height * scale / vk->vp.height;
-
-   /* Hoist reciprocals, function pointer, and pre-multiplied factors. */
-   inv_tex_size_x   = 1.0f / font->texture.width;
-   inv_tex_size_y   = 1.0f / font->texture.height;
-   inv_win_width    = 1.0f / vk->vp.width;
-   inv_win_height   = 1.0f / vk->vp.height;
-   scale_iww        = scale * inv_win_width;
-   scale_iwh        = scale * inv_win_height;
-   get_glyph        = font->font_driver->get_glyph;
-   font_data        = font->font_data;
-
-   has_drop         = (drop_x || drop_y);
-   needs_align      = (text_align != TEXT_ALIGN_LEFT);
-
-   /* Pre-compute per-pass constants: base X in NDC (pixel-snapped),
-    * shadow color, and shadow Y origin. */
-   {
-      struct vk_color vk_color, vk_color_dark = {0.0f, 0.0f, 0.0f, 0.0f};
-      float fg_base_x, sh_base_x, sh_y_origin;
-      int line_num;
-      const char *m;
-
-      vk_color.r       = color[0];
-      vk_color.g       = color[1];
-      vk_color.b       = color[2];
-      vk_color.a       = color[3];
-
-      fg_base_x        = roundf(x * vk->vp.width) * inv_win_width;
-
-      sh_base_x        = 0.0f;
-      sh_y_origin      = 0.0f;
-      if (has_drop)
-      {
-         vk_color_dark.r = color[0] * drop_mod;
-         vk_color_dark.g = color[1] * drop_mod;
-         vk_color_dark.b = color[2] * drop_mod;
-         vk_color_dark.a = color[3] * drop_alpha;
-         sh_base_x       = roundf((x + scale * drop_x
-                              * inv_win_width) * vk->vp.width)
-                              * inv_win_width;
-         sh_y_origin     = y + scale * drop_y * inv_win_height;
-      }
-
-      /* Single pass over the string: for each line, emit interleaved
-       * shadow + foreground quads from one glyph lookup.  This halves
-       * cache/TLB pressure on the glyph table compared to two separate
-       * passes, and shares tex-coord and glyph-size computations. */
-      m        = msg;
-      line_num = 0;
-
-      for (;;)
-      {
-         const char *delim       = m;
-         const char *line_start;
-         size_t line_len;
-         float align_ndc, fg_y, fg_x, sh_y, sh_x;
-         int delta_x, delta_y;
-
-         while (*delim != '\n' && *delim != '\0')
-            delim++;
-         line_start = m;
-         line_len   = (size_t)(delim - m);
-
-         /* Alignment: skip the width pre-scan for TEXT_ALIGN_LEFT,
-          * which is the overwhelmingly common case (OSD, notifications). */
-         align_ndc = 0.0f;
-         if (needs_align)
-         {
-            int width_accum  = 0;
-            const char *scan = line_start;
-            const char *scan_end = scan + line_len;
-            while (scan < scan_end)
-            {
-               const struct font_glyph *glyph;
-               uint32_t code = utf8_walk(&scan);
-               if (!(glyph = get_glyph(font_data, code)))
-                  if (!(glyph = glyph_q))
-                     continue;
-
-               if (font->atlas->dirty)
-               {
-                  vulkan_font_update_glyph(font, glyph);
-                  font->atlas->dirty = false;
-                  font->needs_update = true;
-               }
-
-               width_accum += glyph->advance_x;
-            }
-            {
-               float total = width_accum * scale_iww;
-               align_ndc   = (text_align == TEXT_ALIGN_RIGHT)
-                  ? total : total * 0.5f;
-            }
-         }
-
-         /* Per-line Y in NDC (pixel-snapped), X adjusted for alignment. */
-         {
-            float fg_pos_y = y - (float)line_num * line_height;
-            fg_y = roundf((1.0f - fg_pos_y) * vk->vp.height)
-               * inv_win_height;
-            fg_x = fg_base_x - align_ndc;
-         }
-
-         sh_y = 0.0f;
-         sh_x = 0.0f;
-         if (has_drop)
-         {
-            float sh_pos_y = sh_y_origin - (float)line_num * line_height;
-            sh_y = roundf((1.0f - sh_pos_y) * vk->vp.height)
-               * inv_win_height;
-            sh_x = sh_base_x - align_ndc;
-         }
-
-         /* Emit glyphs: 1 lookup → shadow quad + foreground quad.
-          * Tex coords and glyph dimensions are computed once and
-          * shared between both quads. */
-         delta_x = 0;
-         delta_y = 0;
-         {
-            const char *gm  = line_start;
-            const char *gme = gm + line_len;
-
-            while (gm < gme)
-            {
-               const struct font_glyph *glyph;
-               uint32_t code = utf8_walk(&gm);
-
-               if (!(glyph = get_glyph(font_data, code)))
-                  if (!(glyph = glyph_q))
-                     continue;
-
-               if (font->atlas->dirty)
-               {
-                  vulkan_font_update_glyph(font, glyph);
-                  font->atlas->dirty = false;
-                  font->needs_update = true;
-               }
-
-               {
-                  /* Texture coordinates — shared between shadow and fg. */
-                  float ftx = glyph->atlas_offset_x * inv_tex_size_x;
-                  float fty = glyph->atlas_offset_y * inv_tex_size_y;
-                  float ftw = glyph->width  * inv_tex_size_x;
-                  float fth = glyph->height * inv_tex_size_y;
-
-                  /* Pre-scaled glyph size and per-glyph offset. */
-                  float fw  = glyph->width  * scale_iww;
-                  float fh  = glyph->height * scale_iwh;
-                  float gox = (glyph->draw_offset_x + delta_x) * scale_iww;
-                  float goy = (glyph->draw_offset_y + delta_y) * scale_iwh;
-
-                  if (has_drop)
-                  {
-                     struct vk_vertex *pv = font->pv + font->vertices;
-                     VULKAN_WRITE_QUAD_VBO(pv,
-                           sh_x + gox, sh_y + goy,
-                           fw, fh, ftx, fty, ftw, fth,
-                           &vk_color_dark);
-                     font->vertices += 4;
-                  }
-
-                  {
-                     struct vk_vertex *pv = font->pv + font->vertices;
-                     VULKAN_WRITE_QUAD_VBO(pv,
-                           fg_x + gox, fg_y + goy,
-                           fw, fh, ftx, fty, ftw, fth,
-                           &vk_color);
-                     font->vertices += 4;
-                  }
-               }
-
-               delta_x += glyph->advance_x;
-               delta_y += glyph->advance_y;
-            }
-         }
-
-         if (*delim == '\0')
-            break;
-         m = delim + 1;
-         line_num++;
-      }
-   }
-
-   /* Batched: vertices stay in the CPU batch and the draw happens
-    * once, in vulkan_font_flush_block(). */
-   if (font->block)
-   {
-      font->batch_len                   = font->vertices;
-      font->block->fullscreen           = full_screen;
-      /* font_flush() gates on this being non-zero. */
-      font->block->carr.coords.vertices = font->batch_len;
-      return;
-   }
-
-   vulkan_font_draw_range(vk, font, width, height);
 }
 
 static const struct font_glyph *vulkan_font_get_glyph(
@@ -9519,62 +9456,14 @@ static bool vulkan_focus(void *data)
    return true;
 }
 
-static void vulkan_font_bind_block(void *data, void *userdata)
-{
-   vulkan_raster_t *font = (vulkan_raster_t*)data;
-   if (font)
-   {
-      font->block     = (video_font_raster_block_t*)userdata;
-      /* Unbinding ends the batching window; anything still pending
-       * belongs to the caller that is going away, not to whoever draws
-       * next through this font. */
-      if (!font->block)
-         font->batch_len = 0;
-   }
-}
-
-static void vulkan_font_flush_block(unsigned width, unsigned height,
-      void *data)
-{
-   vulkan_raster_t *font = (vulkan_raster_t*)data;
-   vk_t            *vk   = font ? font->vk : NULL;
-   size_t           sz;
-
-   if (!font || !vk || !font->block || !font->batch_len)
-      return;
-
-   sz = (size_t)font->batch_len * sizeof(struct vk_vertex);
-
-   if (vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo, sz,
-            &font->range))
-   {
-      memcpy(font->range.data, font->batch, sz);
-      font->vertices = font->batch_len;
-
-      /* The viewport was set per message while batching, and the
-       * last one set still stands; re-assert it from the block so the
-       * mvp written into the descriptor UBO matches the vertices. */
-      vulkan_set_viewport(vk, width, height, font->block->fullscreen,
-            false);
-      vulkan_font_draw_range(vk, font, width, height);
-   }
-
-   /* Reset both counters here rather than relying on the caller:
-    * ozone and materialui come through font_flush(), which clears the
-    * coord-array count itself, but xmb and gfx_widgets call
-    * renderer->flush directly and never touch it. */
-   font->batch_len                   = 0;
-   font->block->carr.coords.vertices = 0;
-}
-
 static font_renderer_t vulkan_raster_font = {
    vulkan_font_init,
    vulkan_font_free,
    vulkan_font_render_msg,
    "vulkan",
    vulkan_font_get_glyph,
-   vulkan_font_bind_block,
-   vulkan_font_flush_block,
+   NULL,                            /* bind_block */
+   NULL,                            /* flush_block */
    vulkan_font_get_message_width,
    vulkan_font_get_line_metrics
 };
