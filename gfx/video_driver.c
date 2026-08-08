@@ -1986,7 +1986,7 @@ void video_driver_free_internal(void)
    if (!is_threaded)
 #endif
    {
-      if (vid && vid->font_api != FONT_DRIVER_RENDER_DONT_CARE)
+      if (vid && vid->font_backend)
          font_driver_free_osd_for(video_st->data);
    }
 
@@ -4573,9 +4573,9 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
     * reinit, holding GPU handles from a device that is gone -
     * font_driver_init_osd() then no-ops because the pointer is still
     * set, and the stale object keeps drawing. */
-   if (video_st->current_video->font_api != FONT_DRIVER_RENDER_DONT_CARE)
+   if (video_st->current_video->font_backend)
       font_driver_init_osd(video_st->data, &video, false,
-            video.is_threaded, video_st->current_video->font_api);
+            video.is_threaded, video_st->current_video->font_backend);
 
    video_st->poke = NULL;
    if (video_st->current_video->poke_interface)

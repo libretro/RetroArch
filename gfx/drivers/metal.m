@@ -3277,7 +3277,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
    gfx_display_metal_get_default_mvp,
    gfx_display_metal_get_default_vertices,
    gfx_display_metal_get_default_tex_coords,
-   FONT_DRIVER_RENDER_METAL_API,
+   &metal_raster_font,
    GFX_VIDEO_DRIVER_METAL,
    "metal",
    false,
@@ -4227,7 +4227,7 @@ static void metal_pull_cached_frame_cb(void *userdata,
             video,
             false,
             video->is_threaded,
-            FONT_DRIVER_RENDER_METAL_API);
+            &metal_raster_font);
 
       /* Tell Context to allocate HDR offscreen + readback textures and
        * compile its composite/tonemap pipelines.  By this point the CAMetalLayer's

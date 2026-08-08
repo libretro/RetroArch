@@ -527,7 +527,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_gl1 = {
    gfx_display_gl1_get_default_mvp,
    gfx_display_gl1_get_default_vertices,
    gfx_display_gl1_get_default_tex_coords,
-   FONT_DRIVER_RENDER_OPENGL1_API,
+   &gl1_raster_font,
    GFX_VIDEO_DRIVER_OPENGL1,
    "gl1",
    false,
@@ -1508,7 +1508,7 @@ static void *gl1_init(const video_info_t *video,
             video,
             false,
             video->is_threaded,
-            FONT_DRIVER_RENDER_OPENGL1_API);
+            &gl1_raster_font);
 
    if (video_smooth)
       gl1->flags     |= GL1_FLAG_SMOOTH;

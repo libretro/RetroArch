@@ -313,7 +313,7 @@ static void *sixel_gfx_init(const video_info_t *video,
             video,
             false,
             video->is_threaded,
-            FONT_DRIVER_RENDER_SIXEL);
+            &sixel_font);
 
    return sixel;
 }

@@ -1592,7 +1592,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_gdi = {
    NULL,                                     /* get_default_mvp */
    gfx_display_gdi_get_default_vertices,
    gfx_display_gdi_get_default_tex_coords,
-   FONT_DRIVER_RENDER_GDI,
+   &gdi_font,
    GFX_VIDEO_DRIVER_GDI,
    "gdi",
    false,
@@ -2573,7 +2573,7 @@ static void *gdi_init(const video_info_t *video,
             video,
             false,
             video->is_threaded,
-            FONT_DRIVER_RENDER_GDI);
+            &gdi_font);
 
    RARCH_LOG("[GDI] Init complete.\n");
 

@@ -1375,7 +1375,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d9_hlsl = {
    NULL,                                     /* get_default_mvp        */
    NULL,                                     /* get_default_vertices   */
    NULL,                                     /* get_default_tex_coords */
-   FONT_DRIVER_RENDER_D3D9_API,
+   &d3d9_font,
    GFX_VIDEO_DRIVER_DIRECT3D9_HLSL,
    "d3d9_hlsl",
    true,
@@ -7049,7 +7049,7 @@ static bool d3d9_hlsl_initialize(
    font_driver_init_osd(d3d, info,
          false,
          info->is_threaded,
-         FONT_DRIVER_RENDER_D3D9_API);
+         &d3d9_font);
 
    {
       static const D3DVERTEXELEMENT9 VertexElements[4] = {

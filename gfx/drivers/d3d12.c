@@ -1348,7 +1348,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d12 = {
    NULL,                                     /* get_default_mvp        */
    NULL,                                     /* get_default_vertices   */
    NULL,                                     /* get_default_tex_coords */
-   FONT_DRIVER_RENDER_D3D12_API,
+   &d3d12_font,
    GFX_VIDEO_DRIVER_DIRECT3D12,
    "d3d12",
    true,
@@ -4729,7 +4729,7 @@ static void *d3d12_gfx_init(const video_info_t* video,
          video,
          false,
          video->is_threaded,
-         FONT_DRIVER_RENDER_D3D12_API);
+         &d3d12_font);
 
    if (video_driver_get_hw_context()->context_type  == RETRO_HW_CONTEXT_D3D12)
    {

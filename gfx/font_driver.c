@@ -111,365 +111,23 @@ int font_renderer_create_default(
 static bool font_init_first(
       const void **font_driver, void **font_handle,
       void *video_data, const char *font_path, float font_size,
-      enum font_driver_render_api api, bool is_threaded)
+      const font_renderer_t *backend, bool is_threaded)
 {
+   void *data;
+
    if (font_path && !font_path[0])
       font_path = NULL;
 
-   switch (api)
-   {
-#ifdef HAVE_OPENGL1
-      case FONT_DRIVER_RENDER_OPENGL1_API:
-         {
-            void *data = gl1_raster_font.init(
-                  video_data, font_path, font_size, is_threaded);
-            if (data)
-            {
-               *font_driver = &gl1_raster_font;
-               *font_handle = data;
-               return true;
-            }
-         }
-         break;
-#endif
-#ifdef HAVE_OPENGL
-      case FONT_DRIVER_RENDER_OPENGL_API:
-         {
-            void *data = gl2_raster_font.init(
-                  video_data, font_path, font_size, is_threaded);
-            if (data)
-            {
-               *font_driver = &gl2_raster_font;
-               *font_handle = data;
-               return true;
-            }
-         }
-         break;
-#endif
-#ifdef HAVE_OPENGL_CORE
-      case FONT_DRIVER_RENDER_OPENGL_CORE_API:
-         {
-            void *data = gl3_raster_font.init(
-                  video_data, font_path, font_size, is_threaded);
-            if (data)
-            {
-               *font_driver = &gl3_raster_font;
-               *font_handle = data;
-               return true;
-            }
-         }
-         break;
-#endif
-#ifdef HAVE_VULKAN
-      case FONT_DRIVER_RENDER_VULKAN_API:
-         {
-            void *data = vulkan_raster_font.init(video_data,
-                  font_path, font_size, is_threaded);
-            if (data)
-            {
-               *font_driver = &vulkan_raster_font;
-               *font_handle = data;
-               return true;
-            }
-         }
-         break;
-#endif
-#ifdef HAVE_METAL
-   case FONT_DRIVER_RENDER_METAL_API:
-         {
-            void *data = metal_raster_font.init(video_data,
-                  font_path, font_size, is_threaded);
-            if (data)
-            {
-               *font_driver = &metal_raster_font;
-               *font_handle = data;
-               return true;
-            }
-         }
-         break;
-#endif
-#ifdef HAVE_SDL2
-#if SDL_VERSION_ATLEAST(2, 0, 18)
-      case FONT_DRIVER_RENDER_SDL2:
-         {
-            void *data = sdl2_raster_font.init(video_data,
-                  font_path, font_size, is_threaded);
-            if (data)
-            {
-               *font_driver = &sdl2_raster_font;
-               *font_handle = data;
-               return true;
-            }
-         }
-         break;
-#endif
-#endif
-#ifdef HAVE_SDL3
-      case FONT_DRIVER_RENDER_SDL3:
-         {
-            void *data = sdl3_raster_font.init(video_data,
-                  font_path, font_size, is_threaded);
-            if (data)
-            {
-               *font_driver = &sdl3_raster_font;
-               *font_handle = data;
-               return true;
-            }
-         }
-         break;
-#endif
-#ifdef HAVE_D3D8
-      case FONT_DRIVER_RENDER_D3D8_API:
-      {
-         static const font_renderer_t *d3d8_font_backends[] = {
-            &d3d8_font,
-            NULL
-         };
-         unsigned i;
+   if (!backend || !backend->init)
+      return false;
 
-         for (i = 0; i < ARRAY_SIZE(d3d8_font_backends); i++)
-         {
-            void *data = d3d8_font_backends[i] ? d3d8_font_backends[i]->init(
-                  video_data, font_path, font_size, is_threaded) : NULL;
-            if (data)
-            {
-               *font_driver = d3d8_font_backends[i];
-               *font_handle = data;
+   if (!(data = backend->init(video_data, font_path, font_size,
+               is_threaded)))
+      return false;
 
-               return true;
-            }
-         }
-      }
-      break;
-#endif
-#ifdef HAVE_D3D9
-      case FONT_DRIVER_RENDER_D3D9_API:
-         {
-            void *data = d3d9_font.init(video_data,
-                  font_path, font_size, is_threaded);
-            if (data)
-            {
-               *font_driver = &d3d9_font;
-               *font_handle = data;
-               return true;
-            }
-         }
-      break;
-#ifdef HAVE_CG
-      case FONT_DRIVER_RENDER_D3D9_CG_API:
-         {
-            void *data = d3d9_cg_font.init(video_data,
-                  font_path, font_size, is_threaded);
-            if (data)
-            {
-               *font_driver = &d3d9_cg_font;
-               *font_handle = data;
-               return true;
-            }
-         }
-      break;
-#endif
-#endif
-#ifdef HAVE_D3D10
-      case FONT_DRIVER_RENDER_D3D10_API:
-         {
-            void *data = d3d10_font.init(video_data,
-                  font_path, font_size, is_threaded);
-            if (data)
-            {
-               *font_driver = &d3d10_font;
-               *font_handle = data;
-               return true;
-            }
-         }
-         break;
-#endif
-#ifdef HAVE_D3D11
-      case FONT_DRIVER_RENDER_D3D11_API:
-         {
-            void *data = d3d11_font.init(video_data,
-                  font_path, font_size, is_threaded);
-            if (data)
-            {
-               *font_driver = &d3d11_font;
-               *font_handle = data;
-               return true;
-            }
-         }
-         break;
-#endif
-#ifdef HAVE_D3D12
-      case FONT_DRIVER_RENDER_D3D12_API:
-         {
-            void *data = d3d12_font.init(video_data,
-                  font_path, font_size, is_threaded);
-            if (data)
-            {
-               *font_driver = &d3d12_font;
-               *font_handle = data;
-               return true;
-            }
-         }
-         break;
-#endif
-#ifdef HAVE_GXM
-      case FONT_DRIVER_RENDER_GXM:
-         {
-            void *data = gxm_font.init(
-                  video_data, font_path, font_size, is_threaded);
-            if (data)
-            {
-               *font_driver = &gxm_font;
-               *font_handle = data;
-               return true;
-            }
-         }
-         break;
-#endif
-#ifdef PS2
-      case FONT_DRIVER_RENDER_PS2:
-         {
-            void *data = ps2_font.init(
-                  video_data, font_path, font_size,
-                  is_threaded);
-            if (data)
-            {
-               *font_driver = &ps2_font;
-               *font_handle = data;
-               return true;
-            }
-         }
-         break;
-#endif
-#ifdef _3DS
-      case FONT_DRIVER_RENDER_CTR:
-         {
-            void *data = ctr_font.init(
-                  video_data, font_path, font_size,
-                  is_threaded);
-            if (data)
-            {
-               *font_driver = &ctr_font;
-               *font_handle = data;
-               return true;
-            }
-         }
-         break;
-#endif
-#ifdef WIIU
-      case FONT_DRIVER_RENDER_WIIU:
-         {
-            void *data = wiiu_font.init(
-                  video_data, font_path, font_size, is_threaded);
-            if (data)
-            {
-               *font_driver = &wiiu_font;
-               *font_handle = data;
-               return true;
-            }
-         }
-         break;
-#endif
-#ifdef HAVE_CACA
-      case FONT_DRIVER_RENDER_CACA:
-         {
-            void *data = caca_font.init(
-                  video_data, font_path, font_size,
-                  is_threaded);
-            if (data)
-            {
-               *font_driver = &caca_font;
-               *font_handle = data;
-               return true;
-            }
-         }
-         break;
-#endif
-#ifdef HAVE_SIXEL
-      case FONT_DRIVER_RENDER_SIXEL:
-         {
-            void *data = sixel_font.init(
-                  video_data, font_path, font_size,
-                  is_threaded);
-            if (data)
-            {
-               *font_driver = &sixel_font;
-               *font_handle = data;
-               return true;
-            }
-         }
-         break;
-#endif
-#ifdef HAVE_LIBNX
-      case FONT_DRIVER_RENDER_SWITCH:
-         {
-            void *data = switch_font.init(
-                  video_data, font_path, font_size,
-                  is_threaded);
-            if (data)
-            {
-               *font_driver = &switch_font;
-               *font_handle = data;
-               return true;
-            }
-         }
-         break;
-#endif
-#ifdef HAVE_GCM
-      case FONT_DRIVER_RENDER_RSX:
-         {
-            void *data = rsx_font.init(
-                  video_data, font_path, font_size,
-                  is_threaded);
-            if (data)
-            {
-               *font_driver = &rsx_font;
-               *font_handle = data;
-               return true;
-            }
-         }
-         break;
-#endif
-#ifdef HAVE_GDI
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
-      case FONT_DRIVER_RENDER_GDI:
-         {
-            void *data = gdi_font.init(
-                  video_data, font_path, font_size,
-                  is_threaded);
-            if (data)
-            {
-               *font_driver = &gdi_font;
-               *font_handle = data;
-               return true;
-            }
-         }
-         break;
-#endif
-#endif
-#ifdef DJGPP
-      case FONT_DRIVER_RENDER_VGA:
-         {
-            void *data = vga_font.init(
-                  video_data, font_path, font_size,
-                  is_threaded);
-            if (data)
-            {
-               *font_driver = &vga_font;
-               *font_handle = data;
-               return true;
-            }
-         }
-         break;
-#endif
-      case FONT_DRIVER_RENDER_DONT_CARE:
-         /* TODO/FIXME - lookup graphics driver's 'API' */
-         break;
-      default:
-         break;
-   }
-
-   return false;
+   *font_driver = backend;
+   *font_handle = data;
+   return true;
 }
 
 #ifdef HAVE_LANGEXTRA
@@ -1073,7 +731,7 @@ void font_driver_free(font_data_t *font)
 font_data_t *font_driver_init_first(
       void *video_data, const char *font_path, float font_size,
       bool threading_hint, bool is_threaded,
-      enum font_driver_render_api api)
+      const font_renderer_t *backend)
 {
    const void *font_driver = NULL;
    void *font_handle       = NULL;
@@ -1083,12 +741,12 @@ font_data_t *font_driver_init_first(
          && is_threaded
          && !video_driver_is_hw_context())
       ok = video_thread_font_init(&font_driver, &font_handle,
-            video_data, font_path, font_size, api, font_init_first,
+            video_data, font_path, font_size, backend, font_init_first,
             is_threaded);
    else
 #endif
    ok = font_init_first(&font_driver, &font_handle,
-         video_data, font_path, font_size, api, is_threaded);
+         video_data, font_path, font_size, backend, is_threaded);
 
    if (ok)
    {
@@ -1123,7 +781,7 @@ void font_driver_init_osd(
       const video_info_t *video_info,
       bool threading_hint,
       bool is_threaded,
-      enum font_driver_render_api api)
+      const font_renderer_t *backend)
 {
    /* A font left over from a different instance cannot be adopted:
     * its images belong to a device that is gone, whose handles the
@@ -1135,7 +793,7 @@ void font_driver_init_osd(
    if (!video_font_driver && video_info)
       video_font_driver = font_driver_init_first(video_data,
             *video_info->path_font ? video_info->path_font : NULL,
-            video_info->font_size, threading_hint, is_threaded, api);
+            video_info->font_size, threading_hint, is_threaded, backend);
 
    if (video_font_driver)
       video_font_driver_owner = video_data;

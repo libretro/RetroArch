@@ -1763,7 +1763,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d8 = {
    gfx_display_d3d8_get_default_mvp,
    gfx_display_d3d8_get_default_vertices,
    gfx_display_d3d8_get_default_tex_coords,
-   FONT_DRIVER_RENDER_D3D8_API,
+   &d3d8_font,
    GFX_VIDEO_DRIVER_DIRECT3D8,
    "d3d8",
    false,
@@ -2318,7 +2318,7 @@ static bool d3d8_initialize(d3d8_video_t *d3d, const video_info_t *info)
    font_driver_init_osd(d3d, info,
          false,
          info->is_threaded,
-         FONT_DRIVER_RENDER_D3D8_API);
+         &d3d8_font);
 
    d3d->menu_display.offset = 0;
    d3d->menu_display.size   = 1024;

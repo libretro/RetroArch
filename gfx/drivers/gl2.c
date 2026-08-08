@@ -797,7 +797,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_gl = {
    gfx_display_gl2_get_default_mvp,
    gfx_display_gl2_get_default_vertices,
    gfx_display_gl2_get_default_tex_coords,
-   FONT_DRIVER_RENDER_OPENGL_API,
+   &gl2_raster_font,
    GFX_VIDEO_DRIVER_OPENGL,
    "gl",
    false,
@@ -5472,7 +5472,7 @@ static void *gl2_init(const video_info_t *video,
       font_driver_init_osd(gl, video,
             false,
             video->is_threaded,
-            FONT_DRIVER_RENDER_OPENGL_API);
+            &gl2_raster_font);
 
    /* Only bother with PBO readback if we're doing GPU recording.
     * Check recording_st->enable and not

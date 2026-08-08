@@ -466,7 +466,7 @@ static void *sdl2_gfx_init(const video_info_t *video,
     * subsystem that calls font_driver_render_msg with NULL font -
     * this is the same wiring every other modern driver does. */
       font_driver_init_osd(vid, video, false, video->is_threaded,
-            FONT_DRIVER_RENDER_SDL2);
+            &sdl2_raster_font);
 #endif
 
    *input      = NULL;
@@ -892,7 +892,7 @@ static void sdl2_poke_set_osd_msg(void *data, const char *msg, size_t msg_len,
     * 2. gfx_display_draw_text path (used by all menu drivers and
     *    by widgets via gfx_widgets_draw_text).  `font` is a valid
     *    font_data_t* whose renderer was selected via
-    *    FONT_DRIVER_RENDER_SDL2 - i.e. our sdl2_raster_font.  We
+    *    sdl2_raster_font as the font backend.  We
     *    must dispatch to that font driver's render_msg, otherwise
     *    every menu/widget text call falls through to the OSD font
     *    and lands in the wrong place with the wrong glyphs.
@@ -1443,7 +1443,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_sdl2 = {
    gfx_display_sdl2_get_default_mvp,
    NULL, /* get_default_vertices */
    NULL, /* get_default_tex_coords */
-   FONT_DRIVER_RENDER_SDL2,
+   &sdl2_raster_font,
    GFX_VIDEO_DRIVER_SDL2,
    "sdl2",
    false,

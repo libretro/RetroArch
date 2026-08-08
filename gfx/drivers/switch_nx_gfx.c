@@ -82,7 +82,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_switch = {
    NULL,                                        /* get_default_mvp */
    gfx_display_switch_get_default_vertices,
    gfx_display_switch_get_default_tex_coords,
-   FONT_DRIVER_RENDER_SWITCH,
+   &switch_font,
    GFX_VIDEO_DRIVER_SWITCH,
    "switch",
    false,
@@ -559,7 +559,7 @@ static void *switch_init(const video_info_t *video,
           video,
           false,
           video->is_threaded,
-          FONT_DRIVER_RENDER_SWITCH);
+          &switch_font);
 
     clear_screen(sw);
 

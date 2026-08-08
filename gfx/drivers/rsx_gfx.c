@@ -478,7 +478,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_rsx = {
    gfx_display_rsx_get_default_mvp,
    gfx_display_rsx_get_default_vertices,
    gfx_display_rsx_get_default_tex_coords,
-   FONT_DRIVER_RENDER_RSX,
+   &rsx_font,
    GFX_VIDEO_DRIVER_RSX,
    "rsx",
    true,
@@ -1604,7 +1604,7 @@ static void* rsx_init(const video_info_t* video,
             video,
             false,
             video->is_threaded,
-            FONT_DRIVER_RENDER_RSX);
+            &rsx_font);
       rsx->msg_rendering_enabled = true;
    }
 

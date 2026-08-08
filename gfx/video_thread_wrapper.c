@@ -207,9 +207,9 @@ static bool video_thread_handle_packet(
              * context. Unmigrated drivers still do it themselves,
              * also from here, inside their own init(). */
             if (     thr->driver_data
-                  && thr->driver->font_api != FONT_DRIVER_RENDER_DONT_CARE)
+                  && thr->driver->font_backend)
                font_driver_init_osd(thr->driver_data, &thr->info,
-                     false, true, thr->driver->font_api);
+                     false, true, thr->driver->font_backend);
          }
          else
             thr->driver_data = NULL;
@@ -221,7 +221,7 @@ static bool video_thread_handle_packet(
          /* Before the driver goes: the font owns GPU objects created
           * against it, and this is the thread they belong to. */
          if (     thr->driver
-               && thr->driver->font_api != FONT_DRIVER_RENDER_DONT_CARE)
+               && thr->driver->font_backend)
             font_driver_free_osd_for(thr->driver_data);
          if (thr->driver_data && thr->driver && thr->driver->free)
             thr->driver->free(thr->driver_data);
@@ -399,7 +399,7 @@ static bool video_thread_handle_packet(
                pkt.data.font_init.video_data,
                pkt.data.font_init.font_path,
                pkt.data.font_init.font_size,
-               pkt.data.font_init.api,
+               pkt.data.font_init.backend,
                pkt.data.font_init.is_threaded
             );
          video_thread_reply(thr, &pkt);
@@ -1593,7 +1593,7 @@ bool video_init_thread(const video_driver_t **out_driver, void **out_data,
 
 bool video_thread_font_init(const void **font_driver, void **font_handle,
       void *data, const char *font_path, float video_font_size,
-      enum font_driver_render_api api, custom_font_command_method_t func,
+      const font_renderer_t *backend, custom_font_command_method_t func,
       bool is_threaded)
 {
    thread_packet_t pkt;
@@ -1621,7 +1621,7 @@ bool video_thread_font_init(const void **font_driver, void **font_handle,
    pkt.data.font_init.font_path   = font_path;
    pkt.data.font_init.font_size   = video_font_size;
    pkt.data.font_init.is_threaded = is_threaded;
-   pkt.data.font_init.api         = api;
+   pkt.data.font_init.backend         = backend;
 
    video_thread_send_and_wait_user_to_thread(thr, &pkt);
 

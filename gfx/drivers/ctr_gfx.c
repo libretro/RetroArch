@@ -381,7 +381,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_ctr = {
    NULL,                                     /* get_default_mvp        */
    NULL,                                     /* get_default_vertices   */
    NULL,                                     /* get_default_tex_coords */
-   FONT_DRIVER_RENDER_CTR,
+   &ctr_font,
    GFX_VIDEO_DRIVER_CTR,
    "ctr",
    true,
@@ -1899,7 +1899,7 @@ static void* ctr_init(const video_info_t* video,
    font_driver_init_osd(ctr, video,
          false,
          video->is_threaded,
-         FONT_DRIVER_RENDER_CTR);
+         &ctr_font);
 
    ctr->msg_rendering_enabled     = true;
    ctr->menu_texture_frame_enable = false;

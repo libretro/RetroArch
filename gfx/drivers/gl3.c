@@ -884,7 +884,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_gl3 = {
    gfx_display_gl3_get_default_mvp,
    gfx_display_gl3_get_default_vertices,
    gfx_display_gl3_get_default_tex_coords,
-   FONT_DRIVER_RENDER_OPENGL_CORE_API,
+   &gl3_raster_font,
    GFX_VIDEO_DRIVER_OPENGL_CORE,
    "glcore",
    false,
@@ -3194,7 +3194,7 @@ static void *gl3_init(const video_info_t *video,
             video,
             false,
             video->is_threaded,
-            FONT_DRIVER_RENDER_OPENGL_CORE_API);
+            &gl3_raster_font);
 
    if (video_gpu_record
       && recording_state_get_ptr()->enable)

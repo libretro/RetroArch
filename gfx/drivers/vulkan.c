@@ -2190,7 +2190,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_vulkan = {
    gfx_display_vk_get_default_mvp,
    gfx_display_vk_get_default_vertices,
    gfx_display_vk_get_default_tex_coords,
-   FONT_DRIVER_RENDER_VULKAN_API,
+   &vulkan_raster_font,
    GFX_VIDEO_DRIVER_VULKAN,
    "vulkan",
    false,
@@ -9490,5 +9490,5 @@ video_driver_t video_vulkan = {
 #else
    NULL, /* read_viewport_hdr */
 #endif
-   FONT_DRIVER_RENDER_VULKAN_API
+   &vulkan_raster_font
 };

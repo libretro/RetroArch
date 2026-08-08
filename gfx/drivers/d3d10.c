@@ -860,7 +860,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d10 = {
    NULL,                                     /* get_default_mvp        */
    NULL,                                     /* get_default_vertices   */
    NULL,                                     /* get_default_tex_coords */
-   FONT_DRIVER_RENDER_D3D10_API,
+   &d3d10_font,
    GFX_VIDEO_DRIVER_DIRECT3D10,
    "d3d10",
    true,
@@ -2703,7 +2703,7 @@ static void *d3d10_gfx_init(const video_info_t* video,
             video,
             false,
             video->is_threaded,
-            FONT_DRIVER_RENDER_D3D10_API);
+            &d3d10_font);
 
 
 #if 0

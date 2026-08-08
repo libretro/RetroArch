@@ -858,7 +858,7 @@ static void *ps2_init(const video_info_t *video,
       font_driver_init_osd(ps2,
             video, false,
             video->is_threaded,
-            FONT_DRIVER_RENDER_PS2);
+            &ps2_font);
 
    ps2->PSM          = (video->rgb32 ? GS_PSM_CT32 : GS_PSM_CT16);
    ps2->tex_filter   = video->smooth ? GS_FILTER_LINEAR : GS_FILTER_NEAREST;

@@ -220,7 +220,7 @@ static void *vga_gfx_init(const video_info_t *video,
       font_driver_init_osd(NULL,
             video,
             false,
-            video->is_threaded, FONT_DRIVER_RENDER_VGA);
+            video->is_threaded, &vga_font);
 
    return vga;
 }

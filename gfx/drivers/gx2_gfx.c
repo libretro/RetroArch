@@ -640,7 +640,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_wiiu = {
    NULL,                                     /* get_default_mvp        */
    NULL,                                     /* get_default_vertices   */
    NULL,                                     /* get_default_tex_coords */
-   FONT_DRIVER_RENDER_WIIU,
+   &wiiu_font,
    GFX_VIDEO_DRIVER_WIIU,
    "gx2",
    true,
@@ -1396,7 +1396,7 @@ static void *gx2_init(const video_info_t *video,
          video,
          false,
          video->is_threaded,
-         FONT_DRIVER_RENDER_WIIU);
+         &wiiu_font);
 
    {
       enum rarch_shader_type type;

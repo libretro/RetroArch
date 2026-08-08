@@ -406,7 +406,7 @@ font_data_t *gfx_display_font_file(
          font_size = 2.0f;
       if ((font_data = font_driver_init_first(video_driver_get_ptr(),
                   fontpath, font_size, true, is_threaded,
-                  dispctx->font_type)))
+                  dispctx->font_backend)))
          return font_data;
    }
    return NULL;

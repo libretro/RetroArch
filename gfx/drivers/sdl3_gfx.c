@@ -290,7 +290,7 @@ static void *sdl3_gfx_init(const video_info_t *video,
     * a NULL font - the same wiring every other modern driver does. */
    if (video->font_enable)
       font_driver_init_osd(vid, video, false, video->is_threaded,
-            FONT_DRIVER_RENDER_SDL3);
+            &sdl3_raster_font);
 
    /* The frontend selects the input driver separately. */
    *input      = NULL;
@@ -1203,7 +1203,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_sdl3 = {
    NULL, /* get_default_mvp - SDL_Renderer has no MVP concept */
    NULL, /* get_default_vertices */
    NULL, /* get_default_tex_coords */
-   FONT_DRIVER_RENDER_SDL3,
+   &sdl3_raster_font,
    GFX_VIDEO_DRIVER_SDL3,
    "sdl3",
    false,

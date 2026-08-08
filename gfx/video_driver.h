@@ -841,8 +841,7 @@ typedef struct video_driver
    bool (*read_viewport_hdr)(void *data, uint16_t *buffer, bool is_idle,
          struct rpng_hdr_metadata *out_meta);
 
-   /* Optional. When set to anything other than
-    * FONT_DRIVER_RENDER_DONT_CARE, the OSD font is created and
+   /* Optional. When non-NULL, the OSD font is created and
     * destroyed for this driver by the layer above - by
     * video_driver_init_internal()/video_driver_free_internal() when
     * running unthreaded, and by the CMD_INIT/CMD_FREE handlers in
@@ -850,13 +849,13 @@ typedef struct video_driver
     * threaded. Drivers that declare it must not call
     * font_driver_init_osd()/font_driver_free_osd() themselves.
     *
-    * Leaving it at DONT_CARE keeps the driver responsible for its own
+    * Leaving it NULL keeps the driver responsible for its own
     * OSD font, which is what every unmigrated driver still does.
     *
     * Placed last, after read_viewport_hdr, so drivers using positional
     * initializers leave it zero (== DONT_CARE) without shifting any
     * other vtable slot. */
-   enum font_driver_render_api font_api;
+   const struct font_renderer *font_backend;
 } video_driver_t;
 
 typedef struct

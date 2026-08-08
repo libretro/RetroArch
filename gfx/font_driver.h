@@ -138,14 +138,14 @@ font_data_t *font_driver_init_first(
       float font_size,
       bool threading_hint,
       bool is_threaded,
-      enum font_driver_render_api api);
+      const font_renderer_t *backend);
 
 void font_driver_init_osd(
       void *video_data,
       const video_info_t *video_info,
       bool threading_hint,
       bool is_threaded,
-      enum font_driver_render_api api);
+      const font_renderer_t *backend);
 
 void font_driver_free_osd(void);
 

@@ -118,7 +118,7 @@ static void *network_gfx_init(const video_info_t *video,
             video,
             false,
             video->is_threaded,
-            FONT_DRIVER_RENDER_NETWORK_VIDEO);
+            NULL /* no font backend */);
 
    strlcpy(network->address, xstr(NETWORK_VIDEO_HOST), sizeof(network->address));
    network->port = NETWORK_VIDEO_PORT;
