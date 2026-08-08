@@ -150,6 +150,26 @@ static bool patch_stream_fill(patch_stream_t *ps, size_t at,
    return true;
 }
 
+/* BPS and UPS both end with a CRC-32 of the patch's own bytes in the
+ * last four, little endian.  It depends on nothing but the patch, which
+ * open() already has whole, so it is settled here - before the declared
+ * target length, which the patch alone chooses, becomes an allocation.
+ * A 20-byte file can otherwise name a 4 GiB target and get it reserved
+ * and walked before anything is verified.  finish() still checks the
+ * trailer in full; this is a gate in front of the allocator. */
+static bool patch_stream_self_checksum_ok(const uint8_t *patch,
+      size_t patch_len)
+{
+   uint32_t want = 0;
+   unsigned i;
+
+   if (patch_len < 4)
+      return false;
+   for (i = 0; i < 4; i++)
+      want |= (uint32_t)patch[patch_len - 4 + i] << (i * 8);
+   return encoding_crc32(0, patch, patch_len - 4) == want;
+}
+
 /* Variable-length integer, as used by both UPS and BPS. */
 static bool patch_stream_decode(patch_stream_t *ps, uint64_t *out)
 {
@@ -418,7 +438,9 @@ patch_stream_t *patch_stream_ups_open(const uint8_t *patch, size_t patch_len,
    uint64_t declared_src;
    uint64_t declared_tgt;
 
-   if (patch_len < 18 || memcmp(patch, "UPS1", 4))
+   if (     patch_len < 18
+         || memcmp(patch, "UPS1", 4)
+         || !patch_stream_self_checksum_ok(patch, patch_len))
       return NULL;
 
    if (!(ps = (patch_stream_t*)calloc(1, sizeof(*ps))))
@@ -689,7 +711,9 @@ patch_stream_t *patch_stream_bps_open(const uint8_t *patch, size_t patch_len,
    uint64_t        decl_tgt;
    uint64_t        markup;
 
-   if (patch_len < 19 || memcmp(patch, "BPS1", 4))
+   if (     patch_len < 19
+         || memcmp(patch, "BPS1", 4)
+         || !patch_stream_self_checksum_ok(patch, patch_len))
       return NULL;
 
    if (!(ps = (patch_stream_t*)calloc(1, sizeof(*ps))))

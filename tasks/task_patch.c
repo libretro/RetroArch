@@ -105,6 +105,29 @@ struct ups_data
 typedef enum patch_error (*patch_func_t)(const uint8_t*, uint64_t,
       const uint8_t*, uint64_t, uint8_t**, uint64_t*);
 
+/* BPS and UPS both close with a CRC-32 of the patch file's own bytes,
+ * little endian, in the last four.  It depends on nothing but the
+ * patch, which is already whole in memory, so it can be settled before
+ * anything the patch merely *claims* is acted on.  That matters because
+ * the declared target length is attacker-controlled and is turned into
+ * a malloc long before either applier reaches its trailer: a 20-byte
+ * file can ask for the whole 4 GiB a UPS length field can name.
+ * Checking here costs one fold over a file measured in kilobytes and
+ * throws out anything that is not a patch at all before it can name a
+ * size.  Both appliers still verify it again in place at the end - this
+ * is a gate, not a replacement. */
+static bool patch_self_checksum_ok(const uint8_t *patch, uint64_t patch_len)
+{
+   uint32_t want = 0;
+   unsigned i;
+
+   if (patch_len < 4)
+      return false;
+   for (i = 0; i < 4; i++)
+      want |= (uint32_t)patch[patch_len - 4 + i] << (i * 8);
+   return encoding_crc32(0, patch, (size_t)(patch_len - 4)) == want;
+}
+
 static uint8_t bps_read(struct bps_data *bps)
 {
    /* Reads past the end yield zeroes rather than walking off the
@@ -162,6 +185,9 @@ static enum patch_error bps_apply_patch(
 
    if (modify_length < 19)
       return PATCH_PATCH_TOO_SMALL;
+
+   if (!patch_self_checksum_ok(modify_data, modify_length))
+      return PATCH_PATCH_CHECKSUM_INVALID;
 
    bps.modify_data            = modify_data;
    bps.source_data            = source_data;
@@ -553,6 +579,9 @@ static enum patch_error ups_apply_patch(
          || (ups_patch_read(&data) != '1')
       )
       return PATCH_PATCH_INVALID;
+
+   if (!patch_self_checksum_ok(patchdata, patchlength))
+      return PATCH_PATCH_CHECKSUM_INVALID;
 
    if (   !ups_decode(&data, &decoded_source_length)
        || !ups_decode(&data, &decoded_target_length)
