@@ -150,6 +150,15 @@ void font_driver_free(font_data_t *font);
  * left alone. Returns the number rebuilt. */
 unsigned font_driver_reload_fonts(void);
 
+/* The font file the current menu language needs, relative to the
+ * assets pkg directory, or NULL when it has no special requirement
+ * and the caller's own default should be used.
+ *
+ * One copy of this decision. It was four - ozone, materialui,
+ * gfx_widgets and file_path_special each carried the same switch -
+ * which is three places to forget when a language is added. */
+const char *font_driver_language_font_file(void);
+
 /* Returns a monotonic counter incremented on every font free;
  * see font_driver.c for rationale. Used to validate externally
  * cached per-font derived data */

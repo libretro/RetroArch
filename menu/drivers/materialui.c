@@ -9327,33 +9327,22 @@ static void materialui_init_font(gfx_display_t *p_disp,
       font_data->font = NULL;
    }
 
-   switch (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE))
    {
-      case RETRO_LANGUAGE_ARABIC:
-      case RETRO_LANGUAGE_PERSIAN:
+      const char *lang_font = font_driver_language_font_file();
+
+      if (lang_font)
+      {
          fill_pathname_join_special(tmp_dir,
                settings->paths.directory_assets, "pkg", sizeof(tmp_dir));
-         fill_pathname_join_special(fontpath, tmp_dir, "fallback-font.ttf",
+         fill_pathname_join_special(fontpath, tmp_dir, lang_font,
                sizeof(fontpath));
-         break;
-      case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
-      case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-         fill_pathname_join_special(tmp_dir,
-               settings->paths.directory_assets, "pkg", sizeof(tmp_dir));
-         fill_pathname_join_special(fontpath, tmp_dir, "chinese-fallback-font.ttf",
-               sizeof(fontpath));
-         break;
-      case RETRO_LANGUAGE_KOREAN:
-         fill_pathname_join_special(tmp_dir,
-               settings->paths.directory_assets, "pkg", sizeof(tmp_dir));
-         fill_pathname_join_special(fontpath, tmp_dir, "korean-fallback-font.ttf",
-               sizeof(fontpath));
-         break;
-      default:
+      }
+      else
+      {
          fill_pathname_join_special(tmp_dir, dir_assets, "glui", sizeof(tmp_dir));
          fill_pathname_join_special(fontpath, tmp_dir, FILE_PATH_TTF_FONT,
                sizeof(fontpath));
-         break;
+      }
    }
 
    font_data->font = gfx_display_font_file(p_disp,

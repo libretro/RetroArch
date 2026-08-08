@@ -24,6 +24,7 @@
 #include "../config.h"
 #endif
 
+#include "../msg_hash.h"
 #include "font_driver.h"
 #include "video_thread_wrapper.h"
 
@@ -66,6 +67,25 @@ static void font_driver_cache_metrics(font_data_t *font)
       font->metrics.ascender  = sz * 1.58f * 0.75f;
       font->metrics.descender = sz * 1.58f * 0.25f;
    }
+}
+
+const char *font_driver_language_font_file(void)
+{
+   switch (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE))
+   {
+      case RETRO_LANGUAGE_ARABIC:
+      case RETRO_LANGUAGE_PERSIAN:
+         return "fallback-font.ttf";
+      case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
+      case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
+         return "chinese-fallback-font.ttf";
+      case RETRO_LANGUAGE_KOREAN:
+         return "korean-fallback-font.ttf";
+      default:
+         break;
+   }
+
+   return NULL;
 }
 
 unsigned font_driver_reload_fonts(void)

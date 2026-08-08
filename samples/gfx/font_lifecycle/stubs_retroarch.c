@@ -26,6 +26,15 @@ bool filestream_read_file(const char *path, void **buf, int64_t *len)
    return *buf != NULL;
 }
 
+/* font_driver_language_font_file() asks which language is selected.
+ * English here: the tests are about the lifecycle, not the mapping. */
+unsigned *msg_hash_get_uint(enum msg_hash_action type)
+{
+   static unsigned lang = 0;   /* RETRO_LANGUAGE_ENGLISH */
+   (void)type;
+   return &lang;
+}
+
 static video_driver_state_t vst;
 video_driver_state_t *video_state_get_ptr(void) { return &vst; }
 

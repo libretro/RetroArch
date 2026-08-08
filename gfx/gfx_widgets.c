@@ -1015,22 +1015,15 @@ static void gfx_widgets_layout(
             is_threaded, p_dispwidget->ozone_bold_font_path, BASE_FONT_SIZE);
 
       /* Create msg_queue font */
-      switch (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE))
       {
-         case RETRO_LANGUAGE_ARABIC:
-         case RETRO_LANGUAGE_PERSIAN:
-            fill_pathname_join_special(font_file, p_dispwidget->assets_pkg_dir, "fallback-font.ttf", sizeof(font_file));
-            break;
-         case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
-         case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-            fill_pathname_join_special(font_file, p_dispwidget->assets_pkg_dir, "chinese-fallback-font.ttf", sizeof(font_file));
-            break;
-         case RETRO_LANGUAGE_KOREAN:
-            fill_pathname_join_special(font_file, p_dispwidget->assets_pkg_dir, "korean-fallback-font.ttf", sizeof(font_file));
-            break;
-         default:
-            strlcpy(font_file, p_dispwidget->ozone_regular_font_path, sizeof(font_file));
-            break;
+         const char *lang_font = font_driver_language_font_file();
+
+         if (lang_font)
+            fill_pathname_join_special(font_file,
+                  p_dispwidget->assets_pkg_dir, lang_font, sizeof(font_file));
+         else
+            strlcpy(font_file, p_dispwidget->ozone_regular_font_path,
+                  sizeof(font_file));
       }
       gfx_widgets_font_init(p_disp, p_dispwidget,
             &p_dispwidget->gfx_widget_fonts.msg_queue,

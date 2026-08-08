@@ -10114,25 +10114,16 @@ static void ozone_set_layout(
    ozone->pointer_active_delta = CURSOR_ACTIVE_DELTA * scale_factor;
 
    /* Initialise fonts */
-   switch (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE))
    {
-      case RETRO_LANGUAGE_ARABIC:
-      case RETRO_LANGUAGE_PERSIAN:
+      const char *lang_font = font_driver_language_font_file();
+
+      if (lang_font)
+      {
          fill_pathname_join_special(tmp_dir, path_directory_assets, "pkg", sizeof(tmp_dir));
-         fill_pathname_join_special(font_path, tmp_dir, "fallback-font.ttf", sizeof(font_path));
-         break;
-      case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
-      case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-         fill_pathname_join_special(tmp_dir, path_directory_assets, "pkg", sizeof(tmp_dir));
-         fill_pathname_join_special(font_path, tmp_dir, "chinese-fallback-font.ttf", sizeof(font_path));
-         break;
-      case RETRO_LANGUAGE_KOREAN:
-         fill_pathname_join_special(tmp_dir, path_directory_assets, "pkg", sizeof(tmp_dir));
-         fill_pathname_join_special(font_path, tmp_dir, "korean-fallback-font.ttf", sizeof(font_path));
-         break;
-      default:
+         fill_pathname_join_special(font_path, tmp_dir, lang_font, sizeof(font_path));
+      }
+      else
          fill_pathname_join_special(font_path, ozone->assets_path, "bold.ttf", sizeof(font_path));
-         break;
    }
 
    if (path_menu_font && *path_menu_font)
@@ -10143,25 +10134,16 @@ static void ozone_set_layout(
    if (!(((ozone->flags & OZONE_FLAG_HAS_ALL_ASSETS) > 0) && font_inited))
       ozone->flags &= ~OZONE_FLAG_HAS_ALL_ASSETS;
 
-   switch (*msg_hash_get_uint(MSG_HASH_USER_LANGUAGE))
    {
-      case RETRO_LANGUAGE_ARABIC:
-      case RETRO_LANGUAGE_PERSIAN:
+      const char *lang_font = font_driver_language_font_file();
+
+      if (lang_font)
+      {
          fill_pathname_join_special(tmp_dir, path_directory_assets, "pkg", sizeof(tmp_dir));
-         fill_pathname_join_special(font_path, tmp_dir, "fallback-font.ttf", sizeof(font_path));
-         break;
-      case RETRO_LANGUAGE_CHINESE_SIMPLIFIED:
-      case RETRO_LANGUAGE_CHINESE_TRADITIONAL:
-         fill_pathname_join_special(tmp_dir, path_directory_assets, "pkg", sizeof(tmp_dir));
-         fill_pathname_join_special(font_path, tmp_dir, "chinese-fallback-font.ttf", sizeof(font_path));
-         break;
-      case RETRO_LANGUAGE_KOREAN:
-         fill_pathname_join_special(tmp_dir, path_directory_assets, "pkg", sizeof(tmp_dir));
-         fill_pathname_join_special(font_path, tmp_dir, "korean-fallback-font.ttf", sizeof(font_path));
-         break;
-      default:
+         fill_pathname_join_special(font_path, tmp_dir, lang_font, sizeof(font_path));
+      }
+      else
          fill_pathname_join_special(font_path, ozone->assets_path, "regular.ttf", sizeof(font_path));
-         break;
    }
 
    if (path_menu_font && *path_menu_font)
