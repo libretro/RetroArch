@@ -35,6 +35,79 @@
  * alone cannot prove a cached entry still describes a live font */
 static uint32_t font_driver_generation = 0;
 
+/* Every live font, so they can be rebuilt when the file behind them
+ * should change. Singly linked through font_data_t::next. */
+static font_data_t *font_live = NULL;
+
+static void font_driver_release_renderer_state(
+      const font_renderer_t *renderer, void *renderer_data,
+      bool is_threaded);
+
+/* Read the renderer's line metrics into the font, or approximate them
+ * from the width of 'a' when it has none. Done at creation and again
+ * after a rebuild, since a different face has different metrics. */
+static void font_driver_cache_metrics(font_data_t *font)
+{
+   struct font_line_metrics *m = NULL;
+
+   if (     font->renderer->get_line_metrics
+         && font->renderer->get_line_metrics(font->renderer_data, &m)
+         && m)
+      font->metrics = *m;
+   else
+   {
+      /* font_size = width('a') / 0.6, height = font_size * 1.7,
+       * ascender = font_size * 1.58 * 0.75, descender the rest. */
+      float sz = 0.0f;
+      if (font->renderer->get_message_width)
+         sz = (float)font->renderer->get_message_width(
+               font->renderer_data, "a", 1, 1.0f) / 0.6f;
+      font->metrics.height    = sz * 1.7f;
+      font->metrics.ascender  = sz * 1.58f * 0.75f;
+      font->metrics.descender = sz * 1.58f * 0.25f;
+   }
+}
+
+unsigned font_driver_reload_fonts(void)
+{
+   font_data_t *font;
+   unsigned     n = 0;
+
+   for (font = font_live; font; font = font->next)
+   {
+      const font_renderer_t *renderer = font->renderer;
+      void                  *fresh    = NULL;
+
+      /* Only a font created from an explicit path can be re-resolved;
+       * one the renderer chose for itself has nothing to re-read. */
+      if (!font->path || !renderer || !renderer->init)
+         continue;
+
+      /* The backend's own init does the resolving and the reading, so
+       * this is the same call that created the font in the first
+       * place - just against whatever the path now points at. */
+      if (!(fresh = renderer->init(font->video_data, font->path,
+                  font->size, font->is_threaded)))
+         continue;      /* keep the old font rather than lose text */
+
+      /* Swap in place: the font_data_t address does not change, so
+       * every holder of the pointer stays valid. Only the renderer
+       * state behind it is replaced. */
+      font_driver_release_renderer_state(renderer, font->renderer_data,
+            font->is_threaded);
+      font->renderer_data = fresh;
+      font_driver_cache_metrics(font);
+      n++;
+   }
+
+   if (n)
+      /* Derived data cached outside this file - ticker widths, menu
+       * line heights - is now stale. */
+      font_driver_generation++;
+
+   return n;
+}
+
 uint32_t font_driver_get_generation(void)
 {
    return font_driver_generation;
@@ -712,9 +785,23 @@ void font_driver_free(font_data_t *font)
    if (font)
    {
       bool is_threaded        = false;
+      font_data_t **link      = &font_live;
 
       /* Invalidate any externally cached per-font derived data */
       font_driver_generation++;
+
+      while (*link)
+      {
+         if (*link == font)
+         {
+            *link = font->next;
+            break;
+         }
+         link = &(*link)->next;
+      }
+
+      free(font->path);
+      font->path = NULL;
 
 #ifdef HAVE_THREADS
       /* Ask for the real threaded state, not the video_threaded
@@ -759,33 +846,21 @@ font_data_t *font_driver_init_first(
 
       if (font)
       {
-         struct font_line_metrics *m = NULL;
-
          font->renderer      = (const font_renderer_t*)font_driver;
          font->renderer_data = font_handle;
          font->size          = font_size;
+         font->next          = NULL;
+         font->video_data    = video_data;
+         font->path          = (font_path && *font_path)
+            ? strdup(font_path) : NULL;
+         font->is_threaded   = is_threaded;
 
-         if (     font->renderer->get_line_metrics
-               && font->renderer->get_line_metrics(font->renderer_data, &m)
-               && m)
-            font->metrics    = *m;
-         else
-         {
-            /* Renderer has no metrics of its own. Approximate from
-             * the width of 'a', which is what the old
-             * font_driver_get_line_*() helpers fell back to:
-             *   font_size = width('a') / 0.6
-             *   height    = font_size * 1.7
-             *   ascender  = font_size * 1.58 * 0.75
-             *   descender = font_size * 1.58 * 0.25 */
-            float sz = 0.0f;
-            if (font->renderer->get_message_width)
-               sz = (float)font->renderer->get_message_width(
-                     font->renderer_data, "a", 1, 1.0f) / 0.6f;
-            font->metrics.height    = sz * 1.7f;
-            font->metrics.ascender  = sz * 1.58f * 0.75f;
-            font->metrics.descender = sz * 1.58f * 0.25f;
-         }
+         font_driver_cache_metrics(font);
+
+         /* Track it so font_driver_reload_fonts() can find it. */
+         font->next          = font_live;
+         font_live           = font;
+
          return font;
       }
 

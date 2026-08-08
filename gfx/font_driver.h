@@ -85,6 +85,14 @@ typedef struct font_data
    const font_renderer_t *renderer;
    void *renderer_data;
    float size;
+   /* How this font was created, so it can be rebuilt in place when the
+    * file behind it should change - switching menu language picks a
+    * different TTF. Rebuilding keeps this font_data_t at the same
+    * address, so every holder of the pointer stays valid. */
+   struct font_data *next;          /* list of live fonts */
+   void *video_data;
+   char *path;                      /* NULL when the renderer chose */
+   bool is_threaded;
    /* Line metrics, read from the renderer once when the font is
     * created. Renderers fill these at init and never change them, so
     * callers can use them directly instead of asking again - which
@@ -128,6 +136,12 @@ void font_driver_render_msg(void *data,
 int font_driver_get_message_width(void *font_data, const char *msg, size_t len, float scale);
 
 void font_driver_free(font_data_t *font);
+
+/* Rebuild every live font from its current path, in place. Used when
+ * the menu language changes and the fonts must follow, without tearing
+ * down the video driver to do it. Fonts whose path is unchanged are
+ * left alone. Returns the number rebuilt. */
+unsigned font_driver_reload_fonts(void);
 
 /* Returns a monotonic counter incremented on every font free;
  * see font_driver.c for rationale. Used to validate externally
