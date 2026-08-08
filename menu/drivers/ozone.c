@@ -9935,6 +9935,10 @@ static bool ozone_init_font(
       font_data->glyph_width     = glyph_width;
 
    font_data->wideglyph_width    = 100;
+   /* Kept so the derived metrics can be recomputed if the font is
+    * rebuilt - a language switch picks a different face. */
+   font_data->wideglyph_str      = wideglyph_str;
+   font_data->metrics_generation = font_driver_get_generation();
 
    if (wideglyph_str)
    {

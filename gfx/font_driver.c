@@ -688,12 +688,53 @@ void font_driver_bind_block(void *font_data, void *block)
 }
 
 /* Flushing is slow - only do it if font has actually been used */
+void font_driver_sync_impl(font_data_impl_t *font_data)
+{
+   int glyph_width;
+   uint32_t gen = font_driver_get_generation();
+
+   if (!font_data || !font_data->font)
+      return;
+   if (font_data->metrics_generation == gen)
+      return;
+
+   font_data->metrics_generation = gen;
+
+   if ((glyph_width = font_driver_get_message_width(
+               font_data->font, "a", 1, 1.0f)) > 0)
+      font_data->glyph_width     = (unsigned)glyph_width;
+
+   font_data->wideglyph_width    = 100;
+
+   if (font_data->wideglyph_str && glyph_width > 0)
+   {
+      int wide = font_driver_get_message_width(font_data->font,
+            font_data->wideglyph_str,
+            strlen(font_data->wideglyph_str), 1.0f);
+      if (wide > 0)
+         font_data->wideglyph_width = wide * 100 / glyph_width;
+   }
+
+   font_data->line_height        =
+      (int)roundf(font_data->font->metrics.height);
+   font_data->line_ascender      =
+      (int)roundf(font_data->font->metrics.ascender);
+   font_data->line_centre_offset =
+      (int)roundf((font_data->font->metrics.ascender
+            - font_data->font->metrics.descender) * 0.5f);
+}
+
 void font_flush(
       unsigned video_width,
       unsigned video_height,
       font_data_impl_t *font_data)
 {
    const font_renderer_t *renderer = font_data->font ? font_data->font->renderer : NULL;
+
+   /* A rebuilt font has different metrics; pick them up before
+    * anything is drawn with the old ones. */
+   font_driver_sync_impl(font_data);
+
    if (font_data->raster_block.carr.coords.vertices == 0)
       return;
    if (renderer && renderer->flush)

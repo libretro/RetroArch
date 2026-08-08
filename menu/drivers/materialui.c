@@ -9369,6 +9369,10 @@ static void materialui_init_font(gfx_display_t *p_disp,
          font_data->glyph_width     = (unsigned)char_width;
 
       font_data->wideglyph_width    = 100;
+      /* Kept so the derived metrics can be recomputed if the font is
+       * rebuilt - a language switch picks a different face. */
+      font_data->wideglyph_str      = wideglyph_str;
+      font_data->metrics_generation = font_driver_get_generation();
 
       if (wideglyph_str)
       {

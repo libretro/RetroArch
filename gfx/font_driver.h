@@ -112,6 +112,13 @@ typedef struct
    int line_height;
    int line_ascender;
    int line_centre_offset;
+   /* The string wideglyph_width is measured from, kept so the derived
+    * values above can be recomputed without the driver's help. */
+   const char *wideglyph_str;
+   /* font_driver generation these were computed at. When the font is
+    * rebuilt underneath - switching menu language picks a different
+    * face - the generation moves and they are recomputed. */
+   uint32_t metrics_generation;
 } font_data_impl_t;
 
 void font_driver_bind_block(void *font_data, void *block);
@@ -147,6 +154,11 @@ unsigned font_driver_reload_fonts(void);
  * see font_driver.c for rationale. Used to validate externally
  * cached per-font derived data */
 uint32_t font_driver_get_generation(void);
+
+/* Recompute the derived metrics above if the font has been rebuilt
+ * since they were last worked out. Cheap when nothing has changed:
+ * one integer compare. */
+void font_driver_sync_impl(font_data_impl_t *font_data);
 
 void font_flush(
       unsigned video_width,

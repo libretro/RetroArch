@@ -144,6 +144,32 @@ int main(void)
       }
    }
 
+   /* 7. derived metrics on an impl follow a rebuild */
+   {
+      font_data_impl_t impl;
+      memset(&impl, 0, sizeof(impl));
+      impl.font          = a;
+      impl.wideglyph_str = "WW";
+      font_driver_sync_impl(&impl);
+      {
+         int h0 = impl.line_height;
+         unsigned g0w = impl.glyph_width;
+         CHECK(h0 > 0, "impl metrics computed on first sync");
+         CHECK(g0w > 0, "impl glyph width computed");
+         /* nothing changed: sync must be a no-op */
+         impl.line_height = -1;
+         font_driver_sync_impl(&impl);
+         CHECK(impl.line_height == -1,
+               "sync does nothing when the generation is unchanged");
+         /* rebuild: the sync must notice and recompute */
+         font_driver_reload_fonts();
+         font_driver_sync_impl(&impl);
+         CHECK(impl.line_height == h0,
+               "impl metrics recomputed after a rebuild");
+         CHECK(impl.wideglyph_width > 0, "wideglyph width recomputed");
+      }
+   }
+
    font_driver_free(a);
    font_driver_free(c);
    CHECK(live_renderer_state == 0, "all renderer state released at teardown");
