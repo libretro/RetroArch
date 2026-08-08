@@ -668,9 +668,7 @@ FONTS
 
 #include "../gfx/font_driver.c"
 
-#if defined(HAVE_STB_FONT)
 #include "../gfx/drivers_font_renderer/stb.c"
-#endif
 
 #if defined(HAVE_FREETYPE)
 #include "../gfx/drivers_font_renderer/freetype.c"

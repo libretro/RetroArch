@@ -356,7 +356,6 @@ else ifeq ($(platform), vita)
    HAVE_OVERLAY             := 1
    HAVE_MATERIALUI          := 1
    HAVE_XMB                 := 1
-   HAVE_STB_FONT            := 1
    HAVE_THREADS             := 1
    HAVE_LIBRETRODB          := 1
    RARCH_CONSOLE             = 1
@@ -379,7 +378,6 @@ else ifeq ($(platform), windows_msvc6_x86)
    HAVE_OVERLAY             := 1
    HAVE_MATERIALUI          := 1
    HAVE_XMB                 := 1
-   HAVE_STB_FONT            := 1
    HAVE_THREADS             := 1
    HAVE_LIBRETRODB          := 1
    HAVE_COMMAND             := 1
@@ -427,7 +425,6 @@ else ifeq ($(platform), windows_msvc2003_x86)
    HAVE_OVERLAY             := 1
    HAVE_MATERIALUI          := 1
    HAVE_XMB                 := 1
-   HAVE_STB_FONT            := 1
    HAVE_THREADS             := 1
    HAVE_LIBRETRODB          := 1
    HAVE_COMMAND             := 1
@@ -484,7 +481,6 @@ else ifeq ($(platform), windows_msvc2005_x86)
    HAVE_MATERIALUI          := 1
    HAVE_XMB                 := 1
    HAVE_OZONE               := 1
-   HAVE_STB_FONT            := 1
    HAVE_THREADS             := 1
    HAVE_LIBRETRODB          := 1
    HAVE_COMMAND             := 1
@@ -569,7 +565,6 @@ else ifneq (,$(findstring windows_msvc2010,$(platform)))
    HAVE_MATERIALUI          := 1
    HAVE_XMB                 := 1
    HAVE_OZONE               := 1
-   HAVE_STB_FONT            := 1
    HAVE_THREADS             := 1
    HAVE_LIBRETRODB          := 1
    HAVE_COMMAND             := 1
@@ -665,7 +660,6 @@ else ifneq (,$(findstring windows_msvc2012,$(platform)))
    HAVE_OVERLAY             := 1
    HAVE_MATERIALUI          := 1
    HAVE_XMB                 := 1
-   HAVE_STB_FONT            := 1
    HAVE_THREADS             := 1
    HAVE_LIBRETRODB          := 1
    HAVE_COMMAND             := 1
@@ -753,7 +747,6 @@ else ifneq (,$(findstring windows_msvc2013,$(platform)))
    HAVE_OVERLAY             := 1
    HAVE_MATERIALUI          := 1
    HAVE_XMB                 := 1
-   HAVE_STB_FONT            := 1
    HAVE_THREADS             := 1
    HAVE_LIBRETRODB          := 1
    HAVE_COMMAND             := 1
@@ -841,7 +834,6 @@ else ifneq (,$(findstring windows_msvc2015,$(platform)))
    HAVE_OVERLAY             := 1
    HAVE_MATERIALUI          := 1
    HAVE_XMB                 := 1
-   HAVE_STB_FONT            := 1
    HAVE_THREADS             := 1
    HAVE_LIBRETRODB          := 1
    HAVE_COMMAND             := 1
@@ -944,7 +936,6 @@ else ifeq (qnx,$(platform))
    HAVE_OVERLAY             := 1
    HAVE_MATERIALUI          := 1
    HAVE_XMB                 := 1
-   HAVE_STB_FONT            := 1
    HAVE_THREADS             := 1
    HAVE_LIBRETRODB          := 1
    HAVE_COMMAND             := 1
@@ -966,7 +957,7 @@ else ifeq (qnx,$(platform))
       LDFLAGS += -g
    endif
 
-   PLATCFLAGS += -DHAVE_SHADERPIPELINE -DHAVE_OPENGL -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DHAVE_OZONE -DHAVE_CC_RESAMPLER -DHAVE_CHEEVOS -DRC_DISABLE_LUA -DHAVE_GL_SYNC -DHAVE_GLSLANG -DHAVE_BUILTINGLSLANG -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_RUNAHEAD -DHAVE_GFX_WIDGETS -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_SPIRV_CROSS -DHAVE_STB_FONT -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_UPDATE_CORES 
+   PLATCFLAGS += -DHAVE_SHADERPIPELINE -DHAVE_OPENGL -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DHAVE_OZONE -DHAVE_CC_RESAMPLER -DHAVE_CHEEVOS -DRC_DISABLE_LUA -DHAVE_GL_SYNC -DHAVE_GLSLANG -DHAVE_BUILTINGLSLANG -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_RUNAHEAD -DHAVE_GFX_WIDGETS -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_SPIRV_CROSS -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_UPDATE_CORES 
    PLATCFLAGS += -DHAVE_UPDATE_CORE_INFO
    PLATCFLAGS += -DHAVE_XMB -DRARCH_INTERNAL -DWANT_GLSLANG -DHAVE_XCB -DHAVE_EGL -DHAVE_BB10 -DHAVE_GLSL -DHAVE_AL -DHAVE_BSV_MOVIE -DRARCH_MOBILE
    EXT_TARGET := $(TARGET_NAME)
@@ -992,7 +983,6 @@ else ifneq (,$(findstring unix,$(platform)))
    HAVE_OVERLAY             := 1
    HAVE_MATERIALUI          := 1
    HAVE_XMB                 := 1
-   HAVE_STB_FONT            := 1
    HAVE_THREADS             := 1
    HAVE_LIBRETRODB          := 1
    HAVE_COMMAND             := 1
@@ -1007,7 +997,7 @@ else ifneq (,$(findstring unix,$(platform)))
    HAVE_CHEATS              := 1
    HAVE_CORE_INFO_CACHE     := 1
 
-   PLATCFLAGS += -D__MMX__ -D__SSE__ -DHAVE_OPENGL -DHAVE_OPENGL1 -DHAVE_GLSL -DHAVE_SHADERPIPELINE -DHAVE_OZONE -DHAVE_CC_RESAMPLER -DHAVE_CHEEVOS -DRC_DISABLE_LUA -DHAVE_GL_SYNC -DHAVE_SLANG -DHAVE_GLSLANG -DHAVE_BUILTINGLSLANG -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_RUNAHEAD -DHAVE_GFX_WIDGETS -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_SPIRV_CROSS -DHAVE_STB_FONT -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_UPDATE_CORES 
+   PLATCFLAGS += -D__MMX__ -D__SSE__ -DHAVE_OPENGL -DHAVE_OPENGL1 -DHAVE_GLSL -DHAVE_SHADERPIPELINE -DHAVE_OZONE -DHAVE_CC_RESAMPLER -DHAVE_CHEEVOS -DRC_DISABLE_LUA -DHAVE_GL_SYNC -DHAVE_SLANG -DHAVE_GLSLANG -DHAVE_BUILTINGLSLANG -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_RUNAHEAD -DHAVE_GFX_WIDGETS -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_SPIRV_CROSS -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_UPDATE_CORES 
    PLATCFLAGS += -DHAVE_UPDATE_CORE_INFO
    PLATCFLAGS += -DHAVE_VULKAN -DHAVE_XMB -DRARCH_INTERNAL -DWANT_GLSLANG -DHAVE_X11 -DHAVE_XCB -DHAVE_UDEV -DHAVE_BSV_MOVIE -DHAVE_PULSE
    EXT_TARGET := $(TARGET_NAME)
@@ -1171,10 +1161,6 @@ endif
 
 ifeq ($(HAVE_XMB), 1)
    CFLAGS += -DHAVE_XMB
-endif
-
-ifeq ($(HAVE_STB_FONT), 1)
-   CFLAGS += -DHAVE_STB_FONT
 endif
 
 ifeq ($(HAVE_LANGEXTRA), 1)

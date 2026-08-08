@@ -50,9 +50,7 @@ int font_renderer_create_default(
 #if defined(__APPLE__) && defined(HAVE_CORETEXT)
       &coretext_font_renderer,
 #endif
-#ifdef HAVE_STB_FONT
       &stb_font_renderer,
-#endif
       &bitmap_font_renderer,
       NULL
    };

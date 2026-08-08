@@ -1157,10 +1157,7 @@ ifeq ($(HAVE_OVERLAY), 1)
           led/drivers/led_overlay.o
 endif
 
-ifeq ($(HAVE_STB_FONT), 1)
-   OBJ += gfx/drivers_font_renderer/stb.o
-   DEFINES += -DHAVE_STB_FONT
-endif
+OBJ += gfx/drivers_font_renderer/stb.o
 
 ifeq ($(HAVE_FREETYPE), 1)
    OBJ += gfx/drivers_font_renderer/freetype.o
