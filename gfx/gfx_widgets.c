@@ -2198,8 +2198,6 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
          &p_dispwidget->gfx_widget_fonts.bold.raster_block.carr);
    video_coord_array_free(
          &p_dispwidget->gfx_widget_fonts.msg_queue.raster_block.carr);
-
-   font_driver_bind_block(NULL, NULL);
 }
 
 static void gfx_widgets_context_reset(

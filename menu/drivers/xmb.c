@@ -10337,7 +10337,6 @@ static void xmb_free(void *data)
    }
 
    gfx_display_deinit_white_texture();
-   font_driver_bind_block(NULL, NULL);
 }
 
 static void xmb_context_bg_destroy(xmb_handle_t *xmb)

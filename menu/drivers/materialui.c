@@ -9693,8 +9693,6 @@ static void materialui_free(void *data)
 
    gfx_display_deinit_white_texture();
 
-   font_driver_bind_block(NULL, NULL);
-
    materialui_free_playlist_icon_list(mui);
 
    p_anim->updatetime_cb = NULL;

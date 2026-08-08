@@ -9820,8 +9820,6 @@ static void ozone_free(void *data)
    }
 
    gfx_display_deinit_white_texture();
-
-   font_driver_bind_block(NULL, NULL);
 }
 
 static void ozone_update_thumbnail_image(void *data)

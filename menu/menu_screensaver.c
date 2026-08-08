@@ -268,8 +268,6 @@ void menu_screensaver_free(menu_screensaver_t *screensaver)
       font_driver_free(screensaver->font_data.font);
       video_coord_array_free(&screensaver->font_data.raster_block.carr);
       screensaver->font_data.font = NULL;
-
-      font_driver_bind_block(NULL, NULL);
    }
 
    /* Free particle array */

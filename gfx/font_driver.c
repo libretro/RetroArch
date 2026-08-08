@@ -563,8 +563,7 @@ void font_driver_render_msg(void *data, const char *msg, size_t msg_len,
 
 void font_driver_bind_block(void *font_data, void *block)
 {
-   font_data_t *font               = (font_data_t*)(font_data
-         ? font_data : (void*)video_state_get_ptr()->osd_font);
+   font_data_t *font               = (font_data_t*)font_data;
    const font_renderer_t *renderer = font ? font->renderer : NULL;
    if (renderer && renderer->bind_block)
       renderer->bind_block(font->renderer_data, block);
