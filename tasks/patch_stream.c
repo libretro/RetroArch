@@ -129,7 +129,10 @@ static bool patch_stream_put(patch_stream_t *ps, size_t at,
 {
    if (!patch_stream_reserve(ps, at + len))
       return false;
-   memcpy(ps->out + at, data, len);
+   /* reserve() is a no-op for a zero-byte request, so out can still be
+    * NULL here; NULL + 0 and memcpy(NULL, ..., 0) are both undefined. */
+   if (len)
+      memcpy(ps->out + at, data, len);
    if (at + len > ps->out_len)
       ps->out_len = at + len;
    return true;
@@ -140,7 +143,8 @@ static bool patch_stream_fill(patch_stream_t *ps, size_t at,
 {
    if (!patch_stream_reserve(ps, at + len))
       return false;
-   memset(ps->out + at, val, len);
+   if (len)
+      memset(ps->out + at, val, len);
    if (at + len > ps->out_len)
       ps->out_len = at + len;
    return true;
