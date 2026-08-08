@@ -366,9 +366,7 @@
 		05A8C7A720DB72F100FF7857 /* font_driver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = font_driver.h; sourceTree = "<group>"; };
 		05A8C7A820DB72F100FF7857 /* video_defines.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = video_defines.h; sourceTree = "<group>"; };
 		05A8C7AB20DB72F100FF7857 /* freetype.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = freetype.c; sourceTree = "<group>"; };
-		05A8C7AC20DB72F100FF7857 /* bitmap.bmp */ = {isa = PBXFileReference; lastKnownFileType = image.bmp; path = bitmap.bmp; sourceTree = "<group>"; };
 		05A8C7AD20DB72F100FF7857 /* coretext.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = coretext.c; sourceTree = "<group>"; };
-		05A8C7AE20DB72F100FF7857 /* bitmap.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = bitmap.bin; sourceTree = "<group>"; };
 		05A8C7AF20DB72F100FF7857 /* stb_unicode.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = stb_unicode.c; sourceTree = "<group>"; };
 		05A8C7B020DB72F100FF7857 /* bitmapfont.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = bitmapfont.c; sourceTree = "<group>"; };
 		05A8C7B120DB72F100FF7857 /* bitmap.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bitmap.h; sourceTree = "<group>"; };
@@ -1021,9 +1019,7 @@
 			isa = PBXGroup;
 			children = (
 				05A8C7AB20DB72F100FF7857 /* freetype.c */,
-				05A8C7AC20DB72F100FF7857 /* bitmap.bmp */,
 				05A8C7AD20DB72F100FF7857 /* coretext.c */,
-				05A8C7AE20DB72F100FF7857 /* bitmap.bin */,
 				05A8C7AF20DB72F100FF7857 /* stb_unicode.c */,
 				05A8C7B020DB72F100FF7857 /* bitmapfont.c */,
 				05A8C7B120DB72F100FF7857 /* bitmap.h */,
