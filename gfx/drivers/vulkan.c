@@ -444,12 +444,11 @@ typedef struct
    struct vk_buffer_range range;
    unsigned vertices;
 
-   /* Dirty rectangle for partial atlas uploads.
-    * Tracks the bounding box of modified glyphs so that
-    * vulkan_font_render_msg only copies the changed region
-    * instead of the entire atlas texture. */
-   unsigned dirty_x_min, dirty_y_min;
-   unsigned dirty_x_max, dirty_y_max;
+   /* The atlas keeps its own dirty box, a union over everything
+    * rasterised since the last upload, so the driver does not track
+    * one. This only records that the device-local texture has never
+    * been written and wants the whole atlas once. */
+   bool full_upload;
 
    /* Recycled fence used by vulkan_raster_font_flush to scope
     * the wait for the atlas upload submission. Lazy-created on
@@ -457,7 +456,6 @@ typedef struct
     * vkCreateFence/vkDestroyFence churn. */
    VkFence upload_fence;
 
-   bool needs_update;
 } vulkan_raster_t;
 
 #ifdef VULKAN_DEBUG_TEXTURE_ALLOC
@@ -2182,34 +2180,40 @@ static void gfx_display_vk_scissor_end(void *data,
  * FONT DRIVER
  */
 
-static INLINE void vulkan_font_update_glyph(
-      vulkan_raster_t *font, const struct font_glyph *glyph)
+/* Copy the region the atlas says it changed out of the CPU atlas and
+ * into the mapped staging texture, in one pass.
+ *
+ * This used to happen a glyph at a time, from six call sites, with the
+ * driver keeping a second dirty box alongside the one the atlas
+ * already maintains. The atlas box is a union over everything
+ * rasterised since the last upload, which is exactly the region that
+ * needs staging, so there is nothing for the driver to track. gl3 has
+ * always worked this way. */
+static void vulkan_font_stage_atlas(vulkan_raster_t *font,
+      unsigned x0, unsigned y0, unsigned x1, unsigned y1)
 {
    unsigned row;
-   unsigned gx_min = glyph->atlas_offset_x;
-   unsigned gy_min = glyph->atlas_offset_y;
-   unsigned gx_max = gx_min + glyph->width;
-   unsigned gy_max = gy_min + glyph->height;
+   size_t   esz = (font->atlas->format == FONT_ATLAS_FORMAT_A16)
+         ? sizeof(uint16_t) : sizeof(uint8_t);
 
+   if (!font->texture.mapped)
+      return;
+   if (x1 > font->atlas->width)
+      x1 = font->atlas->width;
+   if (y1 > font->atlas->height)
+      y1 = font->atlas->height;
+   if (x1 <= x0 || y1 <= y0)
+      return;
+
+   for (row = y0; row < y1; row++)
    {
-      size_t esz = (font->atlas->format == FONT_ATLAS_FORMAT_A16)
-            ? sizeof(uint16_t) : sizeof(uint8_t);
-      for (row = gy_min; row < gy_max; row++)
-      {
-         uint8_t *src = font->atlas->buffer
-               + ((size_t)row * font->atlas->width + gx_min) * esz;
-         uint8_t *dst = (uint8_t*)font->texture.mapped
-               + (size_t)row * font->texture.stride
-               + (size_t)gx_min * esz;
-         memcpy(dst, src, (size_t)glyph->width * esz);
-      }
+      const uint8_t *src = font->atlas->buffer
+            + ((size_t)row * font->atlas->width + x0) * esz;
+      uint8_t       *dst = (uint8_t*)font->texture.mapped
+            + (size_t)row * font->texture.stride
+            + (size_t)x0 * esz;
+      memcpy(dst, src, (size_t)(x1 - x0) * esz);
    }
-
-   /* Expand the dirty bounding box. */
-   if (gx_min < font->dirty_x_min) font->dirty_x_min = gx_min;
-   if (gy_min < font->dirty_y_min) font->dirty_y_min = gy_min;
-   if (gx_max > font->dirty_x_max) font->dirty_x_max = gx_max;
-   if (gy_max > font->dirty_y_max) font->dirty_y_max = gy_max;
 }
 
 static void vulkan_font_free(void *data, bool is_threaded)
@@ -2289,12 +2293,9 @@ static void *vulkan_font_init(void *data,
             NULL, VULKAN_TEXTURE_DYNAMIC);
    }
 
-   /* Initial upload is full atlas. */
-   font->dirty_x_min  = 0;
-   font->dirty_y_min  = 0;
-   font->dirty_x_max  = font->atlas->width;
-   font->dirty_y_max  = font->atlas->height;
-   font->needs_update = true;
+   /* texture_optimal starts empty; the staging texture was created
+    * with the atlas as its initial contents. */
+   font->full_upload  = true;
 
    return font;
 }
@@ -2320,12 +2321,6 @@ static int vulkan_font_get_message_width(void *data, const char *msg,
     * evicted like any other slot under atlas pressure); without this
     * pairing its cell would be stranded once an unrelated glyph's
     * update clears the dirty flag. */
-   if (glyph_q && font->atlas->dirty)
-   {
-      vulkan_font_update_glyph(font, glyph_q);
-      font->atlas->dirty = false;
-      font->needs_update = true;
-   }
 
    while (msg < msg_end)
    {
@@ -2337,12 +2332,6 @@ static int vulkan_font_get_message_width(void *data, const char *msg,
          if (!(glyph = glyph_q))
             continue;
 
-      if (font->atlas->dirty)
-      {
-         vulkan_font_update_glyph(font, glyph);
-         font->atlas->dirty = false;
-         font->needs_update = true;
-      }
       delta_x += glyph->advance_x;
    }
 
@@ -2455,12 +2444,6 @@ static void vulkan_font_render_msg(
 
    /* Pair the fallback-glyph lookup with an upload like every other
     * lookup, in case '?' was just (re)rasterized after eviction. */
-   if (glyph_q && font->atlas->dirty)
-   {
-      vulkan_font_update_glyph(font, glyph_q);
-      font->atlas->dirty = false;
-      font->needs_update = true;
-   }
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height      = line_metrics->height * scale / vk->vp.height;
 
@@ -2542,12 +2525,6 @@ static void vulkan_font_render_msg(
                   if (!(glyph = glyph_q))
                      continue;
 
-               if (font->atlas->dirty)
-               {
-                  vulkan_font_update_glyph(font, glyph);
-                  font->atlas->dirty = false;
-                  font->needs_update = true;
-               }
 
                width_accum += glyph->advance_x;
             }
@@ -2594,12 +2571,6 @@ static void vulkan_font_render_msg(
                   if (!(glyph = glyph_q))
                      continue;
 
-               if (font->atlas->dirty)
-               {
-                  vulkan_font_update_glyph(font, glyph);
-                  font->atlas->dirty = false;
-                  font->needs_update = true;
-               }
 
                {
                   /* Texture coordinates — shared between shadow and fg. */
@@ -2660,10 +2631,22 @@ static void vulkan_font_render_msg(
     * before the fragment shader samples the atlas in the main
     * command buffer, without serialising the entire queue or
     * holding queue_lock across the wait. */
-   if (font->needs_update)
+   if (font->full_upload || font->atlas->dirty)
    {
       struct vk_texture *dynamic_tex = &font->texture_optimal;
       struct vk_texture *staging_tex = &font->texture;
+      /* The region to move this time: the whole atlas the first time
+       * round, otherwise whatever the atlas has accumulated since the
+       * last upload. Staged here, in one pass, rather than per glyph
+       * as it was rasterised. */
+      unsigned ux0                   = font->full_upload
+            ? 0 : font->atlas->dirty_x0;
+      unsigned uy0                   = font->full_upload
+            ? 0 : font->atlas->dirty_y0;
+      unsigned ux1                   = font->full_upload
+            ? font->atlas->width  : font->atlas->dirty_x1;
+      unsigned uy1                   = font->full_upload
+            ? font->atlas->height : font->atlas->dirty_y1;
       /* Bytes per texel of the atlas: R8_UNORM normally, R16_UNORM
        * for the A16 atlas an HDR swapchain asks for. The mapped-range
        * flush and the buffer-image copy must agree on this, or the
@@ -2673,6 +2656,8 @@ static void vulkan_font_render_msg(
 
       if (!bpp)
          bpp                         = 1;
+
+      vulkan_font_stage_atlas(font, ux0, uy0, ux1, uy1);
 
       if (  (staging_tex->flags
                & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
@@ -2688,12 +2673,12 @@ static void vulkan_font_render_msg(
           * instead of flushing the entire allocation.
           * Aligns offset down and size up to nonCoherentAtomSize
           * as required by the spec (§12.1). */
-         VkDeviceSize flush_offset = (VkDeviceSize)font->dirty_y_min 
+         VkDeviceSize flush_offset = (VkDeviceSize)uy0
                       * staging_tex->stride
-                      + (VkDeviceSize)font->dirty_x_min * bpp;
-         VkDeviceSize flush_end    = (VkDeviceSize)(font->dirty_y_max > 0
-                      ? (font->dirty_y_max - 1) : 0) * staging_tex->stride
-                      + (VkDeviceSize)font->dirty_x_max * bpp;
+                      + (VkDeviceSize)ux0 * bpp;
+         VkDeviceSize flush_end    = (VkDeviceSize)(uy1 > 0
+                      ? (uy1 - 1) : 0) * staging_tex->stride
+                      + (VkDeviceSize)ux1 * bpp;
          if (flush_end <= flush_offset)
             flush_end = flush_offset + 1;
          flush_size   = flush_end - flush_offset;
@@ -2716,10 +2701,10 @@ static void vulkan_font_render_msg(
       }
 
       {
-         unsigned dx = font->dirty_x_min;
-         unsigned dy = font->dirty_y_min;
-         unsigned dw = font->dirty_x_max - dx;
-         unsigned dh = font->dirty_y_max - dy;
+         unsigned dx = ux0;
+         unsigned dy = uy0;
+         unsigned dw = (ux1 > ux0) ? (ux1 - ux0) : 0;
+         unsigned dh = (uy1 > uy0) ? (uy1 - uy0) : 0;
 
          if (dx >= staging_tex->width || dy >= staging_tex->height)
             dw = dh = 0;
@@ -2875,14 +2860,10 @@ static void vulkan_font_render_msg(
             dynamic_tex->layout =
                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-            /* Reset only on a real upload. Clearing the dirty box
-             * after a rect that clamped away stranded that glyph's
-             * staging write permanently. */
-            font->dirty_x_min  = font->atlas->width;
-            font->dirty_y_min  = font->atlas->height;
-            font->dirty_x_max  = 0;
-            font->dirty_y_max  = 0;
-            font->needs_update = false;
+            /* Clear only on a real upload. Clearing after a rect that
+             * clamped away would strand those glyphs permanently. */
+            font->atlas->dirty = false;
+            font->full_upload  = false;
          }
       }
    }
@@ -3014,12 +2995,6 @@ static const struct font_glyph *vulkan_font_get_glyph(
 
    glyph = font->font_driver->get_glyph((void*)font->font_data, code);
 
-   if (glyph && font->atlas->dirty)
-   {
-      vulkan_font_update_glyph(font, glyph);
-      font->atlas->dirty = false;
-      font->needs_update = true;
-   }
    return glyph;
 }
 
