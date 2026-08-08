@@ -20,8 +20,6 @@
 #include <math.h>
 #include <stdint.h>
 
-#include <file/file_path.h>
-#include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <retro_miscellaneous.h>
 
@@ -1644,6 +1642,9 @@ static void *font_renderer_stb_init(const char *font_path,
    stb_font_renderer_t *self =
       (stb_font_renderer_t*)calloc(1, sizeof(*self));
 
+   /* font_path is unused: what matters is whether bytes arrived. */
+   (void)font_path;
+
    if (!self || font_size < 1.0f)
       goto error;
 
@@ -1652,7 +1653,7 @@ static void *font_renderer_stb_init(const char *font_path,
    font_size = -font_size;
 
 #ifdef WIIU
-   if (!*font_path)
+   if (!font_data)
    {
       uint32_t size = 0;
       /* OS-owned shared memory: borrowed, not owned - must not be freed. */
@@ -1663,19 +1664,19 @@ static void *font_renderer_stb_init(const char *font_path,
    }
    else
 #endif
-   if (!font_path || !*font_path)
+   if (!font_data || !font_data_len)
    {
-      /* No TrueType font was found; use the built-in glyphs. */
+      /* Nothing was loaded for us - either no candidate existed or it
+       * could not be read - so fall back to the built-in glyphs. The
+       * path is not consulted: this renderer does no file I/O, so the
+       * bytes are the only thing that says whether a font arrived. */
       if (!font_renderer_stb_init_builtin(self, -font_size))
          goto error;
       return self;
    }
    else
    {
-      /* Bytes come from font_renderer_create_default(); this renderer
-       * does no file I/O. Ownership transfers on success. */
-      if (!font_data || !font_data_len)
-         goto error;
+      /* Ownership transfers on success. */
       self->font_data       = font_data;
       self->font_data_size  = font_data_len;
       self->font_data_owned = true;

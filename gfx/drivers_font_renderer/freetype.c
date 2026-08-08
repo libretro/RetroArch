@@ -22,7 +22,6 @@
 
 #include <ft2build.h>
 
-#include <file/file_path.h>
 #include <streams/file_stream.h>
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
@@ -406,7 +405,8 @@ static void *font_renderer_ft_init(const char *font_path,
       goto error;
 
 #ifdef WIIU
-   if (!*font_path)
+   /* No bytes arrived, so use the OS shared font. */
+   if (!font_data_in)
    {
       void* font_data         = NULL;
       uint32_t font_data_size = 0;
@@ -421,9 +421,18 @@ static void *font_renderer_ft_init(const char *font_path,
    }
    else
 #elif defined(HAVE_FONTCONFIG_SUPPORT)
-   /* if fallback font is requested, instead of loading it, we find the full font in the system */
-   if (!*font_path || strstr(font_path, "fallback"))
+   /* If no bytes arrived, or a fallback font was asked for, look the
+    * real font up in the system instead. The path is consulted here
+    * because "fallback" is a property of what was requested, not of
+    * whether a file was found. */
+   if (!font_data_in || (font_path && strstr(font_path, "fallback")))
    {
+      /* fontconfig supplies its own bytes, so release anything the
+       * caller read for us rather than holding it for the lifetime of
+       * the font. Ownership passed to us either way. */
+      free(font_data_in);
+      font_data_in = NULL;
+
       FcValue locale_boxed;
       uint8_t* font_data     = NULL;
       int64_t font_data_size = 0;
@@ -602,7 +611,7 @@ static const char * const *font_renderer_ft_get_default_fonts(void)
    return none;
 #else
    /* Selection happens in font_renderer_create_default(), which is
-    * what keeps path_is_valid() out of this file. */
+    * what keeps path lookups out of this file. */
    return font_paths;
 #endif
 }
