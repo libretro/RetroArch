@@ -518,51 +518,48 @@ static bool coretext_font_renderer_render_glyph(CTFontRef face, ct_font_renderer
    return true;
 }
 
-static void *font_renderer_ct_init(const char *font_path,
+/* CoreGraphics calls this when it is done with the buffer, which is
+ * how ownership of the bytes handed to init() is discharged. */
+static void ct_font_data_release(void *info, const void *data, size_t size)
+{
+   (void)info;
+   (void)size;
+   free((void*)data);
+}
+
+static void *font_renderer_ct_init(
       uint8_t *font_data, size_t font_data_len,
+      unsigned face_index,
       float font_size, enum font_atlas_format fmt)
 {
    char err                       = 0;
-   CFStringRef cf_font_path       = NULL;
    CTFontRef face                 = NULL;
-   CFURLRef url                   = NULL;
    CGDataProviderRef dataProvider = NULL;
    CGFontRef theCGFont            = NULL;
    ct_font_renderer_t *handle     = (ct_font_renderer_t*)calloc(1, sizeof(*handle));
 
-   /* font_data being non-NULL is proof the path exists - it was read
-    * by font_renderer_create_default() - so no stat is needed here.
-    * CoreText loads by URL, so the bytes themselves are not used;
-    * release them rather than hold them for the font's lifetime. */
+   /* CoreText has no collection index in this path. */
+   (void)face_index;
+
    if (!handle || !font_data || !font_data_len)
    {
       free(font_data);
       err = 1;
       goto error;
    }
-   free(font_data);
+
+   /* The bytes were read by font_renderer_create_default(); this
+    * renderer opens nothing. The provider takes them, and releases
+    * them through ct_font_data_release() when CoreGraphics is
+    * finished - so on success they must not be freed here. */
+   if (!(dataProvider = CGDataProviderCreateWithData(
+               NULL, font_data, font_data_len, ct_font_data_release)))
+   {
+      free(font_data);
+      err = 1;
+      goto error;
+   }
    font_data = NULL;
-
-   if (!(cf_font_path = CFStringCreateWithCString(
-                     NULL, font_path, kCFStringEncodingUTF8)))
-   {
-      err = 1;
-      goto error;
-   }
-
-   /* Each step is checked before use: several of these APIs do not
-    * accept NULL arguments. */
-   if (!(url = CFURLCreateWithFileSystemPath(
-         kCFAllocatorDefault, cf_font_path, kCFURLPOSIXPathStyle, false)))
-   {
-      err = 1;
-      goto error;
-   }
-   if (!(dataProvider = CGDataProviderCreateWithURL(url)))
-   {
-      err = 1;
-      goto error;
-   }
    if (!(theCGFont = CGFontCreateWithDataProvider(dataProvider)))
    {
       err = 1;
@@ -614,22 +611,10 @@ error:
       handle = NULL;
    }
 
-   if (cf_font_path)
-   {
-      CFRelease(cf_font_path);
-      cf_font_path = NULL;
-   }
-
    if (face)
    {
       CFRelease(face);
       face = NULL;
-   }
-
-   if (url)
-   {
-      CFRelease(url);
-      url = NULL;
    }
 
    if (dataProvider)
@@ -647,13 +632,16 @@ error:
    return handle;
 }
 
-static const char * const *font_renderer_ct_get_default_fonts(void)
+static const char * const *font_renderer_ct_get_default_fonts(
+      const char *requested, unsigned *face_index)
 {
    /* A name rather than a path: CoreText looks fonts up by name, and
     * there is no way to know one is present without initialising it.
     * font_renderer_create_default() will not find this on disk, which
     * matches the previous behaviour - init() rejected it too. */
    static const char * const names[] = { "Verdana", NULL };
+   (void)requested;
+   (void)face_index;
    return names;
 }
 

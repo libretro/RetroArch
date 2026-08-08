@@ -22,7 +22,6 @@
 
 #include <ft2build.h>
 
-#include <streams/file_stream.h>
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
 
@@ -386,8 +385,9 @@ static bool font_renderer_create_atlas(ft_font_renderer_t *handle,
    return true;
 }
 
-static void *font_renderer_ft_init(const char *font_path,
+static void *font_renderer_ft_init(
       uint8_t *font_data_in, size_t font_data_in_len,
+      unsigned face_index,
       float font_size, enum font_atlas_format fmt)
 {
    FT_Error err;
@@ -405,146 +405,38 @@ static void *font_renderer_ft_init(const char *font_path,
       goto error;
 
 #ifdef WIIU
-   /* No bytes arrived, so use the OS shared font. */
+   /* No bytes arrived, so use the OS shared font. Borrowed from the
+    * OS: not ours to free, so file_data stays NULL. */
    if (!font_data_in)
    {
-      void* font_data         = NULL;
-      uint32_t font_data_size = 0;
+      void* shared_data         = NULL;
+      uint32_t shared_data_size = 0;
 
       if (!OSGetSharedData(SHARED_FONT_DEFAULT, 0,
-               &font_data, &font_data_size))
+               &shared_data, &shared_data_size))
          goto error;
 
-      if ((err = FT_New_Memory_Face(handle->lib, (const FT_Byte*)font_data,
-            (FT_Long)font_data_size, (FT_Long)0, &handle->face)))
+      if ((err = FT_New_Memory_Face(handle->lib,
+            (const FT_Byte*)shared_data, (FT_Long)shared_data_size,
+            (FT_Long)0, &handle->face)))
          goto error;
-   }
-   else
-#elif defined(HAVE_FONTCONFIG_SUPPORT)
-   /* If no bytes arrived, or a fallback font was asked for, look the
-    * real font up in the system instead. The path is consulted here
-    * because "fallback" is a property of what was requested, not of
-    * whether a file was found. */
-   if (!font_data_in || (font_path && strstr(font_path, "fallback")))
-   {
-      /* fontconfig supplies its own bytes, so release anything the
-       * caller read for us rather than holding it for the lifetime of
-       * the font. Ownership passed to us either way. */
-      free(font_data_in);
-      font_data_in = NULL;
-
-      FcValue locale_boxed;
-      uint8_t* font_data     = NULL;
-      int64_t font_data_size = 0;
-      FcPattern *found       = NULL;
-      FcConfig* config       = NULL;
-      FcResult result        = FcResultNoMatch;
-      FcChar8 *_font_path    = NULL;
-      int face_index         = 0;
-      FcPattern* pattern     = NULL;
-      FcChar8* locale        = NULL;
-
-      if (!fc_config)
-         fc_config = FcInitLoadConfigAndFonts();
-      config  = fc_config;
-      if (!config)
-         goto error;
-
-      /* select Sans fonts */
-      pattern = FcNameParse((const FcChar8*)"Sans");
-      if (!pattern)
-         goto error;
-
-      /* since fontconfig uses LL-TT style, we need to normalize
-       * locale names */
-      locale  = FcLangNormalize((const FcChar8*)get_user_language_iso639_1(false));
-
-      /* configure fontconfig substitute policies, this
-       * will increase the search scope */
-      FcConfigSubstitute(config, pattern, FcMatchPattern);
-      /* pull in system-wide defaults, so the
-       * font selection respects system (or user) configurations */
-      FcDefaultSubstitute(pattern);
-
-      /* Override locale settings, since we are not using the
-       * system locale; FcLangNormalize can fail, in which case the
-       * pattern is simply left without a language preference */
-      if (locale)
-      {
-         /* Box the locale data in a FcValue container */
-         locale_boxed.type = FcTypeString;
-         locale_boxed.u.s  = locale;
-         FcPatternAdd(pattern, FC_LANG, locale_boxed, false);
-      }
-
-      /* Let's find the best matching font given our search criteria */
-      found             = FcFontMatch(config, pattern, &result);
-
-      if (result != FcResultMatch)
-         goto fc_cleanup;
-      if (FcPatternGetString(found, FC_FILE, 0,
-               &_font_path) != FcResultMatch)
-         goto fc_cleanup;
-      if (FcPatternGetInteger(found, FC_INDEX, 0,
-               &face_index) != FcResultMatch)
-         goto fc_cleanup;
-      /* The one read left in this directory. fontconfig resolves a
-       * path here, from the locale and the system configuration, so
-       * font_renderer_create_default() cannot have pre-read it from a
-       * static candidate list. */
-      if (!filestream_read_file((const char*)_font_path,
-               (void**)&font_data,
-               &font_data_size))
-         goto fc_cleanup;
-
-      /* Initialize font renderer */
-      err = FT_New_Memory_Face(handle->lib, (const FT_Byte*)font_data,
-            (FT_Long)font_data_size, (FT_Long)face_index, &handle->face);
-
-      /* free up per-lookup fontconfig structures; the config
-       * itself is kept alive for the process lifetime (see the
-       * comment at the fc_config definition) */
-      FcPatternDestroy(pattern);
-      if (found)
-         FcPatternDestroy(found);
-      if (locale)
-         FcStrFree(locale);
-
-      if (err)
-      {
-         free(font_data);
-         goto error;
-      }
-      handle->file_data = font_data;
-      goto fc_done;
-
-fc_cleanup:
-      FcPatternDestroy(pattern);
-      if (found)
-         FcPatternDestroy(found);
-      if (locale)
-         FcStrFree(locale);
-      if (font_data)
-         free(font_data);
-      goto error;
-
-fc_done:
-      ; /* fall through to charmap selection */
    }
    else
 #endif
    {
-      /* Bytes come from font_renderer_create_default(); no file I/O
-       * here. Take ownership before the face is built, not after, so
-       * the error path releases them when FT rejects the font. */
+      /* Bytes and face index come from
+       * font_renderer_create_default(); this renderer opens nothing.
+       * Ownership is taken before the face is built, not after, so the
+       * error path releases them when FT rejects the font. */
       if (!font_data_in || !font_data_in_len)
          goto error;
       handle->file_data = font_data_in;
       if ((err = FT_New_Memory_Face(handle->lib,
-            (const FT_Byte*)font_data_in,
-            (FT_Long)font_data_in_len, (FT_Long)0, &handle->face)))
+            (const FT_Byte*)font_data_in, (FT_Long)font_data_in_len,
+            (FT_Long)face_index, &handle->face)))
          goto error;
    }
+
 
    if ((err = FT_Select_Charmap(handle->face, FT_ENCODING_UNICODE)))
       goto error;
@@ -601,15 +493,91 @@ static const char * const font_paths[] = {
 };
 
 /* Highly OS/platform dependent. */
-static const char * const *font_renderer_ft_get_default_fonts(void)
+static const char * const *font_renderer_ft_get_default_fonts(
+      const char *requested, unsigned *face_index)
 {
-/* Since fontconfig will return parameters more than a simple path
-   we will process these in the init function */
-#if defined(WIIU) || defined(HAVE_FONTCONFIG_SUPPORT)
-   /* Resolved in init() - fontconfig returns more than a path, and
-    * WiiU uses the shared system font. */
+#if defined(WIIU)
+   /* The shared system font, fetched in init(); no file to open. */
    static const char * const none[] = { "", NULL };
    return none;
+#elif defined(HAVE_FONTCONFIG_SUPPORT)
+   /* fontconfig resolves against the request and the user's locale,
+    * and answers with a face index as well as a path, which is why it
+    * happens here rather than being picked from the static list
+    * below. Only the resolving: the read belongs to
+    * font_renderer_create_default() like every other renderer's. */
+   static char resolved[PATH_MAX_LENGTH];
+   static const char * const fc_result[] = { resolved, NULL };
+   FcValue     locale_boxed;
+   FcPattern  *found      = NULL;
+   FcConfig   *config     = NULL;
+   FcResult    result     = FcResultNoMatch;
+   FcChar8    *_font_path = NULL;
+   FcPattern  *pattern    = NULL;
+   FcChar8    *locale     = NULL;
+   int         index      = 0;
+
+   /* An explicit font that is not one of the bundled fallbacks is
+    * taken as asked for; "fallback" means the caller wants the real
+    * system font for this language instead. */
+   if (requested && *requested && !strstr(requested, "fallback"))
+      return NULL;
+
+   if (!fc_config)
+      fc_config = FcInitLoadConfigAndFonts();
+   if (!(config = fc_config))
+      return NULL;
+
+   if (!(pattern = FcNameParse((const FcChar8*)"Sans")))
+      return NULL;
+
+   /* fontconfig uses LL-TT style, so normalize the locale name */
+   locale = FcLangNormalize((const FcChar8*)get_user_language_iso639_1(false));
+
+   /* Widen the search scope, then pull in system-wide defaults so the
+    * selection respects system or user configuration */
+   FcConfigSubstitute(config, pattern, FcMatchPattern);
+   FcDefaultSubstitute(pattern);
+
+   /* Override locale settings, since we are not using the system
+    * locale; FcLangNormalize can fail, in which case the pattern is
+    * simply left without a language preference */
+   if (locale)
+   {
+      locale_boxed.type = FcTypeString;
+      locale_boxed.u.s  = locale;
+      FcPatternAdd(pattern, FC_LANG, locale_boxed, false);
+   }
+
+   found = FcFontMatch(config, pattern, &result);
+
+   resolved[0] = '\0';
+
+   if (     result == FcResultMatch
+         && FcPatternGetString(found, FC_FILE, 0, &_font_path)
+               == FcResultMatch
+         && FcPatternGetInteger(found, FC_INDEX, 0, &index)
+               == FcResultMatch)
+   {
+      /* Copied out: fontconfig owns the string until the pattern is
+       * destroyed, which happens below. */
+      strlcpy(resolved, (const char*)_font_path, sizeof(resolved));
+      if (face_index)
+         *face_index = (unsigned)index;
+   }
+
+   /* free up per-lookup fontconfig structures; the config itself is
+    * kept alive for the process lifetime (see the comment at the
+    * fc_config definition) */
+   FcPatternDestroy(pattern);
+   if (found)
+      FcPatternDestroy(found);
+   if (locale)
+      FcStrFree(locale);
+
+   if (!resolved[0])
+      return NULL;
+   return fc_result;
 #else
    /* Selection happens in font_renderer_create_default(), which is
     * what keeps path lookups out of this file. */

@@ -1634,16 +1634,18 @@ static bool font_renderer_stb_create_atlas_fmt(
    return true;
 }
 
-static void *font_renderer_stb_init(const char *font_path,
+static void *font_renderer_stb_init(
       uint8_t *font_data, size_t font_data_len,
+      unsigned face_index,
       float font_size, enum font_atlas_format fmt)
 {
    int ascent, descent, line_gap;
    stb_font_renderer_t *self =
       (stb_font_renderer_t*)calloc(1, sizeof(*self));
 
-   /* font_path is unused: what matters is whether bytes arrived. */
-   (void)font_path;
+   /* stb_truetype has no collection support, so the face index is
+    * not applicable here. */
+   (void)face_index;
 
    if (!self || font_size < 1.0f)
       goto error;
@@ -1722,11 +1724,14 @@ error:
    return NULL;
 }
 
-static const char * const *font_renderer_stb_get_default_fonts(void)
+static const char * const *font_renderer_stb_get_default_fonts(
+      const char *requested, unsigned *face_index)
 {
 #ifdef WIIU
    /* The shared system font, fetched in init(); no file to open. */
    static const char * const wiiu_paths[] = { "", NULL };
+   (void)requested;
+   (void)face_index;
    return wiiu_paths;
 #else
    static const char * const paths[] = {
@@ -1771,6 +1776,9 @@ static const char * const *font_renderer_stb_get_default_fonts(void)
       "",              /* built-in glyphs, no file needed */
       NULL
    };
+
+   (void)requested;
+   (void)face_index;
 
    /* The empty entry is the fallback: no file, built-in glyphs. */
    return paths;

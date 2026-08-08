@@ -202,40 +202,40 @@ int font_renderer_create_default(
       const char *path      = font_path;
       uint8_t    *data      = NULL;
       int64_t     len       = 0;
+      unsigned    face      = 0;
 
-      if (!path)
+      /* Ask the renderer where to look. It gets the requested path so
+       * it can resolve against it - freetype hands it to fontconfig -
+       * and answers with candidates and the face to use. Doing the
+       * lookup and the read here is what keeps file I/O out of the
+       * renderers entirely. */
       {
-         /* Pick the first candidate that exists. Doing it here rather
-          * than in the renderer is what keeps file I/O out of them. */
          const char * const *cand = font_backends[i]->get_default_fonts
-            ? font_backends[i]->get_default_fonts()
+            ? font_backends[i]->get_default_fonts(font_path, &face)
             : NULL;
 
-         if (!cand)
-            continue;
-
-         for (; *cand; cand++)
+         if (cand)
          {
-            /* An empty entry means the renderer has an internal or
-             * system source and wants no file. */
-            if (!**cand)
+            for (path = NULL; *cand; cand++)
             {
-               path = *cand;
-               break;
-            }
-            if (path_is_valid(*cand))
-            {
-               path = *cand;
-               break;
+               /* An empty entry means the renderer has an internal or
+                * system source and wants no file. */
+               if (!**cand || path_is_valid(*cand))
+               {
+                  path = *cand;
+                  break;
+               }
             }
          }
 
-         if (!path)
+         /* Nothing offered and nothing asked for: this backend has
+          * nothing to work with. */
+         if (!path && !font_path)
             continue;
+         if (!path)
+            path = font_path;
       }
 
-      /* Read it once, here. A failed read is not fatal: the renderer
-       * may still have an internal source to fall back on. */
       if (path && *path)
          if (!filestream_read_file(path, (void**)&data, &len) || len <= 0)
          {
@@ -243,13 +243,13 @@ int font_renderer_create_default(
             len  = 0;
          }
 
-      *handle = font_backends[i]->init(path, data, (size_t)len,
-            font_size, fmt);
       /* Ownership passes to the renderer the moment init() is called,
        * not when it succeeds: a renderer can take the buffer and then
        * fail - stb stores it, then rejects a malformed font and frees
        * it on the way out of init(). Freeing here as well was a double
        * free on any unreadable or truncated font file. */
+      *handle = font_backends[i]->init(data, (size_t)len, face,
+            font_size, fmt);
       if (*handle)
       {
          *drv = font_backends[i];

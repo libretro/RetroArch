@@ -58,8 +58,14 @@ typedef struct font_renderer_driver
     * source it has (stb's built-in glyphs, the WiiU shared font,
     * fontconfig). On success the renderer takes ownership of
     * font_data and frees it in free(). */
-   void *(*init)(const char *font_path,
-         uint8_t *font_data, size_t font_data_len,
+   /* font_data/font_data_len are the bytes of the chosen font, read by
+    * font_renderer_create_default(); face_index selects the face
+    * within a collection. Renderers do no file I/O and are not given a
+    * path: a NULL font_data means nothing usable was found and the
+    * renderer should fall back to whatever internal or system source
+    * it has. On success the renderer takes ownership of font_data. */
+   void *(*init)(uint8_t *font_data, size_t font_data_len,
+         unsigned face_index,
          float font_size, enum font_atlas_format fmt);
 
    struct font_atlas *(*get_atlas)(void *data);
@@ -73,7 +79,15 @@ typedef struct font_renderer_driver
     * the list rather than a chosen path keeps path_is_valid() - and so
     * all file I/O - out of the renderers. An empty first entry means
     * "no file needed", for renderers with an internal source. */
-   const char * const *(*get_default_fonts)(void);
+   /* Candidate paths for the requested font, best first,
+    * NULL-terminated. requested is what the caller asked for, or NULL;
+    * a renderer may ignore it or resolve against it - freetype asks
+    * fontconfig, which needs the request and the user's locale.
+    * face_index is written with the face to use within whichever
+    * candidate is taken. An empty entry means "no file needed", for a
+    * renderer with an internal source. */
+   const char * const *(*get_default_fonts)(const char *requested,
+         unsigned *face_index);
 
    const char *ident;
 
