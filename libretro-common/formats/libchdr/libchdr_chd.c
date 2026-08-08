@@ -345,6 +345,11 @@ static chd_error huff_codec_init(void* codec, uint32_t hunkbytes)
 {
 	huff_codec_data* huff_codec = (huff_codec_data*) codec;
 	huff_codec->decoder = create_huffman_decoder(256, 16);
+	/* Reporting success on a failed allocation left a NULL decoder for
+	 * huff_codec_decompress to hand straight to
+	 * huffman_import_tree_huffman, which dereferences it unchecked. */
+	if (huff_codec->decoder == NULL)
+		return CHDERR_OUT_OF_MEMORY;
 	return CHDERR_NONE;
 }
 
