@@ -7488,16 +7488,12 @@ static const char *xmb_texture_path(unsigned id)
 /* xmb keeps no font_data_impl_t, so it does not get the refresh
  * font_flush() gives ozone and materialui. Only wideglyph_width is
  * derived from the face here, so that is all there is to redo. */
-static void xmb_sync_wideglyph(xmb_handle_t *xmb)
+static void xmb_compute_wideglyph(xmb_handle_t *xmb)
 {
-   uint32_t gen = font_driver_get_generation();
-
    if (!xmb || !xmb->font)
       return;
-   if (xmb->wideglyph_generation == gen)
-      return;
 
-   xmb->wideglyph_generation = gen;
+   xmb->wideglyph_generation = font_driver_get_generation();
    xmb->wideglyph_width      = 100;
 
    if (xmb->wideglyph_str)
@@ -7511,6 +7507,20 @@ static void xmb_sync_wideglyph(xmb_handle_t *xmb)
       if (wideglyph_width > 0 && char_width > 0)
          xmb->wideglyph_width = wideglyph_width * 100 / char_width;
    }
+}
+
+/* Unconditional above, guarded here. A fresh xmb_handle_t and a fresh
+ * font_driver both start at generation 0, so a caller that knows the
+ * font is new has to bypass the check or the width is never worked
+ * out at all. */
+static void xmb_sync_wideglyph(xmb_handle_t *xmb)
+{
+   if (!xmb || !xmb->font)
+      return;
+   if (xmb->wideglyph_generation == font_driver_get_generation())
+      return;
+
+   xmb_compute_wideglyph(xmb);
 }
 
 static void xmb_context_reset_textures(
@@ -7663,8 +7673,7 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
    }
 
    xmb->wideglyph_str        = wideglyph_str;
-   xmb->wideglyph_generation = 0;
-   xmb_sync_wideglyph(xmb);
+   xmb_compute_wideglyph(xmb);
 
    if (reinit_textures)
    {

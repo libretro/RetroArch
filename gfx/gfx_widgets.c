@@ -86,6 +86,9 @@ static void gfx_widgets_update_icon_layout(dispgfx_widget_t *p_dispwidget)
          - p_dispwidget->msg_queue_regular_text_start - (2 * p_dispwidget->simple_widget_padding);
 }
 
+static void gfx_widgets_font_compute_metrics(
+      gfx_widget_font_data_t *font_data);
+
 /* Widgets list */
 static const gfx_widget_t* const widgets[] = {
 #ifdef HAVE_NETWORKING
@@ -958,7 +961,7 @@ static void gfx_widgets_font_init(
     * no implicit font to fall back on any more, so the approximate
     * glyph width set above has to stand on its own. */
    if (font_data->font)
-      gfx_widgets_font_sync(font_data);
+      gfx_widgets_font_compute_metrics(font_data);
 
    font_data->usage_count        = 0;
 }
@@ -967,17 +970,19 @@ static void gfx_widgets_font_init(
  * they were last worked out. Cheap when nothing has changed. The menu
  * drivers get this from font_flush() via font_driver_sync_impl(), but
  * widgets keep their own font struct and flush directly. */
-void gfx_widgets_font_sync(gfx_widget_font_data_t *font_data)
+/* Work the derived metrics out. Unconditional: callers that know the
+ * font is new must not be turned away by the generation check, since
+ * a fresh font_data_t and a fresh font_driver both start at
+ * generation 0 and would compare equal. */
+static void gfx_widgets_font_compute_metrics(
+      gfx_widget_font_data_t *font_data)
 {
    int glyph_width;
-   uint32_t gen = font_driver_get_generation();
 
    if (!font_data || !font_data->font)
       return;
-   if (font_data->metrics_generation == gen)
-      return;
 
-   font_data->metrics_generation = gen;
+   font_data->metrics_generation = font_driver_get_generation();
 
    {
       glyph_width                = font_driver_get_message_width(
@@ -991,6 +996,17 @@ void gfx_widgets_font_sync(gfx_widget_font_data_t *font_data)
       font_data->line_centre_offset = roundf((font_data->font->metrics.ascender
             - font_data->font->metrics.descender) * 0.5f);
    }
+}
+
+void gfx_widgets_font_sync(gfx_widget_font_data_t *font_data)
+{
+   if (!font_data || !font_data->font)
+      return;
+   /* Nothing has been rebuilt since these were worked out. */
+   if (font_data->metrics_generation == font_driver_get_generation())
+      return;
+
+   gfx_widgets_font_compute_metrics(font_data);
 }
 
 static void gfx_widgets_layout(

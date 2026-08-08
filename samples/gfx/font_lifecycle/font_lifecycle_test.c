@@ -147,6 +147,25 @@ int main(void)
       }
    }
 
+   /* 6b. the generation-zero trap: a fresh impl and a fresh font
+    *     driver both start at 0, so a guarded sync would decide
+    *     nothing had changed and leave the metrics at zero. */
+   {
+      font_data_impl_t fresh;
+      memset(&fresh, 0, sizeof(fresh));
+      fresh.font          = a;
+      fresh.wideglyph_str = "WW";
+      CHECK(fresh.metrics_generation == 0, "fresh impl starts at gen 0");
+      font_driver_sync_impl(&fresh);
+      /* Whether this computes depends on the current generation, which
+       * is why callers that know the font is new must not rely on the
+       * guarded path. What must never happen is a zero line height
+       * being left behind and drawn with. */
+      if (fresh.metrics_generation == font_driver_get_generation())
+         CHECK(fresh.line_height > 0,
+               "metrics are not left at zero once stamped");
+   }
+
    /* 7. derived metrics on an impl follow a rebuild */
    {
       font_data_impl_t impl;
