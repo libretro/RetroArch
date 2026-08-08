@@ -1636,8 +1636,9 @@ static bool font_renderer_stb_create_atlas_fmt(
    return true;
 }
 
-static void *font_renderer_stb_init(const char *font_path, float font_size,
-      enum font_atlas_format fmt)
+static void *font_renderer_stb_init(const char *font_path,
+      uint8_t *font_data, size_t font_data_len,
+      float font_size, enum font_atlas_format fmt)
 {
    int ascent, descent, line_gap;
    stb_font_renderer_t *self =
@@ -1664,22 +1665,19 @@ static void *font_renderer_stb_init(const char *font_path, float font_size,
 #endif
    if (!font_path || !*font_path)
    {
-      /* get_default_font() found no TrueType font. */
+      /* No TrueType font was found; use the built-in glyphs. */
       if (!font_renderer_stb_init_builtin(self, -font_size))
          goto error;
       return self;
    }
    else
    {
-      int64_t len = 0;
-      /* filestream_read_file() opens the file and returns 0 if it
-       * cannot, so a path_is_valid() stat first only repeats that
-       * lookup. */
-      if (!filestream_read_file(font_path, (void**)&self->font_data, &len))
+      /* Bytes come from font_renderer_create_default(); this renderer
+       * does no file I/O. Ownership transfers on success. */
+      if (!font_data || !font_data_len)
          goto error;
-      if (len <= 0)
-         goto error;
-      self->font_data_size  = (size_t)len;
+      self->font_data       = font_data;
+      self->font_data_size  = font_data_len;
       self->font_data_owned = true;
    }
 
@@ -1723,12 +1721,14 @@ error:
    return NULL;
 }
 
-static const char *font_renderer_stb_get_default_font(void)
+static const char * const *font_renderer_stb_get_default_fonts(void)
 {
 #ifdef WIIU
-   return "";
+   /* The shared system font, fetched in init(); no file to open. */
+   static const char * const wiiu_paths[] = { "", NULL };
+   return wiiu_paths;
 #else
-   static const char *paths[] = {
+   static const char * const paths[] = {
 #if defined(_WIN32) && !defined(__WINRT__)
       "C:\\Windows\\Fonts\\consola.ttf",
       "C:\\Windows\\Fonts\\verdana.ttf",
@@ -1767,19 +1767,12 @@ static const char *font_renderer_stb_get_default_font(void)
       "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
       "osd-font.ttf",
 #endif
+      "",              /* built-in glyphs, no file needed */
       NULL
    };
 
-   const char **p;
-
-   for (p = paths; *p; ++p)
-      if (path_is_valid(*p))
-         return *p;
-
-   /* No TrueType font on this system. Returning "" rather than NULL
-    * keeps this renderer in play: init() then builds the atlas from
-    * the built-in bitmap glyphs. */
-   return "";
+   /* The empty entry is the fallback: no file, built-in glyphs. */
+   return paths;
 #endif
 }
 
@@ -1795,7 +1788,7 @@ font_renderer_driver_t stb_font_renderer = {
    font_renderer_stb_get_atlas,
    font_renderer_stb_get_glyph,
    font_renderer_stb_free,
-   font_renderer_stb_get_default_font,
+   font_renderer_stb_get_default_fonts,
    "font_renderer_stb",
    font_renderer_stb_get_line_metrics
 };

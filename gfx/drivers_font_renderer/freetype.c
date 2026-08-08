@@ -387,8 +387,9 @@ static bool font_renderer_create_atlas(ft_font_renderer_t *handle,
    return true;
 }
 
-static void *font_renderer_ft_init(const char *font_path, float font_size,
-      enum font_atlas_format fmt)
+static void *font_renderer_ft_init(const char *font_path,
+      uint8_t *font_data_in, size_t font_data_in_len,
+      float font_size, enum font_atlas_format fmt)
 {
    FT_Error err;
 
@@ -478,6 +479,10 @@ static void *font_renderer_ft_init(const char *font_path, float font_size,
       if (FcPatternGetInteger(found, FC_INDEX, 0,
                &face_index) != FcResultMatch)
          goto fc_cleanup;
+      /* The one read left in this directory. fontconfig resolves a
+       * path here, from the locale and the system configuration, so
+       * font_renderer_create_default() cannot have pre-read it from a
+       * static candidate list. */
       if (!filestream_read_file((const char*)_font_path,
                (void**)&font_data,
                &font_data_size))
@@ -520,21 +525,15 @@ fc_done:
    else
 #endif
    {
-      uint8_t* font_data     = NULL;
-      int64_t font_data_size = 0;
-      /* No path_is_valid() first: filestream_read_file() opens the
-       * file itself and returns 0 when it cannot, so the stat only
-       * repeats the open's own lookup. */
-      if (!filestream_read_file(font_path,
-               (void**)&font_data, &font_data_size))
+      /* Bytes come from font_renderer_create_default(); no file I/O
+       * here. Ownership transfers on success. */
+      if (!font_data_in || !font_data_in_len)
          goto error;
-      if ((err = FT_New_Memory_Face(handle->lib, (const FT_Byte*)font_data,
-            (FT_Long)font_data_size, (FT_Long)0, &handle->face)))
-      {
-         free(font_data);
+      if ((err = FT_New_Memory_Face(handle->lib,
+            (const FT_Byte*)font_data_in,
+            (FT_Long)font_data_in_len, (FT_Long)0, &handle->face)))
          goto error;
-      }
-      handle->file_data = font_data;
+      handle->file_data = font_data_in;
    }
 
    if ((err = FT_Select_Charmap(handle->face, FT_ENCODING_UNICODE)))
@@ -560,8 +559,8 @@ error:
 /* Not the cleanest way to do things for sure,
  * but should hopefully work ... */
 
-static const char *font_paths[] = {
-   /* Assets directory OSD Font, @see font_renderer_ft_get_default_font() */
+static const char * const font_paths[] = {
+   /* Assets directory OSD Font, @see font_renderer_ft_get_default_fonts() */
    "assets://pkg/osd-font.ttf",
 #if defined(_WIN32)
    "C:\\Windows\\Fonts\\consola.ttf",
@@ -588,25 +587,23 @@ static const char *font_paths[] = {
    "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf", /* Debian, Ubuntu */
 #endif
    "osd-font.ttf", /* Magic font to search for, useful for distribution. */
+   NULL
 };
 
 /* Highly OS/platform dependent. */
-static const char *font_renderer_ft_get_default_font(void)
+static const char * const *font_renderer_ft_get_default_fonts(void)
 {
 /* Since fontconfig will return parameters more than a simple path
    we will process these in the init function */
 #if defined(WIIU) || defined(HAVE_FONTCONFIG_SUPPORT)
-   return "";
+   /* Resolved in init() - fontconfig returns more than a path, and
+    * WiiU uses the shared system font. */
+   static const char * const none[] = { "", NULL };
+   return none;
 #else
-   size_t i;
-
-   for (i = 0; i < ARRAY_SIZE(font_paths); i++)
-   {
-      if (path_is_valid(font_paths[i]))
-         return font_paths[i];
-   }
-
-   return NULL;
+   /* Selection happens in font_renderer_create_default(), which is
+    * what keeps path_is_valid() out of this file. */
+   return font_paths;
 #endif
 }
 
@@ -624,7 +621,7 @@ font_renderer_driver_t freetype_font_renderer = {
    font_renderer_ft_get_atlas,
    font_renderer_ft_get_glyph,
    font_renderer_ft_free,
-   font_renderer_ft_get_default_font,
+   font_renderer_ft_get_default_fonts,
    "font_renderer_ft",
    font_renderer_ft_get_line_metrics
 };

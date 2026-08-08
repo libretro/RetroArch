@@ -51,8 +51,16 @@ typedef struct font_renderer
 
 typedef struct font_renderer_driver
 {
-   void *(*init)(const char *font_path, float font_size,
-         enum font_atlas_format fmt);
+   /* font_data/font_data_len carry the contents of font_path, already
+    * read by font_renderer_create_default(). Renderers do no file I/O
+    * of their own: a NULL font_data means no usable file was found,
+    * and the renderer should fall back to whatever internal or system
+    * source it has (stb's built-in glyphs, the WiiU shared font,
+    * fontconfig). On success the renderer takes ownership of
+    * font_data and frees it in free(). */
+   void *(*init)(const char *font_path,
+         uint8_t *font_data, size_t font_data_len,
+         float font_size, enum font_atlas_format fmt);
 
    struct font_atlas *(*get_atlas)(void *data);
 
@@ -61,7 +69,11 @@ typedef struct font_renderer_driver
 
    void (*free)(void *data);
 
-   const char *(*get_default_font)(void);
+   /* NULL-terminated list of candidate paths, best first. Returning
+    * the list rather than a chosen path keeps path_is_valid() - and so
+    * all file I/O - out of the renderers. An empty first entry means
+    * "no file needed", for renderers with an internal source. */
+   const char * const *(*get_default_fonts)(void);
 
    const char *ident;
 

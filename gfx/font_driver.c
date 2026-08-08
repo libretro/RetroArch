@@ -16,6 +16,8 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <streams/file_stream.h>
+#include <file/file_path.h>
 #include <math.h>
 
 #ifdef HAVE_CONFIG_H
@@ -57,19 +59,60 @@ int font_renderer_create_default(
 
    for (i = 0; font_backends[i]; i++)
    {
-      const char *path = font_path;
+      const char *path      = font_path;
+      uint8_t    *data      = NULL;
+      int64_t     len       = 0;
 
       if (!path)
-         path = font_backends[i]->get_default_font();
-      if (!path)
-         continue;
+      {
+         /* Pick the first candidate that exists. Doing it here rather
+          * than in the renderer is what keeps file I/O out of them. */
+         const char * const *cand = font_backends[i]->get_default_fonts
+            ? font_backends[i]->get_default_fonts()
+            : NULL;
 
-      *handle = font_backends[i]->init(path, font_size, fmt);
+         if (!cand)
+            continue;
+
+         for (; *cand; cand++)
+         {
+            /* An empty entry means the renderer has an internal or
+             * system source and wants no file. */
+            if (!**cand)
+            {
+               path = *cand;
+               break;
+            }
+            if (path_is_valid(*cand))
+            {
+               path = *cand;
+               break;
+            }
+         }
+
+         if (!path)
+            continue;
+      }
+
+      /* Read it once, here. A failed read is not fatal: the renderer
+       * may still have an internal source to fall back on. */
+      if (path && *path)
+         if (!filestream_read_file(path, (void**)&data, &len) || len <= 0)
+         {
+            data = NULL;
+            len  = 0;
+         }
+
+      *handle = font_backends[i]->init(path, data, (size_t)len,
+            font_size, fmt);
       if (*handle)
       {
+         /* The renderer owns data now. */
          *drv = font_backends[i];
          return 1;
       }
+
+      free(data);
    }
 
    *drv    = NULL;
