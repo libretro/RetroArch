@@ -2196,6 +2196,7 @@ video_driver_t video_sdl2 = {
 #endif
 };
 
+#if SDL_VERSION_ATLEAST(2, 0, 18)
 gfx_display_ctx_driver_t gfx_display_ctx_sdl2 = {
    gfx_display_sdl2_draw,
    gfx_display_sdl2_draw_pipeline,
@@ -2211,3 +2212,4 @@ gfx_display_ctx_driver_t gfx_display_ctx_sdl2 = {
    gfx_display_sdl2_scissor_begin,
    gfx_display_sdl2_scissor_end
 };
+#endif
