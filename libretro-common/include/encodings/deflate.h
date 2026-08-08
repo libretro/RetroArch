@@ -44,8 +44,18 @@ RETRO_BEGIN_DECLS
  *   RDEFLATE_PROCESS_ERROR (-2)- the stream is malformed / an error occurred
  *
  * The `window_bits` argument selects the container format, matching zlib's
- * convention: a negative value selects raw DEFLATE (no header/checksum),
- * while a value >= 0 selects the zlib wrapper (2-byte header + adler32).
+ * convention:
+ *
+ *   < 0        raw DEFLATE - no header, no checksum
+ *   0 .. 15    zlib wrapper - 2-byte header + adler32 (RFC 1950)
+ *   16 .. 31   gzip wrapper - RFC 1952 header + crc32/isize
+ *   32 .. 47   decompression only: detect zlib or gzip from the stream
+ *
+ * so the values a zlib caller passes as -15, 15, 31 and 47 mean here what
+ * they mean there.  When compressing, 32..47 writes gzip.  The gzip reader
+ * skips the optional FEXTRA/FNAME/FCOMMENT fields and verifies both the
+ * crc32 and the length in the trailer; the writer emits a minimal header
+ * with no mtime and OS 255.
  */
 
 enum

@@ -35,6 +35,7 @@
  * single-TU griffin builds, tripping the LSB_FIRST/MSB_FIRST
  * consistency check in retro_endianness.h). */
 #include <retro_endianness.h>
+#include <encodings/crc32.h>
 #include <encodings/deflate.h>
 
 /* ---------------- adler32 (RFC 1950), shared by both halves --------------
@@ -274,10 +275,39 @@ uint32_t rd_probe_adler32(uint32_t adler, const uint8_t *buf, size_t len)
  * Non-blocking, resumable: suspends when input is exhausted or output is
  * full and resumes on the next call, in the style of image_transfer. */
 
+/* Container selection, following zlib's window_bits convention:
+ *   < 0        raw deflate, no header or checksum
+ *   0 .. 15    zlib wrapper (2-byte header + adler32)
+ *   16 .. 31   gzip wrapper (RFC 1952 header + crc32/isize)
+ *   32 .. 47   auto-detect zlib or gzip from the first byte
+ * The last two are what callers porting from zlib pass as 31 and 47. */
+enum
+{
+   RINF_WRAP_RAW = 0,
+   RINF_WRAP_ZLIB,
+   RINF_WRAP_GZIP,
+   RINF_WRAP_AUTO
+};
+
+static int rinf_wrap_from_bits(int window_bits)
+{
+   if (window_bits < 0)   return RINF_WRAP_RAW;
+   if (window_bits <= 15) return RINF_WRAP_ZLIB;
+   if (window_bits <= 31) return RINF_WRAP_GZIP;
+   return RINF_WRAP_AUTO;
+}
+
 /* Decoder state-machine phases. */
 enum rinf_phase
 {
+   RINF_HDR_SNIFF = -1, /* auto-detect: peek one byte, pick zlib or gzip   */
    RINF_ZHEADER = 0, /* consume 2-byte zlib header (wrapped mode)          */
+   RINF_GZHEADER,    /* consume the 10-byte gzip fixed header              */
+   RINF_GZ_EXTRA,    /* FEXTRA: XLEN then that many bytes                  */
+   RINF_GZ_NAME,     /* FNAME: NUL-terminated                              */
+   RINF_GZ_COMMENT,  /* FCOMMENT: NUL-terminated                           */
+   RINF_GZ_HCRC,     /* FHCRC: 2 bytes over the header, skipped            */
+   RINF_GZCRC,       /* consume/verify crc32 + isize trailer               */
    RINF_BLOCK_HDR,   /* read BFINAL + BTYPE                                */
    RINF_STORED_LEN,  /* stored block: read LEN/NLEN                        */
    RINF_STORED_DATA, /* stored block: copy literal bytes                  */
@@ -286,6 +316,26 @@ enum rinf_phase
    RINF_ADLER,       /* consume/verify adler32 trailer (wrapped mode)     */
    RINF_DONE
 };
+
+static int rinf_end_phase(int wrap)
+{
+   if (wrap == RINF_WRAP_ZLIB) return RINF_ADLER;
+   if (wrap == RINF_WRAP_GZIP) return RINF_GZCRC;
+   return RINF_DONE;
+}
+
+static int rinf_start_phase(int wrap)
+{
+   switch (wrap)
+   {
+      case RINF_WRAP_ZLIB: return RINF_ZHEADER;
+      case RINF_WRAP_GZIP: return RINF_GZHEADER;
+      case RINF_WRAP_AUTO: return RINF_HDR_SNIFF;
+      default:             break;
+   }
+   return RINF_BLOCK_HDR;
+}
+
 
 /* A canonical-huffman decode table.  We use a two-level scheme: a direct
  * lookup on the low FAST_BITS bits, and for codes longer than FAST_BITS a
@@ -349,7 +399,11 @@ struct rinflate
    uint32_t       whave;   /* how many bytes are valid in the ring       */
    uint32_t       wnext;   /* next write position in the ring            */
 
-   int            wrapped; /* zlib wrapper present?                      */
+   /* Container: RINF_WRAP_RAW / RINF_WRAP_ZLIB / RINF_WRAP_GZIP.  Kept as
+    * `wrapped' meaning "has a checksummed wrapper" wherever the value
+    * only decides trailer-or-not. */
+   int            wrap;
+   int            wrapped; /* wrap != RINF_WRAP_RAW                      */
    int            stop_at_block; /* report each block boundary            */
    int            block_ready;   /* boundary reached, not yet reported    */
    int            skip_bits;     /* bits to discard at stream start       */
@@ -393,6 +447,13 @@ struct rinflate
    uint32_t       adler;      /* running adler32 of the output           */
    uint32_t       adler_read; /* trailer value read so far               */
    int            adler_have;
+
+   /* gzip container (RINF_WRAP_GZIP) */
+   uint32_t       crc;        /* running crc32 of the output             */
+   uint32_t       total_out;  /* mod 2^32, for the ISIZE check           */
+   uint32_t       gz_flg;     /* FLG byte from the header                */
+   uint32_t       gz_count;   /* bytes still to skip in the current field*/
+   int            gz_step;    /* sub-step within a header field          */
 
    int            error;
 };
@@ -725,8 +786,10 @@ void *rinflate_new(int window_bits)
    struct rinflate *s = (struct rinflate*)calloc(1, sizeof(*s));
    if (!s)
       return NULL;
-   s->wrapped = (window_bits >= 0);
-   s->phase   = s->wrapped ? RINF_ZHEADER : RINF_BLOCK_HDR;
+   s->wrap    = rinf_wrap_from_bits(window_bits);
+   s->wrapped = (s->wrap != RINF_WRAP_RAW);
+   s->crc     = encoding_crc32(0, NULL, 0);
+   s->phase   = rinf_start_phase(s->wrap);
    s->adler   = 1;
    return s;
 }
@@ -755,8 +818,14 @@ void rinflate_reset(void *data, int window_bits)
     * produced. Fields are listed rather than memset in bulk so that
     * adding one to the struct without touching this function is a
     * compile-time-visible omission rather than a silent stale value. */
-   s->phase            = (window_bits >= 0) ? RINF_ZHEADER : RINF_BLOCK_HDR;
-   s->wrapped          = (window_bits >= 0);
+   s->wrap             = rinf_wrap_from_bits(window_bits);
+   s->wrapped          = (s->wrap != RINF_WRAP_RAW);
+   s->phase            = rinf_start_phase(s->wrap);
+   s->crc              = encoding_crc32(0, NULL, 0);
+   s->total_out        = 0;
+   s->gz_flg           = 0;
+   s->gz_count         = 0;
+   s->gz_step          = 0;
 
    s->in               = NULL;
    s->in_size          = 0;
@@ -887,6 +956,124 @@ int rinflate_process(void *data, size_t *read, size_t *wrote)
    {
       switch (s->phase)
       {
+         case RINF_HDR_SNIFF:
+            /* zlib's 47 means "work it out from the stream".  A gzip
+             * member always starts 1f 8b; a zlib header never can,
+             * because its low nibble must be 8 and 0x1f gives 15. */
+            if (!rinf_need(s, 8)) goto suspend;
+            s->wrap  = ((s->bitbuf & 0xff) == 0x1f)
+                     ? RINF_WRAP_GZIP : RINF_WRAP_ZLIB;
+            s->phase = rinf_start_phase(s->wrap);
+            break;
+
+         case RINF_GZHEADER:
+            /* ID1 ID2 CM FLG MTIME[4] XFL OS */
+            if (!rinf_need(s, 16)) goto suspend;
+            {
+               uint32_t id1 = rinf_getbits(s, 8);
+               uint32_t id2 = rinf_getbits(s, 8);
+               if (id1 != 0x1f || id2 != 0x8b) { s->error = 1; goto error; }
+            }
+            if (!rinf_need(s, 16)) goto suspend;
+            {
+               uint32_t cm = rinf_getbits(s, 8);
+               s->gz_flg   = rinf_getbits(s, 8);
+               if (cm != 8)              { s->error = 1; goto error; }
+               /* bits 5-7 are reserved and must be zero */
+               if (s->gz_flg & 0xe0)     { s->error = 1; goto error; }
+            }
+            {
+               int i;
+               for (i = 0; i < 6; i++)   /* MTIME[4], XFL, OS */
+               {
+                  if (!rinf_need(s, 8)) goto suspend;
+                  rinf_getbits(s, 8);
+               }
+            }
+            s->gz_step  = 0;
+            s->gz_count = 0;
+            s->phase    = RINF_GZ_EXTRA;
+            break;
+
+         case RINF_GZ_EXTRA:
+            if (!(s->gz_flg & 0x04)) { s->phase = RINF_GZ_NAME; break; }
+            if (s->gz_step == 0)
+            {
+               if (!rinf_need(s, 16)) goto suspend;
+               s->gz_count = rinf_getbits(s, 8);
+               s->gz_count |= rinf_getbits(s, 8) << 8;  /* XLEN, LE */
+               s->gz_step  = 1;
+            }
+            while (s->gz_count)
+            {
+               if (!rinf_need(s, 8)) goto suspend;
+               rinf_getbits(s, 8);
+               s->gz_count--;
+            }
+            s->gz_step = 0;
+            s->phase   = RINF_GZ_NAME;
+            break;
+
+         case RINF_GZ_NAME:
+            if (!(s->gz_flg & 0x08)) { s->phase = RINF_GZ_COMMENT; break; }
+            for (;;)
+            {
+               if (!rinf_need(s, 8)) goto suspend;
+               if (rinf_getbits(s, 8) == 0) break;
+            }
+            s->phase = RINF_GZ_COMMENT;
+            break;
+
+         case RINF_GZ_COMMENT:
+            if (!(s->gz_flg & 0x10)) { s->phase = RINF_GZ_HCRC; break; }
+            for (;;)
+            {
+               if (!rinf_need(s, 8)) goto suspend;
+               if (rinf_getbits(s, 8) == 0) break;
+            }
+            s->phase = RINF_GZ_HCRC;
+            break;
+
+         case RINF_GZ_HCRC:
+            /* Header crc16, if present.  Consumed, not verified: a
+             * mismatch here says nothing the crc32 over the data will
+             * not say more reliably a moment later. */
+            if (s->gz_flg & 0x02)
+            {
+               if (!rinf_need(s, 16)) goto suspend;
+               rinf_getbits(s, 8);
+               rinf_getbits(s, 8);
+            }
+            s->phase = RINF_BLOCK_HDR;
+            break;
+
+         case RINF_GZCRC:
+            /* fold any output produced in this call before comparing */
+            if (s->out_pos > fold_start)
+            {
+               s->crc = encoding_crc32(s->crc,
+                     s->out + fold_start, s->out_pos - fold_start);
+               s->total_out += (uint32_t)(s->out_pos - fold_start);
+               fold_start = s->out_pos;
+            }
+            /* align to byte, then CRC32 and ISIZE, both little-endian */
+            s->bitbuf >>= (s->bitcnt & 7);
+            s->bitcnt  -= (s->bitcnt & 7);
+            while (s->adler_have < 8)
+            {
+               if (!rinf_need(s, 8)) goto suspend;
+               s->adler_read |= rinf_getbits(s, 8) << ((s->adler_have & 3) * 8);
+               s->adler_have++;
+               if (s->adler_have == 4)
+               {
+                  if (s->adler_read != s->crc) { s->error = 1; goto error; }
+                  s->adler_read = 0;
+               }
+            }
+            if (s->adler_read != s->total_out) { s->error = 1; goto error; }
+            s->phase = RINF_DONE;
+            break;
+
          case RINF_ZHEADER:
             if (!rinf_need(s, 16)) goto suspend;
             {
@@ -991,7 +1178,7 @@ int rinflate_process(void *data, size_t *read, size_t *wrote)
                }
                s->stored_len--;
             }
-            s->phase = s->bfinal ? (s->wrapped ? RINF_ADLER : RINF_DONE)
+            s->phase = s->bfinal ? rinf_end_phase(s->wrap)
                                  : RINF_BLOCK_HDR;
             if (!s->bfinal && s->stop_at_block)
                s->block_ready = 1;
@@ -1244,7 +1431,7 @@ fast_again:
                      if (sym == 256)
                      {
                         s->phase = s->bfinal
-                           ? (s->wrapped ? RINF_ADLER : RINF_DONE)
+                           ? rinf_end_phase(s->wrap)
                            : RINF_BLOCK_HDR;
                         if (!s->bfinal && s->stop_at_block)
                            s->block_ready = 1;
@@ -1281,7 +1468,7 @@ fast_again:
                      bitbuf >>= (e & 15);
                      bitcnt  -= (int)(e & 15);
                      s->phase = s->bfinal
-                        ? (s->wrapped ? RINF_ADLER : RINF_DONE)
+                        ? rinf_end_phase(s->wrap)
                         : RINF_BLOCK_HDR;
                      if (!s->bfinal && s->stop_at_block)
                         s->block_ready = 1;
@@ -1570,7 +1757,7 @@ fast_again:
                   if (sym == 256)
                   {
                      s->phase = s->bfinal
-                        ? (s->wrapped ? RINF_ADLER : RINF_DONE)
+                        ? rinf_end_phase(s->wrap)
                         : RINF_BLOCK_HDR;
                      if (!s->bfinal && s->stop_at_block)
                         s->block_ready = 1;
@@ -1644,9 +1831,18 @@ suspend:
    status = RDEFLATE_PROCESS_NEXT;
 done:
    rinf_window_commit(s);
-   if (s->wrapped && s->out_pos > fold_start)
-      s->adler = rd_adler32_update(s->adler,
-            s->out + fold_start, s->out_pos - fold_start);
+   if (s->out_pos > fold_start)
+   {
+      if (s->wrap == RINF_WRAP_ZLIB)
+         s->adler = rd_adler32_update(s->adler,
+               s->out + fold_start, s->out_pos - fold_start);
+      else if (s->wrap == RINF_WRAP_GZIP)
+      {
+         s->crc = encoding_crc32(s->crc,
+               s->out + fold_start, s->out_pos - fold_start);
+         s->total_out += (uint32_t)(s->out_pos - fold_start);
+      }
+   }
    if (read)  *read  = s->in_pos  - in_start;
    if (wrote) *wrote = s->out_pos - out_start;
    return status;
@@ -1699,7 +1895,8 @@ struct rd_sym
 struct rdeflate
 {
    int      level;
-   int      wrapped;
+   int      wrap;      /* RINF_WRAP_RAW / _ZLIB / _GZIP                 */
+   int      wrapped;   /* wrap != RINF_WRAP_RAW                         */
    int      use_crc_hash; /* settled once at construction; see rd_hash */
    int      good, lazy, nice, chain;  /* match-finder tuning per level     */
 
@@ -1744,6 +1941,8 @@ struct rdeflate
    size_t   in_pos;
 
    uint32_t adler;
+   uint32_t crc;       /* gzip: running crc32 of the input              */
+   uint32_t total_in;  /* gzip: mod 2^32, for ISIZE                     */
    int      final_in;    /* caller signalled end of input                  */
    int      done;
    int      error;
@@ -3032,7 +3231,15 @@ void *rdeflate_new(int level, int window_bits)
    if (!s)
       return NULL;
    s->level   = level;
-   s->wrapped = (window_bits >= 0);
+   /* Same window_bits convention as the decoder: >= 16 selects gzip.
+    * Auto-detect has no meaning when writing, so it is treated as gzip -
+    * the container a caller passing 47 to zlib would have got. */
+   s->wrap    = rinf_wrap_from_bits(window_bits);
+   if (s->wrap == RINF_WRAP_AUTO)
+      s->wrap = RINF_WRAP_GZIP;
+   s->wrapped = (s->wrap != RINF_WRAP_RAW);
+   s->crc     = encoding_crc32(0, NULL, 0);
+   s->total_in = 0;
    s->adler   = 1;
    rd_set_level(s);
 #if defined(RD_CRC32_HASH_RUNTIME)
@@ -3089,8 +3296,21 @@ int rdeflate_process(void *data, size_t *read, size_t *wrote)
    size_t in_start    = s->in_pos;
    size_t out_start   = s->out_pos;
 
-   /* 0) zlib wrapper header (CMF/FLG) once, at stream start */
-   if (s->wrapped && !s->header_done)
+   /* 0) container header once, at stream start */
+   if (s->wrap == RINF_WRAP_GZIP && !s->header_done)
+   {
+      /* RFC 1952: ID1 ID2 CM FLG MTIME[4] XFL OS.  No optional fields,
+       * no mtime (0 means "not available"), OS 255 "unknown" - the same
+       * minimal header zlib emits when it is not given a gz_header. */
+      static const uint8_t gz_hdr[10] =
+         { 0x1f, 0x8b, 0x08, 0x00, 0, 0, 0, 0, 0x00, 0xff };
+      if (s->out_pos + sizeof(gz_hdr) > s->out_size)
+         goto suspend;
+      memcpy(s->out + s->out_pos, gz_hdr, sizeof(gz_hdr));
+      s->out_pos    += sizeof(gz_hdr);
+      s->header_done = 1;
+   }
+   if (s->wrap == RINF_WRAP_ZLIB && !s->header_done)
    {
       /* CM=8 (deflate), CINFO=7 (32K window) -> CMF=0x78; FLG chosen so that
        * (CMF*256+FLG) % 31 == 0 and no preset dict. 0x78 0x9C is the common
@@ -3110,8 +3330,13 @@ int rdeflate_process(void *data, size_t *read, size_t *wrote)
       if (s->win_len + n > sizeof(s->win))
          n = sizeof(s->win) - s->win_len;   
       memcpy(s->win + s->win_len, s->in + s->in_pos, n);
-      if (s->wrapped)
+      if (s->wrap == RINF_WRAP_ZLIB)
          s->adler = rd_adler32_update(s->adler, s->in + s->in_pos, n);
+      else if (s->wrap == RINF_WRAP_GZIP)
+      {
+         s->crc      = encoding_crc32(s->crc, s->in + s->in_pos, n);
+         s->total_in += (uint32_t)n;
+      }
       s->win_len += (uint32_t)n;
       s->in_pos  += n;
    }
@@ -3173,8 +3398,13 @@ int rdeflate_process(void *data, size_t *read, size_t *wrote)
             if (s->win_len + n > sizeof(s->win))
                n = sizeof(s->win) - s->win_len;
             memcpy(s->win + s->win_len, s->in + s->in_pos, n);
-            if (s->wrapped)
+            if (s->wrap == RINF_WRAP_ZLIB)
                s->adler = rd_adler32_update(s->adler, s->in + s->in_pos, n);
+            else if (s->wrap == RINF_WRAP_GZIP)
+            {
+               s->crc      = encoding_crc32(s->crc, s->in + s->in_pos, n);
+               s->total_in += (uint32_t)n;
+            }
             s->win_len += (uint32_t)n;
             s->in_pos  += n;
          }
@@ -3216,7 +3446,7 @@ int rdeflate_process(void *data, size_t *read, size_t *wrote)
    }
    if (s->emit_phase == 11)
    {
-      if (s->wrapped)
+      if (s->wrap == RINF_WRAP_ZLIB)
       {
          while (s->trailer_cursor < 4)
          {
@@ -3224,6 +3454,19 @@ int rdeflate_process(void *data, size_t *read, size_t *wrote)
             if (s->out_pos >= s->out_size)
                goto suspend;
             s->out[s->out_pos++] = (uint8_t)byte;
+            s->trailer_cursor++;
+         }
+      }
+      else if (s->wrap == RINF_WRAP_GZIP)
+      {
+         /* crc32 then ISIZE, both little-endian, unlike zlib's adler */
+         while (s->trailer_cursor < 8)
+         {
+            const uint32_t v = (s->trailer_cursor < 4) ? s->crc : s->total_in;
+            const int      i = s->trailer_cursor & 3;
+            if (s->out_pos >= s->out_size)
+               goto suspend;
+            s->out[s->out_pos++] = (uint8_t)((v >> (8 * i)) & 0xff);
             s->trailer_cursor++;
          }
       }
