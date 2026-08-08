@@ -81,6 +81,8 @@ const char *font_driver_language_font_file(void)
          return "chinese-fallback-font.ttf";
       case RETRO_LANGUAGE_KOREAN:
          return "korean-fallback-font.ttf";
+      case RETRO_LANGUAGE_THAI:
+         return "thai-fallback-font.ttf";
       default:
          break;
    }

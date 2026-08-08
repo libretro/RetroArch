@@ -70,6 +70,7 @@ font_renderer_t fake_font = {
 int read_should_fail = 0;
 extern unsigned test_language;
 #define TEST_LANG_KOREAN 10   /* RETRO_LANGUAGE_KOREAN */
+#define TEST_LANG_THAI   36   /* RETRO_LANGUAGE_THAI   */
 static int fails = 0;
 #define CHECK(c, msg) do { if (!(c)) { printf("  FAIL: %s\n", msg); fails++; } } while (0)
 
@@ -189,6 +190,12 @@ int main(void)
       font_driver_reload_fonts();
       CHECK(L->path && strstr(L->path, "korean-fallback-font.ttf") != NULL,
             "korean re-resolves to the korean face");
+
+      /* Thai, which needs its own face too */
+      test_language = TEST_LANG_THAI;
+      font_driver_reload_fonts();
+      CHECK(L->path && strstr(L->path, "thai-fallback-font.ttf") != NULL,
+            "thai re-resolves to the thai face");
 
       /* and back */
       test_language = 0;
