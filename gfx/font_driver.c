@@ -34,6 +34,11 @@
 
 /* TODO/FIXME - global */
 static void *video_font_driver = NULL;
+/* The video driver instance video_font_driver was built against. A
+ * font holds GPU objects created through that instance and is not
+ * reusable by any other, so ownership - not mere presence - is what
+ * decides whether it can be kept or must be freed. */
+static void *video_font_driver_owner = NULL;
 
 /* Monotonic counter incremented whenever any font instance is
  * freed. Consumers that cache per-font derived data (e.g. the
@@ -1120,10 +1125,29 @@ void font_driver_init_osd(
       bool is_threaded,
       enum font_driver_render_api api)
 {
+   /* A font left over from a different instance cannot be adopted:
+    * its images belong to a device that is gone, whose handles the
+    * new one will recycle. Drop it rather than keep it. Guarding on
+    * presence alone is what let a stale font survive a reinit. */
+   if (video_font_driver && video_font_driver_owner != video_data)
+      font_driver_free_osd();
+
    if (!video_font_driver && video_info)
       video_font_driver = font_driver_init_first(video_data,
             *video_info->path_font ? video_info->path_font : NULL,
             video_info->font_size, threading_hint, is_threaded, api);
+
+   if (video_font_driver)
+      video_font_driver_owner = video_data;
+}
+
+void font_driver_free_osd_for(void *video_data)
+{
+   /* Only the owner may free it. Teardown of an instance that no
+    * longer owns the font - a stale or deferred free - must leave the
+    * live one alone. */
+   if (video_font_driver && video_font_driver_owner == video_data)
+      font_driver_free_osd();
 }
 
 void font_driver_free_osd(void)
@@ -1131,5 +1155,6 @@ void font_driver_free_osd(void)
    if (video_font_driver)
       font_driver_free((font_data_t*)video_font_driver);
 
-   video_font_driver = NULL;
+   video_font_driver       = NULL;
+   video_font_driver_owner = NULL;
 }

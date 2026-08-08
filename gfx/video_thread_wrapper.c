@@ -222,7 +222,7 @@ static bool video_thread_handle_packet(
           * against it, and this is the thread they belong to. */
          if (     thr->driver
                && thr->driver->font_api != FONT_DRIVER_RENDER_DONT_CARE)
-            font_driver_free_osd();
+            font_driver_free_osd_for(thr->driver_data);
          if (thr->driver_data && thr->driver && thr->driver->free)
             thr->driver->free(thr->driver_data);
          thr->driver_data = NULL;

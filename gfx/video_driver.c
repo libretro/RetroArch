@@ -1978,15 +1978,16 @@ void video_driver_free_internal(void)
 
    /* Drop the OSD font before the driver that owns its GPU objects
     * goes away. Only for drivers that have handed the lifecycle up;
-    * the rest still free it inside their own free(). Under threaded
-    * video the wrapper does this from CMD_FREE, on the video thread,
-    * so it must not also happen here. */
+    * the rest still free it inside their own free(). Keyed on
+    * ownership so that a teardown arriving after the next driver is
+    * already up cannot take the live font with it. Under threaded
+    * video the wrapper does this from CMD_FREE, on the video thread. */
 #ifdef HAVE_THREADS
    if (!is_threaded)
 #endif
    {
       if (vid && vid->font_api != FONT_DRIVER_RENDER_DONT_CARE)
-         font_driver_free_osd();
+         font_driver_free_osd_for(video_st->data);
    }
 
    if (video_st->data && vid && vid->free)

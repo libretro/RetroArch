@@ -149,6 +149,11 @@ void font_driver_init_osd(
 
 void font_driver_free_osd(void);
 
+/* Frees the OSD font only if it was built against @video_data. Use
+ * this from any teardown that may run out of order with respect to the
+ * next init. */
+void font_driver_free_osd_for(void *video_data);
+
 int font_driver_get_line_height(font_data_t *font, float scale);
 int font_driver_get_line_ascender(font_data_t *font, float scale);
 int font_driver_get_line_descender(font_data_t *font, float scale);
