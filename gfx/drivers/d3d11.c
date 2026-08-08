@@ -4866,7 +4866,7 @@ static bool d3d11_gfx_frame(
    if((d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE) && 
       (d3d11->flags & D3D11_ST_FLAG_MENU_ENABLE))
    {
-      static const float clear_colour[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+      static const float clear_colour[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
       context->lpVtbl->OMSetRenderTargets(context, 1,
             &d3d11->back_buffer.rt_view, NULL);
 
