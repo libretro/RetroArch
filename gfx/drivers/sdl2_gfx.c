@@ -2205,5 +2205,9 @@ video_driver_t video_sdl2 = {
 #endif
    NULL, /* invalidate_hw_render_cache */
    NULL, /* read_viewport_hdr */
+#if SDL_VERSION_ATLEAST(2, 0, 18)
    &sdl2_raster_font
+#else
+   NULL  /* sdl2_raster_font needs SDL_RenderGeometry */
+#endif
 };
