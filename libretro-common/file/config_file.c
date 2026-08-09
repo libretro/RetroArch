@@ -448,8 +448,8 @@ static char *config_file_extract_value(char *line, unsigned p_opts,
             const char* next_quote;
 
             /* Only treat the quote as escaped if another (") exists later on the
-             * line; otherwise it terminates the value. This handles values ending
-             * in '\', or where trailing whitespace exists after the quote. */
+             * line; otherwise it terminates the value. This handles values ending in
+             * backslash (\), or where trailing whitespace exists after the quote. */
             next_quote = strchr(end + 1, '\"');
             if (next_quote)
             {
@@ -463,7 +463,9 @@ static char *config_file_extract_value(char *line, unsigned p_opts,
                   if (next_quote[-1] != '\\')
                      break;
 
-                  /* consume the backslash and find the next quote */
+                  /* find the next quote and loop. if one is not found, the last
+                   * escape sequence should be treated as two separate characters
+                   * (\") and the string is considered to be terminated. */
                   read = next_quote;
                   next_quote = strchr(read + 1, '\"');
                } while (next_quote);
