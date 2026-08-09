@@ -30,6 +30,7 @@
 #include <retro_miscellaneous.h>
 
 #include "slang_process.h"
+#include "spirv_opengl.h"
 #include "spirv_glsl.hpp"
 
 #include "../common/gl3_defines.h"
@@ -319,6 +320,8 @@ GLuint gl3_cross_compile_program(
          loc->flat_push_fragment           = -1;
          loc->buffer_index_ubo_vertex      = GL_INVALID_INDEX;
          loc->buffer_index_ubo_fragment    = GL_INVALID_INDEX;
+         loc->buffer_index_push_vertex     = GL_INVALID_INDEX;
+         loc->buffer_index_push_fragment   = GL_INVALID_INDEX;
 
          if (flatten)
          {
@@ -351,6 +354,130 @@ GLuint gl3_cross_compile_program(
       RARCH_ERR("[GLCore] Failed to cross compile program: %s\n", e.what());
       if (program != 0)
          glDeleteProgram(program);
+      return 0;
+   }
+
+   return program;
+}
+
+static GLuint gl3_spirv_compile_stage(GLenum stage,
+      const uint32_t *spirv, size_t words)
+{
+   GLint status = 0;
+   GLuint shader;
+
+   /* ShaderBinary reports an unsupported module through the GL error
+    * queue, so start from a known state. */
+   while (glGetError() != GL_NO_ERROR);
+
+   shader = glCreateShader(stage);
+   if (!shader)
+      return 0;
+
+   glShaderBinary(1, &shader, GL_SHADER_BINARY_FORMAT_SPIR_V_ARB,
+         spirv, (GLsizei)(words * sizeof(uint32_t)));
+
+   if (glGetError() != GL_NO_ERROR)
+   {
+      glDeleteShader(shader);
+      return 0;
+   }
+
+   /* No specialization constants: slang has no way to express them. */
+   if (glSpecializeShader)
+      glSpecializeShader(shader, "main", 0, NULL, NULL);
+   else
+      glSpecializeShaderARB(shader, "main", 0, NULL, NULL);
+
+   glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+
+   if (!status)
+   {
+      GLint length = 0;
+      glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
+      if (length > 1)
+      {
+         char *info_log = (char*)malloc(length);
+         if (info_log)
+         {
+            glGetShaderInfoLog(shader, length, &length, info_log);
+            RARCH_WARN("[GLCore] Failed to specialize SPIR-V shader: %s\n",
+                  info_log);
+            free(info_log);
+         }
+      }
+      glDeleteShader(shader);
+      return 0;
+   }
+
+   while (glGetError() != GL_NO_ERROR);
+
+   return shader;
+}
+
+GLuint gl3_spirv_link_program(
+      const uint32_t *vertex, size_t vertex_words,
+      const uint32_t *fragment, size_t fragment_words,
+      unsigned push_binding)
+{
+   GLint status = 0;
+   GLuint program;
+   GLuint vertex_shader   = 0;
+   GLuint fragment_shader = 0;
+   std::vector<uint32_t> vertex_gl(
+         vertex_words   + SPIRV_OPENGL_LOWER_EXTRA_WORDS);
+   std::vector<uint32_t> fragment_gl(
+         fragment_words + SPIRV_OPENGL_LOWER_EXTRA_WORDS);
+   size_t vertex_gl_words   = spirv_opengl_lower(vertex, vertex_words,
+         vertex_gl.data(), vertex_gl.size(), push_binding);
+   size_t fragment_gl_words = spirv_opengl_lower(fragment, fragment_words,
+         fragment_gl.data(), fragment_gl.size(), push_binding);
+
+   /* Both stages have to make it, or neither does: the lowered push
+    * constant block must match across the program. */
+   if (!vertex_gl_words || !fragment_gl_words)
+      return 0;
+
+   if (!(vertex_shader = gl3_spirv_compile_stage(GL_VERTEX_SHADER,
+               vertex_gl.data(), vertex_gl_words)))
+      return 0;
+
+   if (!(fragment_shader = gl3_spirv_compile_stage(GL_FRAGMENT_SHADER,
+               fragment_gl.data(), fragment_gl_words)))
+   {
+      glDeleteShader(vertex_shader);
+      return 0;
+   }
+
+   program = glCreateProgram();
+   glAttachShader(program, vertex_shader);
+   glAttachShader(program, fragment_shader);
+   /* BindAttribLocation has no effect on SPIR-V shaders; the Location
+    * decorations in the module are authoritative. slang already pins
+    * Position to 0 and TexCoord to 1, which is what the vertex arrays
+    * are set up for. */
+   glLinkProgram(program);
+   glDeleteShader(vertex_shader);
+   glDeleteShader(fragment_shader);
+
+   glGetProgramiv(program, GL_LINK_STATUS, &status);
+
+   if (!status)
+   {
+      GLint length = 0;
+      glGetProgramiv(program, GL_INFO_LOG_LENGTH, &length);
+      if (length > 1)
+      {
+         char *info_log = (char*)malloc(length);
+         if (info_log)
+         {
+            glGetProgramInfoLog(program, length, &length, info_log);
+            RARCH_WARN("[GLCore] Failed to link SPIR-V program: %s\n",
+                  info_log);
+            free(info_log);
+         }
+      }
+      glDeleteProgram(program);
       return 0;
    }
 
@@ -919,6 +1046,12 @@ private:
    std::vector<uint8_t> push_constant_buffer;
    gl3_buffer_locations locations = {};
    UBORing ubo_ring;
+   /* Only allocated on the GL_ARB_gl_spirv path, where the push constant
+    * block becomes a second uniform buffer. */
+   UBORing push_ring;
+   /* SPIR-V modules carry no name reflection, so glGetUniformLocation()
+    * cannot be used to find individual block members. */
+   bool spirv_binary = false;
 
    void reflect_parameter(const std::string &name, slang_semantic_meta &meta);
    void reflect_parameter(const std::string &name, slang_texture_semantic_meta &meta);
@@ -973,6 +1106,9 @@ bool Pass::build()
 
 void Pass::reflect_parameter(const std::string &name, slang_semantic_meta &meta)
 {
+   if (spirv_binary)
+      return;
+
    if (meta.uniform)
    {
       int vert = glGetUniformLocation(pipeline, (std::string("RARCH_UBO_VERTEX_INSTANCE.") + name).c_str());
@@ -998,6 +1134,9 @@ void Pass::reflect_parameter(const std::string &name, slang_semantic_meta &meta)
 
 void Pass::reflect_parameter(const std::string &name, slang_texture_semantic_meta &meta)
 {
+   if (spirv_binary)
+      return;
+
    if (meta.uniform)
    {
       int vert = glGetUniformLocation(pipeline, (std::string("RARCH_UBO_VERTEX_INSTANCE.") + name).c_str());
@@ -1024,6 +1163,10 @@ void Pass::reflect_parameter(const std::string &name, slang_texture_semantic_met
 void Pass::reflect_parameter_array(const char *name, std::vector<slang_texture_semantic_meta> &meta)
 {
    size_t i;
+
+   if (spirv_binary)
+      return;
+
    for (i = 0; i < meta.size(); i++)
    {
       char n[128];
@@ -1069,35 +1212,94 @@ void Pass::reflect_parameter_array(const char *name, std::vector<slang_texture_s
    }
 }
 
+static void gl3_ubo_ring_init(UBORing &ring, size_t size)
+{
+   unsigned i;
+   unsigned count = 16;
+
+   ring.buffers.resize(count);
+   glGenBuffers(count, ring.buffers.data());
+
+   for (i = 0; i < ring.buffers.size(); i++)
+   {
+      glBindBuffer(GL_UNIFORM_BUFFER, ring.buffers[i]);
+      glBufferData(GL_UNIFORM_BUFFER, size, NULL, GL_STREAM_DRAW);
+   }
+
+   glBindBuffer(GL_UNIFORM_BUFFER, 0);
+}
+
 bool Pass::init_pipeline()
 {
-   pipeline = gl3_cross_compile_program(
-         vertex_shader.data(),   vertex_shader.size()   * sizeof(uint32_t),
-         fragment_shader.data(), fragment_shader.size() * sizeof(uint32_t),
-         &locations, false);
+   /* Handing the SPIR-V straight to the driver skips both SPIRV-Cross and
+    * the driver's GLSL front end, which is most of the cost of bringing up
+    * a multi-pass preset. Not every module can be expressed under the
+    * OpenGL SPIR-V environment though, so this quietly falls back. */
+   if (gl3_spirv_binary_supported())
+   {
+      /* The lowered push constant block needs a binding of its own. slang
+       * only ever declares a single UBO, so one other slot always exists. */
+      unsigned push_binding = (reflection.ubo_binding == 0) ? 1 : 0;
+
+      if ((pipeline = gl3_spirv_link_program(
+                  vertex_shader.data(),   vertex_shader.size(),
+                  fragment_shader.data(), fragment_shader.size(),
+                  push_binding)))
+      {
+         spirv_binary                       = true;
+
+         locations.flat_ubo_vertex          = -1;
+         locations.flat_ubo_fragment        = -1;
+         locations.flat_push_vertex         = -1;
+         locations.flat_push_fragment       = -1;
+
+         /* Block bindings in a SPIR-V shader are immutable and cannot be
+          * looked up by name, so they come from reflection rather than
+          * glGetUniformBlockIndex(). */
+         locations.buffer_index_ubo_vertex  =
+            (reflection.ubo_size
+             && (reflection.ubo_stage_mask & SLANG_STAGE_VERTEX_MASK))
+            ? reflection.ubo_binding : GL_INVALID_INDEX;
+         locations.buffer_index_ubo_fragment =
+            (reflection.ubo_size
+             && (reflection.ubo_stage_mask & SLANG_STAGE_FRAGMENT_MASK))
+            ? reflection.ubo_binding : GL_INVALID_INDEX;
+
+         locations.buffer_index_push_vertex =
+            (reflection.push_constant_size
+             && (reflection.push_constant_stage_mask & SLANG_STAGE_VERTEX_MASK))
+            ? push_binding : GL_INVALID_INDEX;
+         locations.buffer_index_push_fragment =
+            (reflection.push_constant_size
+             && (reflection.push_constant_stage_mask & SLANG_STAGE_FRAGMENT_MASK))
+            ? push_binding : GL_INVALID_INDEX;
+      }
+   }
 
    if (!pipeline)
-      return false;
+   {
+      if (!(pipeline = gl3_cross_compile_program(
+                  vertex_shader.data(),   vertex_shader.size()   * sizeof(uint32_t),
+                  fragment_shader.data(), fragment_shader.size() * sizeof(uint32_t),
+                  &locations, false)))
+         return false;
+   }
 
    uniforms.resize(reflection.ubo_size);
    if (reflection.ubo_size)
-   {
-      unsigned i;
-      size_t    size = reflection.ubo_size;
-      unsigned count = 16;
+      gl3_ubo_ring_init(ubo_ring, reflection.ubo_size);
 
-      ubo_ring.buffers.resize(count);
-      glGenBuffers(count, ubo_ring.buffers.data());
-
-      for (i = 0; i < ubo_ring.buffers.size(); i++)
-      {
-         glBindBuffer(GL_UNIFORM_BUFFER, ubo_ring.buffers[i]);
-         glBufferData(GL_UNIFORM_BUFFER, size, NULL, GL_STREAM_DRAW);
-      }
-
-      glBindBuffer(GL_UNIFORM_BUFFER, 0);
-   }
    push_constant_buffer.resize(reflection.push_constant_size);
+   if (     locations.buffer_index_push_vertex   != GL_INVALID_INDEX
+         || locations.buffer_index_push_fragment != GL_INVALID_INDEX)
+   {
+      /* A push constant block is packed std430, so its declared size need
+       * not be a multiple of 16 the way a std140 block's is. Round up so
+       * the buffer can never come up short of the block size the driver
+       * derives from the SPIR-V offsets. */
+      gl3_ubo_ring_init(push_ring,
+            (reflection.push_constant_size + 15) & ~((size_t)15));
+   }
 
    reflect_parameter("MVP", reflection.semantics[SLANG_SEMANTIC_MVP]);
    reflect_parameter("OutputSize", reflection.semantics[SLANG_SEMANTIC_OUTPUT]);
@@ -1747,12 +1949,38 @@ void Pass::build_commands(
       glBindBuffer(GL_UNIFORM_BUFFER, 0);
       if (vertex_binding != GL_INVALID_INDEX)
          glBindBufferBase(GL_UNIFORM_BUFFER, vertex_binding, id);
-      if (fragment_binding != GL_INVALID_INDEX)
+      if (     fragment_binding != GL_INVALID_INDEX
+            && fragment_binding != vertex_binding)
          glBindBufferBase(GL_UNIFORM_BUFFER, fragment_binding, id);
 
       ubo_ring.buffer_index++;
       if (ubo_ring.buffer_index >= ubo_ring.buffers.size())
          ubo_ring.buffer_index = 0;
+   }
+
+   if (!(      locations.buffer_index_push_vertex   == GL_INVALID_INDEX
+            && locations.buffer_index_push_fragment == GL_INVALID_INDEX))
+   {
+      /* Push constant ring - the GL_ARB_gl_spirv path carries the push
+       * constant block in a uniform buffer of its own. */
+      unsigned vertex_binding   = locations.buffer_index_push_vertex;
+      unsigned fragment_binding = locations.buffer_index_push_fragment;
+      const void *data          = push_constant_buffer.data();
+      size_t _len               = reflection.push_constant_size;
+      GLuint id                 = push_ring.buffers[push_ring.buffer_index];
+
+      glBindBuffer(GL_UNIFORM_BUFFER, id);
+      glBufferSubData(GL_UNIFORM_BUFFER, 0, _len, data);
+      glBindBuffer(GL_UNIFORM_BUFFER, 0);
+      if (vertex_binding != GL_INVALID_INDEX)
+         glBindBufferBase(GL_UNIFORM_BUFFER, vertex_binding, id);
+      if (     fragment_binding != GL_INVALID_INDEX
+            && fragment_binding != vertex_binding)
+         glBindBufferBase(GL_UNIFORM_BUFFER, fragment_binding, id);
+
+      push_ring.buffer_index++;
+      if (push_ring.buffer_index >= push_ring.buffers.size())
+         push_ring.buffer_index = 0;
    }
 
    /* The final pass is always executed inside

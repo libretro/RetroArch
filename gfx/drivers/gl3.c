@@ -464,6 +464,98 @@ static bool gl3_parse_version(const char *version,
    return true;
 }
 
+/**
+ * gl3_spirv_binary_supported:
+ *
+ * Reports whether SPIR-V modules can be handed straight to the driver via
+ * GL_ARB_gl_spirv, letting the slang filter chain skip cross compilation to
+ * GLSL entirely. Desktop GL only; the extension is explicitly not written
+ * for OpenGL ES.
+ *
+ * The result is latched, so this is cheap to call per shader stage. It is
+ * only ever consulted while a context is current.
+ *
+ * Returns: true if glShaderBinary/glSpecializeShader can consume SPIR-V.
+ */
+bool gl3_spirv_binary_supported(void)
+{
+#if defined(HAVE_OPENGLES3) || defined(HAVE_OPENGLES)
+   return false;
+#else
+   static int supported = -1;
+   GLint num_formats    = 0;
+   GLint num_extensions = 0;
+   GLint i;
+   unsigned major       = 0;
+   unsigned minor       = 0;
+   bool have_extension  = false;
+
+   if (supported >= 0)
+      return supported > 0;
+
+   supported = 0;
+
+   /* A kill switch, for bisecting driver specific breakage without
+    * having to rebuild. */
+   if (getenv("RETROARCH_GL3_DISABLE_SPIRV"))
+   {
+      RARCH_LOG("[GLCore] SPIR-V shader ingestion disabled by environment.\n");
+      return false;
+   }
+
+   if (!glShaderBinary || !(glSpecializeShader || glSpecializeShaderARB))
+      return false;
+
+   /* Core since 4.6, otherwise the extension must be advertised. */
+   if (gl3_parse_version((const char*)glGetString(GL_VERSION), &major, &minor))
+      have_extension = (major > 4) || (major == 4 && minor >= 6);
+
+   if (!have_extension)
+   {
+      glGetIntegerv(GL_NUM_EXTENSIONS, &num_extensions);
+      for (i = 0; i < num_extensions; i++)
+      {
+         const char *ext = (const char*)glGetStringi(GL_EXTENSIONS, i);
+         if (ext && string_is_equal(ext, "GL_ARB_gl_spirv"))
+         {
+            have_extension = true;
+            break;
+         }
+      }
+   }
+
+   if (!have_extension)
+      return false;
+
+   /* Advertising the extension is not quite enough: the binary format has
+    * to actually be accepted by ShaderBinary. */
+   glGetIntegerv(GL_NUM_SHADER_BINARY_FORMATS, &num_formats);
+   if (num_formats > 0)
+   {
+      GLint *formats = (GLint*)calloc((size_t)num_formats, sizeof(GLint));
+
+      if (formats)
+      {
+         glGetIntegerv(GL_SHADER_BINARY_FORMATS, formats);
+         for (i = 0; i < num_formats; i++)
+         {
+            if (formats[i] == GL_SHADER_BINARY_FORMAT_SPIR_V_ARB)
+            {
+               supported = 1;
+               break;
+            }
+         }
+         free(formats);
+      }
+   }
+
+   RARCH_LOG("[GLCore] GL_ARB_gl_spirv: %s.\n",
+         supported ? "available" : "unavailable");
+
+   return supported > 0;
+#endif
+}
+
 uint32_t gl3_get_cross_compiler_target_version(void)
 {
    const char *version = (const char*)glGetString(GL_VERSION);

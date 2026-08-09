@@ -77,6 +77,10 @@ struct gl3_buffer_locations
    GLint flat_push_fragment;
    GLuint buffer_index_ubo_vertex;
    GLuint buffer_index_ubo_fragment;
+   /* Only used by the GL_ARB_gl_spirv path, where the push constant block
+    * is lowered into a second uniform buffer. GL_INVALID_INDEX otherwise. */
+   GLuint buffer_index_push_vertex;
+   GLuint buffer_index_push_fragment;
 };
 
 gl3_filter_chain_t *gl3_filter_chain_new(void);
@@ -224,6 +228,34 @@ GLuint gl3_cross_compile_program(
       size_t fragment_size,
       struct gl3_buffer_locations *loc,
       bool flatten);
+
+/**
+ * gl3_spirv_binary_supported:
+ *
+ * Returns true when the driver can consume SPIR-V modules directly through
+ * GL_ARB_gl_spirv, i.e. when cross compilation to GLSL can be skipped.
+ * Implemented by the gl3 driver; the result is cached after the first call.
+ **/
+bool gl3_spirv_binary_supported(void);
+
+/**
+ * gl3_spirv_link_program:
+ * @push_binding : uniform block binding to give the lowered push constant
+ *                 block. Must differ from the binding the shader's own UBO
+ *                 uses.
+ *
+ * Builds a program by handing both SPIR-V modules straight to the driver,
+ * bypassing SPIRV-Cross and the driver's GLSL front end. Returns 0 if the
+ * modules cannot be lowered to OpenGL SPIR-V, or if specialization or
+ * linking fails, in which case the caller should fall back to
+ * gl3_cross_compile_program().
+ **/
+GLuint gl3_spirv_link_program(
+      const uint32_t *vertex,
+      size_t vertex_words,
+      const uint32_t *fragment,
+      size_t fragment_words,
+      unsigned push_binding);
 
 RETRO_END_DECLS
 
