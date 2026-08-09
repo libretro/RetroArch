@@ -251,15 +251,13 @@ static void *sdl3_audio_init(const char *device,
    *new_rate = sdl->spec.freq;
 
    device_name = SDL_GetAudioDeviceName(devid);
-   RARCH_DBG("[SDL3 audio] Opened SDL audio out device \"%s\".\n",
-         device_name ? device_name : "(default)");
-   RARCH_DBG("[SDL3 audio] Requested a speaker frequency of %u Hz, received %d Hz.\n",
-         rate, sdl->spec.freq);
-   RARCH_DBG("[SDL3 audio] Requested a device period of %d frames, received %d frames.\n",
-         frames, device_sample_frames);
-   RARCH_DBG("[SDL3 audio] Speaker audio format: %u-bit %s.\n",
+   RARCH_DBG("[SDL3 audio] Opened SDL audio out device \"%s\": "
+         "%u-bit %s, requested %u Hz / %d frame periods, "
+         "received %d Hz / %d frame periods.\n",
+         device_name ? device_name : "(default)",
          SDL_AUDIO_BITSIZE(sdl->spec.format),
-         SDL_AUDIO_ISFLOAT(sdl->spec.format) ? "floating-point" : "integer");
+         SDL_AUDIO_ISFLOAT(sdl->spec.format) ? "floating-point" : "integer",
+         rate, frames, sdl->spec.freq, device_sample_frames);
    RARCH_LOG("[SDL3 audio] Requested %u ms latency for output device, using %d ms.\n",
          latency,
          (int)((sdl->buffer_size / frame_size + device_sample_frames)
@@ -604,15 +602,13 @@ static void *sdl3_microphone_open_mic(void *driver_context, const char *device,
       *new_rate = mic->spec.freq;
 
    device_name = SDL_GetAudioDeviceName(devid);
-   RARCH_DBG("[SDL3 mic] Opened SDL audio input device \"%s\".\n",
-         device_name ? device_name : "(default)");
-   RARCH_DBG("[SDL3 mic] Requested a microphone frequency of %u Hz, received %d Hz.\n",
-         rate, mic->spec.freq);
-   RARCH_DBG("[SDL3 mic] Requested a device period of %d frames, received %d frames.\n",
-         frames, device_sample_frames);
-   RARCH_DBG("[SDL3 mic] Microphone audio format: %u-bit %s.\n",
+   RARCH_DBG("[SDL3 mic] Opened SDL audio input device \"%s\": "
+         "%u-bit %s, requested %u Hz / %d frame periods, "
+         "received %d Hz / %d frame periods.\n",
+         device_name ? device_name : "(default)",
          SDL_AUDIO_BITSIZE(mic->spec.format),
-         SDL_AUDIO_ISFLOAT(mic->spec.format) ? "floating-point" : "integer");
+         SDL_AUDIO_ISFLOAT(mic->spec.format) ? "floating-point" : "integer",
+         rate, frames, mic->spec.freq, device_sample_frames);
    RARCH_LOG("[SDL3 mic] Requested %u ms latency for input device, capping the backlog at %d ms.\n",
          latency,
          (int)((mic->buffer_size / frame_size) * 1000 / mic->spec.freq));
