@@ -754,7 +754,7 @@ static enum patch_error ips_alloc_targetdata(
 
       if (_len) /* Copy */
       {
-         if (offset > patchlen - _len)
+         if ((uint64_t)_len > patchlen - offset)
             break;
 
          while (_len--)
@@ -845,7 +845,7 @@ static enum patch_error ips_apply_patch(
 
       if (_len) /* Copy */
       {
-         if (offset > patchlen - _len)
+         if ((uint64_t)_len > patchlen - offset)
             break;
 
          while (_len--)

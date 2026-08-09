@@ -284,7 +284,11 @@ patch_stream_t *patch_stream_ips_open(const uint8_t *patch, size_t patch_len,
 
       if (len)
       {
-         if (off > patch_len - len)
+         /* off <= patch_len here, so the remaining-bytes form is safe;
+          * "off > patch_len - len" is not, because a record length
+          * larger than the whole patch wraps the subtraction and lets
+          * the record through. */
+         if (len > patch_len - off)
             break;
          recs[n].addr    = addr;
          recs[n].len     = len;
