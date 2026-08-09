@@ -173,6 +173,23 @@ typedef struct thread_video
    retro_time_t last_time;
 
    slock_t *lock;
+   /* cond_cmd carries two distinct predicates - the command reply
+    * (pkt->type == reply_cmd) and frame consumption (!frame.updated) -
+    * and every signaller uses scond_signal(), which wakes exactly one
+    * waiter. There is no broadcast anywhere in the wrapper.
+    *
+    * That is only correct because at most one thread ever waits on
+    * cond_cmd: all four wait sites run on the user thread, and
+    * video_thread_wait_frame() bars the worker with a thread id check.
+    * Add a second waiter and a wake-one signal can wake the waiter
+    * whose predicate did not change; it re-tests, sleeps again, and the
+    * intended waiter is never woken. Only the frame pacing wait in
+    * video_thread_frame() is timed and would recover - the other three
+    * are unbounded scond_wait() and would hang.
+    *
+    * So: do not add a cond_cmd waiter without converting the signallers
+    * to scond_broadcast(), or splitting the predicates onto separate
+    * condition variables. cond_cmd_waiters checks this in debug builds. */
    scond_t *cond_cmd;
    scond_t *cond_thread;
    sthread_t *thread;
@@ -246,6 +263,17 @@ typedef struct thread_video
    } frame;
 
    bool apply_state_changes;
+
+   /* Which thread is currently blocked on cond_cmd, and how deep, both
+    * guarded by lock. Used to check the single-waiter requirement noted
+    * on cond_cmd above. Maintained unconditionally so the struct layout
+    * does not depend on the build type; only asserted on in debug
+    * builds. Same-thread nesting is permitted and counted rather than
+    * rejected, because the cocoa trampoline drained by
+    * video_thread_pump_wait() can re-enter the wrapper on the waiting
+    * thread. A second distinct thread is the case that breaks. */
+   uintptr_t cond_cmd_waiter;
+   unsigned cond_cmd_waiters;
 
    bool alive;
    bool focus;

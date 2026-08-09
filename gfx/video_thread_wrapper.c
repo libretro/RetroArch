@@ -35,6 +35,34 @@
 #include "../runloop.h"
 #include "../verbosity.h"
 
+#include <retro_assert.h>
+
+/* cond_cmd multiplexes two predicates over wake-one signals, which is
+ * only correct while at most one thread waits on it. See the note on
+ * cond_cmd in video_thread_wrapper.h. Every wait on cond_cmd must be
+ * bracketed by these; thr->lock is held across the wait, so the counter
+ * needs no atomics. */
+#ifdef DEBUG
+#define VIDEO_THREAD_CMD_WAIT_ENTER(thr) \
+   do { \
+      uintptr_t self_ = sthread_get_current_thread_id(); \
+      retro_assert(   (thr)->cond_cmd_waiters == 0 \
+                   || (thr)->cond_cmd_waiter  == self_); \
+      (thr)->cond_cmd_waiter = self_; \
+      (thr)->cond_cmd_waiters++; \
+   } while (0)
+#else
+/* Release builds pay nothing; the fields exist unconditionally only so
+ * that the struct layout does not vary with the build type. */
+#define VIDEO_THREAD_CMD_WAIT_ENTER(thr) do { } while (0)
+#endif
+#ifdef DEBUG
+#define VIDEO_THREAD_CMD_WAIT_LEAVE(thr) \
+   do { (thr)->cond_cmd_waiters--; } while (0)
+#else
+#define VIDEO_THREAD_CMD_WAIT_LEAVE(thr) do { } while (0)
+#endif
+
 static void *video_thread_init_never_call(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
@@ -127,9 +155,11 @@ static void video_thread_wait_reply(thread_video_t *thr, thread_packet_t *pkt)
 {
    slock_lock(thr->lock);
 
+   VIDEO_THREAD_CMD_WAIT_ENTER(thr);
    while (pkt->type != thr->reply_cmd)
       if (!video_thread_pump_wait(thr->cond_cmd, thr->lock))
          scond_wait(thr->cond_cmd, thr->lock);
+   VIDEO_THREAD_CMD_WAIT_LEAVE(thr);
 
    *pkt               = thr->cmd_data;
    thr->cmd_data.type = CMD_VIDEO_NONE;
@@ -704,6 +734,7 @@ static bool video_thread_frame(void *data, const void *frame_,
       retro_time_t target            = thr->last_time + target_frame_time;
 
       /* Ideally, use absolute time, but that is only a good idea on POSIX. */
+      VIDEO_THREAD_CMD_WAIT_ENTER(thr);
       while (thr->frame.updated)
       {
          retro_time_t current = cpu_features_get_time_usec();
@@ -715,6 +746,7 @@ static bool video_thread_frame(void *data, const void *frame_,
          if (!scond_wait_timeout(thr->cond_cmd, thr->lock, delta))
             break;
       }
+      VIDEO_THREAD_CMD_WAIT_LEAVE(thr);
    }
 
    /* Drop frame if updated flag is still set, as thread is
@@ -763,11 +795,13 @@ static bool video_thread_frame(void *data, const void *frame_,
           * frame-pacing wait above needs no such treatment: it breaks after
           * at most one frame period and the main runloop then drains common
           * modes. */
+         VIDEO_THREAD_CMD_WAIT_ENTER(thr);
          do
          {
             if (!video_thread_pump_wait(thr->cond_cmd, thr->lock))
                scond_wait(thr->cond_cmd, thr->lock);
          } while (thr->frame.updated);
+         VIDEO_THREAD_CMD_WAIT_LEAVE(thr);
       }
 #endif
       thr->hit_count++;
@@ -1700,7 +1734,9 @@ void video_thread_wait_idle(void)
       return;
 
    slock_lock(thr->lock);
+   VIDEO_THREAD_CMD_WAIT_ENTER(thr);
    while (thr->frame.updated)
       scond_wait(thr->cond_cmd, thr->lock);
+   VIDEO_THREAD_CMD_WAIT_LEAVE(thr);
    slock_unlock(thr->lock);
 }
