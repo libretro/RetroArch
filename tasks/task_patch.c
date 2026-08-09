@@ -929,15 +929,28 @@ static bool apply_patch_content(uint8_t **buf,
          runloop_msg_queue_push(msg, _len, 1, 180, false, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
       }
-   }
-   else
-      RARCH_ERR("[Patch] %s %s: %s #%u\n",
-            msg_hash_to_str(MSG_FAILED_TO_PATCH),
-            patch_desc,
-            msg_hash_to_str(MSG_ERROR),
-            (unsigned)err);
 
-   return true;
+      return true;
+   }
+
+   RARCH_ERR("[Patch] %s %s: %s #%u\n",
+         msg_hash_to_str(MSG_FAILED_TO_PATCH),
+         patch_desc,
+         msg_hash_to_str(MSG_ERROR),
+         (unsigned)err);
+
+   /* A patch that was found but could not be applied is a silent
+    * failure otherwise: the content boots unpatched and nothing on
+    * screen says why. */
+   {
+      char msg[128];
+      size_t _len = snprintf(msg, sizeof(msg), "%s %s",
+            msg_hash_to_str(MSG_FAILED_TO_PATCH), patch_desc);
+      runloop_msg_queue_push(msg, _len, 2, 240, false, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+   }
+
+   return false;
 }
 
 static bool try_bps_patch(bool allow_bps, const char *name_bps,
