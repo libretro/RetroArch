@@ -14,6 +14,8 @@ extern "C" {
 #define RETRO_SMB2_SEC_UNDEFINED 0
 #define RETRO_SMB2_SEC_NTLMSSP 1
 #define RETRO_SMB2_SEC_KRB5 2
+#define RETRO_SMB2_DEFAULT_MAX_CLIENTS 4
+#define RETRO_SMB2_DEFAULT_CLIENT_TIMEOUT 5
 
 struct smb_settings {
    const char *server_address;
