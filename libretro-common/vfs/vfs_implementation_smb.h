@@ -38,8 +38,19 @@ struct smbc_dirent {
 };
 
 typedef struct {
-   struct smb2_context *ctx;
+   /* Checked by the generic VFS layer; non-NULL on success. */
    struct smb2dir *dir;
+   /* Pool slot the directory was opened on, plus the slot generation
+    * at open time. Operations resolve these to a context under the
+    * slot lock and fail closed when the generation no longer matches
+    * (context healed or shut down), instead of caching a context
+    * pointer that dangles once the context is destroyed. */
+   unsigned slot;
+   unsigned gen;
+   /* Storage for the entry returned by retro_vfs_readdir_smb(). Was a
+    * function-local static, which two threads reading different
+    * directories would race on regardless of any pool locking. */
+   struct smbc_dirent ent;
 } smb_dir_handle;
 
 bool smb_init_cfg(const struct smb_settings *new_cfg);
