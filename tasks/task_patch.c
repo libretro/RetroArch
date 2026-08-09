@@ -673,14 +673,36 @@ static enum patch_error ups_apply_patch(
    return PATCH_SOURCE_INVALID;
 }
 
+/* Scans the record stream and allocates the target buffer.
+ *
+ * Two lengths come out of this, and conflating them is what made a
+ * truncating patch overrun its own allocation:
+ *
+ * @targetlength is what the patched content ends up being - the record
+ * span, or the size named by the truncation extension when there is one.
+ *
+ * @alloclength is how much memory the applier is allowed to touch.  It
+ * covers the whole source (which is copied in wholesale) and every
+ * record end (records may legally sit past the truncation point; the
+ * bytes are written and then dropped), so it can exceed @targetlength.
+ *
+ * The buffer is zeroed rather than merely reserved: a patch that grows
+ * the content need not write every byte it adds, and the gap between
+ * the source and the first record beyond it would otherwise be whatever
+ * the heap last held.  The streaming applier in tasks/patch_stream.c
+ * zero-fills the same gap, so this also keeps the two paths agreeing on
+ * the output. */
 static enum patch_error ips_alloc_targetdata(
       const uint8_t *patchdata, uint64_t patchlen,
       uint64_t sourcelength,
-      uint8_t **targetdata, uint64_t *targetlength)
+      uint8_t **targetdata, uint64_t *targetlength,
+      uint64_t *alloclength)
 {
    uint8_t *prov_alloc;
    uint32_t offset = 5;
+   uint64_t memlen = sourcelength;
    *targetlength   = sourcelength;
+   *alloclength    = sourcelength;
 
    for (;;)
    {
@@ -698,7 +720,9 @@ static enum patch_error ips_alloc_targetdata(
       {
          if (offset == patchlen)
          {
-            prov_alloc     = (uint8_t*)malloc((size_t) * targetlength);
+            *targetlength  = memlen;
+            *alloclength   = memlen;
+            prov_alloc     = (uint8_t*)calloc(1, (size_t) * alloclength);
             if (!prov_alloc)
                return PATCH_TARGET_ALLOC_FAILED;
             free(*targetdata);
@@ -711,7 +735,8 @@ static enum patch_error ips_alloc_targetdata(
             size          |= patchdata[offset++] << 8;
             size          |= patchdata[offset++] << 0;
             *targetlength  = size;
-            prov_alloc     = (uint8_t*)malloc((size_t) * targetlength);
+            *alloclength   = (memlen > (uint64_t)size) ? memlen : (uint64_t)size;
+            prov_alloc     = (uint8_t*)calloc(1, (size_t) * alloclength);
 
             if (!prov_alloc)
                return PATCH_TARGET_ALLOC_FAILED;
@@ -755,8 +780,8 @@ static enum patch_error ips_alloc_targetdata(
          offset++;
       }
 
-      if (address > *targetlength)
-         *targetlength = address;
+      if (address > memlen)
+         memlen = address;
    }
 
    return PATCH_PATCH_INVALID;
@@ -768,6 +793,8 @@ static enum patch_error ips_apply_patch(
       uint8_t **targetdata, uint64_t *targetlength)
 {
    uint32_t offset = 5;
+   uint64_t alloclength         = 0;
+   uint64_t copylength          = 0;
    enum patch_error error_patch = PATCH_UNKNOWN;
    if (     patchlen      < 8
          || patchdata[0] != 'P'
@@ -779,10 +806,15 @@ static enum patch_error ips_apply_patch(
 
    if ((error_patch = ips_alloc_targetdata(
                patchdata, patchlen, sourcelength,
-               targetdata, targetlength)) != PATCH_SUCCESS)
+               targetdata, targetlength, &alloclength)) != PATCH_SUCCESS)
       return error_patch;
 
-   memcpy(*targetdata, sourcedata, (size_t)sourcelength);
+   /* ips_alloc_targetdata never reports less than the source, so this
+    * clamp does not bite today; it is here so that the copy stays tied
+    * to the size of the buffer rather than to a separate variable that
+    * a later change could let drift apart from it again. */
+   copylength = (sourcelength < alloclength) ? sourcelength : alloclength;
+   memcpy(*targetdata, sourcedata, (size_t)copylength);
 
    for (;;)
    {
