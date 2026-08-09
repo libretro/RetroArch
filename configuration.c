@@ -7104,6 +7104,14 @@ static bool config_load_file(global_t *global,
       free(path_settings);
    if (size_settings)
       free(size_settings);
+#ifdef HAVE_SMBCLIENT
+   /* Re-publish the SMB client settings: the numeric fields are
+    * copied by value at publish time, so the values this load just
+    * applied are not visible to the SMB backend until re-published.
+    * Covers the main configuration, appends and per-core overrides
+    * alike, since they all pass through here. */
+   retroarch_smb_init();
+#endif
    first_load = false;
    return true;
 }

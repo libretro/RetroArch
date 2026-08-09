@@ -89,7 +89,9 @@ static struct smb2_context *smb_create_context(void)
       smb2_set_password(ctx, smb_cfg->password);
    if (smb_cfg->workgroup && *smb_cfg->workgroup)
       smb2_set_domain(ctx, smb_cfg->workgroup);
-   smb2_set_timeout(ctx, smb_cfg->timeout);
+   /* Same fallback as smb_init(): 0 is not a valid timeout */
+   smb2_set_timeout(ctx, (smb_cfg->timeout == 0)
+         ? RETRO_SMB2_DEFAULT_CLIENT_TIMEOUT : smb_cfg->timeout);
    smb2_set_security_mode(ctx, resolved_auth_mode);
    smb2_set_authentication(ctx, resolved_auth_mode);
 
@@ -131,11 +133,15 @@ static struct smb2_context *smb_heal_if_dead(struct smb2_context *ctx)
    return smb_heal_context(ctx);
 }
 
-void reset(unsigned num_contexts)
+/* Static: this file is compiled into the griffin unity translation
+ * unit, where a global named 'reset' is a link-time collision waiting
+ * to happen. */
+static void smb_reset_pool(unsigned num_contexts)
 {
-   for (unsigned i = 0; i < num_contexts; i++)
+   unsigned i;
+   for (i = 0; i < num_contexts; i++)
    {
-      if(smb_context_pool[i])
+      if (smb_context_pool[i])
          smb2_destroy_context(smb_context_pool[i]);
    }
 
@@ -197,7 +203,7 @@ static bool smb_init(void)
       if (!smb_context)
       {
          fprintf(stderr, "smb_init: error - no smb_context for %d\n", i);
-         reset(max_context_configured);
+         smb_reset_pool(max_context_configured);
          return false;
       }
 
@@ -264,7 +270,7 @@ static bool smb_init(void)
                if (!smb_context)
                {
                   fprintf(stderr, "smb_init - error - no context\n");
-                  reset(max_context_configured);
+                  smb_reset_pool(max_context_configured);
                   return false;
                }
 
@@ -303,7 +309,7 @@ static bool smb_init(void)
       {
          fprintf(stderr, "smb_init: error - failed to connect - error_no: %d\n", error_no);
          smb2_destroy_context(smb_context);
-         reset(max_context_configured);
+         smb_reset_pool(max_context_configured);
          return false;
       }
 
@@ -340,7 +346,7 @@ void smb_shutdown(void)
    for (i = 0; i < max_context_configured; i++)
       smb_close_context(i);
 
-   reset(max_context_configured);
+   smb_reset_pool(max_context_configured);
 }
 
 /* Build full SMB path from settings */

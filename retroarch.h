@@ -158,6 +158,21 @@ void retroarch_favorites_init(void);
 
 void retroarch_favorites_deinit(void);
 
+#ifdef HAVE_SMBCLIENT
+/**
+ * retroarch_smb_init:
+ *
+ * Publishes the SMB client settings to the VFS SMB backend. The string
+ * fields alias settings->arrays and therefore always read current
+ * values, but the numeric fields (timeout, num_contexts, auth_mode)
+ * are copied by value, so this must be called again whenever a
+ * configuration is loaded; config_load_file() does so. Safe to call
+ * repeatedly. Values only take effect for SMB contexts created after
+ * the call - the existing pool is not rebuilt.
+ **/
+void retroarch_smb_init(void);
+#endif
+
 /* Audio */
 
 /**
