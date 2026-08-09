@@ -682,6 +682,7 @@ protected:
    void setSelection(const QRect &rect, QFlags<QItemSelectionModel::SelectionFlag> flags);
    void paintEvent(QPaintEvent*);
    void resizeEvent(QResizeEvent*);
+   void showEvent(QShowEvent*);
 
 private:
    QRectF viewportRectForRow(int row) const;

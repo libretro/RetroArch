@@ -1637,6 +1637,23 @@ void GridView::setGridSize(const int newSize)
    }
 }
 
+/* The item rectangles are cached and only recomputed when the hash is
+ * marked dirty. resizeEvent() does that, but a hidden widget receives
+ * no resize events: the desktop menu is hidden while content runs, and
+ * anything that changes the viewport width in the meantime - window
+ * geometry, dock layout, a scroll bar appearing - leaves the cached
+ * rectangles describing a width the viewport no longer has. They are
+ * then reused on the next paint, and the grid stays misaligned until
+ * something else happens to call refresh().
+ *
+ * Recompute whenever the view becomes visible again, so the layout is
+ * always derived from the viewport it is actually being drawn into. */
+void GridView::showEvent(QShowEvent *event)
+{
+   QAbstractItemView::showEvent(event);
+   refresh();
+}
+
 void GridView::resizeEvent(QResizeEvent*)
 {
    refresh();
