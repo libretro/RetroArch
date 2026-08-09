@@ -62,7 +62,6 @@ static void sdl3_vk_ctx_destroy(void *data)
    {
       SDL_StopTextInput(sdl->win);
       SDL_DestroyWindow(sdl->win);
-      sdl->win = NULL;
    }
 
    SDL_Vulkan_UnloadLibrary();

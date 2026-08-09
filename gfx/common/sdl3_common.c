@@ -227,7 +227,7 @@ static SDL_Window *sdl3_window_create(unsigned width, unsigned height,
    else
       sdl3_window_move_to_monitor(win, settings->uints.video_monitor_index);
 
-   /* SDL_EVENT_TEXT_INPUT is emit for windows that opted in for
+   /* SDL_EVENT_TEXT_INPUT is emitted for windows that opted in for
     * it. The SDL3 input driver handles those events for menu
     * text entry and core keyboard callbacks. */
    SDL_StartTextInput(win);
@@ -318,10 +318,13 @@ void sdl3_window_update_title(SDL_Window *win)
 {
    char title[128];
 
+   if (!win)
+      return;
+
    title[0] = '\0';
    video_driver_get_window_title(title, sizeof(title));
 
-   if (win && title[0])
+   if (title[0])
       SDL_SetWindowTitle(win, title);
 }
 
@@ -369,9 +372,7 @@ float sdl3_ctx_get_refresh_rate(void *data)
 
 void sdl3_ctx_update_title(void *data)
 {
-   SDL_Window *win = sdl3_ctx_window(data);
-   if (win)
-      sdl3_window_update_title(win);
+   sdl3_window_update_title(sdl3_ctx_window(data));
 }
 
 bool sdl3_ctx_has_focus(void *data)
