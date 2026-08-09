@@ -5,7 +5,7 @@
  * h2json.py parses these rows for the Crowdin source upload. */
 
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
+#if defined(RARCH_MOBILE) || defined(SETTINGS_DEF_CONFIG_PASS)
 S_UINT_NS(microphone_block_frames, MICROPHONE_BLOCK_FRAMES,
       "microphone_block_frames",
       0, SD_FLAG_ADVANCED, 0, 0, 0, 0, 0, 0, NULL, NULL,

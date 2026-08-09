@@ -6,7 +6,7 @@
 
 /* Descriptor and configuration rows are #if defined(HAVE_LAKKA) || defined(HAVE_ODROIDGO2); the string
  * tables always carry this row via the strings pass. */
-#if defined(HAVE_LAKKA) || defined(HAVE_ODROIDGO2) || defined(SETTINGS_DEF_STRINGS_PASS)
+#if defined(HAVE_LAKKA) || defined(HAVE_ODROIDGO2) || defined(SETTINGS_DEF_STRINGS_PASS) || (defined(SETTINGS_DEF_CONFIG_PASS) && defined(HAVE_MENU))
 S_BOOL(menu_show_reboot, MENU_SHOW_REBOOT,
       "menu_show_reboot",
       DEFAULT_MENU_SHOW_REBOOT, SD_FLAG_NONE, 0, 0,
@@ -15,7 +15,7 @@ S_BOOL(menu_show_reboot, MENU_SHOW_REBOOT,
 #endif
 /* Descriptor and configuration rows are #if defined(HAVE_LAKKA) || defined(HAVE_ODROIDGO2); the string
  * tables always carry this row via the strings pass. */
-#if defined(HAVE_LAKKA) || defined(HAVE_ODROIDGO2) || defined(SETTINGS_DEF_STRINGS_PASS)
+#if defined(HAVE_LAKKA) || defined(HAVE_ODROIDGO2) || defined(SETTINGS_DEF_STRINGS_PASS) || (defined(SETTINGS_DEF_CONFIG_PASS) && defined(HAVE_MENU))
 S_BOOL(menu_show_shutdown, MENU_SHOW_SHUTDOWN,
       "menu_show_shutdown",
       DEFAULT_MENU_SHOW_SHUTDOWN, SD_FLAG_NONE, 0, 0,

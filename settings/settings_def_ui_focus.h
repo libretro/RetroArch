@@ -19,7 +19,7 @@ S_BOOL(pause_nonactive, PAUSE_NONACTIVE,
       "Pause content when RetroArch is not the active window.")
 /* Descriptor and configuration rows are #if !defined(RARCH_MOBILE); the string
  * tables always carry this row via the strings pass. */
-#if !defined(RARCH_MOBILE) || defined(SETTINGS_DEF_STRINGS_PASS)
+#if !defined(RARCH_MOBILE) || defined(SETTINGS_DEF_STRINGS_PASS) || defined(SETTINGS_DEF_CONFIG_PASS)
 S_BOOL_H(video_disable_composition, VIDEO_DISABLE_COMPOSITION,
       "video_disable_composition",
       DEFAULT_DISABLE_COMPOSITION, SD_FLAG_CMD_APPLY_AUTO | SD_FLAG_LAKKA_ADVANCED, 0, CMD_EVENT_REINIT,

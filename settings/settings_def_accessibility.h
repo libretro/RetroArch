@@ -20,7 +20,7 @@ S_UINT_EX(accessibility_narrator_speech_speed, ACCESSIBILITY_NARRATOR_SPEECH_SPE
       "The speed for the Text-to-Speech voice.")
 /* Descriptor and configuration rows are #if defined(__linux__) && !defined(ANDROID); the string
  * tables always carry this row via the strings pass. */
-#if (defined(__linux__) && !defined(ANDROID)) || defined(SETTINGS_DEF_STRINGS_PASS)
+#if (defined(__linux__) && !defined(ANDROID)) || defined(SETTINGS_DEF_STRINGS_PASS) || defined(SETTINGS_DEF_CONFIG_PASS)
 S_UINT_EX(accessibility_narrator_engine, ACCESSIBILITY_NARRATOR_ENGINE,
       "accessibility_narrator_engine",
       DEFAULT_ACCESSIBILITY_NARRATOR_ENGINE, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, ACCESSIBILITY_NARRATOR_ENGINE_LAST - 1, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_accessibility_narrator_engine, NULL, NULL, NULL, NULL, 0,

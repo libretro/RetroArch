@@ -6,7 +6,7 @@
 
 /* Descriptor and configuration rows are #ifdef ANDROID; the string
  * tables always carry this row via the strings pass. */
-#if defined(ANDROID) || defined(SETTINGS_DEF_STRINGS_PASS)
+#if defined(ANDROID) || defined(SETTINGS_DEF_STRINGS_PASS) || defined(SETTINGS_DEF_CONFIG_PASS)
 S_BOOL_NS(sustained_performance_mode, SUSTAINED_PERFORMANCE_MODE,
       "sustained_performance_mode",
       DEFAULT_SUSTAINED_PERFORMANCE_MODE, SD_FLAG_CMD_APPLY_AUTO, 0, 0,

@@ -18,7 +18,7 @@ S_FLOAT_EX_H(audio_max_timing_skew, AUDIO_MAX_TIMING_SKEW,
       "The maximum change in audio input rate. Increasing this enables very large changes in timing at the cost of an inaccurate audio pitch (e.g. running PAL cores on NTSC displays).")
 /* Descriptor and configuration rows are #ifdef RARCH_MOBILE; the string
  * tables always carry this row via the strings pass. */
-#if defined(RARCH_MOBILE) || defined(SETTINGS_DEF_STRINGS_PASS)
+#if defined(RARCH_MOBILE) || defined(SETTINGS_DEF_STRINGS_PASS) || defined(SETTINGS_DEF_CONFIG_PASS)
 S_UINT_NS(audio_block_frames, AUDIO_BLOCK_FRAMES,
       "audio_block_frames",
       0, SD_FLAG_ADVANCED, 0, 0, 0, 0, 0, 0, NULL, NULL,
