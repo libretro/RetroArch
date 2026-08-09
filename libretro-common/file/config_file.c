@@ -379,6 +379,17 @@ static char *config_file_strip_comment(char *str)
          /* Search for the end of the string literal
           * value */
          char *literal_end = strchr(literal_start + 1, '\"');
+         while (literal_end && literal_end[-1] == '\\')
+         {
+            if (literal_end > comment)
+            {
+               comment = strchr(literal_end, '#');
+               if (!comment)
+                  return NULL;
+            }
+
+            literal_end = strchr(literal_end + 1, '\"');
+         }
 
          /* Check whether string literal end occurs
           * *after* the comment character
@@ -430,27 +441,33 @@ static char *config_file_extract_value(char *line, unsigned p_opts,
          char *end = strchr(line, '\"');
          idx       = end ? (size_t)(end - line) : strlen(line);
 
-         /* If it's a quote preceed by a backslash, unescape it and find the next (") character */
+         /* If it's a quote preceded by a backslash, unescape it and find the next (") character */
          if (end && end[-1] == '\\')
          {
-            size_t read_idx = idx + 1; /* Skip over the quote */
-            char c;
+            const char* read = end;
+            const char* next_quote;
 
-            do
+            /* Only treat the quote as escaped if another (") exists later on the
+             * line; otherwise it terminates the value. This handles values ending
+             * in '\', or where trailing whitespace exists after the quote. */
+            next_quote = strchr(end + 1, '\"');
+            if (next_quote)
             {
-               c = line[read_idx];
-               if (!c)
-               {
-                  /* If the quote is the last character of the line, assume it's not escaped */
-               }
-               else
-               {
-                  line[idx - 1] = '\"'; /* Replace the backslash with a quote */
+               do {
+                  /* shift the text to overwrite the last backslash */
+                  const size_t copy_len = next_quote - read;
+                  memcpy(&line[idx - 1], read, copy_len);
+                  idx += copy_len - 1;
 
-                  while ((c = line[read_idx++]) && c != '\"')
-                     line[idx++] = c;
-               }
-            } while (c && line[idx - 1] == '\\'); /* If it's another escaped quote, keep going */
+                  /* if this quote is not escaped, stop */
+                  if (next_quote[-1] != '\\')
+                     break;
+
+                  /* consume the backslash and find the next quote */
+                  read = next_quote;
+                  next_quote = strchr(read + 1, '\"');
+               } while (next_quote);
+            }
          }
 
          line[idx] = '\0';
