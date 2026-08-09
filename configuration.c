@@ -1940,17 +1940,6 @@ static struct config_bool_setting *populate_settings_bool(
 #define S_INT_AT_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us)
 #define S_UINT_AT_EX(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub)
 #define S_UINT_AT_EX_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us)
-/* _ND rows are registered without a default; every other pass
- * treats them exactly like the base row. */
-#define S_BOOL_ND(f, T, n, d, sd, df, c, us, sub) \
-   SETTING_BOOL(n, &settings->bools.f, false, d, false);
-#define S_BOOL_NS_ND(f, T, n, d, sd, df, c, us) \
-   SETTING_BOOL(n, &settings->bools.f, false, d, false);
-#define S_BOOL_H_ND(f, T, n, d, sd, df, c, us, sub) \
-   SETTING_BOOL(n, &settings->bools.f, false, d, false);
-#define S_BOOL_EX_NS_ND(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us) \
-   SETTING_BOOL(n, &settings->bools.f, false, d, false);
-#define S_INT_EX_ND(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub)
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_fullscreen.h"
 #include "settings/settings_def_video_sync.h"
@@ -2495,11 +2484,6 @@ static struct config_bool_setting *populate_settings_bool(
 #undef S_UINT_AT_EX_NS
 #undef S_UINT_AT_EX_H
 #undef S_UINT_AT_EX_NS_H
-#undef S_BOOL_ND
-#undef S_BOOL_NS_ND
-#undef S_BOOL_H_ND
-#undef S_BOOL_EX_NS_ND
-#undef S_INT_EX_ND
    SETTING_BOOL("video_scanline_sync",           &settings->bools.video_scanline_sync, true, DEFAULT_SCANLINE_SYNC, false);
    SETTING_BOOL("video_notch_write_over_enable", &settings->bools.video_notch_write_over_enable, true, DEFAULT_NOTCH_WRITE_OVER_ENABLE, false);
 #if defined(__APPLE__) && defined(HAVE_VULKAN)
@@ -2667,13 +2651,6 @@ static struct config_float_setting *populate_settings_float(
 #define S_INT_AT_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us)
 #define S_UINT_AT_EX(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub)
 #define S_UINT_AT_EX_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us)
-/* _ND rows are registered without a default; every other pass
- * treats them exactly like the base row. */
-#define S_BOOL_ND(f, T, n, d, sd, df, c, us, sub)
-#define S_BOOL_NS_ND(f, T, n, d, sd, df, c, us)
-#define S_BOOL_H_ND(f, T, n, d, sd, df, c, us, sub)
-#define S_BOOL_EX_NS_ND(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us)
-#define S_INT_EX_ND(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub)
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_fullscreen.h"
 #include "settings/settings_def_video_sync.h"
@@ -3218,11 +3195,6 @@ static struct config_float_setting *populate_settings_float(
 #undef S_UINT_AT_EX_NS
 #undef S_UINT_AT_EX_H
 #undef S_UINT_AT_EX_NS_H
-#undef S_BOOL_ND
-#undef S_BOOL_NS_ND
-#undef S_BOOL_H_ND
-#undef S_BOOL_EX_NS_ND
-#undef S_INT_EX_ND
    SETTING_FLOAT("menu_footer_opacity",          &settings->floats.menu_footer_opacity,      true, DEFAULT_MENU_FOOTER_OPACITY, false);
    SETTING_FLOAT("menu_header_opacity",          &settings->floats.menu_header_opacity,      true, DEFAULT_MENU_HEADER_OPACITY, false);
 #ifdef HAVE_OZONE
@@ -3342,13 +3314,6 @@ static struct config_uint_setting *populate_settings_uint(
 #define S_INT_AT_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us)
 #define S_UINT_AT_EX(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub)
 #define S_UINT_AT_EX_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us)
-/* _ND rows are registered without a default; every other pass
- * treats them exactly like the base row. */
-#define S_BOOL_ND(f, T, n, d, sd, df, c, us, sub)
-#define S_BOOL_NS_ND(f, T, n, d, sd, df, c, us)
-#define S_BOOL_H_ND(f, T, n, d, sd, df, c, us, sub)
-#define S_BOOL_EX_NS_ND(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us)
-#define S_INT_EX_ND(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub)
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_fullscreen.h"
 #include "settings/settings_def_video_sync.h"
@@ -3893,11 +3858,6 @@ static struct config_uint_setting *populate_settings_uint(
 #undef S_UINT_AT_EX_NS
 #undef S_UINT_AT_EX_H
 #undef S_UINT_AT_EX_NS_H
-#undef S_BOOL_ND
-#undef S_BOOL_NS_ND
-#undef S_BOOL_H_ND
-#undef S_BOOL_EX_NS_ND
-#undef S_INT_EX_ND
 
    SETTING_UINT("video_stream_port",             &settings->uints.video_stream_port, true, RARCH_STREAM_DEFAULT_PORT, false);
    SETTING_UINT("video_record_scale_factor",     &settings->uints.video_record_scale_factor, true, 1, false);
@@ -4059,14 +4019,6 @@ static struct config_int_setting *populate_settings_int(
 #define S_INT_AT_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us)
 #define S_UINT_AT_EX(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub)
 #define S_UINT_AT_EX_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us)
-/* _ND rows are registered without a default; every other pass
- * treats them exactly like the base row. */
-#define S_BOOL_ND(f, T, n, d, sd, df, c, us, sub)
-#define S_BOOL_NS_ND(f, T, n, d, sd, df, c, us)
-#define S_BOOL_H_ND(f, T, n, d, sd, df, c, us, sub)
-#define S_BOOL_EX_NS_ND(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us)
-#define S_INT_EX_ND(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
-   SETTING_INT(n, &settings->ints.f, false, d, false);
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_fullscreen.h"
 #include "settings/settings_def_video_sync.h"
@@ -4611,11 +4563,6 @@ static struct config_int_setting *populate_settings_int(
 #undef S_UINT_AT_EX_NS
 #undef S_UINT_AT_EX_H
 #undef S_UINT_AT_EX_NS_H
-#undef S_BOOL_ND
-#undef S_BOOL_NS_ND
-#undef S_BOOL_H_ND
-#undef S_BOOL_EX_NS_ND
-#undef S_INT_EX_ND
 
    /* GENERATED: single-source setting rows (string kind emits here) */
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub)
@@ -4664,13 +4611,6 @@ static struct config_int_setting *populate_settings_int(
 #define S_INT_AT_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us)
 #define S_UINT_AT_EX(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub)
 #define S_UINT_AT_EX_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us)
-/* _ND rows are registered without a default; every other pass
- * treats them exactly like the base row. */
-#define S_BOOL_ND(f, T, n, d, sd, df, c, us, sub)
-#define S_BOOL_NS_ND(f, T, n, d, sd, df, c, us)
-#define S_BOOL_H_ND(f, T, n, d, sd, df, c, us, sub)
-#define S_BOOL_EX_NS_ND(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us)
-#define S_INT_EX_ND(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub)
 #define SETTINGS_DEF_CONFIG_PASS
 #include "settings/settings_def_video_fullscreen.h"
 #include "settings/settings_def_video_sync.h"
@@ -5215,11 +5155,6 @@ static struct config_int_setting *populate_settings_int(
 #undef S_UINT_AT_EX_NS
 #undef S_UINT_AT_EX_H
 #undef S_UINT_AT_EX_NS_H
-#undef S_BOOL_ND
-#undef S_BOOL_NS_ND
-#undef S_BOOL_H_ND
-#undef S_BOOL_EX_NS_ND
-#undef S_INT_EX_ND
 
 #ifdef HAVE_D3D10
    SETTING_INT("d3d10_gpu_index",                &settings->ints.d3d10_gpu_index, true, DEFAULT_D3D10_GPU_INDEX, false);

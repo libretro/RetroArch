@@ -4,13 +4,7 @@
  * matches SDESC_<kind>_ROW; row order is menu display order;
  * h2json.py parses these rows for the Crowdin source upload. */
 
-/* Rows marked _ND are registered in the configuration table without a
- * default applied; outside the configuration pass they behave exactly
- * like the base row. */
-#ifndef S_INT_EX_ND
-#define S_INT_EX_ND S_INT_EX
-#endif
-S_INT_EX_ND(state_slot, STATE_SLOT,
+S_INT_EX(state_slot, STATE_SLOT,
       "state_slot",
       0, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, -1, 999, 1, -1, setting_action_ok_uint, setting_get_string_representation_state_slot, NULL, NULL, NULL, NULL, 0,
       "State Slot",
@@ -18,7 +12,7 @@ S_INT_EX_ND(state_slot, STATE_SLOT,
 /* Descriptor and configuration rows are #ifdef HAVE_BSV_MOVIE; the string
  * tables always carry this row via the strings pass. */
 #if defined(HAVE_BSV_MOVIE) || defined(SETTINGS_DEF_STRINGS_PASS)
-S_INT_EX_ND(replay_slot, REPLAY_SLOT,
+S_INT_EX(replay_slot, REPLAY_SLOT,
       "replay_slot",
       0, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, -1, 999, 1, -1, setting_action_ok_uint, setting_get_string_representation_state_slot, NULL, NULL, NULL, NULL, 0,
       "Replay Slot",

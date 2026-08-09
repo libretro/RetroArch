@@ -4,12 +4,6 @@
  * matches SDESC_<kind>_ROW; row order is menu display order;
  * h2json.py parses these rows for the Crowdin source upload. */
 
-/* Rows marked _ND are registered in the configuration table without a
- * default applied; outside the configuration pass they behave exactly
- * like the base row. */
-#ifndef S_BOOL_H_ND
-#define S_BOOL_H_ND S_BOOL_H
-#endif
 /* Rows marked _H reserve a MENU_ENUM_LABEL_HELP_ enum member;
  * outside the enum pass they behave exactly like the base row. */
 #ifndef SETTINGS_DEF_ENUM_PASS
@@ -26,7 +20,7 @@
 /* The configuration row lives under defined(HAVE_NETWORKING); other passes are
  * unaffected. */
 #if !defined(SETTINGS_DEF_CONFIG_PASS) || (defined(HAVE_NETWORKING))
-S_BOOL_H_ND(netplay_start_as_spectator, NETPLAY_START_AS_SPECTATOR,
+S_BOOL_H(netplay_start_as_spectator, NETPLAY_START_AS_SPECTATOR,
       "netplay_start_as_spectator",
       DEFAULT_NETPLAY_START_AS_SPECTATOR, SD_FLAG_NONE, 0, 0,
       "Netplay Spectator Mode",

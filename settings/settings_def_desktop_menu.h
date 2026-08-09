@@ -4,12 +4,6 @@
  * matches SDESC_<kind>_ROW; row order is menu display order;
  * h2json.py parses these rows for the Crowdin source upload. */
 
-/* Rows marked _ND are registered in the configuration table without a
- * default applied; outside the configuration pass they behave exactly
- * like the base row. */
-#ifndef S_BOOL_NS_ND
-#define S_BOOL_NS_ND S_BOOL_NS
-#endif
 /* Rows marked _H reserve a MENU_ENUM_LABEL_HELP_ enum member;
  * outside the enum pass they behave exactly like the base row. */
 #ifndef SETTINGS_DEF_ENUM_PASS
@@ -53,7 +47,7 @@ S_BOOL_EX_NS(desktop_menu_enable, DESKTOP_MENU_ENABLE,
 /* Descriptor and configuration rows are #if defined(HAVE_QT) || defined(HAVE_COCOA); the string
  * tables always carry this row via the strings pass. */
 #if (defined(HAVE_QT) || defined(HAVE_COCOA)) || defined(SETTINGS_DEF_STRINGS_PASS)
-S_BOOL_NS_ND(ui_companion_toggle, UI_COMPANION_TOGGLE,
+S_BOOL_NS(ui_companion_toggle, UI_COMPANION_TOGGLE,
       "ui_companion_toggle",
       DEFAULT_UI_COMPANION_TOGGLE, SD_FLAG_NONE, 0, 0,
       "Open Desktop Menu on Startup")

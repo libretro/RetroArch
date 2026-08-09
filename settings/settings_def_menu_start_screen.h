@@ -4,14 +4,8 @@
  * matches SDESC_<kind>_ROW; row order is menu display order;
  * h2json.py parses these rows for the Crowdin source upload. */
 
-/* Rows marked _ND are registered in the configuration table without a
- * default applied; outside the configuration pass they behave exactly
- * like the base row. */
-#ifndef S_BOOL_ND
-#define S_BOOL_ND S_BOOL
-#endif
 /* FIXME Not RGUI specific */ /* FIXME Not RGUI specific */
-S_BOOL_ND(menu_show_start_screen, RGUI_SHOW_START_SCREEN,
+S_BOOL(menu_show_start_screen, RGUI_SHOW_START_SCREEN,
       "rgui_show_start_screen",
       DEFAULT_MENU_SHOW_START_SCREEN, SD_FLAG_ADVANCED, 0, 0,
       "Display Start Screen",
