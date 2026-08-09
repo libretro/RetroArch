@@ -182,14 +182,17 @@ static void sdl3_window_move_to_monitor(SDL_Window *win,
    displays = SDL_GetDisplays(&count);
    if (displays && (int)monitor_index <= count)
       display = displays[monitor_index - 1];
+   SDL_free(displays);
+
+   /* Out-of-range index (e.g. the configured monitor was unplugged):
+    * leave the window where the system placed it. */
+   if (display == 0)
+      return;
 
    SDL_SetWindowPosition(win,
          SDL_WINDOWPOS_CENTERED_DISPLAY(display),
          SDL_WINDOWPOS_CENTERED_DISPLAY(display));
    SDL_SyncWindow(win);
-
-   SDL_free(displays);
-
 }
 
 /* Creates the SDL3 window. */

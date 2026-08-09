@@ -219,15 +219,14 @@ static bool sdl3_ctx_set_video_mode(void *data,
       video_driver_cache_context_ack_set();
       RARCH_LOG("[SDL3 GL] Using cached GL context.\n");
    }
-   else
-   {
-      if (!(sdl->ctx = SDL_GL_CreateContext(sdl->win)))
-         goto error;
+   else if (!(sdl->ctx = SDL_GL_CreateContext(sdl->win)))
+      goto error;
 
-      /* Check whether or not adaptive vsync is supported. */
-      sdl->adaptive_vsync = SDL_GL_SetSwapInterval(-1);
-      SDL_GL_SetSwapInterval(0);
-   }
+   /* Check whether or not adaptive vsync is supported. Probed on the
+    * cached path too: this instance is freshly alloc'd on reinit, so
+    * the flag would otherwise be lost with the old instance. */
+   sdl->adaptive_vsync = SDL_GL_SetSwapInterval(-1);
+   SDL_GL_SetSwapInterval(0);
 
    return true;
 
