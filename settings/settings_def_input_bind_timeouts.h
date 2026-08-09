@@ -18,7 +18,7 @@ S_BOOL_NS(input_keyboard_gamepad_enable, INPUT_ICADE_ENABLE,
 #endif
 /* Descriptor and configuration rows are #if TARGET_OS_IPHONE; the string
  * tables always carry this row via the strings pass. */
-#if TARGET_OS_IPHONE || defined(SETTINGS_DEF_STRINGS_PASS)
+#if TARGET_OS_IPHONE || defined(SETTINGS_DEF_STRINGS_PASS) || defined(SETTINGS_DEF_CONFIG_PASS)
 S_UINT_EX_NS(input_keyboard_gamepad_mapping_type, INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
       "keyboard_gamepad_mapping_type",
       1, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 3, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_keyboard_gamepad_mapping_type, NULL, NULL, NULL, NULL, 0,
