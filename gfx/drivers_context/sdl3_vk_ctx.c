@@ -205,13 +205,9 @@ static bool sdl3_vk_ctx_set_video_mode(void *data,
    return true;
 
 error:
-   /* Do not destroy `sdl` here. The caller in
-    * gfx/drivers/vulkan.c::vulkan_init treats a false return from
-    * set_video_mode as a failure of the in-flight vk_t construction
-    * and runs vulkan_free() on it, which calls
-    * ctx_driver->destroy(ctx_data) on this very pointer. Leave
-    * cleanup to that single destroy (matches x_vk / cocoa /
-    * android). */
+   /* Avoids destroying SDL here since vulkan_init() treats a failure
+    * and will call vulkan_free() itself. This is the same for x_vk,
+    * cocoa, and android. */
    RARCH_WARN("[SDL3 Vulkan] Failed to set video mode: %s.\n",
          SDL_GetError());
    return false;

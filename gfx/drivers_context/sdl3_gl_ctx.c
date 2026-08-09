@@ -49,13 +49,8 @@ static enum gfx_ctx_api sdl3_gl_api = GFX_CTX_OPENGL_API;
 static unsigned sdl3_gl_major = 0;
 static unsigned sdl3_gl_minor = 0;
 
-/* Cached-context support (hw_render.cache_context, used by cores like
- * citra): across a video reinit the GL context - and with it the
- * core's GL state - must survive. destroy stashes the handles here and
- * the next set_video_mode re-adopts them, acking the reuse (same
- * pattern as wgl_ctx's static win32_hrc). While a context is stashed,
- * one SDL video-subsystem reference is deliberately kept: letting the
- * refcount hit zero would tear the context down with the subsystem. */
+/* Cached GL contexts. Allow using the GL context across video
+ * rebuilds. */
 static SDL_GLContext sdl3_gl_cached_ctx = NULL;
 static SDL_GLContext sdl3_gl_cached_shared_ctx = NULL;
 static bool sdl3_gl_kept_video_alive = false;
