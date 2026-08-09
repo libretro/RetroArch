@@ -159,15 +159,15 @@ static HANDLE rtime_sleep_timer_get(void)
    return timer;
 }
 
-void retro_sleep(unsigned msec)
+void retro_sleep_us(unsigned usec)
 {
    HANDLE timer;
    LARGE_INTEGER due;
    DWORD timeout;
 
-   /* Sleep(0) means "yield the rest of this time slice", which is not
-    * a duration and must not be emulated with a timer. */
-   if (!msec)
+   /* A zero duration means "yield the rest of this time slice", which
+    * must not be emulated with a timer. */
+   if (!usec)
    {
       Sleep(0);
       return;
@@ -180,7 +180,7 @@ void retro_sleep(unsigned msec)
        * spinning on the result. */
       if (InterlockedCompareExchange(&rtime_sleep_init_ran, 1, 0) != 0)
       {
-         Sleep(msec);
+         Sleep((usec + 500) / 1000);
          return;
       }
 
@@ -190,24 +190,37 @@ void retro_sleep(unsigned msec)
    if (     rtime_sleep_state != RTIME_SLEEP_HIGHRES
          || !(timer = rtime_sleep_timer_get()))
    {
-      Sleep(msec);
+      Sleep((usec + 500) / 1000);
       return;
    }
 
    /* Negative due time == relative, in 100 ns units */
-   due.QuadPart = -((LONGLONG)msec * 10000);
+   due.QuadPart = -((LONGLONG)usec * 10);
 
    if (!rtime_set_waitable_timer(timer, &due, 0, NULL, NULL, FALSE))
    {
-      Sleep(msec);
+      Sleep((usec + 500) / 1000);
       return;
    }
 
    /* Bounded rather than INFINITE. A timer that was successfully set
     * is guaranteed to signal, but there is no reason for this to be
     * an unbounded wait if it somehow does not. */
-   timeout = (msec < 0xFFFFFF00) ? (DWORD)(msec + 100) : INFINITE;
+   timeout = (usec / 1000) + 100;
    WaitForSingleObject(timer, timeout);
+}
+
+void retro_sleep(unsigned msec)
+{
+   /* Guard the conversion rather than wrapping around. Nothing sleeps
+    * for 49 days, but a bogus value must not turn into a short sleep. */
+   if (msec > 0xFFFFFFFFU / 1000)
+   {
+      Sleep(msec);
+      return;
+   }
+
+   retro_sleep_us(msec * 1000);
 }
 
 /* Called from rtime_deinit(), i.e. main thread only, at program or

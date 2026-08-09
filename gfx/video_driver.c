@@ -6007,6 +6007,8 @@ void video_frame_delay(video_driver_state_t *video_st,
    float refresh_rate                  = settings->floats.video_refresh_rate;
    uint8_t video_frame_delay           = settings->uints.video_frame_delay;
    uint8_t video_frame_delay_effective = video_st->frame_delay_effective;
+   float video_frame_delay_ms          = 0.0f;
+   uint16_t video_frame_delay_remainder= 0;
    uint8_t video_swap_interval         = runloop_get_video_swap_interval(settings->uints.video_swap_interval);
    uint8_t video_bfi                   = settings->uints.video_black_frame_insertion;
    uint8_t shader_subframes            = settings->uints.video_shader_subframes;
@@ -6015,12 +6017,29 @@ void video_frame_delay(video_driver_state_t *video_st,
          || (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
          || state_manager_frame_is_reversed();
 
+   /* The delay target is derived from the frame time and is therefore
+    * rarely a whole number of milliseconds - 3/4 of a 60 Hz frame is
+    * 12.5 ms. The auto tuner below works in whole millisecond steps, so
+    * the target is still carried as milliseconds, but the sub-millisecond
+    * remainder is kept here and added back when actually sleeping instead
+    * of being truncated away. At 60 Hz that recovers up to 6% of a frame. */
+
    /* Treat values 20+ as frame time percentage */
    if (video_frame_delay >= 20)
-      video_frame_delay = 1 / refresh_rate * 1000 * (video_frame_delay / 100.0f);
+      video_frame_delay_ms = 1 / refresh_rate * 1000 * (video_frame_delay / 100.0f);
    /* Set 0 (Auto) delay target as 3/4 frame time */
    else if (video_frame_delay == 0 && settings->bools.video_frame_delay_auto)
-      video_frame_delay = 1 / refresh_rate * 1000 * 0.75f;
+      video_frame_delay_ms = 1 / refresh_rate * 1000 * 0.75f;
+
+   if (video_frame_delay_ms > 0.0f)
+   {
+      video_frame_delay           = (uint8_t)video_frame_delay_ms;
+      /* Keep the truncated fraction so it can be added back when
+       * sleeping. Derived from the same value that produced the integer
+       * target above, so the target itself is bit for bit unchanged. */
+      video_frame_delay_remainder = (uint16_t)
+            ((video_frame_delay_ms - (float)video_frame_delay) * 1000.0f);
+   }
 
    /* Black frame insertion + swap interval multiplier */
    refresh_rate = (refresh_rate / (video_bfi + 1.0f) / video_swap_interval / shader_subframes);
@@ -6115,7 +6134,17 @@ void video_frame_delay(video_driver_state_t *video_st,
 
    /* Never apply frame delay when slow/fastmotion is active */
    if (video_frame_delay_effective > 0 && !skip_delay)
-      retro_sleep(video_frame_delay_effective);
+   {
+      unsigned delay_us = (unsigned)video_frame_delay_effective * 1000;
+
+      /* Only add the sub-millisecond remainder while the delay is still
+       * at the target. If the auto tuner has reduced it, frames were
+       * being missed, and time must not be handed back. */
+      if (video_frame_delay_effective == video_st->frame_delay_target)
+         delay_us += video_frame_delay_remainder;
+
+      retro_sleep_us(delay_us);
+   }
 }
 
 void video_driver_scanline_init(void)
