@@ -6514,6 +6514,10 @@ int rarch_main(int argc, char *argv[], void *data)
 
    runloop_msg_queue_init();
 
+#ifdef HAVE_SMBCLIENT
+   retroarch_smb_init();
+#endif
+
    if (frontend_state_get_ptr()->current_frontend_ctx)
    {
       content_ctx_info_t info;
@@ -6534,10 +6538,6 @@ int rarch_main(int argc, char *argv[], void *data)
    }
 
    settings = config_get_ptr();
-
-#ifdef HAVE_SMBCLIENT
-   retroarch_smb_init();
-#endif
 
    ui_companion_driver_init_first(
 #ifdef HAVE_QT
