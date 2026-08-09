@@ -4,10 +4,16 @@
  * matches SDESC_<kind>_ROW; row order is menu display order;
  * h2json.py parses these rows for the Crowdin source upload. */
 
+/* Rows marked _ND are registered in the configuration table without a
+ * default applied; outside the configuration pass they behave exactly
+ * like the base row. */
+#ifndef S_BOOL_EX_NS_ND
+#define S_BOOL_EX_NS_ND S_BOOL_EX_NS
+#endif
 /* Descriptor and configuration rows are #if defined(HAVE_NETWORKING) #if defined(HAVE_NETWORK_CMD); the string
  * tables always carry this row via the strings pass. */
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORK_CMD) || defined(SETTINGS_DEF_STRINGS_PASS)
-S_BOOL_EX_NS(network_remote_enable, NETWORK_REMOTE_ENABLE,
+S_BOOL_EX_NS_ND(network_remote_enable, NETWORK_REMOTE_ENABLE,
       "network_remote_enable",
       false, SD_FLAG_ADVANCED, 0, 0, setting_bool_action_left_with_refresh, NULL, NULL, NULL, setting_bool_action_left_with_refresh, setting_bool_action_right_with_refresh, 0,
       "Network RetroPad")

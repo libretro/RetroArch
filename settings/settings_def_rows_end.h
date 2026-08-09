@@ -2,7 +2,10 @@
  * have defined. Undefining a name that was never defined is a
  * no-op, so one tail serves every region generation. */
 #undef S_BOOL
+#undef S_BOOL_ND
 #undef S_BOOL_NS
+#undef S_BOOL_NS_ND
+#undef S_BOOL_H_ND
 #undef S_BOOL_H
 #undef S_BOOL_NS_H
 #undef S_UINT
@@ -43,6 +46,7 @@
 #undef S_ACTION_NS_H
 #undef S_BOOL_EX
 #undef S_BOOL_EX_NS
+#undef S_BOOL_EX_NS_ND
 #undef S_BOOL_EX_H
 #undef S_BOOL_EX_NS_H
 #undef S_UINT_EX
@@ -50,6 +54,7 @@
 #undef S_UINT_EX_H
 #undef S_UINT_EX_NS_H
 #undef S_INT_EX
+#undef S_INT_EX_ND
 #undef S_INT_EX_NS
 #undef S_INT_EX_H
 #undef S_INT_EX_NS_H
