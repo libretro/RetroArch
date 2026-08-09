@@ -193,12 +193,27 @@ static bool sdl3_ctx_set_video_mode(void *data,
    if (sdl->ctx)
    {
       /* Bind the context to the new window. */
-      if (!SDL_GL_MakeCurrent(sdl->win, sdl->ctx))
-         goto error;
-      video_driver_cache_context_ack_set();
-      RARCH_LOG("[SDL3 GL] Using cached GL context.\n");
+      if (SDL_GL_MakeCurrent(sdl->win, sdl->ctx))
+      {
+         video_driver_cache_context_ack_set();
+         RARCH_LOG("[SDL3 GL] Using cached GL context.\n");
+      }
+      else
+      {
+         /* Stale cached context: drop it and create a fresh one
+          * below. The ack stays unset, so the core receives a
+          * context_reset and rebuilds its GL state. */
+         RARCH_WARN("[SDL3 GL] Failed to bind cached GL context, creating anew: %s.\n",
+               SDL_GetError());
+         SDL_GL_DestroyContext(sdl->ctx);
+         if (sdl->shared_ctx)
+            SDL_GL_DestroyContext(sdl->shared_ctx);
+         sdl->ctx = NULL;
+         sdl->shared_ctx = NULL;
+      }
    }
-   else if (!(sdl->ctx = SDL_GL_CreateContext(sdl->win)))
+
+   if (!sdl->ctx && !(sdl->ctx = SDL_GL_CreateContext(sdl->win)))
       goto error;
 
    /* Check whether or not adaptive vsync is supported. Probed on the
