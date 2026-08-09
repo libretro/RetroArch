@@ -8194,29 +8194,32 @@ end:
               || (runloop_st->flags & RUNLOOP_FLAG_PAUSED)))
       {
          const retro_time_t end_frame_time  = cpu_features_get_time_usec();
-         const retro_time_t to_sleep_ms     = (
+         const retro_time_t to_sleep_us     = (
                (  runloop_st->frame_limit_last_time
                 + frame_limit_min)
-               - end_frame_time) / 1000;
+               - end_frame_time);
+#if defined(__EMSCRIPTEN__) && !defined(EMSCRIPTEN_ASYNCIFY) && !defined(PROXY_TO_PTHREAD)
+         /* Emscripten paces through a deferred main loop timeout that
+          * is expressed in whole milliseconds, so it cannot act on a
+          * sub-millisecond remainder. Keep the old truncation there. */
+         const retro_time_t to_sleep        = to_sleep_us / 1000;
+#else
+         const retro_time_t to_sleep        = to_sleep_us;
+#endif
 
-         if (to_sleep_ms > 0)
+         if (to_sleep > 0)
          {
-            unsigned               sleep_ms = (unsigned)to_sleep_ms;
-
             /* Combat jitter a bit. */
             runloop_st->frame_limit_last_time += frame_limit_min;
 
-            if (sleep_ms > 0)
-            {
 #if defined(__EMSCRIPTEN__) && !defined(EMSCRIPTEN_ASYNCIFY) && !defined(PROXY_TO_PTHREAD)
-               platform_emscripten_deferred_sleep(sleep_ms);
+            platform_emscripten_deferred_sleep((int)to_sleep);
 #else
 #if defined(HAVE_COCOATOUCH)
-               if (!(uico_state_get_ptr()->flags & UICO_ST_FLAG_IS_ON_FOREGROUND))
+            if (!(uico_state_get_ptr()->flags & UICO_ST_FLAG_IS_ON_FOREGROUND))
 #endif
-                  retro_sleep(sleep_ms);
+               retro_sleep_us((unsigned)to_sleep_us);
 #endif
-            }
 
             return 1;
          }
