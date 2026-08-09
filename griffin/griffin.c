@@ -412,6 +412,12 @@ VIDEO SHADERS
 #include "../gfx/drivers_shader/glslang_util.c"
 #endif
 
+/* Must mirror the guard on shader_gl3.cpp in griffin_cpp.cpp exactly:
+ * that is the only consumer of spirv_opengl_lower(). */
+#if defined(HAVE_OPENGL_CORE) && defined(HAVE_SLANG)
+#include "../gfx/drivers_shader/spirv_opengl.c"
+#endif
+
 #ifdef HAVE_CG
 #ifdef HAVE_OPENGL
 #include "../gfx/drivers_shader/shader_gl_cg.c"

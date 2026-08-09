@@ -464,6 +464,24 @@ static bool gl3_parse_version(const char *version,
    return true;
 }
 
+#if !defined(HAVE_OPENGLES3) && !defined(HAVE_OPENGLES)
+/* Kept local rather than added to the shared glsym headers: some of these
+ * tokens double as feature tests on GLES class targets, where defining them
+ * unconditionally would switch on desktop only entry points. */
+#ifndef GL_NUM_SHADER_BINARY_FORMATS
+#define GL_NUM_SHADER_BINARY_FORMATS 0x8DF9
+#endif
+#ifndef GL_SHADER_BINARY_FORMATS
+#define GL_SHADER_BINARY_FORMATS 0x8DF8
+#endif
+#ifndef GL_SHADER_BINARY_FORMAT_SPIR_V_ARB
+#define GL_SHADER_BINARY_FORMAT_SPIR_V_ARB 0x9551
+#endif
+#ifndef GL_NUM_EXTENSIONS
+#define GL_NUM_EXTENSIONS 0x821D
+#endif
+#endif
+
 /**
  * gl3_spirv_binary_supported:
  *

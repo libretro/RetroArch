@@ -35,6 +35,16 @@
 
 #include "../common/gl3_defines.h"
 
+/* GL_ARB_gl_spirv is desktop only, and glsym does not carry ShaderBinary,
+ * SpecializeShader or GetStringi for the GLES targets, so the whole path
+ * has to compile out there. */
+#if !defined(HAVE_OPENGLES3) && !defined(HAVE_OPENGLES)
+#define GL3_HAVE_SPIRV_BINARY 1
+#ifndef GL_SHADER_BINARY_FORMAT_SPIR_V_ARB
+#define GL_SHADER_BINARY_FORMAT_SPIR_V_ARB 0x9551
+#endif
+#endif
+
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../msg_hash.h"
@@ -360,6 +370,7 @@ GLuint gl3_cross_compile_program(
    return program;
 }
 
+#ifdef GL3_HAVE_SPIRV_BINARY
 static GLuint gl3_spirv_compile_stage(GLenum stage,
       const uint32_t *spirv, size_t words)
 {
@@ -483,6 +494,20 @@ GLuint gl3_spirv_link_program(
 
    return program;
 }
+#else
+GLuint gl3_spirv_link_program(
+      const uint32_t *vertex, size_t vertex_words,
+      const uint32_t *fragment, size_t fragment_words,
+      unsigned push_binding)
+{
+   (void)vertex;
+   (void)vertex_words;
+   (void)fragment;
+   (void)fragment_words;
+   (void)push_binding;
+   return 0;
+}
+#endif
 
 namespace gl3_shader
 {
