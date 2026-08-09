@@ -1763,6 +1763,7 @@ ifeq ($(HAVE_OPENGL_CORE), 1)
 
    ifeq ($(HAVE_SLANG), 1)
       OBJ += gfx/drivers_shader/shader_gl3.o
+      OBJ += gfx/drivers_shader/spirv_opengl.o
 
       NEED_CXX_LINKER = 1
    endif
