@@ -24,7 +24,6 @@
 #include <boolean.h>
 #include <retro_inline.h>
 #include <retro_math.h>
-#include <queues/fifo_queue.h>
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 
@@ -34,17 +33,25 @@
 #include "../../configuration.h"
 #include "../../verbosity.h"
 
-/* The drivers below use a pull architecture: RetroArch pushes into a
- * FIFO owned by the driver, and SDL's stream get-callback pulls from
- * that FIFO each device period (the microphone mirrors this with the
- * put-callback).  The FIFO and its condition variable share one
- * mutex, so blocking reads/writes need no timeouts or sleeps and
- * can't miss a wakeup.  SDL's own synchronization primitives are
- * used instead of rthreads, so the driver behaves identically with
- * or without HAVE_THREADS; SDL3 provides them on every platform it
- * supports.  The lock order is always SDL's stream lock -> ours
- * (callbacks run under the stream lock), never the reverse: the
- * RetroArch side makes no SDL stream calls while holding our mutex. */
+/* The drivers below feed SDL3 audio streams directly: RetroArch puts
+ * samples into the playback stream and gets them from the recording
+ * stream on its own thread, while SDL's device threads handle the
+ * other end.  SDL_AudioStream is internally locked and buffers any
+ * amount of queued audio, so it doubles as the FIFO and the drivers
+ * keep no buffers, locks or condition variables of their own.
+ * Blocking writes and reads poll the stream's fill level at a short
+ * interval instead of waiting on a callback signal: a device that
+ * stops making progress (unplugged, stalled driver) can then only
+ * ever cost the stall timeout below, never park the core's thread
+ * for good. */
+
+/* How long a blocking write/read keeps polling without making any
+ * progress before giving up on the device. */
+#define SDL3_AUDIO_STALL_TIMEOUT_MS 256
+
+/* Poll interval while a blocking write/read waits on the device;
+ * device periods are several times longer than this. */
+#define SDL3_AUDIO_POLL_INTERVAL_NS SDL_NS_PER_MS
 
 static INLINE int sdl3_audio_find_num_frames(int rate, int latency)
 {
@@ -59,6 +66,7 @@ static INLINE int sdl3_audio_find_num_frames(int rate, int latency)
 static SDL_AudioDeviceID sdl3_audio_find_device(const char *device, bool recording)
 {
    int i;
+   bool found                 = false;
    int count                  = 0;
    SDL_AudioDeviceID *devices = NULL;
    SDL_AudioDeviceID devid    = recording
@@ -72,21 +80,25 @@ static SDL_AudioDeviceID sdl3_audio_find_device(const char *device, bool recordi
       ? SDL_GetAudioRecordingDevices(&count)
       : SDL_GetAudioPlaybackDevices(&count);
 
-   if (devices)
+   if (!devices)
    {
-      for (i = 0; i < count; i++)
-      {
-         if (string_is_equal(SDL_GetAudioDeviceName(devices[i]), device))
-         {
-            devid = devices[i];
-            break;
-         }
-      }
-      SDL_free(devices);
+      RARCH_WARN("[SDL3 audio] Failed to enumerate %s devices: %s.\n",
+            recording ? "recording" : "playback", SDL_GetError());
+      return devid;
    }
 
-   if (      devid == SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK
-         ||  devid == SDL_AUDIO_DEVICE_DEFAULT_RECORDING)
+   for (i = 0; i < count; i++)
+   {
+      if (string_is_equal(SDL_GetAudioDeviceName(devices[i]), device))
+      {
+         devid = devices[i];
+         found = true;
+         break;
+      }
+   }
+   SDL_free(devices);
+
+   if (!found)
       RARCH_WARN("[SDL3 audio] Requested %s device \"%s\" not found, using the default device.\n",
             recording ? "recording" : "playback", device);
 
@@ -129,72 +141,18 @@ static struct string_list *sdl3_audio_device_list(bool recording)
 
 typedef struct sdl3_audio
 {
-   /* Guards speaker_buffer and pairs with cond; the stream
-    * get-callback takes it too, so FIFO fill checks and waits
-    * are race-free. */
-   SDL_Mutex *lock;
-   SDL_Condition *cond;
-   /**
-    * The queue used to store outgoing samples to be played by the driver.
-    * Audio from the core ultimately makes its way here,
-    * the last stop before the get-callback pulls it into the device.
-    */
-   fifo_buffer_t *speaker_buffer;
-   size_t buffer_size;
-   /* Staging area for FIFO -> stream copies inside the callback. */
-   uint8_t *scratch;
-   size_t scratch_size;
-   /* The device stream; samples are put into it only by the callback. */
+   /* The device stream.  SDL_AudioStream is internally locked and
+    * buffers queued audio itself, so it doubles as the FIFO between
+    * RetroArch and the device. */
    SDL_AudioStream *stream;
    /* The format samples are put in (SDL converts to the device format). */
    SDL_AudioSpec spec;
-   /* Bytes per frame on the device side, for converting the
-    * callback's byte counts into our put-side units. */
-   size_t out_frame_size;
-   size_t in_frame_size;
+   /* Cap on queued audio, in bytes of our put-side format; writes
+    * block (or bail, when nonblocking) once this much is queued. */
+   size_t buffer_size;
    bool nonblock;
    bool is_paused;
 } sdl3_audio_t;
-
-/**
- * Runs on SDL's device thread each period, before the device reads
- * from the stream: pulls however much the device needs out of the
- * FIFO.  If the FIFO can't cover it, the stream runs short and SDL
- * plays silence for the remainder (the underrun case).
- */
-static void SDLCALL sdl3_audio_stream_cb(void *userdata,
-      SDL_AudioStream *stream, int additional_amount, int total_amount)
-{
-   sdl3_audio_t *sdl = (sdl3_audio_t*)userdata;
-   /* additional_amount is in device-format bytes; convert to ours. */
-   size_t needed     = (size_t)((additional_amount + (int)sdl->out_frame_size - 1)
-         / (int)sdl->out_frame_size) * sdl->in_frame_size;
-
-   SDL_LockMutex(sdl->lock);
-
-   while (needed > 0)
-   {
-      size_t avail = FIFO_READ_AVAIL(sdl->speaker_buffer);
-      size_t chunk = (needed > sdl->scratch_size) ? sdl->scratch_size : needed;
-
-      if (chunk > avail)
-         chunk = avail;
-      if (chunk == 0)
-         break;
-
-      fifo_read(sdl->speaker_buffer, sdl->scratch, chunk);
-      /* This callback already holds the stream's recursive lock,
-       * so putting from here can't deadlock. */
-      SDL_PutAudioStreamData(stream, sdl->scratch, (int)chunk);
-      needed -= chunk;
-   }
-
-   /* Signal while holding the mutex, so the wakeup can't slip
-    * between a writer's fill check and its wait. */
-   SDL_SignalCondition(sdl->cond);
-
-   SDL_UnlockMutex(sdl->lock);
-}
 
 static void sdl3_audio_free(void *data)
 {
@@ -202,20 +160,9 @@ static void sdl3_audio_free(void *data)
 
    if (sdl)
    {
-      /* Destroying the stream also closes the device.  Do this
-       * before freeing anything else, since the stream callback
-       * uses the FIFO, the scratch buffer and the locks. */
+      /* Destroying the stream also closes the device. */
       if (sdl->stream)
          SDL_DestroyAudioStream(sdl->stream);
-
-      if (sdl->speaker_buffer)
-         fifo_free(sdl->speaker_buffer);
-      free(sdl->scratch);
-
-      if (sdl->cond)
-         SDL_DestroyCondition(sdl->cond);
-      if (sdl->lock)
-         SDL_DestroyMutex(sdl->lock);
 
       SDL_QuitSubSystem(SDL_INIT_AUDIO);
    }
@@ -228,14 +175,14 @@ static void *sdl3_audio_init(const char *device,
 {
    int frames;
    char frames_str[16];
-   size_t min_size;
-   const char *device_name  = NULL;
-   void *tmp                = NULL;
-   SDL_AudioDeviceID devid  = 0;
+   size_t frame_size, min_size;
+   const char *device_name   = NULL;
+   void *tmp                 = NULL;
+   SDL_AudioDeviceID devid   = 0;
    SDL_AudioSpec device_spec = {0};
-   int device_sample_frames = 0;
-   sdl3_audio_t *sdl        = NULL;
-   settings_t *settings     = config_get_ptr();
+   int device_sample_frames  = 0;
+   sdl3_audio_t *sdl         = NULL;
+   settings_t *settings      = config_get_ptr();
 
    /* Subsystem initialization is reference-counted in SDL3, so
     * initialize unconditionally; every init is balanced by the
@@ -263,7 +210,7 @@ static void *sdl3_audio_init(const char *device,
       device_spec.freq = rate;
 
    /* Request a device period of roughly a quarter of the total
-    * latency; the rest of the budget stays queued in the FIFO. */
+    * latency; the rest of the budget stays queued in the stream. */
    frames = sdl3_audio_find_num_frames(device_spec.freq, latency / 4);
    snprintf(frames_str, sizeof(frames_str), "%d", frames);
    SDL_SetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES, frames_str);
@@ -276,7 +223,11 @@ static void *sdl3_audio_init(const char *device,
          ? SDL_AUDIO_S16 : SDL_AUDIO_F32;
    sdl->spec.channels = 2;
 
-   if (!(sdl->stream = SDL_OpenAudioDeviceStream(devid, &sdl->spec, NULL, NULL)))
+   sdl->stream = SDL_OpenAudioDeviceStream(devid, &sdl->spec, NULL, NULL);
+   /* The hint is process-global; clear it now that the open has
+    * consumed it so later SDL audio opens aren't affected. */
+   SDL_ResetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES);
+   if (!sdl->stream)
    {
       RARCH_ERR("[SDL3 audio] Failed to open SDL audio output device: %s.\n",
             SDL_GetError());
@@ -284,37 +235,18 @@ static void *sdl3_audio_init(const char *device,
    }
 
    /* See what SDL actually opened (sample_frames honours the hint). */
-   sdl->in_frame_size  = SDL_AUDIO_FRAMESIZE(sdl->spec);
-   sdl->out_frame_size = sdl->in_frame_size;
-   if (SDL_GetAudioDeviceFormat(SDL_GetAudioStreamDevice(sdl->stream),
+   if (!SDL_GetAudioDeviceFormat(SDL_GetAudioStreamDevice(sdl->stream),
          &device_spec, &device_sample_frames))
-   {
-      if (SDL_AUDIO_FRAMESIZE(device_spec) > 0)
-         sdl->out_frame_size = SDL_AUDIO_FRAMESIZE(device_spec);
-   }
-   else
       device_sample_frames = frames;
 
    /* Buffer the requested latency's worth of audio, with at least
     * two device periods to avoid underruns. */
+   frame_size       = SDL_AUDIO_FRAMESIZE(sdl->spec);
    sdl->buffer_size = (size_t)((uint64_t)sdl->spec.freq * latency / 1000)
-         * sdl->in_frame_size;
-   min_size         = (size_t)(2 * device_sample_frames) * sdl->in_frame_size;
+         * frame_size;
+   min_size         = (size_t)(2 * device_sample_frames) * frame_size;
    if (sdl->buffer_size < min_size)
       sdl->buffer_size = min_size;
-
-   /* The staging buffer covers one device period per copy;
-    * the callback loops if it ever needs more. */
-   sdl->scratch_size = (size_t)device_sample_frames * sdl->in_frame_size;
-   if (sdl->scratch_size < 1024)
-      sdl->scratch_size = 1024;
-
-   sdl->speaker_buffer = fifo_new(sdl->buffer_size);
-   sdl->scratch        = (uint8_t*)malloc(sdl->scratch_size);
-   sdl->lock           = SDL_CreateMutex();
-   sdl->cond           = SDL_CreateCondition();
-   if (!sdl->speaker_buffer || !sdl->scratch || !sdl->lock || !sdl->cond)
-      goto error;
 
    *new_rate = sdl->spec.freq;
 
@@ -330,18 +262,16 @@ static void *sdl3_audio_init(const char *device,
          SDL_AUDIO_ISFLOAT(sdl->spec.format) ? "floating-point" : "integer");
    RARCH_LOG("[SDL3 audio] Requested %u ms latency for output device, using %d ms.\n",
          latency,
-         (int)((sdl->buffer_size / sdl->in_frame_size + device_sample_frames)
+         (int)((sdl->buffer_size / frame_size + device_sample_frames)
             * 1000 / sdl->spec.freq));
 
-   /* Prefill the FIFO with silence so playback starts with a
+   /* Prefill the stream with silence so playback starts with a
     * full latency budget instead of an immediate underrun. */
    if ((tmp = calloc(1, sdl->buffer_size)))
    {
-      fifo_write(sdl->speaker_buffer, tmp, sdl->buffer_size);
+      SDL_PutAudioStreamData(sdl->stream, tmp, (int)sdl->buffer_size);
       free(tmp);
    }
-
-   SDL_SetAudioStreamGetCallback(sdl->stream, sdl3_audio_stream_cb, sdl);
 
    /* Device streams open in a paused state. */
    SDL_ResumeAudioStreamDevice(sdl->stream);
@@ -355,36 +285,52 @@ error:
 
 static ssize_t sdl3_audio_write(void *data, const void *s, size_t len)
 {
-   size_t _len      = 0;
+   size_t _len       = 0;
+   Uint64 deadline   = 0;
    sdl3_audio_t *sdl = (sdl3_audio_t*)data;
 
-   SDL_LockMutex(sdl->lock);
+   if (!sdl)
+      return -1;
 
    while (_len < len)
    {
-      size_t avail = FIFO_WRITE_AVAIL(sdl->speaker_buffer);
+      int queued   = SDL_GetAudioStreamQueued(sdl->stream);
+      size_t avail = (queued >= 0 && (size_t)queued < sdl->buffer_size)
+            ? sdl->buffer_size - (size_t)queued : 0;
 
       /* If the outgoing sample queue is full... */
       if (avail == 0)
       {
+         Uint64 now;
          if (sdl->nonblock)
             break; /* If the queue was full... well, too bad. */
-         /* Block until the stream callback pulls samples out of the
-          * FIFO.  It signals under this same mutex, so the wakeup
-          * can't be lost between the check above and this wait. */
-         SDL_WaitCondition(sdl->cond, sdl->lock);
+         /* Poll until the device drains the stream.  Bounded: if
+          * the device stops making progress, give up after the
+          * stall timeout instead of blocking the core's thread
+          * forever. */
+         now = SDL_GetTicks();
+         if (deadline == 0)
+            deadline = now + SDL3_AUDIO_STALL_TIMEOUT_MS;
+         else if (now >= deadline)
+            break;
+         SDL_DelayNS(SDL3_AUDIO_POLL_INTERVAL_NS);
       }
       else
       {
          /* Enqueue as many samples as we have available without
-          * overflowing the queue. */
+          * exceeding the latency cap. */
          size_t write_amt = (len - _len > avail) ? avail : len - _len;
-         fifo_write(sdl->speaker_buffer, (const char*)s + _len, write_amt);
-         _len += write_amt;
+         if (!SDL_PutAudioStreamData(sdl->stream,
+               (const char*)s + _len, (int)write_amt))
+         {
+            RARCH_ERR("[SDL3 audio] Failed to write to audio stream: %s.\n",
+                  SDL_GetError());
+            break;
+         }
+         _len    += write_amt;
+         deadline = 0; /* Progress was made; reset the stall clock. */
       }
    }
-
-   SDL_UnlockMutex(sdl->lock);
 
    return _len;
 }
@@ -392,7 +338,9 @@ static ssize_t sdl3_audio_write(void *data, const void *s, size_t len)
 static bool sdl3_audio_stop(void *data)
 {
    sdl3_audio_t *sdl = (sdl3_audio_t*)data;
-   sdl->is_paused    = true;
+   if (!sdl)
+      return false;
+   sdl->is_paused = true;
    return SDL_PauseAudioStreamDevice(sdl->stream);
 }
 
@@ -407,7 +355,9 @@ static bool sdl3_audio_alive(void *data)
 static bool sdl3_audio_start(void *data, bool is_shutdown)
 {
    sdl3_audio_t *sdl = (sdl3_audio_t*)data;
-   sdl->is_paused    = false;
+   if (!sdl)
+      return false;
+   sdl->is_paused = false;
    return SDL_ResumeAudioStreamDevice(sdl->stream);
 }
 
@@ -421,24 +371,30 @@ static void sdl3_audio_set_nonblock_state(void *data, bool state)
 static bool sdl3_audio_use_float(void *data)
 {
    sdl3_audio_t *sdl = (sdl3_audio_t*)data;
-   return SDL_AUDIO_ISFLOAT(sdl->spec.format) ? true : false;
+   if (!sdl)
+      return false;
+   return SDL_AUDIO_ISFLOAT(sdl->spec.format) != 0;
 }
 
 static size_t sdl3_audio_write_avail(void *data)
 {
-   size_t avail;
+   int queued;
    sdl3_audio_t *sdl = (sdl3_audio_t*)data;
 
-   SDL_LockMutex(sdl->lock);
-   avail = FIFO_WRITE_AVAIL(sdl->speaker_buffer);
-   SDL_UnlockMutex(sdl->lock);
+   if (!sdl)
+      return 0;
 
-   return avail;
+   queued = SDL_GetAudioStreamQueued(sdl->stream);
+   if (queued < 0 || (size_t)queued >= sdl->buffer_size)
+      return 0;
+   return sdl->buffer_size - (size_t)queued;
 }
 
 static size_t sdl3_audio_buffer_size(void *data)
 {
    sdl3_audio_t *sdl = (sdl3_audio_t*)data;
+   if (!sdl)
+      return 0;
    return sdl->buffer_size;
 }
 
@@ -482,54 +438,30 @@ typedef struct sdl3_microphone
 
 typedef struct sdl3_microphone_handle
 {
-   /* Guards sample_buffer and pairs with cond (see sdl3_audio). */
-   SDL_Mutex *lock;
-   SDL_Condition *cond;
-   /**
-    * The queue used to store incoming samples from the driver.
-    * The stream put-callback drains the device stream into it.
-    */
-   fifo_buffer_t *sample_buffer;
-   size_t buffer_size;
-   /* Staging area for stream -> FIFO copies inside the callback. */
-   uint8_t *scratch;
-   size_t scratch_size;
-   /* The device stream; samples are read from it only by the callback. */
+   /* The device stream.  Internally locked and buffering, so it
+    * doubles as the FIFO between the device and RetroArch. */
    SDL_AudioStream *stream;
    /* The format samples are read in (SDL converts from the device format). */
    SDL_AudioSpec spec;
+   /* Cap on buffered capture, in bytes of our get-side format;
+    * the put-callback drops the backlog once it grows past this. */
+   size_t buffer_size;
 } sdl3_microphone_handle_t;
 
 /**
  * Runs on SDL's device thread each period, after the device puts
- * recorded samples into the stream: drains the stream into the FIFO.
- * If the FIFO is almost full, whatever doesn't fit is dropped, which
- * keeps capture latency bounded when nothing is reading.
+ * recorded samples into the stream.  Its only job is to bound the
+ * backlog: if nothing has been reading for a while, drop the stale
+ * audio wholesale so the next read resumes with fresh samples and
+ * capture latency stays bounded.
  */
 static void SDLCALL sdl3_microphone_stream_cb(void *userdata,
       SDL_AudioStream *stream, int additional_amount, int total_amount)
 {
-   int got;
    sdl3_microphone_handle_t *mic = (sdl3_microphone_handle_t*)userdata;
 
-   /* Always drain the stream completely, even when the FIFO can't
-    * take it all, so unread samples never pile up inside SDL. */
-   while ((got = SDL_GetAudioStreamData(stream,
-         mic->scratch, (int)mic->scratch_size)) > 0)
-   {
-      size_t avail, write_amt;
-
-      SDL_LockMutex(mic->lock);
-      avail     = FIFO_WRITE_AVAIL(mic->sample_buffer);
-      write_amt = ((size_t)got > avail) ? avail : (size_t)got;
-      fifo_write(mic->sample_buffer, mic->scratch, write_amt);
-      /* Signal under the mutex; the wakeup can't be lost. */
-      SDL_SignalCondition(mic->cond);
-      SDL_UnlockMutex(mic->lock);
-
-      if (got < (int)mic->scratch_size)
-         break;
-   }
+   if (SDL_GetAudioStreamAvailable(stream) > (int)mic->buffer_size)
+      SDL_ClearAudioStream(stream);
 }
 
 static void *sdl3_microphone_init(void)
@@ -538,7 +470,11 @@ static void *sdl3_microphone_init(void)
 
    /* Reference-counted; balanced by SDL_QuitSubSystem in free. */
    if (!SDL_InitSubSystem(SDL_INIT_AUDIO))
+   {
+      RARCH_ERR("[SDL3 mic] Failed to initialize audio subsystem: %s.\n",
+            SDL_GetError());
       return NULL;
+   }
 
    if (!(sdl = (sdl3_microphone_t*)calloc(1, sizeof(*sdl))))
    {
@@ -564,20 +500,9 @@ static void sdl3_microphone_close_mic(void *driver_context, void *mic_context)
 
    if (mic)
    {
-      /* Destroying the stream also closes the device.  Do this
-       * before freeing anything else, since the stream callback
-       * uses the FIFO, the scratch buffer and the locks. */
+      /* Destroying the stream also closes the device. */
       if (mic->stream)
          SDL_DestroyAudioStream(mic->stream);
-
-      if (mic->sample_buffer)
-         fifo_free(mic->sample_buffer);
-      free(mic->scratch);
-
-      if (mic->cond)
-         SDL_DestroyCondition(mic->cond);
-      if (mic->lock)
-         SDL_DestroyMutex(mic->lock);
 
       RARCH_LOG("[SDL3 mic] Freed microphone.\n");
       free(mic);
@@ -591,7 +516,6 @@ static void *sdl3_microphone_open_mic(void *driver_context, const char *device,
    char frames_str[16];
    size_t frame_size, min_size;
    const char *device_name       = NULL;
-   void *tmp                     = NULL;
    SDL_AudioDeviceID devid       = 0;
    SDL_AudioSpec device_spec     = {0};
    int device_sample_frames      = 0;
@@ -650,7 +574,11 @@ static void *sdl3_microphone_open_mic(void *driver_context, const char *device,
 
    /* Device streams open in a paused state;
     * the frontend starts them with start_mic. */
-   if (!(mic->stream = SDL_OpenAudioDeviceStream(devid, &mic->spec, NULL, NULL)))
+   mic->stream = SDL_OpenAudioDeviceStream(devid, &mic->spec, NULL, NULL);
+   /* The hint is process-global; clear it now that the open has
+    * consumed it so later SDL audio opens aren't affected. */
+   SDL_ResetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES);
+   if (!mic->stream)
    {
       RARCH_ERR("[SDL3 mic] Failed to open SDL audio input device: %s.\n",
             SDL_GetError());
@@ -662,32 +590,13 @@ static void *sdl3_microphone_open_mic(void *driver_context, const char *device,
       device_sample_frames = frames;
 
    /* Buffer up to double the latency budget (with a floor of four
-    * device periods) before new samples start getting dropped. */
-   frame_size        = SDL_AUDIO_FRAMESIZE(mic->spec);
-   mic->buffer_size  = (size_t)((uint64_t)mic->spec.freq * latency / 1000)
+    * device periods) before the backlog starts getting dropped. */
+   frame_size       = SDL_AUDIO_FRAMESIZE(mic->spec);
+   mic->buffer_size = (size_t)((uint64_t)mic->spec.freq * latency / 1000)
          * frame_size * 2;
-   min_size          = (size_t)(4 * device_sample_frames) * frame_size;
+   min_size         = (size_t)(4 * device_sample_frames) * frame_size;
    if (mic->buffer_size < min_size)
       mic->buffer_size = min_size;
-
-   mic->scratch_size = (size_t)device_sample_frames * frame_size;
-   if (mic->scratch_size < 1024)
-      mic->scratch_size = 1024;
-
-   mic->sample_buffer = fifo_new(mic->buffer_size);
-   mic->scratch       = (uint8_t*)malloc(mic->scratch_size);
-   mic->lock          = SDL_CreateMutex();
-   mic->cond          = SDL_CreateCondition();
-   if (!mic->sample_buffer || !mic->scratch || !mic->lock || !mic->cond)
-      goto error;
-
-   /* Prefill half the FIFO with silence, so the first blocking
-    * reads have a latency cushion to draw from. */
-   if ((tmp = calloc(1, mic->buffer_size / 2)))
-   {
-      fifo_write(mic->sample_buffer, tmp, mic->buffer_size / 2);
-      free(tmp);
-   }
 
    SDL_SetAudioStreamPutCallback(mic->stream, sdl3_microphone_stream_cb, mic);
 
@@ -704,10 +613,9 @@ static void *sdl3_microphone_open_mic(void *driver_context, const char *device,
    RARCH_DBG("[SDL3 mic] Microphone audio format: %u-bit %s.\n",
          SDL_AUDIO_BITSIZE(mic->spec.format),
          SDL_AUDIO_ISFLOAT(mic->spec.format) ? "floating-point" : "integer");
-   RARCH_LOG("[SDL3 mic] Requested %u ms latency for input device, using %d ms.\n",
+   RARCH_LOG("[SDL3 mic] Requested %u ms latency for input device, capping the backlog at %d ms.\n",
          latency,
-         (int)((mic->buffer_size / 2 / frame_size + device_sample_frames)
-            * 1000 / mic->spec.freq));
+         (int)((mic->buffer_size / frame_size) * 1000 / mic->spec.freq));
 
    return mic;
 
@@ -762,40 +670,49 @@ static int sdl3_microphone_read(void *driver_context, void *mic_context,
       void *s, size_t len)
 {
    size_t _len                   = 0;
+   Uint64 deadline               = 0;
    sdl3_microphone_t *sdl        = (sdl3_microphone_t*)driver_context;
    sdl3_microphone_handle_t *mic = (sdl3_microphone_handle_t*)mic_context;
 
    if (!sdl || !mic || !s)
       return -1;
 
-   SDL_LockMutex(mic->lock);
-
    /* Until we've given the caller as much data as they've asked for... */
    while (_len < len)
    {
-      size_t avail = FIFO_READ_AVAIL(mic->sample_buffer);
+      int got = SDL_GetAudioStreamData(mic->stream,
+            (char*)s + _len, (int)(len - _len));
 
-      /* If the incoming sample queue is empty... */
-      if (avail == 0)
+      if (got < 0)
       {
-         if (sdl->nonblock)
-            break;
-         /* Block until the stream callback puts samples into the
-          * FIFO.  It signals under this same mutex, so the wakeup
-          * can't be lost between the check above and this wait. */
-         SDL_WaitCondition(mic->cond, mic->lock);
+         RARCH_ERR("[SDL3 mic] Failed to read from microphone stream: %s.\n",
+               SDL_GetError());
+         if (_len == 0)
+            return -1;
+         break;
+      }
+
+      if (got > 0)
+      {
+         _len    += (size_t)got;
+         deadline = 0; /* Progress was made; reset the stall clock. */
       }
       else
       {
-         /* Read as many samples as we have available without
-          * underflowing the queue. */
-         size_t read_amt = (len - _len > avail) ? avail : len - _len;
-         fifo_read(mic->sample_buffer, (char*)s + _len, read_amt);
-         _len += read_amt;
+         Uint64 now;
+         if (sdl->nonblock)
+            break;
+         /* Poll until the device puts more samples into the stream.
+          * Bounded: if the device stops making progress, give up
+          * after the stall timeout instead of blocking forever. */
+         now = SDL_GetTicks();
+         if (deadline == 0)
+            deadline = now + SDL3_AUDIO_STALL_TIMEOUT_MS;
+         else if (now >= deadline)
+            break;
+         SDL_DelayNS(SDL3_AUDIO_POLL_INTERVAL_NS);
       }
    }
-
-   SDL_UnlockMutex(mic->lock);
 
    return (int)_len;
 }
@@ -803,7 +720,9 @@ static int sdl3_microphone_read(void *driver_context, void *mic_context,
 static bool sdl3_microphone_mic_use_float(const void *driver_context, const void *mic_context)
 {
    const sdl3_microphone_handle_t *mic = (const sdl3_microphone_handle_t*)mic_context;
-   return SDL_AUDIO_ISFLOAT(mic->spec.format) ? true : false;
+   if (!mic)
+      return false;
+   return SDL_AUDIO_ISFLOAT(mic->spec.format) != 0;
 }
 
 static struct string_list *sdl3_microphone_device_list_new(const void *driver_context)

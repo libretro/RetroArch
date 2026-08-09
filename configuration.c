@@ -491,12 +491,12 @@ static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_CTR;
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SWITCH;
 #elif defined(HAVE_XVIDEO)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_XVIDEO;
+#elif defined(HAVE_SDL3)
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL3;
 #elif defined(HAVE_SDL) && !defined(HAVE_SDL_DINGUX)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL;
 #elif defined(HAVE_SDL2)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL2;
-#elif defined(HAVE_SDL3)
-static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL3;
 #elif defined(HAVE_SDL_DINGUX)
 #if defined(RS90) || defined(MIYOO)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL_RS90;
@@ -571,12 +571,12 @@ static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_SL;
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_AUDIOWORKLET;
 #elif defined(HAVE_RWEBAUDIO)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_RWEBAUDIO;
+#elif defined(HAVE_SDL3)
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_SDL3;
 #elif defined(HAVE_SDL)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_SDL;
 #elif defined(HAVE_SDL2)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_SDL2;
-#elif defined(HAVE_SDL3)
-static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_SDL3;
 #elif defined(HAVE_RSOUND)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_RSOUND;
 #elif defined(HAVE_ROAR)
@@ -600,11 +600,11 @@ static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_
 static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_PIPEWIRE;
 #elif defined(HAVE_COREAUDIO)
 static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_COREAUDIO;
+#elif defined(HAVE_SDL3)
+static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_SDL3;
 #elif defined(HAVE_SDL2)
 /* The default fallback driver is SDL2, if available. */
 static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_SDL2;
-#elif defined(HAVE_SDL3)
-static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_SDL3;
 #else
 static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_NULL;
 #endif
