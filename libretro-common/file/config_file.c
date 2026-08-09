@@ -455,9 +455,9 @@ static char *config_file_extract_value(char *line, unsigned p_opts,
             {
                do {
                   /* shift the text to overwrite the last backslash */
-                  const size_t copy_len = next_quote - read;
-                  memcpy(&line[idx - 1], read, copy_len);
-                  idx += copy_len - 1;
+                  --idx;
+                  while (read < next_quote)
+                     line[idx++] = *read++;
 
                   /* if this quote is not escaped, stop */
                   if (next_quote[-1] != '\\')
