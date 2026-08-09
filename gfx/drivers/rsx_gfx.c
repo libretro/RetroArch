@@ -240,11 +240,7 @@ typedef struct
    font_vertex[     2 * (6 * i + c) + 0] = (x + (delta_x + off_x + vx * width) * scale) * inv_win_width; \
    font_vertex[     2 * (6 * i + c) + 1] = (y + (delta_y - off_y - vy * height) * scale) * inv_win_height; \
    font_tex_coords[ 2 * (6 * i + c) + 0] = (tex_x + vx * width) * inv_tex_size_x; \
-   font_tex_coords[ 2 * (6 * i + c) + 1] = (tex_y + vy * height) * inv_tex_size_y; \
-   font_color[      4 * (6 * i + c) + 0] = color[0]; \
-   font_color[      4 * (6 * i + c) + 1] = color[1]; \
-   font_color[      4 * (6 * i + c) + 2] = color[2]; \
-   font_color[      4 * (6 * i + c) + 3] = color[3]
+   font_tex_coords[ 2 * (6 * i + c) + 1] = (tex_y + vy * height) * inv_tex_size_y
 
 #define MAX_MSG_LEN_CHUNK 64
 
@@ -345,8 +341,6 @@ static void gfx_display_rsx_draw(gfx_display_ctx_draw_t *draw,
       vertex                = &rsx_vertexes[0];
    if (!tex_coord)
       tex_coord             = &rsx_tex_coords[0];
-   if (!draw->coords->lut_tex_coord)
-      draw->coords->lut_tex_coord   = &rsx_tex_coords[0];
    if (!draw->texture)
       return;
 
@@ -476,22 +470,6 @@ static void gfx_display_rsx_blend_end(void *data)
 #endif
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_rsx = {
-   gfx_display_rsx_draw,
-   NULL,                                        /* draw_pipeline */
-   gfx_display_rsx_blend_begin,
-   gfx_display_rsx_blend_end,
-   gfx_display_rsx_get_default_mvp,
-   gfx_display_rsx_get_default_vertices,
-   gfx_display_rsx_get_default_tex_coords,
-   FONT_DRIVER_RENDER_RSX,
-   GFX_VIDEO_DRIVER_RSX,
-   "rsx",
-   true,
-   gfx_display_rsx_scissor_begin,
-   gfx_display_rsx_scissor_end
-};
-
 /*
  * FONT DRIVER
  */
@@ -540,7 +518,20 @@ static bool rsx_font_upload_atlas(rsx_t *rsx, rsx_font_t *font)
 {
    u8 *texbuffer               = (u8 *)font->texture.data;
    const u8 *atlas_data        = (u8 *)font->atlas->buffer;
-   memcpy(texbuffer, atlas_data, font->atlas->height * font->atlas->width);
+   /* Texture pitch equals the atlas width, so the dirty row band is
+    * contiguous in both buffers and one memcpy of just that band
+    * suffices; the initial upload (dirty rect covering everything
+    * after the renderer pre-cache) still transfers the full atlas. */
+   unsigned y0                 = font->atlas->dirty_y0;
+   unsigned y1                 = font->atlas->dirty_y1;
+   if (y1 > font->atlas->height || y1 <= y0)
+   {
+      y0 = 0;
+      y1 = font->atlas->height;
+   }
+   memcpy(texbuffer   + (size_t)y0 * font->atlas->width,
+          atlas_data  + (size_t)y0 * font->atlas->width,
+          (size_t)(y1 - y0) * font->atlas->width);
 
    font->texture.tex.format    = GCM_TEXTURE_FORMAT_B8 | GCM_TEXTURE_FORMAT_LIN;
    font->texture.tex.mipmap    = 1;
@@ -593,7 +584,7 @@ static void *rsx_font_init(void *data,
 
    if (!font_renderer_create_default(
             &font->font_driver,
-            &font->font_data, font_path, font_size))
+            &font->font_data, font_path, font_size, FONT_ATLAS_FORMAT_A8))
    {
       free(font);
       return NULL;
@@ -762,6 +753,8 @@ static void rsx_font_render_line(rsx_t *rsx,
    float font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
    float font_vertex    [2 * 6 * MAX_MSG_LEN_CHUNK];
    float font_color     [4 * 6 * MAX_MSG_LEN_CHUNK];
+   float color_block[4 * 6];
+   int n;
    const char* msg_end  = msg + msg_len;
    int x                = pre_x;
    int y                = roundf(pos_y * rsx->vp.height);
@@ -790,6 +783,14 @@ static void rsx_font_render_line(rsx_t *rsx,
          x -= (int)(width_accum * scale);
       else
          x -= (int)(width_accum * scale) / 2;
+   }
+
+   for (n = 0; n < 6; n++)
+   {
+      color_block[4 * n + 0] = color[0];
+      color_block[4 * n + 1] = color[1];
+      color_block[4 * n + 2] = color[2];
+      color_block[4 * n + 3] = color[3];
    }
 
    while (msg < msg_end)
@@ -821,6 +822,9 @@ static void rsx_font_render_line(rsx_t *rsx,
          RSX_FONT_EMIT(3, 1, 0); /* Top-right */
          RSX_FONT_EMIT(4, 0, 0); /* Top-left */
          RSX_FONT_EMIT(5, 1, 1); /* Bottom-right */
+
+         memcpy(&font_color[4 * 6 * i], color_block,
+               sizeof(color_block));
 
          i++;
 
@@ -1052,18 +1056,6 @@ static bool rsx_font_get_line_metrics(void* data, struct font_line_metrics **met
    }
    return false;
 }
-
-font_renderer_t rsx_font = {
-   rsx_font_init,
-   rsx_font_free,
-   rsx_font_render_msg,
-   "rsx",
-   rsx_font_get_glyph,
-   rsx_font_bind_block,
-   rsx_font_flush_block,
-   rsx_font_get_message_width,
-   rsx_font_get_line_metrics
-};
 
 /*
  * VIDEO DRIVER
@@ -1579,14 +1571,7 @@ static void* rsx_init(const video_info_t* video,
    rsx_context_bind_hw_render(rsx, true);
 
    if (video->font_enable)
-   {
-      font_driver_init_osd(rsx,
-            video,
-            false,
-            video->is_threaded,
-            FONT_DRIVER_RENDER_RSX);
       rsx->msg_rendering_enabled = true;
-   }
 
    return rsx;
 }
@@ -2668,6 +2653,18 @@ static bool rsx_set_shader(void* data,
 static bool rsx_widgets_enabled(void *data)          { return true;  }
 #endif
 
+static font_renderer_t rsx_font = {
+   rsx_font_init,
+   rsx_font_free,
+   rsx_font_render_msg,
+   "rsx",
+   rsx_font_get_glyph,
+   rsx_font_bind_block,
+   rsx_font_flush_block,
+   rsx_font_get_message_width,
+   rsx_font_get_line_metrics
+};
+
 video_driver_t video_gcm =
 {
    rsx_init,
@@ -2693,6 +2690,25 @@ video_driver_t video_gcm =
    NULL, /* shader_load_begin */
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   rsx_widgets_enabled
+   rsx_widgets_enabled,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &rsx_font
+};
+
+gfx_display_ctx_driver_t gfx_display_ctx_rsx = {
+   gfx_display_rsx_draw,
+   NULL,                                        /* draw_pipeline */
+   gfx_display_rsx_blend_begin,
+   gfx_display_rsx_blend_end,
+   gfx_display_rsx_get_default_mvp,
+   gfx_display_rsx_get_default_vertices,
+   gfx_display_rsx_get_default_tex_coords,
+   &rsx_font,
+   GFX_VIDEO_DRIVER_RSX,
+   "rsx",
+   true,
+   gfx_display_rsx_scissor_begin,
+   gfx_display_rsx_scissor_end
 };

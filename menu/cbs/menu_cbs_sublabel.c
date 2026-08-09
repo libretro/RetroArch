@@ -514,6 +514,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_nowinkey_enable,         MENU_
 #ifdef ANDROID
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_select_physical_keyboard,   MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_android_input_disconnect_workaround, MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_android_system_keyboard,     MENU_ENUM_SUBLABEL_INPUT_ANDROID_SYSTEM_KEYBOARD)
 #endif
 #if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_screensaver_animation,       MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION)
@@ -1102,7 +1103,10 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
       buf[  _len] = ':';
       buf[++_len] = ' ';
       buf[++_len] = '\0';
-      strlcpy(buf + _len, status, sizeof(buf) - _len);
+      /* Reserve the byte the '\n' below needs: without it a long
+       * localized label plus status can fill buf to sizeof(buf) - 1,
+       * and buf[++_len] then writes one past the end of the array. */
+      strlcpy(buf + _len, status, sizeof(buf) - _len - 1);
       _len        = strlen(buf);
       buf[  _len] = '\n';
       buf[++_len] = '\0';
@@ -1129,7 +1133,11 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
 
                if (dev_len <= 0)
                {
-                  _len = -1;
+                  /* _len is size_t, so the old -1 sentinel wrapped to
+                   * SIZE_MAX and sailed straight through the
+                   * "if (_len > 0)" guard below.  0 is what that guard
+                   * was written to reject. */
+                  _len = 0;
                   break;
                }
 
@@ -1251,12 +1259,12 @@ static int action_bind_sublabel_playlist_entry(
 
    /* Note: This looks heavy, but each string_is_equal() call will
     * return almost immediately */
-   if (   !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY))
-       && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB))
-       && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST))
-       && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES_TAB))
-       && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST))
-       && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU)))
+   if (   !string_is_equal(label, MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR)
+       && !string_is_equal(label, MENU_ENUM_LABEL_HISTORY_TAB_STR)
+       && !string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST_STR)
+       && !string_is_equal(label, MENU_ENUM_LABEL_FAVORITES_TAB_STR)
+       && !string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST_STR)
+       && !string_is_equal(label, MENU_ENUM_LABEL_HORIZONTAL_MENU_STR))
       return 0;
 
    /* Check whether runtime info should be loaded from log file */
@@ -2406,6 +2414,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       { MENU_ENUM_LABEL_VIDEO_SCALING_SETTINGS, MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS },
       { MENU_ENUM_LABEL_VIDEO_HDR_SETTINGS, MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS },
       { MENU_ENUM_LABEL_VIDEO_HDR_ENABLE, MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE },
+      { MENU_ENUM_LABEL_VIDEO_SWAPCHAIN_BIT_DEPTH, MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH },
       { MENU_ENUM_LABEL_VIDEO_HDR_PAPER_WHITE_NITS, MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS },
       { MENU_ENUM_LABEL_MENU_HDR_BRIGHTNESS_NITS, MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS },
       { MENU_ENUM_LABEL_VIDEO_HDR_EXPAND_GAMUT, MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT },
@@ -3045,6 +3054,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_android_input_disconnect_workaround);
+            break;
+         case MENU_ENUM_LABEL_INPUT_ANDROID_SYSTEM_KEYBOARD:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_android_system_keyboard);
             break;
 #endif
          case MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS:

@@ -5,7 +5,10 @@ resampler (`drivers/sinc_resampler.c`).  It exists to:
 
 1. **Determinism.** The float driver is built with `-ffast-math`; its output
    is not bit-reproducible across compilers/archs/FMA settings. This driver is
-   integer-only and bit-identical everywhere — relevant for netplay and rewind.
+   integer-only and bit-identical everywhere — reproducible output for
+   validation and regression comparison. (Resampling is downstream of the
+   core, so this does not affect netplay or rewind, which synchronise on
+   inputs and savestates.)
 2. **Round-trip removal.** The libretro audio callback is int16-only, so
    RetroArch converts s16→float for the float resampler on *every* core, every
    frame, and back to s16 for s16 output devices. The int16 driver skips both
@@ -57,18 +60,24 @@ anything the more correct of the two.
 
 The shared `retro_resampler` vtable is float-typed, so rather than change the
 float ABI, the integer driver is held as a parallel handle
-(`audio_driver_state_t::resampler_data_int16`) and used by a fast path in
+(`audio_driver_state_t::resampler_data_int16`) and used by the s16 path in
 `audio_driver_flush()`.
 
-- **Init** (`audio_driver_init_internal`): after `retro_resampler_realloc`, when
-  the selected backend's `short_ident` is `"sinc"`, an int16 instance is created
-  with `sinc_resampler_int16_init(src_ratio_orig, <mapped quality>)`. Logs
-  `"[Audio] SINC resampler: integer s16 fast path available"`.
+- **Init** (`audio_driver_init_internal`): after `retro_resampler_realloc`, an
+  int16 instance is created for the selected backend when one exists — this is
+  no longer sinc-only: `"sinc"` (`sinc_resampler_int16_init(src_ratio_orig,
+  <mapped quality>)`), `"nearest"` and `"cc"` all have int16 variants. Logs
+  `"[Audio] <ident> resampler: integer s16 path available"`.
 - **Deinit** (`audio_driver_deinit_resampler`): frees the int16 handle.
 - **Flush** (`audio_driver_flush`): a branch after the existing `write_raw`
-  fast path takes the integer route when **all** of these hold — int16 core
-  audio, an int16 handle exists, unity gain, no MIDI synth, no fast-forward
-  pitch EMA, and (config-gated) no DSP and no active mixer. It runs the same DRC
+  s16 path takes the integer route when int16 core audio arrives and an int16
+  handle exists. The gate has been relaxed since this note was first written:
+  volume is applied in fixed point (non-unity gain stays integer), MIDI synth
+  output is folded in as s16, fast-forward pitch tracking applies to the
+  integer ratio, and int16-capable DSP chains run in the integer domain — only
+  an incompatible (float-only) DSP filter forces the float path. See the
+  comment block above the gate in `audio_driver_flush` for the authoritative
+  list. It runs the same DRC
   (`src_ratio_orig * audio_driver_compute_rate_adjust`) and slow-motion scaling
   as the float path, resamples s16->s16 into `output_samples_conv_buf`, and
   writes directly (or does a single s16->float pass for float-output drivers).
@@ -97,7 +106,7 @@ reinit.
 
 ### Volume
 
-Volume/mute is applied inside the fast path, so non-unity gain no longer forces
+Volume/mute is applied inside the s16 path, so non-unity gain no longer forces
 the float route:
 
 - **s16-output** driver: a deterministic Q16 gain multiply + saturate over the
@@ -120,7 +129,7 @@ framework gained:
   chain provides `process_i16` (API version >= 2);
 - `retro_dsp_filter_process_int16(dsp, data)` - runs the chain in int16.
 
-`audio_driver_flush()` now keeps DSP inside the integer fast path when
+`audio_driver_flush()` now keeps DSP inside the integer s16 path when
 `retro_dsp_filter_supports_int16()` is true: it copies the core's s16 into an
 int16 scratch (`input_data_int16`), runs the int16 chain in place, then feeds
 the result to the integer resampler. If any filter in the chain is float-only,

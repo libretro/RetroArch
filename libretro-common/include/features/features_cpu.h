@@ -83,7 +83,7 @@ uint64_t cpu_features_get(void);
  * @param func     The CPUID leaf (function number) to query.
  * @param[out] flags Array of four 32-bit words receiving EAX/EBX/ECX/EDX.
  */
-void x86_cpuid(int func, int32_t flags[4]);
+void x86_cpuid(uint32_t func, int32_t flags[4]);
 #endif
 
 /**

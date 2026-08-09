@@ -14,6 +14,11 @@ S_FLOAT_EX(video_hdr_paper_white_nits, VIDEO_HDR_PAPER_WHITE_NITS,
       DEFAULT_VIDEO_HDR_PAPER_WHITE_NITS, "%.0f", SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0.0, 10000.0, 10.0, setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0,
       "Brightness",
       "Sets the HDR brightness level in nits. Use in combination with your display's physical brightness settings. For a starting point, set this to 80 and your display's brightness to full. Alternatively, set this to the max nits of your display and turn your display's brightness down until it looks right.")
+S_FLOAT_EX(video_hdr_max_nits, VIDEO_HDR_MAX_NITS,
+      "video_hdr_max_nits",
+      DEFAULT_VIDEO_HDR_MAX_NITS, "%.0f", SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 100.0, 10000.0, 50.0, setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0,
+      "Peak Brightness",
+      "The brightest your display can go, in nits. Sets how much room there is above Brightness for highlights, so cores that render HDR themselves know how far they can push before rolling off. Check your display's specification; if in doubt, leave it at 1000. Setting this higher than the display can actually reach makes bright detail clip instead of rolling off.")
 S_UINT_EX(video_hdr_expand_gamut, VIDEO_HDR_EXPAND_GAMUT,
       "video_hdr_expand_gamut",
       DEFAULT_VIDEO_HDR_EXPAND_GAMUT, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 3, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_hdr_expand_gamut, NULL, NULL, NULL, NULL, 0,

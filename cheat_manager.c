@@ -1290,7 +1290,9 @@ static void cheat_manager_search_input_cb_common(
 
    if (!line || !*line)
    {
+#ifdef HAVE_MENU
       menu_input_dialog_end();
+#endif
       return;
    }
 
@@ -1299,7 +1301,9 @@ static void cheat_manager_search_input_cb_common(
 
    if (errno || end == line)
    {
+#ifdef HAVE_MENU
       menu_input_dialog_end();
+#endif
       return;
    }
 
@@ -1311,7 +1315,9 @@ static void cheat_manager_search_input_cb_common(
 
    *target = (unsigned)value;
 
+#ifdef HAVE_MENU
    menu_input_dialog_end();
+#endif
 
    cheat_manager_search(search_type);
 }
@@ -1363,7 +1369,7 @@ static int cheat_manager_search_input_start(
    line.label         = msg_hash_to_str(label_value);
    line.label_setting = value_buf;
    line.type          = label;
-   line.idx           = idx;
+   line.idx           = (unsigned)idx;
    line.cb            = cb;
 
    if (menu_input_dialog_start(&line))
@@ -1576,8 +1582,8 @@ int cheat_manager_add_matches(const char *path,
    runloop_msg_queue_push(msg, _len, 1, 180, true, NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
 #ifdef HAVE_MENU
-   menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
-                                   |  MENU_ST_FLAG_PREVENT_POPULATE;
+   menu_st->flags  |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                    |  MENU_ST_FLAG_PREVENT_POPULATE;
 #endif
    return 0;
 }
@@ -2069,8 +2075,8 @@ int cheat_manager_delete_match(rarch_setting_t *setting, size_t idx, bool wrapar
    cheat_manager_match_action(CHEAT_MATCH_ACTION_TYPE_DELETE,
          cheat_st->match_idx, NULL, NULL, NULL, NULL);
 #ifdef HAVE_MENU
-   menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
-                                   |  MENU_ST_FLAG_PREVENT_POPULATE;
+   menu_st->flags  |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                    |  MENU_ST_FLAG_PREVENT_POPULATE;
 #endif
    return 0;
 }

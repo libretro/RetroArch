@@ -732,24 +732,7 @@ static enum frontend_powerstate frontend_emscripten_get_powerstate(int *seconds,
    return ret;
 }
 
-static uint64_t frontend_emscripten_get_total_mem(void)
-{
-   if (!emscripten_platform_data)
-      return 0;
-   return PLATFORM_GETVAL(u64, &emscripten_platform_data->memory_limit);
-}
 
-static uint64_t frontend_emscripten_get_free_mem(void)
-{
-   if (!emscripten_platform_data)
-      return 0;
-#ifndef PROXY_TO_PTHREAD
-   uint64_t used = PLATFORM_GETVAL(u64, &emscripten_platform_data->memory_used);
-#else
-   uint64_t used = mallinfo().uordblks;
-#endif
-   return (PLATFORM_GETVAL(u64, &emscripten_platform_data->memory_limit) - used);
-}
 
 #ifdef HAVE_AUDIOWORKLET
 void audioworklet_close(void);
@@ -1134,8 +1117,6 @@ frontend_ctx_driver_t frontend_ctx_emscripten = {
    NULL,                                /* get_architecture */
    frontend_emscripten_get_powerstate,  /* get_powerstate */
    NULL,                                /* parse_drive_list */
-   frontend_emscripten_get_total_mem,   /* get_total_mem */
-   frontend_emscripten_get_free_mem,    /* get_free_mem  */
    NULL,                                /* install_sighandlers */
    NULL,                                /* get_signal_handler_state */
    NULL,                                /* set_signal_handler_state */

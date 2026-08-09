@@ -1367,22 +1367,6 @@ static void gfx_display_d3d9_hlsl_scissor_end(void *data,
    IDirect3DDevice9_SetScissorRect(d3d9->dev, &rect);
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_d3d9_hlsl = {
-   gfx_display_d3d9_hlsl_draw,
-   gfx_display_d3d9_hlsl_draw_pipeline,
-   gfx_display_d3d9_hlsl_blend_begin,
-   gfx_display_d3d9_hlsl_blend_end,
-   NULL,                                     /* get_default_mvp        */
-   NULL,                                     /* get_default_vertices   */
-   NULL,                                     /* get_default_tex_coords */
-   FONT_DRIVER_RENDER_D3D9_API,
-   GFX_VIDEO_DRIVER_DIRECT3D9_HLSL,
-   "d3d9_hlsl",
-   true,
-   gfx_display_d3d9_hlsl_scissor_begin,
-   gfx_display_d3d9_hlsl_scissor_end
-};
-
 /*
  * FONT DRIVER
  */
@@ -1413,7 +1397,7 @@ static void *d3d9_font_init(void *data,
 
    if (!font_renderer_create_default(
             &font->font_driver, &font->font_data,
-            font_path, font_size))
+            font_path, font_size, FONT_ATLAS_FORMAT_A8))
    {
       free(font);
       return NULL;
@@ -1680,9 +1664,12 @@ static void d3d9_font_render_msg(
       /* If the atlas dimensions changed (grew), we must recreate
        * the texture to match, otherwise glyphs added after init
        * will have wrong UVs or missing data. */
+      bool respecified = false;
+
       if (   font->atlas->width  != font->tex_width
           || font->atlas->height != font->tex_height)
       {
+         respecified      = true;
          if (font->texture)
             IDirect3DTexture9_Release(font->texture);
 
@@ -1700,15 +1687,41 @@ static void d3d9_font_render_msg(
       {
          unsigned i, j;
          D3DLOCKED_RECT lr;
+         RECT rect;
+         unsigned x0 = font->atlas->dirty_x0;
+         unsigned y0 = font->atlas->dirty_y0;
+         unsigned x1 = font->atlas->dirty_x1;
+         unsigned y1 = font->atlas->dirty_y1;
+
+         /* A recreated texture has no previous contents, so the whole
+          * atlas must be converted; otherwise only the dirty
+          * rectangle tracked by the font renderers needs it. Managed
+          * pool textures track locked sub-rects natively. */
+         if (     respecified
+               || x1 <= x0 || y1 <= y0
+               || x1 > (unsigned)font->atlas->width
+               || y1 > (unsigned)font->atlas->height)
+         {
+            x0 = 0;
+            y0 = 0;
+            x1 = font->atlas->width;
+            y1 = font->atlas->height;
+         }
+         rect.left   = (LONG)x0;
+         rect.top    = (LONG)y0;
+         rect.right  = (LONG)x1;
+         rect.bottom = (LONG)y1;
 
          if (SUCCEEDED(IDirect3DTexture9_LockRect(
-                     font->texture, 0, &lr, NULL, 0)))
+                     font->texture, 0, &lr, &rect, 0)))
          {
-            for (j = 0; j < font->atlas->height; j++)
+            /* lr.pBits addresses the top-left of the locked rect */
+            for (j = 0; j < y1 - y0; j++)
             {
                uint32_t       *dst = (uint32_t*)((uint8_t*)lr.pBits + j * lr.Pitch);
-               const uint8_t  *src = font->atlas->buffer + j * font->atlas->width;
-               for (i = 0; i < font->atlas->width; i++)
+               const uint8_t  *src = font->atlas->buffer
+                     + (size_t)(y0 + j) * font->atlas->width + x0;
+               for (i = 0; i < x1 - x0; i++)
                   dst[i] = D3DCOLOR_ARGB(src[i], 0xFF, 0xFF, 0xFF);
             }
             IDirect3DTexture9_UnlockRect(font->texture, 0);
@@ -1973,18 +1986,6 @@ static bool d3d9_font_get_line_metrics(
    }
    return false;
 }
-
-font_renderer_t d3d9_font = {
-   d3d9_font_init,
-   d3d9_font_free,
-   d3d9_font_render_msg,
-   "d3d9_hlsl",
-   d3d9_font_get_glyph,
-   NULL, /* bind_block */
-   NULL, /* flush */
-   d3d9_font_get_message_width,
-   d3d9_font_get_line_metrics
-};
 
 /*
  * VIDEO DRIVER
@@ -4063,19 +4064,9 @@ static char *d3d9_hlsl_decompose_struct_samplers(const char *source)
       /* Remove sampler member lines from sampler-containing structs.
        * Look for lines containing 'sampler' followed by ';' */
       {
-         bool skip_sampler_line = false;
-         if (strncmp(p, "sampler", 7) == 0 || (p > source && p[-1] != '\n'
-               && strstr(p, "sampler") == p))
-         {
-            /* Actually, let's detect sampler lines more carefully:
-             * at the start of a line (after whitespace), check if we see
-             * 'sampler2D' followed by '_texture' and ';' */
-         }
-
          /* Simpler approach: detect 'sampler2D _texture;' or 'sampler2D _texture ;'
           * as a standalone line (with optional leading whitespace) */
          {
-            const char *line_start = p;
             /* Check if we're at line start */
             if (p == source || p[-1] == '\n')
             {
@@ -5349,12 +5340,6 @@ static bool d3d9_hlsl_compile_cg_compat(
    D3DBlob error_blob = NULL;
    HRESULT hr;
 
-   /* D3D_SHADER_MACRO compatible: { Name, Definition }, null-terminated */
-   struct { const char *n; const char *d; } cg_defines[] = {
-      { "CG", "1" },
-      { NULL, NULL }
-   };
-
    if (!out_blob)
       return false;
 
@@ -5788,7 +5773,6 @@ static char *d3d9_hlsl_convert_macro_loops(const char *source)
                                  && s[(size_t)(nm_end - nm)] == '(')
                            {
                               /* Check if this starts a consecutive run from 0 */
-                              const char *call = s;
                               const char *after_name = s + (size_t)(nm_end - nm);
                               /* Parse the argument */
                               if (after_name[0] == '(' && after_name[1] == '0'
@@ -6063,7 +6047,6 @@ static bool d3d9_hlsl_load_program_from_file_ex(
       char *p = resolved;
       while ((p = strstr(p, "#pragma parameter")) != NULL)
       {
-         const char *line_start = p;
          const char *pp = p + 17; /* skip "#pragma parameter" */
          const char *name_start, *name_end;
          size_t name_len;
@@ -6594,7 +6577,6 @@ static uint32_t d3d9_hlsl_get_flags(void *data)
 
 static void d3d9_hlsl_deinitialize(d3d9_video_t *d3d)
 {
-   font_driver_free_osd();
 
    hlsl_d3d9_renderchain_free(d3d->renderchain_data);
 
@@ -7035,10 +7017,6 @@ static bool d3d9_hlsl_initialize(
    d3d9_hlsl_set_viewport(d3d,
       d3d->vp.full_width, d3d->vp.full_height, false, true);
 
-   font_driver_init_osd(d3d, info,
-         false,
-         info->is_threaded,
-         FONT_DRIVER_RENDER_D3D9_API);
 
    {
       static const D3DVERTEXELEMENT9 VertexElements[4] = {
@@ -8375,6 +8353,18 @@ static bool d3d9_hlsl_has_windowed(void *data)
 #endif
 }
 
+static font_renderer_t d3d9_hlsl_font = {
+   d3d9_font_init,
+   d3d9_font_free,
+   d3d9_font_render_msg,
+   "d3d9_hlsl",
+   d3d9_font_get_glyph,
+   NULL, /* bind_block */
+   NULL, /* flush */
+   d3d9_font_get_message_width,
+   d3d9_font_get_line_metrics
+};
+
 video_driver_t video_d3d9_hlsl = {
    d3d9_hlsl_init,
    d3d9_hlsl_frame,
@@ -8403,6 +8393,25 @@ video_driver_t video_d3d9_hlsl = {
    NULL, /* shader_load_begin */
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   d3d9_hlsl_gfx_widgets_enabled
+   d3d9_hlsl_gfx_widgets_enabled,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &d3d9_hlsl_font
+};
+
+gfx_display_ctx_driver_t gfx_display_ctx_d3d9_hlsl = {
+   gfx_display_d3d9_hlsl_draw,
+   gfx_display_d3d9_hlsl_draw_pipeline,
+   gfx_display_d3d9_hlsl_blend_begin,
+   gfx_display_d3d9_hlsl_blend_end,
+   NULL,                                     /* get_default_mvp        */
+   NULL,                                     /* get_default_vertices   */
+   NULL,                                     /* get_default_tex_coords */
+   &d3d9_hlsl_font,
+   GFX_VIDEO_DRIVER_DIRECT3D9_HLSL,
+   "d3d9_hlsl",
+   true,
+   gfx_display_d3d9_hlsl_scissor_begin,
+   gfx_display_d3d9_hlsl_scissor_end
 };

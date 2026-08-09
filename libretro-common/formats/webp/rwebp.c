@@ -22,7 +22,15 @@
  * inverse transforms, 4x4 and 16x16 intra prediction, both the simple
  * and normal loop filters, fancy chroma upsampling and YUV->RGB. Only
  * VP8 key frames occur in WebP, so inter-frame prediction (motion
- * vectors, golden/altref reference frames) is intentionally absent. */
+ * vectors, golden/altref reference frames) is intentionally absent.
+ *
+ * Alpha (ALPH chunks, all filter methods) is applied to lossy images,
+ * and animated WebP (ANMF) is decoded into fully composited canvas
+ * frames following the container spec's canvas/blend/dispose model.
+ *
+ * What it does not implement: encoding, color profiles and EXIF/XMP
+ * metadata (the chunks are skipped), and fragments (an abandoned spec
+ * draft). */
 
 #include <stdio.h>
 #include <stdint.h>
@@ -179,30 +187,50 @@ static int vh_next_tbl_bits(const int *count, int len, int root_bits)
 static int vh_build(vh *h, const uint8_t *lens, int ns, int root)
 {
    int count[VH_MAXCL + 1], offset[VH_MAXCL + 1];
-   int sorted[4096];
+   /* Symbol scratch, heap rather than stack.  As int sorted[4096] this
+    * was 16 KiB in one frame - twice the 8 KiB a GEKKO thread gets
+    * (STACKSIZE in rthreads/gx_pthread.h) - and it is reachable from
+    * a task handler, so it runs on a worker rather than the main
+    * thread whenever the task queue is threaded:
+    * task_file_load_handler -> task_image_load_handler ->
+    * task_image_process -> image_transfer_process ->
+    * rwebp_process_image -> ... -> vh_build, and the same via
+    * task_overlay_handler.  Wii and GameCube build HAVE_RWEBP and
+    * HAVE_THREADS both.
+    *
+    * uint16_t rather than int as well: every value here is a symbol
+    * index, bounded by the ns > 4096 rejection below, and every read
+    * of it is already masked with 0xFFFF. */
+   uint16_t *sorted = (uint16_t*)malloc(4096 * sizeof(*sorted));
    int total_size = 1 << root;
    int len, symbol, i, pass;
    uint32_t *t = NULL;
 
-   if (ns > 4096) return -1;
+   if (!sorted)
+      return -1;
+   if (ns > 4096)
+      goto fail;
    memset(count, 0, sizeof(count));
    for (symbol = 0; symbol < ns; symbol++)
    {
-      if (lens[symbol] > VH_MAXCL) return -1;
+      if (lens[symbol] > VH_MAXCL)
+         goto fail;
       count[lens[symbol]]++;
    }
-   if (count[0] == ns) return -1;
+   if (count[0] == ns)
+      goto fail;
 
    offset[1] = 0;
    for (len = 1; len < VH_MAXCL; len++)
    {
-      if (count[len] > (1 << len)) return -1;
+      if (count[len] > (1 << len))
+         goto fail;
       offset[len + 1] = offset[len] + count[len];
    }
    for (symbol = 0; symbol < ns; symbol++)
    {
       int cl = lens[symbol];
-      if (cl > 0) sorted[offset[cl]++] = symbol;
+      if (cl > 0) sorted[offset[cl]++] = (uint16_t)symbol;
    }
 
    /* Single-symbol special case: 0-bit code returns that symbol. */
@@ -210,10 +238,12 @@ static int vh_build(vh *h, const uint8_t *lens, int ns, int root)
    {
       total_size = 1 << root;
       h->t = (uint32_t*)calloc(total_size, sizeof(uint32_t));
-      if (!h->t) return -1;
+      if (!h->t)
+         goto fail;
       h->sz = total_size; h->rb = root;
       for (i = 0; i < total_size; i++)
          h->t[i] = (uint32_t)(sorted[0] & 0xFFFF);
+      free(sorted);
       return 0;
    }
 
@@ -274,12 +304,18 @@ static int vh_build(vh *h, const uint8_t *lens, int ns, int root)
       if (pass == 0)
       {
          t = (uint32_t*)calloc(total_size + 1, sizeof(uint32_t));
-         if (!t) return -1;
+         if (!t)
+            goto fail;
       }
    }
 
    h->t = t; h->sz = total_size; h->rb = root;
+   free(sorted);
    return 0;
+
+fail:
+   free(sorted);
+   return -1;
 }
 
 static INLINE int vh_read(const vh *h, vbr *b)
@@ -1207,7 +1243,7 @@ static uint32_t *rwebp_do(const uint8_t *buf, size_t len,
  * header) into RGBA. Mirrors rwebp_do's lossy/lossless + ALPH handling
  * but operates on the frame's local chunk list. */
 static uint32_t *rwebp_anim_frame_pixels(const uint8_t *d, size_t sz,
-      unsigned *ow, unsigned *oh, int *out_opaque)
+      unsigned *ow, unsigned *oh, int *out_opaque, int swap_rb)
 {
    const uint8_t *fv = NULL, *fl = NULL, *fa = NULL;
    size_t fvs = 0, fls = 0, fas = 0;
@@ -1228,7 +1264,7 @@ static uint32_t *rwebp_anim_frame_pixels(const uint8_t *d, size_t sz,
    if (out_opaque)
       *out_opaque = 0;
    if (fl && fls > 0)
-      pix = vl_decode_full(fl, fls, &w, &h, 1); /* canvas order directly */
+      pix = vl_decode_full(fl, fls, &w, &h, swap_rb); /* canvas order */
    else if (fv && fvs > 0)
    {
       /* A VP8 sub-image without an ALPH chunk decodes with every alpha
@@ -1237,7 +1273,7 @@ static uint32_t *rwebp_anim_frame_pixels(const uint8_t *d, size_t sz,
        * caller can skip per-pixel blending for such frames. */
       if (out_opaque && !(fa && fas > 0))
          *out_opaque = 1;
-      pix = rvp8_decode(fv, fvs, &w, &h, 1); /* canvas order directly */
+      pix = rvp8_decode(fv, fvs, &w, &h, swap_rb); /* canvas order */
       if (pix && fa && fas > 0)
       {
          uint8_t *ap = alph_decode(fa, fas, w, h);
@@ -1251,9 +1287,12 @@ static uint32_t *rwebp_anim_frame_pixels(const uint8_t *d, size_t sz,
       }
    }
    if (!pix) return NULL;
-   /* Frames of both kinds now decode straight into canvas order
-    * (memory R,G,B,A): lossy via the rvp8_decode swap_rb store,
-    * lossless via the transform-fused swap in vl_decode_full. All
+   /* Frames of both kinds decode straight into the canvas's current
+    * channel order (the swap_rb parameter): lossy via the rvp8_decode
+    * store, lossless via the transform-fused swap in vl_decode_full.
+    * The ALPH merge and the opacity scan below touch only byte 3, so
+    * they are order-agnostic, as is everything downstream (the blend
+    * loops channels 0/8/16 symmetrically, disposal clears to zero). All
     * that remains is the AND-mask accumulation over the alpha bytes:
     * encoders routinely emit an ALPH chunk (or a VP8L alpha channel)
     * whose bytes are all 0xFF, and detecting that lets the compositor
@@ -1387,6 +1426,11 @@ struct rwebp_anim_stream
     * clear just that region when the next frame is prepared. */
    int       prev_fx, prev_fy, prev_fw, prev_fh;
    int       prev_disp_bg, prev_full, prev_key;
+   /* Channel order of the canvas (and of emitted frames): 0 = memory
+    * R,G,B,A (the default), 1 = ARGB words.  A property of the whole
+    * canvas, since frames blend onto it; switched at frame boundaries
+    * by rwebp_anim_stream_set_argb. */
+   int       emit_argb;
 };
 
 void rwebp_anim_stream_close(rwebp_anim_stream_t *s)
@@ -1464,6 +1508,33 @@ void rwebp_anim_stream_get_info(const rwebp_anim_stream_t *s,
    if (loop_count) *loop_count = s->loop_count;
 }
 
+void rwebp_anim_stream_set_argb(rwebp_anim_stream_t *s, int argb)
+{
+   int want;
+   if (!s)
+      return;
+   want = argb ? 1 : 0;
+   if (want == s->emit_argb)
+      return;
+   /* The order is a property of the persistent canvas - later frames
+    * blend onto earlier pixels - so switching converts the canvas in
+    * place once, at a frame boundary, and subsequent sub-frames decode
+    * directly in the new order.  Before the first emitted frame the
+    * canvas is all zeros (identical in either order) and the flag can
+    * simply flip; the first frame is a key frame and rebuilds it. */
+   if (s->emitted > 0 && s->canvas)
+   {
+      size_t i, n = (size_t)s->canvas_w * s->canvas_h;
+      for (i = 0; i < n; i++)
+      {
+         uint32_t px  = s->canvas[i];
+         s->canvas[i] = (px & 0xFF00FF00u)
+               | ((px & 0xFFu) << 16) | ((px >> 16) & 0xFFu);
+      }
+   }
+   s->emit_argb = want;
+}
+
 void rwebp_anim_stream_rewind(rwebp_anim_stream_t *s)
 {
    if (!s) return;
@@ -1506,7 +1577,7 @@ const uint32_t *rwebp_anim_stream_next(rwebp_anim_stream_t *s,
          continue;
 
       sub = rwebp_anim_frame_pixels(d + 16, sz - 16, &sub_w, &sub_h,
-            &sub_opaque);
+            &sub_opaque, s->emit_argb ? 0 : 1);
       if (!sub)
          continue;
       if ((int)sub_w != fw || (int)sub_h != fh)
@@ -1833,6 +1904,16 @@ int rwebp_process_image(rwebp_t *rwebp, void **buf_data,
 
    }
    return IMAGE_PROCESS_ERROR;
+}
+
+bool rwebp_still_ready(const void *buf, size_t avail)
+{
+   rw_ctr c;
+   /* rw_parse's chunk walk stops at the first chunk that does not fit
+    * inside 'avail', so success means the still image's chunk - and
+    * everything a decode of it touches - lies wholly within the
+    * prefix. */
+   return rw_parse((const uint8_t*)buf, avail, &c) != 0;
 }
 
 bool rwebp_set_buf_ptr(rwebp_t *rwebp, void *data, size_t len)

@@ -30,6 +30,9 @@
 
 #include "../video_display_server.h"
 #include "../../retroarch.h"
+/* CMD_EVENT_REINIT / command_event(); previously reached only
+ * transitively, and only under some configurations. */
+#include "../../command.h"
 #include "../video_crt_switch.h" /* Needed to set aspect for low resolution in Linux */
 #include "../common/drm_common.h"
 #include "../../verbosity.h"
@@ -119,7 +122,6 @@ static void *kms_display_server_get_resolution_list(
 {
    unsigned i                        = 0;
    unsigned j                        = 0;
-   unsigned count                    = 0;
    unsigned curr_width               = 0;
    unsigned curr_height              = 0;
    unsigned curr_bpp                 = 0;
@@ -137,6 +139,17 @@ static void *kms_display_server_get_resolution_list(
       curr_bpp         = 32;
       curr_interlaced  = (g_drm_mode->flags & DRM_MODE_FLAG_INTERLACE) ? true : false;
       curr_dblscan     = (g_drm_mode->flags & DRM_MODE_FLAG_DBLSCAN)   ? true : false;
+   }
+
+   /* g_drm_connector is NULLed by drm_free(), which runs on every
+    * context teardown -- a resolution change, a fullscreen toggle, a
+    * driver reinit.  The display server outlives that, so the menu can
+    * ask for the resolution list with no connector to describe.
+    * g_drm_mode is already tested for exactly this a few lines up. */
+   if (!g_drm_connector || g_drm_connector->count_modes <= 0)
+   {
+      *len = 0;
+      return NULL;
    }
 
    *len = g_drm_connector->count_modes;
@@ -167,8 +180,11 @@ static void *kms_display_server_get_resolution_list(
       j++;
    }
 
+   /* j, not count: count was declared zero and never assigned, so
+    * this sorted nothing at all and the resolution list came back in
+    * whatever order the connector reported it. */
    qsort(
-         conf, count,
+         conf, j,
          sizeof(video_display_config_t),
          (int (*)(const void *, const void *))
                resolution_list_qsort_func);

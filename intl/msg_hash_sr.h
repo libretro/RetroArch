@@ -14,383 +14,131 @@
 
 static const struct
 {
-   char s_d9685b01[12];
-   char s_9932960f[13];
-   char s_2cb9dc71[9];
-   char s_ae50c550[9];
-   char s_b30d3e14[6];
-   char s_42b8ffbf[7];
-   char s_bcddf275[6];
-   char s_733174db[18];
-   char s_99eb425d[9];
-   char s_ec59110b[21];
-   char s_7632d987[15];
-   char s_d21c686b[23];
-   char s_d7fc4c9c[26];
-   char s_36265c93[10];
-   char s_544da5c1[48];
-   char s_193e1462[51];
-   char s_d7f2cfac[15];
-   char s_35f2309a[32];
+   char s_37033dd5[103];
    char s_70c7c198[331];
-   char s_e3d18a3d[17];
-   char s_c6e1f92b[32];
-   char s_d15b342a[13];
-   char s_2f5a9518[83];
+   char s_4081ac3b[21];
+   char s_1d921fac[38];
+   char s_513ae2ac[25];
+   char s_f319134a[34];
+   char s_7607974d[19];
+   char s_bdf1165f[38];
+   char s_6a15d029[25];
+   char s_5468d3f9[147];
+   char s_4ad41e20[15];
+   char s_314e7dec[12];
+   char s_061657e6[15];
+   char s_7632d987[15];
+   char s_2e5078b2[10];
+   char s_da068369[8];
+   char s_daead8a5[5];
+   char s_dcf2e800[5];
+   char s_792e0069[22];
+   char s_fb84857a[6];
+   char s_5b2d8d2f[20];
+   char s_49b0b12a[5];
+   char s_ad7c73f6[15];
+   char s_30acd6fb[15];
+   char s_5209cc72[31];
+   char s_14ec7b7e[8];
+   char s_005cc6dc[12];
+   char s_00614813[8];
+   char s_8584f1d6[16];
+   char s_7fc52043[16];
+   char s_9509d1c2[19];
+   char s_c7a999e6[14];
+   char s_502f623c[7];
+   char s_5b51050b[5];
+   char s_565cbabb[12];
+   char s_6322a8fa[16];
+   char s_ce5f3353[22];
+   char s_6155456e[24];
+   char s_e4e54370[14];
+   char s_ec59110b[21];
+   char s_225da616[7];
+   char s_0fd30a6d[6];
+   char s_36265c93[10];
+   char s_1e1c0557[9];
+   char s_97242f99[31];
+   char s_8cefb843[15];
+   char s_177845b3[24];
+   char s_881efe76[21];
+   char s_1e4264a1[6];
+   char s_babee9c1[11];
+   char s_78c58363[14];
+   char s_78071664[13];
+   char s_e3d18c38[18];
+   char s_49c9bf91[8];
+   char s_04ecbe77[10];
+   char s_525068d3[23];
+   char s_18cc5aec[31];
+   char s_b0b9ca3e[90];
+   char s_ba582576[52];
+   char s_8d30abf0[21];
+   char s_38b82e6c[21];
+   char s_8f133960[14];
+   char s_d7f2cfac[15];
+   char s_d7f2e719[30];
+   char s_b95e3404[22];
+   char s_734d2a61[7];
+   char s_a7a97316[44];
+   char s_145f5880[18];
+   char s_9af4bf52[22];
+   char s_e5d096ab[19];
+   char s_6a07da9c[31];
+   char s_12b8e195[31];
+   char s_dd6afca3[21];
+   char s_4bcbcc14[33];
+   char s_06f25fc0[22];
+   char s_f0ce97f7[27];
+   char s_b92166cd[13];
+   char s_5d29b870[20];
+   char s_4927597c[12];
+   char s_10342503[9];
+   char s_d31f6d88[15];
+   char s_f03e9c42[21];
+   char s_3674ba44[9];
    char s_6ebb6a00[14];
-   char s_ccbacaee[90];
 #ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
    char s_e65393d5[12];
-   char s_043f1283[40];
 #endif
 #endif
-   char s_b3cc8a43[6];
-   char s_d34eb231[68];
-   char s_061657e6[15];
-   char s_243da114[49];
-   char s_6155456e[24];
-   char s_4a3d27dc[48];
-   char s_ce5f3353[22];
-   char s_de265901[62];
-   char s_87ee250e[32];
-   char s_70d6077c[43];
-   char s_a11934f5[28];
-   char s_a9c51063[54];
-   char s_1938dce6[23];
-   char s_1f084654[57];
-   char s_2f9a064c[7];
-   char s_8d99673a[30];
-   char s_ed013a05[27];
-   char s_4b009af3[40];
-   char s_62564465[18];
-   char s_198c91d3[50];
-   char s_e2c6c781[19];
-   char s_f28ded2f[53];
-   char s_4aaeeb99[13];
-   char s_e8aee6c7[22];
-   char s_d81bf7a9[12];
-   char s_9eb26572[32];
-   char s_95cf0994[8];
-   char s_d31f6d88[15];
-   char s_f2a19576[54];
-   char s_01a73130[28];
-   char s_46c57dde[58];
+   char s_99eb425d[9];
    char s_941e50fb[22];
-   char s_10342503[9];
-   char s_164566fb[14];
-   char s_6107eb09[15];
-   char s_550b1e93[9];
-   char s_64d24441[50];
-   char s_c0d9bee1[7];
-   char s_dec53d8f[56];
-   char s_d2224db6[6];
-   char s_ad7da224[54];
-   char s_c175c697[6];
-   char s_df614545[54];
-   char s_fd3e287f[9];
-   char s_44040aad[81];
-   char s_c4842e2d[21];
-   char s_145f5880[18];
-   char s_5eee10e5[29];
-   char s_6e9f0493[58];
-   char s_ea80654d[43];
-   char s_8bbf7ffb[112];
-   char s_64dd7209[27];
-   char s_061c8cb7[50];
-   char s_f03e9c42[21];
-   char s_51cbf8f0[38];
-   char s_95cbebbd[18];
-   char s_6b80a1bc[29];
-   char s_99a77122[22];
-   char s_4a5b7672[24];
-   char s_eb3c8b7f[22];
-   char s_8fa79de5[24];
-   char s_eb0d7f1d[22];
-   char s_6ae93e68[25];
-   char s_881efe76[21];
-   char s_a64647a4[55];
-   char s_5d29b870[20];
-   char s_7b51019e[45];
-   char s_89920317[21];
-   char s_7279e585[51];
-   char s_bab74532[22];
-   char s_ffd591e0[46];
-   char s_f0ce97f7[27];
-   char s_0ef5e125[25];
-   char s_06f25fc0[22];
-   char s_16b9856e[30];
-   char s_78071664[13];
-   char s_78c58363[14];
-   char s_8f133960[14];
-   char s_38b82e6c[21];
-   char s_babee9c1[11];
-   char s_1e4264a1[6];
-   char s_04ecbe77[10];
-   char s_49c9bf91[8];
-   char s_8d30abf0[21];
-   char s_525068d3[23];
-   char s_18cc5aec[31];
-   char s_ba582576[52];
-   char s_b0b9ca3e[90];
-   char s_e3d18c38[18];
-   char s_51844cc2[21];
-   char s_e1a8f707[23];
-   char s_66df5c89[20];
-   char s_f70406ce[22];
-   char s_d7f2e719[30];
-   char s_a7a97316[44];
-   char s_48e88dc4[156];
-   char s_8cefb843[15];
-   char s_684b0cb1[28];
-   char s_97242f99[31];
-   char s_dc427c47[65];
-   char s_b95e3404[22];
-   char s_791acb32[65];
-   char s_177845b3[24];
-   char s_1d47af21[46];
-   char s_7d2035c4[18];
-   char s_43ac80a0[12];
-   char s_f7e279a6[11];
-   char s_f8fa3e2f[16];
-   char s_b3565d3d[25];
-   char s_9af4bf52[22];
-   char s_e5d096ab[19];
-   char s_8fe41f79[25];
-   char s_519cd5f8[14];
-   char s_ebe994b4[16];
-   char s_d9b00fbd[24];
-   char s_cd916c68[22];
-   char s_5c7bbce1[21];
-   char s_8356c98c[13];
-   char s_0472da71[6];
-   char s_bdc1c274[5];
-   char s_9251b4c1[6];
-   char s_36109f2c[12];
-   char s_47f4eb8e[11];
-   char s_887214f4[6];
-   char s_3413595a[22];
-   char s_69f2e90c[24];
-   char s_9329c64c[9];
-   char s_92be1c10[7];
-   char s_70bac144[9];
-   char s_8d13ec48[16];
-   char s_e8ad0320[9];
-   char s_cbdfd37c[7];
-   char s_f1382b82[6];
-   char s_a986c4da[12];
-   char s_09ba892e[13];
-   char s_ffd0dac4[9];
-   char s_0a2aa953[18];
-   char s_4ceac87e[9];
-   char s_f019e498[8];
-   char s_b2865f23[10];
-   char s_58b9d895[11];
-   char s_3af38d58[23];
-   char s_00dfe961[24];
-   char s_00966fb4[21];
-   char s_6c06b558[20];
-   char s_387a4176[20];
-   char s_28863bc1[21];
-   char s_b93afb41[13];
-   char s_17983560[13];
-   char s_2742a469[14];
-   char s_0e740679[13];
-   char s_a708b2f4[23];
-   char s_d3a2aa7d[13];
-   char s_f8883f70[14];
-   char s_cf24fcc2[28];
-   char s_f751c497[20];
-   char s_046d0e21[31];
-   char s_7fc52043[16];
-   char s_8584f1d6[16];
-   char s_14ec7b7e[8];
-   char s_005cc6dc[12];
-   char s_c7a999e6[14];
-   char s_00614813[8];
-   char s_9509d1c2[19];
-   char s_3674ba44[9];
-   char s_3f2095b2[38];
-   char s_67d549fd[34];
-   char s_6a07da9c[31];
-   char s_79b8ce4a[78];
-   char s_57665cff[6];
-   char s_19d092ed[34];
-   char s_49b0b12a[5];
-   char s_980ef0e8[5];
-   char s_a7d61696[51];
-   char s_84d3d068[6];
-   char s_a2fb1996[49];
-   char s_734d2a61[7];
-   char s_92cf524f[29];
-   char s_e4e54370[14];
-   char s_f496371e[55];
-   char s_e7a63560[12];
-   char s_f05210ce[36];
-   char s_8cb3b95f[11];
-   char s_aadb028d[35];
+   char s_2cb9dc71[9];
    char s_a46a4178[23];
-   char s_aa39aae6[63];
-   char s_6322a8fa[16];
-   char s_a670da0a[22];
-   char s_5dc056f8[80];
-   char s_260261d6[10];
-   char s_302fdd56[13];
-   char s_7277e127[22];
-   char s_78474a95[45];
-   char s_2e5078b2[10];
-   char s_17385b20[63];
-   char s_4ad41e20[15];
-   char s_5a8511ce[35];
-   char s_56e21ee1[23];
-   char s_0e319bcf[31];
-   char s_3a0a3fef[20];
-   char s_62144cdf[12];
-   char s_2b36bd4d[36];
-   char s_513ae2ac[25];
-   char s_1d921fac[38];
-   char s_f319134a[34];
-   char s_6a15d029[25];
-   char s_bdf1165f[38];
-   char s_7607974d[19];
-   char s_4081ac3b[21];
-   char s_1b8a5cb5[9];
-   char s_60a8a963[33];
-   char s_87d88aa2[7];
-   char s_a5ffd3d0[38];
-   char s_8d94cfea[6];
-   char s_70a53ed8[41];
-   char s_3a9d7557[9];
-   char s_b92166cd[13];
-   char s_fe3fb37b[56];
-   char s_e22edcd8[7];
+   char s_c4842e2d[21];
+   char s_fd3e287f[9];
+   char s_550b1e93[9];
+   char s_d2224db6[6];
+   char s_c0d9bee1[7];
+   char s_c175c697[6];
+   char s_e2f27171[7];
+   char s_2f9a064c[7];
+   char s_96ee0cfb[9];
+   char s_ae50c550[9];
+   char s_b30d3e14[6];
+   char s_99d3d4ae[12];
+   char s_d81bf7a9[12];
    char s_009a10e3[5];
+   char s_735c53f7[10];
+   char s_87071f08[8];
+   char s_ec502f2a[20];
+   char s_980ef0e8[5];
    char s_9e66791a[10];
-   char s_5468d3f9[147];
-   char s_daead8a5[5];
-   char s_5b2d8d2f[20];
-   char s_6ade80dd[32];
-   char s_502f623c[7];
+   char s_84d3d068[6];
+   char s_6107eb09[15];
+   char s_b6172513[9];
+   char s_e3d18a3d[17];
+   char s_d15b342a[13];
    char s_31b177ec[9];
+   char s_8cb3b95f[11];
+   char s_d9685b01[12];
+   char s_e22edcd8[7];
+   char s_9da5609f[12];
    char s_8d3a8b68[5];
-   char s_721e7bb2[9];
-   char s_020e2bc5[20];
-   char s_0d96ed73[42];
-   char s_ebf10493[15];
-   char s_d96182c1[37];
-   char s_730df420[15];
-   char s_7e96b5ce[42];
-   char s_69b801ef[11];
-   char s_7968f59d[48];
-   char s_82fab47a[35];
-   char s_ef13be35[83];
-   char s_5e14cb20[112];
-   char s_7943e750[24];
-   char s_1a8301fe[43];
-   char s_258060bf[20];
-   char s_3547866d[119];
-   char s_4bceefff[24];
-   char s_ef3d53d8[18];
-#if defined(DINGUX)
-   char s_805730a0[20];
-   char s_6dc7aece[178];
-   char s_bfd4c6ef[8];
-   char s_ce997004[11];
-   char s_52153570[16];
-#endif
-#if defined(DINGUX)
-#if defined(RS90) || defined(MIYOO)
-   char s_c1e9447c[20];
-   char s_eaa5cf6a[139];
-   char s_fec3d9e4[16];
-   char s_5a03a511[13];
-#endif
-#endif
-   char s_f5911f43[25];
-   char s_3aaf6bf1[141];
-   char s_d0a04fe4[13];
-   char s_17663212[159];
-   char s_ed22c5f1[20];
-   char s_d60aa85f[63];
-   char s_12b8e195[31];
-   char s_d5231783[97];
-   char s_dd6afca3[21];
-   char s_a68d6d11[56];
-   char s_a39ca959[71];
-   char s_8abad013[71];
-   char s_4bcbcc14[33];
-   char s_74022c02[89];
-   char s_a1a8257e[102];
-   char s_61213f1d[16];
-   char s_4a09218b[31];
-   char s_6c40d14e[15];
-   char s_7c07f6fc[101];
-   char s_fd9cfe13[20];
-   char s_42bb4ac1[62];
-   char s_71747541[23];
-   char s_7a2050af[25];
-   char s_ea2674d3[19];
-   char s_ac90aac1[78];
-   char s_ea2674d4[17];
-   char s_ac90aac2[76];
-   char s_c0cdc638[31];
-   char s_afd69a70[38];
-   char s_b5a603de[63];
-   char s_22735e37[53];
-   char s_d9c2db25[59];
-#if defined(DINGUX) && defined(DINGUX_BETA)
-   char s_f98e1e26[31];
-   char s_b0dd9b14[109];
-#endif
-   char s_3c70d08d[29];
-   char s_fc2d67bb[160];
-   char s_84c46931[21];
-   char s_3c13e61f[103];
-   char s_59f183c8[21];
-   char s_9f0fd076[127];
-   char s_59f183c9[20];
-   char s_9f0fd077[126];
-   char s_f5ab35c0[27];
-   char s_055c296e[104];
-   char s_6c1369c6[16];
-   char s_30140cb5[16];
-   char s_75325963[24];
-   char s_0f5266ce[15];
-   char s_f83a493c[23];
-   char s_83e8dc72[27];
-   char s_4d0b4ce0[105];
-   char s_a64b3a0b[26];
-   char s_93bbb839[104];
-   char s_2d8cb7ce[21];
-   char s_74e69f4b[80];
-   char s_b9e24170[28];
-   char s_68190518[36];
-   char s_09581fc6[296];
-   char s_7cf985f0[38];
-   char s_f99a7d5e[221];
-   char s_4d7e9b13[22];
-   char s_c79d5013[13];
-#if defined(DINGUX)
-   char s_d374d67d[21];
-   char s_c0e554ab[153];
-#endif
-   char s_8f37930f[34];
-   char s_8f379310[34];
-   char s_b7ef9e17[31];
-   char s_81120e85[102];
-   char s_92a02470[30];
-   char s_8010a29e[101];
-   char s_fb84857a[6];
-   char s_bdeebb68[27];
-   char s_30acd6fb[15];
-   char s_5209cc72[31];
-   char s_ed8a1060[89];
-   char s_dcf2e800[5];
-   char s_23b8ca2e[16];
-   char s_da068369[8];
-   char s_20cc6597[103];
-   char s_37033dd5[103];
-   char s_792e0069[22];
+   char s_3a0a3fef[20];
+   char s_72898bf0[13];
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
    char s_d0fb22cb[8];
@@ -399,472 +147,455 @@ static const struct
 #ifdef HAVE_MICROPHONE
 #ifdef HAVE_WASAPI
    char s_73295c14[31];
-   char s_b37744c2[89];
 #endif
 #endif
-   char s_ad7c73f6[15];
    char s_8be7813a[5];
    char s_1757647b[6];
-   char s_87071f08[8];
-   char s_735c53f7[10];
-   char s_9da5609f[12];
-   char s_565cbabb[12];
-   char s_96ee0cfb[9];
-   char s_5bbcf84b[8];
-   char s_1e1c0557[9];
-   char s_5f612db6[22];
+   char s_e1a8f707[23];
+   char s_51844cc2[21];
+   char s_42b8ffbf[7];
+   char s_62564465[18];
+   char s_733174db[18];
+   char s_89920317[21];
+   char s_87d88aa2[7];
+   char s_e2c6c781[19];
+   char s_a670da0a[22];
+   char s_164566fb[14];
+   char s_b3cc8a43[6];
    char s_6090802e[6];
-   char s_99d3d4ae[12];
-   char s_0fd30a6d[6];
-   char s_225da616[7];
-   char s_314e7dec[12];
-   char s_5b51050b[5];
-   char s_4927597c[12];
-   char s_72898bf0[13];
-   char s_404e69aa[11];
-   char s_ccfe26d1[22];
-   char s_6d059c18[12];
-   char s_5f15f7a7[13];
-   char s_7534cfc9[8];
-   char s_2aeb5474[15];
-   char s_6d08238d[6];
-   char s_b71e6907[6];
-   char s_08785e85[20];
+   char s_8d94cfea[6];
+   char s_5bbcf84b[8];
+   char s_64dd7209[27];
+   char s_56e21ee1[23];
+   char s_f70406ce[22];
+   char s_66df5c89[20];
    char s_6d025795[7];
+   char s_6d059c18[12];
    char s_99d648f2[12];
-   char s_e8ae394f[7];
+   char s_2aeb5474[15];
+   char s_7534cfc9[8];
+   char s_5f15f7a7[13];
+   char s_6d08238d[6];
    char s_e8a86d57[8];
-   char s_b6172513[9];
-   char s_e2f9cd07[9];
-   char s_e2f27171[7];
-   char s_ec502f2a[20];
+   char s_e8ae394f[7];
+   char s_08785e85[20];
+   char s_b71e6907[6];
+   char s_260261d6[10];
+   char s_95cf0994[8];
+   char s_36109f2c[12];
+   char s_cf24fcc2[28];
+   char s_8d13ec48[16];
+   char s_b93afb41[13];
+   char s_47f4eb8e[11];
+   char s_d3a2aa7d[13];
+   char s_3413595a[22];
+   char s_70bac144[9];
+   char s_046d0e21[31];
+   char s_bdc1c274[5];
+   char s_6c06b558[20];
+   char s_00966fb4[21];
+   char s_00dfe961[24];
+   char s_2742a469[14];
+   char s_a708b2f4[23];
+   char s_17983560[13];
+   char s_3af38d58[23];
+   char s_b2865f23[10];
+   char s_e8ad0320[9];
+   char s_9251b4c1[6];
+   char s_887214f4[6];
+   char s_92be1c10[7];
+   char s_0472da71[6];
+   char s_cbdfd37c[7];
+   char s_f019e498[8];
+   char s_f1382b82[6];
+   char s_0e740679[13];
+   char s_a986c4da[12];
+   char s_69f2e90c[24];
+   char s_4ceac87e[9];
+   char s_387a4176[20];
+   char s_28863bc1[21];
+   char s_f751c497[20];
+   char s_9329c64c[9];
+   char s_f8883f70[14];
+   char s_09ba892e[13];
+   char s_58b9d895[11];
+   char s_0a2aa953[18];
+   char s_ffd0dac4[9];
+   char s_1b8a5cb5[9];
+   char s_721e7bb2[9];
+   char s_1938dce6[23];
+   char s_62144cdf[12];
+   char s_ccfe26d1[22];
+   char s_5f612db6[22];
+   char s_404e69aa[11];
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
    char s_addc7f89[77];
+#endif
+#endif
+   char s_87ee250e[32];
+   char s_a11934f5[28];
+   char s_e7a63560[12];
+   char s_fd9cfe13[20];
+   char s_4aaeeb99[13];
+   char s_9932960f[13];
+   char s_302fdd56[13];
+   char s_ed013a05[27];
+   char s_01a73130[28];
+   char s_d7fc4c9c[26];
+   char s_d21c686b[23];
+   char s_7943e750[24];
+   char s_ea80654d[43];
+   char s_bab74532[22];
+   char s_7d2035c4[18];
+   char s_b3565d3d[25];
+   char s_f8fa3e2f[16];
+   char s_8356c98c[13];
+   char s_5c7bbce1[21];
+   char s_cd916c68[22];
+   char s_8fe41f79[25];
+   char s_519cd5f8[14];
+   char s_43ac80a0[12];
+   char s_ebe994b4[16];
+   char s_d9b00fbd[24];
+   char s_95cbebbd[18];
+   char s_6b80a1bc[29];
+   char s_eb0d7f1d[22];
+   char s_99a77122[22];
+   char s_51cbf8f0[38];
+   char s_4a5b7672[24];
+   char s_8fa79de5[24];
+   char s_5eee10e5[29];
+   char s_eb3c8b7f[22];
+   char s_6ae93e68[25];
+   char s_e2f9cd07[9];
+   char s_7277e127[22];
+   char s_3a9d7557[9];
+   char s_c79d5013[13];
+   char s_4bceefff[24];
+#if defined(DINGUX)
+   char s_bfd4c6ef[8];
+   char s_ce997004[11];
+   char s_52153570[16];
+   char s_805730a0[20];
+   char s_d374d67d[21];
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+   char s_f98e1e26[31];
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   char s_5a03a511[13];
+   char s_fec3d9e4[16];
+   char s_c1e9447c[20];
+#endif
+#endif
+   char s_d0a04fe4[13];
+   char s_ed22c5f1[20];
+   char s_f5ab35c0[27];
+   char s_3c70d08d[29];
+   char s_020e2bc5[20];
+   char s_59f183c8[21];
+   char s_59f183c9[20];
+   char s_71747541[23];
+   char s_61213f1d[16];
+   char s_57665cff[6];
+   char s_c0cdc638[31];
+   char s_afd69a70[38];
+   char s_22735e37[53];
+   char s_6c40d14e[15];
+   char s_6c1369c6[16];
+   char s_4d7e9b13[22];
+   char s_69b801ef[11];
+   char s_f5911f43[25];
+   char s_ef3d53d8[18];
+   char s_730df420[15];
+   char s_bcddf275[6];
+   char s_258060bf[20];
+   char s_92a02470[30];
+   char s_b7ef9e17[31];
+   char s_8f37930f[34];
+   char s_8f379310[34];
+   char s_84c46931[21];
+   char s_ebf10493[15];
+   char s_a64b3a0b[26];
+   char s_83e8dc72[27];
+   char s_7cf985f0[38];
+   char s_0f5266ce[15];
+   char s_ea2674d3[19];
+   char s_ea2674d4[17];
+   char s_2d8cb7ce[21];
+   char s_68190518[36];
+   char s_b9e24170[28];
+   char s_30140cb5[16];
+   char s_5a8511ce[35];
+   char s_243da114[49];
+   char s_17385b20[63];
+   char s_20cc6597[103];
+   char s_23b8ca2e[16];
+   char s_bdeebb68[27];
+   char s_6ade80dd[32];
+   char s_ed8a1060[89];
+   char s_de265901[62];
+   char s_4a3d27dc[48];
+   char s_f496371e[55];
+   char s_544da5c1[48];
+   char s_dc427c47[65];
+   char s_684b0cb1[28];
+   char s_1d47af21[46];
+   char s_a64647a4[55];
+   char s_35f2309a[32];
+   char s_791acb32[65];
+   char s_92cf524f[29];
+   char s_48e88dc4[156];
+   char s_79b8ce4a[78];
+   char s_a1a8257e[102];
+   char s_d5231783[97];
+   char s_a68d6d11[56];
+   char s_74022c02[89];
+   char s_8abad013[71];
+   char s_a39ca959[71];
+   char s_16b9856e[30];
+   char s_0ef5e125[25];
+   char s_fe3fb37b[56];
+   char s_7b51019e[45];
+   char s_f2a19576[54];
+   char s_3f2095b2[38];
+   char s_ccbacaee[90];
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   char s_043f1283[40];
+#endif
+#endif
+   char s_aa39aae6[63];
+   char s_44040aad[81];
+   char s_64d24441[50];
+   char s_ad7da224[54];
+   char s_dec53d8f[56];
+   char s_df614545[54];
+   char s_8d99673a[30];
+   char s_9eb26572[32];
+   char s_a7d61696[51];
+   char s_a2fb1996[49];
+   char s_c6e1f92b[32];
+   char s_2f5a9518[83];
+   char s_aadb028d[35];
+   char s_193e1462[51];
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+   char s_b37744c2[89];
+#endif
+#endif
+   char s_198c91d3[50];
+   char s_7279e585[51];
+   char s_a5ffd3d0[38];
+   char s_f28ded2f[53];
+   char s_5dc056f8[80];
+   char s_d34eb231[68];
+   char s_70a53ed8[41];
+   char s_061c8cb7[50];
+   char s_0e319bcf[31];
+   char s_60a8a963[33];
+   char s_1f084654[57];
+   char s_2b36bd4d[36];
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
    char s_96c461f7[125];
 #endif
 #endif
+   char s_70d6077c[43];
+   char s_a9c51063[54];
+   char s_f05210ce[36];
+   char s_42bb4ac1[62];
+   char s_e8aee6c7[22];
+   char s_4b009af3[40];
+   char s_46c57dde[58];
+   char s_1a8301fe[43];
+   char s_8bbf7ffb[112];
+   char s_ffd591e0[46];
+   char s_6e9f0493[58];
+   char s_78474a95[45];
+   char s_5e14cb20[112];
+#if defined(DINGUX)
+   char s_6dc7aece[178];
+   char s_c0e554ab[153];
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+   char s_b0dd9b14[109];
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   char s_eaa5cf6a[139];
+#endif
+#endif
+   char s_17663212[159];
+   char s_d60aa85f[63];
+   char s_055c296e[104];
+   char s_fc2d67bb[160];
+   char s_0d96ed73[42];
+   char s_9f0fd076[127];
+   char s_9f0fd077[126];
+   char s_7a2050af[25];
+   char s_ef13be35[83];
+   char s_82fab47a[35];
+   char s_4a09218b[31];
+   char s_19d092ed[34];
+   char s_b5a603de[63];
+   char s_d9c2db25[59];
+   char s_7c07f6fc[101];
+   char s_7968f59d[48];
+   char s_67d549fd[34];
+   char s_3aaf6bf1[141];
+   char s_7e96b5ce[42];
+   char s_3547866d[119];
+   char s_8010a29e[101];
+   char s_81120e85[102];
+   char s_3c13e61f[103];
+   char s_d96182c1[37];
+   char s_93bbb839[104];
+   char s_4d0b4ce0[105];
+   char s_f99a7d5e[221];
+   char s_f83a493c[23];
+   char s_ac90aac1[78];
+   char s_ac90aac2[76];
+   char s_09581fc6[296];
+   char s_74e69f4b[80];
+   char s_75325963[24];
+   char s_f7e279a6[11];
 } msg_hash_sr_blob =
 {
-   "Glavni meni",
-   "Pode\305\241avanja",
-   "Omiljeno",
-   "Istorija",
-   "Slike",
-   "Muzika",
-   "Video",
-   "Igra preko mre\305\276e",
-   "Istra\305\276i",
-   "Jezgra bez sadr\305\276aja",
-   "Uvezi sadr\305\276aj",
-   "Pokreni video procesor",
-   "Pokreni udaljeni RetroPad",
-   "Brzi meni",
-   "Brz pristup svim bitnim pode\305\241avanjima za igru.",
-   "Prika\305\276i sva pode\305\241avanja vezana za konfiguraciju.",
-   "U\304\215itaj jezgro",
-   "Odaberi jezgro za kori\305\241\304\207enje.",
+   "Overrajduj podrazumevani audio ure\304\221aj koji \304\207e koristiti audio drajver. Ovo je neza"
+   "visno od drajvera.",
    "Potra\305\276i implementaciju libretro core. Pretra\305\276iva\304\215 po\304\215inje u zavisnos"
    "ti od putanje osnovnog direktorijuma. Ako je prazan, po\304\215e\304\207e iz root-a. \nAko je os"
    "novni direktorijum definisan, meni \304\207e ga koristiti kao glavni direktorijum. Ako osnovni d"
    "irektorijum sadr\305\276i punu putanju, onda \304\207e po\304\215eti iz foldera gde se nalazi da"
    "toteka.",
-   "U\304\215itaj sadr\305\276aj",
-   "Odaberi sadr\305\276aj za pokretanje.",
-   "U\304\215itaj disk",
-   "U\304\215itaj fizi\304\215ki disk. Prvo odaberi jezgro (U\304\215itaj Jezgro) za upotrebu sa dis"
-   "kom.",
+   "Datoteka za varanje.",
+   "Komprimovana datoteka za arhiviranje.",
+   "Konfiguraciona datoteka.",
+   "Snimanje konfiguracione datoteke.",
+   "Datoteka \305\241ejdera.",
+   "Datoteka unapred pode\305\241enih \305\241ejdera.",
+   "Konfiguraciona datoteka.",
+   "OpenGL 1.x drajver. Minimalna potrebna verzija: OpenGL 1.1. Ne podr\305\276ava \305\241ejdere. U"
+   "mesto toga, ako je mogu\304\207e, koristite kasnije OpenGL drajvere.",
+   "Pristupa\304\215nost",
+   "Dostignu\304\207a",
+   "Uvezi sadr\305\276aj",
+   "Uvezi sadr\305\276aj",
+   "VI servis",
+   "Ure\304\221aj",
+   "Zvuk",
+   "Zvuk",
+   "Ka\305\241njenje zvuka (ms)",
+   "Izlaz",
+   "Reuzorkovanje zvuka",
+   "Zvuk",
+   "Sinhronizacija",
+   "Sinhronizacija",
+   "Du\305\276ina WASAPI deljenog bafera",
+   "Potvrdi",
+   "Informacije",
+   "Zatvori",
+   "Skroluj na dole",
+   "Skroluj na gore",
+   "Prika\305\276i tastaturu",
+   "Prika\305\276i meni",
+   "Kamera",
+   "Opis",
+   "Dostignu\304\207a",
+   "Korisni\304\215ko Ime",
+   "U\304\215itaj konfiguraciju",
+   "Konfiguraciona datoteka",
+   "Konfiguracija",
+   "Jezgra bez sadr\305\276aja",
+   "Jezgro",
+   "Naziv",
+   "Brzi meni",
+   "Preuzeto",
+   "Napravi rezervnu kopiju jezgra",
+   "Obri\305\241i jezgro",
+   "Obri\305\241i rezervnu kopiju",
+   "Informacije o jezgru",
+   "Autor",
+   "Kategorije",
+   "Oznaka jezgra",
+   "Naziv jezgra",
+   "Sistemski fajlovi",
+   "Licenca",
+   "Permisije",
+   "Potreban grafi\304\215ki API",
+   "Osnovno (\304\214uvanje/U\304\215itavanje)",
+   "Deterministi\304\215ki (\304\214uvanje/U\304\215itavanje, Premotavanja, Pokretanje Unapred, Igra"
+   " na Mre\305\276i)",
+   "Serijalizovano (\304\214uvanje/U\304\215itavanje, Premotavanje)",
+   "Podr\305\276ane ekstenzije",
+   "Proizvo\304\221a\304\215 sistema",
+   "Naziv sistema",
+   "U\304\215itaj jezgro",
+   "Zaklju\304\215aj instalirano jezgro",
+   "Vrati rezervnu kopiju",
+   "Jezgro",
+   "Izuzmi iz menija \342\200\236Jezgra bez sadr\305\276aja\342\200\235",
+   "Preuzima\304\215 jezgra",
+   "Arhitektura procesora",
+   "Procesorska jezgra",
+   "Rezolucija prilago\304\221ena za CRT",
+   "Rezolucija prilago\304\221ena za CRT",
+   "CRT super rezolucija",
+   "Prilago\304\221ena brzina osve\305\276avanja",
+   "Upravljanje kursorima",
+   "Upravljanje bazom podataka",
+   "Direktorijum",
+   "Informacije o disku",
+   "Izvadi disk",
+   "Preuzeto",
+   "Preuzmi jezgro",
+   "Preuzima\304\215 sadr\305\276aja",
+   "Drajveri",
    "Kloniraj disk",
-   "Napravi kopiju fizi\304\215kog diska na internoj memoriji. Bi\304\207e sa\304\215uvan kao odrazn"
-   "a datoteka.",
 #ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
    "Izvadi disk",
-   "Izvadi disk iz fizi\304\215kog CD/DVD drajva.",
 #endif
 #endif
-   "Liste",
-   "Skeniran sadr\305\276aj koji odgovara bazi podataka \304\207e se pojaviti ovde.",
-   "Uvezi sadr\305\276aj",
-   "Napravi i a\305\276uriraj liste skeniranjem sadr\305\276aja.",
-   "Konfiguraciona datoteka",
-   "Kreiraj i upravljaj konfiguracionim datotekama.",
-   "U\304\215itaj konfiguraciju",
-   "U\304\215itaj postoje\304\207u konfiguraciju i zameni trenutne vrednosti.",
-   "Sa\304\215uvaj trenutnu konfiguraciju",
-   "Prebri\305\241i trenutni datoteku konfiguracije.",
-   "Sa\304\215uvaj novu konfiguraciju",
-   "Sa\304\215uvaj trenutnu konfiguraciju u odvojenoj datoteci.",
-   "Vrati na podrazumevano",
-   "Vrati trenutnu konfiguraciju na podrazumevane vrednosti.",
-   "Pomo\304\207",
-   "Saznaj vi\305\241e o radu programa.",
-   "Prika\305\276i desktop Interfejs",
-   "Otvori tradicionalni desktop interfejs.",
-   "Igra preko mre\305\276e",
-   "Pridru\305\276i se ili hostuj sesiju igre preko mre\305\276e.",
-   "Onlajn a\305\276uriranje",
-   "Preuzmi dodatke, komponente i sadr\305\276aj za RetroArch.",
-   "Pode\305\241avanja",
-   "Konfiguri\305\241i program.",
-   "Informacije",
-   "Prika\305\276i informacije o sistemu.",
-   "Zatvori",
-   "Preuzmi jezgro",
-   "Preuzmi i instaliraj jezgro putem onlajn a\305\276uriranja.",
-   "Instaliraj ili vrati jezgro",
-   "Instaliraj ili vrati jezgro iz 'Downloads' direktorijuma.",
-   "Po\304\215etni direktorijum",
-   "Preuzeto",
-   "Otvori arhivu",
-   "U\304\215itaj arhivu",
-   "Omiljeno",
-   "Sadr\305\276aj dodat u 'Omiljeno' \304\207e se pojaviti ovde.",
-   "Muzika",
-   "Muzika koja je prethodno pu\305\241tana \304\207e se pojaviti ovde.",
-   "Slike",
-   "Slike koje su prethodno gledane \304\207e se pojaviti ovde.",
-   "Video",
-   "Video koji je prethodno pu\305\241tan \304\207e se pojaviti ovde.",
    "Istra\305\276i",
-   "Pretra\305\276i sadr\305\276aj koji odgovara bazi podataka putem kategorizovanog interfejsa.",
-   "Jezgra bez sadr\305\276aja",
-   "Preuzima\304\215 jezgra",
-   "A\305\276uriraj instalirana jezgra",
-   "A\305\276uriraj sva instalirana jezgra na naja\305\276urniju verziju.",
-   "Zameni jezgra verzijama iz Plej prodavnice",
-   "Zameni sva zastarela i ru\304\215no instalirana jezgra sa naja\305\276urnijim verzijama iz Plej "
-   "prodavnice, ako je mogu\304\207e.",
-   "A\305\276uriranje sli\304\215ica liste",
-   "Preuzmi sli\304\215ice za svaki unos u odabranoj listi.",
-   "Preuzima\304\215 sadr\305\276aja",
-   "A\305\276uriraj datoteke informacija jezgra",
-   "A\305\276uriraj resurse",
-   "A\305\276uriraj profile kontrolera",
-   "A\305\276uriraj \304\215it-kodove",
-   "A\305\276uriraj baze podataka",
-   "A\305\276uriraj prekriva\304\215e",
-   "A\305\276uriraj GLSL \305\241ejdere",
-   "A\305\276uriraj Cg \305\241ejdere",
-   "A\305\276uriraj Slang \305\241ejdere",
-   "Informacije o jezgru",
-   "Pregledaj informacije koje se ti\304\215u aplikacije/jezgra.",
-   "Informacije o disku",
-   "Pregledaj informacije o uba\304\215enim diskovima.",
-   "Informacije o mre\305\276i",
-   "Pogledaj mre\305\276ne interfejse i asocirane IP adrese.",
-   "Informacije o sistemu",
-   "Pregledaj informacije specifi\304\215ne za ure\304\221aj.",
-   "Upravljanje bazom podataka",
-   "Pregledaj baze podataka.",
-   "Upravljanje kursorima",
-   "Pregledaj prethodne pretrage.",
-   "Naziv jezgra",
-   "Oznaka jezgra",
-   "Naziv sistema",
-   "Proizvo\304\221a\304\215 sistema",
-   "Kategorije",
-   "Autor",
-   "Permisije",
-   "Licenca",
-   "Podr\305\276ane ekstenzije",
-   "Potreban grafi\304\215ki API",
-   "Osnovno (\304\214uvanje/U\304\215itavanje)",
-   "Serijalizovano (\304\214uvanje/U\304\215itavanje, Premotavanje)",
-   "Deterministi\304\215ki (\304\214uvanje/U\304\215itavanje, Premotavanja, Pokretanje Unapred, Igra"
-   " na Mre\305\276i)",
-   "Sistemski fajlovi",
-   "Nedostaje, Potreban:",
-   "Nedostaje, Opcionalan:",
-   "Prisutan, Potreban:",
-   "Prisutan, Opcionalan:",
-   "Zaklju\304\215aj instalirano jezgro",
-   "Izuzmi iz menija \342\200\236Jezgra bez sadr\305\276aja\342\200\235",
-   "Spre\304\215ite prikazivanje ovog jezgra na kartici/meniju \342\200\236Jezgra bez sadr\305\276aj"
-   "a\342\200\235. Primenjuje se samo kada je re\305\276im prikaza postavljen na \342\200\236Prilago"
-   "\304\221en\342\200\235.",
-   "Obri\305\241i jezgro",
-   "Ukloni ovo jezgro sa diska.",
-   "Napravi rezervnu kopiju jezgra",
-   "Napravi arhiviranu rezervnu kopiju trenutno instaliranog jezgra.",
-   "Vrati rezervnu kopiju",
-   "Instaliraj prethodnu verziju jezgra iz liste arhiviranih kopija.",
-   "Obri\305\241i rezervnu kopiju",
-   "Obri\305\241i datoteku iz liste arhiviranih kopija.",
-   "Datum kompilacije",
-   "Git verzija",
-   "Kompilator",
-   "Model procesora",
-   "Karakteristike procesora",
-   "Arhitektura procesora",
-   "Procesorska jezgra",
-   "Identifikator frontend-a",
-   "OS frontend-a",
-   "Izvor napajanja",
-   "Drajver video konteksta",
-   "\305\240irina displeja (mm)",
-   "Visina displeja (mm)",
-   "DPI displeja",
-   "Naziv",
-   "Opis",
-   "\305\275anr",
-   "Dostignu\304\207a",
-   "Ketegorija",
-   "Jezik",
-   "Eksluzivno za konzole",
-   "Eksluzivno za platforme",
-   "Rezultat",
-   "Mediji",
-   "Kontrole",
-   "Umetni\304\215ki stil",
-   "Gejmplej",
-   "Pri\304\215a",
-   "Tempo",
-   "Perspektiva",
-   "Pode\305\241avanja",
-   "Vizuelno",
-   "Automobilisti\304\215ki",
-   "Izdava\304\215",
-   "Poreklo",
-   "Fran\305\241iza",
-   "TGDB ocena",
-   "Ocena Famicu \304\215asopisa",
-   "Recenzija Ed\305\276 magazina",
-   "Ocena Ed\305\276 \304\215asopisa",
-   "Broj Ed\305\276 \304\215asopisa",
-   "Mesec Objavljivanja",
-   "Godina Objavljivanja",
-   "BBFC rejting",
-   "ESRB rejting",
-   "ELSPA rejting",
-   "PEGI rejting",
-   "Hardver za pro\305\241irenja",
-   "CERO rejting",
-   "Serijski broj",
-   "Podr\305\276ava analogne kontrole",
-   "Podr\305\276ava vibraciju",
-   "Podr\305\276ava kooperativno igranje",
-   "Skroluj na gore",
-   "Skroluj na dole",
-   "Potvrdi",
-   "Informacije",
-   "Prika\305\276i meni",
-   "Zatvori",
-   "Prika\305\276i tastaturu",
-   "Drajveri",
-   "Promeni drajvere koje koristi sistem.",
-   "Izmeni pode\305\241avanja video izlaza.",
-   "Rezolucija prilago\304\221ena za CRT",
-   "Koristi prirodni, nisko-rezolucioni video izlaz, za upotrebu sa CRT ekranima.",
-   "Izlaz",
-   "Izmeni pode\305\241avanja video izlaza.",
-   "Zvuk",
-   "Ulaz",
-   "Izmeni pode\305\241avanja kontrolera, tastature i mi\305\241a.",
-   "Odziv",
-   "Izmeni pode\305\241avanja odziva videa, zvuka i ulaza.",
-   "Jezgro",
-   "Izmeni pode\305\241avanja jezgara.",
-   "Konfiguracija",
-   "Izmeni pode\305\241avanja vezana za konfiguracione datoteke.",
-   "Usnimavanje",
-   "Izmeni pode\305\241avanja za usnimavanje.",
-   "Bele\305\276enje",
-   "Izmeni pode\305\241avanja za bele\305\276enje.",
+   "Po\304\215etni direktorijum",
+   "Omiljeno",
    "Regulisanje frejmrejta",
-   "Izmeni pode\305\241avanja za premotavanje, ubrzavanje i usporavanje.",
-   "Korisni\304\215ko Ime",
-   "Informacije na ekranu",
-   "Izmeni pode\305\241avanja za prekriva\304\215 displeja, tastaturu na ekranu i notifikacije.",
-   "Brzi meni",
-   "Pode\305\241avanja",
-   "Korisni\304\215ki interfejs",
-   "Izmeni pode\305\241avanja korisni\304\215kog interfejsa.",
+   "Jezgra bez sadr\305\276aja",
+   "Istra\305\276i",
+   "Omiljeno",
+   "Slike",
+   "Muzika",
+   "Video",
+   "Pomo\304\207",
+   "Pomo\304\207",
+   "Istorija",
+   "Istorija",
+   "Slike",
+   "Informacije",
+   "Informacije",
+   "Ulaz",
    "VI servis",
-   "Izmeni pode\305\241avanja VI servisa (prevod/sinteza govora/ostalo).",
-   "Pristupa\304\215nost",
-   "Izmeni pode\305\241avanja auto-naratora.",
-   "Pode\305\241avanja napajanja",
-   "Izmeni pode\305\241avanja napajanja.",
-   "Pregleda\304\215 datoteka",
-   "Dostignu\304\207a",
-   "Izmeni pode\305\241avanja za dostignu\304\207a.",
-   "Konfiguraciona datoteka.",
-   "Komprimovana datoteka za arhiviranje.",
-   "Snimanje konfiguracione datoteke.",
-   "Konfiguraciona datoteka.",
-   "Datoteka unapred pode\305\241enih \305\241ejdera.",
-   "Datoteka \305\241ejdera.",
-   "Datoteka za varanje.",
-   "Snimanje",
-   "Izmeni pode\305\241avanja za snimanje.",
-   "Mre\305\276a",
-   "Izmeni pode\305\241avanja servera i mre\305\276e.",
-   "Liste",
-   "Izmeni pode\305\241avanja vezana za plejliste.",
-   "Korisnik",
-   "Direktorijum",
-   "Izmeni podrazumevane direktorijume i lokacije datoteka.",
-   "Mediji",
+   "Zatvori",
+   "Restartuj RetroArch",
    "Ulaz",
    "Kontroler",
-   "OpenGL 1.x drajver. Minimalna potrebna verzija: OpenGL 1.1. Ne podr\305\276ava \305\241ejdere. U"
-   "mesto toga, ako je mogu\304\207e, koristite kasnije OpenGL drajvere.",
-   "Zvuk",
-   "Reuzorkovanje zvuka",
-   "Drajver za reuzorkovanje zvuka.",
-   "Kamera",
+   "Odziv",
+   "U\304\215itaj arhivu",
+   "Istorija",
+   "U\304\215itaj sadr\305\276aj",
+   "U\304\215itaj disk",
    "Lokacija",
+   "Bele\305\276enje",
+   "Glavni meni",
+   "Mediji",
+   "Glavni meni",
    "Meni",
-   "Snimanje",
-   "Re\305\276im celog ekrana",
-   "Izmeni pode\305\241avanja re\305\276ima celog ekrana.",
-   "Re\305\276im prozora",
-   "Izmeni pode\305\241avanja re\305\276ima prozora.",
-   "Sinhronizacija",
-   "Izmeni pode\305\241avanja video sinhronizacije.",
-   "Skaliranje",
-   "Izmeni pode\305\241avanja vezana za video skaliranje.",
-   "Izmeni pode\305\241avanja vezana za HDR.",
-   "Koristi \305\241ejderovan materijal grafi\304\215ke karte pri slikanju ekrana, ako je mogu\304"
-   "\207e.",
-   "Iseci nekoliko piksela oko ivice slike koji se obi\304\215no ostavljaju praznim i ponekad sadr"
-   "\305\276e nesmislene piksele.",
-   "Suspenduj \304\215uvar ekrana",
-   "Spre\304\215i pokretanje \304\215uvara ekrana sistema.",
-   "Podeli video u niti",
-   "Pove\304\207ava performanse po cenu odziva i glatko\304\207e videa. Koristi samo ako nije mogu"
-   "\304\207e druga\304\215ije dosti\304\207i punu brzinu.",
-   "Ubacivanje crnog frejma",
-   "Bilinearni filter",
-#if defined(DINGUX)
-   "Interpolacija slike",
-   "Specificiraj metodu interpolacije slike pri skaliranju sadr\305\276aja pomo\304\207u internog IP"
-   "U-a. 'Bikubno' ili 'bilinearno' se preporu\304\215uje ako se koriste filteri bazirani na proceso"
-   "ru.",
-   "Bikubno",
-   "Bilinearno",
-   "Najbli\305\276i sused",
-#endif
-#if defined(DINGUX)
-#if defined(RS90) || defined(MIYOO)
-   "Interpolacija slike",
-   "Specificiraj metodu interpolacije slike kada je 'celobrojno skaliranje' isklju\304\215eno. 'Najb"
-   "li\305\276i sused' ima najmanji uticaj na performanse.",
-   "Najbli\305\276i sused",
-   "Polulinearno",
-#endif
-#endif
-   "Ka\305\241njenje auto-\305\241ejdera",
-   "Odlo\305\276i automatsko u\304\215itavanje \305\241ejdera (u milisekundama). Mo\305\276e pomo"
-   "\304\207i kod grafi\304\215kih gre\305\241aka kada se koristi softver za snimanje ekrana.",
-   "Video filter",
-   "Uklju\304\215i video filter baziran na procesoru. Mo\305\276e jako pogor\305\241ati performanse."
-   " Neki video filteri rade samo za jezgra koje koriste 32-bitne ili 16-bitne boje.",
-   "Ukloni video filter",
-   "Isklju\304\215i bilo koji aktivan video filter baziran na procesoru.",
-   "Rezolucija prilago\304\221ena za CRT",
-   "Samo za CRT ekrane. Poku\305\241aj da koristi\305\241 preciznu rezoluciju i brzinu osve\305\276a"
-   "vanja jezgra/igre.",
-   "CRT super rezolucija",
-   "Biraj izme\304\221u prirodne i ultra\305\241iroke super rezolucije.",
-   "Pro\304\221i kroz ove opcije ako slika nije pravilno centrirana na displeju.",
-   "Pro\304\221i kroz ove opcije ako slika nije pravilno centrirana na displeju.",
-   "Prilago\304\221ena brzina osve\305\276avanja",
-   "Prilagodi brzinu osve\305\276avanja specificiranu u konfiguracionoj datoteci, ako je potrebno.",
-   "Uklju\304\215i visoko-rezolucioni mod za upotrebu sa visoko-rezolucionim menijem ako sadr\305"
-   "\276aj nije u\304\215itan.",
-   "Indeks monitora",
-   "Odaberi ekran za kori\305\241\304\207enje.",
-   "Video rotacija",
-   "Forsiraj odre\304\221enu orijentaciju slike. Orijentacija se dodaje na orijentaciju koju defini"
-   "\305\241e jezgro.",
-   "Orijentacija ekrana",
-   "Forsiraj ore\304\221enu orijentaciju ekrana iz operativnog sistema.",
-   "Indeks grafi\304\215ke karte",
-   "Odaberi grafi\304\215ku kartu.",
-   "Horizontalni ofset",
-   "Forsiraj odre\304\221eni horizontalni ofset na sliku. Ofset se primenjuje globalno.",
-   "Vertikalni ofset",
-   "Forsiraj odre\304\221eni vertikalni ofset na sliku. Ofset se primenjuje globalno.",
-   "Vertikalna brzina osve\305\276avanja",
-   "Procenjena brzina osve\305\276avanja ekrana",
-   "Precizno procenjena brzina osve\305\276avanja ekrana u hercima (Hz).",
-   "Postavljena brzina osve\305\276avanja izve\305\241tena od ekrana",
-   "Brzina osve\305\276avanja izve\305\241tena od strane displej drajvera.",
-#if defined(DINGUX) && defined(DINGUX_BETA)
-   "Vertikalna brzina osve\305\276avanja",
-   "Postavi vertikalnu brzinu osve\305\276avanja ekrana. '50 Hz' omogu\304\207ava glatku sliku ako j"
-   "e pokrenut PAL sadr\305\276aj.",
-#endif
-   "Forsirano isklju\304\215i sRGB FBO",
-   "Forsirano iskllju\304\215i podr\305\241ku za sRGB FBO. Neki Intel OpenGL drajveri na Windows-u i"
-   "maju video probleme sa sRGB FBO. Ova opcija mo\305\276e biti zaobilazno re\305\241enje.",
-   "Re\305\276im punog prozora",
-   "Ako je ukjlu\304\215en re\305\276im punog ekrana, koristi pun prozor da bi se spre\304\215ilo me"
-   "njanje re\305\276ima displeja.",
-   "\305\240irina punog ekrana",
-   "Ru\304\215no postavi \305\241irinu ekrana u re\305\276imu punog ekrana (bez punog prozora). Ako "
-   "nije pode\305\241eno koristi\304\207e se desktop rezolucija.",
-   "Visina punog ekrana",
-   "Ru\304\215no postavi visinu ekrana u re\305\276imu punog ekrana (bez punog prozora). Ako nije po"
-   "de\305\241eno koristi\304\207e se desktop rezolucija.",
-   "Forsiraj rezoluciju na UWP",
-   "Forsiraj rezoluciju na veli\304\215inu punog ekrana, ako je 0, bi\304\207e kori\305\241\304\207e"
-   "na fiksna vrednost 3840 x 2160.",
-   "Razmera prozora",
-   "\305\240irina prozora",
-   "Podesi \305\241irinu prozora.",
-   "Visina prozora",
-   "Podesi visinu prozora.",
-   "Maksimalna \305\241irina prozora",
-   "Podesi maksimalnu \305\241irinu prozora kada se automatski menja veli\304\215ina na osnovu opcij"
-   "e 'Razmera prozora'.",
-   "Maksimalna visina prozora",
-   "Podesi maksimalnu visinu prozora kada se automatski menja veli\304\215ina na osnovu opcije 'Razm"
-   "era prozora'.",
-   "Neprozirnost prozora",
-   "Postavi razmeru prozora na odre\304\221eni umno\305\276ak veli\304\215ine prozora prikaza jezgra"
-   ".",
-   "Prikazuj dekoracije prozora",
-   "Upamti poziciju i veli\304\215inu prozora",
-   "Prikazuj sav sadr\305\276aj u prozoru fiksne veli\304\215ine dimenzija pode\305\241enim opcijama"
-   " '\305\240irina prozora' i 'Visina prozora' i sa\304\215uvaj trenutnu veli\304\215inu prozora i "
-   "poziciju pri zatvaranju RetroArcha. Ako je isklju\304\215eno, veli\304\215ina prozara \304\207e "
-   "biti dinami\304\215ki odre\304\221ena na osnovu opcije 'Razmera prozora'.",
-   "Koristi specifi\304\215nu veli\304\215inu prozora",
-   "Prikazuj sav sadr\305\276aj u prozoru fiksne veli\304\215ine dimenzija pode\305\241enim opcijama"
-   " '\305\240irina prozora' i 'Visina prozora'. Ako je isklju\304\215eno, veli\304\215ina prozora "
-   "\304\207e biti dinami\304\215ki odre\304\221ena na osnovu opcije 'Razmera prozora'.",
-   "Celobrojno skaliranje",
+   "Pregleda\304\215 datoteka",
    "Odnos ekrana",
-#if defined(DINGUX)
-   "Zadr\305\276i odnos ekrana",
-   "Odr\305\276avaj 1:1 odnos piksela kada se skalira sadr\305\276aj preko unutra\305\241njeg IPU-a."
-   " Ako je isklju\304\215eno, slika \304\207e biti razvu\304\215ena da bu popunila ceo displej.",
-#endif
-   "Postavi odnos ekrana (X pozicija)",
-   "Postavi odnos ekrana (Y pozicija)",
-   "Postavi odnos ekrana (\305\241irina)",
-   "Postavi \305\241irinu prozora prikaza ako je opcija odnos ekrana postavljena na 'Specifi\304\215"
-   "an odnos ekrana'.",
-   "Postavi odnos ekrana (visina)",
-   "Postavi visinu prozora prikaza ako je opcija odnos ekrana postavljena na 'Specifi\304\215an odno"
-   "s ekrana'.",
-   "Izlaz",
-   "Izmeni pode\305\241avanja zvuka.",
-   "Sinhronizacija",
-   "Du\305\276ina WASAPI deljenog bafera",
-   "Srednja du\305\276ina bafera (u frejmovima) kada se koristi WASAPI drajver u deljenom re\305\276"
-   "imu.",
-   "Zvuk",
-   "Uklju\304\215i audio.",
-   "Ure\304\221aj",
-   "Overrajduj podrazumevani audio ure\304\221aj koji \304\207e koristiti audio drajver. Ovo je neza"
-   "visno od drajvera.",
-   "Overrajduj podrazumevani audio ure\304\221aj koji \304\207e koristiti audio drajver. Ovo je neza"
-   "visno od drajvera.",
-   "Ka\305\241njenje zvuka (ms)",
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
    "Ure\304\221aj",
@@ -873,53 +604,358 @@ static const struct
 #ifdef HAVE_MICROPHONE
 #ifdef HAVE_WASAPI
    "Du\305\276ina WASAPI deljenog bafera",
+#endif
+#endif
+   "Ulaz",
+   "Izlaz",
+   "Nedostaje, Opcionalan:",
+   "Nedostaje, Potreban:",
+   "Muzika",
+   "Igra preko mre\305\276e",
+   "Igra preko mre\305\276e",
+   "Informacije o mre\305\276i",
+   "Mre\305\276a",
+   "Onlajn a\305\276uriranje",
+   "Informacije na ekranu",
+   "Otvori arhivu",
+   "Liste",
+   "Liste",
+   "Liste",
+   "Jezgro:",
+   "A\305\276uriranje sli\304\215ica liste",
+   "Pode\305\241avanja napajanja",
+   "Prisutan, Opcionalan:",
+   "Prisutan, Potreban:",
+   "Jezgro",
+   "Informacije",
+   "Informacije",
+   "U\304\215itaj jezgro",
+   "&Pomo\304\207",
+   "Pode\305\241avanja",
+   "Naziv",
+   "Jezgro:",
+   "Naziv:",
+   "Pregleda\304\215 datoteka",
+   "Liste",
+   "Brzi meni",
+   "Zatvori",
+   "Dostignu\304\207a",
+   "Podr\305\276ava analogne kontrole",
+   "Umetni\304\215ki stil",
+   "BBFC rejting",
+   "Ketegorija",
+   "CERO rejting",
+   "Eksluzivno za konzole",
+   "Kontrole",
+   "Podr\305\276ava kooperativno igranje",
+   "Opis",
+   "Broj Ed\305\276 \304\215asopisa",
+   "Ocena Ed\305\276 \304\215asopisa",
+   "Recenzija Ed\305\276 magazina",
+   "ELSPA rejting",
+   "Hardver za pro\305\241irenja",
+   "ESRB rejting",
+   "Ocena Famicu \304\215asopisa",
+   "Fran\305\241iza",
+   "Gejmplej",
+   "\305\275anr",
+   "Jezik",
+   "Mediji",
+   "Naziv",
+   "Pri\304\215a",
+   "Poreklo",
+   "Tempo",
+   "PEGI rejting",
+   "Perspektiva",
+   "Eksluzivno za platforme",
+   "Izdava\304\215",
+   "Mesec Objavljivanja",
+   "Godina Objavljivanja",
+   "Podr\305\276ava vibraciju",
+   "Rezultat",
+   "Serijski broj",
+   "Pode\305\241avanja",
+   "TGDB ocena",
+   "Automobilisti\304\215ki",
+   "Vizuelno",
+   "Snimanje",
+   "Snimanje",
+   "Vrati na podrazumevano",
+   "Dostignu\304\207a",
+   "Celobrojno skaliranje",
+   "Po\304\215etni direktorijum",
+   "Bilinearno",
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+   "Retroflag Safe Shutdown\"\n#else\n   \"Retroflag Safe Shutdown (Reboot required)",
+#endif
+#endif
+   "Sa\304\215uvaj trenutnu konfiguraciju",
+   "Sa\304\215uvaj novu konfiguraciju",
+   "Usnimavanje",
+   "Orijentacija ekrana",
+   "Pode\305\241avanja",
+   "Pode\305\241avanja",
+   "Pode\305\241avanja",
+   "Prika\305\276i desktop Interfejs",
+   "Instaliraj ili vrati jezgro",
+   "Pokreni udaljeni RetroPad",
+   "Pokreni video procesor",
+   "Suspenduj \304\215uvar ekrana",
+   "Zameni jezgra verzijama iz Plej prodavnice",
+   "Informacije o sistemu",
+   "Datum kompilacije",
+   "Karakteristike procesora",
+   "Model procesora",
+   "DPI displeja",
+   "Visina displeja (mm)",
+   "\305\240irina displeja (mm)",
+   "Identifikator frontend-a",
+   "OS frontend-a",
+   "Git verzija",
+   "Izvor napajanja",
+   "Drajver video konteksta",
+   "A\305\276uriraj resurse",
+   "A\305\276uriraj profile kontrolera",
+   "A\305\276uriraj Cg \305\241ejdere",
+   "A\305\276uriraj \304\215it-kodove",
+   "A\305\276uriraj datoteke informacija jezgra",
+   "A\305\276uriraj baze podataka",
+   "A\305\276uriraj GLSL \305\241ejdere",
+   "A\305\276uriraj instalirana jezgra",
+   "A\305\276uriraj prekriva\304\215e",
+   "A\305\276uriraj Slang \305\241ejdere",
+   "Korisnik",
+   "Korisni\304\215ki interfejs",
+   "Korisnik",
+   "Odnos ekrana",
+   "Ubacivanje crnog frejma",
+#if defined(DINGUX)
+   "Bikubno",
+   "Bilinearno",
+   "Najbli\305\276i sused",
+   "Interpolacija slike",
+   "Zadr\305\276i odnos ekrana",
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+   "Vertikalna brzina osve\305\276avanja",
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   "Polulinearno",
+   "Najbli\305\276i sused",
+   "Interpolacija slike",
+#endif
+#endif
+   "Video filter",
+   "Ukloni video filter",
+   "Forsiraj rezoluciju na UWP",
+   "Forsirano isklju\304\215i sRGB FBO",
+   "Re\305\276im celog ekrana",
+   "\305\240irina punog ekrana",
+   "Visina punog ekrana",
+   "Indeks grafi\304\215ke karte",
+   "Indeks monitora",
+   "Izlaz",
+   "Vertikalna brzina osve\305\276avanja",
+   "Procenjena brzina osve\305\276avanja ekrana",
+   "Postavljena brzina osve\305\276avanja izve\305\241tena od ekrana",
+   "Video rotacija",
+   "Razmera prozora",
+   "Celobrojno skaliranje",
+   "Skaliranje",
+   "Ka\305\241njenje auto-\305\241ejdera",
+   "Bilinearni filter",
+   "Sinhronizacija",
+   "Video",
+   "Podeli video u niti",
+   "Postavi odnos ekrana (visina)",
+   "Postavi odnos ekrana (\305\241irina)",
+   "Postavi odnos ekrana (X pozicija)",
+   "Postavi odnos ekrana (Y pozicija)",
+   "Re\305\276im punog prozora",
+   "Re\305\276im prozora",
+   "Maksimalna visina prozora",
+   "Maksimalna \305\241irina prozora",
+   "Koristi specifi\304\215nu veli\304\215inu prozora",
+   "Visina prozora",
+   "Horizontalni ofset",
+   "Vertikalni ofset",
+   "Neprozirnost prozora",
+   "Upamti poziciju i veli\304\215inu prozora",
+   "Prikazuj dekoracije prozora",
+   "\305\240irina prozora",
+   "Izmeni pode\305\241avanja auto-naratora.",
+   "Napravi i a\305\276uriraj liste skeniranjem sadr\305\276aja.",
+   "Izmeni pode\305\241avanja VI servisa (prevod/sinteza govora/ostalo).",
+   "Overrajduj podrazumevani audio ure\304\221aj koji \304\207e koristiti audio drajver. Ovo je neza"
+   "visno od drajvera.",
+   "Uklju\304\215i audio.",
+   "Izmeni pode\305\241avanja zvuka.",
+   "Drajver za reuzorkovanje zvuka.",
+   "Srednja du\305\276ina bafera (u frejmovima) kada se koristi WASAPI drajver u deljenom re\305\276"
+   "imu.",
+   "U\304\215itaj postoje\304\207u konfiguraciju i zameni trenutne vrednosti.",
+   "Kreiraj i upravljaj konfiguracionim datotekama.",
+   "Izmeni pode\305\241avanja vezana za konfiguracione datoteke.",
+   "Brz pristup svim bitnim pode\305\241avanjima za igru.",
+   "Napravi arhiviranu rezervnu kopiju trenutno instaliranog jezgra.",
+   "Ukloni ovo jezgro sa diska.",
+   "Obri\305\241i datoteku iz liste arhiviranih kopija.",
+   "Pregledaj informacije koje se ti\304\215u aplikacije/jezgra.",
+   "Odaberi jezgro za kori\305\241\304\207enje.",
+   "Instaliraj prethodnu verziju jezgra iz liste arhiviranih kopija.",
+   "Izmeni pode\305\241avanja jezgara.",
+   "Spre\304\215ite prikazivanje ovog jezgra na kartici/meniju \342\200\236Jezgra bez sadr\305\276aj"
+   "a\342\200\235. Primenjuje se samo kada je re\305\276im prikaza postavljen na \342\200\236Prilago"
+   "\304\221en\342\200\235.",
+   "Koristi prirodni, nisko-rezolucioni video izlaz, za upotrebu sa CRT ekranima.",
+   "Uklju\304\215i visoko-rezolucioni mod za upotrebu sa visoko-rezolucionim menijem ako sadr\305"
+   "\276aj nije u\304\215itan.",
+   "Samo za CRT ekrane. Poku\305\241aj da koristi\305\241 preciznu rezoluciju i brzinu osve\305\276a"
+   "vanja jezgra/igre.",
+   "Biraj izme\304\221u prirodne i ultra\305\241iroke super rezolucije.",
+   "Prilagodi brzinu osve\305\276avanja specificiranu u konfiguracionoj datoteci, ako je potrebno.",
+   "Pro\304\221i kroz ove opcije ako slika nije pravilno centrirana na displeju.",
+   "Pro\304\221i kroz ove opcije ako slika nije pravilno centrirana na displeju.",
+   "Pregledaj prethodne pretrage.",
+   "Pregledaj baze podataka.",
+   "Izmeni podrazumevane direktorijume i lokacije datoteka.",
+   "Pregledaj informacije o uba\304\215enim diskovima.",
+   "Preuzmi i instaliraj jezgro putem onlajn a\305\276uriranja.",
+   "Promeni drajvere koje koristi sistem.",
+   "Napravi kopiju fizi\304\215kog diska na internoj memoriji. Bi\304\207e sa\304\215uvan kao odrazn"
+   "a datoteka.",
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   "Izvadi disk iz fizi\304\215kog CD/DVD drajva.",
+#endif
+#endif
+   "Izmeni pode\305\241avanja za premotavanje, ubrzavanje i usporavanje.",
+   "Pretra\305\276i sadr\305\276aj koji odgovara bazi podataka putem kategorizovanog interfejsa.",
+   "Sadr\305\276aj dodat u 'Omiljeno' \304\207e se pojaviti ovde.",
+   "Slike koje su prethodno gledane \304\207e se pojaviti ovde.",
+   "Muzika koja je prethodno pu\305\241tana \304\207e se pojaviti ovde.",
+   "Video koji je prethodno pu\305\241tan \304\207e se pojaviti ovde.",
+   "Saznaj vi\305\241e o radu programa.",
+   "Prika\305\276i informacije o sistemu.",
+   "Izmeni pode\305\241avanja kontrolera, tastature i mi\305\241a.",
+   "Izmeni pode\305\241avanja odziva videa, zvuka i ulaza.",
+   "Odaberi sadr\305\276aj za pokretanje.",
+   "U\304\215itaj fizi\304\215ki disk. Prvo odaberi jezgro (U\304\215itaj Jezgro) za upotrebu sa dis"
+   "kom.",
+   "Izmeni pode\305\241avanja za bele\305\276enje.",
+   "Prika\305\276i sva pode\305\241avanja vezana za konfiguraciju.",
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
    "Srednja du\305\276ina bafera (u frejmovima) kada se koristi WASAPI drajver u deljenom re\305\276"
    "imu.",
 #endif
 #endif
-   "Sinhronizacija",
-   "Ulaz",
-   "Izlaz",
-   "Zatvori",
-   "VI servis",
-   "Glavni meni",
-   "Dostignu\304\207a",
-   "Istorija",
-   "Jezgro:",
-   "Preuzeto",
-   "Po\304\215etni direktorijum",
-   "Liste",
-   "Informacije",
-   "Naziv",
-   "Jezgro",
-   "Dostignu\304\207a",
-   "Opis",
-   "Izvadi disk",
-   "Odnos ekrana",
-   "Bilinearno",
-   "Celobrojno skaliranje",
-   "Informacije",
-   "Pode\305\241avanja",
-   "&Pomo\304\207",
-   "U\304\215itaj jezgro",
-   "Naziv",
-   "Liste",
-   "Pregleda\304\215 datoteka",
-   "Jezgro",
-   "Informacije",
-   "Naziv:",
-   "Jezgro:",
-   "Istorija",
-   "Korisnik",
-   "Pomo\304\207",
-   "Restartuj RetroArch",
+   "Pridru\305\276i se ili hostuj sesiju igre preko mre\305\276e.",
+   "Pogledaj mre\305\276ne interfejse i asocirane IP adrese.",
+   "Izmeni pode\305\241avanja servera i mre\305\276e.",
+   "Preuzmi dodatke, komponente i sadr\305\276aj za RetroArch.",
+   "Izmeni pode\305\241avanja za prekriva\304\215 displeja, tastaturu na ekranu i notifikacije.",
+   "Skeniran sadr\305\276aj koji odgovara bazi podataka \304\207e se pojaviti ovde.",
+   "Izmeni pode\305\241avanja vezana za plejliste.",
+   "Preuzmi sli\304\215ice za svaki unos u odabranoj listi.",
+   "Izmeni pode\305\241avanja napajanja.",
+   "Izmeni pode\305\241avanja za snimanje.",
+   "Vrati trenutnu konfiguraciju na podrazumevane vrednosti.",
+   "Izmeni pode\305\241avanja za dostignu\304\207a.",
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
-   "Retroflag Safe Shutdown\"\n#else\n   \"Retroflag Safe Shutdown (Reboot required)",
    "For use with compatible Retroflag case.\"\n#else\n   \"For use with compatible Retroflag case. R"
    "eboot is required when changing.",
 #endif
 #endif
+   "Prebri\305\241i trenutni datoteku konfiguracije.",
+   "Sa\304\215uvaj trenutnu konfiguraciju u odvojenoj datoteci.",
+   "Izmeni pode\305\241avanja za usnimavanje.",
+   "Forsiraj ore\304\221enu orijentaciju ekrana iz operativnog sistema.",
+   "Konfiguri\305\241i program.",
+   "Otvori tradicionalni desktop interfejs.",
+   "Instaliraj ili vrati jezgro iz 'Downloads' direktorijuma.",
+   "Spre\304\215i pokretanje \304\215uvara ekrana sistema.",
+   "Zameni sva zastarela i ru\304\215no instalirana jezgra sa naja\305\276urnijim verzijama iz Plej "
+   "prodavnice, ako je mogu\304\207e.",
+   "Pregledaj informacije specifi\304\215ne za ure\304\221aj.",
+   "A\305\276uriraj sva instalirana jezgra na naja\305\276urniju verziju.",
+   "Izmeni pode\305\241avanja korisni\304\215kog interfejsa.",
+   "Iseci nekoliko piksela oko ivice slike koji se obi\304\215no ostavljaju praznim i ponekad sadr"
+   "\305\276e nesmislene piksele.",
+#if defined(DINGUX)
+   "Specificiraj metodu interpolacije slike pri skaliranju sadr\305\276aja pomo\304\207u internog IP"
+   "U-a. 'Bikubno' ili 'bilinearno' se preporu\304\215uje ako se koriste filteri bazirani na proceso"
+   "ru.",
+   "Odr\305\276avaj 1:1 odnos piksela kada se skalira sadr\305\276aj preko unutra\305\241njeg IPU-a."
+   " Ako je isklju\304\215eno, slika \304\207e biti razvu\304\215ena da bu popunila ceo displej.",
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+   "Postavi vertikalnu brzinu osve\305\276avanja ekrana. '50 Hz' omogu\304\207ava glatku sliku ako j"
+   "e pokrenut PAL sadr\305\276aj.",
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   "Specificiraj metodu interpolacije slike kada je 'celobrojno skaliranje' isklju\304\215eno. 'Najb"
+   "li\305\276i sused' ima najmanji uticaj na performanse.",
+#endif
+#endif
+   "Uklju\304\215i video filter baziran na procesoru. Mo\305\276e jako pogor\305\241ati performanse."
+   " Neki video filteri rade samo za jezgra koje koriste 32-bitne ili 16-bitne boje.",
+   "Isklju\304\215i bilo koji aktivan video filter baziran na procesoru.",
+   "Forsiraj rezoluciju na veli\304\215inu punog ekrana, ako je 0, bi\304\207e kori\305\241\304\207e"
+   "na fiksna vrednost 3840 x 2160.",
+   "Forsirano iskllju\304\215i podr\305\241ku za sRGB FBO. Neki Intel OpenGL drajveri na Windows-u i"
+   "maju video probleme sa sRGB FBO. Ova opcija mo\305\276e biti zaobilazno re\305\241enje.",
+   "Izmeni pode\305\241avanja re\305\276ima celog ekrana.",
+   "Ru\304\215no postavi \305\241irinu ekrana u re\305\276imu punog ekrana (bez punog prozora). Ako "
+   "nije pode\305\241eno koristi\304\207e se desktop rezolucija.",
+   "Ru\304\215no postavi visinu ekrana u re\305\276imu punog ekrana (bez punog prozora). Ako nije po"
+   "de\305\241eno koristi\304\207e se desktop rezolucija.",
+   "Odaberi grafi\304\215ku kartu.",
+   "Koristi \305\241ejderovan materijal grafi\304\215ke karte pri slikanju ekrana, ako je mogu\304"
+   "\207e.",
+   "Izmeni pode\305\241avanja vezana za HDR.",
+   "Odaberi ekran za kori\305\241\304\207enje.",
+   "Izmeni pode\305\241avanja video izlaza.",
+   "Precizno procenjena brzina osve\305\276avanja ekrana u hercima (Hz).",
+   "Brzina osve\305\276avanja izve\305\241tena od strane displej drajvera.",
+   "Forsiraj odre\304\221enu orijentaciju slike. Orijentacija se dodaje na orijentaciju koju defini"
+   "\305\241e jezgro.",
+   "Izmeni pode\305\241avanja vezana za video skaliranje.",
+   "Izmeni pode\305\241avanja video izlaza.",
+   "Odlo\305\276i automatsko u\304\215itavanje \305\241ejdera (u milisekundama). Mo\305\276e pomo"
+   "\304\207i kod grafi\304\215kih gre\305\241aka kada se koristi softver za snimanje ekrana.",
+   "Izmeni pode\305\241avanja video sinhronizacije.",
+   "Pove\304\207ava performanse po cenu odziva i glatko\304\207e videa. Koristi samo ako nije mogu"
+   "\304\207e druga\304\215ije dosti\304\207i punu brzinu.",
+   "Postavi visinu prozora prikaza ako je opcija odnos ekrana postavljena na 'Specifi\304\215an odno"
+   "s ekrana'.",
+   "Postavi \305\241irinu prozora prikaza ako je opcija odnos ekrana postavljena na 'Specifi\304\215"
+   "an odnos ekrana'.",
+   "Ako je ukjlu\304\215en re\305\276im punog ekrana, koristi pun prozor da bi se spre\304\215ilo me"
+   "njanje re\305\276ima displeja.",
+   "Izmeni pode\305\241avanja re\305\276ima prozora.",
+   "Podesi maksimalnu visinu prozora kada se automatski menja veli\304\215ina na osnovu opcije 'Razm"
+   "era prozora'.",
+   "Podesi maksimalnu \305\241irinu prozora kada se automatski menja veli\304\215ina na osnovu opcij"
+   "e 'Razmera prozora'.",
+   "Prikazuj sav sadr\305\276aj u prozoru fiksne veli\304\215ine dimenzija pode\305\241enim opcijama"
+   " '\305\240irina prozora' i 'Visina prozora'. Ako je isklju\304\215eno, veli\304\215ina prozora "
+   "\304\207e biti dinami\304\215ki odre\304\221ena na osnovu opcije 'Razmera prozora'.",
+   "Podesi visinu prozora.",
+   "Forsiraj odre\304\221eni horizontalni ofset na sliku. Ofset se primenjuje globalno.",
+   "Forsiraj odre\304\221eni vertikalni ofset na sliku. Ofset se primenjuje globalno.",
+   "Prikazuj sav sadr\305\276aj u prozoru fiksne veli\304\215ine dimenzija pode\305\241enim opcijama"
+   " '\305\240irina prozora' i 'Visina prozora' i sa\304\215uvaj trenutnu veli\304\215inu prozora i "
+   "poziciju pri zatvaranju RetroArcha. Ako je isklju\304\215eno, veli\304\215ina prozara \304\207e "
+   "biti dinami\304\215ki odre\304\221ena na osnovu opcije 'Razmera prozora'.",
+   "Postavi razmeru prozora na odre\304\221eni umno\305\276ak veli\304\215ine prozora prikaza jezgra"
+   ".",
+   "Podesi \305\241irinu prozora.",
+   "Kompilator",
 };
 
 /* Contiguity check: char members have alignment 1, so any
@@ -930,31 +966,7 @@ typedef char msg_hash_sr_blob_check[
 #ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
        + 12u
-       + 40u
 #endif
-#endif
-#if defined(DINGUX)
-       + 20u
-       + 178u
-       + 8u
-       + 11u
-       + 16u
-#endif
-#if defined(DINGUX)
-#if defined(RS90) || defined(MIYOO)
-       + 20u
-       + 139u
-       + 16u
-       + 13u
-#endif
-#endif
-#if defined(DINGUX) && defined(DINGUX_BETA)
-       + 31u
-       + 109u
-#endif
-#if defined(DINGUX)
-       + 21u
-       + 153u
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -964,396 +976,186 @@ typedef char msg_hash_sr_blob_check[
 #ifdef HAVE_MICROPHONE
 #ifdef HAVE_WASAPI
        + 31u
-       + 89u
 #endif
 #endif
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
        + 77u
+#endif
+#endif
+#if defined(DINGUX)
+       + 8u
+       + 11u
+       + 16u
+       + 20u
+       + 21u
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+       + 31u
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+       + 13u
+       + 16u
+       + 20u
+#endif
+#endif
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+       + 40u
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+       + 89u
+#endif
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
        + 125u
+#endif
+#endif
+#if defined(DINGUX)
+       + 178u
+       + 153u
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+       + 109u
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+       + 139u
 #endif
 #endif
       )) ? 1 : -1];
 
 static const uint32_t msg_hash_sr_ids[] =
 {
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MAIN_MENU,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_HELP_CORE_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_DISC,
-   (uint32_t)MENU_ENUM_SUBLABEL_LOAD_DISC,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CHEAT,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_COMPRESSED_ARCHIVE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_RECORD_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_DELETE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LOCK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DUMP_DISC,
-   (uint32_t)MENU_ENUM_SUBLABEL_DUMP_DISC,
 #ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
    (uint32_t)MENU_ENUM_LABEL_VALUE_EJECT_DISC,
-   (uint32_t)MENU_ENUM_SUBLABEL_EJECT_DISC,
 #endif
 #endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
-   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_NEW_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-   (uint32_t)MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_HELP_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_HELP_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
-   (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
-   (uint32_t)MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
-   (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
-   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
-   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_MUSIC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
-   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_IMAGES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
-   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_VIDEO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
-   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
-   (uint32_t)MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
-   (uint32_t)MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_INFORMATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_DISC_INFORMATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
-   (uint32_t)MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
-   (uint32_t)MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LOCK,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_DELETE,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_DELETE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_CREATE_BACKUP,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_RESTORE_BACKUP_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_DELETE_BACKUP_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
-   (uint32_t)MSG_COMPILER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_CORES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONSOLE_EXCLUSIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PLATFORM_EXCLUSIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MEDIA,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ARTSTYLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GAMEPLAY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NARRATIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PACING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PERSPECTIVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FAMITSU_MAGAZINE_RATING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_REVIEW,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_RATING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ESRB_RATING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ELSPA_RATING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CORE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_COMPRESSED_ARCHIVE,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_RECORD_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_CONFIG,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
-   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CHEAT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HELP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HELP_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_DISC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MAIN_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
-#if defined(DINGUX)
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
-#endif
-#if defined(DINGUX)
-#if defined(RS90) || defined(MIYOO)
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
-#endif
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
-   (uint32_t)MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
-#if defined(DINGUX) && defined(DINGUX_BETA)
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
-#if defined(DINGUX)
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-#endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
-   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DEVICE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
@@ -1362,49 +1164,319 @@ static const uint32_t msg_hash_sr_ids[] =
 #ifdef HAVE_MICROPHONE
 #ifdef HAVE_WASAPI
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
-   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
 #endif
 #endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INFORMATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_BILINEAR,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_INFO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_NAME,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_INFO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_USER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_HELP,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ARTSTYLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONSOLE_EXCLUSIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_REVIEW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ELSPA_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ESRB_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FAMITSU_MAGAZINE_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GAMEPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MEDIA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NARRATIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PACING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PERSPECTIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PLATFORM_EXCLUSIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_BILINEAR,
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
+#endif
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
+#if defined(DINGUX)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+#endif
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_CREATE_BACKUP,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_DELETE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_DELETE_BACKUP_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_RESTORE_BACKUP_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
+   (uint32_t)MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
+   (uint32_t)MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
+   (uint32_t)MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_DUMP_DISC,
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_SUBLABEL_EJECT_DISC,
+#endif
+#endif
+   (uint32_t)MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_MUSIC,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_VIDEO,
+   (uint32_t)MENU_ENUM_SUBLABEL_HELP_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOAD_DISC,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+#endif
+#endif
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
    (uint32_t)MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
 #endif
 #endif
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_NEW_CONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
+   (uint32_t)MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
+   (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
+   (uint32_t)MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
+#if defined(DINGUX)
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+#endif
+#endif
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MSG_COMPILER,
 };

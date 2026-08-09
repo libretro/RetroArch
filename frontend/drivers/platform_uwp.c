@@ -318,24 +318,6 @@ static void frontend_uwp_env_get(int *argc, char *argv[],
 #endif
 }
 
-static uint64_t frontend_uwp_get_total_mem(void)
-{
-   MEMORYSTATUSEX mem_info;
-   mem_info.dwLength = sizeof(MEMORYSTATUSEX);
-   GlobalMemoryStatusEx(&mem_info);
-   return mem_info.ullTotalPhys;
-}
-
-static uint64_t frontend_uwp_get_free_mem(void)
-{
-   MEMORYSTATUSEX mem_info;
-   mem_info.dwLength = sizeof(MEMORYSTATUSEX);
-   GlobalMemoryStatusEx(&mem_info);
-   /* ullAvailPhys is the amount free; the previous expression
-    * (ullTotalPhys - ullAvailPhys) returned memory *in use*. */
-   return mem_info.ullAvailPhys;
-}
-
 static enum rarch_display_type frontend_uwp_get_display_type(void)
 {
    return RARCH_DISPLAY_WIN32;
@@ -356,8 +338,6 @@ frontend_ctx_driver_t frontend_ctx_uwp = {
    frontend_uwp_get_arch,           /* get_architecture       */
    frontend_uwp_get_powerstate,
    frontend_uwp_parse_drive_list,
-   frontend_uwp_get_total_mem,      /* get_total_mem          */
-   frontend_uwp_get_free_mem,       /* get_free_mem           */
    NULL,                            /* install_signal_handler */
    NULL,                            /* get_sighandler_state */
    NULL,                            /* set_sighandler_state */

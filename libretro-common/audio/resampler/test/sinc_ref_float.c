@@ -218,7 +218,7 @@ void *sinc_ref_float_init(double bandwidth_mod, int quality)
       cutoff  *= bandwidth_mod;
       re->taps = (unsigned)ceil((double)re->taps / bandwidth_mod);
    }
-   re->taps = (re->taps + 3u) & ~3u;
+   re->taps = (re->taps + 7u) & ~7u;
 
    stride      = (window == REF_WIN_KAISER) ? 2 : 1;
    phases      = 1 << re->phase_bits;

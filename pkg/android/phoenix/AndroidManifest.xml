@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           xmlns:tools="http://schemas.android.com/tools"
     package="com.retroarch"
-    android:versionCode="1597175267"
+    android:versionCode="1597175272"
     android:versionName="1.22.2"
     android:installLocation="internalOnly">
     <uses-feature android:glEsVersion="0x00020000" />
@@ -15,10 +15,9 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <!-- Android 6-12 -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
-    <!-- Android 11+ -->
-    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
     <application
+	android:allowNativeHeapPointerTagging="false"
         android:name="com.retroarch.playcore.RetroArchApplication"
         android:allowAudioPlaybackCapture="true"
         android:allowBackup="true"
@@ -29,6 +28,7 @@
         android:banner="@drawable/banner"
         android:extractNativeLibs="true"
         android:requestLegacyExternalStorage="true"
+        android:enableOnBackInvokedCallback="false"
         tools:ignore="UnusedAttribute">
         <activity android:name="com.retroarch.browser.mainmenu.MainMenuActivity" android:exported="true" android:launchMode="singleInstance">
             <intent-filter>

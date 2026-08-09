@@ -17,6 +17,7 @@
 /* X/EGL context. Mostly used for testing GLES code paths. */
 
 #include <stdint.h>
+#include <compat/strcasestr.h>
 #include <stdlib.h>
 
 #include <string/stdstring.h>
@@ -326,7 +327,7 @@ static bool gfx_ctx_xegl_set_video_mode(void *data,
          {
             RARCH_LOG("[X/EGL] Window manager is %s.\n", wm_name);
 
-            if (strcasestr(wm_name, "xfwm"))
+            if (compat_strcasestr(wm_name, "xfwm"))
             {
                RARCH_LOG("[X/EGL] Using override-redirect workaround.\n");
                swa.override_redirect = True;

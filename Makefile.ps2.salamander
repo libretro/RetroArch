@@ -56,6 +56,7 @@ EE_OBJS = frontend/frontend_salamander.o \
 		 libretro-common/compat/compat_strldup.o \
 		 libretro-common/compat/compat_strcasestr.o \
 		 libretro-common/file/config_file.o \
+		 libretro-common/file/config_file_io.o \
 		 libretro-common/streams/file_stream.o \
 		 libretro-common/vfs/vfs_implementation.o \
 		 libretro-common/hash/lrc_hash.o \

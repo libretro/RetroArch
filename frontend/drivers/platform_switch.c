@@ -23,7 +23,6 @@
 #include <sys/stat.h>
 #include <dirent.h>
 
-#include <file/nbio.h>
 #include <formats/image.h>
 
 #ifdef HAVE_LIBNX
@@ -654,37 +653,6 @@ static int frontend_switch_parse_drive_list(void *data, bool load_content)
    return 0;
 }
 
-static uint64_t frontend_switch_get_free_mem(void)
-{
-#ifdef HAVE_LIBNX
-   /* mallinfo() only sees newlib's own arena, not the memory the
-    * kernel has actually handed this process. Ask the kernel: free
-    * == the process's total memory region minus what it is using. */
-   uint64_t total = 0;
-   uint64_t used  = 0;
-   if (R_SUCCEEDED(svcGetInfo(&total, InfoType_TotalMemorySize, CUR_PROCESS_HANDLE, 0)) &&
-       R_SUCCEEDED(svcGetInfo(&used,  InfoType_UsedMemorySize,  CUR_PROCESS_HANDLE, 0)))
-      return (total > used) ? (total - used) : 0;
-   return 0;
-#else
-   struct mallinfo mem_info = mallinfo();
-   return mem_info.fordblks;
-#endif
-}
-
-static uint64_t frontend_switch_get_total_mem(void)
-{
-#ifdef HAVE_LIBNX
-   uint64_t total = 0;
-   if (R_SUCCEEDED(svcGetInfo(&total, InfoType_TotalMemorySize, CUR_PROCESS_HANDLE, 0)))
-      return total;
-   return 0;
-#else
-   struct mallinfo mem_info = mallinfo();
-   return mem_info.usmblks;
-#endif
-}
-
 static enum frontend_powerstate
 frontend_switch_get_powerstate(int *seconds, int *percent)
 {
@@ -807,13 +775,18 @@ static void frontend_switch_get_name(char *s, size_t len)
 
 void frontend_switch_process_args(int *argc, char *argv[])
 {
-#ifdef HAVE_STATIC_DUMMY
-   if (*argc >= 1)
-   {
-      /* Ensure current Path is set, only works for the static dummy, likely a hbloader args Issue (?) */
+   /* When launched through hbloader (hbmenu, a forwarder, or a
+    * fork via envSetNextLoad), argv[0] is the path of the NRO
+    * this process is running and is the authoritative core
+    * identity: RARCH_PATH_CORE may otherwise carry a stale value
+    * read from the salamander config at startup, naming a core
+    * other than the one statically linked into this binary.
+    * Menu-triggered content loads pass a synthesised argv whose
+    * argv[0] is the literal "retroarch", so only accept values
+    * that actually name an NRO. */
+   if (     (*argc >= 1)
+         && string_is_equal_noncase(path_get_extension(argv[0]), "nro"))
       path_set(RARCH_PATH_CORE, argv[0]);
-   }
-#endif
 }
 
 frontend_ctx_driver_t frontend_ctx_switch =
@@ -843,8 +816,6 @@ frontend_ctx_driver_t frontend_ctx_switch =
    frontend_switch_get_arch,           /* get_architecture       */
    frontend_switch_get_powerstate,     /* get_powerstate         */
    frontend_switch_parse_drive_list,   /* parse_drive_list       */
-   frontend_switch_get_total_mem,      /* get_total_mem          */
-   frontend_switch_get_free_mem,       /* get_free_mem           */
    NULL,                               /* install_signal_handler */
    NULL,                               /* get_signal_handler_state */
    NULL,                               /* set_signal_handler_state */

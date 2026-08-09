@@ -106,7 +106,7 @@ static void normal2x_height_work_cb_xrgb8888(void *data, void *thread_data)
    uint32_t *output                   = (uint32_t*)thr->out_data;
    uint32_t in_stride                 = (uint32_t)(thr->in_pitch >> 2);
    uint32_t out_stride                = (uint32_t)(thr->out_pitch >> 2);
-   uint32_t x, y;
+   uint32_t y;
 
    for (y = 0; y < thr->height; ++y)
    {
@@ -127,7 +127,7 @@ static void normal2x_height_work_cb_rgb565(void *data, void *thread_data)
    uint16_t *output                   = (uint16_t*)thr->out_data;
    uint16_t in_stride                 = (uint16_t)(thr->in_pitch >> 1);
    uint16_t out_stride                = (uint16_t)(thr->out_pitch >> 1);
-   uint16_t x, y;
+   uint16_t y;
 
    for (y = 0; y < thr->height; ++y)
    {

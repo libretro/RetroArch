@@ -24,7 +24,6 @@
 #include <string/stdstring.h>
 #include <file/file_path.h>
 #include <net/net_http.h>
-#include <streams/file_stream.h>
 
 #include "tasks_internal.h"
 #include "task_file_transfer.h"
@@ -260,7 +259,6 @@ void cb_http_task_download_pl_thumbnail(
       retro_task_t *task, void *task_data,
       void *user_data, const char *err)
 {
-   char output_dir[DIR_MAX_LENGTH];
    http_transfer_data_t *data  = (http_transfer_data_t*)task_data;
    file_transfer_t *transf     = (file_transfer_t*)user_data;
    pl_thumb_handle_t *pl_thumb = NULL;
@@ -276,31 +274,18 @@ void cb_http_task_download_pl_thumbnail(
 
    pl_thumb->flags |= PL_THUMB_FLAG_HTTP_TASK_COMPLETE;
 
-   /* Remaining sanity checks... */
-   if (!data || !data->data || !*transf->path)
+   /* Remaining sanity checks...
+    * > data->data is NULL by design: the body was streamed to
+    *   transf->path as it arrived, and task_push_http_download_file()
+    *   removes the partial file unless the transfer finished cleanly,
+    *   so there is nothing to write here. */
+   if (!data || !*transf->path)
       goto finish;
 
    /* Skip if data can't be good */
    if (data->status != 200)
    {
       err = "File not found.";
-      goto finish;
-   }
-
-   /* Create output directory, if required */
-   strlcpy(output_dir, transf->path, sizeof(output_dir));
-   path_basedir_wrapper(output_dir);
-
-   if (!path_mkdir(output_dir))
-   {
-      err = msg_hash_to_str(MSG_FAILED_TO_CREATE_THE_DIRECTORY);
-      goto finish;
-   }
-
-   /* Write thumbnail file to disk */
-   if (!filestream_write_file(transf->path, data->data, data->len))
-   {
-      err = "Write failed.";
       goto finish;
    }
 
@@ -349,14 +334,35 @@ static void download_pl_thumbnail(pl_thumb_handle_t *pl_thumb)
          transf->user_data            = (void*)pl_thumb;
          strlcpy(transf->path, path, sizeof(transf->path));
 
+         /* The body is streamed straight to transf->path as it
+          * arrives, so the output directory has to exist before the
+          * transfer starts rather than being created in the
+          * completion callback. */
+         {
+            char output_dir[DIR_MAX_LENGTH];
+            strlcpy(output_dir, transf->path, sizeof(output_dir));
+            path_basedir_wrapper(output_dir);
+
+            if (!path_mkdir(output_dir))
+            {
+               RARCH_ERR("[Thumbnail] Download \"%s\" failed: %s\n",
+                     transf->path,
+                     msg_hash_to_str(MSG_FAILED_TO_CREATE_THE_DIRECTORY));
+               free(transf);
+               pl_thumb->flags |= PL_THUMB_FLAG_HTTP_TASK_COMPLETE;
+               return;
+            }
+         }
+
          /* Note: We don't actually care if this fails since that
           * just means the file is missing from the server, so it's
           * not something we can handle here... */
 
          /* ...if it does fail, however, we can immediately
           * signal that the task is 'complete' */
-         if (!(pl_thumb->http_task = (retro_task_t*)task_push_http_transfer_file(
-               url, true, NULL, cb_http_task_download_pl_thumbnail, transf)))
+         if (!(pl_thumb->http_task = (retro_task_t*)task_push_http_download_file(
+               url, transf->path, true, NULL,
+               cb_http_task_download_pl_thumbnail, transf)))
             pl_thumb->flags             |= PL_THUMB_FLAG_HTTP_TASK_COMPLETE;
       }
    }
@@ -483,7 +489,7 @@ static void task_pl_thumbnail_download_handler(retro_task_t *task)
           *   current task is 'complete' */
          if (!pl_thumb->http_task)
             pl_thumb->flags             |= PL_THUMB_FLAG_HTTP_TASK_COMPLETE;
-         /* > Wait for task_push_http_transfer_file()
+         /* > Wait for task_push_http_download_file()
           *   callback to trigger */
          else if (!(pl_thumb->flags & PL_THUMB_FLAG_HTTP_TASK_COMPLETE))
             break;
@@ -799,7 +805,7 @@ static void task_pl_entry_thumbnail_download_handler(retro_task_t *task)
              *   current task is 'complete' */
             if (!pl_thumb->http_task)
                pl_thumb->flags |= PL_THUMB_FLAG_HTTP_TASK_COMPLETE;
-            /* > Wait for task_push_http_transfer_file()
+            /* > Wait for task_push_http_download_file()
              *   callback to trigger */
             else if (!(pl_thumb->flags & PL_THUMB_FLAG_HTTP_TASK_COMPLETE))
                break;

@@ -168,7 +168,7 @@ static void iir_process_i16(void *data,
       int32_t v;
 
       fwd = (int64_t)nb0 * in_l + (int64_t)nb1 * xn1_l + (int64_t)nb2 * xn2_l;
-      acc = (fwd << 16) - (int64_t)na1 * yn1_l - (int64_t)na2 * yn2_l;
+      acc = fwd * 65536 - (int64_t)na1 * yn1_l - (int64_t)na2 * yn2_l;
       v   = (acc >= 0) ?  (int32_t)(( acc + (1LL << 39)) >> 40)
                        : -(int32_t)((-acc + (1LL << 39)) >> 40);
       if      (v >  32767) v =  32767;
@@ -180,7 +180,7 @@ static void iir_process_i16(void *data,
       out[0] = (int16_t)v;
 
       fwd = (int64_t)nb0 * in_r + (int64_t)nb1 * xn1_r + (int64_t)nb2 * xn2_r;
-      acc = (fwd << 16) - (int64_t)na1 * yn1_r - (int64_t)na2 * yn2_r;
+      acc = fwd * 65536 - (int64_t)na1 * yn1_r - (int64_t)na2 * yn2_r;
       v   = (acc >= 0) ?  (int32_t)(( acc + (1LL << 39)) >> 40)
                        : -(int32_t)((-acc + (1LL << 39)) >> 40);
       if      (v >  32767) v =  32767;

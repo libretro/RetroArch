@@ -37,7 +37,10 @@ enum intfstream_type
    INTFSTREAM_FILE = 0,
    INTFSTREAM_MEMORY,
    INTFSTREAM_CHD,
-   INTFSTREAM_RZIP
+   INTFSTREAM_RZIP,
+   /* Read-only file access through a sliding buffer - see
+    * intfstream_open_buffered(). */
+   INTFSTREAM_BUFFERED
 };
 
 typedef struct intfstream_internal intfstream_internal_t, intfstream_t;
@@ -113,10 +116,44 @@ uint32_t intfstream_get_first_sector(intfstream_internal_t* intf);
 
 bool intfstream_is_compressed(intfstream_internal_t *intf);
 
+/**
+ * intfstream_crc_step:
+ *
+ * Hash at most @max_bytes more of @intf into @accumulator, resuming
+ * from where the previous call stopped.  Returns bytes hashed, 0 at
+ * end of stream, -1 on error.
+ *
+ * For callers inside a task handler that must bound how long one tick
+ * spends hashing; intfstream_get_crc() consumes the whole stream in
+ * one call, making the tick cost a function of file size.  Timing
+ * policy stays with the caller, which owns the deadline and the
+ * quantum.  Position the stream and zero @accumulator before the
+ * first step.
+ **/
+int64_t intfstream_crc_step(intfstream_internal_t *intf,
+      uint32_t *accumulator, size_t max_bytes);
+
 bool intfstream_get_crc(intfstream_internal_t *intf, uint32_t *crc);
 
 intfstream_t *intfstream_open_file(const char *path,
       unsigned mode, unsigned hints);
+
+/* Open @path read-only behind a sliding window of @window bytes.
+ *
+ * Reads that fall inside the window are a memcpy; the window is
+ * refilled by seek+read when one does not.  For a consumer issuing
+ * very many small reads - a MsgPack walk over an .rdb spends its time
+ * there - this removes the per-read trip through
+ * filestream/VFS/fread while keeping the resident cost fixed at
+ * @window rather than the size of the file.
+ *
+ * A backwards seek inside the window is free; one outside it costs a
+ * refill, so @window should comfortably exceed the caller's largest
+ * backwards jump.
+ *
+ * Returns NULL if the file cannot be opened or the window cannot be
+ * allocated; callers should fall back to intfstream_open_file(). */
+intfstream_t *intfstream_open_buffered(const char *path, uint64_t window);
 
 intfstream_t *intfstream_open_memory(void *data,
       unsigned mode, unsigned hints, uint64_t size);

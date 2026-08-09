@@ -47,15 +47,6 @@
 
 #include <windows.h>
 
-/* Assume W-functions do not work below Win2K and Xbox platforms */
-#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX)
-
-#ifndef LEGACY_WIN32
-#define LEGACY_WIN32
-#endif
-
-#endif
-
 #ifndef FILE_SHARE_ALL
 #define FILE_SHARE_ALL (FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE)
 #endif
@@ -81,7 +72,20 @@ static void *nbio_mmap_win32_open(const char * filename, unsigned mode)
    void* ptr                         = NULL;
    bool is_write                     = (mode == NBIO_WRITE || mode == NBIO_UPDATE || mode == BIO_WRITE);
    DWORD access                      = (is_write ? GENERIC_READ|GENERIC_WRITE : GENERIC_READ);
-#if !defined(_WIN32) || defined(LEGACY_WIN32)
+#if defined(LEGACY_WIN32_RUNTIME)
+   HANDLE file;
+
+   if (win32_needs_local_encoding())
+      file                           = CreateFileA(filename, access, FILE_SHARE_ALL, NULL, dispositions[mode], FILE_ATTRIBUTE_NORMAL, NULL);
+   else
+   {
+      wchar_t *filename_wide         = utf8_to_utf16_string_alloc(filename);
+      file                           = CreateFileW(filename_wide, access, FILE_SHARE_ALL, NULL, dispositions[mode], FILE_ATTRIBUTE_NORMAL, NULL);
+
+      if (filename_wide)
+         free(filename_wide);
+   }
+#elif !defined(_WIN32) || defined(LEGACY_WIN32)
    HANDLE file                       = CreateFile(filename, access, FILE_SHARE_ALL, NULL, dispositions[mode], FILE_ATTRIBUTE_NORMAL, NULL);
 #else
    wchar_t *filename_wide            = utf8_to_utf16_string_alloc(filename);

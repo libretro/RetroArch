@@ -37,11 +37,22 @@
 #define MAX_MFI_AXES 6
 #endif
 
+/* Minimum delay between CoreHaptics engine (re)creation attempts after a
+ * failure. Engine instantiation opens an XPC connection to the haptics
+ * server; set_rumble() is driven by the core and can be called at frame
+ * rate, and the lazy player getters re-enter engine creation on every call
+ * for as long as creation keeps failing. Without a backoff, a persistent
+ * failure state (engine auto-stopped on backgrounding, audio session
+ * interruption, controller haptics withdrawn) turns into thousands of
+ * engine instantiations and teardowns per minute. */
+#define MFI_HAPTIC_RETRY_SECONDS 5.0
+
 #if TARGET_OS_IOS
 #define IPHONE_RUMBLE_AVAIL API_AVAILABLE(ios(14.0))
 static CHHapticEngine *deviceHapticEngine IPHONE_RUMBLE_AVAIL;
 static id<CHHapticPatternPlayer> deviceWeakPlayer IPHONE_RUMBLE_AVAIL;
 static id<CHHapticPatternPlayer> deviceStrongPlayer IPHONE_RUMBLE_AVAIL;
+static CFAbsoluteTime deviceHapticRetryTime;
 #endif
 
 @class MFIRumbleController;
@@ -381,6 +392,7 @@ static id<CHHapticPatternPlayer> apple_gamecontroller_create_haptic_player(
 @property (nonatomic, strong) NSMutableSet<CHHapticEngine *> *engines MFI_RUMBLE_AVAIL;
 @property (nonatomic, strong, readonly) id<CHHapticPatternPlayer> strongPlayer MFI_RUMBLE_AVAIL;
 @property (nonatomic, strong, readonly) id<CHHapticPatternPlayer> weakPlayer MFI_RUMBLE_AVAIL;
+@property (nonatomic, assign) CFAbsoluteTime hapticRetryTime;
 @end
 
 @implementation MFIRumbleController
@@ -402,18 +414,43 @@ static id<CHHapticPatternPlayer> apple_gamecontroller_create_haptic_player(
 
 - (id<CHHapticPatternPlayer>)createPlayerWithLocality:(GCHapticsLocality)locality andIntensity:(float)intensity MFI_RUMBLE_AVAIL
 {
-    NSError *error;
+    NSError *error = nil;
+    CHHapticEngine *engine;
+    id<CHHapticPatternPlayer> player;
+
     if (!self.controller)
+        return nil;
+
+    /* See MFI_HAPTIC_RETRY_SECONDS. The strongPlayer/weakPlayer getters
+     * leave their ivar nil when this returns nil, so every subsequent
+     * rumble request lands back here; the backoff is what stops that from
+     * becoming a per-frame engine churn loop. */
+    if (CFAbsoluteTimeGetCurrent() < self.hapticRetryTime)
         return nil;
 
     if (![self.controller.haptics.supportedLocalities containsObject:locality])
         locality = GCHapticsLocalityDefault;
-    CHHapticEngine *engine = [self.controller.haptics createEngineWithLocality:locality];
-    [engine startAndReturnError:&error];
-    if (error)
-        return nil;
 
+    if (!(engine = [self.controller.haptics createEngineWithLocality:locality]))
+    {
+        self.hapticRetryTime = CFAbsoluteTimeGetCurrent() + MFI_HAPTIC_RETRY_SECONDS;
+        return nil;
+    }
+
+    /* Track the engine before anything else can fail. A started engine that
+     * is not in self.engines is never reachable by -shutdown, so it keeps
+     * its XPC connection to the haptics server alive until the object is
+     * finally released - and on the failure path below it was previously
+     * dropped on the floor without ever being stopped. */
     [self.engines addObject:engine];
+
+    if (![engine startAndReturnError:&error] || error)
+    {
+        [engine stopWithCompletionHandler:nil];
+        [self.engines removeObject:engine];
+        self.hapticRetryTime = CFAbsoluteTimeGetCurrent() + MFI_HAPTIC_RETRY_SECONDS;
+        return nil;
+    }
 
     __weak MFIRumbleController *weakSelf = self;
     engine.stoppedHandler = ^(CHHapticEngineStoppedReason reason) {
@@ -448,7 +485,19 @@ static id<CHHapticPatternPlayer> apple_gamecontroller_create_haptic_player(
         });
     };
 
-    return apple_gamecontroller_create_haptic_player(engine, intensity);
+    /* Pattern/player creation failing leaves the getter's ivar nil, so
+     * without this the next rumble request adds yet another started engine
+     * to self.engines and the set grows without bound, each entry holding a
+     * live XPC connection. */
+    if (!(player = apple_gamecontroller_create_haptic_player(engine, intensity)))
+    {
+        [engine stopWithCompletionHandler:nil];
+        [self.engines removeObject:engine];
+        self.hapticRetryTime = CFAbsoluteTimeGetCurrent() + MFI_HAPTIC_RETRY_SECONDS;
+        return nil;
+    }
+
+    return player;
 }
 
 - (id<CHHapticPatternPlayer>)strongPlayer
@@ -606,13 +655,27 @@ static void apple_gamecontroller_device_haptics_setup(void) IPHONE_RUMBLE_AVAIL
     if (deviceHapticEngine)
         return;
 
-    NSError *error;
+    /* See MFI_HAPTIC_RETRY_SECONDS: this is reached from set_rumble() via
+     * the lazy device player getters, so a persistent failure would
+     * otherwise allocate a fresh engine on every rumble request. */
+    if (CFAbsoluteTimeGetCurrent() < deviceHapticRetryTime)
+        return;
+
+    NSError *error = nil;
     CHHapticEngine *engine = [[CHHapticEngine alloc] initAndReturnError:&error];
-    if (error)
+    if (!engine || error)
+    {
+        deviceHapticRetryTime = CFAbsoluteTimeGetCurrent() + MFI_HAPTIC_RETRY_SECONDS;
         return;
-    [engine startAndReturnError:&error];
-    if (error)
+    }
+    if (![engine startAndReturnError:&error] || error)
+    {
+        /* Stop explicitly: releasing a started engine leaves its XPC
+         * connection to the haptics server to be torn down asynchronously. */
+        [engine stopWithCompletionHandler:nil];
+        deviceHapticRetryTime = CFAbsoluteTimeGetCurrent() + MFI_HAPTIC_RETRY_SECONDS;
         return;
+    }
     deviceHapticEngine = engine;
 
     deviceHapticEngine.stoppedHandler = ^(CHHapticEngineStoppedReason reason)
@@ -653,17 +716,18 @@ static id<CHHapticPatternPlayer> apple_gamecontroller_device_haptics_create_play
         return nil;
 
     /* Ensure engine is started (may have been stopped by backgrounding) */
-    NSError *error;
-    [deviceHapticEngine startAndReturnError:&error];
-    if (error)
+    NSError *error = nil;
+    if (![deviceHapticEngine startAndReturnError:&error] || error)
     {
-        /* Engine couldn't start - recreate it */
-        deviceHapticEngine = nil;
-        deviceWeakPlayer = nil;
-        deviceStrongPlayer = nil;
-        apple_gamecontroller_device_haptics_setup();
-        if (!deviceHapticEngine)
-            return nil;
+        /* Engine couldn't start - drop it and let setup() recreate, subject
+         * to the backoff. Stop it first so its XPC connection is torn down
+         * deterministically rather than at release time. */
+        [deviceHapticEngine stopWithCompletionHandler:nil];
+        deviceHapticEngine     = nil;
+        deviceWeakPlayer       = nil;
+        deviceStrongPlayer     = nil;
+        deviceHapticRetryTime  = CFAbsoluteTimeGetCurrent() + MFI_HAPTIC_RETRY_SECONDS;
+        return nil;
     }
 
     return apple_gamecontroller_create_haptic_player(deviceHapticEngine, intensity);
@@ -723,13 +787,25 @@ static void apple_gamecontroller_joypad_destroy(void)
    {
       if (deviceHapticEngine)
       {
-         deviceHapticEngine.stoppedHandler = ^(CHHapticEngineStoppedReason reason) {};
-         deviceHapticEngine.resetHandler = ^{};
-         [deviceHapticEngine stopWithCompletionHandler:^(NSError *error) {
-            deviceWeakPlayer = nil;
-            deviceStrongPlayer = nil;
-            deviceHapticEngine = nil;
-         }];
+         CHHapticEngine *engine = deviceHapticEngine;
+
+         /* Clear the globals here, on the caller's thread, rather
+          * than from the stop completion handler. The handler runs
+          * on a CoreHaptics queue an arbitrary time later, by which
+          * point a rumble request may already have built a fresh
+          * engine via apple_gamecontroller_device_haptics_setup() -
+          * the stale handler would then nil out the new engine and
+          * its players. Dropping them up front also guarantees any
+          * such request builds a new engine instead of reusing the
+          * one being torn down. The block keeps `engine` alive
+          * until the stop completes. */
+         deviceWeakPlayer   = nil;
+         deviceStrongPlayer = nil;
+         deviceHapticEngine = nil;
+
+         engine.stoppedHandler = ^(CHHapticEngineStoppedReason reason) {};
+         engine.resetHandler   = ^{};
+         [engine stopWithCompletionHandler:^(NSError *error) {}];
       }
    }
 #endif

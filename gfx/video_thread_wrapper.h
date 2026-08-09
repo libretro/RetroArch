@@ -71,7 +71,7 @@ typedef uintptr_t (*custom_command_method_t)(void*);
 
 typedef bool (*custom_font_command_method_t)(const void **font_driver,
       void **font_handle, void *video_data, const char *font_path,
-      float font_size, enum font_driver_render_api api,
+      float font_size, const font_renderer_t *backend,
       bool is_threaded);
 
 typedef struct thread_packet
@@ -153,7 +153,7 @@ typedef struct thread_packet
          float font_size;
          bool return_value;
          bool is_threaded;
-         enum font_driver_render_api api;
+         const font_renderer_t *backend;
       } font_init;
 
       struct
@@ -173,6 +173,23 @@ typedef struct thread_video
    retro_time_t last_time;
 
    slock_t *lock;
+   /* cond_cmd carries two distinct predicates - the command reply
+    * (pkt->type == reply_cmd) and frame consumption (!frame.updated) -
+    * and every signaller uses scond_signal(), which wakes exactly one
+    * waiter. There is no broadcast anywhere in the wrapper.
+    *
+    * That is only correct because at most one thread ever waits on
+    * cond_cmd: all four wait sites run on the user thread, and
+    * video_thread_wait_frame() bars the worker with a thread id check.
+    * Add a second waiter and a wake-one signal can wake the waiter
+    * whose predicate did not change; it re-tests, sleeps again, and the
+    * intended waiter is never woken. Only the frame pacing wait in
+    * video_thread_frame() is timed and would recover - the other three
+    * are unbounded scond_wait() and would hang.
+    *
+    * So: do not add a cond_cmd waiter without converting the signallers
+    * to scond_broadcast(), or splitting the predicates onto separate
+    * condition variables. cond_cmd_waiters checks this in debug builds. */
    scond_t *cond_cmd;
    scond_t *cond_thread;
    sthread_t *thread;
@@ -212,6 +229,13 @@ typedef struct thread_video
    struct video_viewport vp;
    struct video_viewport read_vp; /* Last viewport reported to caller. */
 
+   /* Content scale, published under 'lock' at the end of each frame.
+    * The viewport maths that produces these runs on the video thread,
+    * so video_driver_build_info() must read them from here rather than
+    * from video_driver_st directly. Statistics only. */
+   unsigned scale_width;
+   unsigned scale_height;
+
    thread_packet_t cmd_data;
    video_driver_t video_thread;
 
@@ -229,11 +253,27 @@ typedef struct thread_video
       unsigned height;
       unsigned pitch;
       char msg[NAME_MAX_LENGTH];
+      /* Built by the caller (main thread) in video_thread_frame() and
+       * consumed by video_thread_loop().  video_driver_build_info()
+       * reads video_driver_st and runloop_state, both of which the main
+       * thread mutates, so it must not be called from the worker. */
+      video_frame_info_t video_info;
       bool updated;
       bool within_thread;
    } frame;
 
    bool apply_state_changes;
+
+   /* Which thread is currently blocked on cond_cmd, and how deep, both
+    * guarded by lock. Used to check the single-waiter requirement noted
+    * on cond_cmd above. Maintained unconditionally so the struct layout
+    * does not depend on the build type; only asserted on in debug
+    * builds. Same-thread nesting is permitted and counted rather than
+    * rejected, because the cocoa trampoline drained by
+    * video_thread_pump_wait() can re-enter the wrapper on the waiting
+    * thread. A second distinct thread is the case that breaks. */
+   uintptr_t cond_cmd_waiter;
+   unsigned cond_cmd_waiters;
 
    bool alive;
    bool focus;
@@ -268,7 +308,7 @@ bool video_thread_font_init(
       void *data,
       const char *font_path,
       float font_size,
-      enum font_driver_render_api api,
+      const font_renderer_t *backend,
       custom_font_command_method_t func,
       bool is_threaded);
 

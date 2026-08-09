@@ -161,6 +161,28 @@ bool path_mkdir(const char *dir)
    if (!(dir && *dir))
       return false;
 
+   /* Nothing to do if it is already there.
+    *
+    * Without this the common case - which for archive extraction is
+    * every member after the first in a given directory - still costs
+    * a strdup, a path_parent_dir, a strcmp, a stat of the parent, a
+    * mkdir that is guaranteed to fail with EEXIST, and then a stat of
+    * the leaf to interpret that failure.  Two directory probes and a
+    * doomed syscall to answer a question one probe answers.  On Win32
+    * each of those probes is a UTF-16 conversion allocation plus both
+    * GetFileAttributesW and _wstat64, so the saving there is larger
+    * than the syscall count suggests.
+    *
+    * This is not a shortcut around the slow path's result: the slow
+    * path already returns true for an existing directory, by way of
+    * the mkdir -> -2 -> path_is_directory sequence at the bottom.  The
+    * one behavioural difference is at a filesystem root ("/", "C:\"),
+    * where path_parent_dir empties the string and the !*basedir guard
+    * below returns false today; such a directory does exist, so
+    * reporting true for it is the correction, not a regression. */
+   if (path_is_directory(dir))
+      return true;
+
    /* Use heap. Real chance of stack 
     * overflow if we recurse too hard. */
    if (!(basedir = strdup(dir)))

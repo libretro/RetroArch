@@ -90,14 +90,14 @@ static rcheevos_locals_t rcheevos_locals =
    NULL, /* client */
    {{0}},/* memory */
 #ifdef HAVE_THREADS
-   /* queued_command (atomic). CMD_EVENT_NONE == 0. Brace-init so that
-    * under CXX_BUILD (std::atomic<int>) this list-initializes via the
-    * converting constructor rather than the deleted copy constructor;
-    * for the C backends {0} is an equivalent scalar initializer. */
-   {0},
+   /* queued_command (atomic). CMD_EVENT_NONE == 0. The initializer macro
+    * expands to a braced form only under CXX_BUILD, where
+    * retro_atomic_int_t is std::atomic<int> and list-initialization is
+    * required; the C backends are plain scalars. */
+   RETRO_ATOMIC_INT_INITIALIZER(0),
    /* load_generation (atomic). Starts at 0; bumped by
     * rcheevos_unload and rcheevos_load. */
-   {0},
+   RETRO_ATOMIC_INT_INITIALIZER(0),
 #endif
    "",   /* user_agent_prefix */
    "",   /* user_agent_core */
@@ -1943,6 +1943,23 @@ bool rcheevos_load(const void *data)
 
       {
 #ifdef HAVE_THREADS
+         intptr_t gen;
+#endif
+         const uint8_t* data = (const uint8_t*)info->data;
+         size_t data_size = info->size;
+
+         if (data) {
+            const char* ext = path_get_extension(info->path);
+            if (string_is_equal_noncase(ext, "m3u") || string_is_equal_noncase(ext, "cue")) {
+               /* If the core doesn't specify needs_fullpath, the file will be loaded into
+                * memory. For m3u and cue files, we want to call the version of the hasher
+                * that reads files from disk, so pretend the data isn't loaded in memory. */
+               data = NULL;
+               data_size = 0;
+            }
+         }
+
+#ifdef HAVE_THREADS
          /* Capture the current load generation; the callback
           * compares this against the live value to detect a
           * stale completion (i.e. the user closed/changed
@@ -1950,15 +1967,13 @@ bool rcheevos_load(const void *data)
           * loses information only if HAVE_THREADS is enabled
           * and a generation counter overflows intptr_t, which
           * would require ~2^31 (or ~2^63) load events. */
-         intptr_t gen = (intptr_t)retro_atomic_load_acquire_int(
+         gen = (intptr_t)retro_atomic_load_acquire_int(
                &rcheevos_locals.load_generation);
          rc_client_begin_identify_and_load_game(rcheevos_locals.client, console_id,
-            info->path, (const uint8_t*)info->data, info->size,
-            rcheevos_client_load_game_callback, (void*)gen);
+            info->path, data, data_size, rcheevos_client_load_game_callback, (void*)gen);
 #else
          rc_client_begin_identify_and_load_game(rcheevos_locals.client, console_id,
-            info->path, (const uint8_t*)info->data, info->size,
-            rcheevos_client_load_game_callback, NULL);
+            info->path, data, data_size, rcheevos_client_load_game_callback, NULL);
 #endif
       }
    }

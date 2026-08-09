@@ -132,6 +132,31 @@ struct gl2
 
    char device_str[128];
    bool pbo_readback_valid[4];
+   /* scRGB (FP16) default framebuffer support (Windows/WGL HDR):
+    * everything renders into this SDR offscreen and one GLSL 1.20
+    * pass encodes it into the FP16 backbuffer at end of frame.
+    * All zero / inactive on SDR contexts. */
+   struct
+   {
+      GLuint fbo;
+      GLuint tex;
+      GLuint program;
+      GLint  loc_tex;
+      GLint  loc_nits;
+      GLint  loc_expand;
+      unsigned width;
+      unsigned height;
+      /* Separate layer for the SDR UI when the content is PQ: one
+       * encode cannot treat some pixels as Rec.2020 PQ and others as
+       * gamma. Mirrors the glcore driver's ui_fbo/ui_tex. */
+      GLuint   ui_fbo;
+      GLuint   ui_tex;
+      GLint    loc_ui_tex;
+      GLint    loc_mode;
+      GLint    loc_ui_nits;
+      bool   active;
+   } scrgb;
+
 };
 
 bool gl2_load_luts(

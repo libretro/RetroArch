@@ -9,7 +9,9 @@
  *
  * Deliberately unsupported (rvp9_decode_frame returns an error):
  * segmentation, scaled (different-size) reference frames, and
- * profiles 1-3.  Tiled streams (tile columns and tile rows) decode
+ * profiles 1-3 (profile 2/3 are the 10/12-bit streams used for HDR;
+ * these return -15 specifically so callers can report them as such).
+ * Tiled streams (tile columns and tile rows) decode
  * fully, so encoder defaults at any resolution are covered.
  *
  * Usage: zero-initialise an rvp9_dec (it is large; heap allocation is
@@ -48,6 +50,7 @@ typedef struct
    int intra_only;
    int reset_frame_context;
    int color_space, color_range;
+   int bit_depth;           /* 8; 10/12 for profile 2 (parsed, not yet decodable) */
    int subsampling_x, subsampling_y;
    int refresh_frame_flags;
    int ref_idx[RVP9_REFS_PER_FRAME];
@@ -231,13 +234,38 @@ typedef struct
 
    /* planes */
    uint8_t *buf_y, *buf_u, *buf_v;
+   /* geometry the buffers above were sized for; every frame header can
+    * change mi_cols/mi_rows, so this is what decides whether they still
+    * fit */
+   int      alloc_mi_cols, alloc_mi_rows;
    int      ys, uvs;
    int      yw, yh, uvw, uvh;        /* padded plane dims           */
 
    /* dequant per segment: [seg][0]=dc [1]=ac, per plane group      */
    int16_t  y_dq[8][2], uv_dq[8][2];
 
+   /* cat6 escape token: probability pointer + extra-bit count for the
+    * current frame's bit depth (14/16/18 bits for 8/10/12-bit). */
+   const uint8_t *cat6_prob;
+   int      cat6_bits;
+
+   /* pixel width the frame buffers were allocated for (8 or 10);
+    * set on first frame, streams may not switch mid-way */
+   int      fb_bit_depth;
+
    rvp9_tran dqcoeff[32 * 32];
+
+   /* Reconstruction scratch, kept in the (heap-recommended) decoder
+    * state rather than on the stack: several targets run decode on
+    * 8 KiB thread stacks.  mc_scratch is the motion-compensation
+    * edge-emulation buffer (worst case is the 10-bit path: a
+    * 160x160 block of uint16 pixels, 50 KiB); iht_scratch holds the
+    * inverse-transform row-pass output for the largest transform. */
+   uint16_t  mc_scratch[80 * 2 * 80 * 2];
+   rvp9_tran iht_scratch[32 * 32];
+   /* rvp9_convolve8's horizontal-pass intermediate; separate from
+    * mc_scratch because both are live during edge-emulated MC. */
+   uint16_t  convolve_scratch[64 * 135];
    int      max_blocks_wide, max_blocks_high;  /* token ctx trunc  */
    int      mb_to_right_edge, mb_to_bottom_edge; /* in 1/8 pel *8  */
    int      mb_to_left_edge, mb_to_top_edge;

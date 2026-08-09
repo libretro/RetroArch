@@ -228,7 +228,7 @@ static void *vg_init(const video_info_t *video,
          && font_renderer_create_default(
             &vg->font_driver, &vg->mFontRenderer,
             *path_font ? path_font : NULL,
-            video_font_size))
+            video_font_size, FONT_ATLAS_FORMAT_A8))
    {
       vg->mFont            = vgCreateFont(0);
 

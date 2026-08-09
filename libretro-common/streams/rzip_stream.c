@@ -28,6 +28,11 @@
 
 #include <streams/rzip_stream.h>
 
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#include <features/features_cpu.h>
+#endif
+
 /* Current RZIP file format version */
 #define RZIP_VERSION 1
 
@@ -51,6 +56,59 @@
 #define RZIP_CHUNK_HEADER_SIZE 4
 
 /* Holds all metadata for an RZIP file stream */
+#ifdef HAVE_THREADS
+/* Maximum number of worker threads used for
+ * parallel chunk compression */
+#define RZIP_MAX_THREADS 8
+
+enum rzip_slot_status
+{
+   RZIP_SLOT_EMPTY = 0,
+   RZIP_SLOT_READY,
+   RZIP_SLOT_DONE,
+   RZIP_SLOT_ERROR
+};
+
+/* One in-flight compression job. Each slot is
+ * statically owned by one worker thread */
+typedef struct rzip_par_slot
+{
+   const uint8_t *in;
+   uint8_t *out;
+   uint32_t in_size;
+   uint32_t out_size;
+   enum rzip_slot_status status;
+} rzip_par_slot_t;
+
+struct rzip_par;
+
+typedef struct rzip_par_worker
+{
+   sthread_t *thread;
+   const struct trans_stream_backend *backend;
+   void *stream;
+   struct rzip_par *par;
+   unsigned index;
+} rzip_par_worker_t;
+
+typedef struct rzip_par
+{
+   slock_t *lock;
+   scond_t *cond;
+   rzip_par_slot_t slots[RZIP_MAX_THREADS];
+   rzip_par_worker_t workers[RZIP_MAX_THREADS];
+   uint32_t out_buf_size;
+   unsigned num_threads;
+   bool shutdown;
+} rzip_par_t;
+#endif
+
+struct rzipstream;
+
+#ifdef HAVE_THREADS
+static void rzipstream_par_free(struct rzipstream *stream);
+#endif
+
 struct rzipstream
 {
    uint64_t size;
@@ -70,6 +128,10 @@ struct rzipstream
    uint32_t out_buf_ptr;
    uint32_t out_buf_occupancy;
    uint32_t chunk_size;
+#ifdef HAVE_THREADS
+   rzip_par_t *par;
+   bool par_attempted;
+#endif
    bool is_compressed;
    bool is_writing;
 };
@@ -229,6 +291,10 @@ static bool rzipstream_init_stream(
    stream->out_buf_size      = 0;
    stream->out_buf_ptr       = 0;
    stream->out_buf_occupancy = 0;
+#ifdef HAVE_THREADS
+   stream->par               = NULL;
+   stream->par_attempted     = false;
+#endif
 
    /* Check whether this is a read or write stream */
    stream->is_writing = is_writing;
@@ -352,6 +418,11 @@ static int rzipstream_free_stream(rzipstream_t *stream)
    if (!stream)
       return -1;
 
+#ifdef HAVE_THREADS
+   /* Stop and free parallel compression pool */
+   rzipstream_par_free(stream);
+#endif
+
    /* Free transform streams */
    if (stream->deflate_stream && stream->deflate_backend)
       stream->deflate_backend->stream_free(stream->deflate_stream);
@@ -456,6 +527,7 @@ static bool rzipstream_read_chunk(rzipstream_t *stream)
    uint32_t compressed_chunk_size;
    uint32_t inflate_read;
    uint32_t inflate_written;
+   enum trans_stream_error inflate_err = TRANS_STREAM_ERROR_NONE;
 
    if (!stream || !stream->inflate_backend || !stream->inflate_stream)
       return false;
@@ -522,9 +594,20 @@ static bool rzipstream_read_chunk(rzipstream_t *stream)
     * can't guarantee that the entire chunk will be written
     * to the output buffer - this is inefficient, but not
     * much we can do... */
+   /* trans() returns true both for "stream finished" and for "ran out of
+    * input with the codec still mid-stream" - the latter reported as
+    * TRANS_STREAM_ERROR_AGAIN - so the return value alone does not say
+    * the chunk decompressed.  Without the error code a truncated chunk
+    * passes every check below (all input consumed, some output written)
+    * and its partial contents are handed back as if complete.  Demand
+    * TRANS_STREAM_ERROR_NONE, which both backends set only on a
+    * finalized stream. */
    if (!stream->inflate_backend->trans(
          stream->inflate_stream, true,
-         &inflate_read, &inflate_written, NULL))
+         &inflate_read, &inflate_written, &inflate_err))
+      return false;
+
+   if (inflate_err != TRANS_STREAM_ERROR_NONE)
       return false;
 
    /* Error checking */
@@ -667,6 +750,75 @@ char* rzipstream_gets(rzipstream_t *stream, char *s, size_t len)
    return (s);
 }
 
+/* Does the file at 'path' hold exactly 'len' bytes equal to 'data'?
+ *
+ * The rzip counterpart of filestream_matches_buf(), for the same
+ * "has this changed since I last wrote it?" question, and answering
+ * it the same way: the uncompressed size settles a mismatch before
+ * anything is decompressed, and the comparison stops at the first
+ * differing byte.
+ *
+ * There is no mapped fast path here and there cannot be - the bytes
+ * being compared do not exist on disk in that form - so this always
+ * decompresses into a window.  What it avoids is the whole-file
+ * allocation: callers asked this question by decompressing the
+ * entire file into a fresh buffer, comparing it, and freeing it.
+ *
+ * False for a missing file, a size mismatch, a short or failed read,
+ * or the first difference - all of which mean "write it". */
+bool rzipstream_matches_buf(const char *path, const void *data, size_t len)
+{
+   const uint8_t *mem   = (const uint8_t*)data;
+   bool           match = false;
+   rzipstream_t  *stream;
+
+   if (!path || !*path || (len && !data))
+      return false;
+
+   if (!(stream = rzipstream_open(path, RETRO_VFS_FILE_ACCESS_READ)))
+      return false;
+
+   if (rzipstream_get_size(stream) != (int64_t)len)
+      goto done;
+
+   {
+      /* RZIPSTREAM_MATCHES_BUF_CHUNK, sized by the stack rather than
+       * by the decompressor: this is libretro-common API, so a caller
+       * can be on a spawned thread, and GEKKO threads get 8 KiB
+       * (STACKSIZE in rthreads/gx_pthread.h).  See the same
+       * ceiling and its measured cost in filestream_matches_buf(). */
+      uint8_t chunk[RZIPSTREAM_MATCHES_BUF_CHUNK];
+      size_t  off = 0;
+
+      match = true;
+      while (off < len)
+      {
+         int64_t got;
+         size_t  want = len - off;
+
+         if (want > sizeof(chunk))
+            want = sizeof(chunk);
+
+         if ((got = rzipstream_read(stream, chunk, (int64_t)want))
+               != (int64_t)want)
+         {
+            match = false;
+            break;
+         }
+         if (memcmp(chunk, mem + off, (size_t)got) != 0)
+         {
+            match = false;
+            break;
+         }
+         off += (size_t)got;
+      }
+   }
+
+done:
+   rzipstream_close(stream);
+   return match;
+}
+
 /* Reads all data from file specified by 'path' and
  * copies it to 'buf'.
  * - 'buf' will be allocated and must be free()'d manually.
@@ -741,9 +893,10 @@ error:
 
 /* File Write */
 
-/* Compresses currently cached data and writes it
- * as the next RZIP file chunk */
-static bool rzipstream_write_chunk(rzipstream_t *stream)
+/* Compresses 'len' bytes of 'data' and writes the
+ * result as the next RZIP file chunk */
+static bool rzipstream_write_chunk_data(rzipstream_t *stream,
+      const uint8_t *data, uint32_t len)
 {
    unsigned i;
    uint8_t chunk_header_bytes[RZIP_CHUNK_HEADER_SIZE];
@@ -756,10 +909,10 @@ static bool rzipstream_write_chunk(rzipstream_t *stream)
    for (i = 0; i < RZIP_CHUNK_HEADER_SIZE; i++)
       chunk_header_bytes[i] = 0;
 
-   /* Compress data currently held in input buffer */
+   /* Compress input data */
    stream->deflate_backend->set_in(
          stream->deflate_stream,
-         stream->in_buf, stream->in_buf_ptr);
+         data, len);
 
    stream->deflate_backend->set_out(
          stream->deflate_stream,
@@ -775,7 +928,7 @@ static bool rzipstream_write_chunk(rzipstream_t *stream)
       return false;
 
    /* Error checking */
-   if (deflate_read != stream->in_buf_ptr)
+   if (deflate_read != len)
       return false;
 
    if (   (deflate_written == 0)
@@ -796,6 +949,258 @@ static bool rzipstream_write_chunk(rzipstream_t *stream)
    /* Write compressed data to file */
    if (filestream_write(
          stream->file, stream->out_buf, deflate_written) != deflate_written)
+      return false;
+
+   return true;
+}
+
+#ifdef HAVE_THREADS
+/* Worker thread: compresses chunks assigned to its
+ * statically owned slot until shutdown is requested */
+static void rzipstream_par_worker(void *data)
+{
+   rzip_par_worker_t *worker = (rzip_par_worker_t*)data;
+   rzip_par_t *par           = worker->par;
+   rzip_par_slot_t *slot     = &par->slots[worker->index];
+
+   for (;;)
+   {
+      uint32_t deflate_read    = 0;
+      uint32_t deflate_written = 0;
+      bool ok                  = false;
+
+      slock_lock(par->lock);
+      while ((slot->status != RZIP_SLOT_READY) && !par->shutdown)
+         scond_wait(par->cond, par->lock);
+
+      if (par->shutdown)
+      {
+         slock_unlock(par->lock);
+         return;
+      }
+      slock_unlock(par->lock);
+
+      /* Compress assigned chunk with this worker's
+       * private deflate state. Each chunk is an
+       * independent zlib stream (flush == true), so
+       * output is identical to serial compression */
+      worker->backend->set_in(
+            worker->stream, slot->in, slot->in_size);
+      worker->backend->set_out(
+            worker->stream, slot->out, par->out_buf_size);
+
+      ok = worker->backend->trans(
+            worker->stream, true,
+            &deflate_read, &deflate_written, NULL);
+
+      if (ok)
+      {
+         if (   (deflate_read != slot->in_size)
+             || (deflate_written == 0)
+             || (deflate_written > par->out_buf_size))
+            ok = false;
+      }
+
+      slock_lock(par->lock);
+      slot->out_size = deflate_written;
+      slot->status   = ok ? RZIP_SLOT_DONE : RZIP_SLOT_ERROR;
+      scond_broadcast(par->cond);
+      slock_unlock(par->lock);
+   }
+}
+
+/* Tears down the parallel compression pool */
+static void rzipstream_par_free(rzipstream_t *stream)
+{
+   unsigned i;
+   rzip_par_t *par = stream->par;
+
+   if (!par)
+      return;
+
+   if (par->lock && par->cond)
+   {
+      slock_lock(par->lock);
+      par->shutdown = true;
+      scond_broadcast(par->cond);
+      slock_unlock(par->lock);
+   }
+
+   for (i = 0; i < par->num_threads; i++)
+   {
+      if (par->workers[i].thread)
+         sthread_join(par->workers[i].thread);
+      par->workers[i].thread = NULL;
+
+      if (par->workers[i].stream && par->workers[i].backend)
+         par->workers[i].backend->stream_free(par->workers[i].stream);
+      par->workers[i].stream = NULL;
+
+      if (par->slots[i].out)
+         free(par->slots[i].out);
+      par->slots[i].out = NULL;
+   }
+
+   if (par->cond)
+      scond_free(par->cond);
+   if (par->lock)
+      slock_free(par->lock);
+
+   free(par);
+   stream->par = NULL;
+}
+
+/* Lazily creates the parallel compression pool.
+ * Returns true if a usable pool exists on exit */
+static bool rzipstream_par_init(rzipstream_t *stream)
+{
+   unsigned i;
+   unsigned num_threads;
+   rzip_par_t *par = NULL;
+
+   if (stream->par)
+      return true;
+
+   /* Only attempt pool creation once per stream */
+   if (stream->par_attempted)
+      return false;
+   stream->par_attempted = true;
+
+   num_threads = cpu_features_get_core_amount();
+   if (num_threads < 2)
+      return false;
+   if (num_threads > RZIP_MAX_THREADS)
+      num_threads = RZIP_MAX_THREADS;
+
+   if (!(par = (rzip_par_t*)calloc(1, sizeof(*par))))
+      return false;
+
+   par->out_buf_size = stream->out_buf_size;
+
+   if (!(par->lock = slock_new()))
+      goto error;
+   if (!(par->cond = scond_new()))
+      goto error;
+
+   for (i = 0; i < num_threads; i++)
+   {
+      rzip_par_worker_t *worker = &par->workers[i];
+
+      worker->par     = par;
+      worker->index   = i;
+
+      if (!(worker->backend = trans_stream_get_zlib_deflate_backend()))
+         goto error;
+      if (!(worker->stream = worker->backend->stream_new()))
+         goto error;
+      if (!worker->backend->define(
+            worker->stream, "level", RZIP_COMPRESSION_LEVEL))
+         goto error;
+
+      if (!(par->slots[i].out = (uint8_t*)malloc(par->out_buf_size)))
+         goto error;
+
+      if (!(worker->thread = sthread_create(
+            rzipstream_par_worker, worker)))
+         goto error;
+
+      par->num_threads = i + 1;
+   }
+
+   stream->par = par;
+   return true;
+
+error:
+   stream->par = par;
+   rzipstream_par_free(stream);
+   return false;
+}
+
+/* Compresses 'num_chunks' whole chunks from 'data'
+ * across the worker pool and writes the results to
+ * file in order. Returns false on any compression
+ * or IO error (all in-flight jobs are still drained
+ * before returning) */
+static bool rzipstream_write_chunks_parallel(rzipstream_t *stream,
+      const uint8_t *data, uint32_t num_chunks)
+{
+   uint8_t chunk_header_bytes[RZIP_CHUNK_HEADER_SIZE];
+   rzip_par_t *par      = stream->par;
+   uint32_t chunk_size  = stream->in_buf_size;
+   uint32_t num_slots   = par->num_threads;
+   uint32_t dispatched  = 0;
+   uint32_t drained     = 0;
+   bool failed          = false;
+
+   while (   (drained < dispatched)
+          || (!failed && (dispatched < num_chunks)))
+   {
+      rzip_par_slot_t *slot = NULL;
+
+      /* Dispatch until the slot window is full */
+      if (   !failed
+          && (dispatched < num_chunks)
+          && ((dispatched - drained) < num_slots))
+      {
+         slot = &par->slots[dispatched % num_slots];
+
+         slock_lock(par->lock);
+         slot->in       = data + (size_t)dispatched * chunk_size;
+         slot->in_size  = chunk_size;
+         slot->out_size = 0;
+         slot->status   = RZIP_SLOT_READY;
+         scond_broadcast(par->cond);
+         slock_unlock(par->lock);
+
+         dispatched++;
+         continue;
+      }
+
+      /* Drain oldest in-flight chunk (in-order emission) */
+      slot = &par->slots[drained % num_slots];
+
+      slock_lock(par->lock);
+      while (   (slot->status != RZIP_SLOT_DONE)
+             && (slot->status != RZIP_SLOT_ERROR))
+         scond_wait(par->cond, par->lock);
+
+      if (slot->status == RZIP_SLOT_ERROR)
+         failed = true;
+      slot->status = RZIP_SLOT_EMPTY;
+      slock_unlock(par->lock);
+
+      if (!failed)
+      {
+         /* Write compressed chunk size to file */
+         chunk_header_bytes[3] = (slot->out_size >> 24) & 0xFF;
+         chunk_header_bytes[2] = (slot->out_size >> 16) & 0xFF;
+         chunk_header_bytes[1] = (slot->out_size >>  8) & 0xFF;
+         chunk_header_bytes[0] =  slot->out_size        & 0xFF;
+
+         if (filestream_write(
+               stream->file, chunk_header_bytes,
+               sizeof(chunk_header_bytes)) != RZIP_CHUNK_HEADER_SIZE)
+            failed = true;
+         /* Write compressed data to file */
+         else if (filestream_write(
+               stream->file, slot->out, slot->out_size) !=
+                     slot->out_size)
+            failed = true;
+      }
+
+      drained++;
+   }
+
+   return !failed;
+}
+#endif
+
+/* Compresses currently cached data and writes it
+ * as the next RZIP file chunk */
+static bool rzipstream_write_chunk(rzipstream_t *stream)
+{
+   if (!rzipstream_write_chunk_data(stream,
+         stream->in_buf, stream->in_buf_ptr))
       return false;
 
    /* Reset input buffer pointer */
@@ -824,6 +1229,51 @@ int64_t rzipstream_write(rzipstream_t *stream, const void *data, int64_t len)
       if (stream->in_buf_ptr >= stream->in_buf_size)
          if (!rzipstream_write_chunk(stream))
             return -1;
+
+      /* Fast path: if no data is currently cached and
+       * at least one whole chunk remains in the caller's
+       * buffer, compress directly from the caller's buffer
+       * (avoids a redundant memcpy through in_buf) */
+      if (   (stream->in_buf_ptr == 0)
+          && (_len >= (int64_t)stream->in_buf_size))
+      {
+#ifdef HAVE_THREADS
+         uint32_t num_chunks =
+               (uint32_t)(_len / (int64_t)stream->in_buf_size);
+
+         /* Multiple whole chunks pending: compress them
+          * concurrently across the worker pool. Chunks
+          * are independent zlib streams, so output is
+          * byte-identical to the serial path */
+         if (   (num_chunks >= 2)
+             && rzipstream_par_init(stream))
+         {
+            int64_t processed =
+                  (int64_t)num_chunks * (int64_t)stream->in_buf_size;
+
+            if (!rzipstream_write_chunks_parallel(stream,
+                  data_ptr, num_chunks))
+               return -1;
+
+            data_ptr            += processed;
+            _len                -= processed;
+
+            stream->size        += processed;
+            stream->virtual_ptr += processed;
+            continue;
+         }
+#endif
+         if (!rzipstream_write_chunk_data(stream,
+               data_ptr, stream->in_buf_size))
+            return -1;
+
+         data_ptr            += stream->in_buf_size;
+         _len                -= stream->in_buf_size;
+
+         stream->size        += stream->in_buf_size;
+         stream->virtual_ptr += stream->in_buf_size;
+         continue;
+      }
 
       /* Get amount of data to cache during this loop
        * > i.e. minimum of space remaining in input buffer

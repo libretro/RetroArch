@@ -1710,11 +1710,13 @@ static bool gl_glsl_set_coords(void *shader_data,
    {
       /* Avoid hitting malloc on every single regular quad draw. */
 
+      /* Must match the four bind conditions below exactly: a stream
+       * the caller did not supply is not bound and takes no room. */
       size_t elems  = 0;
-      elems        += (uni->color >= 0)         * 4;
-      elems        += (uni->tex_coord >= 0)     * 2;
-      elems        += (uni->vertex_coord >= 0)  * 2;
-      elems        += (uni->lut_tex_coord >= 0) * 2;
+      elems        += (uni->color         >= 0 && coords->color)         * 4;
+      elems        += (uni->tex_coord     >= 0 && coords->tex_coord)     * 2;
+      elems        += (uni->vertex_coord  >= 0 && coords->vertex)        * 2;
+      elems        += (uni->lut_tex_coord >= 0 && coords->lut_tex_coord) * 2;
 
       elems        *= coords->vertices * sizeof(GLfloat);
 
@@ -1732,28 +1734,28 @@ static bool gl_glsl_set_coords(void *shader_data,
    }
 #endif
 
-   if (uni->tex_coord >= 0)
+   if (uni->tex_coord >= 0 && coords->tex_coord)
    {
       gl_glsl_set_coord_array(attribs, uni->tex_coord,
             coords->tex_coord, coords, size, 2);
       attribs_size++;
    }
 
-   if (uni->vertex_coord >= 0)
+   if (uni->vertex_coord >= 0 && coords->vertex)
    {
       gl_glsl_set_coord_array(attribs, uni->vertex_coord,
             coords->vertex, coords, size, 2);
       attribs_size++;
    }
 
-   if (uni->color >= 0)
+   if (uni->color >= 0 && coords->color)
    {
       gl_glsl_set_coord_array(attribs, uni->color,
             coords->color, coords, size, 4);
       attribs_size++;
    }
 
-   if (uni->lut_tex_coord >= 0)
+   if (uni->lut_tex_coord >= 0 && coords->lut_tex_coord)
    {
       gl_glsl_set_coord_array(attribs, uni->lut_tex_coord,
             coords->lut_tex_coord, coords, size, 2);

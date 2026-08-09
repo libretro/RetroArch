@@ -34,7 +34,7 @@ android {
     buildConfig true
   }
 
-  ndkVersion "27.3.13750724"
+  ndkVersion "29.0.14206865"
 
   flavorDimensions "variant"
 
@@ -48,6 +48,14 @@ android {
     }
     versionCode = (System.currentTimeMillis() / 1000).toInteger()
     versionName "${getManifestAttribute("versionName")}_GIT"
+  }
+
+  android {
+    packagingOptions {
+      jniLibs {
+        useLegacyPackaging = true
+      }
+    }
   }
 
   productFlavors {
@@ -91,9 +99,15 @@ android {
       ndk {
         abiFilters 'arm64-v8a', 'x86_64', 'armeabi-v7a'
       }
+
+      externalNativeBuild {
+        ndkBuild {
+          arguments "-j${Runtime.runtime.availableProcessors()}", "PLAY_STORE_BUILD=1"
+        }
+      }
     }
     playStorePlus {
-      minSdkVersion 21
+      minSdkVersion 26
       targetSdkVersion 36
       versionCode getPlayStoreVersionCode()
       versionName getPlayStoreVersionName()
@@ -106,6 +120,12 @@ android {
 
       ndk {
         abiFilters 'arm64-v8a', 'x86_64', 'armeabi-v7a'
+      }
+
+      externalNativeBuild {
+        ndkBuild {
+          arguments "-j${Runtime.runtime.availableProcessors()}", "PLAY_STORE_BUILD=1"
+        }
       }
     }
   }
@@ -178,6 +198,15 @@ dependencies {
   playStorePlusImplementation playAssetDelivery
 }
 
+dependencies {
+  constraints {
+    playStoreNormalImplementation 'androidx.activity:activity:1.10.1'
+    playStoreNormalImplementation 'androidx.fragment:fragment:1.8.6'
+    playStorePlusImplementation 'androidx.activity:activity:1.10.1'
+    playStorePlusImplementation 'androidx.fragment:fragment:1.8.6'
+  }
+}
+
 def dynamicFeatures = file("dynamic_features.gradle")
 if(dynamicFeatures.exists()) {
   apply from: "dynamic_features.gradle"
@@ -186,8 +215,8 @@ if(dynamicFeatures.exists()) {
 int getPlayStoreVersionCode() {
   def baseVersion = getManifestAttribute("versionCode").toInteger()
   def baseTime = 1609632000
-  def halfWeek = 302400
-  def increment = ((System.currentTimeMillis() / 1000).toInteger() - baseTime) / halfWeek
+  def oneDay = 86400
+  def increment = ((System.currentTimeMillis() / 1000).toInteger() - baseTime) / oneDay
 
   return baseVersion + increment
 }

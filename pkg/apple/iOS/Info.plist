@@ -87,7 +87,7 @@
 	<string>RetroArch uses direct Bluetooth communication for some types of controllers</string>
 	<key>NSBonjourServices</key>
 	<array>
-		<string>_altserver._tcp</string>
+		<string>_ra-bless._tcp</string>
 		<string>_ra_netplay._tcp</string>
 	</array>
 	<key>NSCameraUsageDescription</key>

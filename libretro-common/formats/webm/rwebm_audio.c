@@ -39,6 +39,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <encodings/crc32.h>
 #include <formats/rwebm.h>
 #include <formats/rwebm_audio.h>
 
@@ -55,11 +56,13 @@
 
 typedef struct
 {
-   int16_t *data;
+   void    *data;       /* s16 or f32 samples, by elem                  */
    size_t   frames;     /* per-channel                                  */
    size_t   cap_frames; /* allocation size                              */
    size_t   max_frames; /* hard cap from max_ms (0 = none)              */
    unsigned channels;
+   size_t   elem;       /* sizeof(int16_t) or sizeof(float): selects
+                         * the s16 or the float codec pipeline          */
 } rwebm_pcm_acc;
 
 static int rwebm_pcm_reserve(rwebm_pcm_acc *a, size_t add_frames)
@@ -69,11 +72,10 @@ static int rwebm_pcm_reserve(rwebm_pcm_acc *a, size_t add_frames)
       return 1;
    {
       size_t ncap = a->cap_frames ? a->cap_frames : 48000;
-      int16_t *nd;
+      void *nd;
       while (ncap < need)
          ncap += ncap / 2;
-      nd = (int16_t*)realloc(a->data,
-            ncap * a->channels * sizeof(int16_t));
+      nd = realloc(a->data, ncap * a->channels * a->elem);
       if (!nd)
          return 0;
       a->data       = nd;
@@ -82,13 +84,19 @@ static int rwebm_pcm_reserve(rwebm_pcm_acc *a, size_t add_frames)
    return 1;
 }
 
+/* byte offset of a frame position in the accumulator */
+#define RWEBM_ACC_AT(a, fr) \
+   ((uint8_t*)(a)->data + (fr) * (a)->channels * (a)->elem)
+
 /* ==================================================================== */
 /* Opus                                                                 */
 /* ==================================================================== */
 
 #ifdef HAVE_ROPUS
 /* Maximum frames one Opus packet can produce: 120 ms at 48 kHz. */
-#define RWEBM_OPUS_MAX_FRAMES 5760
+/* The reserve above and the room passed to the decoder are the
+ * same number; take it from ropus rather than restating it. */
+#define RWEBM_OPUS_MAX_FRAMES ROPUS_MAX_FRAME
 
 static int rwebm_audio_decode_opus(rwebm_t *m, const rwebm_track *t,
       int track_idx, rwebm_pcm_acc *a, unsigned *rate)
@@ -111,8 +119,17 @@ static int rwebm_audio_decode_opus(rwebm_t *m, const rwebm_track *t,
          continue;
       if (!rwebm_pcm_reserve(a, RWEBM_OPUS_MAX_FRAMES))
          break;
-      produced = ropus_decode_s16(o, pkt.data, pkt.size,
-            a->data + a->frames * a->channels);
+      /* the two pipelines are genuinely different decoders (s16 is
+       * the fixed-point build, f32 the float build), not conversions
+       * of one another */
+      if (a->elem == sizeof(float))
+         produced = ropus_decode_f32(o, pkt.data, pkt.size,
+               (float*)RWEBM_ACC_AT(a, a->frames),
+               (size_t)RWEBM_OPUS_MAX_FRAMES * a->channels);
+      else
+         produced = ropus_decode_s16(o, pkt.data, pkt.size,
+               (int16_t*)RWEBM_ACC_AT(a, a->frames),
+               (size_t)RWEBM_OPUS_MAX_FRAMES * a->channels);
       if (produced < 0)
          break;                    /* malformed packet: keep what we have */
       if (pkt.discard_padding > 0)
@@ -127,9 +144,9 @@ static int rwebm_audio_decode_opus(rwebm_t *m, const rwebm_track *t,
       {
          size_t s = ((size_t)produced < skip) ? (size_t)produced : skip;
          if (s)
-            memmove(a->data + a->frames * a->channels,
-                  a->data + (a->frames + s) * a->channels,
-                  ((size_t)produced - s) * a->channels * sizeof(int16_t));
+            memmove(RWEBM_ACC_AT(a, a->frames),
+                  RWEBM_ACC_AT(a, a->frames + s),
+                  ((size_t)produced - s) * a->channels * a->elem);
          produced -= (int)s;
          skip     -= s;
       }
@@ -150,24 +167,6 @@ static int rwebm_audio_decode_opus(rwebm_t *m, const rwebm_track *t,
 /* ==================================================================== */
 
 #ifdef HAVE_RVORBIS
-static uint32_t rwebm_ogg_crc_table[256];
-static int      rwebm_ogg_crc_ready = 0;
-
-static void rwebm_ogg_crc_init(void)
-{
-   unsigned i, j;
-   if (rwebm_ogg_crc_ready)
-      return;
-   for (i = 0; i < 256; i++)
-   {
-      uint32_t r = (uint32_t)i << 24;
-      for (j = 0; j < 8; j++)
-         r = (r << 1) ^ ((r & 0x80000000u) ? 0x04c11db7u : 0);
-      rwebm_ogg_crc_table[i] = r;
-   }
-   rwebm_ogg_crc_ready = 1;
-}
-
 typedef struct
 {
    uint8_t *data;
@@ -231,8 +230,7 @@ static int rwebm_ogg_page(rwebm_ogg *g, const uint8_t *pkt, size_t len,
    g->size += head + len;
    g->seq++;
 
-   for (k = 0; k < head + len; k++)
-      crc = (crc << 8) ^ rwebm_ogg_crc_table[(uint8_t)(crc >> 24) ^ p[k]];
+   crc = encoding_crc32_ogg(crc, p, head + len);
    for (k = 0; k < 4; k++)
       p[22 + k] = (uint8_t)(crc >> (8 * k));
    return 1;
@@ -290,7 +288,6 @@ static int rwebm_audio_decode_vorbis(rwebm_t *m, const rwebm_track *t,
          hdr, hdr_len))
       return 0;
 
-   rwebm_ogg_crc_init();
    memset(&g, 0, sizeof(g));
    g.serial = 0x52415741;   /* arbitrary but fixed */
 
@@ -352,8 +349,13 @@ static int rwebm_audio_decode_vorbis(rwebm_t *m, const rwebm_track *t,
       }
       if (!rwebm_pcm_reserve(a, chunk))
          break;
-      got = rvorbis_get_samples_s16_interleaved(v, (int)a->channels,
-            a->data + a->frames * a->channels,
+      if (a->elem == sizeof(float))
+         got = rvorbis_get_samples_float_interleaved(v, (int)a->channels,
+               (float*)RWEBM_ACC_AT(a, a->frames),
+               (int)(chunk * a->channels));
+      else
+         got = rvorbis_get_samples_s16_interleaved(v, (int)a->channels,
+            (int16_t*)RWEBM_ACC_AT(a, a->frames),
             (int)(chunk * a->channels));
       if (got <= 0)
          break;
@@ -372,8 +374,10 @@ out:
 /* Public entry points                                                  */
 /* ==================================================================== */
 
-int rwebm_audio_decode(const void *buf, size_t len, int64_t max_ms,
-      int16_t **pcm, size_t *frames, unsigned *rate, unsigned *channels)
+static int rwebm_audio_decode_any(const void *buf, size_t len,
+      size_t avail, int64_t max_ms, size_t elem, void **pcm,
+      size_t *frames, unsigned *rate, unsigned *channels,
+      int *need_more)
 {
    rwebm_t      *m;
    rwebm_pcm_acc a;
@@ -384,8 +388,15 @@ int rwebm_audio_decode(const void *buf, size_t len, int64_t max_ms,
    *frames = 0;
    *rate = 0;
    *channels = 0;
+   if (need_more)
+      *need_more = 0;
 
-   if (!(m = rwebm_open_memory((const uint8_t*)buf, len)))
+   /* Open against the resident prefix (avail == len is the whole
+    * buffer).  The segment headers must be resident (need_more
+    * reports otherwise); the packet walk stops at the first block
+    * past the wall, which the codec loops treat as end-of-input. */
+   if (!(m = rwebm_open_memory_avail((const uint8_t*)buf, len, avail,
+         need_more)))
       return 0;
 
    for (i = 0; i < rwebm_num_tracks(m); i++)
@@ -404,6 +415,7 @@ int rwebm_audio_decode(const void *buf, size_t len, int64_t max_ms,
       goto out;
 
    memset(&a, 0, sizeof(a));
+   a.elem = elem;
    if (max_ms > 0)
    {
       unsigned r = (t->codec == RWEBM_CODEC_OPUS)
@@ -440,25 +452,29 @@ out:
    return ok;
 }
 
-int rwebm_audio_decode_wav(const void *buf, size_t len, int64_t max_ms,
-      void **wav, size_t *wav_size)
+int rwebm_audio_decode(const void *buf, size_t len, int64_t max_ms,
+      int16_t **pcm, size_t *frames, unsigned *rate, unsigned *channels)
 {
-   int16_t *pcm = NULL;
-   size_t   frames = 0;
-   unsigned rate = 0, channels = 0;
+   return rwebm_audio_decode_any(buf, len, len, max_ms, sizeof(int16_t),
+         (void**)pcm, frames, rate, channels, NULL);
+}
+
+int rwebm_audio_decode_f32(const void *buf, size_t len, int64_t max_ms,
+      float **pcm, size_t *frames, unsigned *rate, unsigned *channels)
+{
+   return rwebm_audio_decode_any(buf, len, len, max_ms, sizeof(float),
+         (void**)pcm, frames, rate, channels, NULL);
+}
+
+static int rwebm_audio_pcm_to_wav(float *pcm, size_t frames,
+      unsigned rate, unsigned channels, void **wav, size_t *wav_size)
+{
    size_t   data_size, total;
    uint8_t *w;
    uint32_t v32;
    uint16_t v16;
 
-   *wav = NULL;
-   *wav_size = 0;
-
-   if (!rwebm_audio_decode(buf, len, max_ms, &pcm, &frames,
-         &rate, &channels))
-      return 0;
-
-   data_size = frames * channels * sizeof(int16_t);
+   data_size = frames * channels * sizeof(float);
    total     = 44 + data_size;
    if (!(w = (uint8_t*)malloc(total)))
    {
@@ -471,19 +487,19 @@ int rwebm_audio_decode_wav(const void *buf, size_t len, int64_t max_ms,
 #define RWEBM_W16(off, val) \
    do { v16 = (uint16_t)(val); memcpy(w + (off), &v16, 2); } while (0)
 
-   /* RIFF/WAVE, PCM s16le. WAV is little-endian by definition; on
+   /* RIFF/WAVE, IEEE-float 32 (format tag 3). WAV is little-endian by definition; on
     * big-endian hosts both the header fields and the samples are
     * byte-swapped into place. */
    memcpy(w, "RIFF", 4);
    RWEBM_W32(4, 36 + data_size);
    memcpy(w + 8, "WAVEfmt ", 8);
    RWEBM_W32(16, 16);
-   RWEBM_W16(20, 1);
+   RWEBM_W16(20, 3);
    RWEBM_W16(22, channels);
    RWEBM_W32(24, rate);
-   RWEBM_W32(28, (uint32_t)rate * channels * 2);
-   RWEBM_W16(32, channels * 2);
-   RWEBM_W16(34, 16);
+   RWEBM_W32(28, (uint32_t)rate * channels * 4);
+   RWEBM_W16(32, channels * 4);
+   RWEBM_W16(34, 32);
    memcpy(w + 36, "data", 4);
    RWEBM_W32(40, data_size);
 #if defined(MSB_FIRST)
@@ -507,9 +523,12 @@ int rwebm_audio_decode_wav(const void *buf, size_t len, int64_t max_ms,
       }
       for (k = 0; k < n; k++)
       {
-         uint16_t s = (uint16_t)pcm[k];
-         w[44 + 2*k]     = (uint8_t)(s & 0xFF);
-         w[44 + 2*k + 1] = (uint8_t)(s >> 8);
+         uint32_t s;
+         memcpy(&s, &pcm[k], 4);
+         w[44 + 4*k]     = (uint8_t)(s & 0xFF);
+         w[44 + 4*k + 1] = (uint8_t)((s >> 8) & 0xFF);
+         w[44 + 4*k + 2] = (uint8_t)((s >> 16) & 0xFF);
+         w[44 + 4*k + 3] = (uint8_t)(s >> 24);
       }
    }
 #else
@@ -522,4 +541,28 @@ int rwebm_audio_decode_wav(const void *buf, size_t len, int64_t max_ms,
    *wav      = w;
    *wav_size = total;
    return 1;
+}
+
+int rwebm_audio_decode_wav_avail(const void *buf, size_t len, size_t avail,
+      int64_t max_ms, void **wav, size_t *wav_size, int *need_more)
+{
+   float   *pcm    = NULL;
+   size_t   frames = 0;
+   unsigned rate = 0, channels = 0;
+
+   *wav      = NULL;
+   *wav_size = 0;
+
+   if (!rwebm_audio_decode_any(buf, len, avail, max_ms, sizeof(float),
+         (void**)&pcm, &frames, &rate, &channels, need_more))
+      return 0;
+   return rwebm_audio_pcm_to_wav(pcm, frames, rate, channels,
+         wav, wav_size);
+}
+
+int rwebm_audio_decode_wav(const void *buf, size_t len, int64_t max_ms,
+      void **wav, size_t *wav_size)
+{
+   return rwebm_audio_decode_wav_avail(buf, len, len, max_ms,
+         wav, wav_size, NULL);
 }

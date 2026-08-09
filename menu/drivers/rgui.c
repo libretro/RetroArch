@@ -55,10 +55,9 @@
 #include "../../input/input_osk.h"
 #include "../../tasks/tasks_internal.h"
 
-#include "../../gfx/drivers_font_renderer/bitmap.h"
+#include "../../gfx/bitmapfont.h"
 #ifdef HAVE_LANGEXTRA
-#include "../../gfx/drivers_font_renderer/bitmapfont_10x10.h"
-#include "../../gfx/drivers_font_renderer/bitmapfont_6x10.h"
+#include "rgui_bitmapfont.h"
 #endif
 
 #ifdef HAVE_AUDIOMIXER
@@ -1257,6 +1256,90 @@ static INLINE uint32_t rgui_rand(void)
  * pixel format conversion START
  * ============================== */
 
+/* 8-bit -> N-bit channel quantisation.
+ *
+ * These formats reconstruct an N-bit value by bit replication: a 4-bit
+ * v is displayed as (v << 4) | v, i.e. v * 17, and a 5-bit v as
+ * v * 33 / 4.  Quantising with a plain shift assumes a step of 16 (or
+ * 8) against a reconstruction spaced by 17 (or 33/4), which biases
+ * every channel downwards - 127 truncates to 7, shown as 119, when 8
+ * would show as 136 and 127 sits almost exactly between the two.  The
+ * whole menu is slightly dark as a result.
+ *
+ * Divide by the actual step instead, rounding to nearest. */
+static INLINE unsigned rgui_quant4(unsigned v)
+{
+   unsigned q = ((v * 15) + 127) / 255;
+   return (q > 15) ? 15 : q;
+}
+
+static INLINE unsigned rgui_quant5(unsigned v)
+{
+   unsigned q = ((v * 31) + 127) / 255;
+   return (q > 31) ? 31 : q;
+}
+
+static INLINE unsigned rgui_quant6(unsigned v)
+{
+   unsigned q = ((v * 63) + 127) / 255;
+   return (q > 63) ? 63 : q;
+}
+
+/* Ordered (Bayer) dither threshold, 0..15 for a 4x4 cell.
+ *
+ * Rounding alone still lands every pixel of a slow gradient on the
+ * same level until the source crosses a step boundary, so the banding
+ * remains - 4 bits is only 16 levels.  Dithering pushes pixels either
+ * side of the boundary in a fixed pattern, so the local average
+ * follows the source continuously even though no single pixel can.
+ * The eye integrates over the pattern and sees a smooth ramp.
+ *
+ * Only worth applying to photographic sources - thumbnails and
+ * wallpaper.  A flat UI colour has no spatial extent to average
+ * over, so dithering it would just add visible noise. */
+static const uint8_t rgui_bayer4x4[4][4] = {
+   {  0,  8,  2, 10 },
+   { 12,  4, 14,  6 },
+   {  3, 11,  1,  9 },
+   { 15,  7, 13,  5 }
+};
+
+static INLINE unsigned rgui_quant4_dither(unsigned v, unsigned x, unsigned y)
+{
+   unsigned n = v * 15;
+   unsigned q = n / 255;
+   unsigned f = n % 255;
+
+   if ((f > ((unsigned)rgui_bayer4x4[y & 3][x & 3] * 255) / 16) && (q < 15))
+      q++;
+
+   return (q > 15) ? 15 : q;
+}
+
+static INLINE unsigned rgui_quant5_dither(unsigned v, unsigned x, unsigned y)
+{
+   unsigned n = v * 31;
+   unsigned q = n / 255;
+   unsigned f = n % 255;
+
+   if ((f > ((unsigned)rgui_bayer4x4[y & 3][x & 3] * 255) / 16) && (q < 31))
+      q++;
+
+   return (q > 31) ? 31 : q;
+}
+
+static INLINE unsigned rgui_quant6_dither(unsigned v, unsigned x, unsigned y)
+{
+   unsigned n = v * 63;
+   unsigned q = n / 255;
+   unsigned f = n % 255;
+
+   if ((f > ((unsigned)rgui_bayer4x4[y & 3][x & 3] * 255) / 16) && (q < 63))
+      q++;
+
+   return (q > 63) ? 63 : q;
+}
+
 /* PS2 */
 static uint16_t argb32_to_abgr1555(uint32_t col)
 {
@@ -1284,9 +1367,9 @@ static uint16_t argb32_to_abgr1555(uint32_t col)
       b = (unsigned)(((float)b * a_factor) + 0.5f) & 0xFF;
    }
    /* Convert from 8 bit to 5 bit */
-   r = r >> 3;
-   g = g >> 3;
-   b = b >> 3;
+   r = rgui_quant5(r);
+   g = rgui_quant5(g);
+   b = rgui_quant5(b);
    /* Return final value - alpha always set to 1 */
    return (1 << 15) | (b << 10) | (g << 5) | r;
 }
@@ -1327,9 +1410,9 @@ static uint16_t argb32_to_rgb5a3(uint32_t col)
          b = 0xFF;
    }
    /* Convert RGB from 8 bit to 4 bit */
-   r = r >> 4;
-   g = g >> 4;
-   b = b >> 4;
+   r = rgui_quant4(r);
+   g = rgui_quant4(g);
+   b = rgui_quant4(b);
    /* Return final value */
    return (a3 << 12) | (r << 8) | (g << 4) | b;
 }
@@ -1337,30 +1420,30 @@ static uint16_t argb32_to_rgb5a3(uint32_t col)
 /* PSP */
 static uint16_t argb32_to_abgr4444(uint32_t col)
 {
-   unsigned a = ((col >> 24) & 0xFF) >> 4;
-   unsigned r = ((col >> 16) & 0xFF) >> 4;
-   unsigned g = ((col >> 8)  & 0xFF) >> 4;
-   unsigned b = ( col        & 0xFF) >> 4;
+   unsigned a = rgui_quant4((col >> 24) & 0xFF);
+   unsigned r = rgui_quant4((col >> 16) & 0xFF);
+   unsigned g = rgui_quant4((col >> 8)  & 0xFF);
+   unsigned b = rgui_quant4( col        & 0xFF);
    return (a << 12) | (b << 8) | (g << 4) | r;
 }
 
 /* PS3 */
 static uint16_t argb32_to_argb4444(uint32_t col)
 {
-   unsigned a = ((col >> 24) & 0xFF) >> 4;
-   unsigned r = ((col >> 16) & 0xFF) >> 4;
-   unsigned g = ((col >> 8)  & 0xFF) >> 4;
-   unsigned b = ( col        & 0xFF) >> 4;
+   unsigned a = rgui_quant4((col >> 24) & 0xFF);
+   unsigned r = rgui_quant4((col >> 16) & 0xFF);
+   unsigned g = rgui_quant4((col >> 8)  & 0xFF);
+   unsigned b = rgui_quant4( col        & 0xFF);
    return (a << 12) | (r << 8) | (g << 4) | b;
 }
 
 /* D3D10/11/12 */
 static uint16_t argb32_to_bgra4444(uint32_t col)
 {
-   unsigned a = ((col >> 24) & 0xFF) >> 4;
-   unsigned r = ((col >> 16) & 0xFF) >> 4;
-   unsigned g = ((col >> 8)  & 0xFF) >> 4;
-   unsigned b = ( col        & 0xFF) >> 4;
+   unsigned a = rgui_quant4((col >> 24) & 0xFF);
+   unsigned r = rgui_quant4((col >> 16) & 0xFF);
+   unsigned g = rgui_quant4((col >> 8)  & 0xFF);
+   unsigned b = rgui_quant4( col        & 0xFF);
    return (b << 12) | (g << 8) | (r << 4) | a;
 }
 
@@ -1382,10 +1465,10 @@ static uint16_t argb32_to_rgb565(uint32_t col)
       g = (unsigned)(((float)g * a_factor) + 0.5f) & 0xFF;
       b = (unsigned)(((float)b * a_factor) + 0.5f) & 0xFF;
    }
-   /* Convert from 8 bit to 5 bit */
-   r = r >> 3;
-   g = g >> 3;
-   b = b >> 3;
+   /* Convert from 8 bit to 5/6 bit */
+   r = rgui_quant5(r);
+   g = rgui_quant6(g);
+   b = rgui_quant5(b);
    /* Return final value */
    return (r << 11) | (g << 6) | b;
 }
@@ -1393,14 +1476,139 @@ static uint16_t argb32_to_rgb565(uint32_t col)
 /* All other platforms */
 static uint16_t argb32_to_rgba4444(uint32_t col)
 {
-   unsigned a = ((col >> 24) & 0xFF) >> 4;
-   unsigned r = ((col >> 16) & 0xFF) >> 4;
-   unsigned g = ((col >> 8)  & 0xFF) >> 4;
-   unsigned b = ( col        & 0xFF) >> 4;
+   unsigned a = rgui_quant4((col >> 24) & 0xFF);
+   unsigned r = rgui_quant4((col >> 16) & 0xFF);
+   unsigned g = rgui_quant4((col >> 8)  & 0xFF);
+   unsigned b = rgui_quant4( col        & 0xFF);
    return (r << 12) | (g << 8) | (b << 4) | a;
 }
 
 static uint16_t (*argb32_to_pixel_platform_format)(uint32_t col) = argb32_to_rgba4444;
+
+/* Dithered variants, for photographic sources only (thumbnails and
+ * wallpaper).  Identical to the plain conversions above except that
+ * the channel quantisation is dithered against the pixel position;
+ * see rgui_quant4_dither(). */
+
+/* PS2 */
+static uint16_t argb32_to_abgr1555_dither(uint32_t col,
+      unsigned x, unsigned y)
+{
+   unsigned a = (col >> 24) & 0xFF;
+   unsigned r = (col >> 16) & 0xFF;
+   unsigned g = (col >> 8)  & 0xFF;
+   unsigned b =  col        & 0xFF;
+   if (a < 0xFF)
+   {
+      float a_factor = (float)a * (1.0f / 255.0f);
+      r = (unsigned)(((float)r * a_factor) + 0.5f) & 0xFF;
+      g = (unsigned)(((float)g * a_factor) + 0.5f) & 0xFF;
+      b = (unsigned)(((float)b * a_factor) + 0.5f) & 0xFF;
+   }
+   r = rgui_quant5_dither(r, x, y);
+   g = rgui_quant5_dither(g, x, y);
+   b = rgui_quant5_dither(b, x, y);
+   return (1 << 15) | (b << 10) | (g << 5) | r;
+}
+
+/* GEKKO */
+static uint16_t argb32_to_rgb5a3_dither(uint32_t col,
+      unsigned x, unsigned y)
+{
+   unsigned a  = (col >> 24) & 0xFF;
+   unsigned r  = (col >> 16) & 0xFF;
+   unsigned g  = (col >> 8)  & 0xFF;
+   unsigned b  =  col        & 0xFF;
+   unsigned a3 =  a   >> 5;
+   if (a < 0xFF)
+   {
+      unsigned a4    = a >> 4;
+      float a_factor = (a4 > 0)
+            ? ((float)((a3 << 1) | (a3 >> 2)) / (float)a4)
+            : 1.0f;
+      r = (unsigned)(((float)r * a_factor) + 0.5f);
+      g = (unsigned)(((float)g * a_factor) + 0.5f);
+      b = (unsigned)(((float)b * a_factor) + 0.5f);
+      if (r >= 0xFF)
+         r = 0xFF;
+      if (g >= 0xFF)
+         g = 0xFF;
+      if (b >= 0xFF)
+         b = 0xFF;
+   }
+   r = rgui_quant4_dither(r, x, y);
+   g = rgui_quant4_dither(g, x, y);
+   b = rgui_quant4_dither(b, x, y);
+   return (a3 << 12) | (r << 8) | (g << 4) | b;
+}
+
+/* PSP */
+static uint16_t argb32_to_abgr4444_dither(uint32_t col,
+      unsigned x, unsigned y)
+{
+   unsigned a = rgui_quant4_dither((col >> 24) & 0xFF, x, y);
+   unsigned r = rgui_quant4_dither((col >> 16) & 0xFF, x, y);
+   unsigned g = rgui_quant4_dither((col >> 8)  & 0xFF, x, y);
+   unsigned b = rgui_quant4_dither( col        & 0xFF, x, y);
+   return (a << 12) | (b << 8) | (g << 4) | r;
+}
+
+/* PS3 */
+static uint16_t argb32_to_argb4444_dither(uint32_t col,
+      unsigned x, unsigned y)
+{
+   unsigned a = rgui_quant4_dither((col >> 24) & 0xFF, x, y);
+   unsigned r = rgui_quant4_dither((col >> 16) & 0xFF, x, y);
+   unsigned g = rgui_quant4_dither((col >> 8)  & 0xFF, x, y);
+   unsigned b = rgui_quant4_dither( col        & 0xFF, x, y);
+   return (a << 12) | (r << 8) | (g << 4) | b;
+}
+
+/* D3D10/11/12 */
+static uint16_t argb32_to_bgra4444_dither(uint32_t col,
+      unsigned x, unsigned y)
+{
+   unsigned a = rgui_quant4_dither((col >> 24) & 0xFF, x, y);
+   unsigned r = rgui_quant4_dither((col >> 16) & 0xFF, x, y);
+   unsigned g = rgui_quant4_dither((col >> 8)  & 0xFF, x, y);
+   unsigned b = rgui_quant4_dither( col        & 0xFF, x, y);
+   return (b << 12) | (g << 8) | (r << 4) | a;
+}
+
+/* DINGUX SDL */
+static uint16_t argb32_to_rgb565_dither(uint32_t col,
+      unsigned x, unsigned y)
+{
+   unsigned a = (col >> 24) & 0xFF;
+   unsigned r = (col >> 16) & 0xFF;
+   unsigned g = (col >> 8)  & 0xFF;
+   unsigned b =  col        & 0xFF;
+   if (a < 0xFF)
+   {
+      float a_factor = (float)a * (1.0f / 255.0f);
+      r = (unsigned)(((float)r * a_factor) + 0.5f) & 0xFF;
+      g = (unsigned)(((float)g * a_factor) + 0.5f) & 0xFF;
+      b = (unsigned)(((float)b * a_factor) + 0.5f) & 0xFF;
+   }
+   r = rgui_quant5_dither(r, x, y);
+   g = rgui_quant6_dither(g, x, y);
+   b = rgui_quant5_dither(b, x, y);
+   return (r << 11) | (g << 6) | b;
+}
+
+/* All other platforms */
+static uint16_t argb32_to_rgba4444_dither(uint32_t col,
+      unsigned x, unsigned y)
+{
+   unsigned a = rgui_quant4_dither((col >> 24) & 0xFF, x, y);
+   unsigned r = rgui_quant4_dither((col >> 16) & 0xFF, x, y);
+   unsigned g = rgui_quant4_dither((col >> 8)  & 0xFF, x, y);
+   unsigned b = rgui_quant4_dither( col        & 0xFF, x, y);
+   return (r << 12) | (g << 8) | (b << 4) | a;
+}
+
+static uint16_t (*argb32_to_pixel_platform_format_dither)(
+      uint32_t col, unsigned x, unsigned y) = argb32_to_rgba4444_dither;
 
 /* Per-driver RGUI pixel-format dispatch.
  *
@@ -1418,25 +1626,26 @@ typedef struct
 {
    const char *driver_ident;
    uint16_t (*conv)(uint32_t);
+   uint16_t (*conv_dither)(uint32_t, unsigned, unsigned);
    bool transparency_supported;
 } rgui_pixel_format_entry;
 
 static const rgui_pixel_format_entry rgui_pixel_format_map[] =
 {
-   { "ps2",        argb32_to_abgr1555, false }, /* PS2 */
-   { "gx",         argb32_to_rgb5a3,   true  }, /* GEKKO */
-   { "psp1",       argb32_to_abgr4444, true  }, /* PSP */
-   { "rsx",        argb32_to_argb4444, true  }, /* PS3 */
-   { "d3d8",       argb32_to_argb4444, true  }, /* D3D8 (Original Xbox + legacy Windows) */
-   { "d3d9_hlsl",  argb32_to_argb4444, true  }, /* D3D9 PC/Xbox 360 */
-   { "d3d9_cg",    argb32_to_argb4444, true  }, /* D3D9 PC */
-   { "d3d10",      argb32_to_bgra4444, true  }, /* D3D10/11/12 */
-   { "d3d11",      argb32_to_bgra4444, true  },
-   { "d3d12",      argb32_to_bgra4444, true  },
-   { "metal",      argb32_to_bgra4444, true  }, /* Metal */
-   { "sdl_dingux", argb32_to_rgb565,   false }, /* DINGUX SDL */
-   { "sdl_rs90",   argb32_to_rgb565,   false },
-   { "xvideo",     argb32_to_rgb565,   false }
+   { "ps2",        argb32_to_abgr1555, argb32_to_abgr1555_dither, false }, /* PS2 */
+   { "gx",         argb32_to_rgb5a3,   argb32_to_rgb5a3_dither,   true  }, /* GEKKO */
+   { "psp1",       argb32_to_abgr4444, argb32_to_abgr4444_dither, true  }, /* PSP */
+   { "rsx",        argb32_to_argb4444, argb32_to_argb4444_dither, true  }, /* PS3 */
+   { "d3d8",       argb32_to_argb4444, argb32_to_argb4444_dither, true  }, /* D3D8 (Original Xbox + legacy Windows) */
+   { "d3d9_hlsl",  argb32_to_argb4444, argb32_to_argb4444_dither, true  }, /* D3D9 PC/Xbox 360 */
+   { "d3d9_cg",    argb32_to_argb4444, argb32_to_argb4444_dither, true  }, /* D3D9 PC */
+   { "d3d10",      argb32_to_bgra4444, argb32_to_bgra4444_dither, true  }, /* D3D10/11/12 */
+   { "d3d11",      argb32_to_bgra4444, argb32_to_bgra4444_dither, true  },
+   { "d3d12",      argb32_to_bgra4444, argb32_to_bgra4444_dither, true  },
+   { "metal",      argb32_to_bgra4444, argb32_to_bgra4444_dither, true  }, /* Metal */
+   { "sdl_dingux", argb32_to_rgb565,   argb32_to_rgb565_dither,   false }, /* DINGUX SDL */
+   { "sdl_rs90",   argb32_to_rgb565,   argb32_to_rgb565_dither,   false },
+   { "xvideo",     argb32_to_rgb565,   argb32_to_rgb565_dither,   false }
 };
 
 /* Returns true if current pixel format supports
@@ -1455,6 +1664,8 @@ static bool rgui_set_pixel_format_function(void)
          {
             argb32_to_pixel_platform_format =
                   rgui_pixel_format_map[i].conv;
+            argb32_to_pixel_platform_format_dither =
+                  rgui_pixel_format_map[i].conv_dither;
             return rgui_pixel_format_map[i].transparency_supported;
          }
       }
@@ -1462,7 +1673,8 @@ static bool rgui_set_pixel_format_function(void)
 
    /* Default fallback for unknown / empty driver ident:
     * RGBA4444 with transparency support. */
-   argb32_to_pixel_platform_format = argb32_to_rgba4444;
+   argb32_to_pixel_platform_format        = argb32_to_rgba4444;
+   argb32_to_pixel_platform_format_dither = argb32_to_rgba4444_dither;
    return true;
 }
 
@@ -1874,6 +2086,28 @@ static void rgui_color_rect(
    }
 }
 
+/* Force a render phase out of line even though it has a single call
+ * site.  Follows the RXML_NOINLINE precedent in
+ * libretro-common/formats/xml/rxml.c.
+ *
+ * rgui_render() is already factored into named phases, but at -O3 the
+ * ones called exactly once are all inlined straight back into it,
+ * producing a single 25 KB function -- about 80% of a 32 KB L1i on its
+ * own, entered every frame -- where most of the code belongs to
+ * branches that are not taken on a given frame.  Keeping the phases
+ * separate costs one call each and lets the fall-through path stay
+ * resident.  Under -Os the compiler already optimises for size and the
+ * forced outlining only adds call overhead, so it is disabled. */
+#if defined(__OPTIMIZE_SIZE__)
+#define RGUI_NOINLINE
+#elif defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
+#define RGUI_NOINLINE __attribute__((noinline))
+#elif defined(_MSC_VER)
+#define RGUI_NOINLINE __declspec(noinline)
+#else
+#define RGUI_NOINLINE
+#endif
+
 static void rgui_render_border(
       rgui_t *rgui,
       uint16_t *data,
@@ -2055,7 +2289,7 @@ static void rgui_init_particle_effect(
    }
 }
 
-static void rgui_render_particle_effect(
+RGUI_NOINLINE static void rgui_render_particle_effect(
       rgui_t *rgui,
       gfx_animation_t *p_anim,
       uint16_t *frame_buf_data,
@@ -2346,6 +2580,8 @@ static void rgui_process_wallpaper(
    unsigned x, y;
    unsigned x_crop_offset;
    unsigned y_crop_offset;
+   settings_t *settings        = config_get_ptr();
+   bool dither                 = settings->bools.menu_rgui_thumbnail_dither;
    frame_buf_t *background_buf = &rgui->background_buf;
 
    /* Sanity check */
@@ -2377,8 +2613,16 @@ static void rgui_process_wallpaper(
       uint16_t   *dst = background_buf->data + y * background_buf->width;
       const uint32_t *src = image->pixels + x_crop_offset
             + (y + y_crop_offset) * image->width;
-      for (x = 0; x < background_buf->width; x++)
-         dst[x] = argb32_to_pixel_platform_format(src[x]);
+      if (dither)
+      {
+         for (x = 0; x < background_buf->width; x++)
+            dst[x] = argb32_to_pixel_platform_format_dither(src[x], x, y);
+      }
+      else
+      {
+         for (x = 0; x < background_buf->width; x++)
+            dst[x] = argb32_to_pixel_platform_format(src[x]);
+      }
    }
 
    /* Tell menu that a display update is required */
@@ -2437,6 +2681,7 @@ static bool rgui_request_thumbnail(
          if (task_push_image_load(thumbnail->path,
                (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA),
                0,
+               0,
                (thumbnail_id == GFX_THUMBNAIL_LEFT)
                      ? rgui_handle_left_thumbnail_upload
                      : rgui_handle_thumbnail_upload,
@@ -2454,6 +2699,66 @@ static bool rgui_request_thumbnail(
 }
 
 /* TODO/FIXME - we can remove the dependency on rgui struct here */
+
+/* Integer box decimate by 'f', averaging f*f ARGB8888 pixels.
+ *
+ * RGUI reduces thumbnails to a framebuffer at most 560 pixels wide -
+ * mini thumbnails to roughly half that - so an arbitrary source lands
+ * at a large ratio: a 4K screenshot in a mini thumbnail is a 15.7:1
+ * reduction.  The sinc kernel widens with the ratio (128 taps there)
+ * and the scaler's accumulate truncates once per tap, so the result
+ * comes back measurably dark: -7.8% at that ratio, -4.7% for a 1080p
+ * screenshot, against -0.8% at the 8-tap minimum.
+ *
+ * Decimating first keeps the sinc stage below 2:1 and so at 8 taps.
+ * Box averaging is exact here - it averages precisely the pixels being
+ * discarded - so this costs nothing in quality, and it is faster
+ * besides, the expensive filter seeing far fewer input pixels. */
+static uint32_t *rgui_downscale_box(const uint32_t *src,
+      unsigned sw, unsigned sh, unsigned f,
+      unsigned *dw, unsigned *dh)
+{
+   unsigned x, y, i, j;
+   unsigned n = f * f;
+   uint32_t *d;
+
+   *dw = sw / f;
+   *dh = sh / f;
+
+   if ((*dw < 1) || (*dh < 1))
+      return NULL;
+
+   if (!(d = (uint32_t*)malloc((size_t)*dw * *dh * sizeof(uint32_t))))
+      return NULL;
+
+   for (y = 0; y < *dh; y++)
+   {
+      for (x = 0; x < *dw; x++)
+      {
+         unsigned a = 0, r = 0, g = 0, b = 0;
+
+         for (j = 0; j < f; j++)
+         {
+            const uint32_t *row = src + (size_t)(y * f + j) * sw + x * f;
+
+            for (i = 0; i < f; i++)
+            {
+               uint32_t p  = row[i];
+               a          += (p >> 24) & 0xff;
+               r          += (p >> 16) & 0xff;
+               g          += (p >>  8) & 0xff;
+               b          +=  p        & 0xff;
+            }
+         }
+
+         d[(size_t)y * *dw + x] =
+               ((a / n) << 24) | ((r / n) << 16)
+             | ((g / n) <<  8) |  (b / n);
+      }
+   }
+
+   return d;
+}
 
 static bool rgui_downscale_thumbnail(
       rgui_t *rgui,
@@ -2541,9 +2846,34 @@ static bool rgui_downscale_thumbnail(
        * > Better quality, but substantially higher performance
        *   impact - although not an issue on desktop-class
        *   hardware */
-      rgui->image_scaler.in_width    = image_src->width;
-      rgui->image_scaler.in_height   = image_src->height;
-      rgui->image_scaler.in_stride   = image_src->width * sizeof(uint32_t);
+      const uint32_t *scale_src = image_src->pixels;
+      unsigned scale_width      = image_src->width;
+      unsigned scale_height     = image_src->height;
+      uint32_t *box_buf         = NULL;
+      unsigned f;
+
+      /* Decimate first while doing so does not undershoot the
+       * target, so the filter below runs at its minimum kernel
+       * rather than one widened by the ratio.  See
+       * rgui_downscale_box(). */
+      for (f = 1; (scale_width / (f * 2)) >= image_dst->width; f *= 2) ;
+
+      if (f > 1)
+      {
+         unsigned bw, bh;
+
+         if ((box_buf = rgui_downscale_box(scale_src,
+               scale_width, scale_height, f, &bw, &bh)))
+         {
+            scale_src    = box_buf;
+            scale_width  = bw;
+            scale_height = bh;
+         }
+      }
+
+      rgui->image_scaler.in_width    = scale_width;
+      rgui->image_scaler.in_height   = scale_height;
+      rgui->image_scaler.in_stride   = scale_width * sizeof(uint32_t);
       rgui->image_scaler.in_fmt      = SCALER_FMT_ARGB8888;
 
       rgui->image_scaler.out_width   = image_dst->width;
@@ -2564,10 +2894,12 @@ static bool rgui_downscale_thumbnail(
          /* Could be leftovers if scaler_ctx_gen_filter()
           * fails, so reset just in case... */
          scaler_ctx_gen_reset(&rgui->image_scaler);
+         free(box_buf);
          return false;
       }
 
-      scaler_ctx_scale(&rgui->image_scaler, image_dst->pixels, image_src->pixels);
+      scaler_ctx_scale(&rgui->image_scaler, image_dst->pixels, scale_src);
+      free(box_buf);
       /* Reset again - don't want to leave anything hanging around
        * if the user switches back to nearest neighbour scaling */
       scaler_ctx_gen_reset(&rgui->image_scaler);
@@ -2581,6 +2913,7 @@ static void rgui_process_thumbnail(
       thumbnail_t *thumbnail,
       uint32_t *queue_size,
       unsigned menu_rgui_thumbnail_downscaler,
+      bool dither,
       struct texture_image *image_src)
 {
    unsigned x, y;
@@ -2632,8 +2965,16 @@ static void rgui_process_thumbnail(
    {
       uint16_t       *dst = thumbnail->data   + y * thumbnail->width;
       const uint32_t *src = image->pixels     + y * thumbnail->width;
-      for (x = 0; x < thumbnail->width; x++)
-         dst[x] = argb32_to_pixel_platform_format(src[x]);
+      if (dither)
+      {
+         for (x = 0; x < thumbnail->width; x++)
+            dst[x] = argb32_to_pixel_platform_format_dither(src[x], x, y);
+      }
+      else
+      {
+         for (x = 0; x < thumbnail->width; x++)
+            dst[x] = argb32_to_pixel_platform_format(src[x]);
+      }
    }
 
    thumbnail->is_valid    = true;
@@ -2693,18 +3034,22 @@ static bool rgui_load_image(
             settings_t *settings                    = config_get_ptr();
             unsigned menu_rgui_thumbnail_downscaler =
                   settings->uints.menu_rgui_thumbnail_downscaler;
+            bool dither                             =
+                  settings->bools.menu_rgui_thumbnail_dither;
 
             if (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
                rgui_process_thumbnail(rgui,
                      &rgui->fs_thumbnail,
                      &rgui->thumbnail_queue_size,
                      menu_rgui_thumbnail_downscaler,
+                     dither,
                      image);
             else
                rgui_process_thumbnail(rgui,
                      &rgui->mini_thumbnail,
                      &rgui->thumbnail_queue_size,
                      menu_rgui_thumbnail_downscaler,
+                     dither,
                      image);
 
             /* If user toggles settings rapidly on very slow systems,
@@ -2722,18 +3067,22 @@ static bool rgui_load_image(
             settings_t *settings                    = config_get_ptr();
             unsigned menu_rgui_thumbnail_downscaler =
                   settings->uints.menu_rgui_thumbnail_downscaler;
+            bool dither                             =
+                  settings->bools.menu_rgui_thumbnail_dither;
 
             if (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
                rgui_process_thumbnail(rgui,
                      &rgui->fs_thumbnail,
                      &rgui->left_thumbnail_queue_size,
                      menu_rgui_thumbnail_downscaler,
+                     dither,
                      image);
             else
                rgui_process_thumbnail(rgui,
                      &rgui->mini_left_thumbnail,
                      &rgui->left_thumbnail_queue_size,
                      menu_rgui_thumbnail_downscaler,
+                     dither,
                      image);
 
             if (rgui->left_thumbnail_queue_size > 0)
@@ -2747,7 +3096,7 @@ static bool rgui_load_image(
    return true;
 }
 
-static void rgui_render_background(
+RGUI_NOINLINE static void rgui_render_background(
       rgui_t *rgui,
       unsigned fb_width,
       unsigned fb_height,
@@ -2786,7 +3135,7 @@ static void rgui_render_messagebox(
       unsigned fb_width,
       unsigned fb_height);
 
-static void rgui_render_fs_thumbnail(
+RGUI_NOINLINE static void rgui_render_fs_thumbnail(
       rgui_t *rgui,
       unsigned fb_width,
       unsigned fb_height,
@@ -3347,6 +3696,7 @@ end:
              * and then forgotten, so performance issues are not a concern */
             task_push_image_load(wallpaper_path,
                   (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA),
+                  0,
                   0,
                   menu_display_handle_wallpaper_upload,
                   NULL);
@@ -4853,7 +5203,7 @@ static int rgui_osk_ptr_at_pos(
    return -1;
 }
 
-static void rgui_render_osk(
+RGUI_NOINLINE static void rgui_render_osk(
       rgui_t *rgui,
       uint16_t *frame_buf_data,
       gfx_animation_ctx_ticker_t *ticker,
@@ -5520,6 +5870,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
          else
          {
             ticker.s        = thumbnail_title_buf;
+            ticker.s_len    = sizeof(thumbnail_title_buf);
             ticker.len      = rgui->term_layout.width;
             ticker.str      = thumbnail_title;
             ticker.selected = true;
@@ -5722,6 +6073,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
       else
       {
          ticker.s        = title_buf;
+         ticker.s_len    = sizeof(title_buf);
          ticker.len      = title_max_len;
          ticker.str      = rgui->menu_title;
          ticker.selected = true;
@@ -5875,6 +6227,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
          else
          {
             ticker.s                  = entry_title_buf;
+            ticker.s_len              = sizeof(entry_title_buf);
             ticker.len                = entry_title_max_len;
             if (*entry.rich_label)
                ticker.str             = entry.rich_label;
@@ -5912,6 +6265,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
                else
                {
                   ticker.s                  = type_str_buf;
+                  ticker.s_len              = sizeof(type_str_buf);
                   ticker.len                = entry_value_len;
                   ticker.str                = entry_value;
 
@@ -6028,6 +6382,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
          else
          {
             ticker.s                  = sublabel_buf;
+            ticker.s_len              = sizeof(sublabel_buf);
             ticker.len                = rgui->term_layout.width;
             ticker.str                = rgui->menu_sublabel;
             ticker.selected           = true;
@@ -6065,6 +6420,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
          else
          {
             ticker.s                  = core_title_buf;
+            ticker.s_len              = sizeof(core_title_buf);
             ticker.len                = rgui->term_layout.width;
             ticker.str                = core_title;
             ticker.selected           = true;
@@ -7176,7 +7532,7 @@ static void rgui_update_savestate_thumbnail_path(void *data, unsigned i)
          unsigned _state_slot = string_to_unsigned(entry.label);
          if (     _state_slot == MENU_ENUM_LABEL_STATE_SLOT
                || string_is_equal(entry.label, MENU_ENUM_LABEL_STATE_SLOT_RUN_STR)
-               || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_STATE_SLOT))
+               || string_is_equal(entry.label, MENU_ENUM_LABEL_STATE_SLOT_STR)
                || string_is_equal(entry.label, MENU_ENUM_LABEL_LOAD_STATE_STR)
                || string_is_equal(entry.label, MENU_ENUM_LABEL_SAVE_STATE_STR))
          {
@@ -7666,7 +8022,7 @@ static void rgui_populate_entries(
 
    /* Check whether we are currently viewing a playlist */
    if (     string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST_STR)
-         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY))
+         || string_is_equal(label, MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR)
          || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST_STR)
          || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST_STR)
          || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST_STR)
@@ -7676,14 +8032,14 @@ static void rgui_populate_entries(
    else
       rgui->flags &= ~RGUI_FLAG_IS_PLAYLIST;
 
-   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
+   if (string_is_equal(label, MENU_ENUM_LABEL_PLAYLISTS_TAB_STR))
       rgui->flags |=  RGUI_FLAG_IS_PLAYLISTS_TAB;
    else
       rgui->flags &= ~RGUI_FLAG_IS_PLAYLISTS_TAB;
 
    /* Determine whether this is the quick menu */
    if (     string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS_STR)
-         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS))
+         || string_is_equal(label, MENU_ENUM_LABEL_CONTENT_SETTINGS_STR)
          || string_is_equal(label, MENU_ENUM_LABEL_SAVESTATE_LIST_STR))
       rgui->flags |=  RGUI_FLAG_IS_QUICK_MENU;
    else
@@ -7713,7 +8069,7 @@ static void rgui_populate_entries(
       /* Quick Menu under Explore list must also be Quick Menu */
       if (     string_is_equal(entry.label, MENU_ENUM_LABEL_RUN_STR)
             || string_is_equal(entry.label, MENU_ENUM_LABEL_RESUME_CONTENT_STR)
-            || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_STATE_SLOT))
+            || string_is_equal(entry.label, MENU_ENUM_LABEL_STATE_SLOT_STR)
          )
       {
          rgui->flags |=  RGUI_FLAG_IS_QUICK_MENU;
@@ -7733,7 +8089,7 @@ static void rgui_populate_entries(
    rgui->flags &= ~RGUI_FLAG_THUMBNAIL_LOAD_PENDING;
 
    if (     rgui->flags & RGUI_FLAG_IS_PLAYLIST
-         && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY)))
+         && !string_is_equal(label, MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR))
    {
       if (     remember_selection == MENU_REMEMBER_SELECTION_ALWAYS
             || remember_selection == MENU_REMEMBER_SELECTION_PLAYLISTS)
@@ -7745,7 +8101,7 @@ static void rgui_populate_entries(
             || remember_selection == MENU_REMEMBER_SELECTION_PLAYLISTS)
          menu_st->selection_ptr = rgui->playlist_selection_ptr;
    }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS)))
+   else if (string_is_equal(label, MENU_ENUM_LABEL_SETTINGS_STR))
    {
       if (     remember_selection == MENU_REMEMBER_SELECTION_ALWAYS
             || remember_selection == MENU_REMEMBER_SELECTION_MAIN)

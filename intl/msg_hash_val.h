@@ -101,6 +101,9 @@ static const struct
    char s_87e07c0e[18];
    char s_d7f2e719[31];
    char s_e567aa86[20];
+#ifdef HAVE_MIST
+   char s_c3f0e1ff[20];
+#endif
    char s_16eade0c[38];
    char s_b95e3404[43];
    char s_734d2a61[6];
@@ -129,6 +132,11 @@ static const struct
    char s_6b38a08b[53];
    char s_3e073ed3[45];
    char s_6ebb6a00[12];
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   char s_e65393d5[14];
+#endif
+#endif
    char s_c12910d3[8];
    char s_40a4eb2b[60];
    char s_1ad1dee7[7];
@@ -213,8 +221,25 @@ static const struct
    char s_72898bf0[19];
    char s_f89e1cbc[54];
    char s_63af41a7[30];
-   char s_df92f5b5[36];
+#ifdef HAVE_MIST
+   char s_53788998[27];
+#endif
    char s_b00815b8[15];
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
+   char s_d0fb22cb[11];
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+   char s_ca9a92ae[24];
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+   char s_e501ec1b[21];
+   char s_5a6c78fd[30];
+   char s_73295c14[36];
+#endif
+#endif
    char s_8be7813a[8];
    char s_1757647b[7];
    char s_e1a8f707[18];
@@ -243,15 +268,11 @@ static const struct
    char s_56e21ee1[18];
    char s_f70406ce[18];
    char s_66df5c89[17];
-   char s_3361e11d[51];
-   char s_9b3ca94b[47];
    char s_6d025795[6];
    char s_6d059c18[12];
    char s_99d648f2[12];
    char s_2aeb5474[15];
    char s_7534cfc9[6];
-   char s_036acd54[34];
-   char s_a0a191ca[34];
    char s_5f15f7a7[8];
    char s_6d08238d[4];
    char s_e8a86d57[7];
@@ -345,6 +366,9 @@ static const struct
    char s_93bae0e3[11];
    char s_ed013a05[24];
    char s_01a73130[31];
+#ifdef HAVE_SMBCLIENT
+   char s_d21d875b[21];
+#endif
    char s_d7fc4c9c[23];
    char s_d21c686b[35];
    char s_7943e750[28];
@@ -382,6 +406,23 @@ static const struct
    char s_b2f7627c[32];
    char s_c79d5013[19];
    char s_4bceefff[26];
+#if defined(DINGUX)
+   char s_bfd4c6ef[10];
+   char s_ce997004[9];
+   char s_52153570[17];
+   char s_805730a0[23];
+   char s_d374d67d[29];
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+   char s_f98e1e26[46];
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   char s_5a03a511[11];
+   char s_fec3d9e4[17];
+   char s_c1e9447c[23];
+#endif
+#endif
    char s_cc973e8a[7];
    char s_d0a04fe4[17];
    char s_ed22c5f1[26];
@@ -411,6 +452,7 @@ static const struct
    char s_f5911f43[40];
    char s_552163d9[40];
    char s_ef3d53d8[17];
+   char s_ba3e4ee6[22];
    char s_45816e1d[31];
    char s_c017f975[22];
    char s_730df420[16];
@@ -439,8 +481,6 @@ static const struct
    char s_65e6ea7c[4];
    char s_aa0659db[20];
    char s_49757b91[20];
-   char s_9ca4bbd7[22];
-   char s_9ca4bbd8[22];
    char s_5a8511ce[50];
    char s_243da114[53];
    char s_17385b20[65];
@@ -499,6 +539,11 @@ static const struct
    char s_711cd0b9[95];
    char s_4db83281[126];
    char s_ccbacaee[133];
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   char s_043f1283[52];
+#endif
+#endif
    char s_aa39aae6[74];
    char s_d43521db[100];
    char s_44040aad[117];
@@ -526,7 +571,18 @@ static const struct
    char s_ad131006[175];
    char s_ee3a489b[43];
    char s_236bd8d5[60];
+#ifdef HAVE_MIST
+   char s_40e907c6[56];
+#endif
    char s_8b636a26[36];
+#ifdef HAVE_MICROPHONE
+   char s_b80b10dc[180];
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+   char s_b37744c2[102];
+#endif
+#endif
    char s_a9d2ffe8[33];
    char s_4be9dc09[28];
    char s_198c91d3[68];
@@ -566,6 +622,9 @@ static const struct
    char s_d512ad1c[52];
    char s_4b009af3[82];
    char s_46c57dde[64];
+#ifdef HAVE_MIST
+   char s_32956bc0[42];
+#endif
    char s_1a8301fe[57];
    char s_8bbf7ffb[135];
    char s_ffd591e0[49];
@@ -575,6 +634,18 @@ static const struct
    char s_f815af2a[78];
    char s_8759e741[43];
    char s_5e14cb20[182];
+#if defined(DINGUX)
+   char s_6dc7aece[235];
+   char s_c0e554ab[202];
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+   char s_b0dd9b14[155];
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   char s_eaa5cf6a[170];
+#endif
+#endif
    char s_ab839b13[138];
    char s_17663212[192];
    char s_d60aa85f[63];
@@ -605,6 +676,11 @@ static const struct
    char s_81120e85[157];
    char s_47ae341f[151];
    char s_48696c85[96];
+#if defined (WIIU)
+#ifdef WIIU
+   char s_7222b7e5[177];
+#endif
+#endif
    char s_3c13e61f[153];
    char s_d96182c1[50];
    char s_93bbb839[119];
@@ -619,11 +695,6 @@ static const struct
    char s_5562855e[56];
    char s_75325963[53];
    char s_6ac06624[168];
-   char s_2a9c73f3[34];
-   char s_05e3f715[42];
-   char s_631c5635[45];
-   char s_19e809ad[38];
-   char s_db1e4390[38];
    char s_f7e279a6[11];
    char s_824867fd[69];
    char s_0638fe80[66];
@@ -631,19 +702,6 @@ static const struct
    char s_c0cae103[28];
    char s_71d52dde[61];
    char s_c6615fcf[34];
-   char s_4b6a946a[36];
-   char s_8d677b5b[29];
-   char s_e533ddbb[22];
-   char s_45130077[26];
-   char s_856bdef7[31];
-   char s_b1e9bfbf[20];
-   char s_28bbcc15[30];
-   char s_d15060ee[27];
-   char s_a068841f[28];
-   char s_4d7ee7e2[20];
-   char s_509dd374[25];
-   char s_bab020a4[22];
-   char s_88494936[37];
    char s_a7ae1b42[22];
 } msg_hash_val_blob =
 {
@@ -745,6 +803,9 @@ static const struct
    "Descarregar nucli",
    "Bloquejar el nucli instal\302\267lat",
    "Gestiona els nuclis",
+#ifdef HAVE_MIST
+   "Gestiona els nuclis",
+#endif
    "Categories en les opcions dels nuclis",
    "Restaurar una c\303\262pia de seguretat existent",
    "Nucli",
@@ -773,6 +834,11 @@ static const struct
    "Permetre als nuclis canviar el controlador de v\303\255deo",
    "Carregar un nucli buit al tancar-ne un altre",
    "Abocar disc",
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   "Expulsar disc",
+#endif
+#endif
    "Engegat",
    "Engega la vibraci\303\263 del dispositiu (per a nuclis suportats)",
    "Regi\303\263",
@@ -857,8 +923,25 @@ static const struct
    "Relaci\303\263 d'aspecte",
    "Reprendre contingut despr\303\251s d'usar un guardat r\303\240pid",
    "Vore 'Arxiu de configuraci\303\263'",
-   "\"Load Content\" Startup Notification",
+#ifdef HAVE_MIST
+   "Vore 'Gestiona els nuclis'",
+#endif
    "Sons del men\303\272",
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
+   "Dispositiu",
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+   "Qualitat del remostreig",
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+   "Mode WASAPI exclusiu",
+   "Format WASAPI de punt flotant",
+   "Mida del b\303\272fer compartit de WASAPI",
+#endif
+#endif
    "Entrada",
    "Eixida",
    "Perdut, opcional:",
@@ -887,15 +970,11 @@ static const struct
    "Gesti\303\263 d'energia",
    "Actual, opcional:",
    "Actual, requerit",
-   "Are you sure you want to delete the playlist \"%1\"?",
-   "Are you sure you want to delete the item \"%1\"?",
    "Nucli",
    "Informaci\303\263",
    "Informaci\303\263",
    "Carregar nucli",
    "&Ajut",
-   "\"All Playlists\" max grid entries:",
-   "\"All Playlists\" max list entries:",
    "Ajustos",
    "Nom",
    "Nucli:",
@@ -989,6 +1068,9 @@ static const struct
    "Un sol \303\272s",
    "Vore men\303\272 d'escriptori",
    "Instal\302\267la o restaura un nucli",
+#ifdef HAVE_SMBCLIENT
+   "Xarxa compartida SMB",
+#endif
    "Iniciar RetroPad remot",
    "Comen\303\247ar el processador de v\303\255deo",
    "Suspendre el salvapantalles",
@@ -1026,6 +1108,23 @@ static const struct
    "Configura la relaci\303\263 d'aspecte",
    "Relaci\303\263 d'aspecte",
    "Inserir fotogrames negres",
+#if defined(DINGUX)
+   "Bic\303\272bica",
+   "Bilineal",
+   "Ve\303\255 m\303\251s proper",
+   "Interpolaci\303\263 d'imatge",
+   "Mantindre relaci\303\263 d'aspecte",
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+   "Freq\303\274\303\250ncia de refresc vertical de la imatge",
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   "Semilineal",
+   "Ve\303\255 m\303\251s proper",
+   "Interpolaci\303\263 d'imatge",
+#endif
+#endif
    "V\303\255deo",
    "Filtre de v\303\255deo",
    "Remou el filtre de v\303\255deo",
@@ -1055,6 +1154,7 @@ static const struct
    "Retarda c\303\240rrega autom\303\240tica de shaders",
    "Activar context compartit per maquinari",
    "Filtrat bilineal",
+   "Selecci\303\263 autom\303\240tica",
    "Interval d'intercanvi de VSync",
    "Selecci\303\263 autom\303\240tica",
    "Sincronitzaci\303\263",
@@ -1083,8 +1183,6 @@ static const struct
    "Cap",
    "Preajust de shaders",
    "Preajust de shaders",
-   "video_viewport_bias_x",
-   "video_viewport_bias_y",
    "Canvia els ajustos del narrador d'accessibilitat.",
    "Crea i actualitza els llistats escanejant contingut.",
    "Canvia els ajustos del servei d'IA (traducci\303\263/text a veu/etc.).",
@@ -1168,6 +1266,11 @@ static const struct
    "\240 un nucli buit evitant que es tanque soles.",
    "Converteix un mitj\303\240 f\303\255sic de disc \303\262ptic en un arxiu d'imatge per a poder se"
    "r guardat i executat en la mem\303\262ria del teu maquinari.",
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   "Trau el disc \303\262ptic de la unitat lectora de CD/DVD.",
+#endif
+#endif
    "Canvia els ajustos de rebobinat, l'avan\303\247ament r\303\240pid i la c\303\240mera lenta.",
    "Ac\303\255 apareixeran els nuclis instal\302\267lats que puguen funcionar sense haver de carrega"
    "r un contingut.",
@@ -1212,7 +1315,21 @@ static const struct
    "n execuci\303\263.",
    "Canvia els ajustos de l'aspecte del men\303\272.",
    "Vore la opci\303\263 \"Arxiu de configuraci\303\263\" al Men\303\272 principal.",
+#ifdef HAVE_MIST
+   "Vore l'opci\303\263 'Gestiona els nuclis' al men\303\272 principal.",
+#endif
    "Canvia els ajustos de so del men\303\272.",
+#ifdef HAVE_MICROPHONE
+   "Baixa este valor per afavorir el rendiment i la lat\303\250ncia sobre la qualitat de l'\303\240u"
+   "dio, incrementeu-lo per a una millor qualitat d'\303\240udio a canvi de perdre rendiment i lat"
+   "\303\250ncia.",
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+   "Mida (en fotogrames) de la mem\303\262ria interm\303\250dia quan s\342\200\231usa el controlador"
+   " WASAPI en mode compartit.",
+#endif
+#endif
    "Selecciona dispositiu d'entrada.",
    "Canvia els ajustos de MIDI.",
    "Uneix-te a una sessi\303\263 de joc en l\303\255nia, o crea-ne la teua pr\303\262pia.",
@@ -1263,6 +1380,9 @@ static const struct
    "Fa apar\303\250ixer un men\303\272 en forma de la t\303\255pica finestra de programari d'ordinad"
    "or.",
    "Instal\302\267la o restaura un nucli des del directori de \"Baixades\".",
+#ifdef HAVE_MIST
+   "Canvia els ajustos relacionats amb Steam.",
+#endif
    "Evita que el salvapantalles del vostre sistema s'active.",
    "Bescanvia tots els nuclis vells i instal\302\267lats manualment amb les \303\272ltimes versions "
    "de la Google Play Store quan estiguen disponibles.",
@@ -1275,6 +1395,25 @@ static const struct
    "Retalla uns quants p\303\255xels a les vores de la imatge que de vegades els desenvolupadors sol"
    "en deixar en blanc, o que tamb\303\251 la imatge puga contenir p\303\255xels de residu. (cal rei"
    "niciar)",
+#if defined(DINGUX)
+   "Concreta el m\303\250tode d'interpolaci\303\263 d'imatge usat per escalar contingut a trav\303"
+   "\251s de l'IPU interna. Usar 'Bic\303\272bica' o 'Bilineal' \303\251s recomanable quan s'usen fi"
+   "ltres de v\303\255deo processats per la CPU. Esta opci\303\263 no afecta al rendiment.",
+   "Mant\303\251 les relacions d'aspecte de p\303\255xels 1:1 a l'escalar continguts mitjan\303\247a"
+   "nt la IPU interna. Si es desactiva esta opci\303\263, les imatges seran estirades a fi de que oc"
+   "upen la totalitat de la pantalla.",
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+   "Establix la freq\303\274\303\250ncia de l'actualitzaci\303\263 vertical de la imatge. Escollir '"
+   "50 Hz' donar\303\240 una imatge m\303\251s suau al estar usant continguts en format PAL.",
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   "Especifica el m\303\250tode d'interpolaci\303\263 d'imatge que s'usar\303\240 quan l'ajust 'Esca"
+   "lar usant nombres sencers' estiga desactivat. 'Ve\303\255 m\303\251s proper' afecta menys al ren"
+   "diment.",
+#endif
+#endif
    "Els gestors de finestres empraran la composici\303\263 per aplicar efectes visuals, detectar fin"
    "estres que no responguen, entre d'altres coses.",
    "Aplica un filtre de v\303\255deo processat per la CPU. Pot comportar un major consum de recursos"
@@ -1329,6 +1468,13 @@ static const struct
    "a de refresc d'imatge d'actualitzaci\303\263 de la pantalla. Es recomana activar-lo.",
    "For\303\247a la sincronitzaci\303\263 entre CPU i GPU. Reduix la lat\303\250ncia a canvi de p"
    "\303\250rdua de rendiment.",
+#if defined (WIIU)
+#ifdef WIIU
+   "Usa una escala exacta del doble de la resoluci\303\263 del controlador per a l'\303\240rea de vi"
+   "sualitzaci\303\263. Mantin esta opci\303\263 desactivada per mostrar la resoluci\303\263 nativa "
+   "del televisor.",
+#endif
+#endif
    "Si s'est\303\240 usant el mode de pantalla completa, for\303\247a l'\303\272s d'una finestra a m"
    "ida completa de la pantalla per no haver de canviar entre modes de v\303\255deo.",
    "Canvia els ajustos del mode finestra en pantalla.",
@@ -1357,11 +1503,6 @@ static const struct
    "Ajusta una amplada personalitzada per a la finestra.",
    "Impedix capgirar-se de l'interval sol\302\267licitat pel nucli. Recomanat per a pantalles amb un"
    "a freq\303\274\303\250ncia de refresc d'imatge variable (G-Sync, FreeSync, HDMI 2.1 VRR).",
-   "Controller profile saved as \"%s\".",
-   "Auto-loading save state from \"%s\" failed.",
-   "Auto-loading save state from \"%s\" succeeded.",
-   "bringing_up_command_interface_at_port",
-   "RetroAchievements: Logged in as \"%s\".",
    "Compilador",
    "Error a l'esborrar el nucli de la llista 'Nuclis sense continguts': ",
    "Error a l'afegir el nucli a la llista 'Nuclis sense continguts': ",
@@ -1369,19 +1510,6 @@ static const struct
    "Desconnectat %s del port %u",
    "No ha sigut configurat %s (%u/%u) usant l'opci\303\263 secund\303\240ria",
    "No ha sigut configurat %s (%u/%u)",
-   "disconnect_device_from_a_valid_port",
-   "failed_to_start_audio_driver",
-   "found_last_state_slot",
-   "Got connection from: \"%s\"",
-   "Got connection from: \"%s (%s)\"",
-   "Client banned: \"%s\"",
-   "Your nickname changed to \"%s\"",
-   "Failed to ban client: \"%s\"",
-   "Failed to kick client: \"%s\"",
-   "Client kicked: \"%s\"",
-   "Netplay peer \"%s\" paused",
-   "\"%s\" has disconnected",
-   "Unrecognized command \"%s\" received.\n",
    "Esperant al client...",
 };
 
@@ -1389,11 +1517,97 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_val_blob_check[
-      (sizeof(msg_hash_val_blob) == (26528u
+      (sizeof(msg_hash_val_blob) == (25754u
+#ifdef HAVE_MIST
+       + 20u
+#endif
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+       + 14u
+#endif
+#endif
+#ifdef HAVE_MIST
+       + 27u
+#endif
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
+       + 11u
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+       + 24u
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+       + 21u
+       + 30u
+       + 36u
+#endif
+#endif
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
        + 77u
+#endif
+#endif
+#ifdef HAVE_SMBCLIENT
+       + 21u
+#endif
+#if defined(DINGUX)
+       + 10u
+       + 9u
+       + 17u
+       + 23u
+       + 29u
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+       + 46u
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+       + 11u
+       + 17u
+       + 23u
+#endif
+#endif
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+       + 52u
+#endif
+#endif
+#ifdef HAVE_MIST
+       + 56u
+#endif
+#ifdef HAVE_MICROPHONE
+       + 180u
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+       + 102u
+#endif
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
        + 125u
+#endif
+#endif
+#ifdef HAVE_MIST
+       + 42u
+#endif
+#if defined(DINGUX)
+       + 235u
+       + 202u
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+       + 155u
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+       + 170u
+#endif
+#endif
+#if defined (WIIU)
+#ifdef WIIU
+       + 177u
 #endif
 #endif
       )) ? 1 : -1];
@@ -1487,6 +1701,9 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST,
+#ifdef HAVE_MIST
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_MANAGER_STEAM_LIST,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
@@ -1515,6 +1732,11 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DRIVER_SWITCH_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DUMP_DISC,
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EJECT_DISC,
+#endif
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_ENABLED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_REGION,
@@ -1599,8 +1821,25 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
+#ifdef HAVE_MIST
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+#endif
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
@@ -1629,15 +1868,11 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_INFO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
@@ -1731,6 +1966,9 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_SINGLE_PURPOSE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
+#ifdef HAVE_SMBCLIENT
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
@@ -1768,6 +2006,23 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
+#if defined(DINGUX)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+#endif
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
@@ -1797,6 +2052,7 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
@@ -1825,8 +2081,6 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
@@ -1885,6 +2139,11 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_DRIVER_SWITCH_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_DUMP_DISC,
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_SUBLABEL_EJECT_DISC,
+#endif
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
    (uint32_t)MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
@@ -1912,7 +2171,18 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
+#ifdef HAVE_MIST
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SOUNDS,
+#ifdef HAVE_MICROPHONE
+   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY,
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+#endif
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_MIDI_INPUT,
    (uint32_t)MENU_ENUM_SUBLABEL_MIDI_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY,
@@ -1952,6 +2222,9 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
    (uint32_t)MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
+#ifdef HAVE_MIST
+   (uint32_t)MENU_ENUM_SUBLABEL_STEAM_SETTINGS,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
    (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
@@ -1961,6 +2234,18 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
+#if defined(DINGUX)
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+#endif
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
@@ -1991,6 +2276,11 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+#if defined (WIIU)
+#ifdef WIIU
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
+#endif
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
@@ -2005,11 +2295,6 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
-   (uint32_t)MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
-   (uint32_t)MSG_AUTOLOADING_SAVESTATE_FAILED,
-   (uint32_t)MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
-   (uint32_t)MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
-   (uint32_t)MSG_CHEEVOS_LOGGED_IN_AS_USER,
    (uint32_t)MSG_COMPILER,
    (uint32_t)MSG_CORE_SET_STANDALONE_EXEMPT_FAILED,
    (uint32_t)MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED,
@@ -2017,18 +2302,5 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MSG_DEVICE_DISCONNECTED_FROM_PORT_NR,
    (uint32_t)MSG_DEVICE_NOT_CONFIGURED_FALLBACK_NR,
    (uint32_t)MSG_DEVICE_NOT_CONFIGURED_NR,
-   (uint32_t)MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
-   (uint32_t)MSG_FAILED_TO_START_AUDIO_DRIVER,
-   (uint32_t)MSG_FOUND_LAST_STATE_SLOT,
-   (uint32_t)MSG_GOT_CONNECTION_FROM,
-   (uint32_t)MSG_GOT_CONNECTION_FROM_NAME,
-   (uint32_t)MSG_NETPLAY_BANNED_CLIENT_S,
-   (uint32_t)MSG_NETPLAY_CHANGED_NICK,
-   (uint32_t)MSG_NETPLAY_FAILED_TO_BAN_CLIENT_S,
-   (uint32_t)MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S,
-   (uint32_t)MSG_NETPLAY_KICKED_CLIENT_S,
-   (uint32_t)MSG_NETPLAY_PEER_PAUSED,
-   (uint32_t)MSG_NETPLAY_SERVER_NAMED_HANGUP,
-   (uint32_t)MSG_UNRECOGNIZED_COMMAND,
    (uint32_t)MSG_WAITING_FOR_CLIENT,
 };

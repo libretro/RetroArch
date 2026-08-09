@@ -55,19 +55,19 @@ static int32_t hermite_interp_i16(int32_t x, const int16_t *y)
    int64_t c2 = 2 * (int64_t)y[0] - 5 * (int64_t)y[1]
               + 4 * (int64_t)y[2] - (int64_t)y[3];
    int64_t c3 = ((int64_t)y[3] - y[0]) + 3 * ((int64_t)y[1] - y[2]);
-   int64_t acc = c3 << 16;      /* Q16, holds 2*intermediate */
+   int64_t acc = c3 * 65536;    /* Q16, holds 2*intermediate */
    int64_t p;
    int32_t r;
 
    p   = acc * x;
    acc = ((p >= 0) ?  ((p + 32768) >> 16)
-                   : -(((-p) + 32768) >> 16)) + (c2 << 16);
+                   : -(((-p) + 32768) >> 16)) + c2 * 65536;
    p   = acc * x;
    acc = ((p >= 0) ?  ((p + 32768) >> 16)
-                   : -(((-p) + 32768) >> 16)) + (c1 << 16);
+                   : -(((-p) + 32768) >> 16)) + c1 * 65536;
    p   = acc * x;
    acc = ((p >= 0) ?  ((p + 32768) >> 16)
-                   : -(((-p) + 32768) >> 16)) + (c0 << 16);
+                   : -(((-p) + 32768) >> 16)) + c0 * 65536;
    /* acc is Q16 of 2*result; result = acc / (2 * 65536) = acc / 131072. */
    r   = (acc >= 0) ?  (int32_t)(( acc + 65536) >> 17)
                     : -(int32_t)((-acc + 65536) >> 17);
@@ -183,7 +183,7 @@ static int16_t vibratocore_core_i16(struct vibrato_core *core, int16_t in)
    core->phase        = core->phase % core->maxphase;
 
    size_q16      = (int64_t)core->size << 16;
-   readindex_q16 = ((int64_t)(core->writeindex - 1) << 16) - delay_q16;
+   readindex_q16 = (int64_t)(core->writeindex - 1) * 65536 - delay_q16;
    while (readindex_q16 < 0)
       readindex_q16 += size_q16;
    while (readindex_q16 >= size_q16)

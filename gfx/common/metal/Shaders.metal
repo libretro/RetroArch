@@ -63,6 +63,16 @@ fragment float4 sprite_fragment_a8(FontFragmentIn  in  [[ stage_in ]],
     return float4(in.color.rgb, in.color.a * colorSample.r);
 }
 
+/* 16-bit coverage sibling: identical math, float sampler so the
+ * R16Unorm atlas is not quantized to half precision (~11 bits). */
+fragment float4 sprite_fragment_a16(FontFragmentIn  in  [[ stage_in ]],
+                              texture2d<float> tex [[ texture(TextureIndexColor) ]],
+                              sampler samp         [[ sampler(SamplerIndexDraw) ]])
+{
+    float4 colorSample = tex.sample(samp, in.texCoord.xy);
+    return float4(in.color.rgb, in.color.a * colorSample.r);
+}
+
 #pragma mark - functions for rendering sprites
 
 vertex FontFragmentIn stock_vertex(const SpriteVertex in [[ stage_in ]], const device Uniforms &uniforms [[ buffer(BufferIndexUniforms) ]])
@@ -855,6 +865,30 @@ fragment float4 hdr_composite_fragment(
 
    if (!in_rect)
       return float4(0.0f, 0.0f, 0.0f, 0.0f);
+
+   /* Rotate sampling coordinates for rotated content (TATE / vertical
+    * games).  Nonzero only on the core pass of the no-shader path: the
+    * slang path pre-rotates via mvp_last_pass and the menu pass is never
+    * rotated.  The rect test above stays in screen space (the viewport
+    * already has the rotated aspect); only the sampling rotates.
+    * Mapping is corner-exact with what the SDR blit's rotated MVP
+    * (matrix_rotate_z * matrix_proj_ortho, y-negating ortho) displays:
+    *   rot 1: uv' = (1-v, u)   rot 2: uv' = (1-u, 1-v)
+    *   rot 3: uv' = (v, 1-u) */
+   switch (u.Rotation)
+   {
+      default:
+         break;
+      case 1u:
+         core_uv = float2(1.0f - core_uv.y, core_uv.x);
+         break;
+      case 2u:
+         core_uv = float2(1.0f - core_uv.x, 1.0f - core_uv.y);
+         break;
+      case 3u:
+         core_uv = float2(core_uv.y, 1.0f - core_uv.x);
+         break;
+   }
 
    if (u.HDRMode == 3u)
    {

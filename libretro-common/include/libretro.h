@@ -2716,6 +2716,144 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS 87
 
 /**
+ * Queries whether the active video driver can present a 10-bit-per-channel
+ * (30-bit) source surface end to end, i.e. whether a frame submitted as
+ * #RETRO_PIXEL_FORMAT_XRGB2101010 reaches the display without the frontend
+ * narrowing it to 8 bits per channel.
+ *
+ * Unlike SET_PIXEL_FORMAT, which accepts XRGB2101010 unconditionally and
+ * transparently down-converts when the driver cannot present 10-bit, this
+ * lets a core discover the real capability so it can avoid pointless work:
+ * a core that has both a 10-bit and an 8-bit output path should prefer the
+ * 8-bit path when this returns \c false, since emitting 10-bit only to have
+ * the frontend narrow it wastes effort and, for content that starts at 8
+ * bits, is a no-op round trip; going straight to 8 bits also rounds rather
+ * than truncates.
+ *
+ * The result may change across a driver reinit (e.g. the user switches
+ * video driver or toggles HDR), so a core that cares should query it when
+ * (re)choosing its pixel format rather than caching it indefinitely.
+ *
+ * @param[out] data <tt>bool *</tt>.
+ * Set to \c true if a 10-bit source surface is presented natively, \c false
+ * if XRGB2101010 frames are down-converted to 8-bit.
+ * @return \c true if the environment call is recognised (the value at
+ * \c data is then valid), \c false if it is unsupported (an older frontend);
+ * a core must treat "unsupported" as "no guarantee of native 10-bit".
+ */
+#define RETRO_ENVIRONMENT_GET_SCREEN_10BPC_CAPABLE (88 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/**
+ * Queries the luminance, in nits, that the frontend treats as SDR paper
+ * white when presenting HDR content.
+ *
+ * Only meaningful together with #RETRO_PIXEL_FORMAT_HDR10_2101010: a core
+ * encoding absolute luminance itself has to know where the user expects
+ * ordinary, non-glowing image content to sit, otherwise the whole frame is
+ * either dim or searing.  The value corresponds to the frontend's HDR paper
+ * white setting; typical values are 100-400.
+ *
+ * The user can change it at any time, so a core should re-query it when it
+ * rebuilds its colour tables rather than caching it forever.
+ *
+ * @param[out] data <tt>float *</tt>.
+ * Set to the paper white luminance in nits.
+ * @return \c true if the call is recognised and the value is valid, \c false
+ * on a frontend that does not implement it; callers should then assume a
+ * sensible default (200 nits).
+ */
+#define RETRO_ENVIRONMENT_GET_HDR_PAPER_WHITE_NITS (89 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/**
+ * Queries the colour-gamut treatment the frontend applies to SDR content
+ * when presenting HDR.
+ *
+ * Only meaningful together with #RETRO_PIXEL_FORMAT_HDR10_2101010.  A core
+ * emitting that format performs its own Rec.709 -> Rec.2020 rotation, and
+ * has to make the same choice the frontend makes for SDR content, or a
+ * scene will change saturation when the user switches the core between an
+ * SDR format and HDR10.  The values match the frontend's "Colour Boost"
+ * setting:
+ *
+ *   0 Accurate -- proper Rec.709 -> Rec.2020 conversion, no boost
+ *   1 Expanded -- Rec.709 -> a slightly wider space
+ *   2 Wide     -- Rec.709 -> DCI-P3
+ *   3 Super    -- no rotation at all; values stay Rec.709 and the boost
+ *                 comes from the display interpreting them as Rec.2020
+ *
+ * A core should re-query this when it rebuilds its colour tables, since the
+ * user can change it at any time.
+ *
+ * @param[out] data <tt>unsigned *</tt>.
+ * Set to one of the values above.
+ * @return \c true if the call is recognised, \c false on a frontend that
+ * does not implement it; callers should then assume 0 (Accurate).
+ */
+#define RETRO_ENVIRONMENT_GET_HDR_EXPAND_GAMUT (90 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/**
+ * Queries which HDR output mode the frontend is presenting with.
+ *
+ * Only meaningful together with #RETRO_PIXEL_FORMAT_HDR10_2101010.  Both
+ * output modes accept the same PQ Rec.2020 frame, but they do not treat its
+ * primaries identically: an HDR10 swapchain presents the samples as-is,
+ * while an scRGB swapchain converts them and applies a Rec.2020 -> Rec.709
+ * rotation on the way.  A core that encodes its own gamut -- which it must,
+ * to honour #RETRO_ENVIRONMENT_GET_HDR_EXPAND_GAMUT -- therefore has to know
+ * which of the two it is feeding, or its colour choice is undone by that
+ * rotation on one of them.
+ *
+ * Values:
+ *   0  HDR output is off
+ *   1  HDR10 (PQ, Rec.2020 swapchain); samples are presented unchanged
+ *   2  scRGB (linear FP16, Rec.709); the frontend applies Rec.2020 ->
+ *      Rec.709 to the decoded samples
+ *
+ * The user can switch this at any time, so a core should re-query it when it
+ * rebuilds its colour tables rather than caching it indefinitely.
+ *
+ * @param[out] data <tt>unsigned *</tt>.
+ * Set to one of the values above.
+ * @return \c true if the call is recognised, \c false on a frontend that
+ * does not implement it; callers should then assume 1 (HDR10), which is the
+ * mode that needs no compensation.
+ */
+#define RETRO_ENVIRONMENT_GET_HDR_OUTPUT_MODE (91 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/**
+ * Queries the peak luminance the frontend is presenting to, in cd/m2 (nits).
+ *
+ * Only meaningful together with #RETRO_PIXEL_FORMAT_HDR10_2101010.  A core
+ * emitting HDR10 encodes absolute luminance itself, so it decides where its
+ * brightest content lands.  #RETRO_ENVIRONMENT_GET_HDR_PAPER_WHITE_NITS says
+ * where ordinary content sits; this says how much room there is above it.  The
+ * gap between the two is the entire headroom a core has for highlights, and
+ * without it a core has to guess - a guess that is too dark on a bright display
+ * and clips on a dim one.
+ *
+ * This is what the *display* can do, not what the content wants, so it is a
+ * ceiling to roll off toward rather than a level to target.  A core should not
+ * assume anything it emits below this value is reproduced exactly; displays
+ * tone map internally, and many report a peak they can only hold over a small
+ * window.
+ *
+ * May be lower than paper white if the user has configured it so.  A core
+ * should treat that as zero headroom and clamp to paper white rather than
+ * producing a negative range.
+ *
+ * The user can change this at any time, so a core should re-query it rather
+ * than caching it indefinitely.
+ *
+ * @param[out] data <tt>float *</tt>.
+ * Set to the peak luminance in nits.
+ * @return \c true if the call is recognised, \c false on a frontend that does
+ * not implement it; callers should then fall back to a sensible default.
+ * 1000 nits is a reasonable assumption, being both the HDR10 reference peak
+ * and roughly what mid-range HDR displays achieve.
+ */
+#define RETRO_ENVIRONMENT_GET_HDR_MAX_NITS (92 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/**
  * Result of \c RETRO_ENVIRONMENT_GET_MEMORY_STATUS.
  *
  * Sizes are in bytes; a field the frontend cannot determine is left at 0.
@@ -2902,6 +3040,10 @@ typedef const char *(RETRO_CALLCONV *retro_vfs_get_path_t)(struct retro_vfs_file
  * @param path The path to open.
  * @param mode A bitwise combination of \c RETRO_VFS_FILE_ACCESS flags.
  * At a minimum, one of \c RETRO_VFS_FILE_ACCESS_READ or \c RETRO_VFS_FILE_ACCESS_WRITE must be specified.
+ * If \c RETRO_VFS_FILE_ACCESS_WRITE is specified and \c RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING is not specified,
+ * and no file or directory exists at \c path, this function will attempt to create an empty file at \c path.
+ * If either \c RETRO_VFS_FILE_ACCESS_WRITE is not specified or \c RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING is specified,
+ * and no file or directory exists at \c path, this function will return \c NULL without attempting to create a file at \c path.
  * @param hints A bitwise combination of \c RETRO_VFS_FILE_ACCESS_HINT flags.
  * @return A handle to the opened file,
  * or \c NULL upon failure.
@@ -2973,8 +3115,7 @@ typedef int64_t (RETRO_CALLCONV *retro_vfs_tell_t)(struct retro_vfs_file_handle 
  * @param stream The file to set the position of.
  * @param offset The new position, in bytes.
  * @param seek_position The position to seek from.
- * @return The new position,
- * or -1 if there was an error.
+ * @return 0 on success, -1 on failure.
  * @since VFS API v1
  * @see File Seek Positions
  * @see filestream_seek
@@ -4376,6 +4517,27 @@ struct retro_log_callback
 
 /** Indicates CPU support for the LZCNT instruction (x86 ABM / ARM CLZ). */
 #define RETRO_SIMD_LZCNT    (1 << 23)
+
+/**
+ * Indicates CPU support for the PCLMULQDQ carry-less multiply instruction.
+ *
+ * Distinct from \c RETRO_SIMD_AES: AES-NI is CPUID.1:ECX[25] and
+ * PCLMULQDQ is CPUID.1:ECX[1]. They shipped together on most parts but
+ * hypervisors mask them independently and some early Westmere SKUs had
+ * AES fused off, so one must not be used as a proxy for the other.
+ */
+#define RETRO_SIMD_PCLMUL   (1 << 24)
+
+/**
+ * Indicates CPU support for the ARMv8 CRC32 instructions
+ * (\c crc32b / \c crc32h / \c crc32w / \c crc32x).
+ *
+ * These compute CRC-32/ISO-HDLC, the gzip and PNG polynomial, not
+ * CRC-32C. Optional in ARMv8.0 and mandatory from ARMv8.1, so a
+ * 64-bit ARM CPU does not imply their presence: Apple's A7 through
+ * A10 lack them, for instance.
+ */
+#define RETRO_SIMD_CRC32    (1 << 25)
 
 /** @} */
 
@@ -5808,7 +5970,56 @@ enum retro_pixel_format
     */
    RETRO_PIXEL_FORMAT_RGB565   = 2,
 
-   /** Defined to ensure that <tt>sizeof(retro_pixel_format) == sizeof(int)</tt>. Do not use. */
+   /**
+    * XRGB2101010, native endian.
+    * 32-bit packed: 2 ignored high bits followed by 10-bit R, G, B
+    * (i.e. bits [29:20]=R, [19:10]=G, [9:0]=B; the top 2 bits are ignored).
+    * Intended for cores that decode 10-bit-per-channel content (e.g. HDR10
+    * sources) and want to pass it through without narrowing to 8 bits.
+    *
+    * A frontend is not required to render this natively: if the active video
+    * driver does not support a 10-bit source surface, the frontend transparently
+    * down-converts to XRGB8888, so a core may rely on SET_PIXEL_FORMAT accepting
+    * this value but should not assume the display path is 10-bit end to end.
+    */
+   RETRO_PIXEL_FORMAT_XRGB2101010 = 3,
+
+   /**
+    * HDR10: PQ-encoded Rec.2020, 10 bits per channel, native endian.
+    *
+    * Bit layout is identical to #RETRO_PIXEL_FORMAT_XRGB2101010 -- 2 ignored
+    * high bits then 10-bit R, G, B (bits [29:20]=R, [19:10]=G, [9:0]=B) --
+    * but the *encoding* differs, and that is the whole point of a separate
+    * value: the samples are SMPTE ST.2084 (PQ) over Rec.2020 primaries,
+    * covering 0..10000 nits absolute, exactly as HDR10 video does.
+    *
+    * XRGB2101010 is 10-bit SDR: the frontend treats 1.0 as paper white and
+    * cannot represent anything brighter, so a core has no way to make a
+    * highlight exceed the SDR white level.  With this format the core
+    * chooses absolute luminance per pixel, so specular highlights, muzzle
+    * flashes, explosions and emissive surfaces can sit well above paper
+    * white while the rest of the image stays where it was.
+    *
+    * A frontend that accepts this format MUST pass the samples through to an
+    * HDR10 (PQ / Rec.2020) swapchain without re-encoding them: no inverse
+    * tonemap, no Rec.709->Rec.2020 rotation, no paper-white scaling, since
+    * the core has already applied all of it.  A frontend that cannot present
+    * HDR10 natively must reject the format from SET_PIXEL_FORMAT rather than
+    * silently down-converting -- PQ samples interpreted as SDR look badly
+    * wrong, so the usual transparent narrowing is not safe here.  Cores
+    * should therefore keep an SDR path and fall back when this is refused.
+    *
+    * Cores should query #RETRO_ENVIRONMENT_GET_HDR_PAPER_WHITE_NITS to learn
+    * the luminance the user considers "SDR white" and map their normal
+    * output to it; content authored above that value is what produces the
+    * HDR effect.
+    */
+   RETRO_PIXEL_FORMAT_HDR10_2101010 = 4,
+
+   /** 
+    * @private Defined to ensure that <tt>sizeof(retro_pixel_format) == sizeof(int)</tt>.
+	* Do not use.
+	*/
    RETRO_PIXEL_FORMAT_UNKNOWN  = INT_MAX
 };
 
@@ -7595,7 +7806,8 @@ struct retro_exec_mem_alloc
  */
 struct retro_exec_mem_free
 {
-   void *rx;  /**< The \c rx pointer returned by a previous alloc call. */
+   void *rx;  /**< The \c rx pointer returned by a previous alloc call.
+                   The matching \c rw pointer is also accepted. */
 };
 
 /** @} */

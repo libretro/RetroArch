@@ -721,6 +721,34 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
       gfx_display_t            *p_disp     = state->p_disp;
       gfx_display_ctx_driver_t *dispctx    = p_disp->dispctx;
 
+      /* Frame-local copies of the tintable colours.  This function runs
+       * on the video thread, while gfx_widgets_iterate() and the
+       * gfx_animation_update() callbacks own
+       * p_w_load_content_animation_st on the main thread.  Tinting in
+       * place made the video thread a second writer to that struct. */
+      float bg_color[16];
+      float bg_underlay_color[16];
+      float bg_shadow_top_color[16];
+      float bg_shadow_bottom_color[16];
+      float icon_color[16];
+      float margin_shadow_left_color[16];
+      float margin_shadow_right_color[16];
+      unsigned content_name_color          = state->content_name_color;
+      unsigned system_name_color           = state->system_name_color;
+
+      memcpy(bg_color, state->bg_color, sizeof(bg_color));
+      memcpy(bg_underlay_color, state->bg_underlay_color,
+            sizeof(bg_underlay_color));
+      memcpy(bg_shadow_top_color, state->bg_shadow_top_color,
+            sizeof(bg_shadow_top_color));
+      memcpy(bg_shadow_bottom_color, state->bg_shadow_bottom_color,
+            sizeof(bg_shadow_bottom_color));
+      memcpy(icon_color, state->icon_color, sizeof(icon_color));
+      memcpy(margin_shadow_left_color, state->margin_shadow_left_color,
+            sizeof(margin_shadow_left_color));
+      memcpy(margin_shadow_right_color, state->margin_shadow_right_color,
+            sizeof(margin_shadow_right_color));
+
 #ifdef HAVE_MENU
       /* Draw nothing if menu is currently active */
       if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
@@ -788,13 +816,13 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
          if (bg_alpha < 1.0f)
          {
             float shadow_a = bg_alpha * state->bg_shadow_alpha;
-            state->bg_shadow_top_color[3]     = shadow_a;
-            state->bg_shadow_top_color[7]     = shadow_a;
-            state->bg_shadow_bottom_color[11] = shadow_a;
-            state->bg_shadow_bottom_color[15] = shadow_a;
+            bg_shadow_top_color[3]     = shadow_a;
+            bg_shadow_top_color[7]     = shadow_a;
+            bg_shadow_bottom_color[11] = shadow_a;
+            bg_shadow_bottom_color[15] = shadow_a;
 
-            gfx_display_set_alpha(state->bg_color, bg_alpha * state->bg_alpha);
-            gfx_display_set_alpha(state->bg_underlay_color,
+            gfx_display_set_alpha(bg_color, bg_alpha * state->bg_alpha);
+            gfx_display_set_alpha(bg_underlay_color,
                   bg_alpha * state->bg_underlay_alpha);
          }
 
@@ -810,7 +838,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                video_height,
                video_width,
                video_height,
-               state->bg_underlay_color,
+               bg_underlay_color,
                NULL);
 
          /* > Background shadow */
@@ -825,7 +853,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                state->bg_shadow_height,
                video_width,
                video_height,
-               state->bg_shadow_top_color,
+               bg_shadow_top_color,
                NULL);
 
          gfx_display_draw_quad(
@@ -839,7 +867,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                state->bg_shadow_height,
                video_width,
                video_height,
-               state->bg_shadow_bottom_color,
+               bg_shadow_bottom_color,
                NULL);
 
          /* > Background */
@@ -854,14 +882,14 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                state->bg_height,
                video_width,
                video_height,
-               state->bg_color,
+               bg_color,
                NULL);
       }
 
       /* Draw icon */
       if (icon_alpha > 0.0f)
       {
-         gfx_display_set_alpha(state->icon_color, icon_alpha);
+         gfx_display_set_alpha(icon_color, icon_alpha);
 
          if (state->icon_texture)
          {
@@ -881,7 +909,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                   0.0f, /* rad */
                   1.0f, /* cos(rad)   = cos(0)  = 1.0f */
                   0.0f, /* sine(rad)  = sine(0) = 0.0f */
-                  state->icon_color);
+                  icon_color);
 
             if (dispctx && dispctx->blend_end)
                dispctx->blend_end(userdata);
@@ -900,7 +928,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                   state->icon_size,
                   video_width,
                   video_height,
-                  state->icon_color,
+                  icon_color,
 		  NULL);
       }
 
@@ -914,9 +942,9 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
          bool text_drawn         = false;
 
          /* > Set opacity */
-         state->content_name_color = COLOR_TEXT_ALPHA(state->content_name_color,
+         content_name_color = COLOR_TEXT_ALPHA(content_name_color,
                text_alpha_int);
-         state->system_name_color  = COLOR_TEXT_ALPHA(state->system_name_color,
+         system_name_color  = COLOR_TEXT_ALPHA(system_name_color,
                text_alpha_int);
 
          /* > Content name */
@@ -929,7 +957,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                   state->content_name_y,
                   video_width,
                   video_height,
-                  state->content_name_color,
+                  content_name_color,
                   TEXT_ALIGN_LEFT,
                   true);
             text_drawn = true;
@@ -945,7 +973,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                   state->system_name_y,
                   video_width,
                   video_height,
-                  state->system_name_color,
+                  system_name_color,
                   TEXT_ALIGN_LEFT,
                   true);
             text_drawn = true;
@@ -984,10 +1012,10 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
       if (bg_alpha > 0.0f)
       {
          /* > Set opacity */
-         state->margin_shadow_left_color[3]   = bg_alpha;
-         state->margin_shadow_left_color[11]  = bg_alpha;
-         state->margin_shadow_right_color[7]  = bg_alpha;
-         state->margin_shadow_right_color[15] = bg_alpha;
+         margin_shadow_left_color[3]   = bg_alpha;
+         margin_shadow_left_color[11]  = bg_alpha;
+         margin_shadow_right_color[7]  = bg_alpha;
+         margin_shadow_right_color[15] = bg_alpha;
 
          /* > Left */
          gfx_display_draw_quad(
@@ -1001,7 +1029,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                state->bg_height,
                video_width,
                video_height,
-               state->margin_shadow_left_color,
+               margin_shadow_left_color,
 	       NULL);
 
          /* > Right */
@@ -1016,7 +1044,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                state->bg_height,
                video_width,
                video_height,
-               state->margin_shadow_right_color,
+               margin_shadow_right_color,
 	       NULL);
       }
    }

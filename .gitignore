@@ -93,7 +93,7 @@ saves
 screenshots
 autoconfig
 config
-database
+/database
 overlays
 playlists
 states
@@ -152,7 +152,7 @@ wiiu/wut/elf2rpl/elf2rpl
 /pkg/android/phoenix/.externalNativeBuild
 /pkg/android/phoenix/build
 /pkg/android/phoenix-legacy/.project
-/pkg/android/phoenix-jelly-bean/.gradle/
+/pkg/android/phoenix-jelly-bean/**/.gradle/
 /pkg/android/phoenix-jelly-bean/.cxx/
 
 # Cloned by libretro-fetch.sh
@@ -231,6 +231,8 @@ gfx/common/wayland/xdg-shell.c
 gfx/common/wayland/xdg-shell.h
 gfx/common/wayland/pointer-constraints-unstable-v1.c
 gfx/common/wayland/pointer-constraints-unstable-v1.h
+gfx/common/wayland/presentation-time.h
+gfx/common/wayland/presentation-time.c
 gfx/common/wayland/relative-pointer-unstable-v1.c
 gfx/common/wayland/relative-pointer-unstable-v1.h
 gfx/common/wayland/viewporter.c
@@ -255,9 +257,12 @@ gfx/common/wayland/webos-shell.c
 gfx/common/wayland/webos-shell.h
 gfx/common/wayland/webos-surface-group.c
 gfx/common/wayland/webos-surface-group.h
+gfx/common/wayland/tearing-control-v1.h
+gfx/common/wayland/tearing-control-v1.c
 
 # libretro-common samples
 libretro-common/samples/streams/rzip/rzip
+libretro-common/samples/audio/audio_mixer_loop/audio_mixer_loop_test
 
 # DINGUX
 *.opk

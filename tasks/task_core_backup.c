@@ -27,6 +27,7 @@
 #include <streams/interface_stream.h>
 #include <streams/file_stream.h>
 #include <streams/rzip_stream.h>
+#include <features/features_cpu.h>
 
 #include "../retroarch.h"
 #include "../paths.h"
@@ -45,7 +46,45 @@
 #include "../play_feature_delivery/play_feature_delivery.h"
 #endif
 
-#define CORE_BACKUP_CHUNK_SIZE 4096
+/* A low common denominator transfer quantum.  On a slow (speed class
+   6) SD card we can write 6MB/s, which is roughly 100KB/frame, so a
+   single quantum is one syscall that fits inside one frame even on
+   the worst storage we support.
+
+   This is the size of one read/write call, NOT the amount of work a
+   tick may do.  It used to be both, and it used to be 4096 bytes,
+   which capped a backup or restore at CORE_BACKUP_CHUNK_SIZE *
+   tick_rate == ~245KB/s regardless of the device: measured here, a
+   4MB core took 1029 ticks at 4076 bytes each, i.e. 17.2s at 60Hz to
+   copy a file the same machine moves in well under a second.  Cores
+   in the tens of megabytes are ordinary (mame, dolphin, ppsspp) and
+   an automatic backup runs on every core update, so this was the
+   common path rather than a corner.
+
+   The tick budget below is what bounds a tick now; the quantum only
+   bounds how far the handler can overshoot it, which is why it stays
+   sized for the slowest device rather than the fastest.  Same shape
+   as SAVE_STATE_CHUNK in tasks/task_save.c. */
+#define CORE_BACKUP_CHUNK_SIZE (100 * 1024)
+
+/* Wall-clock budget for one backup/restore tick, in microseconds.
+   The handler keeps transferring quanta until this is exhausted, then
+   yields.  ~12% of a 60Hz frame.
+
+   A time rather than a byte count, because the quantity that must be
+   bounded is the stall the user sees, and only a clock measures that;
+   a byte count is a guess about device speed that is wrong by two
+   orders of magnitude across the range of devices RetroArch runs on.
+
+   The loop is do/while, so exactly one quantum is always transferred.
+   On a device slow enough that one quantum exceeds the budget the
+   behaviour is therefore byte-for-byte what it was before this budget
+   existed - there is no worst case to regress. */
+#define CORE_BACKUP_TICK_BUDGET_US 2000
+
+/* Bytes hashed per step.  Matches the read size inside
+   intfstream_crc_step(). */
+#define CORE_BACKUP_CRC_CHUNK (256 * 1024)
 
 enum core_backup_status
 {
@@ -75,6 +114,14 @@ typedef struct core_backup_handle
    char *backup_path;
    intfstream_t *core_file;
    intfstream_t *backup_file;
+   /* Transfer buffer, allocated once.  CORE_BACKUP_CHUNK_SIZE is far
+    * too large to sit on the stack of a task handler, which may be
+    * running on the task thread. */
+   uint8_t *buffer;
+   /* Resumable CRC accumulator, so hashing a core is spread across
+    * ticks instead of consuming a whole stream in one call. */
+   uint32_t crc_accumulator;
+   bool crc_active;
    core_backup_list_t *backup_list;
    size_t auto_backup_history_size;
    size_t num_auto_backups_to_remove;
@@ -139,6 +186,12 @@ static void free_core_backup_handle(core_backup_handle_t *backup_handle)
    {
       core_backup_list_free(backup_handle->backup_list);
       backup_handle->backup_list = NULL;
+   }
+
+   if (backup_handle->buffer)
+   {
+      free(backup_handle->buffer);
+      backup_handle->buffer = NULL;
    }
 
    free(backup_handle);
@@ -241,16 +294,58 @@ static void task_core_backup_handler(retro_task_t *task)
          /* Check whether we need to calculate CRC value */
          if (backup_handle->core_crc == 0)
          {
-            if (!intfstream_get_crc(backup_handle->core_file,
-                     &backup_handle->core_crc))
+            /* Hash a bounded slice per tick and stay in this state
+             * until done.  intfstream_get_crc() consumes the whole
+             * stream in one call, so the cost of the tick that
+             * invoked it was a function of core size and nothing
+             * else -- 43ms for a 40MB core measured cold on NVMe,
+             * an order of magnitude worse on the SD-card and
+             * spinning-disk targets, and an automatic backup runs on
+             * every core update.  Same treatment
+             * tasks/task_core_updater.c already applies. */
+            int64_t hashed;
+            retro_time_t crc_deadline;
+
+            if (!backup_handle->crc_active)
             {
-               RARCH_ERR("[Core Backup] Failed to determine CRC of core file: \"%s\".\n",
-                     backup_handle->core_path);
-               task_free_error(task);
-               task_set_error(task, strdup("Failed to determine CRC of core file."));
-               backup_handle->status = CORE_BACKUP_END;
-               break;
+               backup_handle->crc_accumulator = 0;
+               backup_handle->crc_active      = true;
+               intfstream_rewind(backup_handle->core_file);
             }
+
+            crc_deadline = cpu_features_get_time_usec()
+                  + CORE_BACKUP_TICK_BUDGET_US;
+            do
+            {
+               hashed = intfstream_crc_step(backup_handle->core_file,
+                     &backup_handle->crc_accumulator,
+                     CORE_BACKUP_CRC_CHUNK);
+
+               if (hashed < 0)
+               {
+                  RARCH_ERR("[Core Backup] Failed to determine CRC of core file: \"%s\".\n",
+                        backup_handle->core_path);
+                  task_free_error(task);
+                  task_set_error(task, strdup("Failed to determine CRC of core file."));
+                  backup_handle->crc_active = false;
+                  backup_handle->status     = CORE_BACKUP_END;
+                  return;
+               }
+            } while (hashed > 0
+                  && cpu_features_get_time_usec() < crc_deadline);
+
+            /* Not finished: resume on the next tick. */
+            if (hashed > 0)
+               break;
+
+            backup_handle->core_crc   = backup_handle->crc_accumulator;
+            backup_handle->crc_active = false;
+            /* Rewind: CORE_BACKUP_ITERATE copies from this same
+             * handle, and intfstream_get_crc() -- which this
+             * replaced -- rewound on the way out as well as on the
+             * way in.  Without this the transfer phase starts at EOF
+             * and writes an empty backup. */
+            intfstream_rewind(backup_handle->core_file);
          }
 
          /* Check whether a backup with this CRC already
@@ -305,7 +400,7 @@ static void task_core_backup_handler(retro_task_t *task)
             backup_handle->backup_path = strdup(backup_path);
 
             /* Open backup file */
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
             backup_handle->backup_file = intfstream_open_rzip_file(
                   backup_handle->backup_path, RETRO_VFS_FILE_ACCESS_WRITE);
 #else
@@ -339,12 +434,57 @@ static void task_core_backup_handler(retro_task_t *task)
       case CORE_BACKUP_ITERATE:
          {
             int64_t data_written = 0;
-            uint8_t buffer[CORE_BACKUP_CHUNK_SIZE];
-            /* Read a single chunk from the core file */
-            int64_t data_read    = intfstream_read(
-                  backup_handle->core_file, buffer, sizeof(buffer));
+            int64_t data_read    = 0;
+            retro_time_t deadline;
+            bool failed_read     = false;
+            bool failed_write    = false;
 
-            if (data_read < 0)
+            if (!backup_handle->buffer)
+            {
+               if (!(backup_handle->buffer = (uint8_t*)malloc(
+                           CORE_BACKUP_CHUNK_SIZE)))
+               {
+                  RARCH_ERR("[Core Backup] Failed to allocate transfer buffer.\n");
+                  task_free_error(task);
+                  task_set_error(task, strdup("Failed to allocate transfer buffer."));
+                  backup_handle->status = CORE_BACKUP_END;
+                  break;
+               }
+            }
+
+            /* Transfer quanta until the tick budget is spent.
+             * do/while, so a device slow enough that one quantum
+             * exceeds the budget behaves exactly as it did when a
+             * tick was hardcoded to one quantum. */
+            deadline = cpu_features_get_time_usec()
+                  + CORE_BACKUP_TICK_BUDGET_US;
+            do
+            {
+               data_read = intfstream_read(backup_handle->core_file,
+                     backup_handle->buffer, CORE_BACKUP_CHUNK_SIZE);
+
+               if (data_read < 0)
+               {
+                  failed_read = true;
+                  break;
+               }
+
+               backup_handle->file_data_read += data_read;
+
+               if (data_read == 0)
+                  break;
+
+               data_written = intfstream_write(backup_handle->backup_file,
+                     backup_handle->buffer, data_read);
+
+               if (data_written != data_read)
+               {
+                  failed_write = true;
+                  break;
+               }
+            } while (cpu_features_get_time_usec() < deadline);
+
+            if (failed_read)
             {
                RARCH_ERR("[Core Backup] Failed to read from core file: \"%s\".\n",
                      backup_handle->core_path);
@@ -354,7 +494,15 @@ static void task_core_backup_handler(retro_task_t *task)
                break;
             }
 
-            backup_handle->file_data_read += data_read;
+            if (failed_write)
+            {
+               RARCH_ERR("[Core Backup] Failed to write to core backup file: \"%s\".\n",
+                     backup_handle->backup_path);
+               task_free_error(task);
+               task_set_error(task, strdup("Failed to write to core backup file."));
+               backup_handle->status = CORE_BACKUP_END;
+               break;
+            }
 
             /* Check whether we have reached the end of the file */
             if (data_read == 0)
@@ -378,19 +526,6 @@ static void task_core_backup_handler(retro_task_t *task)
                backup_handle->status  = (backup_handle->backup_mode ==
                      CORE_BACKUP_MODE_AUTO) ?
                            CORE_BACKUP_CHECK_HISTORY : CORE_BACKUP_END;
-               break;
-            }
-
-            /* Write chunk to backup file */
-            data_written = intfstream_write(backup_handle->backup_file, buffer, data_read);
-
-            if (data_written != data_read)
-            {
-               RARCH_ERR("[Core Backup] Failed to write to core backup file: \"%s\".\n",
-                     backup_handle->backup_path);
-               task_free_error(task);
-               task_set_error(task, strdup("Failed to write to core backup file."));
-               backup_handle->status = CORE_BACKUP_END;
                break;
             }
 
@@ -683,8 +818,10 @@ static void cb_task_core_restore(
       void *user_data, const char *err)
 {
    /* Reload core info files
-    * > This must be done on the main thread */
-   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+    * > This must be done on the main thread
+    * > Forced: a core file changed on disk */
+   bool refresh = true;
+   command_event(CMD_EVENT_CORE_INFO_INIT, &refresh);
 
 #if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
    /* Force reload of contentless cores icons */
@@ -728,16 +865,49 @@ static void task_core_restore_handler(retro_task_t *task)
                break;
             }
 
-            /* Get CRC value */
-            if (!intfstream_get_crc(backup_handle->core_file,
-                     &backup_handle->core_crc))
+            /* Get CRC value, a bounded slice per tick; see the
+             * matching comment in CORE_BACKUP_CHECK_CRC. */
             {
-               RARCH_ERR("[Core Restore] Failed to determine CRC of core file: \"%s\".\n",
-                     backup_handle->core_path);
-               task_free_error(task);
-               task_set_error(task, strdup("Failed to determine CRC of core file."));
-               backup_handle->status = CORE_RESTORE_END;
-               break;
+               int64_t hashed;
+               retro_time_t crc_deadline;
+
+               if (!backup_handle->crc_active)
+               {
+                  backup_handle->crc_accumulator = 0;
+                  backup_handle->crc_active      = true;
+                  intfstream_rewind(backup_handle->core_file);
+               }
+
+               crc_deadline = cpu_features_get_time_usec()
+                     + CORE_BACKUP_TICK_BUDGET_US;
+               do
+               {
+                  hashed = intfstream_crc_step(backup_handle->core_file,
+                        &backup_handle->crc_accumulator,
+                        CORE_BACKUP_CRC_CHUNK);
+
+                  if (hashed < 0)
+                  {
+                     RARCH_ERR("[Core Restore] Failed to determine CRC of core file: \"%s\".\n",
+                           backup_handle->core_path);
+                     task_free_error(task);
+                     task_set_error(task, strdup("Failed to determine CRC of core file."));
+                     backup_handle->crc_active = false;
+                     backup_handle->status     = CORE_RESTORE_END;
+                     return;
+                  }
+               } while (hashed > 0
+                     && cpu_features_get_time_usec() < crc_deadline);
+
+               /* Not finished: resume on the next tick.  The core
+                * file stays open across ticks, which is what the
+                * close below is deferred for. */
+               if (hashed > 0)
+                  break;
+
+               backup_handle->core_crc   = backup_handle->crc_accumulator;
+               backup_handle->crc_active = false;
+               intfstream_rewind(backup_handle->core_file);
             }
 
             /* Close core file */
@@ -750,8 +920,86 @@ static void task_core_restore_handler(retro_task_t *task)
          backup_handle->status = CORE_RESTORE_GET_BACKUP_CRC;
          break;
       case CORE_RESTORE_GET_BACKUP_CRC:
-         /* Get CRC value of backup file */
-         if (!core_backup_get_backup_crc(
+         /* For a .lcbk archive the CRC is a field in the filename, so
+          * core_backup_get_backup_crc() is a string split and costs
+          * nothing.  For a plain library it hashes the whole file in
+          * one call, which is the same unbounded tick this handler
+          * has just stopped doing twice over -- so that case is
+          * sliced here instead, leaving the helper's API intact for
+          * the archive path and for any future caller. */
+         if (core_backup_get_backup_type(backup_handle->backup_path)
+               == CORE_BACKUP_TYPE_LIB)
+         {
+            int64_t hashed;
+            retro_time_t crc_deadline;
+
+            if (!backup_handle->crc_active)
+            {
+               if (!(backup_handle->backup_file = intfstream_open_file(
+                           backup_handle->backup_path,
+                           RETRO_VFS_FILE_ACCESS_READ,
+                           RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+               {
+                  RARCH_ERR("[Core Restore] Failed to determine CRC of core backup file: \"%s\".\n",
+                        backup_handle->backup_path);
+                  task_free_error(task);
+                  task_set_error(task, strdup("Failed to determine CRC of core backup file."));
+                  backup_handle->status = CORE_RESTORE_END;
+                  break;
+               }
+               backup_handle->crc_accumulator = 0;
+               backup_handle->crc_active      = true;
+               intfstream_rewind(backup_handle->backup_file);
+            }
+
+            crc_deadline = cpu_features_get_time_usec()
+                  + CORE_BACKUP_TICK_BUDGET_US;
+            do
+            {
+               hashed = intfstream_crc_step(backup_handle->backup_file,
+                     &backup_handle->crc_accumulator,
+                     CORE_BACKUP_CRC_CHUNK);
+
+               if (hashed < 0)
+               {
+                  RARCH_ERR("[Core Restore] Failed to determine CRC of core backup file: \"%s\".\n",
+                        backup_handle->backup_path);
+                  intfstream_close(backup_handle->backup_file);
+                  free(backup_handle->backup_file);
+                  backup_handle->backup_file = NULL;
+                  backup_handle->crc_active  = false;
+                  task_free_error(task);
+                  task_set_error(task, strdup("Failed to determine CRC of core backup file."));
+                  backup_handle->status = CORE_RESTORE_END;
+                  return;
+               }
+            } while (hashed > 0
+                  && cpu_features_get_time_usec() < crc_deadline);
+
+            /* Not finished: resume on the next tick. */
+            if (hashed > 0)
+               break;
+
+            backup_handle->backup_crc = backup_handle->crc_accumulator;
+            backup_handle->crc_active = false;
+            intfstream_close(backup_handle->backup_file);
+            free(backup_handle->backup_file);
+            backup_handle->backup_file = NULL;
+
+            /* A zero CRC is what the helper reports as failure, and
+             * the comparison below cannot distinguish it from a real
+             * match, so keep that contract. */
+            if (backup_handle->backup_crc == 0)
+            {
+               RARCH_ERR("[Core Restore] Failed to determine CRC of core backup file: \"%s\".\n",
+                     backup_handle->backup_path);
+               task_free_error(task);
+               task_set_error(task, strdup("Failed to determine CRC of core backup file."));
+               backup_handle->status = CORE_RESTORE_END;
+               break;
+            }
+         }
+         else if (!core_backup_get_backup_crc(
                   backup_handle->backup_path, &backup_handle->backup_crc))
          {
             RARCH_ERR("[Core Restore] Failed to determine CRC of core backup file: \"%s\".\n",
@@ -787,7 +1035,7 @@ static void task_core_restore_handler(retro_task_t *task)
             char task_title[128];
 
             /* Open backup file */
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
             backup_handle->backup_file = intfstream_open_rzip_file(
                   backup_handle->backup_path, RETRO_VFS_FILE_ACCESS_READ);
 #else
@@ -876,12 +1124,54 @@ static void task_core_restore_handler(retro_task_t *task)
          {
             int64_t data_read    = 0;
             int64_t data_written = 0;
-            uint8_t buffer[CORE_BACKUP_CHUNK_SIZE];
+            retro_time_t deadline;
+            bool failed_read     = false;
+            bool failed_write    = false;
 
-            /* Read a single chunk from the backup file */
-            data_read = intfstream_read(backup_handle->backup_file, buffer, sizeof(buffer));
+            if (!backup_handle->buffer)
+            {
+               if (!(backup_handle->buffer = (uint8_t*)malloc(
+                           CORE_BACKUP_CHUNK_SIZE)))
+               {
+                  RARCH_ERR("[Core Restore] Failed to allocate transfer buffer.\n");
+                  task_free_error(task);
+                  task_set_error(task, strdup("Failed to allocate transfer buffer."));
+                  backup_handle->status = CORE_RESTORE_END;
+                  break;
+               }
+            }
 
-            if (data_read < 0)
+            /* Same budgeted-quanta scheme as the backup handler; see
+             * the comment on CORE_BACKUP_TICK_BUDGET_US. */
+            deadline = cpu_features_get_time_usec()
+                  + CORE_BACKUP_TICK_BUDGET_US;
+            do
+            {
+               data_read = intfstream_read(backup_handle->backup_file,
+                     backup_handle->buffer, CORE_BACKUP_CHUNK_SIZE);
+
+               if (data_read < 0)
+               {
+                  failed_read = true;
+                  break;
+               }
+
+               backup_handle->file_data_read += data_read;
+
+               if (data_read == 0)
+                  break;
+
+               data_written = intfstream_write(backup_handle->core_file,
+                     backup_handle->buffer, data_read);
+
+               if (data_written != data_read)
+               {
+                  failed_write = true;
+                  break;
+               }
+            } while (cpu_features_get_time_usec() < deadline);
+
+            if (failed_read)
             {
                RARCH_ERR("[Core Restore] Failed to read from core backup file: \"%s\".\n",
                      backup_handle->backup_path);
@@ -891,7 +1181,15 @@ static void task_core_restore_handler(retro_task_t *task)
                break;
             }
 
-            backup_handle->file_data_read += data_read;
+            if (failed_write)
+            {
+               RARCH_ERR("[Core Restore] Failed to write to core file: \"%s\".\n",
+                     backup_handle->core_path);
+               task_free_error(task);
+               task_set_error(task, strdup("Failed to open core file."));
+               backup_handle->status = CORE_RESTORE_END;
+               break;
+            }
 
             /* Check whether we have reached the end of the file */
             if (data_read == 0)
@@ -909,19 +1207,6 @@ static void task_core_restore_handler(retro_task_t *task)
 
                backup_handle->success = true;
                backup_handle->status  = CORE_RESTORE_END;
-               break;
-            }
-
-            /* Write chunk to core file */
-            data_written = intfstream_write(backup_handle->core_file, buffer, data_read);
-
-            if (data_written != data_read)
-            {
-               RARCH_ERR("[Core Restore] Failed to write to core file: \"%s\".\n",
-                     backup_handle->core_path);
-               task_free_error(task);
-               task_set_error(task, strdup("Failed to open core file."));
-               backup_handle->status = CORE_RESTORE_END;
                break;
             }
 

@@ -1,5 +1,38 @@
 /* rmp3 - MP3 decoder implementation (minimp3-derived).
- * Declarations live in <formats/rmp3.h>; this file is the implementation. */
+ * Declarations live in <formats/rmp3.h>; this file is the implementation.
+ *
+ * What it implements: MPEG-1/2/2.5 audio layers 1, 2 and 3 including
+ * free-format streams, seeking, and both s16 and f32 output from
+ * memory-resident files.  Leading tags are stepped over by the
+ * frame-sync scan rather than parsed.
+ *
+ * What it does not implement: ID3/APE tag parsing, Xing/Info/LAME
+ * header interpretation (VBR duration estimates and gapless
+ * delay/padding trimming are the caller's concern), and encoding.
+ *
+ * Two interfaces share the decode core.  The original pull interface
+ * (rmp3_init_memory / rmp3_read_s16 / rmp3_read_f32 /
+ * rmp3_seek_to_frame) decodes a complete memory-resident file.  The
+ * stream interface (rmp3_stream_new and the rmp3_stream_* calls at
+ * the bottom of this file) is a push API in the same shape as
+ * rflac's: the caller feeds spans as it has them, sets an s16 or f32
+ * output block, and calls rmp3_stream_process until END after
+ * rmp3_stream_set_eof; a span may end mid-frame, and the unconsumed
+ * tail is carried internally so nothing is decoded twice or lost.
+ * audio_transfer's MP3 arm runs on the stream interface.
+ *
+ * The fixed-point kernels accumulate in unsigned arithmetic.  A valid
+ * stream cannot overflow them - the format bounds the values so the
+ * sums fit in int32 - but a corrupt one is bounded by nothing, and
+ * signed overflow is undefined rather than merely wrong.  The
+ * additions, subtractions and negations of the DCT-3/IMDCT group, the
+ * DCT-II and the synthesis input pairs are therefore carried through
+ * uint32_t, where the wrap is defined, and reinterpreted where a
+ * signed value is consumed (RMP3_MULQU is that seam): the bits are the
+ * ones every two's-complement target produced for the signed form,
+ * checked bit-identical against it on valid and corrupt corpora at
+ * -O0, -O2 and -O2 -fwrapv.  rflac's LPC prediction is the same
+ * treatment in one contained function. */
 #include <formats/rmp3.h>
 
 #include <stdlib.h>
@@ -137,6 +170,11 @@ typedef struct
         int32_t q[18 + 15][2*32];
     } syn;
 } rmp3dec_scratch;
+
+/* The public rmp3dec carries this as opaque sized storage; refuse to
+ * build if the layout ever outgrows it. */
+typedef char rmp3_scratch_storage_fits[
+   (sizeof(((rmp3dec*)0)->scratch) >= sizeof(rmp3dec_scratch)) ? 1 : -1];
 
 static void rmp3_bs_init(rmp3_bs *bs, const uint8_t *data, int bytes)
 {
@@ -1120,6 +1158,12 @@ static void rmp3_L3_change_sign(float *grbuf)
 #define RMP3_MULQ(x, c) \
    ((int32_t)((((int64_t)(x) * (c)) + ((int64_t)1 << 26)) >> 27))
 
+/* RMP3_MULQ for a sample carried in uint32_t: the fixed-point kernels
+ * below accumulate unsigned (see the head comment), and this seam
+ * reinterprets the stored bits as the signed value they are before the
+ * widening multiply, which must be signed to be correct. */
+#define RMP3_MULQU(x, c) RMP3_MULQ((int32_t)(uint32_t)(x), (c))
+
 /* Q-format for fixed-point samples.  Every value between the IMDCT and
  * the s16 output is a fraction (measured |x| <= 0.47 across the corpus,
  * including full-scale square waves; the polyphase window magnitudes
@@ -1216,44 +1260,53 @@ static int16_t rmp3d_scale_pcm_q(int64_t acc)
    return (int16_t)v;
 }
 
+/* This kernel and the IMDCT/DCT-II/synthesis companions below carry
+ * their additions, subtractions and negations in uint32_t.  A valid
+ * stream cannot overflow them - the format bounds the values so the
+ * sums fit in int32 - but a corrupt one is bounded by nothing, and
+ * signed overflow is undefined rather than merely wrong.  Unsigned,
+ * the wrap is defined and the bits are the ones every two's-complement
+ * target produced for the signed form; RMP3_MULQU reinterprets where
+ * the multiply needs the signed value.  rflac's LPC prediction is the
+ * same treatment in one contained function. */
 static void rmp3_L3_dct3_9_q(int32_t *y)
 {
-    int32_t s0, s1, s2, s3, s4, s5, s6, s7, s8, t0, t2, t4;
+    uint32_t s0, s1, s2, s3, s4, s5, s6, s7, s8, t0, t2, t4;
 
     s0 = y[0]; s2 = y[2]; s4 = y[4]; s6 = y[6]; s8 = y[8];
-    t0 = s0 + RMP3_MULQ(s6, 67108864);
+    t0 = s0 + RMP3_MULQU(s6, 67108864);
     s0 -= s6;
-    t4 = RMP3_MULQ(s4 + s2, 126123408);
-    t2 = RMP3_MULQ(s8 + s2, 102816744);
-    s6 = RMP3_MULQ(s4 - s8, 23306664);
+    t4 = RMP3_MULQU(s4 + s2, 126123408);
+    t2 = RMP3_MULQU(s8 + s2, 102816744);
+    s6 = RMP3_MULQU(s4 - s8, 23306664);
     s4 += s8 - s2;
 
-    s2 = s0 - RMP3_MULQ(s4, 67108864);
-    y[4] = s4 + s0;
+    s2 = s0 - RMP3_MULQU(s4, 67108864);
+    y[4] = (int32_t)(s4 + s0);
     s8 = t0 - t2 + s6;
     s0 = t0 - t4 + t2;
     s4 = t0 + t4 - s6;
 
     s1 = y[1]; s3 = y[3]; s5 = y[5]; s7 = y[7];
 
-    s3 = RMP3_MULQ(s3, 116235962);
-    t0 = RMP3_MULQ(s5 + s1, 132178659);
-    t4 = RMP3_MULQ(s5 - s7, 45905166);
-    t2 = RMP3_MULQ(s1 + s7, 86273493);
-    s1 = RMP3_MULQ(s1 - s5 - s7, 116235962);
+    s3 = RMP3_MULQU(s3, 116235962);
+    t0 = RMP3_MULQU(s5 + s1, 132178659);
+    t4 = RMP3_MULQU(s5 - s7, 45905166);
+    t2 = RMP3_MULQU(s1 + s7, 86273493);
+    s1 = RMP3_MULQU(s1 - s5 - s7, 116235962);
 
     s5 = t0 - s3 - t2;
     s7 = t4 - s3 - t0;
     s3 = t4 + s3 - t2;
 
-    y[0] = s4 - s7;
-    y[1] = s2 + s1;
-    y[2] = s0 - s3;
-    y[3] = s8 + s5;
-    y[5] = s8 - s5;
-    y[6] = s0 + s3;
-    y[7] = s2 - s1;
-    y[8] = s4 + s7;
+    y[0] = (int32_t)(s4 - s7);
+    y[1] = (int32_t)(s2 + s1);
+    y[2] = (int32_t)(s0 - s3);
+    y[3] = (int32_t)(s8 + s5);
+    y[5] = (int32_t)(s8 - s5);
+    y[6] = (int32_t)(s0 + s3);
+    y[7] = (int32_t)(s2 - s1);
+    y[8] = (int32_t)(s4 + s7);
 }
 
 static const int32_t g_twid9_q[18] = {
@@ -1268,43 +1321,43 @@ static void rmp3_L3_imdct36_q(int32_t *grbuf, int32_t *overlap, const int32_t *w
     for (j = 0; j < nbands; j++, grbuf += 18, overlap += 9)
     {
         int32_t co[9], si[9];
-        co[0] = -grbuf[0];
+        co[0] = (int32_t)(0u - (uint32_t)grbuf[0]);
         si[0] = grbuf[17];
         for (i = 0; i < 4; i++)
         {
-            si[8 - 2*i] =   grbuf[4*i + 1] - grbuf[4*i + 2];
-            co[1 + 2*i] =   grbuf[4*i + 1] + grbuf[4*i + 2];
-            si[7 - 2*i] =   grbuf[4*i + 4] - grbuf[4*i + 3];
-            co[2 + 2*i] = -(grbuf[4*i + 3] + grbuf[4*i + 4]);
+            si[8 - 2*i] = (int32_t)((uint32_t)grbuf[4*i + 1] - (uint32_t)grbuf[4*i + 2]);
+            co[1 + 2*i] = (int32_t)((uint32_t)grbuf[4*i + 1] + (uint32_t)grbuf[4*i + 2]);
+            si[7 - 2*i] = (int32_t)((uint32_t)grbuf[4*i + 4] - (uint32_t)grbuf[4*i + 3]);
+            co[2 + 2*i] = (int32_t)(0u - ((uint32_t)grbuf[4*i + 3] + (uint32_t)grbuf[4*i + 4]));
         }
         rmp3_L3_dct3_9_q(co);
         rmp3_L3_dct3_9_q(si);
 
-        si[1] = -si[1];
-        si[3] = -si[3];
-        si[5] = -si[5];
-        si[7] = -si[7];
+        si[1] = (int32_t)(0u - (uint32_t)si[1]);
+        si[3] = (int32_t)(0u - (uint32_t)si[3]);
+        si[5] = (int32_t)(0u - (uint32_t)si[5]);
+        si[7] = (int32_t)(0u - (uint32_t)si[7]);
 
         for (i = 0; i < 9; i++)
         {
-            int32_t ovl  = overlap[i];
-            int32_t sum  = RMP3_MULQ(co[i], g_twid9_q[9 + i])
-                         + RMP3_MULQ(si[i], g_twid9_q[0 + i]);
-            overlap[i]   = RMP3_MULQ(co[i], g_twid9_q[0 + i])
-                         - RMP3_MULQ(si[i], g_twid9_q[9 + i]);
-            grbuf[i]      = RMP3_MULQ(ovl, window[0 + i]) - RMP3_MULQ(sum, window[9 + i]);
-            grbuf[17 - i] = RMP3_MULQ(ovl, window[9 + i]) + RMP3_MULQ(sum, window[0 + i]);
+            uint32_t ovl  = (uint32_t)overlap[i];
+            uint32_t sum  = (uint32_t)RMP3_MULQ(co[i], g_twid9_q[9 + i])
+                          + (uint32_t)RMP3_MULQ(si[i], g_twid9_q[0 + i]);
+            overlap[i]    = (int32_t)((uint32_t)RMP3_MULQ(co[i], g_twid9_q[0 + i])
+                          - (uint32_t)RMP3_MULQ(si[i], g_twid9_q[9 + i]));
+            grbuf[i]      = (int32_t)((uint32_t)RMP3_MULQU(ovl, window[0 + i]) - (uint32_t)RMP3_MULQU(sum, window[9 + i]));
+            grbuf[17 - i] = (int32_t)((uint32_t)RMP3_MULQU(ovl, window[9 + i]) + (uint32_t)RMP3_MULQU(sum, window[0 + i]));
         }
     }
 }
 
 static void rmp3_L3_idct3_q(int32_t x0, int32_t x1, int32_t x2, int32_t *dst)
 {
-    int32_t m1 = RMP3_MULQ(x1, 116235962);
-    int32_t a1 = x0 - RMP3_MULQ(x2, 67108864);
-    dst[1] = x0 + x2;
-    dst[0] = a1 + m1;
-    dst[2] = a1 - m1;
+    uint32_t m1 = (uint32_t)RMP3_MULQ(x1, 116235962);
+    uint32_t a1 = (uint32_t)x0 - (uint32_t)RMP3_MULQ(x2, 67108864);
+    dst[1] = (int32_t)((uint32_t)x0 + (uint32_t)x2);
+    dst[0] = (int32_t)(a1 + m1);
+    dst[2] = (int32_t)(a1 - m1);
 }
 
 static const int32_t g_twid3_q[6] = {
@@ -1316,17 +1369,21 @@ static void rmp3_L3_imdct12_q(int32_t *x, int32_t *dst, int32_t *overlap)
     int32_t co[3], si[3];
     int i;
 
-    rmp3_L3_idct3_q(-x[0], x[6] + x[3], x[12] + x[9], co);
-    rmp3_L3_idct3_q(x[15], x[12] - x[9], x[6] - x[3], si);
-    si[1] = -si[1];
+    rmp3_L3_idct3_q((int32_t)(0u - (uint32_t)x[0]),
+          (int32_t)((uint32_t)x[6]  + (uint32_t)x[3]),
+          (int32_t)((uint32_t)x[12] + (uint32_t)x[9]), co);
+    rmp3_L3_idct3_q(x[15],
+          (int32_t)((uint32_t)x[12] - (uint32_t)x[9]),
+          (int32_t)((uint32_t)x[6]  - (uint32_t)x[3]), si);
+    si[1] = (int32_t)(0u - (uint32_t)si[1]);
 
     for (i = 0; i < 3; i++)
     {
-        int32_t ovl  = overlap[i];
-        int32_t sum  = RMP3_MULQ(co[i], g_twid3_q[3 + i]) + RMP3_MULQ(si[i], g_twid3_q[0 + i]);
-        overlap[i]   = RMP3_MULQ(co[i], g_twid3_q[0 + i]) - RMP3_MULQ(si[i], g_twid3_q[3 + i]);
-        dst[i]       = RMP3_MULQ(ovl, g_twid3_q[2 - i]) - RMP3_MULQ(sum, g_twid3_q[5 - i]);
-        dst[5 - i]   = RMP3_MULQ(ovl, g_twid3_q[5 - i]) + RMP3_MULQ(sum, g_twid3_q[2 - i]);
+        uint32_t ovl = (uint32_t)overlap[i];
+        uint32_t sum = (uint32_t)RMP3_MULQ(co[i], g_twid3_q[3 + i]) + (uint32_t)RMP3_MULQ(si[i], g_twid3_q[0 + i]);
+        overlap[i]   = (int32_t)((uint32_t)RMP3_MULQ(co[i], g_twid3_q[0 + i]) - (uint32_t)RMP3_MULQ(si[i], g_twid3_q[3 + i]));
+        dst[i]       = (int32_t)((uint32_t)RMP3_MULQU(ovl, g_twid3_q[2 - i]) - (uint32_t)RMP3_MULQU(sum, g_twid3_q[5 - i]));
+        dst[5 - i]   = (int32_t)((uint32_t)RMP3_MULQU(ovl, g_twid3_q[5 - i]) + (uint32_t)RMP3_MULQU(sum, g_twid3_q[2 - i]));
     }
 }
 
@@ -1348,7 +1405,7 @@ static void rmp3_L3_change_sign_q(int32_t *grbuf)
     int b, i;
     for (b = 0, grbuf += 18; b < 32; b += 2, grbuf += 36)
         for (i = 1; i < 18; i += 2)
-            grbuf[i] = -grbuf[i];
+            grbuf[i] = (int32_t)(0u - (uint32_t)grbuf[i]);
 }
 
 static void rmp3_L3_imdct_gr_q(int32_t *grbuf, int32_t *overlap, unsigned block_type, unsigned n_long_bands)
@@ -1475,26 +1532,27 @@ static void rmp3d_DCT_II_q(int32_t *grbuf, int n)
     int i, k;
     for (k = 0; k < n; k++)
     {
-        int32_t t[4][8], *x, *y = grbuf + k;
+        uint32_t t[4][8], *x;
+        int32_t *y = grbuf + k;
 
         for (x = t[0], i = 0; i < 8; i++, x++)
         {
-            int32_t x0 = y[i*18];
-            int32_t x1 = y[(15 - i)*18];
-            int32_t x2 = y[(16 + i)*18];
-            int32_t x3 = y[(31 - i)*18];
-            int32_t t0 = x0 + x3;
-            int32_t t1 = x1 + x2;
-            int32_t t2 = RMP3_MULQ(x1 - x2, g_sec_q[3*i + 0]);
-            int32_t t3 = RMP3_MULQ(x0 - x3, g_sec_q[3*i + 1]);
+            uint32_t x0 = (uint32_t)y[i*18];
+            uint32_t x1 = (uint32_t)y[(15 - i)*18];
+            uint32_t x2 = (uint32_t)y[(16 + i)*18];
+            uint32_t x3 = (uint32_t)y[(31 - i)*18];
+            uint32_t t0 = x0 + x3;
+            uint32_t t1 = x1 + x2;
+            uint32_t t2 = (uint32_t)RMP3_MULQU(x1 - x2, g_sec_q[3*i + 0]);
+            uint32_t t3 = (uint32_t)RMP3_MULQU(x0 - x3, g_sec_q[3*i + 1]);
             x[0]  = t0 + t1;
-            x[8]  = RMP3_MULQ(t0 - t1, g_sec_q[3*i + 2]);
+            x[8]  = (uint32_t)RMP3_MULQU(t0 - t1, g_sec_q[3*i + 2]);
             x[16] = t3 + t2;
-            x[24] = RMP3_MULQ(t3 - t2, g_sec_q[3*i + 2]);
+            x[24] = (uint32_t)RMP3_MULQU(t3 - t2, g_sec_q[3*i + 2]);
         }
         for (x = t[0], i = 0; i < 4; i++, x += 8)
         {
-            int32_t x0 = x[0], x1 = x[1], x2 = x[2], x3 = x[3], x4 = x[4], x5 = x[5], x6 = x[6], x7 = x[7], xt;
+            uint32_t x0 = x[0], x1 = x[1], x2 = x[2], x3 = x[3], x4 = x[4], x5 = x[5], x6 = x[6], x7 = x[7], xt;
             xt = x0 - x7; x0 += x7;
             x7 = x1 - x6; x1 += x6;
             x6 = x2 - x5; x2 += x5;
@@ -1502,33 +1560,33 @@ static void rmp3d_DCT_II_q(int32_t *grbuf, int n)
             x4 = x0 - x3; x0 += x3;
             x3 = x1 - x2; x1 += x2;
             x[0] = x0 + x1;
-            x[4] = RMP3_MULQ(x0 - x1, 94906264);
+            x[4] = (uint32_t)RMP3_MULQU(x0 - x1, 94906264);
             x5 =  x5 + x6;
-            x6 = RMP3_MULQ(x6 + x7, 94906264);
+            x6 = (uint32_t)RMP3_MULQU(x6 + x7, 94906264);
             x7 =  x7 + xt;
-            x3 = RMP3_MULQ(x3 + x4, 94906264);
-            x5 -= RMP3_MULQ(x7, 26697566);  /* rotate by PI/8 */
-            x7 += RMP3_MULQ(x5, 51362901);
-            x5 -= RMP3_MULQ(x7, 26697566);
+            x3 = (uint32_t)RMP3_MULQU(x3 + x4, 94906264);
+            x5 -= (uint32_t)RMP3_MULQU(x7, 26697566);  /* rotate by PI/8 */
+            x7 += (uint32_t)RMP3_MULQU(x5, 51362901);
+            x5 -= (uint32_t)RMP3_MULQU(x7, 26697566);
             x0 = xt - x6; xt += x6;
-            x[1] = RMP3_MULQ(xt + x7, 68423609);
-            x[2] = RMP3_MULQ(x4 + x3, 72638112);
-            x[3] = RMP3_MULQ(x0 - x5, 80711144);
-            x[5] = RMP3_MULQ(x0 + x5, 120792759);
-            x[6] = RMP3_MULQ(x4 - x3, 175363920);
-            x[7] = RMP3_MULQ(xt - x7, 343988704);
+            x[1] = (uint32_t)RMP3_MULQU(xt + x7, 68423609);
+            x[2] = (uint32_t)RMP3_MULQU(x4 + x3, 72638112);
+            x[3] = (uint32_t)RMP3_MULQU(x0 - x5, 80711144);
+            x[5] = (uint32_t)RMP3_MULQU(x0 + x5, 120792759);
+            x[6] = (uint32_t)RMP3_MULQU(x4 - x3, 175363920);
+            x[7] = (uint32_t)RMP3_MULQU(xt - x7, 343988704);
         }
         for (i = 0; i < 7; i++, y += 4*18)
         {
-            y[0*18] = t[0][i];
-            y[1*18] = t[2][i] + t[3][i] + t[3][i + 1];
-            y[2*18] = t[1][i] + t[1][i + 1];
-            y[3*18] = t[2][i + 1] + t[3][i] + t[3][i + 1];
+            y[0*18] = (int32_t)t[0][i];
+            y[1*18] = (int32_t)(t[2][i] + t[3][i] + t[3][i + 1]);
+            y[2*18] = (int32_t)(t[1][i] + t[1][i + 1]);
+            y[3*18] = (int32_t)(t[2][i + 1] + t[3][i] + t[3][i + 1]);
         }
-        y[0*18] = t[0][7];
-        y[1*18] = t[2][7] + t[3][7];
-        y[2*18] = t[1][7];
-        y[3*18] = t[3][7];
+        y[0*18] = (int32_t)t[0][7];
+        y[1*18] = (int32_t)(t[2][7] + t[3][7]);
+        y[2*18] = (int32_t)t[1][7];
+        y[3*18] = (int32_t)t[3][7];
     }
 }
 
@@ -1796,14 +1854,17 @@ static int16_t rmp3d_scale_pcm(float sample)
 static void rmp3d_synth_pair_q(short *pcm, int nch, const int32_t *z)
 {
     int64_t a;
-    a  = (int64_t)(z[14*64] - z[    0]) * 29;
-    a += (int64_t)(z[ 1*64] + z[13*64]) * 213;
-    a += (int64_t)(z[12*64] - z[ 2*64]) * 459;
-    a += (int64_t)(z[ 3*64] + z[11*64]) * 2037;
-    a += (int64_t)(z[10*64] - z[ 4*64]) * 5153;
-    a += (int64_t)(z[ 5*64] + z[ 9*64]) * 6574;
-    a += (int64_t)(z[ 8*64] - z[ 6*64]) * 37489;
-    a += (int64_t) z[ 7*64]             * 75038;
+    /* The pair sums and differences wrap unsigned (see the kernel-group
+     * comment at rmp3_L3_dct3_9_q) and re-enter signed for the widening
+     * multiply. */
+    a  = (int64_t)(int32_t)((uint32_t)z[14*64] - (uint32_t)z[    0]) * 29;
+    a += (int64_t)(int32_t)((uint32_t)z[ 1*64] + (uint32_t)z[13*64]) * 213;
+    a += (int64_t)(int32_t)((uint32_t)z[12*64] - (uint32_t)z[ 2*64]) * 459;
+    a += (int64_t)(int32_t)((uint32_t)z[ 3*64] + (uint32_t)z[11*64]) * 2037;
+    a += (int64_t)(int32_t)((uint32_t)z[10*64] - (uint32_t)z[ 4*64]) * 5153;
+    a += (int64_t)(int32_t)((uint32_t)z[ 5*64] + (uint32_t)z[ 9*64]) * 6574;
+    a += (int64_t)(int32_t)((uint32_t)z[ 8*64] - (uint32_t)z[ 6*64]) * 37489;
+    a += (int64_t) z[ 7*64]                                          * 75038;
     pcm[0] = rmp3d_scale_pcm_q(a);
 
     z += 2;
@@ -2419,7 +2480,7 @@ static int rmp3dec_decode_frame(rmp3dec *dec, const unsigned char *mp3, int mp3_
    int i = 0, igr, frame_size = 0, success = 1;
    const uint8_t *hdr;
    rmp3_bs bs_frame[1];
-   rmp3dec_scratch scratch;
+   rmp3dec_scratch *scratch = (rmp3dec_scratch*)dec->scratch.bytes;
 
    if (mp3_bytes > 4 && dec->header[0] == 0xff && rmp3_hdr_compare(dec->header, mp3))
    {
@@ -2460,13 +2521,13 @@ static int rmp3dec_decode_frame(rmp3dec *dec, const unsigned char *mp3, int mp3_
 
    if (info->layer == 3)
    {
-      int main_data_begin = rmp3_L3_read_side_info(bs_frame, scratch.gr_info, hdr);
+      int main_data_begin = rmp3_L3_read_side_info(bs_frame, scratch->gr_info, hdr);
       if (main_data_begin < 0 || bs_frame->pos > bs_frame->limit)
       {
          dec->header[0] = 0;
          return 0;
       }
-      success = rmp3_L3_restore_reservoir(dec, bs_frame, &scratch, main_data_begin);
+      success = rmp3_L3_restore_reservoir(dec, bs_frame, scratch, main_data_begin);
       if (success)
       {
          size_t granule_bytes = (size_t)576*info->channels
@@ -2474,38 +2535,38 @@ static int rmp3dec_decode_frame(rmp3dec *dec, const unsigned char *mp3, int mp3_
          for (igr = 0; igr < (RMP3_HDR_TEST_MPEG1(hdr) ? 2 : 1);
                igr++, pcm = (uint8_t *)pcm + granule_bytes)
          {
-            memset(scratch.grbuf.f[0], 0, 576*2*sizeof(float));
-            rmp3_L3_decode(dec, &scratch, scratch.gr_info + igr*info->channels, info->channels, f32);
+            memset(scratch->grbuf.f[0], 0, 576*2*sizeof(float));
+            rmp3_L3_decode(dec, scratch, scratch->gr_info + igr*info->channels, info->channels, f32);
             if (f32)
-               rmp3d_synth_granule(dec->qmf_state.f, scratch.grbuf.f[0], 18, info->channels, pcm, scratch.syn.f[0], 1);
+               rmp3d_synth_granule(dec->qmf_state.f, scratch->grbuf.f[0], 18, info->channels, pcm, scratch->syn.f[0], 1);
             else
-               rmp3d_synth_granule_q(dec->qmf_state.q, scratch.grbuf.q[0], 18, info->channels, (short *)pcm, scratch.syn.q[0]);
+               rmp3d_synth_granule_q(dec->qmf_state.q, scratch->grbuf.q[0], 18, info->channels, (short *)pcm, scratch->syn.q[0]);
          }
       }
-      rmp3_L3_save_reservoir(dec, &scratch);
+      rmp3_L3_save_reservoir(dec, scratch);
    } else
    {
       rmp3_L12_scale_info sci[1];
       rmp3_L12_read_scale_info(hdr, bs_frame, sci);
 
-      memset(scratch.grbuf.f[0], 0, 576*2*sizeof(float));
+      memset(scratch->grbuf.f[0], 0, 576*2*sizeof(float));
       for (i = 0, igr = 0; igr < 3; igr++)
       {
-         if (12 == (i += rmp3_L12_dequantize_granule(scratch.grbuf.f[0] + i, bs_frame, sci, info->layer | 1)))
+         if (12 == (i += rmp3_L12_dequantize_granule(scratch->grbuf.f[0] + i, bs_frame, sci, info->layer | 1)))
          {
             i = 0;
-            rmp3_L12_apply_scf_384(sci, sci->scf + igr, scratch.grbuf.f[0]);
+            rmp3_L12_apply_scf_384(sci, sci->scf + igr, scratch->grbuf.f[0]);
             if (f32)
-               rmp3d_synth_granule(dec->qmf_state.f, scratch.grbuf.f[0], 12, info->channels, pcm, scratch.syn.f[0], 1);
+               rmp3d_synth_granule(dec->qmf_state.f, scratch->grbuf.f[0], 12, info->channels, pcm, scratch->syn.f[0], 1);
             else
             {
                /* Layer I/II scalefactor application is float; convert
                 * the granule at the same boundary as Layer III. */
-               rmp3d_float_to_q_n(&scratch.grbuf.q[0][0],
-                     &scratch.grbuf.f[0][0], 576*2);
-               rmp3d_synth_granule_q(dec->qmf_state.q, scratch.grbuf.q[0], 12, info->channels, (short *)pcm, scratch.syn.q[0]);
+               rmp3d_float_to_q_n(&scratch->grbuf.q[0][0],
+                     &scratch->grbuf.f[0][0], 576*2);
+               rmp3d_synth_granule_q(dec->qmf_state.q, scratch->grbuf.q[0], 12, info->channels, (short *)pcm, scratch->syn.q[0]);
             }
-            memset(scratch.grbuf.f[0], 0, 576*2*sizeof(float));
+            memset(scratch->grbuf.f[0], 0, 576*2*sizeof(float));
             pcm = (uint8_t *)pcm + (size_t)384*info->channels
                   * (f32 ? sizeof(float) : sizeof(short));
          }
@@ -2584,42 +2645,42 @@ static uint32_t rmp3_decode_next_frame(rmp3* pMP3)
  * frame is converted in place (the decoder state has already advanced
  * past it, so re-decoding is not an option); every later frame is
  * synthesised natively in the new format. */
-static void rmp3_set_output_mode(rmp3* pMP3, uint32_t f32)
+/* The two pipelines keep their persistent decoder state in different
+ * formats: float for the float pipeline, Q28 fixed point for the s16
+ * pipeline (the storage is shared through unions).  Convert the QMF
+ * and IMDCT overlap histories so decoding continues seamlessly in the
+ * new format.  Shared by the pull and streaming APIs, whose format
+ * switches are the same operation on different bookkeeping. */
+static void rmp3d_convert_state(rmp3dec *dec, uint32_t f32)
 {
-   uint32_t total;
    int i;
-   if (pMP3->f32_mode == f32)
-      return;
-   pMP3->f32_mode = f32;
-
-   /* The two pipelines keep their persistent decoder state in
-    * different formats: float for the float pipeline, Q28 fixed point
-    * for the s16 pipeline (the storage is shared through unions).
-    * Convert the QMF and IMDCT overlap histories so decoding continues
-    * seamlessly in the new format. */
+   float   *of = &dec->mdct_overlap.f[0][0];
+   int32_t *oq = &dec->mdct_overlap.q[0][0];
+   if (f32)
    {
-      float   *of = &pMP3->decoder.mdct_overlap.f[0][0];
-      int32_t *oq = &pMP3->decoder.mdct_overlap.q[0][0];
-      if (f32)
-      {
-         for (i = 0; i < 15*2*32; i++)
-            pMP3->decoder.qmf_state.f[i] =
-                  pMP3->decoder.qmf_state.q[i] * (1.0f / (float)(1 << RMP3D_QBITS));
-         for (i = 0; i < 2*9*32; i++)
-            of[i] = oq[i] * (1.0f / (float)(1 << RMP3D_QBITS));
-      }
-      else
-      {
-         for (i = 0; i < 15*2*32; i++)
-            pMP3->decoder.qmf_state.q[i] =
-                  rmp3d_float_to_q(pMP3->decoder.qmf_state.f[i]);
-         for (i = 0; i < 2*9*32; i++)
-            oq[i] = rmp3d_float_to_q(of[i]);
-      }
+      for (i = 0; i < 15*2*32; i++)
+         dec->qmf_state.f[i] =
+               dec->qmf_state.q[i] * (1.0f / (float)(1 << RMP3D_QBITS));
+      for (i = 0; i < 2*9*32; i++)
+         of[i] = oq[i] * (1.0f / (float)(1 << RMP3D_QBITS));
    }
+   else
+   {
+      for (i = 0; i < 15*2*32; i++)
+         dec->qmf_state.q[i] =
+               rmp3d_float_to_q(dec->qmf_state.f[i]);
+      for (i = 0; i < 2*9*32; i++)
+         oq[i] = rmp3d_float_to_q(of[i]);
+   }
+}
 
-   total = (pMP3->framesConsumed + pMP3->framesRemaining)
-         * pMP3->frameChannels;
+/* Convert 'total' samples of a buffered frame between the two formats,
+ * in place.  The decoder state has already advanced past the frame, so
+ * re-decoding is not an option; conversion is what keeps a buffered
+ * frame playable across a format switch. */
+static void rmp3d_convert_frames(rmp3_frame_buf *fb, uint32_t total,
+      uint32_t f32)
+{
    if (total == 0)
       return;
 
@@ -2629,7 +2690,7 @@ static void rmp3_set_output_mode(rmp3* pMP3, uint32_t f32)
        * backwards only clobbers s16 slots that are already consumed. */
       uint32_t i = total;
       while (i-- > 0)
-         pMP3->frames.f32[i] = pMP3->frames.s16[i] * (1.0f / 32768.0f);
+         fb->f32[i] = fb->s16[i] * (1.0f / 32768.0f);
    }
    else
    {
@@ -2638,17 +2699,28 @@ static void rmp3_set_output_mode(rmp3* pMP3, uint32_t f32)
       uint32_t i;
       for (i = 0; i < total; i++)
       {
-         float s = pMP3->frames.f32[i] * 32768.0f;
+         float s = fb->f32[i] * 32768.0f;
          int   v;
-         if (s >  32767.0f) { pMP3->frames.s16[i] =  32767; continue; }
-         if (s < -32768.0f) { pMP3->frames.s16[i] = -32768; continue; }
+         if (s >  32767.0f) { fb->s16[i] =  32767; continue; }
+         if (s < -32768.0f) { fb->s16[i] = -32768; continue; }
          v  = (int)(s + .5f);
          v -= (v < 0); /* round half away from zero, as rmp3d_scale_pcm */
          if (v >  32767) v =  32767;
          if (v < -32768) v = -32768;
-         pMP3->frames.s16[i] = (int16_t)v;
+         fb->s16[i] = (int16_t)v;
       }
    }
+}
+
+static void rmp3_set_output_mode(rmp3* pMP3, uint32_t f32)
+{
+   if (pMP3->f32_mode == f32)
+      return;
+   pMP3->f32_mode = f32;
+   rmp3d_convert_state(&pMP3->decoder, f32);
+   rmp3d_convert_frames(&pMP3->frames,
+         (pMP3->framesConsumed + pMP3->framesRemaining)
+         * pMP3->frameChannels, f32);
 }
 
 uint32_t rmp3_init_memory(rmp3* pMP3, const void* pData, size_t dataSize)
@@ -2818,4 +2890,381 @@ uint32_t rmp3_seek_to_frame(rmp3* pMP3, uint64_t frameIndex)
    if (frameIndex == 0)
       return 1;
    return rmp3_read_f32(pMP3, frameIndex, NULL) == frameIndex;
+}
+
+/* --- STREAMING API -----------------------------------------------------
+ *
+ * rmp3_init_memory wants the whole file addressable: it keeps a borrowed
+ * pointer and a cursor into it, and seeking re-scans from the front.  A
+ * caller reading from storage has no such buffer, and building one costs
+ * the file in memory to play a few kilobytes of it at a time.
+ *
+ * MPEG audio needs far less than that.  A frame is self-contained apart
+ * from the bit reservoir, which the decoder already carries between
+ * frames, so all a decode needs resident is one frame - at most 1044
+ * bytes plus padding at 320kbps, and free-format streams aside, never
+ * more than a couple of kilobytes.  What was missing was a way to hand
+ * frames over as they arrive rather than pointing at all of them at
+ * once.
+ *
+ * Same shape as rvorbis and rflac: point it at input, point it at
+ * output, and step it.  Input is consumed rather than borrowed, so a
+ * window may slide freely; what is not consumed must be presented again
+ * at the head of the next window.
+ */
+
+#define RMP3_STREAM_HOLD  4096   /* comfortably one frame plus a header */
+
+struct rmp3_stream
+{
+   rmp3dec        dec;
+
+   const uint8_t *in;
+   size_t         in_size;
+   size_t         in_pos;
+
+   /* One destination or the other, the same way the pull API's two
+    * reads are one decoder: whichever set_out_* ran last names the
+    * pipeline, and f32_mode says which. */
+   int16_t       *out;
+   float         *outf;
+   size_t         out_frames;
+   size_t         out_pos;
+   uint32_t       f32_mode;
+
+   /* A frame straddling two windows is reassembled here rather than
+    * asking the caller to guarantee alignment it cannot know. */
+   uint8_t        hold[RMP3_STREAM_HOLD];
+   size_t         hold_len;
+   uint64_t       in_total;    /* bytes ever taken in                  */
+   uint64_t       frame_off;   /* where the last decoded frame began   */
+   uint64_t       frames_in;   /* MPEG frames consumed since reset     */
+
+   /* One decoded frame, drained across as many calls as the caller's
+    * output takes to accept it; held in whichever format the synthesis
+    * ran in, converted in place if the caller switches. */
+   rmp3_frame_buf pcm;
+   unsigned       pending;
+   unsigned       drained;
+
+   unsigned       channels;
+   unsigned       rate;
+   int            started;
+   int            eof_in;
+};
+
+rmp3_stream_t *rmp3_stream_new(void)
+{
+   rmp3_stream_t *s = (rmp3_stream_t*)calloc(1, sizeof(*s));
+   if (!s)
+      return NULL;
+   memset(&s->dec, 0, sizeof(s->dec));
+   return s;
+}
+
+void rmp3_stream_free(rmp3_stream_t *s)
+{
+   free(s);
+}
+
+void rmp3_stream_set_in(rmp3_stream_t *s, const void *in, size_t in_size)
+{
+   if (!s)
+      return;
+   s->in      = (const uint8_t*)in;
+   s->in_size = in ? in_size : 0;
+   s->in_pos  = 0;
+}
+
+/* Selecting a pipeline is the same operation as the pull API's reads
+ * perform: convert the decoder's persistent filter state, and whatever
+ * of the last decoded frame has not been drained, so decoding
+ * continues seamlessly in the new format.  A parse-only call selects
+ * nothing - a walk in the middle of a decode must not disturb the
+ * pipeline the decode is in. */
+static void rmp3_stream_set_mode(rmp3_stream_t *s, uint32_t f32)
+{
+   if (s->f32_mode == f32)
+      return;
+   s->f32_mode = f32;
+   rmp3d_convert_state(&s->dec, f32);
+   rmp3d_convert_frames(&s->pcm,
+         (uint32_t)s->pending * s->channels, f32);
+}
+
+void rmp3_stream_set_out_s16(rmp3_stream_t *s, int16_t *out, size_t out_frames)
+{
+   if (!s)
+      return;
+   /* A null destination, or no room in it, means parse-only: frames are
+    * located and counted, nothing is decoded. */
+   s->out        = out;
+   s->outf       = NULL;
+   s->out_frames = out ? out_frames : 0;
+   s->out_pos    = 0;
+   if (out && out_frames)
+      rmp3_stream_set_mode(s, 0);
+}
+
+void rmp3_stream_set_out_f32(rmp3_stream_t *s, float *out, size_t out_frames)
+{
+   if (!s)
+      return;
+   s->out        = NULL;
+   s->outf       = out;
+   s->out_frames = out ? out_frames : 0;
+   s->out_pos    = 0;
+   if (out && out_frames)
+      rmp3_stream_set_mode(s, 1);
+}
+
+int rmp3_stream_info(const rmp3_stream_t *s, unsigned *channels, unsigned *rate)
+{
+   if (!s || !s->started)
+      return 0;
+   if (channels)
+      *channels = s->channels;
+   if (rate)
+      *rate = s->rate;
+   return 1;
+}
+
+uint64_t rmp3_stream_frames_in(const rmp3_stream_t *s)
+{
+   return s ? s->frames_in : 0;
+}
+
+uint64_t rmp3_stream_frame_offset(const rmp3_stream_t *s)
+{
+   return s ? s->frame_off : 0;
+}
+
+void rmp3_stream_set_eof(rmp3_stream_t *s)
+{
+   if (s)
+      s->eof_in = 1;
+}
+
+void rmp3_stream_reset(rmp3_stream_t *s)
+{
+   if (!s)
+      return;
+   memset(&s->dec, 0, sizeof(s->dec));
+   s->in       = NULL;
+   s->in_size  = 0;
+   s->in_pos   = 0;
+   s->hold_len = 0;
+   s->pending  = 0;
+   s->drained  = 0;
+   s->in_total = 0;
+   s->frame_off = 0;
+   s->frames_in = 0;
+   /* A reset re-points input, so whatever the previous run reached says
+    * nothing about the new one. */
+   s->eof_in   = 0;
+}
+
+int rmp3_stream_process(rmp3_stream_t *s, size_t *read, size_t *wrote)
+{
+   size_t w0;
+   int    ret = RMP3_STREAM_OK;
+
+   if (!s)
+      return RMP3_STREAM_ERROR;
+   w0 = s->out_pos;
+
+   for (;;)
+   {
+      rmp3dec_frame_info info;
+      const uint8_t     *src;
+      size_t             avail;
+      int                samples;
+      int                parse_only =
+            ((!s->out && !s->outf) || !s->out_frames);
+
+      /* Hand over what the last frame produced before decoding another:
+       * one frame is up to 1152 PCM frames and a caller's buffer may be
+       * smaller than that. */
+      if (s->pending > s->drained)
+      {
+         unsigned take = s->pending - s->drained;
+         size_t   room = s->out_frames - s->out_pos;
+         if (!parse_only)
+         {
+            if ((size_t)take > room)
+               take = (unsigned)room;
+            if (s->f32_mode)
+               memcpy(s->outf + s->out_pos * (size_t)s->channels,
+                     s->pcm.f32 + (size_t)s->drained * (size_t)s->channels,
+                     (size_t)take * (size_t)s->channels * sizeof(float));
+            else
+               memcpy(s->out + s->out_pos * (size_t)s->channels,
+                     s->pcm.s16 + (size_t)s->drained * (size_t)s->channels,
+                     (size_t)take * (size_t)s->channels * sizeof(int16_t));
+            s->out_pos += take;
+         }
+         s->drained += take;
+         if (s->drained < s->pending)
+         {
+            ret = RMP3_STREAM_OK;   /* output full, frame not spent */
+            break;
+         }
+         s->pending = s->drained = 0;
+      }
+
+      if (!parse_only && s->out_pos >= s->out_frames)
+      {
+         ret = RMP3_STREAM_OK;
+         break;
+      }
+
+      /* Top the hold up so a frame split across windows is whole. */
+      if (s->hold_len < RMP3_STREAM_HOLD)
+      {
+         size_t take = RMP3_STREAM_HOLD - s->hold_len;
+         if (take > s->in_size - s->in_pos)
+            take = s->in_size - s->in_pos;
+         if (take)
+         {
+            memcpy(s->hold + s->hold_len, s->in + s->in_pos, take);
+            s->hold_len += take;
+            s->in_pos   += take;
+            s->in_total += take;
+         }
+      }
+
+      src   = s->hold;
+      avail = s->hold_len;
+
+      if (!avail)
+      {
+         /* Nothing held and nothing in the window.  With EOF declared
+          * this is the end of the stream, not a request for more: a
+          * file whose last frame drains the hold exactly - the common
+          * shape, ending on a frame boundary - arrives here rather
+          * than at the no-frame-in-a-short-hold return below, and
+          * before this returned END the caller had to detect the end
+          * itself from NEED_IN with nothing left to feed. */
+         ret = s->eof_in ? RMP3_STREAM_END : RMP3_STREAM_NEED_IN;
+         break;
+      }
+
+      /* Do not decode a partly-filled hold.  Handed fewer bytes than a
+       * frame occupies, the frame finder reports the bytes it scanned
+       * as bytes to skip - it cannot tell the head of a frame that has
+       * not all arrived from junk - and acting on that discards the
+       * frame.  So wait until the hold is full, or until the caller
+       * says nothing more is coming and a short tail is all there is. */
+      if (s->hold_len < RMP3_STREAM_HOLD && !s->eof_in)
+      {
+         ret = RMP3_STREAM_NEED_IN;
+         break;
+      }
+
+      /* Where in the stream whatever is decoded next begins: the hold
+       * always starts at a frame boundary once one has been found, so
+       * this is the offset a caller would seek back to. */
+      s->frame_off = s->in_total - (uint64_t)s->hold_len;
+
+      memset(&info, 0, sizeof(info));
+      samples = rmp3dec_decode_frame(&s->dec, src, (int)avail,
+            parse_only ? NULL : (void*)&s->pcm, &info,
+            (int)s->f32_mode);
+
+      if (!samples && !info.frame_bytes)
+      {
+         /* A full hold with no frame in it is a stream this cannot
+          * make progress on; short of that, more input is wanted. */
+         ret = (s->eof_in && s->hold_len < RMP3_STREAM_HOLD)
+            ? RMP3_STREAM_END : RMP3_STREAM_NEED_IN;
+         break;
+      }
+
+      /* A located frame fills in the header fields whether or not it
+       * went on to produce samples; junk that was merely scanned past
+       * leaves them clear.  That distinction is what separates a frame
+       * consumed from bytes discarded, and only the former advances the
+       * stream's position. */
+      if (info.hz)
+         s->frames_in++;
+
+      if (info.frame_bytes > 0)
+      {
+         size_t used = (size_t)info.frame_bytes;
+         if (used > s->hold_len)
+            used = s->hold_len;
+         memmove(s->hold, s->hold + used, s->hold_len - used);
+         s->hold_len -= used;
+      }
+
+      if (samples > 0)
+      {
+         if (!s->started)
+         {
+            s->channels = (unsigned)info.channels;
+            s->rate     = (unsigned)info.hz;
+            s->started  = 1;
+         }
+         /* A malformed stream that changes channel count partway is
+          * adapted to the stream's own layout - mono duplicated,
+          * stereo averaged, the same arithmetic the pull API's reads
+          * apply - so the interleave stays consistent.  A rate change
+          * likewise decodes through at the stream's stated rate, which
+          * is all the pull API ever did with one. */
+         else if (!parse_only
+               && (unsigned)info.channels != s->channels)
+         {
+            if (s->channels == 2)
+            {
+               /* Widening in place: pair 2i,2i+1 overlays sample i,
+                * so walking backwards reads each source before its
+                * slots are clobbered. */
+               int i = samples;
+               if (s->f32_mode)
+                  while (i-- > 0)
+                     s->pcm.f32[2*i] = s->pcm.f32[2*i + 1]
+                                     = s->pcm.f32[i];
+               else
+                  while (i-- > 0)
+                     s->pcm.s16[2*i] = s->pcm.s16[2*i + 1]
+                                     = s->pcm.s16[i];
+            }
+            else
+            {
+               /* Narrowing in place: sample i overlays half of the
+                * pair 2i,2i+1, which is behind the read position
+                * walking forwards. */
+               int i;
+               if (s->f32_mode)
+                  for (i = 0; i < samples; i++)
+                     s->pcm.f32[i] = (s->pcm.f32[2*i]
+                           + s->pcm.f32[2*i + 1]) * 0.5f;
+               else
+                  for (i = 0; i < samples; i++)
+                     s->pcm.s16[i] = (int16_t)(((int32_t)s->pcm.s16[2*i]
+                           + (int32_t)s->pcm.s16[2*i + 1]) >> 1);
+            }
+         }
+
+         if (parse_only)
+         {
+            /* One frame per call while counting, so the offset reported
+             * alongside it belongs to that frame and not to whichever
+             * of a batch happened to come first.  Building a seek index
+             * is the reason to walk a stream without decoding it, and
+             * an index of frame positions needs them one at a time. */
+            s->out_pos += (size_t)samples;
+            ret = RMP3_STREAM_OK;
+            break;
+         }
+         s->pending = (unsigned)samples;
+         s->drained = 0;
+      }
+   }
+
+   if (read)
+      *read = s->in_pos;
+   if (wrote)
+      *wrote = s->out_pos - w0;
+   return ret;
 }

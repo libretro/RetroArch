@@ -92,18 +92,18 @@ S_BOOL(content_runtime_log_aggregate, CONTENT_RUNTIME_LOG_AGGREGATE,
       DEFAULT_CONTENT_RUNTIME_LOG_AGGREGATE, SD_FLAG_NONE, 0, 0,
       "Save Runtime Log (Aggregate)",
       "Keep track of how long each item of content has run for, recorded as the aggregate total across all cores.")
-/* Descriptor and configuration rows are #if defined(HAVE_ZLIB); the string
+/* Descriptor and configuration rows are #if defined(HAVE_COMPRESSION); the string
  * tables always carry this row via the strings pass. */
-#if defined(HAVE_ZLIB) || defined(SETTINGS_DEF_STRINGS_PASS)
+#if defined(HAVE_COMPRESSION) || defined(SETTINGS_DEF_STRINGS_PASS)
 S_BOOL(save_file_compression, SAVE_FILE_COMPRESSION,
       "save_file_compression",
       DEFAULT_SAVE_FILE_COMPRESSION, SD_FLAG_ADVANCED, 0, 0,
       "Save File: Compression",
       "Write non-volatile SaveRAM files in an archived format. Dramatically reduces file size at the expense of (negligibly) increased saving/loading times.\nOnly applies to cores that enable saving via the standard libretro SaveRAM interface.")
 #endif
-/* Descriptor and configuration rows are #if defined(HAVE_ZLIB); the string
+/* Descriptor and configuration rows are #if defined(HAVE_COMPRESSION); the string
  * tables always carry this row via the strings pass. */
-#if defined(HAVE_ZLIB) || defined(SETTINGS_DEF_STRINGS_PASS)
+#if defined(HAVE_COMPRESSION) || defined(SETTINGS_DEF_STRINGS_PASS)
 S_BOOL(savestate_file_compression, SAVESTATE_FILE_COMPRESSION,
       "savestate_file_compression",
       DEFAULT_SAVESTATE_FILE_COMPRESSION, SD_FLAG_ADVANCED, 0, 0,

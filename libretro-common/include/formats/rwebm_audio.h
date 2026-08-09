@@ -44,10 +44,25 @@ RETRO_BEGIN_DECLS
 int rwebm_audio_decode(const void *buf, size_t len, int64_t max_ms,
       int16_t **pcm, size_t *frames, unsigned *rate, unsigned *channels);
 
-/* Same, but returns a complete in-memory RIFF/WAVE file (16-bit PCM),
- * ready for audio_mixer_load_wav / AUDIO_MIXER_TYPE_WAV. */
+/* Same, decoded through the codecs' float pipelines (unit scale,
+ * full scale +-1.0) with no 16-bit quantisation anywhere. */
+int rwebm_audio_decode_f32(const void *buf, size_t len, int64_t max_ms,
+      float **pcm, size_t *frames, unsigned *rate, unsigned *channels);
+
+/* Same, but returns a complete in-memory RIFF/WAVE file (IEEE-float
+ * samples from the float pipelines, so nothing quantises between the
+ * codec and the mixer's float voice), ready for audio_mixer_load_wav / AUDIO_MIXER_TYPE_WAV. */
 int rwebm_audio_decode_wav(const void *buf, size_t len, int64_t max_ms,
       void **wav, size_t *wav_size);
+
+/* Avail-aware variant: decodes preview audio from the first 'avail'
+ * bytes, stopping at max_ms, end of track, or the first block past the
+ * wall - whichever comes first.  Requires the segment headers within
+ * 'avail'; need_more (may be NULL) is set to 1 when they are not yet
+ * resident and a larger prefix should be retried.  avail == len is
+ * exactly rwebm_audio_decode_wav. */
+int rwebm_audio_decode_wav_avail(const void *buf, size_t len, size_t avail,
+      int64_t max_ms, void **wav, size_t *wav_size, int *need_more);
 
 RETRO_END_DECLS
 

@@ -105,6 +105,12 @@ typedef NS_ENUM(NSUInteger, RPixelFormat)
    RPixelFormatBGRA8Unorm,
    RPixelFormatBGRX8Unorm, /* RetroArch XRGB */
 
+   /* RetroArch XRGB2101010 (10-bit per channel). BGR10A2 matches the ABI's
+    * packed layout (R in bits [29:20], G [19:10], B [9:0]) with no swizzle,
+    * and is directly sampleable, so it uses the same direct-encoder draw
+    * path as BGRA8/BGRX8 rather than a conversion filter. */
+   RPixelFormatBGR10A2Unorm,
+
    RPixelFormatCount
 };
 
@@ -232,7 +238,8 @@ typedef NS_ENUM(NSUInteger, ViewportResetMode) {
  * caller supplies the source explicitly: the shader-chain's last-pass RT
  * if a preset is active, or the raw frame texture for the no-shader path. */
 - (void)hdrComposite:(const HDRUniforms *)uniforms
-          fromSource:(id<MTLTexture>)source;
+          fromSource:(id<MTLTexture>)source
+            rotation:(unsigned)rotation;
 
 /* HDR-specific setters exposed for the poke interface. */
 - (void)setHDRPaperWhiteNits:(float)nits;
@@ -252,6 +259,17 @@ typedef NS_ENUM(NSUInteger, ViewportResetMode) {
  * inverse-tonemap / PQ encode. */
 - (void)setHDRShaderEmitsHDR10:(bool)emitsHDR10
                     emitsHDR16:(bool)emitsHDR16;
+
+/* Native (no tone-map) HDR read-back for HDR screenshots: reads the raw
+ * RGB10A2 / RGBA16F drawable rows and converts to three uint16_t per
+ * pixel (PQ-coded, bottom-up), with the same viewport clamping as
+ * readViewport:.  Reports the measured peak / average light levels and
+ * which encoding the swapchain used.  Returns NO when HDR is off or
+ * capture is unavailable; the caller then falls back to the SDR path. */
+- (bool)readViewportHDR:(uint16_t *)buffer
+                 maxCLL:(float *)outMaxCLL
+                maxFALL:(float *)outMaxFALL
+                isSCRGB:(bool *)outIsSCRGB;
 
 /* Current HDRUniforms for composite pass — updated as settings change. */
 - (const HDRUniforms *)currentHDRUniforms;
@@ -365,6 +383,9 @@ typedef NS_ENUM(NSInteger, ViewDrawState)
 - (void)clearShader;
 - (void)updateFrame:(void const *)src pitch:(NSUInteger)pitch;
 - (bool)readViewport:(uint8_t *)buffer isIdle:(bool)isIdle;
+- (bool)readViewportHDR:(uint16_t *)buffer
+                 isIdle:(bool)isIdle
+                   meta:(struct rpng_hdr_metadata *)meta;
 
 @end
 
@@ -621,6 +642,7 @@ static NSString *NSStringFromRPixelFormat(RPixelFormat format)
       STRING(RPixelFormatBGRA4Unorm);
       STRING(RPixelFormatBGRA8Unorm);
       STRING(RPixelFormatBGRX8Unorm);
+      STRING(RPixelFormatBGR10A2Unorm);
 #undef STRING
 
    });
@@ -860,6 +882,7 @@ static matrix_float4x4 matrix_proj_ortho(float left, float right, float top, flo
       _hdrUniforms.HDR10           = 1.0f;
       _hdrUniforms.HDRMode         = 0u;
       _hdrUniforms.PaperWhiteNits  = 200.0f;
+      _hdrUniforms.Rotation        = 0u;
       _hdrShaderEmitsHDR10 = false;
       _hdrShaderEmitsHDR16 = false;
 #endif
@@ -1627,6 +1650,7 @@ static matrix_float4x4 matrix_proj_ortho(float left, float right, float top, flo
  * encoder), opens the drawable, runs both passes, leaves _rce = nil. */
 - (void)hdrComposite:(const HDRUniforms *)uniforms
           fromSource:(id<MTLTexture>)source
+            rotation:(unsigned)rotation
 {
    if (!_hdrEnabled || !uniforms)
       return;
@@ -1677,6 +1701,9 @@ static matrix_float4x4 matrix_proj_ortho(float left, float right, float top, flo
                                             (float)_viewport.y,
                                             (float)_viewport.width,
                                             (float)_viewport.height);
+      /* Core content rotation.  Nonzero only for the no-shader source;
+       * the slang path pre-rotates via mvp_last_pass. */
+      local.Rotation     = rotation & 3u;
 
       id<MTLRenderCommandEncoder> cre = [_commandBuffer renderCommandEncoderWithDescriptor:rpd];
       cre.label = @"HDR composite (core)";
@@ -1727,6 +1754,8 @@ static matrix_float4x4 matrix_proj_ortho(float left, float right, float top, flo
                                               (float)drawable.texture.width,
                                               (float)drawable.texture.height);
       menuUni.BrightnessNits = uniforms->PaperWhiteNits;
+      /* The menu / OSD overlay is never rotated. */
+      menuUni.Rotation       = 0u;
       if (scRGB)
       {
          /* scRGB menu pass.  Force InverseTonemap=1 to bypass the
@@ -1852,7 +1881,14 @@ static matrix_float4x4 matrix_proj_ortho(float left, float right, float top, flo
 
 - (id<MTLTexture>)newTexture:(struct texture_image)image mipmapped:(bool)mipmapped
 {
-   MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
+   /* A 10-bit (XRGB2101010) source uses BGR10A2Unorm, whose packed layout
+    * (R in the high 10 bits, B in the low) matches the ABI with no swizzle,
+    * exactly as in the Metal source-frame path; otherwise BGRA8. Both are 4
+    * bytes/pixel so the row stride is unchanged. */
+   MTLPixelFormat        pf = image.pix10
+         ? MTLPixelFormatBGR10A2Unorm
+         : MTLPixelFormatBGRA8Unorm;
+   MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:pf
          width:image.width
          height:image.height
          mipmapped:mipmapped];
@@ -2099,6 +2135,212 @@ static matrix_float4x4 matrix_proj_ortho(float left, float right, float top, flo
 
    return YES;
 }
+
+#if METAL_HDR_AVAILABLE
+/* CPU-side HDR pixel helpers for the native HDR read-back.  Verbatim
+ * ports of the vulkan driver's (unit-tested) helpers -- see
+ * vulkan_read_viewport_hdr -- so every driver produces equivalent HDR
+ * PNGs from identical backbuffers. */
+static float metal_hdr_half_to_float(uint16_t h)
+{
+   uint32_t sign = (uint32_t)(h & 0x8000) << 16;
+   uint32_t exp  = (h >> 10) & 0x1F;
+   uint32_t mant = h & 0x3FF;
+   uint32_t f;
+   float    out;
+   if (exp == 0)
+   {
+      if (mant == 0)
+         f = sign;
+      else
+      {
+         exp = 127 - 15 + 1;
+         while (!(mant & 0x400)) { mant <<= 1; exp--; }
+         mant &= 0x3FF;
+         f = sign | (exp << 23) | (mant << 13);
+      }
+   }
+   else if (exp == 0x1F)
+      f = sign | 0x7F800000 | (mant << 13);
+   else
+      f = sign | ((exp - 15 + 127) << 23) | (mant << 13);
+   memcpy(&out, &f, sizeof(out));
+   return out;
+}
+
+/* ST.2084 (PQ) inverse-EOTF: normalised linear [0,1] -> PQ code [0,1]. */
+static float metal_hdr_pq_encode(float v)
+{
+   const float m1 = 0.1593017578125f, m2 = 78.84375f;
+   const float c1 = 0.8359375f, c2 = 18.8515625f, c3 = 18.6875f;
+   float yp;
+   if (v < 0.0f) v = 0.0f;
+   else if (v > 1.0f) v = 1.0f;
+   yp = powf(v, m1);
+   return powf((c1 + c2 * yp) / (1.0f + c3 * yp), m2);
+}
+
+/* One scRGB (Rec.709 linear, 1.0 = 80 nits) channel -> 16-bit PQ code. */
+static uint16_t metal_hdr_scrgb_to_pq16(float scrgb)
+{
+   float nits = scrgb * 80.0f;
+   float pq;
+   if (nits < 0.0f) nits = 0.0f;
+   else if (nits > 10000.0f) nits = 10000.0f;
+   pq = metal_hdr_pq_encode(nits / 10000.0f);
+   if (pq < 0.0f) pq = 0.0f;
+   else if (pq > 1.0f) pq = 1.0f;
+   return (uint16_t)(pq * 65535.0f + 0.5f);
+}
+
+/* ST.2084 EOTF: PQ code [0,1] -> nits, for MaxCLL / MaxFALL. */
+static float metal_hdr_pq_to_nits(float pq)
+{
+   const float m1 = 0.1593017578125f, m2 = 78.84375f;
+   const float c1 = 0.8359375f, c2 = 18.8515625f, c3 = 18.6875f;
+   float np, num, den;
+   if (pq <= 0.0f)
+      return 0.0f;
+   np  = powf(pq, 1.0f / m2);
+   num = np - c1;
+   den = c2 - c3 * np;
+   if (num < 0.0f) num = 0.0f;
+   return powf(num / den, 1.0f / m1) * 10000.0f;
+}
+
+- (bool)readViewportHDR:(uint16_t *)buffer
+                 maxCLL:(float *)outMaxCLL
+                maxFALL:(float *)outMaxFALL
+                isSCRGB:(bool *)outIsSCRGB
+{
+   size_t y;
+   NSUInteger rowBytes;
+   uint16_t *dst;
+   size_t dstStride;
+   uint8_t  stackRow[32 * 1024];
+   uint8_t *row     = stackRow;
+   uint8_t *heapRow = NULL;
+   bool     isSCRGB;
+   float    maxCLL  = 0.0f;
+   double   sumFALL = 0.0;
+   id<MTLTexture> srcTex = _backBuffer;
+
+   if (!_hdrEnabled || !_captureEnabled || srcTex == nil)
+      return NO;
+
+   if (srcTex.pixelFormat == MTLPixelFormatRGBA16Float)
+      isSCRGB = true;
+   else if (srcTex.pixelFormat == MTLPixelFormatRGB10A2Unorm)
+      isSCRGB = false;
+   else
+      return NO;
+
+   /* Native rows: 8 bytes/px for RGBA16F, 4 for RGB10A2. */
+   rowBytes = srcTex.width * (isSCRGB ? 8 : 4);
+   if (rowBytes > sizeof(stackRow))
+   {
+      heapRow = (uint8_t *)malloc(rowBytes);
+      if (!heapRow)
+         return NO;
+      row     = heapRow;
+   }
+
+   dstStride = (size_t)_viewport.width * 3;
+   dst       = buffer + (size_t)(_viewport.height - 1) * dstStride;
+
+   /* Same overscan clamping as readViewport: (issue #19038): off-texture
+    * rows / columns are written as black (PQ code 0). */
+   {
+      int texW     = (int)srcTex.width;
+      int texH     = (int)srcTex.height;
+      int colStart = -_viewport.x;
+      int colEnd   = texW - _viewport.x;
+      if (colStart < 0)
+         colStart = 0;
+      if (colEnd > (int)_viewport.width)
+         colEnd   = (int)_viewport.width;
+
+      for (y = 0; y < _viewport.height; y++, dst -= dstStride)
+      {
+         size_t x;
+         int    srcRow = _viewport.y + (int)y;
+
+         if (srcRow < 0 || srcRow >= texH || colEnd <= colStart)
+         {
+            memset(dst, 0, dstStride * sizeof(uint16_t));
+            continue;
+         }
+
+         [srcTex getBytes:row
+              bytesPerRow:rowBytes
+               fromRegion:MTLRegionMake2D(0, (NSUInteger)srcRow,
+                                          (NSUInteger)texW, 1)
+              mipmapLevel:0];
+
+         if (colStart > 0 || colEnd < (int)_viewport.width)
+            memset(dst, 0, dstStride * sizeof(uint16_t));
+
+         if (isSCRGB)
+         {
+            const uint16_t *srcPx = (const uint16_t *)row;
+            for (x = (size_t)colStart; x < (size_t)colEnd; x++)
+            {
+               int   srcCol = _viewport.x + (int)x;
+               float r      = metal_hdr_half_to_float(srcPx[4 * srcCol + 0]);
+               float g      = metal_hdr_half_to_float(srcPx[4 * srcCol + 1]);
+               float b      = metal_hdr_half_to_float(srcPx[4 * srcCol + 2]);
+               float lvl;
+               dst[3 * x + 0] = metal_hdr_scrgb_to_pq16(r);
+               dst[3 * x + 1] = metal_hdr_scrgb_to_pq16(g);
+               dst[3 * x + 2] = metal_hdr_scrgb_to_pq16(b);
+               lvl = r; if (g > lvl) lvl = g; if (b > lvl) lvl = b;
+               lvl *= 80.0f;
+               if (lvl < 0.0f) lvl = 0.0f;
+               else if (lvl > 10000.0f) lvl = 10000.0f;
+               if (lvl > maxCLL) maxCLL = lvl;
+               sumFALL += lvl;
+            }
+         }
+         else
+         {
+            const uint32_t *srcPx = (const uint32_t *)row;
+            for (x = (size_t)colStart; x < (size_t)colEnd; x++)
+            {
+               /* MTLPixelFormatRGB10A2Unorm: R[9:0] G[19:10] B[29:20]
+                * A[31:30] -- same placement as DXGI R10G10B10A2 and
+                * Vulkan A2B10G10R10. */
+               uint32_t w = srcPx[_viewport.x + (int)x];
+               uint32_t r = (w      ) & 0x3FF;
+               uint32_t g = (w >> 10) & 0x3FF;
+               uint32_t b = (w >> 20) & 0x3FF;
+               uint32_t mx;
+               float    lvl;
+               dst[3 * x + 0] = (uint16_t)((r << 6) | (r >> 4));
+               dst[3 * x + 1] = (uint16_t)((g << 6) | (g >> 4));
+               dst[3 * x + 2] = (uint16_t)((b << 6) | (b >> 4));
+               mx  = r; if (g > mx) mx = g; if (b > mx) mx = b;
+               lvl = metal_hdr_pq_to_nits((float)mx * (1.0f / 1023.0f));
+               if (lvl > maxCLL) maxCLL = lvl;
+               sumFALL += lvl;
+            }
+         }
+      }
+   }
+
+   free(heapRow);
+
+   if (outMaxCLL)
+      *outMaxCLL  = maxCLL;
+   if (outMaxFALL)
+      *outMaxFALL = (_viewport.width && _viewport.height)
+            ? (float)(sumFALL / ((double)_viewport.width
+                               * (double)_viewport.height))
+            : 0.0f;
+   if (outIsSCRGB)
+      *outIsSCRGB = isSCRGB;
+   return YES;
+}
+#endif /* METAL_HDR_AVAILABLE */
 
 - (void)begin
 {
@@ -2815,7 +3057,9 @@ static const NSUInteger kConstantAlignment = 4;
       _filter       = d.filter;
       _context      = c;
       _visible      = YES;
-      if (_format == RPixelFormatBGRA8Unorm || _format == RPixelFormatBGRX8Unorm)
+      if (   _format == RPixelFormatBGRA8Unorm
+          || _format == RPixelFormatBGRX8Unorm
+          || _format == RPixelFormatBGR10A2Unorm)
          _drawState = ViewDrawStateEncoder;
       else
          _drawState = ViewDrawStateAll;
@@ -2833,7 +3077,14 @@ static const NSUInteger kConstantAlignment = 4;
    _size = size;
 
    {
-      MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
+      /* The sampled texture matches the source for the direct-encoder
+       * formats (BGRA8/BGRX8/BGR10A2); the filtered formats convert into a
+       * BGRA8 texture via a compute pass. */
+      MTLPixelFormat texFmt =
+            (_format == RPixelFormatBGR10A2Unorm)
+            ? MTLPixelFormatBGR10A2Unorm
+            : MTLPixelFormatBGRA8Unorm;
+      MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:texFmt
             width: (NSUInteger)size.width
             height:(NSUInteger)size.height
             mipmapped:NO];
@@ -2842,7 +3093,8 @@ static const NSUInteger kConstantAlignment = 4;
    }
 
    if (   _format != RPixelFormatBGRA8Unorm
-       && _format != RPixelFormatBGRX8Unorm)
+       && _format != RPixelFormatBGRX8Unorm
+       && _format != RPixelFormatBGR10A2Unorm)
    {
       MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatR16Uint
                width:(NSUInteger)size.width
@@ -2886,7 +3138,8 @@ static const NSUInteger kConstantAlignment = 4;
 - (void)drawWithContext:(Context *)ctx
 {
    if (   _format == RPixelFormatBGRA8Unorm
-       || _format == RPixelFormatBGRX8Unorm)
+       || _format == RPixelFormatBGRX8Unorm
+       || _format == RPixelFormatBGR10A2Unorm)
       return;
 
    if (!_srcDirty)
@@ -2911,7 +3164,9 @@ static const NSUInteger kConstantAlignment = 4;
     * the driver to walk 4x the source memory between rows, reading
     * past the source allocation on every row after the first. The
     * else-branch already passes pitch straight through. */
-   if (_format == RPixelFormatBGRA8Unorm || _format == RPixelFormatBGRX8Unorm)
+   if (   _format == RPixelFormatBGRA8Unorm
+       || _format == RPixelFormatBGRX8Unorm
+       || _format == RPixelFormatBGR10A2Unorm)
    {
       [_texture replaceRegion:MTLRegionMake2D(0, 0, (NSUInteger)_size.width, (NSUInteger)_size.height)
                   mipmapLevel:0 withBytes:src
@@ -3014,22 +3269,6 @@ static void gfx_display_metal_scissor_end(void *data,
       [md.display clearScissorRect];
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_metal = {
-   gfx_display_metal_draw,
-   gfx_display_metal_draw_pipeline,
-   gfx_display_metal_blend_begin,
-   gfx_display_metal_blend_end,
-   gfx_display_metal_get_default_mvp,
-   gfx_display_metal_get_default_vertices,
-   gfx_display_metal_get_default_tex_coords,
-   FONT_DRIVER_RENDER_METAL_API,
-   GFX_VIDEO_DRIVER_METAL,
-   "metal",
-   false,
-   gfx_display_metal_scissor_begin,
-   gfx_display_metal_scissor_end
-};
-
 /*
  * FONT DRIVER
  */
@@ -3042,6 +3281,8 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
    struct font_atlas *_atlas;
 
    NSUInteger _stride;
+   /* Bytes per atlas coverage sample (1 for A8, 2 for A16) */
+   size_t _esz;
    id<MTLBuffer> _buffer;
    id<MTLTexture> _texture;
 
@@ -3082,14 +3323,23 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
 
       _driver  = driver;
       _context = driver.context;
-      if (!font_renderer_create_default(
-               &_font_driver,
-               &_font_data, font_path, font_size))
-         return nil;
+      {
+         /* When outputting HDR (scRGB or HDR10), ask the font
+          * renderer for a higher-precision coverage atlas; same
+          * policy as the d3d12 and vulkan drivers. */
+         if (!font_renderer_create_default(
+                  &_font_driver,
+                  &_font_data, font_path, font_size,
+                  _context.hdrEnabled
+                  ? FONT_ATLAS_FORMAT_A16 : FONT_ATLAS_FORMAT_A8))
+            return nil;
+      }
 
       _uniforms.projectionMatrix = matrix_proj_ortho(0, 1, 0, 1);
       _atlas  = _font_driver->get_atlas(_font_data);
-      _stride = MTL_ALIGN_BUFFER(_atlas->width);
+      _esz    = (_atlas->format == FONT_ATLAS_FORMAT_A16)
+            ? sizeof(uint16_t) : sizeof(uint8_t);
+      _stride = MTL_ALIGN_BUFFER(_atlas->width * _esz);
 
       /* Allocate an uninitialized managed buffer and fill it through
        * .contents. This collapses two previous branches (fast path
@@ -3102,9 +3352,10 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
                                              options:PLATFORM_METAL_RESOURCE_STORAGE_MODE];
       {
          size_t i;
+         size_t row_bytes   = (size_t)_atlas->width * _esz;
          uint8_t       *dst = (uint8_t *)_buffer.contents;
          const uint8_t *src = (const uint8_t *)_atlas->buffer;
-         if (_stride == _atlas->width)
+         if (_stride == row_bytes)
          {
             memcpy(dst, src, (size_t)_stride * _atlas->height);
          }
@@ -3112,9 +3363,9 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
          {
             for (i = 0; i < _atlas->height; i++)
             {
-               memcpy(dst, src, _atlas->width);
+               memcpy(dst, src, row_bytes);
                dst += _stride;
-               src += _atlas->width;
+               src += row_bytes;
             }
          }
       }
@@ -3122,7 +3373,10 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
       [_buffer didModifyRange:NSMakeRange(0, _buffer.length)];
 #endif
 
-      MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatR8Unorm
+      MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:
+                                        (_atlas->format == FONT_ATLAS_FORMAT_A16)
+                                              ? MTLPixelFormatR16Unorm
+                                              : MTLPixelFormatR8Unorm
                                                                                     width:_atlas->width
                                                                                    height:_atlas->height
                                                                                 mipmapped:NO];
@@ -3170,7 +3424,10 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
       psd.sampleCount                = 1;
       psd.vertexDescriptor           = vd;
       psd.vertexFunction             = [_context.library newFunctionWithName:@"sprite_vertex"];
-      psd.fragmentFunction           = [_context.library newFunctionWithName:@"sprite_fragment_a8"];
+      psd.fragmentFunction           = [_context.library newFunctionWithName:
+            (_atlas->format == FONT_ATLAS_FORMAT_A16)
+                  ? @"sprite_fragment_a16"
+                  : @"sprite_fragment_a8"];
 
       if (!psd.vertexFunction || !psd.fragmentFunction)
          return NO;
@@ -3196,9 +3453,12 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
       unsigned row;
       for (row = glyph->atlas_offset_y; row < (glyph->atlas_offset_y + glyph->height); row++)
       {
-         uint8_t *src = _atlas->buffer + row * _atlas->width + glyph->atlas_offset_x;
-         uint8_t *dst = (uint8_t *)_buffer.contents + row * _stride + glyph->atlas_offset_x;
-         memcpy(dst, src, glyph->width);
+         uint8_t *src = _atlas->buffer
+               + ((size_t)row * _atlas->width + glyph->atlas_offset_x) * _esz;
+         uint8_t *dst = (uint8_t *)_buffer.contents
+               + (size_t)row * _stride
+               + (size_t)glyph->atlas_offset_x * _esz;
+         memcpy(dst, src, (size_t)glyph->width * _esz);
       }
 
 #if !defined(HAVE_COCOATOUCH)
@@ -3220,8 +3480,9 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
 
 - (int)getWidthForMessage:(const char *)msg length:(NSUInteger)length scale:(float)scale
 {
-   NSUInteger i;
-   int delta_x = 0;
+   const char *walk     = msg;
+   const char *walk_end = msg + length;
+   int delta_x          = 0;
    const struct font_glyph* glyph_q;
 
    /* Validate font data before use - can become invalid during
@@ -3230,12 +3491,21 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
       return 0;
 
    glyph_q = _font_driver->get_glyph(_font_data, '?');
+   /* The fallback glyph can itself have just been rasterized after
+    * eviction; pair its lookup with an update like every other
+    * lookup so its cell is not stranded when an unrelated glyph
+    * clears the dirty flag. */
+   if (glyph_q)
+      [self updateGlyph:glyph_q];
 
-   for (i = 0; i < length; i++)
+   /* Decode UTF-8 exactly like the render path does; walking bytes
+    * here made the measured width of multi-byte text disagree with
+    * what is actually drawn, skewing right/center alignment. */
+   while (walk < walk_end)
    {
       const struct font_glyph *glyph;
-      /* Do something smarter here ... */
-      if (!(glyph = _font_driver->get_glyph(_font_data, (uint8_t)msg[i])))
+      uint32_t code = utf8_walk(&walk);
+      if (!(glyph = _font_driver->get_glyph(_font_data, code)))
          if (!(glyph = glyph_q))
             continue;
 
@@ -3343,6 +3613,10 @@ static INLINE void write_quad6(SpriteVertex *pv,
    SpriteVertex *v = (SpriteVertex *)_range.data;
    v              += _vertices;
    glyph_q         = _font_driver->get_glyph(_font_data, '?');
+   /* Pair the fallback-glyph lookup with an update like every other
+    * lookup, in case '?' was just (re)rasterized after eviction. */
+   if (glyph_q)
+      [self updateGlyph:glyph_q];
 
    while (msg < msg_end)
    {
@@ -3463,11 +3737,16 @@ static INLINE void write_quad6(SpriteVertex *pv,
       drop_mod   = params->drop_mod;
       drop_alpha = params->drop_alpha;
 
-      color      = simd_make_float4(
-            FONT_COLOR_GET_RED(params->color) / 255.0f,
-            FONT_COLOR_GET_GREEN(params->color) / 255.0f,
-            FONT_COLOR_GET_BLUE(params->color) / 255.0f,
-            FONT_COLOR_GET_ALPHA(params->color) / 255.0f);
+      if (params->color_hp)
+         color   = simd_make_float4(
+               params->color_hp[0], params->color_hp[1],
+               params->color_hp[2], params->color_hp[3]);
+      else
+         color   = simd_make_float4(
+               FONT_COLOR_GET_RED(params->color) / 255.0f,
+               FONT_COLOR_GET_GREEN(params->color) / 255.0f,
+               FONT_COLOR_GET_BLUE(params->color) / 255.0f,
+               FONT_COLOR_GET_ALPHA(params->color) / 255.0f);
 
    }
    else
@@ -3593,18 +3872,6 @@ static bool metal_get_line_metrics(void *data,
       return [r getLineMetrics:metrics];
    return false;
 }
-
-font_renderer_t metal_raster_font = {
-   metal_raster_font_init,
-   metal_raster_font_free,
-   metal_raster_font_render_msg,
-   "metal",
-   metal_raster_font_get_glyph,
-   NULL, /* bind_block  */
-   NULL, /* flush_block */
-   metal_raster_font_get_message_width,
-   metal_get_line_metrics
-};
 
 /*
  * VIDEO DRIVER
@@ -3825,6 +4092,29 @@ static void metal_pull_cached_frame_cb(void *userdata,
          unsigned    initial_hdr_mode = settings
             ? settings->uints.video_hdr_mode
             : METAL_HDR_MODE_OFF;
+         /* Clamp the request to the display before it configures the
+          * layer.  The capability announce further down correctly
+          * advertises no HDR on SDR displays, but two things trust the
+          * *setting* rather than the flags: SET_PIXEL_FORMAT's
+          * HDR10_2101010 gate (documented there: it runs too early in
+          * core init to test the flags, so "non-zero means requested
+          * and possible") and this very block, which would otherwise
+          * configure an EDR layer the display clamps.  The D3D and
+          * Vulkan paths already force the setting to 0 on unsupported
+          * displays; Metal was the one HDR driver that did not, so a
+          * stale mode on an SDR Mac accepted PQ frames from a core.
+          * Mirrors dxgi_check_display_hdr_support. */
+         if (     initial_hdr_mode != METAL_HDR_MODE_OFF
+               && !metal_display_supports_edr())
+         {
+            RARCH_WARN("[Metal] HDR requested but the display reports no EDR headroom; forcing HDR off.\n");
+            initial_hdr_mode = METAL_HDR_MODE_OFF;
+            if (settings)
+            {
+               settings->flags               |= SETTINGS_FLG_MODIFIED;
+               settings->uints.video_hdr_mode = METAL_HDR_MODE_OFF;
+            }
+         }
          metal_apply_hdr_layer_config(_layer, initial_hdr_mode);
          _initial_hdr_mode           = initial_hdr_mode;
       }
@@ -3885,7 +4175,9 @@ static void metal_pull_cached_frame_cb(void *userdata,
       /* Framebuffer view */
       {
          ViewDescriptor *vd  = [ViewDescriptor new];
-         vd.format           = _video.rgb32 ? RPixelFormatBGRX8Unorm : RPixelFormatB5G6R5Unorm;
+         vd.format           = _video.source_10bit
+               ? RPixelFormatBGR10A2Unorm
+               : (_video.rgb32 ? RPixelFormatBGRX8Unorm : RPixelFormatB5G6R5Unorm);
          vd.size             = CGSizeMake(video->width, video->height);
          vd.filter           = _video.smooth ? RTextureFilterLinear : RTextureFilterNearest;
          _frameView          = [[FrameView alloc] initWithDescriptor:vd context:_context];
@@ -3897,11 +4189,6 @@ static void metal_pull_cached_frame_cb(void *userdata,
       /* Overlay view */
       _overlay = [[Overlay alloc] initWithContext:_context];
 
-      font_driver_init_osd((__bridge void *)self,
-            video,
-            false,
-            video->is_threaded,
-            FONT_DRIVER_RENDER_METAL_API);
 
       /* Tell Context to allocate HDR offscreen + readback textures and
        * compile its composite/tonemap pipelines.  By this point the CAMetalLayer's
@@ -3974,7 +4261,6 @@ static void metal_pull_cached_frame_cb(void *userdata,
       free(_viewport);
       _viewport = nil;
    }
-   font_driver_free_osd();
 
    /* Tear down the GPU list we published to the frontend.  We clear
     * the slot first so any later code paths (e.g. the menu cbs) that
@@ -4231,44 +4517,9 @@ static void metal_pull_cached_frame_cb(void *userdata,
          gfx_widgets_frame(video_info);
 #endif
 
-      /* Render on-screen message: optional background quad + text. */
+      /* Render on-screen message */
       if (msg && *msg)
-      {
-         settings_t *settings    = config_get_ptr();
-         bool msg_bgcolor_enable = settings->bools.video_msg_bgcolor_enable;
-
-         if (msg_bgcolor_enable)
-         {
-            int msg_width         = font_driver_get_message_width(NULL,
-                  msg, strlen(msg), 1.0f);
-            float font_size       = settings->floats.video_font_size;
-            unsigned bgcolor_red  = settings->uints.video_msg_bgcolor_red;
-            unsigned bgcolor_green= settings->uints.video_msg_bgcolor_green;
-            unsigned bgcolor_blue = settings->uints.video_msg_bgcolor_blue;
-            float bgcolor_opacity = settings->floats.video_msg_bgcolor_opacity;
-            float x               = settings->floats.video_msg_pos_x;
-            float y               = 1.0f - settings->floats.video_msg_pos_y;
-            float bg_w            = msg_width / (float)_viewport->full_width;
-            float bg_h            = font_size / (float)_viewport->full_height;
-            float x2              = 0.005f; /* extend background around text */
-            float y2              = 0.005f;
-            float r               = bgcolor_red   / 255.0f;
-            float g               = bgcolor_green / 255.0f;
-            float b               = bgcolor_blue  / 255.0f;
-            float a               = bgcolor_opacity;
-
-            y                    -= bg_h;
-            x                    -= x2;
-            y                    -= y2;
-            bg_w                 += x2;
-            bg_h                 += y2;
-
-            [_context resetRenderViewport:kFullscreenViewport];
-            [_context drawQuadX:x y:y w:bg_w h:bg_h r:r g:g b:b a:a];
-         }
-
          font_driver_render_msg(data, msg, strlen(msg), NULL, NULL);
-      }
 
       /* End-of-frame HDR composite.  Menu / overlay / OSD / widgets have
        * rendered into the BGRA8 SDR overlay offscreen (_sdrOverlayTex);
@@ -4280,10 +4531,17 @@ static void metal_pull_cached_frame_cb(void *userdata,
       if (hdrOn)
       {
          const HDRUniforms *u  = _context.currentHDRUniforms;
+         unsigned          rot = 0;
          id<MTLTexture>    src = _frameView.shaderOutputTexture;
          if (!src)
-            src                = _frameView.frameTexture;
-         [_context hdrComposite:u fromSource:src];
+         {
+            /* Raw frame texture: unrotated content, so the composite
+             * rotates the sampling.  The slang last pass (src != nil)
+             * already rendered rotated via mvp_last_pass. */
+            src = _frameView.frameTexture;
+            rot = retroarch_get_rotation() & 3;
+         }
+         [_context hdrComposite:u fromSource:src rotation:rot];
       }
 
       [self _endFrame];
@@ -4498,7 +4756,9 @@ typedef struct MTLALIGN(16)
       _format               = d.format;
       _bpp                  = RPixelFormatToBPP(_format);
       _filter               = d.filter;
-      if (_format == RPixelFormatBGRA8Unorm || _format == RPixelFormatBGRX8Unorm)
+      if (   _format == RPixelFormatBGRA8Unorm
+          || _format == RPixelFormatBGRX8Unorm
+          || _format == RPixelFormatBGR10A2Unorm)
          _drawState         = ViewDrawStateEncoder;
       else
          _drawState         = ViewDrawStateAll;
@@ -4608,7 +4868,8 @@ typedef struct MTLALIGN(16)
    resize_render_targets = YES;
 
    if (   _format != RPixelFormatBGRA8Unorm
-       && _format != RPixelFormatBGRX8Unorm)
+       && _format != RPixelFormatBGRX8Unorm
+       && _format != RPixelFormatBGR10A2Unorm)
    {
       MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatR16Uint
                                  width:(NSUInteger)size.width
@@ -4685,7 +4946,15 @@ typedef struct MTLALIGN(16)
    if (   _engine.frame.texture[0].size_data.x != _size.width
        || _engine.frame.texture[0].size_data.y != _size.height)
    {
-      MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
+      /* The front slot receives the uploaded source frame directly, so for a
+       * native 10-bit source it must be BGR10A2 (which matches the ABI's
+       * XRGB2101010 packing with no swizzle); all other formats upload into
+       * or convert to BGRA8. */
+      MTLPixelFormat frameFmt =
+            (_format == RPixelFormatBGR10A2Unorm)
+            ? MTLPixelFormatBGR10A2Unorm
+            : MTLPixelFormatBGRA8Unorm;
+      MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:frameFmt
                width:(NSUInteger)_size.width
                height:(NSUInteger)_size.height
                mipmapped:false];
@@ -4711,6 +4980,67 @@ typedef struct MTLALIGN(16)
    return res;
 }
 
+- (bool)readViewportHDR:(uint16_t *)buffer
+                 isIdle:(bool)isIdle
+                   meta:(struct rpng_hdr_metadata *)meta
+{
+#if METAL_HDR_AVAILABLE
+   bool res      = NO;
+   bool isSCRGB  = false;
+   float maxCLL  = 0.0f;
+   float maxFALL = 0.0f;
+   bool enabled  = _context.captureEnabled;
+   if (!enabled)
+      _context.captureEnabled = YES;
+
+   if (!isIdle)
+      video_driver_cached_frame();
+
+   res = [_context readViewportHDR:buffer
+                            maxCLL:&maxCLL
+                           maxFALL:&maxFALL
+                           isSCRGB:&isSCRGB];
+
+   if (!enabled)
+      _context.captureEnabled = NO;
+
+   if (res && meta)
+   {
+      /* Same tagging as the vulkan / dxgi implementations: PQ transfer,
+       * BT.2100 primaries for HDR10 or BT.709 for scRGB, D65 white,
+       * cLLI from the measured levels, mDCV from the configured range. */
+      memset(meta, 0, sizeof(*meta));
+      meta->colour_primaries      = isSCRGB ? 1 : 9;
+      meta->transfer_function     = 16; /* SMPTE ST 2084 (PQ) */
+      meta->matrix_coefficients   = 0;  /* RGB (must be 0 for PNG) */
+      meta->video_full_range_flag = 1;
+      meta->max_cll               = maxCLL;
+      meta->max_fall              = maxFALL;
+      meta->write_mdcv            = 1;
+      if (isSCRGB)
+      {
+         meta->primary_chromaticity[0][0] = 0.640f; meta->primary_chromaticity[0][1] = 0.330f;
+         meta->primary_chromaticity[1][0] = 0.300f; meta->primary_chromaticity[1][1] = 0.600f;
+         meta->primary_chromaticity[2][0] = 0.150f; meta->primary_chromaticity[2][1] = 0.060f;
+      }
+      else
+      {
+         meta->primary_chromaticity[0][0] = 0.708f; meta->primary_chromaticity[0][1] = 0.292f;
+         meta->primary_chromaticity[1][0] = 0.170f; meta->primary_chromaticity[1][1] = 0.797f;
+         meta->primary_chromaticity[2][0] = 0.131f; meta->primary_chromaticity[2][1] = 0.046f;
+      }
+      meta->white_point[0] = 0.3127f; meta->white_point[1] = 0.3290f; /* D65 */
+      /* Same mastering-display defaults the vulkan and d3d12 drivers
+       * use; RetroArch has no per-display luminance query on Metal. */
+      meta->max_luminance  = 1000.0f;
+      meta->min_luminance  = 0.001f;
+   }
+   return res;
+#else
+   return NO;
+#endif
+}
+
 - (void)updateFrame:(void const *)src pitch:(NSUInteger)pitch
 {
    if (_shader && (_engine.frame.output_size.x != _viewport->width
@@ -4734,7 +5064,8 @@ typedef struct MTLALIGN(16)
    [self _updateHistory];
 
    if (   _format == RPixelFormatBGRA8Unorm
-       || _format == RPixelFormatBGRX8Unorm)
+       || _format == RPixelFormatBGRX8Unorm
+       || _format == RPixelFormatBGR10A2Unorm)
    {
       id<MTLTexture> tex = _engine.frame.texture[0].view;
       [tex replaceRegion:MTLRegionMake2D(0, 0, (NSUInteger)_size.width, (NSUInteger)_size.height)
@@ -4777,6 +5108,7 @@ typedef struct MTLALIGN(16)
 
    if (     (_format != RPixelFormatBGRA8Unorm)
          && (_format != RPixelFormatBGRX8Unorm)
+         && (_format != RPixelFormatBGR10A2Unorm)
          && _srcDirty)
    {
       [_context convertFormat:_format from:_src to:_texture];
@@ -5015,7 +5347,13 @@ typedef struct MTLALIGN(16)
       if (lastPass && _hdrEnabled)
       {
          forceAllocForHDR = YES;
-         if (fmt != MTLPixelFormatRGBA16Float && fmt != MTLPixelFormatRGB10A2Unorm)
+         /* Must match the attachment format _initPipelines picks, which
+          * only honours an HDR format the shader declared itself.  A
+          * format derived from preset FBO flags is not an HDR encode, so
+          * the composite input stays RGBA16F for it. */
+         if (!(   _engine.pass[i].semantics.explicit_format
+               && (   fmt == MTLPixelFormatRGBA16Float
+                   || fmt == MTLPixelFormatRGB10A2Unorm)))
             fmt = MTLPixelFormatRGBA16Float;
       }
 
@@ -5249,11 +5587,19 @@ typedef struct MTLALIGN(16)
             BOOL passEmitsHDR16 = NO;
             if (lastPass)
             {
-               if (   _engine.pass[i].semantics.format == SLANG_FORMAT_A2B10G10R10_UNORM_PACK32
-                   || _engine.pass[i].semantics.format == SLANG_FORMAT_A2B10G10R10_UINT_PACK32)
-                  passEmitsHDR10 = YES;
-               else if (_engine.pass[i].semantics.format == SLANG_FORMAT_R16G16B16A16_SFLOAT)
-                  passEmitsHDR16 = YES;
+               /* Only a format the shader declared itself (#pragma format)
+                * means the shader performed its own HDR encode.  A format
+                * derived from preset FBO flags (float_framebuffer /
+                * rgb10_framebuffer) carries no such intent, so it must not
+                * put the composite pass into passthrough. */
+               if (_engine.pass[i].semantics.explicit_format)
+               {
+                  if (   _engine.pass[i].semantics.format == SLANG_FORMAT_A2B10G10R10_UNORM_PACK32
+                      || _engine.pass[i].semantics.format == SLANG_FORMAT_A2B10G10R10_UINT_PACK32)
+                     passEmitsHDR10 = YES;
+                  else if (_engine.pass[i].semantics.format == SLANG_FORMAT_R16G16B16A16_SFLOAT)
+                     passEmitsHDR16 = YES;
+               }
 
                /* Method-scope flags — will be pushed to Context after the loop. */
                _shaderEmitsHDR10 = passEmitsHDR10;
@@ -5855,6 +6201,13 @@ static bool metal_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    return [md.frameView readViewport:buffer isIdle:is_idle];
 }
 
+static bool metal_read_viewport_hdr(void *data, uint16_t *buffer,
+      bool is_idle, struct rpng_hdr_metadata *out_meta)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   return [md.frameView readViewportHDR:buffer isIdle:is_idle meta:out_meta];
+}
+
 #ifdef HAVE_THREADS
 typedef struct
 {
@@ -6044,6 +6397,7 @@ static uint32_t metal_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES);
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
    BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
+   BIT32_SET(flags, GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE);
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
@@ -6199,7 +6553,6 @@ static void metal_get_poke_interface(void *data,
 }
 
 #ifdef HAVE_OVERLAY
-
 static void metal_overlay_enable(void *data, bool state)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
@@ -6261,12 +6614,23 @@ static void metal_get_overlay_interface(void *data,
 {
    *iface = &metal_overlay_interface;
 }
-
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
 static bool metal_widgets_enabled(void *data) { return true; }
 #endif
+
+static font_renderer_t metal_raster_font = {
+   metal_raster_font_init,
+   metal_raster_font_free,
+   metal_raster_font_render_msg,
+   "metal",
+   metal_raster_font_get_glyph,
+   NULL, /* bind_block  */
+   NULL, /* flush_block */
+   metal_raster_font_get_message_width,
+   metal_get_line_metrics
+};
 
 video_driver_t video_metal = {
    metal_init,
@@ -6292,6 +6656,25 @@ video_driver_t video_metal = {
    NULL, /* shader_load_begin */
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   metal_widgets_enabled
+   metal_widgets_enabled,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   metal_read_viewport_hdr,
+   &metal_raster_font
+};
+
+gfx_display_ctx_driver_t gfx_display_ctx_metal = {
+   gfx_display_metal_draw,
+   gfx_display_metal_draw_pipeline,
+   gfx_display_metal_blend_begin,
+   gfx_display_metal_blend_end,
+   gfx_display_metal_get_default_mvp,
+   gfx_display_metal_get_default_vertices,
+   gfx_display_metal_get_default_tex_coords,
+   &metal_raster_font,
+   GFX_VIDEO_DRIVER_METAL,
+   "metal",
+   false,
+   gfx_display_metal_scissor_begin,
+   gfx_display_metal_scissor_end
 };

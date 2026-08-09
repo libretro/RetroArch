@@ -340,8 +340,6 @@ frontend_ctx_driver_t frontend_ctx_wiiu =
    frontend_wiiu_get_arch,       /* get_architecture */
    NULL,                         /* get_powerstate */
    frontend_wiiu_parse_drive_list,
-   NULL,                         /* get_total_mem */
-   NULL,                         /* get_free_mem */
    NULL,                         /* install_signal_handler */
    NULL,                         /* get_signal_handler_state */
    NULL,                         /* set_signal_handler_state       */

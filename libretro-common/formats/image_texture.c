@@ -27,7 +27,7 @@
 
 #include <boolean.h>
 #include <formats/image.h>
-#include <file/nbio.h>
+#include <formats/data_transfer.h>
 
 enum image_type_enum image_texture_get_type(const char *path)
 {
@@ -84,6 +84,16 @@ enum image_type_enum image_texture_get_type(const char *path)
              (ext[1] | 0x20) == 'd' &&
              (ext[2] | 0x20) == 's')
             return IMAGE_TYPE_DDS;
+#endif
+#ifdef HAVE_RMP4
+         if ((ext[0] | 0x20) == 'm' &&
+              ext[1]         == '4' &&
+             (ext[2] | 0x20) == 'v')
+            return IMAGE_TYPE_MP4;
+         if ((ext[0] | 0x20) == 'm' &&
+             (ext[1] | 0x20) == 'p' &&
+              ext[2]         == '4')
+            return IMAGE_TYPE_MP4;
 #endif
          break;
 
@@ -279,6 +289,31 @@ bool image_texture_realize_rgba(struct texture_image *img)
    return true;
 }
 
+void image_texture_narrow_10bit(struct texture_image *img)
+{
+   size_t n, i;
+   uint32_t *px;
+   if (!img || !img->pix10 || !img->pixels)
+      return;
+   px = img->pixels;
+   n  = (size_t)img->width * img->height;
+   /* Narrow packed XRGB2101010 (R[29:20] G[19:10] B[9:0]) to 8-bit ARGB8888
+    * (0xAARRGGBB, opaque) in place, for drivers without native 10-bit
+    * texture support. Matches the >> 2 narrowing used elsewhere. */
+   for (i = 0; i < n; i++)
+   {
+      uint32_t p = px[i];
+      uint32_t r = (p >> 20) & 0x3ff;
+      uint32_t g = (p >> 10) & 0x3ff;
+      uint32_t b =  p        & 0x3ff;
+      px[i] = 0xff000000u
+            | ((r >> 2) << 16)
+            | ((g >> 2) <<  8)
+            |  (b >> 2);
+   }
+   img->pix10 = false;
+}
+
 bool image_texture_load_buffer(struct texture_image *out_img,
    enum image_type_enum type, void *buffer, size_t buffer_len)
 {
@@ -305,27 +340,30 @@ bool image_texture_load(struct texture_image *out_img,
 
    if (type != IMAGE_TYPE_NONE)
    {
-      struct nbio_t *handle = (struct nbio_t*)
-         nbio_open(path, NBIO_READ);
-      if (handle)
+      /* The synchronous read rides the data_transfer prefix spine
+       * like every other loader: filestream/VFS routing (overlays
+       * and driver assets from archive members or content://
+       * documents), 64-bit lengths, the hardware guard behind the
+       * read, and honest short-read detection.  A zero budget fills
+       * to completion in one blocking call, which is this API's
+       * contract. */
+      struct data_transfer *dt = data_transfer_open_prefix(path, 0);
+      if (dt)
       {
-         void *ptr       = NULL;
-         size_t file_len = 0;
+         size_t file_len    = 0;
+         const uint8_t *ptr = NULL;
 
-         /* Fast path: collapses begin_read + iterate-loop + get_ptr
-          * into a single call. For mmap this is zero-copy (instant),
-          * for AIO a single blocking syscall, for stdio one fread. */
-         if ((ptr = nbio_load_entire(handle, &file_len)))
-         {
-            if (image_texture_load_internal(
+         data_transfer_iterate(dt, 0);
+         ptr = data_transfer_ptr(dt, &file_len);
+         if (data_transfer_complete(dt) && ptr && file_len
+               && image_texture_load_internal(
                      type,
-                     ptr, file_len, out_img))
-            {
-               nbio_free(handle);
-               return true;
-            }
+                     (void*)ptr, file_len, out_img))
+         {
+            data_transfer_free(dt);
+            return true;
          }
-         nbio_free(handle);
+         data_transfer_free(dt);
       }
    }
 

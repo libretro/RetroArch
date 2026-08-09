@@ -41,6 +41,11 @@ typedef struct jack
    slock_t *cond_lock;
 #endif
    size_t buffer_size;
+#ifdef HAVE_THREADS
+   /* Bound for the blocking wait in ja_write, one process period.
+    * See the note there. */
+   int64_t wait_us;
+#endif
    volatile bool shutdown;
    bool nonblock;
    bool is_paused;
@@ -206,6 +211,16 @@ static void *ja_init(const char *device,
    bufsize         = ja_find_buffersize(jd, latency, *new_rate);
    jd->buffer_size = bufsize;
 
+#ifdef HAVE_THREADS
+   /* One process-callback period, floored so a tiny JACK buffer does
+    * not turn the bounded wait into a spin. */
+   jd->wait_us     = *new_rate
+      ? (int64_t)jack_get_buffer_size(jd->client) * 1000000 / *new_rate
+      : 1000;
+   if (jd->wait_us < 1000)
+      jd->wait_us  = 1000;
+#endif
+
    RARCH_LOG("[JACK] Internal buffer size: %d frames.\n", (int)(bufsize / sizeof(jack_default_audio_sample_t)));
 
    jd->buffer = jack_ringbuffer_create(bufsize);
@@ -263,8 +278,14 @@ static ssize_t ja_write(void *data, const void *buf_, size_t len)
       avail = jack_ringbuffer_write_space(jd->buffer);
 
       to_write = (len < avail) ? len : avail;
-      /* make sure to only write multiples of the sample size */
-      to_write = (to_write / sizeof(float)) * sizeof(float);
+      /* Quantise to whole stereo frames, not single floats.  JACK's
+       * ringbuffer holds size-1 bytes, so with frame-aligned usage the
+       * free space is never frame-aligned: rounding to sizeof(float)
+       * let the first ring-full write land on a half frame, after which
+       * every sample was L/R-swapped (with a one-sample interchannel
+       * skew) for the rest of the session.  The process callback reads
+       * in whole frames, so the writer must feed whole frames. */
+      to_write = (to_write / (2 * sizeof(float))) * (2 * sizeof(float));
 
       if (to_write > 0)
       {
@@ -276,8 +297,24 @@ static ssize_t ja_write(void *data, const void *buf_, size_t len)
       else if (!jd->nonblock)
       {
 #ifdef HAVE_THREADS
+         /* Timed, not indefinite.  The predicate is the ringbuffer's
+          * write space, which is lock-free - the consumer is JACK's
+          * real-time process callback and must not take a lock - so
+          * cond_lock cannot also guard it, and a signal raised between
+          * the write_space test above and this wait reaches no waiter.
+          *
+          * That matters most for the one signal that is never
+          * repeated.  ja_process_cb signals every period, but once the
+          * JACK server goes away it is never called again;
+          * ja_shutdown_cb then signals exactly once, without
+          * cond_lock.  Losing that single wakeup to the window left
+          * this thread parked forever, because the jd->shutdown test
+          * that would have released it sits at the top of a loop the
+          * thread can no longer reach.  A timed wait puts it back
+          * inside the loop, where both shutdown and write space are
+          * rechecked. */
          slock_lock(jd->cond_lock);
-         scond_wait(jd->cond, jd->cond_lock);
+         scond_wait_timeout(jd->cond, jd->cond_lock, jd->wait_us);
          slock_unlock(jd->cond_lock);
 #endif
          continue;

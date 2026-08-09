@@ -25,7 +25,8 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y build-essential
+          sudo apt-get install -y build-essential \
+            libx11-dev libxrandr-dev libdrm-dev
 
       - name: Checkout
         uses: actions/checkout@v3
@@ -236,7 +237,14 @@ jobs:
           # GFX_THUMB_STATUS_STORE / GFX_THUMB_STATUS_LOAD or the
           # .status field type, the verbatim copies in
           # gfx_thumbnail_status_atomic_test.c must follow.
-          make clean all SANITIZER=thread
+          #
+          # STRESS_ITERS is bounded here because the default of
+          # 1000000 measures ~145 s on a single core before TSan
+          # multiplies it, and this step allows 60 s.  20000 runs
+          # in ~2.4 s under TSan on one core and still routes every
+          # round trip through the instrumented release/acquire
+          # pair; the default stays at 1000000 for local soak runs.
+          make clean all SANITIZER=thread EXTRA_CFLAGS="-DSTRESS_ITERS=20000"
           test -x gfx_thumbnail_status_atomic_test
           TSAN_OPTIONS=halt_on_error=1 timeout 60 \
              ./gfx_thumbnail_status_atomic_test
@@ -288,3 +296,204 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 60 \
              ./gfx_widgets_msg_queue_race_test
           echo "[pass] gfx_widgets_msg_queue_race_test"
+
+      - name: Build and run gfx_animation_sanitize_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/gfx_animation_sanitize
+        run: |
+          set -eu
+          # Regression test for the stack overflow in
+          # gfx/gfx_animation.c::gfx_animation_ticker().  Pre-fix it
+          # passed PATH_MAX_LENGTH to utf8cpy() as the destination
+          # size, in all five places it copies, regardless of what the
+          # caller had provided.  utf8cpy()'s second argument is a
+          # size in BYTES; ticker->len, which the surrounding logic
+          # uses, is a width in GLYPHS -- so the guard
+          # `str_len <= ticker->len` compared glyph counts and then
+          # copied bytes, and one glyph of CJK or emoji is three or
+          # four of them.  PATH_MAX_LENGTH is 512 and not one of the
+          # 27 call sites in tree provides that much (mostly
+          # NAME_MAX_LENGTH, 64 bytes in one RGUI case), so the
+          # function was licensed to write 511 bytes plus a
+          # terminator into any of them.  Reachable from content: RGUI
+          # sets ticker.len from term_layout.width and ticker.s to a
+          # NAME_MAX_LENGTH stack buffer, so a playlist entry with a
+          # long enough Japanese, Cyrillic or emoji title overran it.
+          # Fixed by giving the struct an s_len field carrying the
+          # destination size in bytes, mirroring the dst_str_len that
+          # gfx_animation_ticker_smooth() had all along.
+          #
+          # AddressSanitizer is the validator: the test allocates
+          # every ticker destination at exactly the length it hands
+          # over, so a single byte past the end is a report rather
+          # than a stomp on whatever followed.  It also sweeps every
+          # easing type through push/update/expire, frees animation
+          # subjects while their animation is in flight, and deinits
+          # with animations still running.  If gfx_animation.c amends
+          # the destination sizing, this goes red.
+          make clean all SANITIZER=address,undefined
+          test -x gfx_animation_sanitize_test
+          ASAN_OPTIONS=detect_leaks=1 timeout 120 \
+             ./gfx_animation_sanitize_test
+          echo "[pass] gfx_animation_sanitize_test"
+
+
+      - name: Build and run gfx_widgets_sanitize_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/gfx_widgets_sanitize
+        run: |
+          set -eu
+          # Sanitizer sweep of gfx/gfx_widgets.c, focused on the
+          # message queue: it has the same shape as the
+          # gfx_animation ticker overflow -- a caller-supplied
+          # string, internal fixed buffers, and arithmetic that has
+          # to keep glyphs and bytes apart.  Multi-byte text,
+          # over-long text, text with no break opportunity, embedded
+          # newlines and empty strings across every message/title
+          # pairing, a 256-message overflow to drive eviction and
+          # free, and eight init/deinit cycles with messages still
+          # outstanding at teardown.
+          #
+          # Like the thumbnail sweep this pins no historical defect
+          # and is a tripwire.  Two things decide whether it sweeps
+          # anything: the font metric stubs return a non-zero
+          # proportional width (a zero-width font makes every "does
+          # this fit" test succeed and the layout paths are never
+          # entered), and gfx_widgets_init() returning false makes
+          # the whole run vacuous -- hence the asserted push and
+          # frame counters.
+          make clean all SANITIZER=address,undefined
+          test -x gfx_widgets_sanitize_test
+          ASAN_OPTIONS=detect_leaks=1 timeout 120 \
+             ./gfx_widgets_sanitize_test
+          echo "[pass] gfx_widgets_sanitize_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 \
+             ./gfx_widgets_sanitize_test
+          echo "[pass] gfx_widgets_sanitize_test (TSan)"
+      - name: Build and run display_servers_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/display_servers
+        run: |
+          set -eu
+          # Regression test for the XRandR query handling in
+          # gfx/display_servers/dispserv_x11.c.  Pre-fix every query
+          # was treated as infallible: XRRGetOutputInfo() returns NULL
+          # for an output the server cannot describe and
+          # info->connection was read straight off it; likewise
+          # XRRGetCrtcInfo() and crtc->width, XRRGetScreenResources(),
+          # and XRRGetScreenInfo() feeding a XRRFreeScreenConfigInfo()
+          # that is not NULL-tolerant.  On any X server advertising
+          # RandR without a usable output -- Xvfb, a headless box, a
+          # display with everything disconnected -- RetroArch died
+          # inside video_display_server_init() before drawing
+          # anything.  Both orientation walks also indexed
+          # screen->crtcs with the output's ncrtc, reading past the
+          # end and then configuring a crtc other than the one whose
+          # geometry had just been read.
+          #
+          # The test stubs libXrandr and the handful of Xlib entry
+          # points the driver reaches, so it needs the headers but no
+          # X server, no display and no RandR extension: what is under
+          # test is what happens when the queries FAIL, and a working
+          # display is exactly the environment that cannot produce
+          # that.  The stub numbers screen crtcs from 100 and output
+          # crtcs from 200 so which array was walked is read off the
+          # call log, and tracks every pointer it hands out so a
+          # double free or leak is attributed to the case that caused
+          # it.  If dispserv_x11.c amends the query handling, this
+          # goes red.
+          make clean all SANITIZER=address,undefined
+          test -x display_servers_test
+          timeout 60 ./display_servers_test
+          echo "[pass] display_servers_test"
+
+      - name: Build and run display_servers_kms_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/display_servers_kms
+        run: |
+          set -eu
+          # Regression test for two defects in
+          # gfx/display_servers/dispserv_kms.c::
+          # kms_display_server_get_resolution_list().  g_drm_connector
+          # is owned by gfx/common/drm_common.c and set to NULL by
+          # drm_free(), which runs on every context teardown -- a
+          # resolution change, a fullscreen toggle, a driver reinit --
+          # while the display server object outlives it, so the menu
+          # could ask for the list with no connector to describe and
+          # the function read straight through NULL.  g_drm_mode, the
+          # sibling global, was already tested for exactly this a few
+          # lines earlier.  Separately the qsort() at the end was
+          # passed `count`, which was declared zero and never
+          # assigned; `j` is the element count.  So the sort ran over
+          # zero elements and the resolution list came back in
+          # whatever order the connector reported its modes -- no
+          # crash, no diagnostic, just an unsorted list that looks
+          # plausible.
+          #
+          # The test fabricates the drmModeConnector the driver reads,
+          # so it needs the libdrm headers but links nothing from
+          # libdrm: presenting a connector that is absent, empty, or
+          # reporting modes in an awkward order is the whole exercise
+          # and a real one will not do it on request.  The ordering
+          # check feeds modes in descending size, which a working sort
+          # must reverse and a broken one leaves untouched.  If
+          # dispserv_kms.c amends either, this goes red.
+          make clean all SANITIZER=address,undefined
+          test -x display_servers_kms_test
+          timeout 60 ./display_servers_kms_test
+          echo "[pass] display_servers_kms_test"
+
+      - name: Build and run gfx_thumbnail_anim_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/gfx/gfx_thumbnail_anim
+        run: |
+          set -eu
+          # Regression test for the two faults that froze animated
+          # thumbnails in the file browser, in gfx/gfx_thumbnail.c.
+          #
+          # gfx_thumbnail_request_file malloc'd its tag and never set
+          # tag->path, so gfx_thumbnail_anim_open - which
+          # gfx_thumbnail_handle_upload feeds that field for every
+          # load with no video stream to adopt - read uninitialised
+          # heap and returned without touching the file.  Undefined
+          # behaviour rather than a stable failure: a freed tag is
+          # the size of the next one, so the allocator commonly
+          # handed back a block still holding the previous entry's
+          # path, which opened an animation and looked like the
+          # feature working.  gfx_thumbnail_request fills the field
+          # for playlist entries, which is why playlists animated and
+          # the browser did not.
+          #
+          # Separately, anim_install marked windowed animations
+          # 'read pending' via !data_transfer_complete().  A window
+          # never completes - done stays clear for its whole life -
+          # and the pump animate() uses (iterate_while) declines
+          # windows by design, so pending forced the pump branch, the
+          # pump was a no-op, and animate() returned before ever
+          # advancing a frame, every vsync, forever.  That is every
+          # path-based open: animated WEBP, APNG, and any WEBM/MP4
+          # with no still stream to adopt.
+          #
+          # The oracle links the real gfx_thumbnail.c and measures
+          # animation as DISTINCT FRAMES REACHING THE TEXTURE - the
+          # video-driver stub CRCs every upload - not as internal
+          # flags, which is what every earlier test in this area got
+          # wrong and why neither fault was caught.  A 188-byte
+          # 3-frame lossless WEBP is embedded, so there are no
+          # fixtures.  One lane drives anim_open with a garbage path
+          # and requires no stream; one opens the real animation and
+          # requires multiple distinct uploads within bounded paced
+          # vsyncs, naming the windowed+pending deadlock explicitly
+          # before the timeout would.  Both pre-fix trees score zero
+          # uploads in 240 vsyncs.  If gfx_thumbnail.c amends the
+          # pending decision or the request plumbing, this goes red.
+          make clean all SANITIZER=address,undefined
+          test -x gfx_thumbnail_anim_test
+          ASAN_OPTIONS=detect_leaks=1 timeout 120 \
+             ./gfx_thumbnail_anim_test
+          echo "[pass] gfx_thumbnail_anim_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 \
+             ./gfx_thumbnail_anim_test
+          echo "[pass] gfx_thumbnail_anim_test (TSan)"

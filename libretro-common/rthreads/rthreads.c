@@ -84,6 +84,40 @@
 #define RTHREADS_HAVE_QOS_OVERRIDE 1
 #include <pthread/qos.h>
 #endif
+/* clock_gettime() arrived in macOS 10.12 / iOS 10.0 / tvOS 10.0. Below that
+ * the Mach clock service is the only option; see the note on
+ * rthreads_calendar_clock below for why it must not be re-acquired per call.
+ * Same literal-constant rationale as above. */
+#if (TARGET_OS_OSX && defined(MAC_OS_X_VERSION_MIN_REQUIRED) && MAC_OS_X_VERSION_MIN_REQUIRED >= 101200) || \
+    (TARGET_OS_IPHONE && defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && __IPHONE_OS_VERSION_MIN_REQUIRED >= 100000)
+#define RTHREADS_HAVE_CLOCK_GETTIME 1
+#endif
+#endif
+
+#if defined(__MACH__) && defined(__APPLE__) && !defined(RTHREADS_HAVE_CLOCK_GETTIME)
+/* Acquired once for the lifetime of the process.
+ *
+ * The previous code called host_get_clock_service(mach_host_self(), ...)
+ * followed by mach_port_deallocate() on every scond_wait_timeout(). That is
+ * wrong twice over:
+ *
+ *   - the send right returned by mach_host_self() was never deallocated, so
+ *     every call leaked a user reference on the host port;
+ *   - host_get_clock_service() allocates a fresh port *name* in the task IPC
+ *     space which is then immediately freed, so a hot caller (the CoreAudio
+ *     write path, the task queue worker, autosave) churns the task's port
+ *     name space continuously for the whole session.
+ *
+ * Neither is acceptable in a function called at audio-buffer rate. */
+static clock_serv_t   rthreads_calendar_clock;
+static pthread_once_t rthreads_calendar_clock_once = PTHREAD_ONCE_INIT;
+
+static void rthreads_calendar_clock_init(void)
+{
+   mach_port_t host = mach_host_self();
+   host_get_clock_service(host, CALENDAR_CLOCK, &rthreads_calendar_clock);
+   mach_port_deallocate(mach_task_self(), host);
+}
 #endif
 
 struct thread_data
@@ -172,7 +206,7 @@ sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
 }
 
 /* TODO/FIXME - this needs to be implemented for Switch/3DS */
-#if !defined(SWITCH) && !defined(USE_WIN32_THREADS) && !defined(_3DS) && !defined(GEKKO) && !defined(__HAIKU__) && !defined(EMSCRIPTEN)
+#if !defined(SWITCH) && !defined(USE_WIN32_THREADS) && !defined(_3DS) && !defined(GEKKO) && !defined(__HAIKU__) && !defined(__EMSCRIPTEN__)
 #define HAVE_THREAD_ATTR
 #endif
 
@@ -733,15 +767,20 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
 #else
    int64_t seconds, remainder;
    struct timespec now;
-#if defined(__MACH__) && defined(__APPLE__)
-   /* OSX doesn't have clock_gettime. */
-   clock_serv_t cclock;
+#if defined(__MACH__) && defined(__APPLE__) && !defined(RTHREADS_HAVE_CLOCK_GETTIME)
    mach_timespec_t mts;
-   host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
-   clock_get_time(cclock, &mts);
-   mach_port_deallocate(mach_task_self(), cclock);
-   now.tv_sec = mts.tv_sec;
+#endif
+#if defined(__MACH__) && defined(__APPLE__)
+   /* CALENDAR_CLOCK is the Mach equivalent of CLOCK_REALTIME, which is what
+    * pthread_cond_timedwait() below expects. */
+#ifdef RTHREADS_HAVE_CLOCK_GETTIME
+   clock_gettime(CLOCK_REALTIME, &now);
+#else
+   pthread_once(&rthreads_calendar_clock_once, rthreads_calendar_clock_init);
+   clock_get_time(rthreads_calendar_clock, &mts);
+   now.tv_sec  = mts.tv_sec;
    now.tv_nsec = mts.tv_nsec;
+#endif
 #elif !defined(__PSL1GHT__) && defined(__PS3__)
    sys_time_sec_t s;
    sys_time_nsec_t n;

@@ -46,6 +46,23 @@ extern "C" {
 #include <gfx/math/vector_2.h>
 #endif
 
+/* The audio spectrum visualizer (hwfft) below needs functionality that is
+ * only available in desktop OpenGL 3.x and OpenGL ES 3.0: vertex array
+ * objects, glTexStorage2D, sized/integer internal formats, glMapBufferRange,
+ * glBlitFramebuffer and friends.
+ *
+ * HAVE_OPENGL cannot be tested on its own to detect that: Makefile.common
+ * defines it for *any* modern GL context (see HAVE_GL_MODERN), so it is also
+ * defined for a GLES2-only build, where glsym pulls in <GLES2/gl2.h> and none
+ * of the above exists. Testing HAVE_OPENGL alone therefore compiled the FFT
+ * code against the GLES2 headers and broke the build.
+ *
+ * So: enable the visualizer for GLES3, or for desktop GL (which is the case
+ * when a modern GL context is requested and it is not a GLES one). */
+#if defined(HAVE_OPENGLES3) || (defined(HAVE_OPENGL) && !defined(HAVE_OPENGLES))
+#define HAVE_FFMPEG_FFT 1
+#endif
+
 #include <features/features_cpu.h>
 #include <retro_miscellaneous.h>
 #include <rthreads/rthreads.h>
@@ -546,7 +563,7 @@ struct media_info
  * all hidden global state.
  */
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
+#ifdef HAVE_FFMPEG_FFT
 
 #if GL_DEBUG
 #define GL_CHECK_ERROR() do { \
@@ -620,7 +637,7 @@ struct GLFFT
 
 typedef struct GLFFT hwfft_t;
 
-#endif /* HAVE_OPENGL || HAVE_OPENGLES3 */
+#endif /* HAVE_FFMPEG_FFT */
 
 typedef struct ffmpeg_core_ctx
 {
@@ -671,7 +688,7 @@ typedef struct ffmpeg_core_ctx
    struct attachment *attachments;
    size_t attachments_size;
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
+#ifdef HAVE_FFMPEG_FFT
    hwfft_t *fft;
    unsigned fft_width;
    unsigned fft_height;
@@ -764,7 +781,7 @@ static ffmpeg_core_ctx_t g_ctx;
 #endif
 #define ATTACHMENTS_STR            (g_ctx.attachments)
 #define ATTACHMENTS_SIZE_STR       (g_ctx.attachments_size)
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
+#ifdef HAVE_FFMPEG_FFT
 #define FFT_STR                    (g_ctx.fft)
 #define FFT_WIDTH_STR              (g_ctx.fft_width)
 #define FFT_HEIGHT_STR             (g_ctx.fft_height)
@@ -807,9 +824,9 @@ static ffmpeg_core_ctx_t g_ctx;
 #endif
 #define MEDIA_STR                  (g_ctx.media)
 
-/* ---- GL FFT implementation (merged from ffmpeg_fft.c) ---- */
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
-
+/* Used by the FFT visualizer below and by the plain video path further down,
+ * so these have to stay outside of the HAVE_FFMPEG_FFT block. */
+#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 #ifndef CG
 #if defined(HAVE_OPENGLES)
 #define CG(src)   "" #src
@@ -825,6 +842,10 @@ static ffmpeg_core_ctx_t g_ctx;
 #define GLSL(src) "" #src
 #endif
 #endif
+#endif
+
+/* ---- GL FFT implementation (merged from ffmpeg_fft.c) ---- */
+#ifdef HAVE_FFMPEG_FFT
 
 #ifndef GLSL_300
 #define GLSL_300(src)   "#version 300 es\n"   #src
@@ -1693,7 +1714,7 @@ static void hwfft_render(hwfft_t *fft, GLuint backbuffer, unsigned width, unsign
    GL_CHECK_ERROR();
 }
 
-#endif /* HAVE_OPENGL || HAVE_OPENGLES3 */
+#endif /* HAVE_FFMPEG_FFT */
 
 #ifdef HAVE_SSA
 static void render_ass_img(AVFrame *conv_frame, ASS_Image *img);
@@ -1787,7 +1808,7 @@ void CORE_PREFIX(retro_get_system_av_info)(struct retro_system_av_info *info)
    info->timing.fps = MEDIA_STR.interpolate_fps;
    info->timing.sample_rate = ACTX_STR[0] ? MEDIA_STR.sample_rate : 32000.0;
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
+#ifdef HAVE_FFMPEG_FFT
    if (AUDIO_STREAMS_NUM_STR > 0 && VIDEO_STREAM_INDEX_STR < 0)
    {
       width = FFT_WIDTH_STR;
@@ -1814,7 +1835,7 @@ void CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
       { "ffmpeg_temporal_interp", "Temporal Interpolation; disabled|enabled" },
 #endif
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
+#ifdef HAVE_FFMPEG_FFT
       { "ffmpeg_fft_resolution", "FFT Resolution; 1280x720|1920x1080|2560x1440|3840x2160|640x360|320x180" },
       { "ffmpeg_fft_multisample", "FFT Multisample; 1x|2x|4x" },
 #endif
@@ -1882,7 +1903,7 @@ static void check_variables(bool firststart)
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
    struct retro_variable var        = {0};
 #endif
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
+#ifdef HAVE_FFMPEG_FFT
    struct retro_variable fft_var    = {0};
    struct retro_variable fft_ms_var = {0};
 #endif
@@ -1899,7 +1920,7 @@ static void check_variables(bool firststart)
    }
 #endif
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
+#ifdef HAVE_FFMPEG_FFT
    fft_var.key = "ffmpeg_fft_resolution";
 
    FFT_WIDTH_STR       = 1280;
@@ -2130,7 +2151,7 @@ void CORE_PREFIX(retro_run)(void)
    size_t to_read_frames        = 0;
    int seek_frames              = 0;
    bool updated                 = false;
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
+#ifdef HAVE_FFMPEG_FFT
    unsigned old_fft_width       = FFT_WIDTH_STR;
    unsigned old_fft_height      = FFT_HEIGHT_STR;
    unsigned old_fft_multisample = FFT_MULTISAMPLE_STR;
@@ -2139,7 +2160,7 @@ void CORE_PREFIX(retro_run)(void)
    if (CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
       check_variables(false);
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
+#ifdef HAVE_FFMPEG_FFT
    if (FFT_WIDTH_STR != old_fft_width || FFT_HEIGHT_STR != old_fft_height)
    {
       struct retro_system_av_info info;
@@ -2499,7 +2520,7 @@ void CORE_PREFIX(retro_run)(void)
                MEDIA_STR.width, MEDIA_STR.height, MEDIA_STR.width * sizeof(uint32_t));
       }
    }
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
+#ifdef HAVE_FFMPEG_FFT
    else if (FFT_STR)
    {
       unsigned       fft_frames = (unsigned)to_read_frames;
@@ -3496,7 +3517,7 @@ static void decode_thread(void *data)
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 static void context_destroy(void)
 {
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
+#ifdef HAVE_FFMPEG_FFT
    if (FFT_STR)
    {
       hwfft_free(FFT_STR);
@@ -3553,7 +3574,7 @@ static void context_reset(void)
    GLuint vert, frag;
    unsigned i;
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
+#ifdef HAVE_FFMPEG_FFT
    if (AUDIO_STREAMS_NUM_STR > 0 && VIDEO_STREAM_INDEX_STR < 0)
    {
       FFT_STR = hwfft_new(11, HW_RENDER_STR.get_proc_address);
@@ -3796,7 +3817,7 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
       goto error;
    }
 
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES3)
+#ifdef HAVE_FFMPEG_FFT
    is_fft = VIDEO_STREAM_INDEX_STR < 0 && AUDIO_STREAMS_NUM_STR > 0;
 #endif
 

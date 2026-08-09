@@ -1,0 +1,9 @@
+[
+{
+  "comment": "A device no profile matches: the connect must fall back to a full scan and report unconfigured - and a fresh index that already (correctly) said so must not be rewritten with an identical copy on every such connect.",
+  "action": 1,
+  "param_num": 0,
+  "param_str": "(dead:beef) Completely Unknown Pad",
+  "frame": 0
+}
+]

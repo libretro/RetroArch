@@ -21,6 +21,7 @@
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
 #include <lists/dir_list.h>
+#include <memory/mem_stats.h>
 #include <lists/string_list.h>
 #include <file/file_path.h>
 #include <formats/logiqx_dat.h>
@@ -45,8 +46,6 @@
 #include "../retroarch.h"
 #include "../verbosity.h"
 #include "task_database_cue.h"
-
-#define MAX_DATABASE_COUNT 256
 
 /* Scan result structure for accumulating identification results */
 typedef struct scan_result
@@ -162,8 +161,60 @@ enum db_state_flags_enum
    DB_STATE_FLAG_HAS_SERIAL               = (1 << 0),
    DB_STATE_FLAG_HAS_CRC                  = (1 << 1),
    DB_STATE_FLAG_HAS_SIZE                 = (1 << 2),
-   DB_STATE_FLAG_MATCHED                  = (1 << 3)
+   DB_STATE_FLAG_MATCHED                  = (1 << 3),
+   /* Set once the size range for a database has been queried,
+    * whatever the answer was.  The probe used to key off
+    * "min_sizes[i] == 0", which is also what an unqueried slot holds
+    * and what a database whose smallest record is zero-sized
+    * legitimately produces - so such a database was re-queried for
+    * every content file, at two full walks a time. */
+   DB_STATE_FLAG_SIZE_CHECKED             = (1 << 4)
 };
+
+/* Ceiling on the crc and serial indexes a single scan may hold.
+ *
+ * Taken as a share of what is actually free rather than from a
+ * platform list: mem_stats_free() has implementations for the 3DS and
+ * the GameCube/Wii among others, which are the platforms where this
+ * matters, and task_audio_mixer_threshold() already sizes a
+ * task-lifetime allocation the same way.
+ *
+ * An eighth is deliberately more conservative than the quarter the
+ * mixer uses, because these indexes are held for the whole scan
+ * rather than consulted once.  The cap keeps a large-memory host from
+ * hoarding: the biggest database shipped today indexes to 237 KB
+ * across roughly 30000 records, so 32 MB covers far more databases
+ * than exist.  Below the
+ * floor there is no point starting, and the query path is only
+ * slower, never wrong. */
+#define DB_STATE_INDEX_BUDGET_SHARE  8
+#define DB_STATE_INDEX_BUDGET_CAP    (32 * 1024 * 1024)
+#define DB_STATE_INDEX_BUDGET_FLOOR  (256 * 1024)
+
+/* Used when mem_stats_free() has no implementation for the platform
+ * and returns 0.  Small enough to be harmless where memory is tight,
+ * since the only cost of running out is falling back to querying. */
+#ifndef DB_STATE_INDEX_BUDGET_UNKNOWN
+#define DB_STATE_INDEX_BUDGET_UNKNOWN (2 * 1024 * 1024)
+#endif
+
+static size_t task_database_index_budget(void)
+{
+   uint64_t free_mem = mem_stats_free();
+   uint64_t share;
+
+   if (!free_mem)
+      return (size_t)DB_STATE_INDEX_BUDGET_UNKNOWN;
+
+   share = free_mem / DB_STATE_INDEX_BUDGET_SHARE;
+
+   if (share > (uint64_t)DB_STATE_INDEX_BUDGET_CAP)
+      share = (uint64_t)DB_STATE_INDEX_BUDGET_CAP;
+   if (share < (uint64_t)DB_STATE_INDEX_BUDGET_FLOOR)
+      return 0;
+
+   return (size_t)share;
+}
 
 typedef struct database_state_handle
 {
@@ -178,9 +229,29 @@ typedef struct database_state_handle
    uint64_t archive_size;
    char archive_name[512]; /* TODO/FIXME - check size */
    char serial[4096];      /* TODO/FIXME - check size */
-   int64_t min_sizes[MAX_DATABASE_COUNT];
-   int64_t max_sizes[MAX_DATABASE_COUNT];
-   uint8_t flags[MAX_DATABASE_COUNT];
+   /* One entry per database in 'list'.  These used to be
+    * [MAX_DATABASE_COUNT] arrays indexed by list_index, which is
+    * bounded only by list->size - the number of .rdb files in the
+    * database directory.  Nothing clamped it, so a database
+    * directory with more than MAX_DATABASE_COUNT entries wrote past
+    * all three arrays, and the shuffle in
+    * database_info_list_iterate_found_match() memmove()d past them
+    * as well.  The shipped set is already over half that limit and
+    * grows every release.  Allocated by
+    * task_database_state_alloc_arrays(). */
+   int64_t *min_sizes;
+   int64_t *max_sizes;
+   uint8_t *flags;
+   /* One crc index per database, built the first time that database
+    * is probed and kept for the rest of the scan.  Without it every
+    * (content file, database) pair is a full walk of the database. */
+   database_info_crc_index_t **crc_index;
+   /* Likewise for the serial lookup disc content uses. */
+   database_info_serial_index_t **serial_index;
+   /* Bytes of index the scan may still allocate.  Indexes are held
+    * for the whole scan, so without a ceiling a large database set
+    * costs tens of megabytes.  See task_database_index_budget(). */
+   size_t index_budget;
 } database_state_handle_t;
 
 enum db_flags_enum
@@ -227,6 +298,11 @@ typedef struct manual_scan_handle
    database_state_handle_t state;
    uint8_t flags;
 #endif
+   /* The caller's completion callback, run after the task's own.
+    * task_push_dbscan takes one and used to drop it, so a caller that
+    * wanted to know when a scan finished never found out - see
+    * cb_task_manual_content_scan. */
+   retro_task_callback_t user_cb;
 } manual_scan_handle_t;
 
 enum scan_verdict
@@ -483,29 +559,49 @@ static bool is_valid_disc_indicator(const char *str, size_t len)
 
 static void remove_disc_indicators(char *title, size_t len)
 {
+   size_t i;
    char *disc_pos = NULL;
+   size_t prefix_len = 0;
+   /* Tape and floppy releases usually do not follow the naming
+    * convention, so their prefixes skip the leading space - which
+    * makes them six characters rather than seven.  The old code
+    * skipped a hard-coded seven for all of them, so for "(Tape 1)"
+    * the indicator was taken to start at the ')' and came out empty:
+    * is_valid_disc_indicator() rejected it and no tape or side
+    * indicator was ever stripped.  Carry each prefix's own length. */
+   static const struct
+   {
+      const char *pat;
+      size_t      len;
+   } patterns[] = {
+      { " (Disc ", 7 }, { " (disc ", 7 },
+      { " (Disk ", 7 }, { " (disk ", 7 },
+      { "(Tape ",  6 }, { "(tape ",  6 },
+      { "(Side ",  6 }, { "(side ",  6 }
+   };
 
-   /* Search for common disc patterns */
-   if (   (disc_pos = strstr(title, " (Disc "))
-       || (disc_pos = strstr(title, " (disc "))
-       || (disc_pos = strstr(title, " (Disk "))
-       || (disc_pos = strstr(title, " (disk "))
-       /* Tape and floppy releases usually do not follow naming convention, so skip the space */
-       || (disc_pos = strstr(title, "(Tape "))
-       || (disc_pos = strstr(title, "(tape "))
-       || (disc_pos = strstr(title, "(Side "))
-       || (disc_pos = strstr(title, "(side ")))
+   for (i = 0; i < ARRAY_SIZE(patterns); i++)
+   {
+      if ((disc_pos = strstr(title, patterns[i].pat)))
+      {
+         prefix_len = patterns[i].len;
+         break;
+      }
+   }
+
+   if (disc_pos)
    {
       /* Find the closing parenthesis */
       char *end_pos = strchr(disc_pos, ')');
       if (end_pos)
       {
-         /* Extract the disc indicator text (between " (Disc " and ")") */
-         const char *indicator_start = disc_pos + 7; /* Skip " (Disc " */
-         size_t indicator_len = end_pos - indicator_start;
+         /* Extract the indicator text between the prefix and ")" */
+         const char *indicator_start = disc_pos + prefix_len;
+         size_t indicator_len        = (size_t)(end_pos - indicator_start);
 
          /* Validate this is actually a disc indicator, not arbitrary text */
-         if (is_valid_disc_indicator(indicator_start, indicator_len))
+         if (   end_pos >= indicator_start
+             && is_valid_disc_indicator(indicator_start, indicator_len))
          {
             /* Truncate at the disc indicator */
             *disc_pos = '\0';
@@ -677,6 +773,11 @@ static void gdi_prune(struct string_list *list, const char *name)
       }
    }
 
+   /* task_database_cue_prune() above closes the stream before freeing
+    * the handle; this one only freed the handle, leaking the OS file
+    * descriptor and the inner stream object for every .gdi in the
+    * scan.  A large GDI collection exhausts the descriptor table. */
+   intfstream_close(fd);
    free(fd);
 }
 
@@ -686,30 +787,36 @@ static enum msg_file_type extension_to_file_type(const char *ext)
    strlcpy(ext_lower, ext, sizeof(ext_lower));
    string_to_lower(ext_lower);
 
+   /* These were memcmp() against a fixed count, which is specified to
+    * read all n bytes.  For an extension shorter than the count - an
+    * empty extension being the common case - those bytes are
+    * uninitialised stack, which MSan reports and which vectorised
+    * memcmp() implementations really do load.  string_is_equal()
+    * stops at the terminator. */
    if (
-            memcmp(ext_lower, "7z",  3) == 0
-         || memcmp(ext_lower, "zip", 4) == 0
-         || memcmp(ext_lower, "apk", 4) == 0
-         || memcmp(ext_lower, "zst", 4) == 0
+            string_is_equal(ext_lower, "7z")
+         || string_is_equal(ext_lower, "zip")
+         || string_is_equal(ext_lower, "apk")
+         || string_is_equal(ext_lower, "zst")
       )
       return FILE_TYPE_COMPRESSED;
-   if (memcmp(ext_lower, "cue",   4) == 0)
+   if (string_is_equal(ext_lower, "cue"))
       return FILE_TYPE_CUE;
-   if (memcmp(ext_lower, "gdi",   4) == 0)
+   if (string_is_equal(ext_lower, "gdi"))
       return FILE_TYPE_GDI;
-   if (memcmp(ext_lower, "iso",   4) == 0)
+   if (string_is_equal(ext_lower, "iso"))
       return FILE_TYPE_ISO;
-   if (memcmp(ext_lower, "chd",   4) == 0)
+   if (string_is_equal(ext_lower, "chd"))
       return FILE_TYPE_CHD;
-   if (memcmp(ext_lower, "wbfs",  5) == 0)
+   if (string_is_equal(ext_lower, "wbfs"))
       return FILE_TYPE_WBFS;
-   if (memcmp(ext_lower, "rvz",   4) == 0)
+   if (string_is_equal(ext_lower, "rvz"))
       return FILE_TYPE_RVZ;
-   if (memcmp(ext_lower, "wia",   4) == 0)
+   if (string_is_equal(ext_lower, "wia"))
       return FILE_TYPE_WIA;
-   if (memcmp(ext_lower, "pbp",   4) == 0)
+   if (string_is_equal(ext_lower, "pbp"))
       return FILE_TYPE_PBP;
-   if (memcmp(ext_lower, "lutro", 6) == 0)
+   if (string_is_equal(ext_lower, "lutro"))
       return FILE_TYPE_LUTRO;
    return FILE_TYPE_NONE;
 }
@@ -830,9 +937,14 @@ static bool add_files_from_archive(manual_scan_handle_t *_db,
             char new_path[PATH_MAX_LENGTH];
             strlcpy(new_path, path, sizeof(new_path));
             new_path[_len] = '#';
+            /* The copy starts at _len + 1, so the space left is
+             * sizeof(new_path) - _len - 1.  The bound said - _len,
+             * which permits one byte past the end.  The enclosing
+             * length test happens to keep that unreachable today;
+             * the two must agree regardless. */
             strlcpy(new_path + _len + 1,
                   archive_list->elems[i].data,
-                  sizeof(new_path) - _len);
+                  sizeof(new_path) - _len - 1);
             string_list_append(_db->content_list, new_path,
                   archive_list->elems[i].attr);
          }
@@ -915,15 +1027,34 @@ static enum scan_verdict database_info_list_iterate_found_match(
     * We should use less fullsize paths in the future so that we don't
     * need to have all these big char arrays here */
    size_t str_len                 = PATH_MAX_LENGTH * sizeof(char);
-   char* db_crc                   = (char*)malloc(str_len); /* this is needlessly large */
+   /* db_crc holds one of two things: a serial with "|serial" after it,
+    * or a CRC as "%08lX|crc" - thirteen bytes.  It was a PATH_MAX_LENGTH
+    * heap allocation for both, per matched entry, which is four
+    * kilobytes to hold thirteen.
+    *
+    * The worst case is still large, because db_state->serial is itself
+    * a 4 KiB field, so it cannot simply move to the stack - that is
+    * what the note below about limited stack sizes is about.  Take a
+    * small buffer for what actually occurs and fall back to the heap
+    * only for a serial that does not fit, which no real disc serial
+    * comes close to. */
+   char  db_crc_buf[128];
+   size_t db_crc_len              = (*db_state->serial)
+      ? (strlen(db_state->serial) + STRLEN_CONST("|serial") + 1)
+      : (STRLEN_CONST("XXXXXXXX|crc") + 1);
+   char* db_crc                   = (db_crc_len <= sizeof(db_crc_buf))
+      ? db_crc_buf
+      : (char*)malloc(db_crc_len);
    char* entry_path_str           = (char*)malloc(str_len);
    char *hash                     = NULL;
    const char         *db_path    =
       database_info_get_current_name(db_state);
    const char         *entry_path =
       database_info_get_current_element_name(_db->content_list, _db->content_list_index);
-   database_info_t *db_info_entry =
-      &db_state->info->list[db_state->entry_index];
+   database_info_t *db_info_entry = (db_state->info
+         && db_state->entry_index < db_state->info->count)
+      ? &db_state->info->list[db_state->entry_index]
+      : NULL;
 
    /* NULL-check both mallocs: the 'db_crc[0] = ...' /
     * 'entry_path_str[0] = ...' writes below NULL-deref on OOM.
@@ -939,10 +1070,22 @@ static enum scan_verdict database_info_list_iterate_found_match(
     * fed straight into path_basename_nocompression()/fill_pathname()
     * below, where strrchr()/strlcpy() dereference it and crash. With
     * no database name there is no meaningful playlist filename to
-    * build, so treat it like the OOM case and skip this entry. */
-   if (!db_crc || !entry_path_str || !db_path)
+    * build, so treat it like the OOM case and skip this entry.
+    *
+    * db_info_entry likewise: the matched entry used to be taken as
+    * &info->list[entry_index] unconditionally, which reads info and
+    * indexes list on nothing but the caller's word.  Every caller
+    * does test both - each of the four reaches this function from
+    * inside an "info && entry_index < info->count" - so this is the
+    * invariant being stated where it is relied on rather than a
+    * reachable fault.  It is the same shape as the two the callers
+    * were given after they were found dereferencing list[0] on an
+    * empty result, and the only place left in the file taking that
+    * address without a bound. */
+   if (!db_crc || !entry_path_str || !db_path || !db_info_entry)
    {
-      free(db_crc);
+      if (db_crc != db_crc_buf)
+         free(db_crc);
       free(entry_path_str);
       return SCAN_VERDICT_ERROR;
    }
@@ -955,13 +1098,13 @@ static enum scan_verdict database_info_list_iterate_found_match(
 
    if (*db_state->serial)
    {
-      size_t _len = strlcpy(db_crc, db_state->serial, str_len);
+      size_t _len = strlcpy(db_crc, db_state->serial, db_crc_len);
       strlcpy(db_crc  + _len,
             "|serial",
-            str_len   - _len);
+            db_crc_len - _len);
    }
    else
-      snprintf(db_crc, str_len, "%08lX|crc",
+      snprintf(db_crc, db_crc_len, "%08lX|crc",
       (unsigned long)db_info_entry->crc32);
 
    if (entry_path)
@@ -976,7 +1119,7 @@ static enum scan_verdict database_info_list_iterate_found_match(
        * matches with the last disk, which is never bootable */
       char *delim = (char*)strchr(entry_path_str, '#');
 
-      if (delim && strcasestr(entry_path_str, " (Disk "))
+      if (delim && compat_strcasestr(entry_path_str, " (Disk "))
          *delim = '\0';
 
       strlcpy(entry_lbl, db_info_entry->name, sizeof(entry_lbl));
@@ -1041,6 +1184,27 @@ static enum scan_verdict database_info_list_iterate_found_match(
               &db_state->flags[0],
               sizeof(flag) * db_state->list_index);
 
+      /* The index caches are keyed by the same position, so they have
+       * to travel with the entry.  Leaving them behind pairs a
+       * database with another database's index, and the lookup then
+       * answers with records that belong to a different system. */
+      {
+         database_info_crc_index_t    *ci =
+            db_state->crc_index[db_state->list_index];
+         database_info_serial_index_t *si =
+            db_state->serial_index[db_state->list_index];
+
+         memmove(&db_state->crc_index[1],
+                 &db_state->crc_index[0],
+                 sizeof(ci) * db_state->list_index);
+         memmove(&db_state->serial_index[1],
+                 &db_state->serial_index[0],
+                 sizeof(si) * db_state->list_index);
+
+         db_state->crc_index[0]    = ci;
+         db_state->serial_index[0] = si;
+      }
+
       db_state->list->elems[0] = entry;
       db_state->min_sizes[0]   = min;
       db_state->max_sizes[0]   = max;
@@ -1048,7 +1212,8 @@ static enum scan_verdict database_info_list_iterate_found_match(
       db_state->flags[0]      |= DB_STATE_FLAG_MATCHED;
    }
 
-   free(db_crc);
+   if (db_crc != db_crc_buf)
+      free(db_crc);
    free(entry_path_str);
    return SCAN_VERDICT_MATCHED_DB;
 }
@@ -1068,13 +1233,121 @@ static enum scan_verdict database_info_list_iterate_next(
    return SCAN_VERDICT_CONTINUE;
 }
 
+/* Allocate the per-database size/flag caches once the database list
+ * is known.  Returns false on OOM; the caller aborts the scan. */
+static bool task_database_state_alloc_arrays(
+      database_state_handle_t *db_state)
+{
+   size_t count;
+
+   if (!db_state || !db_state->list)
+      return false;
+
+   count = db_state->list->size;
+
+   /* An empty database directory is not an error: every lookup path
+    * bails on "list_index == list->size" before touching these. */
+   if (count == 0)
+      return true;
+
+   db_state->min_sizes = (int64_t*)calloc(count, sizeof(int64_t));
+   db_state->max_sizes = (int64_t*)calloc(count, sizeof(int64_t));
+   db_state->flags     = (uint8_t*)calloc(count, sizeof(uint8_t));
+   db_state->crc_index = (database_info_crc_index_t**)
+      calloc(count, sizeof(*db_state->crc_index));
+   db_state->serial_index = (database_info_serial_index_t**)
+      calloc(count, sizeof(*db_state->serial_index));
+   db_state->index_budget = task_database_index_budget();
+
+   if (   !db_state->min_sizes
+       || !db_state->max_sizes
+       || !db_state->flags
+       || !db_state->crc_index
+       || !db_state->serial_index)
+      return false;
+
+   return true;
+}
+
 static void task_database_fill_db_min_max(database_state_handle_t *db_state)
 {
    char query[50];
    query[0] = '\0';
 
+   /* Marked up front so that every exit below - including the ones
+    * that record a placeholder range - counts as having been asked.
+    * This is what stops the two walks repeating per content file. */
+   db_state->flags[db_state->list_index] |= DB_STATE_FLAG_SIZE_CHECKED;
+
+   /* The crc index collects the size range while it walks, so build
+    * it here and take the range from it: one walk instead of this
+    * function's two, and the crc lookup then finds the index already
+    * built.  The queries below still run for a database the index
+    * cannot cover. */
+   {
+      const char *rdb = db_state->list->elems[db_state->list_index].data;
+      int64_t     lo  = 0;
+      int64_t     hi  = 0;
+
+      if (rdb && *rdb)
+      {
+         if (   !db_state->crc_index[db_state->list_index]
+             && db_state->index_budget)
+         {
+            database_info_crc_index_t *ci =
+               database_info_crc_index_new(rdb, db_state->index_budget);
+            if (ci)
+            {
+               size_t used = database_info_crc_index_bytes(ci);
+               db_state->index_budget = (used < db_state->index_budget)
+                  ? db_state->index_budget - used : 0;
+               db_state->crc_index[db_state->list_index] = ci;
+            }
+         }
+
+         if (   db_state->crc_index[db_state->list_index]
+             && database_info_crc_index_size_range(
+                   db_state->crc_index[db_state->list_index], &lo, &hi))
+         {
+            db_state->min_sizes[db_state->list_index] = lo;
+            db_state->max_sizes[db_state->list_index] = hi;
+            db_state->flags[db_state->list_index]    |=
+               DB_STATE_FLAG_HAS_SIZE;
+
+            /* HAS_SERIAL gates a skip in the serial lookup, and this
+             * walk does not observe serial keys - it scans crc with
+             * size alongside.  Set it rather than leave it clear:
+             * clear would skip every database for disc content, which
+             * is a missed match, while set costs at most one wasted
+             * serial-index build for a database that carries none.
+             * Every database shipped today carries serials.
+             *
+             * HAS_CRC is set for symmetry; nothing reads it beyond a
+             * debug line. */
+            db_state->flags[db_state->list_index] |=
+               DB_STATE_FLAG_HAS_CRC | DB_STATE_FLAG_HAS_SERIAL;
+
+            db_state->entry_index = 0;
+            return;
+         }
+      }
+   }
+
    snprintf(query, sizeof(query), "{size:min(0)}");
    database_info_list_iterate_new(db_state, query);
+
+   /* database_info_list_new_filtered() returns NULL when the .rdb
+    * cannot be opened, when the query fails to compile, or on OOM, so
+    * db_state->info is not guaranteed here.  Treat a failed query the
+    * same way an empty result is treated below: mark the database as
+    * having no usable size range and move on. */
+   if (!db_state->info)
+   {
+      db_state->min_sizes[db_state->list_index] = -1;
+      db_state->max_sizes[db_state->list_index] = -1;
+      db_state->entry_index                     = 0;
+      return;
+   }
 
    if (db_state->info->count > 0)
    {
@@ -1082,7 +1355,8 @@ static void task_database_fill_db_min_max(database_state_handle_t *db_state)
       snprintf(query, sizeof(query), "{size:max(0)}");
       database_info_list_iterate_new(db_state, query);
 
-      if (db_state->info->count > 0)
+      /* Second query, same failure modes as the first. */
+      if (db_state->info && db_state->info->count > 0)
       {
          size_t i;
          db_state->max_sizes[db_state->list_index] = db_state->info->list[db_state->info->count-1].size;
@@ -1152,7 +1426,7 @@ static enum scan_verdict task_database_iterate_crc_lookup(
    }
 
    /* If size boundaries are not filled for this DB, run the queries */
-   if (db_state->min_sizes[db_state->list_index] == 0)
+   if (!(db_state->flags[db_state->list_index] & DB_STATE_FLAG_SIZE_CHECKED))
       task_database_fill_db_min_max(db_state);
 
    if (db_state->min_sizes[db_state->list_index] > 0)
@@ -1195,6 +1469,9 @@ static enum scan_verdict task_database_iterate_crc_lookup(
    if (db_state->entry_index == 0)
    {
       char query[50];
+      const char *rdb            = db_state->list->elems[
+         db_state->list_index].data;
+      database_info_list_t *hits = NULL;
 
       query[0] = '\0';
 
@@ -1217,20 +1494,69 @@ static enum scan_verdict task_database_iterate_crc_lookup(
          }
       }
 
-      snprintf(query, sizeof(query),
-            "{crc:or(b\"%08lX\",b\"%08lX\")}",
-            (unsigned long)db_state->crc, (unsigned long)db_state->archive_crc);
+      /* Answer from this database's crc index when we can.  Building
+       * it costs one walk - about what a single probe used to cost -
+       * and every later content file is then a binary search instead
+       * of another walk.  The index is only a faster route to the
+       * same records: it reports them in file order with the same
+       * fields extracted, so the matching below is unchanged.
+       *
+       * Anything the index cannot serve falls through to the query,
+       * which stays the reference path. */
+      if (rdb && *rdb)
+      {
+         if (   !db_state->crc_index[db_state->list_index]
+             && db_state->index_budget)
+         {
+            database_info_crc_index_t *ci =
+               database_info_crc_index_new(rdb, db_state->index_budget);
+            if (ci)
+            {
+               size_t used = database_info_crc_index_bytes(ci);
+               db_state->index_budget = (used < db_state->index_budget)
+                  ? db_state->index_budget - used : 0;
+               db_state->crc_index[db_state->list_index] = ci;
+            }
+         }
 
-      database_info_list_iterate_new(db_state, query);
+         if (db_state->crc_index[db_state->list_index])
+            hits = database_info_list_new_crc(
+                  db_state->crc_index[db_state->list_index], rdb,
+                  db_state->crc, db_state->archive_crc,
+                  DB_EXTRACT_SCAN_FIELDS);
+      }
+
+      if (hits)
+      {
+         if (db_state->info)
+         {
+            database_info_list_free(db_state->info);
+            free(db_state->info);
+         }
+         db_state->info = hits;
+      }
+      else
+      {
+         snprintf(query, sizeof(query),
+               "{crc:or(b\"%08lX\",b\"%08lX\")}",
+               (unsigned long)db_state->crc,
+               (unsigned long)db_state->archive_crc);
+
+         database_info_list_iterate_new(db_state, query);
+      }
    }
 
-   if (db_state->info)
+   /* Same shape as the serial lookup below: entry_index was used to
+    * index the list without checking it against count, so a query
+    * that matched nothing (count == 0, list either empty or NULL)
+    * still had list[0] dereferenced. */
+   if (db_state->info && db_state->entry_index < db_state->info->count)
    {
       database_info_t *db_info_entry =
          &db_state->info->list[db_state->entry_index];
 
       /* When scanning an archive, "first" file crc32 is also checked. */
-      if (db_info_entry && db_info_entry->crc32)
+      if (db_info_entry->crc32)
       {
          if (db_state->archive_crc == db_info_entry->crc32)
             return database_info_list_iterate_found_match(
@@ -1336,7 +1662,7 @@ static int task_database_iterate_serial_lookup(
             path_contains_compressed_file);
 
    /* If size boundaries are not filled for this DB, run the queries */
-   if (db_state->min_sizes[db_state->list_index] == 0)
+   if (!(db_state->flags[db_state->list_index] & DB_STATE_FLAG_SIZE_CHECKED))
       task_database_fill_db_min_max(db_state);
 
    if (db_state->min_sizes[db_state->list_index] > 0)
@@ -1387,36 +1713,120 @@ static int task_database_iterate_serial_lookup(
 
    if (db_state->entry_index == 0)
    {
-      size_t _len;
-      char query[50];
-      char *serial_buf = bin_to_hex_alloc(
+      size_t query_len;
+      char  query_buf[128];
+      char *query      = query_buf;
+      char *serial_buf;
+      const char *rdb  = db_state->list->elems[db_state->list_index].data;
+      database_info_list_t *hits = NULL;
+
+      /* Same treatment as the crc path: one walk builds this
+       * database's serial index, and every content file after that is
+       * a lookup instead of another walk.  The index reports the same
+       * records in the same order with the same fields extracted, and
+       * returns NULL for anything it cannot serve so the query below
+       * still runs. */
+      if (rdb && *rdb)
+      {
+         if (   !db_state->serial_index[db_state->list_index]
+             && db_state->index_budget)
+         {
+            database_info_serial_index_t *si =
+               database_info_serial_index_new(rdb, db_state->index_budget);
+            if (si)
+            {
+               size_t used = database_info_serial_index_bytes(si);
+               db_state->index_budget = (used < db_state->index_budget)
+                  ? db_state->index_budget - used : 0;
+               db_state->serial_index[db_state->list_index] = si;
+            }
+         }
+
+         if (db_state->serial_index[db_state->list_index])
+            hits = database_info_list_new_serial(
+                  db_state->serial_index[db_state->list_index], rdb,
+                  db_state->serial, DB_EXTRACT_SCAN_FIELDS);
+      }
+
+      if (hits)
+      {
+         if (db_state->info)
+         {
+            database_info_list_free(db_state->info);
+            free(db_state->info);
+         }
+         db_state->info = hits;
+         goto serial_query_done;
+      }
+
+      serial_buf = bin_to_hex_alloc(
             (uint8_t*)db_state->serial,
             strlen(db_state->serial) * sizeof(uint8_t));
 
       if (!serial_buf)
          return SCAN_VERDICT_ERROR;
 
-      _len           = strlcpy(query, "{'serial': b'", sizeof(query));
-      _len          += strlcpy(query + _len, serial_buf, sizeof(query) - _len);
-      query[  _len]  = '\'';
-      query[++_len]  = '}';
-      query[++_len]  = '\0';
+      /* strlcpy() returns the length of its *source*, not the number
+       * of bytes it copied, so the previous form advanced _len by the
+       * full hex expansion even when the copy had been truncated to
+       * fit.  The three stores that follow then landed at
+       * query[13 + 2 * strlen(serial)], past the end of a 50 byte
+       * buffer for any serial longer than 17 characters:
+       *
+       *   AddressSanitizer: stack-buffer-overflow
+       *   WRITE of size 1
+       *
+       * db_state->serial is 4 KiB, and detect_dc_game() alone
+       * concatenates lgame_id[20] and rgame_id[20] before appending a
+       * disc suffix, so it can hand us close to forty characters.
+       *
+       * Size the buffer from the string being built instead, keeping
+       * the common case on the stack and falling back to the heap for
+       * a serial that does not fit - the same pattern
+       * database_info_list_iterate_found_match() uses for db_crc. */
+      query_len = STRLEN_CONST("{'serial': b'")
+                + strlen(serial_buf)
+                + STRLEN_CONST("'}") + 1;
+
+      if (query_len > sizeof(query_buf))
+         query = (char*)malloc(query_len);
+
+      if (!query)
+      {
+         free(serial_buf);
+         return SCAN_VERDICT_ERROR;
+      }
+
+      snprintf(query, query_len, "{'serial': b'%s'}", serial_buf);
 #ifdef DEBUG
       RARCH_DBG("[Scanner] Serial orig / decoded: \"%s\" / \"%s\".\n", db_state->serial, serial_buf);
 #endif
       database_info_list_iterate_new(db_state, query);
 
+      if (query != query_buf)
+         free(query);
       free(serial_buf);
+
+serial_query_done:
+      ;
    }
 
    if (db_state->info)
    {
-      while (db_state->entry_index <= db_state->info->count)
+      /* "<=" walked one element past the end of the list and then
+       * dereferenced it: db_info_entry->serial reads a pointer out of
+       * whatever follows the allocation and hands it to
+       * string_is_equal().  The list is empty on the common no-match
+       * path, so this fired on ordinary scans, not just crafted ones.
+       *
+       * The "db_info_entry &&" test below was dead - the address of an
+       * array element is never NULL - and is dropped with it. */
+      while (db_state->entry_index < db_state->info->count)
       {
          database_info_t *db_info_entry = &db_state->info->list[
             db_state->entry_index];
 
-         if (db_info_entry && db_info_entry->serial)
+         if (db_info_entry->serial)
          {
             if (string_is_equal(db_state->serial, db_info_entry->serial))
             {
@@ -1546,12 +1956,29 @@ static void scan_results_batch_update_playlists(scan_results_t *sr,
    {
       scan_result_t *result = &sr->results[i];
       char db_name_noext[PATH_MAX_LENGTH];
+      /* The key identifying which playlist this result belongs to.
+       * With a fixed playlist file every result goes to the same
+       * playlist, so the key is that path; otherwise results are
+       * grouped by database name.
+       *
+       * This used to compare current_playlist against result->db_name
+       * unconditionally, but the fixed-file branch below assigns
+       * task_config->playlist_file to current_playlist - a path like
+       * ".../MyList.lpl", which never equals a db_name, those being
+       * the database's own file name.  The test was therefore true on every
+       * iteration, and each result closed the playlist (a full
+       * playlist_write_file()) and reopened it (a full
+       * playlist_init() parse from disk).  N results meant N complete
+       * loads and N complete writes of the same file. */
+      const char *group_key = (*manual_scan->task_config->playlist_file)
+         ? manual_scan->task_config->playlist_file
+         : result->db_name;
 
       strlcpy(db_name_noext, result->db_name, sizeof(db_name_noext));
       path_remove_extension(db_name_noext);
 
       /* Check if we need to switch to a different playlist */
-      if (!single_playlist && (!current_playlist || !string_is_equal(current_playlist, result->db_name)))
+      if (!single_playlist && (!current_playlist || !string_is_equal(current_playlist, group_key)))
       {
          /* Write and close previous playlist if any */
          if (playlist)
@@ -1580,6 +2007,18 @@ static void scan_results_batch_update_playlists(scan_results_t *sr,
          }
 
          playlist = playlist_init(&manual_scan->playlist_config);
+
+         /* Check before use: the playlist_set_scan_* calls below are
+          * not all NULL-guarded (playlist_set_scan_search_recursively,
+          * playlist_set_sort_mode, playlist_qsort, playlist_write_file
+          * and several others dereference unconditionally).  The test
+          * used to sit after all of them. */
+         if (!playlist)
+         {
+            RARCH_ERR("[Scanner] Failed to open playlist: \"%s\".\n", result->db_name);
+            current_playlist = NULL;
+            continue;
+         }
 
          /* Set default core, if required */
          if (manual_scan->task_config->core_set)
@@ -1615,12 +2054,6 @@ static void scan_results_batch_update_playlists(scan_results_t *sr,
                manual_scan->task_config->db_usage);
          playlist_set_scan_omit_db_ref(playlist,
                manual_scan->task_config->omit_db_reference);
-
-         if (!playlist)
-         {
-            RARCH_ERR("[Scanner] Failed to open playlist: \"%s\".\n", result->db_name);
-            continue;
-         }
 
          RARCH_LOG("[Scanner] Processing playlist: \"%s\".\n", result->db_name);
       }
@@ -1682,7 +2115,12 @@ static void scan_results_batch_update_playlists(scan_results_t *sr,
       playlist_set_sort_mode(playlist, PLAYLIST_SORT_MODE_DEFAULT);
       playlist_qsort(playlist);
       playlist_write_file(playlist);
-      if (!string_is_equal(current_playlist, manual_scan->task_config->playlist_file))
+      /* Free whatever this function opened.  Only the single-playlist
+       * path borrows manual_scan->playlist, which the handle teardown
+       * owns; comparing the handles says that exactly, where the
+       * previous string compare against playlist_file also matched
+       * the playlist this function had opened itself and leaked it. */
+      if (playlist != manual_scan->playlist)
          playlist_free(playlist);
    }
 
@@ -1701,7 +2139,7 @@ bool task_push_dbscan(
 {
    manual_content_scan_set_menu_content_dir(fullpath);
    /*manual_content_scan_set_menu_scan_method(MANUAL_CONTENT_SCAN_METHOD_AUTOMATIC);*/
-   return task_push_manual_content_scan(false);
+   return task_push_manual_content_scan(false, cb);
 }
 
 #endif
@@ -1761,8 +2199,52 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
 
       if (dbstate)
       {
+         /* The per-database arrays are sized from the list, so the
+          * count has to be taken before the list goes away.  Reading
+          * it afterwards is a use-after-free, and the value it
+          * returns then drives the loops below. */
+         size_t db_count = dbstate->list ? dbstate->list->size : 0;
+
          if (dbstate->list)
+         {
             dir_list_free(dbstate->list);
+            dbstate->list = NULL;
+         }
+         /* db_state->info is only released along the iterate paths,
+          * so cancelling a scan while a database query result was
+          * live leaked the whole database_info_list_t - every
+          * strdup'd field of every matched record. */
+         if (dbstate->info)
+         {
+            database_info_list_free(dbstate->info);
+            free(dbstate->info);
+            dbstate->info = NULL;
+         }
+         if (dbstate->crc_index)
+         {
+            size_t ci;
+            for (ci = 0; ci < db_count; ci++)
+               database_info_crc_index_free(dbstate->crc_index[ci]);
+            free(dbstate->crc_index);
+            dbstate->crc_index = NULL;
+         }
+         if (dbstate->serial_index)
+         {
+            size_t si;
+            for (si = 0; si < db_count; si++)
+               database_info_serial_index_free(dbstate->serial_index[si]);
+            free(dbstate->serial_index);
+            dbstate->serial_index = NULL;
+         }
+         if (dbstate->min_sizes)
+            free(dbstate->min_sizes);
+         if (dbstate->max_sizes)
+            free(dbstate->max_sizes);
+         if (dbstate->flags)
+            free(dbstate->flags);
+         dbstate->min_sizes = NULL;
+         dbstate->max_sizes = NULL;
+         dbstate->flags     = NULL;
       }
 
       if (    manual_scan->content_database_path 
@@ -1832,6 +2314,21 @@ static void cb_task_manual_content_scan(
 
 #if defined(HAVE_MENU)
 end:
+#endif
+   /* The caller's callback, if it gave one.  Read before the handle is
+    * released below.
+    *
+    * This used to sit inside the HAVE_MENU block along with the menu
+    * refresh, so a build without menu support ran the scan and then
+    * dropped the callback: a caller waiting on it waited forever.
+    * The in-tree callers only supply one under HAVE_MENU themselves,
+    * which is why nothing noticed, but the parameter is not
+    * documented as menu-only and the sample in samples/tasks/database
+    * hangs on exactly this. */
+   if (manual_scan && manual_scan->user_cb)
+      manual_scan->user_cb(task, task_data, user_data, err);
+
+#if defined(HAVE_MENU)
    /* When creating playlists, the playlist tabs of
     * any active menu driver must be refreshed */
    if (   
@@ -1995,6 +2492,16 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                               manual_scan->flags & DB_HANDLE_FLAG_SHOW_HIDDEN_FILES,
                               false, false);
                      }
+
+                     /* Size the per-database size/flag caches to the
+                      * database list we just built.  Both branches
+                      * above land here. */
+                     if (   dbstate->list
+                         && !task_database_state_alloc_arrays(dbstate))
+                     {
+                        RARCH_ERR("[Scanner] Out of memory allocating database state\n");
+                        goto task_finished;
+                     }
                   }
 
                   RARCH_LOG("[Scanner] %s\"%s\"...\n", msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_START), manual_scan->content_database_path);
@@ -2130,7 +2637,8 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                      msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_PLAYLIST_CLEANUP),
                      sizeof(task_title));
 
-               if (   (entry->path && *entry->path)
+               if (   _len < sizeof(task_title)
+                   && (entry->path && *entry->path)
                    && (entry_file = path_basename(entry->path)))
                   strlcpy(task_title       + _len,
                         entry_file,
@@ -2294,7 +2802,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                      msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS),
                      sizeof(task_title));
 
-               if (content_file && *content_file)
+               if (_len < sizeof(task_title) && content_file && *content_file)
                   strlcpy(task_title       + _len,
                         content_file,
                         sizeof(task_title) - _len);
@@ -2411,7 +2919,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                      msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_M3U_CLEANUP),
                      sizeof(task_title));
 
-               if (m3u_name && *m3u_name)
+               if (_len < sizeof(task_title) && m3u_name && *m3u_name)
                   strlcpy(task_title       + _len,
                         m3u_name,
                         sizeof(task_title) - _len);
@@ -2517,7 +3025,8 @@ static bool task_manual_content_scan_finder(retro_task_t *task, void *user_data)
 }
 
 bool task_push_manual_content_scan(
-      bool do_menu_refresh)
+      bool do_menu_refresh,
+      retro_task_callback_t user_cb)
 {
    size_t _len;
    task_finder_data_t find_data;
@@ -2611,13 +3120,23 @@ bool task_push_manual_content_scan(
    if (!(task = task_init()))
       goto error;
 
-   /* > Get task title */
+   /* > Get task title
+    *
+    * strlcpy() returns the length of its source, so _len can exceed
+    * the buffer when the (translated) message does not fit.  The
+    * append would then form an out-of-bounds pointer and pass a
+    * wrapped size_t as the bound.  The shipped strings leave a wide
+    * margin - the longest of these four is 26 bytes into 128 - so
+    * this is hardening rather than a live overflow, but it is the
+    * same misuse of the return value that overflowed the serial
+    * query buffer, and translations come from Crowdin. */
    _len = strlcpy(
          task_title, msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_START),
          sizeof(task_title));
-   strlcpy(task_title       + _len,
-         manual_scan->task_config->system_name,
-         sizeof(task_title) - _len);
+   if (_len < sizeof(task_title))
+      strlcpy(task_title       + _len,
+            manual_scan->task_config->system_name,
+            sizeof(task_title) - _len);
 
    /* > Configure task */
    task->handler                 = task_manual_content_scan_handler;
@@ -2630,6 +3149,7 @@ bool task_push_manual_content_scan(
    task->progress_cb             = NULL;
 #endif
 
+   manual_scan->user_cb          = user_cb;
    task->callback                = cb_task_manual_content_scan;
    task->cleanup                 = task_manual_content_scan_free;
    task->flags                  |= RETRO_TASK_FLG_ALTERNATIVE_LOOK;

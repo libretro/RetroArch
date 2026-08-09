@@ -18,6 +18,7 @@
  *  with RetroArch. If not, see <http://www.gnu.org/licenses/>.
  **/
 
+#include <memory/mem_stats.h>
 #include "libretro.h"
 #include <queues/message_queue.h>
 #include <streams/interface_stream.h>
@@ -77,6 +78,21 @@
 #endif
 
 #include "../ai/game_ai.h"
+
+/* Force a helper out of line even though it has a single call site.
+ * Follows the RXML_NOINLINE precedent in
+ * libretro-common/formats/xml/rxml.c.  Under -Os the compiler already
+ * optimises for size and the outlining only adds call overhead, so it
+ * is disabled there. */
+#if defined(__OPTIMIZE_SIZE__)
+#define INPUT_NOINLINE
+#elif defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
+#define INPUT_NOINLINE __attribute__((noinline))
+#elif defined(_MSC_VER)
+#define INPUT_NOINLINE __declspec(noinline)
+#else
+#define INPUT_NOINLINE
+#endif
 
 #define HOLD_BTN_DELAY_SEC 2
 
@@ -163,6 +179,8 @@ const unsigned input_config_bind_order[24] = {
 /* TODO/FIXME - turn these into static global variable */
 retro_keybind_set input_config_binds[MAX_USERS];
 retro_keybind_set input_autoconf_binds[MAX_USERS];
+input_bind_label_set input_config_bind_labels[MAX_USERS];
+input_bind_label_set input_autoconf_bind_labels[MAX_USERS];
 uint64_t lifecycle_state                                        = 0;
 
 static void *input_null_init(const char *joypad_driver) { return (void*)-1; }
@@ -299,7 +317,9 @@ input_device_driver_t *joypad_drivers[] = {
 #ifdef ANDROID
    &android_joypad,
 #endif
-#if defined(HAVE_SDL3) || defined(HAVE_SDL) || defined(HAVE_SDL2)
+#if defined(HAVE_SDL3)
+   &sdl3_joypad,
+#elif defined(HAVE_SDL) || defined(HAVE_SDL2)
    &sdl_joypad,
 #endif
 #if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
@@ -320,7 +340,7 @@ input_device_driver_t *joypad_drivers[] = {
 #if defined(HAVE_HID) && !defined(WIIU)
    &hid_joypad,
 #endif
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
    &rwebpad_joypad,
 #endif
 #if defined(_WIN32) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501 && !defined(__WINRT__)
@@ -381,6 +401,9 @@ input_driver_t *input_drivers[] = {
 #if (defined(HAVE_SDL) || defined(HAVE_SDL2)) && !(defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL))
    &input_sdl,
 #endif
+#if defined(HAVE_SDL3) && !(defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL))
+   &input_sdl3,
+#endif
 #if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
    &input_sdl_dingux,
 #endif
@@ -405,7 +428,7 @@ input_driver_t *input_drivers[] = {
 #ifdef __QNX__
    &input_qnx,
 #endif
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
    &input_rwebinput,
 #endif
 #ifdef DJGPP
@@ -477,12 +500,18 @@ const char* config_get_joypad_driver_options(void)
  * Finds first suitable joypad driver and initializes. Used as a fallback by
  * input_joypad_init_driver when no matching driver is found.
  *
- * @param data  joypad state data pointer, which can be NULL and will be
- *              initialized by the new joypad driver, if one is found.
+ * @param data        joypad state data pointer, which can be NULL and will be
+ *                    initialized by the new joypad driver, if one is found.
+ * @param skip_ident  optional ident of a driver that was already tried (and
+ *                    failed) as the explicitly configured driver; skipped
+ *                    here since re-running its init would just fail again
+ *                    (and, for the hybrid XInput driver, repeat the
+ *                    controller slot probe).
  *
  * @return joypad driver if found and initialized, otherwise NULL.
  **/
-static const input_device_driver_t *input_joypad_init_first(void *data)
+static const input_device_driver_t *input_joypad_init_first(void *data,
+      const char *skip_ident)
 {
    int i;
    for (i = 0; joypad_drivers[i]; i++)
@@ -490,7 +519,11 @@ static const input_device_driver_t *input_joypad_init_first(void *data)
       if (     joypad_drivers[i]
             && joypad_drivers[i]->init)
       {
-         void *ptr = joypad_drivers[i]->init(data);
+         void *ptr;
+         if (     skip_ident
+               && string_is_equal(skip_ident, joypad_drivers[i]->ident))
+            continue;
+         ptr = joypad_drivers[i]->init(data);
          if (ptr)
          {
             RARCH_LOG("[Input] Found joypad driver: \"%s\".\n",
@@ -622,8 +655,31 @@ const input_device_driver_t *input_joypad_init_driver(
          }
       }
    }
-   /* Fall back to first available driver */
-   return input_joypad_init_first(data);
+   /* Fall back to first available driver, skipping the configured
+    * one that just failed above.
+    *
+    * Warn when this happens: from here on the active joypad driver is
+    * not the configured one, which changes which pads are visible and
+    * how they are named, and the only prior evidence was a "Found
+    * joypad driver" line naming a driver the user never asked for.
+    * On Windows in particular the first entry that initialises is
+    * xinput, so a transient winraw/dinput init failure would silently
+    * present as xinput with no indication why. */
+   {
+      const input_device_driver_t *fallback = input_joypad_init_first(data,
+            (ident && *ident) ? ident : NULL);
+
+      if (     ident
+            && *ident
+            && fallback
+            && fallback->ident
+            && !string_is_equal(ident, fallback->ident))
+         RARCH_WARN("[Input] Configured joypad driver \"%s\" failed to "
+               "initialise; falling back to \"%s\".\n",
+               ident, fallback->ident);
+
+      return fallback;
+   }
 }
 
 static bool input_driver_button_combo_hold(
@@ -1022,6 +1078,15 @@ static int16_t input_joypad_analog_button(
       ? joypad_info->auto_binds[ident].joyaxis
       : bind->joyaxis;
 
+   /* The joypad driver pointer can be NULL for the duration of a
+    * driver teardown/reinit cycle - video_driver_free_internal()
+    * clears primary_joypad before the joypad is recreated by
+    * input_driver_init_joypads(). input_joypad_axis() already
+    * guards against this, but the digital button fallback paths
+    * below dereference drv directly. */
+   if (!drv)
+      return 0;
+
    /* Early exit for digital-only buttons: if neither the user bind
     * nor the autoconfig bind has an analog axis, this button has no
     * analog capability. Skip the input_joypad_axis() call and
@@ -1092,6 +1157,11 @@ static int16_t input_joypad_analog_axis(
    const struct retro_keybind *bind_x_plus  = NULL;
    const struct retro_keybind *bind_y_minus = NULL;
    const struct retro_keybind *bind_y_plus  = NULL;
+
+   /* See input_joypad_analog_button() - drv is NULL while the
+    * joypad driver is being torn down and reinitialised. */
+   if (!drv)
+      return 0;
 
    /* Skip analog input with analog_dpad_mode */
    switch (input_analog_dpad_mode)
@@ -1283,7 +1353,7 @@ static int16_t input_joypad_analog_axis(
  *
  * @return true if the stick was processed, false if skipped (dpad mode)
  */
-static bool input_joypad_analog_stick(
+INPUT_NOINLINE static bool input_joypad_analog_stick(
       unsigned input_analog_dpad_mode,
       float input_analog_deadzone,
       float input_analog_sensitivity,
@@ -1305,6 +1375,11 @@ static bool input_joypad_analog_stick(
 
    *out_x = 0;
    *out_y = 0;
+
+   /* See input_joypad_analog_button() - drv is NULL while the
+    * joypad driver is being torn down and reinitialised. */
+   if (!drv)
+      return false;
 
    /* Skip analog input with analog_dpad_mode */
    switch (input_analog_dpad_mode)
@@ -2514,7 +2589,11 @@ static int16_t input_state_internal(
                            port_result |= (1 << bit);
                         else if (id == (unsigned)bit)
                         {
-                           port_result = bit;
+                           /* Digital results are OR'd together by the
+                            * caller, so this must be a plain 1 - not
+                            * the bind index, which would leave stray
+                            * high bits in the returned value */
+                           port_result = 1;
                            result      = 1;
                         }
                      }
@@ -4040,7 +4119,7 @@ static void input_overlay_update_pointer_coords(
  *
  * Poll pressed buttons/keys on currently active overlay.
  **/
-static void input_poll_overlay(
+INPUT_NOINLINE static void input_poll_overlay(
       bool keyboard_mapping_blocked,
       settings_t *settings,
       void *ol_data,
@@ -4389,6 +4468,32 @@ static void input_poll_overlay(
    if (input_overlay_show_inputs == OVERLAY_SHOW_INPUT_NONE)
       button_pressed = false;
 
+   /* menu_toggle fires on release and cannot tell a lift from a
+    * slide-off, so a slide-off must cancel it here. */
+   if (ol_state->touch_count)
+   {
+      int d, t;
+      for (d = 0; d < (int)ol->active->size; d++)
+      {
+         struct overlay_desc *desc = &ol->active->descs[d];
+
+         if (    desc->touch_mask
+             || !desc->old_touch_mask
+             || !BIT256_GET(desc->button_mask, RARCH_MENU_TOGGLE))
+            continue;
+
+         for (t = 0; t < ol_state->touch_count; t++)
+         {
+            int old_t = input_st->old_touch_index_lut[t];
+            if (old_t >= 0 && BIT32_GET(desc->old_touch_mask, old_t))
+            {
+               input_st->flags |= INP_FLAG_MENU_PRESS_CANCEL;
+               break;
+            }
+         }
+      }
+   }
+
    if (button_pressed || ol_state->touch_count)
       input_overlay_post_poll(overlay_visibility, ol,
             button_pressed, opacity);
@@ -4464,6 +4569,8 @@ size_t input_config_get_bind_string(
       char *s,
       const struct retro_keybind *bind,
       const struct retro_keybind *auto_bind,
+      const struct input_bind_label *label,
+      const struct input_bind_label *auto_label,
       size_t len)
 {
    settings_t *settings                 = (settings_t*)settings_data;
@@ -4477,19 +4584,19 @@ size_t input_config_get_bind_string(
    if      (bind      && bind->joykey  != NO_BTN)
       _len = input_config_get_bind_string_joykey(
             input_descriptor_label_show,
-            s, "", bind, len);
+            s, "", bind, label, len);
    else if (bind      && bind->joyaxis != AXIS_NONE)
       _len = input_config_get_bind_string_joyaxis(
             input_descriptor_label_show,
-            s, "", bind, len);
+            s, "", bind, label, len);
    else if (auto_bind && auto_bind->joykey != NO_BTN)
       _len = input_config_get_bind_string_joykey(
             input_descriptor_label_show,
-            s, "(Auto)", auto_bind, len);
+            s, "(Auto)", auto_bind, auto_label, len);
    else if (auto_bind && auto_bind->joyaxis != AXIS_NONE)
       _len = input_config_get_bind_string_joyaxis(
             input_descriptor_label_show,
-            s, "(Auto)", auto_bind, len);
+            s, "(Auto)", auto_bind, auto_label, len);
 
    if (*s)
       delim = 1;
@@ -4569,16 +4676,18 @@ size_t input_config_get_bind_string(
 size_t input_config_get_bind_string_joykey(
       bool input_descriptor_label_show,
       char *s, const char *suffix,
-      const struct retro_keybind *bind, size_t len)
+      const struct retro_keybind *bind,
+      const struct input_bind_label *label, size_t len)
 {
+   const char *joykey_label = label ? label->joykey : NULL;
    size_t _len = 0;
    if (GET_HAT_DIR(bind->joykey))
    {
-      if (      bind->joykey_label
-            && (bind->joykey_label && *bind->joykey_label)
+      if (      joykey_label
+            && (joykey_label && *joykey_label)
             && input_descriptor_label_show)
          return fill_pathname_join_delim(s,
-               bind->joykey_label, suffix, ' ', len);
+               joykey_label, suffix, ' ', len);
       /* TODO/FIXME - localize */
       _len  = snprintf(s, len,
             "Hat #%u ", (unsigned)GET_HAT(bind->joykey));
@@ -4603,11 +4712,11 @@ size_t input_config_get_bind_string_joykey(
    }
    else
    {
-      if (      bind->joykey_label
-            && (bind->joykey_label && *bind->joykey_label)
+      if (      joykey_label
+            && (joykey_label && *joykey_label)
             && input_descriptor_label_show)
          return fill_pathname_join_delim(s,
-               bind->joykey_label, suffix, ' ', len);
+               joykey_label, suffix, ' ', len);
 
       /* TODO/FIXME - localize */
       _len  = strlcpy(s, "Button ", len);
@@ -4624,14 +4733,16 @@ size_t input_config_get_bind_string_joykey(
 size_t input_config_get_bind_string_joyaxis(
       bool input_descriptor_label_show,
       char *s, const char *suffix,
-      const struct retro_keybind *bind, size_t len)
+      const struct retro_keybind *bind,
+      const struct input_bind_label *label, size_t len)
 {
+   const char *joyaxis_label = label ? label->joyaxis : NULL;
    size_t _len = 0;
-   if (      bind->joyaxis_label
-         && (bind->joyaxis_label && *bind->joyaxis_label)
+   if (      joyaxis_label
+         && (joyaxis_label && *joyaxis_label)
          && input_descriptor_label_show)
       return fill_pathname_join_delim(s,
-            bind->joyaxis_label, suffix, ' ', len);
+            joyaxis_label, suffix, ' ', len);
 
    /* TODO/FIXME - localize */
    _len = strlcpy(s, "Axis ", len);
@@ -5151,19 +5262,8 @@ bool input_core_set_sensor_state(unsigned port,
          break;
    }
 
-   /* For accel/gyro, the poll loop reconciles core/shader/frontend
-    * state and manages driver enable/disable. For other sensor types,
-    * pass through to the driver directly. */
-   switch (action)
-   {
-      case RETRO_SENSOR_ACCELEROMETER_ENABLE:
-      case RETRO_SENSOR_ACCELEROMETER_DISABLE:
-      case RETRO_SENSOR_GYROSCOPE_ENABLE:
-      case RETRO_SENSOR_GYROSCOPE_DISABLE:
-         return true;
-      default:
-         return input_set_sensor_state(port, action, rate);
-   }
+   /* pass through to the driver directly. */
+   return input_set_sensor_state(port, action, rate);
 }
 
 float input_core_get_sensor_state(unsigned port, unsigned id)
@@ -5606,6 +5706,71 @@ unsigned *input_config_get_device_ptr(unsigned port)
    return NULL;
 }
 
+/* The player -> pad mapping is required to be a permutation of
+ * [0, MAX_USERS):
+ *
+ * - Two players sharing a pad index makes a single physical device
+ *   drive two libretro ports at once, so one controller presses
+ *   Start for both players.
+ * - reallocate_port_if_needed() in tasks/task_autodetect.c reassigns
+ *   ports by transposing entries of this array. A transposition
+ *   preserves the permutation property but cannot restore it, so a
+ *   mapping that is already non-injective stays non-injective for
+ *   every subsequent hotplug.
+ * - That same function inverts the mapping through an array indexed
+ *   by pad index, so an out of range entry is an out of bounds write.
+ *
+ * Nothing validates the mapping when it is read back from a
+ * configuration file, and the menu's device index selector happily
+ * lets two players point at the same pad, so the invariant has to be
+ * asserted rather than assumed. */
+bool input_config_sanitize_joypad_indices(void)
+{
+   unsigned i;
+   bool taken[MAX_USERS];
+   unsigned next_free   = 0;
+   bool corrected       = false;
+   settings_t *settings = config_get_ptr();
+
+   if (!settings)
+      return false;
+
+   for (i = 0; i < MAX_USERS; i++)
+      taken[i] = false;
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      unsigned joy_idx = settings->uints.input_joypad_index[i];
+
+      if (joy_idx < MAX_USERS && !taken[joy_idx])
+      {
+         taken[joy_idx] = true;
+         continue;
+      }
+
+      while (next_free < MAX_USERS && taken[next_free])
+         next_free++;
+
+      /* MAX_USERS players cannot claim more than MAX_USERS distinct
+       * indices, so this is unreachable; bail out rather than write
+       * past the end of the array if it ever is reached. */
+      if (next_free >= MAX_USERS)
+         break;
+
+      RARCH_WARN("[Input] Player %u had %s pad index %u, "
+            "reassigning to %u.\n",
+            i + 1,
+            (joy_idx < MAX_USERS) ? "duplicate" : "out of range",
+            joy_idx, next_free);
+
+      settings->uints.input_joypad_index[i] = next_free;
+      taken[next_free]                      = true;
+      corrected                             = true;
+   }
+
+   return corrected;
+}
+
 /* Adds an index to devices with the same name,
  * so they can be uniquely identified in the
  * frontend */
@@ -5915,8 +6080,10 @@ void config_read_keybinds_conf(void *data)
          input_keyboard_mapping_bits(1, bind->key);
          key_store[bind->key]       = true;
 
-         input_config_parse_joy_button  (str, conf, prefix, btn, bind);
-         input_config_parse_joy_axis    (str, conf, prefix, btn, bind);
+         input_config_parse_joy_button  (str, conf, prefix, btn, bind,
+               &input_config_bind_labels[i][j]);
+         input_config_parse_joy_axis    (str, conf, prefix, btn, bind,
+               &input_config_bind_labels[i][j]);
          input_config_parse_mouse_button(str, conf, prefix, btn, bind);
       }
    }
@@ -5967,7 +6134,7 @@ void input_driver_init_command(input_driver_state_t *input_st,
 #if defined(HAVE_LAKKA)
    if (!(input_st->command[2] = command_uds_new()))
       RARCH_ERR("Failed to initialize the UDS command interface.\n");
-#elif defined(EMSCRIPTEN)
+#elif defined(__EMSCRIPTEN__)
    if (!(input_st->command[2] = command_emscripten_new()))
       RARCH_ERR("Failed to initialize the emscripten command interface.\n");
 #endif
@@ -6131,7 +6298,7 @@ void input_overlay_unload(void)
 
    /* Free if overlays disabled or initing/deiniting core */
    if (     !input_overlay_enable
-         || !(runloop_st->flags & RUNLOOP_FLAG_IS_INITED)
+         || !runloop_is_inited()
          ||  (runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
       input_overlay_deinit();
    else
@@ -6450,7 +6617,7 @@ void input_overlay_init(void)
 
 #if defined(GEKKO)
    /* Avoid a crash at startup or even when toggling overlay in rgui */
-   if (frontend_driver_get_free_memory() < (3 * 1024 * 1024))
+   if (mem_stats_free() < (3 * 1024 * 1024))
       return;
 #endif
 
@@ -8070,20 +8237,29 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
       }
       else if (display_kb && input && input->input_state)
       {
-         /* Allow character map switches, 
-          * and set RetroPad Select bit when pressing Escape
-          * in order to clear the input window and close it. */
+         /* OSK grid navigation from keyboard / TV remote D-pad, plus
+          * page switches and Escape to clear/close. Return confirms the
+          * highlighted OSK character (same as menu OK). */
          unsigned i;
+         bool swap_ok_cancel_buttons = settings->bools.input_menu_swap_ok_cancel_buttons;
          unsigned ids[][2] =
          {
+            {RETROK_RETURN,    RETRO_DEVICE_ID_JOYPAD_A      },
+            {RETROK_UP,        RETRO_DEVICE_ID_JOYPAD_UP     },
+            {RETROK_DOWN,      RETRO_DEVICE_ID_JOYPAD_DOWN   },
+            {RETROK_LEFT,      RETRO_DEVICE_ID_JOYPAD_LEFT   },
+            {RETROK_RIGHT,     RETRO_DEVICE_ID_JOYPAD_RIGHT  },
             {RETROK_PAGEUP,    RETRO_DEVICE_ID_JOYPAD_L      },
             {RETROK_PAGEDOWN,  RETRO_DEVICE_ID_JOYPAD_R      },
             {RETROK_ESCAPE,    RETRO_DEVICE_ID_JOYPAD_SELECT },
          };
 
+         if (swap_ok_cancel_buttons)
+            ids[0][1] = RETRO_DEVICE_ID_JOYPAD_B;
+
          for (i = 0; i < ARRAY_SIZE(ids); i++)
          {
-            if (input->input_state(
+            if (ids[i][0] && input->input_state(
                      input_st->current_data,
                      joypad,
                      sec_joypad,

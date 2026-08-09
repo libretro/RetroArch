@@ -162,8 +162,6 @@
 		92B9EB6A24E0518700E6CFB2 /* fopen_utf8.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = fopen_utf8.h; sourceTree = "<group>"; };
 		92B9EB6B24E0518700E6CFB2 /* intrinsics.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = intrinsics.h; sourceTree = "<group>"; };
 		92B9EB6C24E0518700E6CFB2 /* posix_string.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = posix_string.h; sourceTree = "<group>"; };
-		92B9EB6E24E0518700E6CFB2 /* zlib.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = zlib.h; sourceTree = "<group>"; };
-		92B9EB6F24E0518700E6CFB2 /* zconf.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = zconf.h; sourceTree = "<group>"; };
 		92B9EB7024E0518700E6CFB2 /* getopt.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = getopt.h; sourceTree = "<group>"; };
 		92B9EB7124E0518700E6CFB2 /* fnmatch.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = fnmatch.h; sourceTree = "<group>"; };
 		92B9EB7224E0518700E6CFB2 /* msvc.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = msvc.h; sourceTree = "<group>"; };
@@ -576,8 +574,6 @@
 		92B9EB6D24E0518700E6CFB2 /* zlib */ = {
 			isa = PBXGroup;
 			children = (
-				92B9EB6E24E0518700E6CFB2 /* zlib.h */,
-				92B9EB6F24E0518700E6CFB2 /* zconf.h */,
 			);
 			path = zlib;
 			sourceTree = "<group>";
@@ -1324,7 +1320,6 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
-					"../../libretro-common/include/compat/zlib",
 					../../deps/stb,
 					../../deps/rcheevos/include,
 					../../deps,
@@ -1358,7 +1353,7 @@
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
 					"-DHAVE_GRIFFIN",
-					"-DHAVE_STB_VORBIS",
+					"-DHAVE_RVORBIS",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_ONLINE_UPDATER",
 					"-DHAVE_LANGEXTRA",
@@ -1383,7 +1378,6 @@
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",
-					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_RWEBP",
 					"-DHAVE_RDDS",
@@ -1419,7 +1413,6 @@
 					"-DHAVE_PATCH",
 					"-DHAVE_UPDATE_CORE_INFO",
 					"-DHAVE_VULKAN",
-					"-D_7ZIP_ST",
 					"-DHAVE_7ZIP",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.ios.RetroArch;
@@ -1451,7 +1444,6 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
-					"../../libretro-common/include/compat/zlib",
 					../../deps/stb,
 					../../deps/rcheevos/include,
 					../../deps,
@@ -1486,7 +1478,7 @@
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
 					"-DHAVE_GRIFFIN",
-					"-DHAVE_STB_VORBIS",
+					"-DHAVE_RVORBIS",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_ONLINE_UPDATER",
 					"-DHAVE_LANGEXTRA",
@@ -1513,7 +1505,6 @@
 					"-std=gnu99",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_OVERLAY",
-					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_RWEBP",
 					"-DHAVE_RDDS",
@@ -1531,7 +1522,6 @@
 					"-DHAVE_PATCH",
 					"-DHAVE_UPDATE_CORE_INFO",
 					"-DHAVE_VULKAN",
-					"-D_7ZIP_ST",
 					"-DHAVE_7ZIP",
 				);
 				"OTHER_CFLAGS[arch=*]" = (
@@ -1547,7 +1537,7 @@
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
 					"-DHAVE_GRIFFIN",
-					"-DHAVE_STB_VORBIS",
+					"-DHAVE_RVORBIS",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_ONLINE_UPDATER",
 					"-DHAVE_LANGEXTRA",
@@ -1573,7 +1563,6 @@
 					"-DHAVE_DYNAMIC",
 					"-DRARCH_INTERNAL",
 					"-DHAVE_OVERLAY",
-					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_RWEBP",
 					"-DHAVE_RDDS",
@@ -1585,7 +1574,6 @@
 					"-DHAVE_THREADS",
 					"-DHAVE_FILTERS_BUILTIN",
 					"-DHAVE_7ZIP",
-					"-D_7ZIP_ST",
 					"-DHAVE_MATERIALUI",
 					"-DHAVE_XMB",
 					"-DHAVE_OZONE",
@@ -1668,7 +1656,6 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
-					"../../libretro-common/include/compat/zlib",
 					../../deps/stb,
 					../../deps/rcheevos/include,
 					../../deps,
@@ -1701,7 +1688,7 @@
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
 					"-DHAVE_GRIFFIN",
-					"-DHAVE_STB_VORBIS",
+					"-DHAVE_RVORBIS",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_ONLINE_UPDATER",
 					"-DHAVE_LANGEXTRA",
@@ -1725,7 +1712,6 @@
 					"-DRARCH_MOBILE",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_DYNAMIC",
-					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_RWEBP",
 					"-DHAVE_RDDS",
@@ -1811,7 +1797,6 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
-					"../../libretro-common/include/compat/zlib",
 					../../deps/stb,
 					../../deps/rcheevos/include,
 					../../deps,
@@ -1845,7 +1830,7 @@
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
 					"-DHAVE_GRIFFIN",
-					"-DHAVE_STB_VORBIS",
+					"-DHAVE_RVORBIS",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_ONLINE_UPDATER",
 					"-DHAVE_LANGEXTRA",
@@ -1869,7 +1854,6 @@
 					"-DRARCH_MOBILE",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_DYNAMIC",
-					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_RWEBP",
 					"-DHAVE_RDDS",
@@ -1882,7 +1866,6 @@
 					"-DHAVE_THREADS",
 					"-DHAVE_FILTERS_BUILTIN",
 					"-DHAVE_7ZIP",
-					"-D_7ZIP_ST",
 					"-DHAVE_XMB",
 					"-DHAVE_OZONE",
 					"-DHAVE_SHADERPIPELINE",
@@ -1955,7 +1938,7 @@
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
 					"-DHAVE_GRIFFIN",
-					"-DHAVE_STB_VORBIS",
+					"-DHAVE_RVORBIS",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_ONLINE_UPDATER",
 					"-DHAVE_LANGEXTRA",
@@ -1982,7 +1965,6 @@
 					"-std=gnu99",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_OVERLAY",
-					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_RWEBP",
 					"-DHAVE_RDDS",
@@ -2032,7 +2014,7 @@
 					"-DHAVE_RUNAHEAD",
 					"-DHAVE_TRANSLATE",
 					"-DHAVE_GRIFFIN",
-					"-DHAVE_STB_VORBIS",
+					"-DHAVE_RVORBIS",
 					"-DHAVE_UPDATE_ASSETS",
 					"-DHAVE_ONLINE_UPDATER",
 					"-DHAVE_LANGEXTRA",
@@ -2059,7 +2041,6 @@
 					"-std=gnu99",
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_OVERLAY",
-					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_RWEBP",
 					"-DHAVE_RDDS",

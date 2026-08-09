@@ -105,9 +105,10 @@ enum gfx_wrap_type
 
 enum gfx_fbo_scale_flags
 {
-   FBO_SCALE_FLAG_FP_FBO   = (1 << 0),
-   FBO_SCALE_FLAG_SRGB_FBO = (1 << 1),
-   FBO_SCALE_FLAG_VALID    = (1 << 2)
+   FBO_SCALE_FLAG_FP_FBO    = (1 << 0),
+   FBO_SCALE_FLAG_SRGB_FBO  = (1 << 1),
+   FBO_SCALE_FLAG_VALID     = (1 << 2),
+   FBO_SCALE_FLAG_RGB10_FBO = (1 << 3)
 };
 
 struct gfx_fbo_scale

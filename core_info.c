@@ -29,6 +29,10 @@
 #include "config.h"
 #endif
 
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#endif
+
 #include "retroarch.h"
 #include "verbosity.h"
 
@@ -51,7 +55,7 @@
 #define CORE_INFO_CACHE_DEFAULT_CAPACITY 8
 
 /* TODO/FIXME: Apparently rzip compression is an issue on UWP */
-#if defined(HAVE_ZLIB) && !(defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
+#if defined(HAVE_COMPRESSION) && !(defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
 #define CORE_INFO_CACHE_COMPRESS
 #endif
 
@@ -96,6 +100,48 @@ static core_info_state_t core_info_st = {
    NULL,
    NULL
 };
+
+#ifdef HAVE_THREADS
+/* Guards publication and teardown of core_info_st.curr_list.
+ *
+ * The list is built, replaced and freed on the main thread, but it
+ * is *read* from task threads - the content scanner calls
+ * core_info_database_supports_content_path() and
+ * core_info_database_match_archive_member() from
+ * task_database_iterate_crc_lookup(). Closing content runs
+ * driver_uninit() -> core_info_deinit_list() on the main thread with
+ * no regard for a scan that is still in flight, so without this lock
+ * a worker walks a list that has just been freed.
+ *
+ * Created once, before the first list is ever published, and
+ * deliberately never destroyed: core_info_st is a process-lifetime
+ * singleton and the lock has to outlive any task thread that could
+ * still be sitting inside a reader. */
+static slock_t *core_info_list_mutex = NULL;
+
+#define CORE_INFO_LIST_LOCK() \
+   do { \
+      if (core_info_list_mutex) \
+         slock_lock(core_info_list_mutex); \
+   } while (0)
+
+#define CORE_INFO_LIST_UNLOCK() \
+   do { \
+      if (core_info_list_mutex) \
+         slock_unlock(core_info_list_mutex); \
+   } while (0)
+#else
+#define CORE_INFO_LIST_LOCK()   do { } while (0)
+#define CORE_INFO_LIST_UNLOCK() do { } while (0)
+#endif
+
+/* Parameters of the last successful core info scan; used by
+ * core_info_list_is_current() to let CMD_EVENT_CORE_INFO_INIT
+ * skip redundant rescans when nothing relevant has changed. */
+static char *core_info_last_path_info   = NULL;
+static char *core_info_last_dir_cores   = NULL;
+static bool core_info_last_show_hidden  = false;
+static bool core_info_last_enable_cache = false;
 
 #ifdef HAVE_CORE_INFO_CACHE
 /* JSON Handlers START */
@@ -774,7 +820,7 @@ static core_info_cache_list_t *core_info_cache_read(const char *info_dir)
    else
       strlcpy(file_path, FILE_PATH_CORE_INFO_CACHE, sizeof(file_path));
 
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
    file = intfstream_open_rzip_file(file_path,
          RETRO_VFS_FILE_ACCESS_READ);
 #else
@@ -821,9 +867,14 @@ static core_info_cache_list_t *core_info_cache_read(const char *info_dir)
              ? rjson_get_error(parser)
              : "format error"));
 
-      /* Info cache is corrupt - discard it */
+      /* Info cache is corrupt - discard it.
+       * core_info_cache_list_free() releases the contents but not the
+       * structure itself (see the caller in core_info_list_new, which
+       * pairs it with free()), so both are needed here. */
       core_info_cache_list_free(context.core_info_cache_list);
-      core_info_cache_list = core_info_cache_list_new();
+      free(context.core_info_cache_list);
+      context.core_info_cache_list = NULL;
+      core_info_cache_list         = core_info_cache_list_new();
    }
    else
       core_info_cache_list = context.core_info_cache_list;
@@ -852,7 +903,13 @@ static core_info_cache_list_t *core_info_cache_read(const char *info_dir)
             CORE_INFO_CACHE_VERSION,
             core_info_cache_list->version);
 
-      core_info_cache_list_free(context.core_info_cache_list);
+      /* Free the list actually in hand, not the parse context's.  On a
+       * corrupt cache the branch above has already replaced it with a
+       * fresh one and cleared the context pointer, so freeing the
+       * context here leaked that replacement - and would have been a
+       * double free had the parse built a list before failing. */
+      core_info_cache_list_free(core_info_cache_list);
+      free(core_info_cache_list);
       core_info_cache_list = core_info_cache_list_new();
    }
 
@@ -864,12 +921,50 @@ end:
 }
 #endif
 
+/* Move a completed temporary over its destination.
+ *
+ * POSIX rename() replaces atomically, which is the whole point;
+ * Windows' rename() refuses when the destination exists, so fall back
+ * to moving the original aside first and putting it back if the second
+ * move fails - never leaving nothing behind.
+ *
+ * (playlist.c carries the same helper for the same reason.  A third
+ * caller would justify hoisting one copy into libretro-common.) */
+static bool core_info_replace_file(const char *from, const char *to)
+{
+   char saved[PATH_MAX_LENGTH];
+   size_t _len;
+
+   if (filestream_rename(from, to) == 0)
+      return true;
+
+   _len = strlcpy(saved, to, sizeof(saved));
+   if (_len + STRLEN_CONST(".old") >= sizeof(saved))
+      return false;
+   strlcpy(saved + _len, ".old", sizeof(saved) - _len);
+
+   filestream_delete(saved);          /* a leftover from a previous run */
+   if (filestream_rename(to, saved) != 0)
+      return false;                   /* original untouched; give up   */
+
+   if (filestream_rename(from, to) == 0)
+   {
+      filestream_delete(saved);
+      return true;
+   }
+
+   filestream_rename(saved, to);      /* put the original back */
+   return false;
+}
+
 static bool core_info_cache_write(core_info_cache_list_t *list, const char *info_dir)
 {
    intfstream_t *file    = NULL;
    rjsonwriter_t *writer = NULL;
    bool success          = false;
+   bool wrote_ok         = false;
    char file_path[PATH_MAX_LENGTH];
+   char write_path[PATH_MAX_LENGTH];
    size_t i, j;
 
    if (!list)
@@ -883,17 +978,35 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
    else
       strlcpy(file_path, FILE_PATH_CORE_INFO_CACHE, sizeof(file_path));
 
+   /* Write to a temporary and move it into place.  Truncating the
+    * cache in situ means a crash, a power loss or a full disk part way
+    * through leaves a half-written file, and the next startup then
+    * fails to parse it and falls back to reading every .info file
+    * individually - the slow path this cache exists to avoid.  The
+    * temporary sits in the same directory so the move stays within one
+    * filesystem. */
+   {
+      size_t _len = strlcpy(write_path, file_path, sizeof(write_path));
+      if (_len + STRLEN_CONST(".tmp") >= sizeof(write_path))
+      {
+         RARCH_ERR("[Core info] Path too long to write safely: \"%s\".\n",
+               file_path);
+         return false;
+      }
+      strlcpy(write_path + _len, ".tmp", sizeof(write_path) - _len);
+   }
+
 #if defined(CORE_INFO_CACHE_COMPRESS)
-   file = intfstream_open_rzip_file(file_path, RETRO_VFS_FILE_ACCESS_WRITE);
+   file = intfstream_open_rzip_file(write_path, RETRO_VFS_FILE_ACCESS_WRITE);
 #else
-   file = intfstream_open_file(file_path,
+   file = intfstream_open_file(write_path,
          RETRO_VFS_FILE_ACCESS_WRITE,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
 #endif
 
    if (!file)
    {
-      RARCH_ERR("[Core info] Failed to write core info cache file: \"%s\".\n", file_path);
+      RARCH_ERR("[Core info] Failed to write core info cache file: \"%s\".\n", write_path);
       return false;
    }
 
@@ -1160,7 +1273,33 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
    rjsonwriter_raw(writer, "\n", 1);
    rjsonwriter_add_spaces(writer, 2);
    rjsonwriter_raw(writer, "]\n}\n", 4);
-   rjsonwriter_free(writer);
+
+   /* rjsonwriter_free performs the final flush, so its result is what
+    * says whether the temporary is complete.  Without it a short write
+    * was reported as a successful cache write - and the 'force
+    * refresh' marker below was then deleted, so the next startup
+    * trusted a truncated cache instead of rebuilding it. */
+   if (!(wrote_ok = rjsonwriter_free(writer)))
+      RARCH_ERR("[Core info] Failed to write core info cache file: \"%s\".\n",
+            write_path);
+   writer = NULL;
+
+   if (!wrote_ok)
+      goto end;
+
+   /* Commit: only now does the new cache replace the old one. */
+   intfstream_close(file);
+   free(file);
+   file    = NULL;
+
+   if (!core_info_replace_file(write_path, file_path))
+   {
+      filestream_delete(write_path);
+      RARCH_ERR("[Core info] Failed to write core info cache file: \"%s\".\n",
+            file_path);
+      list->refresh = false;
+      return false;
+   }
 
    RARCH_LOG("[Core info] Wrote to cache file: \"%s\".\n", file_path);
    success = true;
@@ -1178,8 +1317,16 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
       filestream_delete(file_path);
 
 end:
-   intfstream_close(file);
-   free(file);
+   if (file)
+   {
+      intfstream_close(file);
+      free(file);
+   }
+
+   /* A temporary left behind by any failure above is discarded; what
+    * is on disk stays exactly what it was. */
+   if (!success && *write_path)
+      filestream_delete(write_path);
 
    list->refresh = false;
    return success;
@@ -1593,7 +1740,6 @@ static void core_info_resolve_firmware(
    {
       size_t _len2;
       char key[64];
-      struct config_entry_list *entry = NULL;
       bool tmp_bool                   = false;
 
       snprintf(prefix + _len, sizeof(prefix) - _len, "%u_", i);
@@ -1605,23 +1751,11 @@ static void core_info_resolve_firmware(
 
       strlcpy(key + _len2, "path", sizeof(key) - _len2);
 
-      entry = config_get_entry(conf, key);
-
-      if (entry && (entry->value && *entry->value))
-      {
-         firmware[i].path = entry->value;
-         entry->value     = NULL;
-      }
+      firmware[i].path = config_take_string(conf, key);
 
       strlcpy(key + _len2, "desc", sizeof(key) - _len2);
 
-      entry = config_get_entry(conf, key);
-
-      if (entry && (entry->value && *entry->value))
-      {
-         firmware[i].desc = entry->value;
-         entry->value     = NULL;
-      }
+      firmware[i].desc = config_take_string(conf, key);
    }
 
    info->firmware_count = firmware_count;
@@ -1646,149 +1780,92 @@ static void core_info_parse_config_file(
       config_file_t *conf)
 {
    bool tmp_bool                   = false;
-   struct config_entry_list *entry = config_get_entry(conf, "display_name");
 
-   if (entry && (entry->value && *entry->value))
+   info->display_name = config_take_string(conf, "display_name");
+
+   info->display_version = config_take_string(conf, "display_version");
+
+   info->core_name = config_take_string(conf, "corename");
+
+   info->systemname = config_take_string(conf, "systemname");
+
+   info->system_id = config_take_string(conf, "systemid");
+
+   info->system_manufacturer = config_take_string(conf, "manufacturer");
+
+   info->supported_extensions = config_take_string(conf, "supported_extensions");
+
+   if (info->supported_extensions)
    {
-      info->display_name = entry->value;
-      entry->value       = NULL;
-   }
-
-   entry = config_get_entry(conf, "display_version");
-
-   if (entry && (entry->value && *entry->value))
-   {
-      info->display_version = entry->value;
-      entry->value          = NULL;
-   }
-
-   entry = config_get_entry(conf, "corename");
-
-   if (entry && (entry->value && *entry->value))
-   {
-      info->core_name = entry->value;
-      entry->value    = NULL;
-   }
-
-   entry = config_get_entry(conf, "systemname");
-
-   if (entry && (entry->value && *entry->value))
-   {
-      info->systemname = entry->value;
-      entry->value     = NULL;
-   }
-
-   entry = config_get_entry(conf, "systemid");
-
-   if (entry && (entry->value && *entry->value))
-   {
-      info->system_id = entry->value;
-      entry->value    = NULL;
-   }
-
-   entry = config_get_entry(conf, "manufacturer");
-
-   if (entry && (entry->value && *entry->value))
-   {
-      info->system_manufacturer = entry->value;
-      entry->value              = NULL;
-   }
-
-   entry = config_get_entry(conf, "supported_extensions");
-
-   if (entry && (entry->value && *entry->value))
-   {
-      info->supported_extensions      = entry->value;
-      entry->value                    = NULL;
 
       info->supported_extensions_list =
             string_split(info->supported_extensions, "|");
    }
 
-   entry = config_get_entry(conf, "authors");
+   info->authors = config_take_string(conf, "authors");
 
-   if (entry && (entry->value && *entry->value))
+   if (info->authors)
    {
-      info->authors      = entry->value;
-      entry->value       = NULL;
 
       info->authors_list =
             string_split(info->authors, "|");
    }
 
-   entry = config_get_entry(conf, "permissions");
+   info->permissions = config_take_string(conf, "permissions");
 
-   if (entry && (entry->value && *entry->value))
+   if (info->permissions)
    {
-      info->permissions      = entry->value;
-      entry->value           = NULL;
 
       info->permissions_list =
             string_split(info->permissions, "|");
    }
 
-   entry = config_get_entry(conf, "license");
+   info->licenses = config_take_string(conf, "license");
 
-   if (entry && (entry->value && *entry->value))
+   if (info->licenses)
    {
-      info->licenses      = entry->value;
-      entry->value        = NULL;
 
       info->licenses_list =
             string_split(info->licenses, "|");
    }
 
-   entry = config_get_entry(conf, "categories");
+   info->categories = config_take_string(conf, "categories");
 
-   if (entry && (entry->value && *entry->value))
+   if (info->categories)
    {
-      info->categories      = entry->value;
-      entry->value          = NULL;
 
       info->categories_list =
             string_split(info->categories, "|");
    }
 
-   entry = config_get_entry(conf, "database");
+   info->databases = config_take_string(conf, "database");
 
-   if (entry && (entry->value && *entry->value))
+   if (info->databases)
    {
-      info->databases      = entry->value;
-      entry->value         = NULL;
 
       info->databases_list =
             string_split(info->databases, "|");
    }
 
-   entry = config_get_entry(conf, "notes");
+   info->notes = config_take_string(conf, "notes");
 
-   if (entry && (entry->value && *entry->value))
+   if (info->notes)
    {
-      info->notes     = entry->value;
-      entry->value    = NULL;
 
       info->note_list =
             string_split(info->notes, "|");
    }
 
-   entry = config_get_entry(conf, "required_hw_api");
+   info->required_hw_api = config_take_string(conf, "required_hw_api");
 
-   if (entry && (entry->value && *entry->value))
+   if (info->required_hw_api)
    {
-      info->required_hw_api      = entry->value;
-      entry->value               = NULL;
 
       info->required_hw_api_list =
             string_split(info->required_hw_api, "|");
    }
 
-   entry = config_get_entry(conf, "description");
-
-   if (entry && (entry->value && *entry->value))
-   {
-      info->description = entry->value;
-      entry->value      = NULL;
-   }
+   info->description = config_take_string(conf, "description");
 
    if (config_get_bool(conf, "supports_no_game",
             &tmp_bool))
@@ -1843,7 +1920,8 @@ static void core_info_parse_config_file(
       if (tmp_bool)
       {
          /* Check if savestate features are defined */
-         entry = config_get_entry(conf, "savestate_features");
+         struct config_entry_list *entry = config_get_entry(
+               conf, "savestate_features");
 
          if (entry && (entry->value && *entry->value))
          {
@@ -1892,6 +1970,18 @@ typedef struct
    uint8_t  len;
    uint8_t  used;
 } core_info_ext_slot_t;
+
+/* The whole working set of the resolver in one piece: 4 KiB of slots
+ * plus the 8 KiB token buffer.  As two locals this was a ~12 KiB
+ * stack frame, which does not fit the 8 KiB thread stacks some
+ * console targets give the task threads this runs on -- so it is one
+ * allocation for the lifetime of the call instead.  The function runs
+ * once per core-list refresh; a single malloc is noise there. */
+typedef struct
+{
+   core_info_ext_slot_t slots[_HASH_SLOTS];
+   char                 token_buf[_TOKEN_BUF];
+} core_info_ext_scratch_t;
 
 /*
  * Inline FNV-1a hash + insert into a stack-resident hash set slot.
@@ -1948,14 +2038,16 @@ static size_t core_info_list_resolve_all_extensions(
    size_t unique_count  = 0;
    size_t total_chars   = 0;
    char  *result;
-   core_info_ext_slot_t slots[_HASH_SLOTS];
-   char                 token_buf[_TOKEN_BUF];
+   core_info_ext_scratch_t *scr = (core_info_ext_scratch_t*)
+      calloc(1, sizeof(*scr));
 
-   memset(slots, 0, sizeof(slots));
+   if (!scr)
+      return 0;
 
    /*
     * Phase 1 — parse every core's extension list, split on '|',
-    * and insert each token into the hash set. Zero heap allocations.
+    * and insert each token into the hash set. One heap allocation
+    * (the scratch itself); the token strings never leave it.
     */
    for (i = 0; i < core_info_list->count; i++)
    {
@@ -1971,25 +2063,30 @@ static size_t core_info_list_resolve_all_extensions(
             if (!tok_end)
                tok_end = end;
             tok_len = tok_end - p;
-            CORE_INFO_EXT_INSERT(p, tok_len, slots, token_buf,
-                  token_pos, _TOKEN_BUF, unique_count, total_chars,
-                  _HASH_MASK);
+            CORE_INFO_EXT_INSERT(p, tok_len, scr->slots,
+                  scr->token_buf, token_pos, _TOKEN_BUF,
+                  unique_count, total_chars, _HASH_MASK);
             p = tok_end + 1;
          }
       }
    }
 
 #ifdef HAVE_7ZIP
-   CORE_INFO_EXT_INSERT("7z", STRLEN_CONST("7z"), slots, token_buf,
-         token_pos, _TOKEN_BUF, unique_count, total_chars, _HASH_MASK);
+   CORE_INFO_EXT_INSERT("7z", STRLEN_CONST("7z"), scr->slots,
+         scr->token_buf, token_pos, _TOKEN_BUF, unique_count,
+         total_chars, _HASH_MASK);
 #endif
-#ifdef HAVE_ZLIB
-   CORE_INFO_EXT_INSERT("zip", STRLEN_CONST("zip"), slots, token_buf,
-         token_pos, _TOKEN_BUF, unique_count, total_chars, _HASH_MASK);
+#ifdef HAVE_COMPRESSION
+   CORE_INFO_EXT_INSERT("zip", STRLEN_CONST("zip"), scr->slots,
+         scr->token_buf, token_pos, _TOKEN_BUF, unique_count,
+         total_chars, _HASH_MASK);
 #endif
 
    if (unique_count == 0)
+   {
+      free(scr);
       return 0;
+   }
 
    /*
     * Phase 2 — single exactly-sized allocation for the result.
@@ -2000,21 +2097,25 @@ static size_t core_info_list_resolve_all_extensions(
    final_len = total_chars + (unique_count - 1);
    result    = (char*)malloc(final_len + 1);
    if (!result)
+   {
+      free(scr);
       return 0;
+   }
 
    pos = 0;
    for (i = 0; i < _HASH_SLOTS; i++)
    {
-      core_info_ext_slot_t *s = &slots[i];
+      core_info_ext_slot_t *s = &scr->slots[i];
       if (!s->used)
          continue;
       if (pos > 0)
          result[pos++] = '|';
-      memcpy(result + pos, token_buf + s->off, s->len);
+      memcpy(result + pos, scr->token_buf + s->off, s->len);
       pos += s->len;
    }
    result[pos] = '\0';
 
+   free(scr);
    core_info_list->all_ext = result;
    return pos;
 }
@@ -2425,9 +2526,21 @@ bool core_info_get_current_core(core_info_t **core)
 void core_info_deinit_list(void)
 {
    core_info_state_t *p_coreinfo          = &core_info_st;
-   if (p_coreinfo->curr_list)
-      core_info_list_free(p_coreinfo->curr_list);
+   core_info_list_t  *list                = NULL;
+
+   /* Detach first, free afterwards. Once the NULL store has been
+    * published under the lock no reader can reach 'list' any more
+    * (they all re-read curr_list while holding the lock), so the
+    * free itself does not need to be inside the critical section -
+    * and keeping it out means a scan thread is never blocked for
+    * the length of a full list teardown. */
+   CORE_INFO_LIST_LOCK();
+   list                  = p_coreinfo->curr_list;
    p_coreinfo->curr_list = NULL;
+   CORE_INFO_LIST_UNLOCK();
+
+   if (list)
+      core_info_list_free(list);
 }
 
 bool core_info_init_list(
@@ -2436,7 +2549,19 @@ bool core_info_init_list(
       bool enable_cache, bool *cache_supported)
 {
    core_info_state_t *p_coreinfo          = &core_info_st;
-   if (!(p_coreinfo->curr_list            = core_info_list_new(
+   core_info_list_t  *list                = NULL;
+
+#ifdef HAVE_THREADS
+   /* Main thread only, and always reached before the first list
+    * becomes visible to a task thread. */
+   if (!core_info_list_mutex)
+      core_info_list_mutex                = slock_new();
+#endif
+
+   /* Scan into a local first - the new list is private until it is
+    * published below, so the (slow) directory walk and .info parse
+    * stay outside the critical section. */
+   if (!(list                             = core_info_list_new(
                dir_cores,
                (path_info && *path_info)
                ? path_info
@@ -2445,6 +2570,39 @@ bool core_info_init_list(
                dir_show_hidden_files,
                enable_cache,
                cache_supported)))
+      return false;
+
+   CORE_INFO_LIST_LOCK();
+   p_coreinfo->curr_list                  = list;
+   CORE_INFO_LIST_UNLOCK();
+
+   /* Remember the parameters of this scan so
+    * core_info_list_is_current() can identify redundant rescans. */
+   free(core_info_last_path_info);
+   free(core_info_last_dir_cores);
+   core_info_last_path_info    = strdup(path_info ? path_info : "");
+   core_info_last_dir_cores    = strdup(dir_cores ? dir_cores : "");
+   core_info_last_show_hidden  = dir_show_hidden_files;
+   core_info_last_enable_cache = enable_cache;
+
+   return true;
+}
+
+bool core_info_list_is_current(const char *path_info,
+      const char *dir_cores, bool dir_show_hidden_files,
+      bool enable_cache)
+{
+   core_info_state_t *p_coreinfo = &core_info_st;
+   if (!p_coreinfo->curr_list)
+      return false;
+   if (   (dir_show_hidden_files != core_info_last_show_hidden)
+       || (enable_cache          != core_info_last_enable_cache))
+      return false;
+   if (!string_is_equal(path_info ? path_info : "",
+            core_info_last_path_info ? core_info_last_path_info : ""))
+      return false;
+   if (!string_is_equal(dir_cores ? dir_cores : "",
+            core_info_last_dir_cores ? core_info_last_dir_cores : ""))
       return false;
    return true;
 }
@@ -2630,6 +2788,10 @@ bool core_info_database_match_archive_member(const char *database_path)
       return false;
    path_remove_extension(database);
    p_coreinfo                     = &core_info_st;
+
+   /* Task thread reader - see the comment in
+    * core_info_database_supports_content_path(). */
+   CORE_INFO_LIST_LOCK();
    if (p_coreinfo->curr_list)
    {
       size_t i;
@@ -2644,10 +2806,12 @@ bool core_info_database_match_archive_member(const char *database_path)
          if (!string_list_find_elem(info->databases_list, database))
              continue;
 
+         CORE_INFO_LIST_UNLOCK();
          free(database);
          return true;
       }
    }
+   CORE_INFO_LIST_UNLOCK();
 
    free(database);
    return false;
@@ -2665,6 +2829,12 @@ bool core_info_database_supports_content_path(
       return false;
    path_remove_extension(database);
    p_coreinfo                    = &core_info_st;
+
+   /* Called from the content scanner on a task thread. The whole
+    * walk has to be under the lock, not just the NULL check - the
+    * main thread can free the list out from under us at any point
+    * between the two. */
+   CORE_INFO_LIST_LOCK();
    if (p_coreinfo->curr_list)
    {
       size_t i;
@@ -2680,10 +2850,12 @@ bool core_info_database_supports_content_path(
          if (!string_list_find_elem(info->databases_list, database))
             continue;
 
+         CORE_INFO_LIST_UNLOCK();
          free(database);
          return true;
       }
    }
+   CORE_INFO_LIST_UNLOCK();
 
    free(database);
    return false;
@@ -2712,8 +2884,6 @@ size_t core_info_list_get_display_name(
 core_updater_info_t *core_info_get_core_updater_info(
       const char *info_path)
 {
-   struct config_entry_list
-      *entry                 = NULL;
    bool tmp_bool             = false;
    core_updater_info_t *info = NULL;
    config_file_t *conf       = NULL;
@@ -2741,31 +2911,13 @@ core_updater_info_t *core_info_get_core_updater_info(
       info->is_experimental  = tmp_bool;
 
    /* > display_name */
-   entry                     = config_get_entry(conf, "display_name");
-
-   if (entry && entry->value && *entry->value)
-   {
-      info->display_name     = entry->value;
-      entry->value           = NULL;
-   }
+   info->display_name = config_take_string(conf, "display_name");
 
    /* > description */
-   entry                     = config_get_entry(conf, "description");
-
-   if (entry && entry->value && *entry->value)
-   {
-      info->description      = entry->value;
-      entry->value           = NULL;
-   }
+   info->description = config_take_string(conf, "description");
 
    /* > licenses */
-   entry                     = config_get_entry(conf, "license");
-
-   if (entry && entry->value && *entry->value)
-   {
-      info->licenses         = entry->value;
-      entry->value           = NULL;
-   }
+   info->licenses = config_take_string(conf, "license");
 
    /* Clean up */
    config_file_free(conf);

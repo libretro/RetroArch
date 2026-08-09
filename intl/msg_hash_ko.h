@@ -14,6 +14,7 @@
 
 static const struct
 {
+   char s_74d0bdad[23];
    char s_54d907f5[16];
    char s_9a250c33[25];
    char s_dec692c9[28];
@@ -38,6 +39,8 @@ static const struct
    char s_76fae911[44];
    char s_56581215[45];
    char s_6b45243b[11];
+   char s_43585d45[21];
+   char s_43585d53[21];
    char s_ea6df2a1[120];
    char s_bfb33e98[101];
    char s_87603f77[21];
@@ -111,6 +114,9 @@ static const struct
    char s_0e85a0d1[48];
    char s_ff583ef3_0[498];
    char s_ff583ef3_1[97];
+#ifdef ANDROID
+   char s_2bd047ef[436];
+#endif
    char s_285ad699[48];
    char s_a6f4e7fa[67];
    char s_0cd5a7bf[121];
@@ -126,6 +132,9 @@ static const struct
    char s_ceafef5e[154];
    char s_c073450a[150];
    char s_e6cd4ada[129];
+#ifdef HAVE_MICROPHONE
+   char s_86e940b7[124];
+#endif
    char s_3f5ab0a6[166];
    char s_39308167[432];
    char s_60255deb_0[500];
@@ -144,6 +153,9 @@ static const struct
    char s_4dc69fe8[501];
    char s_138c1cdf[182];
    char s_a7206ebc[120];
+#ifdef HAVE_LAKKA
+   char s_f947e37f[225];
+#endif
    char s_80558e85[273];
    char s_cb88fe26[421];
    char s_0836e741[269];
@@ -262,7 +274,9 @@ static const struct
    char s_f7e668f4[27];
    char s_f4740f16[38];
    char s_d95f1db1[45];
+   char s_3c9950ad[49];
    char s_aafc147d[17];
+   char s_734f5242[33];
    char s_792e0069[22];
    char s_a9d2227f[34];
    char s_76e73138[27];
@@ -305,7 +319,24 @@ static const struct
    char s_f0c9c4c0[24];
    char s_95a3cbcb[63];
    char s_0b7bdc29[13];
+#ifdef HAVE_LAKKA
+   char s_0d83eb84[20];
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   char s_9a57d328[31];
+#endif
+#endif
    char s_e290a5ae[13];
+#ifdef _3DS
+   char s_22a46583[34];
+   char s_a4d079f8[19];
+   char s_3f3d3a01[19];
+   char s_6651ce29[24];
+   char s_04fed26b[19];
+   char s_17813ad9[14];
+   char s_1131883a[14];
+#endif
    char s_efe3b3e1[14];
    char s_25babaa7[7];
    char s_b819d3cc[11];
@@ -499,6 +530,9 @@ static const struct
    char s_8cefb843[14];
    char s_177845b3[14];
    char s_8fe1a777[21];
+#ifdef HAVE_GAME_AI
+   char s_8dc1bc3e[10];
+#endif
    char s_881efe76[14];
    char s_1e4264a1[7];
    char s_58072ab5[34];
@@ -527,6 +561,9 @@ static const struct
    char s_87e07c0e[14];
    char s_d7f2e719[24];
    char s_e567aa86[14];
+#ifdef HAVE_MIST
+   char s_c3f0e1ff[14];
+#endif
    char s_93e2fd9c[14];
    char s_8ea1aafd[27];
    char s_8f76f01e[24];
@@ -537,6 +574,10 @@ static const struct
    char s_734d2a61[7];
    char s_a7a97316[43];
    char s_8b421107[27];
+#ifdef HAVE_MIST
+   char s_3e0f9900[14];
+   char s_67b3c923[14];
+#endif
    char s_543b5a62[27];
    char s_d1dc5a72[31];
    char s_1d9a045d[34];
@@ -571,6 +612,10 @@ static const struct
    char s_4bcbcc14[27];
    char s_e97bb565[21];
    char s_da7a38eb[21];
+#ifdef _3DS
+   char s_9db0c321[29];
+   char s_d199b625[18];
+#endif
    char s_06f25fc0[17];
    char s_0a176c2e[20];
    char s_f0ce97f7[29];
@@ -612,6 +657,11 @@ static const struct
    char s_6ebb6a00[17];
    char s_f4116974[29];
    char s_01d9ae7b[29];
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   char s_e65393d5[20];
+#endif
+#endif
    char s_c12910d3[7];
    char s_40a4eb2b[44];
    char s_92c32104[14];
@@ -674,6 +724,12 @@ static const struct
    char s_97c02a5a[26];
    char s_998d1a40[30];
    char s_c6622b4d[14];
+#ifdef HAVE_GAME_AI
+   char s_cef4e317[23];
+   char s_49a76d6a[10];
+   char s_49a76d6b[10];
+   char s_282cd511[17];
+#endif
    char s_3ca7402d[21];
    char s_5ebe01e7[21];
    char s_ad8d5812[57];
@@ -710,6 +766,9 @@ static const struct
    char s_700d45a9[26];
    char s_2a30a561[26];
    char s_6ae6f953[20];
+#ifdef ANDROID
+   char s_b573f90c[27];
+#endif
    char s_e28bc72f[13];
    char s_0b2a8528[41];
    char s_ea5757a0[14];
@@ -840,8 +899,14 @@ static const struct
    char s_e354f00a[12];
    char s_0eed526e[12];
    char s_4e61b8dd[12];
+#ifdef GEKKO
+   char s_4e706e07[17];
+#endif
    char s_803347cb[20];
    char s_6f8b74f8[17];
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+   char s_6a09c0b1[47];
+#endif
    char s_267cef24[44];
    char s_727b11f4[19];
    char s_21ec213c[47];
@@ -886,6 +951,9 @@ static const struct
    char s_d7c1d887[26];
    char s_8c49943c[14];
    char s_d2c6b214[36];
+#ifdef ANDROID
+   char s_dd65ea83[27];
+#endif
    char s_dad749ea[21];
    char s_90402655[20];
    char s_956c0935[26];
@@ -896,6 +964,13 @@ static const struct
    char s_da16c634[21];
    char s_d042d680[14];
    char s_16cacb01[14];
+#ifdef UDEV_TOUCH_SUPPORT
+   char s_3326ea36[47];
+   char s_174b92c0[47];
+   char s_fe8e5e18[47];
+   char s_9c91e6ef[50];
+   char s_f03621e7[47];
+#endif
    char s_75851363[14];
    char s_a60a77f9[35];
    char s_f07432ff[24];
@@ -913,6 +988,10 @@ static const struct
    char s_f3076af9[10];
    char s_168d155d[19];
    char s_caca90b3[26];
+   char s_c64d260f[10];
+#ifdef HAVE_LAKKA_SWITCH
+   char s_becdc648[23];
+#endif
    char s_84d3d068[13];
    char s_2ff647c2[21];
    char s_650d0e34[30];
@@ -931,6 +1010,9 @@ static const struct
    char s_e3d18a3d[23];
    char s_d15b342a[23];
    char s_fdd6e708[26];
+#ifdef HAVE_LAKKA
+   char s_d3e11c2a[26];
+#endif
    char s_cafa647f[14];
    char s_31b177ec[20];
    char s_8cb3b95f[7];
@@ -1022,11 +1104,17 @@ static const struct
    char s_9da5609f[14];
    char s_269e5dff[20];
    char s_25464734[34];
+#ifdef _3DS
+   char s_fcde5521[25];
+#endif
    char s_136eaaf4[33];
    char s_8d3a8b68[20];
    char s_68d27147[30];
    char s_f02f73fc[33];
    char s_3a0a3fef[17];
+   char s_1b6ed818[19];
+   char s_89a75c21[19];
+   char s_9439ec8b[19];
    char s_1e09db79[13];
    char s_0d2d8eef[7];
    char s_400523e5[23];
@@ -1055,6 +1143,7 @@ static const struct
    char s_d05c8ee3[20];
    char s_13bce77f[20];
    char s_1b2ee6c4[25];
+   char s_81589fd5[23];
    char s_26e9cde7[27];
    char s_b539ec6c[10];
    char s_f89e1cbc[40];
@@ -1070,8 +1159,17 @@ static const struct
    char s_ceb820ad[7];
    char s_63af41a7[23];
    char s_a4b769ca[27];
+#ifdef HAVE_MIST
+   char s_53788998[23];
+#endif
    char s_d02afc79[29];
    char s_7a2033d4[26];
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   char s_5e519829[29];
+#endif
+#endif
+   char s_a6e5d0ee[21];
    char s_f228c6c5[19];
    char s_11926382[16];
    char s_645ae416[32];
@@ -1092,7 +1190,9 @@ static const struct
    char s_d264a13e[26];
    char s_d3213ff3[32];
    char s_ac60056b[17];
+   char s_54d6b95e[10];
    char s_1ad09b45[20];
+   char s_774e2332[43];
    char s_87064238[30];
    char s_2a273dd7[31];
    char s_5e5fc0ee[25];
@@ -1102,6 +1202,7 @@ static const struct
    char s_1193e37b[41];
    char s_729a38da[21];
    char s_4ca32b24[17];
+   char s_b51fb85c[30];
    char s_9b2a97d9[17];
    char s_94ce603f[38];
    char s_0c1e1a65[43];
@@ -1116,6 +1217,32 @@ static const struct
    char s_5e8d5121[14];
    char s_b201bb70[31];
    char s_b66840e9[21];
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
+   char s_f0db2883[27];
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
+   char s_d0fb22cb[17];
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+   char s_d1df7807[10];
+   char s_d3e78762[10];
+   char s_b4868136[29];
+   char s_4eb68c0b[29];
+   char s_35324f11[23];
+   char s_ca9a92ae[30];
+   char s_d04ab10c[10];
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+   char s_e501ec1b[21];
+   char s_5a6c78fd[30];
+   char s_73295c14[28];
+#endif
+#endif
    char s_fd726b56[18];
    char s_8be7813a[7];
    char s_1757647b[7];
@@ -1205,6 +1332,9 @@ static const struct
    char s_ce445b41[43];
    char s_87d88aa2[13];
    char s_aadf6541[42];
+#ifdef _3DS
+   char s_4b1915d7[33];
+#endif
    char s_c3168ee5[10];
    char s_e2f5e678[7];
    char s_e53de5dd[36];
@@ -1514,6 +1644,10 @@ static const struct
    char s_e5a649a5[17];
    char s_5633a523[75];
    char s_6d0ae29b[7];
+#ifdef HAVE_QT
+   char s_974d8c3a_0[499];
+   char s_974d8c3a_1[167];
+#endif
    char s_21083aca[14];
    char s_213b38be[14];
    char s_490eddc7[14];
@@ -1547,6 +1681,9 @@ static const struct
    char s_a6efd66c[19];
    char s_f8b4c7cd[36];
    char s_6d24f146[35];
+#ifdef HAVE_GAME_AI
+   char s_1ff7947b[19];
+#endif
    char s_3fa8bb7e[16];
    char s_ab4776a4[23];
    char s_ae4fb605[32];
@@ -1740,6 +1877,9 @@ static const struct
    char s_addc7f89[77];
 #endif
 #endif
+#ifdef HAVE_LAKKA
+   char s_ec2fae92[13];
+#endif
    char s_8dec52be[60];
    char s_8fa632ab[17];
    char s_7614d29f[53];
@@ -1816,6 +1956,9 @@ static const struct
    char s_b160f7a1[23];
    char s_cd5ff0f5[16];
    char s_8b92e740[16];
+#ifdef HAVE_SMBCLIENT
+   char s_e2415d78[29];
+#endif
    char s_aeef8db2[15];
    char s_14d20957[19];
    char s_f4ad0f27[35];
@@ -1844,6 +1987,21 @@ static const struct
    char s_01a73130[28];
    char s_44ebca0d[21];
    char s_608ac5a1[20];
+#ifdef HAVE_SMBCLIENT
+   char s_3839f91d[18];
+   char s_86b07599[18];
+   char s_8d5f85ee[27];
+   char s_9b023eee[22];
+   char s_ccae82ba[17];
+   char s_ad6e88de[11];
+   char s_c7bc8298[24];
+   char s_e63b035a[18];
+   char s_d21d875b[11];
+   char s_ae86fed0[33];
+   char s_b12ae22e[17];
+   char s_b2d073c7[17];
+   char s_1cbc2657[17];
+#endif
    char s_e2ffc38b[67];
    char s_9d7898f7[58];
    char s_00ea07cc[60];
@@ -1851,6 +2009,9 @@ static const struct
    char s_369df8fa[60];
    char s_467f06c1[7];
    char s_084af156[7];
+#ifdef HAVE_LAKKA
+   char s_4338da9c[11];
+#endif
    char s_7d65b67e[14];
    char s_d7fc4c9c[23];
    char s_9247a1b5[16];
@@ -1859,6 +2020,16 @@ static const struct
    char s_a35a9e13[14];
    char s_8406d44c[7];
    char s_64a91b83[13];
+#ifdef HAVE_MIST
+   char s_943e9be1[28];
+   char s_96af5ce3[38];
+   char s_6889b69d[10];
+   char s_262290e5[26];
+   char s_5f12b2a1[29];
+   char s_4efdaf69[45];
+   char s_cf0912eb[14];
+   char s_dba1ce27[17];
+#endif
    char s_206b1acd[13];
    char s_b00e1e16[20];
    char s_b24d8753[20];
@@ -1869,7 +2040,20 @@ static const struct
    char s_9374b989[14];
    char s_7943e750[30];
    char s_cec8f66d[24];
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   char s_d3fa66ea[11];
+#endif
+#endif
+#ifdef HAVE_LIBNX
+   char s_09902e71[17];
+#endif
    char s_ea80654d[45];
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   char s_37eb8e31[17];
+#endif
+#endif
    char s_be8e02b4[44];
    char s_002e83c8[21];
    char s_6a739141[23];
@@ -1885,6 +2069,7 @@ static const struct
    char s_519cd5f8[19];
    char s_43ac80a0[11];
    char s_6959ce80[13];
+   char s_886631ec[16];
    char s_ebe994b4[7];
    char s_1c62c301[10];
    char s_a8bb35b6[11];
@@ -1907,6 +2092,9 @@ static const struct
    char s_9dcc1f02[17];
    char s_49f54c1b[21];
    char s_ccf131c5[24];
+#ifdef HAVE_LAKKA
+   char s_597f7f13[10];
+#endif
    char s_89cbf597[14];
    char s_6bcbf80c[4];
    char s_f92cf1f5[4];
@@ -1964,6 +2152,10 @@ static const struct
    char s_c512fde9[44];
    char s_2b39eb60[29];
    char s_e8636306[22];
+#ifdef _3DS
+   char s_c54d8fa1[18];
+   char s_f069ce0e[18];
+#endif
    char s_d6fb8efe[24];
    char s_2f86932b[14];
    char s_b2f7627c[34];
@@ -1984,6 +2176,23 @@ static const struct
 #ifdef HAVE_ODROIDGO2
 #else
    char s_e07e844d[34];
+#endif
+#if defined(DINGUX)
+   char s_bfd4c6ef[16];
+   char s_ce997004[19];
+   char s_52153570[17];
+   char s_805730a0[17];
+   char s_d374d67d[21];
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+   char s_f98e1e26[10];
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   char s_5a03a511[10];
+   char s_fec3d9e4[17];
+   char s_c1e9447c[17];
+#endif
 #endif
    char s_f4341e25[40];
    char s_cc973e8a[23];
@@ -2018,6 +2227,7 @@ static const struct
    char s_bfa23080[7];
    char s_723d3966[7];
    char s_ec326380[10];
+   char s_8a86d1de[14];
    char s_8fc1e4da[4];
    char s_14ed14d0[7];
    char s_5c87e95b[13];
@@ -2061,6 +2271,9 @@ static const struct
    char s_c0cdc638[10];
    char s_afd69a70[30];
    char s_22735e37[34];
+#ifdef HAVE_ODROIDGO2
+   char s_05359d58[18];
+#endif
    char s_6c40d14e[14];
    char s_b0fa9d95[7];
    char s_fb9fb1b5[7];
@@ -2106,6 +2319,10 @@ static const struct
    char s_48431da6[10];
    char s_21d7a1f6[7];
    char s_d2fe3ed2[20];
+   char s_1edf58ee[21];
+   char s_d74474ce[9];
+   char s_541958e5[8];
+   char s_ba3e4ee6[7];
    char s_45816e1d[31];
    char s_c017f975[7];
    char s_730df420[10];
@@ -2113,6 +2330,10 @@ static const struct
    char s_258060bf[33];
    char s_f90edcc2[49];
    char s_ad14307a[13];
+#if defined(RARCH_MOBILE)
+   char s_774121c7[51];
+   char s_774121c8[51];
+#endif
    char s_b0fb58d3[35];
    char s_b0fb58d4[35];
    char s_92a02470[27];
@@ -2122,6 +2343,11 @@ static const struct
    char s_6a9b757c[21];
    char s_6c52dfb1[25];
    char s_9119ef97[27];
+#if defined (WIIU)
+#ifdef WIIU
+   char s_afb881f7[53];
+#endif
+#endif
    char s_84c46931[24];
    char s_ebf10493[11];
    char s_a64b3a0b[18];
@@ -2140,6 +2366,7 @@ static const struct
    char s_e0609921[13];
    char s_b3c7fa93[23];
    char s_f6a0db44[23];
+   char s_4eecff92[34];
    char s_0ca1128d[24];
    char s_65e6ea7c[7];
    char s_7b4dd5b5[7];
@@ -2190,9 +2417,15 @@ static const struct
    char s_f4b6d13e[27];
    char s_25e89959[4];
    char s_a7468d68[22];
+   char s_b1d6fea6[11];
    char s_aa0659db[20];
    char s_49757b91[20];
    char s_660eb9c4[20];
+   char s_b6ca9df2[21];
+#if defined(RARCH_MOBILE)
+   char s_b754294b[51];
+   char s_b754294c[51];
+#endif
    char s_9ca4bbd7[35];
    char s_9ca4bbd8[35];
    char s_5508c468[58];
@@ -2237,7 +2470,11 @@ static const struct
    char s_daf6d7e2[47];
    char s_042502c4[64];
    char s_90ae9a9f[125];
+   char s_81b79d5b_0[500];
+   char s_81b79d5b_1[212];
    char s_c9235dab[60];
+   char s_330be970_0[498];
+   char s_330be970_1[182];
    char s_98b02857[256];
    char s_6c3c586d[205];
    char s_950e7a66[40];
@@ -2264,7 +2501,24 @@ static const struct
    char s_f6adf4ee[54];
    char s_9b87fbf9[133];
    char s_29a32557[65];
+#ifdef HAVE_LAKKA
+   char s_2bab34b2[40];
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   char s_aa08c6d6[121];
+#endif
+#endif
    char s_27aef25c[53];
+#ifdef _3DS
+   char s_2873cef1[122];
+   char s_b4816da6[54];
+   char s_450ca36f[54];
+   char s_1da14b17[57];
+   char s_c7690859[54];
+   char s_5c9f8787[179];
+   char s_f441f728[58];
+#endif
    char s_3502008f[37];
    char s_a49df80f[73];
    char s_986d445e[73];
@@ -2389,6 +2643,9 @@ static const struct
    char s_a607c53c[46];
    char s_35f24807[274];
    char s_c8781974[126];
+#ifdef HAVE_MIST
+   char s_c9c04b6d[70];
+#endif
    char s_daa8dfca[40];
    char s_d3bff7ab[220];
    char s_d4953ccc[70];
@@ -2435,6 +2692,11 @@ static const struct
    char s_ccbacaee[114];
    char s_d721d862[80];
    char s_ef4a2ca9[79];
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   char s_043f1283[60];
+#endif
+#endif
    char s_a8b02d9a[156];
    char s_8a8a4bd7[217];
    char s_aa30afc7[63];
@@ -2451,6 +2713,12 @@ static const struct
    char s_e531c55e[163];
    char s_deab66ee[142];
    char s_5ce79fca[188];
+#ifdef HAVE_GAME_AI
+   char s_b7dcc585[30];
+   char s_328f4fd8[25];
+   char s_328f4fd9[25];
+   char s_6d4b21bf[17];
+#endif
    char s_6563cb1b[70];
    char s_877a8cd5[70];
    char s_6ff78e00[67];
@@ -2472,6 +2740,9 @@ static const struct
    char s_5c8a1d63[141];
    char s_744c0f80[84];
    char s_2aa39081[50];
+#ifdef ANDROID
+   char s_50f43cfa[312];
+#endif
    char s_e85b309d[101];
    char s_cd94bb16[241];
    char s_a17a67e1[77];
@@ -2560,6 +2831,12 @@ static const struct
    char s_12adb1e7[57];
    char s_070529d4[57];
    char s_30d1fc05[56];
+#ifdef GEKKO
+   char s_3180dcf5[55];
+#endif
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+   char s_2c73f69f[73];
+#endif
    char s_13ed6d52[116];
    char s_ad9b9762[137];
    char s_623a09ea[144];
@@ -2570,6 +2847,9 @@ static const struct
    char s_bc47004d[73];
    char s_980b7c0a[91];
    char s_cc27d9d1[128];
+#if defined(ANDROID)
+   char s_8b6fbb71[163];
+#endif
    char s_9f1584c0[143];
    char s_791ba074[212];
    char s_8dcc2dac[81];
@@ -2597,6 +2877,9 @@ static const struct
    char s_dda608b5[334];
    char s_6f5a032a[54];
    char s_9530e802[96];
+#ifdef ANDROID
+   char s_e8eeac31[80];
+#endif
    char s_e0bb7a18[211];
    char s_a18eb603[43];
    char s_d5b9f1e3[49];
@@ -2604,6 +2887,13 @@ static const struct
    char s_6a44b3af[72];
    char s_a7d61696[58];
    char s_f9db39ef[106];
+#ifdef UDEV_TOUCH_SUPPORT
+   char s_d46604e4[103];
+   char s_d70829ee[67];
+   char s_9fcd78c6[78];
+   char s_65b4575d[123];
+   char s_dda6a015[157];
+#endif
    char s_b5bb6ba7[149];
    char s_0e9b7c2d[126];
    char s_2447fa4c[76];
@@ -2617,6 +2907,9 @@ static const struct
    char s_eaa7274b[44];
    char s_10994fc9[122];
    char s_bde8a108[65];
+#ifdef HAVE_LAKKA_SWITCH
+   char s_c4b1f676[50];
+#endif
    char s_a2fb1996[79];
    char s_394e4cd7[53];
    char s_ba790123[153];
@@ -2629,6 +2922,9 @@ static const struct
    char s_c6e1f92b[40];
    char s_2f5a9518[132];
    char s_1bc265b6[70];
+#ifdef HAVE_LAKKA
+   char s_e3a841d8[46];
+#endif
    char s_dac18a2d[59];
    char s_3a5d535a[59];
    char s_aadb028d[34];
@@ -2664,6 +2960,9 @@ static const struct
    char s_b3c6310f[78];
    char s_b1305e15[60];
    char s_2b2a7762[88];
+#ifdef _3DS
+   char s_02c2854f[51];
+#endif
    char s_193e1462[48];
    char s_6895dfd6[59];
    char s_788364f5[68];
@@ -2694,6 +2993,7 @@ static const struct
    char s_87ac0bd1[77];
    char s_236ddb2d[91];
    char s_d27e63b2[221];
+   char s_2297ba83[328];
    char s_32728f95[84];
    char s_c4eae01a[147];
    char s_bb0852aa[241];
@@ -2706,8 +3006,17 @@ static const struct
    char s_ee3a489b[41];
    char s_236bd8d5[63];
    char s_87c7d8b8[162];
+#ifdef HAVE_MIST
+   char s_40e907c6[60];
+#endif
    char s_dfdbf027[101];
    char s_63081642[63];
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   char s_6435c857[66];
+#endif
+#endif
+   char s_acca011c[100];
    char s_01efec73[56];
    char s_d3fc9970[53];
    char s_740bd7c4[69];
@@ -2723,7 +3032,9 @@ static const struct
    char s_aebcb136[195];
    char s_8b636a26[41];
    char s_8f707459[48];
+   char s_5aa622cc[213];
    char s_2b908073[232];
+   char s_64bea160[239];
    char s_97c62766[182];
    char s_6f458a85[120];
    char s_41702fdc[74];
@@ -2731,6 +3042,7 @@ static const struct
    char s_0a583569[109];
    char s_5b821b48[64];
    char s_5c6a50d2[137];
+   char s_c4d0ac0a[46];
    char s_84127a47[92];
    char s_a47f53ed[129];
    char s_cbdab193[278];
@@ -2739,7 +3051,33 @@ static const struct
    char s_70e21550[69];
    char s_f3e3ccc1[66];
    char s_0ca85937[56];
+   char s_23709d35[74];
+   char s_48b0d8fa[51];
    char s_9ce2f939[80];
+   char s_20f7870f[71];
+   char s_ed2240de[51];
+   char s_51e884d7[83];
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
+   char s_b40b91b9[124];
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+   char s_b4efe6f5[62];
+   char s_b6f7f650[171];
+   char s_76f0b724[118];
+   char s_93d4d8b9[159];
+   char s_fe54bf7f[56];
+   char s_b80b10dc[204];
+   char s_b932937a[44];
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+   char s_f5c1d149[176];
+   char s_65f53aab[114];
+   char s_b37744c2[112];
+#endif
+#endif
    char s_d8cdbfc4[57];
    char s_a9d2ffe8[34];
    char s_f2b2b8e9[34];
@@ -2789,6 +3127,9 @@ static const struct
    char s_7279e585[79];
    char s_8bb9f63a[136];
    char s_a5ffd3d0[44];
+#ifdef _3DS
+   char s_0d834bc5[65];
+#endif
    char s_d2ae640b[85];
    char s_8e5bac99[94];
    char s_28a346d2[70];
@@ -2899,6 +3240,9 @@ static const struct
    char s_66ac6d9a[39];
    char s_3902b07b[91];
    char s_b72fefb4[90];
+#ifdef HAVE_GAME_AI
+   char s_25c6fde9[39];
+#endif
    char s_08cb2bec[36];
    char s_b116e012[43];
    char s_be00a9b3[61];
@@ -2982,6 +3326,9 @@ static const struct
    char s_96c461f7[125];
 #endif
 #endif
+#ifdef HAVE_LAKKA
+   char s_32f590c0[60];
+#endif
    char s_0a8d4a2c[73];
    char s_d4c47f59[138];
    char s_86d4b7cd[73];
@@ -3018,6 +3365,9 @@ static const struct
    char s_c2d7c9a8[52];
    char s_42bb4ac1[53];
    char s_0e0af329[61];
+#ifdef HAVE_LAKKA
+   char s_96ceb12a[40];
+#endif
    char s_e8aee6c7[33];
    char s_9754ee6e[39];
    char s_59a0ee82[42];
@@ -3038,6 +3388,9 @@ static const struct
    char s_bce9b94f[43];
    char s_d32f5a63[36];
    char s_9177176e[36];
+#ifdef HAVE_SMBCLIENT
+   char s_a1fdf4a6[49];
+#endif
    char s_97d77020[35];
    char s_59f05605[39];
    char s_e21d8d55[55];
@@ -3052,18 +3405,53 @@ static const struct
    char s_4b009af3[40];
    char s_46c57dde[67];
    char s_7eb20ecf[77];
+#ifdef HAVE_SMBCLIENT
+   char s_3e1e294b[66];
+   char s_69c0e487[57];
+   char s_706ff4dc[238];
+   char s_a0d1a85c[70];
+   char s_b5966528[40];
+   char s_907ef7cc[50];
+   char s_b0a46506[51];
+   char s_04624c88[50];
+   char s_91976dbe[51];
+   char s_f6492edc[52];
+   char s_9bb85635[40];
+   char s_22a05685[47];
+#endif
    char s_f3bfa8b9[106];
    char s_5fe2cee5[73];
    char s_29a692ba[112];
    char s_4b99ff86[77];
    char s_76ebe1a8[112];
+#ifdef HAVE_LAKKA
+   char s_6124594a[59];
+#endif
    char s_9b51352c[44];
    char s_12510638[50];
    char s_ac067981[50];
    char s_82d064b1[66];
+#ifdef HAVE_MIST
+   char s_357db68f[73];
+   char s_37ee7791[67];
+   char s_32956bc0[40];
+#endif
    char s_c50aa955[63];
    char s_1a8301fe[56];
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   char s_b70ad5d8[59];
+#endif
+#endif
+#ifdef HAVE_LIBNX
+   char s_4eae7b1f[41];
+#endif
    char s_8bbf7ffb[161];
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   char s_5612d75f[37];
+#endif
+#endif
    char s_e74a8da2[74];
    char s_889ada6f[82];
    char s_ffd591e0[44];
@@ -3076,6 +3464,9 @@ static const struct
    char s_a39b8870[138];
    char s_52a12789[55];
    char s_dcb85773[64];
+#ifdef HAVE_LAKKA
+   char s_f77f7a41[87];
+#endif
    char s_e7cb5685[60];
    char s_2beab583[38];
    char s_a1c071eb[88];
@@ -3094,6 +3485,10 @@ static const struct
    char s_17e15f27[130];
    char s_adc676fb[68];
    char s_c6e32f19[153];
+#ifdef _3DS
+   char s_d4fe834f[207];
+   char s_f64dfe3c[125];
+#endif
    char s_dcdfbf2c[243];
    char s_74a4dfd9[158];
    char s_f815af2a[62];
@@ -3106,6 +3501,18 @@ static const struct
 #ifdef HAVE_ODROIDGO2
 #else
    char s_c38ef33b[80];
+#endif
+#if defined(DINGUX)
+   char s_6dc7aece[257];
+   char s_c0e554ab[156];
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+   char s_b0dd9b14[145];
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   char s_eaa5cf6a[170];
+#endif
 #endif
    char s_ab839b13[163];
    char s_135d20b8[62];
@@ -3132,6 +3539,8 @@ static const struct
    char s_698d5124[106];
    char s_7e43d750[272];
    char s_87ca7bc6[214];
+   char s_cfa51e8c_0[498];
+   char s_cfa51e8c_1[87];
    char s_b62c2f7e[462];
    char s_456fcbc9[354];
    char s_82fab47a[41];
@@ -3157,6 +3566,9 @@ static const struct
    char s_05ec12e6[172];
    char s_b5a603de[54];
    char s_d9c2db25[69];
+#ifdef HAVE_ODROIDGO2
+   char s_e8460c46[103];
+#endif
    char s_7c07f6fc[98];
    char s_36667d81[142];
    char s_eec252b5[195];
@@ -3191,10 +3603,15 @@ static const struct
    char s_3c679f0a[332];
    char s_5b059407[170];
    char s_36033606[245];
+   char s_d62ed5dc[467];
    char s_2e69508b[400];
    char s_7e96b5ce[47];
    char s_3547866d[169];
    char s_c2314d30[265];
+#if defined(RARCH_MOBILE)
+   char s_82c9e375[196];
+   char s_82c9e376[196];
+#endif
    char s_73658ec1[180];
    char s_73658ec2[180];
    char s_8010a29e[102];
@@ -3203,6 +3620,11 @@ static const struct
    char s_9506fc7e[98];
    char s_47ae341f[129];
    char s_48696c85[91];
+#if defined (WIIU)
+#ifdef WIIU
+   char s_7222b7e5[132];
+#endif
+#endif
    char s_3c13e61f[119];
    char s_d96182c1[38];
    char s_93bbb839[116];
@@ -3219,6 +3641,7 @@ static const struct
    char s_6ac06624[196];
    char s_f765b650[58];
    char s_7059a595[53];
+   char s_6d1448c0[60];
    char s_cf0b487b[121];
    char s_840f4569[44];
    char s_c4928773[54];
@@ -3230,6 +3653,15 @@ static const struct
    char s_1ba1d249[91];
    char s_57dccf4f[100];
    char s_fa863aac[76];
+#ifdef _3DS
+   char s_33e06527[28];
+   char s_a69ccdc1[33];
+   char s_f099647c[26];
+   char s_f56f24f2[17];
+   char s_0c6847bc[20];
+   char s_3d02018d[13];
+   char s_5c75e18b[26];
+#endif
    char s_007587a5[74];
    char s_52c66e88[20];
    char s_63a238b1[26];
@@ -3353,6 +3785,11 @@ static const struct
    char s_fb59e491[23];
    char s_96e03bed[33];
    char s_824867fd[69];
+#ifdef HAVE_MIST
+   char s_30512c09[36];
+   char s_35b60281[20];
+   char s_91e3840f[54];
+#endif
    char s_e5668863[29];
    char s_0638fe80[66];
    char s_902526ad[51];
@@ -3522,6 +3959,14 @@ static const struct
    char s_e8e6cf09[30];
    char s_9033e61a[40];
    char s_d16f3816[7];
+#ifdef HAVE_LAKKA
+   char s_7924d728[56];
+   char s_1f2be238[68];
+   char s_f250153f[86];
+   char s_0e086f97[49];
+   char s_f279fcb2[64];
+   char s_8b487430[46];
+#endif
    char s_a602dd84[54];
    char s_aa7139c6[84];
    char s_4ae9f9f9[74];
@@ -3755,9 +4200,15 @@ static const struct
    char s_5876788a[62];
    char s_b7248c5d[59];
    char s_a7ae1b42[48];
+#ifdef HAVE_LAKKA
+   char s_ebacf443[25];
+   char s_02938696[34];
+   char s_6f6d5b5a[14];
+#endif
    char s_2dbb6496[21];
 } msg_hash_ko_blob =
 {
+   "AI \354\204\234\353\271\204\354\212\244 \353\260\261\354\227\224\353\223\234",
    "\354\227\220\353\256\254\353\240\210\354\235\264\355\204\260",
    "1-bit, \354\265\234\353\214\200 \352\260\222 = 0x01",
    "16-bit, \354\265\234\353\214\200 \352\260\222 = 0xFFFF",
@@ -3786,6 +4237,8 @@ static const struct
    "\352\260\222 != \353\251\224\353\252\250\353\246\254 \354\235\274\354\213\234 \353\213\244\354"
    "\235\214 \354\271\230\355\212\270 \354\213\244\355\226\211",
    "\352\260\222 \354\247\200\354\240\225",
+   "\354\210\230\353\217\231 \352\260\200\353\241\234 \355\214\250\353\224\251",
+   "\354\210\230\353\217\231 \354\204\270\353\241\234 \355\214\250\353\224\251",
    "RetroAchievements \354\204\234\353\262\204\354\227\220 \354\227\260\352\262\260\355\225\240 \354"
    "\210\230 \354\227\206\354\212\265\353\213\210\353\213\244. \354\204\261\352\263\265\355\225\230"
    "\352\261\260\353\202\230 \354\225\261\354\235\264 \353\213\253\355\236\220 \353\225\214\352\271"
@@ -4144,6 +4597,25 @@ static const struct
    "\270 \353\251\224\353\211\264\354\235\230 '\354\273\250\355\212\270\353\241\244' \355\225\230"
    "\354\234\204 \353\251\224\353\211\264\353\245\274 \353\214\200\354\213\240 \354\202\254\354\232"
    "\251\355\225\264\354\225\274 \355\225\251\353\213\210\353\213\244.",
+#ifdef ANDROID
+   "\353\247\214\354\235\274 RetroArch\352\260\200 \355\225\230\353\223\234\354\233\250\354\226\264 "
+   "\355\202\244\353\263\264\353\223\234\353\245\274 \352\262\214\354\236\204\355\214\250\353\223"
+   "\234\353\241\234 \354\235\270\354\213\235\355\225\240 \352\262\275\354\232\260, \354\235\264 "
+   "\354\204\244\354\240\225\354\235\204 \355\231\234\354\204\261\355\231\224\355\225\264 RetroArch"
+   "\352\260\200 \354\236\230\353\252\273 \354\235\270\354\213\235\353\220\234 \355\225\264\353\213"
+   "\271 \354\236\245\354\271\230\353\245\274 \355\202\244\353\263\264\353\223\234\354\235\270 \352"
+   "\262\203\354\262\230\353\237\274 \353\213\244\353\243\250\353\217\204\353\241\235 \352\260\225"
+   "\354\240\234\355\225\240 \354\210\230 \354\236\210\354\212\265\353\213\210\353\213\244.\n\354"
+   "\235\264 \354\204\244\354\240\225\354\235\200 Android TV \354\236\245\354\271\230\354\227\220"
+   "\354\204\234 \354\273\264\355\223\250\355\204\260\353\245\274 \354\227\220\353\256\254\353\240"
+   "\210\354\235\264\355\212\270\355\225\230\353\240\244 \355\225\230\353\212\224\353\215\260 \354"
+   "\236\245\354\271\230\354\227\220 \354\247\201\354\240\221 \354\227\260\352\262\260 \352\260\200"
+   "\353\212\245\355\225\234 \353\254\274\353\246\254\354\240\201 \355\202\244\353\263\264\353\223"
+   "\234\352\260\200 \354\241\264\354\236\254\355\225\240 \352\262\275\354\232\260 \353\223\261\354"
+   "\235\230 \354\203\201\355\231\251\354\227\220\354\204\234 \354\234\240\354\232\251\355\225\230"
+   "\352\262\214 \354\202\254\354\232\251\353\220\240 \354\210\230 \354\236\210\354\212\265\353\213"
+   "\210\353\213\244.",
+#endif
    "DirectInput \354\273\250\355\212\270\353\241\244\353\237\254 \353\223\234\353\235\274\354\235"
    "\264\353\262\204\354\236\205\353\213\210\353\213\244.",
    "\353\202\256\354\235\200 \354\210\230\354\244\200 \355\234\264\353\250\274 \354\235\270\355\204"
@@ -4255,6 +4727,13 @@ static const struct
    "\354\212\265\354\235\230 RetroArch GUI\354\236\205\353\213\210\353\213\244. Ozone\352\263\274 "
    "\352\260\231\354\235\200 \352\270\260\353\212\245\354\235\204 \354\240\234\352\263\265\355\225"
    "\251\353\213\210\353\213\244.",
+#ifdef HAVE_MICROPHONE
+   "\353\247\210\354\235\264\355\201\254 \353\223\234\353\235\274\354\235\264\353\262\204\352\260"
+   "\200 \354\202\254\354\232\251\355\225\240 \352\270\260\353\263\270 \354\236\205\353\240\245 \354"
+   "\236\245\354\271\230\353\245\274 \354\204\244\354\240\225\355\225\251\353\213\210\353\213\244. "
+   "\354\235\264 \354\230\265\354\205\230\354\235\200 \353\223\234\353\235\274\354\235\264\353\262"
+   "\204 \354\242\205\354\206\215\354\240\201\354\236\205\353\213\210\353\213\244.",
+#endif
    "\354\236\205\353\240\245 \354\236\245\354\271\230(\353\223\234\353\235\274\354\235\264\353\262"
    "\204 \355\212\271\354\240\225)\353\245\274 \354\204\244\354\240\225\355\225\251\353\213\210\353"
    "\213\244. '\352\272\274\354\247\220'\354\234\274\353\241\234 \354\204\244\354\240\225\355\225"
@@ -4447,6 +4926,17 @@ static const struct
    "\230\244 \353\223\234\353\235\274\354\235\264\353\262\204\354\227\220\354\204\234 \353\260\230"
    "\353\223\234\354\213\234 \353\224\260\353\245\274 \355\225\204\354\232\224\354\227\206\353\212"
    "\224 \355\236\214\355\212\270\354\236\205\353\213\210\353\213\244.",
+#ifdef HAVE_LAKKA
+   "\354\202\254\354\232\251 \352\260\200\353\212\245\355\225\234 \354\213\234\352\260\204\353\214"
+   "\200 \353\252\251\353\241\235\354\235\204 \355\221\234\354\213\234\355\225\251\353\213\210\353"
+   "\213\244. \354\213\234\352\260\204\353\214\200\353\245\274 \354\204\240\355\203\235\355\225\230"
+   "\353\251\264, \354\213\234\352\260\204\352\263\274 \353\202\240\354\247\234\352\260\200 \354\204"
+   "\240\355\203\235\355\225\234 \354\213\234\352\260\204\353\214\200\354\227\220 \353\247\236\354"
+   "\266\260 \354\241\260\354\240\225\353\220\251\353\213\210\353\213\244. \354\213\234\354\212\244"
+   "\355\205\234/\355\225\230\353\223\234\354\233\250\354\226\264 \354\213\234\352\260\204\354\235"
+   "\264 UTC\354\227\220 \353\247\236\354\266\260\354\240\270 \354\236\210\353\213\244\352\263\240 "
+   "\352\260\200\354\240\225\355\225\251\353\213\210\353\213\244.",
+#endif
    "\353\221\220 \352\260\234\354\235\230 \353\262\204\355\212\274\354\235\204 \354\202\254\354\232"
    "\251\355\225\230\353\212\224 \355\201\264\353\236\230\354\213\235 \353\252\250\353\223\234\354"
    "\236\205\353\213\210\353\213\244. \354\233\220\355\225\230\353\212\224 \353\262\204\355\212\274"
@@ -4976,7 +5466,11 @@ static const struct
    "\244 \354\235\214\354\206\214\352\261\260",
    "\353\271\250\353\246\254 \352\260\220\352\270\260 \354\244\221 \354\230\244\353\224\224\354\230"
    "\244\353\217\204 \353\271\250\353\246\254 \352\260\220\352\270\260",
+   "\352\263\240\354\240\225 \354\240\225\354\210\230 \352\260\222\354\234\274\353\241\234 \353\246"
+   "\254\354\203\230\355\224\214\355\225\230\352\270\260 (\355\236\214\355\212\270)",
    "\354\230\244\353\224\224\354\230\244 \355\225\204\355\204\260",
+   "\354\230\244\353\224\224\354\230\244 \355\230\225\354\213\235 \355\230\221\354\203\201 (\355\236"
+   "\214\355\212\270)",
    "\354\230\244\353\224\224\354\230\244 \354\247\200\354\227\260 (ms)",
    "\354\230\244\353\224\224\354\230\244 \354\265\234\353\214\200 \355\203\200\354\235\264\353\260"
    "\215 \354\231\234\352\263\241",
@@ -5033,7 +5527,26 @@ static const struct
    "\254\354\230\254 \353\225\214 SaveRAM \353\215\256\354\226\264\354\223\260\354\247\200 \354\225"
    "\212\352\270\260",
    "\353\270\224\353\243\250\355\210\254\354\212\244",
+#ifdef HAVE_LAKKA
+   "\353\270\224\353\243\250\355\210\254\354\212\244 \354\202\254\354\232\251",
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   "\353\270\224\353\243\250\355\210\254\354\212\244 ERTM \353\271\204\355\231\234\354\204\261\355"
+   "\231\224",
+#endif
+#endif
    "\353\270\224\353\243\250\355\210\254\354\212\244",
+#ifdef _3DS
+   "\354\225\204\353\236\230 \355\231\224\353\251\264 \354\225\240\354\205\213 \353\224\224\353\240"
+   "\211\355\206\240\353\246\254",
+   "\355\217\260\355\212\270 \354\203\211: \355\214\214\353\236\221",
+   "\355\217\260\355\212\270 \354\203\211: \354\264\210\353\241\235",
+   "\355\217\260\355\212\270 \354\203\211 \353\266\210\355\210\254\353\252\205\353\217\204",
+   "\355\217\260\355\212\270 \354\203\211: \353\271\250\352\260\225",
+   "\355\217\260\355\212\270 \354\202\254\354\232\251",
+   "\355\217\260\355\212\270 \355\201\254\352\270\260",
+#endif
    "\355\231\224\353\251\264 \353\260\235\352\270\260",
    "\354\213\234\354\236\221",
    "URL \352\262\275\353\241\234",
@@ -5291,6 +5804,9 @@ static const struct
    "\354\275\224\354\226\264 \354\202\255\354\240\234",
    "\353\260\261\354\227\205 \354\202\255\354\240\234",
    "\354\275\224\354\226\264 \354\235\264\353\246\204 \355\221\234\354\213\234",
+#ifdef HAVE_GAME_AI
+   "\352\262\214\354\236\204 AI",
+#endif
    "\354\275\224\354\226\264 \354\240\225\353\263\264",
    "\354\240\200\354\236\220",
    "\354\275\224\354\226\264 \354\240\225\353\263\264 \355\214\214\354\235\274 \354\272\220\354\213"
@@ -5328,6 +5844,9 @@ static const struct
    "\354\275\224\354\226\264 \353\213\253\352\270\260",
    "\354\204\244\354\271\230\353\220\234 \354\275\224\354\226\264 \354\236\240\352\270\210",
    "\354\275\224\354\226\264 \352\264\200\353\246\254",
+#ifdef HAVE_MIST
+   "\354\275\224\354\226\264 \352\264\200\353\246\254",
+#endif
    "\354\275\224\354\226\264 \354\230\265\354\205\230",
    "\354\230\265\354\205\230 \353\224\224\354\212\244\355\201\254\354\227\220 \354\240\200\354\236"
    "\245",
@@ -5342,6 +5861,10 @@ static const struct
    "\211\264\354\227\220\354\204\234 \354\240\234\354\231\270",
    "\354\236\220\353\217\231\354\234\274\353\241\234 \354\275\224\354\226\264 \354\213\234\354\236"
    "\221",
+#ifdef HAVE_MIST
+   "\354\275\224\354\226\264 \354\204\244\354\271\230",
+   "\354\275\224\354\226\264 \354\202\255\354\240\234",
+#endif
    "\355\225\255\354\203\201 \354\275\224\354\226\264 \354\240\234\354\225\210\355\225\230\352\270"
    "\260",
    "\354\227\205\353\215\260\354\235\264\355\212\270 \354\213\234 \354\275\224\354\226\264 \353\260"
@@ -5386,6 +5909,10 @@ static const struct
    "\250",
    "\354\204\270\353\241\234 \354\244\221\354\225\231 \354\240\225\353\240\254",
    "\352\260\200\353\241\234 \354\244\221\354\225\231 \354\240\225\353\240\254",
+#ifdef _3DS
+   "2D (\355\224\275\354\205\200 \352\267\270\353\246\254\353\223\234 \355\232\250\352\263\274)",
+   "2D (\352\263\240\355\225\264\354\203\201\353\217\204)",
+#endif
    "\354\273\244\354\204\234 \353\247\244\353\213\210\354\240\200",
    "\353\257\270\353\246\254\353\263\264\352\270\260 \354\240\204\355\231\230",
    "\353\215\260\354\235\264\355\204\260\353\262\240\354\235\264\354\212\244 \353\247\244\353\213"
@@ -5439,6 +5966,11 @@ static const struct
    "\264\353\223\234",
    "\353\213\244\354\235\264\353\202\230\353\257\271 \353\260\261\352\267\270\353\235\274\354\232"
    "\264\353\223\234",
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   "\353\224\224\354\212\244\355\201\254 \352\272\274\353\202\264\352\270\260",
+#endif
+#endif
    "\354\202\254\354\232\251",
    "\354\236\245\354\271\230 \354\247\204\353\217\231 \354\202\254\354\232\251 (\354\247\200\354\233"
    "\220 \354\275\224\354\226\264 \355\225\234\354\240\225)",
@@ -5512,6 +6044,12 @@ static const struct
    "\355\224\204\353\241\240\355\212\270\354\227\224\353\223\234 \353\241\234\352\267\270 \353\240"
    "\210\353\262\250",
    "\352\262\214\354\236\204 \353\252\250\353\223\234",
+#ifdef HAVE_GAME_AI
+   "AI \355\224\214\353\240\210\354\235\264\354\226\264 \355\225\240\353\213\271",
+   "p1 \355\225\240\353\213\271",
+   "p2 \355\225\240\353\213\271",
+   "\353\224\224\353\262\204\352\267\270 \355\221\234\354\213\234",
+#endif
    "\352\262\214\354\236\204 \354\230\265\354\205\230 \354\240\200\354\236\245",
    "\352\262\214\354\236\204 \354\230\265\354\205\230 \354\240\234\352\261\260",
    "\354\275\230\355\205\220\354\270\240 \355\212\271\354\240\225 \354\275\224\354\226\264 \354\230"
@@ -5557,6 +6095,10 @@ static const struct
    "\354\232\260 \354\225\204\353\202\240\353\241\234\352\267\270 Y- (\354\203\201)",
    "\354\232\260 \354\225\204\353\202\240\353\241\234\352\267\270 Y+ (\355\225\230)",
    "\354\225\204\353\202\240\353\241\234\352\267\270 \352\260\220\353\217\204",
+#ifdef ANDROID
+   "\354\213\234\354\212\244\355\205\234 \355\202\244\353\263\264\353\223\234 \354\202\254\354\232"
+   "\251",
+#endif
    "\354\236\220\353\217\231\352\265\254\354\204\261",
    "\352\262\214\354\236\204 \355\217\254\354\273\244\354\212\244 \353\252\250\353\223\234 \354\236"
    "\220\353\217\231 \355\231\234\354\204\261\355\231\224",
@@ -5733,8 +6275,15 @@ static const struct
    "\353\247\210\354\232\260\354\212\244 1",
    "\353\247\210\354\232\260\354\212\244 3",
    "\353\247\210\354\232\260\354\212\244 2",
+#ifdef GEKKO
+   "\353\247\210\354\232\260\354\212\244 \353\260\260\354\234\250",
+#endif
    "\353\247\210\354\232\260\354\212\244 \355\234\240\353\213\244\354\232\264",
    "\353\247\210\354\232\260\354\212\244 \355\234\240\354\227\205",
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+   "Windows \355\225\253\355\202\244 \353\271\204\355\231\234\354\204\261\355\231\224 (\354\236\254"
+   "\354\213\234\354\236\221 \355\225\204\354\232\224)",
+#endif
    "\354\236\220\353\217\231 \355\201\254\352\270\260 \354\241\260\354\240\225 \355\202\244\353\263"
    "\264\353\223\234 \354\230\244\353\262\204\353\240\210\354\235\264",
    "ABXY \352\262\271\354\271\250 \352\260\220\353\217\204",
@@ -5801,6 +6350,10 @@ static const struct
    "\354\247\204\353\217\231 \354\204\270\352\270\260",
    "\354\273\250\355\212\270\353\241\244\353\237\254 \355\224\204\353\241\234\355\225\204 \354\240"
    "\200\354\236\245\355\225\230\352\270\260",
+#ifdef ANDROID
+   "\353\254\274\353\246\254\354\240\201 \355\202\244\353\263\264\353\223\234 \354\204\240\355\203"
+   "\235",
+#endif
    "\353\263\264\354\241\260 \354\204\274\354\204\234 \354\236\205\353\240\245",
    "\352\260\200\354\206\215\353\217\204\352\263\204 \352\260\220\353\217\204",
    "\354\236\220\354\235\264\353\241\234\354\212\244\354\275\224\355\224\204 \352\260\220\353\217"
@@ -5812,6 +6365,18 @@ static const struct
    "Joy-Con \353\266\204\355\225\240\355\225\230\352\270\260",
    "\355\204\260\354\271\230 \354\202\254\354\232\251",
    "\355\204\260\354\271\230 \353\260\260\354\234\250",
+#ifdef UDEV_TOUCH_SUPPORT
+   "\352\260\200\354\203\201 \355\204\260\354\271\230 \353\247\210\354\232\260\354\212\244\353\245"
+   "\274 \354\240\234\354\212\244\354\262\230\353\241\234 \354\202\254\354\232\251",
+   "\352\260\200\354\203\201 \355\204\260\354\271\230 \353\247\210\354\232\260\354\212\244\353\245"
+   "\274 \353\247\210\354\232\260\354\212\244\353\241\234 \354\202\254\354\232\251",
+   "\352\260\200\354\203\201 \355\204\260\354\271\230 \353\247\210\354\232\260\354\212\244\353\245"
+   "\274 \355\217\254\354\235\270\355\204\260\353\241\234 \354\202\254\354\232\251",
+   "\352\260\200\354\203\201 \355\204\260\354\271\230 \353\247\210\354\232\260\354\212\244\353\245"
+   "\274 \355\204\260\354\271\230\355\214\250\353\223\234\353\241\234 \354\202\254\354\232\251",
+   "\352\260\200\354\203\201 \355\204\260\354\271\230 \353\247\210\354\232\260\354\212\244\353\245"
+   "\274 \355\212\270\353\236\231\353\263\274\353\241\234 \354\202\254\354\232\251",
+#endif
    "\355\204\260\353\263\264 \354\236\205\353\240\245",
    "\353\260\251\355\226\245 \355\214\250\353\223\234 \355\204\260\353\263\264 \354\236\205\353\240"
    "\245 \355\227\210\354\232\251",
@@ -5831,6 +6396,10 @@ static const struct
    "\355\202\244\353\263\264\353\223\234",
    "Kick \354\212\244\355\212\270\353\246\274 \355\202\244",
    "L1 + R1 + \354\213\234\354\236\221 + \354\204\240\355\203\235",
+   "\354\204\234\353\271\204\354\212\244",
+#ifdef HAVE_LAKKA_SWITCH
+   "Nintendo Switch \354\230\265\354\205\230",
+#endif
    "\354\247\200\354\227\260\354\213\234\352\260\204",
    "\354\242\214+\354\232\260 \354\225\204\353\202\240\353\241\234\352\267\270",
    "\354\242\214+\354\232\260 \354\225\204\353\202\240\353\241\234\352\267\270 (\352\260\225\354\240"
@@ -5852,6 +6421,9 @@ static const struct
    "\353\224\224\354\212\244\355\201\254 \353\266\210\353\237\254\354\230\244\352\270\260",
    "\354\203\201\355\203\234\354\240\200\354\236\245 \353\266\210\353\237\254\354\230\244\352\270"
    "\260",
+#ifdef HAVE_LAKKA
+   "Wi-Fi \354\225\241\354\204\270\354\212\244 \355\217\254\354\235\270\355\212\270",
+#endif
    "\354\234\204\354\271\230 \355\227\210\354\232\251",
    "\354\234\204\354\271\230 \353\223\234\353\235\274\354\235\264\353\262\204",
    "\353\241\234\352\267\270",
@@ -5958,6 +6530,9 @@ static const struct
    "\354\213\244\355\226\211\353\252\251\353\241\235 \353\251\224\353\211\264",
    "\355\203\255\354\227\220\354\204\234 \353\222\244\353\241\234 \353\202\230\352\260\200\352\270"
    "\260 \355\227\210\354\232\251",
+#ifdef _3DS
+   "3DS \354\225\204\353\236\230 \355\231\224\353\251\264 \353\251\224\353\211\264",
+#endif
    "\355\202\244\354\230\244\354\212\244\355\201\254 \353\252\250\353\223\234 \353\271\204\355\231"
    "\234\354\204\261\355\231\224",
    "\353\251\224\353\211\264 \353\223\234\353\235\274\354\235\264\353\262\204",
@@ -5966,6 +6541,9 @@ static const struct
    "\353\251\224\353\211\264 \355\224\204\353\240\210\354\236\204\353\240\210\354\235\264\355\212"
    "\270 \354\240\234\355\225\234",
    "\355\214\214\354\235\274 \355\203\220\354\203\211\352\270\260",
+   "\355\217\260\355\212\270 \354\203\211: \355\214\214\353\236\221",
+   "\355\217\260\355\212\270 \354\203\211: \354\264\210\353\241\235",
+   "\355\217\260\355\212\270 \354\203\211: \353\271\250\352\260\225",
    "\353\266\210\355\210\254\353\252\205\353\217\204",
    "\353\260\235\352\270\260",
    "\354\210\230\355\217\211 \354\225\240\353\213\210\353\251\224\354\235\264\354\205\230",
@@ -6007,6 +6585,7 @@ static const struct
    "\353\257\270\353\246\254\353\263\264\352\270\260 \354\240\204\355\231\230",
    "\354\212\244\354\234\204\354\271\230 \354\225\204\354\235\264\354\275\230",
    "\353\257\270\353\246\254\353\263\264\352\270\260 \354\247\200\354\227\260 (ms)",
+   "\353\257\270\353\246\254\353\263\264\352\270\260 \353\224\224\353\215\224\353\247\201",
    "\353\257\270\353\246\254\353\263\264\352\270\260 \354\266\225\354\206\214 \353\260\251\353\262"
    "\225",
    "\355\210\254\353\252\205\353\217\204",
@@ -6028,9 +6607,19 @@ static const struct
    "'\352\265\254\354\204\261 \355\214\214\354\235\274' \355\221\234\354\213\234",
    "\355\231\225\354\235\270 \353\214\200\355\231\224\354\203\201\354\236\220 \355\221\234\354\213"
    "\234",
+#ifdef HAVE_MIST
+   "'\354\275\224\354\226\264 \352\264\200\353\246\254' \355\221\234\354\213\234",
+#endif
    "'\354\275\224\354\226\264 \353\213\244\354\232\264\353\241\234\353\215\224' \355\221\234\354\213"
    "\234",
    "'\353\224\224\354\212\244\355\201\254 \353\215\244\355\224\204' \355\221\234\354\213\234",
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   "'\353\224\224\354\212\244\355\201\254 \352\272\274\353\202\264\352\270\260' \355\221\234\354\213"
+   "\234",
+#endif
+#endif
+   "\354\240\204\354\262\264 \352\262\275\353\241\234 \355\221\234\354\213\234",
    "'\353\217\204\354\233\200\353\247\220' \355\221\234\354\213\234",
    "'\354\240\225\353\263\264' \355\221\234\354\213\234",
    "'\354\275\230\355\205\220\354\270\240 \353\266\210\353\237\254\354\230\244\352\270\260' \355\221"
@@ -6059,7 +6648,10 @@ static const struct
    "'\354\212\244\355\201\254\353\241\244' \354\202\254\354\232\264\353\223\234 \355\231\234\354\204"
    "\261\355\231\224",
    "\354\213\234\354\236\221 \355\216\230\354\235\264\354\247\200",
+   "\353\260\211\353\247\265\355\225\221",
    "\353\257\270\353\246\254\353\263\264\352\270\260 \353\260\260\352\262\275",
+   "\354\233\200\354\247\201\354\235\264\353\212\224 \353\257\270\353\246\254\353\263\264\352\270"
+   "\260 \354\230\244\353\224\224\354\230\244 \354\236\254\354\203\235",
    "\353\257\270\353\246\254\353\263\264\352\270\260 \355\231\225\353\214\200 \354\236\204\352\263"
    "\204\352\260\222",
    "\353\266\200\353\223\234\353\237\254\354\232\264 \355\225\234 \354\244\204 \355\205\215\354\212"
@@ -6073,6 +6665,8 @@ static const struct
    "\201 \355\205\214\353\247\210 \354\202\254\354\232\251",
    "\353\251\224\353\211\264 \355\225\255\353\252\251 \355\221\234\354\213\234",
    "\353\260\260\352\262\275 \354\235\264\353\257\270\354\247\200",
+   "\353\260\260\352\262\275 \354\235\264\353\257\270\354\247\200 \353\266\210\355\210\254\353\252"
+   "\205\353\217\204",
    "\352\267\270\353\236\230\355\224\275 \354\234\204\354\240\257",
    "\352\267\270\353\236\230\355\224\275 \354\234\204\354\240\257 \354\236\220\353\217\231 \355\201"
    "\254\352\270\260 \354\204\244\354\240\225",
@@ -6097,6 +6691,34 @@ static const struct
    "\354\240\234\353\252\251 \353\247\210\354\247\204 \352\260\200\353\241\234 \354\230\244\355\224"
    "\204\354\205\213",
    "\354\210\230\354\247\201 \355\216\230\354\235\264\353\223\234 \354\226\221",
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
+   "\353\247\210\354\235\264\355\201\254 \353\270\224\353\241\235 \355\224\204\353\240\210\354\236"
+   "\204",
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
+   "\354\230\244\353\224\224\354\230\244 \354\236\245\354\271\230",
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+   "\353\247\210\354\235\264\355\201\254",
+   "\353\247\210\354\235\264\355\201\254",
+   "\352\270\260\353\263\270 \354\236\205\353\240\245 \353\240\210\354\235\264\355\212\270 (Hz)",
+   "\354\230\244\353\224\224\354\230\244 \354\236\205\353\240\245 \354\247\200\354\227\260 (ms)",
+   "\353\247\210\354\235\264\355\201\254 \353\246\254\354\203\230\355\224\214\353\237\254",
+   "\354\230\244\353\224\224\354\230\244 \353\246\254\354\203\230\355\224\214\353\237\254 \355\222"
+   "\210\354\247\210",
+   "\353\247\210\354\235\264\355\201\254",
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+   "WASAPI \353\213\250\353\217\205 \353\252\250\353\223\234",
+   "WASAPI \353\266\200\353\217\231\354\206\214\354\210\230\354\240\220 \355\230\225\354\213\235",
+   "WASAPI \352\263\265\354\234\240 \353\262\204\355\215\274 \352\270\270\354\235\264",
+#endif
+#endif
    "MIDI \353\223\234\353\235\274\354\235\264\353\262\204",
    "\354\236\205\353\240\245",
    "\354\266\234\353\240\245",
@@ -6225,6 +6847,9 @@ static const struct
    "\353\204\244\355\212\270\354\233\214\355\201\254",
    "\354\202\254\354\232\251\354\236\220 %d \353\204\244\355\212\270\354\233\214\355\201\254 \353"
    "\240\210\355\212\270\353\241\234\355\214\250\353\223\234",
+#ifdef _3DS
+   "New3DS \355\201\264\353\237\255 / L2 \354\272\220\354\213\234 \354\202\254\354\232\251",
+#endif
    "\354\225\204\353\213\210\354\230\244",
    "\354\227\206\354\235\214",
    "\354\236\205\353\240\245 (\354\236\220\353\217\231\352\265\254\354\204\261) \354\227\260\352\262"
@@ -6655,6 +7280,29 @@ static const struct
    "\230\353\240\244\353\251\264 \355\224\204\353\241\234\352\267\270\353\236\250\354\235\204 \353"
    "\213\244\354\213\234 \354\213\234\354\236\221\355\225\230\354\213\255\354\213\234\354\230\244.",
    "\354\240\200\354\236\245",
+#ifdef HAVE_QT
+   "\354\212\244\354\272\224 \354\231\204\353\243\214.<br><br>\n\354\275\230\355\205\220\354\270\240"
+   "\353\245\274 \354\240\225\355\231\225\355\225\230\352\262\214 \354\212\244\354\272\224\355\225"
+   "\230\353\240\244\353\251\264:\n<ul><li>\353\247\236\353\212\224 \354\275\224\354\226\264\353\245"
+   "\274 \353\257\270\353\246\254 \353\213\244\354\232\264\353\241\234\353\223\234 \355\225\230\352"
+   "\263\240</li>\n<li>\"\354\275\224\354\226\264 \354\240\225\353\263\264 \355\214\214\354\235\274"
+   "\"\354\235\204 \354\230\250\353\235\274\354\235\270 \354\227\205\353\215\260\354\235\264\355\204"
+   "\260\353\241\234 \354\227\205\353\215\260\354\235\264\355\212\270\355\225\230\353\251\260</li>\n"
+   "<li>\"\353\215\260\354\235\264\355\204\260\353\262\240\354\235\264\354\212\244\"\353\217\204 "
+   "\354\230\250\353\235\274\354\235\270 \354\227\205\353\215\260\354\235\264\355\204\260\353\241"
+   "\234 \354\227\205\353\215\260\354\235\264\355\212\270\355\225\230\352\263\240</li>\n<li>\354\234"
+   "\204\354\235\230 \354\202\254\355\225\255\354\235\204 \354\240\201\354\232\251\355\225\234 \355"
+   "\233\204 RetroArch\353\245\274 \353\213\244\354\213\234 \354\213\234\354\236\221\355\225\230\354"
+   "\213\255\354\213\234\354\230\244</li></ul>\n\353\247\210\354\247\200\353\247\211\354\234\274\353"
+   "\241\234 \354\275\230\355\205\220\354\270\240\353\212\224 <a href=\"https://docs.libretro.com/gu"
+   "ides/roms-playlists-thumbnails/#sources\">\354\235\264 \352\263\263</a>\354\235\230 \353\215\260"
+   "\354\235\264\355\204\260\353\262\240",
+   "\354\235\264\354\212\244\354\227\220 \354\235\274\354\271\230\355\225\264\354\225\274 \355\225"
+   "\251\353\213\210\353\213\244. \352\267\270\353\236\230\353\217\204 \353\217\231\354\236\221\355"
+   "\225\230\354\247\200 \354\225\212\353\212\224\353\213\244\353\251\264 <a href=\"https://www.gith"
+   "ub.com/libretro/RetroArch/issues\">\353\262\204\352\267\270 \353\246\254\355\217\254\355\212\270"
+   "\353\245\274 \355\225\264\354\243\274\354\204\270\354\232\224</a>.",
+#endif
    "\354\203\211\354\203\201 \354\204\240\355\203\235",
    "\355\214\214\354\235\274 \354\204\240\355\203\235",
    "\355\217\264\353\215\224 \354\204\240\355\203\235",
@@ -6699,6 +7347,9 @@ static const struct
    "\245' \355\221\234\354\213\234",
    "'\353\257\270\353\246\254\353\263\264\352\270\260 \353\213\244\354\232\264\353\241\234\353\223"
    "\234' \355\221\234\354\213\234",
+#ifdef HAVE_GAME_AI
+   "'\352\262\214\354\236\204 AI' \355\221\234\354\213\234",
+#endif
    "'\354\240\225\353\263\264' \355\221\234\354\213\234",
    "'\354\275\224\354\226\264 \354\230\265\354\205\230' \355\221\234\354\213\234",
    "'\353\246\254\355\224\214\353\240\210\354\235\264 \354\273\250\355\212\270\353\241\244' \355\221"
@@ -6940,6 +7591,9 @@ static const struct
    "Retroflag Safe Shutdown\"\n#else\n   \"Retroflag Safe Shutdown (Reboot required)",
 #endif
 #endif
+#ifdef HAVE_LAKKA
+   "SAMBA \354\202\254\354\232\251",
+#endif
    "\354\203\201\355\203\234\354\240\200\354\236\245 \355\214\214\354\235\274: \354\275\230\355\205"
    "\220\354\270\240 \353\224\224\353\240\211\355\206\240\353\246\254\354\227\220 \354\240\200\354"
    "\236\245\355\225\230\352\270\260",
@@ -7044,6 +7698,9 @@ static const struct
    "'\354\240\204\353\240\245 \352\264\200\353\246\254' \355\221\234\354\213\234",
    "'\353\205\271\355\231\224' \355\221\234\354\213\234",
    "'\354\240\200\354\236\245' \355\221\234\354\213\234",
+#ifdef HAVE_SMBCLIENT
+   "'SMB \355\201\264\353\235\274\354\235\264\354\226\270\355\212\270' \355\221\234\354\213\234",
+#endif
    "'Steam' \355\221\234\354\213\234",
    "'\354\202\254\354\232\251\354\236\220' \355\221\234\354\213\234",
    "'\354\202\254\354\232\251\354\236\220 \354\235\270\355\204\260\355\216\230\354\235\264\354\212"
@@ -7077,6 +7734,22 @@ static const struct
    "\220",
    "\354\275\224\354\226\264 \354\204\244\354\271\230 \354\204\261\352\263\265",
    "\354\212\254\353\241\234\353\252\250\354\205\230 \353\271\204\354\234\250",
+#ifdef HAVE_SMBCLIENT
+   "SMB \354\235\270\354\246\235 \353\252\250\353\223\234",
+   "SMB \352\263\265\354\234\240 \355\203\220\354\203\211",
+   "SMB \355\201\264\353\235\274\354\235\264\354\226\270\355\212\270 \354\202\254\354\232\251",
+   "SMB \354\265\234\353\214\200 \354\227\260\352\262\260 \354\210\230",
+   "SMB \353\271\204\353\260\200\353\262\210\355\230\270",
+   "SMB \354\204\234\353\262\204",
+   "SMB \353\204\244\355\212\270\354\233\214\355\201\254 \354\204\244\354\240\225",
+   "SMB \352\263\265\354\234\240 \354\235\264\353\246\204",
+   "SMB \352\263\265\354\234\240",
+   "SMB \354\204\234\353\270\214 \353\224\224\353\240\211\355\206\240\353\246\254 (\354\204\240\355"
+   "\203\235)",
+   "SMB \355\203\200\354\236\204\354\225\204\354\233\203",
+   "SMB \354\202\254\354\232\251\354\236\220\353\252\205",
+   "SMB \354\233\214\355\201\254\352\267\270\353\243\271",
+#endif
    "\354\203\201\355\203\234\354\240\200\354\236\245 \355\214\214\354\235\274: \354\275\230\355\205"
    "\220\354\270\240 \353\224\224\353\240\211\355\206\240\353\246\254\353\263\204\353\241\234 \355"
    "\217\264\353\215\224\354\227\220 \354\240\225\353\240\254",
@@ -7093,6 +7766,9 @@ static const struct
    "\227\220 \354\240\225\353\240\254",
    "\354\206\214\353\246\254",
    "\354\212\244\355\216\231",
+#ifdef HAVE_LAKKA
+   "SSH \354\202\254\354\232\251",
+#endif
    "\354\275\224\354\226\264 \354\213\244\355\226\211",
    "\354\233\220\352\262\251 RetroPad \354\213\244\355\226\211",
    "\354\213\234\354\236\221 + \354\204\240\355\203\235",
@@ -7102,6 +7778,20 @@ static const struct
    "\355\206\265\352\263\204 \355\221\234\354\213\234",
    "\354\203\201\355\203\234",
    "stdin \353\252\205\353\240\271",
+#ifdef HAVE_MIST
+   "\352\263\240\352\270\211 \354\203\201\355\203\234 \355\221\234\354\213\234 \354\202\254\354\232"
+   "\251",
+   "\352\263\240\352\270\211 \354\203\201\355\203\234 \355\221\234\354\213\234 \354\275\230\355\205"
+   "\220\354\270\240 \355\230\225\354\213\235",
+   "\354\275\230\355\205\220\354\270\240",
+   "\354\275\230\355\205\220\354\270\240 (\354\275\224\354\226\264 \354\235\264\353\246\204)",
+   "\354\275\230\355\205\220\354\270\240 (\354\213\234\354\212\244\355\205\234 \354\235\264\353\246"
+   "\204)",
+   "\354\275\230\355\205\220\354\270\240 (\354\213\234\354\212\244\355\205\234 \354\235\264\353\246"
+   "\204 - \354\275\224\354\226\264 \354\235\264\353\246\204)",
+   "\354\275\224\354\226\264 \354\235\264\353\246\204",
+   "\354\213\234\354\212\244\355\205\234 \354\235\264\353\246\204",
+#endif
    "\354\240\200\354\236\245\352\263\265\352\260\204",
    "\354\212\244\355\212\270\353\246\254\353\260\215 \353\252\250\353\223\234",
    "\354\212\244\355\212\270\353\246\274 \355\203\200\354\235\264\355\213\200",
@@ -7114,8 +7804,21 @@ static const struct
    "\355\231\224\353\251\264\353\263\264\355\230\270\352\270\260 \353\217\231\354\236\221 \354\260"
    "\250\353\213\250",
    "\354\247\200\354\206\215\354\240\201 \354\204\261\353\212\245 \353\252\250\353\223\234",
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   "CEC \354\247\200\354\233\220",
+#endif
+#endif
+#ifdef HAVE_LIBNX
+   "CPU \354\230\244\353\262\204\355\201\264\353\237\255",
+#endif
    "\354\275\224\354\226\264\353\245\274 Play \354\212\244\355\206\240\354\226\264 \353\262\204\354"
    "\240\204\354\234\274\353\241\234 \352\265\220\354\262\264",
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   "CPU \354\230\244\353\262\204\355\201\264\353\237\255",
+#endif
+#endif
    "\354\275\230\355\205\220\354\270\240 \355\217\264\353\215\224\354\227\220 \354\213\234\354\212"
    "\244\355\205\234 \355\214\214\354\235\274 \355\217\254\355\225\250",
    "\354\213\234\354\212\244\355\205\234 BGM \354\202\254\354\232\251",
@@ -7133,6 +7836,7 @@ static const struct
    "\355\224\204\353\241\240\355\212\270\354\227\224\353\223\234 OS",
    "Git \353\262\204\354\240\204",
    "Lakka \353\262\204\354\240\204",
+   "MoltenVK \353\262\204\354\240\204",
    "\354\240\204\354\233\220",
    "\354\266\251\354\240\204\353\220\250",
    "\354\266\251\354\240\204 \354\244\221",
@@ -7156,6 +7860,9 @@ static const struct
    "\353\202\240\354\247\234 \352\265\254\353\266\204\354\204\240",
    "\354\213\234\352\260\204/\353\202\240\354\247\234 \355\221\234\354\213\234",
    "\354\213\234\352\260\204/\353\202\240\354\247\234 \354\212\244\355\203\200\354\235\274",
+#ifdef HAVE_LAKKA
+   "\354\213\234\352\260\204\353\214\200",
+#endif
    "\354\213\234\352\260\204 \355\221\234\354\213\234",
    "\354\240\204",
    "\354\235\274",
@@ -7231,6 +7938,10 @@ static const struct
    "<\355\230\204\354\236\254 \353\224\224\353\240\211\355\206\240\353\246\254 \354\202\254\354\232"
    "\251>",
    "\355\202\244 \353\210\204\353\245\274 \353\225\214 \354\247\204\353\217\231",
+#ifdef _3DS
+   "3DS \355\231\224\353\251\264 \353\252\250\353\223\234",
+   "3DS \355\225\230\353\213\250 \355\231\224\353\251\264",
+#endif
    "\354\240\201\354\235\221\355\230\225 \354\210\230\354\247\201 \353\217\231\352\270\260",
    "\355\232\214\354\240\204 \355\227\210\354\232\251",
    "\352\260\200\353\241\234 \354\204\270\353\241\234 \353\271\204\354\234\250 \352\265\254\354\204"
@@ -7260,6 +7971,23 @@ static const struct
 #else
    "\354\273\250\355\205\215\354\212\244\355\212\270 \355\212\271\354\240\225 \355\201\254\352\270"
    "\260 \354\241\260\354\240\210",
+#endif
+#if defined(DINGUX)
+   "\354\214\215\354\236\205\353\260\251\353\263\264\352\260\204",
+   "\354\235\264\354\244\221\354\204\240\355\230\225\353\263\264\352\260\204",
+   "\354\265\234\352\267\274\354\240\221 \354\235\264\354\233\203",
+   "\354\235\264\353\257\270\354\247\200 \353\263\264\352\260\204",
+   "\355\231\224\353\263\200 \353\271\204\354\234\250 \354\234\240\354\247\200",
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+   "\354\243\274\354\202\254\354\234\250",
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   "\353\260\230\354\204\240\355\230\225",
+   "\354\265\234\352\267\274\354\240\221 \354\235\264\354\233\203",
+   "\354\235\264\353\257\270\354\247\200 \353\263\264\352\260\204",
+#endif
 #endif
    "\353\215\260\354\212\244\355\201\254\355\203\221 \354\273\264\355\217\254\354\247\200\354\205"
    "\230 \354\202\254\354\232\251 \354\225\210\355\225\250",
@@ -7306,6 +8034,7 @@ static const struct
    "\355\231\225\354\236\245",
    "\354\212\210\355\215\274",
    "\354\231\200\354\235\264\353\223\234",
+   "\354\265\234\353\214\200 \353\260\235\352\270\260",
    "\353\201\224",
    "\353\260\235\352\270\260",
    "\354\212\244\354\272\224\353\235\274\354\235\270",
@@ -7357,6 +8086,9 @@ static const struct
    "\254\354\234\250",
    "\353\263\264\352\263\240\353\220\234 \355\231\224\353\251\264 \354\243\274\354\202\254\354\234"
    "\250 \354\202\254\354\232\251",
+#ifdef HAVE_ODROIDGO2
+   "RGA \355\201\254\352\270\260 \354\241\260\354\240\210",
+#endif
    "\355\231\224\353\251\264 \355\232\214\354\240\204",
    "180\353\217\204",
    "270\353\217\204",
@@ -7413,6 +8145,10 @@ static const struct
    "\354\202\254\354\232\251\354\236\220",
    "\353\241\234\354\273\254",
    "\354\212\244\355\212\270\353\246\254\353\260\215 \355\222\210\354\247\210",
+   "\354\266\234\353\240\245 \353\271\204\355\212\270 \352\271\212\354\235\264",
+   "10\353\271\204\355\212\270",
+   "8\353\271\204\355\212\270",
+   "\354\236\220\353\217\231",
    "\354\210\230\354\247\201 \353\217\231\352\270\260\355\231\224 \354\212\244\354\231\221 \352\260"
    "\204\352\262\251",
    "\354\236\220\353\217\231",
@@ -7423,6 +8159,12 @@ static const struct
    "Metal Argument Buffers \354\202\254\354\232\251 (\354\236\254\354\213\234\354\236\221 \355\225"
    "\204\354\232\224)",
    "\353\224\224\355\224\214\353\246\254\354\273\244",
+#if defined(RARCH_MOBILE)
+   "\353\267\260\355\217\254\355\212\270 \352\270\260\354\244\200\354\240\220 \353\260\224\354\235"
+   "\264\354\226\264\354\212\244 X (\354\204\270\353\241\234 \355\231\224\353\251\264)",
+   "\353\267\260\355\217\254\355\212\270 \352\270\260\354\244\200\354\240\220 \353\260\224\354\235"
+   "\264\354\226\264\354\212\244 Y (\354\204\270\353\241\234 \355\231\224\353\251\264)",
+#endif
    "\353\267\260\355\217\254\355\212\270 \352\270\260\354\244\200\354\240\220 \353\260\224\354\235"
    "\264\354\226\264\354\212\244 X",
    "\353\267\260\355\217\254\355\212\270 \352\270\260\354\244\200\354\240\220 \353\260\224\354\235"
@@ -7438,6 +8180,12 @@ static const struct
    "\354\210\230\354\247\201 \353\217\231\352\270\260\355\231\224 (VSync)",
    "\353\214\200\352\270\260 \352\260\200\353\212\245 \354\212\244\354\231\221\354\262\264\354\235"
    "\270",
+#if defined (WIIU)
+#ifdef WIIU
+   "Wii U GamePad\354\227\220 \354\225\214\353\247\236\352\262\214 \355\221\234\354\213\234 (\354"
+   "\236\254\354\213\234\354\236\221 \355\225\204\354\232\224)",
+#endif
+#endif
    "\354\240\204\354\262\264 \354\260\275\355\231\224\353\251\264 \353\252\250\353\223\234",
    "\354\260\275 \353\252\250\353\223\234",
    "\354\265\234\353\214\200 \354\260\275 \353\206\222\354\235\264",
@@ -7459,6 +8207,8 @@ static const struct
    "Wi-Fi \354\202\254\354\232\251",
    "\353\204\244\355\212\270\354\233\214\355\201\254\354\227\220 \354\227\260\352\262\260",
    "\353\204\244\355\212\270\354\233\214\355\201\254\354\227\220 \354\227\260\352\262\260",
+   "\354\203\211\354\203\201 \355\205\214\353\247\210 \353\266\210\355\210\254\353\252\205\353\217"
+   "\204 \354\232\224\354\206\214",
    "\355\230\204\354\236\254 \353\251\224\353\211\264 \354\225\204\354\235\264\354\275\230",
    "\354\227\206\354\235\214",
    "\353\263\264\355\206\265",
@@ -7511,9 +8261,17 @@ static const struct
    "\230",
    "\354\230\210",
    "YouTube \354\212\244\355\212\270\353\246\274 \355\202\244",
+   "HDR \353\252\250\353\223\234",
    "\354\205\260\354\235\264\353\215\224 \355\224\204\353\246\254\354\205\213",
    "\354\205\260\354\235\264\353\215\224 \355\224\204\353\246\254\354\205\213",
    "\354\205\260\354\235\264\353\215\224 \355\224\204\353\246\254\354\205\213",
+   "\354\266\234\353\240\245 \353\271\204\355\212\270 \352\271\212\354\235\264",
+#if defined(RARCH_MOBILE)
+   "\353\267\260\355\217\254\355\212\270 \352\270\260\354\244\200\354\240\220 \353\260\224\354\235"
+   "\264\354\226\264\354\212\244 X (\354\204\270\353\241\234 \355\231\224\353\251\264)",
+   "\353\267\260\355\217\254\355\212\270 \352\270\260\354\244\200\354\240\220 \353\260\224\354\235"
+   "\264\354\226\264\354\212\244 Y (\354\204\270\353\241\234 \355\231\224\353\251\264)",
+#endif
    "\353\267\260\355\217\254\355\212\270 \352\270\260\354\244\200\354\240\220 \353\260\224\354\235"
    "\264\354\226\264\354\212\244 X",
    "\353\267\260\355\217\254\355\212\270 \352\270\260\354\244\200\354\240\220 \353\260\224\354\235"
@@ -7684,9 +8442,63 @@ static const struct
    "\213\244. \354\206\214\353\246\254 \352\271\250\354\247\220 \355\232\250\352\263\274\353\245\274"
    " \353\260\251\354\247\200\355\225\230\354\247\200\353\247\214 \354\235\214\353\206\222\354\235"
    "\264\352\260\200 \354\230\254\353\235\274\352\260\221\353\213\210\353\213\244.",
+   "\354\275\224\354\226\264\352\260\200 16\353\271\204\355\212\270 \354\230\244\353\224\224\354\230"
+   "\244\353\245\274 \354\266\234\353\240\245\355\225\240 \353\225\214, \353\266\200\353\217\231\354"
+   "\206\214\354\210\230\354\240\220 \353\246\254\354\203\230\355\224\214\353\237\254 \353\214\200"
+   "\354\213\240 \352\263\240\354\240\225\354\206\214\354\210\230\354\240\220 (\354\240\225\354\210"
+   "\230) \353\246\254\354\203\230\355\224\214\353\237\254\353\245\274 \354\202\254\354\232\251\355"
+   "\225\251\353\213\210\353\213\244. \353\252\250\353\223\240 \355\224\214\353\236\253\355\217\274"
+   "\354\227\220\354\204\234 \353\271\204\355\212\270 \353\213\250\354\234\204\353\241\234 \353\217"
+   "\231\354\235\274\355\225\234 \352\262\260\352\263\274\353\254\274\354\235\204 \354\266\234\353"
+   "\240\245\355\225\230\354\227\254, \354\230\244\353\224\224\354\230\244 \354\266\234\353\240\245"
+   "\354\235\264 \354\213\244\355\226\211 \355\231\230\352\262\275\352\263\274 \353\254\264\352\264"
+   "\200\355\225\230\352\262\214 \354\236\254\355\230\204 \352\260\200\353\212\245\355\225\264\354"
+   "\247\221\353\213\210\353\213\244. \354\235\264 \354\230\265\354\205\230\354\235\200 \354\204\261"
+   "\353\212\245\354\235\264 \354\225\204\353\213\214 \354\236\254\355\230\204 \352\260\200\353\212"
+   "\245\354\204\261\354\235\204 \354\234\204\355\225\234 \354\230\265\354\205\230\354\234\274\353"
+   "\241\234, CPU\354\227\220 \353\262\241\355\204\260 FPU\352\260\200 \354\241\264\354\236\254\355"
+   "\225\240 \352\262\275\354\232\260 \354\240\225\354\210\230 \353\246\254\354\203\230\355\224\214"
+   "\353\237\254\353\212\224 \353\262\241\355\204\260 \354\262\230\353\246\254\352\260\200 \352\260"
+   "\200\353\212\245\355\225\234 \353\266\200\353\217\231\354\206\214\354\210\230\354\240\220 \353"
+   "\246\254\354\203\230\355\224\214\353\237\254\353\263\264\353\213\244 \353\215\224 \353\212\220"
+   "\353\240\244",
+   "\354\247\221\353\213\210\353\213\244. \354\235\264 \354\230\265\354\205\230\354\235\200 \354\275"
+   "\224\354\226\264\352\260\200 \353\266\200\353\217\231\354\206\214\354\210\230\354\240\220 \354"
+   "\230\244\353\224\224\354\230\244\353\245\274 \354\266\234\353\240\245\355\225\240 \352\262\275"
+   "\354\232\260 \354\225\204\353\254\264\353\237\260 \355\232\250\352\263\274\353\217\204 \354\227"
+   "\206\354\234\274\353\251\260, \355\230\270\355\231\230\353\220\230\354\247\200 \354\225\212\353"
+   "\212\224 DSP \355\225\204\355\204\260\352\260\200 \354\240\201\354\232\251\353\220\234 \352\262"
+   "\275\354\232\260 \353\266\200\353\217\231\354\206\214\354\210\230\354\240\220 \353\246\254\354"
+   "\203\230\355\224\214\353\237\254\352\260\200 \354\202\254\354\232\251\353\220\251\353\213\210"
+   "\353\213\244.",
    "\354\230\244\353\224\224\354\230\244 DSP \355\225\204\355\204\260\352\260\200 \354\240\200\354"
    "\236\245\353\220\230\353\212\224 \353\224\224\353\240\211\355\206\240\353\246\254\354\236\205"
    "\353\213\210\353\213\244.",
+   "\354\230\244\353\224\224\354\230\244 \353\223\234\353\235\274\354\235\264\353\262\204\352\260"
+   "\200 \354\266\234\353\240\245 \354\236\245\354\271\230\354\227\220 \354\232\224\354\262\255\355"
+   "\225\240 \354\203\230\355\224\214 \355\230\225\354\213\235\354\236\205\353\213\210\353\213\244. "
+   "'Float'\353\212\224 32\353\271\204\355\212\270 \353\266\200\353\217\231\354\206\214\354\210\230"
+   "\354\240\220 \355\230\225\354\213\235\354\235\204, 'Int16'\354\235\200 16\353\271\204\355\212"
+   "\270 \354\240\225\354\210\230 \355\230\225\354\213\235\354\235\204 \354\232\224\354\262\255\355"
+   "\225\251\353\213\210\353\213\244. \355\230\225\354\213\235\354\235\204 \355\230\221\354\203\201"
+   "\355\225\240 \354\210\230 \354\236\210\353\212\224 \353\223\234\353\235\274\354\235\264\353\262"
+   "\204(WASAPI, DirectSound, XAudio2, ALSA, SDL2)\354\227\220\353\247\214 \354\230\201\355\226\245"
+   "\354\235\204 \353\257\270\354\271\230\353\251\260, \353\213\244\353\245\270 \353\223\234\353\235"
+   "\274\354\235\264\353\262\204\353\212\224 \353\223\234\353\235\274\354\235\264\353\262\204\354"
+   "\235\230 \352\263\240\354\240\225\353\220\234 \355\230\225\354\213\235\354\235\204 \354\202\254"
+   "\354\232\251\355\225\251\353\213\210\353\213\244. \354\235\264 \354\204\244\354\240\225\354\235"
+   "\200 \355\236\214\355\212\270\354\235\274 \353\277\220\354\235\264\353\251\260, \354\266\234\353"
+   "\240\245 \354\236\245\354\271\230\352\260\200 \354\232\224\354\262\255\353\220\234 \355\230\225"
+   "\354\213\235\354\235\204 \352\261\260\354\240\210\355\225\240 \352\262\275\354\232\260 \353\223"
+   "\234\353\235\274\354\235\264\353\262\204\353\212\224 \352\270\260\354\241\264 \353\260\251\354"
+   "\213\235\353\214\200\353\241\234 \353\217\231\354\236\221",
+   "\355\225\251\353\213\210\353\213\244. 'Int16' \354\204\244\354\240\225\352\263\274 '\352\263\240"
+   "\354\240\225 \354\206\214\354\210\230 \352\260\222\354\234\274\353\241\234 \353\246\254\354\203"
+   "\230\355\224\214\355\225\230\352\270\260' \355\236\214\355\212\270\353\245\274 \355\225\250\352"
+   "\273\230 \354\202\254\354\232\251\355\225\230\353\251\264 \354\230\244\353\224\224\354\230\244 "
+   "\352\262\275\353\241\234 \354\240\204\354\262\264\354\235\230 \355\230\225\354\213\235\354\235"
+   "\204 \354\240\225\354\210\230\353\247\214\354\234\274\353\241\234 \354\240\234\355\225\234\355"
+   "\225\240 \354\210\230 \354\236\210\354\212\265\353\213\210\353\213\244.",
    "\354\265\234\353\214\200 \354\230\244\353\224\224\354\230\244 \354\247\200\354\227\260 \354\213"
    "\234\352\260\204 \353\260\200\353\246\254\354\264\210 \354\236\205\353\213\210\353\213\244. \353"
    "\223\234\353\235\274\354\235\264\353\262\204\353\212\224 \354\213\244\354\240\234 \354\247\200"
@@ -7792,9 +8604,51 @@ static const struct
    "\354\202\254\354\232\251\355\225\240 \353\270\224\353\243\250\355\210\254\354\212\244 \353\223"
    "\234\353\235\274\354\235\264\353\262\204\354\236\205\353\213\210\353\213\244. (\354\236\254\354"
    "\213\234\354\236\221 \355\225\204\354\232\224)",
+#ifdef HAVE_LAKKA
+   "\353\270\224\353\243\250\355\210\254\354\212\244\353\245\274 \354\202\254\354\232\251/\355\225"
+   "\264\354\240\234\355\225\251\353\213\210\353\213\244.",
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   "\353\270\224\353\243\250\355\210\254\354\212\244 ERTM\354\235\204 \353\271\204\355\231\234\354"
+   "\204\261\355\231\224\355\225\230\353\251\264 \354\235\274\353\266\200 \354\236\245\354\271\230"
+   "\354\231\200 \355\216\230\354\226\264\353\247\201\355\225\240 \353\225\214 \354\203\235\352\270"
+   "\260\353\212\224 \353\254\270\354\240\234\353\245\274 \355\225\264\352\262\260\355\225\240 \354"
+   "\210\230 \354\236\210\354\212\265\353\213\210\353\213\244",
+#endif
+#endif
    "\353\270\224\353\243\250\355\210\254\354\212\244 \354\236\245\353\271\204\353\245\274 \352\262"
    "\200\354\203\211\355\225\230\352\263\240 \354\227\260\352\262\260\355\225\251\353\213\210\353"
    "\213\244.",
+#ifdef _3DS
+   "\354\225\204\353\236\230 \355\231\224\353\251\264 \354\225\240\354\205\213 \353\224\224\353\240"
+   "\211\355\206\240\353\246\254\354\236\205\353\213\210\353\213\244. \353\224\224\353\240\211\355"
+   "\206\240\353\246\254\354\227\220 \"bottom_menu.png\" \355\214\214\354\235\274\354\235\264 \353"
+   "\260\230\353\223\234\354\213\234 \354\241\264\354\236\254\355\225\264\354\225\274 \355\225\251"
+   "\353\213\210\353\213\244.",
+   "\354\225\204\353\236\230 \355\231\224\353\251\264 \355\217\260\355\212\270\354\235\230 \355\214"
+   "\214\353\236\221\354\203\211\354\235\204 \354\241\260\354\240\210\355\225\251\353\213\210\353"
+   "\213\244.",
+   "\354\225\204\353\236\230 \355\231\224\353\251\264 \355\217\260\355\212\270\354\235\230 \354\264"
+   "\210\353\241\235\354\203\211\354\235\204 \354\241\260\354\240\210\355\225\251\353\213\210\353"
+   "\213\244.",
+   "\354\225\204\353\236\230 \355\231\224\353\251\264 \355\217\260\355\212\270\354\235\230 \353\266"
+   "\210\355\210\254\353\252\205\353\217\204\353\245\274 \354\241\260\354\240\210\355\225\251\353"
+   "\213\210\353\213\244.",
+   "\354\225\204\353\236\230 \355\231\224\353\251\264 \355\217\260\355\212\270\354\235\230 \353\271"
+   "\250\352\260\225\354\203\211\354\235\204 \354\241\260\354\240\210\355\225\251\353\213\210\353"
+   "\213\244.",
+   "\354\225\204\353\236\230 \355\231\224\353\251\264 \353\251\224\353\211\264\354\227\220 \355\217"
+   "\260\355\212\270\353\245\274 \354\202\254\354\232\251\355\225\251\353\213\210\353\213\244. \355"
+   "\231\234\354\204\261\355\231\224\355\225\230\353\251\264 \354\225\204\353\236\230 \355\231\224"
+   "\353\251\264\354\227\220 \353\262\204\355\212\274 \354\204\244\353\252\205\354\235\264 \355\221"
+   "\234\354\213\234\353\220\251\353\213\210\353\213\244. \354\203\201\355\203\234\354\240\200\354"
+   "\236\245 \354\235\274\354\236\220 \355\221\234\354\213\234\353\212\224 \354\230\201\355\226\245"
+   "\354\235\204 \353\260\233\354\247\200 \354\225\212\354\212\265\353\213\210\353\213\244.",
+   "\354\225\204\353\236\230 \355\231\224\353\251\264 \355\217\260\355\212\270\354\235\230 \355\201"
+   "\254\352\270\260 \353\260\260\354\234\250\354\235\204 \354\241\260\354\240\210\355\225\251\353"
+   "\213\210\353\213\244.",
+#endif
    "\355\231\224\353\251\264\354\235\230 \353\260\235\352\270\260\353\245\274 \354\241\260\354\240"
    "\210\355\225\251\353\213\210\353\213\244.",
    "libretro \353\271\214\353\223\234\353\264\207 \354\203\201\354\235\230 \354\225\240\354\205\213 "
@@ -8246,6 +9100,11 @@ static const struct
    "\227\205, \353\263\265\354\233\220, \354\202\255\354\240\234 \353\223\261) \354\235\204 \354\210"
    "\230\355\226\211\355\225\230\352\263\240 \354\275\224\354\226\264 \354\240\225\353\263\264\353"
    "\245\274 \355\231\225\354\235\270\355\225\251\353\213\210\353\213\244.",
+#ifdef HAVE_MIST
+   "Steam\354\235\204 \355\206\265\355\225\264 \353\260\260\355\217\254\353\220\230\353\212\224 \354"
+   "\275\224\354\226\264\353\245\274 \354\204\244\354\271\230 \353\230\220\353\212\224 \354\202\255"
+   "\354\240\234\355\225\251\353\213\210\353\213\244.",
+#endif
    "\354\275\230\355\205\220\354\270\240\354\235\230 \354\230\265\354\205\230\354\235\204 \353\263"
    "\200\352\262\275\355\225\251\353\213\210\353\213\244.",
    "\355\230\204\354\236\254 \354\204\244\354\240\225\354\235\204 \355\231\234\354\204\261 \354\230"
@@ -8443,6 +9302,13 @@ static const struct
    "\231\354\240\201 \353\260\260\352\262\275\355\231\224\353\251\264\354\235\264 \354\240\200\354"
    "\236\245\353\220\234 \353\224\224\353\240\211\355\206\240\353\246\254\354\236\205\353\213\210"
    "\353\213\244.",
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   "\353\254\274\353\246\254 CD/DVD \353\223\234\353\235\274\354\235\264\353\270\214\354\227\220\354"
+   "\204\234 \353\224\224\354\212\244\355\201\254\353\245\274 \352\272\274\353\203\205\353\213\210"
+   "\353\213\244.",
+#endif
+#endif
    "\353\271\250\353\246\254 \352\260\220\352\270\260 \353\271\204\354\234\250\354\227\220 \353\224"
    "\260\353\235\274 \355\224\204\353\240\210\354\236\204\354\235\204 \352\261\264\353\204\210\353"
    "\234\201\353\213\210\353\213\244. \354\240\204\353\240\245 \354\206\214\353\252\250\353\245\274 "
@@ -8527,6 +9393,13 @@ static const struct
    "\274\353\245\274 \353\263\274 \354\210\230 \354\236\210\354\212\265\353\213\210\353\213\244. "
    "\354\202\254\354\232\251\355\225\230\353\240\244\353\251\264 https://github.com/FeralInteractive"
    "/gamemode \352\260\200 \355\225\204\354\232\224\355\225\251\353\213\210\353\213\244.",
+#ifdef HAVE_GAME_AI
+   "AI \355\224\214\353\240\210\354\235\264\354\226\264 \355\225\240\353\213\271 \354\204\244\353"
+   "\252\205",
+   "\355\224\214\353\240\210\354\235\264\354\226\264 1\354\227\220 \355\225\240\353\213\271",
+   "\355\224\214\353\240\210\354\235\264\354\226\264 2\354\227\220 \355\225\240\353\213\271",
+   "\353\224\224\353\262\204\352\267\270 \355\221\234\354\213\234",
+#endif
    "\355\230\204\354\236\254 \354\275\230\355\205\220\354\270\240\354\227\220\353\247\214 \354\240"
    "\201\354\232\251\353\220\230\353\212\224 \354\275\224\354\226\264 \354\230\265\354\205\230\354"
    "\235\204 \354\240\200\354\236\245\355\225\251\353\213\210\353\213\244.",
@@ -8606,6 +9479,20 @@ static const struct
    "\353\213\210\353\213\244.",
    "\354\225\204\353\202\240\353\241\234\352\267\270 \354\212\244\355\213\261\354\235\230 \352\260"
    "\220\353\217\204\353\245\274 \354\241\260\354\240\225\355\225\251\353\213\210\353\213\244.",
+#ifdef ANDROID
+   "\353\251\224\353\211\264\354\227\220\354\204\234 \355\205\215\354\212\244\355\212\270 \354\236"
+   "\205\353\240\245 \354\213\234 \353\202\264\354\236\245 \354\230\250\354\212\244\355\201\254\353"
+   "\246\260 \355\202\244\353\263\264\353\223\234 \353\214\200\354\213\240 Android\354\235\230 \354"
+   "\213\234\354\212\244\355\205\234 \355\202\244\353\263\264\353\223\234\353\245\274 \354\202\254"
+   "\354\232\251\355\225\251\353\213\210\353\213\244. \355\201\264\353\246\275\353\263\264\353\223"
+   "\234\354\227\220\354\204\234 \353\266\231\354\227\254\353\204\243\352\270\260\354\231\200 \353"
+   "\271\204\353\260\200\353\262\210\355\230\270 \352\264\200\353\246\254\354\236\220 \353\223\261"
+   "\354\235\204 \354\202\254\354\232\251\355\225\240 \354\210\230 \354\236\210\352\262\214 \353\220"
+   "\251\353\213\210\353\213\244. \355\204\260\354\271\230\354\212\244\355\201\254\353\246\260 \353"
+   "\230\220\353\212\224 \352\262\214\354\236\204\355\214\250\353\223\234\353\241\234 \354\202\254"
+   "\354\232\251 \352\260\200\353\212\245\355\225\234 \352\260\200\354\203\201 \355\202\244\353\263"
+   "\264\353\223\234\352\260\200 \355\225\204\354\232\224\355\225\251\353\213\210\353\213\244.",
+#endif
    "\355\224\204\353\241\234\355\225\204, \355\224\214\353\237\254\352\267\270 \354\225\244 \355\224"
    "\214\353\240\210\354\235\264 \354\212\244\355\203\200\354\235\274\354\235\204 \352\260\200\354"
    "\247\204 \354\273\250\355\212\270\353\241\244\353\237\254\353\245\274 \354\236\220\353\217\231"
@@ -8974,6 +9861,15 @@ static const struct
    "\213\210\353\213\244.",
    "RetroArch\352\260\200 \354\235\270\354\213\235\355\225\230\353\212\224 \353\254\274\353\246\254"
    "\354\240\201 \353\247\210\354\232\260\354\212\244\354\236\205\353\213\210\353\213\244.",
+#ifdef GEKKO
+   "Wii \353\246\254\353\252\250\354\273\250\354\235\230 x/y \354\206\215\353\217\204 \353\260\260"
+   "\354\234\250\354\235\204 \354\241\260\354\240\225\355\225\251\353\213\210\353\213\244.",
+#endif
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+   "\354\234\210\353\217\204\354\232\260 \355\202\244\354\231\200 \355\225\250\352\273\230 \354\236"
+   "\205\353\240\245\353\220\230\353\212\224 \355\225\253\355\202\244\353\223\244\354\235\204 \353"
+   "\271\204\355\231\234\354\204\261\355\231\224\355\225\251\353\213\210\353\213\244.",
+#endif
    "\355\202\244\353\263\264\353\223\234 \354\230\244\353\262\204\353\240\210\354\235\264\353\245"
    "\274 \354\233\220\353\236\230 \355\231\224\353\251\264 \353\271\204\354\234\250\353\241\234 \354"
    "\241\260\354\240\225\355\225\251\353\213\210\353\213\244. \355\231\224\353\251\264\354\234\274"
@@ -9023,6 +9919,15 @@ static const struct
    "\251\264 \354\230\244\353\262\204\353\240\210\354\235\264\353\245\274 \354\210\250\352\270\260"
    "\352\263\240, \354\227\260\352\262\260\354\235\264 \355\225\264\354\240\234\353\220\230\353\251"
    "\264 \353\213\244\354\213\234 \355\221\234\354\213\234\355\225\251\353\213\210\353\213\244.",
+#if defined(ANDROID)
+   "\353\254\274\353\246\254\354\240\201 \354\273\250\355\212\270\353\241\244\353\237\254\352\260"
+   "\200 1\353\262\210 \355\217\254\355\212\270\354\227\220 \354\227\260\352\262\260\353\220\230\353"
+   "\251\264 \354\230\244\353\262\204\353\240\210\354\235\264\353\245\274 \354\210\250\352\271\201"
+   "\353\213\210\353\213\244. \354\273\250\355\212\270\353\241\244\353\237\254\353\245\274 \353\266"
+   "\204\353\246\254\355\225\264\353\217\204 \354\230\244\353\262\204\353\240\210\354\235\264\352"
+   "\260\200 \353\213\244\354\213\234 \355\221\234\354\213\234\353\220\230\354\247\200 \354\225\212"
+   "\354\212\265\353\213\210\353\213\244.",
+#endif
    "\355\231\224\353\251\264 \353\260\226\354\235\204 \354\241\260\354\244\200\355\225\240 \354\210"
    "\230 \354\236\210\352\262\214 \355\225\251\353\213\210\353\213\244. \353\271\204\355\231\234\354"
    "\204\261\355\231\224\355\225\240 \352\262\275\354\232\260 \355\231\224\353\251\264 \353\260\226"
@@ -9169,6 +10074,12 @@ static const struct
    "\235\353\220\230\353\251\264 \354\236\220\353\217\231\354\234\274\353\241\234 \354\240\201\354"
    "\232\251\353\220\240 \354\236\220\353\217\231\354\204\244\354\240\225 \355\214\214\354\235\274"
    "\354\235\204 \354\203\235\354\204\261\355\225\251\353\213\210\353\213\244.",
+#ifdef ANDROID
+   "\354\235\264 \354\236\245\354\271\230\353\245\274 \352\262\214\354\236\204\355\214\250\353\223"
+   "\234\352\260\200 \354\225\204\353\213\214 \353\254\274\353\246\254\354\240\201 \355\202\244\353"
+   "\263\264\353\223\234\353\241\234\354\204\234 \354\202\254\354\232\251\355\225\251\353\213\210"
+   "\353\213\244.",
+#endif
    "\352\260\200\353\212\245\355\225\234 \352\262\275\354\232\260 \352\260\200\354\206\215\353\217"
    "\204\352\263\204, \354\236\220\354\235\264\353\241\234\354\212\244\354\275\224\355\224\204, \354"
    "\241\260\353\217\204 \354\204\274\354\204\234\353\241\234\353\266\200\355\204\260\354\235\230 "
@@ -9196,6 +10107,30 @@ static const struct
    "\264 \355\201\254\352\270\260 \353\260\260\354\234\250\354\227\220 \353\247\236\352\262\214 \355"
    "\204\260\354\271\230 \354\236\205\353\240\245\354\235\230 X/Y \354\242\214\355\221\234 \353\260"
    "\260\354\234\250\354\235\204 \354\241\260\354\240\225\355\225\251\353\213\210\353\213\244.",
+#ifdef UDEV_TOUCH_SUPPORT
+   "\355\203\255, \355\203\255 \355\233\204 \353\223\234\353\236\230\352\267\270, \354\206\220\352"
+   "\260\200\353\235\275 \354\212\244\354\231\200\354\235\264\355\224\204 \353\223\261\354\235\230 "
+   "\355\204\260\354\271\230\354\212\244\355\201\254\353\246\260 \354\240\234\354\212\244\354\262"
+   "\230\353\245\274 \355\231\234\354\204\261\355\231\224\355\225\251\353\213\210\353\213\244.",
+   "\355\204\260\354\271\230 \354\235\264\353\262\244\355\212\270 \354\236\205\353\240\245\354\234"
+   "\274\353\241\234 \352\260\200\354\203\201 \353\247\210\354\232\260\354\212\244\353\245\274 \352"
+   "\265\254\355\230\204\355\225\251\353\213\210\353\213\244.",
+   "\355\204\260\354\271\230\354\212\244\355\201\254\353\246\260 \354\236\205\353\240\245\354\235"
+   "\204 \355\204\260\354\271\230 \354\235\264\353\262\244\355\212\270\353\241\234 \354\240\204\353"
+   "\213\254\355\225\240 \354\210\230 \354\236\210\352\262\214 \355\225\251\353\213\210\353\213\244.",
+   "\353\247\210\354\232\260\354\212\244\353\241\234 \354\202\254\354\232\251 \354\230\265\354\205"
+   "\230\352\263\274 \355\225\250\352\273\230 \355\231\234\354\204\261\355\231\224\355\225\230\353"
+   "\251\264 \355\204\260\354\271\230\354\212\244\355\201\254\353\246\260\354\235\204 \355\204\260"
+   "\354\271\230\355\214\250\353\223\234\354\262\230\353\237\274 \354\202\254\354\232\251\355\225"
+   "\240 \354\210\230 \354\236\210\352\262\214 \353\220\251\353\213\210\353\213\244.",
+   "\353\247\210\354\232\260\354\212\244\353\241\234 \354\202\254\354\232\251 \354\230\265\354\205"
+   "\230\352\263\274 \355\225\250\352\273\230 \355\231\234\354\204\261\355\231\224\355\225\230\353"
+   "\251\264 \355\204\260\354\271\230\354\212\244\355\201\254\353\246\260\354\235\204 \355\212\270"
+   "\353\236\231\353\263\274\354\262\230\353\237\274 \355\231\234\354\232\251\355\225\240 \354\210"
+   "\230 \354\236\210\352\262\214 \353\220\230\353\251\260, \355\217\254\354\235\270\355\204\260\354"
+   "\227\220 \352\264\200\354\204\261\354\235\264 \354\240\201\354\232\251\353\220\251\353\213\210"
+   "\353\213\244.",
+#endif
    "\355\231\234\354\204\261\355\231\224\355\225\240 \352\262\275\354\232\260, \353\224\224\354\247"
    "\200\355\204\270 \353\260\251\355\226\245 \354\236\205\353\240\245(\354\213\255\354\236\220\355"
    "\214\250\353\223\234 \353\230\220\353\212\224 '\355\226\207\354\212\244\354\234\204\354\271\230'"
@@ -9250,6 +10185,10 @@ static const struct
    "\354\202\254\354\232\251\355\225\240 \354\273\250\355\212\270\353\241\244\353\237\254 \353\223"
    "\234\353\235\274\354\235\264\353\262\204\354\236\205\353\213\210\353\213\244. (\354\236\254\354"
    "\213\234\354\236\221 \355\225\204\354\232\224)",
+#ifdef HAVE_LAKKA_SWITCH
+   "Nintendo Switch \354\240\204\354\232\251 \354\230\265\354\205\230\354\235\204 \354\204\244\354"
+   "\240\225\355\225\251\353\213\210\353\213\244.",
+#endif
    "\353\271\204\353\224\224\354\230\244, \354\230\244\353\224\224\354\230\244 \353\260\217 \354\236"
    "\205\353\240\245 \354\247\200\354\227\260\354\227\220 \352\264\200\353\240\250\353\220\234 \354"
    "\204\244\354\240\225\354\235\204 \353\263\200\352\262\275\355\225\251\353\213\210\353\213\244.",
@@ -9297,6 +10236,10 @@ static const struct
    "\355\230\204\354\236\254 \354\204\240\355\203\235\353\220\234 \354\212\254\353\241\257\354\227"
    "\220\354\204\234 \354\203\201\355\203\234\354\240\200\354\236\245 \355\214\214\354\235\274\354"
    "\235\204 \353\266\210\353\237\254\354\230\265\353\213\210\353\213\244.",
+#ifdef HAVE_LAKKA
+   "Wi-Fi \354\225\241\354\204\270\354\212\244 \355\217\254\354\235\270\355\212\270\353\245\274 \354"
+   "\202\254\354\232\251\355\225\251\353\213\210\353\213\244.",
+#endif
    "\354\275\224\354\226\264\352\260\200 \354\234\204\354\271\230 \354\240\225\353\263\264\354\227"
    "\220 \354\240\221\352\267\274\355\225\240 \354\210\230 \354\236\210\352\262\214 \355\225\251\353"
    "\213\210\353\213\244.",
@@ -9466,6 +10409,10 @@ static const struct
    "\220\354\204\234 \353\222\244\353\241\234 \353\202\230\352\260\200\353\251\264 \353\251\224\354"
    "\235\270 \353\251\224\353\211\264\353\241\234 \353\217\214\354\225\204\354\230\244\352\262\214 "
    "\355\225\251\353\213\210\353\213\244.",
+#ifdef _3DS
+   "\354\225\204\353\236\230 \355\231\224\353\251\264 \353\251\224\353\211\264\354\235\230 \354\204"
+   "\244\354\240\225\354\235\204 \353\263\200\352\262\275\355\225\251\353\213\210\353\213\244.",
+#endif
    "\353\252\250\353\223\240 \352\265\254\354\204\261 \352\264\200\353\240\250 \354\204\244\354\240"
    "\225\354\235\204 \355\221\234\354\213\234\355\225\251\353\213\210\353\213\244.",
    "\354\202\254\354\232\251\355\225\240 \353\251\224\353\211\264 \353\223\234\353\235\274\354\235"
@@ -9616,6 +10563,19 @@ static const struct
    "\271\240\353\245\264\352\263\240 \353\201\212\352\271\200 \354\227\206\353\212\224 \354\212\244"
    "\355\201\254\353\241\244 \355\232\250\352\263\274\353\245\274 \353\263\274 \354\210\230 \354\236"
    "\210\354\212\265\353\213\210\353\213\244.",
+   "\353\257\270\353\246\254\353\263\264\352\270\260\354\231\200 \353\260\260\352\262\275\355\231"
+   "\224\353\251\264\354\235\204 \353\251\224\353\211\264\354\235\230 \355\214\224\353\240\210\355"
+   "\212\270\354\227\220 \353\247\236\354\266\260 \353\224\224\353\215\224\353\247\201\355\225\230"
+   "\354\227\254 \354\203\211\354\203\201 \353\260\264\353\224\251\354\235\204 \354\244\204\354\236"
+   "\205\353\213\210\353\213\244. \353\224\224\353\215\224\353\247\201 \355\214\250\355\204\264\354"
+   "\235\200 \353\213\244\353\245\270 \353\251\224\353\211\264 \354\232\224\354\206\214\353\223\244"
+   "\352\263\274 \355\225\250\352\273\230 '\353\251\224\353\211\264 \355\201\254\352\270\260' \353"
+   "\260\260\354\234\250\354\227\220 \353\271\204\353\241\200\355\225\230\354\227\254 \355\231\225"
+   "\353\214\200\353\220\230\353\257\200\353\241\234, \354\247\210\352\260\220\354\235\264 \353\210"
+   "\210\354\227\220 \353\235\204\352\262\214 \353\223\234\353\237\254\353\202\240 \354\210\230\353"
+   "\217\204 \354\236\210\354\212\265\353\213\210\353\213\244. \352\267\270\353\237\264 \352\262\275"
+   "\354\232\260 \354\235\264 \354\230\265\354\205\230\354\235\204 \353\271\204\355\231\234\354\204"
+   "\261\355\231\224\355\225\230\354\213\255\354\213\234\354\230\244.",
    "\355\201\260 \353\257\270\353\246\254\353\263\264\352\270\260 \355\214\214\354\235\274\354\235"
    "\204 \355\231\224\353\251\264 \355\225\264\354\203\201\353\217\204\354\227\220 \353\247\236\352"
    "\262\214 \354\266\225\354\206\214\355\225\230\353\212\224 \353\260\251\353\262\225\354\236\205"
@@ -9671,6 +10631,11 @@ static const struct
    "\355\231\224\355\225\240 \352\262\275\354\232\260 \355\225\264\353\213\271 \355\226\211\353\217"
    "\231\353\223\244\354\235\200 \354\246\211\354\213\234 \354\213\244\355\226\211\353\220\251\353"
    "\213\210\353\213\244.",
+#ifdef HAVE_MIST
+   "\353\251\224\354\235\270 \353\251\224\353\211\264\354\227\220 '\354\275\224\354\226\264 \352\264"
+   "\200\353\246\254' \354\230\265\354\205\230\354\235\204 \355\221\234\354\213\234\355\225\251\353"
+   "\213\210\353\213\244.",
+#endif
    "'\354\230\250\353\235\274\354\235\270 \354\227\205\353\215\260\354\235\264\355\204\260' \354\230"
    "\265\354\205\230\354\227\220 \354\275\224\354\226\264(\353\260\217 \354\275\224\354\226\264 \354"
    "\240\225\353\263\264) \354\227\205\353\215\260\354\235\264\355\212\270 \352\270\260\353\212\245"
@@ -9678,6 +10643,17 @@ static const struct
    "\353\251\224\354\235\270 \353\251\224\353\211\264\354\227\220 '\353\224\224\354\212\244\355\201"
    "\254 \353\215\244\355\224\204' \354\230\265\354\205\230\354\235\204 \355\221\234\354\213\234\355"
    "\225\251\353\213\210\353\213\244.",
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   "\353\251\224\354\235\270 \353\251\224\353\211\264\354\227\220 '\353\224\224\354\212\244\355\201"
+   "\254 \352\272\274\353\202\264\352\270\260' \354\230\265\354\205\230\354\235\204 \355\221\234\354"
+   "\213\234\355\225\251\353\213\210\353\213\244.",
+#endif
+#endif
+   "\353\224\224\353\240\211\355\206\240\353\246\254 \354\204\244\354\240\225\354\227\220\354\204"
+   "\234 \354\204\240\355\203\235\353\220\234 \353\224\224\353\240\211\355\206\240\353\246\254\354"
+   "\235\230 \354\235\264\353\246\204 \353\214\200\354\213\240 \354\240\204\354\262\264 \352\262\275"
+   "\353\241\234\353\245\274 \355\221\234\354\213\234\355\225\251\353\213\210\353\213\244.",
    "\353\251\224\354\235\270 \353\251\224\353\211\264\354\227\220 '\353\217\204\354\233\200\353\247"
    "\220' \354\230\265\354\205\230\354\235\204 \355\221\234\354\213\234\355\225\251\353\213\210\353"
    "\213\244.",
@@ -9724,6 +10700,15 @@ static const struct
    "\200\352\262\275\355\225\251\353\213\210\353\213\244.",
    "\354\213\234\354\236\221 \354\213\234 \355\221\234\354\213\234\353\220\240 \353\251\224\353\211"
    "\264 \355\216\230\354\235\264\354\247\200\354\236\205\353\213\210\353\213\244.",
+   "\353\251\224\353\211\264 \354\235\264\353\257\270\354\247\200\354\235\230 \353\260\211\353\247"
+   "\265\354\235\204 \354\203\235\354\204\261\355\225\251\353\213\210\353\213\244. \354\225\204\354"
+   "\235\264\354\275\230, \353\257\270\353\246\254\353\263\264\352\270\260, \353\260\260\352\262\275"
+   "\355\231\224\353\251\264\354\235\264 \354\233\220\353\263\270 \355\201\254\352\270\260\353\263"
+   "\264\353\213\244 \354\236\221\352\262\214 \352\267\270\353\240\244\354\247\210 \353\225\214 \353"
+   "\266\200\353\223\234\353\237\275\352\262\214 \355\221\234\355\230\204\353\220\230\353\251\260, "
+   "\353\271\204\353\224\224\354\230\244 \353\251\224\353\252\250\353\246\254 \354\202\254\354\232"
+   "\251\353\237\211\354\235\264 \354\225\275\352\260\204 \353\212\230\354\226\264\353\202\251\353"
+   "\213\210\353\213\244.",
    "\353\257\270\353\246\254\353\263\264\352\270\260 \355\205\214\353\221\220\353\246\254\354\227"
    "\220 \353\213\250\354\203\211\354\235\230 \355\205\214\353\221\220\353\246\254 \353\260\260\352"
    "\262\275\354\235\204 \354\266\224\352\260\200\355\225\251\353\213\210\353\213\244. \353\257\270"
@@ -9734,6 +10719,15 @@ static const struct
    "\230\354\247\200 \354\225\212\353\215\224\353\235\274\353\217\204 \354\235\274\352\264\200\353"
    "\220\234 \353\252\250\354\212\265\354\235\204 \354\234\240\354\247\200\355\225\251\353\213\210"
    "\353\213\244.",
+   "\354\233\200\354\247\201\354\235\264\353\212\224 WebM \353\257\270\353\246\254\353\263\264\352"
+   "\270\260\353\245\274 \355\221\234\354\213\234\355\225\240 \353\225\214 \354\230\244\353\224\224"
+   "\354\230\244 \355\212\270\353\236\231\354\235\204 \354\236\254\354\203\235\355\225\251\353\213"
+   "\210\353\213\244. Vorbis\354\231\200 Opus \354\230\244\353\224\224\354\230\244\352\260\200 \354"
+   "\247\200\354\233\220\353\220\251\353\213\210\353\213\244. \354\230\244\353\224\224\354\230\244"
+   "\353\212\224 \354\225\240\353\213\210\353\251\224\354\235\264\354\205\230\352\263\274 \355\225"
+   "\250\352\273\230 \353\260\230\353\263\265 \354\236\254\354\203\235\353\220\230\353\251\260 \353"
+   "\257\270\353\246\254\353\263\264\352\270\260\352\260\200 \353\213\253\355\236\210\353\251\264 "
+   "\355\225\250\352\273\230 \354\240\225\354\247\200\353\220\251\353\213\210\353\213\244.",
    "\354\247\200\354\240\225\353\220\234 \352\260\222\353\263\264\353\213\244 \354\236\221\354\235"
    "\200 \355\201\254\352\270\260\354\235\230 \353\257\270\353\246\254\353\263\264\352\270\260 \354"
    "\235\264\353\257\270\354\247\200\353\245\274 \354\236\220\353\217\231\354\234\274\353\241\234 "
@@ -9768,6 +10762,8 @@ static const struct
    " \354\235\264\353\257\270\354\247\200\353\212\224 '\354\203\211\354\203\201 \355\205\214\353\247"
    "\210'\353\263\264\353\213\244 \354\232\260\354\204\240 \354\240\201\354\232\251\353\220\251\353"
    "\213\210\353\213\244.",
+   "\353\260\260\352\262\275\355\231\224\353\251\264\354\235\230 \355\210\254\353\252\205\353\217"
+   "\204\353\245\274 \353\263\200\352\262\275\355\225\251\353\213\210\353\213\244.",
    "\352\260\234\354\204\240\353\220\234 \353\224\224\354\236\220\354\235\270\354\235\230 \354\225"
    "\240\353\213\210\353\251\224\354\235\264\354\205\230, \354\225\214\353\246\274, \355\221\234\354"
    "\213\234\354\236\220 \353\260\217 \354\273\250\355\212\270\353\241\244\354\235\204 \354\202\254"
@@ -9823,10 +10819,91 @@ static const struct
    "\353\251\224\353\211\264\353\245\274 \354\227\264\353\225\214 \353\260\234\354\203\235\355\225"
    "\230\353\212\224 \354\225\240\353\213\210\353\251\224\354\235\264\354\205\230\354\236\205\353"
    "\213\210\353\213\244.",
+   "\353\202\264\353\271\204\352\262\214\354\235\264\354\205\230\354\235\204 \354\234\204\355\225"
+   "\234 \353\251\224\354\235\270 \352\260\200\353\241\234 \355\203\255 \353\252\251\353\241\235\354"
+   "\235\204 \355\231\234\354\204\261\355\231\224\355\225\251\353\213\210\353\213\244.",
+   "\355\230\204\354\236\254 \353\251\224\353\211\264 \354\234\204\354\271\230\353\245\274 \355\227"
+   "\244\353\215\224\354\227\220 \355\221\234\354\213\234\355\225\251\353\213\210\353\213\244.",
    "\354\265\234\353\214\200 \355\217\255\354\235\204 \354\240\234\355\225\234\355\225\230\354\227"
    "\254 \355\221\234\354\213\234\353\220\230\353\212\224 \353\257\270\353\246\254\353\263\264\352"
    "\270\260\354\235\230 \355\201\254\352\270\260\353\245\274 \354\244\204\354\236\205\353\213\210"
    "\353\213\244.",
+   "\354\240\234\353\252\251 \355\227\244\353\215\224\354\231\200 \355\231\224\353\251\264 \355\205"
+   "\214\353\221\220\353\246\254 \354\202\254\354\235\264\354\235\230 \352\261\260\353\246\254\353"
+   "\245\274 \354\241\260\354\240\210\355\225\251\353\213\210\353\213\244.",
+   "\354\240\234\353\252\251 \355\227\244\353\215\224\354\235\230 \352\260\200\353\241\234 \352\261"
+   "\260\353\246\254\353\245\274 \354\241\260\354\240\210\355\225\251\353\213\210\353\213\244.",
+   "\355\205\214\353\221\220\353\246\254 \352\260\200\352\271\214\354\235\264 \354\236\210\353\212"
+   "\224 \355\225\255\353\252\251\353\223\244\354\235\264 \355\210\254\353\252\205\355\225\264\354"
+   "\247\200\353\212\224 \354\240\225\353\217\204\353\245\274 \354\241\260\354\240\225\355\225\251"
+   "\353\213\210\353\213\244.",
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
+   "\353\247\210\354\235\264\355\201\254 \353\223\234\353\235\274\354\235\264\353\262\204\352\260"
+   "\200 \354\202\254\354\232\251\355\225\240 \352\270\260\353\263\270 \354\236\205\353\240\245 \354"
+   "\236\245\354\271\230\353\245\274 \354\204\244\354\240\225\355\225\251\353\213\210\353\213\244. "
+   "\354\235\264 \354\230\265\354\205\230\354\235\200 \353\223\234\353\235\274\354\235\264\353\262"
+   "\204 \354\242\205\354\206\215\354\240\201\354\236\205\353\213\210\353\213\244.",
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+   "\354\202\254\354\232\251\355\225\240 \353\247\210\354\235\264\355\201\254 \353\223\234\353\235"
+   "\274\354\235\264\353\262\204\354\236\205\353\213\210\353\213\244. (\354\236\254\354\213\234\354"
+   "\236\221 \355\225\204\354\232\224)",
+   "\354\247\200\354\233\220\353\220\230\353\212\224 \354\275\224\354\226\264\354\227\220\354\204"
+   "\234 \354\230\244\353\224\224\354\230\244 \354\236\205\353\240\245\354\235\204 \355\231\234\354"
+   "\204\261\355\231\224\355\225\251\353\213\210\353\213\244. \354\275\224\354\226\264\352\260\200 "
+   "\353\247\210\354\235\264\355\201\254\353\245\274 \354\202\254\354\232\251\355\225\230\354\247"
+   "\200 \354\225\212\354\235\204 \352\262\275\354\232\260 \354\235\264 \354\230\265\354\205\230\354"
+   "\235\200 \354\225\204\353\254\264 \354\230\201\355\226\245\353\217\204 \353\201\274\354\271\230"
+   "\354\247\200 \354\225\212\354\212\265\353\213\210\353\213\244.",
+   "\354\230\244\353\224\224\354\230\244 \354\236\205\353\240\245\354\235\230 \354\203\230\355\224"
+   "\214 \353\240\210\354\235\264\355\212\270\354\236\205\353\213\210\353\213\244. \354\275\224\354"
+   "\226\264\352\260\200 \355\212\271\354\240\225\355\225\234 \352\260\222\354\235\204 \354\232\224"
+   "\352\265\254\355\225\230\354\247\200 \354\225\212\354\235\204 \352\262\275\354\232\260 \354\202"
+   "\254\354\232\251\353\220\251\353\213\210\353\213\244.",
+   "\354\230\244\353\224\224\354\230\244 \354\236\205\353\240\245 \354\247\200\354\227\260(\353\260"
+   "\200\353\246\254\354\264\210)\354\235\204 \354\204\244\354\240\225\355\225\251\353\213\210\353"
+   "\213\244. \353\247\210\354\235\264\355\201\254 \353\223\234\353\235\274\354\235\264\353\262\204"
+   "\352\260\200 \355\225\264\353\213\271 \354\247\200\354\227\260\354\213\234\352\260\204\354\235"
+   "\204 \354\247\200\354\233\220\355\225\230\354\247\200 \353\252\273\355\225\240 \352\262\275\354"
+   "\232\260 \353\254\264\354\213\234\353\220\240 \354\210\230 \354\236\210\354\212\265\353\213\210"
+   "\353\213\244.",
+   "\354\202\254\354\232\251\355\225\240 \353\247\210\354\235\264\355\201\254 \353\246\254\354\203"
+   "\230\355\224\214\353\237\254 \353\223\234\353\235\274\354\235\264\353\262\204\354\236\205\353"
+   "\213\210\353\213\244.",
+   "\352\260\222\354\235\204 \353\202\256\354\266\260\354\204\234 \354\230\244\353\224\224\354\230"
+   "\244 \355\222\210\354\247\210 \353\214\200\354\213\240 \354\204\261\353\212\245 \353\260\217 "
+   "\353\260\230\354\235\221 \354\206\215\353\217\204\354\227\220 \353\271\204\354\244\221\354\235"
+   "\204 \353\221\220\352\261\260\353\202\230, \353\260\230\353\214\200\353\241\234 \352\260\222\354"
+   "\235\204 \353\206\222\354\227\254\354\204\234 \354\204\261\353\212\245\354\235\264\353\202\230 "
+   "\353\260\230\354\235\221 \354\206\215\353\217\204 \353\214\200\354\213\240 \353\215\224 \353\202"
+   "\230\354\235\200 \354\235\214\354\247\210\354\227\220 \353\271\204\354\244\221\354\235\204 \353"
+   "\221\230 \354\210\230 \354\236\210\354\212\265\353\213\210\353\213\244.",
+   "\354\230\244\353\224\224\354\230\244 \354\236\205\353\240\245 \354\204\244\354\240\225\354\235"
+   "\204 \353\263\200\352\262\275\355\225\251\353\213\210\353\213\244.",
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+   "WASAPI \353\223\234\353\235\274\354\235\264\353\262\204\353\245\274 \354\202\254\354\232\251\355"
+   "\225\240 \353\225\214 RetroArch\352\260\200 \353\247\210\354\235\264\355\201\254 \354\236\245"
+   "\354\271\230\354\227\220 \353\214\200\355\225\234 \353\217\205\354\240\220 \352\266\214\355\225"
+   "\234\354\235\204 \352\260\226\353\217\204\353\241\235 \355\227\210\354\232\251\355\225\251\353"
+   "\213\210\353\213\244. \353\271\204\355\231\234\354\204\261 \354\213\234 \352\263\265\354\234\240"
+   " \353\252\250\353\223\234\353\245\274 \354\202\254\354\232\251\355\225\230\352\262\214 \353\220"
+   "\251\353\213\210\353\213\244.",
+   "\354\230\244\353\224\224\354\230\244 \354\236\245\354\271\230\352\260\200 \354\247\200\354\233"
+   "\220\355\225\240 \352\262\275\354\232\260, WASAPI \353\223\234\353\235\274\354\235\264\353\262"
+   "\204\352\260\200 \353\266\200\353\217\231\354\206\214\354\210\230\354\240\220 \355\230\225\354"
+   "\213\235\354\235\204 \354\202\254\354\232\251\355\225\230\353\217\204\353\241\235 \355\225\251"
+   "\353\213\210\353\213\244.",
+   "WASAPI \353\223\234\353\235\274\354\235\264\353\262\204\353\245\274 \352\263\265\354\234\240 "
+   "\353\252\250\353\223\234\353\241\234 \354\202\254\354\232\251\355\225\240 \352\262\275\354\232"
+   "\260 \354\202\254\354\232\251\355\225\240 \354\244\221\352\260\204 \353\262\204\355\215\274\354"
+   "\235\230 \352\270\270\354\235\264(\355\224\204\353\240\210\354\236\204)\354\236\205\353\213\210"
+   "\353\213\244.",
+#endif
+#endif
    "\354\202\254\354\232\251\355\225\240 MIDI \353\223\234\353\235\274\354\235\264\353\262\204\354"
    "\236\205\353\213\210\353\213\244. (\354\236\254\354\213\234\354\236\221 \355\225\204\354\232\224"
    ")",
@@ -10015,6 +11092,10 @@ static const struct
    "\213\210\353\213\244.",
    "\354\204\234\353\262\204 \353\260\217 \353\204\244\355\212\270\354\233\214\355\201\254\353\245"
    "\274 \354\204\244\354\240\225\355\225\251\353\213\210\353\213\244.",
+#ifdef _3DS
+   "New3DS\354\235\230 \355\201\264\353\237\255 \354\206\215\353\217\204(804MHz)\354\231\200 L2 \354"
+   "\272\220\354\213\234\353\245\274 \354\202\254\354\232\251\355\225\251\353\213\210\353\213\244.",
+#endif
    "\354\236\205\353\240\245 \354\236\245\354\271\230\353\245\274 \354\227\260\352\262\260/\354\227"
    "\260\352\262\260 \355\225\264\354\240\234\355\225\240 \353\225\214 \355\231\224\353\251\264\354"
    "\227\220 \353\251\224\354\213\234\354\247\200\353\245\274 \355\221\234\354\213\234\355\225\251"
@@ -10533,6 +11614,10 @@ static const struct
    "\204\353\213\220 \353\225\214 '\353\257\270\353\246\254\353\263\264\352\270\260 \353\213\244\354"
    "\232\264\353\241\234\353\223\234' \355\225\255\353\252\251\354\235\204 \355\221\234\354\213\234"
    "\355\225\251\353\213\210\353\213\244.",
+#ifdef HAVE_GAME_AI
+   "'\352\262\214\354\236\204 AI' \354\230\265\354\205\230\354\235\204 \355\221\234\354\213\234\355"
+   "\225\251\353\213\210\353\213\244.",
+#endif
    "'\354\240\225\353\263\264' \354\230\265\354\205\230\354\235\204 \355\221\234\354\213\234\355\225"
    "\251\353\213\210\353\213\244.",
    "'\354\275\224\354\226\264 \354\230\265\354\205\230' \355\225\255\353\252\251\354\235\204 \355"
@@ -10840,6 +11925,11 @@ static const struct
    "eboot is required when changing.",
 #endif
 #endif
+#ifdef HAVE_LAKKA
+   "SMB \355\224\204\353\241\234\355\206\240\354\275\234\353\241\234 \353\204\244\355\212\270\354"
+   "\233\214\355\201\254 \355\217\264\353\215\224\353\245\274 \352\263\265\354\234\240\355\225\251"
+   "\353\213\210\353\213\244.",
+#endif
    "\354\275\230\355\205\220\354\270\240 \353\224\224\353\240\211\355\206\240\353\246\254\353\245"
    "\274 \354\240\200\354\236\245 \355\214\214\354\235\274 \353\224\224\353\240\211\355\206\240\353"
    "\246\254\353\241\234 \354\202\254\354\232\251\355\225\251\353\213\210\353\213\244.",
@@ -11047,6 +12137,10 @@ static const struct
    "\353\224\224\354\212\244\355\224\214\353\240\210\354\235\264 \353\252\250\353\223\234\353\245"
    "\274 \354\204\240\355\203\235\355\225\251\353\213\210\353\213\244 (\354\236\254\354\213\234\354"
    "\236\221 \355\225\204\354\232\224)",
+#ifdef HAVE_LAKKA
+   "OS \354\210\230\354\244\200 \354\204\234\353\271\204\354\212\244\353\245\274 \352\264\200\353"
+   "\246\254\355\225\251\353\213\210\353\213\244.",
+#endif
    "\355\224\204\353\241\234\352\267\270\353\236\250\354\235\204 \352\265\254\354\204\261\355\225"
    "\251\353\213\210\353\213\244.",
    "'\354\240\221\352\267\274\354\204\261' \354\204\244\354\240\225\354\235\204 \355\221\234\354\213"
@@ -11088,6 +12182,10 @@ static const struct
    "\251\353\213\210\353\213\244.",
    "'\354\240\200\354\236\245' \354\204\244\354\240\225\354\235\204 \355\221\234\354\213\234\355\225"
    "\251\353\213\210\353\213\244.",
+#ifdef HAVE_SMBCLIENT
+   "'SMB \355\201\264\353\235\274\354\235\264\354\226\270\355\212\270' \354\204\244\354\240\225\354"
+   "\235\204 \355\221\234\354\213\234\355\225\251\353\213\210\353\213\244.",
+#endif
    "'Steam' \354\204\244\354\240\225\354\235\204 \355\221\234\354\213\234\355\225\251\353\213\210"
    "\353\213\244.",
    "'\354\202\254\354\232\251\354\236\220' \354\204\244\354\240\225\354\235\204 \355\221\234\354\213"
@@ -11128,6 +12226,42 @@ static const struct
    "\354\212\254\353\241\234\353\252\250\354\205\230\354\235\204 \354\202\254\354\232\251\355\225"
    "\240 \353\225\214 \354\275\230\355\205\220\354\270\240\353\245\274 \353\212\220\353\240\244\354"
    "\247\200\352\262\214 \355\225\240 \353\271\204\354\234\250\354\236\205\353\213\210\353\213\244.",
+#ifdef HAVE_SMBCLIENT
+   "\353\204\244\355\212\270\354\233\214\355\201\254\354\227\220\354\204\234 \354\202\254\354\232"
+   "\251\353\220\230\353\212\224 \354\235\270\354\246\235 \353\260\251\354\213\235\354\235\204 \354"
+   "\204\240\355\203\235\355\225\251\353\213\210\353\213\244.",
+   "\354\204\244\354\240\225\353\220\234 SMB \352\263\265\354\234\240\354\227\220\354\204\234 \355"
+   "\214\214\354\235\274\353\223\244\354\235\204 \355\203\220\354\203\211\355\225\251\353\213\210"
+   "\353\213\244.",
+   "SMB \353\204\244\355\212\270\354\233\214\355\201\254 \352\263\265\354\234\240 \354\225\241\354"
+   "\204\270\354\212\244\353\245\274 \355\231\234\354\204\261\355\231\224\355\225\251\353\213\210"
+   "\353\213\244. \353\263\264\353\213\244 \354\225\210\354\240\225\354\240\201\354\235\270 \354\227"
+   "\260\352\262\260\354\235\204 \354\234\204\355\225\264 Wi-Fi\353\263\264\353\213\244\353\212\224 "
+   "\354\235\264\353\215\224\353\204\267 \354\202\254\354\232\251\354\235\204 \352\260\225\353\240"
+   "\245\355\236\210 \352\266\214\354\236\245\355\225\251\353\213\210\353\213\244. \354\260\270\352"
+   "\263\240: \354\235\264 \354\204\244\354\240\225\354\235\204 \353\263\200\352\262\275\355\225\230"
+   "\353\240\244\353\251\264 RetroArch\353\245\274 \353\213\244\354\213\234 \354\213\234\354\236\221"
+   "\355\225\264\354\225\274 \355\225\251\353\213\210\353\213\244.",
+   "\353\204\244\355\212\270\354\233\214\355\201\254\354\227\220\354\204\234 \354\202\254\354\232"
+   "\251\353\220\230\353\212\224 \354\265\234\353\214\200 \354\227\260\352\262\260 \354\210\230\353"
+   "\245\274 \354\204\240\355\203\235\355\225\251\353\213\210\353\213\244.",
+   "\354\235\270\354\246\235\354\235\204 \354\234\204\355\225\234 \353\271\204\353\260\200\353\262"
+   "\210\355\230\270\354\236\205\353\213\210\353\213\244.",
+   "\354\204\234\353\262\204\354\235\230 IP \354\243\274\354\206\214 \353\230\220\353\212\224 \355"
+   "\230\270\354\212\244\355\212\270\353\252\205\354\236\205\353\213\210\353\213\244.",
+   "SMB \353\204\244\355\212\270\354\233\214\355\201\254 \352\263\265\354\234\240 \354\204\244\354"
+   "\240\225\354\235\204 \353\263\200\352\262\275\355\225\251\353\213\210\353\213\244.",
+   "\354\240\221\354\206\215\355\225\240 \353\204\244\355\212\270\354\233\214\355\201\254 \352\263"
+   "\265\354\234\240\354\235\230 \354\235\264\353\246\204\354\236\205\353\213\210\353\213\244.",
+   "\352\263\265\354\234\240 \353\202\264\354\235\230 \354\204\234\353\270\214 \353\224\224\353\240"
+   "\211\355\206\240\353\246\254 \352\262\275\353\241\234\354\236\205\353\213\210\353\213\244.",
+   "\352\270\260\353\263\270 \355\203\200\354\236\204\354\225\204\354\233\203 \354\213\234\352\260"
+   "\204(\354\264\210)\354\235\204 \354\204\240\355\203\235\355\225\251\353\213\210\353\213\244.",
+   "\354\235\270\354\246\235\354\235\204 \354\234\204\355\225\234 \354\202\254\354\232\251\354\236"
+   "\220\353\252\205\354\236\205\353\213\210\353\213\244.",
+   "\354\233\214\355\201\254\352\267\270\353\243\271 \353\230\220\353\212\224 \353\217\204\353\251"
+   "\224\354\235\270 \354\235\264\353\246\204\354\236\205\353\213\210\353\213\244.",
+#endif
    "\354\275\230\355\205\220\354\270\240\352\260\200 \354\234\204\354\271\230\355\225\234 \353\224"
    "\224\353\240\211\355\206\240\353\246\254\354\235\230 \354\235\264\353\246\204\354\234\274\353"
    "\241\234 \355\217\264\353\215\224\353\245\274 \353\247\214\353\223\244\354\226\264 \354\240\200"
@@ -11149,6 +12283,11 @@ static const struct
    "\241\234 \355\217\264\353\215\224\353\245\274 \353\247\214\353\223\244\354\226\264 \354\212\244"
    "\355\201\254\353\246\260\354\203\267 \355\214\214\354\235\274\354\235\204 \354\240\225\353\240"
    "\254\355\225\251\353\213\210\353\213\244.",
+#ifdef HAVE_LAKKA
+   "SSH\353\241\234 \354\233\220\352\262\251 \353\252\205\353\240\271\354\244\204\354\227\220 \354"
+   "\240\221\354\206\215\355\225\240 \354\210\230 \354\236\210\352\262\214 \355\225\251\353\213\210"
+   "\353\213\244.",
+#endif
    "\354\275\230\355\205\220\354\270\240 \354\227\206\354\235\264 \354\275\224\354\226\264\353\245"
    "\274 \354\213\234\354\236\221\355\225\251\353\213\210\353\213\244.",
    "\354\204\240\355\203\235\353\220\234 \354\203\201\355\203\234\354\240\200\354\236\245 \354\212"
@@ -11158,12 +12297,33 @@ static const struct
    "\355\221\234\354\244\200\354\236\205\353\240\245 \353\252\205\353\240\271\354\226\264 \354\235"
    "\270\355\204\260\355\216\230\354\235\264\354\212\244 \354\202\254\354\232\251\354\235\204 \354"
    "\204\244\354\240\225\355\225\251\353\213\210\353\213\244.",
+#ifdef HAVE_MIST
+   "Steam\354\227\220\354\204\234 RetroArch\353\245\274 \354\202\254\354\232\251\355\225\240 \353"
+   "\225\214 \355\230\204\354\236\254 \354\203\201\355\203\234\353\245\274 \352\263\265\354\234\240"
+   "\355\225\251\353\213\210\353\213\244.",
+   "\354\275\230\355\205\220\354\270\240\354\227\220 \353\214\200\355\225\234 \354\226\264\353\226"
+   "\244 \354\240\225\353\263\264\353\245\274 \352\263\265\354\234\240\355\225\240\354\247\200 \352"
+   "\262\260\354\240\225\355\225\251\353\213\210\353\213\244.",
+   "Steam \352\264\200\353\240\250 \354\204\244\354\240\225\354\235\204 \353\263\200\352\262\275\355"
+   "\225\251\353\213\210\353\213\244.",
+#endif
    "\355\230\204\354\236\254 \354\275\230\355\205\220\354\270\240\354\235\230 \354\204\234\353\270"
    "\214\354\213\234\354\212\244\355\205\234 \354\204\244\354\240\225\354\227\220 \354\240\221\352"
    "\267\274\355\225\251\353\213\210\353\213\244.",
    "\354\213\234\354\212\244\355\205\234 \355\231\224\353\251\264\353\263\264\355\230\270\352\270"
    "\260\354\235\230 \353\217\231\354\236\221\354\235\204 \353\260\251\354\247\200\355\225\251\353"
    "\213\210\353\213\244.",
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   "TV\354\227\220 \353\217\204\355\202\271\355\225\240 \353\225\214 CEC \355\225\270\353\223\234"
+   "\354\205\260\354\235\264\355\201\254\353\245\274 \354\202\254\354\232\251\355\225\251\353\213"
+   "\210\353\213\244",
+#endif
+#endif
+#ifdef HAVE_LIBNX
+   "\354\212\244\354\234\204\354\271\230 CPU\353\245\274 \354\230\244\353\262\204\355\201\264\353"
+   "\237\255 \355\225\251\353\213\210\353\213\244.",
+#endif
    "\352\260\200\353\212\245\355\225\234 \354\275\224\354\226\264\354\227\220 \355\225\234\355\225"
    "\264, \354\235\264\354\240\204\354\227\220 \354\204\244\354\271\230\355\226\210\352\261\260\353"
    "\202\230 \354\210\230\353\217\231\354\234\274\353\241\234 \354\204\244\354\271\230\353\220\234 "
@@ -11171,6 +12331,12 @@ static const struct
    "\227\220\354\204\234 \354\240\234\352\263\265\355\225\230\353\212\224 \354\265\234\354\213\240 "
    "\353\262\204\354\240\204\354\234\274\353\241\234 \352\265\220\354\262\264\355\225\251\353\213"
    "\210\353\213\244.",
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   "CPU \354\230\244\353\262\204\355\201\264\353\237\255 \354\243\274\355\214\214\354\210\230 \355"
+   "\231\234\354\204\261\355\231\224",
+#endif
+#endif
    "\354\275\230\355\205\220\354\270\240 \353\224\224\353\240\211\355\206\240\353\246\254\353\245"
    "\274 \354\213\234\354\212\244\355\205\234/BIOS \353\224\224\353\240\211\355\206\240\353\246\254"
    "\353\241\234 \354\202\254\354\232\251\355\225\251\353\213\210\353\213\244.",
@@ -11213,6 +12379,12 @@ static const struct
    "\353\251\224\353\211\264\354\227\220 \355\221\234\354\213\234\353\220\240 \354\213\234\352\260"
    "\204/\353\202\240\354\247\234 \354\212\244\355\203\200\354\235\274\354\235\204 \353\263\200\352"
    "\262\275\355\225\251\353\213\210\353\213\244.",
+#ifdef HAVE_LAKKA
+   "\354\213\234\352\260\204\353\214\200\353\245\274 \354\204\244\354\240\225\355\225\230\354\227"
+   "\254 \353\202\240\354\247\234\354\231\200 \354\213\234\352\260\204\354\235\204 \355\230\204\354"
+   "\236\254 \354\234\204\354\271\230\354\227\220 \353\247\236\352\262\214 \354\241\260\354\240\225"
+   "\355\225\251\353\213\210\353\213\244.",
+#endif
    "\355\230\204\354\236\254 \354\213\234\352\260\204\354\235\204 \354\204\240\355\230\270\355\225"
    "\230\353\212\224 \355\230\225\354\213\235\354\234\274\353\241\234 \355\221\234\354\213\234\355"
    "\225\251\353\213\210\353\213\244.",
@@ -11296,6 +12468,21 @@ static const struct
    "\354\202\254\354\232\251\355\225\230\353\212\224 \352\270\260\352\270\260\354\227\220\354\204"
    "\234 \354\234\240\354\232\251\355\225\230\354\247\200\353\247\214 \354\204\261\353\212\245\354"
    "\235\264 \355\201\254\352\262\214 \352\260\220\354\206\214\353\220\251\353\213\210\353\213\244.",
+#ifdef _3DS
+   "3D \353\260\217 2D \355\231\224\353\251\264 \353\252\250\353\223\234\353\245\274 \354\204\240"
+   "\355\203\235\355\225\251\353\213\210\353\213\244. '3D' \353\252\250\353\223\234\354\227\220\354"
+   "\204\240 \355\224\275\354\205\200\354\235\264 \354\202\254\352\260\201\354\234\274\353\241\234 "
+   "\355\221\234\354\213\234\353\220\230\352\263\240 \353\271\240\353\245\270 \353\251\224\353\211"
+   "\264\354\227\220 \354\236\205\354\262\264 \355\232\250\352\263\274\352\260\200 \354\240\201\354"
+   "\232\251\353\220\251\353\213\210\353\213\244. '2D' \353\252\250\353\223\234\353\212\224 \354\265"
+   "\234\354\203\201\354\235\230 \355\215\274\355\217\254\353\250\274\354\212\244\353\245\274 \354"
+   "\240\234\352\263\265\355\225\251\353\213\210\353\213\244.",
+   "\355\225\230\353\213\250 \355\231\224\353\251\264\354\227\220 \354\203\201\355\203\234 \354\240"
+   "\225\353\263\264\353\245\274 \355\221\234\354\213\234\355\225\251\353\213\210\353\213\244. \354"
+   "\202\254\354\232\251\355\225\264\354\240\234\354\213\234 \353\260\260\355\204\260\353\246\254 "
+   "\353\260\217 \355\215\274\355\217\254\353\250\274\354\212\244\352\260\200 \355\226\245\354\203"
+   "\201\353\220\240 \354\210\230 \354\236\210\354\212\265\353\213\210\353\213\244.",
+#endif
    "\354\204\244\354\240\225\353\220\234 \354\243\274\354\202\254\354\234\250\353\263\264\353\213"
    "\244 \353\202\256\354\235\200 \354\204\261\353\212\245\354\235\264 \352\260\220\354\247\200\353"
    "\220\240 \352\262\275\354\232\260 \354\210\230\354\247\201 \353\217\231\352\270\260\355\231\224"
@@ -11361,6 +12548,43 @@ static const struct
    "\270 \355\201\254\352\270\260 \354\204\244\354\240\225\354\235\204 \354\210\230\355\226\211\355"
    "\225\251\353\213\210\353\213\244. (\354\202\254\354\232\251 \352\260\200\353\212\245 \354\213"
    "\234)",
+#endif
+#if defined(DINGUX)
+   "\353\202\264\353\266\200 IPU\353\245\274 \355\206\265\355\225\264 \355\201\254\352\270\260\354"
+   "\241\260\354\240\210 \354\213\234 \354\202\254\354\232\251\355\225\240 \354\235\264\353\257\270"
+   "\354\247\200 \353\263\264\352\260\204 \353\260\251\353\262\225\354\235\204 \354\247\200\354\240"
+   "\225\355\225\251\353\213\210\353\213\244. CPU\353\241\234 \353\217\231\354\236\221\355\225\230"
+   "\353\212\224 \353\271\204\353\224\224\354\230\244 \355\225\204\355\204\260 \354\202\254\354\232"
+   "\251\354\213\234 '\354\214\215\354\236\205\353\260\251' \353\230\220\353\212\224 '\354\235\264"
+   "\354\244\221\354\204\240\355\230\225'\354\235\204 \354\266\224\354\262\234\355\225\251\353\213"
+   "\210\353\213\244. \355\225\264\353\213\271 \354\230\265\354\205\230\354\235\200 \355\215\274\355"
+   "\217\254\353\250\274\354\212\244\354\227\220 \354\230\201\355\226\245\354\235\204 \354\243\274"
+   "\354\247\200 \354\225\212\354\212\265\353\213\210\353\213\244.",
+   "\353\202\264\353\266\200 IPU\353\245\274 \355\206\265\355\225\234 \355\201\254\354\247\200\354"
+   "\241\260\354\240\210 \354\213\234 1:1 \355\224\275\354\205\200 \353\271\204\354\234\250\354\235"
+   "\204 \354\234\240\354\247\200\355\225\251\353\213\210\353\213\244. \354\202\254\354\232\251 \355"
+   "\225\264\354\240\234\354\213\234 \354\235\264\353\257\270\354\247\200\352\260\200 \355\231\225"
+   "\353\214\200\353\220\230\354\226\264 \354\240\204\354\262\264 \355\231\224\353\251\264\354\235"
+   "\204 \354\261\204\354\232\260\352\262\214\353\220\251\353\213\210\353\213\244.",
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+   "\353\224\224\354\212\244\355\224\214\353\240\210\354\235\264\354\235\230 \354\243\274\354\202"
+   "\254\354\234\250\354\235\204 \354\204\244\354\240\225\355\225\251\353\213\210\353\213\244. '50 H"
+   "z'\353\241\234 \354\204\244\354\240\225\355\225\230\353\251\264 PAL \354\275\230\355\205\220\354"
+   "\270\240\353\245\274 \354\213\244\355\226\211\355\225\240 \353\225\214 \353\266\200\353\223\234"
+   "\353\237\275\352\262\214 \355\221\234\354\213\234\355\225\240 \354\210\230 \354\236\210\354\212"
+   "\265\353\213\210\353\213\244.",
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   "'\354\240\225\354\210\230 \353\213\250\354\234\204 \355\231\224\353\251\264 \355\201\254\352\270"
+   "\260'\353\245\274 \354\202\254\354\232\251\355\225\230\354\247\200 \354\225\212\354\235\204 \353"
+   "\225\214 \354\235\264\353\257\270\354\247\200\353\245\274 \353\263\264\352\260\204\355\225\240 "
+   "\353\260\251\354\213\235\354\235\204 \354\247\200\354\240\225\355\225\251\353\213\210\353\213"
+   "\244. '\354\265\234\352\267\274\354\240\221 \354\235\264\354\233\203'\354\235\264 \354\204\261"
+   "\353\212\245\354\227\220 \352\260\200\354\236\245 \354\230\201\355\226\245\354\235\264 \354\240"
+   "\201\354\212\265\353\213\210\353\213\244.",
+#endif
 #endif
    "\354\234\210\353\217\204\354\232\260 \353\247\244\353\213\210\354\240\200\353\212\224 \354\273"
    "\264\355\217\254\354\247\200\354\205\230\354\235\204 \355\231\234\354\232\251\355\225\230\354"
@@ -11491,6 +12715,29 @@ static const struct
    "\354\233\220\355\225\230\354\213\234\353\251\264 \354\235\264 \354\204\244\354\240\225\354\235"
    "\204 '\354\240\225\355\231\225'\354\234\274\353\241\234 \353\263\200\352\262\275\355\225\230\354"
    "\204\270\354\232\224.",
+   "\353\224\224\354\212\244\355\224\214\353\240\210\354\235\264\352\260\200 \355\221\234\354\213"
+   "\234\355\225\240 \354\210\230 \354\236\210\353\212\224 \354\265\234\353\214\200 \353\260\235\352"
+   "\270\260(nit)\354\236\205\353\213\210\353\213\244. \354\235\274\353\260\230 \353\260\235\352\270"
+   "\260 \354\234\204 \355\225\230\354\235\264\353\235\274\354\235\264\355\212\270 \353\260\235\352"
+   "\270\260\354\235\230 \353\262\224\354\234\204\353\245\274 \354\247\200\354\240\225\355\225\230"
+   "\354\227\254, \354\275\224\354\226\264\353\223\244\354\235\264 HDR \354\273\250\355\205\220\354"
+   "\270\240\353\245\274 \353\240\214\353\215\224\353\247\201\355\225\240 \353\225\214 \354\226\264"
+   "\353\212\220 \354\240\225\353\217\204\352\271\214\354\247\200 \353\260\235\352\270\260\353\245"
+   "\274 \353\260\200\354\226\264\354\230\254\353\246\264 \354\210\230 \354\236\210\353\212\224\354"
+   "\247\200\353\245\274 \354\240\225\355\225\264\354\244\215\353\213\210\353\213\244. \354\235\264 "
+   "\354\240\225\353\263\264\353\212\224 \353\224\224\354\212\244\355\224\214\353\240\210\354\235"
+   "\264\354\235\230 \354\202\254\354\226\221\354\227\220\354\204\234 \355\231\225\354\235\270\355"
+   "\225\240 \354\210\230 \354\236\210\354\212\265\353\213\210\353\213\244. \354\236\230 \353\252"
+   "\250\353\245\264\352\262\240\353\213\244\353\251\264 1000\354\234\274\353\241\234 \354\204\244"
+   "\354\240\225\355\225\264\353\221\220\354\204\270\354\232\224. \354\235\264 \352\260\222\354\235"
+   "\204 \353\224\224\354\212\244\355\224\214\353\240\210\354\235\264\352\260\200 \355\221\234\354"
+   "\213\234\355\225\240 \354\210\230 \354\236\210\353\212\224 \353\260\235\352\270\260 \354\235\264"
+   "\354\203\201\354\234\274\353\241\234 \354\230\254\353\246\264 \352\262\275\354\232\260 \353\260"
+   "\235\354\235\200 \353\266\200\353\266\204\354\235\230 \353\260\235\352\270\260\352\260\200 ",
+   "\353\266\200\353\223\234\353\237\275\352\262\214 \354\262\230\353\246\254\353\220\230\354\247"
+   "\200 \354\225\212\352\263\240 \354\236\230\353\240\244\353\202\230\352\260\200\353\212\224 \355"
+   "\230\204\354\203\201\354\235\264 \353\260\234\354\203\235\355\225\240 \354\210\230 \354\236\210"
+   "\354\212\265\353\213\210\353\213\244.",
    "HDR \353\260\235\352\270\260 \354\210\230\354\244\200(\353\213\210\355\212\270)\354\235\204 \354"
    "\204\244\354\240\225\355\225\251\353\213\210\353\213\244. \353\224\224\354\212\244\355\224\214"
    "\353\240\210\354\235\264\354\235\230 \353\254\274\353\246\254\354\240\201 \353\260\235\352\270"
@@ -11626,6 +12873,12 @@ static const struct
    "\353\224\224\354\212\244\355\224\214\353\240\210\354\235\264 \353\223\234\353\235\274\354\235"
    "\264\353\262\204\352\260\200 \353\263\264\352\263\240\355\225\234 \355\231\224\353\251\264 \354"
    "\243\274\354\202\254\354\234\250\354\236\205\353\213\210\353\213\244.",
+#ifdef HAVE_ODROIDGO2
+   "RGA \355\201\254\352\270\260 \354\204\244\354\240\225 \353\260\217 \353\260\224\354\235\264\355"
+   "\201\220\353\271\205 \355\225\204\355\204\260\353\247\201\354\235\204 \355\225\251\353\213\210"
+   "\353\213\244. \354\234\204\354\240\257\355\221\234\354\213\234\352\260\200 \354\236\230\353\252"
+   "\273\353\220\240 \354\210\230 \354\236\210\354\212\265\353\213\210\353\213\244.",
+#endif
    "\352\260\225\354\240\234\353\241\234 \355\231\224\353\251\264\354\235\204 \355\232\214\354\240"
    "\204\354\213\234\355\202\265\353\213\210\353\213\244. \354\275\224\354\226\264 \352\270\260\353"
    "\263\270 \355\232\214\354\240\204 \354\204\244\354\240\225\354\227\220 \354\266\224\352\260\200"
@@ -11799,6 +13052,24 @@ static const struct
    "\244. \354\205\260\354\235\264\353\215\224\353\245\274 \354\202\254\354\232\251\355\225\240 \352"
    "\262\275\354\232\260 \353\271\204\355\231\234\354\204\261\355\231\224\353\220\230\354\226\264"
    "\354\225\274 \355\225\251\353\213\210\353\213\244.",
+   "HDR\354\235\204 \354\202\254\354\232\251\355\225\230\354\247\200 \354\225\212\354\235\204 \353"
+   "\225\214 \354\202\254\354\232\251\353\220\240 \354\265\234\354\242\205 \354\266\234\353\240\245 "
+   "\355\221\234\353\251\264\354\235\230 \353\271\204\355\212\270 \352\271\212\354\235\264\354\236"
+   "\205\353\213\210\353\213\244. 10\353\271\204\355\212\270\353\241\234 \354\204\244\354\240\225"
+   "\355\225\240 \352\262\275\354\232\260, CRT \353\271\224\354\235\264\353\202\230 \354\225\240\355"
+   "\215\274\354\262\230 \352\267\270\353\246\264 \353\247\210\354\212\244\355\201\254 \353\223\261 "
+   "\354\235\264\353\257\270\354\247\200\353\245\274 \354\226\264\353\221\241\352\262\214 \353\247"
+   "\214\353\223\234\353\212\224 \355\232\250\352\263\274\354\235\230 \354\205\260\354\235\264\353"
+   "\215\224\353\241\234 \354\235\270\355\225\264 \354\203\235\352\270\260\353\212\224 \353\260\264"
+   "\353\224\251 \355\232\250\352\263\274\352\260\200 \354\240\234\352\261\260\353\220\251\353\213"
+   "\210\353\213\244. \353\224\224\354\212\244\355\224\214\353\240\210\354\235\264 \353\230\220\353"
+   "\212\224 \354\273\264\355\217\254\354\247\200\355\204\260\352\260\200 10\353\271\204\355\212\270"
+   "\353\245\274 \354\247\200\354\233\220\355\225\230\354\247\200 \354\225\212\354\235\204 \352\262"
+   "\275\354\232\260 8\353\271\204\355\212\270\352\260\200 \353\214\200\354\213\240 \354\202\254\354"
+   "\232\251\353\220\251\353\213\210\353\213\244. HDR\354\235\204 \354\202\254\354\232\251\355\225"
+   "\240 \352\262\275\354\232\260 HDR \355\217\254\353\247\267\354\235\264 \354\202\254\354\232\251"
+   "\353\220\230\353\257\200\353\241\234, \354\235\264 \352\260\222\354\235\200 \353\254\264\354\213"
+   "\234\353\220\251\353\213\210\353\213\244.",
    "\354\210\230\354\247\201 \353\217\231\352\270\260\355\231\224\354\227\220 \354\202\254\354\232"
    "\251\354\236\220 \354\240\225\354\235\230 \354\212\244\354\231\221 \352\260\204\352\262\251\354"
    "\235\204 \354\202\254\354\232\251\355\225\251\353\213\210\353\213\244. \353\252\250\353\213\210"
@@ -11833,6 +13104,24 @@ static const struct
    "\264 \352\270\260\353\212\245\354\235\200 \354\235\274\353\266\200 \354\205\260\354\235\264\353"
    "\215\224\353\245\274 \353\247\235\352\260\200\355\212\270\353\246\264 \354\210\230 \354\236\210"
    "\354\212\265\353\213\210\353\213\244.",
+#if defined(RARCH_MOBILE)
+   "\353\267\260\355\217\254\355\212\270 \352\260\200\353\241\234 \352\270\270\354\235\264\352\260"
+   "\200 \354\273\250\355\205\220\354\270\240 \352\260\200\353\241\234 \352\270\270\354\235\264\353"
+   "\263\264\353\213\244 \352\270\270 \353\225\214 \354\273\250\355\205\220\354\270\240\353\245\274 "
+   "\355\221\234\354\213\234\355\225\240 \352\260\200\353\241\234 \354\234\204\354\271\230\354\236"
+   "\205\353\213\210\353\213\244. 0.0\354\235\200 \354\231\274\354\252\275 \353\201\235, 0.5\353\212"
+   "\224 \352\260\200\354\232\264\353\215\260, 1.0\354\235\200 \354\230\244\353\245\270\354\252\275 "
+   "\353\201\235\354\236\205\353\213\210\353\213\244. (\354\204\270\353\241\234 \355\231\224\353\251"
+   "\264)",
+   "\353\267\260\355\217\254\355\212\270 \354\204\270\353\241\234 \352\270\270\354\235\264\352\260"
+   "\200 \354\273\250\355\205\220\354\270\240 \354\204\270\353\241\234 \352\270\270\354\235\264\353"
+   "\263\264\353\213\244 \352\270\270 \353\225\214 \354\273\250\355\205\220\354\270\240\353\245\274 "
+   "\355\221\234\354\213\234\355\225\240 \354\204\270\353\241\234 \354\234\204\354\271\230\354\236"
+   "\205\353\213\210\353\213\244. 0.0\354\235\200 \354\234\204\354\252\275 \353\201\235, 0.5\353\212"
+   "\224 \352\260\200\354\232\264\353\215\260, 1.0\354\235\200 \354\225\204\353\236\230\354\252\275 "
+   "\353\201\235\354\236\205\353\213\210\353\213\244. (\354\204\270\353\241\234 \355\231\224\353\251"
+   "\264)",
+#endif
    "\353\267\260\355\217\254\355\212\270 \352\260\200\353\241\234 \352\270\270\354\235\264\352\260"
    "\200 \354\273\250\355\205\220\354\270\240 \352\260\200\353\241\234 \352\270\270\354\235\264\353"
    "\263\264\353\213\244 \352\270\270 \353\225\214 \354\273\250\355\205\220\354\270\240\353\245\274 "
@@ -11873,6 +13162,15 @@ static const struct
    "\355\225\251\353\213\210\353\213\244. \354\204\261\353\212\245\354\235\204 \355\235\254\354\203"
    "\235\355\225\264 \354\247\200\354\227\260\354\213\234\352\260\204\354\235\204 \354\244\204\354"
    "\236\205\353\213\210\353\213\244.",
+#if defined (WIIU)
+#ifdef WIIU
+   "GamePad\354\235\230 \354\240\225\355\231\225\355\236\210 2\353\260\260 \355\201\254\352\270\260"
+   "\353\245\274 \353\267\260\355\217\254\355\212\270\353\241\234 \354\202\254\354\232\251\355\225"
+   "\251\353\213\210\353\213\244. \353\271\204\355\231\234\354\204\261\355\231\224\355\225\240 \352"
+   "\262\275\354\232\260 TV\354\235\230 \352\270\260\353\263\270 \355\225\264\354\203\201\353\217"
+   "\204\353\241\234 \354\266\234\353\240\245\353\220\251\353\213\210\353\213\244.",
+#endif
+#endif
    "\354\240\204\354\262\264\355\231\224\353\251\264\354\235\204 \354\202\254\354\232\251\355\225"
    "\240 \352\262\275\354\232\260, \355\231\224\353\251\264 \353\252\250\353\223\234 \353\263\200"
    "\352\262\275\354\235\204 \353\247\211\352\270\260 \354\234\204\355\225\264 \354\240\204\354\262"
@@ -11951,6 +13249,9 @@ static const struct
    "\353\254\264\354\204\240 \353\204\244\355\212\270\354\233\214\355\201\254\353\245\274 \352\262"
    "\200\354\203\211\355\225\230\352\263\240 \354\227\260\352\262\260\355\225\251\353\213\210\353"
    "\213\244.",
+   "\354\203\211\354\203\201 \355\205\214\353\247\210\354\235\230 \353\266\210\355\210\254\353\252"
+   "\205\353\217\204 \355\215\274\354\204\274\355\212\270\353\245\274 \353\263\200\352\262\275\355"
+   "\225\251\353\213\210\353\213\244.",
    "\355\230\204\354\236\254 \353\251\224\353\211\264\354\235\230 \354\225\204\354\235\264\354\275"
    "\230\354\235\204 \354\210\250\352\270\260\352\261\260\353\202\230, \354\210\230\355\217\211 \353"
    "\251\224\353\211\264 \354\225\204\353\236\230, \353\230\220\353\212\224 \355\203\200\354\235\264"
@@ -11993,6 +13294,18 @@ static const struct
    "\354\231\274\354\252\275 \353\257\270\353\246\254\353\263\264\352\270\260\353\245\274 \354\230"
    "\244\353\245\270\354\252\275 \353\257\270\353\246\254\353\263\264\352\270\260\354\235\230 \354"
    "\225\204\353\236\230\354\227\220 \355\221\234\354\213\234\355\225\251\353\213\210\353\213\244.",
+#ifdef _3DS
+   "\354\225\240\354\205\213\354\235\204 \354\260\276\354\235\204 \354\210\230 \354\227\206\354\235"
+   "\214",
+   "\355\204\260\354\271\230\355\225\264\354\204\234\nRetroArch \353\251\224\353\211\264\353\241\234",
+   "\354\203\201\355\203\234\354\240\200\354\236\245\n\353\266\210\353\237\254\354\230\244\352\270"
+   "\260",
+   "\353\215\260\354\235\264\355\204\260\n\354\227\206\354\235\214",
+   "\354\212\244\355\201\254\353\246\260\354\203\267\n\354\227\206\354\235\214",
+   "\354\235\264\354\226\264\355\225\230\352\270\260",
+   "\354\203\201\355\203\234\354\240\200\354\236\245\n\354\203\235\354\204\261\355\225\230\352\270"
+   "\260",
+#endif
    "RetroArch \354\240\221\352\267\274\354\204\261 \352\270\260\353\212\245 \354\202\254\354\232\251"
    " \354\244\221. \353\251\224\354\235\270 \353\251\224\353\211\264 \354\275\224\354\226\264 \353"
    "\266\210\353\237\254\354\230\244\352\270\260.",
@@ -12272,6 +13585,13 @@ static const struct
    "'\353\213\250\353\217\205 \354\213\244\355\226\211 \354\275\224\354\226\264' \353\252\251\353"
    "\241\235\354\227\220\354\204\234 \354\275\224\354\226\264\353\245\274 \354\202\255\354\240\234"
    "\355\225\240 \354\210\230 \354\227\206\354\235\214: ",
+#ifdef HAVE_MIST
+   "\354\275\224\354\226\264\353\245\274 \353\213\244\354\232\264\353\241\234\353\223\234 \354\244"
+   "\221\354\236\205\353\213\210\353\213\244",
+   "\354\275\224\354\226\264 \354\204\244\354\271\230 \354\244\221: ",
+   "RetroArch\353\245\274 \354\242\205\353\243\214\355\225\240 \353\225\214 \354\275\224\354\226\264"
+   "\352\260\200 \354\202\255\354\240\234\353\220\251\353\213\210\353\213\244.",
+#endif
    "\354\275\224\354\226\264 \354\236\240\352\270\210\355\225\264\354\240\234 \354\213\244\355\214"
    "\250: ",
    "'\353\213\250\353\217\205 \354\213\244\355\226\211 \354\275\224\354\226\264' \353\252\251\353"
@@ -12569,6 +13889,22 @@ static const struct
    "\354\275\224\354\226\264\353\245\274 \353\250\274\354\240\200 \353\266\210\353\237\254\354\231"
    "\200\354\243\274\354\213\255\354\213\234\354\230\244.",
    "\353\241\234\354\273\254",
+#ifdef HAVE_LAKKA
+   "Wi-Fi \354\225\241\354\204\270\354\212\244 \355\217\254\354\235\270\355\212\270\352\260\200 \354"
+   "\235\264\353\257\270 \354\274\234\354\240\270 \354\236\210\354\212\265\353\213\210\353\213\244",
+   "Wi-Fi \354\225\241\354\204\270\354\212\244 \355\217\254\354\235\270\355\212\270 \352\265\254\354"
+   "\204\261 \355\214\214\354\235\274\354\235\204 \353\247\214\353\223\244 \354\210\230 \354\227\206"
+   "\354\212\265\353\213\210\353\213\244.",
+   "\354\236\230\353\252\273\353\220\234 \352\265\254\354\204\261 \355\214\214\354\235\274 - %s\354"
+   "\227\220\354\204\234 APNAME \353\230\220\353\212\224 PASSWORD\353\245\274 \354\260\276\354\235"
+   "\204 \354\210\230 \354\227\206\354\212\265\353\213\210\353\213\244.",
+   "Wi-Fi \354\225\241\354\204\270\354\212\244 \355\217\254\354\235\270\355\212\270\352\260\200 \352"
+   "\272\274\354\240\270 \354\236\210\354\212\265\353\213\210\353\213\244",
+   "Wi-Fi \354\225\241\354\204\270\354\212\244 \355\217\254\354\235\270\355\212\270\353\245\274 \354"
+   "\213\234\354\236\221\355\225\251\353\213\210\353\213\244. SSID=%s \354\225\224\355\230\270=%s",
+   "Wi-Fi \354\225\241\354\204\270\354\212\244 \355\217\254\354\235\270\355\212\270\353\245\274 \354"
+   "\242\205\353\243\214\355\225\251\353\213\210\353\213\244.",
+#endif
    "\354\225\204\354\274\200\354\235\264\353\223\234 DAT \355\214\214\354\235\274\354\235\264 \354"
    "\230\254\353\260\224\353\245\264\354\247\200 \354\225\212\354\212\265\353\213\210\353\213\244.",
    "\354\225\204\354\274\200\354\235\264\353\223\234 DAT \355\214\214\354\235\274\354\235\204 \353"
@@ -13070,6 +14406,11 @@ static const struct
    "\212\265\353\213\210\353\213\244.",
    "\355\201\264\353\235\274\354\235\264\354\226\270\355\212\270\353\245\274 \352\270\260\353\213"
    "\244\353\246\254\352\263\240 \354\236\210\354\212\265\353\213\210\353\213\244...",
+#ifdef HAVE_LAKKA
+   "Wi-Fi '%s'\354\227\220 \354\227\260\352\262\260 \354\244\221",
+   "Wi-Fi '%s'\354\227\220\354\204\234 \354\227\260\352\262\260 \355\225\264\354\240\234\353\220\250",
+   "[SSID \354\227\206\354\235\214]",
+#endif
    "Wi-Fi \352\262\200\354\203\211 \354\231\204\353\243\214.",
 };
 
@@ -13077,21 +14418,323 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ko_blob_check[
-      (sizeof(msg_hash_ko_blob) == (197128u
+      (sizeof(msg_hash_ko_blob) == (201370u
+#ifdef ANDROID
+       + 436u
+#endif
+#ifdef HAVE_MICROPHONE
+       + 124u
+#endif
+#ifdef HAVE_LAKKA
+       + 225u
+#endif
 #ifndef HAVE_DYNAMIC
        + 55u
+#endif
+#ifdef HAVE_LAKKA
+       + 20u
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+       + 31u
+#endif
+#endif
+#ifdef _3DS
+       + 34u
+       + 19u
+       + 19u
+       + 24u
+       + 19u
+       + 14u
+       + 14u
+#endif
+#ifdef HAVE_GAME_AI
+       + 10u
+#endif
+#ifdef HAVE_MIST
+       + 14u
+       + 14u
+       + 14u
+#endif
+#ifdef _3DS
+       + 29u
+       + 18u
+#endif
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+       + 20u
+#endif
+#endif
+#ifdef HAVE_GAME_AI
+       + 23u
+       + 10u
+       + 10u
+       + 17u
+#endif
+#ifdef ANDROID
+       + 27u
+#endif
+#ifdef GEKKO
+       + 17u
+#endif
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+       + 47u
+#endif
+#ifdef ANDROID
+       + 27u
+#endif
+#ifdef UDEV_TOUCH_SUPPORT
+       + 47u
+       + 47u
+       + 47u
+       + 50u
+       + 47u
+#endif
+#ifdef HAVE_LAKKA_SWITCH
+       + 23u
+#endif
+#ifdef HAVE_LAKKA
+       + 26u
+#endif
+#ifdef _3DS
+       + 25u
+#endif
+#ifdef HAVE_MIST
+       + 23u
+#endif
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+       + 29u
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
+       + 27u
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
+       + 17u
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+       + 10u
+       + 10u
+       + 29u
+       + 29u
+       + 23u
+       + 30u
+       + 10u
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+       + 21u
+       + 30u
+       + 28u
+#endif
+#endif
+#ifdef _3DS
+       + 33u
+#endif
+#ifdef HAVE_QT
+       + 666u
+#endif
+#ifdef HAVE_GAME_AI
+       + 19u
 #endif
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
        + 77u
 #endif
 #endif
+#ifdef HAVE_LAKKA
+       + 13u
+#endif
+#ifdef HAVE_SMBCLIENT
+       + 29u
+       + 18u
+       + 18u
+       + 27u
+       + 22u
+       + 17u
+       + 11u
+       + 24u
+       + 18u
+       + 11u
+       + 33u
+       + 17u
+       + 17u
+       + 17u
+#endif
+#ifdef HAVE_LAKKA
+       + 11u
+#endif
+#ifdef HAVE_MIST
+       + 28u
+       + 38u
+       + 10u
+       + 26u
+       + 29u
+       + 45u
+       + 14u
+       + 17u
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+       + 11u
+#endif
+#endif
+#ifdef HAVE_LIBNX
+       + 17u
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+       + 17u
+#endif
+#endif
+#ifdef HAVE_LAKKA
+       + 10u
+#endif
+#ifdef _3DS
+       + 18u
+       + 18u
+#endif
 #ifdef HAVE_ODROIDGO2
 #else
        + 34u
 #endif
+#if defined(DINGUX)
+       + 16u
+       + 19u
+       + 17u
+       + 17u
+       + 21u
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+       + 10u
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+       + 10u
+       + 17u
+       + 17u
+#endif
+#endif
+#ifdef HAVE_ODROIDGO2
+       + 18u
+#endif
+#if defined(RARCH_MOBILE)
+       + 51u
+       + 51u
+#endif
+#if defined (WIIU)
+#ifdef WIIU
+       + 53u
+#endif
+#endif
+#if defined(RARCH_MOBILE)
+       + 51u
+       + 51u
+#endif
 #ifndef HAVE_DYNAMIC
        + 205u
+#endif
+#ifdef HAVE_LAKKA
+       + 40u
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+       + 121u
+#endif
+#endif
+#ifdef _3DS
+       + 122u
+       + 54u
+       + 54u
+       + 57u
+       + 54u
+       + 179u
+       + 58u
+#endif
+#ifdef HAVE_MIST
+       + 70u
+#endif
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+       + 60u
+#endif
+#endif
+#ifdef HAVE_GAME_AI
+       + 30u
+       + 25u
+       + 25u
+       + 17u
+#endif
+#ifdef ANDROID
+       + 312u
+#endif
+#ifdef GEKKO
+       + 55u
+#endif
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+       + 73u
+#endif
+#if defined(ANDROID)
+       + 163u
+#endif
+#ifdef ANDROID
+       + 80u
+#endif
+#ifdef UDEV_TOUCH_SUPPORT
+       + 103u
+       + 67u
+       + 78u
+       + 123u
+       + 157u
+#endif
+#ifdef HAVE_LAKKA_SWITCH
+       + 50u
+#endif
+#ifdef HAVE_LAKKA
+       + 46u
+#endif
+#ifdef _3DS
+       + 51u
+#endif
+#ifdef HAVE_MIST
+       + 60u
+#endif
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+       + 66u
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
+       + 124u
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+       + 62u
+       + 171u
+       + 118u
+       + 159u
+       + 56u
+       + 204u
+       + 44u
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+       + 176u
+       + 114u
+       + 112u
+#endif
+#endif
+#ifdef _3DS
+       + 65u
+#endif
+#ifdef HAVE_GAME_AI
+       + 39u
 #endif
 #if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
        + 304u
@@ -13101,14 +14744,111 @@ typedef char msg_hash_ko_blob_check[
        + 125u
 #endif
 #endif
+#ifdef HAVE_LAKKA
+       + 60u
+       + 40u
+#endif
+#ifdef HAVE_SMBCLIENT
+       + 49u
+       + 66u
+       + 57u
+       + 238u
+       + 70u
+       + 40u
+       + 50u
+       + 51u
+       + 50u
+       + 51u
+       + 52u
+       + 40u
+       + 47u
+#endif
+#ifdef HAVE_LAKKA
+       + 59u
+#endif
+#ifdef HAVE_MIST
+       + 73u
+       + 67u
+       + 40u
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+       + 59u
+#endif
+#endif
+#ifdef HAVE_LIBNX
+       + 41u
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+       + 37u
+#endif
+#endif
+#ifdef HAVE_LAKKA
+       + 87u
+#endif
+#ifdef _3DS
+       + 207u
+       + 125u
+#endif
 #ifdef HAVE_ODROIDGO2
 #else
        + 80u
+#endif
+#if defined(DINGUX)
+       + 257u
+       + 156u
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+       + 145u
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+       + 170u
+#endif
+#endif
+#ifdef HAVE_ODROIDGO2
+       + 103u
+#endif
+#if defined(RARCH_MOBILE)
+       + 196u
+       + 196u
+#endif
+#if defined (WIIU)
+#ifdef WIIU
+       + 132u
+#endif
+#endif
+#ifdef _3DS
+       + 28u
+       + 33u
+       + 26u
+       + 17u
+       + 20u
+       + 13u
+       + 26u
+#endif
+#ifdef HAVE_MIST
+       + 36u
+       + 20u
+       + 54u
+#endif
+#ifdef HAVE_LAKKA
+       + 56u
+       + 68u
+       + 86u
+       + 49u
+       + 64u
+       + 46u
+       + 25u
+       + 34u
+       + 14u
 #endif
       )) ? 1 : -1];
 
 static const uint32_t msg_hash_ko_ids[] =
 {
+   (uint32_t)MENU_ENUM_LABEL_AI_SERVICE_BACKEND,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_EMU,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_16,
@@ -13133,6 +14873,8 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_H,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_V,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
    (uint32_t)MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW,
@@ -13205,6 +14947,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_POLL_TYPE_BEHAVIOR,
    (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_PREFER_FRONT_TOUCH,
    (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
+#ifdef ANDROID
+   (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_SELECT_PHYSICAL_KEYBOARD,
+#endif
    (uint32_t)MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
    (uint32_t)MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_HID,
    (uint32_t)MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_LINUXRAW,
@@ -13220,6 +14965,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_MENU_DRIVER_OZONE,
    (uint32_t)MENU_ENUM_LABEL_HELP_MENU_DRIVER_RGUI,
    (uint32_t)MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
+#ifdef HAVE_MICROPHONE
+   (uint32_t)MENU_ENUM_LABEL_HELP_MICROPHONE_DEVICE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_HELP_MIDI_INPUT,
    (uint32_t)MENU_ENUM_LABEL_HELP_MIDI_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_HELP_NETPLAY_CHECK_FRAMES,
@@ -13237,6 +14985,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_SHADER_APPLY_CHANGES,
    (uint32_t)MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
    (uint32_t)MENU_ENUM_LABEL_HELP_SUSPEND_SCREENSAVER_ENABLE,
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_LABEL_HELP_TIMEZONE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
    (uint32_t)MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
@@ -13352,7 +15103,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTPATH_S16,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FORMAT_NEGOTIATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
@@ -13395,7 +15148,24 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BLUETOOTH_DRIVER,
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BLUETOOTH_ENABLE,
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BLUETOOTH_ERTM_DISABLE,
+#endif
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_BLUETOOTH_SETTINGS,
+#ifdef _3DS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BOTTOM_ASSETS_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_BLUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_GREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_OPACITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_SCALE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BROWSE_START,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BROWSE_URL,
@@ -13589,6 +15359,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_DELETE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_ENABLE,
+#ifdef HAVE_GAME_AI
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_GAME_AI_OPTIONS,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
@@ -13617,6 +15390,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST,
+#ifdef HAVE_MIST
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_MANAGER_STEAM_LIST,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
@@ -13627,6 +15403,10 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
+#ifdef HAVE_MIST
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_STEAM_INSTALL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_STEAM_UNINSTALL,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SUGGEST_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
@@ -13661,6 +15441,10 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_VERTICAL_ADJUST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
+#ifdef _3DS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_400X240,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800X240,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CYCLE_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
@@ -13702,6 +15486,11 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DUMP_DISC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EJECT_DISC,
+#endif
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_ENABLED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_ADDITIONAL_FILTER,
@@ -13764,6 +15553,12 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FRONTEND_LOG_LEVEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_GAMEMODE_ENABLE,
+#ifdef HAVE_GAME_AI
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GAME_AI_MENU_OPTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GAME_AI_OVERRIDE_P1,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GAME_AI_OVERRIDE_P2,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GAME_AI_SHOW_DEBUG,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_CREATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
@@ -13800,6 +15595,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
+#ifdef ANDROID
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANDROID_SYSTEM_KEYBOARD,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
@@ -13930,8 +15728,14 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_MIDDLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_RIGHT,
+#ifdef GEKKO
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_SCALE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_DOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_UP,
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_AUTO_SCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
@@ -13976,6 +15780,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
+#ifdef ANDROID
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
@@ -13986,6 +15793,13 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
+#ifdef UDEV_TOUCH_SUPPORT
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_GESTURE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_MOUSE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_POINTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TRACKBALL,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ALLOW_DPAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BIND,
@@ -14003,6 +15817,10 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_KEYBOARD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_KICK_STREAM_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_L1_R1_START_SELECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
+#ifdef HAVE_LAKKA_SWITCH
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LAKKA_SWITCH_OPTIONS,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG_FORCED,
@@ -14021,6 +15839,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_DISC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_STATE,
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOCALAP_ENABLE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
@@ -14112,11 +15933,17 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ALLOW_TABS_BACK,
+#ifdef _3DS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
@@ -14145,6 +15972,7 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWITCH_ICONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DELAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DITHER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DOWNSCALER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -14160,8 +15988,17 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIRM,
+#ifdef HAVE_MIST
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_DUMP_DISC,
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_EJECT_DISC,
+#endif
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_FULL_PATHS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
@@ -14182,7 +16019,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_SCROLL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TEXTURE_MIPMAPPING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_PREVIEW_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_SPEED,
@@ -14192,6 +16031,7 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
@@ -14206,6 +16046,32 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_INPUT_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS,
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+#endif
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
@@ -14295,6 +16161,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_PORT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_USER_REMOTE_ENABLE,
+#ifdef _3DS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NEW3DS_SPEEDUP_ENABLE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG,
@@ -14604,6 +16473,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_RESET_PASS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_RESTART_TO_TAKE_EFFECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_SAVE,
+#ifdef HAVE_QT
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_SELECT_COLOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_SELECT_FILES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_SELECT_FOLDER,
@@ -14637,6 +16509,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+#ifdef HAVE_GAME_AI
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_GAME_AI,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_REPLAY,
@@ -14830,6 +16705,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
 #endif
 #endif
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAMBA_ENABLE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
@@ -14906,6 +16784,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_POWER_MANAGEMENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_RECORDING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SAVING,
+#ifdef HAVE_SMBCLIENT
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SMB_CLIENT,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_STEAM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER_INTERFACE,
@@ -14934,6 +16815,21 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
+#ifdef HAVE_SMBCLIENT
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
@@ -14941,6 +16837,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SOUND_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SPECS_SETTINGS,
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SSH_ENABLE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_START_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_START_SELECT,
@@ -14949,6 +16848,16 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STATUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE,
+#ifdef HAVE_MIST
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_SYSTEM,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
@@ -14959,7 +16868,20 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUSTAINED_PERFORMANCE_MODE,
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_CEC_ENABLE,
+#endif
+#endif
+#ifdef HAVE_LIBNX
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_OC_ENABLE,
+#endif
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY,
@@ -14975,6 +16897,7 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MOLTENVK_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,
@@ -14997,6 +16920,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_DATE_SEPARATOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEZONE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_SHOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_DAYS_PLURAL,
@@ -15054,6 +16980,10 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
+#ifdef _3DS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_3DS_DISPLAY_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
@@ -15074,6 +17004,23 @@ static const uint32_t msg_hash_ko_ids[] =
 #ifdef HAVE_ODROIDGO2
 #else
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_CTX_SCALING,
+#endif
+#if defined(DINGUX)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
@@ -15108,6 +17055,7 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_EXPANDED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_SUPER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_WIDE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
@@ -15151,6 +17099,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
+#ifdef HAVE_ODROIDGO2
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_180_DEG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_270_DEG,
@@ -15196,6 +17147,10 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_10,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_8,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
@@ -15203,6 +17158,10 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
+#if defined(RARCH_MOBILE)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
@@ -15212,6 +17171,11 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
+#if defined (WIIU)
+#ifdef WIIU
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
+#endif
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
@@ -15230,6 +17194,7 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_ENABLED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NORMAL,
@@ -15280,9 +17245,15 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_YES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_YOUTUBE_STREAM_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_HDR_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
+#if defined(RARCH_MOBILE)
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_ENABLED,
@@ -15327,7 +17298,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTPATH_S16,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FILTER_DIR,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FORMAT_NEGOTIATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
@@ -15354,7 +17327,24 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
    (uint32_t)MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE,
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   (uint32_t)MENU_ENUM_SUBLABEL_BLUETOOTH_ERTM_DISABLE,
+#endif
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
+#ifdef _3DS
+   (uint32_t)MENU_ENUM_SUBLABEL_BOTTOM_ASSETS_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,
+   (uint32_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_GREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_OPACITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_RED,
+   (uint32_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_SCALE,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_BRIGHTNESS_CONTROL,
    (uint32_t)MENU_ENUM_SUBLABEL_BUILDBOT_ASSETS_URL,
    (uint32_t)MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
@@ -15479,6 +17469,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_LOCK,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_MANAGER_LIST,
+#ifdef HAVE_MIST
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_MANAGER_STEAM_LIST,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_OPTIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_OPTIONS_FLUSH,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
@@ -15525,6 +17518,11 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_DUMP_DISC,
    (uint32_t)MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPER,
    (uint32_t)MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPERS_DIRECTORY,
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_SUBLABEL_EJECT_DISC,
+#endif
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
    (uint32_t)MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
    (uint32_t)MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_PICKER,
@@ -15540,6 +17538,12 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
    (uint32_t)MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
+#ifdef HAVE_GAME_AI
+   (uint32_t)MENU_ENUM_SUBLABEL_GAME_AI_MENU_OPTION,
+   (uint32_t)MENU_ENUM_SUBLABEL_GAME_AI_OVERRIDE_P1,
+   (uint32_t)MENU_ENUM_SUBLABEL_GAME_AI_OVERRIDE_P2,
+   (uint32_t)MENU_ENUM_SUBLABEL_GAME_AI_SHOW_DEBUG,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_CREATE,
    (uint32_t)MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
    (uint32_t)MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS,
@@ -15561,6 +17565,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
+#ifdef ANDROID
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANDROID_SYSTEM_KEYBOARD,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
@@ -15648,6 +17655,12 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_UP,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
+#ifdef GEKKO
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
+#endif
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OSK_OVERLAY_AUTO_SCALE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
@@ -15658,6 +17671,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
+#if defined(ANDROID)
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED_ANDROID,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_PORT,
@@ -15685,6 +17701,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SAVE_AUTOCONFIG,
+#ifdef ANDROID
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
@@ -15692,6 +17711,13 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
+#ifdef UDEV_TOUCH_SUPPORT
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_MOUSE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_POINTER,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_ALLOW_DPAD,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_BIND,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_BUTTON,
@@ -15705,6 +17731,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
    (uint32_t)MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
+#ifdef HAVE_LAKKA_SWITCH
+   (uint32_t)MENU_ENUM_SUBLABEL_LAKKA_SWITCH_OPTIONS,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_MATERIALUI,
@@ -15717,6 +17746,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_LOAD_DISC,
    (uint32_t)MENU_ENUM_SUBLABEL_LOAD_STATE,
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_SUBLABEL_LOCALAP_ENABLE,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_LOCATION_ALLOW,
    (uint32_t)MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
@@ -15752,6 +17784,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MEMORY_SHOW,
    (uint32_t)MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK,
+#ifdef _3DS
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_BOTTOM_SETTINGS,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
@@ -15782,6 +17817,7 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_SWAP_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_SWITCH_ICONS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DELAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DITHER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
@@ -15794,8 +17830,17 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM,
+#ifdef HAVE_MIST
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_DUMP_DISC,
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_EJECT_DISC,
+#endif
+#endif
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_FULL_PATHS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
@@ -15811,7 +17856,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_TEXTURE_MIPMAPPING,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_AUDIO,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
@@ -15819,6 +17866,7 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_WIDGETS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_AUTO,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
@@ -15827,7 +17875,33 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_SHOW_HORIZONTAL_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_SHOW_TITLE_HEADER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_TITLE_MARGIN,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_VERTICAL_FADE_FACTOR,
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
+   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_DEVICE,
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_INPUT_RATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_SETTINGS,
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+#endif
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_MIDI_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MIDI_INPUT,
    (uint32_t)MENU_ENUM_SUBLABEL_MIDI_OUTPUT,
@@ -15877,6 +17951,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
+#ifdef _3DS
+   (uint32_t)MENU_ENUM_SUBLABEL_NEW3DS_SPEEDUP_ENABLE,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
@@ -15987,6 +18064,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CONTROLS,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+#ifdef HAVE_GAME_AI
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_GAME_AI,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_REPLAY,
@@ -16070,6 +18150,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
 #endif
 #endif
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_SUBLABEL_SAMBA_ENABLE,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
@@ -16106,6 +18189,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION,
    (uint32_t)MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_SUBLABEL_SERVICES_SETTINGS,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACCESSIBILITY,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACHIEVEMENTS,
@@ -16126,6 +18212,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SAVING,
+#ifdef HAVE_SMBCLIENT
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_STEAM,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER_INTERFACE,
@@ -16140,18 +18229,53 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
    (uint32_t)MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
+#ifdef HAVE_SMBCLIENT
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_SUBLABEL_SSH_ENABLE,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_START_CORE,
    (uint32_t)MENU_ENUM_SUBLABEL_STATE_SLOT,
    (uint32_t)MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
    (uint32_t)MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
+#ifdef HAVE_MIST
+   (uint32_t)MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_FORMAT,
+   (uint32_t)MENU_ENUM_SUBLABEL_STEAM_SETTINGS,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_SUBSYSTEM_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   (uint32_t)MENU_ENUM_SUBLABEL_SWITCH_CEC_ENABLE,
+#endif
+#endif
+#ifdef HAVE_LIBNX
+   (uint32_t)MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   (uint32_t)MENU_ENUM_SUBLABEL_SWITCH_OC_ENABLE,
+#endif
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
@@ -16164,6 +18288,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_TIMEDATE_DATE_SEPARATOR,
    (uint32_t)MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_TIMEDATE_STYLE,
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_SUBLABEL_TIMEZONE,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_TIME_SHOW,
    (uint32_t)MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
@@ -16182,6 +18309,10 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANUAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MAX_PERF,
    (uint32_t)MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MIN_POWER,
+#ifdef _3DS
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_3DS_DISPLAY_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_3DS_LCD_BOTTOM,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ALLOW_ROTATE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
@@ -16194,6 +18325,18 @@ static const uint32_t msg_hash_ko_ids[] =
 #ifdef HAVE_ODROIDGO2
 #else
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CTX_SCALING,
+#endif
+#if defined(DINGUX)
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+#endif
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
@@ -16220,6 +18363,7 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
@@ -16245,6 +18389,9 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
+#ifdef HAVE_ODROIDGO2
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_RGA_SCALING,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
@@ -16279,10 +18426,15 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
+#if defined(RARCH_MOBILE)
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
@@ -16291,6 +18443,11 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+#if defined (WIIU)
+#ifdef WIIU
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
+#endif
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
@@ -16307,6 +18464,7 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_WIFI_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_XMB_ALPHA_FACTOR,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_ENTRY_ICONS,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_FONT,
@@ -16318,6 +18476,15 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_SWITCH_ICONS,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_THEME,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
+#ifdef _3DS
+   (uint32_t)MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
+   (uint32_t)MSG_3DS_BOTTOM_MENU_DEFAULT,
+   (uint32_t)MSG_3DS_BOTTOM_MENU_LOAD_STATE,
+   (uint32_t)MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
+   (uint32_t)MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL,
+   (uint32_t)MSG_3DS_BOTTOM_MENU_RESUME,
+   (uint32_t)MSG_3DS_BOTTOM_MENU_SAVE_STATE,
+#endif
    (uint32_t)MSG_ACCESSIBILITY_STARTUP,
    (uint32_t)MSG_ACHIEVEMENT_UNLOCKED,
    (uint32_t)MSG_ADDED_TO_FAVORITES,
@@ -16441,6 +18608,11 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MSG_CORE_RESTORATION_FAILED,
    (uint32_t)MSG_CORE_RESTORATION_INVALID_CONTENT,
    (uint32_t)MSG_CORE_SET_STANDALONE_EXEMPT_FAILED,
+#ifdef HAVE_MIST
+   (uint32_t)MSG_CORE_STEAM_CURRENTLY_DOWNLOADING,
+   (uint32_t)MSG_CORE_STEAM_INSTALLING,
+   (uint32_t)MSG_CORE_STEAM_UNINSTALLED,
+#endif
    (uint32_t)MSG_CORE_UNLOCK_FAILED,
    (uint32_t)MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED,
    (uint32_t)MSG_CORE_UPDATE_DISABLED,
@@ -16610,6 +18782,14 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MSG_LOADING_STATE,
    (uint32_t)MSG_LOAD_CORE_FIRST,
    (uint32_t)MSG_LOCAL,
+#ifdef HAVE_LAKKA
+   (uint32_t)MSG_LOCALAP_ALREADY_RUNNING,
+   (uint32_t)MSG_LOCALAP_ERROR_CONFIG_CREATE,
+   (uint32_t)MSG_LOCALAP_ERROR_CONFIG_PARSE,
+   (uint32_t)MSG_LOCALAP_NOT_RUNNING,
+   (uint32_t)MSG_LOCALAP_STARTING,
+   (uint32_t)MSG_LOCALAP_SWITCHING_OFF,
+#endif
    (uint32_t)MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
    (uint32_t)MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
    (uint32_t)MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
@@ -16843,5 +19023,10 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MSG_VRR_RUNLOOP_DISABLED,
    (uint32_t)MSG_VRR_RUNLOOP_ENABLED,
    (uint32_t)MSG_WAITING_FOR_CLIENT,
+#ifdef HAVE_LAKKA
+   (uint32_t)MSG_WIFI_CONNECTING_TO,
+   (uint32_t)MSG_WIFI_DISCONNECT_FROM,
+   (uint32_t)MSG_WIFI_EMPTY_SSID,
+#endif
    (uint32_t)MSG_WIFI_SCAN_COMPLETE,
 };

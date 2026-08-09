@@ -51,6 +51,36 @@
  * the Content-Length header. */
 #define NET_HTTP_MAX_CONTENT_LENGTH ((size_t)256 * 1024 * 1024)
 
+/* Receive-window floor.  Below this a recv() costs a syscall and a
+ * round trip to move almost nothing; see the drain loop in
+ * net_http_update(). */
+#define NET_HTTP_MIN_RECV_WINDOW    (32 * 1024)
+
+/* Per-call drain bounds.  The budget keeps a saturated link from
+ * stalling a frame; the iteration cap keeps a peer that dribbles
+ * single bytes from spinning us.
+ *
+ * The budget is a stall cap, not a throughput knob.  It only binds
+ * when the peer can deliver more than budget bytes per task-queue
+ * tick -- roughly 16MB/s at the 16.7ms unthreaded cadence -- so for
+ * any transfer slower than that the loop exits on EAGAIN long before
+ * the budget is reached and its value is irrelevant.  Measured
+ * against a rate-limited loopback server at 2MB/s, the largest single
+ * call was 112KiB with the budget at 4MiB: never once reached.
+ *
+ * What the value does control is the worst case when the link *does*
+ * outrun us, and there the previous 4MiB was too coarse.  Draining
+ * 4MiB of TLS costs one AES-GCM pass over 4MiB: 24-57ms measured on
+ * x86-64 with AES-NI (~170MB/s effective), which is 2-4 dropped
+ * frames per call in an unthreaded build, on the video thread.  A
+ * target doing software AES-GCM at 30-60MB/s lands at 70-140ms.
+ * 256KiB holds that to 2-3ms here and stays inside a frame even an
+ * order of magnitude slower, while 16MiB still completes in 1.29s
+ * against 16.9s for the pre-drain one-recv-per-tick behaviour -- so
+ * substantially all of the win survives. */
+#define NET_HTTP_DRAIN_BUDGET       ((size_t)256 * 1024)
+#define NET_HTTP_DRAIN_MAX_ITERS    256
+
 enum response_part
 {
    P_HEADER_TOP = 0,
@@ -91,11 +121,33 @@ static slock_t *conn_pool_lock = NULL;
 
 typedef struct response
 {
+   /* Ownership of data/headers transfers to the caller when it
+    * retrieves them via net_http_data() / net_http_headers_ex().
+    * Until then this handle owns them and net_http_delete() frees
+    * them.  Previously net_http_delete() freed neither, so any path
+    * that did not retrieve both leaked -- which is every cancelled
+    * download (task_http.c's cancel branch never calls the headers
+    * accessor) and, before the accessors were reached, every
+    * transport failure. */
+   bool owns_data;
+   bool owns_headers;
    char *data;
    struct string_list *headers;
    size_t pos;
    size_t len;
    size_t buflen;
+   /* Streaming sink bookkeeping.  Zero/NULL when no sink is set, in
+    * which case none of the flush paths below run and behaviour is
+    * byte-for-byte what it was: the whole body accumulates in `data`.
+    *
+    * With a sink, decoded body bytes are handed off and dropped from
+    * the buffer as they arrive, so peak memory is the receive window
+    * rather than the whole payload.  `flushed` is the running count
+    * already handed off; `content_len` is the Content-Length as
+    * advertised, kept separately because T_LEN's `len` is decremented
+    * as bytes are flushed and can no longer answer progress queries. */
+   size_t flushed;
+   size_t content_len;
    int status;
    enum response_part part;
    enum bodytype bodytype;
@@ -116,6 +168,8 @@ typedef struct request
 
 struct http_t
 {
+   net_http_sink_t sink;
+   void *sink_data;
    bool err;
 
    struct conn_pool_entry *conn;
@@ -138,6 +192,8 @@ struct http_connection_t
    char *useragent;
    char *headers;
    size_t contentlength; /* ptr alignment */
+   net_http_sink_t sink;
+   void *sink_data;
    int port;
    bool ssl;
 };
@@ -528,6 +584,26 @@ void net_http_connection_set_headers(
    conn->headers = headers ? strdup(headers) : NULL;
 }
 
+/**
+ * net_http_connection_set_sink:
+ *
+ * Stream the response body to @cb as it arrives instead of buffering
+ * the whole thing.  net_http_data() then returns NULL with a length of
+ * 0, since the handle keeps nothing.  Response headers and status are
+ * unaffected.
+ *
+ * @cb returning false aborts the transfer with an error, which is how
+ * a full disk or a failed write surfaces.
+ **/
+void net_http_connection_set_sink(struct http_connection_t *conn,
+      net_http_sink_t cb, void *userdata)
+{
+   if (!conn)
+      return;
+   conn->sink      = cb;
+   conn->sink_data = userdata;
+}
+
 void net_http_connection_set_content(
       struct http_connection_t *conn, const char *content_type,
       size_t content_length, const void *content)
@@ -575,6 +651,35 @@ static void net_http_dns_cache_remove_expired(void)
             || (!entry->addr && (entry->timestamp + dns_cache_fail_timeout < cpu_features_get_time_usec())))
       {
 #ifdef HAVE_THREADS
+         /* An entry whose resolver has not published a result yet
+          * cannot be evicted here.  This function only ever runs with
+          * the DNS cache lock held -- net_http_dns_cache_find() is
+          * called under it from both net_http_new_socket() and
+          * net_http_connect() -- and net_http_resolve() takes that
+          * same lock, both on entry and again on completion.
+          * sthread_join() on a thread blocked acquiring the lock we
+          * are holding deadlocks outright, taking the task thread
+          * with it (and in unthreaded builds, the frontend).
+          *
+          * The window is not theoretical.  entry->addr stays NULL for
+          * the whole resolution, so the fail-timeout arm above fires
+          * after dns_cache_fail_timeout (30s) -- and
+          * getaddrinfo_retro() against a blackholed resolver
+          * routinely blocks longer than that.  So the entry looks
+          * expired precisely while its thread is still running.
+          *
+          * entry->valid is set by the resolver under the lock
+          * immediately before it unlocks and returns, so once it is
+          * set nothing that thread does can block on us and the join
+          * below is safe.  Until then, leave the entry alone; the
+          * next sweep collects it. */
+         if (entry->thread && !entry->valid)
+         {
+            prev  = entry;
+            entry = entry->next;
+            continue;
+         }
+
          if (entry->thread)
          {
             sthread_join(entry->thread);
@@ -857,6 +962,12 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    state->request.port     = conn->port;
 
    state->response.status  = -1;
+   state->sink                  = conn->sink;
+   state->sink_data             = conn->sink_data;
+   state->response.owns_data    = true;
+   state->response.owns_headers = true;
+   state->response.flushed      = 0;
+   state->response.content_len  = 0;
    state->response.buflen  = 64 * 1024;  /* Start with larger buffer to reduce reallocations */
    state->response.data    = (char*)malloc(state->response.buflen);
    state->response.headers = string_list_new();
@@ -1010,9 +1121,33 @@ static bool net_http_connect(struct http_t *state)
 {
    struct addrinfo *addr = NULL, *next_addr = NULL;
    struct conn_pool_entry *conn = state->conn;
-   struct dns_cache_entry *dns_entry = net_http_dns_cache_find(state->request.domain, state->request.port);
-   /* we just used/added this in _new_socket above, if it's not there it's a big bug */
+   struct dns_cache_entry *dns_entry;
+
+   /* net_http_dns_cache_find() is not a read-only lookup: it calls
+    * net_http_dns_cache_remove_expired(), which unlinks entries,
+    * freeaddrinfo()s their addrinfo and free()s the entry, and it
+    * joins resolver threads and bumps timestamps.  Calling it here
+    * without the lock (as this function used to) let one download
+    * free a cache entry while another was walking the same list under
+    * the lock -- a use-after-free of the entry and its addrinfo, not
+    * merely a benign race.  ThreadSanitizer flags it as soon as two
+    * transfers overlap. */
+   LOCK_DNS_CACHE();
+   dns_entry = net_http_dns_cache_find(state->request.domain,
+         state->request.port);
+   /* Normally populated by net_http_new_socket() just above, but the
+    * entry can expire between the two calls, so this is not the
+    * "big bug" the old comment claimed -- it is reachable, and
+    * dereferencing NULL here crashed. */
+   if (!dns_entry)
+   {
+      UNLOCK_DNS_CACHE();
+      net_http_log_transport_state(state, "connect_missing_dns_entry", -1);
+      state->err = true;
+      return false;
+   }
    addr = dns_entry->addr;
+   UNLOCK_DNS_CACHE();
 
 #ifndef HAVE_SSL
    if (state->ssl)
@@ -1348,8 +1483,9 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
                      state->err     = true;
                      return -1;
                   }
-                  response->bodytype = T_LEN;
-                  response->len      = val;
+                  response->bodytype    = T_LEN;
+                  response->len         = val;
+                  response->content_len = val;
                }
                break;
             case 't':
@@ -1383,7 +1519,11 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
    {
       len           = response->pos;
       response->pos = 0;
-      if (response->bodytype == T_LEN && response->len > 0)
+      /* With a sink the body never accumulates, so sizing the buffer
+       * to Content-Length would allocate the very thing streaming
+       * exists to avoid -- up to NET_HTTP_MAX_CONTENT_LENGTH of it,
+       * on a server's say-so.  Keep the receive-window buffer. */
+      if (response->bodytype == T_LEN && response->len > 0 && !state->sink)
       {
          /* Use a tmp pointer so a realloc failure does not leak the
           * original buffer AND leave response->data NULL for later
@@ -1419,6 +1559,31 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
    return len;
 }
 
+/* Hand @n decoded body bytes from the front of the buffer to the
+ * sink.  Callers reset pos/len afterwards; this only moves the data
+ * out and keeps the running total.
+ *
+ * A sink refusing the write (full disk, I/O error) aborts the
+ * transfer the same way a transport failure would. */
+static bool net_http_sink_flush(struct http_t *state, size_t n)
+{
+   struct response *response = (struct response*)&state->response;
+
+   if (!n)
+      return true;
+
+   if (!state->sink(state->sink_data, response->data, n))
+   {
+      net_http_log_transport_state(state, "sink_write_failed", -1);
+      state->err     = true;
+      response->part = P_DONE;
+      return false;
+   }
+
+   response->flushed += n;
+   return true;
+}
+
 static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
 {
    struct response *response = (struct response*)&state->response;
@@ -1442,88 +1607,231 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
          if (tmp)
             response->data = tmp;
       }
+      /* The peer closing the connection *is* the terminator for
+       * T_FULL, but the transports report it as a failure:
+       * socket_receive_all_nonblocking() sets *err on recv() == 0,
+       * and both SSL backends do the same on a clean close.  So
+       * state->err was left set through P_DONE and every accessor
+       * that respects it refused the body -- net_http_data(state,
+       * &len, false), which is exactly what task_http.c calls on the
+       * success path, returned NULL for a complete 200 response with
+       * the payload sitting in the buffer.  Measured on a 1MiB
+       * close-delimited body: 0 bytes with accept_err false, 1048576
+       * with it true, on both TLS and plain.  The preceding commit
+       * got the bytes into the buffer; they were still unreachable.
+       *
+       * Clear it, having reached a terminal state we consider valid.
+       * Note this cannot distinguish a clean EOF from a socket error
+       * midway through the body -- close-delimited framing carries no
+       * length to check a truncated body against, which is precisely
+       * why HTTP/1.1 servers use Content-Length or chunked and why
+       * every other client treats close as success here.  Truncation
+       * of a framed body is unaffected: T_LEN and T_CHUNK take the
+       * `return false` above and still fail the transfer. */
+      state->err = false;
       return true;
    }
 
-parse_again:
    if (response->bodytype == T_CHUNK)
    {
-      if (response->part == P_BODY_CHUNKLEN)
+      char  *out;
+      char  *in;
+      char  *rawend;
+      size_t leftover;
+
+      /* De-chunking is a single pass over the raw region.
+       *
+       * Invariants, unchanged from before: in P_BODY_CHUNKLEN,
+       * response->len is the number of decoded body bytes (i.e. the
+       * offset of the current chunk-length line) and response->pos is
+       * the end of the raw wire data; in P_BODY, response->len is the
+       * number of bytes still outstanding in the current chunk and
+       * response->pos is the decoded byte count.
+       *
+       * The previous implementation slid the entire remaining raw tail
+       * down over each chunk-length line it consumed, so a byte near
+       * the end of the receive window was moved once for every chunk
+       * header preceding it.  That is O(window * chunks), and the
+       * window is response->buflen - response->pos, which grows
+       * without bound as buflen doubles.  A 16 MiB body delivered in
+       * 1 KiB chunks moved 45.5 GB; the same body in 8 KiB chunks
+       * moved 5.7 GB.  Chunk size is the server's choice, so this is
+       * also a cheap way for a peer to burn client CPU and memory
+       * bandwidth.
+       *
+       * Instead, walk the raw region once with separate read and write
+       * cursors and copy each chunk payload down to the write cursor.
+       * out <= in always holds (decoded data can only ever be shorter
+       * than the wire bytes it came from), so the copies stay in
+       * bounds; they may overlap, hence memmove.  Every payload byte
+       * now moves exactly once per parse pass: O(window). */
+
+      if (response->part == P_BODY)
       {
-         response->pos      += newlen;
-
-         if (response->pos - response->len >= 2)
+         /* Finish the chunk carried over from the previous call. */
+         if ((size_t)newlen < response->len)
          {
-            /*
-             * len=start of chunk including \r\n
-             * pos=end of data
-             */
-
-            char *fullend = response->data + response->pos;
-            char *end     = (char*)memchr(response->data + response->len + 2,
-            '\n', response->pos - response->len - 2);
-
-            if (end)
+            response->pos += newlen;
+            response->len -= newlen;
+            if (state->sink)
             {
-               size_t chunklen = strtoul(response->data + response->len, NULL, 16);
-               /* Cap the chunk length at the same Content-Length
-                * ceiling.  A hostile server sending a chunklen
-                * like ffffffffffffffff drives the client into
-                * an effectively unbounded receive loop (each
-                * net_http_update tick nibbles at response->len
-                * and response->len never reaches zero). */
-               if (chunklen > NET_HTTP_MAX_CONTENT_LENGTH)
+               if (!net_http_sink_flush(state, response->pos))
+                  return false;
+               response->pos = 0;
+            }
+            goto check_grow;
+         }
+         response->pos += response->len;
+         newlen        -= (ssize_t)response->len;
+         response->len  = response->pos;
+         response->part = P_BODY_CHUNKLEN;
+      }
+
+      response->pos += newlen;
+
+      out    = response->data + response->len;
+      in     = response->data + response->len;
+      rawend = response->data + response->pos;
+
+      for (;;)
+      {
+         char  *end;
+         size_t chunklen;
+         size_t avail = (size_t)(rawend - in);
+
+         if (avail < 2)
+            break;
+
+         /* Skip the CRLF terminating the previous chunk, then find the
+          * end of the chunk-length line.  Starting the scan at in + 2
+          * matches the previous behaviour, including on the first
+          * chunk where those two bytes are length digits. */
+         end = (char*)memchr(in + 2, '\n', avail - 2);
+         if (!end)
+            break;
+
+         chunklen = strtoul(in, NULL, 16);
+         /* Cap the chunk length at the same Content-Length ceiling.
+          * A hostile server sending a chunklen like ffffffffffffffff
+          * drives the client into an effectively unbounded receive
+          * loop. */
+         if (chunklen > NET_HTTP_MAX_CONTENT_LENGTH)
+         {
+            response->part = P_DONE;
+            state->err     = true;
+            return false;
+         }
+         end++;
+
+         if (chunklen == 0)
+         {
+            /* Terminal chunk.  Any trailers after it are discarded,
+             * as before.  Shrink the buffer to the decoded length.
+             *
+             * The length guard matters: a legitimate zero-length
+             * chunked body ("0\r\n\r\n") would otherwise reach
+             * realloc(data, 0), which glibc answers by freeing the
+             * block and returning NULL.  That failed the transfer and
+             * left response->data dangling.  Both sibling shrink
+             * sites (T_FULL, T_LEN) already carry this guard; this
+             * was the only one without it. */
+            response->pos  = (size_t)(out - response->data);
+            response->part = P_DONE;
+            response->len  = response->pos;
+            if (state->sink)
+            {
+               if (!net_http_sink_flush(state, response->pos))
+                  return false;
+               response->pos = 0;
+               response->len = response->flushed;
+               return true;
+            }
+            if (   response->buflen != response->len
+                && response->len > 0)
+            {
+               char *tmp = (char*)realloc(response->data,
+                     response->len);
+               if (!tmp)
                {
-                  response->part = P_DONE;
-                  state->err     = true;
+                  state->err = true;
                   return false;
                }
-               response->pos   = response->len;
-               end++;
-
-               memmove(response->data + response->len, end, fullend-end);
-
-               response->len   = chunklen;
-               newlen          = (fullend - end);
-
-               /*
-                 len=num bytes
-                 newlen=unparsed bytes after \n
-                 pos=start of chunk including \r\n
-               */
-
-               response->part = P_BODY;
-               if (response->len == 0)
-               {
-                  char *tmp;
-                  response->part = P_DONE;
-                  response->len  = response->pos;
-                  tmp            = (char*)realloc(response->data,
-                        response->len);
-                  if (!tmp)
-                  {
-                     state->err = true;
-                     return false;
-                  }
-                  response->data = tmp;
-                  return true;
-               }
-               goto parse_again;
+               response->data = tmp;
             }
+            return true;
          }
-      }
-      else if (response->part == P_BODY)
-      {
-         if ((size_t)newlen >= response->len)
+
+         avail = (size_t)(rawend - end);
+         if (avail < chunklen)
          {
-            response->pos += response->len;
-            newlen        -= response->len;
-            response->len  = response->pos;
-            response->part = P_BODY_CHUNKLEN;
-            goto parse_again;
+            /* Chunk straddles the end of the raw region.  Move what
+             * we have and remember the outstanding remainder. */
+            if (avail && out != end)
+               memmove(out, end, avail);
+            out           += avail;
+            response->pos  = (size_t)(out - response->data);
+            response->len  = chunklen - avail;
+            response->part = P_BODY;
+            if (state->sink)
+            {
+               /* In P_BODY, pos is the decoded count and len is what
+                * is still outstanding in this chunk, so the decoded
+                * prefix can go and the next receive appends at 0. */
+               if (!net_http_sink_flush(state, response->pos))
+                  return false;
+               response->pos = 0;
+            }
+            goto check_grow;
          }
-         response->pos += newlen;
-         response->len -= newlen;
+
+         if (out != end)
+            memmove(out, end, chunklen);
+         out += chunklen;
+         in   = end + chunklen;
+      }
+
+      /* Carry the unconsumed raw remainder down behind the decoded
+       * data so the next receive appends to it as before. */
+      leftover      = (size_t)(rawend - in);
+      response->len = (size_t)(out - response->data);
+      if (leftover && out != in)
+         memmove(out, in, leftover);
+      response->pos  = response->len + leftover;
+      response->part = P_BODY_CHUNKLEN;
+      if (state->sink)
+      {
+         /* Decoded bytes sit at data[0..len) with the unconsumed raw
+          * tail behind them; hand off the former and slide the tail
+          * to the front so the invariant (len == decoded offset of
+          * the current chunklen line) still holds at 0. */
+         if (!net_http_sink_flush(state, response->len))
+            return false;
+         if (leftover)
+            memmove(response->data, response->data + response->len,
+                  leftover);
+         response->pos = leftover;
+         response->len = 0;
+      }
+   }
+   else if (response->bodytype == T_FULL)
+   {
+      /* Body is delimited by the peer closing the connection, so
+       * there is no expected length to compare against.  response->len
+       * stays 0 for T_FULL (it is only ever assigned by the
+       * Content-Length parse or the chunked decoder), which is why the
+       * shared "pos > len" check below cannot be used here: the first
+       * body byte would trip it and the whole transfer would be
+       * discarded with status -1.  Just accumulate; the terminal
+       * condition is the newlen < 0 branch at the top of this
+       * function, which sets P_DONE and shrinks the buffer. */
+      response->pos += newlen;
+      response->len  = response->pos;
+      if (state->sink)
+      {
+         if (!net_http_sink_flush(state, response->pos))
+            return false;
+         response->pos = 0;
+         response->len = 0;
       }
    }
    else
@@ -1535,6 +1843,14 @@ parse_again:
       else if (response->pos == response->len)
       {
          response->part = P_DONE;
+         if (state->sink)
+         {
+            if (!net_http_sink_flush(state, response->pos))
+               return false;
+            response->pos = 0;
+            response->len = response->flushed;
+            return true;
+         }
          if (response->buflen != response->len && response->len > 0)
          {
             char *tmp = (char*)realloc(response->data, response->len);
@@ -1547,8 +1863,20 @@ parse_again:
          }
          return true;
       }
+      if (state->sink)
+      {
+         /* T_LEN's `len` is the outstanding count once streaming, so
+          * decrement it by what we hand off; the "pos == len"
+          * completion test above keeps working unchanged.  The
+          * advertised total lives in content_len for progress. */
+         if (!net_http_sink_flush(state, response->pos))
+            return false;
+         response->len -= response->pos;
+         response->pos  = 0;
+      }
    }
 
+check_grow:
    if (response->pos >= response->buflen)
    {
       char *tmp;
@@ -1665,6 +1993,103 @@ static bool net_http_redirect(struct http_t *state, const char *location)
 }
 
 /**
+ * net_http_init:
+ *
+ * Creates the locks guarding the process-global DNS cache and
+ * connection pool.  Must be called once, before any thread can reach
+ * net_http_update().
+ *
+ * These were created lazily on first use inside net_http_new_socket():
+ *
+ *     if (!dns_cache_lock) dns_cache_lock = slock_new();
+ *
+ * which is an unsynchronised first-use initialisation of the very
+ * lock meant to serialise that cache.  Two threads arriving together
+ * each create one, one store wins, and the loser goes on locking an
+ * object nobody else holds -- so the cache is walked and mutated with
+ * no mutual exclusion at all.  It does not reproduce once the locks
+ * exist, which is why it survived a TSan run over concurrent
+ * transfers; the window is only ever the first two requests of the
+ * process.
+ *
+ * Idempotent, so callers that cannot easily order their startup can
+ * call it more than once -- but not concurrently, which is the whole
+ * point.
+ **/
+void net_http_init(void)
+{
+#ifdef HAVE_THREADS
+   if (!dns_cache_lock)
+      dns_cache_lock = slock_new();
+   if (!conn_pool_lock)
+      conn_pool_lock = slock_new();
+#endif
+}
+
+/**
+ * net_http_deinit:
+ *
+ * Tears down the DNS cache and connection pool.  Nothing did this
+ * before: pooled sockets (and their SSL contexts), cached addrinfo,
+ * the strdup'd domains and both mutexes simply lived until the
+ * process exited.
+ *
+ * Both lists are detached under their lock and then drained with the
+ * lock released.  That ordering matters for the DNS cache:
+ * net_http_resolve() takes the same lock at the end of its run, so
+ * joining a resolver thread while holding it deadlocks.
+ **/
+void net_http_deinit(void)
+{
+   struct conn_pool_entry *conns;
+   struct dns_cache_entry *entries;
+
+   LOCK_POOL();
+   conns     = conn_pool;
+   conn_pool = NULL;
+   UNLOCK_POOL();
+
+   while (conns)
+   {
+      struct conn_pool_entry *next = conns->next;
+      net_http_conn_pool_free(conns);
+      conns = next;
+   }
+
+   LOCK_DNS_CACHE();
+   entries   = dns_cache;
+   dns_cache = NULL;
+   UNLOCK_DNS_CACHE();
+
+   while (entries)
+   {
+      struct dns_cache_entry *next = entries->next;
+#ifdef HAVE_THREADS
+      if (entries->thread)
+         sthread_join(entries->thread);
+#endif
+      if (entries->addr)
+         freeaddrinfo_retro(entries->addr);
+      free(entries->domain);
+      free(entries);
+      entries = next;
+   }
+
+#ifdef HAVE_THREADS
+   if (dns_cache_lock)
+   {
+      slock_free(dns_cache_lock);
+      dns_cache_lock = NULL;
+   }
+   if (conn_pool_lock)
+   {
+      slock_free(conn_pool_lock);
+      conn_pool_lock = NULL;
+   }
+#endif
+}
+
+/**
  * net_http_update:
  *
  * @return true if it's done, or if something broke.
@@ -1701,53 +2126,166 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
 
    response = (struct response*)&state->response;
 
+   /* Drain the socket, rather than taking a single bite out of it.
+    *
+    * socket_receive_all_nonblocking() is one recv() despite the name,
+    * and this function used to issue exactly one per call.  Since
+    * task_http_iterate_transfer() calls us once per task-queue tick,
+    * transfer time was
+    *
+    *     (body_size / bytes_per_recv) * tick_period
+    *
+    * with bytes_per_recv capped by the kernel receive buffer.  The
+    * tick period is ~1ms threaded and one frame (16.7ms at 60Hz)
+    * unthreaded, so a 4MiB download over a 64KiB receive buffer cost
+    * ~45 ticks -- around 0.8s of pure scheduling latency unthreaded,
+    * against ~0.02s of actual transfer.  Nothing was slow except the
+    * number of round trips.
+    *
+    * Looping until the socket reports EAGAIN collapses that to one
+    * tick in the common case.  Two bounds keep a fast or hostile peer
+    * from holding the calling thread (which is the video thread in
+    * unthreaded builds):
+    *
+    *   - NET_HTTP_DRAIN_BUDGET caps bytes moved per call, so a
+    *     saturated link yields rather than stalling a frame;
+    *   - NET_HTTP_DRAIN_MAX_ITERS caps syscalls per call, so a peer
+    *     dribbling one byte at a time cannot spin us.
+    *
+    * Exceeding either bound just returns false and we resume on the
+    * next tick, which is the pre-existing behaviour. */
+   {
+      size_t drained = 0;
+      int    iters   = 0;
+
+      for (;;)
+      {
+         size_t window;
+
+         /* Keep a floor under the receive window.  For the
+          * doubling-growth body types (T_CHUNK, T_FULL) the window is
+          * buflen - pos, which decays toward zero just before each
+          * realloc; measured as low as 16 bytes with megabytes still
+          * outstanding.  Those reads are round trips that move almost
+          * nothing.  Grow early instead of waiting for pos to reach
+          * buflen. */
+         window = response->buflen - response->pos;
+         if (     window < NET_HTTP_MIN_RECV_WINDOW
+               && response->part != P_DONE)
+         {
+            char  *tmp;
+            size_t want = response->buflen * 2;
+            if (want < response->pos + NET_HTTP_MIN_RECV_WINDOW)
+               want = response->pos + NET_HTTP_MIN_RECV_WINDOW;
+            if (!(tmp = (char*)realloc(response->data, want)))
+            {
+               state->err = true;
+               break;
+            }
+            response->data   = tmp;
+            response->buflen = want;
+            window           = response->buflen - response->pos;
+         }
+
+         /* Clamp the window to what is left of the budget, so that the
+          * budget is an actual cap rather than a post-hoc check.
+          *
+          * It used to be tested only after the read had already
+          * happened, and for T_LEN the window is the entire remaining
+          * body -- so a single recv() off a large kernel receive
+          * buffer could return far more than the budget and the check
+          * would notice one read too late.  Measured on a 16MiB
+          * Content-Length body over loopback: single calls of 6029153
+          * and 5536467 bytes against a 4MiB budget, i.e. the bound
+          * overshot by ~1.4x, and it scales with SO_RCVBUF rather
+          * than with anything we control.
+          *
+          * drained < NET_HTTP_DRAIN_BUDGET is the loop invariant at
+          * this point (the bottom of the loop breaks as soon as that
+          * stops holding), so the subtraction cannot underflow.
+          *
+          * Stop rather than issue a read below the window floor: a
+          * clamp to whatever happens to be left of the budget would
+          * otherwise reintroduce exactly the tiny reads that
+          * NET_HTTP_MIN_RECV_WINDOW exists to prevent, once per call.
+          * The drained test guards the degenerate case where the
+          * budget is configured below the floor, which would
+          * otherwise break before reading anything and stall the
+          * transfer outright. */
+         if (     drained
+               && NET_HTTP_DRAIN_BUDGET - drained < NET_HTTP_MIN_RECV_WINDOW)
+            break;
+         if (window > NET_HTTP_DRAIN_BUDGET - drained)
+            window = NET_HTTP_DRAIN_BUDGET - drained;
+
 #ifdef HAVE_SSL
-   if (state->ssl && state->conn->ssl_ctx)
-      _len = ssl_socket_receive_all_nonblocking(state->conn->ssl_ctx, &state->err,
-            (uint8_t*)response->data + response->pos,
-            response->buflen - response->pos);
-   else
+         if (state->ssl && state->conn->ssl_ctx)
+            _len = ssl_socket_receive_all_nonblocking(
+                  state->conn->ssl_ctx, &state->err,
+                  (uint8_t*)response->data + response->pos, window);
+         else
 #endif
-      _len = socket_receive_all_nonblocking(state->conn->fd, &state->err,
-            (uint8_t*)response->data + response->pos,
-            response->buflen - response->pos);
+            _len = socket_receive_all_nonblocking(state->conn->fd,
+                  &state->err,
+                  (uint8_t*)response->data + response->pos, window);
 
-   if (response->part < P_BODY)
-   {
-      if (_len < 0 || state->err)
-      {
-         net_http_log_transport_state(state, "receive_header_failed", _len);
-         net_http_conn_pool_remove(state->conn);
-         state->conn      = NULL;
-         state->err       = true;
-         response->part   = P_DONE;
-         response->status = -1;
-         return true;
-      }
-      _len = net_http_receive_header(state, _len);
-   }
+         if (response->part < P_BODY)
+         {
+            if (_len < 0 || state->err)
+            {
+               net_http_log_transport_state(state,
+                     "receive_header_failed", _len);
+               net_http_conn_pool_remove(state->conn);
+               state->conn      = NULL;
+               state->err       = true;
+               response->part   = P_DONE;
+               response->status = -1;
+               return true;
+            }
+            _len = net_http_receive_header(state, _len);
+         }
 
-   if (response->part >= P_BODY && response->part < P_DONE)
-   {
-      if (!net_http_receive_body(state, _len))
-      {
-         net_http_log_transport_state(state, "receive_body_failed", _len);
-         net_http_conn_pool_remove(state->conn);
-         state->conn      = NULL;
-         state->err       = true;
-         response->part   = P_DONE;
-         response->status = -1;
-         return true;
+         if (response->part >= P_BODY && response->part < P_DONE)
+         {
+            if (!net_http_receive_body(state, _len))
+            {
+               net_http_log_transport_state(state,
+                     "receive_body_failed", _len);
+               net_http_conn_pool_remove(state->conn);
+               state->conn      = NULL;
+               state->err       = true;
+               response->part   = P_DONE;
+               response->status = -1;
+               return true;
+            }
+         }
+
+         if (response->part == P_DONE || state->err)
+            break;
+
+         /* _len == 0 is EAGAIN: the socket is drained for now.
+          * _len < 0 past the header stage is a close, which the body
+          * parser above has already turned into P_DONE for T_FULL and
+          * into an error otherwise; either way we are finished here. */
+         if (_len <= 0)
+            break;
+
+         drained += (size_t)_len;
+         if (     drained >= NET_HTTP_DRAIN_BUDGET
+               || ++iters >= NET_HTTP_DRAIN_MAX_ITERS)
+            break;
       }
    }
 
    if (progress)
-      *progress = response->pos;
+      *progress = response->flushed + response->pos;
 
    if (total)
    {
       if (response->bodytype == T_LEN)
-         *total = response->len;
+         /* content_len, not len: with a sink, len counts down as
+          * bytes are handed off. */
+         *total = response->content_len;
       else
          *total = 0;
    }
@@ -1766,7 +2304,14 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
    }
 
    if (state->conn)
+   {
+      /* net_http_conn_pool_remove_expired() reads in_use under the
+       * pool lock and feeds the fd to select(); writing it unlocked
+       * raced with that walk. */
+      LOCK_POOL();
       state->conn->in_use = false;
+      UNLOCK_POOL();
+   }
    state->conn = NULL;
 
    if (response->status >= 300 && response->status < 400)
@@ -1814,6 +2359,7 @@ struct string_list *net_http_headers_ex(struct http_t *state, bool accept_err)
       return NULL;
    if (!accept_err && state->err)
       return NULL;
+   state->response.owns_headers = false;
    return state->response.headers;
 }
 
@@ -1843,8 +2389,21 @@ uint8_t* net_http_data(struct http_t *state, size_t* len, bool accept_err)
       return NULL;
    }
 
+   /* Nothing was retained: the body went to the sink as it arrived. */
+   if (state->sink)
+   {
+      if (len)
+         *len = 0;
+      return NULL;
+   }
+
    if (len)
       *len    = state->response.len;
+
+   /* Ownership moves to the caller.  The pointer is deliberately left
+    * in place so repeated calls stay idempotent; only the ownership
+    * flag changes, and net_http_delete() consults that. */
+   state->response.owns_data = false;
 
    return (uint8_t*)state->response.data;
 }
@@ -1861,6 +2420,13 @@ void net_http_delete(struct http_t *state)
 
    if (state->conn)
       net_http_conn_pool_remove(state->conn);
+   /* Free whatever the caller never took ownership of.  Without this
+    * the doc comment on this function ("Cleans up all memory") was
+    * simply false for the response side. */
+   if (state->response.owns_data && state->response.data)
+      free(state->response.data);
+   if (state->response.owns_headers && state->response.headers)
+      string_list_free(state->response.headers);
    if (state->request.domain)
       free(state->request.domain);
    if (state->request.path)

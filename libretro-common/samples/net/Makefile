@@ -77,6 +77,16 @@ NET_IFINFO_C = \
 
 ifeq ($(platform), win)
 CFLAGS += -liphlpapi -lws2_32
+
+# The samples workflow passes SANITIZER=address,undefined to every
+# sample dir.  Without this block the variable was accepted and
+# ignored, so these targets built unsanitized while the workflow
+# reported them as checked.
+ifneq ($(SANITIZER),)
+   CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
+   LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
+endif
+
 endif
 
 NET_IFINFO_OBJS := $(NET_IFINFO_C:.c=.o)

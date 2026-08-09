@@ -54,6 +54,7 @@
 #include "video_shader_parse.h"
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+#include "drivers_shader/glslang_util.h"
 #include "drivers_shader/slang_process.h"
 #endif
 
@@ -729,6 +730,25 @@ static bool video_shader_parse_pass(config_file_t *conf,
          pass->fbo.flags &= ~FBO_SCALE_FLAG_FP_FBO;
    }
 
+   _len  = strlcpy(shader_var, "rgb10_framebuffer", sizeof(shader_var));
+   strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
+   if (config_get_bool(conf, shader_var, &tmp_bool))
+   {
+      if (tmp_bool)
+      {
+         /* Only the slang chain resolves this flag to a render target
+          * format; the .cg / .glsl backends would silently give 8-bit. */
+         if (!string_is_equal_case_insensitive(
+                  path_get_extension(pass->source.path), "slang"))
+            RARCH_WARN("[Shaders] Pass %u sets \"%s\" but is not a .slang"
+                  " shader; the option has no effect here.\n",
+                  i, shader_var);
+         pass->fbo.flags |=  FBO_SCALE_FLAG_RGB10_FBO;
+      }
+      else
+         pass->fbo.flags &= ~FBO_SCALE_FLAG_RGB10_FBO;
+   }
+
    _len  = strlcpy(shader_var, "mipmap_input", sizeof(shader_var));
    strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
    if (config_get_bool(conf, shader_var, &tmp_bool))
@@ -1019,15 +1039,26 @@ void video_shader_resolve_parameters(struct video_shader *shader)
 #endif
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-   for (i = 0; i < shader->passes; i++)
    {
-      const char *path          = shader->pass[i].source.path;
-      if (!path || !*path || !path_is_valid(path))
-         continue;
-      /* Now uses the same slang parsing for parameters since
-       * it should be the same implementation, but supporting
-       * #include directives */
-      slang_preprocess_parse_parameters(path, shader);
+      /* One include cache for the whole walk.  Every pass is expanded
+       * here to harvest its '#pragma parameter' lines, and the passes
+       * of a preset share helper .inc files, so without this each pass
+       * re-reads the same helpers from disk. */
+      void *include_cache = glslang_include_cache_new();
+
+      for (i = 0; i < shader->passes; i++)
+      {
+         const char *path          = shader->pass[i].source.path;
+         if (!path || !*path || !path_is_valid(path))
+            continue;
+         /* Now uses the same slang parsing for parameters since
+          * it should be the same implementation, but supporting
+          * #include directives */
+         slang_preprocess_parse_parameters_cached(path, shader,
+               include_cache);
+      }
+
+      glslang_include_cache_free(include_cache);
    }
 #else
    {
@@ -1275,6 +1306,14 @@ static void video_shader_write_fbo(config_file_t *conf,
    _len = strlcpy(key, "srgb_framebuffer", sizeof(key));
    strlcpy(key + _len, formatted_num, sizeof(key) - _len);
    config_set_string(conf, key, (fbo->flags & FBO_SCALE_FLAG_SRGB_FBO) ? "true" : "false");
+   /* Only emitted when set, so presets that do not use it stay
+    * byte-identical to what older builds wrote. */
+   if (fbo->flags & FBO_SCALE_FLAG_RGB10_FBO)
+   {
+      _len = strlcpy(key, "rgb10_framebuffer", sizeof(key));
+      strlcpy(key + _len, formatted_num, sizeof(key) - _len);
+      config_set_string(conf, key, "true");
+   }
 
    if (fbo->flags & FBO_SCALE_FLAG_VALID)
    {
@@ -1896,6 +1935,16 @@ static bool video_shader_write_referenced_preset(
          {
 #ifdef DEBUG
             RARCH_WARN("[Shaders] Pass %u srgb_fbo", i);
+#endif
+            continue_saving_ref = false;
+         }
+
+         if (continue_saving_ref
+               && (fbo->flags & FBO_SCALE_FLAG_RGB10_FBO) != (root_fbo->flags &
+                  FBO_SCALE_FLAG_RGB10_FBO))
+         {
+#ifdef DEBUG
+            RARCH_WARN("[Shaders] Pass %u rgb10_fbo", i);
 #endif
             continue_saving_ref = false;
          }
@@ -3333,7 +3382,7 @@ const char *video_shader_get_current_shader_preset(void)
       flags.flags     = 0;
       video_context_driver_get_flags(&flags);
 
-      video_st->flags &= ~VIDEO_FLAG_SHADER_PRESETS_NEED_RELOAD;
+      video_driver_modify_disp_flags(0, VIDEO_FLAG_SHADER_PRESETS_NEED_RELOAD);
 
       if (BIT32_GET(flags.flags,
                video_shader_type_to_flag(video_shader_parse_type(video_st->cli_shader_path))))

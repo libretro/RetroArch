@@ -18,6 +18,8 @@
 
 #include "com_retroarch_browser_retroactivity_RetroActivityCommon.h"
 
+#include <retro_atomic.h>
+
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #include <stdlib.h>
@@ -43,28 +45,30 @@
 typedef struct
 {
 #ifdef HAVE_THREADS
-   slock_t *enabled_lock;
    slock_t *status_lock;
 #endif
+   /* Cached result of play_feature_delivery_enabled_internal():
+    * -1 = not yet queried, 0 = disabled, 1 = enabled.  Queried
+    * frequently, often in loops, so the fast path is a single
+    * acquire load with no lock.  A cold race can at worst issue
+    * the (idempotent) Java query twice; both stores write the
+    * same value. */
+   retro_atomic_int_t enabled_cached;
    unsigned download_progress;
    enum play_feature_delivery_install_status last_status;
    char last_core_name[256];
-   bool enabled;
-   bool enabled_set;
    bool active;
 } play_feature_delivery_state_t;
 
 static play_feature_delivery_state_t play_feature_delivery_state = {
 
 #ifdef HAVE_THREADS
-   NULL,                       /* enabled_lock */
    NULL,                       /* status_lock */
 #endif
+   RETRO_ATOMIC_INT_INITIALIZER(-1), /* enabled_cached */
    0,                          /* download_progress */
    PLAY_FEATURE_DELIVERY_IDLE, /* last_status */
    {'\0'},                     /* last_core_name */
-   false,                      /* enabled */
-   false,                      /* enabled_set */
    false,                      /* active */
 };
 
@@ -204,8 +208,6 @@ void play_feature_delivery_init(void)
    play_feature_delivery_deinit();
 
 #ifdef HAVE_THREADS
-   if (!state->enabled_lock)
-      state->enabled_lock = slock_new();
    if (!state->status_lock)
       state->status_lock  = slock_new();
 #endif
@@ -222,12 +224,6 @@ void play_feature_delivery_deinit(void)
    play_feature_delivery_state_t* state = play_feature_delivery_get_state();
 
 #ifdef HAVE_THREADS
-   if (state->enabled_lock)
-   {
-      slock_free(state->enabled_lock);
-      state->enabled_lock = NULL;
-   }
-
    if (state->status_lock)
    {
       slock_free(state->status_lock);
@@ -292,32 +288,21 @@ static bool play_feature_delivery_enabled_internal(void)
 bool play_feature_delivery_enabled(void)
 {
    play_feature_delivery_state_t* state = play_feature_delivery_get_state();
-   bool enabled;
-
-   /* Lock mutex */
-#ifdef HAVE_THREADS
-   slock_lock(state->enabled_lock);
-#endif
 
    /* Calling Java functions is slow. We need to
     * check Play Store build status frequently,
     * often in loops, so rely on a cached global
     * status flag instead dealing with Java
     * interfaces */
-   if (!state->enabled_set)
+   int cached = retro_atomic_load_acquire_int(&state->enabled_cached);
+
+   if (cached < 0)
    {
-      state->enabled     = play_feature_delivery_enabled_internal();
-      state->enabled_set = true;
+      cached = play_feature_delivery_enabled_internal() ? 1 : 0;
+      retro_atomic_store_release_int(&state->enabled_cached, cached);
    }
 
-   enabled = state->enabled;
-
-   /* Unlock mutex */
-#ifdef HAVE_THREADS
-   slock_unlock(state->enabled_lock);
-#endif
-
-   return enabled;
+   return (cached == 1);
 }
 
 /* Returns a list of cores currently available

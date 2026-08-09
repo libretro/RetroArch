@@ -28,6 +28,9 @@ static const struct
    char s_24e40f00[247];
    char s_4dc69fe8[410];
    char s_a7206ebc[103];
+#ifdef HAVE_LAKKA
+   char s_f947e37f[176];
+#endif
    char s_7e97e2f6[282];
    char s_5fdad539[273];
    char s_353c64eb_0[500];
@@ -44,6 +47,9 @@ static const struct
    char s_ad7c73f6[16];
    char s_30acd6fb[16];
    char s_ed31b08a[5];
+#ifdef _3DS
+   char s_6651ce29[20];
+#endif
    char s_bbb615a1[21];
    char s_b6cd2ff0[48];
    char s_b7ed78f3[14];
@@ -111,6 +117,9 @@ static const struct
    char s_0c1e1a65[33];
    char s_8ed62097[47];
    char s_6b9ce765[44];
+#ifdef HAVE_MICROPHONE
+   char s_ca9a92ae[19];
+#endif
    char s_62564465[9];
    char s_e4405788[22];
    char s_6c4b8962[23];
@@ -151,12 +160,14 @@ static const struct
    char s_313105c8[21];
    char s_0f49d986[54];
    char s_b152eb42[29];
-   char s_3361e11d[51];
-   char s_9b3ca94b[47];
    char s_036acd54[38];
    char s_a0a191ca[38];
    char s_aee9789b[18];
    char s_1c540479[41];
+#ifdef HAVE_QT
+   char s_974d8c3a_0[500];
+   char s_974d8c3a_1[91];
+#endif
    char s_21083aca[14];
    char s_d725639f[8];
    char s_a85eb9f5[25];
@@ -185,7 +196,15 @@ static const struct
    char s_addc7f89[77];
 #endif
 #endif
+#ifdef HAVE_LIBNX
+   char s_09902e71[15];
+#endif
    char s_ea80654d[40];
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   char s_37eb8e31[15];
+#endif
+#endif
    char s_8fe41f79[21];
    char s_2c296537[15];
    char s_519cd5f8[13];
@@ -197,6 +216,15 @@ static const struct
    char s_9a90acec[22];
    char s_0ef856cb[35];
    char s_22ee45f4[34];
+#if defined(DINGUX)
+   char s_bfd4c6ef[9];
+   char s_52153570[18];
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   char s_fec3d9e4[18];
+#endif
+#endif
    char s_f417f6f1[20];
    char s_020e2bc5[17];
    char s_59f183c8[18];
@@ -215,13 +243,16 @@ static const struct
    char s_ad14307a[11];
    char s_6c52dfb1[23];
    char s_9119ef97[21];
+#if defined (WIIU)
+#ifdef WIIU
+   char s_afb881f7[46];
+#endif
+#endif
    char s_84c46931[26];
    char s_25a21976[52];
    char s_8d5d41b3[13];
    char s_4cfcae06[10];
    char s_ed2766fc[11];
-   char s_9ca4bbd7[22];
-   char s_9ca4bbd8[22];
    char s_f4805a53[33];
    char s_9211eac4[33];
    char s_66e9521c[71];
@@ -235,6 +266,11 @@ static const struct
    char s_a8d552a7[43];
    char s_6112ec7c[38];
    char s_27aef25c[45];
+#ifdef _3DS
+   char s_b4816da6[39];
+   char s_450ca36f[40];
+   char s_c7690859[38];
+#endif
    char s_a49df80f[59];
    char s_16a53432[50];
    char s_6cc5ba39[51];
@@ -287,11 +323,17 @@ static const struct
    char s_8c424989[36];
    char s_070529d4[49];
    char s_30d1fc05[47];
+#ifdef GEKKO
+   char s_3180dcf5[47];
+#endif
    char s_623a09ea[82];
    char s_791ba074[121];
    char s_cc3c2510[122];
    char s_223aff92[120];
    char s_d6d8d4be[80];
+#ifdef UDEV_TOUCH_SUPPORT
+   char s_dda6a015[99];
+#endif
    char s_0ea19c95[44];
    char s_394e4cd7[47];
    char s_7e88336d[109];
@@ -311,6 +353,10 @@ static const struct
    char s_cbdab193[273];
    char s_d8e11f05[293];
    char s_94597253[290];
+#ifdef HAVE_MICROPHONE
+   char s_93d4d8b9[121];
+   char s_b80b10dc[152];
+#endif
    char s_a83d6467[175];
    char s_198c91d3[33];
    char s_59508007[40];
@@ -346,10 +392,22 @@ static const struct
    char s_5ae6337d[52];
    char s_db671d75[237];
    char s_2c1469aa[149];
+#ifdef HAVE_LIBNX
+   char s_4eae7b1f[27];
+#endif
    char s_bae1c983[103];
    char s_1d92d9e0[141];
    char s_c6e32f19[132];
    char s_5e14cb20[133];
+#if defined(DINGUX)
+   char s_6dc7aece[195];
+   char s_c0e554ab[153];
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   char s_eaa5cf6a[123];
+#endif
+#endif
    char s_17663212[152];
    char s_055c296e[102];
    char s_123f401f[95];
@@ -367,9 +425,16 @@ static const struct
    char s_0b409b89[79];
    char s_1eebf4f8[154];
    char s_2f2ca2b6[151];
+#ifdef HAVE_ODROIDGO2
+   char s_e8460c46[55];
+#endif
    char s_3aaf6bf1[109];
    char s_2e69508b[282];
    char s_7e96b5ce[39];
+#if defined(RARCH_MOBILE)
+   char s_82c9e375[147];
+   char s_82c9e376[139];
+#endif
    char s_73658ec1[124];
    char s_73658ec2[116];
    char s_47ae341f[98];
@@ -378,35 +443,28 @@ static const struct
    char s_6ac06624[114];
    char s_7059a595[55];
    char s_934171e1[44];
+#ifdef _3DS
+   char s_a69ccdc1[49];
+#endif
    char s_63a238b1[20];
    char s_06fb676c[39];
    char s_4bc02672[56];
    char s_25f63cc5[48];
    char s_4173591b[16];
    char s_c2b63d3e[15];
-   char s_2a9c73f3[34];
-   char s_05e3f715[42];
-   char s_631c5635[45];
    char s_6c868497[31];
-   char s_19e809ad[38];
    char s_0256d7eb[59];
    char s_2a345bc4[43];
    char s_7058f002[40];
    char s_3267601f[75];
    char s_8db0184a[44];
-   char s_db1e4390[38];
    char s_12a68ed0[64];
    char s_76c4c7ce[28];
    char s_5eafa434[28];
    char s_7f1e25bf[32];
    char s_ed9e4f6f[140];
-   char s_4b6a946a[36];
    char s_d8f36eee[31];
-   char s_8d677b5b[29];
    char s_e68913bc[29];
-   char s_e533ddbb[22];
-   char s_45130077[26];
-   char s_856bdef7[31];
    char s_0e7aca8a[23];
    char s_ab1afe7c[21];
    char s_3b7c0dd8[23];
@@ -416,7 +474,6 @@ static const struct
    char s_143f28c7[97];
    char s_dde3bd30[34];
    char s_1943a9c7[22];
-   char s_b1e9bfbf[20];
    char s_28bbcc15[34];
    char s_f9a13828[22];
    char s_f5ab7ff9[61];
@@ -426,9 +483,6 @@ static const struct
    char s_5b678bc4[29];
    char s_a6abc697[32];
    char s_e3bb7f4c[30];
-   char s_d15060ee[27];
-   char s_a068841f[28];
-   char s_4d7ee7e2[20];
    char s_9d7c6772[31];
    char s_4bc518be[24];
    char s_c8812645[49];
@@ -437,7 +491,6 @@ static const struct
    char s_509dd374[26];
    char s_a1aa4c42[64];
    char s_9cfca240[35];
-   char s_bab020a4[22];
    char s_b1b24b70[32];
    char s_263efdcf[32];
    char s_676d783e[53];
@@ -504,6 +557,10 @@ static const struct
    "ed to the Shader Directory.",
    "Suspends the screensaver. Is a hint that does not necessarily have to be honoured by the video d"
    "river.",
+#ifdef HAVE_LAKKA
+   "Displays a list of available time zones. After selecting a time zone, time and date is adjusted "
+   "to the selected time zone. It assumes that system/hardware clock is set to UTC.",
+#endif
    "Localises the menu and all on-screen messages according to the language you have selected here. "
    "Requires a restart for the changes to take effect.\nTranslation completeness is shown next to ea"
    "ch option. In case a language is not implemented for a menu item, we fall back to English.",
@@ -537,6 +594,9 @@ static const struct
    "Synchronisation",
    "Synchronisation",
    "Okay",
+#ifdef _3DS
+   "Font Colour Opacity",
+#endif
    "Build-bot Assets URL",
    "Achievements cannot be activated with this core",
    "Bottom Centre",
@@ -604,6 +664,9 @@ static const struct
    "Graphical Widgets Scale Override",
    "Graphical Widgets Scale Override (Full-Screen)",
    "Graphical Widgets Scale Override (Windowed)",
+#ifdef HAVE_MICROPHONE
+   "Re-sampler Quality",
+#endif
    "Net-play",
    "Chat Colour (Message)",
    "Chat Colour (Nickname)",
@@ -644,12 +707,19 @@ static const struct
    "History & Favourites",
    "Show Content Specific Icons in History and Favourites",
    "Number of Pre-emptive Frames",
-   "Are you sure you want to delete the playlist \"%1\"?",
-   "Are you sure you want to delete the item \"%1\"?",
    "\"All Playlists\" maximum grid entries:",
    "\"All Playlists\" maximum list entries:",
    "Highlight Colour:",
    "Please fill out all the required fields.",
+#ifdef HAVE_QT
+   "Scan Finished.<br><br>\nIn order for content to be correctly scanned, you must:\n<ul><li>have a "
+   "compatible core already downloaded</li>\n<li>have \"Core Info Files\" updated with the Online Up"
+   "dater</li>\n<li>have \"Databases\" updated with the Online Updater</li>\n<li>restart RetroArch i"
+   "f any of the above was just done</li></ul>\nFinally, the content must match existing databases f"
+   "rom <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">here</a>. If"
+   " it is still not working, consid",
+   "er <a href=\"https://www.github.com/libretro/RetroArch/issues\">submitting a bug report</a>.",
+#endif
    "Select Colour",
    "Box Art",
    "Show 'Add to Favourites'",
@@ -678,7 +748,15 @@ static const struct
    "Retroflag Safe Shutdown\"\n#else\n   \"Retroflag Safe Shutdown (Reboot required)",
 #endif
 #endif
+#ifdef HAVE_LIBNX
+   "CPU Over-clock",
+#endif
    "Switch Cores to the Play Store versions",
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   "CPU Over-clock",
+#endif
+#endif
    "Front-End Identifier",
    "Front-End Name",
    "Front-End OS",
@@ -690,6 +768,15 @@ static const struct
    "All Full-Screen Modes",
    "Only in Exclusive Full-Screen Mode",
    "Only in Windowed Full-Screen Mode",
+#if defined(DINGUX)
+   "Bi-cubic",
+   "Nearest Neighbour",
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   "Nearest Neighbour",
+#endif
+#endif
    "Full-Screen Display",
    "Full-Screen Mode",
    "Full-Screen Width",
@@ -708,13 +795,16 @@ static const struct
    "De-flicker",
    "Vertical Sync (V-Sync)",
    "Waitable Swap Chains",
+#if defined (WIIU)
+#ifdef WIIU
+   "Optimise for Wii U GamePad (Restart required)",
+#endif
+#endif
    "Windowed Full-Screen Mode",
    "Sync to Exact Content Frame Rate (G-Sync, FreeSync)",
    "Colour Theme",
    "Grey Dark",
    "Grey Light",
-   "video_viewport_bias_x",
-   "video_viewport_bias_y",
    "Add the content to 'Favourites'.",
    "Add the content to 'Favourites'.",
    "Audio DSP plug-in that processes audio before it's sent to the driver.",
@@ -731,6 +821,11 @@ static const struct
    "Load customised configuration at start-up.",
    "Load customised controls at start-up.",
    "Scan for Bluetooth devices and connect them.",
+#ifdef _3DS
+   "Adjust bottom screen font blue colour.",
+   "Adjust bottom screen font green colour.",
+   "Adjust bottom screen font red colour.",
+#endif
    "URL to assets updater directory on the libretro build-bot.",
    "Address bit-mask when Memory Search Size < 8-bit.",
    "Load a cheat file and replace the existing cheats.",
@@ -802,6 +897,9 @@ static const struct
    "Switches Pre-emptive Frames on/off.",
    "Toggles sync to exact content frame rate on/off.",
    "The physical mouse as recognised by RetroArch.",
+#ifdef GEKKO
+   "Adjust x/y scale for Wii-mote light gun speed.",
+#endif
    "Analogue stick input will be relative to first touch if pressed within this zone.",
    "Select input to send when four pointers are on screen. Trigger Delay should be non-zero to disti"
    "nguish from other input.",
@@ -810,6 +908,10 @@ static const struct
    "Select input to send when two pointers are on screen. Trigger Delay should be non-zero to distin"
    "guish from other input.",
    "Specifies which core port will receive input from front-end controller port %u.",
+#ifdef UDEV_TOUCH_SUPPORT
+   "Enable along with Mouse to utilise the touch screen as a trackball, adding inertia to the pointe"
+   "r.",
+#endif
    "Select the general behaviour of turbo mode.",
    "Type of thumbnail to display on the left side.",
    "Type of thumbnail to display at the bottom right of playlists. Can be cycled with Right Analogue"
@@ -846,6 +948,12 @@ static const struct
    "es when 'Scale Graphical Widgets Automatically' is disabled. Can be used to increase or decrease"
    " the size of decorated notifications, indicators and controls independently from the menu itself"
    ".",
+#ifdef HAVE_MICROPHONE
+   "Desired audio input latency in milliseconds. Might not be honoured if the microphone driver can'"
+   "t provide given latency.",
+   "Lower this value to favour performance/lower latency over audio quality, increase for better aud"
+   "io quality at the expense of performance/lower latency.",
+#endif
    "Will start playback of the audio stream. Once finished, it will jump to the next audio stream in"
    " sequential order and repeat this behaviour. Useful as an album playback mode.",
    "Join or host a net-play session.",
@@ -895,6 +1003,9 @@ static const struct
    "with the standard libretro SaveRAM interface.",
    "Changes to the shader configuration will take effect immediately. Use this if you've changed the"
    " amount of shader passes, filtering, FBO scale, etc.",
+#ifdef HAVE_LIBNX
+   "Over-clock the Switch CPU.",
+#endif
    "Type of thumbnail to display at the top right of playlists. Can be cycled with Right Analogue Up"
    "/Left.",
    "Allows the choice of what governors to use in menus and during gameplay. Performance, Ondemand o"
@@ -903,6 +1014,19 @@ static const struct
    "ance will be significantly reduced.",
    "Cut off a few pixels around the edges of the image customarily left blank by developers which so"
    "metimes also contain rubbish pixels.",
+#if defined(DINGUX)
+   "Specify image interpolation method when scaling content with the internal IPU. 'Bicubic' or 'Bil"
+   "inear' is recommended when using CPU powered video filters. This option has no performance impac"
+   "t.",
+   "Maintain 1:1 pixel aspect ratios when scaling content with the internal IPU. If it's disabled, i"
+   "mages will then be stretched to fill the entire display.",
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   "Specify image interpolation method when 'Integer Scale' is disabled. 'Nearest Neighbour' has the"
+   " least performance impact.",
+#endif
+#endif
    "Apply a CPU powered video filter. Might come at a high performance cost. Some video filters migh"
    "t only work for cores that use 32-bit or 16-bit colour.",
    "Force the resolution to the full-screen size. If set to 0, a fixed value of 3840 x 2160 will be "
@@ -926,12 +1050,21 @@ static const struct
    " from bottom of screen). May introduce scaling artefacts.",
    "Adjust display overscan cropping by reducing image size by specified number of scan lines (taken"
    " from top of screen). May introduce scaling artefacts.",
+#ifdef HAVE_ODROIDGO2
+   "RGA scaling and bi-cubic filtering. May break widgets.",
+#endif
    "Delay autoloading shaders (in ms). Can work around graphical glitches when using 'screen grabbin"
    "g' software.",
    "Use a custom swap interval for V-Sync. Effectively reduces monitor refresh rate by the specified"
    " factor. 'Auto' sets factor based on core-reported frame rate, providing improved frame pacing w"
    "hen running e.g. 30 fps content on a 60 Hz display or 60 fps content on a 120 Hz display.",
    "Change video synchronisation settings.",
+#if defined(RARCH_MOBILE)
+   "Horizontal position of content when viewport is wider than content width. 0.0 is far left, 0.5 i"
+   "s centre, 1.0 is far right. (Portrait Orientation)",
+   "Vertical position of content when viewport is taller than content height. 0.0 is top, 0.5 is cen"
+   "tre, 1.0 is bottom. (Portrait Orientation)",
+#endif
    "Horizontal position of content when viewport is wider than content width. 0.0 is far left, 0.5 i"
    "s centre, 1.0 is far right.",
    "Vertical position of content when viewport is taller than content height. 0.0 is top, 0.5 is cen"
@@ -944,36 +1077,29 @@ static const struct
    "c, HDMI 2.1 VRR).",
    "Scan for wireless networks and establish a connection.",
    "Select a different background colour theme.",
+#ifdef _3DS
+   "Tap the Touch Screen to go\nto the RetroArch menu",
+#endif
    "Added to favourites",
    "Failed to add favourite: playlist full",
    "All supported cores are switched to Play Store versions",
    "All installed cores are at their latest version",
    "Audio disabled.",
    "Audio enabled.",
-   "Controller profile saved as \"%s\".",
-   "Auto-loading save state from \"%s\" failed.",
-   "Auto-loading save state from \"%s\" succeeded.",
    "Could not initialise autosave.",
-   "bringing_up_command_interface_at_port",
    "Cannot infer new configuration path. Use the current time.",
    "New cheat added to the bottom of the list.",
    "New cheat added to the top of the list.",
    "There's not enough room. The maximum number of simultaneous cheats is 100.",
    "Searching has not been initialised/started.",
-   "RetroAchievements: Logged in as \"%s\".",
    "Configuration directory not set. Cannot save new configuration.",
    "Connecting to net-play host",
    "Could not read film header.",
    "Could not read state from film.",
    "CRC32 checksum mismatch between content file and saved content checksum in replay file header. R"
    "eplay highly likely to de-sync on playback.",
-   "disconnect_device_from_a_valid_port",
    "Failed saving configuration to",
-   "failed_to_start_audio_driver",
    "Failed to start film record.",
-   "found_last_state_slot",
-   "Got connection from: \"%s\"",
-   "Got connection from: \"%s (%s)\"",
    "Password is incorrect.",
    "Password is correct.",
    "Password is incorrect.",
@@ -983,7 +1109,6 @@ static const struct
    "Input replay film format seems to have a different serialiser version. It will most likely fail.",
    "Input replay film playback ended.",
    "Stopping film record.",
-   "Client banned: \"%s\"",
    "Your nickname was changed to \"%s\"",
    "Net-play disconnected",
    "A net-play peer is running a different core. Cannot connect.",
@@ -995,9 +1120,6 @@ static const struct
    "Enter net-play chat message:",
    "Enter net-play server password:",
    "Failed to initialise netplay.",
-   "Failed to ban client: \"%s\"",
-   "Failed to kick client: \"%s\"",
-   "Client kicked: \"%s\"",
    "Scanning for net-play hosts...",
    "Net-play scan complete.",
    "Content must be loaded before starting net-play.",
@@ -1007,7 +1129,6 @@ static const struct
    "Net-play peer \"%s\" paused",
    "This core does not support net-play between different platforms",
    "A net-play client has disconnected",
-   "\"%s\" has disconnected",
    "Core does not support net-play.",
    "Netplay port mapping successful",
    "Restarting recording due to driver reinitialisation.",
@@ -1031,12 +1152,87 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_en_blob_check[
-      (sizeof(msg_hash_en_blob) == (27356u
+      (sizeof(msg_hash_en_blob) == (26756u
+#ifdef HAVE_LAKKA
+       + 176u
+#endif
+#ifdef _3DS
+       + 20u
+#endif
+#ifdef HAVE_MICROPHONE
+       + 19u
+#endif
+#ifdef HAVE_QT
+       + 591u
+#endif
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
        + 77u
+#endif
+#endif
+#ifdef HAVE_LIBNX
+       + 15u
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+       + 15u
+#endif
+#endif
+#if defined(DINGUX)
+       + 9u
+       + 18u
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+       + 18u
+#endif
+#endif
+#if defined (WIIU)
+#ifdef WIIU
+       + 46u
+#endif
+#endif
+#ifdef _3DS
+       + 39u
+       + 40u
+       + 38u
+#endif
+#ifdef GEKKO
+       + 47u
+#endif
+#ifdef UDEV_TOUCH_SUPPORT
+       + 99u
+#endif
+#ifdef HAVE_MICROPHONE
+       + 121u
+       + 152u
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
        + 125u
 #endif
+#endif
+#ifdef HAVE_LIBNX
+       + 27u
+#endif
+#if defined(DINGUX)
+       + 195u
+       + 153u
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+       + 123u
+#endif
+#endif
+#ifdef HAVE_ODROIDGO2
+       + 55u
+#endif
+#if defined(RARCH_MOBILE)
+       + 147u
+       + 139u
+#endif
+#ifdef _3DS
+       + 49u
 #endif
       )) ? 1 : -1];
 
@@ -1056,6 +1252,9 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
    (uint32_t)MENU_ENUM_LABEL_HELP_SHADER_APPLY_CHANGES,
    (uint32_t)MENU_ENUM_LABEL_HELP_SUSPEND_SCREENSAVER_ENABLE,
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_LABEL_HELP_TIMEZONE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_HELP_USER_LANGUAGE,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
@@ -1071,6 +1270,9 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_OK,
+#ifdef _3DS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_OPACITY,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMCENTER,
@@ -1138,6 +1340,9 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
+#ifdef HAVE_MICROPHONE
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_MSG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_NAME,
@@ -1178,12 +1383,13 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_HISTORY_ICONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_HIGHLIGHT_COLOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLEASE_FILL_OUT_REQUIRED_FIELDS,
+#ifdef HAVE_QT
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_SELECT_COLOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
@@ -1212,7 +1418,15 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
 #endif
 #endif
+#ifdef HAVE_LIBNX
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_OC_ENABLE,
+#endif
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
@@ -1224,6 +1438,15 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN,
+#if defined(DINGUX)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
+#endif
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
@@ -1242,13 +1465,16 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
+#if defined (WIIU)
+#ifdef WIIU
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
+#endif
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_DARK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_LIGHT,
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES,
    (uint32_t)MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES_PLAYLIST,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
@@ -1262,6 +1488,11 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
+#ifdef _3DS
+   (uint32_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,
+   (uint32_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_GREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_RED,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_BUILDBOT_ASSETS_URL,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_ADDRESS_BIT_POSITION,
    (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
@@ -1314,11 +1545,17 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_PREEMPT_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
+#ifdef GEKKO
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
+#ifdef UDEV_TOUCH_SUPPORT
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
@@ -1338,6 +1575,10 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
+#ifdef HAVE_MICROPHONE
+   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_SEQUENTIAL,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
@@ -1373,10 +1614,22 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
    (uint32_t)MENU_ENUM_SUBLABEL_SHADER_APPLY_CHANGES,
+#ifdef HAVE_LIBNX
+   (uint32_t)MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
    (uint32_t)MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MIN_POWER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
+#if defined(DINGUX)
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+#endif
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
@@ -1394,9 +1647,16 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_RED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
+#ifdef HAVE_ODROIDGO2
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_RGA_SCALING,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
+#if defined(RARCH_MOBILE)
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
@@ -1405,35 +1665,28 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
+#ifdef _3DS
+   (uint32_t)MSG_3DS_BOTTOM_MENU_DEFAULT,
+#endif
    (uint32_t)MSG_ADDED_TO_FAVORITES,
    (uint32_t)MSG_ADD_TO_FAVORITES_FAILED,
    (uint32_t)MSG_ALL_CORES_SWITCHED_PFD,
    (uint32_t)MSG_ALL_CORES_UPDATED,
    (uint32_t)MSG_AUDIO_MUTED,
    (uint32_t)MSG_AUDIO_UNMUTED,
-   (uint32_t)MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
-   (uint32_t)MSG_AUTOLOADING_SAVESTATE_FAILED,
-   (uint32_t)MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
    (uint32_t)MSG_AUTOSAVE_FAILED,
-   (uint32_t)MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
    (uint32_t)MSG_CANNOT_INFER_NEW_CONFIG_PATH,
    (uint32_t)MSG_CHEAT_ADD_BOTTOM_SUCCESS,
    (uint32_t)MSG_CHEAT_ADD_TOP_SUCCESS,
    (uint32_t)MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
    (uint32_t)MSG_CHEAT_SEARCH_NOT_INITIALIZED,
-   (uint32_t)MSG_CHEEVOS_LOGGED_IN_AS_USER,
    (uint32_t)MSG_CONFIG_DIRECTORY_NOT_SET,
    (uint32_t)MSG_CONNECTING_TO_NETPLAY_HOST,
    (uint32_t)MSG_COULD_NOT_READ_MOVIE_HEADER,
    (uint32_t)MSG_COULD_NOT_READ_STATE_FROM_MOVIE,
    (uint32_t)MSG_CRC32_CHECKSUM_MISMATCH,
-   (uint32_t)MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
    (uint32_t)MSG_FAILED_SAVING_CONFIG_TO,
-   (uint32_t)MSG_FAILED_TO_START_AUDIO_DRIVER,
    (uint32_t)MSG_FAILED_TO_START_MOVIE_RECORD,
-   (uint32_t)MSG_FOUND_LAST_STATE_SLOT,
-   (uint32_t)MSG_GOT_CONNECTION_FROM,
-   (uint32_t)MSG_GOT_CONNECTION_FROM_NAME,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
    (uint32_t)MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
@@ -1443,7 +1696,6 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,
    (uint32_t)MSG_MOVIE_PLAYBACK_ENDED,
    (uint32_t)MSG_MOVIE_RECORD_STOPPED,
-   (uint32_t)MSG_NETPLAY_BANNED_CLIENT_S,
    (uint32_t)MSG_NETPLAY_CHANGED_NICK,
    (uint32_t)MSG_NETPLAY_CLIENT_HANGUP,
    (uint32_t)MSG_NETPLAY_DIFFERENT_CORES,
@@ -1453,9 +1705,6 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MSG_NETPLAY_ENTER_CHAT,
    (uint32_t)MSG_NETPLAY_ENTER_PASSWORD,
    (uint32_t)MSG_NETPLAY_FAILED,
-   (uint32_t)MSG_NETPLAY_FAILED_TO_BAN_CLIENT_S,
-   (uint32_t)MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S,
-   (uint32_t)MSG_NETPLAY_KICKED_CLIENT_S,
    (uint32_t)MSG_NETPLAY_LAN_SCANNING,
    (uint32_t)MSG_NETPLAY_LAN_SCAN_COMPLETE,
    (uint32_t)MSG_NETPLAY_NEED_CONTENT_LOADED,
@@ -1464,7 +1713,6 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MSG_NETPLAY_PEER_PAUSED,
    (uint32_t)MSG_NETPLAY_PLATFORM_DEPENDENT,
    (uint32_t)MSG_NETPLAY_SERVER_HANGUP,
-   (uint32_t)MSG_NETPLAY_SERVER_NAMED_HANGUP,
    (uint32_t)MSG_NETPLAY_UNSUPPORTED,
    (uint32_t)MSG_PUBLIC_ADDRESS,
    (uint32_t)MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT,

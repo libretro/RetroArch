@@ -216,7 +216,7 @@ void create_gl_context(HWND hwnd, bool *quit)
 
    if (win32_hrc)
    {
-      video_state_get_ptr()->flags |= VIDEO_FLAG_CACHE_CONTEXT_ACK;
+      video_driver_cache_context_ack_set();
       RARCH_LOG("[WGL] Using cached GL context.\n");
    }
    else
@@ -391,6 +391,39 @@ void create_gl_context(HWND hwnd, bool *quit)
          }
       }
    }
+
+   /* HDR settings availability for the GL drivers: probe whether the
+    * display is in HDR mode and shape the display flags accordingly,
+    * so the menu offers the HDR options exactly when they can work.
+    * The trio is cleared first (it may be stale from a previous video
+    * driver); the probe's underlying DXGI check re-sets it when the
+    * display supports HDR. OpenGL HDR on Windows is scRGB-only (there
+    * is no WGL HDR10 / metadata API), so the HDR10 support bit is
+    * masked back out. On builds without a D3D driver the probe reports
+    * false and the settings simply stay hidden, as before. */
+   {
+      uint32_t disp_flags = video_driver_get_disp_flags();
+      disp_flags         &= ~(  VIDEO_FLAG_HDR_SUPPORT
+                              | VIDEO_FLAG_HDR10_SUPPORT
+                              | VIDEO_FLAG_SCRGB_SUPPORT);
+      video_driver_set_disp_flags(disp_flags);
+
+      /* The probe lives in win32_common's desktop-only region; UWP
+       * configurations that define HAVE_OPENGL compile this function
+       * (through ANGLE) but must not reference it -- doing so was an
+       * unresolved external at UWP release link. Under WinRT the trio
+       * simply stays cleared here and the d3d drivers manage it. */
+#if !defined(__WINRT__)
+      if (win32_display_hdr_active(win32_get_window()))
+      {
+         disp_flags  = video_driver_get_disp_flags();
+         disp_flags |=  (VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT);
+         disp_flags &= ~VIDEO_FLAG_HDR10_SUPPORT;
+         video_driver_set_disp_flags(disp_flags);
+         RARCH_LOG("[WGL] Display is in HDR mode; HDR settings available (scRGB).\n");
+      }
+#endif
+   }
 }
 #endif
 
@@ -513,6 +546,10 @@ static void gfx_ctx_wgl_destroy(void *data)
    {
       case GFX_CTX_OPENGL_API:
 #if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
+         video_driver_set_disp_flags(video_driver_get_disp_flags()
+               & ~(  VIDEO_FLAG_HDR_SUPPORT
+                   | VIDEO_FLAG_HDR10_SUPPORT
+                   | VIDEO_FLAG_SCRGB_SUPPORT));
          if (win32_hrc)
          {
             uint32_t video_st_flags;
@@ -770,6 +807,11 @@ static uint32_t gfx_ctx_wgl_get_flags(void *data)
       case GFX_CTX_OPENGL_API:
          if (wgl_flags & WGL_FLAG_ADAPTIVE_VSYNC)
             BIT32_SET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC);
+
+#ifndef __WINRT__
+         if (win32_backbuffer_is_scrgb())
+            BIT32_SET(flags, GFX_CTX_FLAGS_SCRGB_FRAMEBUFFER);
+#endif
 
          if (wgl_flags & WGL_FLAG_CORE_HW_CTX_ENABLE)
             BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);

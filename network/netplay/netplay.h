@@ -172,6 +172,16 @@ typedef struct
 
 net_driver_state_t *networking_state_get_ptr(void);
 
+#ifdef HAVE_NETWORKING
+/* The content fingerprint netplay advertises, compares and searches by.
+ * Derived on first use and cached; see netplay_frontend.c.
+ *
+ * Netplay is the only consumer of a content CRC in the frontend, so
+ * this exists only where netplay does - a target built without
+ * networking has neither this nor anything that calls it. */
+uint32_t netplay_content_crc(void);
+#endif
+
 bool netplay_compatible_version(const char *version);
 bool netplay_decode_hostname(const char *hostname,
    char *address, unsigned *port, char *session, size_t len);
@@ -209,6 +219,13 @@ void netplay_force_send_savestate(void);
 bool init_netplay_discovery(void);
 /** Deinitialize and free Netplay discovery */
 void deinit_netplay_discovery(void);
+
+/**
+ * netplay_discovery_free_hosts:
+ *
+ * Frees the LAN discovery result list. One-time teardown only.
+ */
+void netplay_discovery_free_hosts(void);
 
 /** Discovery control */
 bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state,

@@ -280,8 +280,7 @@ public final class VfsImplementationSaf
       path = normalizePath(path);
       if (isDocument(treeUri))
          return -1;
-      path = path.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + path;
-      final Uri directoryUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, path);
+      final Uri directoryUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, path.length() == 1 ? DocumentsContract.getTreeDocumentId(treeUri) : DocumentsContract.getTreeDocumentId(treeUri) + path);
       Cursor cursor = null;
       try
       {

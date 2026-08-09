@@ -292,8 +292,12 @@ bool recording_init(void)
    params.filename                  = output;
    params.fps                       = av_info->timing.fps;
    params.samplerate                = av_info->timing.sample_rate;
+   /* XRGB2101010 source frames are down-converted to XRGB8888 before the
+    * recording path sees them (see video_driver_frame), so they record as
+    * ARGB8888 just like a native XRGB8888 core. */
    params.pix_fmt                   =
-      (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888)
+      (   video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888
+       || video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB2101010)
       ? FFEMU_PIX_ARGB8888
       : FFEMU_PIX_RGB565;
    params.config                    = NULL;

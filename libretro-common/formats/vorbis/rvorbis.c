@@ -1,8 +1,15 @@
-/* rvorbis - Ogg Vorbis decoder (stb_vorbis-derived), memory-only.
+/* rvorbis - Ogg Vorbis decoder (stb_vorbis-derived), memory-resident.
  *
- * The public API in <formats/rvorbis.h> is the pull interface used by
- * libretro-common's audio_transfer: open a whole file from memory,
- * query the stream info, pull interleaved f32 frames, seek by sample.
+ * Two interfaces in <formats/rvorbis.h> share the decode core.  The
+ * pull interface opens a whole file from memory, queries the stream
+ * info, pulls interleaved frames and seeks by sample.  The stream
+ * interface (rvorbis_stream_*) decodes from a sliding window instead:
+ * the caller presents what bytes it has, rvorbis_stream_process
+ * consumes from the front and reports how much, and NEED_IN asks for
+ * more - which is what lets audio_transfer's Vorbis arm play a file
+ * that is still arriving, holding at most one packet across calls.
+ * The stream contract, including caller-driven seeking by granule
+ * bisection, is documented at its declarations in the header.
  *
  * Decode pipeline, in the order the code runs it:
  *
@@ -19,6 +26,15 @@
  *                 the floor, and runs the inverse MDCT (SIMD kernels
  *                 near imdct_step3_iter0_loop) followed by the windowed
  *                 overlap-add in vorbis_finish_frame.
+ *
+ * What it implements: Ogg-encapsulated Vorbis I, all residue types and
+ * floor type 1, sample-accurate seeking, and interleaved f32 output.
+ *
+ * What it does not implement: floor type 0 (ancient encoders only;
+ * such streams are refused with a dedicated error), chained or
+ * multiplexed Ogg streams (the first logical stream is decoded), raw
+ * unencapsulated Vorbis packets, file/callback I/O (memory only), and
+ * encoding.
  */
 /* Two complete pipelines, selected at runtime by which read the mixer
  * calls: rvorbis_get_samples_float_interleaved drives the float
@@ -47,6 +63,7 @@
 #elif !defined(alloca)
 #define alloca __builtin_alloca /* gcc/clang builtin: no header, portable everywhere */
 #endif
+#include <encodings/crc32.h>
 #include <formats/rvorbis.h>
 /* Convert a float coefficient in [-1, 1] to Q31, round half away from
  * zero, clamped (the window hits exactly 1.0). Double arithmetic: at
@@ -275,15 +292,6 @@ typedef struct
 
 typedef struct
 {
-   uint32_t  goal_crc;    /* expected crc if match */
-   int     bytes_left;  /* bytes left in packet */
-   uint32_t  crc_so_far;  /* running crc */
-   int     bytes_done;  /* bytes processed in _current_ chunk */
-   uint32_t  sample_loc;  /* granule pos encoded in page */
-} CRCscan;
-
-typedef struct
-{
    uint32_t page_start, page_end;
    uint32_t after_previous_page_start;
    uint32_t first_decoded_sample;
@@ -307,6 +315,15 @@ struct rvorbis
    uint32_t stream_len;
 
    uint8_t  push_mode;
+
+   /* Raw-packet mode (rvorbis_open_packets): the input is one bare
+    * Vorbis packet at a time rather than an Ogg stream.  next_segment
+    * synthesises the lacing over the packet where it lies, so the bit
+    * reader, the setup parser and the frame decoder are the same code
+    * in both modes and no framing is ever materialised. */
+   uint8_t  packet_mode;
+   uint8_t  packet_ready;  /* a fed packet the decoder has not taken yet */
+   uint32_t packet_left;   /* bytes of it not yet handed to a segment    */
 
    uint32_t first_audio_page_offset;
 
@@ -350,6 +367,17 @@ struct rvorbis
 
    int16_t *finalY[RVORBIS_MAX_CHANNELS];
 
+  /* per-packet channel flags for decode_packet_rest, held here rather
+   * than as 2 KiB of int[256] locals on the decode stack.  Sized by
+   * RVORBIS_MAX_CHANNELS rather than the locals' spec-maximum 256:
+   * both arrays are indexed only by channel number, header setup
+   * rejects streams above the cap, and the struct can be placed in a
+   * caller-provided alloc buffer whose budget should not grow by more
+   * than it must.  (The floor decoder's step2_flag stays a local --
+   * it is indexed by floor curve point, not by channel.) */
+   int zero_channel[RVORBIS_MAX_CHANNELS];
+   int really_zero_channel[RVORBIS_MAX_CHANNELS];
+
    uint32_t current_loc; /* sample location of next frame to decode */
    int    current_loc_valid;
 
@@ -386,9 +414,6 @@ struct rvorbis
    uint32_t known_loc_for_packet;
    int discard_samples_deferred;
    uint32_t samples_output;
-
-  /* push mode scanning */
-   int page_crc_tests; /* only in push_mode: number of tests active; -1 if not searching */
 
   /* sample-access */
    int channel_buffer_start;
@@ -476,24 +501,46 @@ static void setup_temp_free(vorb *f, void *p, int sz)
    free(p);
 }
 
-#define CRC32_POLY    0x04c11db7   /* from spec */
 
-static uint32_t rvorbis_crc_table[256];
-static void crc32_init(void)
+/* Folds n stream bytes into an Ogg page CRC in one call.
+ *
+ * The three page-scanning loops this replaces each called a one-byte
+ * checksum through get8(), so a 64 KiB page cost 64 Ki bounds checks,
+ * pointer bumps and calls to fold one byte apiece. The stream is a
+ * plain memory span - get8() is "if (stream >= stream_end) { eof = 1;
+ * return 0; } return *stream++;" and there is no file or callback
+ * path - so the bytes are already contiguous and can go in one call.
+ *
+ * A short stream is folded the way the byte loop folded it: get8()
+ * yields a zero for every byte past the end and sets eof, so fold what
+ * is there and then that many zeroes. */
+static uint32_t crc32_stream(vorb *f, uint32_t crc, uint32_t n)
 {
-   int i,j;
-   uint32_t s;
-   for(i=0; i < 256; i++)
+   size_t avail = (size_t)(f->stream_end - f->stream);
+
+   if ((size_t)n <= avail)
    {
-      for (s=(uint32_t)i<<24, j=0; j < 8; ++j)
-         s = (s << 1) ^ (s >= (1U<<31) ? CRC32_POLY : 0);
-      rvorbis_crc_table[i] = s;
+      crc        = encoding_crc32_ogg(crc, f->stream, (size_t)n);
+      f->stream += n;
+      return crc;
    }
-}
 
-static INLINE uint32_t crc32_update(uint32_t crc, uint8_t byte)
-{
-   return (crc << 8) ^ rvorbis_crc_table[byte ^ (crc >> 24)];
+   {
+      static const uint8_t zeros[64] = { 0 };
+      size_t missing = (size_t)n - avail;
+
+      crc       = encoding_crc32_ogg(crc, f->stream, avail);
+      f->stream = f->stream_end;
+      f->eof    = 1;
+
+      while (missing)
+      {
+         size_t chunk = (missing < sizeof(zeros)) ? missing : sizeof(zeros);
+         crc     = encoding_crc32_ogg(crc, zeros, chunk);
+         missing -= chunk;
+      }
+   }
+   return crc;
 }
 
 /* used in setup, and for huffman that doesn't go fast path */
@@ -506,7 +553,6 @@ static unsigned int bit_reverse(unsigned int n)
   return (n >> 16) | (n << 16);
 }
 
-static float square(float x) { return x * x; }
 
 /* this is a weird definition of log2() for which log2(1) = 1, log2(2) = 2, log2(4) = 3
  * as required by the specification. fast(?) implementation from stb.h
@@ -752,8 +798,13 @@ static int lookup1_values(int entries, int dim)
    int r = (int) floor(exp((float) log((float) entries) / dim));
    if ((int) floor(pow((float) r+1, dim)) <= entries)   /* (int) cast for MinGW warning; */
       ++r;                                              /* floor() to avoid _ftol() when non-CRT */
-   assert(pow((float) r+1, dim) > entries);
-   assert((int) floor(pow((float) r, dim)) <= entries); /* (int),floor() as above */
+   /* On well-formed data these invariants hold; on malformed entries/dim
+    * they can fail.  Return 0 so the caller (which already rejects a
+    * zero lookup_values) errors out gracefully instead of asserting. */
+   if (!(pow((float) r+1, dim) > entries))
+      return 0;
+   if (!((int) floor(pow((float) r, dim)) <= entries))
+      return 0;
    return r;
 }
 
@@ -781,7 +832,14 @@ static void compute_window(int n, float *window)
 {
    int n2 = n >> 1, i;
    for (i=0; i < n2; ++i)
-      window[i] = (float) sin(0.5 * M_PI * square((float) sin((i - 0 + 0.5) / n2 * 0.5 * M_PI)));
+   {
+      /* sin(pi/2 * sin(x)^2), with both steps narrowed to float the
+       * way the old square() helper narrowed them - the temporaries
+       * keep the multiply in float rather than letting it stay wide. */
+      float a   = (float)sin((i - 0 + 0.5) / n2 * 0.5 * M_PI);
+      float b   = a * a;
+      window[i] = (float)sin(0.5 * M_PI * b);
+   }
 }
 
 static void compute_bitreverse(int n, uint16_t *rev)
@@ -907,7 +965,12 @@ static void skip(vorb *z, int n)
 static int set_file_offset(rvorbis *f, unsigned int loc)
 {
    f->eof = 0;
-   if (f->stream_start + loc >= f->stream_end || f->stream_start + loc < f->stream_start)
+   /* Compare in the integer domain: forming stream_start + loc first
+    * is undefined when loc exceeds the buffer, so compilers fold the
+    * pointer-wrap test 'start + loc < start' to false
+    * (-Wtautological-compare). stream_end >= stream_start by
+    * construction. */
+   if (loc >= (size_t)(f->stream_end - f->stream_start))
    {
       f->stream = f->stream_end;
       f->eof    = 1;
@@ -1014,6 +1077,17 @@ static int start_packet(vorb *f)
 
 static int maybe_start_packet(vorb *f)
 {
+   if (f->packet_mode)
+   {
+      /* The bounds were set when the packet was fed; there is no page
+       * to open.  Consuming the flag here is what stops the retry loop
+       * in vorbis_decode_initial from re-reading a drained packet when
+       * the one fed was not an audio packet. */
+      if (!f->packet_ready)
+         return 0;
+      f->packet_ready = 0;
+      return 1;
+   }
    if (f->next_seg == -1)
    {
       int x = get8(f);
@@ -1046,6 +1120,24 @@ static int next_segment(vorb *f)
    int len;
    if (f->last_seg)
       return 0;
+   if (f->packet_mode)
+   {
+      /* One packet, laced as Ogg would have laced it, but computed
+       * rather than read: 255-byte segments until fewer than 255
+       * bytes remain, then the short (possibly zero-length) segment
+       * that terminates the packet.  A length that is a multiple of
+       * 255 therefore ends on a returned 0, which the callers already
+       * read as end of packet. */
+      len            = (f->packet_left >= 255) ? 255 : (int)f->packet_left;
+      f->packet_left -= (uint32_t)len;
+      if (len < 255)
+      {
+         f->last_seg       = 1;
+         f->last_seg_which = 0;
+      }
+      f->bytes_in_seg = (uint8_t)len;
+      return len;
+   }
    if (f->next_seg == -1)
    {
       f->last_seg_which = f->segment_count-1; /* in case start_page fails */
@@ -1141,6 +1233,33 @@ static INLINE void prep_huffman(vorb *f)
 {
    if (f->valid_bits <= 24)
    {
+      /* Bulk refill: this runs before every Huffman symbol, and the
+       * byte loop below pays a segment test, an EOP test, counter
+       * updates and a bounds check per byte to move at most four
+       * contiguous bytes.  When the current segment and the stream
+       * both hold the bytes the loop would take, take them in one
+       * step; every boundary - segment end, packet end, truncation -
+       * falls through to the byte loop unchanged. */
+      int want = (32 - f->valid_bits) >> 3;
+      if (f->valid_bits >= 0
+            && (int)f->bytes_in_seg >= want
+            && f->stream_end - f->stream >= want)
+      {
+         const uint8_t *p = f->stream;
+         uint32_t w = p[0];
+         if (want > 1) w |= (uint32_t)p[1] << 8;
+         if (want > 2) w |= (uint32_t)p[2] << 16;
+         if (want > 3) w |= (uint32_t)p[3] << 24;
+         if (f->valid_bits == 0)
+            f->acc = w;
+         else
+            f->acc += w << f->valid_bits;
+         f->valid_bits   += want << 3;
+         f->stream       += want;
+         f->bytes_in_seg -= (uint8_t)want;
+         f->packet_bytes += want;
+         return;
+      }
       if (f->valid_bits == 0)
          f->acc = 0;
       do
@@ -1264,6 +1383,17 @@ static INLINE int codebook_decode_scalar(vorb *f, Codebook *c)
  * those magnitudes the Q20 step (9.5e-7) is ~32x finer than float32's
  * ULP (3e-5).  Saturation gives malformed streams defined clamping. */
 #define RVQ_RBITS 20
+/* __builtin_{add,sub}_overflow arrived in GCC 5; older GCC (and any
+ * compiler without the builtins) treats the unknown __builtin_ names as
+ * external calls and fails at link time, so gate on version /
+ * __has_builtin and fall back to the widening implementation. */
+#if defined(__clang__)
+#  if __has_builtin(__builtin_add_overflow) && __has_builtin(__builtin_sub_overflow)
+#    define RVQ_HAS_OVERFLOW_BUILTINS 1
+#  endif
+#elif defined(__GNUC__) && (__GNUC__ >= 5)
+#  define RVQ_HAS_OVERFLOW_BUILTINS 1
+#endif
 /* Saturating 32-bit add/sub via the overflow flag: the hot form is
  * one add plus a never-taken branch (x86 add+jo, ARM adds+b.vs) --
  * measured 4x fewer instructions than widening to int64 and cmov-
@@ -1272,7 +1402,7 @@ static INLINE int codebook_decode_scalar(vorb *f, Codebook *c)
  * first operand's sign equals clamping the true 64-bit result. */
 static INLINE int32_t rvq_sat_add32(int32_t a, int32_t b)
 {
-#if defined(__GNUC__) || defined(__clang__)
+#ifdef RVQ_HAS_OVERFLOW_BUILTINS
    int32_t r;
    if (__builtin_add_overflow(a, b, &r))
       r = (a < 0) ? (int32_t)-0x7FFFFFFF - 1 : 0x7FFFFFFF;
@@ -1286,7 +1416,7 @@ static INLINE int32_t rvq_sat_add32(int32_t a, int32_t b)
 }
 static INLINE int32_t rvq_sat_sub32(int32_t a, int32_t b)
 {
-#if defined(__GNUC__) || defined(__clang__)
+#ifdef RVQ_HAS_OVERFLOW_BUILTINS
    int32_t r;
    if (__builtin_sub_overflow(a, b, &r))
       r = (a < 0) ? (int32_t)-0x7FFFFFFF - 1 : 0x7FFFFFFF;
@@ -1425,7 +1555,13 @@ static int codebook_decode_deinterleave_repeat(vorb *f, Codebook *c, float **out
        * buffer (len*ch), our current offset within it (p_inter*ch)+(c_inter),
        * and the length we'll be using (effective) */
       if (c_inter + p_inter*ch + effective > len * ch) {
-         effective = len*ch - (p_inter*ch - c_inter);
+         /* The offset is p_inter*ch + c_inter, as the note above says;
+          * subtracting c_inter instead of adding it overstates what is
+          * left by twice it, and writes that far past the end of the
+          * virtual vector.  Harmless at two channels, where c_inter is
+          * 0 or 1 and this path is not the one taken anyway, and not
+          * harmless beyond that. */
+         effective = len*ch - (p_inter*ch + c_inter);
       }
 
       z *= c->dimensions;
@@ -1622,11 +1758,24 @@ static INLINE void draw_line(float *output, int x0, int y0, int x1, int y1, int 
 {
    int dy = y1 - y0;
    int adx = x1 - x0;
-   int ady = abs(dy);
+   /* See draw_line_q: guard against a malformed floor's non-increasing
+    * X coordinates dividing by zero here. */
+   int ady;
    int x=x0,y=y0;
    int err = 0;
    int sy;
-   int base = dy / adx;
+   int base;
+   if (adx <= 0)
+      return;
+   /* y is interpolated between y0 and y1, so clamping the endpoints to
+    * the inverse_db_table[] range keeps every lookup below in bounds
+    * even if a malformed floor produced an out-of-range Y value. */
+   if (y0 < 0) y0 = 0; else if (y0 > 255) y0 = 255;
+   if (y1 < 0) y1 = 0; else if (y1 > 255) y1 = 255;
+   dy   = y1 - y0;
+   y    = y0;
+   ady  = abs(dy);
+   base = dy / adx;
 
    if (dy < 0)
       sy = base - 1;
@@ -1680,7 +1829,28 @@ static void decode_residue(vorb *f, float *residue_buffers[], int ch, int n, int
    int rtype = f->residue_types[rn];
    int c = r->classbook;
    int classwords = f->codebooks[c].dimensions;
-   int n_read = r->end - r->begin;
+   /* A residue's begin/end may legally exceed the vector actually
+    * decoded (libvorbis routinely writes type-2 coupled ranges over the
+    * interleaved ch*n vector); the spec behaviour, and upstream
+    * stb_vorbis's, is to clamp to the actual vector size at decode
+    * time, never to reject.  This also bounds part_read, keeping the
+    * temp classification array allocation below safe.
+    *
+    * ch*n, not 2*n: a type-2 residue is one vector with every
+    * channel interleaved into it, so its length follows the channel
+    * count.  Two is only right for stereo, and clamping a wider
+    * stream to it drops the partitions past the clamp - they are
+    * never decoded, and what comes out is noise.
+    *
+    * Inherited from upstream stb_vorbis, which has the same 2*n here
+    * and the same missing channel count in the setup bound; the two
+    * together are why multichannel Vorbis does not decode there
+    * either. */
+   unsigned int actual_size = rtype == 2
+      ? (unsigned int)n * (unsigned int)ch : (unsigned int)n;
+   unsigned int limit_r_begin = r->begin < actual_size ? r->begin : actual_size;
+   unsigned int limit_r_end   = r->end   < actual_size ? r->end   : actual_size;
+   int n_read = (int)(limit_r_end - limit_r_begin);
    int part_read = n_read / r->part_size;
    int temp_alloc_point = temp_alloc_save(f);
    uint8_t ***part_classdata = (uint8_t ***) temp_block_array(f,f->channels, part_read * sizeof(**part_classdata));
@@ -3339,7 +3509,13 @@ static int codebook_decode_deinterleave_repeat_q(vorb *f, Codebook *c, int32_t *
        * buffer (len*ch), our current offset within it (p_inter*ch)+(c_inter),
        * and the length we'll be using (effective) */
       if (c_inter + p_inter*ch + effective > len * ch) {
-         effective = len*ch - (p_inter*ch - c_inter);
+         /* The offset is p_inter*ch + c_inter, as the note above says;
+          * subtracting c_inter instead of adding it overstates what is
+          * left by twice it, and writes that far past the end of the
+          * virtual vector.  Harmless at two channels, where c_inter is
+          * 0 or 1 and this path is not the one taken anyway, and not
+          * harmless beyond that. */
+         effective = len*ch - (p_inter*ch + c_inter);
       }
 
       z *= c->dimensions;
@@ -3472,7 +3648,28 @@ static void decode_residue_q(vorb *f, int32_t *residue_buffers[], int ch, int n,
    int rtype = f->residue_types[rn];
    int c = r->classbook;
    int classwords = f->codebooks[c].dimensions;
-   int n_read = r->end - r->begin;
+   /* A residue's begin/end may legally exceed the vector actually
+    * decoded (libvorbis routinely writes type-2 coupled ranges over the
+    * interleaved ch*n vector); the spec behaviour, and upstream
+    * stb_vorbis's, is to clamp to the actual vector size at decode
+    * time, never to reject.  This also bounds part_read, keeping the
+    * temp classification array allocation below safe.
+    *
+    * ch*n, not 2*n: a type-2 residue is one vector with every
+    * channel interleaved into it, so its length follows the channel
+    * count.  Two is only right for stereo, and clamping a wider
+    * stream to it drops the partitions past the clamp - they are
+    * never decoded, and what comes out is noise.
+    *
+    * Inherited from upstream stb_vorbis, which has the same 2*n here
+    * and the same missing channel count in the setup bound; the two
+    * together are why multichannel Vorbis does not decode there
+    * either. */
+   unsigned int actual_size = rtype == 2
+      ? (unsigned int)n * (unsigned int)ch : (unsigned int)n;
+   unsigned int limit_r_begin = r->begin < actual_size ? r->begin : actual_size;
+   unsigned int limit_r_end   = r->end   < actual_size ? r->end   : actual_size;
+   int n_read = (int)(limit_r_end - limit_r_begin);
    int part_read = n_read / r->part_size;
    int temp_alloc_point = temp_alloc_save(f);
    uint8_t ***part_classdata = (uint8_t ***) temp_block_array(f,f->channels, part_read * sizeof(**part_classdata));
@@ -3626,17 +3823,45 @@ static void decode_residue_q(vorb *f, int32_t *residue_buffers[], int ch, int n,
 done:
    temp_alloc_restore(f,temp_alloc_point);
 }
-/* Q31 twin of inverse_db_table, generated once; entries are (0,1]. */
-static int32_t inverse_db_q31[256];
-static int inverse_db_q31_ready;
-static void rvq_init_db_q31(void)
-{
-   int i;
-   if (inverse_db_q31_ready) return;
-   for (i = 0; i < 256; i++)
-      inverse_db_q31[i] = rvq_coef_q31(inverse_db_table[i]);
-   inverse_db_q31_ready = 1;
-}
+/* Q31 twin of inverse_db_table; entries are (0,1].  This used to
+ * be built at first use behind a non-atomic flag, a data race when
+ * two decoders enter s16 mode concurrently.  The 256 entries are
+ * rvq_coef_q31() over the float inverse_db_table, baked as const data
+ * generated by that same converter; const data has no initialiser
+ * to race on. */
+static const int32_t inverse_db_q31[256] = {
+  229,244,259,276,294,313,334,355,
+  378,403,429,457,487,518,552,588,
+  626,667,710,756,806,858,914,973,
+  1036,1104,1175,1252,1333,1420,1512,1610,
+  1715,1826,1945,2072,2206,2350,2502,2665,
+  2838,3023,3219,3428,3651,3888,4141,4410,
+  4696,5002,5327,5673,6042,6434,6852,7298,
+  7772,8277,8815,9388,9998,10647,11339,12076,
+  12861,13697,14587,15535,16544,17619,18764,19984,
+  21283,22666,24139,25707,27378,29157,31052,33070,
+  35219,37507,39945,42541,45305,48249,51385,54724,
+  58281,62068,66102,70397,74972,79844,85033,90559,
+  96444,102711,109386,116494,124065,132127,140714,149858,
+  159597,169968,181014,192777,205305,218647,232855,247988,
+  264103,281266,299544,319011,339742,361820,385333,410374,
+  437043,465444,495691,527904,562210,598746,637656,679094,
+  723226,770225,820278,873585,930355,990815,1055204,1123777,
+  1196806,1274581,1357411,1445623,1539568,1639617,1746169,1859645,
+  1980495,2109199,2246266,2392242,2547703,2713267,2889590,3077372,
+  3277357,3490338,3717160,3958722,4215982,4489960,4781743,5092488,
+  5423426,5775871,6151220,6550961,6976679,7430063,7912910,8427135,
+  8974778,9558009,10179143,10840641,11545127,12295394,13094418,13945367,
+  14851616,15816757,16844620,17939278,19105072,20346628,21668866,23077032,
+  24576706,26173840,27874762,29686224,31615400,33669948,35858008,38188264,
+  40669952,43312916,46127636,49125268,52317704,55717604,59338448,63194596,
+  67301336,71674952,76332792,81293328,86576232,92202440,98194280,104575488,
+  111371400,118608936,126316816,134525600,143267824,152578176,162493568,173053312,
+  184299296,196276096,209031216,222615248,237082048,252488976,268897120,286371552,
+  304981600,324801024,345908448,368387520,392327392,417823040,444975520,473892576,
+  504688768,537486272,572415168,609613952,649230080,691420736,736353088,784205504,
+  835167552,889441472,947242432,1008799552,1074356992,1144174848,1218529664,1297716608,
+  1382049536,1471862912,1567512832,1669378688,1777864320,1893399936,2016443776,2147483647 };
 /* Fused floor apply: Q20 residue * Q31 floor -> Q28 spectral sample,
  * rounded.  Peak product ~2^60, int64-safe. */
 #define RVQ_FLOORMUL(r, fq) \
@@ -3646,11 +3871,26 @@ static INLINE void draw_line_q(int32_t *output, int x0, int y0, int x1, int y1, 
 {
    int dy = y1 - y0;
    int adx = x1 - x0;
-   int ady = abs(dy);
+   /* A valid floor's X coordinates are strictly increasing, so adx > 0;
+    * a malformed floor can repeat or unsort them, which would divide by
+    * zero below.  A zero/negative-width segment covers no samples, so
+    * skip it. */
+   int ady;
    int x=x0,y=y0;
    int err = 0;
    int sy;
-   int base = dy / adx;
+   int base;
+   if (adx <= 0)
+      return;
+   /* y is interpolated between y0 and y1, so clamping the endpoints to
+    * the inverse_db_q31[] range keeps every lookup below in bounds even
+    * if a malformed floor produced an out-of-range Y value. */
+   if (y0 < 0) y0 = 0; else if (y0 > 255) y0 = 255;
+   if (y1 < 0) y1 = 0; else if (y1 > 255) y1 = 255;
+   dy   = y1 - y0;
+   y    = y0;
+   ady  = abs(dy);
+   base = dy / adx;
 
    if (dy < 0)
       sy = base - 1;
@@ -3796,8 +4036,8 @@ static int vorbis_decode_packet_rest(vorb *f, int *len, Mode *m, int left_start,
 {
    Mapping *map;
    int i,j,k,n,n2;
-   int zero_channel[256];
-   int really_zero_channel[256];
+   int *zero_channel        = f->zero_channel;
+   int *really_zero_channel = f->really_zero_channel;
 
 /* WINDOWING */
 
@@ -4244,29 +4484,14 @@ static void rvorbis_materialize_first_frame(rvorbis *f)
    }
 }
 
-static int start_decoder(vorb *f)
+/* The identification header: 30 fixed bytes read straight out of the
+ * stream where it sits, the packet layer buying nothing for a packet
+ * whose length is already known.  Shared by the Ogg opener, which has
+ * just checked that the first page carries exactly this packet, and by
+ * the raw-packet opener, which is handed the packet by its container. */
+static int parse_id_header(vorb *f)
 {
-   uint8_t header[6], x,y;
-   int len,i,j,k, max_submaps = 0;
-   int longest_floorlist=0;
-
-   /* first page, first packet */
-
-   if (!start_page(f))
-      return 0;
-
-   /* validate page flag */
-   if (!(f->page_flag & PAGEFLAG_first_page))
-      return error(f, RVORBIS_invalid_first_page);
-   if (f->page_flag & PAGEFLAG_last_page)
-      return error(f, RVORBIS_invalid_first_page);
-   if (f->page_flag & PAGEFLAG_continued_packet)
-      return error(f, RVORBIS_invalid_first_page);
-   /* check for expected packet length */
-   if (f->segment_count != 1)
-      return error(f, RVORBIS_invalid_first_page);
-   if (f->segments[0] != 30)
-      return error(f, RVORBIS_invalid_first_page);
+   uint8_t header[6], x;
    /* read packet
     * check packet header */
    if (get8(f) != RVORBIS_packet_id)
@@ -4307,6 +4532,37 @@ static int start_decoder(vorb *f)
    x = get8(f);
    if (!(x & 1))
       return error(f, RVORBIS_invalid_first_page);
+   return 1;
+}
+
+/* From the setup header on: the setup parse, and the allocation and
+ * precomputation that it sizes.  Entered with the bit reader positioned
+ * at the first byte of the setup packet, under either framing. */
+static int start_decoder_setup(vorb *f);
+
+static int start_decoder(vorb *f)
+{
+   int len;
+
+   /* first page, first packet */
+
+   if (!start_page(f))
+      return 0;
+
+   /* validate page flag */
+   if (!(f->page_flag & PAGEFLAG_first_page))
+      return error(f, RVORBIS_invalid_first_page);
+   if (f->page_flag & PAGEFLAG_last_page)
+      return error(f, RVORBIS_invalid_first_page);
+   if (f->page_flag & PAGEFLAG_continued_packet)
+      return error(f, RVORBIS_invalid_first_page);
+   /* check for expected packet length */
+   if (f->segment_count != 1)
+      return error(f, RVORBIS_invalid_first_page);
+   if (f->segments[0] != 30)
+      return error(f, RVORBIS_invalid_first_page);
+   if (!parse_id_header(f))
+      return 0;
 
    /* second packet! */
    if (!start_page(f))
@@ -4326,7 +4582,15 @@ static int start_decoder(vorb *f)
    if (!start_packet(f))
       return 0;
 
-   crc32_init(); /* always init it, to avoid multithread race conditions */
+   return start_decoder_setup(f);
+}
+
+static int start_decoder_setup(vorb *f)
+{
+   uint8_t header[6], x,y;
+   int i,j,k, max_submaps = 0;
+   int longest_floorlist=0;
+
 
    if (get8_packet(f) != RVORBIS_packet_setup)
       return error(f, RVORBIS_invalid_setup);
@@ -4412,6 +4676,8 @@ static int start_decoder(vorb *f)
             f->setup_temp_memory_required = c->entries;
 
          c->codeword_lengths = (uint8_t *) setup_malloc(f, c->entries);
+         if (!c->codeword_lengths)
+            return error(f, RVORBIS_outofmem);
          memcpy(c->codeword_lengths, lengths, c->entries);
          setup_temp_free(f, lengths, c->entries); /* note this is only safe if there have been no intervening temp mallocs! */
          lengths = c->codeword_lengths;
@@ -4691,6 +4957,12 @@ skip:;
    /* Residue */
    f->residue_count = get_bits(f, 6)+1;
    f->residue_config = (Residue *) setup_malloc(f, f->residue_count * sizeof(*f->residue_config));
+   if (!f->residue_config)
+      return error(f, RVORBIS_outofmem);
+   /* setup_malloc does not zero: clear so a mid-parse error() leaves the
+    * unvisited residues' classdata/residue_books pointers NULL for
+    * vorbis_deinit rather than freeing uninitialised garbage. */
+   memset(f->residue_config, 0, f->residue_count * sizeof(*f->residue_config));
    for (i=0; i < f->residue_count; ++i)
    {
       uint8_t residue_cascade[64];
@@ -4700,6 +4972,25 @@ skip:;
       r->begin = get_bits(f, 24);
       r->end = get_bits(f, 24);
       r->part_size = get_bits(f,24)+1;
+      /* begin/end are unbounded 24-bit fields.  Do not reject large
+       * values outright: libvorbis legally writes type-2 coupled ranges
+       * over the interleaved ch*n vector, i.e. up to twice the
+       * half-block (seen in ordinary stereo files).  decode_residue[_q]
+       * clamps to the actual decoded vector at run time (as upstream
+       * stb_vorbis does), which is what makes the temp classification
+       * array sizing safe; here only reject inverted ranges and values
+       * beyond the largest vector any mode can decode.
+       *
+       * Channels times the half-block, which is what the interleaved
+       * vector holds.  It read two, and refused 5.1 for it: libvorbis
+       * couples 5.1 across the vector and writes an end of 4020
+       * against a ceiling of 2048.  That refusal was hiding the same
+       * omission in decode_residue's own clamp, so widening this
+       * alone let the file open and decode to noise.  Both say ch
+       * now, and neither should go back to two. */
+      if (r->begin > r->end ||
+            r->end > (uint32_t)f->channels * (uint32_t)(f->blocksize_1 >> 1))
+         return error(f, RVORBIS_invalid_setup);
       r->classifications = get_bits(f,6)+1;
       r->classbook = get_bits(f,8);
       for (j=0; j < r->classifications; ++j) {
@@ -4738,6 +5029,11 @@ skip:;
 
    f->mapping_count = get_bits(f,6)+1;
    f->mapping = (Mapping *) setup_malloc(f, f->mapping_count * sizeof(*f->mapping));
+   if (f->mapping == NULL)                    return error(f, RVORBIS_outofmem);
+   /* setup_malloc does not zero: clear the per-mapping chan pointers so
+    * that if a later error() aborts this loop, vorbis_deinit only frees
+    * pointers that were actually assigned (or NULL). */
+   memset(f->mapping, 0, f->mapping_count * sizeof(*f->mapping));
    for (i=0; i < f->mapping_count; ++i) {
       Mapping *m = f->mapping + i;
       int mapping_type = get_bits(f,16);
@@ -4842,7 +5138,11 @@ skip:;
          return error(f, RVORBIS_outofmem);
    }
 
-   f->first_audio_page_offset = (unsigned int)(f->stream - f->stream_start);
+   /* Ogg only: the byte the audio starts at, which rewind returns
+    * to.  Raw-packet mode is positioned by its feeder, not by an
+    * offset into a stream it does not have. */
+   if (!f->packet_mode)
+      f->first_audio_page_offset = (unsigned int)(f->stream - f->stream_start);
 
    return 1;
 }
@@ -4923,7 +5223,6 @@ static void vorbis_init(rvorbis *p, rvorbis_alloc *z)
    p->error          = RVORBIS__no_error;
    p->stream         = NULL;
    p->codebooks      = NULL;
-   p->page_crc_tests = -1;
 }
 
 rvorbis_info rvorbis_get_info(rvorbis *f)
@@ -4957,10 +5256,24 @@ static uint32_t vorbis_find_page(rvorbis *f, uint32_t *end, uint32_t *last)
 {
    for(;;)
    {
-      int n;
       if (f->eof) return 0;
-      n = get8(f);
-      if (n == 0x4f) { /* page header */
+      /* One memchr for the capture byte instead of a get8() call per
+       * scanned byte: after a coarse seek lands mid-page this walks
+       * up to a page's worth of data before any header is even
+       * tried.  Finding nothing consumes the stream the way the byte
+       * loop did - pointer at the end, eof set. */
+      {
+         uint8_t *hit = (uint8_t*)memchr(f->stream, 0x4f,
+               (size_t)(f->stream_end - f->stream));
+         if (!hit)
+         {
+            f->stream = f->stream_end;
+            f->eof    = 1;
+            return 0;
+         }
+         f->stream = hit + 1;
+      }
+      { /* page header candidate */
          unsigned int retry_loc = (unsigned int)(f->stream - f->stream_start);
          int i;
          /* check if we're off the end of a file_section stream */
@@ -4982,22 +5295,27 @@ static uint32_t vorbis_find_page(rvorbis *f, uint32_t *end, uint32_t *last)
                header[i] = get8(f);
             if (f->eof) return 0;
             if (header[4] != 0) goto invalid;
-            goal = header[22] + (header[23] << 8) + (header[24]<<16) + (header[25]<<24);
+            goal = header[22]              + ((uint32_t)header[23] << 8)
+                 + ((uint32_t)header[24] << 16) + ((uint32_t)header[25] << 24);
             for (i=22; i < 26; ++i)
                header[i] = 0;
-            crc = 0;
-            for (i=0; i < 27; ++i)
-               crc = crc32_update(crc, header[i]);
+            crc = encoding_crc32_ogg(0, header, 27);
             len = 0;
-            for (i=0; i < header[26]; ++i)
             {
-               int s = get8(f);
-               crc = crc32_update(crc, s);
-               len += s;
+               /* The segment table is folded in one call, then summed
+                * from the same bytes. Only what was really there is
+                * summed, which is what the byte loop did - get8() gave
+                * a zero for anything past the end. */
+               uint32_t       nseg  = header[26];
+               const uint8_t *seg   = f->stream;
+               size_t         avail = (size_t)(f->stream_end - f->stream);
+
+               crc = crc32_stream(f, crc, nseg);
+               for (i = 0; i < nseg && (size_t)i < avail; ++i)
+                  len += seg[i];
             }
             if (len && f->eof) return 0;
-            for (i=0; i < len; ++i)
-               crc = crc32_update(crc, get8(f));
+            crc = crc32_stream(f, crc, len);
             /* finished parsing probable page */
             if (crc == goal)
             {
@@ -5047,8 +5365,6 @@ static void rvorbis_set_output_mode(vorb *f, int s16)
    if (f->s16_mode == s16)
       return;
    f->s16_mode = s16;
-   if (s16)
-      rvq_init_db_q31();
    for (i=0; i < f->channels; ++i)
    {
       float   *pf = f->previous_window[i];
@@ -5478,6 +5794,11 @@ int rvorbis_seek(rvorbis *f, unsigned int sample_number)
    return 1;
 }
 
+unsigned int rvorbis_buffer_tell(rvorbis *f)
+{
+   return (unsigned int)(f->stream - f->stream_start);
+}
+
 void rvorbis_seek_start(rvorbis *f)
 {
    f->first_frame_pending = 0;
@@ -5521,33 +5842,89 @@ rvorbis * rvorbis_open_memory(const unsigned char *data, int len, int *error, rv
    return NULL;
 }
 
+
+/* The interleave copy, shared by the streaming getters and the
+ * raw-packet reads: frames the decoder has produced and not yet handed
+ * out, taken from the per-channel buffers into the caller's.  Advances
+ * channel_buffer_start by what it copies, advances the caller's write
+ * pointer with it, and returns the count in frames.  The output mode is
+ * the caller's to select first; these read the buffers as the latch
+ * says they are laid out. */
+static int rvorbis_drain_float(rvorbis *f, int channels, float **pbuffer,
+      int frames)
+{
+   float *buffer = *pbuffer;
+   int    i, j;
+   int    z = f->channels;
+   int    k = f->channel_buffer_end - f->channel_buffer_start;
+   if (z > channels)
+      z = channels;
+   if (k > frames)
+      k = frames;
+   if (k <= 0)
+      return 0;
+   for (j=0; j < k; ++j)
+   {
+      for (i=0; i < z; ++i)
+         *buffer++ = f->channel_buffers[i][f->channel_buffer_start+j];
+      for (   ; i < channels; ++i)
+         *buffer++ = 0;
+   }
+   f->channel_buffer_start += k;
+   *pbuffer = buffer;
+   return k;
+}
+
+/* As above, quantised during the copy: Q28 buffers, so
+ * s16 = round(x * 32768) = round(v / 2^13), rounded half away from zero
+ * and clamped.  This is the only place the quantiser exists. */
+static int rvorbis_drain_s16(rvorbis *f, int channels, int16_t **pbuffer,
+      int frames)
+{
+   int16_t *buffer = *pbuffer;
+   int      i, j;
+   int      z = f->channels;
+   int      k = f->channel_buffer_end - f->channel_buffer_start;
+   if (z > channels)
+      z = channels;
+   if (k > frames)
+      k = frames;
+   if (k <= 0)
+      return 0;
+   for (j=0; j < k; ++j)
+   {
+      for (i=0; i < z; ++i)
+      {
+         int32_t v = ((int32_t *) f->channel_buffers[i])[f->channel_buffer_start+j];
+         int32_t q = (v >= 0) ? ((v + (1 << 12)) >> 13)
+                              : -((-v + (1 << 12)) >> 13);
+         if (q >  32767)
+            q =  32767;
+         if (q < -32768)
+            q = -32768;
+         *buffer++ = (int16_t)q;
+      }
+      for (   ; i < channels; ++i)
+         *buffer++ = 0;
+   }
+   f->channel_buffer_start += k;
+   *pbuffer = buffer;
+   return k;
+}
+
 int rvorbis_get_samples_float_interleaved(rvorbis *f, int channels,
       float *buffer, int num_floats)
 {
    float **outputs;
    int len = num_floats / channels;
-   int n=0;
-   int z = f->channels;
+   int n   = 0;
 
    rvorbis_set_output_mode(f, 0);
    rvorbis_materialize_first_frame(f);
-   if (z > channels)
-      z = channels;
-   while (n < len)
+   for (;;)
    {
-      int i,j;
-      int k = f->channel_buffer_end - f->channel_buffer_start;
-      if (n+k >= len) k = len - n;
-      for (j=0; j < k; ++j)
-      {
-         for (i=0; i < z; ++i)
-            *buffer++ = f->channel_buffers[i][f->channel_buffer_start+j];
-         for (   ; i < channels; ++i)
-            *buffer++ = 0;
-      }
-      n += k;
-      f->channel_buffer_start += k;
-      if (n == len)
+      n += rvorbis_drain_float(f, channels, &buffer, len - n);
+      if (n >= len)
          break;
       if (!rvorbis_get_frame_float(f, NULL, &outputs))
          break;
@@ -5556,54 +5933,832 @@ int rvorbis_get_samples_float_interleaved(rvorbis *f, int channels,
 }
 
 /* Native signed 16-bit output: identical to the float read except that
- * quantisation (round half away from zero, clamped) happens during the
- * interleave copy, so the samples go from the per-channel decode
- * buffers to the caller's buffer in a single pass with no intermediate
- * float staging.  Vorbis is a float-internal codec, so one
- * quantisation at the output boundary is the minimum possible. */
+ * quantisation happens during the interleave copy, so the samples go
+ * from the per-channel decode buffers to the caller's buffer in a
+ * single pass with no intermediate float staging.  Vorbis is a
+ * float-internal codec, so one quantisation at the output boundary is
+ * the minimum possible. */
 int rvorbis_get_samples_s16_interleaved(rvorbis *f, int channels,
       int16_t *buffer, int num_shorts)
 {
    float **outputs;
    int len = num_shorts / channels;
-   int n=0;
-   int z = f->channels;
+   int n   = 0;
 
    rvorbis_set_output_mode(f, 1);
    rvorbis_materialize_first_frame(f);
-   if (z > channels)
-      z = channels;
-   while (n < len)
+   for (;;)
    {
-      int i,j;
-      int k = f->channel_buffer_end - f->channel_buffer_start;
-      if (n+k >= len) k = len - n;
-      for (j=0; j < k; ++j)
-      {
-         /* Q28 buffers: s16 = round(x * 32768) = round(v / 2^13),
-          * rounded half away from zero and clamped as the float
-          * quantiser below. */
-         for (i=0; i < z; ++i)
-         {
-            int32_t v = ((int32_t *) f->channel_buffers[i])[f->channel_buffer_start+j];
-            int32_t q = (v >= 0) ? ((v + (1 << 12)) >> 13)
-                                 : -((-v + (1 << 12)) >> 13);
-            if (q >  32767)
-               q =  32767;
-            if (q < -32768)
-               q = -32768;
-            *buffer++ = (int16_t)q;
-         }
-
-         for (   ; i < channels; ++i)
-            *buffer++ = 0;
-      }
-      n += k;
-      f->channel_buffer_start += k;
-      if (n == len)
+      n += rvorbis_drain_s16(f, channels, &buffer, len - n);
+      if (n >= len)
          break;
       if (!rvorbis_get_frame_float(f, NULL, &outputs))
          break;
    }
    return n;
+}
+
+/* --- RAW PACKET API ---------------------------------------------------
+ *
+ * A container that delimits Vorbis packets itself (Matroska/WebM, and
+ * anything else that carries the three setup headers out of band) has
+ * no Ogg for this decoder to walk.  Nothing is synthesised for it:
+ * rvorbis_open_packets parses the identification and setup headers
+ * where the container put them, and rvorbis_packet_decode reads each
+ * audio packet where the container put that, next_segment laying Ogg's
+ * lacing over the bytes arithmetically rather than the caller writing
+ * it out.  The comment header is not wanted - it carries no decode
+ * state, and the Ogg opener skips over it too.
+ *
+ * Overlap-add makes this one packet in, zero or more frames out: the
+ * first audio packet primes the window and yields nothing, and each
+ * one after that yields the frames its predecessor's right half
+ * overlapped.  So decode returns a count and the reads drain it,
+ * instead of a packet call filling a caller buffer end to end.
+ */
+
+/* Point the reader at one packet.  Everything the segment layer would
+ * have taken from a page header is set here instead. */
+static void rvorbis_feed_packet(vorb *f, const void *packet, uint32_t len)
+{
+   f->stream         = (uint8_t *)packet;
+   f->stream_start   = (uint8_t *)packet;
+   f->stream_end     = (uint8_t *)packet + len;
+   f->stream_len     = len;
+   f->packet_left    = len;
+   f->packet_ready   = 1;
+   f->eof            = 0;
+   f->last_seg       = 0;
+   f->last_seg_which = 0;
+   f->next_seg       = 0;
+   f->bytes_in_seg   = 0;
+   f->valid_bits     = 0;
+   f->packet_bytes   = 0;
+   f->acc            = 0;
+   f->page_flag      = 0;
+   /* No granule ever arrives here, so the branch in
+    * vorbis_decode_packet_rest that trusts one must never match: -2 is
+    * the "no known location" value a page header without one leaves. */
+   f->end_seg_with_known_loc = -2;
+}
+
+rvorbis * rvorbis_open_packets(const unsigned char *id_header, int id_len,
+      const unsigned char *setup_header, int setup_len,
+      int *error, rvorbis_alloc *alloc)
+{
+   rvorbis *f, p;
+   if (   !id_header    || id_len != 30
+       || !setup_header || setup_len <= 0)
+   {
+      if (error)
+         *error = RVORBIS_invalid_first_page;
+      return NULL;
+   }
+   vorbis_init(&p, alloc);
+   p.packet_mode  = 1;
+   /* The identification header is a flat 30 bytes; read it where it
+    * lies, exactly as the Ogg opener reads it out of its one-segment
+    * first page. */
+   p.stream       = (uint8_t *)id_header;
+   p.stream_start = (uint8_t *)id_header;
+   p.stream_end   = (uint8_t *)id_header + id_len;
+   p.stream_len   = (uint32_t)id_len;
+   if (parse_id_header(&p))
+   {
+      rvorbis_feed_packet(&p, setup_header, (uint32_t)setup_len);
+      if (start_decoder_setup(&p))
+      {
+         f = vorbis_alloc(&p);
+         if (f)
+         {
+            *f = p;
+            /* Nothing to pump: there is no stream to read the first
+             * frame out of ahead of the caller feeding it. */
+            f->first_frame_pending = 0;
+            return f;
+         }
+      }
+   }
+   if (error)
+      *error = p.error;
+   vorbis_deinit(&p);
+   return NULL;
+}
+
+void rvorbis_packet_reset(rvorbis *f)
+{
+   if (!f)
+      return;
+   f->previous_length          = 0;
+   f->first_decode             = 1;
+   f->current_loc              = 0;
+   f->current_loc_valid        = 0;
+   f->discard_samples_deferred = 0;
+   f->samples_output           = 0;
+   f->channel_buffer_start     = 0;
+   f->channel_buffer_end       = 0;
+   f->packet_ready             = 0;
+   f->packet_left              = 0;
+   f->last_seg                 = 0;
+   f->eof                      = 0;
+   f->error                    = RVORBIS__no_error;
+}
+
+int rvorbis_packet_decode(rvorbis *f, const void *packet, size_t len,
+      int s16)
+{
+   int frames, left, right;
+   if (!f || !f->packet_mode)
+      return -1;
+   /* A packet with no bytes carries no audio.  Saying so here keeps it
+    * out of the bit reader, which would otherwise read the mode number
+    * off the end and decode whatever fell out. */
+   if (!packet || !len)
+      return 0;
+   if (len > (size_t)0x7FFFFFFF)
+      return -1;
+   rvorbis_set_output_mode(f, s16 ? 1 : 0);
+   rvorbis_feed_packet(f, packet, (uint32_t)len);
+   if (!vorbis_decode_packet(f, &frames, &left, &right))
+   {
+      f->channel_buffer_start = f->channel_buffer_end = 0;
+      return 0;
+   }
+   frames = vorbis_finish_frame(f, frames, left, right);
+   f->channel_buffer_start = left;
+   f->channel_buffer_end   = left + frames;
+   return frames;
+}
+
+int rvorbis_packet_pending(rvorbis *f)
+{
+   if (!f)
+      return 0;
+   return f->channel_buffer_end - f->channel_buffer_start;
+}
+
+int rvorbis_packet_read_float(rvorbis *f, int channels, float *buffer,
+      int num_floats)
+{
+   if (!f || !buffer || channels <= 0)
+      return 0;
+   rvorbis_set_output_mode(f, 0);
+   return rvorbis_drain_float(f, channels, &buffer, num_floats / channels);
+}
+
+int rvorbis_packet_read_s16(rvorbis *f, int channels, int16_t *buffer,
+      int num_shorts)
+{
+   if (!f || !buffer || channels <= 0)
+      return 0;
+   rvorbis_set_output_mode(f, 1);
+   return rvorbis_drain_s16(f, channels, &buffer, num_shorts / channels);
+}
+
+/* --- PACKET FRAME COUNT (no decode) -----------------------------------
+ *
+ * How many frames a packet contributes, read off its header rather than
+ * decoded.  This is the Vorbis analogue of the duration an Opus packet
+ * carries in its TOC byte, and it exists for the same reason: a caller
+ * that wants to know where the audio in a container sits - to seek, or
+ * to measure the stream - should not have to decode it to find out.
+ *
+ * Everything needed is in the first two bytes.  The packet type bit
+ * must be 0 for audio; the mode number selects a blocksize; and a long
+ * block then carries the two flags saying whether its neighbours are
+ * long, which is what decides the window shape.  Because those flags
+ * are in this packet, the count does not depend on the previous one -
+ * the read is stateless, and touches no decoder state at all.
+ *
+ * The count is what vorbis_finish_frame returns: right_start minus
+ * left_start, computed here exactly as vorbis_decode_initial computes
+ * it.  The one thing the packet cannot say is that a decoder just
+ * reset has no left half to fold into, so the first packet after a
+ * reset yields nothing whatever this reports; a caller summing a
+ * stream starts from the second.
+ */
+int rvorbis_packet_frames(rvorbis *f, const void *packet, size_t len)
+{
+   const uint8_t *p = (const uint8_t *)packet;
+   uint32_t       acc;
+   int            nbits, mode, n, left_start, right_start, bitpos;
+   Mode          *m;
+   if (!f || !p || !len || !f->packet_mode)
+      return -1;
+   /* Vorbis packs LSB-first, so the header bits are the low bits of
+    * the first bytes.  Nine of them at most: type (1), mode (up to 6),
+    * and the two block flags. */
+   acc = p[0];
+   if (len > 1)
+      acc |= (uint32_t)p[1] << 8;
+   if (len > 2)
+      acc |= (uint32_t)p[2] << 16;
+   if (acc & 1)
+      return 0;              /* not an audio packet */
+   bitpos = 1;
+   nbits  = ilog(f->mode_count - 1);
+   mode   = (int)((acc >> bitpos) & (uint32_t)((1 << nbits) - 1));
+   bitpos += nbits;
+   if (mode >= f->mode_count)
+      return -1;
+   m = f->mode_config + mode;
+   if (m->blockflag)
+   {
+      int prev = (int)((acc >> bitpos) & 1);
+      int next = (int)((acc >> (bitpos + 1)) & 1);
+      n           = f->blocksize_1;
+      left_start  = prev ? 0 : ((n - f->blocksize_0) >> 2);
+      right_start = next ? (n >> 1) : ((n * 3 - f->blocksize_0) >> 2);
+   }
+   else
+   {
+      n           = f->blocksize_0;
+      left_start  = 0;
+      right_start = n >> 1;
+   }
+   return right_start - left_start;
+}
+
+/* --- STREAMING OGG API -------------------------------------------------
+ *
+ * The pulling API above addresses the whole stream at once: it seeks by
+ * bisecting over a resident buffer, so a caller must hold the file to
+ * use it at all.  A caller reading from storage has no such buffer and
+ * fabricating one costs the whole file in memory to play a few
+ * kilobytes of it at a time.
+ *
+ * This walks the Ogg layer incrementally instead, and hands the packets
+ * it assembles to the raw-packet decoder above, which already reads a
+ * packet where it lies.  So nothing here decodes: it is a demuxer, and
+ * the residency it needs is one packet rather than one file.
+ *
+ * Ogg's framing is what makes that possible and also what makes it
+ * fiddly.  A packet is a run of segments, each up to 255 bytes, ended
+ * by one shorter than 255 - so a packet that is an exact multiple of
+ * 255 ends with a zero-length segment, and a packet may run past the
+ * end of its page and continue on the next.  Pages of other logical
+ * bitstreams may be interleaved with ours and have to be skipped by
+ * serial number.  And after a seek the first page is joined mid-packet,
+ * whose leading fragment must be dropped rather than decoded.
+ */
+
+#define RVS_MAX_PACKET  (1u << 20)  /* far above any real setup header */
+
+enum
+{
+   RVS_HDR = 0,   /* filling the 27-byte page header, resyncing if wrong */
+   RVS_SEGS,      /* filling the lacing table                           */
+   RVS_BODY,      /* consuming segment bytes into the packet            */
+   RVS_DONE
+};
+
+struct rvorbis_stream
+{
+   rvorbis       *dec;
+
+   const uint8_t *in;
+   size_t         in_size;
+   size_t         in_pos;
+
+   int16_t       *out16;
+   float         *outf;
+   size_t         out_frames;
+   size_t         out_pos;
+   int            s16;
+
+   uint8_t        hdr[27 + 255];
+   unsigned       hdr_have;
+
+   unsigned       nsegs;
+   unsigned       seg_idx;
+   unsigned       seg_left;
+   int            pkt_ends;
+
+   uint8_t       *pkt;
+   size_t         pkt_len;
+   size_t         pkt_cap;
+
+   uint32_t       serial;
+   uint32_t       cur_serial;
+   int            have_serial;
+   int            skip_page;
+   int            drop_pkt;
+   int            resyncing;  /* joined mid-stream; still converging   */
+
+   uint64_t       granule;
+   uint64_t       pos;       /* frame the next emission sits at        */
+   int            pos_known;
+   int            page_done;  /* page consumed; pos lands once drained  */
+   uint64_t       emitted;   /* frames handed out since the start      */
+   uint64_t       limit;     /* final granule, once the EOS page is in */
+   int            have_limit;
+   int            eos;
+   int            state;
+
+   int            hdr_count;
+   uint8_t       *id;
+   size_t         id_len;
+   uint8_t       *setup;
+   size_t         setup_len;
+   int            opened;
+
+   int            channels;
+   int            pending;
+   int            error;
+};
+
+static int rvs_pkt_reserve(rvorbis_stream_t *s, size_t need)
+{
+   uint8_t *p;
+   size_t   cap;
+   if (need <= s->pkt_cap)
+      return 1;
+   if (need > RVS_MAX_PACKET)
+      return 0;
+   cap = s->pkt_cap ? s->pkt_cap : 4096;
+   while (cap < need)
+      cap <<= 1;
+   if (cap > RVS_MAX_PACKET)
+      cap = RVS_MAX_PACKET;
+   if (!(p = (uint8_t *)realloc(s->pkt, cap)))
+      return 0;
+   s->pkt     = p;
+   s->pkt_cap = cap;
+   return 1;
+}
+
+static int rvs_is_id(const uint8_t *p, size_t n)
+{
+   return n == 30 && p[0] == 0x01 && !memcmp(p + 1, "vorbis", 6);
+}
+
+static int rvs_is_setup(const uint8_t *p, size_t n)
+{
+   return n > 7 && p[0] == 0x05 && !memcmp(p + 1, "vorbis", 6);
+}
+
+rvorbis_stream_t *rvorbis_stream_new(void)
+{
+   rvorbis_stream_t *s = (rvorbis_stream_t *)calloc(1, sizeof(*s));
+   if (!s)
+      return NULL;
+   s->s16   = 1;
+   s->state = RVS_HDR;
+   return s;
+}
+
+void rvorbis_stream_free(rvorbis_stream_t *s)
+{
+   if (!s)
+      return;
+   if (s->dec)
+      rvorbis_close(s->dec);
+   free(s->pkt);
+   free(s->id);
+   free(s->setup);
+   free(s);
+}
+
+void rvorbis_stream_set_in(rvorbis_stream_t *s, const void *in, size_t in_size)
+{
+   if (!s)
+      return;
+   s->in      = (const uint8_t *)in;
+   s->in_size = in ? in_size : 0;
+   s->in_pos  = 0;
+}
+
+void rvorbis_stream_set_out_s16(rvorbis_stream_t *s, int16_t *out,
+      size_t out_frames)
+{
+   if (!s)
+      return;
+   s->out16      = out;
+   s->outf       = NULL;
+   s->out_frames = out ? out_frames : 0;
+   s->out_pos    = 0;
+   s->s16        = 1;
+}
+
+void rvorbis_stream_set_out_f32(rvorbis_stream_t *s, float *out,
+      size_t out_frames)
+{
+   if (!s)
+      return;
+   s->outf       = out;
+   s->out16      = NULL;
+   s->out_frames = out ? out_frames : 0;
+   s->out_pos    = 0;
+   s->s16        = 0;
+}
+
+int rvorbis_stream_info(const rvorbis_stream_t *s, rvorbis_info *out)
+{
+   if (!s || !s->opened)
+      return 0;
+   if (out)
+      *out = rvorbis_get_info(s->dec);
+   return 1;
+}
+
+uint64_t rvorbis_stream_granule(const rvorbis_stream_t *s)
+{
+   return s ? s->granule : 0;
+}
+
+rvorbis *rvorbis_stream_decoder(const rvorbis_stream_t *s)
+{
+   return s ? s->dec : NULL;
+}
+
+uint64_t rvorbis_stream_tell(const rvorbis_stream_t *s)
+{
+   return s ? s->pos : 0;
+}
+
+int rvorbis_stream_pos_known(const rvorbis_stream_t *s)
+{
+   return s ? s->pos_known : 0;
+}
+
+int rvorbis_stream_get_error(rvorbis_stream_t *s)
+{
+   int e;
+   if (!s)
+      return RVORBIS_STREAM_ERROR;
+   e        = s->error;
+   s->error = 0;
+   return e;
+}
+
+void rvorbis_stream_rewind(rvorbis_stream_t *s)
+{
+   if (!s)
+      return;
+   rvorbis_stream_reset(s);
+   /* Unlike a resync into the middle of a file, this one knows where it
+    * is: the head of the stream is frame zero.  Without that, a target
+    * inside the first page is unreachable - position becomes known at a
+    * page boundary, and there is none before it. */
+   s->pos       = 0;
+   s->pos_known = 1;
+   s->resyncing = 0;
+}
+
+void rvorbis_stream_reset(rvorbis_stream_t *s)
+{
+   if (!s)
+      return;
+   s->state    = RVS_HDR;
+   s->hdr_have = 0;
+   s->nsegs    = 0;
+   s->seg_idx  = 0;
+   s->seg_left = 0;
+   s->pkt_ends = 0;
+   s->pkt_len  = 0;
+   s->in       = NULL;
+   s->in_size  = 0;
+   s->in_pos   = 0;
+   s->eos      = 0;
+   s->pending  = 0;
+   s->drop_pkt = 0;
+   s->skip_page= 0;
+   /* Nothing decoded yet from wherever this lands, so the first packets
+    * have no overlap to continue from. */
+   s->resyncing = 1;
+   s->granule  = 0;
+   s->emitted  = 0;
+   s->pos      = 0;
+   s->pos_known= 0;
+   s->page_done= 0;
+   s->limit    = 0;
+   s->have_limit = 0;
+   if (s->opened)
+      rvorbis_packet_reset(s->dec);
+}
+
+/* One assembled packet.  Returns 0 on a hard failure. */
+static int rvs_packet(rvorbis_stream_t *s)
+{
+   const uint8_t *p   = s->pkt;
+   size_t         n   = s->pkt_len;
+   int            got;
+
+   if (s->drop_pkt)
+   {
+      /* Joined mid-packet after a seek: this is a tail, not a packet. */
+      s->drop_pkt = 0;
+      return 1;
+   }
+
+   if (!s->opened)
+   {
+      if (!s->id && rvs_is_id(p, n))
+      {
+         if (!(s->id = (uint8_t *)malloc(n)))
+            return 0;
+         memcpy(s->id, p, n);
+         s->id_len      = n;
+         s->serial      = s->cur_serial;
+         s->have_serial = 1;
+         return 1;
+      }
+      if (!s->id)
+         return 1;              /* not our bitstream's first packet   */
+      if (rvs_is_setup(p, n))
+      {
+         int err = 0;
+         if (!(s->setup = (uint8_t *)malloc(n)))
+            return 0;
+         memcpy(s->setup, p, n);
+         s->setup_len = n;
+         s->dec       = rvorbis_open_packets(s->id, (int)s->id_len,
+               s->setup, (int)s->setup_len, &err, NULL);
+         if (!s->dec)
+         {
+            s->error = RVORBIS_STREAM_ERROR;
+            return 0;
+         }
+         s->opened   = 1;
+         s->channels = rvorbis_get_info(s->dec).channels;
+      }
+      return 1;                 /* comment header, or anything else   */
+   }
+
+   if (!n)
+      return 1;
+   /* A rewind re-presents the three setup packets.  Vorbis marks a
+    * header packet with bit 0 of its first byte; feeding one to the
+    * audio decoder would read a mode number out of a comment string. */
+   if (p[0] & 1)
+      return 1;
+   if ((got = rvorbis_packet_decode(s->dec, p, n, s->s16)) < 0)
+   {
+      /* Until a packet has decoded, this is a stream joined partway:
+       * the first ones after a resync reference an overlap that was
+       * never decoded, and failing on them is how converging looks
+       * rather than a broken stream.  Once one succeeds, a failure is
+       * a failure. */
+      if (s->resyncing)
+         return 1;
+      s->error = RVORBIS_STREAM_ERROR;
+      return 0;
+   }
+   if (got > 0)
+      s->resyncing = 0;
+   s->pending = got;
+   return 1;
+}
+
+int rvorbis_stream_process(rvorbis_stream_t *s, size_t *read, size_t *wrote)
+{
+   size_t w0;
+   int    ret = RVORBIS_STREAM_OK;
+
+   if (!s)
+      return RVORBIS_STREAM_ERROR;
+   w0 = s->out_pos;
+
+   for (;;)
+   {
+      /* Drain what the last packet produced before decoding another:
+       * the decoder holds one packet's frames, so a caller with a small
+       * output buffer must be able to take them a slice at a time. */
+      if (s->opened && s->pending > 0 && s->out_pos < s->out_frames)
+      {
+         size_t want = s->out_frames - s->out_pos;
+         int    got;
+         if (s->s16)
+            got = rvorbis_packet_read_s16(s->dec, s->channels,
+                  s->out16 + s->out_pos * (size_t)s->channels,
+                  (int)(want * (size_t)s->channels));
+         else
+            got = rvorbis_packet_read_float(s->dec, s->channels,
+                  s->outf + s->out_pos * (size_t)s->channels,
+                  (int)(want * (size_t)s->channels));
+         if (got > 0)
+         {
+            /* Vorbis codes in overlapping blocks, so the last packet
+             * decodes past the end of the audio.  The final page's
+             * granule is where that end actually is, and it is known
+             * before this page's packets are decoded because the header
+             * is parsed first - so the overhang is dropped rather than
+             * handed out and taken back. */
+            if (s->have_limit)
+            {
+               /* Count against the absolute position, not against what
+                * this pass has emitted: a seek resets the latter, and
+                * measuring an absolute granule from a relative origin
+                * lets the tail through. Before the first page boundary
+                * the position is not known and emitted is the same
+                * quantity, the stream having started at zero. */
+               uint64_t at   = s->pos_known ? s->pos : s->emitted;
+               uint64_t room = (at < s->limit) ? s->limit - at : 0;
+               if ((uint64_t)got > room)
+                  got = (int)room;
+            }
+            s->out_pos += (size_t)got;
+            s->emitted += (uint64_t)got;
+            s->pos     += (uint64_t)got;
+            s->pending -= got;
+            if (s->pending < 0)
+               s->pending = 0;
+            if (s->have_limit
+                  && (s->pos_known ? s->pos : s->emitted) >= s->limit)
+            {
+               s->pending = 0;
+               s->state   = RVS_DONE;
+               continue;
+            }
+            if (got > 0)
+               continue;
+         }
+         s->pending = 0;
+      }
+
+      /* A page's granule is the position reached once every packet that
+       * completes on it has been decoded.  So the instant its frames are
+       * drained, that granule is where the stream now stands - which is
+       * what makes an exact seek possible after a mid-stream resync,
+       * where nothing else says where the output landed. */
+      if (s->page_done && s->pending <= 0)
+      {
+         s->pos       = s->granule;
+         s->pos_known = 1;
+         s->page_done = 0;
+      }
+
+      /* No output buffer means parse-only: consume just enough to get
+       * the setup headers in and stop there, which is what an open
+       * wants.  Treating it as unbounded instead would run the whole
+       * stream through with nowhere to put it. */
+      if (!s->out_frames)
+      {
+         if (s->opened)
+         {
+            ret = RVORBIS_STREAM_OK;
+            break;
+         }
+      }
+      else if (s->out_pos >= s->out_frames)
+      {
+         ret = RVORBIS_STREAM_OK;
+         break;
+      }
+      if (s->state == RVS_DONE)
+      {
+         ret = RVORBIS_STREAM_EOS;
+         break;
+      }
+
+      switch (s->state)
+      {
+         case RVS_HDR:
+            while (s->hdr_have < 27 && s->in_pos < s->in_size)
+               s->hdr[s->hdr_have++] = s->in[s->in_pos++];
+            if (s->hdr_have < 27)
+            {
+               ret = RVORBIS_STREAM_NEED_IN;
+               goto out;
+            }
+            if (memcmp(s->hdr, "OggS", 4) || s->hdr[4] != 0)
+            {
+               /* Resynchronise a byte at a time: a capture pattern may
+                * begin anywhere inside what we mistook for a header. */
+               memmove(s->hdr, s->hdr + 1, 26);
+               s->hdr_have = 26;
+               break;
+            }
+            s->nsegs   = s->hdr[26];
+            s->hdr_have= 0;
+            s->state   = RVS_SEGS;
+            break;
+
+         case RVS_SEGS:
+            while (s->hdr_have < s->nsegs && s->in_pos < s->in_size)
+               s->hdr[27 + s->hdr_have++] = s->in[s->in_pos++];
+            if (s->hdr_have < s->nsegs)
+            {
+               ret = RVORBIS_STREAM_NEED_IN;
+               goto out;
+            }
+            {
+               unsigned k;
+               uint64_t g = 0;
+               uint32_t sn = 0;
+               for (k = 0; k < 8; k++)
+                  g |= (uint64_t)s->hdr[6 + k] << (8 * k);
+               for (k = 0; k < 4; k++)
+                  sn |= (uint32_t)s->hdr[14 + k] << (8 * k);
+               s->cur_serial = sn;
+               s->skip_page  = (s->have_serial && sn != s->serial);
+               if (!s->skip_page)
+               {
+                  /* A page on which no packet completes carries -1
+                   * rather than a position; it says nothing about where
+                   * the stream has reached. */
+                  if (g != (uint64_t)-1)
+                     s->granule = g;
+                  if ((s->hdr[5] & 0x04) && g != (uint64_t)-1)
+                  {
+                     s->limit      = g;
+                     s->have_limit = 1;
+                  }
+                  /* A continued flag with nothing carried over means we
+                   * joined mid-packet: its leading fragment is a tail. */
+                  if ((s->hdr[5] & 0x01) && !s->pkt_len)
+                     s->drop_pkt = 1;
+                  else if (!(s->hdr[5] & 0x01))
+                     s->pkt_len = 0;
+               }
+            }
+            s->seg_idx  = 0;
+            s->seg_left = 0;
+            s->pkt_ends = 0;
+            s->hdr_have = 0;
+            s->state    = RVS_BODY;
+            break;
+
+         case RVS_BODY:
+            for (;;)
+            {
+               if (!s->seg_left && !s->pkt_ends)
+               {
+                  unsigned lace;
+                  if (s->seg_idx >= s->nsegs)
+                     break;
+                  lace        = s->hdr[27 + s->seg_idx++];
+                  s->seg_left = lace;
+                  s->pkt_ends = (lace < 255);
+               }
+               if (s->seg_left)
+               {
+                  size_t avail = s->in_size - s->in_pos;
+                  size_t take  = s->seg_left < avail ? s->seg_left : avail;
+                  if (!take)
+                  {
+                     ret = RVORBIS_STREAM_NEED_IN;
+                     goto out;
+                  }
+                  if (s->skip_page)
+                     s->in_pos += take;
+                  else
+                  {
+                     if (!rvs_pkt_reserve(s, s->pkt_len + take))
+                     {
+                        s->error = RVORBIS_STREAM_ERROR;
+                        ret      = RVORBIS_STREAM_ERROR;
+                        goto out;
+                     }
+                     memcpy(s->pkt + s->pkt_len, s->in + s->in_pos, take);
+                     s->pkt_len += take;
+                     s->in_pos  += take;
+                  }
+                  s->seg_left -= (unsigned)take;
+                  if (s->seg_left)
+                  {
+                     ret = RVORBIS_STREAM_NEED_IN;
+                     goto out;
+                  }
+               }
+               if (s->pkt_ends)
+               {
+                  s->pkt_ends = 0;
+                  if (!s->skip_page)
+                  {
+                     if (!rvs_packet(s))
+                     {
+                        ret = RVORBIS_STREAM_ERROR;
+                        goto out;
+                     }
+                     s->pkt_len = 0;
+                     if (s->pending > 0)
+                        break;   /* drain before taking another packet */
+                  }
+               }
+            }
+            if (s->seg_idx >= s->nsegs && !s->seg_left && !s->pkt_ends)
+            {
+               if (!s->skip_page && (s->hdr[5] & 0x04))
+               {
+                  s->eos   = 1;
+                  s->state = RVS_DONE;
+               }
+               else
+               {
+                  s->page_done = 1;
+                  s->hdr_have  = 0;
+                  s->state     = RVS_HDR;
+               }
+            }
+            break;
+      }
+   }
+
+out:
+   if (read)
+      *read = s->in_pos;
+   if (wrote)
+      *wrote = s->out_pos - w0;
+   return ret;
 }

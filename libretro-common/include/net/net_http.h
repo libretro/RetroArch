@@ -51,6 +51,46 @@ void net_http_connection_set_user_agent(struct http_connection_t *conn, const ch
 
 void net_http_connection_set_headers(struct http_connection_t *conn, const char *headers);
 
+/**
+ * net_http_sink_t:
+ *
+ * Called with each run of decoded body bytes as they arrive.  Return
+ * false to abort the transfer (a failed write, a full disk); the
+ * handle then reports an error like any other transport failure.
+ *
+ * Runs on whichever thread drives net_http_update().
+ **/
+/**
+ * net_http_init:
+ *
+ * Creates the locks guarding the process-global DNS cache and
+ * connection pool.  Call once at startup, before any thread can reach
+ * net_http_update(); they were previously created lazily on first
+ * use, which raced.  Idempotent, but not safe to call concurrently.
+ **/
+void net_http_init(void);
+
+/**
+ * net_http_deinit:
+ *
+ * Closes pooled connections and frees the DNS cache and the locks.
+ * Call at shutdown, after the last transfer has finished.
+ **/
+void net_http_deinit(void);
+
+typedef bool (*net_http_sink_t)(void *userdata, const void *data, size_t len);
+
+/**
+ * net_http_connection_set_sink:
+ *
+ * Stream the response body to @cb instead of accumulating it, so peak
+ * memory is the receive window rather than the whole payload.  With a
+ * sink set, net_http_data() returns NULL/0; status and headers are
+ * unaffected.
+ **/
+void net_http_connection_set_sink(struct http_connection_t *conn,
+      net_http_sink_t cb, void *userdata);
+
 void net_http_connection_set_content(struct http_connection_t *conn, const char *content_type,
       size_t content_length, const void *content);
 

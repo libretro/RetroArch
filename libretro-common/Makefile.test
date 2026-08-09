@@ -1,7 +1,14 @@
 
 OBJDIR = ../obj-unix
 
-TEST_UNIT_CFLAGS = $(CFLAGS) -Iinclude $(LDFLAGS) -lcheck $(LIBCHECK_CFLAGS) -Werror -Wdeclaration-after-statement -fsanitize=address -fsanitize=undefined -ftest-coverage -fprofile-arcs -ggdb
+# libcheck's link line is more than -lcheck on most distributions --
+# Debian and Ubuntu need -lcheck_pic -lsubunit -lrt -lm -pthread -- so
+# ask pkg-config and fall back to the bare flag only if it cannot
+# answer.  Overridable for platforms without pkg-config.
+LIBCHECK_CFLAGS ?= $(shell pkg-config --cflags check 2>/dev/null)
+LIBCHECK_LIBS   ?= $(shell pkg-config --libs check 2>/dev/null || echo -lcheck)
+
+TEST_UNIT_CFLAGS = $(CFLAGS) -Iinclude $(LDFLAGS) $(LIBCHECK_CFLAGS) -Werror -Wdeclaration-after-statement -fsanitize=address -fsanitize=undefined -ftest-coverage -fprofile-arcs -ggdb
 
 TEST_GENERIC_QUEUE = test/queues/test_generic_queue
 TEST_GENERIC_QUEUE_SRC = test/queues/test_generic_queue.c queues/generic_queue.c
@@ -9,61 +16,221 @@ TEST_GENERIC_QUEUE_SRC = test/queues/test_generic_queue.c queues/generic_queue.c
 TEST_LINKED_LIST = test/lists/test_linked_list
 TEST_LINKED_LIST_SRC = test/lists/test_linked_list.c lists/linked_list.c
 
+TEST_FILE_LIST = test/lists/test_file_list
+TEST_FILE_LIST_SRC = test/lists/test_file_list.c lists/file_list.c \
+		     compat/compat_strcasestr.c
+
 TEST_STDSTRING = test/string/test_stdstring
 TEST_STDSTRING_SRC = test/string/test_stdstring.c string/stdstring.c encodings/encoding_utf.c \
-		     compat/compat_strl.c
+		     compat/compat_strl.c compat/compat_strldup.c
 
 TEST_UTILS = test/utils/test_utils
 TEST_UTILS_SRC = test/utils/test_utils.c utils/md5.c encodings/encoding_crc32.c \
+		features/features_cpu.c \
 		streams/file_stream.c vfs/vfs_implementation.c file/file_path.c \
+		file/file_path_io.c \
 		compat/compat_strl.c time/rtime.c string/stdstring.c encodings/encoding_utf.c
 
 TEST_HASH = test/hash/test_hash
 TEST_HASH_SRC = test/hash/test_hash.c hash/lrc_hash.c \
 		streams/file_stream.c vfs/vfs_implementation.c file/file_path.c \
+		file/file_path_io.c \
 		compat/compat_strl.c time/rtime.c string/stdstring.c encodings/encoding_utf.c
+
+TEST_RWAV = test/formats/test_rwav
+TEST_RWAV_SRC = test/formats/test_rwav.c formats/wav/rwav.c
+
+TEST_RJPEG = test/formats/test_rjpeg
+TEST_RJPEG_SRC = test/formats/test_rjpeg.c formats/jpeg/rjpeg.c \
+		streams/file_stream.c vfs/vfs_implementation.c file/file_path.c \
+		file/file_path_io.c features/features_cpu.c \
+		compat/compat_strl.c time/rtime.c string/stdstring.c encodings/encoding_utf.c
+
+# Not a libcheck suite: a plain main() that prints its own verdict and
+# returns non-zero on failure.
+TEST_RWEBM_AUDIO = test/formats/test_rwebm_audio
+TEST_RWEBM_AUDIO_SRC = test/formats/test_rwebm_audio.c \
+		encodings/encoding_crc32.c features/features_cpu.c
 
 TEST_RPNG = test/formats/test_rpng
 TEST_RPNG_SRC = test/formats/test_rpng.c formats/png/rpng.c \
-		streams/trans_stream.c streams/trans_stream_zlib.c \
+		streams/trans_stream.c streams/trans_stream_deflate.c \
+		encodings/encoding_deflate.c \
+		features/features_cpu.c \
 		streams/trans_stream_pipe.c
 TEST_RPNG_LIBS = -lz
+
+
+# --- Windows A/W selection matrix -------------------------------------
+#
+# libretro-common picks between the ANSI and the wide Win32 entry points
+# three different ways (compile-time wide, compile-time ANSI via
+# LEGACY_WIN32, and per-call via HAVE_WIN9X_RUNTIME), and no
+# Linux-hosted target builds two of them.  That is how the ANSI branch
+# rots: nothing compiles it, so nothing notices when it stops
+# compiling, and the report comes from someone on a Windows 98 box.
+#
+# Cross-compiling covers "still builds".  wine covers rather more than
+# that: an ANSI build under wine really does call CreateFileA,
+# FindFirstFileA and _stat64 rather than their wide twins, so the
+# branch is executed, not merely parsed.  What wine cannot do is make
+# the probe say ANSI - it implements the W entry points, so a
+# HAVE_WIN9X_RUNTIME build correctly chooses wide there.  Only real 9x
+# exercises win32_needs_local_encoding() returning 1.
+#
+# Both tools are optional.  Absent either one, the affected steps say
+# so and pass; a contributor without a cross-compiler is not blocked.
+WIN32_CC      ?= x86_64-w64-mingw32-gcc
+WIN32_CC_X86  ?= i686-w64-mingw32-gcc
+WINE          ?= wine
+
+# Every file that selects between A and W.
+WIN32_AW_SRC = compat/fopen_utf8.c dynamic/dylib.c file/file_path.c \
+	       file/nbio/nbio_stdio.c file/nbio/nbio_windowsmmap.c \
+	       vfs/vfs_implementation.c
+
+# What a runnable test needs linked in besides the file under test.
+WIN32_AW_TEST     = samples/file/vfs/vfs_seek_contract_test.c
+WIN32_AW_TEST_SRC = compat/fopen_utf8.c compat/compat_strl.c \
+		    encodings/encoding_utf.c file/file_path.c \
+		    file/file_path_io.c streams/file_stream.c \
+		    time/rtime.c vfs/vfs_implementation.c
+
+win32-configs:
+	@fails=0; \
+	for cc in $(WIN32_CC) $(WIN32_CC_X86); do \
+	   if ! command -v $$cc >/dev/null 2>&1; then \
+	      echo "skip: $$cc not installed"; continue; \
+	   fi; \
+	   for cfg in "" "-DLEGACY_WIN32" "-DHAVE_WIN9X_RUNTIME"; do \
+	      for src in $(WIN32_AW_SRC); do \
+	         if ! $$cc -c -Iinclude -Wall -Werror $$cfg \
+	               -DLEGACY_WIN32_NO_MIGRATION_NOTE \
+	               -o /dev/null $$src 2>/tmp/lrc_aw_err.$$$$; then \
+	            echo "FAIL: $$cc [$${cfg:-default}] $$src"; \
+	            cat /tmp/lrc_aw_err.$$$$; fails=`expr $$fails + 1`; \
+	         fi; \
+	         rm -f /tmp/lrc_aw_err.$$$$; \
+	      done; \
+	      echo "ok:   $$cc [$${cfg:-default}] builds"; \
+	   done; \
+	done; \
+	wine_ok=0; \
+	if command -v $(WIN32_CC) >/dev/null 2>&1 \
+	      && command -v $(WINE) >/dev/null 2>&1; then \
+	   printf 'int main(void){return 0;}\n' > /tmp/lrc_aw_probe.c; \
+	   if $(WIN32_CC) -o /tmp/lrc_aw_probe.exe /tmp/lrc_aw_probe.c 2>/dev/null \
+	         && (cd /tmp && WINEDEBUG=-all $(WINE) /tmp/lrc_aw_probe.exe \
+	               >/dev/null 2>/tmp/lrc_aw_probe.log); then \
+	      wine_ok=1; \
+	   else \
+	      echo "skip: wine is installed but cannot run a Windows binary here"; \
+	      echo "      (configurations were built; none were executed)"; \
+	      sed 's/^/      /' /tmp/lrc_aw_probe.log 2>/dev/null | head -5; \
+	   fi; \
+	   rm -f /tmp/lrc_aw_probe.c /tmp/lrc_aw_probe.exe /tmp/lrc_aw_probe.log; \
+	fi; \
+	if [ $$wine_ok -eq 1 ]; then \
+	   for cfg in "" "-DLEGACY_WIN32" "-DHAVE_WIN9X_RUNTIME"; do \
+	      if ! $(WIN32_CC) -O2 -Iinclude $$cfg \
+	            -DLEGACY_WIN32_NO_MIGRATION_NOTE \
+	            -o /tmp/lrc_aw_test.exe \
+	            $(WIN32_AW_TEST) $(WIN32_AW_TEST_SRC) 2>/dev/null; then \
+	         echo "FAIL: [$${cfg:-default}] test would not build"; \
+	         fails=`expr $$fails + 1`; continue; \
+	      fi; \
+	      if (cd /tmp && WINEDEBUG=-all $(WINE) /tmp/lrc_aw_test.exe \
+	            >/tmp/lrc_aw_out.txt 2>/tmp/lrc_aw_err.txt); then \
+	         echo "ok:   [$${cfg:-default}] runs under wine"; \
+	      else \
+	         echo "FAIL: [$${cfg:-default}] failed under wine"; \
+	         cat /tmp/lrc_aw_out.txt; \
+	         sed 's/^/      /' /tmp/lrc_aw_err.txt | head -10; \
+	         fails=`expr $$fails + 1`; \
+	      fi; \
+	      rm -f /tmp/lrc_aw_test.exe /tmp/lrc_aw_out.txt /tmp/lrc_aw_err.txt; \
+	   done; \
+	elif ! command -v $(WINE) >/dev/null 2>&1; then \
+	   echo "skip: wine not installed - configurations built, not run"; \
+	fi; \
+	if [ $$fails -ne 0 ]; then echo "$$fails Windows configuration check(s) failed"; exit 1; fi; \
+	echo "Windows A/W configuration matrix: all checks passed"
+
+# --- VFS sample regression tests --------------------------------------
+#
+# Native runs of the samples that pin file-size, seek and EOF behaviour,
+# in both mapping configurations because the mapped and unmapped paths
+# implement those boundaries separately.
+vfs-samples:
+	$(MAKE) -C samples/file/vfs clean
+	$(MAKE) -C samples/file/vfs SANITIZER=address,undefined
+	cd samples/file/vfs && ./vfs_seek_contract_test && ./vfs_large_file_test
+	$(MAKE) -C samples/file/vfs clean
+	$(MAKE) -C samples/file/vfs MMAP=0 SANITIZER=address,undefined
+	cd samples/file/vfs && ./vfs_seek_contract_test
+	$(MAKE) -C samples/file/vfs clean
+
+.PHONY: win32-configs vfs-samples
 
 all:
 	# Build and execute tests in order, to avoid coverage file collision
 	# string
-	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_STDSTRING_SRC) -o $(TEST_STDSTRING)
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_STDSTRING_SRC) $(LIBCHECK_LIBS) -o $(TEST_STDSTRING)
 	$(TEST_STDSTRING)
 	lcov -c -d . -o `dirname $(TEST_STDSTRING)`/coverage.info
 	# utils
-	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_UTILS_SRC) -o $(TEST_UTILS)
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_UTILS_SRC) $(LIBCHECK_LIBS) -o $(TEST_UTILS)
 	$(TEST_UTILS)
 	lcov -c -d . -o `dirname $(TEST_UTILS)`/coverage.info
 	# utils
-	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_HASH_SRC) -o $(TEST_HASH)
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_HASH_SRC) $(LIBCHECK_LIBS) -o $(TEST_HASH)
 	$(TEST_HASH)
 	lcov -c -d . -o `dirname $(TEST_HASH)`/coverage.info
 	# list
-	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_LINKED_LIST_SRC) -o $(TEST_LINKED_LIST)
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_LINKED_LIST_SRC) $(LIBCHECK_LIBS) -o $(TEST_LINKED_LIST)
 	$(TEST_LINKED_LIST)
 	lcov -c -d . -o `dirname $(TEST_LINKED_LIST)`/coverage.info
+	# file list
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_FILE_LIST_SRC) $(LIBCHECK_LIBS) -o $(TEST_FILE_LIST)
+	$(TEST_FILE_LIST)
+	lcov -c -d . -o `dirname $(TEST_FILE_LIST)`/file_list_coverage.info
 	# queue
-	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_GENERIC_QUEUE_SRC) -o $(TEST_GENERIC_QUEUE)
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_GENERIC_QUEUE_SRC) $(LIBCHECK_LIBS) -o $(TEST_GENERIC_QUEUE)
 	$(TEST_GENERIC_QUEUE)
 	lcov -c -d . -o `dirname $(TEST_GENERIC_QUEUE)`/coverage.info
 	# rpng
-	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_RPNG_SRC) $(TEST_RPNG_LIBS) -o $(TEST_RPNG)
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_RPNG_SRC) $(TEST_RPNG_LIBS) $(LIBCHECK_LIBS) -o $(TEST_RPNG)
 	$(TEST_RPNG)
 	lcov -c -d . -o `dirname $(TEST_RPNG)`/coverage.info
+	# rwav
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_RWAV_SRC) $(LIBCHECK_LIBS) -o $(TEST_RWAV)
+	$(TEST_RWAV)
+	# rjpeg
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_RJPEG_SRC) $(LIBCHECK_LIBS) -o $(TEST_RJPEG)
+	$(TEST_RJPEG)
+	# rwebm audio
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_RWEBM_AUDIO_SRC) $(LIBCHECK_LIBS) -o $(TEST_RWEBM_AUDIO)
+	$(TEST_RWEBM_AUDIO)
+	# vfs samples: file size, seek and EOF boundaries, mapped and not
+	$(MAKE) -f Makefile.test vfs-samples
+	# the three Windows A/W configurations, two of which nothing else builds
+	$(MAKE) -f Makefile.test win32-configs
 	
 	lcov -o test/coverage.info \
 	     -a test/utils/coverage.info \
 	     -a test/string/coverage.info \
 	     -a test/lists/coverage.info \
+	     -a test/lists/file_list_coverage.info \
 	     -a test/queues/coverage.info \
 	     -a test/formats/coverage.info
 	genhtml -o test/coverage/ test/coverage.info
 
 clean:
 	rm -f *.gcda *.gcno
+	rm -f $(TEST_STDSTRING) $(TEST_UTILS) $(TEST_HASH) \
+	      $(TEST_LINKED_LIST) $(TEST_FILE_LIST) $(TEST_GENERIC_QUEUE) \
+	      $(TEST_RPNG) $(TEST_RWAV) $(TEST_RJPEG) $(TEST_RWEBM_AUDIO)
+	rm -f test/*/*.gcda test/*/*.gcno test/*/coverage.info \
+	      test/lists/file_list_coverage.info test/coverage.info
+	rm -rf test/coverage
 

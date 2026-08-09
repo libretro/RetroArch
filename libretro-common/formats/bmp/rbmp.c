@@ -20,7 +20,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/* Modified version of stb_image's BMP sources. */
+/* rbmp -- BMP decoder (modified version of stb_image's BMP sources).
+ *
+ * What it implements: Windows BMP with core (12-byte) and
+ * BITMAPINFOHEADER/V4/V5 (40/56/108/124-byte) headers, 1/4/8-bit
+ * palettised, 16-bit with arbitrary channel bitfields, and 24/32-bit
+ * images, top-down and bottom-up row order, with all-alpha-zero
+ * detection for 32-bit files that leave the alpha channel empty.
+ * A matching encoder (24/32-bit uncompressed) lives in
+ * rbmp_encode.c.
+ *
+ * What it does not implement: RLE4/RLE8 compression (rejected up
+ * front), embedded PNG/JPEG payloads (BI_PNG/BI_JPEG), and colour
+ * management from the V4/V5 header extensions (the fields are
+ * skipped). */
 
 #include <stdio.h>
 #include <stdint.h>
@@ -53,8 +66,19 @@ typedef struct
 
 struct rbmp
 {
-   uint8_t *buff_data;
-   uint32_t *output_image;
+   uint8_t      *buff_data;
+   uint32_t     *output_image;
+   rbmp_context  s;              /* stream cursor, latched at begin */
+   uint32_t      pal32[256];     /* palette modes: entry -> pixel */
+   unsigned int  mr, mg, mb, ma;
+   int bpp, flip_vertically, pad, width, easy;
+   int rshift, gshift, bshift, ashift;
+   int rcount, gcount, bcount, acount;
+   unsigned char all_a;
+   int swap_rb;                  /* supports_rgba latched at begin */
+   int phase;
+   int row;                      /* row cursor */
+   size_t fixup_k;               /* opaque-fixup cursor */
 };
 
 static INLINE unsigned char rbmp_get8(rbmp_context *s)
@@ -85,10 +109,36 @@ static void rbmp_skip(rbmp_context *s, int n)
 
 static int rbmp_get16le(rbmp_context *s)
 {
-   return rbmp_get8(s) + (rbmp_get8(s) << 8);
+   /* Sequenced explicitly: two side-effecting reads in one expression
+    * have no sequence point between them, so their order is
+    * unspecified and the halves can swap.  See rbmp_get32le below. */
+   int lo = rbmp_get8(s);
+   int hi = rbmp_get8(s);
+   return lo + (hi << 8);
 }
 
-#define RBMP_GET32LE(s) (rbmp_get16le(s) + (rbmp_get16le(s) << 16))
+/* Read a 32-bit little-endian value as two 16-bit halves.
+ *
+ * This was a macro expanding to
+ *    (rbmp_get16le(s) + (rbmp_get16le(s) << 16))
+ * which places two side-effecting calls in one expression with no
+ * sequence point between them.  Their relative order is unspecified,
+ * so a compiler is free to evaluate the high half first and the two
+ * halves get swapped - a header field of 40 reads back as 2621440,
+ * and every 32-bit BMP field is misparsed.  It happened to work with
+ * the ordering GCC picked at the usual optimisation levels, but it is
+ * not something the language guarantees: building with sanitizers
+ * instrumented (which perturbs the order) already flips it, and so
+ * could a different compiler, target or -O level.
+ *
+ * Sequence the reads explicitly. */
+static INLINE uint32_t rbmp_get32le(rbmp_context *s)
+{
+   uint32_t lo = (uint32_t)rbmp_get16le(s);
+   uint32_t hi = (uint32_t)rbmp_get16le(s);
+   return lo + (hi << 16);
+}
+#define RBMP_GET32LE(s) rbmp_get32le(s)
 
 /* Microsoft/Windows BMP image */
 
@@ -154,9 +204,26 @@ static int rbmp_shiftsigned(int v, int shift, int bits)
    return ret;
 }
 
-static uint32_t *rbmp_bmp_load(rbmp_context *s, unsigned *x, unsigned *y,
-      int *comp, bool supports_rgba)
+/* --- sliced decode ------------------------------------------------ *
+ * rbmp_begin parses the header, converts any palette and allocates the
+ * surface; each later call fills a bounded run of rows.  The two row
+ * bodies below are the originals verbatim - only the enclosing loops
+ * changed - so the locals they read are aliased out of the handle on
+ * entry and the mutated ones written back on exit. */
+
+#define RBMP_PHASE_IDLE  0
+#define RBMP_PHASE_PAL   1
+#define RBMP_PHASE_RAW   2
+#define RBMP_PHASE_FIXUP 3
+
+/* Output texels per call; see rtga.c for the sizing argument.  BMP runs
+ * 200-600 Mtexel/s depending on depth, so 64K texels is well under a
+ * tenth of a frame. */
+#define RBMP_TEXELS_PER_CALL 65536
+
+static bool rbmp_begin(rbmp_t *bmp, bool supports_rgba)
 {
+   rbmp_context *s = &bmp->s;
    uint32_t *output;
    int bpp, flip_vertically, pad, offset, hsz;
    int psize=0,i,j,width;
@@ -164,7 +231,7 @@ static uint32_t *rbmp_bmp_load(rbmp_context *s, unsigned *x, unsigned *y,
 
    /* Corrupt BMP? */
    if (rbmp_get8(s) != 'B' || rbmp_get8(s) != 'M')
-      return 0;
+      return false;
 
    /* discard filesize */
    rbmp_get16le(s);
@@ -178,7 +245,7 @@ static uint32_t *rbmp_bmp_load(rbmp_context *s, unsigned *x, unsigned *y,
 
    /* BMP type not supported? */
    if (hsz != 12 && hsz != 40 && hsz != 56 && hsz != 108 && hsz != 124)
-      return 0;
+      return false;
 
    if (hsz == 12)
    {
@@ -193,13 +260,13 @@ static uint32_t *rbmp_bmp_load(rbmp_context *s, unsigned *x, unsigned *y,
 
    /* Bad BMP? */
    if (rbmp_get16le(s) != 1)
-      return 0;
+      return false;
 
    bpp = rbmp_get16le(s);
 
    /* BMP 1-bit type not supported? */
    if (bpp == 1)
-      return 0;
+      return false;
 
    /* img_y can legitimately be a negative int (top-down BMP).
     * Pre-patch the code did abs((int)s->img_y) -- if the uint32
@@ -208,7 +275,7 @@ static uint32_t *rbmp_bmp_load(rbmp_context *s, unsigned *x, unsigned *y,
     * treat as bottom-up zero-height (rejected by the overflow
     * guard below). */
    if (s->img_y == 0x80000000u)
-      return 0;
+      return false;
    flip_vertically = ((int) s->img_y) > 0;
    s->img_y        = (uint32_t)abs((int) s->img_y);
 
@@ -223,7 +290,7 @@ static uint32_t *rbmp_bmp_load(rbmp_context *s, unsigned *x, unsigned *y,
 
       /* BMP RLE type not supported? */
       if (compress == 1 || compress == 2)
-         return 0;
+         return false;
 
       /* discard sizeof */
       rbmp_get16le(s);
@@ -288,11 +355,11 @@ static uint32_t *rbmp_bmp_load(rbmp_context *s, unsigned *x, unsigned *y,
                    * Photoshop and handled by MS Paint */
                   /* Bad BMP ?*/
                   if (mr == mg && mg == mb)
-                     return 0;
+                     return false;
                   break;
                default:
                   /* Bad BMP? */
-                  return 0;
+                  return false;
             }
          }
       }
@@ -338,31 +405,87 @@ static uint32_t *rbmp_bmp_load(rbmp_context *s, unsigned *x, unsigned *y,
     * width, so img_x * img_y silently wrapped on 32-bit -- e.g.
     * 0x10001 * 0x10000 = 0x100010000 wraps to 0x10000, and the
     * subsequent malloc returned a 256 KiB buffer that the pixel
-    * decode loop wrote off the end of (4 GiB+ of writes).  Do
-    * the multiplication in size_t with an explicit ceiling:
-    * 0x4000 x 0x4000 = 256 M pixels = 1 GiB of decoded RGBA is
-    * far beyond any realistic libretro asset, and rejecting at
-    * that ceiling blocks the overflow case AND avoids giving a
-    * malicious BMP a direct route to a multi-GiB allocation
-    * attempt. */
+    * decode loop wrote off the end of (4 GiB+ of writes).
+    *
+    * BMP dimensions come from 32-bit header fields, so unlike TGA's
+    * 16-bit ones the product can overflow even a 64-bit size_t
+    * (0xFFFFFFFF squared, times four, is ~64 EiB).  The
+    * multiplication therefore has to be checked rather than merely
+    * widened - but the check should bound what is *addressable*, not
+    * what someone guessed a realistic asset looks like.  A fixed
+    * 0x4000 ceiling refused large scans and renders outright, leaving
+    * no thumbnail at all, and "far beyond any realistic libretro
+    * asset" is not a safe assumption to make on a user's behalf.
+    *
+    * Divide instead of multiply so nothing can wrap: if the pixel
+    * count exceeds SIZE_MAX/4 the RGBA buffer is unrepresentable on
+    * this host and the file is refused; otherwise let the allocation
+    * decide, and a request the host cannot satisfy fails at malloc,
+    * which is handled below.  On a 32-bit host that division-based
+    * ceiling is itself the old wrap guard, now exact rather than
+    * approximate. */
    if (s->img_x == 0 || s->img_y == 0)
-      return 0;
-   if (s->img_x > 0x4000u || s->img_y > 0x4000u)
-      return 0;
+      return false;
+   {
+      size_t max_px = (size_t)-1 / sizeof(uint32_t);
+      if ((size_t)s->img_x > max_px / (size_t)s->img_y)
+         return false;
+   }
+
+   /* The dimensions are representable, but that alone does not make
+    * them real: they are attacker-controlled header fields, and letting
+    * the allocation decide only works where an over-large request
+    * actually fails.  Under Linux overcommit it does not - a 128-byte
+    * file declaring 0x10001 x 0x10000 gets a 16 GiB mapping and the
+    * decoder then faults it all in, one zero-filled row at a time, for
+    * an out-of-memory kill or a very long stall from a trivially small
+    * input.
+    *
+    * A declared image cannot need more pixel data than the file has
+    * left to give, so require the input to hold what it claims: one
+    * padded row stride per row, from the pixel-data offset onwards.
+    * That is a property of the file rather than a guess about what a
+    * realistic asset looks like, so it refuses nothing a real decode
+    * would have produced - a genuinely large BMP carries genuinely
+    * large pixel data and still loads.  Rows are computed in size_t
+    * from values already bounded above, so nothing here can wrap. */
+   {
+      size_t total     = (size_t)(s->img_buffer_end - s->img_buffer_original);
+      size_t data_off  = (offset > 0) ? (size_t)offset : 0;
+      size_t row_bits  = (size_t)s->img_x * (size_t)((bpp > 0) ? bpp : 1);
+      size_t row_bytes = ((row_bits + 31) / 32) * 4; /* 4-byte aligned rows */
+
+      if (data_off >= total)
+         return false;
+      if (row_bytes > (total - data_off) / (size_t)s->img_y)
+         return false;
+   }
+
    output = (uint32_t*)malloc(
          (size_t)s->img_x * (size_t)s->img_y * sizeof(uint32_t));
    if (!output)
-      return 0;
+      return false;
+   bmp->output_image = output;
+
+   bmp->flip_vertically = flip_vertically;
+   bmp->bpp             = bpp;
+   bmp->swap_rb         = supports_rgba ? 1 : 0;
+   bmp->mr              = mr;
+   bmp->mg              = mg;
+   bmp->mb              = mb;
+   bmp->ma              = ma;
+   bmp->all_a           = 0;
+   bmp->row             = 0;
+   bmp->fixup_k         = 0;
 
    if (bpp < 16)
    {
       /* Palette mode: pre-convert palette to uint32 in target byte order */
-      uint32_t pal32[256];
+      uint32_t *pal32 = bmp->pal32;
 
       if (psize == 0 || psize > 256)
       {
-         free(output);
-         return 0;
+         return false;
       }
 
       for (i = 0; i < psize; ++i)
@@ -385,57 +508,27 @@ static uint32_t *rbmp_bmp_load(rbmp_context *s, unsigned *x, unsigned *y,
          width = s->img_x;
       else
       {
-         free(output);
-         return 0;
+         return false;
       }
 
       pad = (-width)&3;
-      for (j = 0; j < (int)s->img_y; ++j)
-      {
-         int dst_row = flip_vertically ? (int)(s->img_y - 1 - j) : j;
-         /* Use size_t for the row-stride offset.  dst_row *
-          * s->img_x in signed-int could overflow for a legitimate
-          * 2 GiB BMP (e.g. 46341 x 46341).  Post-patch the
-          * pointer math matches the size_t-based allocation. */
-         uint32_t *dst = output + (size_t)dst_row * (size_t)s->img_x;
-         int col = 0;
 
-         for (i = 0; i < (int)s->img_x; i += 2)
-         {
-            int v  = rbmp_get8(s);
-            int v2 = 0;
-            if (bpp == 4)
-            {
-               v2  = v & 15;
-               v >>= 4;
-            }
-            dst[col++] = pal32[v];
-
-            if (i + 1 == (int)s->img_x)
-               break;
-
-            v = (bpp == 8) ? rbmp_get8(s) : v2;
-            dst[col++] = pal32[v];
-         }
-         rbmp_skip(s, pad);
-      }
+      bmp->width = width;
+      bmp->pad   = pad;
+      bmp->phase = RBMP_PHASE_PAL;
+      (void)i;
+      (void)j;
+      return true;
    }
-   else
+
    {
-      int rshift = 0;
-      int gshift = 0;
-      int bshift = 0;
-      int ashift = 0;
-      int rcount = 0;
-      int gcount = 0;
-      int bcount = 0;
-      int acount = 0;
+      int rshift = 0, gshift = 0, bshift = 0, ashift = 0;
+      int rcount = 0, gcount = 0, bcount = 0, acount = 0;
       int easy   = 0;
       /* OR of every alpha value read; BI_RGB 32bpp files routinely leave
        * the 4th byte 0, which would decode fully transparent - if the
        * whole image had alpha 0, force it opaque afterwards (mirrors
        * stb_image's all_a fixup). */
-      unsigned char all_a = 0;
 
       rbmp_skip(s, offset - 14 - hsz);
 
@@ -466,8 +559,7 @@ static uint32_t *rbmp_bmp_load(rbmp_context *s, unsigned *x, unsigned *y,
          /* Corrupt BMP? */
          if (!mr || !mg || !mb)
          {
-            free(output);
-            return 0;
+            return false;
          }
 
          rshift = rbmp_high_bit(mr)-7;
@@ -480,8 +572,118 @@ static uint32_t *rbmp_bmp_load(rbmp_context *s, unsigned *x, unsigned *y,
          acount = rbmp_bitcount(ma);
       }
 
-      for (j = 0; j < (int)s->img_y; ++j)
-      {
+      bmp->width  = width;
+      bmp->pad    = pad;
+      bmp->easy   = easy;
+      bmp->rshift = rshift; bmp->rcount = rcount;
+      bmp->gshift = gshift; bmp->gcount = gcount;
+      bmp->bshift = bshift; bmp->bcount = bcount;
+      bmp->ashift = ashift; bmp->acount = acount;
+      (void)i;
+      (void)j;
+   }
+   bmp->phase = RBMP_PHASE_RAW;
+   return true;
+}
+
+/* Palette modes (bpp < 16): whole rows. */
+static void rbmp_pal_rows(rbmp_t *bmp, int nrows)
+{
+   /* Cursor copied to a local rather than used in place: with 's'
+    * pointing into the handle the compiler cannot prove a store through
+    * 'output' misses the handle's own fields, and reloads it per pixel.
+    * Only the fields this decoder uses are copied. */
+   rbmp_context ctx;
+   rbmp_context *s      = &ctx;
+   uint32_t *output     = bmp->output_image;
+   uint32_t *pal32      = bmp->pal32;
+   int flip_vertically  = bmp->flip_vertically;
+   int bpp              = bmp->bpp;
+   int pad              = bmp->pad;
+   int j                = bmp->row;
+   int last             = j + nrows;
+   int i;
+
+   ctx.img_buffer          = bmp->s.img_buffer;
+   ctx.img_buffer_end      = bmp->s.img_buffer_end;
+   ctx.img_buffer_original = bmp->s.img_buffer_original;
+   ctx.img_x               = bmp->s.img_x;
+   ctx.img_y               = bmp->s.img_y;
+
+   if (last > (int)ctx.img_y)
+      last = (int)ctx.img_y;
+
+   for (; j < last; ++j)
+   {
+         int dst_row = flip_vertically ? (int)(s->img_y - 1 - j) : j;
+         /* Use size_t for the row-stride offset.  dst_row *
+          * s->img_x in signed-int could overflow for a legitimate
+          * 2 GiB BMP (e.g. 46341 x 46341).  Post-patch the
+          * pointer math matches the size_t-based allocation. */
+         uint32_t *dst = output + (size_t)dst_row * (size_t)s->img_x;
+         int col = 0;
+
+         for (i = 0; i < (int)s->img_x; i += 2)
+         {
+            int v  = rbmp_get8(s);
+            int v2 = 0;
+            if (bpp == 4)
+            {
+               v2  = v & 15;
+               v >>= 4;
+            }
+            dst[col++] = pal32[v];
+
+            if (i + 1 == (int)s->img_x)
+               break;
+
+            v = (bpp == 8) ? rbmp_get8(s) : v2;
+            dst[col++] = pal32[v];
+         }
+         rbmp_skip(s, pad);
+   }
+
+   bmp->row              = j;
+   bmp->s.img_buffer     = ctx.img_buffer;
+}
+
+/* Direct and bitmask modes (bpp >= 16): whole rows. */
+static void rbmp_raw_rows(rbmp_t *bmp, int nrows)
+{
+   /* Cursor copied to a local rather than used in place: with 's'
+    * pointing into the handle the compiler cannot prove a store through
+    * 'output' misses the handle's own fields, and reloads it per pixel.
+    * Only the fields this decoder uses are copied. */
+   rbmp_context ctx;
+   rbmp_context *s      = &ctx;
+   uint32_t *output     = bmp->output_image;
+   bool supports_rgba   = bmp->swap_rb ? true : false;
+   int flip_vertically  = bmp->flip_vertically;
+   int bpp              = bmp->bpp;
+   int pad              = bmp->pad;
+   int easy             = bmp->easy;
+   unsigned int mr      = bmp->mr, mg = bmp->mg;
+   unsigned int mb      = bmp->mb, ma = bmp->ma;
+   int rshift           = bmp->rshift, rcount = bmp->rcount;
+   int gshift           = bmp->gshift, gcount = bmp->gcount;
+   int bshift           = bmp->bshift, bcount = bmp->bcount;
+   int ashift           = bmp->ashift, acount = bmp->acount;
+   unsigned char all_a  = bmp->all_a;
+   int j                = bmp->row;
+   int last             = j + nrows;
+   int i;
+
+   ctx.img_buffer          = bmp->s.img_buffer;
+   ctx.img_buffer_end      = bmp->s.img_buffer_end;
+   ctx.img_buffer_original = bmp->s.img_buffer_original;
+   ctx.img_x               = bmp->s.img_x;
+   ctx.img_y               = bmp->s.img_y;
+
+   if (last > (int)ctx.img_y)
+      last = (int)ctx.img_y;
+
+   for (; j < last; ++j)
+   {
          int dst_row = flip_vertically ? (int)(s->img_y - 1 - j) : j;
          uint32_t *dst = output + dst_row * s->img_x;
 
@@ -570,54 +772,121 @@ static uint32_t *rbmp_bmp_load(rbmp_context *s, unsigned *x, unsigned *y,
             }
          }
          rbmp_skip(s, pad);
-      }
-
-      /* Whole image decoded with alpha 0 (typical BI_RGB 32bpp with a
-       * zeroed pad byte): force opaque, like stb_image. */
-      if ((easy == 2 || (bpp == 32 && ma == 0xffu << 24)) && all_a == 0)
-      {
-         for (j = 0; j < (int)(s->img_x * s->img_y); ++j)
-            output[j] |= 0xFF000000u;
-      }
    }
 
-   *x = s->img_x;
-   *y = s->img_y;
-
-   if (comp)
-      *comp = s->img_n;
-
-   return output;
+   bmp->row          = j;
+   bmp->all_a        = all_a;
+   bmp->s.img_buffer = ctx.img_buffer;
 }
 
-static uint32_t *rbmp_load_from_memory(unsigned char const *buffer, int len,
-      unsigned *x, unsigned *y, int *comp, bool supports_rgba)
+/* Whole image decoded with alpha 0 (typical BI_RGB 32bpp with a zeroed
+ * pad byte): force opaque, like stb_image.  Sliced like the rows, since
+ * on a large surface the sweep alone is milliseconds. */
+static void rbmp_fixup_pixels(rbmp_t *bmp, size_t npix)
 {
-   rbmp_context s;
+   uint32_t *output = bmp->output_image;
+   size_t n         = (size_t)bmp->s.img_x * (size_t)bmp->s.img_y;
+   size_t k         = bmp->fixup_k;
+   size_t last      = k + npix;
 
-   s.img_buffer          = (unsigned char*)buffer;
-   s.img_buffer_original = (unsigned char*)buffer;
-   s.img_buffer_end      = (unsigned char*)buffer+len;
+   if (last > n)
+      last = n;
+   for (; k < last; ++k)
+      output[k] |= 0xFF000000u;
+   bmp->fixup_k = k;
+}
 
-   return rbmp_bmp_load(&s, x, y, comp, supports_rgba);
+static bool rbmp_needs_fixup(const rbmp_t *bmp)
+{
+   return (bmp->easy == 2
+        || (bmp->bpp == 32 && bmp->ma == 0xffu << 24))
+        && bmp->all_a == 0;
+}
+
+/* Abandon an in-flight decode.  The END path clears output_image
+ * first, transferring ownership, so this only frees what nobody
+ * received. */
+static void rbmp_proc_reset(rbmp_t *rbmp)
+{
+   /* Unconditional: rbmp_begin() allocates output_image before it
+    * sets a phase, and returns false between the two for a palette
+    * header claiming a bpp other than 4 or 8.  Gating the free on
+    * phase != IDLE therefore leaked the surface for any such image,
+    * and free(NULL) is a no-op so the guard bought nothing. */
+   free(rbmp->output_image);
+   rbmp->output_image = NULL;
+   rbmp->phase        = RBMP_PHASE_IDLE;
 }
 
 int rbmp_process_image(rbmp_t *rbmp, void **buf_data,
       size_t size, unsigned *width, unsigned *height,
       bool supports_rgba)
 {
-   int comp;
+   int rows;
 
-   if (!rbmp)
+   if (!rbmp || !buf_data)
       return IMAGE_PROCESS_ERROR;
 
-   rbmp->output_image   = rbmp_load_from_memory(rbmp->buff_data,
-                           (int)size, width, height, &comp, supports_rgba);
-   *buf_data             = rbmp->output_image;
+   if (rbmp->phase == RBMP_PHASE_IDLE)
+   {
+      *buf_data = NULL;
+      /* Reject sizes that don't fit in int before casting: the
+       * truncated value would propagate to img_buffer_end and produce
+       * pointer arithmetic outside the source object. */
+      if (size > (size_t)INT_MAX)
+         return IMAGE_PROCESS_ERROR;
+      if (!rbmp->buff_data)
+         return IMAGE_PROCESS_ERROR;
 
-   if (!rbmp->output_image)
-      return IMAGE_PROCESS_ERROR;
+      rbmp->s.img_buffer          = rbmp->buff_data;
+      rbmp->s.img_buffer_original = rbmp->buff_data;
+      rbmp->s.img_buffer_end      = rbmp->buff_data + (int)size;
 
+      if (!rbmp_begin(rbmp, supports_rgba))
+      {
+         rbmp_proc_reset(rbmp);
+         return IMAGE_PROCESS_ERROR;
+      }
+      *width  = rbmp->s.img_x;
+      *height = rbmp->s.img_y;
+      return IMAGE_PROCESS_NEXT;
+   }
+
+   *width  = rbmp->s.img_x;
+   *height = rbmp->s.img_y;
+
+   rows = (rbmp->s.img_x > 0)
+        ? (int)(RBMP_TEXELS_PER_CALL / rbmp->s.img_x) : (int)rbmp->s.img_y;
+   if (rows < 1)
+      rows = 1;
+
+   if (rbmp->phase == RBMP_PHASE_PAL)
+   {
+      rbmp_pal_rows(rbmp, rows);
+      if (rbmp->row < (int)rbmp->s.img_y)
+         return IMAGE_PROCESS_NEXT;
+   }
+   else if (rbmp->phase == RBMP_PHASE_RAW)
+   {
+      rbmp_raw_rows(rbmp, rows);
+      if (rbmp->row < (int)rbmp->s.img_y)
+         return IMAGE_PROCESS_NEXT;
+      if (rbmp_needs_fixup(rbmp))
+      {
+         rbmp->phase = RBMP_PHASE_FIXUP;
+         return IMAGE_PROCESS_NEXT;
+      }
+   }
+   else
+   {
+      rbmp_fixup_pixels(rbmp, RBMP_TEXELS_PER_CALL);
+      if (rbmp->fixup_k < (size_t)rbmp->s.img_x * (size_t)rbmp->s.img_y)
+         return IMAGE_PROCESS_NEXT;
+   }
+
+   *buf_data          = rbmp->output_image;
+   rbmp->output_image = NULL;   /* ownership -> caller */
+   rbmp->phase        = RBMP_PHASE_IDLE;
    return IMAGE_PROCESS_END;
 }
 
@@ -626,6 +895,8 @@ bool rbmp_set_buf_ptr(rbmp_t *rbmp, void *data)
    if (!rbmp)
       return false;
 
+   /* Repointing invalidates any decode still in flight. */
+   rbmp_proc_reset(rbmp);
    rbmp->buff_data = (uint8_t*)data;
 
    return true;
@@ -635,6 +906,10 @@ void rbmp_free(rbmp_t *rbmp)
 {
    if (!rbmp)
       return;
+
+   /* A finished decode handed its surface to the caller; an abandoned
+    * one still holds a partial surface. */
+   rbmp_proc_reset(rbmp);
 
    free(rbmp);
 }

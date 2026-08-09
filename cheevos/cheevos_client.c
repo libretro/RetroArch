@@ -439,6 +439,8 @@ typedef struct rc_client_download_task_data_t
    rc_client_download_queue_t* queue;
    char badge_fullpath[PATH_MAX_LENGTH];
    char badge_name[32];
+   char url[256];
+   int retry_count;
 } rc_client_download_task_data_t;
 
 static void rcheevos_client_download_task_callback(retro_task_t* task,
@@ -454,6 +456,17 @@ static void rcheevos_client_download_task_callback(retro_task_t* task,
    else if (http_data->status != 200)
    {
       CHEEVOS_LOG(RCHEEVOS_TAG "HTTP status code %d for badge %s\n", http_data->status, callback_data->badge_name);
+
+      /* -1 status code is an internal networking failure. go ahead and retry a few times */
+      if (http_data->status == -1 && callback_data->retry_count++ < 4)
+      {
+         rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
+
+         task_push_http_transfer_with_user_agent(callback_data->url,
+            true, "GET", rcheevos_locals->user_agent_core,
+            rcheevos_client_download_task_callback, callback_data);
+         return;
+      }
    }
    else if (!filestream_write_file(callback_data->badge_fullpath, http_data->data, http_data->len))
    {
@@ -563,8 +576,15 @@ bool rcheevos_client_download_badge(rc_client_download_queue_t* queue,
    taskdata->queue = queue;
    strlcpy(taskdata->badge_fullpath, badge_fullpath, sizeof(taskdata->badge_fullpath));
    strlcpy(taskdata->badge_name, badge_name, sizeof(taskdata->badge_name));
+   strlcpy(taskdata->url, url, sizeof(taskdata->url));
+   taskdata->retry_count = 0;
 
-   task_push_http_transfer_with_user_agent(url,
+#ifndef HAVE_SSL
+   if (string_starts_with(taskdata->url, "https:"))
+      strlcpy(&taskdata->url[4], &url[5], sizeof(taskdata->url) - 4);
+#endif
+
+   task_push_http_transfer_with_user_agent(taskdata->url,
       true, "GET", rcheevos_locals->user_agent_core,
       rcheevos_client_download_task_callback, taskdata);
 

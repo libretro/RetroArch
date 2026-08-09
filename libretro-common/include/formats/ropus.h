@@ -36,11 +36,34 @@ RETRO_BEGIN_DECLS
  * pipeline is bit-exact with the libopus 1.4 float build's
  * opus_decode_float().  No PLC/CNG: loss-free playback only. */
 
+/* The most frames one packet can code, at the 48 kHz Opus decodes at:
+ * 120 ms.  Output room is this times the channel count. */
+#define ROPUS_MAX_FRAME 5760
+
+/* Decode errors, all negative so a caller can keep testing < 0. */
+#define ROPUS_ERR_PACKET (-1)   /* unparseable packet                   */
+#define ROPUS_ERR_DECODE (-2)   /* frame failed to decode               */
+#define ROPUS_ERR_FMT    (-3)   /* s16 and f32 mixed on one instance    */
+#define ROPUS_ERR_ROOM   (-4)   /* out_samples too small for the packet */
+
 typedef struct ropus ropus_t;
 
 /* Parse an OpusHead (RFC 7845 5.1, e.g. a container's CodecPrivate) and
  * create a decoder.  Only channel mapping family 0 (mono/stereo) is
  * supported.  Returns NULL on malformed or unsupported input. */
+/* Create a decoder from an OpusHead (RFC 7845 s5.1).
+ *
+ * Mapping family 0 (mono or stereo) and family 1 (up to eight
+ * channels) are both taken.  A family 1 stream is several substreams,
+ * the first nb_coupled of them stereo and the rest mono, each decoded
+ * independently and scattered to the output channels by the mapping
+ * table in the head; a table entry of 255 leaves that output channel
+ * silent.  The channels come out in the stream's own order, which for
+ * six is Vorbis's L, C, R, SL, SR, LFE and not the order most players
+ * write to a file.  Families 2, 3 and 255 are refused, as is a head
+ * whose table names a channel no substream decodes.
+ *
+ * NULL on anything unparseable or unsupported. */
 ropus_t *ropus_open(const void *opus_head, size_t head_size);
 
 void ropus_close(ropus_t *o);
@@ -57,16 +80,27 @@ unsigned ropus_preskip(const ropus_t *o);
  * back to the start of a stream. */
 void ropus_reset(ropus_t *o);
 
-/* Decode one Opus packet into interleaved 48 kHz PCM.  out must have
- * room for 5760 * channels samples (120 ms).  Returns the number of
- * frames produced, or < 0 on malformed input.  The OpusHead output
- * gain is applied.  The first call selects the decoder's output
+/* Decode one Opus packet into interleaved 48 kHz PCM.  Returns the
+ * number of frames produced, or < 0 on malformed input.  The OpusHead
+ * output gain is applied.  The first call selects the decoder's output
  * pipeline; s16 and f32 must not be mixed on one instance (the pre-skip
- * given by the OpusHead is the caller's responsibility). */
+ * given by the OpusHead is the caller's responsibility).
+ *
+ * out_samples is the room at out, counted in interleaved samples and
+ * not in frames: a packet codes at most ROPUS_MAX_FRAME frames, so a
+ * caller that will take any packet needs
+ * ROPUS_MAX_FRAME * ropus_channels().  Too little room is reported as
+ * ROPUS_ERR_ROOM and nothing is written.
+ *
+ * This used to be a promise the caller made in prose, and the room
+ * needed scales with a channel count the file chooses - mapping family
+ * 1 goes to eight - so a caller sized for stereo was overrun by any
+ * surround stream.  Passing the room instead of asserting it makes
+ * that a returned error. */
 int ropus_decode_s16(ropus_t *o, const void *pkt, size_t len,
-      int16_t *out);
+      int16_t *out, size_t out_samples);
 int ropus_decode_f32(ropus_t *o, const void *pkt, size_t len,
-      float *out);
+      float *out, size_t out_samples);
 
 RETRO_END_DECLS
 

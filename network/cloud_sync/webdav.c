@@ -470,7 +470,13 @@ static bool webdav_needs_reauth(http_transfer_data_t *data)
 
    for (i = 0; i < data->headers->size; i++)
    {
-      if (!string_starts_with(data->headers->elems[i].data, "WWW-Authenticate: Digest "))
+      /* Header names are case-insensitive (RFC 9110 5.1), and the
+       * emscripten backend gets them from the browser, which
+       * lower-cases them.  The offset skipped by
+       * webdav_create_digest_auth() below is a fixed length, so
+       * matching case-insensitively here stays correct. */
+      if (!string_starts_with_case_insensitive(data->headers->elems[i].data,
+               "WWW-Authenticate: Digest "))
          continue;
 
       RARCH_DBG("[webdav] Found WWW-Authenticate: Digest header\n");

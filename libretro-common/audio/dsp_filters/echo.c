@@ -144,8 +144,8 @@ static void echo_process_i16(void *data,
       p      = echo_r * echo->amp_q;
       echo_r = (p >= 0) ? ((p + 32768) >> 16) : -(((-p) + 32768) >> 16);
 
-      left   = ((int64_t)in0 << 16) + echo_l;   /* Q16 */
-      right  = ((int64_t)in1 << 16) + echo_r;
+      left   = (int64_t)in0 * 65536 + echo_l;   /* Q16 */
+      right  = (int64_t)in1 * 65536 + echo_r;
 
       for (c = 0; c < echo->num_channels; c++)
       {
@@ -156,9 +156,9 @@ static void echo_process_i16(void *data,
          fr = (fr >= 0) ? ((fr + 32768) >> 16) : -(((-fr) + 32768) >> 16);
 
          echo->channels[c].buffer_i[(echo->channels[c].ptr << 1) + 0] =
-               ((int64_t)in0 << 16) + fl;
+               (int64_t)in0 * 65536 + fl;
          echo->channels[c].buffer_i[(echo->channels[c].ptr << 1) + 1] =
-               ((int64_t)in1 << 16) + fr;
+               (int64_t)in1 * 65536 + fr;
 
          echo->channels[c].ptr =
                (echo->channels[c].ptr + 1) % echo->channels[c].frames;

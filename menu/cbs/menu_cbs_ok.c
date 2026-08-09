@@ -1084,7 +1084,7 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_AUDIO_DSP_PLUGIN:
          filebrowser_clear_type();
          info.directory_ptr = idx;
-         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN);
+         info_label         = MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN_STR;
          info.enum_idx      = MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
 
@@ -1098,7 +1098,7 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_VIDEO_FILTER:
          filebrowser_clear_type();
          info.directory_ptr = idx;
-         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_FILTER);
+         info_label         = MENU_ENUM_LABEL_VIDEO_FILTER_STR;
          info.enum_idx      = MENU_ENUM_LABEL_VIDEO_FILTER;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
 
@@ -1112,7 +1112,7 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_OVERLAY_PRESET:
          filebrowser_set_type(FILEBROWSER_SELECT_OVERLAY);
          info.directory_ptr = idx;
-         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_OVERLAY_PRESET);
+         info_label         = MENU_ENUM_LABEL_OVERLAY_PRESET_STR;
          info.enum_idx      = MENU_ENUM_LABEL_OVERLAY_PRESET;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
 
@@ -1155,7 +1155,7 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_VIDEO_FONT:
          filebrowser_set_type(FILEBROWSER_SELECT_VIDEO_FONT);
          info.directory_ptr = idx;
-         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_FONT_PATH);
+         info_label         = MENU_ENUM_LABEL_VIDEO_FONT_PATH_STR;
          info.enum_idx      = MENU_ENUM_LABEL_VIDEO_FONT_PATH;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
 
@@ -1889,7 +1889,7 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_CONTENT_SETTINGS:
          info.list          = MENU_LIST_GET_SELECTION(menu_list, 0);
          info_path          = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS);
-         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS);
+         info_label         = MENU_ENUM_LABEL_CONTENT_SETTINGS_STR;
          info.enum_idx      = MENU_ENUM_LABEL_CONTENT_SETTINGS;
          menu_entries_append(menu_stack, info_path, info_label,
                MENU_ENUM_LABEL_CONTENT_SETTINGS,
@@ -1968,8 +1968,6 @@ static const ok_dl_map_t ok_dl_map[] = {
    { MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS, ACTION_OK_DL_AUDIO_OUTPUT_SETTINGS_LIST },
    { MENU_ENUM_LABEL_LATENCY_SETTINGS, ACTION_OK_DL_LATENCY_SETTINGS_LIST },
    { MENU_ENUM_LABEL_CORE_SETTINGS, ACTION_OK_DL_CORE_SETTINGS_LIST },
-   { MENU_ENUM_LABEL_CORE_RESTORE_BACKUP_LIST, ACTION_OK_DL_CORE_RESTORE_BACKUP_LIST },
-   { MENU_ENUM_LABEL_CORE_DELETE_BACKUP_LIST, ACTION_OK_DL_CORE_DELETE_BACKUP_LIST },
    { MENU_ENUM_LABEL_CONFIGURATION_SETTINGS, ACTION_OK_DL_CONFIGURATION_SETTINGS_LIST },
    { MENU_ENUM_LABEL_PLAYLIST_SETTINGS, ACTION_OK_DL_PLAYLIST_SETTINGS_LIST },
    { MENU_ENUM_LABEL_PLAYLIST_MANAGER_LIST, ACTION_OK_DL_PLAYLIST_MANAGER_LIST },
@@ -2412,6 +2410,7 @@ static int generic_action_ok(const char *path,
 
             task_push_image_load(action_path,
                   (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA), 0,
+                  0,
                   menu_display_handle_wallpaper_upload, NULL);
          }
          break;
@@ -2583,7 +2582,7 @@ static int generic_action_ok(const char *path,
 #endif
          break;
       case ACTION_OK_LOAD_RGUI_MENU_THEME_PRESET:
-         flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MENU_SETTINGS_LIST);
+         flush_char = MENU_ENUM_LABEL_DEFERRED_MENU_SETTINGS_LIST_STR;
          if (settings)
          {
             configuration_set_string(settings,
@@ -2594,12 +2593,11 @@ static int generic_action_ok(const char *path,
          /* Return to the subsystem list (which rebuilds to offer the
           * next required ROM, or the Load entry once all are set)
           * instead of flushing all the way back to the main menu. */
-         flush_char = msg_hash_to_str(
-               MENU_ENUM_LABEL_DEFERRED_SUBSYSTEM_SETTINGS_LIST);
+         flush_char = MENU_ENUM_LABEL_DEFERRED_SUBSYSTEM_SETTINGS_LIST_STR;
          content_add_subsystem(action_path);
          break;
       case ACTION_OK_SET_DIRECTORY:
-         flush_char = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DIRECTORY_SETTINGS_LIST);
+         flush_char = MENU_ENUM_LABEL_DEFERRED_DIRECTORY_SETTINGS_LIST_STR;
 #ifdef HAVE_COCOATOUCH
          /* For iOS, set the path using realpath because the
           * path name can start with /private and this ensures
@@ -2841,8 +2839,7 @@ static int action_ok_file_load(const char *path,
       }
 
       content_add_subsystem(full_path_new);
-      menu_entries_flush_stack(msg_hash_to_str(
-            MENU_ENUM_LABEL_DEFERRED_SUBSYSTEM_SETTINGS_LIST), 0);
+      menu_entries_flush_stack(MENU_ENUM_LABEL_DEFERRED_SUBSYSTEM_SETTINGS_LIST_STR, 0);
       return 0;
    }
 
@@ -5191,7 +5188,7 @@ static int action_ok_undo_save_state(const char *path,
 
 #ifdef HAVE_NETWORKING
 
-#ifdef HAVE_ZLIB
+#ifdef HAVE_COMPRESSION
 static void cb_decompressed(retro_task_t *task,
       void *task_data, void *user_data, const char *err)
 {
@@ -5208,7 +5205,16 @@ static void cb_decompressed(retro_task_t *task,
             generic_action_ok_command(CMD_EVENT_REINIT);
             break;
          case MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES:
-            generic_action_ok_command(CMD_EVENT_CORE_INFO_INIT);
+            {
+               /* Forced: info files just changed on disk. Direct
+                * command_event() instead of generic_action_ok_command()
+                * so the force flag can be passed; the menu 'ok' sound
+                * is intentionally dropped here, as this is an async
+                * download-complete callback rather than a direct
+                * user action. */
+               bool refresh = true;
+               command_event(CMD_EVENT_CORE_INFO_INIT, &refresh);
+            }
             break;
          default:
             break;
@@ -5498,7 +5504,7 @@ void cb_generic_download(retro_task_t *task,
 {
    char output_path[PATH_MAX_LENGTH];
    char buf[PATH_MAX_LENGTH];
-#if defined(HAVE_COMPRESSION) && defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
    bool extract               = true;
 #endif
    const char *dir_path       = NULL;
@@ -5522,7 +5528,7 @@ void cb_generic_download(retro_task_t *task,
          break;
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
          dir_path = settings->paths.directory_core_assets;
-#if defined(HAVE_COMPRESSION) && defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
          extract  = settings->bools.network_buildbot_auto_extract_archive;
 #endif
          break;
@@ -5648,7 +5654,7 @@ void cb_generic_download(retro_task_t *task,
       goto finish;
    }
 
-#if defined(HAVE_COMPRESSION) && defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
    if (!extract)
       goto finish;
 
@@ -6615,7 +6621,7 @@ static int action_ok_add_entry_to_new_playlist(const char *path,
    line.label_setting         = NULL;
    line.type                  = 0;
    line.idx                   = 0;
-   line.cb                    = (string_is_equal(label, (char*)msg_hash_to_str(MENU_ENUM_LABEL_CREATE_NEW_PLAYLIST)) ?
+   line.cb                    = (string_is_equal(label, (char*)MENU_ENUM_LABEL_CREATE_NEW_PLAYLIST_STR) ?
                                       action_input_add_entry_to_new_playlist :
                                       action_input_add_entry_to_new_playlist_quickmenu);
    menu_input_dialog_start(&line);
@@ -6822,6 +6828,8 @@ static int action_ok_delete_entry(const char *path,
 }
 
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_cdrom_info_list, ACTION_OK_DL_CDROM_INFO_DETAIL_LIST)
+STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_core_restore_backup_list, ACTION_OK_DL_CORE_RESTORE_BACKUP_LIST)
+STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_core_delete_backup_list, ACTION_OK_DL_CORE_DELETE_BACKUP_LIST)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_shader_preset_manager, ACTION_OK_DL_SHADER_PRESET_MANAGER_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_shader_parameters, ACTION_OK_DL_SHADER_PARAMETERS)
@@ -7028,7 +7036,7 @@ static void netplay_refresh_rooms_cb(retro_task_t *task, void *task_data,
 
    /* Don't push the results if we left the netplay menu */
    if (     !string_is_equal(label, MENU_ENUM_LABEL_NETPLAY_TAB_STR)
-         && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY)))
+         && !string_is_equal(label, MENU_ENUM_LABEL_NETPLAY_STR))
       return;
 
    if (err)
@@ -7109,7 +7117,7 @@ static void netplay_refresh_lan_cb(const void *data)
 
    /* Don't push the results if we left the netplay menu */
    if (     !string_is_equal(label, MENU_ENUM_LABEL_NETPLAY_TAB_STR)
-         && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY)))
+         && !string_is_equal(label, MENU_ENUM_LABEL_NETPLAY_STR))
       return;
 
    if (!hosts || !hosts->size)
@@ -7504,7 +7512,18 @@ int action_cb_push_dropdown_item_resolution(const char *path,
       if (refreshrate == (60.0f * refresh_mod) - 1)
          refresh_exact = 59.94f * refresh_mod;
 
-      video_monitor_set_refresh_rate(refresh_exact);
+      /* Apply through driver_ctl rather than calling
+       * video_monitor_set_refresh_rate() directly.  Updating the
+       * config float is only half the job: the driver_ctl case also
+       * resets the resampler ratio, re-runs
+       * driver_adjust_system_rates() and recomputes the DRC
+       * threshold.  Skipping those leaves the audio resampler
+       * converting for the previous refresh rate until something
+       * else happens to re-adjust the rates - on a 120 Hz -> 60 Hz
+       * switch the ratio is wrong by 2x and the output is audibly
+       * garbled.  Every refresh-rate case in menu_setting.c already
+       * applies changes this way. */
+      driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &refresh_exact);
 
       settings->uints.video_fullscreen_x = width;
       settings->uints.video_fullscreen_y = height;
@@ -8221,6 +8240,9 @@ static int action_ok_state_slot_run(const char *path,
    return 0;
 }
 
+static int action_ok_load_archive_detect_core(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx);
+
 static int action_ok_load_archive(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -8231,6 +8253,13 @@ static int action_ok_load_archive(const char *path,
 
    if (!menu)
       return -1;
+
+   /* Load Content opens archives via ARCHIVE_ACTION (not DETECT_CORE).
+    * With no core loaded, loading "with current core" leaves a broken
+    * runloop state (or appears to hang).  Fall through to detect-core. */
+   if (path_is_empty(RARCH_PATH_CORE))
+      return action_ok_load_archive_detect_core(
+            path, label, type, idx, entry_idx);
 
    menu_path    = menu->scratch2_buf;
    content_path = menu->scratch_buf;
@@ -8621,7 +8650,7 @@ static int action_ok_manual_content_scan_start(const char *path,
          settings->bools.playlist_portable_paths ?
                settings->paths.directory_menu_content : NULL);
 
-   task_push_manual_content_scan(true);
+   task_push_manual_content_scan(true, NULL);
    return 0;
 }
 
@@ -8955,8 +8984,12 @@ static int action_ok_core_delete(const char *path,
 #endif
       filestream_delete(core_path);
 
-   /* Reload core info files */
-   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+   /* Reload core info files
+    * > Forced: a core file changed on disk */
+   {
+      bool refresh = true;
+      command_event(CMD_EVENT_CORE_INFO_INIT, &refresh);
+   }
 
    /* Force reload of contentless cores icons */
    menu_contentless_cores_free();
@@ -9166,7 +9199,7 @@ static int action_ok_playlist_refresh(const char *path,
             settings->bools.playlist_portable_paths ?
             settings->paths.directory_menu_content : NULL);
 
-      task_push_manual_content_scan(false);
+      task_push_manual_content_scan(false, NULL);
    }
    return 0;
 }
@@ -9272,14 +9305,18 @@ static int action_ok_smb_browse(const char *path,
       remaining -= len;
    }
 
+   /* Push as a content list under the same label Load Content uses:
+    * files inside then bind to the detect-core handler instead of
+    * "load with current core", which fatals when no core is loaded */
+   filebrowser_set_type(FILEBROWSER_SELECT_FILE);
    return generic_action_ok_displaylist_push(
       smb_path,
       smb_path,
-      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE),
+      msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
       FILE_TYPE_DIRECTORY,
       idx,
       entry_idx,
-      ACTION_OK_DL_FILE_BROWSER_SELECT_DIR);
+      ACTION_OK_DL_CONTENT_LIST);
 }
 #endif
 
@@ -9501,6 +9538,8 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_MIST
          {MENU_ENUM_LABEL_CORE_MANAGER_STEAM_ENTRY,            action_ok_push_core_information_steam_list},
 #endif
+         {MENU_ENUM_LABEL_CORE_RESTORE_BACKUP_LIST,            action_ok_push_core_restore_backup_list},
+         {MENU_ENUM_LABEL_CORE_DELETE_BACKUP_LIST,             action_ok_push_core_delete_backup_list},
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_SETTINGS,           action_ok_push_playlist_manager_settings},
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_RESET_CORES,        action_ok_playlist_reset_cores},
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST,     action_ok_playlist_clean},
@@ -9968,15 +10007,15 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                   || string_is_equal(menu_label,
                      MENU_ENUM_LABEL_SUBSYSTEM_ADD_STR)
                   || string_is_equal(menu_label,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_FONT_PATH))
+                     MENU_ENUM_LABEL_VIDEO_FONT_PATH_STR)
                   || string_is_equal(menu_label,
-                     msg_hash_to_str(MENU_ENUM_LABEL_XMB_FONT))
+                     MENU_ENUM_LABEL_XMB_FONT_STR)
                   || string_is_equal(menu_label,
-                     msg_hash_to_str(MENU_ENUM_LABEL_OZONE_FONT))
+                     MENU_ENUM_LABEL_OZONE_FONT_STR)
                   || string_is_equal(menu_label,
-                     msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN))
+                     MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN_STR)
                   || string_is_equal(menu_label,
-                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_FILTER)))
+                     MENU_ENUM_LABEL_VIDEO_FILTER_STR))
                BIND_ACTION_OK(cbs, action_ok_directory_push);
             else
                BIND_ACTION_OK(cbs, action_ok_push_random_dir);
@@ -10166,6 +10205,22 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                         BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core);
                      }
                      break;
+                  case MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN:
+                     /* Browse Archive (non-detect) still needs detect-core
+                      * when nothing is loaded — otherwise
+                      * action_ok_file_load pushes content with a dummy
+                      * core and core_run() jumps through a NULL
+                      * retro_run (SIGSEGV). */
+#ifdef HAVE_COMPRESSION
+                     if (type == FILE_TYPE_IN_CARCHIVE
+                           && path_is_empty(RARCH_PATH_CORE))
+                     {
+                        BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core_carchive);
+                        break;
+                     }
+#endif
+                     BIND_ACTION_OK(cbs, action_ok_file_load);
+                     break;
                   case MENU_ENUM_LABEL_DISK_IMAGE_APPEND:
                      BIND_ACTION_OK(cbs, action_ok_disk_image_append);
                      break;
@@ -10194,6 +10249,20 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                   {
                      BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core);
                   }
+               }
+               else if (string_is_equal(menu_label,
+                        MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_STR)
+#ifdef HAVE_COMPRESSION
+                     && type == FILE_TYPE_IN_CARCHIVE
+                     && path_is_empty(RARCH_PATH_CORE)
+#endif
+                     )
+               {
+#ifdef HAVE_COMPRESSION
+                  BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core_carchive);
+#else
+                  BIND_ACTION_OK(cbs, action_ok_file_load);
+#endif
                }
                else if (string_is_equal(menu_label, MENU_ENUM_LABEL_DISK_IMAGE_APPEND_STR))
                {

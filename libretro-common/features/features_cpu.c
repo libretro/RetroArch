@@ -30,9 +30,9 @@
 #endif
 
 #include <compat/strl.h>
-#include <streams/file_stream.h>
 #include <libretro.h>
 #include <features/features_cpu.h>
+#include <retro_atomic.h>
 #include <retro_timers.h>
 
 #if defined(_WIN32) && !defined(_XBOX)
@@ -155,7 +155,7 @@ static int ra_clock_gettime(int clk_ik, struct timespec *t)
 #define ra_clock_gettime clock_gettime
 #endif
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
 
@@ -219,7 +219,7 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
    time_ticks = OSGetSystemTime();
 #elif defined(HAVE_LIBNX)
    time_ticks = armGetSystemTick();
-#elif defined(EMSCRIPTEN)
+#elif defined(__EMSCRIPTEN__)
    time_ticks = emscripten_get_now() * 1000;
 #endif
 
@@ -258,7 +258,7 @@ retro_time_t cpu_features_get_time_usec(void)
    if (ra_clock_gettime(CLOCK_MONOTONIC, &tv) < 0)
       return 0;
    return tv.tv_sec * INT64_C(1000000) + (tv.tv_nsec + 500) / 1000;
-#elif defined(EMSCRIPTEN)
+#elif defined(__EMSCRIPTEN__)
    return emscripten_get_now() * 1000;
 #elif defined(PS2)
    return ps2_clock() / PS2_CLOCKS_PER_MSEC * 1000;
@@ -285,7 +285,7 @@ retro_time_t cpu_features_get_time_usec(void)
 
 #if defined(CPU_X86) && !defined(__MACH__)
 #include <limits.h>
-void x86_cpuid(int func, int32_t flags[4])
+void x86_cpuid(uint32_t func, int32_t flags[4])
 {
    /* On Android, we compile RetroArch with PIC, and we
     * are not allowed to clobber the ebx register. */
@@ -365,14 +365,12 @@ static unsigned char check_arm_cpu_feature(const char* feature)
 {
    char line[1024];
    unsigned char status = 0;
-   RFILE *fp = filestream_open("/proc/cpuinfo",
-         RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   FILE *fp = fopen("/proc/cpuinfo", "r");
 
    if (!fp)
       return 0;
 
-   while (filestream_gets(fp, line, sizeof(line)))
+   while (fgets(line, sizeof(line), fp))
    {
       if (strncmp(line, "Features\t: ", 11))
          continue;
@@ -383,7 +381,7 @@ static unsigned char check_arm_cpu_feature(const char* feature)
       break;
    }
 
-   filestream_close(fp);
+   fclose(fp);
 
    return status;
 }
@@ -437,9 +435,9 @@ static const char *parse_decimal(const char* input,
  *             2,4-127,128-143
  *             0-1
  **/
-static void cpulist_parse(CpuList* list, char **buf, ssize_t len)
+static void cpulist_parse(CpuList* list, const char *buf, ssize_t len)
 {
-   const char* p   = (const char*)buf;
+   const char* p   = buf;
    const char* end = p + len;
 
    /* NOTE: the input line coming from sysfs typically contains a
@@ -490,18 +488,20 @@ static void cpulist_parse(CpuList* list, char **buf, ssize_t len)
  **/
 static void cpulist_read_from(CpuList* list, const char* filename)
 {
-   ssize_t _len;
-   char *buf  = NULL;
+   char   buf[512];
+   size_t _len;
+   FILE  *fp  = fopen(filename, "r");
 
    list->mask = 0;
 
-   if (filestream_read_file(filename, (void**)&buf, &_len) != 1)
+   if (!fp)
       return;
 
-   cpulist_parse(list, &buf, _len);
-   if (buf)
-      free(buf);
-   buf = NULL;
+   _len      = fread(buf, 1, sizeof(buf) - 1, fp);
+   fclose(fp);
+   buf[_len] = '\0';
+
+   cpulist_parse(list, buf, (ssize_t)_len);
 }
 #endif
 
@@ -606,7 +606,33 @@ unsigned cpu_features_get_core_amount(void)
 #define VENDOR_INTEL_c  0x6c65746e
 #define VENDOR_INTEL_d  0x49656e69
 
-uint64_t cpu_features_get(void)
+#if defined(__MACH__) && defined(CPU_X86)
+/* Whole-token search of machdep.cpu.features, which is a space
+ * separated list of CPUID leaf-1 feature names. */
+static bool darwin_cpu_feature_present(const char *want)
+{
+   char   buf[1024];
+   size_t len  = sizeof(buf);
+   size_t wlen = strlen(want);
+   const char *p;
+
+   buf[0] = '\0';
+   if (sysctlbyname("machdep.cpu.features", buf, &len, NULL, 0) != 0)
+      return false;
+   buf[sizeof(buf) - 1] = '\0';
+
+   for (p = buf; (p = strstr(p, want)); p += wlen)
+   {
+      char after  = p[wlen];
+      char before = (p == buf) ? ' ' : p[-1];
+      if ((before == ' ') && (after == ' ' || after == '\0'))
+         return true;
+   }
+   return false;
+}
+#endif
+
+static uint64_t cpu_features_probe(void)
 {
    uint64_t cpu        = 0;
 #if defined(CPU_X86) && !defined(__MACH__)
@@ -674,7 +700,22 @@ uint64_t cpu_features_get(void)
    _len = sizeof(_val);
    if (sysctlbyname("hw.optional.altivec", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_VMX;
+   /* Darwin publishes no hw.optional key for PCLMULQDQ, so read the
+    * CPUID leaf-1 feature-name list instead.  Matching is on whole
+    * space-separated tokens: a plain strstr() would also fire on a
+    * hypothetical future "PCLMULQDQ2". */
+   if (darwin_cpu_feature_present("PCLMULQDQ"))
+      cpu |= RETRO_SIMD_PCLMUL;
 #else
+   _val = 0;
+   _len = sizeof(_val);
+   /* Older key first; newer systems also carry the FEAT_ spelling. */
+   if (   (sysctlbyname("hw.optional.armv8_crc32", &_val, &_len, NULL, 0) == 0
+           && _val)
+       || (_val = 0, _len = sizeof(_val),
+           sysctlbyname("hw.optional.arm.FEAT_CRC32", &_val, &_len, NULL, 0) == 0
+           && _val))
+      cpu |= RETRO_SIMD_CRC32;
    _val = 0;
    _len = sizeof(_val);
    if (sysctlbyname("hw.optional.neon", &_val, &_len, NULL, 0) == 0 && _val)
@@ -710,7 +751,10 @@ uint64_t cpu_features_get(void)
          && flags[2] == VENDOR_INTEL_c
          && flags[3] == VENDOR_INTEL_d);
 
-   max_flag = flags[0];
+   /* CPUID register contents are unsigned; flags[] is int32_t, so the
+    * widening is spelled out rather than left implicit -- leaf
+    * 0x80000000 legitimately returns values with the top bit set. */
+   max_flag = (uint32_t)flags[0];
    /* Does CPUID not support func = 1? (unlikely ...) */
    if (max_flag < 1) 
       return 0;
@@ -750,6 +794,9 @@ uint64_t cpu_features_get(void)
 
    if (flags[2] & (1 << 25))
       cpu |= RETRO_SIMD_AES;
+
+   if (flags[2] & (1 << 1))
+      cpu |= RETRO_SIMD_PCLMUL;
 
    /* Must only perform xgetbv check if we have
     * AVX CPU support (guaranteed to have at least i686). */
@@ -804,7 +851,7 @@ uint64_t cpu_features_get(void)
    }
 
    x86_cpuid(0x80000000, flags);
-   max_flag = flags[0];
+   max_flag = (uint32_t)flags[0];
    if (max_flag >= 0x80000001u)
    {
       x86_cpuid(0x80000001, flags);
@@ -832,6 +879,10 @@ uint64_t cpu_features_get(void)
    if (check_arm_cpu_feature("vfpv4"))
       cpu |= RETRO_SIMD_VFPV4;
 
+   /* aarch64 lists it as "crc32" in the Features: line. */
+   if (check_arm_cpu_feature("crc32"))
+      cpu |= RETRO_SIMD_CRC32;
+
    if (check_arm_cpu_feature("asimd"))
    {
       cpu |= RETRO_SIMD_ASIMD;
@@ -856,6 +907,46 @@ uint64_t cpu_features_get(void)
 #elif defined(GEKKO)
    cpu |= RETRO_SIMD_PS;
 #endif
+
+   return cpu;
+}
+
+/* The probe is not cheap: on x86 it issues a chain of serialising CPUID
+ * instructions, and on ARM/Linux it opens and line-parses /proc/cpuinfo
+ * once per feature queried.  The answer cannot change over the lifetime
+ * of the process, so probe once and hand out the cached mask thereafter.
+ * Callers that sit on a per-frame or per-asset path (the image decoders
+ * select their SIMD kernels this way) were paying the full probe on every
+ * single call. */
+uint64_t cpu_features_get(void)
+{
+   /* The mask is published with a release store and consumed with an
+    * acquire load, so a thread that observes the ready flag is
+    * guaranteed to see the fully written mask.
+    *
+    * The probe being idempotent is not on its own enough: if several
+    * threads reach it before any has published, they all write
+    * cpu_features_cache with plain stores, and those writes are
+    * unordered with respect to one another.  Same value or not, that
+    * is a data race and ThreadSanitizer reports it.  Elect exactly one
+    * writer with an atomic increment; the threads that lose return the
+    * value they computed themselves, which is identical, so nobody
+    * spins and nobody writes memory another thread is writing. */
+   static uint64_t           cpu_features_cache;
+   static retro_atomic_int_t cpu_features_claim; /* 0 = unclaimed */
+   static retro_atomic_int_t cpu_features_ready; /* 0 = not probed yet */
+   uint64_t                  cpu;
+
+   if (retro_atomic_load_acquire_int(&cpu_features_ready))
+      return cpu_features_cache;
+
+   cpu = cpu_features_probe();
+
+   if (retro_atomic_fetch_add_int(&cpu_features_claim, 1) == 0)
+   {
+      cpu_features_cache = cpu;
+      retro_atomic_store_release_int(&cpu_features_ready, 1);
+   }
 
    return cpu;
 }
@@ -919,14 +1010,12 @@ end:
       return;
    {
       char *model_name, line[128];
-      RFILE *fp = filestream_open("/proc/cpuinfo",
-            RETRO_VFS_FILE_ACCESS_READ,
-            RETRO_VFS_FILE_ACCESS_HINT_NONE);
+      FILE *fp = fopen("/proc/cpuinfo", "r");
 
       if (!fp)
          return;
 
-      while (filestream_gets(fp, line, sizeof(line)))
+      while (fgets(line, sizeof(line), fp))
       {
          if (strncmp(line, "model name", 10))
             continue;
@@ -940,7 +1029,7 @@ end:
          break;
       }
 
-      filestream_close(fp);
+      fclose(fp);
 
 #if defined(WEBOS)
       struct stat st;
@@ -959,7 +1048,7 @@ end:
                   if (p)
                   {
                      size_t len2;
-                     p++; // skip ':'
+                     p++; /* skip ':' */
                      while (*p == ' ' || *p == '\t')
                         p++;
                      len2 = strcspn(p, "\r\n");

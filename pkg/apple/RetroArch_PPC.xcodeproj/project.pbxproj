@@ -208,7 +208,6 @@
 				ARCHS = "$(ONLY_ACTIVE_ARCH_PRE_XCODE_3_1)";
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/../../libretro-common/include",
-					"$(SRCROOT)/../../libretro-common/include/compat/zlib",
 					"$(SRCROOT)/../../deps",
 					"$(SRCROOT)/../../deps/stb",
 					"$(SRCROOT)/../../deps/rcheevos/include",
@@ -225,7 +224,6 @@
 				ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1 = "ppc i386";
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/../../libretro-common/include",
-					"$(SRCROOT)/../../libretro-common/include/compat/zlib",
 					"$(SRCROOT)/../../deps",
 					"$(SRCROOT)/../../deps/stb",
 					"$(SRCROOT)/../../deps/rcheevos/include",
@@ -307,7 +305,6 @@
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",
-					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_RWEBP",
 					"-DHAVE_RDDS",
@@ -324,7 +321,6 @@
 					"-DHAVE_THREADS",
 					"-DHAVE_DYLIB",
 					"-DHAVE_7ZIP",
-					"-D_7ZIP_ST",
 					"-DHAVE_MATERIALUI",
 					"-DHAVE_HID",
 					"-DHAVE_XMB",
@@ -334,7 +330,7 @@
 					"-DHAVE_LIBRETRODB",
 					"-DHAVE_FILTERS_BUILTIN",
 				);
-				OTHER_LDFLAGS = "-lz";
+				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = /Developer/SDKs/MacOSX10.5.sdk;
 				WRAPPER_EXTENSION = app;
@@ -404,7 +400,6 @@
 					"-DHAVE_COREAUDIO",
 					"-DHAVE_DYNAMIC",
 					"-DHAVE_OVERLAY",
-					"-DHAVE_ZLIB",
 					"-DHAVE_RPNG",
 					"-DHAVE_RWEBP",
 					"-DHAVE_RDDS",
@@ -421,7 +416,6 @@
 					"-DHAVE_THREADS",
 					"-DHAVE_DYLIB",
 					"-DHAVE_7ZIP",
-					"-D_7ZIP_ST",
 					"-DHAVE_MATERIALUI",
 					"-DHAVE_HID",
 					"-DHAVE_XMB",
@@ -431,7 +425,7 @@
 					"-DHAVE_LIBRETRODB",
 					"-DHAVE_FILTERS_BUILTIN",
 				);
-				OTHER_LDFLAGS = "-lz";
+				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = /Developer/SDKs/MacOSX10.5.sdk;
 				WRAPPER_EXTENSION = app;

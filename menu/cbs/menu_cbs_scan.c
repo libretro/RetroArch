@@ -194,22 +194,30 @@ static int action_scan_input_desc(const char *path,
    {
       size_t first_bind = 0;
       char port_str     = atoi(&label[1]);
-      menu_entry_t entry;
+      /* menu_entry_t carries the entry's path/label/value strings
+       * inline -- several KiB even at console path lengths -- so it
+       * is heap-held here rather than framed on the menu task stack. */
+      menu_entry_t *entry = (menu_entry_t*)malloc(sizeof(*entry));
+
+      if (!entry)
+         return -1;
 
       user_idx = (unsigned)(port_str - 1);
 
       /* Skip non-bind menu elements */
-      MENU_ENTRY_INITIALIZE(entry);
+      MENU_ENTRY_INITIALIZE((*entry));
 
       while (first_bind < idx)
       {
-         menu_entry_get(&entry, 0, first_bind, NULL, false);
+         menu_entry_get(entry, 0, first_bind, NULL, false);
 
-         if (entry.setting_type == ST_BIND)
+         if (entry->setting_type == ST_BIND)
             break;
 
          first_bind++;
       }
+
+      free(entry);
 
       key = (unsigned)(idx - first_bind);
 
@@ -380,20 +388,20 @@ int menu_cbs_init_bind_scan(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SCAN(cbs, action_scan_input_desc);
             return 0;
          case ST_PATH:
-            if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_FONT_PATH)))
+            if (string_is_equal(label, MENU_ENUM_LABEL_VIDEO_FONT_PATH_STR))
             {
                BIND_ACTION_SCAN(cbs, action_scan_video_font_path);
                return 0;
             }
 #ifdef HAVE_XMB
-            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_XMB_FONT)))
+            else if (string_is_equal(label, MENU_ENUM_LABEL_XMB_FONT_STR))
             {
                BIND_ACTION_SCAN(cbs, action_scan_video_xmb_font);
                return 0;
             }
 #endif
 #ifdef HAVE_OZONE
-            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_OZONE_FONT)))
+            else if (string_is_equal(label, MENU_ENUM_LABEL_OZONE_FONT_STR))
             {
                BIND_ACTION_SCAN(cbs, action_scan_video_ozone_font);
                return 0;

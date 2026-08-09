@@ -1,6 +1,7 @@
 TARGET := rpng
 TARGET_TEST := rpng_chunk_overflow_test
 TARGET_TEST2 := rpng_roundtrip_test
+TARGET_TEST3 := rpng_decode_corpus_test
 
 CORE_DIR          := .
 LIBRETRO_PNG_DIR  := ../../../formats/png
@@ -8,7 +9,6 @@ LIBRETRO_COMM_DIR := ../../..
 
 HAVE_IMLIB2=0
 
-LDFLAGS +=  -lz
 
 ifeq ($(HAVE_IMLIB2),1)
 CFLAGS += -DHAVE_IMLIB2
@@ -20,6 +20,7 @@ SOURCES_C := 	\
 	$(LIBRETRO_PNG_DIR)/rpng.c \
 	$(LIBRETRO_PNG_DIR)/rpng_encode.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
 	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
@@ -40,8 +41,9 @@ SOURCES_C := 	\
 	$(LIBRETRO_COMM_DIR)/streams/memory_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/rzip_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream.c \
-	$(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c \
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream_deflate.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c
 
@@ -53,9 +55,12 @@ TEST_SOURCES_C := \
 	$(CORE_DIR)/rpng_chunk_overflow_test.c \
 	$(LIBRETRO_PNG_DIR)/rpng.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream.c \
-	$(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.c \
-	$(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c \
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream_deflate.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
 
 # The round-trip regression test writes with rpng_encode and reads
 # back with rpng, so it needs the full file/nbio/stream stack.
@@ -66,6 +71,7 @@ TEST2_SOURCES_C := \
 	$(LIBRETRO_PNG_DIR)/rpng.c \
 	$(LIBRETRO_PNG_DIR)/rpng_encode.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
 	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
@@ -86,21 +92,56 @@ TEST2_SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/streams/memory_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/rzip_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream.c \
-	$(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c \
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream_deflate.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c
+
+# The decode corpus test builds its own PNG streams in memory - with the
+# filter type forced per scanline, across every colour type, bit depth
+# and a width sweep - and decodes them with rpng, so it needs the
+# decoder, the CRC used to seal the chunks it writes, and the deflate
+# backend it compresses them with.  No file I/O and no second decoder as
+# an oracle: the expected pixels are a function of position, so the
+# generator knows them.
+TEST3_SOURCES_C := \
+	$(CORE_DIR)/rpng_decode_corpus_test.c \
+	$(LIBRETRO_PNG_DIR)/rpng.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream.c \
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c \
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream_deflate.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c
 
 OBJS := $(SOURCES_C:.c=.o)
 TEST_OBJS := $(TEST_SOURCES_C:.c=.o)
 TEST2_OBJS := $(TEST2_SOURCES_C:.c=.o)
+TEST3_OBJS := $(TEST3_SOURCES_C:.c=.corpus.o)
 
-CFLAGS += -Wall -pedantic -std=gnu99 -O0 -g -DHAVE_ZLIB -DRPNG_TEST -I$(LIBRETRO_COMM_DIR)/include
+CFLAGS += -Wall -pedantic -std=gnu99 -O0 -g -I$(LIBRETRO_COMM_DIR)/include
 
-all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2)
+# The corpus test decodes ~2000 generated images.  RPNG_TEST turns on
+# rpng.c's per-image IHDR trace, which would bury the CI log (and any
+# sanitizer report in it), so that target gets its own objects built
+# without it.  Everything else keeps the trace it has always had.
+CORPUS_CFLAGS := $(CFLAGS)
+CFLAGS        += -DRPNG_TEST
+
+ifneq ($(SANITIZER),)
+   CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
+   LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
+endif
+
+all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
+
+%.corpus.o: %.c
+	$(CC) -c -o $@ $< $(CORPUS_CFLAGS)
 
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
@@ -111,7 +152,11 @@ $(TARGET_TEST): $(TEST_OBJS)
 $(TARGET_TEST2): $(TEST2_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
+$(TARGET_TEST3): $(TEST3_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
 clean:
-	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(OBJS) $(TEST_OBJS) $(TEST2_OBJS)
+	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) \
+		$(OBJS) $(TEST_OBJS) $(TEST2_OBJS) $(TEST3_OBJS)
 
 .PHONY: clean

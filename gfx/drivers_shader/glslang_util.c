@@ -316,8 +316,179 @@ static size_t build_line_directive(char *tmp, size_t tmp_size,
 /* -------------------------------------------------------------------
  * glslang_read_shader_file
  * ------------------------------------------------------------------- */
+/* Include cache for one root read.
+ *
+ * Shader packs share helper .inc files across passes, and a helper may
+ * itself include another, so expanding one preset re-reads the same
+ * handful of files many times over: a 24-pass preset over 8 shared
+ * helpers issues 384 reads for 32 distinct files, a 12x duplication,
+ * pulling 1 MB off disk for 80 KB of distinct content.  The SPIR-V
+ * cache does not avoid it - spirv_cache_compute_hash() keys on the
+ * fully preprocessed source, so every include has to be read and
+ * expanded before the cache can be consulted.  These reads therefore
+ * happen on every preset load, hit or miss, and where an open costs
+ * milliseconds rather than microseconds - SD cards, console storage -
+ * they are what makes loading a large preset slow.
+ *
+ * So keep the contents of each file read while expanding one root, and
+ * serve repeats from memory.  The cache lives for exactly one
+ * glslang_read_shader_file() root call, which also makes it a
+ * consistent snapshot: every pass sees the same helper text even if
+ * something rewrites it mid-load.  A linear scan is right for the
+ * handful of distinct files a preset touches. */
+struct slang_include_cache_entry
+{
+   char    *path;
+   uint8_t *data;
+   int64_t  len;
+};
+
+struct slang_include_cache
+{
+   struct slang_include_cache_entry *entries;
+   size_t num;
+   size_t cap;
+};
+
+static void slang_include_cache_free(struct slang_include_cache *cache)
+{
+   size_t i;
+   if (!cache)
+      return;
+   for (i = 0; i < cache->num; i++)
+   {
+      free(cache->entries[i].path);
+      free(cache->entries[i].data);
+   }
+   free(cache->entries);
+   cache->entries = NULL;
+   cache->num     = 0;
+   cache->cap     = 0;
+}
+
+/* Look up @path; on a miss read it and record it.  On any allocation
+ * failure the read still succeeds, it just is not remembered, so the
+ * cache can never turn a working load into a failing one. */
+static bool slang_include_cache_read(struct slang_include_cache *cache,
+      const char *path, uint8_t **buf, int64_t *len)
+{
+   size_t i;
+   uint8_t *data = NULL;
+   int64_t  n    = 0;
+
+   if (cache)
+   {
+      for (i = 0; i < cache->num; i++)
+      {
+         if (string_is_equal(cache->entries[i].path, path))
+         {
+            /* Hand out a copy: the caller writes into the buffer while
+             * scanning lines and frees it when done. */
+            int64_t have = cache->entries[i].len;
+            if (!(data = (uint8_t*)malloc((size_t)have + 1)))
+               return false;
+            memcpy(data, cache->entries[i].data, (size_t)have);
+            data[have] = '\0';
+            *buf       = data;
+            *len       = have;
+            return true;
+         }
+      }
+   }
+
+   if (!filestream_read_file(path, (void**)&data, &n))
+      return false;
+
+   if (cache && n > 0)
+   {
+      if (cache->num == cache->cap)
+      {
+         size_t new_cap = cache->cap ? cache->cap * 2 : 16;
+         struct slang_include_cache_entry *grown =
+               (struct slang_include_cache_entry*)realloc(cache->entries,
+                     new_cap * sizeof(*grown));
+         if (grown)
+         {
+            cache->entries = grown;
+            cache->cap     = new_cap;
+         }
+      }
+      if (cache->num < cache->cap)
+      {
+         char    *path_copy = strdup(path);
+         uint8_t *data_copy = (uint8_t*)malloc((size_t)n);
+         if (path_copy && data_copy)
+         {
+            memcpy(data_copy, data, (size_t)n);
+            cache->entries[cache->num].path = path_copy;
+            cache->entries[cache->num].data = data_copy;
+            cache->entries[cache->num].len  = n;
+            cache->num++;
+         }
+         else
+         {
+            free(path_copy);
+            free(data_copy);
+         }
+      }
+   }
+
+   *buf = data;
+   *len = n;
+   return true;
+}
+
+static bool glslang_read_shader_file_internal(const char *path,
+      struct shader_line_buf *output, bool root_file, bool is_optional,
+      struct slang_include_cache *cache);
+
+void *glslang_include_cache_new(void)
+{
+   struct slang_include_cache *cache = (struct slang_include_cache*)
+         calloc(1, sizeof(*cache));
+   return (void*)cache;
+}
+
+void glslang_include_cache_free(void *cache)
+{
+   if (!cache)
+      return;
+   slang_include_cache_free((struct slang_include_cache*)cache);
+   free(cache);
+}
+
+bool glslang_read_shader_file_cached(const char *path,
+      struct shader_line_buf *output, bool root_file, bool is_optional,
+      void *cache)
+{
+   /* A caller-owned cache spans however many root expansions the
+    * caller wants; without one, fall back to a cache scoped to this
+    * single expansion. */
+   if (cache)
+      return glslang_read_shader_file_internal(path, output, root_file,
+            is_optional, (struct slang_include_cache*)cache);
+   return glslang_read_shader_file(path, output, root_file, is_optional);
+}
+
 bool glslang_read_shader_file(const char *path,
       struct shader_line_buf *output, bool root_file, bool is_optional)
+{
+   /* Only a root read owns a cache; a nested one is already inside a
+    * root's expansion and is handed that root's cache. */
+   struct slang_include_cache cache;
+   bool ret;
+   cache.entries = NULL;
+   cache.num     = 0;
+   cache.cap     = 0;
+   ret = glslang_read_shader_file_internal(path, output, root_file,
+         is_optional, &cache);
+   slang_include_cache_free(&cache);
+   return ret;
+}
+
+static bool glslang_read_shader_file_internal(const char *path,
+      struct shader_line_buf *output, bool root_file, bool is_optional,
+      struct slang_include_cache *cache)
 {
    char tmp[PATH_MAX_LENGTH];
    char line_suffix[PATH_MAX_LENGTH]; /* precomputed: " \"basename\"" */
@@ -343,8 +514,9 @@ bool glslang_read_shader_file(const char *path,
    line_suffix_len = (size_t)snprintf(line_suffix, sizeof(line_suffix),
          " \"%s\"", basename);
 
-   /* Read file contents */
-   if (!filestream_read_file(path, (void**)&buf, &buf_len))
+   /* Read file contents (served from this root read's cache when the
+    * same file has already been expanded) */
+   if (!slang_include_cache_read(cache, path, &buf, &buf_len))
    {
       if (!is_optional)
          RARCH_ERR("[Slang] Failed to open shader file: \"%s\".\n", path);
@@ -476,8 +648,8 @@ bool glslang_read_shader_file(const char *path,
                fill_pathname_resolve_relative(
                      include_path, path, include_file, sizeof(include_path));
 
-               if (!glslang_read_shader_file(include_path, output,
-                     false, include_optional))
+               if (!glslang_read_shader_file_internal(include_path, output,
+                     false, include_optional, cache))
                {
                   if (!include_optional)
                      goto cleanup;

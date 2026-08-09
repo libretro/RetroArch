@@ -94,8 +94,8 @@ static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
 #ifdef HAVE_METAL
    &gfx_display_ctx_metal,
 #endif
-#ifdef HAVE_VITA2D
-   &gfx_display_ctx_vita2d,
+#ifdef HAVE_GXM
+   &gfx_display_ctx_gxm,
 #endif
 #ifdef _3DS
    &gfx_display_ctx_ctr,
@@ -115,6 +115,9 @@ static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
 #if SDL_VERSION_ATLEAST(2, 0, 18)
    &gfx_display_ctx_sdl2,
 #endif
+#endif
+#ifdef HAVE_SDL3
+   &gfx_display_ctx_sdl3,
 #endif
    NULL,
 };
@@ -403,17 +406,18 @@ font_data_t *gfx_display_font_file(
          font_size = 2.0f;
       if ((font_data = font_driver_init_first(video_driver_get_ptr(),
                   fontpath, font_size, true, is_threaded,
-                  dispctx->font_type)))
+                  dispctx->font_backend)))
          return font_data;
    }
    return NULL;
 }
 
 /* Draw text on top of the screen */
-void gfx_display_draw_text(
+static void gfx_display_draw_text_internal(
       const font_data_t *font, const char *text,
       float x, float y, int width, int height,
-      uint32_t color, enum text_alignment text_align,
+      uint32_t color, const float *color_hp,
+      enum text_alignment text_align,
       float scale, bool shadows_enable, float shadow_offset,
       bool draw_outside)
 {
@@ -446,6 +450,7 @@ void gfx_display_draw_text(
    params.drop_x      = 0.0f;
    params.drop_y      = 0.0f;
    params.color       = color;
+   params.color_hp    = color_hp;
    params.full_screen = true;
    params.text_align  = text_align;
 
@@ -459,6 +464,37 @@ void gfx_display_draw_text(
    if (video_st->poke && video_st->poke->set_osd_msg)
       video_st->poke->set_osd_msg(video_st->data,
             text, strlen(text), &params, (void*)font);
+}
+
+void gfx_display_draw_text(
+      const font_data_t *font, const char *text,
+      float x, float y, int width, int height,
+      uint32_t color, enum text_alignment text_align,
+      float scale, bool shadows_enable, float shadow_offset,
+      bool draw_outside)
+{
+   gfx_display_draw_text_internal(font, text, x, y, width, height,
+         color, NULL, text_align, scale, shadows_enable, shadow_offset,
+         draw_outside);
+}
+
+/* As gfx_display_draw_text, but drives the glyph colour at full float
+ * precision (color_rgba points to 4 floats R,G,B,A in 0..1) so text can
+ * exceed 8 bits per channel on a deep-colour framebuffer. The 8-bit 'color'
+ * is still supplied for backends that ignore the high-precision path (they
+ * fall back to it), so pass an equivalent packed value. Font backends that
+ * do not opt in behave exactly as the 8-bit entry point. */
+void gfx_display_draw_text_hp(
+      const font_data_t *font, const char *text,
+      float x, float y, int width, int height,
+      uint32_t color, const float *color_rgba,
+      enum text_alignment text_align,
+      float scale, bool shadows_enable, float shadow_offset,
+      bool draw_outside)
+{
+   gfx_display_draw_text_internal(font, text, x, y, width, height,
+         color, color_rgba, text_align, scale, shadows_enable,
+         shadow_offset, draw_outside);
 }
 
 void gfx_display_draw_bg(
@@ -1082,6 +1118,7 @@ bool gfx_display_reset_textures_list_buffer(
    ti.height        = 0;
    ti.pixels        = NULL;
    ti.supports_rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
+   ti.pix10         = false;
 
    if (image_texture_load_buffer(&ti, image_type, buffer, buffer_len))
    {
@@ -1118,6 +1155,7 @@ bool gfx_display_reset_textures_list(
    ti.height                     = 0;
    ti.pixels                     = NULL;
    ti.supports_rgba              = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
+   ti.pix10                      = false;
 
    if (!texture_path || !*texture_path)
       return false;
@@ -1157,6 +1195,7 @@ bool gfx_display_reset_icon_texture(
    ti.height                     = 0;
    ti.pixels                     = NULL;
    ti.supports_rgba              = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
+   ti.pix10                      = false;
 
    if (!texture_path || !*texture_path)
       return false;
@@ -1248,6 +1287,7 @@ void gfx_display_init_white_texture(void)
    ti.height     = 1;
    ti.pixels     = (uint32_t*)&white_data;
    ti.compressed = NULL; /* raw pixels, not a loaded compressed texture */
+   ti.pix10      = false; /* 8-bit white; must not be read as 10-bit */
 
    video_driver_texture_load(&ti,
          TEXTURE_FILTER_NEAREST, &gfx_white_texture);

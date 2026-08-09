@@ -114,6 +114,19 @@
 #define RHMAP_CLEAR(b) ((b) ? (memset(RHMAP__HDR(b)->keys, 0, RHMAP_CAP(b) * sizeof(uint32_t)), RHMAP__HDR(b)->len = 0) : 0)
 #define RHMAP_FREE(b) ((b) ? (rhmap__free(RHMAP__HDR(b)), (b) = NULL) : 0)
 #define RHMAP_FIT(b, n) ((!(n) || ((b) && (size_t)(n) * 2 <= RHMAP_MAX(b))) ? 0 : RHMAP__GROW(b, n))
+
+/* Opt a map out of owning its string keys.
+ *
+ * By default every RHMAP_*_STR insert stores a private strdup() of the
+ * key, which costs an allocation per entry on insert and a free() per
+ * entry on teardown. When the caller already owns a copy of the key
+ * that is guaranteed to outlive the map, that second copy is pure
+ * overhead. Call this once on an empty map to make inserts store the
+ * caller's pointer directly and teardown leave it alone.
+ *
+ * Only use this when the key's lifetime provably exceeds the map's,
+ * and remember that RHMAP_DEL_STR no longer frees the key either. */
+#define RHMAP_BORROW_KEYS(b) (RHMAP__FIT1(b), RHMAP__HDR(b)->borrow_keys = 1)
 #define RHMAP_TRYFIT(b, n) (RHMAP_FIT((b), (n)), (!(n) || ((b) && (size_t)(n) * 2 <= RHMAP_MAX(b))))
 
 #define RHMAP_SET(b, key, val) RHMAP_SET_FULL(b, key, NULL, val)
@@ -157,7 +170,7 @@ RHMAP__UNUSED static uint32_t rhmap_hash_string(const char* str)
    return (hash ? hash : 1);
 }
 
-struct rhmap__hdr { size_t len, maxlen; uint32_t *keys; char** key_strs; };
+struct rhmap__hdr { size_t len, maxlen; uint32_t *keys; char** key_strs; int borrow_keys; };
 #define RHMAP__HDR(b) (((struct rhmap__hdr *)&(b)[-1])-1)
 #define RHMAP__GROW(b, n) (*(void**)(&(b)) = rhmap__grow((void*)(b), sizeof(*(b)), (size_t)(n)))
 #define RHMAP__FIT1(b) ((b) && RHMAP_LEN(b) * 2 <= RHMAP_MAX(b) ? 0 : RHMAP__GROW(b, 0))
@@ -177,6 +190,7 @@ RHMAP__UNUSED static void* rhmap__grow(void* old_ptr, size_t elem_size, size_t r
       return old_ptr; /* out of memory */
 
    new_hdr->maxlen = new_max;
+   new_hdr->borrow_keys = (old_hdr ? old_hdr->borrow_keys : 0);
    new_hdr->keys = (uint32_t *)calloc(new_max + 1, sizeof(uint32_t));
    if (!new_hdr->keys)
    {
@@ -239,6 +253,11 @@ static char *rhmap_strdup(const char *s)
         ++count;
     ++count;
     out = (char*)malloc(sizeof(char) * count);
+    /* On allocation failure store no key string rather than crash:
+     * the probe comparison already treats a NULL key_str as a
+     * hash-only match, so lookups degrade instead of faulting. */
+    if (!out)
+        return NULL;
     out[--count] = 0;
     while (--count >= 0)
         out[count] = s[count];
@@ -260,14 +279,16 @@ RHMAP__UNUSED static ptrdiff_t rhmap__idx(struct rhmap__hdr* hdr, uint32_t key, 
          {
             hdr->len--;
             hdr->keys[i] = 0;
-            free(hdr->key_strs[i]);
+            if (!hdr->borrow_keys)
+               free(hdr->key_strs[i]);
             hdr->key_strs[i] = NULL;
             while ((key = hdr->keys[i = (i + 1) & hdr->maxlen]) != 0)
             {
                if ((key = (uint32_t)rhmap__idx(hdr, key, hdr->key_strs[i], 1, 0)) == i) continue;
                hdr->len--;
                hdr->keys[i] = 0;
-               free(hdr->key_strs[i]);
+               if (!hdr->borrow_keys)
+                  free(hdr->key_strs[i]);
                hdr->key_strs[i] = NULL;
                memcpy(((char*)(hdr + 1)) + (key + 1) * del,
                      ((char*)(hdr + 1)) + (i + 1) * del, del);
@@ -279,10 +300,25 @@ RHMAP__UNUSED static ptrdiff_t rhmap__idx(struct rhmap__hdr* hdr, uint32_t key, 
       {
          if (add)
          {
+            /* Never claim the table's last empty slot.  Deletion
+             * uses backward-shift (no tombstones), so a completely
+             * full table has no terminator for this probe loop, for
+             * absent-key lookups, or for the deletion fixup walk -
+             * they all spin forever.  Growth keeps the load factor
+             * at or below 50%, so this bound is unreachable unless
+             * RHMAP__GROW failed under OOM and the caller kept
+             * inserting; in that case the insert is dropped (the
+             * slot is returned unclaimed: its key stays 0, len is
+             * unchanged, and a value written through it by the SET
+             * macros is simply never found) rather than corrupting
+             * or hanging. */
+            if (hdr->len >= hdr->maxlen)
+               return (ptrdiff_t)i;
             hdr->len++;
             hdr->keys[i] = key;
             if (str)
-               hdr->key_strs[i] = rhmap_strdup(str);
+               hdr->key_strs[i] = (hdr->borrow_keys
+                     ? (char*)str : rhmap_strdup(str));
             return (ptrdiff_t)i;
          }
          return (ptrdiff_t)-1;
@@ -293,10 +329,9 @@ RHMAP__UNUSED static ptrdiff_t rhmap__idx(struct rhmap__hdr* hdr, uint32_t key, 
 RHMAP__UNUSED static void rhmap__free(struct rhmap__hdr* hdr)
 {
    size_t i;
-   for (i=0;i<hdr->maxlen+1;i++)
-   {
-      free(hdr->key_strs[i]);
-   }
+   if (!hdr->borrow_keys)
+      for (i=0;i<hdr->maxlen+1;i++)
+         free(hdr->key_strs[i]);
    free(hdr->key_strs);
    free(hdr->keys);
    free(hdr);

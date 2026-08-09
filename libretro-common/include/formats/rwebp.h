@@ -38,6 +38,13 @@ int rwebp_process_image(rwebp_t *rwebp, void **buf,
       size_t size, unsigned *width, unsigned *height,
       bool supports_rgba);
 
+/* Prefix probe for partial reads: true once the bytes [0, avail)
+ * contain the complete still-image chunk (the first VP8/VP8L,
+ * standalone or inside the first ANMF frame), i.e. a decode whose
+ * buffer length is bounded to avail will succeed without touching a
+ * byte beyond it. */
+bool rwebp_still_ready(const void *buf, size_t avail);
+
 bool rwebp_set_buf_ptr(rwebp_t *rwebp, void *data, size_t len);
 
 void rwebp_free(rwebp_t *rwebp);
@@ -92,6 +99,14 @@ const uint32_t *rwebp_anim_stream_next(rwebp_anim_stream_t *stream,
       int *duration_ms);
 
 void rwebp_anim_stream_rewind(rwebp_anim_stream_t *stream);
+
+/* Select the channel order of subsequently emitted frames: non-zero
+ * for ARGB words, zero for the default memory-order R,G,B,A.  The
+ * order is a property of the compositing canvas, so a switch after
+ * frames have been emitted converts the canvas in place once (a
+ * single full-canvas pass); sub-frame decoding then stores the new
+ * order directly at no per-frame cost.  Persists across rewind. */
+void rwebp_anim_stream_set_argb(rwebp_anim_stream_t *stream, int argb);
 
 RETRO_END_DECLS
 

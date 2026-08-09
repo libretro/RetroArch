@@ -96,7 +96,7 @@
 #define DEFAULT_MAX_PADS 4
 #elif defined(DINGUX)
 #define DEFAULT_MAX_PADS 2
-#elif defined(EMSCRIPTEN)
+#elif defined(__EMSCRIPTEN__)
 #define DEFAULT_MAX_PADS 4
 #else
 #define DEFAULT_MAX_PADS 16
@@ -571,11 +571,6 @@ struct input_keyboard_ctx_wait
 
 typedef struct
 {
-   /**
-    * Array of timers, one for each entry in enum input_combo_type.
-    */
-   rarch_timer_t combo_timers[INPUT_COMBO_LAST];
-
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
    input_remote_state_t remote_st_ptr;        /* uint64_t alignment */
 #endif
@@ -610,6 +605,14 @@ typedef struct
    int old_touch_index_lut[OVERLAY_MAX_TOUCH];
 #endif
    uint16_t flags;
+   /* Read and written every poll; kept beside flags so the per-poll
+    * bookkeeping shares a cacheline with the hot pointer block above,
+    * rather than sitting past the input_device_info string tables
+    * (~17 KB of cold data) as it used to. */
+   unsigned input_hotkey_block_counter;
+#ifdef HAVE_ACCESSIBILITY
+   unsigned gamepad_input_override;
+#endif
 #ifdef HAVE_NETWORKGAMEPAD
    input_remote_t *remote;
 #endif
@@ -628,12 +631,19 @@ typedef struct
    input_device_info_t input_device_info[MAX_INPUT_DEVICES]; /* unsigned alignment */
    input_mouse_info_t input_mouse_info[MAX_INPUT_DEVICES];
    input_sensor_map_t input_sensor_map[MAX_INPUT_DEVICES];
+
+   /**
+    * Array of timers, one for each entry in enum input_combo_type.
+    * One indexed entry is read per frame, and only while a button
+    * combo is bound; cold enough that it has no business occupying
+    * the first six cachelines of this struct, which it used to.
+    * (rarch_timer_t is int64-aligned; the compiler pads as needed
+    * here, which costs at most 4 bytes.)
+    */
+   rarch_timer_t combo_timers[INPUT_COMBO_LAST];
+
    unsigned osk_last_codepoint;
    unsigned osk_last_codepoint_len;
-   unsigned input_hotkey_block_counter;
-#ifdef HAVE_ACCESSIBILITY
-   unsigned gamepad_input_override;
-#endif
 
    enum osk_type osk_idx;
 
@@ -940,6 +950,21 @@ void input_config_clear_device_joypad_driver(unsigned port);
 
 unsigned input_config_get_device_count(void);
 
+/**
+ * input_config_sanitize_joypad_indices:
+ *
+ * Restores the invariant that settings->uints.input_joypad_index[]
+ * is a permutation of [0, MAX_USERS): every player maps to a distinct
+ * pad index, and every entry is in range.
+ *
+ * Entries are examined in ascending player order and the first
+ * claimant of an index keeps it, so repairing a duplicate never takes
+ * a pad away from a lower numbered player.
+ *
+ * Returns true if the mapping had to be corrected.
+ **/
+bool input_config_sanitize_joypad_indices(void);
+
 unsigned *input_config_get_device_ptr(unsigned port);
 
 unsigned input_config_get_device(unsigned port);
@@ -1043,6 +1068,30 @@ void input_keyboard_line_append(
 void input_keyboard_line_clear(input_driver_state_t *input_st);
 void input_keyboard_line_free(input_driver_state_t *input_st);
 
+#ifdef ANDROID
+/**
+ * android_keyboard_start:
+ * @buffer_ptr               : Pointer to the keyboard line buffer.
+ * @size_ptr                 : Pointer to the keyboard line size.
+ * @ptr_ptr                  : Pointer to the keyboard line cursor.
+ * @label                    : Hint shown on the keyboard, or NULL.
+ * @cb                       : Line complete callback function.
+ * @userdata                 : Userdata passed to the callback.
+ *
+ * Raises the native Android (IME) keyboard for menu text entry, made to
+ * mirror the iOS ios_keyboard_* hooks. Swaps the custom on-screen keyboard
+ * for the system soft keyboard, enabling paste and password managers.
+ * Implemented in input/drivers/android_input.c.
+ *
+ * Returns: true if the keyboard was shown.
+ **/
+bool android_keyboard_start(char **buffer_ptr, size_t *size_ptr,
+      size_t *ptr_ptr, const char *label,
+      input_keyboard_line_complete_t cb, void *userdata);
+bool android_keyboard_active(void);
+void android_keyboard_end(void);
+#endif
+
 /**
  * input_keyboard_start_line:
  * @userdata                 : Userdata.
@@ -1082,17 +1131,21 @@ void input_game_focus_free(void);
  */
 size_t input_config_get_bind_string(void *settings_data,
       char *s, const struct retro_keybind *bind,
-      const struct retro_keybind *auto_bind, size_t len);
+      const struct retro_keybind *auto_bind,
+      const struct input_bind_label *label,
+      const struct input_bind_label *auto_label, size_t len);
 
 size_t input_config_get_bind_string_joyaxis(
       bool input_descriptor_label_show,
       char *s, const char *prefix,
-      const struct retro_keybind *bind, size_t len);
+      const struct retro_keybind *bind,
+      const struct input_bind_label *label, size_t len);
 
 size_t input_config_get_bind_string_joykey(
       bool input_descriptor_label_show,
       char *s, const char *prefix,
-      const struct retro_keybind *bind, size_t len);
+      const struct retro_keybind *bind,
+      const struct input_bind_label *label, size_t len);
 
 bool input_key_pressed(int key, bool keyboard_pressed);
 
@@ -1220,6 +1273,7 @@ extern hid_driver_t *hid_drivers[];
 
 extern input_driver_t input_android;
 extern input_driver_t input_sdl;
+extern input_driver_t input_sdl3;
 extern input_driver_t input_sdl_dingux;
 extern input_driver_t input_dinput;
 extern input_driver_t input_x;
@@ -1249,8 +1303,9 @@ extern input_device_driver_t linuxraw_joypad;
 extern input_device_driver_t parport_joypad;
 extern input_device_driver_t udev_joypad;
 extern input_device_driver_t xinput_joypad;
-extern input_device_driver_t sdl_joypad; /* SDL2 or SDL3. @see sdl_joypad.c, sdl3_joypad.c. */
+extern input_device_driver_t sdl_joypad; /** SDL1 or SDL2. @see sdl_joypad.c. */
 extern input_device_driver_t sdl_dingux_joypad;
+extern input_device_driver_t sdl3_joypad; /** SDL3. @see sdl3_joypad.c */
 extern input_device_driver_t ps4_joypad;
 extern input_device_driver_t ps3_joypad;
 extern input_device_driver_t psp_joypad;
@@ -1279,6 +1334,8 @@ extern hid_driver_t wiiu_hid;
 
 extern retro_keybind_set input_config_binds[MAX_USERS];
 extern retro_keybind_set input_autoconf_binds[MAX_USERS];
+extern input_bind_label_set input_config_bind_labels[MAX_USERS];
+extern input_bind_label_set input_autoconf_bind_labels[MAX_USERS];
 
 RETRO_END_DECLS
 

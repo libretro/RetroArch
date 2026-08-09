@@ -29,7 +29,12 @@
 
 #include <streams/chd_stream.h>
 #include <retro_endianness.h>
+#ifdef HAVE_RCHD
+#include <formats/rchd.h>
+#include <streams/file_stream.h>
+#else
 #include <libchdr/chd.h>
+#endif
 
 #define SECTOR_RAW_SIZE 2352
 #define SECTOR_SIZE 2048
@@ -38,7 +43,16 @@
 
 struct chdstream
 {
+#ifdef HAVE_RCHD
+   rchd_t   *chd;
+   /* rchd never touches a file: it names the byte ranges it needs and
+    * this supplies them, so the stream owns the handle. */
+   RFILE    *file;
+   uint32_t  hunk_bytes;
+   uint32_t  unit_bytes;
+#else
    chd_file *chd;
+#endif
    /* Loaded hunk */
    uint8_t *hunkmem;
    /* Byte offset where track data starts (after pregap) */
@@ -61,6 +75,7 @@ struct chdstream
    bool swab;
 };
 
+#ifndef HAVE_RCHD
 typedef struct metadata
 {
    uint32_t frame_offset;
@@ -366,7 +381,194 @@ chdstream_find_track(chd_file *fd, int32_t track, metadata_t *meta)
       return chdstream_find_special_track(fd, track, meta);
    return chdstream_find_track_number(fd, track, meta);
 }
+#endif  /* !HAVE_RCHD */
 
+#ifdef HAVE_RCHD
+/* Drives an rchd step loop, supplying whatever range it asks for from
+ * the open file. rchd asks for one range at a time and says so by
+ * returning RCHD_PENDING, so this is the whole of the I/O. */
+static bool chdstream_pump(RFILE *f, rchd_t *chd, int opening,
+      rchd_request_t *rq)
+{
+   static uint8_t buf[65536];
+
+   for (;;)
+   {
+      int    e = opening ? rchd_open_step(chd, rq)
+                         : rchd_read_step(chd, rq);
+      size_t want, got;
+
+      if (e == RCHD_OK)
+         return true;
+      if (e != RCHD_PENDING)
+         return false;
+
+      want = rq->length > sizeof(buf) ? sizeof(buf) : rq->length;
+      if (filestream_seek(f, (int64_t)rq->offset,
+               RETRO_VFS_SEEK_POSITION_START) < 0)
+         return false;
+      got = (size_t)filestream_read(f, buf, want);
+      if (!got)
+         return false;
+      if (rchd_feed(chd, buf, got) != RCHD_OK)
+         return false;
+   }
+}
+
+/* The track the caller asked for. Track numbers are 1-based and need
+ * not be contiguous, so this searches rather than indexes; the special
+ * values match what the libchdr path accepted. */
+static const rchd_track_t *chdstream_track_of(rchd_t *chd, int32_t track)
+{
+   uint32_t n = rchd_track_count(chd), i;
+
+   if (!n)
+      return NULL;
+   if (track == CHDSTREAM_TRACK_FIRST_DATA)
+   {
+      for (i = 0; i < n; i++)
+      {
+         const rchd_track_t *t = rchd_track(chd, i);
+
+         if (t && t->type != RCHD_TRACK_AUDIO)
+            return t;
+      }
+      return NULL;
+   }
+   if (track == CHDSTREAM_TRACK_PRIMARY)
+   {
+      const rchd_track_t *best = NULL;
+
+      for (i = 0; i < n; i++)
+      {
+         const rchd_track_t *t = rchd_track(chd, i);
+
+         if (!t)
+            continue;
+         /* A DVD image describes no tracks, so rchd makes one standing
+          * for the whole of it. That is the primary track by
+          * definition, and it is taken without comparing sizes -- the
+          * text form this replaces special-cased "DVD" the same way,
+          * because a DVD track states no frame count to compare. */
+         if (t->synthesised)
+            return t;
+         if (t->type == RCHD_TRACK_AUDIO)
+            continue;
+         if (!best || t->frames > best->frames)
+            best = t;
+      }
+      /* No data track at all means no primary track. An audio-only
+       * image has none, and answering with its first audio track would
+       * hand back something the caller did not ask for. */
+      return best;
+   }
+   if (track == CHDSTREAM_TRACK_LAST)
+      return rchd_track(chd, n - 1);
+
+   for (i = 0; i < n; i++)
+   {
+      const rchd_track_t *t = rchd_track(chd, i);
+
+      if (t && (int32_t)t->track == track)
+         return t;
+   }
+   return NULL;
+}
+#endif  /* HAVE_RCHD */
+
+#ifdef HAVE_RCHD
+chdstream_t *chdstream_open(const char *path, int32_t track)
+{
+   const rchd_track_t *t;
+   const rchd_info_t  *info;
+   rchd_request_t      rq;
+   chdstream_t        *stream = NULL;
+   rchd_t             *chd    = NULL;
+   RFILE              *file   = filestream_open(path,
+         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   uint32_t            pregap = 0;
+
+   if (!file)
+      return NULL;
+   if (!(chd = rchd_new()))
+      goto error;
+   if (!chdstream_pump(file, chd, 1, &rq))
+      goto error;
+   if (!(t = chdstream_track_of(chd, track)))
+      goto error;
+   if (!(stream = (chdstream_t*)malloc(sizeof(*stream))))
+      goto error;
+
+   info                    = rchd_info(chd);
+   stream->chd             = NULL;
+   stream->file            = NULL;
+   stream->hunk_bytes      = info->hunk_bytes;
+   stream->unit_bytes      = info->unit_bytes;
+   stream->swab            = false;
+   stream->frame_size      = 0;
+   stream->frame_offset    = 0;
+   stream->frames_per_hunk = 0;
+   stream->track_frame     = 0;
+   stream->track_start     = 0;
+   stream->track_end       = 0;
+   stream->offset          = 0;
+   stream->hunknum         = -1;
+   if (!(stream->hunkmem = (uint8_t*)malloc(info->hunk_bytes)))
+      goto error;
+
+   /* rchd reports the track's type rather than the text it was written
+    * as, so this is a switch on a number where the libchdr path parsed
+    * a string and compared characters of it. */
+   switch (t->type)
+   {
+      case RCHD_TRACK_MODE1_RAW:
+      case RCHD_TRACK_MODE2_RAW:
+         stream->frame_size = SECTOR_RAW_SIZE;
+         break;
+      case RCHD_TRACK_MODE1:
+         stream->frame_size = SECTOR_SIZE;
+         break;
+      case RCHD_TRACK_AUDIO:
+         stream->frame_size = SECTOR_RAW_SIZE;
+         stream->swab       = true;
+         break;
+      default:
+         stream->frame_size = t->data_size ? t->data_size
+                                           : info->unit_bytes;
+         break;
+   }
+
+   /* A pregap is skipped only when the file actually holds those
+    * frames. A virtual one is on the disc but not in the image, so the
+    * track's data begins where the track begins and skipping would
+    * return silence and then read everything after it from the wrong
+    * place. */
+   if (t->pregap_stored)
+      pregap               = t->pregap;
+
+   stream->chd             = chd;
+   stream->file            = file;
+   stream->frames_per_hunk = info->hunk_bytes / info->unit_bytes;
+   stream->track_frame     = (uint32_t)(t->logical_offset
+                                        / info->unit_bytes);
+   stream->track_start     = (size_t)pregap * stream->frame_size;
+   stream->track_end       = stream->track_start
+                           + (size_t)t->frames * stream->frame_size;
+   return stream;
+
+error:
+   if (stream)
+   {
+      free(stream->hunkmem);
+      free(stream);
+   }
+   if (chd)
+      rchd_free(chd);
+   if (file)
+      filestream_close(file);
+   return NULL;
+}
+#else
 chdstream_t *chdstream_open(const char *path, int32_t track)
 {
    metadata_t meta;
@@ -440,6 +642,7 @@ error:
       chd_close(chd);
    return NULL;
 }
+#endif  /* HAVE_RCHD */
 
 void chdstream_close(chdstream_t *stream)
 {
@@ -448,8 +651,15 @@ void chdstream_close(chdstream_t *stream)
 
    if (stream->hunkmem)
       free(stream->hunkmem);
+#ifdef HAVE_RCHD
+   if (stream->chd)
+      rchd_free(stream->chd);
+   if (stream->file)
+      filestream_close(stream->file);
+#else
    if (stream->chd)
       chd_close(stream->chd);
+#endif
    free(stream);
 }
 
@@ -461,13 +671,29 @@ chdstream_load_hunk(chdstream_t *stream, uint32_t hunknum)
    if ((int)hunknum == stream->hunknum)
       return true;
 
+#ifdef HAVE_RCHD
+   {
+      rchd_request_t rq;
+
+      if (rchd_read_hunk_begin(stream->chd, hunknum,
+               stream->hunkmem) != RCHD_OK)
+         return false;
+      if (!chdstream_pump(stream->file, stream->chd, 0, &rq))
+         return false;
+   }
+#else
    if (chd_read(stream->chd, hunknum, stream->hunkmem) != CHDERR_NONE)
       return false;
+#endif
 
    if (stream->swab)
    {
       uint32_t i;
+#ifdef HAVE_RCHD
+      uint32_t count = stream->hunk_bytes / 2;
+#else
       uint32_t count = chd_get_header(stream->chd)->hunkbytes / 2;
+#endif
       array          = (uint16_t*)stream->hunkmem;
       for (i = 0; i < count; ++i)
          array[i] = SWAP16(array[i]);
@@ -481,7 +707,12 @@ ssize_t chdstream_read(chdstream_t *stream, void *data, size_t bytes)
 {
    size_t end;
    size_t data_offset   = 0;
+#ifdef HAVE_RCHD
+   uint32_t unit_bytes  = stream->unit_bytes;
+#else
    const chd_header *hd = chd_get_header(stream->chd);
+   uint32_t unit_bytes  = hd->unitbytes;
+#endif
    uint8_t         *out = (uint8_t*)data;
 
    if (stream->track_end - stream->offset < bytes)
@@ -506,7 +737,7 @@ ssize_t chdstream_read(chdstream_t *stream, void *data, size_t bytes)
             (stream->offset - stream->track_start) / stream->frame_size);
          uint32_t hunk        = chd_frame / stream->frames_per_hunk;
          uint32_t hunk_offset = (chd_frame % stream->frames_per_hunk)
-            * hd->unitbytes;
+            * unit_bytes;
 
          if (!chdstream_load_hunk(stream, hunk))
             return -1;
@@ -590,6 +821,25 @@ ssize_t chdstream_get_size(chdstream_t *stream)
 
 uint32_t chdstream_get_track_start(chdstream_t *stream)
 {
+#ifdef HAVE_RCHD
+   /* rchd places each track, so the one this stream is on is found by
+    * where it starts rather than by summing frames and padding. */
+   uint32_t n = rchd_track_count(stream->chd), i;
+
+   for (i = 0; i < n; i++)
+   {
+      const rchd_track_t *t = rchd_track(stream->chd, i);
+
+      /* What the disc has, not what the file stores: this is reported
+       * to a caller asking where the track's audio starts on the disc,
+       * and the libchdr path returned the pregap unconditionally here
+       * even when it did not skip it. */
+      if (t && (uint32_t)(t->logical_offset / stream->unit_bytes)
+            == stream->track_frame)
+         return t->pregap * stream->frame_size;
+   }
+   return 0;
+#else
    uint32_t i;
    metadata_t meta;
    uint32_t frame_offset = 0;
@@ -603,6 +853,7 @@ uint32_t chdstream_get_track_start(chdstream_t *stream)
    }
 
    return 0;
+#endif
 }
 
 uint32_t chdstream_get_frame_size(chdstream_t *stream)
@@ -612,6 +863,23 @@ uint32_t chdstream_get_frame_size(chdstream_t *stream)
 
 uint32_t chdstream_get_first_track_sector(chdstream_t* stream)
 {
+#ifdef HAVE_RCHD
+   uint32_t n = rchd_track_count(stream->chd), i;
+   uint32_t sector_offset = 0;
+
+   for (i = 0; i < n; i++)
+   {
+      const rchd_track_t *t = rchd_track(stream->chd, i);
+
+      if (!t)
+         break;
+      if ((uint32_t)(t->logical_offset / stream->unit_bytes)
+            == stream->track_frame)
+         return sector_offset;
+      sector_offset += t->frames;
+   }
+   return 0;
+#else
    uint32_t i;
    metadata_t meta;
    uint32_t frame_offset = 0;
@@ -627,4 +895,5 @@ uint32_t chdstream_get_first_track_sector(chdstream_t* stream)
    }
 
    return 0;
+#endif
 }

@@ -55,7 +55,7 @@
 extern void gfx_ctx_wl_get_video_size_webos(void*, unsigned*, unsigned*);
 extern void gfx_ctx_wl_destroy_resources_webos(gfx_ctx_wayland_data_t*);
 extern void gfx_ctx_wl_update_title_webos(void*);
-extern bool gfx_ctx_wl_init_webos(const toplevel_listener_t*, gfx_ctx_wayland_data_t**);
+extern bool gfx_ctx_wl_init_webos(driver_configure_handler_t, gfx_ctx_wayland_data_t**);
 extern bool gfx_ctx_wl_set_video_mode_common_size_webos(gfx_ctx_wayland_data_t*, unsigned, unsigned, bool);
 extern bool gfx_ctx_wl_set_video_mode_common_fullscreen_webos(gfx_ctx_wayland_data_t*, bool);
 extern bool gfx_ctx_wl_suppress_screensaver_webos(void*, bool);
@@ -73,16 +73,12 @@ extern void gfx_ctx_wl_check_window_webos(gfx_ctx_wayland_data_t*, void (*)(void
 
 static enum gfx_ctx_api wl_api   = GFX_CTX_NONE;
 
-/* Shell surface callbacks. */
-static void xdg_toplevel_handle_configure(void *data,
-      struct xdg_toplevel *toplevel,
-      int32_t width, int32_t height, struct wl_array *states)
-{
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   if (wl->ignore_configuration)
-      return;
-   xdg_toplevel_handle_configure_common(wl, toplevel, width, height, states);
 #ifdef HAVE_EGL
+/* Invoked from the common shell-surface configure handlers after the
+ * shared configure processing; resizes (or lazily creates) the
+ * wl_egl_window to the new buffer dimensions. */
+static void gfx_ctx_wl_egl_configure(gfx_ctx_wayland_data_t *wl)
+{
    if (wl->win)
       wl_egl_window_resize(wl->win,
             wl->buffer_width,
@@ -92,10 +88,8 @@ static void xdg_toplevel_handle_configure(void *data,
       wl->win = wl_egl_window_create(wl->surface,
             wl->buffer_width,
             wl->buffer_height);
-#endif
-
-   wl->configured = false;
 }
+#endif
 
 static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
 {
@@ -138,49 +132,6 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
 
    return true;
 }
-
-#ifdef HAVE_LIBDECOR_H
-static void
-libdecor_frame_handle_configure(struct libdecor_frame *frame,
-      struct libdecor_configuration *configuration, void *data)
-{
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   if (wl->ignore_configuration)
-      return;
-   libdecor_frame_handle_configure_common(frame, configuration, wl);
-
-#ifdef HAVE_EGL
-   if (wl->win)
-      wl_egl_window_resize(wl->win,
-            wl->buffer_width,
-            wl->buffer_height,
-            0, 0);
-   else
-      wl->win     = wl_egl_window_create(
-            wl->surface,
-            wl->buffer_width,
-            wl->buffer_height);
-#endif
-
-   wl->configured = false;
-}
-#endif
-
-static const toplevel_listener_t toplevel_listener = {
-#ifdef HAVE_LIBDECOR_H
-   .libdecor_frame_interface = {
-     libdecor_frame_handle_configure,
-     libdecor_frame_handle_close,
-     libdecor_frame_handle_commit,
-   },
-#endif
-   .xdg_toplevel_listener = {
-      xdg_toplevel_handle_configure,
-      xdg_toplevel_handle_close,
-   },
-};
-
-static const toplevel_listener_t xdg_toplevel_listener = {0};
 
 #ifdef HAVE_EGL
 #define WL_EGL_ATTRIBS_BASE \
@@ -280,12 +231,29 @@ static void *gfx_ctx_wl_init(void *data)
 {
    int i;
    gfx_ctx_wayland_data_t *wl = NULL;
-   if (!gfx_ctx_wl_init_common(&toplevel_listener, &wl))
+   if (!gfx_ctx_wl_init_common(
+#ifdef HAVE_EGL
+         gfx_ctx_wl_egl_configure,
+#else
+         NULL,
+#endif
+         &wl))
       goto error;
 #ifdef HAVE_EGL
    if (!gfx_ctx_wl_egl_init_context(wl))
       goto error;
 #endif
+   if (wl->tearing_control_manager)
+   {
+      settings_t *settings = config_get_ptr();
+      bool video_vsync     = settings->bools.video_vsync;
+      wl->tearing_control  = wp_tearing_control_manager_v1_get_tearing_control(
+         wl->tearing_control_manager, wl->surface);
+      wp_tearing_control_v1_set_presentation_hint(wl->tearing_control,
+                                                  video_vsync
+                                                  ? WP_TEARING_CONTROL_V1_PRESENTATION_HINT_VSYNC
+                                                  : WP_TEARING_CONTROL_V1_PRESENTATION_HINT_ASYNC);
+   }
    return wl;
 error:
    gfx_ctx_wl_destroy_resources(wl);
@@ -388,6 +356,15 @@ static void gfx_ctx_wl_set_swap_interval(void *data, int swap_interval)
 #ifdef HAVE_EGL
    egl_set_swap_interval(&wl->egl, swap_interval);
 #endif
+   wl->swap_interval = swap_interval;
+
+   if (wl->tearing_control)
+   {
+      wp_tearing_control_v1_set_presentation_hint(wl->tearing_control,
+                                                  swap_interval == 0
+                                                  ? WP_TEARING_CONTROL_V1_PRESENTATION_HINT_ASYNC
+                                                  : WP_TEARING_CONTROL_V1_PRESENTATION_HINT_VSYNC);
+   }
 }
 
 static bool gfx_ctx_wl_set_video_mode(void *data,
@@ -539,7 +516,7 @@ static const struct wl_callback_listener wl_surface_frame_listener = {
 static void gfx_ctx_wl_swap_buffers(void *data)
 {
 #ifdef HAVE_EGL
-   struct wl_callback *cb;
+   struct wl_callback *cb         = NULL;
    gfx_ctx_wayland_data_t *wl     = (gfx_ctx_wayland_data_t*)data;
    settings_t *settings           = config_get_ptr();
    unsigned max_swapchain_images  = settings->uints.video_max_swapchain_images;
@@ -548,14 +525,42 @@ static void gfx_ctx_wl_swap_buffers(void *data)
     * disabled) means we explicitly do not want to wait for the
     * display cadence; blocking on the frame callback here would gate
     * unthrottled frames on vsync-rate callbacks and stall the core. */
+   /* Skip the frame-callback wait while the compositor reports the
+    * surface suspended (occluded, minimized, screen locked): hidden
+    * surfaces receive no frame callbacks, so waiting would burn the
+    * 50ms deadline every frame.  Compositors older than xdg_wm_base
+    * v6 never send the state; wl->suspended then stays false and
+    * behavior is unchanged. */
    bool frame_throttle            = (max_swapchain_images <= 2)
-      && (wl->egl.interval != 0);
+      && (wl->egl.interval != 0)
+      && !wl->suspended;
 
    if (frame_throttle)
    {
       /* Set Wayland frame callback. */
       cb = wl_surface_frame(wl->surface);
       wl_callback_add_listener(cb, &wl_surface_frame_listener, wl);
+   }
+
+   if (wl->present_clock)
+      wl_presentation_dispatch_pending(wl);
+
+   /* Skip presentation-time pacing and feedback while the surface is
+    * suspended: the compositor is not scanning out the surface, so
+    * there are no vblank events to track and requesting feedback for
+    * a frame that will not be displayed is wasteful.  Keep the event
+    * queue moving (dispatch above) so the resume configure is seen. */
+   if (!wl->suspended)
+   {
+      /* The EGL frame-callback throttle above already paces to the
+       * compositor's cadence.  Running presentation-time pacing on top
+       * of it double-throttles the frame, so only pace here when that
+       * throttle is not engaged (e.g. >2 max swapchain images). */
+      if (!frame_throttle)
+         wait_for_next_frame(wl);
+
+      if (wl->present_clock)
+         wl_request_presentation_feedback(wl);
    }
 
    egl_swap_buffers(&wl->egl);

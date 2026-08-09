@@ -39,9 +39,7 @@ HAVE_RPNG = 1
 HAVE_RJPEG = 1
 HAVE_RBMP = 1
 HAVE_7ZIP = 1
-HAVE_ZLIB = 1
 HAVE_IMAGEVIEWER = 1
-HAVE_BUILTINZLIB = 1
 HAVE_LIBRETRODB = 0
 HAVE_DSP_FILTER = 1
 HAVE_VIDEO_FILTER = 1
@@ -58,7 +56,6 @@ HAVE_NETWORKING = 0
 HAVE_IFINFO = 0
 HAVE_NETPLAYDISCOVERY = 0
 HAVE_OVERLAY             := 1
-HAVE_STB_FONT = 1
 HAVE_COMMAND             := 1
 HAVE_STDIN_CMD           := 1
 HAVE_CMD                 := 1
@@ -90,6 +87,7 @@ OBJ := frontend/frontend_salamander.o \
 		 libretro-common/compat/compat_strldup.o \
 		 libretro-common/compat/compat_strcasestr.o \
 		 libretro-common/file/config_file.o \
+		 libretro-common/file/config_file_io.o \
 		 libretro-common/streams/file_stream.o \
 		 libretro-common/vfs/vfs_implementation.o \
 		 libretro-common/hash/lrc_hash.o \

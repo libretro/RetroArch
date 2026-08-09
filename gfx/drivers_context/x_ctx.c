@@ -536,7 +536,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
          if (wm_name)
          {
             RARCH_LOG("[GLX] Window manager is %s.\n", wm_name);
-            if (strcasestr(wm_name, "xfwm"))
+            if (compat_strcasestr(wm_name, "xfwm"))
             {
                RARCH_LOG("[GLX] Using override-redirect workaround.\n");
                swa.override_redirect = True;
@@ -875,7 +875,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
          }
          else
          {
-            video_state_get_ptr()->flags |= VIDEO_FLAG_CACHE_CONTEXT_ACK;
+            video_driver_cache_context_ack_set();
             RARCH_LOG("[GLX] Using cached GL context.\n");
          }
 

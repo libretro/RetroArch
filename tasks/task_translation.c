@@ -309,7 +309,6 @@ static void handle_translation_response(
 #ifdef HAVE_GFX_WIDGETS
    bool gfx_widgets_paused           = (video_st->flags &
       VIDEO_FLAG_WIDGETS_PAUSED) ? true : false;
-   dispgfx_widget_t *p_dispwidget    = dispwidget_get_ptr();
 #endif
    bool ai_service_pause             = settings->bools.ai_service_pause;
    unsigned ai_service_mode          = settings->uints.ai_service_mode;
@@ -325,7 +324,7 @@ static void handle_translation_response(
 #ifdef HAVE_ACCESSIBILITY
    /* When auto mode is on, we turn off the overlay
     * once we have the result for the next call.*/
-   if (p_dispwidget->ai_service_overlay_state != 0
+   if (gfx_widgets_ai_service_overlay_get_state() != 0
        && access_st->ai_service_auto == 2)
       gfx_widgets_ai_service_overlay_unload();
 #endif
@@ -339,7 +338,7 @@ static void handle_translation_response(
           && gfx_widgets_paused)
       {
          /* In this case we have to unpause and then repause for a frame */
-         p_dispwidget->ai_service_overlay_state = 2;
+         gfx_widgets_ai_service_overlay_set_state(2);
          command_event(CMD_EVENT_UNPAUSE, NULL);
       }
 #endif
@@ -398,7 +397,7 @@ static void handle_translation_response(
          {
             /* In this case we have to unpause and then repause for a frame */
             /* Unpausing state */
-            p_dispwidget->ai_service_overlay_state = 2;
+            gfx_widgets_ai_service_overlay_set_state(2);
             command_event(CMD_EVENT_UNPAUSE, NULL);
          }
       }
@@ -436,6 +435,7 @@ static void handle_translation_response(
                && raw_image_file_data[3] == 'G')
          {
             /* PNG file */
+#ifdef HAVE_RPNG
             int retval   = 0;
             rpng_t *rpng = rpng_alloc();
             if (!rpng)
@@ -495,6 +495,11 @@ static void handle_translation_response(
                }
             }
             rpng_free(rpng);
+#else
+            /* PNG decoding requires RPNG; without it we cannot handle this
+             * screenshot format, so fail the request cleanly. */
+            goto finish;
+#endif
          }
          else
          {
@@ -569,6 +574,9 @@ static void handle_translation_response(
       params.buf                  = response->sound_data;
       params.bufsize              = response->sound_size;
       params.cb                   = NULL;
+      params.buf_owner            = NULL;
+      params.buf_owner_free       = NULL;
+      params.out_slot             = NULL;
       params.basename             = NULL;
 
       audio_driver_mixer_add_stream(&params);
@@ -890,9 +898,8 @@ bool run_translation_service(settings_t *settings, bool paused)
    video_driver_state_t *video_st    = video_state_get_ptr();
    access_state_t *access_st         = access_state_get_ptr();
 #ifdef HAVE_GFX_WIDGETS
-   dispgfx_widget_t *p_dispwidget    = dispwidget_get_ptr();
    /* For the case when ai service pause is disabled. */
-   if (     (p_dispwidget->ai_service_overlay_state != 0)
+   if (     (gfx_widgets_ai_service_overlay_get_state() != 0)
          && (access_st->ai_service_auto == 1))
    {
       gfx_widgets_ai_service_overlay_unload();
@@ -1282,9 +1289,16 @@ static bool http_translate(
     * branch has been deleted as dead code). */
    {
       size_t pitch = width * 3;
+#ifdef HAVE_RPNG
       bmp_buffer   = rpng_save_image_bgr24_string(
             bit24_image + width * (height - 1) * 3,
             width, height, (signed)-pitch, &buffer_bytes);
+#else
+      /* Encoding the screenshot requires RPNG; without it the translation
+       * request cannot be built, so fail cleanly below on the NULL buffer. */
+      (void)pitch;
+      bmp_buffer   = NULL;
+#endif
    }
 
    if (!(bmp64_buffer = base64((void *)bmp_buffer,

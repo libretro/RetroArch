@@ -51,7 +51,22 @@ typedef struct font_renderer
 
 typedef struct font_renderer_driver
 {
-   void *(*init)(const char *font_path, float font_size);
+   /* font_data/font_data_len carry the contents of font_path, already
+    * read by font_renderer_create_default(). Renderers do no file I/O
+    * of their own: a NULL font_data means no usable file was found,
+    * and the renderer should fall back to whatever internal or system
+    * source it has (stb's built-in glyphs, the WiiU shared font,
+    * fontconfig). On success the renderer takes ownership of
+    * font_data and frees it in free(). */
+   /* font_data/font_data_len are the bytes of the chosen font, read by
+    * font_renderer_create_default(); face_index selects the face
+    * within a collection. Renderers do no file I/O and are not given a
+    * path: a NULL font_data means nothing usable was found and the
+    * renderer should fall back to whatever internal or system source
+    * it has. On success the renderer takes ownership of font_data. */
+   void *(*init)(uint8_t *font_data, size_t font_data_len,
+         unsigned face_index,
+         float font_size, enum font_atlas_format fmt);
 
    struct font_atlas *(*get_atlas)(void *data);
 
@@ -60,18 +75,49 @@ typedef struct font_renderer_driver
 
    void (*free)(void *data);
 
-   const char *(*get_default_font)(void);
+   /* NULL-terminated list of candidate paths, best first. Returning
+    * the list rather than a chosen path keeps path_is_valid() - and so
+    * all file I/O - out of the renderers. An empty first entry means
+    * "no file needed", for renderers with an internal source. */
+   /* Candidate paths for the requested font, best first,
+    * NULL-terminated. requested is what the caller asked for, or NULL;
+    * a renderer may ignore it or resolve against it - freetype asks
+    * fontconfig, which needs the request and the user's locale.
+    * face_index is written with the face to use within whichever
+    * candidate is taken. An empty entry means "no file needed", for a
+    * renderer with an internal source. */
+   const char * const *(*get_default_fonts)(const char *requested,
+         unsigned *face_index);
 
    const char *ident;
 
    void (*get_line_metrics)(void* data, struct font_line_metrics **metrics);
 } font_renderer_driver_t;
 
-typedef struct
+typedef struct font_data
 {
    const font_renderer_t *renderer;
    void *renderer_data;
    float size;
+   /* How this font was created, so it can be rebuilt in place when the
+    * file behind it should change - switching menu language picks a
+    * different TTF. Rebuilding keeps this font_data_t at the same
+    * address, so every holder of the pointer stays valid. */
+   struct font_data *next;          /* list of live fonts */
+   void *video_data;
+   char *path;                      /* NULL when the renderer chose */
+   /* Set for a font whose file depends on the menu language. Kept so
+    * the path can be worked out again rather than merely re-read: a
+    * language change wants a different face, not the same one. */
+   char *lang_pkg_dir;
+   char *lang_default_path;
+   bool is_threaded;
+   /* Line metrics, read from the renderer once when the font is
+    * created. Renderers fill these at init and never change them, so
+    * callers can use them directly instead of asking again - which
+    * some did per frame, from inside ticker animations. Scale them
+    * yourself if you are drawing at other than 1.0. */
+   struct font_line_metrics metrics;
 } font_data_t;
 
 /* This structure holds all objects + metadata
@@ -85,26 +131,29 @@ typedef struct
    int line_height;
    int line_ascender;
    int line_centre_offset;
+   /* The string wideglyph_width is measured from, kept so the derived
+    * values above can be recomputed without the driver's help. */
+   const char *wideglyph_str;
+   /* font_driver generation these were computed at. When the font is
+    * rebuilt underneath - switching menu language picks a different
+    * face - the generation moves and they are recomputed. */
+   uint32_t metrics_generation;
 } font_data_impl_t;
 
 void font_driver_bind_block(void *font_data, void *block);
 
-static INLINE void font_bind(font_data_impl_t *font_data)
-{
-   font_driver_bind_block(font_data->font, &font_data->raster_block);
-   font_data->raster_block.carr.coords.vertices = 0;
-}
+/* font_path can be NULL for default font.
+ *
+ * @fmt is the glyph coverage precision the caller wants in the atlas.
+ * Video drivers producing HDR output ask for FONT_ATLAS_FORMAT_A16;
+ * everything else passes FONT_ATLAS_FORMAT_A8. Renderers without
+ * 16-bit support ignore it. */
 
-static INLINE void font_unbind(font_data_impl_t *font_data)
-{
-   font_driver_bind_block(font_data->font, NULL);
-}
-
-/* font_path can be NULL for default font. */
 int font_renderer_create_default(
       const font_renderer_driver_t **drv,
       void **handle,
-      const char *font_path, unsigned font_size);
+      const char *font_path, unsigned font_size,
+      enum font_atlas_format fmt);
 
 void font_driver_render_msg(void *data,
       const char *msg, size_t msg_len,
@@ -113,6 +162,39 @@ void font_driver_render_msg(void *data,
 int font_driver_get_message_width(void *font_data, const char *msg, size_t len, float scale);
 
 void font_driver_free(font_data_t *font);
+
+/* Rebuild every live font from its current path, in place. Used when
+ * the menu language changes and the fonts must follow, without tearing
+ * down the video driver to do it. Fonts whose path is unchanged are
+ * left alone. Returns the number rebuilt. */
+unsigned font_driver_reload_fonts(void);
+
+/* The font file the current menu language needs, relative to the
+ * assets pkg directory, or NULL when it has no special requirement
+ * and the caller's own default should be used.
+ *
+ * One copy of this decision. It was four - ozone, materialui,
+ * gfx_widgets and file_path_special each carried the same switch -
+ * which is three places to forget when a language is added. */
+const char *font_driver_language_font_file(void);
+
+/* Declare that this font's file follows the menu language, and give
+ * the two things needed to work it out again: the assets pkg
+ * directory the language fonts live in, and the path to use when the
+ * language needs no special font. font_driver_reload_fonts() then
+ * re-resolves instead of re-reading. */
+void font_driver_set_language_font(font_data_t *font,
+      const char *pkg_dir, const char *default_path);
+
+/* Returns a monotonic counter incremented on every font free;
+ * see font_driver.c for rationale. Used to validate externally
+ * cached per-font derived data */
+uint32_t font_driver_get_generation(void);
+
+/* Recompute the derived metrics above if the font has been rebuilt
+ * since they were last worked out. Cheap when nothing has changed:
+ * one integer compare. */
+void font_driver_sync_impl(font_data_impl_t *font_data);
 
 void font_flush(
       unsigned video_width,
@@ -125,50 +207,22 @@ font_data_t *font_driver_init_first(
       float font_size,
       bool threading_hint,
       bool is_threaded,
-      enum font_driver_render_api api);
+      const font_renderer_t *backend);
 
 void font_driver_init_osd(
       void *video_data,
       const video_info_t *video_info,
-      bool threading_hint,
       bool is_threaded,
-      enum font_driver_render_api api);
+      const font_renderer_t *backend);
 
-void font_driver_free_osd(void);
-
-int font_driver_get_line_height(font_data_t *font, float scale);
-int font_driver_get_line_ascender(font_data_t *font, float scale);
-int font_driver_get_line_descender(font_data_t *font, float scale);
-int font_driver_get_line_centre_offset(font_data_t *font, float scale);
-
-extern font_renderer_t gl2_raster_font;
-extern font_renderer_t gl3_raster_font;
-extern font_renderer_t gl1_raster_font;
-extern font_renderer_t ps2_font;
-extern font_renderer_t vita2d_vita_font;
-extern font_renderer_t ctr_font;
-extern font_renderer_t wiiu_font;
-extern font_renderer_t vulkan_raster_font;
-extern font_renderer_t metal_raster_font;
-extern font_renderer_t d3d8_font;
-extern font_renderer_t d3d9_font;
-extern font_renderer_t d3d9_cg_font;
-extern font_renderer_t d3d10_font;
-extern font_renderer_t d3d11_font;
-extern font_renderer_t d3d12_font;
-extern font_renderer_t caca_font;
-extern font_renderer_t gdi_font;
-extern font_renderer_t vga_font;
-extern font_renderer_t sixel_font;
-extern font_renderer_t switch_font;
-extern font_renderer_t rsx_font;
-extern font_renderer_t sdl2_raster_font;
+/* Frees the OSD font only if it was built against @video_data. Use
+ * this from any teardown that may run out of order with respect to the
+ * next init. */
+void font_driver_free_osd_for(void *video_data);
 
 extern font_renderer_driver_t stb_font_renderer;
-extern font_renderer_driver_t stb_unicode_font_renderer;
 extern font_renderer_driver_t freetype_font_renderer;
 extern font_renderer_driver_t coretext_font_renderer;
-extern font_renderer_driver_t bitmap_font_renderer;
 
 RETRO_END_DECLS
 

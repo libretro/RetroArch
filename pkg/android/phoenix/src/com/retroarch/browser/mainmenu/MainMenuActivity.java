@@ -4,6 +4,7 @@ import com.retroarch.BuildConfig;
 import com.retroarch.browser.preferences.util.UserPreferences;
 import com.retroarch.browser.retroactivity.RetroActivityFuture;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.AudioManager;
@@ -13,6 +14,7 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
 
+import java.io.File;
 import java.util.List;
 import java.util.ArrayList;
 import android.content.pm.PackageManager;
@@ -58,6 +60,7 @@ public final class MainMenuActivity extends PreferenceActivity
 
 	public void checkRuntimePermissions()
 	{
+		// The SDK on the user's device >= 30 (Android 11)
 		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R)
 		{
 			if (!Environment.isExternalStorageManager())
@@ -89,6 +92,7 @@ public final class MainMenuActivity extends PreferenceActivity
 					});
 			}
 		}
+		// The SDK on the user's device >= 23 (Android 6)
 		else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M)
 		{
 			// Android 6.0+ needs runtime permission checks
@@ -175,6 +179,7 @@ public final class MainMenuActivity extends PreferenceActivity
 			final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
 
 			startRetroActivity(
+					this,
 					retro,
 					null,
 					prefs.getString("libretro_path", getApplicationInfo().dataDir + "/cores/"),
@@ -213,6 +218,7 @@ public final class MainMenuActivity extends PreferenceActivity
 				break;
 		}
 
+		// The SDK on the user's device < 30 (Android 11)
 		if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.R)
 		{
 			boolean allGranted = true;
@@ -234,7 +240,7 @@ public final class MainMenuActivity extends PreferenceActivity
 		finalStartup();
 	}
 
-	public static void startRetroActivity(Intent retro, String contentPath, String corePath,
+	public static void startRetroActivity(Context ctx, Intent retro, String contentPath, String corePath,
 			String configFilePath, String imePath, String dataDirPath, String dataSourcePath)
 	{
 		if (contentPath != null) {
@@ -245,8 +251,31 @@ public final class MainMenuActivity extends PreferenceActivity
 		retro.putExtra("IME", imePath);
 		retro.putExtra("DATADIR", dataDirPath);
 		retro.putExtra("APK", dataSourcePath);
-		String external = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Android/data/" + PACKAGE_NAME + "/files";
-		retro.putExtra("SDCARD", BuildConfig.PLAY_STORE_BUILD ? external : Environment.getExternalStorageDirectory().getAbsolutePath());
+
+		String external;
+		if (BuildConfig.PLAY_STORE_BUILD)
+		{
+			File[] mediaDirs = ctx.getExternalMediaDirs();
+			if (mediaDirs != null && mediaDirs.length > 0 && mediaDirs[0] != null)
+			{
+				File dir = mediaDirs[0];
+				if (!dir.exists())
+					dir.mkdirs();
+				external = dir.getAbsolutePath();
+			}
+			else
+			{
+				// Fallback: external media unavailable
+				external = Environment.getExternalStorageDirectory().getAbsolutePath()
+						+ "/Android/data/" + PACKAGE_NAME + "/files";
+			}
+		}
+		else
+		{
+			external = Environment.getExternalStorageDirectory().getAbsolutePath();
+		}
+
+		retro.putExtra("SDCARD", external);
 		retro.putExtra("EXTERNAL", external);
 	}
 

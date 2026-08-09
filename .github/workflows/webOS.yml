@@ -37,7 +37,7 @@ jobs:
         with:
           repository: "webosbrew/dev-toolbox-cli"
           latest: true
-          fileName: "webosbrew-toolbox-gen-manifest_*.deb"
+          fileName: "webosbrew-toolbox-gen-manifest_*_amd64.deb"
           out-file-path: "temp"
 
       - name: Update packages

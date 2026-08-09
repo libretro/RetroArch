@@ -3110,6 +3110,16 @@ ShaderPass::ShaderPass(struct video_shader_pass *passToCopy) :
    }
 }
 
+ShaderPass::ShaderPass(const ShaderPass &other) :
+   pass(NULL)
+{
+   if (other.pass)
+   {
+      pass = (struct video_shader_pass*)calloc(1, sizeof(*pass));
+      memcpy(pass, other.pass, sizeof(*pass));
+   }
+}
+
 ShaderPass::~ShaderPass()
 {
    if (pass)
@@ -3118,10 +3128,22 @@ ShaderPass::~ShaderPass()
 
 ShaderPass& ShaderPass::operator=(const ShaderPass &other)
 {
-   if (this != &other && other.pass)
+   if (this != &other)
    {
-      pass = (struct video_shader_pass*)calloc(1, sizeof(*pass));
-      memcpy(pass, other.pass, sizeof(*pass));
+      /* Free any buffer we already own before taking a copy of
+       * other's, otherwise assigning into a non-empty ShaderPass
+       * leaks the previous allocation. */
+      if (pass)
+      {
+         free(pass);
+         pass = NULL;
+      }
+
+      if (other.pass)
+      {
+         pass = (struct video_shader_pass*)calloc(1, sizeof(*pass));
+         memcpy(pass, other.pass, sizeof(*pass));
+      }
    }
 
    return *this;
@@ -3307,9 +3329,10 @@ void ShaderParamsDialog::onFilterComboBoxIndexChanged(int)
             if (menu_shader)
                menu_shader->pass[pass].filter = filter;
             if (video_shader)
+            {
                video_shader->pass[pass].filter = filter;
-
-            video_shader->flags |= SHDR_FLAG_MODIFIED;
+               video_shader->flags |= SHDR_FLAG_MODIFIED;
+            }
 
             command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
          }
@@ -3369,9 +3392,8 @@ void ShaderParamsDialog::onScaleComboBoxIndexChanged(int)
                   video_shader->pass[pass].fbo.flags |=  FBO_SCALE_FLAG_VALID;
                else
                   video_shader->pass[pass].fbo.flags &= ~FBO_SCALE_FLAG_VALID;
+               video_shader->flags |= SHDR_FLAG_MODIFIED;
             }
-
-            video_shader->flags |= SHDR_FLAG_MODIFIED;
 
             command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
          }
@@ -3449,7 +3471,8 @@ void ShaderParamsDialog::onShaderPassMoveDownClicked()
       memcpy(&menu_shader->pass[pass + 1], tempPass.pass, sizeof(struct video_shader_pass));
    }
 
-   menu_shader->flags |= SHDR_FLAG_MODIFIED;
+   if (menu_shader)
+      menu_shader->flags |= SHDR_FLAG_MODIFIED;
 
    reload();
 }
@@ -3524,7 +3547,8 @@ void ShaderParamsDialog::onShaderPassMoveUpClicked()
       memcpy(&menu_shader->pass[pass], tempPass.pass, sizeof(struct video_shader_pass));
    }
 
-   menu_shader->flags |= SHDR_FLAG_MODIFIED;
+   if (menu_shader)
+      menu_shader->flags |= SHDR_FLAG_MODIFIED;
 
    reload();
 }
@@ -5776,7 +5800,10 @@ QWidget *UserBindsPage::widget()
             input_config_get_bind_auto(p, retro_id);
 
          input_config_get_bind_string(settings, descriptor,
-            keybind, auto_bind, sizeof(descriptor));
+            keybind, auto_bind,
+            &input_config_bind_labels[p][retro_id],
+            &input_autoconf_bind_labels[p][retro_id],
+            sizeof(descriptor));
 
          const struct retro_keybind *keyptr =
             &input_config_binds[p][retro_id];
@@ -7187,8 +7214,8 @@ PlaylistModel::PlaylistModel(QObject *parent)
    m_fileSanitizerRegex = QRegularExpression("[&*/:`<>?\\|]");
    m_thumbnailLoader    = new ThumbnailLoader(this);
    setThumbnailCacheLimit(500);
-   connect(m_thumbnailLoader, SIGNAL(imageLoaded(QImage,QModelIndex,QString)),
-         this, SLOT(onImageLoaded(QImage,QModelIndex,QString)));
+   connect(m_thumbnailLoader, SIGNAL(imageLoaded(QImage,QPersistentModelIndex,QString)),
+         this, SLOT(onImageLoaded(QImage,QPersistentModelIndex,QString)));
    m_thumbnailLoader->start();
 }
 
@@ -7398,13 +7425,28 @@ void PlaylistModel::loadThumbnail(const QModelIndex &index)
 }
 
 void PlaylistModel::onImageLoaded(const QImage image,
-		const QModelIndex &index, const QString &path)
+		const QPersistentModelIndex &index, const QString &path)
 {
    QPixmap *pixmap = new QPixmap(QPixmap::fromImage(image));
-   const int  cost = pixmap->width() * pixmap->height() * pixmap->depth() / (8 * 1024);
+   int        cost = pixmap->width() * pixmap->height() * pixmap->depth() / (8 * 1024);
+   const int maxCost = m_cache.maxCost();
+   /* If a single decoded image would exceed the entire cache budget,
+    * QCache drops it on insert and it then gets re-decoded on every
+    * scroll. Cap the reported cost at the budget (when caching is
+    * enabled) so the pixmap is retained instead. When the cache is
+    * disabled (maxCost 0) the cost is left as-is and QCache does not
+    * retain it, which is the intended behaviour. */
+   if (maxCost > 0 && cost > maxCost)
+      cost = maxCost;
    m_cache.insert(path, pixmap, cost);
+   /* index is persistent: it tracks the row across insertions/moves and
+    * reports invalid if that row was removed or the model reset while the
+    * decode was in flight, so a stale row is never signalled. */
    if (index.isValid())
-      emit dataChanged(index, index, { THUMBNAIL });
+   {
+      const QModelIndex modelIndex(index);
+      emit dataChanged(modelIndex, modelIndex, { THUMBNAIL });
+   }
    m_pendingImages.remove(path);
 }
 

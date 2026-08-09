@@ -37,12 +37,27 @@
 
 #include <string.h>
 
+/* ASCII case folding, not tolower.
+ *
+ * tolower takes an int that must be representable as unsigned char or
+ * EOF.  A plain char sign-extends any byte above 0x7F into a negative
+ * value, so passing one straight in is undefined - and these are
+ * compared on file paths and user text, where such bytes are ordinary.
+ * glibc happens to tolerate it because its table is offset for exactly
+ * this mistake; nothing guarantees the next libc will.
+ *
+ * Folding only A-Z is also what the callers mean.  Anything wider makes
+ * a comparison depend on the user's locale, which for extensions,
+ * driver names and identifiers is not wanted. */
+#define COMPAT_LOWER(c) \
+   (((c) >= 'A' && (c) <= 'Z') ? ((c) + ('a' - 'A')) : (c))
+
 int retro_strcasecmp__(const char *a, const char *b)
 {
    while (*a && *b)
    {
-      int a_ = tolower(*a);
-      int b_ = tolower(*b);
+      int a_ = COMPAT_LOWER((unsigned char)*a);
+      int b_ = COMPAT_LOWER((unsigned char)*b);
 
       if (a_ != b_)
          return a_ - b_;
@@ -51,7 +66,7 @@ int retro_strcasecmp__(const char *a, const char *b)
       b++;
    }
 
-   return tolower(*a) - tolower(*b);
+   return COMPAT_LOWER((unsigned char)*a) - COMPAT_LOWER((unsigned char)*b);
 }
 
 char *retro_strdup__(const char *orig)

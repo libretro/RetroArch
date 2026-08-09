@@ -88,7 +88,7 @@ static void *caca_font_init(void *data,
 
    if (!font_renderer_create_default(
             &font->font_driver,
-            &font->font_data, font_path, font_size))
+            &font->font_data, font_path, font_size, FONT_ATLAS_FORMAT_A8))
       return NULL;
 
    return font;
@@ -174,18 +174,6 @@ static void caca_font_render_msg(
    caca_refresh_display(font->caca->display);
 }
 
-font_renderer_t caca_font = {
-   caca_font_init,
-   caca_font_free,
-   caca_font_render_msg,
-   "caca",
-   caca_font_get_glyph,
-   NULL,                      /* bind_block */
-   NULL,                      /* flush */
-   caca_font_get_message_width,
-   NULL                       /* get_line_metrics */
-};
-
 /*
  * VIDEO DRIVER
  */
@@ -247,9 +235,6 @@ static void *caca_init(const video_info_t *video,
       return NULL;
    }
 
-      font_driver_init_osd(caca, video,
-            false, video->is_threaded,
-            FONT_DRIVER_RENDER_CACA);
 
    return caca;
 }
@@ -438,6 +423,19 @@ static void caca_get_poke_interface(void *data,
 static void caca_set_viewport(void *data, unsigned vp_width,
       unsigned vp_height, bool force_full, bool allow_rotate) { }
 
+static font_renderer_t caca_font = {
+   caca_font_init,
+   caca_font_free,
+   caca_font_render_msg,
+   "caca",
+   caca_font_get_glyph,
+   NULL,                      /* bind_block */
+   NULL,                      /* flush */
+   caca_font_get_message_width,
+   NULL                       /* get_line_metrics */
+};
+
+
 video_driver_t video_caca = {
    caca_init,
    caca_frame,
@@ -462,6 +460,9 @@ video_driver_t video_caca = {
    NULL, /* shader_load_begin */
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   NULL  /* gfx_widgets_enabled */
+   NULL  /* gfx_widgets_enabled */,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &caca_font
 };

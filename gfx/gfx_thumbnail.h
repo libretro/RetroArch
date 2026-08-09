@@ -34,6 +34,8 @@
 
 #include "../playlist.h"
 
+struct data_transfer;
+
 RETRO_BEGIN_DECLS
 
 /* Note: This implementation reflects the current
@@ -218,13 +220,29 @@ typedef struct
    /* Animated thumbnail state (all main-thread only). 'anim' is a
     * streaming image_transfer handle which BORROWS 'anim_buf'; both
     * are owned by the thumbnail and released in gfx_thumbnail_reset
-    * (or when the animation finishes its final loop). */
+    * (or when the animation finishes its final loop). 'anim_buf'
+    * is either a malloc'd file read (anim_dt NULL, freed with
+    * free()) or borrowed from an adopted nbio handle (released via
+    * data_transfer_free(anim_dt); anim_buf itself must not be
+    * freed). */
    void *anim;
    void *anim_buf;
-   void *anim_job;         /* decode-worker job (HAVE_THREADS builds)  */
-   void *anim_audio_job;   /* preview-audio decode job                 */
-   size_t anim_buf_len;    /* size of anim_buf (for the audio decoder) */
+   struct data_transfer *anim_dt; /* transfer owning anim_buf (and the
+                                      adopted nbio handle beneath it)   */
+   /* Decode-worker ping-pong job pair (HAVE_THREADS builds): while
+    * the frame held in one job waits for its due time, the other is
+    * already decoding its successor.  anim_job_upload selects which
+    * of the two uploads next. */
+   void *anim_job;
+   void *anim_job2;
+   size_t anim_buf_len;    /* size of anim_buf                         */
    int64_t anim_next_us;   /* time the next frame is due (0 = at once) */
+   /* Generation the in-flight request was issued under.  Only
+    * meaningful while status is PENDING: if it no longer matches the
+    * current generation, that request was superseded and nothing will
+    * ever deliver it, so the slot must be re-requested rather than
+    * waited on. */
+   uint64_t list_id;
    int32_t anim_loops_left; /* remaining loops, -1 = infinite */
    unsigned width;
    unsigned height;
@@ -233,6 +251,17 @@ typedef struct
    retro_atomic_int_t status;
    uint8_t flags;
    uint8_t anim_type;      /* enum image_type_enum of 'anim' */
+   uint8_t anim_job_upload; /* index of the next job to upload (0/1) */
+   uint8_t anim_read_pending; /* adopted nbio read still in flight;
+                                 animation/audio held at the static
+                                 frame until it completes */
+   uint8_t anim_windowed;  /* anim_dt is a sliding window fed from the
+                              decoder frontier during playback, not a
+                              buffer pumped to completion: residency is
+                              the window, not the whole file (large
+                              video previews).  0 = classic whole-file
+                              buffer (audio preview, non-reserve
+                              platforms, adopted stills). */
 } gfx_thumbnail_t;
 
 /* Field-by-field initializer for non-trivial gfx_thumbnail_t.
@@ -256,10 +285,12 @@ static INLINE void gfx_thumbnail_init_blank(gfx_thumbnail_t *t)
    t->texture         = 0;
    t->anim            = NULL;
    t->anim_buf        = NULL;
+   t->anim_dt         = NULL;
    t->anim_job        = NULL;
-   t->anim_audio_job  = NULL;
+   t->anim_job2       = NULL;
    t->anim_buf_len    = 0;
    t->anim_next_us    = 0;
+   t->list_id         = 0;
    t->anim_loops_left = 0;
    t->width           = 0;
    t->height          = 0;
@@ -268,6 +299,9 @@ static INLINE void gfx_thumbnail_init_blank(gfx_thumbnail_t *t)
    retro_atomic_int_init(&t->status, 0 /* GFX_THUMBNAIL_STATUS_UNKNOWN */);
    t->flags           = 0;
    t->anim_type       = 0;
+   t->anim_job_upload = 0;
+   t->anim_read_pending = 0;
+   t->anim_windowed   = 0;
 }
 
 /* Holds all configuration parameters associated
@@ -360,6 +394,15 @@ void gfx_thumbnail_anim_worker_deinit(void);
  *    gfx_thumbnail_process_stream(), otherwise
  *    heap-use-after-free errors *will* occur */
 void gfx_thumbnail_cancel_pending_requests(void);
+
+/* True if 'thumbnail' is waiting on a request that has since been
+ * superseded, i.e. it is PENDING with nothing behind it.  Resets the
+ * thumbnail (returning it to UNKNOWN) and returns true in that case, so
+ * the caller's normal "request if UNKNOWN" path picks it up again.
+ * gfx_thumbnail_process_stream()/_streams() call this themselves; menu
+ * drivers that call gfx_thumbnail_request() directly should call it
+ * before testing the status. */
+bool gfx_thumbnail_reset_if_orphaned(gfx_thumbnail_t *thumbnail);
 
 /* Requests loading of the specified thumbnail
  * - If operation fails, 'thumbnail->status' will be set to

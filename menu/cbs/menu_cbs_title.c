@@ -876,11 +876,6 @@ DEFAULT_FILL_TITLE_MACRO(action_get_title_menu,                   MENU_ENUM_LABE
 
 DEFAULT_TITLE_COPY_MACRO(action_get_title_input_settings,         MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS)
 
-#if defined(HAVE_LIBNX)
-DEFAULT_TITLE_MACRO(action_get_title_switch_cpu_profile,          MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE)
-#endif
-
-
 #ifdef HAVE_MIST
 DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_steam_settings_list,           MENU_ENUM_LABEL_VALUE_STEAM_SETTINGS)
 DEFAULT_TITLE_SEARCH_FILTER_MACRO(action_get_core_manager_steam_list,       MENU_ENUM_LABEL_VALUE_CORE_MANAGER_STEAM_LIST)

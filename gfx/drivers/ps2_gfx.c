@@ -70,6 +70,7 @@ typedef struct
    GSTEXTURE *texture;
    const font_renderer_driver_t* font_driver;
    void* font_data;
+   struct font_atlas* atlas;
 } ps2_font_t;
 
 typedef struct ps2_video
@@ -136,7 +137,7 @@ static void* ps2_font_init(void* data, const char* font_path,
    int text_size, clut_size;
    uint8_t *tex8;
    uint32_t *clut32;
-   const struct font_atlas* atlas = NULL;
+   struct font_atlas* atlas = NULL;
    ps2_font_t* font = (ps2_font_t*)calloc(1, sizeof(*font));
 
    if (!font)
@@ -144,13 +145,14 @@ static void* ps2_font_init(void* data, const char* font_path,
 
    if (!font_renderer_create_default(
             &font->font_driver,
-            &font->font_data, font_path, font_size))
+            &font->font_data, font_path, font_size, FONT_ATLAS_FORMAT_A8))
    {
       free(font);
       return NULL;
    }
 
    atlas                  = font->font_driver->get_atlas(font->font_data);
+   font->atlas            = atlas;
    font->texture          = (GSTEXTURE*)calloc(1, sizeof(GSTEXTURE));
    font->texture->Width   = atlas->width;
    font->texture->Height  = atlas->height;
@@ -432,6 +434,41 @@ static void ps2_font_render_msg(
       drop_alpha              = 0.75f;
    }
 
+   /* The 8-bit texture copy is made once at init; when the font
+    * renderer has rasterized new glyphs since then, refresh the
+    * changed rows and invalidate the texture so the TexManager
+    * re-sends it, otherwise glyphs added after init (anything
+    * beyond the pre-cached first 256 code points) render from a
+    * stale texture. Only the dirty rectangle tracked by the font
+    * renderers is copied on the EE side; gsKit re-sends the whole
+    * texture on invalidate, which it does for every other texture
+    * as well. */
+   if (font->atlas->dirty && font->texture->Mem)
+   {
+      unsigned j;
+      uint8_t *tex8              = (uint8_t*)font->texture->Mem;
+      const struct font_atlas *a = font->atlas;
+      unsigned x0                = a->dirty_x0;
+      unsigned y0                = a->dirty_y0;
+      unsigned x1                = a->dirty_x1;
+      unsigned y1                = a->dirty_y1;
+
+      if (x1 <= x0 || y1 <= y0 || x1 > a->width || y1 > a->height)
+      {
+         x0 = 0;
+         y0 = 0;
+         x1 = a->width;
+         y1 = a->height;
+      }
+
+      for (j = y0; j < y1; j++)
+         memcpy(tex8 + (size_t)j * a->width + x0,
+                a->buffer + (size_t)j * a->width + x0, x1 - x0);
+
+      gsKit_TexManager_invalidate(ps2->gsGlobal, font->texture);
+      font->atlas->dirty = false;
+   }
+
    gsKit_TexManager_bind(ps2->gsGlobal, font->texture);
 
    if (drop_x || drop_y)
@@ -471,18 +508,6 @@ static bool ps2_font_get_line_metrics(void* data, struct font_line_metrics **met
    }
    return false;
 }
-
-font_renderer_t ps2_font = {
-   ps2_font_init,
-   ps2_font_free,
-   ps2_font_render_msg,
-   "ps2",
-   ps2_font_get_glyph,
-   NULL,                      /* bind_block */
-   NULL,                      /* flush */
-   ps2_font_get_message_width,
-   ps2_font_get_line_metrics
-};
 
 /*
  * VIDEO DRIVER
@@ -818,10 +843,6 @@ static void *ps2_init(const video_info_t *video,
       return NULL;
 
    init_ps2_video(ps2);
-      font_driver_init_osd(ps2,
-            video, false,
-            video->is_threaded,
-            FONT_DRIVER_RENDER_PS2);
 
    ps2->PSM          = (video->rgb32 ? GS_PSM_CT32 : GS_PSM_CT16);
    ps2->tex_filter   = video->smooth ? GS_FILTER_LINEAR : GS_FILTER_NEAREST;
@@ -1006,7 +1027,6 @@ static void ps2_free(void *data)
    gsKit_clear(ps2->gsGlobal, GS_BLACK);
    gsKit_vram_clear(ps2->gsGlobal);
 
-   font_driver_free_osd();
 
    ps2_deinit_texture(ps2->menuTexture);
    ps2_deinit_texture(ps2->coreTexture);
@@ -1157,6 +1177,18 @@ static void ps2_get_poke_interface(void *data,
    *iface = &ps2_poke_interface;
 }
 
+static font_renderer_t ps2_font = {
+   ps2_font_init,
+   ps2_font_free,
+   ps2_font_render_msg,
+   "ps2",
+   ps2_font_get_glyph,
+   NULL,                      /* bind_block */
+   NULL,                      /* flush */
+   ps2_font_get_message_width,
+   ps2_font_get_line_metrics
+};
+
 video_driver_t video_ps2 = {
    ps2_init,
    ps2_frame,
@@ -1181,6 +1213,9 @@ video_driver_t video_ps2 = {
    NULL, /* shader_load_begin */
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   NULL  /* gfx_widgets_enabled */
+   NULL  /* gfx_widgets_enabled */,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &ps2_font
 };

@@ -27,6 +27,7 @@
 #include <net/net_http.h>
 #include <streams/interface_stream.h>
 #include <streams/file_stream.h>
+#include <features/features_cpu.h>
 
 #include "task_file_transfer.h"
 #include "tasks_internal.h"
@@ -47,6 +48,22 @@
 #include "../menu/menu_entries.h"
 #include "../menu/menu_driver.h"
 #endif
+
+/* Bytes hashed per step.  Matches the read size inside
+ * intfstream_crc_step(). */
+#define CORE_CRC_CHUNK      (256 * 1024)
+
+/* Time budget per tick.  Deliberately well under a 60Hz frame: the
+ * handler still has its own work to do, and the caller may be the
+ * video thread. */
+#define CORE_CRC_TICK_BUDGET_US 4000
+
+typedef struct
+{
+   intfstream_t *file;
+   uint32_t      accumulator;
+   bool          active;
+} core_crc_slice_t;
 
 /* Get core updater list */
 enum core_updater_list_status
@@ -94,6 +111,7 @@ typedef struct core_updater_download_handle
    retro_task_t *decompress_task;
    retro_task_t *backup_task;
    size_t auto_backup_history_size;
+   core_crc_slice_t crc_slice;
    uint32_t local_crc;
    uint32_t remote_crc;
    enum core_updater_download_status status;
@@ -122,16 +140,23 @@ typedef struct update_installed_cores_handle
    char *path_dir_libretro;
    char *path_dir_core_assets;
    core_updater_list_t* core_list;
-   retro_task_t *list_task;
-   retro_task_t *download_task;
    size_t auto_backup_history_size;
    size_t list_size;
    size_t list_index;
    size_t installed_index;
+   core_crc_slice_t crc_slice;
    unsigned num_updated;
    unsigned num_locked;
    enum update_installed_cores_status status;
    bool auto_backup;
+   /* Set from the child task callbacks. The child
+    * retro_task_t pointers are deliberately *not*
+    * retained: task_queue frees a finished task in the
+    * same gather pass that ran its handler, so a stored
+    * pointer can dangle before this task is stepped
+    * again (see UPDATE_INSTALLED_CORES_WAIT_LIST). */
+   bool list_task_complete;
+   bool download_task_complete;
 } update_installed_cores_handle_t;
 
 #if defined(ANDROID)
@@ -182,30 +207,93 @@ typedef struct play_feature_delivery_switch_cores_handle
 /* Utility functions */
 /*********************/
 
-/* Returns CRC32 of specified core file */
-static uint32_t task_core_updater_get_core_crc(const char *core_path)
+/* Sliced CRC32 of a core file.
+ *
+ * This used to be a blocking intfstream_get_crc() over the whole
+ * file, called from inside a task handler tick.  The cost of that
+ * tick is therefore a function of core size and nothing else --
+ * unbounded from the frontend's point of view.  Measured cold on
+ * NVMe: 43ms for a 40MB core, 112ms for a 260MB one, i.e. 3 to 7
+ * dropped frames per core.  RetroArch's SD-card and spinning-disk
+ * targets read an order of magnitude slower, which turns the same
+ * work into seconds.
+ *
+ * It matters most on the bulk path.  update_installed_cores hashes
+ * every installed core to find out which ones changed, so a 40-core
+ * set is 601MB read (measured) before anything is downloaded -- and
+ * on a repeat run, where nothing has changed, all of it is read
+ * again to learn exactly that.
+ *
+ * The work is now spread across ticks against a time budget, the
+ * same shape the save-state transfer loops in tasks/task_save.c use.
+ * Total work is unchanged; what changes is that no single tick can
+ * exceed the budget regardless of file size.
+ *
+ * Not done here: caching the result keyed by (path, size, mtime) so
+ * a repeat "update installed cores" skips the read entirely.  That
+ * is the larger win, but the libretro VFS exposes no mtime, and size
+ * alone is not a safe invalidation key -- a rebuilt core of identical
+ * size would be silently skipped, which is a worse failure than a
+ * slow one.  It wants a VFS extension first. */
+
+static void task_core_updater_crc_reset(core_crc_slice_t *slice)
 {
-   /* Open core file */
-   intfstream_t *core_file = intfstream_open_file(
-         core_path, RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-   if (core_file)
+   if (slice->file)
    {
-      uint32_t crc = 0;
-      /* Get CRC value */
-      bool ret = intfstream_get_crc(core_file, &crc);
+      intfstream_close(slice->file);
+      free(slice->file);
+      slice->file = NULL;
+   }
+   slice->accumulator = 0;
+   slice->active      = false;
+}
 
-      /* Close core file */
-      intfstream_close(core_file);
-      free(core_file);
-      core_file = NULL;
+/* Advance the CRC of @core_path by one tick's worth of work.
+ *
+ * Returns true when the CRC is complete, writing it to @crc; false
+ * means "call me again next tick".  An unreadable file completes
+ * immediately with a CRC of 0, which is what the blocking version
+ * returned and what the callers already treat as "no local core to
+ * compare against". */
+static bool task_core_updater_crc_step(core_crc_slice_t *slice,
+      const char *core_path, uint32_t *crc)
+{
+   retro_time_t deadline;
 
-      if (ret)
-         return crc;
+   if (!slice->active)
+   {
+      slice->accumulator = 0;
+      if (!(slice->file = intfstream_open_file(core_path,
+                  RETRO_VFS_FILE_ACCESS_READ,
+                  RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+      {
+         *crc = 0;
+         return true;
+      }
+      intfstream_rewind(slice->file);
+      slice->active = true;
    }
 
-   return 0;
+   /* do/while, so a device slow enough that one chunk exceeds the
+    * budget still makes progress rather than spinning forever. */
+   deadline = cpu_features_get_time_usec() + CORE_CRC_TICK_BUDGET_US;
+   do
+   {
+      int64_t hashed = intfstream_crc_step(slice->file,
+            &slice->accumulator, CORE_CRC_CHUNK);
+
+      if (hashed > 0)
+         continue;
+
+      /* 0 is end of stream, negative is a read error; a partial
+       * hash is not a usable CRC, so both yield 0 like the old
+       * open-failure path. */
+      *crc = (hashed == 0) ? slice->accumulator : 0;
+      task_core_updater_crc_reset(slice);
+      return true;
+   } while (cpu_features_get_time_usec() < deadline);
+
+   return false;
 }
 
 /*************************/
@@ -407,7 +495,19 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
 
 task_finished:
    if (task)
+   {
+      /* Clear the state pointer before the handle is freed.  The
+       * worker runs handlers with running_lock released and the task
+       * still linked into tasks_running, so a task that has finished
+       * here stays visible to retro_task_threaded_find() until the
+       * worker retires it.  The finders in this file dereference
+       * task->state, so leaving it pointing at freed memory is a
+       * use-after-free - task_core_updater_download_finder() strcmps
+       * through it, which is a hard crash the moment
+       * task_update_installed_cores_handler() pushes the next core. */
+      task->state = NULL;
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+   }
 
    if (list_handle)
       free_core_updater_list_handle(list_handle);
@@ -429,8 +529,27 @@ static bool task_core_updater_get_list_finder(retro_task_t *task, void *user_dat
    return ((uintptr_t)user_data == (uintptr_t)list_handle->core_list);
 }
 
-void *task_push_get_core_updater_list(
-      core_updater_list_t* core_list, bool mute, bool refresh_menu)
+/* Signals completion of the core list fetch to a parent
+ * 'update installed cores' task, if there is one. The
+ * parent must never poll task_get_flags() on the child
+ * instead: a finished task is retired and freed inside the
+ * same task_queue gather pass that ran its handler, so with
+ * threaded tasks disabled the parent may not get to observe
+ * RETRO_TASK_FLG_FINISHED before the memory is freed. */
+static void cb_task_core_updater_get_list(
+      retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+   update_installed_cores_handle_t *update_installed_handle =
+         (update_installed_cores_handle_t*)user_data;
+
+   if (update_installed_handle)
+      update_installed_handle->list_task_complete = true;
+}
+
+static void *task_push_get_core_updater_list_internal(
+      core_updater_list_t* core_list, bool mute, bool refresh_menu,
+      update_installed_cores_handle_t *update_installed_handle)
 {
    task_finder_data_t find_data;
    retro_task_t *task                      = NULL;
@@ -477,6 +596,8 @@ void *task_push_get_core_updater_list(
    task->title            = strdup(msg_hash_to_str(MSG_FETCHING_CORE_LIST));
    task->progress         = 0;
    task->progress_cb      = task_window_progress_cb;
+   task->callback         = cb_task_core_updater_get_list;
+   task->user_data        = (void*)update_installed_handle;
    task->flags           |=  RETRO_TASK_FLG_ALTERNATIVE_LOOK;
    if (mute)
       task->flags        |=  RETRO_TASK_FLG_MUTE;
@@ -504,6 +625,13 @@ error:
    return NULL;
 }
 
+void *task_push_get_core_updater_list(
+      core_updater_list_t* core_list, bool mute, bool refresh_menu)
+{
+   return task_push_get_core_updater_list_internal(
+         core_list, mute, refresh_menu, NULL);
+}
+
 /*****************/
 /* Download core */
 /*****************/
@@ -513,8 +641,20 @@ static void cb_task_core_updater_download(
       void *user_data, const char *err)
 {
    /* Reload core info files
-    * > This must be done on the main thread */
-   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+    * > This must be done on the main thread
+    * > Forced: a core file changed on disk */
+   bool refresh                                            = true;
+   update_installed_cores_handle_t *update_installed_handle =
+         (update_installed_cores_handle_t*)user_data;
+
+   /* Signal completion to the parent 'update installed
+    * cores' task, if there is one - it cannot safely poll
+    * this task's flags, since the task is freed as soon as
+    * it is retired */
+   if (update_installed_handle)
+      update_installed_handle->download_task_complete = true;
+
+   command_event(CMD_EVENT_CORE_INFO_INIT, &refresh);
 
 #if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
    /* Force reload of contentless cores icons */
@@ -564,7 +704,7 @@ void cb_http_task_core_updater_download(
 
    if (!data || !transf)
       goto finish;
-   if (!data->data || !*transf->path)
+   if (!*transf->path)
       goto finish;
 
    if (!(download_handle = (core_updater_download_handle_t*)transf->user_data))
@@ -573,37 +713,26 @@ void cb_http_task_core_updater_download(
    /* Update download_handle task status */
    download_handle->http_task_complete       = true;
 
-   /* Create output directory, if required */
+   /* The body was streamed to transf->path as it arrived, so
+    * data->data is NULL by design and there is nothing to write here.
+    * task_push_http_download_file() removes the partial file unless
+    * the transfer finished cleanly, so a non-2xx means there is no
+    * file on disk to decompress. */
+   if (err && *err)
+      goto finish;
+
+   if (data->status < 200 || data->status > 299)
+   {
+      err = "Download failed.";
+      goto finish;
+   }
+
+   /* Recomputed for the decompress call below; the directory itself
+    * was created before the transfer started. */
    strlcpy(output_dir, transf->path, sizeof(output_dir));
    path_basedir_wrapper(output_dir);
 
-   if (!path_mkdir(output_dir))
-   {
-      err = msg_hash_to_str(MSG_FAILED_TO_CREATE_THE_DIRECTORY);
-      goto finish;
-   }
-
-#ifdef HAVE_COMPRESSION
-   /* If core file is an archive, make sure it is
-    * not being decompressed already (by another task) */
-   if (path_is_compressed_file(transf->path))
-   {
-      if (task_check_decompress(transf->path))
-      {
-         err = msg_hash_to_str(MSG_DECOMPRESSION_ALREADY_IN_PROGRESS);
-         goto finish;
-      }
-   }
-#endif
-
-   /* Write core file to disk */
-   if (!filestream_write_file(transf->path, data->data, data->len))
-   {
-      err = "Write failed.";
-      goto finish;
-   }
-
-#if defined(HAVE_COMPRESSION) && defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
    /* Decompress core file, if required
     * NOTE: If core is compressed and platform
     * doesn't have compression support, then this
@@ -631,18 +760,26 @@ finish:
    {
       RARCH_ERR("[Core Updater] Download of \"%s\" failed: %s.\n",
             (transf ? transf->path: "unknown"), err);
-      download_handle->status = CORE_UPDATER_DOWNLOAD_ERROR;
+      /* download_handle is still NULL on the early bail-outs above
+       * (no data, no transfer, no user_data), so it cannot be
+       * dereferenced unconditionally here. */
+      if (download_handle)
+         download_handle->status = CORE_UPDATER_DOWNLOAD_ERROR;
    }
    if (transf)
       free(transf);
 
    /* if no decompress task was queued, mark it as completed */
-   if (!download_handle->decompress_task)
+   if (download_handle && !download_handle->decompress_task)
       download_handle->decompress_task_complete = true;
 }
 
 static void free_core_updater_download_handle(core_updater_download_handle_t *download_handle)
 {
+   /* A task cancelled part-way through the sliced CRC still holds an
+    * open intfstream; without this it leaks the handle and the fd. */
+   task_core_updater_crc_reset(&download_handle->crc_slice);
+
    if (download_handle->path_dir_libretro)
       free(download_handle->path_dir_libretro);
 
@@ -686,7 +823,12 @@ static void task_core_updater_download_handler(retro_task_t *task)
    {
       case CORE_UPDATER_DOWNLOAD_BEGIN:
          {
-            /* Get CRC of existing core, if required */
+            /* Get CRC of existing core, if required.
+             *
+             * Sliced: the handler returns after one tick's budget and
+             * is re-entered next tick, staying in this state until
+             * the hash completes.  A 260MB core no longer stalls a
+             * single tick for the whole read. */
             if (download_handle->local_crc == 0)
             {
                const char *local_core_path =
@@ -695,8 +837,14 @@ static void task_core_updater_download_handler(retro_task_t *task)
                        (local_core_path && *local_core_path)
                      && path_is_valid  (local_core_path)
                   )
-                  download_handle->local_crc =
-                     task_core_updater_get_core_crc(local_core_path);
+               {
+                  uint32_t crc = 0;
+                  if (!task_core_updater_crc_step(
+                           &download_handle->crc_slice,
+                           local_core_path, &crc))
+                     break; /* resume next tick */
+                  download_handle->local_crc = crc;
+               }
             }
 
             /* Check whether existing core and remote core
@@ -804,8 +952,11 @@ static void task_core_updater_download_handler(retro_task_t *task)
       case CORE_UPDATER_DOWNLOAD_START_TRANSFER:
          {
             size_t _len;
+            size_t _tlen;
             file_transfer_t *transf = NULL;
             char task_title[128];
+            char output_dir[DIR_MAX_LENGTH];
+            char http_title[NAME_MAX_LENGTH];
 
             /* Configure file transfer object */
             if (!(transf = (file_transfer_t*)calloc(1,
@@ -818,10 +969,55 @@ static void task_core_updater_download_handler(retro_task_t *task)
 
             transf->user_data = (void*)download_handle;
 
+            /* The body is streamed straight to transf->path as it
+             * arrives, so everything that used to gate the write in
+             * cb_http_task_core_updater_download() has to happen
+             * before the transfer starts rather than after it. */
+            strlcpy(output_dir, transf->path, sizeof(output_dir));
+            path_basedir_wrapper(output_dir);
+
+            if (!path_mkdir(output_dir))
+            {
+               RARCH_ERR("[Core Updater] Download of \"%s\" failed: %s.\n",
+                     transf->path,
+                     msg_hash_to_str(MSG_FAILED_TO_CREATE_THE_DIRECTORY));
+               free(transf);
+               download_handle->status = CORE_UPDATER_DOWNLOAD_ERROR;
+               break;
+            }
+
+#ifdef HAVE_COMPRESSION
+            /* If the core file is an archive, make sure it is not
+             * already being decompressed by another task -- otherwise
+             * we would now be overwriting the very file that task is
+             * reading. */
+            if (path_is_compressed_file(transf->path)
+                  && task_check_decompress(transf->path))
+            {
+               RARCH_ERR("[Core Updater] Download of \"%s\" failed: %s.\n",
+                     transf->path,
+                     msg_hash_to_str(MSG_DECOMPRESSION_ALREADY_IN_PROGRESS));
+               free(transf);
+               download_handle->status = CORE_UPDATER_DOWNLOAD_ERROR;
+               break;
+            }
+#endif
+
+            /* Title that task_push_http_transfer_file() used to build
+             * internally; task_push_http_download_file() takes it as
+             * an argument instead. */
+            _tlen = 0;
+            http_title[0] = '\0';
+            strlcpy_append(http_title, sizeof(http_title), &_tlen,
+                  msg_hash_to_str(MSG_DOWNLOADING));
+            strlcpy_append(http_title, sizeof(http_title), &_tlen, ": ");
+            strlcpy_append(http_title, sizeof(http_title), &_tlen,
+                  transf->path);
+
             /* Push HTTP transfer task */
-            download_handle->http_task = (retro_task_t*)task_push_http_transfer_file(
-                  download_handle->remote_core_path, true, NULL,
-                  cb_http_task_core_updater_download, transf);
+            download_handle->http_task = (retro_task_t*)task_push_http_download_file(
+                  download_handle->remote_core_path, transf->path, true,
+                  http_title, cb_http_task_core_updater_download, transf);
 
             /* Update task title */
             task_free_title(task);
@@ -982,7 +1178,19 @@ static void task_core_updater_download_handler(retro_task_t *task)
 
 task_finished:
    if (task)
+   {
+      /* Clear the state pointer before the handle is freed.  The
+       * worker runs handlers with running_lock released and the task
+       * still linked into tasks_running, so a task that has finished
+       * here stays visible to retro_task_threaded_find() until the
+       * worker retires it.  The finders in this file dereference
+       * task->state, so leaving it pointing at freed memory is a
+       * use-after-free - task_core_updater_download_finder() strcmps
+       * through it, which is a hard crash the moment
+       * task_update_installed_cores_handler() pushes the next core. */
+      task->state = NULL;
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+   }
 
    if (download_handle)
       free_core_updater_download_handle(download_handle);
@@ -999,12 +1207,13 @@ static bool task_core_updater_download_finder(retro_task_t *task, void *user_dat
    return false;
 }
 
-void *task_push_core_updater_download(
+static void *task_push_core_updater_download_internal(
       core_updater_list_t* core_list,
       const char *filename, uint32_t crc, bool mute,
       bool auto_backup, size_t auto_backup_history_size,
       const char *path_dir_libretro,
-      const char *path_dir_core_assets)
+      const char *path_dir_core_assets,
+      update_installed_cores_handle_t *update_installed_handle)
 {
    size_t _len;
    task_finder_data_t find_data;
@@ -1121,6 +1330,7 @@ void *task_push_core_updater_download(
    task->progress         = 0;
    task->progress_cb      = task_window_progress_cb;
    task->callback         = cb_task_core_updater_download;
+   task->user_data        = (void*)update_installed_handle;
    task->flags           |=  RETRO_TASK_FLG_ALTERNATIVE_LOOK;
    if (mute)
       task->flags        |=  RETRO_TASK_FLG_MUTE;
@@ -1146,6 +1356,19 @@ error:
       free_core_updater_download_handle(download_handle);
 
    return NULL;
+}
+
+void *task_push_core_updater_download(
+      core_updater_list_t* core_list,
+      const char *filename, uint32_t crc, bool mute,
+      bool auto_backup, size_t auto_backup_history_size,
+      const char *path_dir_libretro,
+      const char *path_dir_core_assets)
+{
+   return task_push_core_updater_download_internal(
+         core_list, filename, crc, mute, auto_backup,
+         auto_backup_history_size, path_dir_libretro,
+         path_dir_core_assets, NULL);
 }
 
 /**************************/
@@ -1184,38 +1407,35 @@ static void task_update_installed_cores_handler(retro_task_t *task)
    switch (update_installed_handle->status)
    {
       case UPDATE_INSTALLED_CORES_BEGIN:
-         /* Request buildbot core list */
-         update_installed_handle->list_task = (retro_task_t*)
-            task_push_get_core_updater_list(
-                  update_installed_handle->core_list,
-                  true, false);
+         /* Request buildbot core list
+          * > Must be cleared *before* the push: the child
+          *   task can finish and fire its callback before
+          *   this returns */
+         update_installed_handle->list_task_complete = false;
 
          /* If push failed, go to end
           * (error will message will be displayed when
           * final task title is set) */
-         if (!update_installed_handle->list_task)
+         if (!task_push_get_core_updater_list_internal(
+                  update_installed_handle->core_list,
+                  true, false, update_installed_handle))
             update_installed_handle->status = UPDATE_INSTALLED_CORES_END;
          else
             update_installed_handle->status = UPDATE_INSTALLED_CORES_WAIT_LIST;
          break;
       case UPDATE_INSTALLED_CORES_WAIT_LIST:
          {
-            bool list_available = false;
-
-            /* > If task is running, check 'is finished'
-             *   status
-             * > If task is NULL, then it is finished
-             *   by definition */
-            if (update_installed_handle->list_task)
-            {
-               uint8_t _flg      = task_get_flags(update_installed_handle->list_task);
-               if ((_flg & RETRO_TASK_FLG_FINISHED) > 0)
-                  list_available = true;
-               else
-                  list_available = false;
-            }
-            else
-               list_available    = true;
+            /* Wait for cb_task_core_updater_get_list() to
+             * trigger. Note that the child task must not be
+             * polled via task_get_flags(): a finished task is
+             * retired and freed inside the same task_queue
+             * gather pass that ran its handler, and with
+             * threaded tasks disabled that pass may run the
+             * child *after* this one - leaving nothing to
+             * observe on the next tick but freed memory, and
+             * this task stuck on 'Fetching core list...'
+             * forever */
+            bool list_available = update_installed_handle->list_task_complete;
 
             /* If list is available, make sure it isn't empty
              * (error will message will be displayed when
@@ -1325,15 +1545,29 @@ static void task_update_installed_cores_handler(retro_task_t *task)
                break;
             }
 
-            /* Get CRC of existing core */
+            /* Get CRC of existing core.
+             *
+             * Sliced across ticks.  This is the site that matters
+             * most: it runs once per installed core, so a 40-core
+             * set hashes 601MB (measured) before a single byte is
+             * downloaded, and on a repeat run where nothing has
+             * changed it reads all of it again to establish that.
+             * Slicing does not reduce that total -- it stops any one
+             * tick from carrying an arbitrary share of it. */
             {
                const char *local_core_path = list_entry->local_core_path;
                if (
                        (local_core_path && *local_core_path)
                      && path_is_valid  (local_core_path)
                   )
-                  local_crc = task_core_updater_get_core_crc(
-                        local_core_path);
+               {
+                  uint32_t crc = 0;
+                  if (!task_core_updater_crc_step(
+                           &update_installed_handle->crc_slice,
+                           local_core_path, &crc))
+                     break; /* resume next tick */
+                  local_crc = crc;
+               }
             }
 
             /* Check whether existing core and remote core
@@ -1350,20 +1584,22 @@ static void task_update_installed_cores_handler(retro_task_t *task)
             }
 
             /* Existing core is not the most recent version
-             * > Request download */
-            update_installed_handle->download_task = (retro_task_t*)
-                  task_push_core_updater_download(
+             * > Request download
+             * > Flag must be cleared *before* the push, since
+             *   the child task can complete before it returns */
+            update_installed_handle->download_task_complete = false;
+
+            /* Again, if an error occurred, just return to
+             * UPDATE_INSTALLED_CORES_ITERATE state */
+            if (!task_push_core_updater_download_internal(
                         update_installed_handle->core_list,
                         list_entry->remote_filename,
                         local_crc, true,
                         update_installed_handle->auto_backup,
                         update_installed_handle->auto_backup_history_size,
                         update_installed_handle->path_dir_libretro,
-                        update_installed_handle->path_dir_core_assets);
-
-            /* Again, if an error occurred, just return to
-             * UPDATE_INSTALLED_CORES_ITERATE state */
-            if (!update_installed_handle->download_task)
+                        update_installed_handle->path_dir_core_assets,
+                        update_installed_handle))
                update_installed_handle->status = UPDATE_INSTALLED_CORES_ITERATE;
             else
             {
@@ -1392,30 +1628,17 @@ static void task_update_installed_cores_handler(retro_task_t *task)
          break;
       case UPDATE_INSTALLED_CORES_WAIT_DOWNLOAD:
          {
-            bool download_complete = false;
-
-            /* > If task is running, check 'is finished'
-             *   status
-             * > If task is NULL, then it is finished
-             *   by definition */
-            if (update_installed_handle->download_task)
-            {
-               uint8_t _flg      = task_get_flags(update_installed_handle->download_task);
-               if ((_flg & RETRO_TASK_FLG_FINISHED) > 0)
-                  download_complete = true;
-               else
-                  download_complete = false;
-            }
-            else
-               download_complete = true;
+            /* Wait for cb_task_core_updater_download() to
+             * trigger - same lifetime hazard as
+             * UPDATE_INSTALLED_CORES_WAIT_LIST, so the child
+             * task's flags are deliberately not polled */
+            bool download_complete =
+                  update_installed_handle->download_task_complete;
 
             /* If download is complete, return to
              * UPDATE_INSTALLED_CORES_ITERATE state */
             if (download_complete)
-            {
-               update_installed_handle->download_task = NULL;
-               update_installed_handle->status        = UPDATE_INSTALLED_CORES_ITERATE;
-            }
+               update_installed_handle->status = UPDATE_INSTALLED_CORES_ITERATE;
          }
          break;
       case UPDATE_INSTALLED_CORES_END:
@@ -1476,7 +1699,19 @@ static void task_update_installed_cores_handler(retro_task_t *task)
 
 task_finished:
    if (task)
+   {
+      /* Clear the state pointer before the handle is freed.  The
+       * worker runs handlers with running_lock released and the task
+       * still linked into tasks_running, so a task that has finished
+       * here stays visible to retro_task_threaded_find() until the
+       * worker retires it.  The finders in this file dereference
+       * task->state, so leaving it pointing at freed memory is a
+       * use-after-free - task_core_updater_download_finder() strcmps
+       * through it, which is a hard crash the moment
+       * task_update_installed_cores_handler() pushes the next core. */
+      task->state = NULL;
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+   }
 
    if (update_installed_handle)
       free_update_installed_cores_handle(update_installed_handle);
@@ -1521,8 +1756,8 @@ void task_push_update_installed_cores(
    update_installed_handle->path_dir_core_assets     = (!path_dir_core_assets || !*path_dir_core_assets) ?
          NULL : strdup(path_dir_core_assets);
    update_installed_handle->core_list                = core_updater_list_init();
-   update_installed_handle->list_task                = NULL;
-   update_installed_handle->download_task            = NULL;
+   update_installed_handle->list_task_complete       = false;
+   update_installed_handle->download_task_complete   = false;
    update_installed_handle->list_size                = 0;
    update_installed_handle->list_index               = 0;
    update_installed_handle->installed_index          = 0;
@@ -1799,7 +2034,19 @@ static void task_play_feature_delivery_core_install_handler(
 
 task_finished:
    if (task)
+   {
+      /* Clear the state pointer before the handle is freed.  The
+       * worker runs handlers with running_lock released and the task
+       * still linked into tasks_running, so a task that has finished
+       * here stays visible to retro_task_threaded_find() until the
+       * worker retires it.  The finders in this file dereference
+       * task->state, so leaving it pointing at freed memory is a
+       * use-after-free - task_core_updater_download_finder() strcmps
+       * through it, which is a hard crash the moment
+       * task_update_installed_cores_handler() pushes the next core. */
+      task->state = NULL;
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+   }
 
    if (pfd_install_handle)
       free_play_feature_delivery_install_handle(pfd_install_handle);
@@ -2183,7 +2430,19 @@ static void task_play_feature_delivery_switch_cores_handler(
 
 task_finished:
    if (task)
+   {
+      /* Clear the state pointer before the handle is freed.  The
+       * worker runs handlers with running_lock released and the task
+       * still linked into tasks_running, so a task that has finished
+       * here stays visible to retro_task_threaded_find() until the
+       * worker retires it.  The finders in this file dereference
+       * task->state, so leaving it pointing at freed memory is a
+       * use-after-free - task_core_updater_download_finder() strcmps
+       * through it, which is a hard crash the moment
+       * task_update_installed_cores_handler() pushes the next core. */
+      task->state = NULL;
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+   }
 
    if (pfd_switch_cores_handle)
       free_play_feature_delivery_switch_cores_handle(pfd_switch_cores_handle);

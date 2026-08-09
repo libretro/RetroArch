@@ -37,7 +37,7 @@ endif
 DOL_TARGET := retroarch-salamander_wii.dol
 ELF_TARGET := retroarch-salamander_wii.elf
 
-INCLUDE := -I. -Ilibretro-common/include -Ilibretro-common/include/compat/zlib
+INCLUDE := -I. -Ilibretro-common/include
 ifeq ($(EXTERNAL_LIBOGC), 1)
 INCLUDE += -I$(DEVKITPRO)/libogc/include
 LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii -L.
@@ -82,6 +82,7 @@ OBJ = frontend/frontend_salamander.o \
 		libretro-common/compat/compat_strcasestr.o \
 		libretro-common/compat/fopen_utf8.o \
 		libretro-common/file/config_file.o \
+		libretro-common/file/config_file_io.o \
 		libretro-common/time/rtime.o \
 		verbosity.o \
 		$(APP_BOOTER_DIR)/app_booter.binobj

@@ -35,7 +35,6 @@ DEFINES += -DHAVE_THREADS \
 	   -DHAVE_RJPEG \
 	   -DHAVE_OVERLAY \
 	   -DHAVE_ALSA \
-	   -DHAVE_ZLIB \
 	   -D__linux__ \
 	   -DHAVE_DSP_FILTER \
 	   -DHAVE_VIDEO_FILTER \

@@ -58,19 +58,130 @@ static NetplayBonjourMan *nbm_instance;
 - (void)browse
 {
     RARCH_LOG("[Bonjour] Starting netplay service discovery\n");
-    self.services = [NSMutableArray arrayWithCapacity: 0];
+    /* The services array is only ever touched from the main queue: the
+     * browser's delegate callbacks add to and remove from it there, and
+     * -finishBrowsing: takes its snapshot there.  Creating it here, off
+     * the main thread, would leave -didFindService: appending to an
+     * array the worker thread is still publishing. */
     dispatch_async(dispatch_get_main_queue(), ^{
-        self.browser = [[NSNetServiceBrowser alloc] init];
+        self.services = [NSMutableArray arrayWithCapacity: 0];
+        self.browser  = [[NSNetServiceBrowser alloc] init];
         [self.browser setDelegate:self];
         [self.browser searchForServicesOfType:@NETPLAY_MDNS_TYPE inDomain:@""];
     });
 }
 
+/* Copy one TXT record value into a fixed-size field.
+ *
+ * NSData contents are neither NUL-terminated nor bounded by the
+ * destination, so strlcpy() cannot be handed the value directly: it
+ * walks the source looking for a terminator (running off the end of
+ * the NSData) and it takes the *destination* size, not the source
+ * length.  Copy a bounded prefix and terminate it ourselves.
+ *
+ * A missing key yields a nil NSData, whose -bytes is NULL; that has to
+ * degrade to an empty string rather than being dereferenced. */
+static void txt_field_copy(char *dst, size_t dst_size, NSData *value)
+{
+    const char *src;
+    size_t len;
+
+    if (!dst_size)
+        return;
+
+    *dst = '\0';
+
+    if (!value)
+        return;
+    if (!(src = (const char*)[value bytes]))
+        return;
+
+    len = (size_t)[value length];
+    if (len >= dst_size)
+        len = dst_size - 1;
+    /* The value may itself contain an embedded NUL; stop there. */
+    {
+        const char *nul = (const char*)memchr(src, '\0', len);
+        if (nul)
+            len = (size_t)(nul - src);
+    }
+
+    memcpy(dst, src, len);
+    dst[len] = '\0';
+}
+
+/* Resolve one of a service's addresses to a numeric IPv4 string.
+ *
+ * -[NSNetService addresses] hands back NSData objects sized to the
+ * concrete sockaddr (16 bytes for sockaddr_in, 28 for sockaddr_in6),
+ * not to sockaddr_storage.  addr_6to4() rewrites its argument with a
+ * sizeof(struct sockaddr_storage) memset, so it must be given a real
+ * sockaddr_storage of our own - passing the NSData buffer both
+ * overruns it by 100 bytes and writes through a pointer to immutable
+ * NSData contents.  Likewise getnameinfo() wants the true address
+ * length, not the storage size. */
+static bool srv_address_to_string(NSNetService *srv, char *address,
+                                  size_t address_size)
+{
+    for (NSData *addr_data in [srv addresses])
+    {
+        struct sockaddr_storage their_addr;
+        socklen_t addr_len = (socklen_t)[addr_data length];
+
+        if (!addr_len || addr_len > (socklen_t)sizeof(their_addr))
+            continue;
+
+        memset(&their_addr, 0, sizeof(their_addr));
+        memcpy(&their_addr, [addr_data bytes], addr_len);
+
+        if (!addr_6to4(&their_addr))
+            continue;
+        /* addr_6to4() may have rewritten a v4-mapped v6 address into a
+         * shorter AF_INET one. */
+        if (their_addr.ss_family == AF_INET)
+            addr_len = (socklen_t)sizeof(struct sockaddr_in);
+
+        if (!getnameinfo_retro((struct sockaddr*)&their_addr, addr_len,
+                               address, (socklen_t)address_size, NULL, 0,
+                               NI_NUMERICHOST))
+            return address[0] != '\0';
+    }
+
+    return false;
+}
+
 - (void)finishBrowsing:(net_driver_state_t *)net_st
 {
-    [self.browser stop];
-    for (NSNetService *srv in self.services)
+    /* -[NSNetServiceBrowser stop] and the services array both belong to
+     * the main run loop, which is where the browser was scheduled and
+     * where its delegate callbacks mutate self.services.  This method
+     * runs on the task worker thread, so enumerating the live array
+     * here races -didFindService: (mutation during fast enumeration
+     * raises NSGenericException).  Stop the browser on its own queue and
+     * enumerate a snapshot. */
+    __block NSArray<NSNetService*> *services = nil;
+    void (^stop_and_snapshot)(void) = ^{
+        [self.browser stop];
+        self.browser  = nil;
+        services      = [self.services copy];
+        self.services = nil;
+    };
+
+    /* With the non-threaded task queue the handler - and therefore this
+     * function - already runs on the main thread, where dispatch_sync()
+     * onto the main queue would deadlock. */
+    if ([NSThread isMainThread])
+        stop_and_snapshot();
+    else
+        dispatch_sync(dispatch_get_main_queue(), stop_and_snapshot);
+
+    for (NSNetService *srv in services)
     {
+        bool known = false;
+        long port;
+        size_t iter;
+        char address[16];
+
         if (![srv.addresses count] || [srv port] <= 0 || ![srv TXTRecordData])
             continue;
 
@@ -78,26 +189,26 @@ static NetplayBonjourMan *nbm_instance;
         if (!txt)
             continue;
 
-        char address[16] = {0};
-        for (NSData *addr_data in [srv addresses])
-        {
-            struct sockaddr_storage *their_addr = (struct sockaddr_storage *)[addr_data bytes];
-            if (!addr_6to4(their_addr))
-                continue;
-            if (!getnameinfo_retro((struct sockaddr*)their_addr, sizeof(struct sockaddr_storage),
-                                   address, sizeof(address), NULL, 0, NI_NUMERICHOST))
-                break;
-        }
-        if (!address[0])
+        if (!srv_address_to_string(srv, address, sizeof(address)))
             continue;
 
         /* Make sure we don't already know about it */
-        long port = [srv port];
-        size_t iter;
+        port = [srv port];
         for (iter = 0; iter < net_st->discovered_hosts.size; iter++)
-            if (port != net_st->discovered_hosts.hosts[iter].port ||
-                !string_is_equal(address, net_st->discovered_hosts.hosts[iter].address))
-                continue;
+        {
+            if (     port == net_st->discovered_hosts.hosts[iter].port
+                  && string_is_equal(address,
+                        net_st->discovered_hosts.hosts[iter].address))
+            {
+                known = true;
+                break;
+            }
+        }
+        if (known)
+            continue;
+
+        if (net_st->discovered_hosts.size >= NETPLAY_MAX_DISCOVERED_HOSTS)
+            break;
 
         /* Allocate space for it */
         if (net_st->discovered_hosts.size >= net_st->discovered_hosts.allocated)
@@ -132,25 +243,44 @@ static NetplayBonjourMan *nbm_instance;
         }
 
         struct netplay_host *host = &net_st->discovered_hosts.hosts[net_st->discovered_hosts.size++];
+        unsigned int content_crc  = 0;
+        char crc_str[16];
 
-        NSString *crc = [[NSString alloc] initWithData:txt[@"content_crc"] encoding:NSUTF8StringEncoding];
-        NSScanner *scanner = [NSScanner scannerWithString:crc];
-        unsigned int content_crc;
-        [scanner scanHexInt:&content_crc];
+        /* -scanHexInt: leaves its output untouched when the string does
+         * not parse (and the string is nil when the key is absent), so
+         * content_crc has to start from a defined value. */
+        txt_field_copy(crc_str, sizeof(crc_str), txt[@"content_crc"]);
+        if (*crc_str)
+        {
+            NSScanner *scanner = [NSScanner scannerWithString:
+                [NSString stringWithUTF8String:crc_str]];
+            if (![scanner scanHexInt:&content_crc])
+                content_crc = 0;
+        }
         host->content_crc = (int)ntohl(content_crc);
         host->port        = (int)port;
 
         strlcpy(host->address, address, sizeof(host->address));
-        strlcpy(host->nick, [txt[@"nick"] bytes], [txt[@"nick"] length] + 1);
-        strlcpy(host->frontend, [txt[@"frontend"] bytes], [txt[@"frontend"] length] + 1);
-        strlcpy(host->core, [txt[@"core"] bytes], [txt[@"core"] length] + 1);
-        strlcpy(host->core_version, [txt[@"core_version"] bytes], [txt[@"core_version"] length] + 1);
-        strlcpy(host->retroarch_version, [txt[@"retroarch_version"] bytes], [txt[@"retroarch_version"] length] + 1);
-        strlcpy(host->content, [txt[@"content"] bytes], [txt[@"content"] length] + 1);
-        strlcpy(host->subsystem_name, [txt[@"subsystem_name"] bytes], [txt[@"subsystem_name"] length] + 1);
+        txt_field_copy(host->nick, sizeof(host->nick), txt[@"nick"]);
+        txt_field_copy(host->frontend, sizeof(host->frontend),
+            txt[@"frontend"]);
+        txt_field_copy(host->core, sizeof(host->core), txt[@"core"]);
+        txt_field_copy(host->core_version, sizeof(host->core_version),
+            txt[@"core_version"]);
+        txt_field_copy(host->retroarch_version,
+            sizeof(host->retroarch_version), txt[@"retroarch_version"]);
+        txt_field_copy(host->content, sizeof(host->content), txt[@"content"]);
+        txt_field_copy(host->subsystem_name, sizeof(host->subsystem_name),
+            txt[@"subsystem_name"]);
 
-        host->has_password = [[[NSString alloc] initWithData:txt[@"has_password"] encoding:NSUTF8StringEncoding] isEqualToString:@"true"];
-        host->has_spectate_password = [[[NSString alloc] initWithData:txt[@"has_spectate_password"] encoding:NSUTF8StringEncoding] isEqualToString:@"true"];
+        {
+            char flag[8];
+
+            txt_field_copy(flag, sizeof(flag), txt[@"has_password"]);
+            host->has_password = string_is_equal(flag, "true");
+            txt_field_copy(flag, sizeof(flag), txt[@"has_spectate_password"]);
+            host->has_spectate_password = string_is_equal(flag, "true");
+        }
     }
 }
 
@@ -194,7 +324,7 @@ static NetplayBonjourMan *nbm_instance;
     uint32_t crc = 0;
     struct string_list *subsystem = path_get_subsystem_list();
     if (!subsystem || subsystem->size <= 0)
-        crc = content_get_crc();
+        crc = netplay_content_crc();
     return [[NSString stringWithFormat:@"%08x", (uint32_t)htonl(crc)] dataUsingEncoding:NSUTF8StringEncoding];
 }
 

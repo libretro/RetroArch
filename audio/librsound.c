@@ -81,6 +81,10 @@
 #include <time.h>
 #include <errno.h>
 
+#ifdef __MACH__
+#include <mach/mach_time.h> /* rsnd_get_time_usec() */
+#endif
+
 #include <compat/strl.h>
 #include <retro_endianness.h>
 #include <retro_inline.h>
@@ -720,19 +724,34 @@ static int64_t rsnd_get_time_usec(void)
    return sysGetSystemTime();
 #elif defined(GEKKO)
    return ticks_to_microsecs(gettime());
-#elif defined(__MACH__) /* OSX doesn't have clock_gettime ... */
-   clock_serv_t cclock;
-   mach_timespec_t mts;
-   host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
-   clock_get_time(cclock, &mts);
-   mach_port_deallocate(mach_task_self(), cclock);
-   return mts.tv_sec * INT64_C(1000000) + (mts.tv_nsec + 500) / 1000;
+#elif defined(__MACH__)
+   /* mach_absolute_time() is the Darwin equivalent of CLOCK_MONOTONIC used
+    * by the POSIX branch below: it needs no port at all, and it exists on
+    * every OS version RetroArch targets.
+    *
+    * The previous code called host_get_clock_service(mach_host_self(), ...)
+    * per call, which leaked a send right on the host port (mach_host_self()
+    * was never deallocated) and allocated then freed a port name in the task
+    * IPC space on every tick. It also read CALENDAR_CLOCK - wall time - even
+    * though the only consumer, rsnd_drain(), takes a delta against
+    * rd->start_time to estimate how much the server has consumed. A clock
+    * step from NTP or a user change corrupted that estimate; the monotonic
+    * clock used everywhere else does not have that failure mode. */
+   {
+      static mach_timebase_info_data_t tb;
+      if (!tb.denom)
+         mach_timebase_info(&tb);
+      /* Nanoseconds first, then to microseconds, so the numer/denom scaling
+       * does not lose resolution on timebases where numer != denom. */
+      return (int64_t)((mach_absolute_time() * tb.numer / tb.denom + 500)
+            / 1000);
+   }
 #elif defined(_POSIX_MONOTONIC_CLOCK) || defined(__QNX__) || defined(ANDROID)
    struct timespec tv;
    if (clock_gettime(CLOCK_MONOTONIC, &tv) < 0)
       return 0;
    return tv.tv_sec * INT64_C(1000000) + (tv.tv_nsec + 500) / 1000;
-#elif defined(EMSCRIPTEN)
+#elif defined(__EMSCRIPTEN__)
    return emscripten_get_now() * 1000;
 #else
 #error "Your platform does not have a timer function implemented in rsnd_get_time_usec(). Cannot continue."

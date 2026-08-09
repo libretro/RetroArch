@@ -297,6 +297,9 @@ static uint32_t ropus_ec_tell_frac(const ropus_ec *e)
 /* Opus packet parsing (src/opus.c opus_packet_parse_impl).             */
 /* ==================================================================== */
 #define ROPUS_MAX_FRAMES 48
+/* Output channels an Opus stream may carry.  RFC 7845's mapping family
+ * 1 allows up to 8; the cap is the table size, not a decode limit. */
+#define ROPUS_MAX_CHANNELS 8
 
 typedef struct
 {
@@ -355,13 +358,23 @@ static int ropus_toc_frame_size(int toc)
 
 /* opus_packet_parse_impl (non-self-delimited).  Returns the number of
  * frames, or -1 on a malformed packet. */
+/* Parse one Opus packet.
+ *
+ * 'self_delim' selects the self-delimiting framing of RFC 6716
+ * Appendix B, where the final frame's length is coded rather than
+ * implied by what is left of the packet.  Every substream of a
+ * multistream packet but the last is framed that way, because the
+ * decoder has to know where one ends before it can find the next.
+ * 'consumed', when given, reports how far into 'data' this packet
+ * reached, which is where the next substream begins. */
 static int ropus_packet_parse(const uint8_t *data, int32_t len,
-      ropus_packet *p)
+      ropus_packet *p, int self_delim, int32_t *consumed)
 {
    int i, bytes, count, cbr;
    uint8_t ch, toc;
    int framesize;
    int32_t last_size;
+   const uint8_t *data0 = data;
 
    if (len <= 0)
       return -1;
@@ -444,15 +457,42 @@ static int ropus_packet_parse(const uint8_t *data, int32_t len,
          }
          break;
    }
-   if (last_size > 1275)
-      return -1;
-   p->sizes[count - 1] = (int16_t)last_size;
+   if (self_delim)
+   {
+      /* The last frame's length is coded here rather than inferred.
+       * For a CBR packet it is every frame's length. */
+      bytes = ropus_parse_size(data, len, &p->sizes[count - 1]);
+      len -= bytes;
+      if (p->sizes[count - 1] < 0)
+         return -1;
+      data += bytes;
+      if (cbr)
+      {
+         if ((int32_t)p->sizes[count - 1] * count > len)
+            return -1;
+         for (i = 0; i < count - 1; i++)
+            p->sizes[i] = p->sizes[count - 1];
+      }
+      else if ((int32_t)bytes + p->sizes[count - 1] > last_size)
+         return -1;
+      last_size -= bytes + p->sizes[count - 1];
+   }
+   else
+   {
+      /* Not coded, so it is whatever is left - and what is left can
+       * exceed what a frame may hold, which only shows up here. */
+      if (last_size > 1275)
+         return -1;
+      p->sizes[count - 1] = (int16_t)last_size;
+   }
 
    for (i = 0; i < count; i++)
    {
       p->frames[i] = data;
       data += p->sizes[i];
    }
+   if (consumed)
+      *consumed = (int32_t)(data - data0);
 
    p->toc = toc;
    if (toc & 0x80)
@@ -3251,11 +3291,10 @@ static const int ropus_ordery_table[] =
    15,  0,  8,  7, 12,  3, 11,  4, 14,  1,  9,  6, 13,  2, 10,  5,
 };
 
-static void ropus_deinterleave_hadamard(float *X, int N0, int stride,
-      int hadamard)
+static void ropus_deinterleave_hadamard(float *tmp, float *X, int N0,
+      int stride, int hadamard)
 {
    int i, j, N = N0 * stride;
-   float tmp[1024];
    if (hadamard)
    {
       const int *ordery = ropus_ordery_table + stride - 2;
@@ -3272,11 +3311,10 @@ static void ropus_deinterleave_hadamard(float *X, int N0, int stride,
    memcpy(X, tmp, N * sizeof(*X));
 }
 
-static void ropus_interleave_hadamard(float *X, int N0, int stride,
-      int hadamard)
+static void ropus_interleave_hadamard(float *tmp, float *X, int N0,
+      int stride, int hadamard)
 {
    int i, j, N = N0 * stride;
-   float tmp[1024];
    if (hadamard)
    {
       const int *ordery = ropus_ordery_table + stride - 2;
@@ -3340,6 +3378,13 @@ typedef struct
    uint32_t seed;
    int avoid_split_noise;   /* unused at decode but kept for parity     */
    int disable_inv;
+   /* hadamard (de)interleave scratch, N <= 1024: decoder-owned so the
+    * 4 KiB float / 2 KiB Q14 tmp is not a quant_band stack frame on
+    * 8 KiB thread stacks.  Purely transient within one call, so one
+    * buffer serves the whole band recursion.  had_q is int16_t spelled
+    * out because the ropus_norm typedef appears later in the file. */
+   float   *had_f;
+   int16_t *had_q;
 } ropus_band_ctx;
 
 typedef struct
@@ -3673,14 +3718,14 @@ static unsigned ropus_quant_band(ropus_band_ctx *ctx, float *X,
    rp_B0 = B;
    N_B0 = N_B;
    if (rp_B0 > 1 && lowband)
-      ropus_deinterleave_hadamard(lowband, N_B >> recombine,
-         rp_B0 << recombine, longBlocks);
+      ropus_deinterleave_hadamard(ctx->had_f, lowband,
+         N_B >> recombine, rp_B0 << recombine, longBlocks);
 
    cm = ropus_quant_partition(ctx, X, N, b, B, lowband, LM, gain, fill);
 
    /* resynthesis (always on for the decoder) */
    if (rp_B0 > 1)
-      ropus_interleave_hadamard(X, N_B >> recombine,
+      ropus_interleave_hadamard(ctx->had_f, X, N_B >> recombine,
          rp_B0 << recombine, longBlocks);
    N_B = N_B0;
    B = rp_B0;
@@ -3832,7 +3877,8 @@ static void ropus_quant_all_bands(int start, int end, float *X_, float *Y_,
       uint8_t *collapse_masks, const int *pulses, int shortBlocks,
       int spread, int dual_stereo, int intensity, const int *tf_res,
       int32_t total_bits, int32_t balance, ropus_ec *ec, int LM,
-      int codedBands, uint32_t *seed, int disable_inv, float *_norm)
+      int codedBands, uint32_t *seed, int disable_inv, float *_norm,
+      float *_had)
 {
    int i;
    int32_t remaining_bits;
@@ -3859,6 +3905,8 @@ static void ropus_quant_all_bands(int start, int end, float *X_, float *Y_,
    ctx.seed = *seed;
    ctx.spread = spread;
    ctx.disable_inv = disable_inv;
+   ctx.had_f = _had;
+   ctx.had_q = NULL;
    ctx.avoid_split_noise = B > 1;
    for (i = start; i < end; i++)
    {
@@ -5002,13 +5050,56 @@ static void ropus_mdct_backward(const float *in, float *out,
    }
 }
 
+/* Frame-decode scratch, one per decoder context (embedded in ropus_t
+ * below).  These lived on the decode-frame and CELT-decode stacks:
+ * pcm_silk alone is 11.5 KB, the float CELT norm buffers another
+ * 19.2 KB, stacking to a worst-case decode depth near 50 KB on the
+ * audio/task thread.  Per context and not static for the same reason
+ * as sub_q/sub_f: the mixer runs several voices at once.  One scratch
+ * per context serves every substream and every (sequential) CELT
+ * call, main and redundancy alike. */
+typedef struct
+{
+   int16_t pcm_silk[2880 * 2];
+   int16_t bl[960];
+   int16_t br[960];
+   union
+   {
+      float   f[240 * 2];
+      int16_t q[240 * 2];
+   } redundant;
+   /* CELT band coefficients (C*N plus last-band lowband scratch) and
+    * the quant_all_bands norm scratch; the q view is int16_t spelled
+    * out because the ropus_norm (Q14) typedef appears later in the
+    * file than this struct must. */
+   union
+   {
+      struct
+      {
+         float X[2 * 960 + 960];
+         float norm[2 * 960];
+         float freq[2 * 960];      /* IMDCT staging in celt_synthesis */
+         float had[1024];          /* quant_band hadamard interleave  */
+      } f;
+      struct
+      {
+         int16_t X[2 * 960 + 960];
+         int16_t norm[2 * 960];
+         int32_t freq[2 * 960];    /* ropus_sig (Q12), typedef'd later
+                                    * in the file than this struct     */
+         int16_t had[1024];        /* quant_band hadamard interleave  */
+      } q;
+   } celt;
+} ropus_frame_scratch;
+
 static void ropus_celt_synthesis(const float *X, float *out_syn[],
+      ropus_frame_scratch *scr,
       const float *oldBandE, int start, int effEnd, int C, int CC,
       int isTransient, int LM, int silence)
 {
    int c, i, b;
    int M, B, N, NB, shift;
-   float freq[1920];
+   float *freq = scr->celt.f.freq;
    N = ROPUS_SHORT_MDCT << LM;
    M = 1 << LM;
    if (isTransient)
@@ -5164,7 +5255,8 @@ static void ropus_deemphasis(float *in[], float *pcm, int N, int C,
 /* celt_decode_with_ec, decode-only, float pipeline, 48 kHz.            */
 /* pcm receives N interleaved float frames (CC channels, [-1,1]).       */
 /* ==================================================================== */
-static int ropus_celt_decode(ropus_celt *st, const uint8_t *data, int len,
+static int ropus_celt_decode(ropus_celt *st,
+      ropus_frame_scratch *scr, const uint8_t *data, int len,
       float *pcm, int frame_size, ropus_ec *dec)
 {
    int c, i, N, CC = st->channels, C = st->stream_channels;
@@ -5176,8 +5268,8 @@ static int ropus_celt_decode(ropus_celt *st, const uint8_t *data, int len,
    float *oldBandE, *oldLogE, *oldLogE2, *backgroundLogE;
    uint8_t collapse_masks[2 * ROPUS_NBANDS];
    int anti_collapse_on = 0;
-   float X[2 * 960 + 960];  /* C*N plus last-band lowband scratch      */
-   float normbuf[2 * 960];
+   float *X       = scr->celt.f.X;
+   float *normbuf = scr->celt.f.norm;
    float max_background_increase;
 
    (void)data;
@@ -5202,12 +5294,13 @@ static int ropus_celt_decode(ropus_celt *st, const uint8_t *data, int len,
          * sizeof(float));
    } while (++c < CC);
 
-   memset(X, 0, sizeof X);
+   memset(X, 0, sizeof scr->celt.f.X);
    ropus_quant_all_bands(start, end, X, C == 2 ? X + N : NULL,
       collapse_masks, f.pulses, f.shortBlocks, f.spread_decision,
       f.dual_stereo, f.intensity, f.tf_res,
       (int32_t)len * (8 << ROPUS_BITRES) - f.anti_collapse_rsv,
-      f.balance, dec, f.LM, f.codedBands, &st->rng, 0, normbuf);
+      f.balance, dec, f.LM, f.codedBands, &st->rng, 0, normbuf,
+      scr->celt.f.had);
 
    if (f.anti_collapse_rsv > 0)
       anti_collapse_on = (int)ropus_ec_dec_bits(dec, 1);
@@ -5223,7 +5316,7 @@ static int ropus_celt_decode(ropus_celt *st, const uint8_t *data, int len,
       for (i = 0; i < C * ROPUS_NBANDS; i++)
          oldBandE[i] = -28.f;
 
-   ropus_celt_synthesis(X, out_syn, oldBandE, start, f.effEnd, C, CC,
+   ropus_celt_synthesis(X, out_syn, scr, oldBandE, start, f.effEnd, C, CC,
       f.isTransient, f.LM, f.silence);
 
    c = 0;
@@ -5780,11 +5873,10 @@ static void ropus_haar1_q(ropus_norm *X, int N0, int stride)
       }
 }
 
-static void ropus_deinterleave_hadamard_q(ropus_norm *X, int N0,
-      int stride, int hadamard)
+static void ropus_deinterleave_hadamard_q(ropus_norm *tmp, ropus_norm *X,
+      int N0, int stride, int hadamard)
 {
    int i, j, N = N0 * stride;
-   ropus_norm tmp[1024];
    if (hadamard)
    {
       const int *ordery = ropus_ordery_table + stride - 2;
@@ -5801,11 +5893,10 @@ static void ropus_deinterleave_hadamard_q(ropus_norm *X, int N0,
    memcpy(X, tmp, N * sizeof(*X));
 }
 
-static void ropus_interleave_hadamard_q(ropus_norm *X, int N0,
-      int stride, int hadamard)
+static void ropus_interleave_hadamard_q(ropus_norm *tmp, ropus_norm *X,
+      int N0, int stride, int hadamard)
 {
    int i, j, N = N0 * stride;
-   ropus_norm tmp[1024];
    if (hadamard)
    {
       const int *ordery = ropus_ordery_table + stride - 2;
@@ -6076,13 +6167,13 @@ static unsigned ropus_quant_band_q(ropus_band_ctx *ctx, ropus_norm *X,
    rp_B0 = B;
    N_B0 = N_B;
    if (rp_B0 > 1 && lowband)
-      ropus_deinterleave_hadamard_q(lowband, N_B >> recombine,
-         rp_B0 << recombine, longBlocks);
+      ropus_deinterleave_hadamard_q(ctx->had_q, lowband,
+         N_B >> recombine, rp_B0 << recombine, longBlocks);
 
    cm = ropus_quant_partition_q(ctx, X, N, b, B, lowband, LM, gain, fill);
 
    if (rp_B0 > 1)
-      ropus_interleave_hadamard_q(X, N_B >> recombine,
+      ropus_interleave_hadamard_q(ctx->had_q, X, N_B >> recombine,
          rp_B0 << recombine, longBlocks);
    N_B = N_B0;
    B = rp_B0;
@@ -6233,7 +6324,7 @@ static void ropus_quant_all_bands_q(int start, int end, ropus_norm *X_,
       int shortBlocks, int spread, int dual_stereo, int intensity,
       const int *tf_res, int32_t total_bits, int32_t balance,
       ropus_ec *ec, int LM, int codedBands, uint32_t *seed,
-      int disable_inv, ropus_norm *_norm)
+      int disable_inv, ropus_norm *_norm, ropus_norm *_had)
 {
    int i;
    int32_t remaining_bits;
@@ -6259,6 +6350,8 @@ static void ropus_quant_all_bands_q(int start, int end, ropus_norm *X_,
    ctx.seed = *seed;
    ctx.spread = spread;
    ctx.disable_inv = disable_inv;
+   ctx.had_f = NULL;
+   ctx.had_q = _had;
    ctx.avoid_split_noise = B > 1;
    for (i = start; i < end; i++)
    {
@@ -6857,12 +6950,13 @@ static void ropus_mdct_backward_q(const ropus_sig *in, ropus_sig *out,
 }
 
 static void ropus_celt_synthesis_q(const ropus_norm *X, ropus_sig *out_syn[],
+      ropus_frame_scratch *scr,
       const int16_t *oldBandE, int start, int effEnd, int C, int CC,
       int isTransient, int LM, int silence)
 {
    int c, b;
    int M, B, N, NB, shift;
-   ropus_sig freq[1920];
+   ropus_sig *freq = scr->celt.q.freq;
    int i;
    N = ROPUS_SHORT_MDCT << LM;
    M = 1 << LM;
@@ -7214,7 +7308,8 @@ static int ropus_celt_front_q(ropus_celt_q *st, ropus_ec *dec, int len,
 }
 
 /* Master fixed-point decode: s16 PCM out.                              */
-static int ropus_celt_decode_q(ropus_celt_q *st, const uint8_t *data,
+static int ropus_celt_decode_q(ropus_celt_q *st,
+      ropus_frame_scratch *scr, const uint8_t *data,
       int len, int16_t *pcm, int frame_size, ropus_ec *dec, int accum)
 {
    int c, i, N, CC = st->channels, C = st->stream_channels;
@@ -7227,8 +7322,8 @@ static int ropus_celt_decode_q(ropus_celt_q *st, const uint8_t *data,
    int16_t *oldBandE, *oldLogE, *oldLogE2, *backgroundLogE;
    uint8_t collapse_masks[2 * ROPUS_NBANDS];
    int anti_collapse_on = 0;
-   ropus_norm X[2 * 960 + 960];
-   ropus_norm normbuf[2 * 960];
+   ropus_norm *X       = scr->celt.q.X;
+   ropus_norm *normbuf = scr->celt.q.norm;
    int16_t max_background_increase;
 
    (void)data;
@@ -7252,12 +7347,13 @@ static int ropus_celt_decode_q(ropus_celt_q *st, const uint8_t *data,
          * sizeof(ropus_sig));
    } while (++c < CC);
 
-   memset(X, 0, sizeof X);
+   memset(X, 0, sizeof scr->celt.q.X);
    ropus_quant_all_bands_q(start, end, X, C == 2 ? X + N : NULL,
       collapse_masks, f.pulses, f.shortBlocks, f.spread_decision,
       f.dual_stereo, f.intensity, f.tf_res,
       (int32_t)len * (8 << ROPUS_BITRES) - f.anti_collapse_rsv,
-      f.balance, dec, f.LM, f.codedBands, &st->rng, 0, normbuf);
+      f.balance, dec, f.LM, f.codedBands, &st->rng, 0, normbuf,
+      scr->celt.q.had);
 
    if (f.anti_collapse_rsv > 0)
       anti_collapse_on = (int)ropus_ec_dec_bits(dec, 1);
@@ -7273,7 +7369,7 @@ static int ropus_celt_decode_q(ropus_celt_q *st, const uint8_t *data,
       for (i = 0; i < C * ROPUS_NBANDS; i++)
          oldBandE[i] = -(28 << ROPUS_DB_SHIFT);
 
-   ropus_celt_synthesis_q(X, out_syn, oldBandE, start, f.effEnd, C, CC,
+   ropus_celt_synthesis_q(X, out_syn, scr, oldBandE, start, f.effEnd, C, CC,
       f.isTransient, f.LM, f.silence);
 
    c = 0;
@@ -9251,7 +9347,7 @@ static void ropus_silk_lpc_analysis_filter(int16_t *out, const int16_t *in,
          out32_Q12 = ROPUS_SILK_ADD32_OVF(out32_Q12,
             ROPUS_SILK_SMULBB(in_ptr[-j - 1], B[j + 1]));
       }
-      out32_Q12 = (int32_t)((uint32_t)((int32_t)in_ptr[1] << 12)
+      out32_Q12 = (int32_t)(((uint32_t)(int32_t)in_ptr[1] << 12)
          - (uint32_t)out32_Q12);
       out32 = ROPUS_SILK_RSHIFT_ROUND(out32_Q12, 12);
       out[ix] = (int16_t)ROPUS_SILK_SAT16(out32);
@@ -9264,7 +9360,8 @@ static const int16_t ropus_quant_offsets_Q10[2][2] =
 
 /* silk_decode_core (decode_core.c), no-loss path.                      */
 static void ropus_silk_decode_core(ropus_silk_state *st, ropus_silk_ctrl *ctrl,
-      int16_t *xq, const int16_t *pulses, int32_t *prev_gain_Q16)
+      int16_t *xq, const int16_t *pulses, int32_t *prev_gain_Q16,
+      int16_t *sLTP, int32_t *sLTP_Q15)
 {
    int i, k, lag = 0, start_idx, sLTP_buf_idx;
    int NLSF_interpolation_flag, signalType;
@@ -9272,8 +9369,6 @@ static void ropus_silk_decode_core(ropus_silk_state *st, ropus_silk_ctrl *ctrl,
    int16_t *B_Q14;
    int16_t *pxq;
    int16_t A_Q12_tmp[ROPUS_SILK_MAX_LPC_ORDER];
-   int16_t sLTP[20 * 16];
-   int32_t sLTP_Q15[20 * 16 + ROPUS_SILK_MAX_FRAME_LEN];
    int32_t res_Q14[5 * 16];
    int32_t sLPC_Q14[5 * 16 + ROPUS_SILK_MAX_LPC_ORDER];
    int32_t LTP_pred_Q13, LPC_pred_Q10, Gain_Q10;
@@ -9808,6 +9903,18 @@ typedef struct
    ropus_silk_stereo sStereo;
    int nChannelsInternal;
    int prev_decode_only_middle;
+
+   /* Decode scratch, per state rather than per call: these were the
+    * decode-path stack frames (sLTP alone is 3.2 KiB with its Q15
+    * shadow) on the audio task thread, against the tree's 8 KiB
+    * floor.  All four are transient within one call -- buf spans the
+    * MS->LR step inside one ropus_silk2_decode, the others live
+    * within one channel's frame decode -- and channels decode
+    * sequentially, so one set serves both. */
+   int16_t scr_buf[2][2 + ROPUS_SILK_MAX_FRAME_LEN];
+   int16_t scr_pulses[ROPUS_SILK_MAX_FRAME_LEN + ROPUS_SILK_SHELL_LEN];
+   int16_t scr_sLTP[20 * 16];
+   int32_t scr_sLTP_Q15[20 * 16 + ROPUS_SILK_MAX_FRAME_LEN];
 } ropus_silk2;
 
 static void ropus_silk2_init(ropus_silk2 *s)
@@ -9829,14 +9936,15 @@ static void ropus_silk2_decode_frame_ch(ropus_silk2 *s, int n,
 {
    ropus_silk_state *st = &s->ch[n];
    ropus_silk_ctrl ctrl;
-   int16_t pulses[ROPUS_SILK_MAX_FRAME_LEN + ROPUS_SILK_SHELL_LEN];
+   int16_t *pulses = s->scr_pulses;
    int mv_len;
    memset(&ctrl, 0, sizeof ctrl);
    ropus_silk_decode_indices(st, dec, st->nFramesDecoded, 0, condCoding);
    ropus_silk_decode_pulses(dec, pulses, st->indices.signalType,
       st->indices.quantOffsetType, st->frame_length);
    ropus_silk_decode_parameters(st, &ctrl, condCoding);
-   ropus_silk_decode_core(st, &ctrl, pOut, pulses, &s->prev_gain_Q16[n]);
+   ropus_silk_decode_core(st, &ctrl, pOut, pulses, &s->prev_gain_Q16[n],
+      s->scr_sLTP, s->scr_sLTP_Q15);
    st->prevSignalType = st->indices.signalType;
    st->first_frame_after_reset = 0;
    mv_len = st->ltp_mem_length - st->frame_length;
@@ -9857,7 +9965,7 @@ static int ropus_silk2_decode(ropus_silk2 *s, ropus_ec *dec,
    int i, n, nOut, frame_length;
    int32_t MS_pred_Q13[2] = { 0, 0 };
    int decode_only_middle = 0, has_side;
-   int16_t buf[2][2 + ROPUS_SILK_MAX_FRAME_LEN];
+   int16_t (*buf)[2 + ROPUS_SILK_MAX_FRAME_LEN] = s->scr_buf;
 
    if (newPacket)
       for (n = 0; n < nch; n++)
@@ -10016,7 +10124,8 @@ static void ropus_smooth_fade_q(const int16_t *in1, const int16_t *in2,
 /* Decode one frame of an Opus packet.  data/len cover the frame's
  * bytes; toc_* give the packet TOC properties.  pcm receives
  * frame_size48 interleaved s16 samples at 48 kHz.                      */
-static int ropus_decode_frame_q(ropus_dec_q *st, const uint8_t *data,
+static int ropus_decode_frame_q(ropus_dec_q *st,
+      ropus_frame_scratch *scr, const uint8_t *data,
       int32_t len, int16_t *pcm, int frame_size48, int mode,
       int bandwidth, int stream_channels, int nfp, int newPacket)
 {
@@ -10026,7 +10135,7 @@ static int ropus_decode_frame_q(ropus_dec_q *st, const uint8_t *data,
    int start_band = 0;
    int F2_5 = 120, F5 = 240, F20 = 960;
    int celt_accum;
-   int16_t redundant_audio[240 * 2];
+   int16_t *redundant_audio = scr->redundant.q;
    int celt_ret = 0;
 
    st->stream_channels = stream_channels;
@@ -10050,7 +10159,8 @@ static int ropus_decode_frame_q(ropus_dec_q *st, const uint8_t *data,
                                          /* unsupported (never emitted)*/
       memset(pcm, 0, audiosize * st->channels * sizeof(int16_t));
       {
-         int16_t bl[960], br[960];
+         int16_t *bl = scr->bl;
+         int16_t *br = scr->br;
          int fr, done = 0;
          for (fr = 0; fr < nfp; fr++)
          {
@@ -10117,7 +10227,7 @@ static int ropus_decode_frame_q(ropus_dec_q *st, const uint8_t *data,
       ropus_ec rdec;
       st->celt.start = 0;
       ropus_ec_dec_init(&rdec, data + len, redundancy_bytes);
-      ropus_celt_decode_q(&st->celt, data + len, redundancy_bytes,
+      ropus_celt_decode_q(&st->celt, scr, data + len, redundancy_bytes,
          redundant_audio, F5, &rdec, 0);
    }
 
@@ -10133,7 +10243,7 @@ static int ropus_decode_frame_q(ropus_dec_q *st, const uint8_t *data,
       st->celt.end = mode == ROPUS_MODE_CELT
          ? st->celt.end : st->celt.end;
       st->celt.stream_channels = st->stream_channels;
-      celt_ret = ropus_celt_decode_q(&st->celt, data, len, pcm,
+      celt_ret = ropus_celt_decode_q(&st->celt, scr, data, len, pcm,
          celt_frame_size, &dec, celt_accum);
    }
    else
@@ -10147,7 +10257,7 @@ static int ropus_decode_frame_q(ropus_dec_q *st, const uint8_t *data,
          ropus_ec sdec;
          st->celt.start = 0;
          ropus_ec_dec_init(&sdec, silence, 2);
-         ropus_celt_decode_q(&st->celt, silence, 2, pcm, F2_5, &sdec,
+         ropus_celt_decode_q(&st->celt, scr, silence, 2, pcm, F2_5, &sdec,
             celt_accum);
       }
    }
@@ -10162,7 +10272,7 @@ static int ropus_decode_frame_q(ropus_dec_q *st, const uint8_t *data,
       ropus_celt_reset_q(&st->celt);
       st->celt.start = 0;
       ropus_ec_dec_init(&rdec, data + len, redundancy_bytes);
-      ropus_celt_decode_q(&st->celt, data + len, redundancy_bytes,
+      ropus_celt_decode_q(&st->celt, scr, data + len, redundancy_bytes,
          redundant_audio, F5, &rdec, 0);
 #ifdef ROPUS_DEBUG_REDAUD
       { int z; for (z = 0; z < F5 * st->channels; z++) g_redaud[z] = redundant_audio[z]; g_redaud_n = F5 * st->channels; }
@@ -10235,7 +10345,8 @@ static void ropus_smooth_fade(const float *in1, const float *in2,
       }
 }
 
-static int ropus_decode_frame_f(ropus_dec_f *st, const uint8_t *data,
+static int ropus_decode_frame_f(ropus_dec_f *st,
+      ropus_frame_scratch *scr, const uint8_t *data,
       int32_t len, float *pcm, int frame_size48, int mode,
       int bandwidth, int stream_channels, int nfp, int newPacket)
 {
@@ -10244,8 +10355,8 @@ static int ropus_decode_frame_f(ropus_dec_f *st, const uint8_t *data,
    int redundancy = 0, redundancy_bytes = 0, celt_to_silk = 0;
    int start_band = 0;
    int F2_5 = 120, F5 = 240, F20 = 960;
-   float redundant_audio[240 * 2];
-   int16_t pcm_silk[2880 * 2];
+   float *redundant_audio = scr->redundant.f;
+   int16_t *pcm_silk = scr->pcm_silk;
    int have_silk = 0, silk_n = 0;
    int celt_ret = 0;
 
@@ -10255,7 +10366,8 @@ static int ropus_decode_frame_f(ropus_dec_f *st, const uint8_t *data,
    if (mode != ROPUS_MODE_CELT)
    {
       int fs_khz, nb_subfr;
-      int16_t bl[960], br[960];
+      int16_t *bl = scr->bl;
+      int16_t *br = scr->br;
       int fr;
       if (st->prev_mode == ROPUS_MODE_CELT)
          ropus_silk2_init(&st->silk);
@@ -10327,7 +10439,7 @@ static int ropus_decode_frame_f(ropus_dec_f *st, const uint8_t *data,
       ropus_ec rdec;
       st->celt.start = 0;
       ropus_ec_dec_init(&rdec, data + len, redundancy_bytes);
-      ropus_celt_decode(&st->celt, data + len, redundancy_bytes,
+      ropus_celt_decode(&st->celt, scr, data + len, redundancy_bytes,
          redundant_audio, F5, &rdec);
    }
 
@@ -10339,7 +10451,7 @@ static int ropus_decode_frame_f(ropus_dec_f *st, const uint8_t *data,
       if (mode != st->prev_mode && st->prev_mode >= 0
             && !st->prev_redundancy)
          ropus_celt_reset(&st->celt);
-      celt_ret = ropus_celt_decode(&st->celt, data, len, pcm,
+      celt_ret = ropus_celt_decode(&st->celt, scr, data, len, pcm,
          celt_frame_size, &dec);
    }
    else
@@ -10353,7 +10465,7 @@ static int ropus_decode_frame_f(ropus_dec_f *st, const uint8_t *data,
          ropus_ec sdec;
          st->celt.start = 0;
          ropus_ec_dec_init(&sdec, silence, 2);
-         ropus_celt_decode(&st->celt, silence, 2, pcm, F2_5, &sdec);
+         ropus_celt_decode(&st->celt, scr, silence, 2, pcm, F2_5, &sdec);
       }
    }
 
@@ -10367,7 +10479,7 @@ static int ropus_decode_frame_f(ropus_dec_f *st, const uint8_t *data,
       ropus_celt_reset(&st->celt);
       st->celt.start = 0;
       ropus_ec_dec_init(&rdec, data + len, redundancy_bytes);
-      ropus_celt_decode(&st->celt, data + len, redundancy_bytes,
+      ropus_celt_decode(&st->celt, scr, data + len, redundancy_bytes,
          redundant_audio, F5, &rdec);
       ropus_smooth_fade(pcm + st->channels * (audiosize - F2_5),
          redundant_audio + st->channels * F2_5,
@@ -10400,30 +10512,63 @@ static int ropus_decode_frame_f(ropus_dec_f *st, const uint8_t *data,
 
 #include <formats/ropus.h>
 
+/* An Opus stream above stereo is several streams (RFC 7845 s5.1.1):
+ * nb_streams substreams, the first nb_coupled of them stereo and the
+ * rest mono, decoded independently and then scattered to the output
+ * channels by a mapping table.  Family 0 is the degenerate case of one
+ * substream, so it runs the same path with nb_streams == 1 and no
+ * table.
+ *
+ * Each substream needs its own decoder state.  They are allocated for
+ * the count the header states rather than a worst case, one pipeline's
+ * worth being about 24 KB. */
 struct ropus
 {
-   int channels;
+   int channels;            /* output channels                          */
    unsigned preskip;
    int gain_q8;
    int fmt;
-   ropus_dec_q q;
-   ropus_dec_f f;
+   int nb_streams;
+   int nb_coupled;
+   /* Output channel -> decoded channel, or 255 for a silent one.  The
+    * identity for family 0. */
+   uint8_t mapping[ROPUS_MAX_CHANNELS];
+   ropus_dec_q *q;          /* nb_streams of each                       */
+   ropus_dec_f *f;
+   /* One substream's output, before it is scattered.  Per context, not
+    * shared: the mixer runs several voices at once and a static here
+    * would have them writing over each other.  Only a multistream
+    * context needs it - a single stream decodes straight into the
+    * caller's buffer, as it always did. */
+   int16_t *sub_q;          /* 5760 * 2, or NULL                        */
+   float   *sub_f;
+   ropus_frame_scratch fscr;
 };
+
+/* Where a substream's channels land in the decoded (pre-mapping)
+ * channel order: the coupled streams come first, two channels each. */
+static int ropus_stream_base(const ropus_t *o, int s)
+{
+   return (s < o->nb_coupled) ? s * 2 : o->nb_coupled + s;
+}
+
+static int ropus_stream_channels(const ropus_t *o, int s)
+{
+   return (s < o->nb_coupled) ? 2 : 1;
+}
 
 /* Parse an OpusHead (RFC 7845 section 5.1) and create a decoder.       */
 ropus_t *ropus_open(const void *head, size_t head_size)
 {
    const uint8_t *h = (const uint8_t *)head;
    ropus_t *o;
-   int channels;
+   int channels, i;
    if (!h || head_size < 19 || memcmp(h, "OpusHead", 8) != 0)
       return NULL;
    if (h[8] != 1)                        /* version                     */
       return NULL;
    channels = h[9];
-   if (channels < 1 || channels > 2)     /* no multistream support      */
-      return NULL;
-   if (head_size >= 19 && h[18] != 0)    /* mapping family != 0         */
+   if (channels < 1 || channels > ROPUS_MAX_CHANNELS)
       return NULL;
    o = (ropus_t *)calloc(1, sizeof(*o));
    if (!o)
@@ -10431,13 +10576,94 @@ ropus_t *ropus_open(const void *head, size_t head_size)
    o->channels = channels;
    o->preskip = (unsigned)h[10] | ((unsigned)h[11] << 8);
    o->gain_q8 = (int16_t)((unsigned)h[16] | ((unsigned)h[17] << 8));
-   ropus_dec_q_init(&o->q, channels);
-   ropus_dec_f_init(&o->f, channels);
+
+   if (h[18] == 0)
+   {
+      /* Family 0: one substream, mono or stereo, no table. */
+      if (channels > 2)
+      {
+         free(o);
+         return NULL;
+      }
+      o->nb_streams = 1;
+      o->nb_coupled = channels - 1;
+      for (i = 0; i < channels; i++)
+         o->mapping[i] = (uint8_t)i;
+   }
+   else if (h[18] == 1)
+   {
+      /* Family 1: stream counts and a channel mapping follow the
+       * head, one byte per output channel. */
+      if (head_size < (size_t)21 + channels)
+      {
+         free(o);
+         return NULL;
+      }
+      o->nb_streams = h[19];
+      o->nb_coupled = h[20];
+      if (   o->nb_streams < 1
+          || o->nb_coupled < 0
+          || o->nb_coupled > o->nb_streams
+          || o->nb_streams + o->nb_coupled > ROPUS_MAX_CHANNELS)
+      {
+         free(o);
+         return NULL;
+      }
+      for (i = 0; i < channels; i++)
+      {
+         uint8_t m = h[21 + i];
+         /* 255 is a channel the mapping leaves silent; anything else
+          * has to name a channel some substream actually decodes. */
+         if (m != 255 && m >= o->nb_streams + o->nb_coupled)
+         {
+            free(o);
+            return NULL;
+         }
+         o->mapping[i] = m;
+      }
+   }
+   else
+   {
+      free(o);                           /* families 2, 3, 255          */
+      return NULL;
+   }
+
+   o->q = (ropus_dec_q *)calloc((size_t)o->nb_streams, sizeof(*o->q));
+   o->f = (ropus_dec_f *)calloc((size_t)o->nb_streams, sizeof(*o->f));
+   if (o->nb_streams > 1)
+   {
+      o->sub_q = (int16_t *)calloc((size_t)ROPUS_MAX_FRAME * 2,
+            sizeof(int16_t));
+      o->sub_f = (float   *)calloc((size_t)ROPUS_MAX_FRAME * 2,
+            sizeof(float));
+   }
+   if (   !o->q || !o->f
+       || (o->nb_streams > 1 && (!o->sub_q || !o->sub_f)))
+   {
+      free(o->sub_q);
+      free(o->sub_f);
+      free(o->q);
+      free(o->f);
+      free(o);
+      return NULL;
+   }
+   for (i = 0; i < o->nb_streams; i++)
+   {
+      ropus_dec_q_init(&o->q[i], ropus_stream_channels(o, i));
+      ropus_dec_f_init(&o->f[i], ropus_stream_channels(o, i));
+   }
    return o;
 }
 
 void ropus_close(ropus_t *o)
 {
+   if (o)
+   {
+      free(o->sub_q);
+      free(o->sub_f);
+      free(o->q);
+      free(o->f);
+   }
    free(o);
 }
 
@@ -10453,8 +10679,12 @@ unsigned ropus_preskip(const ropus_t *o)
 
 void ropus_reset(ropus_t *o)
 {
-   ropus_dec_q_init(&o->q, o->channels);
-   ropus_dec_f_init(&o->f, o->channels);
+   int i;
+   for (i = 0; i < o->nb_streams; i++)
+   {
+      ropus_dec_q_init(&o->q[i], ropus_stream_channels(o, i));
+      ropus_dec_f_init(&o->f[i], ropus_stream_channels(o, i));
+   }
    o->fmt = ROPUS_FMT_NONE;
 }
 
@@ -10487,24 +10717,78 @@ static void ropus_toc_props(uint8_t toc, int *mode, int *bw, int *nfp)
 /* Decode one Opus packet to interleaved 48 kHz s16.  out must hold
  * 5760 * channels samples (120 ms).  Returns frames or < 0.            */
 int ropus_decode_s16(ropus_t *o, const void *pkt, size_t len,
-      int16_t *out)
+      int16_t *out, size_t out_samples)
 {
    ropus_packet pk;
-   int mode, bw, nfp, fr, total = 0;
+   const uint8_t *d = (const uint8_t *)pkt;
+   int32_t left = (int32_t)len;
+   int mode, bw, nfp, fr, s, total = 0;
    if (o->fmt == ROPUS_FMT_F32)
-      return -3;
+      return ROPUS_ERR_FMT;
    o->fmt = ROPUS_FMT_S16;
-   if (ropus_packet_parse((const uint8_t *)pkt, (int32_t)len, &pk) < 0)
-      return -1;
-   ropus_toc_props(((const uint8_t *)pkt)[0], &mode, &bw, &nfp);
-   for (fr = 0; fr < pk.nframes; fr++)
+
+   /* Each substream is a packet in its own right, laid end to end.
+    * All but the last are self-delimited so their extent is known
+    * before the next begins. */
+   for (s = 0; s < o->nb_streams; s++)
    {
-      int r = ropus_decode_frame_q(&o->q, pk.frames[fr], pk.sizes[fr],
-         out + total * o->channels, pk.frame_size, mode, bw,
-         (((const uint8_t *)pkt)[0] & 4) ? 2 : 1, nfp, 1);
-      if (r <= 0)
-         return -2;
-      total += r;
+      int      sch  = ropus_stream_channels(o, s);
+      int      base = ropus_stream_base(o, s);
+      int32_t  used = 0;
+      int      got  = 0;
+      int      c;
+      /* One stream: its channels are the output's, so decode there
+       * directly and skip the scatter entirely. */
+      int16_t *sub  = o->sub_q ? o->sub_q : out;
+      if (ropus_packet_parse(d, left, &pk, s < o->nb_streams - 1,
+               &used) < 0)
+         return ROPUS_ERR_PACKET;
+      /* What this packet can write to out, whether the frames land
+       * there directly (one substream) or through the scatter below
+       * (several).  Checked before anything is written, and on every
+       * substream, they all having to agree on the span anyway. */
+      if ((size_t)pk.nframes * (size_t)pk.frame_size
+            * (size_t)o->channels > out_samples)
+         return ROPUS_ERR_ROOM;
+      ropus_toc_props(d[0], &mode, &bw, &nfp);
+      for (fr = 0; fr < pk.nframes; fr++)
+      {
+         int r = ropus_decode_frame_q(&o->q[s], &o->fscr, pk.frames[fr],
+            pk.sizes[fr], sub + got * sch, pk.frame_size, mode, bw,
+            (d[0] & 4) ? 2 : 1, nfp, 1);
+         if (r <= 0)
+            return ROPUS_ERR_DECODE;
+         got += r;
+      }
+      /* Every substream of a packet codes the same span; a stream
+       * that disagrees is malformed rather than something to mix. */
+      if (s == 0)
+         total = got;
+      else if (got != total)
+         return ROPUS_ERR_DECODE;
+      /* Scatter this substream's channels to whichever output
+       * channels the table points at them. */
+      if (sub != out)
+         for (c = 0; c < o->channels; c++)
+         {
+            int m = o->mapping[c];
+            int i;
+            if (m == 255 || m < base || m >= base + sch)
+               continue;
+            for (i = 0; i < total; i++)
+               out[i * o->channels + c] = sub[i * sch + (m - base)];
+         }
+      d    += used;
+      left -= used;
+   }
+   /* Channels the mapping leaves out are silent, and nothing above
+    * has written them. */
+   {
+      int c, i;
+      for (c = 0; c < o->channels; c++)
+         if (o->mapping[c] == 255)
+            for (i = 0; i < total; i++)
+               out[i * o->channels + c] = 0;
    }
    if (o->gain_q8)
    {
@@ -10523,24 +10807,69 @@ int ropus_decode_s16(ropus_t *o, const void *pkt, size_t len,
 
 /* Decode one Opus packet to interleaved 48 kHz float.                  */
 int ropus_decode_f32(ropus_t *o, const void *pkt, size_t len,
-      float *out)
+      float *out, size_t out_samples)
 {
    ropus_packet pk;
-   int mode, bw, nfp, fr, total = 0;
+   const uint8_t *d = (const uint8_t *)pkt;
+   int32_t left = (int32_t)len;
+   int mode, bw, nfp, fr, s, total = 0;
    if (o->fmt == ROPUS_FMT_S16)
-      return -3;
+      return ROPUS_ERR_FMT;
    o->fmt = ROPUS_FMT_F32;
-   if (ropus_packet_parse((const uint8_t *)pkt, (int32_t)len, &pk) < 0)
-      return -1;
-   ropus_toc_props(((const uint8_t *)pkt)[0], &mode, &bw, &nfp);
-   for (fr = 0; fr < pk.nframes; fr++)
+
+   /* See the s16 path: substreams end to end, all but the last
+    * self-delimited, scattered by the mapping table. */
+   for (s = 0; s < o->nb_streams; s++)
    {
-      int r = ropus_decode_frame_f(&o->f, pk.frames[fr], pk.sizes[fr],
-         out + total * o->channels, pk.frame_size, mode, bw,
-         (((const uint8_t *)pkt)[0] & 4) ? 2 : 1, nfp, 1);
-      if (r <= 0)
-         return -2;
-      total += r;
+      int      sch  = ropus_stream_channels(o, s);
+      int      base = ropus_stream_base(o, s);
+      int32_t  used = 0;
+      int      got  = 0;
+      int      c;
+      float   *sub  = o->sub_f ? o->sub_f : out;
+      if (ropus_packet_parse(d, left, &pk, s < o->nb_streams - 1,
+               &used) < 0)
+         return ROPUS_ERR_PACKET;
+      /* What this packet can write to out, whether the frames land
+       * there directly (one substream) or through the scatter below
+       * (several).  Checked before anything is written, and on every
+       * substream, they all having to agree on the span anyway. */
+      if ((size_t)pk.nframes * (size_t)pk.frame_size
+            * (size_t)o->channels > out_samples)
+         return ROPUS_ERR_ROOM;
+      ropus_toc_props(d[0], &mode, &bw, &nfp);
+      for (fr = 0; fr < pk.nframes; fr++)
+      {
+         int r = ropus_decode_frame_f(&o->f[s], &o->fscr, pk.frames[fr],
+            pk.sizes[fr], sub + got * sch, pk.frame_size, mode, bw,
+            (d[0] & 4) ? 2 : 1, nfp, 1);
+         if (r <= 0)
+            return ROPUS_ERR_DECODE;
+         got += r;
+      }
+      if (s == 0)
+         total = got;
+      else if (got != total)
+         return ROPUS_ERR_DECODE;
+      if (sub != out)
+         for (c = 0; c < o->channels; c++)
+         {
+            int m = o->mapping[c];
+            int i;
+            if (m == 255 || m < base || m >= base + sch)
+               continue;
+            for (i = 0; i < total; i++)
+               out[i * o->channels + c] = sub[i * sch + (m - base)];
+         }
+      d    += used;
+      left -= used;
+   }
+   {
+      int c, i;
+      for (c = 0; c < o->channels; c++)
+         if (o->mapping[c] == 255)
+            for (i = 0; i < total; i++)
+               out[i * o->channels + c] = 0.0f;
    }
    if (o->gain_q8)
    {

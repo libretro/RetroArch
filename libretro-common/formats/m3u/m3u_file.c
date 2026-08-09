@@ -20,6 +20,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+/* m3u_file -- M3U playlist reader/writer.
+ *
+ * What it implements: line-based M3U parsing with three label styles -
+ * the standard extended '#EXTINF:<runtime>,<label>', the non-standard
+ * '#LABEL:<label>', and the RetroArch '<path>|<label>' suffix -
+ * relative and absolute entry paths (resolved against the playlist
+ * location), Windows line endings (trailing whitespace including the
+ * carriage return is trimmed), and saving back out in a chosen label
+ * style via m3u_file_save.
+ *
+ * What it does not implement: other extended directives (#EXTM3U,
+ * #EXTGRP, #PLAYLIST and friends are treated as comments and dropped -
+ * a load/save round trip keeps only paths and labels), URL entries
+ * (paths are treated as filesystem paths), and duplicate detection.
+ */
+
 #include <retro_miscellaneous.h>
 
 #include <string/stdstring.h>

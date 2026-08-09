@@ -48,6 +48,8 @@
 #include "SDL_syswm.h"
 #include "../common/sdl2_common.h"
 
+#include <encodings/utf.h>
+
 #include "../font_driver.h"
 
 #include "../../configuration.h"
@@ -92,7 +94,7 @@ static void sdl2_init_font(sdl2_video_t *vid, const char *font_path,
 
    if (!font_renderer_create_default(
             &vid->font_driver, &vid->font_data,
-            *font_path ? font_path : NULL, font_size))
+            *font_path ? font_path : NULL, font_size, FONT_ATLAS_FORMAT_A8))
    {
       RARCH_WARN("[SDL2] Could not initialize fonts.\n");
       return;
@@ -463,8 +465,6 @@ static void *sdl2_gfx_init(const video_info_t *video,
     * We also gain a working render_msg path for any other RA
     * subsystem that calls font_driver_render_msg with NULL font -
     * this is the same wiring every other modern driver does. */
-      font_driver_init_osd(vid, video, false, video->is_threaded,
-            FONT_DRIVER_RENDER_SDL2);
 #endif
 
    *input      = NULL;
@@ -761,14 +761,9 @@ static void sdl2_gfx_free(void *data)
    if (!vid)
       return;
 
-#if SDL_VERSION_ATLEAST(2, 0, 18)
-   /* Mirror font_driver_init_osd in sdl2_gfx_init.  Must run before
-    * SDL_DestroyRenderer because the OSD font owns SDL_Textures
-    * created against vid->renderer; tearing the renderer down first
-    * would leave the font driver holding dangling texture pointers
-    * for the next free() call. */
-   font_driver_free_osd();
-#endif
+   /* The OSD font owns SDL_Textures created against vid->renderer and
+    * must go before SDL_DestroyRenderer below. It does:
+    * video_driver_free_internal() releases it before calling this. */
 
 #ifdef HAVE_OVERLAY
    /* Same constraint - overlay textures are owned by vid->renderer.
@@ -890,7 +885,7 @@ static void sdl2_poke_set_osd_msg(void *data, const char *msg, size_t msg_len,
     * 2. gfx_display_draw_text path (used by all menu drivers and
     *    by widgets via gfx_widgets_draw_text).  `font` is a valid
     *    font_data_t* whose renderer was selected via
-    *    FONT_DRIVER_RENDER_SDL2 - i.e. our sdl2_raster_font.  We
+    *    sdl2_raster_font as the font backend.  We
     *    must dispatch to that font driver's render_msg, otherwise
     *    every menu/widget text call falls through to the OSD font
     *    and lands in the wrong place with the wrong glyphs.
@@ -1433,22 +1428,6 @@ static void gfx_display_sdl2_draw_pipeline(
    (void)video_height;
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_sdl2 = {
-   gfx_display_sdl2_draw,
-   gfx_display_sdl2_draw_pipeline,
-   gfx_display_sdl2_blend_begin,
-   gfx_display_sdl2_blend_end,
-   gfx_display_sdl2_get_default_mvp,
-   NULL, /* get_default_vertices */
-   NULL, /* get_default_tex_coords */
-   FONT_DRIVER_RENDER_SDL2,
-   GFX_VIDEO_DRIVER_SDL2,
-   "sdl2",
-   false,
-   gfx_display_sdl2_scissor_begin,
-   gfx_display_sdl2_scissor_end
-};
-
 /*
  * FONT DRIVER
  *
@@ -1551,7 +1530,7 @@ static void *sdl2_raster_font_init(void *data, const char *font_path,
 
    if (!font_renderer_create_default(
             &font->font_driver, &font->font_data,
-            font_path, font_size))
+            font_path, font_size, FONT_ATLAS_FORMAT_A8))
    {
       RARCH_WARN("[SDL2] sdl2_raster_font_init: font_renderer_create_default "
             "failed for path '%s' size %.1f\n",
@@ -1592,22 +1571,24 @@ static int sdl2_raster_font_get_message_width(void *data, const char *msg,
 {
    sdl2_raster_t *font = (sdl2_raster_t*)data;
    const char    *cur  = msg;
-   size_t         i    = 0;
+   const char    *end  = msg + msg_len;
    int            width = 0;
 
    if (!font || !msg)
       return 0;
 
-   while (i < msg_len && *cur)
+   /* Decode UTF-8 code points like every other raster font backend;
+    * byte-wise lookups turned multi-byte text into per-byte Latin-1
+    * glyph queries. */
+   while (cur < end && *cur)
    {
+      uint32_t code = utf8_walk(&cur);
       const struct font_glyph *glyph =
-         font->font_driver->get_glyph(font->font_data, (uint8_t)*cur);
+         font->font_driver->get_glyph(font->font_data, code);
       if (!glyph)
          glyph = font->font_driver->get_glyph(font->font_data, '?');
       if (glyph)
          width += glyph->advance_x;
-      i++;
-      cur++;
    }
 
    return (int)((float)width * scale);
@@ -1633,7 +1614,7 @@ static void sdl2_raster_font_render_line(
    int         idx[SDL2_FONT_MAX_GLYPHS * 6];
    int         n_glyphs = 0;
    const char *cur      = msg;
-   size_t      ci       = 0;
+   const char *cur_end  = msg + msg_len;
    float       x        = pos_x;
    float       y        = pos_y;
    float       inv_w;
@@ -1660,14 +1641,14 @@ static void sdl2_raster_font_render_line(
    inv_w = 1.0f / (float)font->tex_width;
    inv_h = 1.0f / (float)font->tex_height;
 
-   /* gfx_display draw_text passes 8-bit-clean strings; we walk byte
-    * by byte. UTF-8 multi-byte sequences are handled by the upstream
-    * font renderer's glyph lookup (which keys on uint32_t codepoints
-    * but tolerates byte-by-byte queries for the ASCII-only RA UI). */
-   while (ci < msg_len && *cur)
+   /* Decode UTF-8 code points like every other raster font backend;
+    * localized UI text is not ASCII-only and byte-wise lookups turned
+    * multi-byte sequences into per-byte Latin-1 glyph queries. */
+   while (cur < cur_end && *cur)
    {
+      uint32_t code = utf8_walk(&cur);
       const struct font_glyph *glyph =
-         font->font_driver->get_glyph(font->font_data, (uint8_t)*cur);
+         font->font_driver->get_glyph(font->font_data, code);
       float gx, gy, gw, gh;
       float u0, v0, u1, v1;
       int   base;
@@ -1675,11 +1656,7 @@ static void sdl2_raster_font_render_line(
       if (!glyph)
          glyph = font->font_driver->get_glyph(font->font_data, '?');
       if (!glyph)
-      {
-         ci++;
-         cur++;
          continue;
-      }
 
       gx = x + glyph->draw_offset_x * scale;
       gy = y + glyph->draw_offset_y * scale;
@@ -1726,8 +1703,6 @@ static void sdl2_raster_font_render_line(
 
       x += glyph->advance_x * scale;
       n_glyphs++;
-      ci++;
-      cur++;
 
       if (n_glyphs >= SDL2_FONT_MAX_GLYPHS)
       {
@@ -1889,7 +1864,7 @@ static bool sdl2_raster_font_get_line_metrics(void *data,
    return false;
 }
 
-font_renderer_t sdl2_raster_font = {
+static font_renderer_t sdl2_raster_font = {
    sdl2_raster_font_init,
    sdl2_raster_font_free,
    sdl2_raster_font_render_msg,
@@ -2207,9 +2182,34 @@ video_driver_t video_sdl2 = {
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
 #if SDL_VERSION_ATLEAST(2, 0, 18)
-   sdl2_gfx_widgets_enabled
+   sdl2_gfx_widgets_enabled,
 #else
-   NULL  /* widgets need SDL_RenderGeometry */
+   NULL,  /* widgets need SDL_RenderGeometry */
 #endif
+#endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+#if SDL_VERSION_ATLEAST(2, 0, 18)
+   &sdl2_raster_font
+#else
+   NULL  /* sdl2_raster_font needs SDL_RenderGeometry */
 #endif
 };
+
+#if SDL_VERSION_ATLEAST(2, 0, 18)
+gfx_display_ctx_driver_t gfx_display_ctx_sdl2 = {
+   gfx_display_sdl2_draw,
+   gfx_display_sdl2_draw_pipeline,
+   gfx_display_sdl2_blend_begin,
+   gfx_display_sdl2_blend_end,
+   gfx_display_sdl2_get_default_mvp,
+   NULL, /* get_default_vertices */
+   NULL, /* get_default_tex_coords */
+   &sdl2_raster_font,
+   GFX_VIDEO_DRIVER_SDL2,
+   "sdl2",
+   false,
+   gfx_display_sdl2_scissor_begin,
+   gfx_display_sdl2_scissor_end
+};
+#endif

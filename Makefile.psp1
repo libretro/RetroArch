@@ -15,13 +15,12 @@ else
    OPTIMIZE_LV	:= -O3
 endif
 
-INCDIR = deps deps/stb deps/7zip libretro-common/include libretro-common/include/compat/zlib
+INCDIR = deps libretro-common/include
 CFLAGS = $(OPTIMIZE_LV) -fsingle-precision-constant
 ASFLAGS = $(CFLAGS)
 
 RARCH_DEFINES = -DPSP \
 		-D_MIPS_ARCH_ALLEGREX \
-		-DHAVE_ZLIB \
 		-DHAVE_AUDIOMIXER \
 		-DHAVE_RWAV \
 		-DHAVE_RPNG \
@@ -42,7 +41,6 @@ RARCH_DEFINES = -DPSP \
 		-DHAVE_DSP_FILTER \
 		-DHAVE_VIDEO_FILTER \
 		-DHAVE_7ZIP \
-		-D_7ZIP_ST \
 		-DHAVE_CC_RESAMPLER \
 		-DHAVE_CORE_INFO_CACHE
 

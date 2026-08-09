@@ -148,7 +148,7 @@ typedef void (^PlaylistEntryBlock)(const struct playlist_entry *entry, playlist_
 
     // Check if RetroArch is properly initialized
     runloop_state_t *runloop_st = runloop_state_get_ptr();
-    if (!runloop_st || !(runloop_st->flags & RUNLOOP_FLAG_IS_INITED)) {
+    if (!runloop_st || !runloop_is_inited()) {
         RARCH_LOG("RetroArch not fully initialized, cannot access playlists\n");
         return games;
     }
@@ -201,7 +201,7 @@ typedef void (^PlaylistEntryBlock)(const struct playlist_entry *entry, playlist_
 {
     // Check if RetroArch is properly initialized
     runloop_state_t *runloop_st = runloop_state_get_ptr();
-    if (!runloop_st || !(runloop_st->flags & RUNLOOP_FLAG_IS_INITED)) {
+    if (!runloop_st || !runloop_is_inited()) {
         RARCH_LOG("RetroArch not fully initialized, cannot find games\n");
         return nil;
     }

@@ -92,7 +92,7 @@ static void test_mmap_read_overflow(void)
       printf("[SUCCESS] baseline read returned 4 bytes\n");
 
    /* Seek to offset 10.  mappos is now 10. */
-   if (retro_vfs_file_seek_impl(stream, 10, 0 /*SEEK_SET*/) != 10)
+   if (retro_vfs_file_seek_impl(stream, 10, 0 /*SEEK_SET*/) != 0 || retro_vfs_file_tell_impl(stream) != 10)
    {
       printf("[ERROR] seek to 10 failed\n");
       failures++;

@@ -254,6 +254,8 @@ enum huffman_error huffman_import_tree_huffman(struct huffman_decoder* decoder, 
 	enum huffman_error error;
 	/* start by parsing the lengths for the small tree */
 	struct huffman_decoder* smallhuff = create_huffman_decoder(24, 6);
+	if (smallhuff == NULL)
+		return HUFFERR_INTERNAL_INCONSISTENCY;
 	smallhuff->huffnode[0].numbits = bitstream_read(bitbuf, 3);
 	start = bitstream_read(bitbuf, 3) + 1;
 	for (index = 1; index < 24; index++)
@@ -270,7 +272,15 @@ enum huffman_error huffman_import_tree_huffman(struct huffman_decoder* decoder, 
 	/* then regenerate the tree */
 	error = huffman_assign_canonical_codes(smallhuff);
 	if (error != HUFFERR_NONE)
+	{
+		/* smallhuff is local to this function and the only other exit
+		 * that reaches it frees it; returning straight out here leaked
+		 * the decoder and both of its arrays. This is the path a
+		 * malformed huffman-compressed hunk takes, so it leaked once per
+		 * hunk read rather than once per image. */
+		delete_huffman_decoder(smallhuff);
 		return error;
+	}
 	huffman_build_lookup_table(smallhuff);
 
 	/* determine the maximum length of an RLE count */

@@ -852,22 +852,6 @@ void gfx_display_d3d10_scissor_end(void *data,
    d3d10->device->lpVtbl->RSSetScissorRects(d3d10->device, 1, &rect);
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_d3d10 = {
-   gfx_display_d3d10_draw,
-   gfx_display_d3d10_draw_pipeline,
-   gfx_display_d3d10_blend_begin,
-   gfx_display_d3d10_blend_end,
-   NULL,                                     /* get_default_mvp        */
-   NULL,                                     /* get_default_vertices   */
-   NULL,                                     /* get_default_tex_coords */
-   FONT_DRIVER_RENDER_D3D10_API,
-   GFX_VIDEO_DRIVER_DIRECT3D10,
-   "d3d10",
-   true,
-   gfx_display_d3d10_scissor_begin,
-   gfx_display_d3d10_scissor_end
-};
-
 /*
  * FONT DRIVER
  */
@@ -882,7 +866,7 @@ static void *d3d10_font_init(void* data, const char* font_path,
       return NULL;
 
    if (!font_renderer_create_default(
-             &font->font_driver, &font->font_data, font_path, font_size))
+             &font->font_driver, &font->font_data, font_path, font_size, FONT_ATLAS_FORMAT_A8))
    {
       free(font);
       return NULL;
@@ -958,6 +942,45 @@ static int d3d10_font_get_message_width(void* data,
    }
 
    return delta_x * scale;
+}
+
+/* Update only the atlas dirty rectangle of the A8 font texture:
+ * map the staging texture preserving its contents, copy the changed
+ * rows, and issue a boxed CopySubresourceRegion for just that area.
+ * The generic d3d10_update_texture() re-uploads the whole surface. */
+static void d3d10_font_update_atlas_region(
+      D3D10Device ctx, d3d10_font_t *font,
+      unsigned x0, unsigned y0, unsigned x1, unsigned y1)
+{
+   unsigned y;
+   D3D10_MAPPED_TEXTURE2D mapped;
+   D3D10_BOX box;
+
+   if (     x1 <= x0 || y1 <= y0
+         || x1 > (unsigned)font->atlas->width
+         || y1 > (unsigned)font->atlas->height)
+      return;
+
+   if (FAILED(font->texture.staging->lpVtbl->Map(
+         font->texture.staging, 0, D3D10_MAP_WRITE, 0, &mapped)))
+      return;
+
+   for (y = y0; y < y1; y++)
+      memcpy((uint8_t*)mapped.pData + y * mapped.RowPitch + x0,
+             font->atlas->buffer + (size_t)y * font->atlas->width + x0,
+             x1 - x0);
+
+   font->texture.staging->lpVtbl->Unmap(font->texture.staging, 0);
+
+   box.left   = x0;
+   box.top    = y0;
+   box.front  = 0;
+   box.right  = x1;
+   box.bottom = y1;
+   box.back   = 1;
+   ctx->lpVtbl->CopySubresourceRegion(
+         ctx, (D3D10Resource)font->texture.handle, 0, x0, y0, 0,
+         (D3D10Resource)font->texture.staging, 0, &box);
 }
 
 static void d3d10_font_render_msg(
@@ -1244,10 +1267,9 @@ static void d3d10_font_render_msg(
    if (font->atlas->dirty)
    {
       if (font->texture.staging)
-         d3d10_update_texture(
-               d3d10->device,
-               font->atlas->width, font->atlas->height, font->atlas->width,
-               DXGI_FORMAT_A8_UNORM, font->atlas->buffer, &font->texture);
+         d3d10_font_update_atlas_region(d3d10->device, font,
+               font->atlas->dirty_x0, font->atlas->dirty_y0,
+               font->atlas->dirty_x1, font->atlas->dirty_y1);
       font->atlas->dirty = false;
    }
 
@@ -1283,18 +1305,6 @@ static bool d3d10_font_get_line_metrics(void* data,
    }
    return false;
 }
-
-font_renderer_t d3d10_font = {
-   d3d10_font_init,
-   d3d10_font_free,
-   d3d10_font_render_msg,
-   "d3d10",
-   d3d10_font_get_glyph,
-   NULL, /* bind_block */
-   NULL, /* flush */
-   d3d10_font_get_message_width,
-   d3d10_font_get_line_metrics
-};
 
 /*
  * VIDEO DRIVER
@@ -2222,7 +2232,6 @@ static void d3d10_gfx_free(void* data)
    Release(d3d10->adapter); 
 #endif
 
-   font_driver_free_osd();
 
 #if 0
    video_st_flags = video_st->flags;
@@ -2661,11 +2670,6 @@ static void *d3d10_gfx_init(const video_info_t* video,
 
    d3d10->device->lpVtbl->RSSetState(d3d10->device, d3d10->state);
 
-      font_driver_init_osd(d3d10,
-            video,
-            false,
-            video->is_threaded,
-            FONT_DRIVER_RENDER_D3D10_API);
 
 
 #if 0
@@ -3949,6 +3953,18 @@ static bool d3d10_gfx_widgets_enabled(void *data)
 }
 #endif
 
+static font_renderer_t d3d10_font = {
+   d3d10_font_init,
+   d3d10_font_free,
+   d3d10_font_render_msg,
+   "d3d10",
+   d3d10_font_get_glyph,
+   NULL, /* bind_block */
+   NULL, /* flush */
+   d3d10_font_get_message_width,
+   d3d10_font_get_line_metrics
+};
+
 video_driver_t video_d3d10 = {
    d3d10_gfx_init,
    d3d10_gfx_frame,
@@ -3973,6 +3989,25 @@ video_driver_t video_d3d10 = {
    d3d10_shader_load_begin,
    d3d10_shader_load_step,
 #if defined(HAVE_GFX_WIDGETS)
-   d3d10_gfx_widgets_enabled
+   d3d10_gfx_widgets_enabled,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &d3d10_font
+};
+
+gfx_display_ctx_driver_t gfx_display_ctx_d3d10 = {
+   gfx_display_d3d10_draw,
+   gfx_display_d3d10_draw_pipeline,
+   gfx_display_d3d10_blend_begin,
+   gfx_display_d3d10_blend_end,
+   NULL,                                     /* get_default_mvp        */
+   NULL,                                     /* get_default_vertices   */
+   NULL,                                     /* get_default_tex_coords */
+   &d3d10_font,
+   GFX_VIDEO_DRIVER_DIRECT3D10,
+   "d3d10",
+   true,
+   gfx_display_d3d10_scissor_begin,
+   gfx_display_d3d10_scissor_end
 };

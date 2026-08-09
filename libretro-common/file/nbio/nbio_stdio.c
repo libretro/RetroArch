@@ -29,15 +29,6 @@
 #include <file/nbio.h>
 #include <encodings/utf.h>
 
-/* Assume W-functions do not work below Win2K and Xbox platforms */
-#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500 || defined(_XBOX)
-
-#ifndef LEGACY_WIN32
-#define LEGACY_WIN32
-#endif
-
-#endif
-
 #if defined(_WIN32)
 #if defined(_MSC_VER) && _MSC_VER >= 1400
 #define ATLEAST_VC2005
@@ -71,10 +62,11 @@ struct nbio_stdio_t
    signed char mode;
 };
 
-#if !defined(_WIN32) || defined(LEGACY_WIN32)
-static const char    *stdio_modes[] = { "rb", "wb", "r+b", "rb", "wb", "r+b" };
-#else
-static const wchar_t *stdio_modes[] = { L"rb", L"wb", L"r+b", L"rb", L"wb", L"r+b" };
+#if !defined(_WIN32) || defined(LEGACY_WIN32) || defined(LEGACY_WIN32_RUNTIME)
+static const char    *stdio_modes[]  = { "rb", "wb", "r+b", "rb", "wb", "r+b" };
+#endif
+#if defined(_WIN32) && (!defined(LEGACY_WIN32) || defined(LEGACY_WIN32_RUNTIME))
+static const wchar_t *stdio_modes_w[] = { L"rb", L"wb", L"r+b", L"rb", L"wb", L"r+b" };
 #endif
 
 static int64_t fseek_wrap(FILE *f, int64_t offset, int origin)
@@ -106,11 +98,24 @@ static void *nbio_stdio_open(const char * filename, unsigned mode)
    void *buf                   = NULL;
    struct nbio_stdio_t* handle = NULL;
    int64_t len                 = 0;
-#if !defined(_WIN32) || defined(LEGACY_WIN32)
+#if defined(LEGACY_WIN32_RUNTIME)
+   FILE* f;
+
+   if (win32_needs_local_encoding())
+      f                        = fopen(filename, stdio_modes[mode]);
+   else
+   {
+      wchar_t *filename_wide   = utf8_to_utf16_string_alloc(filename);
+      f                        = _wfopen(filename_wide, stdio_modes_w[mode]);
+
+      if (filename_wide)
+         free(filename_wide);
+   }
+#elif !defined(_WIN32) || defined(LEGACY_WIN32)
    FILE* f                     = fopen(filename, stdio_modes[mode]);
 #else
    wchar_t *filename_wide      = utf8_to_utf16_string_alloc(filename);
-   FILE* f                     = _wfopen(filename_wide, stdio_modes[mode]);
+   FILE* f                     = _wfopen(filename_wide, stdio_modes_w[mode]);
 
    if (filename_wide)
       free(filename_wide);
@@ -211,14 +216,34 @@ static bool nbio_stdio_iterate(void *data)
    switch (handle->op)
    {
       case NBIO_READ:
+      {
+         size_t got;
          if (handle->mode == BIO_READ)
          {
             amount = handle->len;
-            fread((char*)handle->data, 1, amount, handle->f);
+            got    = fread((char*)handle->data, 1, amount, handle->f);
          }
          else
-            fread((char*)handle->data + handle->progress, 1, amount, handle->f);
+            got    = fread((char*)handle->data + handle->progress,
+                  1, amount, handle->f);
+         if (got != amount)
+         {
+            /* I/O error, or the file shrank underneath us: freeze
+             * progress at the bytes actually delivered and end the
+             * operation.  The transfer count used to be ignored and
+             * progress advanced regardless, silently presenting
+             * unwritten buffer memory as file content - worse now
+             * that the partial-read video decoders consume bytes as
+             * progress claims them.  A finished-but-short state
+             * (get_progress reporting no operation in flight with
+             * progress < len) is the failure signal; a deliberate
+             * cancel is distinct, as it reports progress == len. */
+            handle->progress += got;
+            handle->op        = -1;
+            return true;
+         }
          break;
+      }
       case NBIO_WRITE:
          if (handle->mode == BIO_WRITE)
          {
@@ -229,7 +254,19 @@ static bool nbio_stdio_iterate(void *data)
                return false;
          }
          else
-            fwrite((char*)handle->data + handle->progress, 1, amount, handle->f);
+         {
+            size_t put = fwrite((char*)handle->data + handle->progress,
+                  1, amount, handle->f);
+            if (put != amount)
+            {
+               /* Same treatment for a short write (disk full, etc.):
+                * an honest progress and a terminated operation
+                * instead of a claim of completion. */
+               handle->progress += put;
+               handle->op        = -1;
+               return true;
+            }
+         }
          break;
    }
 
@@ -274,7 +311,17 @@ static void *nbio_stdio_get_ptr(void *data, size_t* len)
       return NULL;
    if (len)
       *len = handle->len;
-   if (handle->op == -1)
+   /* The buffer is allocated once at open and never moves, so during a
+    * READ it is safe to hand out: the leading get_progress() bytes are
+    * valid, the rest merely unread - which is exactly what the
+    * partial-read video still decoders consume (task_image sets their
+    * byte wall from the progress).  Returning NULL here mid-read made
+    * the early decode - and adoption of a still-reading handle - fail
+    * with a NULL buffer.  Write-class operations keep the old
+    * conservative NULL: their buffer may be resized. */
+   if (     handle->op == -1
+         || handle->op == NBIO_READ
+         || handle->op == BIO_READ)
       return handle->data;
    return NULL;
 }
@@ -314,7 +361,7 @@ static void nbio_stdio_set_chunk_size(void *data, size_t chunk_size)
 
 static int nbio_stdio_get_fd(void *data)
 {
-#if !defined(_WIN32) || defined(LEGACY_WIN32)
+#if !defined(_WIN32) || defined(LEGACY_WIN32) || defined(LEGACY_WIN32_RUNTIME)
    struct nbio_stdio_t *handle = (struct nbio_stdio_t*)data;
    if (handle && handle->f)
       return fileno(handle->f);
@@ -347,7 +394,20 @@ static void *nbio_stdio_load_entire(void *data, size_t *len)
 
    /* Single fread of the entire file */
    if (handle->len > 0)
-      fread((char*)handle->data, 1, handle->len, handle->f);
+   {
+      size_t got = fread((char*)handle->data, 1, handle->len, handle->f);
+      if (got != handle->len)
+      {
+         /* Report the failure instead of claiming a full buffer; the
+          * dispatch layer's caller falls back to begin_read + iterate
+          * (begin_read rewinds), where a genuinely unreadable file
+          * fails again with a frozen progress and the task layer
+          * cancels cleanly. */
+         handle->progress = got;
+         handle->op       = -1;
+         return NULL;
+      }
+   }
 
    handle->progress = handle->len;
    handle->op       = -1;

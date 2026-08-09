@@ -1,0 +1,70 @@
+name: CI Linux samples/formats
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+jobs:
+  samples-formats:
+    name: Build and run samples/formats
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y build-essential
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Build and run image_decode_fuzz_test (ASan + UBSan + LSan)
+        shell: bash
+        working-directory: samples/formats/image_decode_fuzz
+        run: |
+          set -eu
+          # Malformed-input sweep for the BMP, TGA, DDS and WebP decoders in
+          # libretro-common/formats.  All three take dimensions and
+          # layout from a header the file supplies and size their
+          # output from it, which is where this kind of arithmetic
+          # goes wrong, and none of the four had any test at all.
+          # (WebP is told its buffer length, so it is the least
+          # exposed of them; its chunk walk still trusts sizes that
+          # came out of the file.)
+          #
+          # It found one on its first run: rbmp_proc_reset() gated the
+          # free of output_image on phase != RBMP_PHASE_IDLE, but
+          # rbmp_begin() allocates that surface before it sets any
+          # phase and returns false between the two for a palette
+          # header claiming a bits-per-pixel other than 4 or 8.  Every
+          # such image leaked the surface, reachable from any
+          # malformed or hostile BMP.  Leak detection is therefore
+          # switched on explicitly here rather than left to the
+          # default.
+          #
+          # The sweep truncates each seed at every length and sets
+          # every header byte to each of six interesting values,
+          # including the ones that make dimensions enormous.  The
+          # count of inputs that decode successfully is asserted
+          # inside the test, so a sweep where the seeds stopped being
+          # accepted would fail rather than exercise only the reject
+          # paths and report a pass.  That count is kept per format, not
+          # just in total, so one decoder quietly ceasing to accept its
+          # seed cannot hide behind the other three.
+          make clean all SANITIZER=address,undefined
+          test -x image_decode_fuzz_test
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+             timeout 120 ./image_decode_fuzz_test
+          echo "[pass] image_decode_fuzz_test"

@@ -66,6 +66,26 @@
 #define M_PI 3.14159265358979323846
 #endif
 
+/* Coefficient-row prefetch.
+ *
+ * The phase advance is fully determined (time += ratio), so the row the next
+ * output sample will read is known one iteration ahead. The table is swept
+ * pseudo-randomly -- for any non-integer ratio consecutive outputs land in
+ * unrelated rows -- so the row base is exactly the access the hardware
+ * prefetcher cannot predict, while the run *within* a row is sequential and
+ * needs no help.
+ *
+ * This is a hint only: it changes no arithmetic, the index is masked into
+ * range, and the no-op fallback is equally correct. Output stays bit-exact. */
+#if defined(__GNUC__) || defined(__clang__)
+#define SINC_I16_PREFETCH(addr) __builtin_prefetch((const void*)(addr), 0, 3)
+#elif defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64))
+#include <intrin.h>
+#define SINC_I16_PREFETCH(addr) _mm_prefetch((const char*)(addr), _MM_HINT_T0)
+#else
+#define SINC_I16_PREFETCH(addr) ((void)0)
+#endif
+
 enum sinc_i16_window
 {
    SINC_I16_WINDOW_LANCZOS = 0,
@@ -290,6 +310,7 @@ static void sinc_i16_process_kaiser(rarch_sinc_resampler_int16_t *re,
    unsigned taps2    = taps * 2;
    unsigned sb       = re->subphase_bits;
    uint32_t sub_mask = re->subphase_mask;
+   uint32_t row_mask = (1u << re->phase_bits) - 1u;
 
    while (frames)
    {
@@ -307,6 +328,12 @@ static void sinc_i16_process_kaiser(rarch_sinc_resampler_int16_t *re,
             const int32_t *pt = re->phase_table + phase * taps2;
             const int32_t *dt = pt + taps;
             uint32_t dsub     = re->time & sub_mask;
+            const int32_t *np = re->phase_table
+                              + (((re->time + ratio) >> sb) & row_mask) * taps2;
+
+            /* Both halves of the next row: the delta half is read first. */
+            SINC_I16_PREFETCH(np);
+            SINC_I16_PREFETCH(np + taps);
 
 #ifdef SINC_I16_KAISER_FISSION
             {
@@ -365,6 +392,7 @@ static void sinc_i16_process_lanczos(rarch_sinc_resampler_int16_t *re,
    size_t out_frames = 0;
    unsigned taps     = re->taps;
    unsigned sb       = re->subphase_bits;
+   uint32_t row_mask = (1u << re->phase_bits) - 1u;
 
    while (frames)
    {
@@ -380,6 +408,10 @@ static void sinc_i16_process_lanczos(rarch_sinc_resampler_int16_t *re,
             int64_t  sum_r    = 0;
             unsigned phase    = re->time >> sb;
             const int32_t *pt = re->phase_table + phase * taps;
+            const int32_t *np = re->phase_table
+                              + (((re->time + ratio) >> sb) & row_mask) * taps;
+
+            SINC_I16_PREFETCH(np);
 
             for (i = 0; i < taps; i++)
             {
@@ -495,8 +527,10 @@ void *sinc_resampler_int16_init(double bandwidth_mod,
       re->taps = (unsigned)ceil((double)re->taps / bandwidth_mod);
    }
 
-   /* Keep taps a multiple of 4 (scalar unroll / future SIMD friendliness). */
-   re->taps = (re->taps + 3u) & ~3u;
+   /* Keep taps a multiple of 8, matching the float driver's rounding so
+    * the two drivers select the same filter on every platform.  (Also
+    * satisfies the scalar unroll's multiple-of-4 requirement.) */
+   re->taps = (re->taps + 7u) & ~7u;
 
    stride      = (window == SINC_I16_WINDOW_KAISER) ? 2 : 1;
    phases      = 1 << re->phase_bits;
