@@ -53,10 +53,18 @@ static unsigned sdl3_gl_minor = 0;
  * rebuilds. */
 static SDL_GLContext sdl3_gl_cached_ctx = NULL;
 static SDL_GLContext sdl3_gl_cached_shared_ctx = NULL;
-static bool sdl3_gl_kept_video_alive = false;
 
-static void sdl3_ctx_destroy_resources(gfx_ctx_sdl3_data_t *sdl)
+/* Core-profile context: explicitly requested, or GL 3.1+. */
+static bool sdl3_gl_core_profile(gfx_ctx_sdl3_data_t *sdl)
 {
+   if (sdl && sdl->core_hw_context_enable)
+      return true;
+   return sdl3_gl_major > 3 || (sdl3_gl_major == 3 && sdl3_gl_minor >= 1);
+}
+
+static void sdl3_ctx_destroy(void *data)
+{
+   gfx_ctx_sdl3_data_t *sdl = (gfx_ctx_sdl3_data_t*)data;
    video_driver_state_t *video_st = video_state_get_ptr();
 
    if (!sdl)
@@ -79,39 +87,19 @@ static void sdl3_ctx_destroy_resources(gfx_ctx_sdl3_data_t *sdl)
          SDL_GL_DestroyContext(sdl->shared_ctx);
    }
 
-   sdl->ctx = NULL;
-   sdl->shared_ctx = NULL;
-
    if (sdl->win)
    {
       SDL_StopTextInput(sdl->win);
       SDL_DestroyWindow(sdl->win);
    }
-   sdl->win = NULL;
-}
 
-static void sdl3_ctx_destroy(void *data)
-{
-   gfx_ctx_sdl3_data_t *sdl = (gfx_ctx_sdl3_data_t*)data;
-
-   if (!sdl)
-      return;
-
-   sdl3_ctx_destroy_resources(sdl);
-
-   if (sdl3_gl_cached_ctx)
-   {
-      /* A cached context survives in the statics - hold on to our
-       * video-subsystem reference so it stays valid until the next
-       * init adopts it. */
-      sdl3_gl_kept_video_alive = true;
-   }
-   else
-   {
-      /* SDL3 refcounts subsystems; this balances the
-       * SDL_InitSubSystem in sdl3_ctx_init. */
+   /* SDL3 refcounts subsystems; this balances the SDL_InitSubSystem
+    * in sdl3_ctx_init. While a cached context is stashed, keep our
+    * reference: letting the refcount hit zero would tear the context
+    * down with the subsystem. The next init adopts it. */
+   if (!sdl3_gl_cached_ctx)
       SDL_QuitSubSystem(SDL_INIT_VIDEO);
-   }
+
    free(sdl);
 }
 
@@ -123,13 +111,10 @@ static void *sdl3_ctx_init(void *video_driver)
    if (!sdl)
       return NULL;
 
-   if (sdl3_gl_kept_video_alive)
-   {
-      /* Adopt the subsystem reference the previous instance kept to
-       * protect its cached GL context. */
-      sdl3_gl_kept_video_alive = false;
-   }
-   else if (!SDL_InitSubSystem(SDL_INIT_VIDEO))
+   /* When a cached context is stashed, the previous instance kept its
+    * video-subsystem reference to protect it - adopt that reference
+    * instead of initializing again. */
+   if (!sdl3_gl_cached_ctx && !SDL_InitSubSystem(SDL_INIT_VIDEO))
    {
       RARCH_WARN("[SDL3 GL] Failed to initialize SDL video subsystem: %s.\n", SDL_GetError());
       free(sdl);
@@ -172,7 +157,6 @@ static bool sdl3_ctx_set_video_mode(void *data,
       bool fullscreen)
 {
    gfx_ctx_sdl3_data_t *sdl = (gfx_ctx_sdl3_data_t*)data;
-   unsigned version = sdl3_gl_major * 1000 + sdl3_gl_minor;
 
    if (!sdl)
       return false;
@@ -182,7 +166,7 @@ static bool sdl3_ctx_set_video_mode(void *data,
    {
       if (sdl3_gl_api == GFX_CTX_OPENGL_ES_API)
          SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-      else if (sdl->core_hw_context_enable || version >= 3001)
+      else if (sdl3_gl_core_profile(sdl))
          SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
       else
          SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
@@ -246,12 +230,11 @@ static uint32_t sdl3_ctx_get_flags(void *data)
 {
    uint32_t flags = 0;
    gfx_ctx_sdl3_data_t *sdl = (gfx_ctx_sdl3_data_t*)data;
-   unsigned version = sdl3_gl_major * 1000 + sdl3_gl_minor;
 
    if (sdl && sdl->adaptive_vsync)
       BIT32_SET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC);
 
-   if ((sdl && sdl->core_hw_context_enable) || version >= 3001)
+   if (sdl3_gl_core_profile(sdl))
       BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
 
    if (string_is_equal(video_driver_get_ident(), "glcore"))
