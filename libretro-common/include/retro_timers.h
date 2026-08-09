@@ -88,6 +88,26 @@ static int nanosleepDOS(const struct timespec *rqtp, struct timespec *rmtp)
 #define retro_sleep(msec) (svcSleepThread(1000000 * (s64)(msec)))
 #elif defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
 #define retro_sleep(msec) (SleepEx((msec), FALSE))
+#elif defined(_WIN32) && !defined(_XBOX)
+/* Desktop Windows.
+ *
+ * Sleep() resolves at the granularity of the global timer period,
+ * which defaults to ~15.6 ms - longer than a single frame at any
+ * common refresh rate. Frame Delay and Scanline Sync both depend on
+ * sub-frame sleeps, so this is implemented out of line (in
+ * libretro-common/time/rtime.c) on top of a high resolution waitable
+ * timer where the running system provides one, falling back to plain
+ * Sleep() everywhere else.
+ *
+ * NOTE: implemented in rtime.c rather than inline here because the
+ * backing timer object must be per thread; see the comments there. */
+#ifdef __cplusplus
+extern "C" {
+#endif
+void retro_sleep(unsigned msec);
+#ifdef __cplusplus
+}
+#endif
 #elif defined(_WIN32)
 #define retro_sleep(msec) (Sleep((msec)))
 #elif defined(XENON)
