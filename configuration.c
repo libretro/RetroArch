@@ -1940,8 +1940,8 @@ static struct config_bool_setting *populate_settings_bool(
 #define S_INT_AT_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us)
 #define S_UINT_AT_EX(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub)
 #define S_UINT_AT_EX_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us)
-#include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
+#include "settings/settings_def_video_fullscreen.h"
 #include "settings/settings_def_video_sync.h"
 #ifdef HAVE_GAME_AI
 #include "settings/settings_def_game_ai.h"
@@ -2651,8 +2651,8 @@ static struct config_float_setting *populate_settings_float(
 #define S_INT_AT_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us)
 #define S_UINT_AT_EX(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub)
 #define S_UINT_AT_EX_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us)
-#include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
+#include "settings/settings_def_video_fullscreen.h"
 #include "settings/settings_def_video_sync.h"
 #ifdef HAVE_GAME_AI
 #include "settings/settings_def_game_ai.h"
@@ -3264,11 +3264,6 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("video_windowed_position_y",     &settings->uints.window_position_y,    true, 0, false);
    SETTING_UINT("video_windowed_position_width", &settings->uints.window_position_width,    true, DEFAULT_WINDOW_WIDTH, false);
    SETTING_UINT("video_windowed_position_height",&settings->uints.window_position_height,    true, DEFAULT_WINDOW_HEIGHT, false);
-#ifdef __WINRT__
-#else
-   SETTING_UINT("video_fullscreen_x",            &settings->uints.video_fullscreen_x, true, DEFAULT_FULLSCREEN_X, false);
-   SETTING_UINT("video_fullscreen_y",            &settings->uints.video_fullscreen_y, true, DEFAULT_FULLSCREEN_Y, false);
-#endif
 #ifdef GEKKO
    SETTING_UINT("video_viwidth",                    &settings->uints.video_viwidth, true, DEFAULT_VIDEO_VI_WIDTH, false);
 #endif
@@ -3319,8 +3314,8 @@ static struct config_uint_setting *populate_settings_uint(
 #define S_INT_AT_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us)
 #define S_UINT_AT_EX(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub)
 #define S_UINT_AT_EX_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us)
-#include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
+#include "settings/settings_def_video_fullscreen.h"
 #include "settings/settings_def_video_sync.h"
 #ifdef HAVE_GAME_AI
 #include "settings/settings_def_game_ai.h"
@@ -4024,8 +4019,8 @@ static struct config_int_setting *populate_settings_int(
 #define S_INT_AT_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us)
 #define S_UINT_AT_EX(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub)
 #define S_UINT_AT_EX_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us)
-#include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
+#include "settings/settings_def_video_fullscreen.h"
 #include "settings/settings_def_video_sync.h"
 #ifdef HAVE_GAME_AI
 #include "settings/settings_def_game_ai.h"
@@ -4616,8 +4611,8 @@ static struct config_int_setting *populate_settings_int(
 #define S_INT_AT_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us)
 #define S_UINT_AT_EX(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub)
 #define S_UINT_AT_EX_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us)
-#include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
+#include "settings/settings_def_video_fullscreen.h"
 #include "settings/settings_def_video_sync.h"
 #ifdef HAVE_GAME_AI
 #include "settings/settings_def_game_ai.h"
