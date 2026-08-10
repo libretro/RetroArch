@@ -13,7 +13,31 @@
 #define inline __inline
 #endif
 
-#if !defined(_XBOX) && !defined(__MINGW32__)
+/*
+ * MinGW-w64 declares asprintf() and vasprintf() in <stdio.h>, but only
+ * under _GNU_SOURCE. lib/libsmb2.c defines _GNU_SOURCE itself before it
+ * includes anything, so on that toolchain the declarations are always in
+ * scope by the time we get here and the fallbacks below collide with them:
+ *
+ *   error: static declaration of 'vasprintf' follows non-static declaration
+ *
+ * The #ifndef vasprintf / #ifndef asprintf guards do not catch this,
+ * because those names are functions rather than macros.
+ *
+ * Previously only the _vscprintf_so() helper was excluded on MinGW while
+ * the fallbacks that call it were still emitted, which produced both the
+ * collision above and an implicit declaration of _vscprintf_so(). Gate the
+ * helper and its users on one condition instead, so the two halves cannot
+ * drift apart again: use the runtime's asprintf()/vasprintf() when they
+ * are declared, and define our own otherwise.
+ */
+#if defined(__MINGW32__) && defined(_GNU_SOURCE)
+#define SMB2_ASPRINTF_IN_LIBC 1
+#endif
+
+#ifndef SMB2_ASPRINTF_IN_LIBC
+
+#if !defined(_XBOX)
 #ifndef _vscprintf
 /* For some reason, MSVC fails to honour this #ifndef. */
 /* Hence function renamed to _vscprintf_so(). */
@@ -61,5 +85,7 @@ static inline int asprintf(char *strp[], const char *fmt, ...) {
   return r;
 }
 #endif /* asprintf */
+
+#endif /* !SMB2_ASPRINTF_IN_LIBC */
 
 #endif /* ! _ASPRINTF_H_ */
