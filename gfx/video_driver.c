@@ -1987,14 +1987,10 @@ void video_driver_free_internal(void)
     * the rest still free it inside their own free(). Keyed on
     * ownership so that a teardown arriving after the next driver is
     * already up cannot take the live font with it. Under threaded
-    * video the wrapper does this from CMD_FREE, on the video thread. */
-#ifdef HAVE_THREADS
-   if (!is_threaded)
-#endif
-   {
-      if (vid && vid->font_backend)
-         font_driver_free_osd_for(video_st->data);
-   }
+    * video the wrapper does this from CMD_FREE, so we don't need to
+    * check HAVE_THREADS here. */
+   if (vid && vid->font_backend)
+      font_driver_free_osd_for(video_st->data);
 
    if (video_st->data && vid && vid->free)
       vid->free(video_st->data);
