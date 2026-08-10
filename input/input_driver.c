@@ -7365,6 +7365,19 @@ void input_driver_poll(void)
          input_bits_t *p_new_state       = (input_bits_t*)&current_inputs;
          unsigned input_analog_dpad_mode = settings->uints.input_analog_dpad_mode[i];
 
+         /* Clear the whole state up front. The 'mapper' switch below
+          * only reads p_new_state for the same device cases that the
+          * 'device' switch fills in (KEYBOARD/JOYPAD/ANALOG), so no
+          * uninitialised read can occur - but the two switches are
+          * separate and the state is reached through p_new_state, so
+          * GCC cannot correlate them and warns about a 'maybe
+          * uninitialized' current_inputs at the BIT256_GET_PTR() in
+          * the mapper switch. Clearing here rather than inside the
+          * device switch case leaves the value defined on every path
+          * and costs nothing extra for the devices that were already
+          * clearing it. */
+         BIT256_CLEAR_ALL_PTR(&current_inputs);
+
          switch (input_analog_dpad_mode)
          {
             case ANALOG_DPAD_LSTICK:
@@ -7395,7 +7408,6 @@ void input_driver_poll(void)
             case RETRO_DEVICE_KEYBOARD:
             case RETRO_DEVICE_JOYPAD:
             case RETRO_DEVICE_ANALOG:
-               BIT256_CLEAR_ALL_PTR(&current_inputs);
                if (joypad)
                {
                   unsigned k;
