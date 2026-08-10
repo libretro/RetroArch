@@ -1078,14 +1078,13 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
    gfx_ctx_vulkan_data_t *vk        = (gfx_ctx_vulkan_data_t *)opaque;
    VkInstanceCreateInfo info        = *create_info;
    VkInstance instance              = VK_NULL_HANDLE;
-   const char **instance_extensions = (const char**)malloc((info.enabledExtensionCount + 8
-                                                          + ARRAY_SIZE(vulkan_optional_device_extensions)) * sizeof(const char *));
-   const char **instance_layers     = (const char**)malloc((info.enabledLayerCount     + 1)                * sizeof(const char *));
-
-   /* Room for VK_KHR_surface + the WSI's own extensions (SDL3 can
-    * report several) + the debug extension. */
-   const char *required_extensions[8];
+   /* Room for VK_KHR_surface, WSI, SDL3, and the debug extension. */
+   const char *required_extensions[16];
    uint32_t required_extension_count = 0;
+   const char **instance_extensions = (const char**)malloc((info.enabledExtensionCount
+                                                          + ARRAY_SIZE(required_extensions)
+                                                          + ARRAY_SIZE(vulkan_optional_instance_extensions)) * sizeof(const char *));
+   const char **instance_layers     = (const char**)malloc((info.enabledLayerCount     + 1)                * sizeof(const char *));
 
    /* Both mallocs must have succeeded before the memcpy / field
     * assignments below dereference the buffers.  The 'end' label
@@ -1148,8 +1147,10 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
             /* VK_KHR_surface already added above. */
             if (string_is_equal(sdl_extensions[i], "VK_KHR_surface"))
                continue;
-            if (required_extension_count < ARRAY_SIZE(required_extensions) - 1)
+            if (required_extension_count < ARRAY_SIZE(required_extensions))
                required_extensions[required_extension_count++] = sdl_extensions[i];
+            else
+               RARCH_WARN("[Vulkan] Dropping SDL3 instance extension \"%s\": list full.\n", sdl_extensions[i]);
          }
          break;
       }
@@ -1161,7 +1162,10 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
 
 #ifdef VULKAN_DEBUG
    instance_layers[info.enabledLayerCount++]         = "VK_LAYER_KHRONOS_validation";
-   required_extensions[required_extension_count++] = "VK_EXT_debug_utils";
+   if (required_extension_count < ARRAY_SIZE(required_extensions))
+      required_extensions[required_extension_count++] = "VK_EXT_debug_utils";
+   else
+      RARCH_WARN("[Vulkan] Dropping VK_EXT_debug_utils: extension list full.\n");
 #endif
 
    if (!(vulkan_find_instance_extensions(
