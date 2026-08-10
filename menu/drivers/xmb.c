@@ -6197,9 +6197,26 @@ XMB_NOINLINE static int xmb_draw_item(
       /* "Main Menu" playlists */
       else if (xmb->depth == 2 && entry_type == FILE_TYPE_PLAYLIST_COLLECTION)
       {
-         xmb_node_t *sidebar_node = (xmb_node_t*)
+         xmb_node_t *sidebar_node = NULL;
+         unsigned offset          = list->list[i].entry_idx;
+
+         /* Search for sorted icon order */
+         if (settings->bools.ozone_sort_after_truncate_playlist_name)
+         {
+            for (offset = 0; offset < xmb->horizontal_list.size; offset++)
+            {
+               char playlist_file_noext[NAME_MAX_LENGTH];
+               fill_pathname(playlist_file_noext,
+                     xmb->horizontal_list.list[offset].path, "",
+                     sizeof(playlist_file_noext));
+               if (string_is_equal(playlist_file_noext, entry.rich_label))
+                  break;
+            }
+         }
+
+         sidebar_node = (xmb_node_t*)
                (xmb->horizontal_list.size)
-                  ? (xmb_node_t*)file_list_get_userdata_at_offset(&xmb->horizontal_list, list->list[i].entry_idx)
+                  ? (xmb_node_t*)file_list_get_userdata_at_offset(&xmb->horizontal_list, offset)
                   : NULL;
 
          if (sidebar_node && sidebar_node->icon)
