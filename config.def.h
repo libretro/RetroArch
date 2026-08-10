@@ -403,6 +403,13 @@
 /* GL specific */
 #define DEFAULT_ADAPTIVE_VSYNC false
 
+/* Hands SPIR-V shaders straight to the driver through GL_ARB_gl_spirv
+ * rather than cross compiling them to GLSL. Off by default: the win is
+ * on a cold driver shader cache, and at least one implementation caches
+ * the cross compiled path far more effectively than the SPIR-V one, so
+ * this is opt-in until there is per-driver data to key off. */
+#define DEFAULT_VIDEO_GL_DIRECT_SPIRV false
+
 /* Attempts to hard-synchronize CPU and GPU.
  * Can reduce latency at cost of performance. */
 #define DEFAULT_HARD_SYNC false

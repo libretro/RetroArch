@@ -257,6 +257,7 @@ bool	video_shader_remember_last_dir	1	0
 bool	android_input_disconnect_workaround	1	0
 bool	video_frame_time_sample_gated	1	0
 bool	video_adaptive_vsync	1	0
+bool	video_gl_direct_spirv	1	0
 bool	video_smooth	1	0
 bool	frame_time_counter_auto_reset	1	0
 bool	menu_navigation_browser_filter_supported_extensions_enable	1	1
@@ -899,6 +900,7 @@ bool	video_shader_watch_files	1	0
 bool	video_shader_remember_last_dir	1	0
 bool	video_frame_time_sample_gated	1	0
 bool	video_adaptive_vsync	1	0
+bool	video_gl_direct_spirv	1	0
 bool	video_smooth	1	0
 bool	frame_time_counter_auto_reset	1	0
 bool	menu_navigation_browser_filter_supported_extensions_enable	1	1
@@ -1541,6 +1543,7 @@ bool	video_shader_watch_files	1	0
 bool	video_shader_remember_last_dir	1	0
 bool	video_frame_time_sample_gated	1	0
 bool	video_adaptive_vsync	1	0
+bool	video_gl_direct_spirv	1	0
 bool	video_smooth	1	0
 bool	frame_time_counter_auto_reset	1	0
 bool	menu_navigation_browser_filter_supported_extensions_enable	1	1

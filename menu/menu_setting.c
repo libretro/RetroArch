@@ -11712,6 +11712,13 @@ static const setting_desc_t avsync_desc[] = {
 #include "../settings/settings_def_video_adaptive_vsync.h"
 };
 
+#if defined(HAVE_OPENGL_CORE) && defined(HAVE_SLANG)
+static const setting_desc_t glspirv_desc[] = {
+/* GENERATED: rows come from settings_def_video_gl_direct_spirv.h in order. */
+#include "../settings/settings_def_video_gl_direct_spirv.h"
+};
+#endif
+
 static const setting_desc_t fdelay_desc[] = {
 /* GENERATED: rows come from settings_def_frame_delay.h in order. */
 #include "../settings/settings_def_frame_delay.h"
@@ -14577,6 +14584,15 @@ static void settings_build_video(
 
          if (video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
             ADD_DESC(avsync_desc);
+
+#if defined(HAVE_OPENGL_CORE) && defined(HAVE_SLANG)
+         /* GL_ARB_gl_spirv is an OpenGL (Core) driver feature; the entry
+          * would be inert under any other video driver. */
+         if (string_is_equal(settings->arrays.video_driver, "glcore"))
+         {
+            ADD_DESC(glspirv_desc);
+         }
+#endif
 
          ADD_DESC(fdelay_desc);
 
@@ -17778,6 +17794,9 @@ static const settings_desc_table_t settings_desc_registry[] = {
    { vid_desc_20, (uint16_t)ARRAY_SIZE(vid_desc_20) },
    { sync_desc, (uint16_t)ARRAY_SIZE(sync_desc) },
    { avsync_desc, (uint16_t)ARRAY_SIZE(avsync_desc) },
+#if defined(HAVE_OPENGL_CORE) && defined(HAVE_SLANG)
+   { glspirv_desc, (uint16_t)ARRAY_SIZE(glspirv_desc) },
+#endif
    { fdelay_desc, (uint16_t)ARRAY_SIZE(fdelay_desc) },
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    { sdelay_desc, (uint16_t)ARRAY_SIZE(sdelay_desc) },

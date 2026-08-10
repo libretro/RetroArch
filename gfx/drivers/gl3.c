@@ -501,12 +501,18 @@ bool gl3_spirv_binary_supported(void)
    return false;
 #else
    static int supported = -1;
+   settings_t *settings = config_get_ptr();
    GLint num_formats    = 0;
    GLint num_extensions = 0;
    GLint i;
    unsigned major       = 0;
    unsigned minor       = 0;
    bool have_extension  = false;
+
+   /* Checked on every call rather than latched with the capability, so
+    * toggling the menu entry takes effect on the next preset load. */
+   if (!settings || !settings->bools.video_gl_direct_spirv)
+      return false;
 
    if (supported >= 0)
       return supported > 0;
