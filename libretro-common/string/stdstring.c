@@ -207,6 +207,10 @@ char *string_trim_whitespace(char *const s)
  * regular Latin characters - i.e. it will not wrap
  * correctly any text containing so-called 'wide' Unicode
  * characters (e.g. CJK languages, emojis, etc.).
+ * @s and @src must NOT overlap: the copy is performed
+ * with strlcpy(), which has undefined behaviour for
+ * overlapping buffers (and aborts via __chk_fail_overlap
+ * with fortified libc on macOS).
  **/
 size_t word_wrap(
       char *s,         size_t len,
@@ -317,6 +321,10 @@ size_t word_wrap(
  * if @src string contains 'wide' Unicode characters whose
  * on-screen pixel width deviates greatly from the set
  * @wideglyph_width value.
+ * @s and @src must NOT overlap: the copy is performed
+ * with strlcpy(), which has undefined behaviour for
+ * overlapping buffers (and aborts via __chk_fail_overlap
+ * with fortified libc on macOS).
  **/
 size_t word_wrap_wideglyph(char *s, size_t len,
       const char *src, size_t src_len, int line_width,

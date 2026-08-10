@@ -1355,24 +1355,28 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
       if (input && line->buffer
             && ((menu_driver_get_current_time() / 500000) & 1))
       {
+         char cursor_src[MENU_LABEL_MAX_LENGTH];
          char cursor_message[MENU_LABEL_MAX_LENGTH];
          size_t len = (size_t)(input - message + 1);
          size_t ptr = line->ptr;
 
          if (ptr > line->size)
             ptr = line->size;
-         if (len < sizeof(cursor_message))
+         if (len < sizeof(cursor_src))
          {
-            if (ptr >= sizeof(cursor_message) - len)
-               ptr = sizeof(cursor_message) - len - 1;
+            if (ptr >= sizeof(cursor_src) - len)
+               ptr = sizeof(cursor_src) - len - 1;
 
-            memcpy(cursor_message, message, len);
-            memcpy(cursor_message + len, line->buffer, ptr);
-            cursor_message[len + ptr] = '\0';
+            /* word_wrap()/word_wrap_wideglyph() require
+             * non-overlapping source and destination
+             * buffers, so stage the source separately */
+            memcpy(cursor_src, message, len);
+            memcpy(cursor_src + len, line->buffer, ptr);
+            cursor_src[len + ptr] = '\0';
 
             (xmb->word_wrap)(
                   cursor_message, sizeof(cursor_message),
-                  cursor_message, strlen(cursor_message),
+                  cursor_src, len + ptr,
                   usable_width / (xmb->font_size * 0.85f),
                   xmb->wideglyph_width, 0);
 

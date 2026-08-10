@@ -2929,24 +2929,28 @@ static void materialui_render_messagebox(
       if (input && line->buffer
             && ((menu_driver_get_current_time() / 500000) & 1))
       {
+         char cursor_src[MENU_LABEL_MAX_LENGTH];
          char cursor_msg[MENU_LABEL_MAX_LENGTH];
          size_t len = (size_t)(input - msg + 1);
          size_t ptr = line->ptr;
 
          if (ptr > line->size)
             ptr = line->size;
-         if (len < sizeof(cursor_msg))
+         if (len < sizeof(cursor_src))
          {
-            if (ptr >= sizeof(cursor_msg) - len)
-               ptr = sizeof(cursor_msg) - len - 1;
+            if (ptr >= sizeof(cursor_src) - len)
+               ptr = sizeof(cursor_src) - len - 1;
 
-            memcpy(cursor_msg, msg, len);
-            memcpy(cursor_msg + len, line->buffer, ptr);
-            cursor_msg[len + ptr] = '\0';
+            /* word_wrap()/word_wrap_wideglyph() require
+             * non-overlapping source and destination
+             * buffers, so stage the source separately */
+            memcpy(cursor_src, msg, len);
+            memcpy(cursor_src + len, line->buffer, ptr);
+            cursor_src[len + ptr] = '\0';
 
             (mui->word_wrap)(
                   cursor_msg, sizeof(cursor_msg),
-                  cursor_msg, strlen(cursor_msg),
+                  cursor_src, len + ptr,
                   usable_width / (int)mui->font_data.list.glyph_width,
                   mui->font_data.list.wideglyph_width, 0);
 
