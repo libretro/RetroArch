@@ -30,159 +30,38 @@
 
 #define SMB_PREFIX "smb://"
 
-#ifdef HAVE_THREADS
-#include <rthreads/rthreads.h>
-#endif
-
-/* Context pool.
- *
- * libsmb2's synchronous API is not thread-safe per context: each
- * smb2_context owns a socket and a PDU queue, and two overlapping
- * synchronous calls on one context corrupt both. VFS operations can
- * arrive from any thread (task threads, menu, main loop), and open
- * files keep using their assigned context for their whole lifetime,
- * so every operation on a context must hold that context's lock.
- *
- * Streams and directory handles do not store context pointers. A
- * healed or shut-down context is destroyed, so a cached pointer
- * dangles and even a liveness probe on it reads freed memory. They
- * store a (slot, generation) handle instead: the generation bumps
- * whenever a slot's context is destroyed, and an operation whose
- * generation no longer matches fails closed under the slot lock
- * without touching freed memory. This also holds in single-threaded
- * builds, where the same stale-pointer problem existed whenever a
- * connection was healed.
- *
- * Lock order: the pool lock may be taken alone, a slot lock may be
- * taken alone, and where both are needed the pool lock is taken
- * first. The pool lock guards initialization state, the pool size and
- * the round-robin cursor; each slot lock guards that slot's context
- * pointer, its generation and all libsmb2 calls on it.
- *
- * The lock objects are created when the configuration is first
- * published via smb_init_cfg() - on the main thread during startup,
- * before any thread can reach an smb:// path (operations refuse to
- * run before a configuration is published) - and are deliberately
- * never destroyed, so no thread can ever block on a freed lock. */
-
-#define SMB_POOL_CAP 64
-
-/* Handle packing: bit 0 marks a valid handle, bits 1..8 carry the
- * slot, and the generation lives above that. 22 generation bits keep
- * the value positive in a 32-bit intptr_t; comparisons mask the
- * slot's generation the same way, so wrap-around stays consistent. */
-#define SMB_HANDLE_GEN_BITS 22
-#define SMB_HANDLE_GEN_MASK ((1u << SMB_HANDLE_GEN_BITS) - 1u)
-
-struct smb_slot
-{
-   struct smb2_context *ctx;
-   unsigned gen;
-};
-
-static struct smb_slot smb_pool[SMB_POOL_CAP];
-/* The parameters the current pool was built with. A publication whose
- * effective parameters differ tears the pool down so the next smb://
- * access rebuilds it with the new values; an identical republication
- * leaves the pool alone. subdir is excluded: it only affects path
- * building, which reads the live configuration. */
-struct smb_pool_params
-{
-   char server[256];
-   char share[256];
-   char username[256];
-   char password[256];
-   char workgroup[256];
-   unsigned timeout;
-   unsigned num_contexts;
-   unsigned auth_mode;
-};
-static struct smb_pool_params smb_built;
-static unsigned smb_pool_size            = 0;
-static unsigned smb_pool_rr              = 0;
-static bool smb_initialized              = false;
+static struct smb2_context **smb_context_pool = NULL;
+static int next_context_index = 0;
+static bool smb_initialized = false;
+static int max_context_configured = 0;
 static const struct smb_settings *smb_cfg = NULL;
-/* Auth mode that actually worked at init, reused when healing */
-static int resolved_auth_mode            = RETRO_SMB2_SEC_NTLMSSP;
+/* Auth mode that actually worked at init, reused when healing contexts */
+static int resolved_auth_mode = RETRO_SMB2_SEC_NTLMSSP;
 
-#ifdef HAVE_THREADS
-static slock_t *smb_pool_lock            = NULL;
-static slock_t *smb_slot_lock[SMB_POOL_CAP];
-static unsigned smb_slot_locks_made      = 0;
-#define SMB_POOL_LOCK()      slock_lock(smb_pool_lock)
-#define SMB_POOL_UNLOCK()    slock_unlock(smb_pool_lock)
-#define SMB_SLOT_LOCK(i)     slock_lock(smb_slot_lock[i])
-#define SMB_SLOT_UNLOCK(i)   slock_unlock(smb_slot_lock[i])
-#define SMB_LOCKS_READY()    (smb_pool_lock != NULL)
-#else
-#define SMB_POOL_LOCK()      do { } while (0)
-#define SMB_POOL_UNLOCK()    do { } while (0)
-#define SMB_SLOT_LOCK(i)     do { } while (0)
-#define SMB_SLOT_UNLOCK(i)   do { } while (0)
-#define SMB_LOCKS_READY()    (true)
-#endif
-
-static intptr_t smb_handle_pack(unsigned slot, unsigned gen)
+static struct smb2_context *get_smb_context(void)
 {
-   return (intptr_t)(
-           (((uintptr_t)(gen & SMB_HANDLE_GEN_MASK)) << 9)
-         | (((uintptr_t)(slot & 0xFFu)) << 1)
-         | 1u);
-}
+   int idx;
 
-static bool smb_handle_unpack(intptr_t handle,
-      unsigned *slot, unsigned *gen)
-{
-   if (!(handle & 1))
-      return false;
-   *slot = (unsigned)(((uintptr_t)handle >> 1) & 0xFFu);
-   *gen  = (unsigned)(((uintptr_t)handle >> 9) & SMB_HANDLE_GEN_MASK);
-   return true;
-}
-
-/* Caller holds the slot lock. NULL when the handle is stale. */
-static struct smb2_context *smb_slot_ctx(unsigned slot, unsigned gen)
-{
-   if (slot >= SMB_POOL_CAP)
+   if (!smb_initialized)
       return NULL;
-   if ((smb_pool[slot].gen & SMB_HANDLE_GEN_MASK) != gen)
+
+   if (!smb_context_pool || max_context_configured == 0)
       return NULL;
-   return smb_pool[slot].ctx;
+
+   if (next_context_index < 0 || next_context_index >= max_context_configured)
+      next_context_index = 0;
+
+   idx = next_context_index;
+   next_context_index = (next_context_index + 1) % max_context_configured;
+
+   if (!smb_context_pool[idx])
+      return NULL;
+
+   return smb_context_pool[idx];
 }
 
-static void smb_cfg_str(char *dst, size_t sz, const char *src)
-{
-   if (src)
-      strlcpy(dst, src, sz);
-   else
-      dst[0] = '\0';
-}
-
-static void smb_snapshot_params(struct smb_pool_params *p)
-{
-   memset(p, 0, sizeof(*p));
-   if (!smb_cfg)
-      return;
-   smb_cfg_str(p->server,    sizeof(p->server),    smb_cfg->server_address);
-   smb_cfg_str(p->share,     sizeof(p->share),     smb_cfg->share);
-   smb_cfg_str(p->username,  sizeof(p->username),  smb_cfg->username);
-   smb_cfg_str(p->password,  sizeof(p->password),  smb_cfg->password);
-   smb_cfg_str(p->workgroup, sizeof(p->workgroup), smb_cfg->workgroup);
-   p->timeout      = smb_cfg->timeout;
-   p->num_contexts = smb_cfg->num_contexts;
-   p->auth_mode    = smb_cfg->auth_mode;
-}
-
-static unsigned smb_effective_timeout(void)
-{
-   unsigned t = smb_cfg ? smb_cfg->timeout : 0;
-   /* 0 is not a valid timeout */
-   return (t == 0) ? RETRO_SMB2_DEFAULT_CLIENT_TIMEOUT : t;
-}
-
-/* Create, configure and connect one context with an explicit auth
- * mode. Returns NULL on any failure; never touches the pool. */
-static struct smb2_context *smb_connect_new_context(int auth_mode)
+/* Create and connect one context using the auth mode resolved at init */
+static struct smb2_context *smb_create_context(void)
 {
    char server[256];
    char share[256];
@@ -210,14 +89,9 @@ static struct smb2_context *smb_connect_new_context(int auth_mode)
       smb2_set_password(ctx, smb_cfg->password);
    if (smb_cfg->workgroup && *smb_cfg->workgroup)
       smb2_set_domain(ctx, smb_cfg->workgroup);
-   smb2_set_timeout(ctx, (int)smb_effective_timeout());
-   /* smb2_set_security_mode() takes the SMB2_NEGOTIATE_SIGNING_*
-    * flags, not the SMB2_SEC_* authentication constants. Passing the
-    * auth mode here happened to request signing-required whenever
-    * Kerberos was selected; signing negotiation and authentication
-    * are independent knobs. */
-   smb2_set_security_mode(ctx, SMB2_NEGOTIATE_SIGNING_ENABLED);
-   smb2_set_authentication(ctx, auth_mode);
+   smb2_set_timeout(ctx, smb_cfg->timeout);
+   smb2_set_security_mode(ctx, resolved_auth_mode);
+   smb2_set_authentication(ctx, resolved_auth_mode);
 
    if (smb2_connect_share(ctx, server, share, username) < 0)
    {
@@ -228,338 +102,245 @@ static struct smb2_context *smb_connect_new_context(int auth_mode)
    return ctx;
 }
 
-/* Destroy a slot's context (if any) and bump its generation so every
- * outstanding handle on it fails closed. Caller holds the slot lock. */
-static void smb_slot_destroy(unsigned slot)
+/* Connect the replacement before destroying the dead context so a failed
+ * reconnect leaves the pool unchanged. */
+static struct smb2_context *smb_heal_context(struct smb2_context *dead)
 {
-   if (smb_pool[slot].ctx)
-   {
-      smb2_destroy_context(smb_pool[slot].ctx);
-      smb_pool[slot].ctx = NULL;
-   }
-   smb_pool[slot].gen++;
+   int i;
+   struct smb2_context *fresh;
+
+   for (i = 0; i < max_context_configured; i++)
+      if (smb_context_pool[i] == dead)
+         break;
+   if (i == max_context_configured)
+      return NULL;
+
+   if (!(fresh = smb_create_context()))
+      return NULL;
+
+   smb2_destroy_context(dead);
+   smb_context_pool[i] = fresh;
+   return fresh;
 }
 
-/* Replace a slot's context with a freshly connected one, using the
- * auth mode resolved at init. Caller holds the slot lock. Returns the
- * new context, or NULL with the slot left empty. */
-static struct smb2_context *smb_slot_recreate(unsigned slot)
-{
-   smb_slot_destroy(slot);
-   smb_pool[slot].ctx = smb_connect_new_context(resolved_auth_mode);
-   return smb_pool[slot].ctx;
-}
-
-/* Echo failure on an established session means the transport is
- * dead; replace it in place. Caller holds the slot lock. Returns the
- * context to retry on, or NULL when no retry is possible. */
-static struct smb2_context *smb_slot_heal_if_dead(unsigned slot,
-      struct smb2_context *ctx)
+/* Echo failure on an established session means the transport is dead */
+static struct smb2_context *smb_heal_if_dead(struct smb2_context *ctx)
 {
    if (smb2_echo(ctx) == 0)
       return NULL;
-   return smb_slot_recreate(slot);
+   return smb_heal_context(ctx);
+}
+
+void reset(unsigned num_contexts)
+{
+   for (unsigned i = 0; i < num_contexts; i++)
+   {
+      if(smb_context_pool[i])
+         smb2_destroy_context(smb_context_pool[i]);
+   }
+
+   free(smb_context_pool);
+   smb_context_pool = NULL;
+
+   smb_initialized = false;
+   next_context_index = 0;
+   max_context_configured = 0;
 }
 
 bool smb_init_cfg(const struct smb_settings *new_cfg)
 {
-#ifdef HAVE_THREADS
-   /* Publications happen on the main thread (startup, configuration
-    * loads and saves); see the pool comment. The bootstrap pool lock
-    * is created only once a publication carries a configured server
-    * address: SMB connections use only the configured server - never
-    * the host embedded in an smb:// URL - so with no server
-    * configured SMB cannot function this session and needs nothing.
-    * A session with no intention of using SMB therefore allocates
-    * exactly nothing here. Configuring a server in the menu takes
-    * effect at the next publication, which the menu flow reaches by
-    * saving the configuration (manually or via save-on-exit); the
-    * per-slot locks are created later still, under the pool lock on
-    * first actual smb:// access, sized to the configured pool. */
-   if (     new_cfg
-         && new_cfg->server_address
-         && *new_cfg->server_address
-         && !smb_pool_lock
-         && !(smb_pool_lock = slock_new()))
-      return false;
-#endif
    smb_cfg = new_cfg;
-   /* If a pool is live and this publication changes any parameter it
-    * was built with, tear it down; the next smb:// access rebuilds it
-    * lazily with the new values. Publications run on the main thread
-    * and smb_shutdown() takes every lock, so in-flight operations
-    * finish first and their stale generation handles fail closed. */
-   if (smb_initialized)
-   {
-      struct smb_pool_params now;
-      smb_snapshot_params(&now);
-      if (memcmp(&now, &smb_built, sizeof(now)) != 0)
-      {
-         fprintf(stderr,
-               "smb: settings changed; rebuilding the context pool "
-               "on next use\n");
-         smb_shutdown();
-      }
-   }
    return true;
 }
 
-/* Make sure slot locks 0..count-1 exist. Caller holds the pool lock,
- * which orders creation before any use: operations reach a slot lock
- * only through a handle, handles only exist after initialization, and
- * initialization runs under the pool lock. Lock objects are kept for
- * the lifetime of the process; a later re-initialization with a
- * larger pool only creates the missing ones. */
-static bool smb_slot_locks_ensure(unsigned count)
-{
-#ifdef HAVE_THREADS
-   while (smb_slot_locks_made < count)
-   {
-      if (!(smb_slot_lock[smb_slot_locks_made] = slock_new()))
-         return false;
-      smb_slot_locks_made++;
-   }
-#else
-   (void)count;
-#endif
-   return true;
-}
-
-/* Initialize the SMB context pool. Serialized by the pool lock, so a
- * lazy first use from two threads initializes exactly once. */
+/* Initialize SMB context */
 static bool smb_init(void)
 {
+   char server[256];
+   char share[256];
+   char *username = NULL;
    unsigned i;
-   unsigned want;
-   bool ok = true;
-
-   if (!SMB_LOCKS_READY())
-   {
-      /* A server address is visible through the aliased configuration
-       * strings but no publication has carried it yet: the SMB
-       * settings were changed after the last configuration load.
-       * They take effect at the next publication (configuration save
-       * or load). */
-      if (smb_cfg && smb_cfg->server_address && *smb_cfg->server_address)
-         fprintf(stderr,
-               "smb_init: SMB configured after startup; save the "
-               "configuration to activate it\n");
-      return false;
-   }
-
-   SMB_POOL_LOCK();
+   int error_no = 0;
 
    if (smb_initialized)
-   {
-      SMB_POOL_UNLOCK();
       return true;
-   }
-
-   if (!smb_cfg || !smb_cfg->server_address || !*smb_cfg->server_address)
-   {
-      fprintf(stderr, "smb_init - error - config not initialized\n");
-      SMB_POOL_UNLOCK();
-      return false;
-   }
 
    if (!network_init())
+      return false;
+
+   if (!smb_cfg || (!smb_cfg->server_address || !*smb_cfg->server_address))
    {
-      SMB_POOL_UNLOCK();
+      fprintf(stderr, "smb_init - error - config not initialized\n");
       return false;
    }
 
-   want = smb_cfg->num_contexts;
-   /* this should always be a positive number 1 or more */
-   if (want == 0)
-      want = RETRO_SMB2_DEFAULT_MAX_CLIENTS;
-   if (want > SMB_POOL_CAP)
-      want = SMB_POOL_CAP;
+   unsigned max_smb_contexts = smb_cfg->num_contexts;
+   unsigned timeout = smb_cfg->timeout;
+   unsigned auth_mode = smb_cfg->auth_mode;
 
-   if (!smb_slot_locks_ensure(want))
-   {
-      SMB_POOL_UNLOCK();
+   // this should always be a positive number 1 or more
+   if (max_smb_contexts == 0)
+      max_smb_contexts = RETRO_SMB2_DEFAULT_MAX_CLIENTS;
+
+   if (timeout == 0)
+      timeout = RETRO_SMB2_DEFAULT_CLIENT_TIMEOUT;
+
+   smb_context_pool = calloc(max_smb_contexts, sizeof(struct smb2_context *));
+
+   if (!smb_context_pool)
       return false;
-   }
 
-   /* Resolve the auth mode first. An explicit configuration is taken
-    * as-is; SEC_UNDEFINED probes KRB5 and falls back to NTLMSSP, the
-    * same order as before. The probe connection is kept as slot 0. */
-   SMB_SLOT_LOCK(0);
-   smb_slot_destroy(0);
-   switch (smb_cfg->auth_mode)
+   for (i = 0; i < max_smb_contexts; i++)
    {
-      case RETRO_SMB2_SEC_NTLMSSP:
-      case RETRO_SMB2_SEC_KRB5:
-         resolved_auth_mode = (int)smb_cfg->auth_mode;
-         smb_pool[0].ctx    = smb_connect_new_context(resolved_auth_mode);
-         break;
-      case RETRO_SMB2_SEC_UNDEFINED:
-      default:
-         resolved_auth_mode = RETRO_SMB2_SEC_KRB5;
-         smb_pool[0].ctx    = smb_connect_new_context(resolved_auth_mode);
-         if (!smb_pool[0].ctx)
-         {
-            resolved_auth_mode = RETRO_SMB2_SEC_NTLMSSP;
-            smb_pool[0].ctx    = smb_connect_new_context(resolved_auth_mode);
-         }
-         break;
-   }
-   if (!smb_pool[0].ctx)
-      ok = false;
-   SMB_SLOT_UNLOCK(0);
+      struct smb2_context *smb_context = smb2_init_context();
 
-   if (!ok)
-   {
-      fprintf(stderr, "smb_init: error - failed to connect\n");
-      SMB_POOL_UNLOCK();
-      return false;
-   }
-
-   for (i = 1; i < want; i++)
-   {
-      SMB_SLOT_LOCK(i);
-      smb_slot_destroy(i);
-      smb_pool[i].ctx = smb_connect_new_context(resolved_auth_mode);
-      if (!smb_pool[i].ctx)
-         ok = false;
-      SMB_SLOT_UNLOCK(i);
-
-      if (!ok)
+      if (!smb_context)
       {
-         unsigned j;
-         fprintf(stderr,
-               "smb_init: error - failed to connect context %u\n", i);
-         for (j = 0; j < i; j++)
-         {
-            SMB_SLOT_LOCK(j);
-            smb_slot_destroy(j);
-            SMB_SLOT_UNLOCK(j);
-         }
-         SMB_POOL_UNLOCK();
+         fprintf(stderr, "smb_init: error - no smb_context for %d\n", i);
+         reset(max_context_configured);
          return false;
       }
+
+      strlcpy(server, smb_cfg->server_address, sizeof(server));
+
+      /* Set credentials */
+      if (smb_cfg->username && *smb_cfg->username)
+      {
+         username = (char*)smb_cfg->username;
+         smb2_set_user(smb_context, username);
+      }
+
+      if (smb_cfg->password && *smb_cfg->password)
+         smb2_set_password(smb_context, smb_cfg->password);
+
+      if (smb_cfg->workgroup && *smb_cfg->workgroup)
+         smb2_set_domain(smb_context, smb_cfg->workgroup);
+
+      if (smb_cfg->share && *smb_cfg->share)
+         strlcpy(share, smb_cfg->share, sizeof(share));
+      else
+         share[0] = '\0';
+
+      /* set timeout */
+      smb2_set_timeout(smb_context, timeout);
+
+      /* SMB2_SEC_ defines missing on system headers but provided with latest libsmb2 */
+      switch(auth_mode)
+      {
+         case RETRO_SMB2_SEC_NTLMSSP:
+            smb2_set_security_mode(smb_context, RETRO_SMB2_SEC_NTLMSSP);
+            smb2_set_authentication(smb_context, RETRO_SMB2_SEC_NTLMSSP);
+            resolved_auth_mode = RETRO_SMB2_SEC_NTLMSSP;
+            auth_mode = resolved_auth_mode;
+            break;
+         case RETRO_SMB2_SEC_KRB5:
+            smb2_set_security_mode(smb_context, RETRO_SMB2_SEC_KRB5);
+            smb2_set_authentication(smb_context, RETRO_SMB2_SEC_KRB5);
+            resolved_auth_mode = RETRO_SMB2_SEC_KRB5;
+            auth_mode = resolved_auth_mode;
+            break;
+         case RETRO_SMB2_SEC_UNDEFINED:
+         default:
+            /* Only probe auth mode on the first context */
+            if (i == 0)
+            {
+               /* first try SMB2_SEC_KRB5 */
+               smb2_set_security_mode(smb_context, RETRO_SMB2_SEC_KRB5);
+               smb2_set_authentication(smb_context, RETRO_SMB2_SEC_KRB5);
+
+               if (smb2_connect_share(smb_context, server, share, username) == 0)
+               {
+                  /* KRB5 worked — use it for all remaining contexts */
+                  resolved_auth_mode = RETRO_SMB2_SEC_KRB5;
+                  smb_context_pool[i] = smb_context;
+                  max_context_configured = i + 1;
+                  continue;
+               }
+
+               /* reset to we can use it again */
+               smb2_destroy_context(smb_context);
+               smb_context = smb2_init_context();
+
+               if (!smb_context)
+               {
+                  fprintf(stderr, "smb_init - error - no context\n");
+                  reset(max_context_configured);
+                  return false;
+               }
+
+               /* reset credentials */
+               if (smb_cfg->username && *smb_cfg->username)
+               {
+                  username = (char*)smb_cfg->username;
+                  smb2_set_user(smb_context, username);
+               }
+
+               if (smb_cfg->password && *smb_cfg->password)
+                  smb2_set_password(smb_context, smb_cfg->password);
+
+               if (smb_cfg->workgroup && *smb_cfg->workgroup)
+                  smb2_set_domain(smb_context, smb_cfg->workgroup);
+
+               if (smb_cfg->share && *smb_cfg->share)
+                  strlcpy(share, smb_cfg->share, sizeof(share));
+               else
+                  share[0] = '\0';
+
+               smb2_set_timeout(smb_context, timeout);
+            }
+
+            /* if that fails, try SMB2_SEC_KRB5 in fallthrough */
+            smb2_set_security_mode(smb_context, RETRO_SMB2_SEC_NTLMSSP);
+            smb2_set_authentication(smb_context, RETRO_SMB2_SEC_NTLMSSP);
+
+            // attempt RETRO_SMB2_SEC_NTLMSSP as RETRO_SMB2_SEC_KRB5 did not work
+            resolved_auth_mode = RETRO_SMB2_SEC_NTLMSSP;
+            auth_mode = resolved_auth_mode;
+      }
+
+      /* Connect to share */
+      if ((error_no = smb2_connect_share(smb_context, server, share, username)) < 0)
+      {
+         fprintf(stderr, "smb_init: error - failed to connect - error_no: %d\n", error_no);
+         smb2_destroy_context(smb_context);
+         reset(max_context_configured);
+         return false;
+      }
+
+      smb_context_pool[i] = smb_context;
+      max_context_configured = i + 1;
    }
 
-   smb_pool_size   = want;
-   smb_pool_rr     = 0;
-   smb_snapshot_params(&smb_built);
    smb_initialized = true;
 
-   SMB_POOL_UNLOCK();
    return true;
 }
 
-/* Pick a slot round-robin and return it locked, with its context
- * (recreated in place if a heal left it empty). Returns false when
- * the pool is unavailable. On success the caller owns the slot lock
- * and must release it with SMB_SLOT_UNLOCK(*slot). */
-static bool smb_slot_acquire(unsigned *slot, struct smb2_context **ctx)
+void smb_close_context(int index)
 {
-   unsigned s;
+   if (index < 0 || index >= max_context_configured)
+      return;
 
-   if (!smb_init())
-      return false;
-
-   SMB_POOL_LOCK();
-   if (!smb_initialized || smb_pool_size == 0)
+   if (smb_context_pool[index])
    {
-      SMB_POOL_UNLOCK();
-      return false;
+      smb2_disconnect_share(smb_context_pool[index]);
+      smb2_destroy_context(smb_context_pool[index]);
+      smb_context_pool[index] = NULL;
    }
-   s = smb_pool_rr;
-   smb_pool_rr = (smb_pool_rr + 1) % smb_pool_size;
-#ifdef HAVE_THREADS
-   {
-      /* Prefer an idle slot: a long-held slot (a cloud sync transfer,
-       * a large read) should not stall unrelated operations that the
-       * round-robin happens to land on it. Fall back to blocking on
-       * the round-robin slot when everything is busy. */
-      unsigned n = smb_pool_size;
-      unsigned i, t;
-      bool got = false;
-      SMB_POOL_UNLOCK();
-      for (i = 0; i < n; i++)
-      {
-         t = (s + i) % n;
-         if (slock_try_lock(smb_slot_lock[t]))
-         {
-            s = t;
-            got = true;
-            break;
-         }
-      }
-      if (!got)
-         SMB_SLOT_LOCK(s);
-   }
-#else
-   SMB_POOL_UNLOCK();
-#endif
-   if (!smb_pool[s].ctx)
-      smb_slot_recreate(s);
-   if (!smb_pool[s].ctx)
-   {
-      SMB_SLOT_UNLOCK(s);
-      return false;
-   }
-   *slot = s;
-   *ctx  = smb_pool[s].ctx;
-   return true;
 }
-
-/* Public pool access for other in-process SMB consumers (the cloud
- * sync driver): acquire returns a connected context with its slot
- * lock held; every libsmb2 call on the context must happen before the
- * matching release. heal_if_dead mirrors the VFS operations' retry:
- * on a failed call, probe the transport and replace the context in
- * place (caller keeps holding the same slot). */
-bool smb_pool_acquire(unsigned *slot, struct smb2_context **ctx)
-{
-   return smb_slot_acquire(slot, ctx);
-}
-
-void smb_pool_release(unsigned slot)
-{
-   if (slot < SMB_POOL_CAP)
-      SMB_SLOT_UNLOCK(slot);
-}
-
-struct smb2_context *smb_pool_heal_if_dead(unsigned slot,
-      struct smb2_context *ctx)
-{
-   if (slot >= SMB_POOL_CAP)
-      return NULL;
-   return smb_slot_heal_if_dead(slot, ctx);
-}
-
 
 /* Shutdown SMB context - called on exit */
 void smb_shutdown(void)
 {
-   unsigned i;
+   int i;
 
-   if (!SMB_LOCKS_READY())
+   if(!smb_initialized || max_context_configured == 0)
       return;
 
-   SMB_POOL_LOCK();
-   if (!smb_initialized)
-   {
-      SMB_POOL_UNLOCK();
-      return;
-   }
+   for (i = 0; i < max_context_configured; i++)
+      smb_close_context(i);
 
-   for (i = 0; i < smb_pool_size; i++)
-   {
-      SMB_SLOT_LOCK(i);
-      if (smb_pool[i].ctx)
-         smb2_disconnect_share(smb_pool[i].ctx);
-      smb_slot_destroy(i);
-      SMB_SLOT_UNLOCK(i);
-   }
-
-   smb_pool_size   = 0;
-   smb_pool_rr     = 0;
-   smb_initialized = false;
-   SMB_POOL_UNLOCK();
+   reset(max_context_configured);
 }
 
 /* Build full SMB path from settings */
@@ -624,7 +405,6 @@ bool retro_vfs_file_open_smb(libretro_vfs_implementation_file *stream,
    char full_path[PATH_MAX_LENGTH];
    struct smb2fh *fh;
    int flags = 0;
-   unsigned slot;
    struct smb2_context *smb_context;
 
    if (!stream)
@@ -633,6 +413,13 @@ bool retro_vfs_file_open_smb(libretro_vfs_implementation_file *stream,
    /* reset file handle */
    stream->smb_fh = (intptr_t)0;
    stream->smb_ctx = (intptr_t)0;
+
+   if (!smb_init())
+      return false;
+
+   smb_context = get_smb_context();
+   if (!smb_context)
+      return false;
 
    if (!smb_build_path(full_path, sizeof(full_path), path))
       return false;
@@ -662,25 +449,18 @@ bool retro_vfs_file_open_smb(libretro_vfs_implementation_file *stream,
        (mode & RETRO_VFS_FILE_ACCESS_WRITE))
       flags |= O_CREAT | O_TRUNC;
 
-   if (!smb_slot_acquire(&slot, &smb_context))
-      return false;
-
    fh = smb2_open(smb_context, full_path, flags);
    if (!fh)
    {
-      if ((smb_context = smb_slot_heal_if_dead(slot, smb_context)))
+      if ((smb_context = smb_heal_if_dead(smb_context)))
          fh = smb2_open(smb_context, full_path, flags);
       if (!fh)
-      {
-         SMB_SLOT_UNLOCK(slot);
          return false;
-      }
    }
 
-   stream->smb_fh  = (intptr_t)(uintptr_t)fh;
-   stream->smb_ctx = smb_handle_pack(slot, smb_pool[slot].gen);
-   stream->scheme  = VFS_SCHEME_SMB; /* ensure SMB dispatch on IO calls */
-   SMB_SLOT_UNLOCK(slot);
+   stream->smb_fh = (intptr_t)(uintptr_t)fh;
+   stream->smb_ctx = (intptr_t)(uintptr_t)smb_context;
+   stream->scheme = VFS_SCHEME_SMB; /* ensure SMB dispatch on IO calls */
    return true;
 }
 
@@ -689,34 +469,25 @@ int64_t retro_vfs_file_read_smb(libretro_vfs_implementation_file *stream,
 {
    uint8_t *ptr               = (uint8_t*)s;
    uint64_t total             = 0;
-   unsigned slot, gen;
    struct smb2_context *ctx;
    struct smb2fh *fh;
 
-   if (!stream || !s || stream->smb_fh == 0 || stream->smb_fh == (intptr_t)-1)
+   if (!smb_initialized || !stream || !s || stream->smb_fh < 0)
       return -1;
 
    if (len == 0)
       return 0;
 
-   if (!smb_handle_unpack(stream->smb_ctx, &slot, &gen))
+   ctx = (struct smb2_context *)(void *)(uintptr_t)stream->smb_ctx;
+   if (!ctx || !smb2_context_active(ctx))
       return -1;
-
-   SMB_SLOT_LOCK(slot);
-   if (!(ctx = smb_slot_ctx(slot, gen)))
-   {
-      /* Context healed away or shut down: the file handle died with
-       * it. Fail closed without touching freed memory. */
-      SMB_SLOT_UNLOCK(slot);
-      stream->smb_fh  = (intptr_t)-1;
-      stream->smb_ctx = (intptr_t)0;
-      return -1;
-   }
 
    fh = (struct smb2fh *)(intptr_t)stream->smb_fh;
+   if (!fh)
+      return -1;
 
    /* libsmb2 silently caps each smb2_read() to max_read_size / credits
-    * (often 64 KiB-1 MiB).  Archive parsers (ZIP EOCD / central directory)
+    * (often 64 KiB–1 MiB).  Archive parsers (ZIP EOCD / central directory)
     * and other VFS callers compare against the exact requested length, so
     * a single short read looks like I/O failure and yields an empty
     * "Browse Archive" list.  Loop like fread() on a regular file. */
@@ -730,17 +501,13 @@ int64_t retro_vfs_file_read_smb(libretro_vfs_implementation_file *stream,
 
       ret = smb2_read(ctx, fh, ptr + total, (uint32_t)want);
       if (ret < 0)
-      {
-         SMB_SLOT_UNLOCK(slot);
          return (total > 0) ? (int64_t)total : -1;
-      }
       if (ret == 0)
          break; /* EOF */
 
       total += (uint64_t)ret;
    }
 
-   SMB_SLOT_UNLOCK(slot);
    return (int64_t)total;
 }
 
@@ -749,31 +516,24 @@ int64_t retro_vfs_file_write_smb(libretro_vfs_implementation_file *stream,
 {
    const uint8_t *ptr         = (const uint8_t*)s;
    uint64_t total             = 0;
-   unsigned slot, gen;
    struct smb2_context *ctx;
    struct smb2fh *fh;
 
-   if (!stream || !s || stream->smb_fh == 0 || stream->smb_fh == (intptr_t)-1)
+   if (!smb_initialized || !stream || !s || stream->smb_fh < 0)
       return -1;
 
    if (len == 0)
       return 0;
 
-   if (!smb_handle_unpack(stream->smb_ctx, &slot, &gen))
+   ctx = (struct smb2_context *)(void *)(uintptr_t)stream->smb_ctx;
+   if (!ctx || !smb2_context_active(ctx))
       return -1;
-
-   SMB_SLOT_LOCK(slot);
-   if (!(ctx = smb_slot_ctx(slot, gen)))
-   {
-      SMB_SLOT_UNLOCK(slot);
-      stream->smb_fh  = (intptr_t)-1;
-      stream->smb_ctx = (intptr_t)0;
-      return -1;
-   }
 
    fh = (struct smb2fh *)(intptr_t)stream->smb_fh;
+   if (!fh)
+      return -1;
 
-   /* Same max_write_size / credits cap as reads - accumulate. */
+   /* Same max_write_size / credits cap as reads — accumulate. */
    while (total < len)
    {
       uint64_t want = len - total;
@@ -784,111 +544,102 @@ int64_t retro_vfs_file_write_smb(libretro_vfs_implementation_file *stream,
 
       ret = smb2_write(ctx, fh, ptr + total, (uint32_t)want);
       if (ret < 0)
-      {
-         SMB_SLOT_UNLOCK(slot);
          return (total > 0) ? (int64_t)total : -1;
-      }
       if (ret == 0)
          break;
 
       total += (uint64_t)ret;
    }
 
-   SMB_SLOT_UNLOCK(slot);
    return (int64_t)total;
 }
 
 int64_t retro_vfs_file_seek_smb(libretro_vfs_implementation_file *stream,
    int64_t offset, int whence)
 {
-   unsigned slot, gen;
    struct smb2fh *fh;
    struct smb2_context *ctx;
-   int64_t ret;
 
-   if (!stream || stream->smb_fh == 0 || stream->smb_fh == (intptr_t)-1)
+   if (!smb_initialized || !stream || !stream->smb_ctx)
+      return -1;
+
+   /* fd holds the pointer returned by smb2_open(); */
+   if (stream->smb_fh == 0 || stream->smb_fh == (intptr_t)-1)
+      return -1;
+
+   /* Reconstruct the exact pointer safely */
+   fh = (struct smb2fh *)(void *)(uintptr_t)stream->smb_fh;
+   if (!fh)
+      return -1;
+
+   ctx = (struct smb2_context *)(void *)(uintptr_t)stream->smb_ctx;
+   if (!ctx || !smb2_context_active(ctx))
       return -1;
 
    /* Only allow valid values */
    if (whence != SEEK_SET && whence != SEEK_CUR && whence != SEEK_END)
       return -1;
 
-   if (!smb_handle_unpack(stream->smb_ctx, &slot, &gen))
+   if (smb2_lseek(ctx, fh, offset, whence, NULL) == -EINVAL)
       return -1;
 
-   SMB_SLOT_LOCK(slot);
-   if (!(ctx = smb_slot_ctx(slot, gen)))
-   {
-      SMB_SLOT_UNLOCK(slot);
-      stream->smb_fh  = (intptr_t)-1;
-      stream->smb_ctx = (intptr_t)0;
-      return -1;
-   }
-
-   fh  = (struct smb2fh *)(void *)(uintptr_t)stream->smb_fh;
-   ret = (smb2_lseek(ctx, fh, offset, whence, NULL) == -EINVAL) ? -1 : 0;
-   SMB_SLOT_UNLOCK(slot);
-   return ret;
+   return 0;
 }
 
 /* return the current byte offset in an open file */
 int64_t retro_vfs_file_tell_smb(libretro_vfs_implementation_file *stream)
 {
    uint64_t cur = 0;
-   unsigned slot, gen;
    struct smb2fh *fh;
    struct smb2_context *ctx;
-   int64_t ret;
 
-   if (!stream || stream->smb_fh == 0 || stream->smb_fh == (intptr_t)-1)
+   if (!smb_initialized || !stream || !stream->smb_ctx)
       return -1;
 
-   if (!smb_handle_unpack(stream->smb_ctx, &slot, &gen))
+   if (stream->smb_fh == 0 || stream->smb_fh == (intptr_t)-1)
       return -1;
 
-   SMB_SLOT_LOCK(slot);
-   if (!(ctx = smb_slot_ctx(slot, gen)))
-   {
-      SMB_SLOT_UNLOCK(slot);
-      stream->smb_fh  = (intptr_t)-1;
-      stream->smb_ctx = (intptr_t)0;
+   fh = (struct smb2fh *)(void *)(uintptr_t)stream->smb_fh;
+   if (!fh)
       return -1;
-   }
 
-   fh  = (struct smb2fh *)(void *)(uintptr_t)stream->smb_fh;
-   ret = (smb2_lseek(ctx, fh, 0, SEEK_CUR, &cur) == -EINVAL)
-         ? -1 : (int64_t)cur;
-   SMB_SLOT_UNLOCK(slot);
-   return ret;
+   ctx = (struct smb2_context *)(void *)(uintptr_t)stream->smb_ctx;
+   if (!ctx || !smb2_context_active(ctx))
+      return -1;
+
+   if (smb2_lseek(ctx, fh, 0, SEEK_CUR, &cur) == -EINVAL)
+      return -1;
+
+   return (int64_t)cur;
 }
 
 int retro_vfs_file_close_smb(libretro_vfs_implementation_file *stream)
 {
    int ret;
-   unsigned slot, gen;
    struct smb2_context *ctx;
 
-   if (!stream || stream->smb_fh == 0 || stream->smb_fh == (intptr_t)-1)
+   /* during shutdown */
+   if (!smb_initialized)
       return -1;
 
-   if (!smb_handle_unpack(stream->smb_ctx, &slot, &gen))
+   if (!stream || stream->smb_fh < 0)
       return -1;
 
-   SMB_SLOT_LOCK(slot);
-   if (!(ctx = smb_slot_ctx(slot, gen)))
+   ctx = (struct smb2_context *)(void *)(uintptr_t)stream->smb_ctx;
+   if (!ctx)
+      return -1;
+
+   /* Context healed away: leak the fh rather than use-after-free */
+   if (!smb2_context_active(ctx))
    {
-      /* Context healed away or shut down: the file handle was freed
-       * with it. Just clear the stream. */
-      SMB_SLOT_UNLOCK(slot);
-      stream->smb_fh  = (intptr_t)-1;
+      stream->smb_fh = (intptr_t)-1;
       stream->smb_ctx = (intptr_t)0;
       return -1;
    }
 
    ret = smb2_close(ctx, (struct smb2fh *)(intptr_t)stream->smb_fh);
-   SMB_SLOT_UNLOCK(slot);
 
-   stream->smb_fh  = (intptr_t)-1;
+   stream->smb_fh = (intptr_t)-1;
    stream->smb_ctx = (intptr_t)0;
 
    return ret;
@@ -898,11 +649,14 @@ smb_dir_handle* retro_vfs_opendir_smb(const char *path, bool include_hidden)
 {
    char full_path[PATH_MAX_LENGTH];
    struct smb2dir *dir;
-   unsigned slot;
    struct smb2_context *smb_context;
    smb_dir_handle *handle;
 
    (void)include_hidden;
+
+
+   if (!smb_init())
+      return NULL;
 
    if (!smb_build_path(full_path, sizeof(full_path), path))
       return NULL;
@@ -910,89 +664,76 @@ smb_dir_handle* retro_vfs_opendir_smb(const char *path, bool include_hidden)
    /* Root-of-share: bare "/" should become "" for libsmb2 opendir */
    if (full_path[0] == '/' && full_path[1] == '\0')
       full_path[0] = '\0';
-
-   /* Strip leading slash ONLY for non-empty subpaths */
-   if (full_path[0] == '/' && full_path[1] != '\0')
+   /* Strip leading slash for non-root subpaths */
+   else if (full_path[0] == '/' && full_path[1] != '\0')
       memmove(full_path, full_path + 1, strlen(full_path));
 
-   if (!smb_slot_acquire(&slot, &smb_context))
+   smb_context = get_smb_context();
+   if (!smb_context)
       return NULL;
 
    dir = smb2_opendir(smb_context, full_path);
    if (!dir)
    {
-      if ((smb_context = smb_slot_heal_if_dead(slot, smb_context)))
+      if ((smb_context = smb_heal_if_dead(smb_context)))
          dir = smb2_opendir(smb_context, full_path);
       if (!dir)
-      {
-         SMB_SLOT_UNLOCK(slot);
          return NULL;
-      }
    }
 
-   if (!(handle = (smb_dir_handle*)calloc(1, sizeof(*handle))))
+   handle = (smb_dir_handle*)malloc(sizeof(smb_dir_handle));
+   if (!handle)
    {
       smb2_closedir(smb_context, dir);
-      SMB_SLOT_UNLOCK(slot);
       return NULL;
    }
 
-   handle->dir  = dir;
-   handle->slot = slot;
-   handle->gen  = smb_pool[slot].gen;
-   SMB_SLOT_UNLOCK(slot);
+   handle->ctx = smb_context;
+   handle->dir = dir;
+
    return handle;
 }
 
 struct smbc_dirent* retro_vfs_readdir_smb(smb_dir_handle* dh)
 {
    struct smb2dirent *ent;
-   struct smb2_context *ctx;
+   static struct smbc_dirent result;
 
-   if (!dh || !dh->dir)
+   if (!smb_initialized || !dh)
       return NULL;
 
-   SMB_SLOT_LOCK(dh->slot);
-   if (!(ctx = smb_slot_ctx(dh->slot, dh->gen)))
-   {
-      /* Context healed away or shut down: the directory handle died
-       * with it. Fail closed without touching freed memory. */
-      SMB_SLOT_UNLOCK(dh->slot);
-      dh->dir = NULL;
+   if (!dh->ctx || !dh->dir || !smb2_context_active(dh->ctx))
       return NULL;
-   }
 
-   ent = smb2_readdir(ctx, dh->dir);
+   ent = smb2_readdir(dh->ctx, dh->dir);
    if (!ent)
-   {
-      SMB_SLOT_UNLOCK(dh->slot);
       return NULL;
-   }
 
-   strlcpy(dh->ent.name, ent->name, sizeof(dh->ent.name));
-   dh->ent.type = (ent->st.smb2_type == SMB2_TYPE_DIRECTORY) ? 1 : 0;
-   dh->ent.size = ent->st.smb2_size;
-   SMB_SLOT_UNLOCK(dh->slot);
+   memset(&result, 0, sizeof(result));
+   strlcpy(result.name, ent->name ? ent->name : "", sizeof(result.name));
 
-   return &dh->ent;
+   result.type = (ent->st.smb2_type == SMB2_TYPE_DIRECTORY) ? 1 : 0;
+   result.size = ent->st.smb2_size;
+
+   return &result;
 }
 
 int retro_vfs_closedir_smb(smb_dir_handle* dh)
 {
-   struct smb2_context *ctx;
-
-   if (!dh)
+   if (!smb_initialized || !dh)
       return -1;
 
-   if (dh->dir)
+   if (!dh->ctx || !dh->dir)
+      return -1;
+
+   /* Context healed away: leak the smb2dir rather than use-after-free */
+   if (!smb2_context_active(dh->ctx))
    {
-      SMB_SLOT_LOCK(dh->slot);
-      if ((ctx = smb_slot_ctx(dh->slot, dh->gen)))
-         smb2_closedir(ctx, dh->dir);
-      /* else: the directory handle was freed with its context */
-      SMB_SLOT_UNLOCK(dh->slot);
+      free(dh);
+      return -1;
    }
 
+   smb2_closedir(dh->ctx, dh->dir);
    free(dh);
    return 0;
 }
@@ -1001,8 +742,10 @@ int retro_vfs_stat_smb(const char *path, int64_t *size)
 {
    char rel_path[PATH_MAX_LENGTH];
    struct smb2_stat_64 st;
-   unsigned slot;
    struct smb2_context *smb_context;
+
+   if (!smb_init())
+      return 0;
 
    if (!smb_build_path(rel_path, sizeof(rel_path), path))
       return 0;
@@ -1015,7 +758,8 @@ int retro_vfs_stat_smb(const char *path, int64_t *size)
    if (rel_path[0] == '/' && rel_path[1] != '\0')
       memmove(rel_path, rel_path + 1, strlen(rel_path));
 
-   if (!smb_slot_acquire(&slot, &smb_context))
+   smb_context = get_smb_context();
+   if (!smb_context)
    {
       fprintf(stderr, "retro_vfs_stat_smb: no smb_context!\n");
       return 0;
@@ -1023,21 +767,17 @@ int retro_vfs_stat_smb(const char *path, int64_t *size)
 
    if (smb2_stat(smb_context, rel_path, &st) < 0)
    {
-      if (!(smb_context = smb_slot_heal_if_dead(slot, smb_context)))
-      {
-         SMB_SLOT_UNLOCK(slot);
+      if (!(smb_context = smb_heal_if_dead(smb_context)))
          return 0;
-      }
       if (smb2_stat(smb_context, rel_path, &st) < 0)
-      {
-         SMB_SLOT_UNLOCK(slot);
          return 0;
-      }
    }
-   SMB_SLOT_UNLOCK(slot);
 
    /* smb2_size is uint64_t; *size is int64_t.  A naked cast on
-    * a >8 EiB size would be implementation-defined - clamp. */
+    * files > INT64_MAX (8 EiB) would produce a negative value
+    * that callers may interpret as a stat error.  Saturate to
+    * INT64_MAX -- unreachable in practice today, but the fix is
+    * cheap and keeps sign semantics sane. */
    if (size)
       *size = (st.smb2_size > (uint64_t)INT64_MAX)
          ? INT64_MAX
@@ -1049,27 +789,25 @@ int retro_vfs_stat_smb(const char *path, int64_t *size)
 
 int retro_vfs_file_error_smb(libretro_vfs_implementation_file *stream)
 {
-   unsigned slot, gen;
    struct smb2_context *ctx;
    const char *err;
-   int ret = 0;
+
+   if (!smb_initialized)
+      return -1;
 
    if (!stream || stream->smb_fh == 0 || stream->smb_fh == (intptr_t)-1)
       return -1;
 
-   if (!smb_handle_unpack(stream->smb_ctx, &slot, &gen))
+   if (!stream->smb_ctx)
       return -1;
 
-   SMB_SLOT_LOCK(slot);
-   if (!(ctx = smb_slot_ctx(slot, gen)))
-   {
-      SMB_SLOT_UNLOCK(slot);
+   ctx = (struct smb2_context *)(void *)(uintptr_t)stream->smb_ctx;
+   if (!ctx || !smb2_context_active(ctx))
       return -1;
-   }
 
    err = smb2_get_error(ctx);
-   if (err && *err)
-      ret = -1;
-   SMB_SLOT_UNLOCK(slot);
-   return ret;
+   if (err && err[0] != '\0')
+      return -1;
+
+   return 0;
 }

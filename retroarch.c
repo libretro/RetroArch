@@ -385,19 +385,6 @@ void retro_input_poll_null(void) { }
 #ifdef HAVE_SMBCLIENT
 static struct smb_settings smb_global_cfg;
 
-/* Publishes the SMB client settings to the VFS SMB backend.
- *
- * Called once early in rarch_main() so the backend has a registered
- * configuration before anything can touch an smb:// path, and again at
- * the end of every successful config_load_file(). The second call is
- * what makes the numeric fields correct: the string fields below alias
- * settings->arrays and therefore follow every config load on their
- * own, but timeout, num_contexts and auth_mode are copied by value and
- * would otherwise keep whatever the settings struct held at the early
- * call, which is zero - config loading happens later, inside
- * retroarch_main_init(). The SMB backend reads the configuration
- * lazily on first smb:// access, which in every startup path is after
- * the configuration has been loaded and re-published. */
 void retroarch_smb_init(void)
 {
    settings_t *settings = config_get_ptr();

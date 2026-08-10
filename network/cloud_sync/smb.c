@@ -26,8 +26,6 @@
 #include <string/stdstring.h>
 #include <time/rtime.h>
 
-#include "../../libretro-common/vfs/vfs_implementation_smb.h"
-
 #include "../cloud_sync_driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
@@ -36,14 +34,9 @@
 
 /* ========== State ========== */
 
-/* Contexts come from the shared VFS SMB pool (vfs_implementation_smb):
- * each operation acquires a slot-locked, already-connected context and
- * releases it when done, instead of connecting a private context per
- * sync session. Connection parameters, pooling, healing and rebuild on
- * settings changes are all owned by the pool. Only the cloud sync
- * subdirectory is state here. */
 typedef struct
 {
+   struct smb2_context *ctx;
    char subdir[PATH_MAX_LENGTH];
 } smb_sync_state_t;
 
@@ -147,9 +140,14 @@ static bool smb_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
    settings_t *settings = config_get_ptr();
    const char *server   = settings->arrays.smb_client_server_address;
    const char *share    = settings->arrays.smb_client_share;
+   const char *user     = settings->arrays.smb_client_username;
+   const char *password = settings->arrays.smb_client_password;
+   const char *workgroup = settings->arrays.smb_client_workgroup;
    const char *subdir   = settings->arrays.smb_client_subdir;
+   unsigned auth_mode   = settings->uints.smb_client_auth_mode;
+   unsigned timeout     = settings->uints.smb_client_timeout;
    struct smb2_context *ctx;
-   unsigned slot;
+   int rc;
 
    if ((!server || !*server) || (!share || !*share))
    {
@@ -157,6 +155,40 @@ static bool smb_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
       cb(user_data, NULL, false, NULL);
       return true;
    }
+
+   ctx = smb2_init_context();
+   if (!ctx)
+   {
+      RARCH_ERR(SMBPFX "Failed to create SMB context\n");
+      cb(user_data, NULL, false, NULL);
+      return true;
+   }
+
+   if (user && *user)
+      smb2_set_user(ctx, user);
+   if (password && *password)
+      smb2_set_password(ctx, password);
+   if (workgroup && *workgroup)
+      smb2_set_domain(ctx, workgroup);
+   if (timeout > 0)
+      smb2_set_timeout(ctx, (int)timeout);
+   smb2_set_security_mode(ctx, SMB2_NEGOTIATE_SIGNING_ENABLED);
+   smb2_set_authentication(ctx, (int)auth_mode);
+
+   RARCH_LOG(SMBPFX "Connecting to %s/%s as %s\n",
+         server, share, (!user || !*user) ? "(anonymous)" : user);
+
+   rc = smb2_connect_share(ctx, server, share,
+         (!user || !*user) ? NULL : user);
+   if (rc < 0)
+   {
+      RARCH_ERR(SMBPFX "Connect failed: %s\n", smb2_get_error(ctx));
+      smb2_destroy_context(ctx);
+      cb(user_data, NULL, false, NULL);
+      return true;
+   }
+
+   smb_st.ctx = ctx;
 
    /* Build cloud sync subdir: {smb_client_subdir}/cloud_sync */
    smb_st.subdir[0] = '\0';
@@ -173,47 +205,39 @@ static bool smb_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
          strlcpy(smb_st.subdir + _len, "cloud_sync", sz - _len);
    }
 
-   if (!smb_pool_acquire(&slot, &ctx))
+   /* Ensure subdir exists */
    {
-      RARCH_ERR(SMBPFX "SMB pool unavailable (connection or "
-            "configuration failure)\n");
-      cb(user_data, NULL, false, NULL);
-      return true;
-   }
-
-   /* Ensure subdir exists; one heal-and-retry on a dead transport,
-    * the same policy the VFS operations use. */
-   if (!smb_sync_ensure_dir(ctx, smb_st.subdir))
-   {
-      if ((ctx = smb_pool_heal_if_dead(slot, ctx))
-            && smb_sync_ensure_dir(ctx, smb_st.subdir))
-         ; /* healed */
-      else
+      if (!smb_sync_ensure_dir(ctx, smb_st.subdir))
       {
          RARCH_ERR(SMBPFX "Failed to create subdir '%s'\n", smb_st.subdir);
-         smb_pool_release(slot);
+         smb2_disconnect_share(ctx);
+         smb2_destroy_context(ctx);
+         smb_st.ctx = NULL;
          cb(user_data, NULL, false, NULL);
          return true;
       }
    }
-   smb_pool_release(slot);
 
-   RARCH_LOG(SMBPFX "Cloud sync ready on the shared SMB pool\n");
+   RARCH_LOG(SMBPFX "Connected successfully\n");
    cb(user_data, NULL, true, NULL);
    return true;
 }
 
 static bool smb_sync_end(cloud_sync_complete_handler_t cb, void *user_data)
 {
-   /* Contexts belong to the shared pool; nothing to tear down. */
+   if (smb_st.ctx)
+   {
+      smb2_disconnect_share(smb_st.ctx);
+      smb2_destroy_context(smb_st.ctx);
+      smb_st.ctx = NULL;
+   }
    smb_st.subdir[0] = '\0';
 
    cb(user_data, NULL, true, NULL);
    return true;
 }
 
-static bool smb_read_locked(unsigned slot, struct smb2_context *ctx,
-      const char *path, const char *file,
+static bool smb_read(const char *path, const char *file,
       cloud_sync_complete_handler_t cb, void *user_data)
 {
    char smb_path[PATH_MAX_LENGTH];
@@ -228,14 +252,8 @@ static bool smb_read_locked(unsigned slot, struct smb2_context *ctx,
 
    smb_sync_build_path(smb_path, sizeof(smb_path), smb_st.subdir, path);
 
-   /* Check if file exists; heal-and-retry once on a dead transport */
-   rc = smb2_stat(ctx, smb_path, &st);
-   if (rc < 0 && -rc != ENOENT)
-   {
-      struct smb2_context *fresh = smb_pool_heal_if_dead(slot, ctx);
-      if (fresh)
-         rc = smb2_stat((ctx = fresh), smb_path, &st);
-   }
+   /* Check if file exists */
+   rc = smb2_stat(smb_st.ctx, smb_path, &st);
    if (rc < 0)
    {
       if (-rc == ENOENT)
@@ -246,18 +264,18 @@ static bool smb_read_locked(unsigned slot, struct smb2_context *ctx,
          return true;
       }
       RARCH_ERR(SMBPFX "Stat '%s' failed: %s\n",
-            smb_path, smb2_get_error(ctx));
+            smb_path, smb2_get_error(smb_st.ctx));
       cb(user_data, path, false, NULL);
       return true;
    }
 
    file_size = st.smb2_size;
 
-   fh = smb2_open(ctx, smb_path, O_RDONLY);
+   fh = smb2_open(smb_st.ctx, smb_path, O_RDONLY);
    if (!fh)
    {
       RARCH_ERR(SMBPFX "Failed to open '%s': %s\n",
-            smb_path, smb2_get_error(ctx));
+            smb_path, smb2_get_error(smb_st.ctx));
       cb(user_data, path, false, NULL);
       return true;
    }
@@ -265,23 +283,23 @@ static bool smb_read_locked(unsigned slot, struct smb2_context *ctx,
    buf = (uint8_t *)malloc((size_t)file_size);
    if (!buf)
    {
-      smb2_close(ctx, fh);
+      smb2_close(smb_st.ctx, fh);
       cb(user_data, path, false, NULL);
       return true;
    }
 
-   chunk = smb2_get_max_read_size(ctx);
+   chunk = smb2_get_max_read_size(smb_st.ctx);
    while (offset < file_size)
    {
       uint32_t to_read = (uint32_t)((file_size - offset) < chunk
             ? (file_size - offset) : chunk);
-      int n = smb2_read(ctx, fh, buf + offset, to_read);
+      int n = smb2_read(smb_st.ctx, fh, buf + offset, to_read);
       if (n < 0)
       {
          RARCH_ERR(SMBPFX "Read error on '%s': %s\n",
-               smb_path, smb2_get_error(ctx));
+               smb_path, smb2_get_error(smb_st.ctx));
          free(buf);
-         smb2_close(ctx, fh);
+         smb2_close(smb_st.ctx, fh);
          cb(user_data, path, false, NULL);
          return true;
       }
@@ -290,7 +308,7 @@ static bool smb_read_locked(unsigned slot, struct smb2_context *ctx,
       offset += (uint32_t)n;
    }
 
-   smb2_close(ctx, fh);
+   smb2_close(smb_st.ctx, fh);
 
    /* Write to local file */
    rfile = filestream_open(file, RETRO_VFS_FILE_ACCESS_READ_WRITE, 0);
@@ -311,24 +329,7 @@ static bool smb_read_locked(unsigned slot, struct smb2_context *ctx,
    return true;
 }
 
-static bool smb_read(const char *path, const char *file,
-      cloud_sync_complete_handler_t cb, void *user_data)
-{
-   unsigned slot;
-   struct smb2_context *ctx;
-   bool ret;
-   if (!smb_pool_acquire(&slot, &ctx))
-   {
-      cb(user_data, path, false, NULL);
-      return true;
-   }
-   ret = smb_read_locked(slot, ctx, path, file, cb, user_data);
-   smb_pool_release(slot);
-   return ret;
-}
-
-static bool smb_update_locked(unsigned slot, struct smb2_context *ctx,
-      const char *path, RFILE *rfile,
+static bool smb_update(const char *path, RFILE *rfile,
       cloud_sync_complete_handler_t cb, void *user_data)
 {
    char smb_path[PATH_MAX_LENGTH];
@@ -340,17 +341,12 @@ static bool smb_update_locked(unsigned slot, struct smb2_context *ctx,
 
    smb_sync_build_path(smb_path, sizeof(smb_path), smb_st.subdir, path);
 
-   /* Ensure parent directories exist; heal-and-retry once on a dead
-    * transport, the same policy the VFS operations use. */
-   if (!smb_sync_ensure_parent_dir(ctx, smb_path))
+   /* Ensure parent directories exist */
+   if (!smb_sync_ensure_parent_dir(smb_st.ctx, smb_path))
    {
-      struct smb2_context *fresh = smb_pool_heal_if_dead(slot, ctx);
-      if (!fresh || !smb_sync_ensure_parent_dir((ctx = fresh), smb_path))
-      {
-         RARCH_ERR(SMBPFX "Failed to create parent dirs for '%s'\n", smb_path);
-         cb(user_data, path, false, rfile);
-         return true;
-      }
+      RARCH_ERR(SMBPFX "Failed to create parent dirs for '%s'\n", smb_path);
+      cb(user_data, path, false, rfile);
+      return true;
    }
 
    /* Read the local file into memory */
@@ -369,38 +365,38 @@ static bool smb_update_locked(unsigned slot, struct smb2_context *ctx,
       filestream_read(rfile, buf, file_size);
 
    /* Open remote file for writing (create if needed) */
-   fh = smb2_open(ctx, smb_path, O_WRONLY | O_CREAT);
+   fh = smb2_open(smb_st.ctx, smb_path, O_WRONLY | O_CREAT);
    if (!fh)
    {
       RARCH_ERR(SMBPFX "Failed to open '%s' for writing: %s\n",
-            smb_path, smb2_get_error(ctx));
+            smb_path, smb2_get_error(smb_st.ctx));
       free(buf);
       cb(user_data, path, false, rfile);
       return true;
    }
 
    /* Truncate to 0 in case file already existed with larger content */
-   smb2_ftruncate(ctx, fh, 0);
+   smb2_ftruncate(smb_st.ctx, fh, 0);
 
-   chunk = smb2_get_max_write_size(ctx);
+   chunk = smb2_get_max_write_size(smb_st.ctx);
    while (offset < (uint64_t)file_size)
    {
       uint32_t to_write = (uint32_t)(((uint64_t)file_size - offset) < chunk
             ? ((uint64_t)file_size - offset) : chunk);
-      int n = smb2_write(ctx, fh, buf + offset, to_write);
+      int n = smb2_write(smb_st.ctx, fh, buf + offset, to_write);
       if (n < 0)
       {
          RARCH_ERR(SMBPFX "Write error on '%s': %s\n",
-               smb_path, smb2_get_error(ctx));
+               smb_path, smb2_get_error(smb_st.ctx));
          free(buf);
-         smb2_close(ctx, fh);
+         smb2_close(smb_st.ctx, fh);
          cb(user_data, path, false, rfile);
          return true;
       }
       offset += (uint32_t)n;
    }
 
-   smb2_close(ctx, fh);
+   smb2_close(smb_st.ctx, fh);
    free(buf);
 
    RARCH_DBG(SMBPFX "Updated %s (%u bytes)\n",
@@ -409,24 +405,7 @@ static bool smb_update_locked(unsigned slot, struct smb2_context *ctx,
    return true;
 }
 
-static bool smb_update(const char *path, RFILE *rfile,
-      cloud_sync_complete_handler_t cb, void *user_data)
-{
-   unsigned slot;
-   struct smb2_context *ctx;
-   bool ret;
-   if (!smb_pool_acquire(&slot, &ctx))
-   {
-      cb(user_data, path, false, NULL);
-      return true;
-   }
-   ret = smb_update_locked(slot, ctx, path, rfile, cb, user_data);
-   smb_pool_release(slot);
-   return ret;
-}
-
-static bool smb_free_locked(unsigned slot, struct smb2_context *ctx,
-      const char *path,
+static bool smb_free(const char *path,
       cloud_sync_complete_handler_t cb, void *user_data)
 {
    char smb_path[PATH_MAX_LENGTH];
@@ -437,13 +416,7 @@ static bool smb_free_locked(unsigned slot, struct smb2_context *ctx,
    smb_sync_build_path(smb_path, sizeof(smb_path), smb_st.subdir, path);
 
    /* Check if file exists */
-   rc = smb2_stat(ctx, smb_path, &st);
-   if (rc < 0 && -rc != ENOENT)
-   {
-      struct smb2_context *fresh = smb_pool_heal_if_dead(slot, ctx);
-      if (fresh)
-         rc = smb2_stat((ctx = fresh), smb_path, &st);
-   }
+   rc = smb2_stat(smb_st.ctx, smb_path, &st);
    if (rc < 0)
    {
       if (-rc == ENOENT)
@@ -453,18 +426,18 @@ static bool smb_free_locked(unsigned slot, struct smb2_context *ctx,
          return true;
       }
       RARCH_ERR(SMBPFX "Stat '%s' failed: %s\n",
-            smb_path, smb2_get_error(ctx));
+            smb_path, smb2_get_error(smb_st.ctx));
       cb(user_data, path, false, NULL);
       return true;
    }
 
    if (settings->bools.cloud_sync_destructive)
    {
-      rc = smb2_unlink(ctx, smb_path);
+      rc = smb2_unlink(smb_st.ctx, smb_path);
       if (rc < 0)
       {
          RARCH_ERR(SMBPFX "Delete '%s' failed: %s\n",
-               smb_path, smb2_get_error(ctx));
+               smb_path, smb2_get_error(smb_st.ctx));
          cb(user_data, path, false, NULL);
          return true;
       }
@@ -488,13 +461,13 @@ static bool smb_free_locked(unsigned slot, struct smb2_context *ctx,
       strlcat(new_path, ts, sizeof(new_path));
 
       /* Ensure parent dir of backup path exists */
-      smb_sync_ensure_parent_dir(ctx, new_path);
+      smb_sync_ensure_parent_dir(smb_st.ctx, new_path);
 
-      rc = smb2_rename(ctx, smb_path, new_path);
+      rc = smb2_rename(smb_st.ctx, smb_path, new_path);
       if (rc < 0)
       {
          RARCH_ERR(SMBPFX "Rename '%s' -> '%s' failed: %s\n",
-               smb_path, new_path, smb2_get_error(ctx));
+               smb_path, new_path, smb2_get_error(smb_st.ctx));
          cb(user_data, path, false, NULL);
          return true;
       }
@@ -503,22 +476,6 @@ static bool smb_free_locked(unsigned slot, struct smb2_context *ctx,
 
    cb(user_data, path, true, NULL);
    return true;
-}
-
-static bool smb_free(const char *path,
-      cloud_sync_complete_handler_t cb, void *user_data)
-{
-   unsigned slot;
-   struct smb2_context *ctx;
-   bool ret;
-   if (!smb_pool_acquire(&slot, &ctx))
-   {
-      cb(user_data, path, false, NULL);
-      return true;
-   }
-   ret = smb_free_locked(slot, ctx, path, cb, user_data);
-   smb_pool_release(slot);
-   return ret;
 }
 
 /* ========== Registration ========== */
