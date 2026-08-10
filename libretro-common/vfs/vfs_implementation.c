@@ -1793,6 +1793,7 @@ struct libretro_vfs_implementation_dir
 #ifdef HAVE_SMBCLIENT
    smb_dir_handle* smb_handle;
    char smb_path[PATH_MAX_LENGTH];
+   bool smb_is_dir;
 #endif
 };
 
@@ -1850,8 +1851,9 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(
          free(rdir);
          return NULL;
       }
-      rdir->smb_handle = dh;
+      rdir->smb_handle  = dh;
       rdir->smb_path[0] = '\0';
+      rdir->smb_is_dir  = false;
       return rdir;
    }
 #endif
@@ -1972,6 +1974,7 @@ bool retro_vfs_readdir_impl(libretro_vfs_implementation_dir *rdir)
       if (!de)
          return false;
       strlcpy(rdir->smb_path, de->name, sizeof(rdir->smb_path));
+      rdir->smb_is_dir = (de->type == RETRO_SMB_DIRENT_DIR);
       return true;
    }
    /* If we opened an SMB path but failed, do not fall through to native readdir */
@@ -2077,27 +2080,6 @@ const char *retro_vfs_dirent_get_name_impl(libretro_vfs_implementation_dir *rdir
    }
 }
 
-#ifdef HAVE_SMBCLIENT
-/* Outlined for the same reason as the stat helper below: the buffer is
- * only needed when the entry belongs to an smb:// listing. */
-static VFS_NOINLINE bool retro_vfs_dirent_is_dir_smb(
-      libretro_vfs_implementation_dir *rdir)
-{
-   char full[PATH_MAX_LENGTH];
-   const char *name = retro_vfs_dirent_get_name_impl(rdir);
-   int64_t sz       = 0;
-   int st           = 0;
-
-   if (!name)
-      return false;
-
-   fill_pathname_join_special(full, rdir->orig_path, name, sizeof(full));
-   st = retro_vfs_stat_smb(full, &sz);
-
-   return (st & RETRO_VFS_STAT_IS_DIRECTORY) != 0;
-}
-#endif
-
 #if !defined(_WIN32) && !defined(VITA) && !defined(__PSL1GHT__) && !defined(__PS3__)
 /* Split out of retro_vfs_dirent_is_dir_impl() so that the d_type test
  * there does not have to carry this scratch buffer. Filesystems that
@@ -2124,7 +2106,7 @@ bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir *rdir)
 {
 #ifdef HAVE_SMBCLIENT
    if (rdir->smb_handle && rdir->smb_handle->dir)
-      return retro_vfs_dirent_is_dir_smb(rdir);
+      return rdir->smb_is_dir;
 #endif
 #if defined(ANDROID) && defined(HAVE_SAF)
    if (rdir->saf_directory != NULL)

@@ -31,9 +31,12 @@ struct smb_settings {
 
 typedef struct smb_settings smb_settings_t;
 
+#define RETRO_SMB_DIRENT_FILE 0
+#define RETRO_SMB_DIRENT_DIR  1
+
 struct smbc_dirent {
    char name[256];
-   int  type;     /* file vs directory */
+   int  type;     /* RETRO_SMB_DIRENT_* */
    int64_t size;  /* file size */
 };
 

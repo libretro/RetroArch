@@ -712,7 +712,9 @@ struct smbc_dirent* retro_vfs_readdir_smb(smb_dir_handle* dh)
    memset(&result, 0, sizeof(result));
    strlcpy(result.name, ent->name ? ent->name : "", sizeof(result.name));
 
-   result.type = (ent->st.smb2_type == SMB2_TYPE_DIRECTORY) ? 1 : 0;
+   result.type = (ent->st.smb2_type == SMB2_TYPE_DIRECTORY)
+      ? RETRO_SMB_DIRENT_DIR
+      : RETRO_SMB_DIRENT_FILE;
    result.size = ent->st.smb2_size;
 
    return &result;
