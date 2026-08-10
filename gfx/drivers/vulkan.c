@@ -3103,6 +3103,12 @@ static struct vk_buffer_chain vulkan_buffer_chain_init(
 }
 
 static const gfx_ctx_driver_t *gfx_ctx_vk_drivers[] = {
+/* SDL3 video driver is higher on the list so that when a Vulkan context
+ * is desired while using SDL3, it's used. The sdl3_ctx_enabled() function
+ * ensures it's only selected when SDL3 is actively in use. */
+#if defined(HAVE_SDL3)
+   &gfx_ctx_sdl3_vk,
+#endif
 #if defined(__APPLE__)
    &gfx_ctx_cocoavk,
 #endif
@@ -3117,9 +3123,6 @@ static const gfx_ctx_driver_t *gfx_ctx_vk_drivers[] = {
 #endif
 #if defined(HAVE_X11)
    &gfx_ctx_vk_x,
-#endif
-#if defined(HAVE_SDL3)
-   &gfx_ctx_sdl3_vk,
 #endif
 #if defined(HAVE_VULKAN_DISPLAY)
    &gfx_ctx_khr_display,

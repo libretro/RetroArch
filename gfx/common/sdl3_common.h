@@ -99,6 +99,12 @@ bool sdl3_suppress_screensaver(void *data, bool enable);
 void sdl3_ctx_input_driver(void *data, const char *name,
       input_driver_t **input, void **input_data);
 
+/* Determines whether or not an SDL3 context driver should be
+ * initialized. Will return true when the user is using the
+ * sdl3 video driver, or when ctx_ident is explicitly configured
+ * as the context driver. */
+bool sdl3_ctx_enabled(const char *ctx_ident);
+
 void sdl3_ctx_get_video_size(void *data, unsigned *width, unsigned *height);
 float sdl3_ctx_get_refresh_rate(void *data);
 void sdl3_ctx_update_title(void *data);

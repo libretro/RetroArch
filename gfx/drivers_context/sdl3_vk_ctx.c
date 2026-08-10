@@ -73,7 +73,12 @@ static void sdl3_vk_ctx_destroy(void *data)
 
 static void *sdl3_vk_ctx_init(void *video_driver)
 {
-   gfx_ctx_sdl3_vk_data_t *sdl = (gfx_ctx_sdl3_vk_data_t*)
+   gfx_ctx_sdl3_vk_data_t *sdl;
+
+   if (!sdl3_ctx_enabled("vk_sdl3"))
+      return NULL;
+
+   sdl = (gfx_ctx_sdl3_vk_data_t*)
       calloc(1, sizeof(gfx_ctx_sdl3_vk_data_t));
 
    if (!sdl)

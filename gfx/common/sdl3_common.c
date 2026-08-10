@@ -352,6 +352,24 @@ void sdl3_ctx_input_driver(void *data,
    *input_data = NULL;
 }
 
+bool sdl3_ctx_enabled(const char *ctx_ident)
+{
+   settings_t *settings = config_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+
+   /* Determine the user's desired video driver. When a core requests
+    * gl/glcore/vulkan, the user's original selection is stashed in
+    * cached_driver_id. Use that if it's available. */
+   const char *video_ident = video_st->cached_driver_id[0]
+         ? video_st->cached_driver_id
+         : settings->arrays.video_driver;
+
+   /* Keep the hardware rendering within the SDL3 window. When SDL3 isn't
+    * selected, will pass off to the next native context instead. */
+   return string_is_equal(video_ident, "sdl3")
+       || string_is_equal(settings->arrays.video_context_driver, ctx_ident);
+}
+
 /* Shared ctx callbacks only need the SDL_Window*, which
  * every SDL3 driver data struct keeps as its first member. */
 static SDL_Window *sdl3_ctx_window(void *data)
