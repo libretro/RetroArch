@@ -912,6 +912,23 @@ fi
 check_pkgconf SMBCLIENT libsmb2 0.0
 check_enabled NETWORKING SMBCLIENT libsmb2 'SMB client support is' false
 
+# --enable-libsmb is the umbrella switch for SMB support: it guarantees SMB
+# gets built in without the caller having to know which libsmb2 provider is
+# available.  A system libsmb2 is preferred when pkg-config found one, and
+# the copy bundled in deps/libsmb2 is used otherwise.  --enable-smbclient and
+# --enable-builtinsmbclient remain available for packagers who need to pin a
+# specific provider.
+if [ "$HAVE_LIBSMB" = 'yes' ]; then
+   check_enabled NETWORKING LIBSMB libsmb2 'Networking is' false
+fi
+
+if [ "$HAVE_LIBSMB" = 'yes' ] && [ "$HAVE_SMBCLIENT" != 'yes' ]; then
+   if [ "$USER_BUILTINSMBCLIENT" = 'no' ]; then
+      die 1 'Error: --enable-libsmb requires a libsmb2, but no system libsmb2 was found and the bundled one is disabled.'
+   fi
+   HAVE_BUILTINSMBCLIENT=yes
+fi
+
 if [ "$HAVE_SMBCLIENT" = "yes" ]; then
     echo "SMB support enabled (system libsmb2)"
 elif [ "$HAVE_BUILTINSMBCLIENT" = "yes" ] || [ "$HAVE_BUILTINSMBCLIENT" = "auto" ]; then
