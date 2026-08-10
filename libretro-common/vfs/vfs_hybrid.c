@@ -123,7 +123,16 @@ static struct retro_vfs_file_handle *hyb_open( const char *path, unsigned mode, 
 	}
 	f->be = be;
 	f->h = h;
-	f->path = strdup( path );
+	/* strdup is POSIX, not C89: under a strict-C89 toolchain the
+	   prototype is hidden and the implicit int return truncates the
+	   pointer on LP64.  Copy manually with the headers we already
+	   include. */
+	{
+		size_t path_len = strlen( path ) + 1;
+		f->path = (char *)malloc( path_len );
+		if ( f->path )
+			memcpy( f->path, path, path_len );
+	}
 	return (struct retro_vfs_file_handle *)f;
 }
 
