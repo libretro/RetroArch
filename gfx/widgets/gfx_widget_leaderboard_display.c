@@ -472,7 +472,9 @@ void gfx_widgets_set_leaderboard_display(unsigned id, const char* value)
             --state->tracker_count;
             if (i < state->tracker_count)
             {
-               memcpy(&state->tracker_info[i], &state->tracker_info[i + 1],
+               /* Multi-element downward shift - regions overlap,
+                * so memcpy is undefined here */
+               memmove(&state->tracker_info[i], &state->tracker_info[i + 1],
                      (state->tracker_count - i) * sizeof(state->tracker_info[i]));
             }
          }
@@ -573,7 +575,9 @@ void gfx_widgets_set_challenge_display(unsigned id, const char* badge)
             --state->challenge_count;
             if (i < state->challenge_count)
             {
-               memcpy(&state->challenge_info[i], &state->challenge_info[i + 1],
+               /* Multi-element downward shift - regions overlap,
+                * so memcpy is undefined here */
+               memmove(&state->challenge_info[i], &state->challenge_info[i + 1],
                   (state->challenge_count - i) * sizeof(state->challenge_info[i]));
             }
 

@@ -5440,7 +5440,10 @@ static int generic_action_ok_network(const char *path,
          fill_pathname_join_special(url_path,
                FILE_PATH_LAKKA_URL,
                LAKKA_PROJECT, sizeof(url_path));
-         fill_pathname_join_special(url_path, url_path,
+         /* fill_pathname_join_special() requires @s != @dir
+          * (unguarded strlcpy with overlapping buffers);
+          * fill_pathname_join() handles the aliased case */
+         fill_pathname_join(url_path, url_path,
                FILE_PATH_INDEX_URL,
                sizeof(url_path));
          url_label    = msg_hash_to_str(enum_idx);
