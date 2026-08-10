@@ -85,7 +85,18 @@ struct RFILE
    size_t rbuf_len;
    size_t rbuf_pos;
    int64_t rbuf_file_off;
+   /* C89 7.9.5.3: on an update stream, output followed by input (or
+    * input followed by output, short of EOF) requires an intervening
+    * file positioning or flush call.  Backends over stdio really do
+    * misbehave without it - reads after writes return stale bytes.
+    * Track the last data direction and interpose a no-op seek on
+    * transitions, at this layer so every VFS backend is covered. */
+   signed char last_io;
 };
+
+#define FILESTREAM_LAST_IO_NONE  0
+#define FILESTREAM_LAST_IO_READ  1
+#define FILESTREAM_LAST_IO_WRITE 2
 
 static int64_t filestream_raw_read(RFILE *stream, void *s, int64_t len);
 static int64_t filestream_raw_seek(RFILE *stream,
@@ -285,6 +296,7 @@ RFILE* filestream_open(const char *path, unsigned mode, unsigned hints)
    output->rbuf_len      = 0;
    output->rbuf_pos      = 0;
    output->rbuf_file_off = 0;
+   output->last_io       = FILESTREAM_LAST_IO_NONE;
    return output;
 }
 
@@ -1287,6 +1299,10 @@ static int64_t filestream_raw_seek(RFILE *stream,
 
    if (output == VFS_ERROR_RETURN_VALUE)
       stream->err_flag = true;
+   else
+      /* A successful positioning call satisfies the update-stream
+       * transition rule in both directions. */
+      stream->last_io = FILESTREAM_LAST_IO_NONE;
 
    return output;
 }
@@ -1365,6 +1381,14 @@ static int64_t filestream_raw_read(RFILE *stream, void *s, int64_t len)
 {
    int64_t output;
 
+   /* Update-stream rule: input directly after output needs a
+    * positioning call between them, or stdio-backed VFS paths hand
+    * back stale bytes.  A zero-byte relative seek is the cheapest
+    * legal one. */
+   if (stream->last_io == FILESTREAM_LAST_IO_WRITE)
+      filestream_raw_seek(stream, 0, RETRO_VFS_SEEK_POSITION_CURRENT);
+   stream->last_io = FILESTREAM_LAST_IO_READ;
+
    if (filestream_read_cb)
       output = filestream_read_cb(stream->hfile, s, len);
    else
@@ -1424,6 +1448,9 @@ int filestream_flush(RFILE *stream)
 
    if (output == VFS_ERROR_RETURN_VALUE)
       stream->err_flag = true;
+   else if (stream)
+      /* A flush also satisfies the update-stream transition rule. */
+      stream->last_io = FILESTREAM_LAST_IO_NONE;
 
    return output;
 }
@@ -1647,9 +1674,17 @@ int64_t filestream_write(RFILE *stream, const void *s, int64_t len)
    int64_t output;
 
    /* Reads may have run ahead of the logical position; put the
-    * underlying handle back on it before writing through it. */
+    * underlying handle back on it before writing through it.  The
+    * discard's rewind doubles as the read-to-write transition seek;
+    * when there is nothing to discard, interpose one (update-stream
+    * rule, mirror of the one in filestream_raw_read). */
    if (stream)
+   {
       filestream_rbuf_discard(stream);
+      if (stream->last_io == FILESTREAM_LAST_IO_READ)
+         filestream_raw_seek(stream, 0, RETRO_VFS_SEEK_POSITION_CURRENT);
+      stream->last_io = FILESTREAM_LAST_IO_WRITE;
+   }
 
    if (filestream_write_cb)
       output = filestream_write_cb(stream->hfile, s, len);
