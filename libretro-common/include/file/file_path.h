@@ -474,14 +474,19 @@ size_t fill_pathname_join(char *s, const char *dir,
 /**
  * fill_pathname_join_special:
  * @s                  : output path
- * @dir                : directory. Cannot be identical to @s
+ * @dir                : directory
  * @path               : path
  * @len                : size of output path
  *
+ * Macro alias of fill_pathname_join(); the two are identical.
+ * Kept for source compatibility with existing callers in
+ * RetroArch and downstream cores. Each argument expands exactly
+ * once, so arguments with side effects are safe. The distinct
+ * identifier fill_pathname_join_special_ext() is unaffected.
  *
- * Specialized version of fill_pathname_join.
- * Unlike fill_pathname_join(),
- * @dir and @s CANNOT be identical.
+ * @dir and @s may be identical (the join is then performed in
+ * place); buffers that overlap without being identical are
+ * undefined.
  *
  * Joins a directory (@dir) and path (@path) together.
  * Makes sure not to get two consecutive slashes
@@ -492,8 +497,8 @@ size_t fill_pathname_join(char *s, const char *dir,
  *
  * @return Length of the string copied into @s
  **/
-size_t fill_pathname_join_special(char *s,
-      const char *dir, const char *path, size_t len);
+#define fill_pathname_join_special(s, dir, path, len) \
+   fill_pathname_join((s), (dir), (path), (len))
 
 size_t fill_pathname_join_special_ext(char *s,
       const char *dir,  const char *path,
