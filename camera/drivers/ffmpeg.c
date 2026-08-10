@@ -58,13 +58,26 @@ extern "C" {
 #define FFMPEG_CAMERA_DEFAULT_BACKEND "lavfi"
 #endif
 
+/* lavf 59 (FFmpeg 5.0) made the demuxer/codec discovery API const-correct:
+ * av_find_input_format() returns const AVInputFormat*, avformat_open_input()
+ * accepts one, and av_find_best_stream() takes const AVCodec**. Older
+ * versions use mutable pointers throughout, so a single const-qualified
+ * declaration cannot satisfy both. */
+#if LIBAVFORMAT_VERSION_MAJOR >= 59
+typedef const AVInputFormat ffmpeg_camera_input_format_t;
+typedef const AVCodec ffmpeg_camera_codec_t;
+#else
+typedef AVInputFormat ffmpeg_camera_input_format_t;
+typedef AVCodec ffmpeg_camera_codec_t;
+#endif
+
 typedef struct ffmpeg_camera
 {
    sthread_t *poll_thread;
    AVFormatContext *format_context;
    AVCodecContext *decoder_context;
-   const AVCodec *decoder;
-   const AVInputFormat *input_format; /* owned by ffmpeg, don't free it */
+   ffmpeg_camera_codec_t *decoder; /* owned by ffmpeg, don't free it */
+   ffmpeg_camera_input_format_t *input_format; /* owned by ffmpeg, don't free it */
    AVDictionary *options;
    AVPacket *packet;
    AVFrame *camera_frame;
