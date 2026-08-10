@@ -289,7 +289,8 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/streams/interface_stream.o \
        $(LIBRETRO_COMM_DIR)/streams/memory_stream.o \
        $(LIBRETRO_COMM_DIR)/streams/network_stream.o \
-       $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.o
+       $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.o \
+       $(LIBRETRO_COMM_DIR)/vfs/vfs_hybrid.o
 
 ifeq ($(ANDROID), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation_saf.o

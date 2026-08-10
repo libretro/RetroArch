@@ -1187,6 +1187,7 @@ FILE
 #ifndef __WINRT__
 #include "../libretro-common/vfs/vfs_implementation.c"
 #endif
+#include "../libretro-common/vfs/vfs_hybrid.c"
 
 #ifdef HAVE_CDROM
 #include "../libretro-common/cdrom/cdrom.c"
