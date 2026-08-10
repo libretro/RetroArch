@@ -81,6 +81,19 @@ int retro_vfs_file_error_smb(libretro_vfs_implementation_file *stream);
 /* Context management */
 void smb_shutdown(void);
 
+struct smb2_context;
+
+/* Pool access for other in-process SMB consumers (cloud sync).
+ * acquire returns a connected context with its slot lock held; all
+ * libsmb2 calls on it must happen before the matching release.
+ * heal_if_dead replaces a dead-transport context in place under the
+ * held slot; on success the returned context replaces the old one for
+ * the remainder of the hold. */
+bool smb_pool_acquire(unsigned *slot, struct smb2_context **ctx);
+void smb_pool_release(unsigned slot);
+struct smb2_context *smb_pool_heal_if_dead(unsigned slot,
+      struct smb2_context *ctx);
+
 #ifdef __cplusplus
 }
 #endif

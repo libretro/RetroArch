@@ -81,6 +81,23 @@ struct smb_slot
 };
 
 static struct smb_slot smb_pool[SMB_POOL_CAP];
+/* The parameters the current pool was built with. A publication whose
+ * effective parameters differ tears the pool down so the next smb://
+ * access rebuilds it with the new values; an identical republication
+ * leaves the pool alone. subdir is excluded: it only affects path
+ * building, which reads the live configuration. */
+struct smb_pool_params
+{
+   char server[256];
+   char share[256];
+   char username[256];
+   char password[256];
+   char workgroup[256];
+   unsigned timeout;
+   unsigned num_contexts;
+   unsigned auth_mode;
+};
+static struct smb_pool_params smb_built;
 static unsigned smb_pool_size            = 0;
 static unsigned smb_pool_rr              = 0;
 static bool smb_initialized              = false;
@@ -133,6 +150,29 @@ static struct smb2_context *smb_slot_ctx(unsigned slot, unsigned gen)
    return smb_pool[slot].ctx;
 }
 
+static void smb_cfg_str(char *dst, size_t sz, const char *src)
+{
+   if (src)
+      strlcpy(dst, src, sz);
+   else
+      dst[0] = '\0';
+}
+
+static void smb_snapshot_params(struct smb_pool_params *p)
+{
+   memset(p, 0, sizeof(*p));
+   if (!smb_cfg)
+      return;
+   smb_cfg_str(p->server,    sizeof(p->server),    smb_cfg->server_address);
+   smb_cfg_str(p->share,     sizeof(p->share),     smb_cfg->share);
+   smb_cfg_str(p->username,  sizeof(p->username),  smb_cfg->username);
+   smb_cfg_str(p->password,  sizeof(p->password),  smb_cfg->password);
+   smb_cfg_str(p->workgroup, sizeof(p->workgroup), smb_cfg->workgroup);
+   p->timeout      = smb_cfg->timeout;
+   p->num_contexts = smb_cfg->num_contexts;
+   p->auth_mode    = smb_cfg->auth_mode;
+}
+
 static unsigned smb_effective_timeout(void)
 {
    unsigned t = smb_cfg ? smb_cfg->timeout : 0;
@@ -171,7 +211,12 @@ static struct smb2_context *smb_connect_new_context(int auth_mode)
    if (smb_cfg->workgroup && *smb_cfg->workgroup)
       smb2_set_domain(ctx, smb_cfg->workgroup);
    smb2_set_timeout(ctx, (int)smb_effective_timeout());
-   smb2_set_security_mode(ctx, (uint16_t)auth_mode);
+   /* smb2_set_security_mode() takes the SMB2_NEGOTIATE_SIGNING_*
+    * flags, not the SMB2_SEC_* authentication constants. Passing the
+    * auth mode here happened to request signing-required whenever
+    * Kerberos was selected; signing negotiation and authentication
+    * are independent knobs. */
+   smb2_set_security_mode(ctx, SMB2_NEGOTIATE_SIGNING_ENABLED);
    smb2_set_authentication(ctx, auth_mode);
 
    if (smb2_connect_share(ctx, server, share, username) < 0)
@@ -239,6 +284,23 @@ bool smb_init_cfg(const struct smb_settings *new_cfg)
       return false;
 #endif
    smb_cfg = new_cfg;
+   /* If a pool is live and this publication changes any parameter it
+    * was built with, tear it down; the next smb:// access rebuilds it
+    * lazily with the new values. Publications run on the main thread
+    * and smb_shutdown() takes every lock, so in-flight operations
+    * finish first and their stale generation handles fail closed. */
+   if (smb_initialized)
+   {
+      struct smb_pool_params now;
+      smb_snapshot_params(&now);
+      if (memcmp(&now, &smb_built, sizeof(now)) != 0)
+      {
+         fprintf(stderr,
+               "smb: settings changed; rebuilding the context pool "
+               "on next use\n");
+         smb_shutdown();
+      }
+   }
    return true;
 }
 
@@ -380,6 +442,7 @@ static bool smb_init(void)
 
    smb_pool_size   = want;
    smb_pool_rr     = 0;
+   smb_snapshot_params(&smb_built);
    smb_initialized = true;
 
    SMB_POOL_UNLOCK();
@@ -405,9 +468,32 @@ static bool smb_slot_acquire(unsigned *slot, struct smb2_context **ctx)
    }
    s = smb_pool_rr;
    smb_pool_rr = (smb_pool_rr + 1) % smb_pool_size;
+#ifdef HAVE_THREADS
+   {
+      /* Prefer an idle slot: a long-held slot (a cloud sync transfer,
+       * a large read) should not stall unrelated operations that the
+       * round-robin happens to land on it. Fall back to blocking on
+       * the round-robin slot when everything is busy. */
+      unsigned n = smb_pool_size;
+      unsigned i, t;
+      bool got = false;
+      SMB_POOL_UNLOCK();
+      for (i = 0; i < n; i++)
+      {
+         t = (s + i) % n;
+         if (slock_try_lock(smb_slot_lock[t]))
+         {
+            s = t;
+            got = true;
+            break;
+         }
+      }
+      if (!got)
+         SMB_SLOT_LOCK(s);
+   }
+#else
    SMB_POOL_UNLOCK();
-
-   SMB_SLOT_LOCK(s);
+#endif
    if (!smb_pool[s].ctx)
       smb_slot_recreate(s);
    if (!smb_pool[s].ctx)
@@ -419,6 +505,32 @@ static bool smb_slot_acquire(unsigned *slot, struct smb2_context **ctx)
    *ctx  = smb_pool[s].ctx;
    return true;
 }
+
+/* Public pool access for other in-process SMB consumers (the cloud
+ * sync driver): acquire returns a connected context with its slot
+ * lock held; every libsmb2 call on the context must happen before the
+ * matching release. heal_if_dead mirrors the VFS operations' retry:
+ * on a failed call, probe the transport and replace the context in
+ * place (caller keeps holding the same slot). */
+bool smb_pool_acquire(unsigned *slot, struct smb2_context **ctx)
+{
+   return smb_slot_acquire(slot, ctx);
+}
+
+void smb_pool_release(unsigned slot)
+{
+   if (slot < SMB_POOL_CAP)
+      SMB_SLOT_UNLOCK(slot);
+}
+
+struct smb2_context *smb_pool_heal_if_dead(unsigned slot,
+      struct smb2_context *ctx)
+{
+   if (slot >= SMB_POOL_CAP)
+      return NULL;
+   return smb_slot_heal_if_dead(slot, ctx);
+}
+
 
 /* Shutdown SMB context - called on exit */
 void smb_shutdown(void)
