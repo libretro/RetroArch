@@ -1156,9 +1156,7 @@ static const struct
    char s_b201bb70[27];
    char s_b66840e9[19];
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    char s_f0db2883[25];
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -5392,9 +5390,7 @@ static const struct
    "Ba\305\237l\304\261k Pay\304\261 Yatay Ofset",
    "Dikey Solma Etkeni",
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    "Mikrofon Kare Engeliyici",
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -9270,9 +9266,7 @@ typedef char msg_hash_tr_blob_check[
 #endif
 #endif
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
        + 25u
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -10704,9 +10698,7 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)

@@ -1116,9 +1116,7 @@ static const struct
    char s_b201bb70[31];
    char s_b66840e9[32];
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    char s_f0db2883[29];
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -5174,9 +5172,7 @@ static const struct
    "Vodorovn\303\275 posun okraje n\303\241zvu",
    "Faktor vertik\303\241ln\303\255ho blednut\303\255",
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    "Sn\303\255mky mikrofonn\303\255ch blok\305\257",
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -8895,9 +8891,7 @@ typedef char msg_hash_cs_blob_check[
 #endif
 #endif
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
        + 29u
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -10285,9 +10279,7 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)

@@ -1218,9 +1218,7 @@ static const struct
    char s_b201bb70[31];
    char s_b66840e9[21];
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    char s_f0db2883[27];
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -6692,10 +6690,8 @@ static const struct
    "\204\354\205\213",
    "\354\210\230\354\247\201 \355\216\230\354\235\264\353\223\234 \354\226\221",
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    "\353\247\210\354\235\264\355\201\254 \353\270\224\353\241\235 \355\224\204\353\240\210\354\236"
    "\204",
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -14508,9 +14504,7 @@ typedef char msg_hash_ko_blob_check[
 #endif
 #endif
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
        + 27u
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -16047,9 +16041,7 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)

@@ -425,9 +425,7 @@ static const struct
    char s_7816d5d5[29];
    char s_b00815b8[13];
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    char s_f0db2883[36];
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -1867,9 +1865,7 @@ static const struct
    "Mostrar 'Atualizador online'",
    "Sons do Menu",
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    "Estruturas de bloqueio do microfone",
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -3002,9 +2998,7 @@ typedef char msg_hash_pt_pt_blob_check[
 #endif
 #endif
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
        + 36u
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -3504,9 +3498,7 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)

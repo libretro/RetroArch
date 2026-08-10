@@ -1089,9 +1089,7 @@ static const struct
    char s_b201bb70[43];
    char s_b66840e9[25];
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    char s_f0db2883[37];
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -6211,10 +6209,8 @@ static const struct
    "\345\271\263\343\202\252\343\203\225\343\202\273\343\203\203\343\203\210",
    "\345\236\202\347\233\264\343\203\225\343\202\247\343\203\274\343\203\211\344\277\202\346\225\260",
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    "\343\203\236\343\202\244\343\202\257\343\203\226\343\203\255\343\203\203\343\202\257\343\203\225"
    "\343\203\254\343\203\274\343\203\240\346\225\260",
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -14066,9 +14062,7 @@ typedef char msg_hash_ja_blob_check[
 #endif
 #endif
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
        + 37u
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -15410,9 +15404,7 @@ static const uint32_t msg_hash_ja_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
