@@ -252,14 +252,18 @@ static uint32_t sdl3_ctx_get_flags(void *data)
    if (sdl3_gl_core_profile(sdl))
       BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
 
-   if (string_is_equal(video_driver_get_ident(), "glcore"))
-   {
+   /* Shader usage depends on the video driver:
+    * - glcore uses slang
+    * - gl uses GLSLS
+    * - gl1 is fixed-function, without shaders */
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+   if (string_is_equal(video_driver_get_ident(), "glcore"))
       BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
 #endif
-   }
-   else
+#ifdef HAVE_GLSL
+   if (string_is_equal(video_driver_get_ident(), "gl"))
       BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+#endif
 
    return flags;
 }
@@ -276,6 +280,7 @@ static void sdl3_ctx_set_flags(void *data, uint32_t flags)
 static void sdl3_ctx_bind_hw_render(void *data, bool enable)
 {
    gfx_ctx_sdl3_data_t *sdl = (gfx_ctx_sdl3_data_t*)data;
+
    if (!sdl || !sdl->win || !sdl->ctx)
       return;
 
