@@ -6238,22 +6238,18 @@ border_iterate:
          /* Playlist manager icons */
          else if (ozone->depth == 3 && e->enum_idx == MENU_ENUM_LABEL_PLAYLIST_MANAGER_SETTINGS)
          {
-            if (string_is_equal(e->rich_label,
-                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB)))
+            if (string_is_equal(e->rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB)))
                texture = icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_HISTORY];
-            else if (string_is_equal(e->rich_label,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB)))
+            else if (string_is_equal(e->rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB)))
                texture = icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_FAVORITES];
 #ifdef HAVE_IMAGEVIEWER
-            else if (string_is_equal(e->rich_label,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_IMAGES_TAB)))
+            else if (string_is_equal(e->rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_IMAGES_TAB)))
                texture = icons_tex[OZONE_TAB_TEXTURE_IMAGE];
 #endif
             else if (string_is_equal(e->rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MUSIC_TAB)))
                texture = icons_tex[OZONE_TAB_TEXTURE_MUSIC];
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-            else if (string_is_equal(e->rich_label,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_TAB)))
+            else if (string_is_equal(e->rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_TAB)))
                texture = icons_tex[OZONE_TAB_TEXTURE_VIDEO];
 #endif
             else if (i < ozone->horizontal_list.size)
@@ -6266,8 +6262,8 @@ border_iterate:
                {
                   char playlist_file_noext[NAME_MAX_LENGTH];
                   fill_pathname(playlist_file_noext,
-                  ozone->horizontal_list.list[offset].path, "",
-                  sizeof(playlist_file_noext));
+                        ozone->horizontal_list.list[offset].path, "",
+                        sizeof(playlist_file_noext));
                   if (string_is_equal(playlist_file_noext, e->rich_label))
                      break;
                }
@@ -6313,10 +6309,26 @@ border_iterate:
             }
             else if (ozone->depth == 2 && e->type == FILE_TYPE_PLAYLIST_COLLECTION)
             {
-               ozone_node_t *sidebar_node = (ozone_node_t*)
+               ozone_node_t *sidebar_node = NULL;
+               unsigned offset            = old_list ? ozone->entries_old[i].entry_idx : selection_buf->list[i].entry_idx;
+
+               /* Search for sorted icon order */
+               if (settings->bools.ozone_sort_after_truncate_playlist_name)
+               {
+                  for (offset = 0; offset < ozone->horizontal_list.size; offset++)
+                  {
+                     char playlist_file_noext[NAME_MAX_LENGTH];
+                     fill_pathname(playlist_file_noext,
+                           ozone->horizontal_list.list[offset].path, "",
+                           sizeof(playlist_file_noext));
+                     if (string_is_equal(playlist_file_noext, e->rich_label))
+                        break;
+                  }
+               }
+
+               sidebar_node = (ozone_node_t*)
                      (ozone->horizontal_list.size)
-                        ? (ozone_node_t*)file_list_get_userdata_at_offset(
-                              &ozone->horizontal_list, old_list ? ozone->entries_old[i].entry_idx : selection_buf->list[i].entry_idx)
+                        ? (ozone_node_t*)file_list_get_userdata_at_offset(&ozone->horizontal_list, offset)
                         : NULL;
 
                if (sidebar_node && sidebar_node->icon)
