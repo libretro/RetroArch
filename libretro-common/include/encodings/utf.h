@@ -120,6 +120,17 @@ char *utf8_to_local_string_alloc(const char *str);
 char *local_to_utf8_string_alloc(const char *str);
 
 /**
+ * local_to_utf8_string:
+ *
+ * Same conversion as local_to_utf8_string_alloc(), into a caller buffer.
+ * Targets where the local codepage needs no conversion - Xbox, and any
+ * UNICODE build - copy rather than allocate.  Truncates like strlcpy().
+ *
+ * @return false only if the conversion itself failed.
+ **/
+bool local_to_utf8_string(const char *in, char *s, size_t len);
+
+/**
  * utf8_to_utf16_string_alloc:
  * 
  * @return Returned pointer MUST be freed by the caller if non-NULL.
