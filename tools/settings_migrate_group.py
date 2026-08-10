@@ -33,6 +33,9 @@ notes for how to rebuild them.
 import re, subprocess, os, json, sys
 def run(cmd): return subprocess.run(cmd, shell=True, capture_output=True, text=True)
 CSTR = r'"(?:[^"\\]|\\.)*"(?:\s*"(?:[^"\\]|\\.)*")*'
+STOP_AFTER_EMIT = '--stop-after-emit' in sys.argv
+if STOP_AFTER_EMIT:
+    sys.argv.remove('--stop-after-emit')
 TABLE, DEF, TITLE = sys.argv[1], sys.argv[2], sys.argv[3]
 assert not os.path.exists(os.path.join('settings', os.path.basename(DEF))), \
     'def file %s already exists upstream - pick a different name' % DEF
@@ -270,6 +273,75 @@ cfg = open('configuration.c').read()
 cfg_spans = []
 cfg_keeps = []
 cfg_guards = {}
+cfg_nodefault = set()
+cfg_defval = {}
+
+def _split_args(call_text):
+    """Top-level comma split of the argument list of a SETTING_*(...)
+    row, respecting parentheses and string literals."""
+    inner = call_text[call_text.index('(') + 1:call_text.rindex(')')]
+    args, depth, cur, i = [], 0, '', 0
+    while i < len(inner):
+        ch = inner[i]
+        if ch == '"':
+            j = i + 1
+            while j < len(inner):
+                if inner[j] == '\\':
+                    j += 2
+                    continue
+                if inner[j] == '"':
+                    break
+                j += 1
+            cur += inner[i:j + 1]
+            i = j + 1
+            continue
+        if ch == '(':
+            depth += 1
+        elif ch == ')':
+            depth -= 1
+        elif ch == ',' and depth == 0:
+            args.append(cur.strip())
+            cur = ''
+            i += 1
+            continue
+        cur += ch
+        i += 1
+    args.append(cur.strip())
+    return args
+
+def _defaults_equivalent(a, b):
+    """Whether two default expressions expand to the same token stream
+    against config.def.h under the battery's base define set. Exactly
+    the right notion for a DEFAULT_* macro versus its literal
+    transcription; conservatively unequal for anything else."""
+    os.makedirs('/tmp/settings_mig_stubs', exist_ok=True)
+    probe = ('#include "config.def.h"\n'
+             '__SETTINGS_MIG_A__ (%s)\n'
+             '__SETTINGS_MIG_B__ (%s)\n' % (a, b))
+    open('/tmp/settings_mig_probe.c', 'w').write(probe)
+    _cmd = ('gcc -E -P -I. -Imenu -Ilibretro-common/include '
+            '-Ideps/rcheevos/include -I/tmp/settings_mig_stubs '
+            '-DRARCH_INTERNAL -DHAVE_MENU -DHAVE_CONFIGFILE '
+            '/tmp/settings_mig_probe.c 2>&1')
+    for _ in range(6):
+        r = run(_cmd)
+        fe = re.search(r"fatal error: ([\w./-]+\.h): No such file", r.stdout)
+        if not fe:
+            break
+        stub = os.path.join('/tmp/settings_mig_stubs', fe.group(1))
+        os.makedirs(os.path.dirname(stub) or '/tmp/settings_mig_stubs',
+                    exist_ok=True)
+        if os.path.exists(stub):
+            return False
+        open(stub, 'w').write('/* empty stub for the default probe */\n')
+    ma = re.search(r'__SETTINGS_MIG_A__ (.*)', r.stdout)
+    mb = re.search(r'__SETTINGS_MIG_B__ (.*)', r.stdout)
+    if not ma or not mb:
+        return False
+    return (re.sub(r'\s+', '', ma.group(1))
+            == re.sub(r'\s+', '', mb.group(1)))
+
+_MACROISH = re.compile(r'\b[A-Z_][A-Z0-9_]{3,}\b')
 for k, f, T, a in rows:
     if T in ref_tokens:
         continue
@@ -290,6 +362,22 @@ for k, f, T, a in rows:
     elif k in ('DIR', 'PATH', 'PATH_DS', 'STRING', 'STRING_LV', 'STRING_P', 'ACTION', 'ACTION_EX', 'ACTION_LV', 'INT_AT', 'UINT_AT_EX'):
         m = None  # dirs keep literal config rows: default-enable varies per row 
     if m:
+        _args = _split_args(m.group(0))
+        # SETTING_<kind>(name, ptr, default_enable, default, override)
+        assert len(_args) >= 4, (T, m.group(0)[:80])
+        _den, _dval = _args[2], _args[3]
+        if _den == 'false':
+            # The row deliberately carries no default. The generated
+            # grammar always applies one, so this row cannot be
+            # migrated into the config pass: keep the hand-written row
+            # and exclude the generated row from the configuration
+            # pass. This is the class that reset state_slot and
+            # replay_slot to 0 on every config load.
+            cfg_nodefault.add(T)
+            print('  note: %s carries no default (default_enable '
+                  'false) - config row stays literal' % T)
+            continue
+        cfg_defval[T] = _dval
         cfg_full_guards[T] = tuple(guard_at(cfg, m.start()))
         cfg_guards[T] = tuple(g for g in cfg_full_guards[T] if g not in table_guard)
         cfg_spans.append((m.start(), m.end())); continue
@@ -320,6 +408,42 @@ for k, f, T, a in rows:
     cfg_keeps.append((T, m.group(1)))
     print("  note: %s config key %s differs from label %s - config row stays literal" % (T, m.group(1), names[T]))
 KEEP = set(T for T, _ in cfg_keeps)
+# ---- Default fidelity: the def file's single default feeds both the
+# descriptor and the configuration pass. Where the two hand-written
+# rows spelled it differently, resolve, never silently pick a side:
+#  - a DEFAULT_*-style macro versus a literal that is its expansion
+#    under the base define set keeps the macro spelling (the macro may
+#    be platform-conditional; the literal transcription is the defect
+#    that discarded DEFAULT_VIDEO_SMOOTH);
+#  - anything else is a genuine divergence between menu and
+#    configuration defaults (the class that flipped the cloud sync
+#    defaults) and aborts for the operator to reconcile in-tree first.
+_new_rows = []
+for k, f, T, a in rows:
+    if T in cfg_defval and a:
+        _da = _split_args('(%s)' % a)
+        _desc_d, _cfg_d = _da[0], cfg_defval[T]
+        if re.sub(r'\s+', '', _desc_d) != re.sub(r'\s+', '', _cfg_d):
+            assert _defaults_equivalent(_desc_d, _cfg_d), (
+                'DEFAULT DIVERGENCE on %s: descriptor row says %r, '
+                'configuration row says %r, and they do not expand '
+                'identically under the base define set. Reconcile the '
+                'two hand-written rows before migrating.' % (T, _desc_d, _cfg_d))
+            _mac_desc = bool(_MACROISH.search(_desc_d))
+            _mac_cfg = bool(_MACROISH.search(_cfg_d))
+            assert _mac_desc != _mac_cfg, (
+                'DEFAULT SPELLING on %s: %r vs %r expand identically '
+                'but neither/both look like a macro; reconcile '
+                'in-tree.' % (T, _desc_d, _cfg_d))
+            _keep = _desc_d if _mac_desc else _cfg_d
+            if _keep != _desc_d:
+                _da[0] = _keep
+                a = ', '.join(_da)
+                print('  note: %s default spelled %s in the '
+                      'configuration row - macro spelling kept over '
+                      'the literal %s' % (T, _keep, _desc_d))
+    _new_rows.append((k, f, T, a))
+rows = _new_rows
 # Common enclosing guard of the removed config rows.  These rows may sit
 # inside a group-level guard in configuration.c (e.g. #ifdef HAVE_MENU
 # around the whole menu-visibility block) that is NOT a per-row guard in
@@ -408,17 +532,38 @@ for k, f, T, a in rows:
         row = ('/* Persistence lives in custom configuration code; no config\n'
                ' * row is emitted. */\n'
                '#ifndef SETTINGS_DEF_CONFIG_PASS\n') + row + '\n#endif'
+    if T in cfg_nodefault:
+        row = ('/* The configuration table registers this row by hand in\n'
+               ' * configuration.c because it carries no default there; the\n'
+               ' * generated row is for the other passes. */\n'
+               '#ifndef SETTINGS_DEF_CONFIG_PASS\n') + row + '\n#endif'
     _row_gs_all = list(table_guard) + (list(guards[f or T]) if (f or T) in guards else [])
-    _cfg_missing_row_guard = (T in cfg_full_guards
-        and any(g not in cfg_full_guards[T] for g in _row_gs_all))
-    _cc_src = (cfg_full_guards.get(T) if _cfg_missing_row_guard else cfg_guards.get(T)) or ()
-    if _cc_src:
-        _cc = ' && '.join(('defined(%s)' % g[len('#ifdef '):].strip()) if g.startswith('#ifdef ')
+    # Guard reconciliation between the descriptor row (about to gate
+    # the def row) and the original configuration row. The def grammar
+    # gates every pass identically, so any difference needs explicit
+    # per-pass terms - in BOTH directions. Attaching the descriptor's
+    # guard to the config row narrowed audio_block_frames and friends
+    # off every desktop build; the reverse (a config-only guard like
+    # HAVE_NETWORKGAMEPAD) silently broadened rows.
+    _cfg_eff = tuple(g for g in cfg_full_guards.get(T, ())
+                     if g not in CFG_GROUP_GUARD) if T in cfg_full_guards else None
+    _desc_set = set(_row_gs_all)
+    # config exists somewhere the descriptor guard is false:
+    _cfg_broader = (_cfg_eff is not None
+                    and any(g not in set(_cfg_eff) for g in _desc_set))
+    # descriptor exists somewhere the config guard is false:
+    _cfg_narrower = (_cfg_eff is not None
+                     and any(g not in _desc_set for g in _cfg_eff))
+    _cfg_missing_row_guard = _cfg_broader
+    def _conds(gs):
+        return ' && '.join(('defined(%s)' % g[len('#ifdef '):].strip()) if g.startswith('#ifdef ')
                           else ('!defined(%s)' % g[len('#ifndef '):].strip()) if g.startswith('#ifndef ')
-                          else '(' + g[len('#if '):].strip() + ')' for g in _cc_src)
+                          else '(' + g[len('#if '):].strip() + ')' for g in gs)
+    if _cfg_eff is not None and (_cfg_broader or _cfg_narrower) and _cfg_eff:
+        _cc = _conds(_cfg_eff)
         row = ('/* The configuration row lives under %s; other passes are\n'
                ' * unaffected. */\n'
-               '#if !defined(SETTINGS_DEF_CONFIG_PASS) || (%s)\n' % (_cc.replace('defined(', '').replace(')', '') if False else _cc, _cc)) + row + '\n#endif'
+               '#if !defined(SETTINGS_DEF_CONFIG_PASS) || (%s)\n' % (_cc, _cc)) + row + '\n#endif'
     if T in KEEP:
         ck = dict(cfg_keeps)[T]
         row = ('/* config key %s differs from the label string; the\n'
@@ -465,7 +610,17 @@ for k, f, T, a in rows:
                        gopen.replace('\n', ' '), cond, _cfg_exempt)) + row + '\n#endif'
             enum_rows.append((T, 'S_%s%s_H' % (k, m2 or '') in _h_used if False else ('S_%s_H' % k in _h_used or 'S_%s_NS_H' % k in _h_used), []))
         else:
-            row = gopen + '\n' + row + '\n' + gclose
+            if _cfg_missing_row_guard:
+                # The configuration row was NOT under (all of) these
+                # guards: let the config pass through the descriptor
+                # guard; the inner condition above already restricts
+                # it to the config row's own guards.
+                row = ('/* Descriptor rows are %s; the configuration row is\n'
+                       ' * gated separately above. */\n'
+                       '#if %s || defined(SETTINGS_DEF_CONFIG_PASS)\n'
+                       % (gopen.replace('\n', ' '), cond)) + row + '\n#endif'
+            else:
+                row = gopen + '\n' + row + '\n' + gclose
             enum_rows.append((T, 'S_%s_H' % k in _h_used or 'S_%s_NS_H' % k in _h_used, list(gs)))
     else:
         enum_rows.append((T, 'S_%s_H' % k in _h_used or 'S_%s_NS_H' % k in _h_used, []))
@@ -551,6 +706,12 @@ new_body = ('/* GENERATED: rows come from %s in order. */\n' % DEF
 ms = ms[:tm.start(1)] + new_body + ms[tm.end(1):]
 open('menu/menu_setting.c','w').write(ms)
 print("surgeries ok")
+if STOP_AFTER_EMIT:
+    # Fixture/self-test mode: extraction, reconciliation and surgeries
+    # are done; the gate battery and the enum stage need the full tree
+    # and the session harness and are exercised on real migrations.
+    print("EMIT_OK")
+    sys.exit(0)
 
 CFB = "-std=gnu89 -pedantic-errors -Wno-long-long -Wno-overlength-strings -O2 -fsyntax-only -I. -Imenu -Ilibretro-common/include -Ideps/rcheevos/include -I/tmp/settings_mig_stubs -DRARCH_INTERNAL -DHAVE_MENU"
 CF = CFB + " -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_REWIND -DHAVE_SCREENSHOTS -DHAVE_CHEATS -DHAVE_OVERLAY -DHAVE_MICROPHONE"

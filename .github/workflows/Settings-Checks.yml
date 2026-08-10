@@ -44,3 +44,14 @@ jobs:
           # settings/ def files and configuration.c only manifests in
           # this concatenation; per-file builds cannot see it.
           python3 tools/settings_check.py unity
+
+      - name: Migration tool self-test
+        shell: bash
+        run: |
+          set -eu
+          # Runs the settings migrator over defect-class fixtures and
+          # asserts the emission: no-default rows keep their literal
+          # configuration row, DEFAULT_* macro spellings survive,
+          # guard breadth is preserved in both directions and both
+          # string topologies, and genuine default divergence aborts.
+          python3 tools/settings_migrate_selftest.py
