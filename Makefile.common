@@ -2878,7 +2878,15 @@ ifneq (,$(filter 1,$(HAVE_SMBCLIENT) $(HAVE_BUILTINSMBCLIENT)))
    else ifeq ($(HAVE_BUILTINSMBCLIENT),1)
       # builtin libsmb2
       ifneq ($(findstring Win32,$(OS)),)
-         CFLAGS += -D_WINDOWS -DWIN32_LEAN_AND_MEAN
+         # WIN32_LEAN_AND_MEAN is defined with an empty replacement list on
+         # purpose. It has to be on the command line because the bundled
+         # libsmb2 needs it, but it lands on every TU in the build, and ~40
+         # RetroArch headers do a bare "#define WIN32_LEAN_AND_MEAN" of their
+         # own before including <windows.h>. A plain -DWIN32_LEAN_AND_MEAN
+         # expands to 1, which does not match those, so each one of them
+         # warns about a macro redefinition. Nothing tests the value, only
+         # #ifndef, so an empty definition is equivalent and silent.
+         CFLAGS += -D_WINDOWS -DWIN32_LEAN_AND_MEAN=
          CFLAGS += -DNEED_RANDOM -DNEED_SRANDOM -DNEED_GETLOGIN_R
       endif
       INCLUDE_DIRS += -I$(DEPS_DIR)/libsmb2/include
