@@ -94,8 +94,11 @@ bool sdl3_window_has_focus(SDL_Window *win);
 /* Toggles screensaver inhibition. */
 bool sdl3_suppress_screensaver(void *data, bool enable);
 
-/* gfx_ctx_driver_t input_driver callback: returns no input driver.
- * The frontend selects an input driver separately (sdl3 on SDL3 builds). */
+/* Initializes the input driver paired with an SDL3 window. */
+void sdl3_input_driver(const char *joypad_name,
+      input_driver_t **input, void **input_data);
+
+/* gfx_ctx_driver_t input_driver callback wrapping sdl3_input_driver. */
 void sdl3_ctx_input_driver(void *data, const char *name,
       input_driver_t **input, void **input_data);
 

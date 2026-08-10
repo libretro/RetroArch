@@ -260,9 +260,7 @@ static void *sdl3_gfx_init(const video_info_t *video,
 
    sdl3_refresh_viewport(vid);
 
-   /* The frontend selects the input driver separately. */
-   *input      = NULL;
-   *input_data = NULL;
+   sdl3_input_driver(config_get_ptr()->arrays.input_joypad_driver, input, input_data);
 
    return vid;
 

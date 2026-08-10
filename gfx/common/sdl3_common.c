@@ -342,14 +342,61 @@ bool sdl3_suppress_screensaver(void *data, bool enable)
    return enable ? SDL_DisableScreenSaver() : SDL_EnableScreenSaver();
 }
 
+/* Returns the configured input driver if it works alongside an SDL3
+ * window, or NULL if the SDL3 input driver should be used instead.
+ *
+ * The udev, linuxraw, raw and dinput input drivers read input devices
+ * directly, so they will function inside an SDL3 window. Drivers tied
+ * to a windowing system like x, wayland, or cocoa however, should end
+ * up using the SDL3 input driver. */
+static input_driver_t *sdl3_passthrough_input(const char *ident)
+{
+#ifdef HAVE_UDEV
+   if (string_is_equal(ident, "udev"))
+      return &input_udev;
+#endif
+#if defined(__linux__) && !defined(ANDROID)
+   if (string_is_equal(ident, "linuxraw"))
+      return &input_linuxraw;
+#endif
+#if defined(_WIN32) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501 && !defined(__WINRT__)
+#ifdef HAVE_WINRAWINPUT
+   if (string_is_equal(ident, "raw"))
+      return &input_winraw;
+#endif
+#endif
+#ifdef HAVE_DINPUT
+   if (string_is_equal(ident, "dinput"))
+      return &input_dinput;
+#endif
+   return NULL;
+}
+
+void sdl3_input_driver(const char *joypad_name,
+      input_driver_t **input, void **input_data)
+{
+   input_driver_t *passthrough = sdl3_passthrough_input(config_get_ptr()->arrays.input_driver);
+
+   if (passthrough)
+   {
+      if ((*input_data = input_driver_init_wrap(passthrough, joypad_name)))
+      {
+         *input = passthrough;
+         return;
+      }
+      /* The configured input driver failed, so fallback to SDL3. */
+   }
+
+   /* Use the SDL3 input driver, taking advantage of the window's event queue. */
+   *input_data = input_driver_init_wrap(&input_sdl3, joypad_name);
+   *input = *input_data ? &input_sdl3 : NULL;
+}
+
 void sdl3_ctx_input_driver(void *data,
       const char *name,
       input_driver_t **input, void **input_data)
 {
-   /* Frontend selects the input driver separately. Will
-    * default to sdl3 on SDL3 builds. */
-   *input      = NULL;
-   *input_data = NULL;
+   sdl3_input_driver(name, input, input_data);
 }
 
 bool sdl3_ctx_enabled(const char *ctx_ident)
