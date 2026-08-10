@@ -219,14 +219,23 @@ static struct smb2_context *smb_slot_heal_if_dead(unsigned slot,
 bool smb_init_cfg(const struct smb_settings *new_cfg)
 {
 #ifdef HAVE_THREADS
-   /* First publication happens on the main thread during startup,
-    * before any thread can reach an smb:// path; see the pool
-    * comment. Only the bootstrap pool lock is created here - one
-    * mutex, whether or not SMB is ever used. The per-slot locks are
-    * created under the pool lock on first actual SMB use, sized to
-    * the configured pool, so a build that never touches an smb://
-    * path never allocates them. */
-   if (!smb_pool_lock && !(smb_pool_lock = slock_new()))
+   /* Publications happen on the main thread (startup, configuration
+    * loads and saves); see the pool comment. The bootstrap pool lock
+    * is created only once a publication carries a configured server
+    * address: SMB connections use only the configured server - never
+    * the host embedded in an smb:// URL - so with no server
+    * configured SMB cannot function this session and needs nothing.
+    * A session with no intention of using SMB therefore allocates
+    * exactly nothing here. Configuring a server in the menu takes
+    * effect at the next publication, which the menu flow reaches by
+    * saving the configuration (manually or via save-on-exit); the
+    * per-slot locks are created later still, under the pool lock on
+    * first actual smb:// access, sized to the configured pool. */
+   if (     new_cfg
+         && new_cfg->server_address
+         && *new_cfg->server_address
+         && !smb_pool_lock
+         && !(smb_pool_lock = slock_new()))
       return false;
 #endif
    smb_cfg = new_cfg;
@@ -263,7 +272,18 @@ static bool smb_init(void)
    bool ok = true;
 
    if (!SMB_LOCKS_READY())
+   {
+      /* A server address is visible through the aliased configuration
+       * strings but no publication has carried it yet: the SMB
+       * settings were changed after the last configuration load.
+       * They take effect at the next publication (configuration save
+       * or load). */
+      if (smb_cfg && smb_cfg->server_address && *smb_cfg->server_address)
+         fprintf(stderr,
+               "smb_init: SMB configured after startup; save the "
+               "configuration to activate it\n");
       return false;
+   }
 
    SMB_POOL_LOCK();
 

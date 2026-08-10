@@ -9004,6 +9004,18 @@ bool config_save_file(const char *path)
    if (path_settings)
       free(path_settings);
 
+#ifdef HAVE_SMBCLIENT
+   /* Publish the SMB client settings on save as well as on load. This
+    * is what lets SMB configured through the menu take effect in the
+    * same session: the menu flow reaches a save (manual or
+    * save-on-exit) and the publication both refreshes the numeric
+    * snapshot and, now that a server address is configured, creates
+    * the backend's bootstrap lock. A configuration with no server
+    * address publishes for free - no lock, no allocation. */
+   if (ret)
+      retroarch_smb_init();
+#endif
+
    return ret;
 }
 
