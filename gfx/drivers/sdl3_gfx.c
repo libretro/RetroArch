@@ -608,6 +608,10 @@ static void sdl3_poke_set_video_mode(void *data, unsigned width,
       return;
    }
 
+   vid->video.width      = width;
+   vid->video.height     = height;
+   vid->video.fullscreen = fullscreen;
+
    /* Recompute the viewport from the new pixel size on the next
     * frame. */
    vid->flags |= SDL3_FLAG_SHOULD_RESIZE;
