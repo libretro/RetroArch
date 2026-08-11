@@ -108,6 +108,15 @@ bool rpng_save_image_argb(const char *path, const uint32_t *data,
 bool rpng_save_image_bgr24(const char *path, const uint8_t *data,
       unsigned width, unsigned height, unsigned pitch);
 
+/* As rpng_save_image_argb, but the source is plain RGBA byte order:
+ * R,G,B,A ascending in memory, i.e. the uint32_t 0xAABBGGRR on a
+ * little-endian host.  This is what GL_RGBA / VK_FORMAT_R8G8B8A8
+ * readbacks and most texture caches hold, and it is also PNG's own
+ * colour-type-6 channel order, so this path swizzles nothing.  pitch is
+ * in bytes. */
+bool rpng_save_image_rgba(const char *path, const uint8_t *data,
+      unsigned width, unsigned height, unsigned pitch);
+
 uint8_t* rpng_save_image_bgr24_string(const uint8_t *data,
       unsigned width, unsigned height, signed pitch, uint64_t *bytes);
 
