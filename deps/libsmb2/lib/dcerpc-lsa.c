@@ -91,7 +91,7 @@ lsa_RPC_SID_coder(struct dcerpc_context *dce,
 {
         RPC_SID *sid = ptr;
         uint64_t count;
-        int i;
+        uint64_t i;
 
         count = sid->SubAuthorityCount;
         if (dcerpc_uint3264_coder(dce, pdu, iov, offset, &count)) {
@@ -135,7 +135,7 @@ lsa_PRPC_SID_array_coder(struct dcerpc_context *dce,
 {
         PLSAPR_SID_ENUM_BUFFER seb = ptr;
         uint64_t val;
-        int i;
+        uint64_t i;
 
         val = seb->Entries;
         if (dcerpc_uint32_coder(dce, pdu, iov, offset, &val)) {
@@ -288,7 +288,7 @@ TN_array_coder(struct dcerpc_context *dce,
 {
         LSAPR_TRANSLATED_NAMES_EX *tn = ptr;
         uint64_t count;
-        int i;
+        uint64_t i;
 
         count = tn->Entries;
         if (dcerpc_uint3264_coder(dce, pdu, iov, offset, &count)) {
@@ -502,7 +502,7 @@ RDL_DOMAINS_array_coder(struct dcerpc_context *dce,
 {
         LSAPR_REFERENCED_DOMAIN_LIST *rdl = ptr;
         uint64_t entries;
-        int i;
+        uint64_t i;
 
         entries = rdl->Entries;
         if (dcerpc_uint3264_coder(dce, pdu, iov, offset, &entries)) {

@@ -84,7 +84,7 @@ smb2_tv_timeval_to_win(struct smb2_timeval *tv){
             tv->tv_usec == 0) {
                 return 0;
         } else if (tv->tv_sec == 0xffffffff &&
-                   tv->tv_usec == 0xffffffff) {
+                   (unsigned long)tv->tv_usec == 0xffffffffUL) {
                return 0xffffffffffffffffULL;
         }
         return smb2_timeval_to_win(tv);
@@ -167,7 +167,7 @@ smb2_decode_file_stream_info(struct smb2_context *smb2,
 
                 if (fs->stream_name_length > 0) {
                         name_len = fs->stream_name_length;
-                        if (vec->len < (offset + 24 + name_len)) {
+                        if (vec->len < (size_t)(offset + 24 + name_len)) {
                                 name_len = (int)vec->len - (int)offset - 24;
                         }
                         if (name_len > 0) {
@@ -204,7 +204,7 @@ smb2_decode_file_stream_info(struct smb2_context *smb2,
                         fs->next_entry_offset = 0;
                 }
                 fs++;
-        } while (next_offset && ((offset + 24) <= vec->len));
+        } while (next_offset && ((size_t)(offset + 24) <= vec->len));
 
         return 0;
 }
@@ -495,7 +495,7 @@ smb2_encode_file_normalized_name_info(struct smb2_context *smb2,
                           struct smb2_iovec *vec)
 {
         struct smb2_utf16 *name = NULL;
-        int name_len;
+        uint32_t name_len;
 
         if (vec->len < (4 + fs->file_name_length)) {
                 return -1;

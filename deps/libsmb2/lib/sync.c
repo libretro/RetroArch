@@ -103,7 +103,7 @@ static void sync_connect_cb(struct smb2_context *smb2, int status,
 {
         struct sync_cb_data *cb_data = private_data;
 
-        if (cb_data->status == SMB2_STATUS_CANCELLED) {
+        if ((uint32_t)cb_data->status == SMB2_STATUS_CANCELLED) {
                 if (cb_data != &smb2->connect_cb_data) {
                         free(cb_data);
                 }
@@ -178,7 +178,7 @@ static void sync_opendir_cb(struct smb2_context *smb2, int status,
 {
         struct sync_cb_data *cb_data = private_data;
 
-        if (status == SMB2_STATUS_SHUTDOWN) {
+        if ((uint32_t)status == SMB2_STATUS_SHUTDOWN) {
                 return;
         }
         if (status) {
@@ -275,10 +275,10 @@ static void sync_close_cb(struct smb2_context *smb2, int status,
 {
         struct sync_cb_data *cb_data = private_data;
 
-        if (status == SMB2_STATUS_SHUTDOWN) {
+        if ((uint32_t)status == SMB2_STATUS_SHUTDOWN) {
                 return;
         }
-        if (cb_data->status == SMB2_STATUS_CANCELLED) {
+        if ((uint32_t)cb_data->status == SMB2_STATUS_CANCELLED) {
                 free(cb_data);
                 return;
         }
@@ -324,7 +324,7 @@ static void sync_fsync_cb(struct smb2_context *smb2, int status,
 {
         struct sync_cb_data *cb_data = private_data;
 
-        if (cb_data->status == SMB2_STATUS_CANCELLED) {
+        if ((uint32_t)cb_data->status == SMB2_STATUS_CANCELLED) {
                 free(cb_data);
                 return;
         }
@@ -370,7 +370,7 @@ static void sync_generic_status_cb(struct smb2_context *smb2, int status,
 {
         struct sync_cb_data *cb_data = private_data;
 
-        if (cb_data->status == SMB2_STATUS_CANCELLED) {
+        if ((uint32_t)cb_data->status == SMB2_STATUS_CANCELLED) {
                 free(cb_data);
                 return;
         }
@@ -790,7 +790,7 @@ static void readlink_cb(struct smb2_context *smb2, int status,
         struct sync_cb_data *cb_data = private_data;
         struct sync_readlink_cb_data *rl_data = cb_data->ptr;
         
-        if (cb_data->status == SMB2_STATUS_CANCELLED) {
+        if ((uint32_t)cb_data->status == SMB2_STATUS_CANCELLED) {
                 free(cb_data);
                 return;
         }
@@ -841,7 +841,7 @@ static void sync_echo_cb(struct smb2_context *smb2, int status,
 {
         struct sync_cb_data *cb_data = private_data;
 
-        if (cb_data->status == SMB2_STATUS_CANCELLED) {
+        if ((uint32_t)cb_data->status == SMB2_STATUS_CANCELLED) {
                 free(cb_data);
                 return;
         }
@@ -892,7 +892,7 @@ static void sync_notify_change_cb(struct smb2_context *smb2, int status,
 {
         struct sync_cb_data *cb_data = private_data;
 
-        if (cb_data->status == SMB2_STATUS_CANCELLED) {
+        if ((uint32_t)cb_data->status == SMB2_STATUS_CANCELLED) {
                 return;
         }
 

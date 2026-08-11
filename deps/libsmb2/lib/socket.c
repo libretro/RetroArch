@@ -1459,7 +1459,7 @@ int smb2_accept_connection_async(const int fd, const int to_msec, smb2_accepted_
         struct linger const lin = { 1, 0 };   /*  if l_linger is zero, sends RST after FIN */
 #endif
 
-        if (!SMB2_VALID_SOCKET(fd)) {
+        if (!SMB2_VALID_SOCKET((t_socket)fd)) {
                 return -EINVAL;
         }
 

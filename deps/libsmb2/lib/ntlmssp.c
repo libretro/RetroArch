@@ -321,7 +321,7 @@ ntlm_decode_challenge_message(struct smb2_context *smb2, struct auth_data *auth_
                         unsigned char *buf, size_t len)
 {
         if (buf && len > 0) {
-                int alloc_len;
+                uint32_t alloc_len;
                 uint32_t inoff;
                 uint16_t inlen;
                 uint32_t outoff;

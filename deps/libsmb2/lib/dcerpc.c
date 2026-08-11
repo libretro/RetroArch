@@ -900,7 +900,7 @@ dcerpc_carray_coder(struct dcerpc_context *ctx,
                     void *ptr, int elem_size, dcerpc_coder coder)
 {
         struct dcerpc_carray *carray = ptr;
-        int i;
+        uint64_t i;
         uint64_t p;
 
         /* Conformance */
@@ -1046,7 +1046,8 @@ dcerpc_decode_utf16(struct dcerpc_context *ctx, struct dcerpc_pdu *pdu,
                 return -1;
         }
         if (!(pdu->hdr.packed_drep[0] & DCERPC_DR_LITTLE_ENDIAN)) {
-                int i, o;
+                uint32_t i;
+                int o;
                 uint16_t v;
                 for (i = 0; i < s->actual_count; i++) {
                         o = *offset + i *2;

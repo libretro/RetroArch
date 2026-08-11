@@ -395,7 +395,7 @@ query_cb(struct smb2_context *smb2, int status,
                 return;
         }
 
-        if (status == SMB2_STATUS_NO_MORE_FILES) {
+        if ((uint32_t)status == SMB2_STATUS_NO_MORE_FILES) {
                 struct smb2_close_request req;
                 struct smb2_pdu *pdu;
 
@@ -693,7 +693,7 @@ session_setup_cb(struct smb2_context *smb2, int status,
         struct smb2_pdu *pdu;
         int ret;
 
-        if (status == SMB2_STATUS_MORE_PROCESSING_REQUIRED &&
+        if ((uint32_t)status == SMB2_STATUS_MORE_PROCESSING_REQUIRED &&
             rep->security_buffer) {
                 smb3_update_preauth_hash(smb2, smb2->in.niov - 1, &smb2->in.iov[1]);
                 if ((ret = send_session_setup_request(
@@ -1445,7 +1445,7 @@ read_cb(struct smb2_context *smb2, int status,
         struct read_data *rd = private_data;
         struct smb2_read_reply *rep = command_data;
 
-        if (status && status != SMB2_STATUS_END_OF_FILE) {
+        if (status && (uint32_t)status != SMB2_STATUS_END_OF_FILE) {
                 smb2_set_nterror(smb2, status, "Read/Write failed with (0x%08x) %s",
                                status, nterror_to_str(status));
                 rd->cb(smb2, -nterror_to_errno(status), &rd->read_cb_data, rd->cb_data);
@@ -1564,7 +1564,7 @@ write_cb(struct smb2_context *smb2, int status,
         struct write_data *wd = private_data;
         struct smb2_write_reply *rep = command_data;
 
-        if (status && status != SMB2_STATUS_END_OF_FILE) {
+        if (status && (uint32_t)status != SMB2_STATUS_END_OF_FILE) {
                 smb2_set_nterror(smb2, status, "Read/Write failed with (0x%08x) %s",
                                status, nterror_to_str(status));
                 wd->cb(smb2, -nterror_to_errno(status), &wd->write_cb_data, wd->cb_data);
@@ -2539,7 +2539,7 @@ readlink_cb_2(struct smb2_context *smb2, int status,
         if (cb_data->status == SMB2_STATUS_SUCCESS) {
                 cb_data->status = status;
         }
-        if (status == SMB2_STATUS_NOT_A_REPARSE_POINT) {
+        if ((uint32_t)status == SMB2_STATUS_NOT_A_REPARSE_POINT) {
                 smb2_set_error(smb2, "Not a reparse point");
         }
         if (status == SMB2_STATUS_SUCCESS) {
@@ -3524,7 +3524,8 @@ smb2_general_client_request_cb(struct smb2_context *smb2, int status, void *comm
                 smb2_close_context(smb2);
                 return;
         }
-        if (status == SMB2_STATUS_CANCELLED || status == SMB2_STATUS_SHUTDOWN) {
+        if ((uint32_t)status == SMB2_STATUS_CANCELLED ||
+            (uint32_t)status == SMB2_STATUS_SHUTDOWN) {
                 return;
         }
 
