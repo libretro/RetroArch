@@ -35,7 +35,7 @@
 
 /* The duration of time to continue polling in order to give up
  * on a device. */
-#define SDL3_AUDIO_STALL_TIMEOUT_MS 256
+#define SDL3_AUDIO_STALL_TIMEOUT_NS SDL_MS_TO_NS(256)
 
 /* The number of nanoseconds to wait between device polls. */
 #define SDL3_AUDIO_POLL_INTERVAL_NS SDL_NS_PER_MS
@@ -168,7 +168,7 @@ static SDL_AudioStream *sdl3_audio_open_stream(const char *device,
       return NULL;
    }
 
-   /* See what SDL actually opened (sample_frames honours the hint). */
+   /* Retrieve the device information to set the period_frames. */
    if (!SDL_GetAudioDeviceFormat(SDL_GetAudioStreamDevice(stream),
          &device_spec, &device_sample_frames))
       device_sample_frames = frames;
@@ -189,16 +189,10 @@ static SDL_AudioStream *sdl3_audio_open_stream(const char *device,
 
 typedef struct sdl3_audio
 {
-   /* The device stream.  SDL_AudioStream is internally locked and
-    * buffers queued audio itself, so it doubles as the FIFO between
-    * RetroArch and the device. */
-   SDL_AudioStream *stream;
-   /* The format samples are put in (SDL converts to the device format). */
-   SDL_AudioSpec spec;
-   /* Cap on queued audio, in bytes of our put-side format; writes
-    * block (or bail, when nonblocking) once this much is queued. */
-   size_t buffer_size;
-   bool nonblock;
+   SDL_AudioStream *stream; /** The device stream. */
+   SDL_AudioSpec spec; /** The format for the given audio sample. */
+   size_t buffer_size; /** The maximum bytes of the queued audio buffer. */
+   bool nonblock; /** When true, drop samples instead of waiting for the device to clear. */
 } sdl3_audio_t;
 
 static void sdl3_audio_free(void *data)
@@ -221,17 +215,13 @@ static void *sdl3_audio_init(const char *device,
       unsigned block_frames, unsigned *new_rate)
 {
    size_t frame_size, min_size;
-   void *tmp                = NULL;
+   void *tmp = NULL;
    int device_sample_frames = 0;
-   sdl3_audio_t *sdl        = NULL;
+   sdl3_audio_t *sdl = NULL;
 
-   /* Subsystem initialization is reference-counted in SDL3, so
-    * initialize unconditionally; every init is balanced by the
-    * SDL_QuitSubSystem call in sdl3_audio_free. */
    if (!SDL_InitSubSystem(SDL_INIT_AUDIO))
    {
-      RARCH_ERR("[SDL3 audio] Failed to initialize audio subsystem: %s.\n",
-            SDL_GetError());
+      RARCH_ERR("[SDL3 audio] Failed to initialize audio subsystem: %s.\n", SDL_GetError());
       return NULL;
    }
 
@@ -261,8 +251,7 @@ static void *sdl3_audio_init(const char *device,
          (int)((sdl->buffer_size / frame_size + device_sample_frames)
             * 1000 / sdl->spec.freq));
 
-   /* Prefill the stream with silence so playback starts with a
-    * full latency budget instead of an immediate underrun. */
+   /* Prefill the stream with silence. */
    if ((tmp = calloc(1, sdl->buffer_size)))
    {
       SDL_PutAudioStreamData(sdl->stream, tmp, (int)sdl->buffer_size);
@@ -295,8 +284,8 @@ static size_t sdl3_audio_write_avail(void *data)
 
 static ssize_t sdl3_audio_write(void *data, const void *s, size_t len)
 {
-   size_t _len       = 0;
-   Uint64 deadline   = 0;
+   size_t _len = 0;
+   Uint64 deadline = 0;
    sdl3_audio_t *sdl = (sdl3_audio_t*)data;
 
    if (!sdl)
@@ -309,23 +298,23 @@ static ssize_t sdl3_audio_write(void *data, const void *s, size_t len)
       if (avail == 0)
       {
          Uint64 now;
+
+         /* When the queue is full, and we can't wait on the
+          * process for the queue to clear a bit, we're unable
+          * to do anything, so skip it. */
          if (sdl->nonblock)
-            break; /* If the queue was full... well, too bad. */
-         /* Poll until the device drains the stream.  Bounded: if
-          * the device stops making progress, give up after the
-          * stall timeout instead of blocking the core's thread
-          * forever. */
-         now = SDL_GetTicks();
+            break;
+         now = SDL_GetTicksNS();
          if (deadline == 0)
-            deadline = now + SDL3_AUDIO_STALL_TIMEOUT_MS;
+            deadline = now + SDL3_AUDIO_STALL_TIMEOUT_NS;
          else if (now >= deadline)
             break;
          SDL_DelayNS(SDL3_AUDIO_POLL_INTERVAL_NS);
       }
       else
       {
-         /* Enqueue as many samples as we have available without
-          * exceeding the latency cap. */
+         /* Add as many samples as we are able to without hitting
+          * the maximum limit. */
          size_t write_amt = MIN(len - _len, avail);
          if (!SDL_PutAudioStreamData(sdl->stream,
                (const char*)s + _len, (int)write_amt))
@@ -334,7 +323,7 @@ static ssize_t sdl3_audio_write(void *data, const void *s, size_t len)
                   SDL_GetError());
             break;
          }
-         _len    += write_amt;
+         _len += write_amt;
          deadline = 0; /* Progress was made; reset the stall clock. */
       }
    }
@@ -429,8 +418,7 @@ typedef struct sdl3_microphone
 
 typedef struct sdl3_microphone_handle
 {
-   /* The device stream.  Internally locked and buffering, so it
-    * doubles as the FIFO between the device and RetroArch. */
+   /* The device stream. */
    SDL_AudioStream *stream;
    /* The format samples are read in (SDL converts from the device format). */
    SDL_AudioSpec spec;
@@ -643,9 +631,9 @@ static int sdl3_microphone_read(void *driver_context, void *mic_context,
          /* Poll until the device puts more samples into the stream.
           * Bounded: if the device stops making progress, give up
           * after the stall timeout instead of blocking forever. */
-         now = SDL_GetTicks();
+         now = SDL_GetTicksNS();
          if (deadline == 0)
-            deadline = now + SDL3_AUDIO_STALL_TIMEOUT_MS;
+            deadline = now + SDL3_AUDIO_STALL_TIMEOUT_NS;
          else if (now >= deadline)
             break;
          SDL_DelayNS(SDL3_AUDIO_POLL_INTERVAL_NS);
