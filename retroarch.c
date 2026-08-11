@@ -6234,17 +6234,6 @@ static void global_free(struct rarch_state *p_rarch)
    retroarch_override_setting_free_state();
 }
 
-#if defined(HAVE_SDL) || defined(HAVE_SDL2) || defined(HAVE_SDL_DINGUX) || defined(HAVE_SDL3)
-static void sdl_exit(void)
-{
-   /* SDL_Quit() should be called at exit even if every subsystem
-    * was already shut down with SDL_QuitSubSystem(). It is also
-    * safe to call regardless of whether anything was ever
-    * initialized. */
-   SDL_Quit();
-}
-#endif
-
 /**
  * main_exit:
  *
@@ -6338,7 +6327,7 @@ void main_exit(void *args)
 #endif
 
 #if defined(HAVE_SDL) || defined(HAVE_SDL2) || defined(HAVE_SDL_DINGUX) || defined(HAVE_SDL3)
-   sdl_exit();
+   SDL_Quit();
 #endif
 }
 
