@@ -11613,14 +11613,14 @@ static const setting_desc_t vid_desc_15[] = {
 };
 #endif
 
-#if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) || (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH))
+#if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) || (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)) || defined(HAVE_SDL3)
 static const setting_desc_t vid_desc_16[] = {
 /* GENERATED: rows come from settings_def_video_window_save_position.h in order. */
 #include "../settings/settings_def_video_window_save_position.h"
 };
 #endif
 
-#if !((defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) || (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)))
+#if !((defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) || (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)) || defined(HAVE_SDL3))
 static const setting_desc_t vid_desc_17[] = {
 /* GENERATED: rows come from settings_def_video_window_custom_size.h in order. */
 #include "../settings/settings_def_video_window_custom_size.h"
@@ -14468,7 +14468,8 @@ static void settings_build_video(
             ADD_DESC(vid_desc_15);
 #endif
 #if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||  \
-    (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH))
+    (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)) ||     \
+    defined(HAVE_SDL3)
             ADD_DESC(vid_desc_16);
 #else
             ADD_DESC(vid_desc_17);
@@ -17764,10 +17765,10 @@ static const settings_desc_table_t settings_desc_registry[] = {
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    { vid_desc_15, (uint16_t)ARRAY_SIZE(vid_desc_15) },
 #endif
-#if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||   (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH))
+#if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||   (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)) || defined(HAVE_SDL3)
    { vid_desc_16, (uint16_t)ARRAY_SIZE(vid_desc_16) },
 #endif
-#if !((defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||   (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)))
+#if !((defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||   (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)) || defined(HAVE_SDL3))
    { vid_desc_17, (uint16_t)ARRAY_SIZE(vid_desc_17) },
 #endif
    { video2_desc_0, (uint16_t)ARRAY_SIZE(video2_desc_0) },

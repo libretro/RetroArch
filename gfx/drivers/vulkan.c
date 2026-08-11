@@ -2688,7 +2688,7 @@ static void vulkan_font_render_msg(
           * instead of flushing the entire allocation.
           * Aligns offset down and size up to nonCoherentAtomSize
           * as required by the spec (§12.1). */
-         VkDeviceSize flush_offset = (VkDeviceSize)font->dirty_y_min 
+         VkDeviceSize flush_offset = (VkDeviceSize)font->dirty_y_min
                       * staging_tex->stride
                       + (VkDeviceSize)font->dirty_x_min * bpp;
          VkDeviceSize flush_end    = (VkDeviceSize)(font->dirty_y_max > 0
@@ -3103,6 +3103,12 @@ static struct vk_buffer_chain vulkan_buffer_chain_init(
 }
 
 static const gfx_ctx_driver_t *gfx_ctx_vk_drivers[] = {
+/* SDL3 video driver is higher on the list so that when a Vulkan context
+ * is desired while using SDL3, it's used. The sdl3_ctx_enabled() function
+ * ensures it's only selected when SDL3 is actively in use. */
+#if defined(HAVE_SDL3)
+   &gfx_ctx_sdl3_vk,
+#endif
 #if defined(__APPLE__)
    &gfx_ctx_cocoavk,
 #endif
@@ -5072,9 +5078,9 @@ static void vulkan_set_signal_semaphore(void *handle, VkSemaphore semaphore)
 /* Drop every reference the frontend holds to core-owned GPU objects.
  *
  * Called immediately before core_reset(). Vulkan-context cores
- * typically destroy and recreate their renderer inside retro_reset(), 
- * which invalidates the VkImage/VkImageView whose handles are cached 
- * in vk->hw.image, plus any per-frame semaphores still referenced 
+ * typically destroy and recreate their renderer inside retro_reset(),
+ * which invalidates the VkImage/VkImageView whose handles are cached
+ * in vk->hw.image, plus any per-frame semaphores still referenced
  * via vk->hw.semaphores[] and vk->hw.signal_semaphore.
  *
  * vkDeviceWaitIdle ensures the previous frame's submit, which may
@@ -7265,7 +7271,7 @@ static bool vulkan_frame(void *data, const void *frame,
           ((vk->flags & VK_FLAG_MENU_ENABLE) || (vk->flags & VK_FLAG_OVERLAY_ENABLE)
          || message_visible
          || statistics_show
-#ifdef HAVE_GFX_WIDGETS       
+#ifdef HAVE_GFX_WIDGETS
          || widgets_visible
 #endif
          ) &&
@@ -7380,7 +7386,7 @@ static bool vulkan_frame(void *data, const void *frame,
           ((vk->flags & VK_FLAG_MENU_ENABLE) || (vk->flags & VK_FLAG_OVERLAY_ENABLE)
          || message_visible
          || statistics_show
-#ifdef HAVE_GFX_WIDGETS       
+#ifdef HAVE_GFX_WIDGETS
          || widgets_visible
 #endif
          ) &&

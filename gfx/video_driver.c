@@ -163,6 +163,12 @@ static const gfx_ctx_driver_t *gfx_ctx_gl_drivers[] = {
 #if defined(HAVE_OPENDINGUX_FBDEV)
    &gfx_ctx_opendingux_fbdev,
 #endif
+/* SDL3 video driver is higher on the list so that when an OpenGL context
+ * is desired while using SDL3, it's used. The sdl3_ctx_enabled() function
+ * ensures it's only selected when SDL3 is actively in use. */
+#if defined(HAVE_SDL3) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE) || defined(HAVE_OPENGLES))
+   &gfx_ctx_sdl3_gl,
+#endif
 #if defined(_WIN32) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_ANGLE)
    &gfx_ctx_wgl,
 #endif
@@ -1981,14 +1987,10 @@ void video_driver_free_internal(void)
     * the rest still free it inside their own free(). Keyed on
     * ownership so that a teardown arriving after the next driver is
     * already up cannot take the live font with it. Under threaded
-    * video the wrapper does this from CMD_FREE, on the video thread. */
-#ifdef HAVE_THREADS
-   if (!is_threaded)
-#endif
-   {
-      if (vid && vid->font_backend)
-         font_driver_free_osd_for(video_st->data);
-   }
+    * video the wrapper does this from CMD_FREE, so we don't need to
+    * check HAVE_THREADS here. */
+   if (vid && vid->font_backend)
+      font_driver_free_osd_for(video_st->data);
 
    if (video_st->data && vid && vid->free)
       vid->free(video_st->data);
@@ -4328,7 +4330,8 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 #endif
       {
 #if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||  \
-    (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH))
+    (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)) ||     \
+    defined(HAVE_SDL3)
          bool window_custom_size_enable = settings->bools.video_window_save_positions;
 #else
          bool window_custom_size_enable = settings->bools.video_window_custom_size_enable;

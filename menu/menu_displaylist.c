@@ -10254,14 +10254,16 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_VIDEO_WINDOWED_MODE_SETTINGS_LIST:
          {
 #if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||  \
-    (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH))
+    (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)) ||     \
+    defined(HAVE_SDL3)
             bool window_custom_size_enable = settings->bools.video_window_save_positions;
 #else
             bool window_custom_size_enable = settings->bools.video_window_custom_size_enable;
 #endif
             static menu_displaylist_build_info_selective_t build_list[] = {
 #if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||  \
-    (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH))
+    (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)) ||     \
+    defined(HAVE_SDL3)
                {MENU_ENUM_LABEL_VIDEO_WINDOW_SAVE_POSITION,      PARSE_ONLY_BOOL,  true },
 #else
                {MENU_ENUM_LABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE, PARSE_ONLY_BOOL,  true },

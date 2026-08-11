@@ -1672,6 +1672,14 @@ ifeq ($(HAVE_SDL3), 1)
           input/drivers/sdl3_input.o \
           gfx/drivers/sdl3_gfx.o \
           gfx/common/sdl3_common.o
+
+   ifneq ($(filter 1,$(HAVE_OPENGL) $(HAVE_OPENGL1) $(HAVE_OPENGL_CORE) $(HAVE_OPENGLES)),)
+      OBJ += gfx/drivers_context/sdl3_gl_ctx.o
+   endif
+
+   ifeq ($(HAVE_VULKAN), 1)
+      OBJ += gfx/drivers_context/sdl3_vk_ctx.o
+   endif
 else ifeq ($(HAVE_SDL2), 1)
    HAVE_SDL_COMMON = 1
    OBJ += gfx/drivers/sdl2_gfx.o \

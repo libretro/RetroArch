@@ -26,6 +26,7 @@
 #endif
 
 #include "../msg_hash.h"
+#include "../verbosity.h"
 #include "font_driver.h"
 #include "video_thread_wrapper.h"
 
@@ -1031,7 +1032,14 @@ void font_driver_init_osd(
    video_driver_state_t *video_st = video_state_get_ptr();
 
    if (video_st->osd_font && video_st->osd_font_owner != video_data)
+   {
+      font_data_t *stale = (font_data_t*)video_st->osd_font;
+
+      RARCH_WARN("[Font] Discarding stale OSD font from a previous video driver instance.\n");
+      stale->renderer = NULL;
+      stale->renderer_data = NULL;
       font_driver_free_osd();
+   }
 
    /* threading_hint is false: both callers - video_driver_init_internal()
     * and the threaded wrapper's CMD_INIT - already run on the thread that
