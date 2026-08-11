@@ -1280,7 +1280,37 @@ int retro_vfs_file_remove_impl(const char *path)
 
 #if defined(_WIN32) && !defined(_XBOX)
       /* Win32 (no Xbox) */
-#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500
+      /* The other _WIN32_WINNT < 0x0500 straggler named by the
+       * LEGACY_WIN32 migration note in encodings/utf.h; selected
+       * like the rest of this file now. */
+#if defined(LEGACY_WIN32_RUNTIME)
+      if (win32_needs_local_encoding())
+      {
+         char *path_local = NULL;
+         if ((path_local = utf8_to_local_string_alloc(path)))
+         {
+            /* We need to check if path is a directory */
+            if ((retro_vfs_stat_impl(path, NULL) & RETRO_VFS_STAT_IS_DIRECTORY) != 0)
+               ret = _rmdir(path_local);
+            else
+               ret = remove(path_local);
+            free(path_local);
+         }
+      }
+      else
+      {
+         wchar_t *path_wide = NULL;
+         if ((path_wide = utf8_to_utf16_string_alloc(path)))
+         {
+            /* We need to check if path is a directory */
+            if ((retro_vfs_stat_impl(path, NULL) & RETRO_VFS_STAT_IS_DIRECTORY) != 0)
+               ret = _wrmdir(path_wide);
+            else
+               ret = _wremove(path_wide);
+            free(path_wide);
+         }
+      }
+#elif defined(LEGACY_WIN32)
       char *path_local = NULL;
       if ((path_local = utf8_to_local_string_alloc(path)))
       {
@@ -1339,46 +1369,116 @@ int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
 #if defined(_WIN32) && !defined(_XBOX)
    /* Win32 (no Xbox) */
    int ret                 = -1;
-#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500
-   char *old_path_local    = NULL;
-#else
-   wchar_t *old_path_wide  = NULL;
-#endif
 
    if (!old_path || !*old_path || !new_path || !*new_path)
       return -1;
 
-#if defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0500
-   old_path_local = utf8_to_local_string_alloc(old_path);
-
-   if (old_path_local)
+   /* Two fixes in one here.
+    *
+    * 1. Replace-existing semantics.  Neither rename() nor _wrename()
+    *    can replace an existing destination on Windows, which breaks
+    *    every atomic save pattern of the form write tmp -> rename
+    *    over original: the rename fails, the new data is stranded in
+    *    the temporary, and the stale original is what loads next
+    *    time.  The wide branch uses MoveFileExW with
+    *    MOVEFILE_REPLACE_EXISTING - the Win32 spelling of the POSIX
+    *    overwrite guarantee, and in the app API partition so WinRT
+    *    takes it too.  The ANSI branch cannot: the flag is
+    *    documented unsupported on 9x and the Xbox XDK has no
+    *    MoveFileEx at all, so replace there is delete-then-rename -
+    *    plain rename first (the only path taken when the destination
+    *    does not exist), removing the destination only after it
+    *    fails.
+    *
+    * 2. Legacy selection.  This function still keyed the ANSI/wide
+    *    split off _WIN32_WINNT < 0x0500, one of the stragglers the
+    *    LEGACY_WIN32 migration note in encodings/utf.h describes:
+    *    that test forced ANSI on Unicode-native NT4 and let a real
+    *    9x build (which has no reason to set an NT macro low) fall
+    *    into the wide branch, where MoveFileExW is a stub.  Now
+    *    selected like the rest of this file: LEGACY_WIN32_RUNTIME
+    *    probes per call, LEGACY_WIN32 is compile-time ANSI, default
+    *    is wide. */
+#if defined(LEGACY_WIN32_RUNTIME)
+   if (win32_needs_local_encoding())
    {
-      char *new_path_local = utf8_to_local_string_alloc(new_path);
+      char *old_path_local = utf8_to_local_string_alloc(old_path);
 
-      if (new_path_local)
+      if (old_path_local)
       {
-         if (rename(old_path_local, new_path_local) == 0)
-            ret = 0;
-         free(new_path_local);
-      }
+         char *new_path_local = utf8_to_local_string_alloc(new_path);
 
-      free(old_path_local);
+         if (new_path_local)
+         {
+            if (rename(old_path_local, new_path_local) == 0)
+               ret = 0;
+            else if (remove(new_path_local) == 0 &&
+                  rename(old_path_local, new_path_local) == 0)
+               ret = 0;
+            free(new_path_local);
+         }
+
+         free(old_path_local);
+      }
+   }
+   else
+   {
+      wchar_t *old_path_wide = utf8_to_utf16_string_alloc(old_path);
+
+      if (old_path_wide)
+      {
+         wchar_t *new_path_wide = utf8_to_utf16_string_alloc(new_path);
+
+         if (new_path_wide)
+         {
+            if (MoveFileExW(old_path_wide, new_path_wide,
+                  MOVEFILE_REPLACE_EXISTING))
+               ret = 0;
+            free(new_path_wide);
+         }
+
+         free(old_path_wide);
+      }
+   }
+#elif defined(LEGACY_WIN32)
+   {
+      char *old_path_local = utf8_to_local_string_alloc(old_path);
+
+      if (old_path_local)
+      {
+         char *new_path_local = utf8_to_local_string_alloc(new_path);
+
+         if (new_path_local)
+         {
+            if (rename(old_path_local, new_path_local) == 0)
+               ret = 0;
+            else if (remove(new_path_local) == 0 &&
+                  rename(old_path_local, new_path_local) == 0)
+               ret = 0;
+            free(new_path_local);
+         }
+
+         free(old_path_local);
+      }
    }
 #else
-   old_path_wide = utf8_to_utf16_string_alloc(old_path);
-
-   if (old_path_wide)
    {
-      wchar_t *new_path_wide = utf8_to_utf16_string_alloc(new_path);
+      wchar_t *old_path_wide = utf8_to_utf16_string_alloc(old_path);
 
-      if (new_path_wide)
+      if (old_path_wide)
       {
-         if (_wrename(old_path_wide, new_path_wide) == 0)
-            ret = 0;
-         free(new_path_wide);
-      }
+         wchar_t *new_path_wide = utf8_to_utf16_string_alloc(new_path);
 
-      free(old_path_wide);
+         if (new_path_wide)
+         {
+            if (MoveFileExW(old_path_wide, new_path_wide,
+                  MOVEFILE_REPLACE_EXISTING))
+               ret = 0;
+            free(new_path_wide);
+         }
+
+         free(old_path_wide);
+      }
    }
 #endif
    return ret;
