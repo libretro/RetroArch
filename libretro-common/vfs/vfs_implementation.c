@@ -1280,9 +1280,6 @@ int retro_vfs_file_remove_impl(const char *path)
 
 #if defined(_WIN32) && !defined(_XBOX)
       /* Win32 (no Xbox) */
-      /* The other _WIN32_WINNT < 0x0500 straggler named by the
-       * LEGACY_WIN32 migration note in encodings/utf.h; selected
-       * like the rest of this file now. */
 #if defined(LEGACY_WIN32_RUNTIME)
       if (win32_needs_local_encoding())
       {
@@ -1373,32 +1370,12 @@ int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
    if (!old_path || !*old_path || !new_path || !*new_path)
       return -1;
 
-   /* Two fixes in one here.
-    *
-    * 1. Replace-existing semantics.  Neither rename() nor _wrename()
-    *    can replace an existing destination on Windows, which breaks
-    *    every atomic save pattern of the form write tmp -> rename
-    *    over original: the rename fails, the new data is stranded in
-    *    the temporary, and the stale original is what loads next
-    *    time.  The wide branch uses MoveFileExW with
-    *    MOVEFILE_REPLACE_EXISTING - the Win32 spelling of the POSIX
-    *    overwrite guarantee, and in the app API partition so WinRT
-    *    takes it too.  The ANSI branch cannot: the flag is
-    *    documented unsupported on 9x and the Xbox XDK has no
-    *    MoveFileEx at all, so replace there is delete-then-rename -
-    *    plain rename first (the only path taken when the destination
-    *    does not exist), removing the destination only after it
-    *    fails.
-    *
-    * 2. Legacy selection.  This function still keyed the ANSI/wide
-    *    split off _WIN32_WINNT < 0x0500, one of the stragglers the
-    *    LEGACY_WIN32 migration note in encodings/utf.h describes:
-    *    that test forced ANSI on Unicode-native NT4 and let a real
-    *    9x build (which has no reason to set an NT macro low) fall
-    *    into the wide branch, where MoveFileExW is a stub.  Now
-    *    selected like the rest of this file: LEGACY_WIN32_RUNTIME
-    *    probes per call, LEGACY_WIN32 is compile-time ANSI, default
-    *    is wide. */
+   /* Neither rename() nor _wrename() can replace an existing
+    * destination on Windows, which breaks writing to a temporary and
+    * renaming it over the original.  MoveFileExW with
+    * MOVEFILE_REPLACE_EXISTING gives the POSIX overwrite behaviour.
+    * It is unsupported on 9x, so the local-encoding path replaces by
+    * removing the destination, and only after a plain rename fails. */
 #if defined(LEGACY_WIN32_RUNTIME)
    if (win32_needs_local_encoding())
    {
