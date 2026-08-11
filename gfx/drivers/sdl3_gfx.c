@@ -592,6 +592,32 @@ static bool sdl3_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    return sdl3_capture_viewport(vid, buffer);
 }
 
+/* Applies a new window size / fullscreen state in place, without
+ * tearing down the driver. Serves video_driver_set_video_mode()
+ * callers (Screen Resolution apply, CRT SwitchRes, the KMS display
+ * server). The window, renderer, textures and OSD font all survive
+ * the switch - sdl3_window_set_video_mode reuses the existing
+ * window, and cursor visibility is handled there too. */
+static void sdl3_poke_set_video_mode(void *data, unsigned width,
+      unsigned height, bool fullscreen)
+{
+   sdl3_video_t *vid = (sdl3_video_t*)data;
+
+   if (!vid || !vid->window)
+      return;
+
+   if (!sdl3_window_set_video_mode(&vid->window, width, height,
+         fullscreen, 0))
+   {
+      RARCH_WARN("[SDL3] Failed to set video mode: %s.\n", SDL_GetError());
+      return;
+   }
+
+   /* Recompute the viewport from the new pixel size on the next
+    * frame. */
+   vid->flags |= SDL3_FLAG_SHOULD_RESIZE;
+}
+
 static void sdl3_poke_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)
 {
    sdl3_video_t *vid = (sdl3_video_t*)data;
@@ -1564,7 +1590,7 @@ static video_poke_interface_t sdl3_video_poke_interface = {
    sdl3_get_flags,
    sdl3_load_texture,
    sdl3_unload_texture,
-   NULL,                            /* set_video_mode */
+   sdl3_poke_set_video_mode,
    sdl3_ctx_get_refresh_rate,
    sdl3_poke_set_filtering,
    NULL,                            /* get_video_output_size */
