@@ -6237,13 +6237,10 @@ static void global_free(struct rarch_state *p_rarch)
 #if defined(HAVE_SDL) || defined(HAVE_SDL2) || defined(HAVE_SDL_DINGUX) || defined(HAVE_SDL3)
 static void sdl_exit(void)
 {
-   /* SDL documents that SDL_Quit() should be called at exit even if
-    * every subsystem was already shut down with SDL_QuitSubSystem()
-    * (which the SDL drivers do on deinit, so SDL_WasInit(0) is
-    * normally 0 by now), and that it is safe to call regardless of
-    * whether anything was ever initialised. It also shuts down any
-    * subsystems still running, so no per-subsystem quits are needed
-    * here. */
+   /* SDL_Quit() should be called at exit even if every subsystem
+    * was already shut down with SDL_QuitSubSystem(). It is also
+    * safe to call regardless of whether anything was ever
+    * initialized. */
    SDL_Quit();
 }
 #endif
