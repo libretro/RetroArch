@@ -592,12 +592,8 @@ static bool sdl3_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    return sdl3_capture_viewport(vid, buffer);
 }
 
-/* Applies a new window size / fullscreen state in place, without
- * tearing down the driver. Serves video_driver_set_video_mode()
- * callers (Screen Resolution apply, CRT SwitchRes, the KMS display
- * server). The window, renderer, textures and OSD font all survive
- * the switch - sdl3_window_set_video_mode reuses the existing
- * window, and cursor visibility is handled there too. */
+/* Applies a new window size / fullscreen in place, without tearing
+ * down the entire driver. */
 static void sdl3_poke_set_video_mode(void *data, unsigned width,
       unsigned height, bool fullscreen)
 {
