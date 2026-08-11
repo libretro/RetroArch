@@ -1618,7 +1618,14 @@ bool video_init_thread(const video_driver_t **out_driver, void **out_data,
    video_state_get_ptr()->flags |= VIDEO_FLAG_THREAD_WRAPPER_ACTIVE;
    if (!video_thread_init(thr, info, input, input_data))
    {
-      video_state_get_ptr()->flags &= ~VIDEO_FLAG_THREAD_WRAPPER_ACTIVE;
+      /* video_thread is a member of thr, not a static vtable, so leaving
+       * it published hands the caller freed memory once thr goes.
+       * Restore drv and NULL the data, as the non-threaded failure path
+       * does.  Free via video_thread_free(): init can fail after the
+       * worker thread and the frame buffer already exist. */
+      video_thread_free(thr);
+      *out_driver = drv;
+      *out_data   = NULL;
       return false;
    }
 
