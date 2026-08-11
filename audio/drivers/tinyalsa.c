@@ -2339,15 +2339,27 @@ tinyalsa_stop(void *data)
 {
 	tinyalsa_t *tinyalsa = (tinyalsa_t*)data;
 
-	if (tinyalsa->can_pause && !tinyalsa->is_paused)
+	if (tinyalsa->is_paused)
+		return true;
+
+	if (tinyalsa->can_pause)
    {
 		int ret = pcm_pause(tinyalsa->pcm, 1);
-		if (ret < 0)
-			return false;
 
-		tinyalsa->is_paused = true;
+		if (ret < 0)
+      {
+			RARCH_WARN("[TINYALSA] Failed to pause. "
+				"Disabling pause for this session.\n");
+
+			/* Not fatal: with no hardware pause the driver simply
+			 * stops feeding the device. */
+			tinyalsa->can_pause = false;
+		}
 	}
 
+	/* Set unconditionally: a device without hardware pause is still
+	 * stopped, and tinyalsa_alive() answers from this flag. */
+	tinyalsa->is_paused = true;
 	return true;
 }
 
@@ -2367,19 +2379,26 @@ tinyalsa_start(void *data, bool is_shutdown)
 {
 	tinyalsa_t *tinyalsa = (tinyalsa_t*)data;
 
-	if (tinyalsa->can_pause && tinyalsa->is_paused)
+	if (!tinyalsa->is_paused)
+		return true;
+
+	if (tinyalsa->can_pause)
    {
 		int ret = pcm_pause(tinyalsa->pcm, 0);
 
 		if (ret < 0)
       {
-			RARCH_ERR("[TINYALSA] Failed to unpause.\n");
-			return false;
-		}
+			RARCH_WARN("[TINYALSA] Failed to unpause. "
+				"Disabling pause for this session.\n");
 
-		tinyalsa->is_paused = false;
+			/* Returning false here would clear AUDIO_FLAG_ACTIVE and
+			 * silence audio for the rest of the session over a pause
+			 * capability the device turned out not to honour. */
+			tinyalsa->can_pause = false;
+		}
 	}
 
+	tinyalsa->is_paused = false;
 	return true;
 }
 

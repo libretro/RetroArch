@@ -138,19 +138,44 @@ typedef struct audio_driver
    /**
     * Temporarily pauses the audio driver.
     *
+    * Reports the resulting state, not the work done: a driver that is
+    * already stopped returns \c true, because it is stopped. Whether
+    * the hardware offers a pause primitive is an implementation detail
+    * - a driver with none simply stops consuming samples - so it must
+    * not leak into the return value or into \c alive.
+    *
     * @param data Opaque handle to the audio driver context
     * that was returned by \c init.
-    * @return \c true if the audio driver was successfully paused,
-    * \c false if there was an error.
+    * @return \c true if the audio driver is now paused,
+    * \c false if it could not be.
     **/
    bool (*stop)(void *data);
 
    /**
     * Resumes audio driver from the paused state.
+    *
+    * Reports the resulting state, as \c stop does: a driver that is
+    * already running returns \c true.
+    *
+    * Returning \c false is not a soft failure. audio_driver_start()
+    * clears AUDIO_FLAG_ACTIVE on it, which disables audio for the rest
+    * of the session, so it is reserved for a stream that genuinely
+    * cannot be resumed. A driver that can recover by other means -
+    * reinitialising the stream, falling back to a restart when a pause
+    * primitive it advertised turns out not to work - should do that and
+    * return \c true.
     **/
    bool (*start)(void *data, bool is_shutdown);
 
-   /* Is the audio driver currently running? */
+   /**
+    * Is the audio driver currently running?
+    *
+    * Must agree with the last successful \c stop or \c start. Drivers
+    * that track this with a flag have to maintain it on every path
+    * through both, including the ones where the hardware call was
+    * skipped; a flag updated only inside the branch that talks to the
+    * hardware leaves \c alive reporting the opposite of the truth.
+    **/
    bool (*alive)(void *data);
 
    /* Should we care about blocking in audio thread? Fast forwarding.
