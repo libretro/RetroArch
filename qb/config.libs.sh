@@ -543,7 +543,9 @@ check_platform Win32 WINMM 'WinMM is' true
 check_platform Win32 ASIO 'ASIO is' true
 
 if [ "$HAVE_BLISSBOX" != 'no' ]; then
-   if [ "$HAVE_LIBUSB" != 'no' ] || [ "$OS" = 'Win32' ]; then
+   # Linux resolves the pad type through hidraw and only falls back to
+   # libusb, so it does not need libusb to be present.
+   if [ "$HAVE_LIBUSB" != 'no' ] || [ "$OS" = 'Win32' ] || [ "$OS" = 'Linux' ]; then
       add_opt BLISSBOX yes
    else
       add_opt BLISSBOX no
