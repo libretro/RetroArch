@@ -42,6 +42,22 @@ typedef struct sdl3_tex
    bool rgb32;
 } sdl3_tex_t;
 
+/* On-screen input overlay entry (see the video_overlay_interface_t
+ * implementation in sdl3_gfx.c). Fields are unconditional - not
+ * HAVE_OVERLAY-gated - so sdl3_video_t has one layout in every
+ * translation unit that includes this header, whether or not it
+ * included config.h first. */
+struct sdl3_overlay
+{
+   SDL_Texture *tex;
+   unsigned  tex_w;
+   unsigned  tex_h;
+   float     tex_coords[4];
+   float     vert_coords[4];
+   float     alpha_mod;
+   bool      fullscreen;
+};
+
 typedef struct _sdl3_video
 {
    SDL_Window *window; /* Must be first because it's shared across
@@ -55,6 +71,10 @@ typedef struct _sdl3_video
    sdl3_tex_t menu;  /* ptr alignment */
 
    SDL_Renderer *renderer;
+
+   struct sdl3_overlay *overlays;
+   unsigned overlays_size;
+   bool overlays_enabled;
 
    uint8_t flags;
 } sdl3_video_t;
