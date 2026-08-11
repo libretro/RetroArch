@@ -258,6 +258,7 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_win3
    char *device_path                    = NULL;
    DWORD index                          = 0;
    size_t len                           = 0;
+   unsigned i                           = 0;
    const blissbox_pad_type_t *pad_type  = NULL;
    char vidPidString[32]                = {0};
    unsigned char report[USB_PACKET_CTRL_LEN + 1] = {0};
