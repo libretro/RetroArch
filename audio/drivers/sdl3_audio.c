@@ -40,6 +40,18 @@
 /* The number of nanoseconds to wait between device polls. */
 #define SDL3_AUDIO_POLL_INTERVAL_NS SDL_NS_PER_MS
 
+/* Context for an audio device. Covered by three different states:
+ * 1. Output Driver, used for playback
+ * 2. Input Driver, used for recoring, like from a microphone
+ * 3. Microphone Device, holds the state for each individual microphone */
+typedef struct sdl3_audio
+{
+   SDL_AudioStream *stream; /** The device stream. */
+   SDL_AudioSpec spec; /** The format for the given audio sample. */
+   size_t buffer_size; /** Cap in bytes on queued audio: writes block past it, capture backlog is dropped past it. */
+   bool nonblock; /** When true, drop samples instead of waiting for the device to clear. */
+} sdl3_audio_t;
+
 /**
  * Looks up an audio device by name, returning the default
  * device ID if the name is empty or not found.
@@ -187,14 +199,6 @@ static SDL_AudioStream *sdl3_audio_open_stream(const char *device,
    return stream;
 }
 
-typedef struct sdl3_audio
-{
-   SDL_AudioStream *stream; /** The device stream. */
-   SDL_AudioSpec spec; /** The format for the given audio sample. */
-   size_t buffer_size; /** The maximum bytes of the queued audio buffer. */
-   bool nonblock; /** When true, drop samples instead of waiting for the device to clear. */
-} sdl3_audio_t;
-
 static void sdl3_audio_free(void *data)
 {
    sdl3_audio_t *sdl = (sdl3_audio_t*)data;
@@ -237,10 +241,9 @@ static void *sdl3_audio_init(const char *device,
 
    /* Buffer the requested latency's worth of audio, with at least
     * two device periods to avoid underruns. */
-   frame_size       = SDL_AUDIO_FRAMESIZE(sdl->spec);
-   sdl->buffer_size = (size_t)((uint64_t)sdl->spec.freq * latency / 1000)
-         * frame_size;
-   min_size         = (size_t)(2 * device_sample_frames) * frame_size;
+   frame_size = SDL_AUDIO_FRAMESIZE(sdl->spec);
+   sdl->buffer_size = (size_t)((uint64_t)sdl->spec.freq * latency / 1000) * frame_size;
+   min_size = (size_t)(2 * device_sample_frames) * frame_size;
    if (sdl->buffer_size < min_size)
       sdl->buffer_size = min_size;
 
@@ -284,14 +287,14 @@ static size_t sdl3_audio_write_avail(void *data)
 
 static ssize_t sdl3_audio_write(void *data, const void *s, size_t len)
 {
-   size_t _len = 0;
+   size_t size = 0;
    Uint64 deadline = 0;
    sdl3_audio_t *sdl = (sdl3_audio_t*)data;
 
    if (!sdl)
       return -1;
 
-   while (_len < len)
+   while (size < len)
    {
       size_t avail = sdl3_audio_write_avail(sdl);
 
@@ -301,7 +304,7 @@ static ssize_t sdl3_audio_write(void *data, const void *s, size_t len)
 
          /* When the queue is full, and we can't wait on the
           * process for the queue to clear a bit, we're unable
-          * to do anything, so skip it. */
+          * to do anything, so skip it the rest. */
          if (sdl->nonblock)
             break;
          now = SDL_GetTicksNS();
@@ -315,20 +318,20 @@ static ssize_t sdl3_audio_write(void *data, const void *s, size_t len)
       {
          /* Add as many samples as we are able to without hitting
           * the maximum limit. */
-         size_t write_amt = MIN(len - _len, avail);
+         size_t write_amt = MIN(len - size, avail);
          if (!SDL_PutAudioStreamData(sdl->stream,
-               (const char*)s + _len, (int)write_amt))
+               (const char*)s + size, (int)write_amt))
          {
             RARCH_ERR("[SDL3 audio] Failed to write to audio stream: %s.\n",
                   SDL_GetError());
             break;
          }
-         _len += write_amt;
+         size += write_amt;
          deadline = 0; /* Progress was made; reset the stall clock. */
       }
    }
 
-   return _len;
+   return size;
 }
 
 static bool sdl3_audio_stop(void *data)
@@ -411,33 +414,14 @@ audio_driver_t audio_sdl3 = {
 #ifdef HAVE_MICROPHONE
 #include "../microphone_driver.h"
 
-typedef struct sdl3_microphone
-{
-   bool nonblock;
-} sdl3_microphone_t;
-
-typedef struct sdl3_microphone_handle
-{
-   /* The device stream. */
-   SDL_AudioStream *stream;
-   /* The format samples are read in (SDL converts from the device format). */
-   SDL_AudioSpec spec;
-   /* Cap on buffered capture, in bytes of our get-side format;
-    * the put-callback drops the backlog once it grows past this. */
-   size_t buffer_size;
-} sdl3_microphone_handle_t;
-
 /**
- * Runs on SDL's device thread each period, after the device puts
- * recorded samples into the stream.  Its only job is to bound the
- * backlog: if nothing has been reading for a while, drop the stale
- * audio wholesale so the next read resumes with fresh samples and
- * capture latency stays bounded.
+ * Stream callback for the microphone to drop stale audio to allow
+ * space within the buffer.
  */
 static void SDLCALL sdl3_microphone_stream_cb(void *userdata,
       SDL_AudioStream *stream, int additional_amount, int total_amount)
 {
-   sdl3_microphone_handle_t *mic = (sdl3_microphone_handle_t*)userdata;
+   sdl3_audio_t *mic = (sdl3_audio_t*)userdata;
 
    if (SDL_GetAudioStreamAvailable(stream) > (int)mic->buffer_size)
       SDL_ClearAudioStream(stream);
@@ -445,7 +429,7 @@ static void SDLCALL sdl3_microphone_stream_cb(void *userdata,
 
 static void *sdl3_microphone_init(void)
 {
-   sdl3_microphone_t *sdl = NULL;
+   sdl3_audio_t *sdl = NULL;
 
    /* Reference-counted; balanced by SDL_QuitSubSystem in free. */
    if (!SDL_InitSubSystem(SDL_INIT_AUDIO))
@@ -455,7 +439,7 @@ static void *sdl3_microphone_init(void)
       return NULL;
    }
 
-   if (!(sdl = (sdl3_microphone_t*)calloc(1, sizeof(*sdl))))
+   if (!(sdl = (sdl3_audio_t*)calloc(1, sizeof(*sdl))))
    {
       SDL_QuitSubSystem(SDL_INIT_AUDIO);
       return NULL;
@@ -465,27 +449,27 @@ static void *sdl3_microphone_init(void)
 
 static void sdl3_microphone_free(void *driver_context)
 {
-   sdl3_microphone_t *sdl = (sdl3_microphone_t*)driver_context;
+   sdl3_audio_t *sdl = (sdl3_audio_t*)driver_context;
 
-   if (sdl)
+   if (sdl) {
       SDL_QuitSubSystem(SDL_INIT_AUDIO);
-   free(sdl);
-   /* NOTE: The microphone frontend should've closed the mics by now */
+      free(sdl);
+   }
 }
 
 static void sdl3_microphone_close_mic(void *driver_context, void *mic_context)
 {
-   sdl3_microphone_handle_t *mic = (sdl3_microphone_handle_t*)mic_context;
+   sdl3_audio_t *mic = (sdl3_audio_t*)mic_context;
 
-   if (mic)
-   {
-      /* Destroying the stream also closes the device. */
-      if (mic->stream)
-         SDL_DestroyAudioStream(mic->stream);
+   if (!mic)
+      return;
 
-      RARCH_LOG("[SDL3 audio] Freed microphone.\n");
-      free(mic);
-   }
+   /* Destroying the stream also closes the device. */
+   if (mic->stream)
+      SDL_DestroyAudioStream(mic->stream);
+
+   RARCH_LOG("[SDL3 audio] Freed microphone.\n");
+   free(mic);
 }
 
 static void *sdl3_microphone_open_mic(void *driver_context, const char *device,
@@ -493,7 +477,7 @@ static void *sdl3_microphone_open_mic(void *driver_context, const char *device,
 {
    size_t frame_size, min_size;
    int device_sample_frames      = 0;
-   sdl3_microphone_handle_t *mic = NULL;
+   sdl3_audio_t *mic = NULL;
 
    if (!SDL_WasInit(SDL_INIT_AUDIO))
    {
@@ -501,7 +485,7 @@ static void *sdl3_microphone_open_mic(void *driver_context, const char *device,
       return NULL;
    }
 
-   if (!(mic = (sdl3_microphone_handle_t*)calloc(1, sizeof(*mic))))
+   if (!(mic = (sdl3_audio_t*)calloc(1, sizeof(*mic))))
       return NULL;
 
    /* Only print SDL audio devices if verbose logging is enabled */
@@ -528,7 +512,7 @@ static void *sdl3_microphone_open_mic(void *driver_context, const char *device,
 
    /* Buffer up to double the latency budget (with a floor of four
     * device periods) before the backlog starts getting dropped. */
-   frame_size       = SDL_AUDIO_FRAMESIZE(mic->spec);
+   frame_size = SDL_AUDIO_FRAMESIZE(mic->spec);
    mic->buffer_size = (size_t)((uint64_t)mic->spec.freq * latency / 1000)
          * frame_size * 2;
    min_size         = (size_t)(4 * device_sample_frames) * frame_size;
@@ -553,7 +537,7 @@ error:
 
 static bool sdl3_microphone_mic_alive(const void *driver_context, const void *mic_context)
 {
-   const sdl3_microphone_handle_t *mic = (const sdl3_microphone_handle_t*)mic_context;
+   const sdl3_audio_t *mic = (const sdl3_audio_t*)mic_context;
    if (!mic)
       return false;
    return !SDL_AudioStreamDevicePaused(mic->stream);
@@ -561,7 +545,7 @@ static bool sdl3_microphone_mic_alive(const void *driver_context, const void *mi
 
 static bool sdl3_microphone_start_mic(void *driver_context, void *mic_context)
 {
-   sdl3_microphone_handle_t *mic = (sdl3_microphone_handle_t*)mic_context;
+   sdl3_audio_t *mic = (sdl3_audio_t*)mic_context;
    if (!mic)
       return false;
    if (!SDL_ResumeAudioStreamDevice(mic->stream))
@@ -575,7 +559,7 @@ static bool sdl3_microphone_start_mic(void *driver_context, void *mic_context)
 
 static bool sdl3_microphone_stop_mic(void *driver_context, void *mic_context)
 {
-   sdl3_microphone_handle_t *mic = (sdl3_microphone_handle_t*)mic_context;
+   sdl3_audio_t *mic = (sdl3_audio_t*)mic_context;
    if (!mic)
       return false;
    if (!SDL_PauseAudioStreamDevice(mic->stream))
@@ -588,7 +572,7 @@ static bool sdl3_microphone_stop_mic(void *driver_context, void *mic_context)
 
 static void sdl3_microphone_set_nonblock_state(void *driver_context, bool nonblock)
 {
-   sdl3_microphone_t *sdl = (sdl3_microphone_t*)driver_context;
+   sdl3_audio_t *sdl = (sdl3_audio_t*)driver_context;
    if (sdl)
       sdl->nonblock = nonblock;
 }
@@ -596,31 +580,30 @@ static void sdl3_microphone_set_nonblock_state(void *driver_context, bool nonblo
 static int sdl3_microphone_read(void *driver_context, void *mic_context,
       void *s, size_t len)
 {
-   size_t _len                   = 0;
-   Uint64 deadline               = 0;
-   sdl3_microphone_t *sdl        = (sdl3_microphone_t*)driver_context;
-   sdl3_microphone_handle_t *mic = (sdl3_microphone_handle_t*)mic_context;
+   size_t size = 0;
+   Uint64 deadline = 0;
+   sdl3_audio_t *sdl = (sdl3_audio_t*)driver_context;
+   sdl3_audio_t *mic = (sdl3_audio_t*)mic_context;
 
    if (!sdl || !mic || !s)
       return -1;
 
-   while (_len < len)
+   while (size < len)
    {
-      int got = SDL_GetAudioStreamData(mic->stream,
-            (char*)s + _len, (int)(len - _len));
+      int got = SDL_GetAudioStreamData(mic->stream, (char*)s + size, (int)(len - size));
 
       if (got < 0)
       {
          RARCH_ERR("[SDL3 audio] Failed to read from microphone stream: %s.\n",
                SDL_GetError());
-         if (_len == 0)
+         if (size == 0)
             return -1;
          break;
       }
 
       if (got > 0)
       {
-         _len    += (size_t)got;
+         size += (size_t)got;
          deadline = 0; /* Progress was made; reset the stall clock. */
       }
       else
@@ -640,12 +623,12 @@ static int sdl3_microphone_read(void *driver_context, void *mic_context,
       }
    }
 
-   return (int)_len;
+   return (int)size;
 }
 
 static bool sdl3_microphone_mic_use_float(const void *driver_context, const void *mic_context)
 {
-   const sdl3_microphone_handle_t *mic = (const sdl3_microphone_handle_t*)mic_context;
+   const sdl3_audio_t *mic = (const sdl3_audio_t*)mic_context;
    if (!mic)
       return false;
    return SDL_AUDIO_ISFLOAT(mic->spec.format) != 0;
