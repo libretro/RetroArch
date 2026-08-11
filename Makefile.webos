@@ -384,8 +384,8 @@ ifeq ($(ADD_SDL2_LIB), 1)
 		echo "Downloading SDL2 prebuilt"; \
 		rm -rf SDL.tmp SDL2-prebuilt.tar.gz.tmp; \
 		mkdir -p SDL.tmp; \
-		wget --tries=5 --timeout=30 --retry-connrefused \
-			-qO SDL2-prebuilt.tar.gz.tmp $(SDL2_PREBUILT_ARCHIVE) \
+		curl -fsSL --retry 5 --retry-all-errors --retry-delay 5 --connect-timeout 30 \
+			-o SDL2-prebuilt.tar.gz.tmp $(SDL2_PREBUILT_ARCHIVE) \
 			|| { echo "error: SDL2 prebuilt download failed: $(SDL2_PREBUILT_ARCHIVE)"; \
 			     rm -rf SDL.tmp SDL2-prebuilt.tar.gz.tmp; exit 1; }; \
 		tar -C SDL.tmp -zxf SDL2-prebuilt.tar.gz.tmp \
