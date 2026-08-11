@@ -21,8 +21,7 @@
 #include <stdlib.h>
 
 #include <boolean.h>
-#include <retro_inline.h>
-#include <retro_math.h>
+#include <retro_miscellaneous.h>
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 
@@ -51,12 +50,6 @@
 /* Poll interval while a blocking write/read waits on the device;
  * device periods are several times longer than this. */
 #define SDL3_AUDIO_POLL_INTERVAL_NS SDL_NS_PER_MS
-
-static INLINE int sdl3_audio_find_num_frames(int rate, int latency)
-{
-   /* Keep the buffer size to 2^n. */
-   return next_pow2((rate * latency) / 1000);
-}
 
 /**
  * Looks up an audio device by name, returning the default
@@ -138,6 +131,74 @@ static struct string_list *sdl3_audio_device_list(bool recording)
    return sl;
 }
 
+/**
+ * Shared device-open path for both directions: looks up the device,
+ * probes its preferred format so the pipeline runs at the device
+ * rate (RetroArch resamples to it exactly once and SDL does no rate
+ * conversion of its own), requests a device period of roughly a
+ * quarter of the total latency, opens the stream in the negotiated
+ * format, and reports the period the device actually uses.
+ */
+static SDL_AudioStream *sdl3_audio_open_stream(const char *device,
+      bool recording, unsigned rate, unsigned latency, int channels,
+      SDL_AudioSpec *spec, int *period_frames)
+{
+   int frames;
+   char frames_str[16];
+   const char *device_name   = NULL;
+   SDL_AudioStream *stream   = NULL;
+   SDL_AudioSpec device_spec = {0};
+   int device_sample_frames  = 0;
+   const char *tag           = recording ? "mic" : "audio";
+   SDL_AudioDeviceID devid   = sdl3_audio_find_device(device, recording);
+   settings_t *settings      = config_get_ptr();
+
+   if (   !SDL_GetAudioDeviceFormat(devid, &device_spec, &device_sample_frames)
+       || device_spec.freq <= 0)
+      device_spec.freq = rate;
+
+   frames = (int)((uint64_t)device_spec.freq * (latency / 4) / 1000);
+   snprintf(frames_str, sizeof(frames_str), "%d", frames);
+   SDL_SetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES, frames_str);
+
+   spec->freq     = device_spec.freq;
+   /* SDL3 converts transparently if the device's native format
+    * differs; honour the negotiation hint for what we produce. */
+   spec->format   = (settings->uints.audio_format_negotiation
+         == AUDIO_FORMAT_NEGOTIATION_INT16)
+         ? SDL_AUDIO_S16 : SDL_AUDIO_F32;
+   spec->channels = channels;
+
+   stream = SDL_OpenAudioDeviceStream(devid, spec, NULL, NULL);
+   /* The hint is process-global; clear it now that the open has
+    * consumed it so later SDL audio opens aren't affected. */
+   SDL_ResetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES);
+   if (!stream)
+   {
+      RARCH_ERR("[SDL3 %s] Failed to open SDL audio %s device: %s.\n",
+            tag, recording ? "input" : "output", SDL_GetError());
+      return NULL;
+   }
+
+   /* See what SDL actually opened (sample_frames honours the hint). */
+   if (!SDL_GetAudioDeviceFormat(SDL_GetAudioStreamDevice(stream),
+         &device_spec, &device_sample_frames))
+      device_sample_frames = frames;
+   *period_frames = device_sample_frames;
+
+   device_name = SDL_GetAudioDeviceName(devid);
+   RARCH_DBG("[SDL3 %s] Opened SDL audio %s device \"%s\": "
+         "%u-bit %s, requested %u Hz / %d frame periods, "
+         "received %d Hz / %d frame periods.\n",
+         tag, recording ? "input" : "out",
+         device_name ? device_name : "(default)",
+         SDL_AUDIO_BITSIZE(spec->format),
+         SDL_AUDIO_ISFLOAT(spec->format) ? "floating-point" : "integer",
+         rate, frames, spec->freq, device_sample_frames);
+
+   return stream;
+}
+
 typedef struct sdl3_audio
 {
    /* The device stream.  SDL_AudioStream is internally locked and
@@ -150,7 +211,6 @@ typedef struct sdl3_audio
     * block (or bail, when nonblocking) once this much is queued. */
    size_t buffer_size;
    bool nonblock;
-   bool is_paused;
 } sdl3_audio_t;
 
 static void sdl3_audio_free(void *data)
@@ -172,16 +232,10 @@ static void *sdl3_audio_init(const char *device,
       unsigned rate, unsigned latency,
       unsigned block_frames, unsigned *new_rate)
 {
-   int frames;
-   char frames_str[16];
    size_t frame_size, min_size;
-   const char *device_name   = NULL;
-   void *tmp                 = NULL;
-   SDL_AudioDeviceID devid   = 0;
-   SDL_AudioSpec device_spec = {0};
-   int device_sample_frames  = 0;
-   sdl3_audio_t *sdl         = NULL;
-   settings_t *settings      = config_get_ptr();
+   void *tmp                = NULL;
+   int device_sample_frames = 0;
+   sdl3_audio_t *sdl        = NULL;
 
    /* Subsystem initialization is reference-counted in SDL3, so
     * initialize unconditionally; every init is balanced by the
@@ -199,44 +253,9 @@ static void *sdl3_audio_init(const char *device,
       return NULL;
    }
 
-   devid = sdl3_audio_find_device(device, false);
-
-   /* Ask SDL for the device's preferred format so the whole pipeline
-    * can run at the device rate; RetroArch resamples to it exactly
-    * once and SDL does no rate conversion of its own. */
-   if (   !SDL_GetAudioDeviceFormat(devid, &device_spec, &device_sample_frames)
-       || device_spec.freq <= 0)
-      device_spec.freq = rate;
-
-   /* Request a device period of roughly a quarter of the total
-    * latency; the rest of the budget stays queued in the stream. */
-   frames = sdl3_audio_find_num_frames(device_spec.freq, latency / 4);
-   snprintf(frames_str, sizeof(frames_str), "%d", frames);
-   SDL_SetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES, frames_str);
-
-   sdl->spec.freq     = device_spec.freq;
-   /* SDL3 converts transparently if the device's native format
-    * differs; honour the negotiation hint for what we produce. */
-   sdl->spec.format   = (settings->uints.audio_format_negotiation
-         == AUDIO_FORMAT_NEGOTIATION_INT16)
-         ? SDL_AUDIO_S16 : SDL_AUDIO_F32;
-   sdl->spec.channels = 2;
-
-   sdl->stream = SDL_OpenAudioDeviceStream(devid, &sdl->spec, NULL, NULL);
-   /* The hint is process-global; clear it now that the open has
-    * consumed it so later SDL audio opens aren't affected. */
-   SDL_ResetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES);
-   if (!sdl->stream)
-   {
-      RARCH_ERR("[SDL3 audio] Failed to open SDL audio output device: %s.\n",
-            SDL_GetError());
+   if (!(sdl->stream = sdl3_audio_open_stream(device, false, rate, latency,
+         2, &sdl->spec, &device_sample_frames)))
       goto error;
-   }
-
-   /* See what SDL actually opened (sample_frames honours the hint). */
-   if (!SDL_GetAudioDeviceFormat(SDL_GetAudioStreamDevice(sdl->stream),
-         &device_spec, &device_sample_frames))
-      device_sample_frames = frames;
 
    /* Buffer the requested latency's worth of audio, with at least
     * two device periods to avoid underruns. */
@@ -249,14 +268,6 @@ static void *sdl3_audio_init(const char *device,
 
    *new_rate = sdl->spec.freq;
 
-   device_name = SDL_GetAudioDeviceName(devid);
-   RARCH_DBG("[SDL3 audio] Opened SDL audio out device \"%s\": "
-         "%u-bit %s, requested %u Hz / %d frame periods, "
-         "received %d Hz / %d frame periods.\n",
-         device_name ? device_name : "(default)",
-         SDL_AUDIO_BITSIZE(sdl->spec.format),
-         SDL_AUDIO_ISFLOAT(sdl->spec.format) ? "floating-point" : "integer",
-         rate, frames, sdl->spec.freq, device_sample_frames);
    RARCH_LOG("[SDL3 audio] Requested %u ms latency for output device, using %d ms.\n",
          latency,
          (int)((sdl->buffer_size / frame_size + device_sample_frames)
@@ -280,6 +291,20 @@ error:
    return NULL;
 }
 
+static size_t sdl3_audio_write_avail(void *data)
+{
+   int queued;
+   sdl3_audio_t *sdl = (sdl3_audio_t*)data;
+
+   if (!sdl)
+      return 0;
+
+   queued = SDL_GetAudioStreamQueued(sdl->stream);
+   if (queued < 0 || (size_t)queued >= sdl->buffer_size)
+      return 0;
+   return sdl->buffer_size - (size_t)queued;
+}
+
 static ssize_t sdl3_audio_write(void *data, const void *s, size_t len)
 {
    size_t _len       = 0;
@@ -291,11 +316,8 @@ static ssize_t sdl3_audio_write(void *data, const void *s, size_t len)
 
    while (_len < len)
    {
-      int queued   = SDL_GetAudioStreamQueued(sdl->stream);
-      size_t avail = (queued >= 0 && (size_t)queued < sdl->buffer_size)
-            ? sdl->buffer_size - (size_t)queued : 0;
+      size_t avail = sdl3_audio_write_avail(sdl);
 
-      /* If the outgoing sample queue is full... */
       if (avail == 0)
       {
          Uint64 now;
@@ -316,7 +338,7 @@ static ssize_t sdl3_audio_write(void *data, const void *s, size_t len)
       {
          /* Enqueue as many samples as we have available without
           * exceeding the latency cap. */
-         size_t write_amt = (len - _len > avail) ? avail : len - _len;
+         size_t write_amt = MIN(len - _len, avail);
          if (!SDL_PutAudioStreamData(sdl->stream,
                (const char*)s + _len, (int)write_amt))
          {
@@ -337,7 +359,6 @@ static bool sdl3_audio_stop(void *data)
    sdl3_audio_t *sdl = (sdl3_audio_t*)data;
    if (!sdl)
       return false;
-   sdl->is_paused = true;
    return SDL_PauseAudioStreamDevice(sdl->stream);
 }
 
@@ -346,7 +367,7 @@ static bool sdl3_audio_alive(void *data)
    sdl3_audio_t *sdl = (sdl3_audio_t*)data;
    if (!sdl)
       return false;
-   return !sdl->is_paused;
+   return !SDL_AudioStreamDevicePaused(sdl->stream);
 }
 
 static bool sdl3_audio_start(void *data, bool is_shutdown)
@@ -354,7 +375,6 @@ static bool sdl3_audio_start(void *data, bool is_shutdown)
    sdl3_audio_t *sdl = (sdl3_audio_t*)data;
    if (!sdl)
       return false;
-   sdl->is_paused = false;
    return SDL_ResumeAudioStreamDevice(sdl->stream);
 }
 
@@ -371,20 +391,6 @@ static bool sdl3_audio_use_float(void *data)
    if (!sdl)
       return false;
    return SDL_AUDIO_ISFLOAT(sdl->spec.format) != 0;
-}
-
-static size_t sdl3_audio_write_avail(void *data)
-{
-   int queued;
-   sdl3_audio_t *sdl = (sdl3_audio_t*)data;
-
-   if (!sdl)
-      return 0;
-
-   queued = SDL_GetAudioStreamQueued(sdl->stream);
-   if (queued < 0 || (size_t)queued >= sdl->buffer_size)
-      return 0;
-   return sdl->buffer_size - (size_t)queued;
 }
 
 static size_t sdl3_audio_buffer_size(void *data)
@@ -509,17 +515,10 @@ static void sdl3_microphone_close_mic(void *driver_context, void *mic_context)
 static void *sdl3_microphone_open_mic(void *driver_context, const char *device,
       unsigned rate, unsigned latency, unsigned *new_rate)
 {
-   int frames;
-   char frames_str[16];
    size_t frame_size, min_size;
-   const char *device_name       = NULL;
-   SDL_AudioDeviceID devid       = 0;
-   SDL_AudioSpec device_spec     = {0};
    int device_sample_frames      = 0;
    sdl3_microphone_handle_t *mic = NULL;
-   settings_t *settings          = config_get_ptr();
 
-   /* If the audio subsystem wasn't initialized yet... */
    if (!SDL_WasInit(SDL_INIT_AUDIO))
    {
       RARCH_ERR("[SDL3 mic] Attempted to initialize input device before initializing the audio subsystem.\n");
@@ -532,59 +531,24 @@ static void *sdl3_microphone_open_mic(void *driver_context, const char *device,
    /* Only print SDL audio devices if verbose logging is enabled */
    if (verbosity_is_enabled())
    {
-      int i;
-      int count                  = 0;
-      SDL_AudioDeviceID *devices = SDL_GetAudioRecordingDevices(&count);
-
-      RARCH_DBG("[SDL3 mic] %d audio capture devices found:\n", count);
-      if (devices)
+      struct string_list *sl = sdl3_audio_device_list(true);
+      if (sl)
       {
-         for (i = 0; i < count; i++)
-         {
-            const char *name = SDL_GetAudioDeviceName(devices[i]);
-            RARCH_DBG("[SDL3 mic]    - %s\n", name ? name : "(unknown)");
-         }
-         SDL_free(devices);
+         size_t i;
+         RARCH_DBG("[SDL3 mic] %u audio capture devices found:\n",
+               (unsigned)sl->size);
+         for (i = 0; i < sl->size; i++)
+            RARCH_DBG("[SDL3 mic]    - %s\n", sl->elems[i].data);
+         string_list_free(sl);
       }
    }
 
-   devid = sdl3_audio_find_device(device, true);
-
-   /* Run the capture path at the device's preferred rate so SDL
-    * does no rate conversion; the mic frontend resamples once. */
-   if (   !SDL_GetAudioDeviceFormat(devid, &device_spec, &device_sample_frames)
-       || device_spec.freq <= 0)
-      device_spec.freq = rate;
-
-   frames = sdl3_audio_find_num_frames(device_spec.freq, latency / 4);
-   snprintf(frames_str, sizeof(frames_str), "%d", frames);
-   SDL_SetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES, frames_str);
-
-   mic->spec.freq     = device_spec.freq;
-   /* The int16 negotiation hint keeps the whole capture path integer
-    * instead of converting a float stream back down; SDL converts
-    * transparently if the device's native format differs. */
-   mic->spec.format   = (settings->uints.audio_format_negotiation
-         == AUDIO_FORMAT_NEGOTIATION_INT16)
-         ? SDL_AUDIO_S16 : SDL_AUDIO_F32;
-   mic->spec.channels = 1; /* Microphones only usually provide input in mono */
-
    /* Device streams open in a paused state;
-    * the frontend starts them with start_mic. */
-   mic->stream = SDL_OpenAudioDeviceStream(devid, &mic->spec, NULL, NULL);
-   /* The hint is process-global; clear it now that the open has
-    * consumed it so later SDL audio opens aren't affected. */
-   SDL_ResetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES);
-   if (!mic->stream)
-   {
-      RARCH_ERR("[SDL3 mic] Failed to open SDL audio input device: %s.\n",
-            SDL_GetError());
+    * the frontend starts them with start_mic.
+    * Microphones usually provide mono input. */
+   if (!(mic->stream = sdl3_audio_open_stream(device, true, rate, latency,
+         1, &mic->spec, &device_sample_frames)))
       goto error;
-   }
-
-   if (!SDL_GetAudioDeviceFormat(SDL_GetAudioStreamDevice(mic->stream),
-         &device_spec, &device_sample_frames))
-      device_sample_frames = frames;
 
    /* Buffer up to double the latency budget (with a floor of four
     * device periods) before the backlog starts getting dropped. */
@@ -600,14 +564,6 @@ static void *sdl3_microphone_open_mic(void *driver_context, const char *device,
    if (new_rate)
       *new_rate = mic->spec.freq;
 
-   device_name = SDL_GetAudioDeviceName(devid);
-   RARCH_DBG("[SDL3 mic] Opened SDL audio input device \"%s\": "
-         "%u-bit %s, requested %u Hz / %d frame periods, "
-         "received %d Hz / %d frame periods.\n",
-         device_name ? device_name : "(default)",
-         SDL_AUDIO_BITSIZE(mic->spec.format),
-         SDL_AUDIO_ISFLOAT(mic->spec.format) ? "floating-point" : "integer",
-         rate, frames, mic->spec.freq, device_sample_frames);
    RARCH_LOG("[SDL3 mic] Requested %u ms latency for input device, capping the backlog at %d ms.\n",
          latency,
          (int)((mic->buffer_size / frame_size) * 1000 / mic->spec.freq));
@@ -672,7 +628,6 @@ static int sdl3_microphone_read(void *driver_context, void *mic_context,
    if (!sdl || !mic || !s)
       return -1;
 
-   /* Until we've given the caller as much data as they've asked for... */
    while (_len < len)
    {
       int got = SDL_GetAudioStreamData(mic->stream,
