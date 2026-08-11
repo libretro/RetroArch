@@ -602,8 +602,7 @@ static void sdl3_poke_set_video_mode(void *data, unsigned width,
    if (!vid || !vid->window)
       return;
 
-   if (!sdl3_window_set_video_mode(&vid->window, width, height,
-         fullscreen, 0))
+   if (!sdl3_window_set_video_mode(&vid->window, width, height, fullscreen, 0))
    {
       RARCH_WARN("[SDL3] Failed to set video mode: %s.\n", SDL_GetError());
       return;
