@@ -19,7 +19,6 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
-#include <string.h>
 
 #include <boolean.h>
 #include <retro_inline.h>
