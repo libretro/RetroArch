@@ -229,13 +229,7 @@ static SDL_Window *sdl3_window_create(unsigned width, unsigned height,
 
    /* SDL_EVENT_TEXT_INPUT is emitted for windows that opted in for
     * it. The SDL3 input driver handles those events for menu
-    * text entry and core keyboard callbacks.
-    *
-    * On desktop, starting text input has no visible effect, so keep
-    * it active for the whole session. On platforms with a system
-    * screen keyboard (Android, iOS, Steam Deck), starting text input
-    * is what pops the keyboard, so there the SDL3 input driver
-    * starts/stops it around menu text dialogs instead. */
+    * text entry and core keyboard callbacks. */
    if (!SDL_HasScreenKeyboardSupport())
       SDL_StartTextInput(win);
 

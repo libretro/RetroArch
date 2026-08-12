@@ -239,13 +239,11 @@ typedef struct key_desc
    char desc[32];
 } key_desc_t;
 
-/* What kind of text a keyboard dialog collects. Lets frontends with a
- * system on-screen keyboard/IME pick a matching layout and hide typed
- * passwords. */
+/* Determines the type of input that's expected for the keyboard dialog. */
 enum menu_input_dialog_kb_text_type
 {
    MENU_INPUT_DIALOG_KB_TYPE_TEXT = 0,
-   MENU_INPUT_DIALOG_KB_TYPE_PASSWORD,
+   MENU_INPUT_DIALOG_KB_TYPE_PASSWORD, /**< Hides typed input. */
    MENU_INPUT_DIALOG_KB_TYPE_NUMBER
 };
 

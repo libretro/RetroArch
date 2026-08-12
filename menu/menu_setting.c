@@ -667,8 +667,7 @@ static int setting_generic_action_ok_linefeed(
 {
    menu_input_ctx_line_t line;
    input_keyboard_line_complete_t cb = NULL;
-   enum menu_input_dialog_kb_text_type text_type =
-         MENU_INPUT_DIALOG_KB_TYPE_TEXT;
+   enum menu_input_dialog_kb_text_type text_type = MENU_INPUT_DIALOG_KB_TYPE_TEXT;
 
    if (!setting)
       return -1;

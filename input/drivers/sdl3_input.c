@@ -68,6 +68,12 @@ typedef struct sdl3_input
    bool mouse_wl;
    bool mouse_wr;
 
+   /* Determines whether or not the previous poll had the menu text
+    * dialog open. Text input is started or stopped only through
+    * transitions, so tracking this properly will keep a dismissed
+    * dialog from popping up again. */
+   bool text_input_wanted;
+
    /* Number of connected touch devices. Saves having to query them
     * every frame. */
    int num_touch_devices;
@@ -608,7 +614,7 @@ static uint16_t sdl3_translate_mod(SDL_Keymod smod)
  * on-screen keyboard. On desktop, text input stays quietly
  * enabled in the background, ensuring normal keyboard
  * controls work. */
-static void sdl3_manage_text_input(void)
+static void sdl3_manage_text_input(sdl3_input_t *sdl)
 {
    bool want = false;
    SDL_Window *win = sdl3_get_window();
@@ -620,7 +626,12 @@ static void sdl3_manage_text_input(void)
    want = menu_input_dialog_get_display_kb();
 #endif
 
-   if (want && !SDL_TextInputActive(win))
+   /* Check if the text input state is the same. */
+   if (want == sdl->text_input_wanted)
+      return;
+   sdl->text_input_wanted = want;
+
+   if (want)
    {
       int w, h;
       SDL_Rect area;
@@ -655,12 +666,12 @@ static void sdl3_manage_text_input(void)
       SDL_StartTextInputWithProperties(win, props);
       SDL_DestroyProperties(props);
 
-      RARCH_LOG("[SDL3] Started text input (type %d) for menu dialog.\n", (int)type);
+      RARCH_LOG("[SDL3] Started text input for menu dialog (type %d).\n", (int)type);
    }
-   else if (!want && SDL_TextInputActive(win))
+   else
    {
       SDL_StopTextInput(win);
-      RARCH_LOG("[SDL3] Stopped text input; menu dialog closed.\n");
+      RARCH_LOG("[SDL3] Stopped text input and menu dialog closed.\n");
    }
 }
 
@@ -675,7 +686,7 @@ static void sdl3_input_poll(void *data)
     * never updates. */
    SDL_PumpEvents();
 
-   sdl3_manage_text_input();
+   sdl3_manage_text_input(sdl);
    sdl3_poll_mouse(sdl);
    sdl3_poll_touch(sdl);
 
