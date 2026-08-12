@@ -667,6 +667,8 @@ static int setting_generic_action_ok_linefeed(
 {
    menu_input_ctx_line_t line;
    input_keyboard_line_complete_t cb = NULL;
+   enum menu_input_dialog_kb_text_type text_type =
+         MENU_INPUT_DIALOG_KB_TYPE_TEXT;
 
    if (!setting)
       return -1;
@@ -678,9 +680,11 @@ static int setting_generic_action_ok_linefeed(
       case ST_SIZE:
       case ST_UINT:
          cb = menu_input_st_uint_cb;
+         text_type = MENU_INPUT_DIALOG_KB_TYPE_NUMBER;
          break;
       case ST_INT:
          cb = menu_input_st_int_cb;
+         text_type = MENU_INPUT_DIALOG_KB_TYPE_NUMBER;
          break;
       case ST_FLOAT:
          cb = menu_input_st_float_cb;
@@ -688,6 +692,8 @@ static int setting_generic_action_ok_linefeed(
       case ST_STRING:
       case ST_STRING_OPTIONS:
          cb = menu_input_st_string_cb;
+         if (setting->ui_type == ST_UI_TYPE_PASSWORD_LINE_EDIT)
+            text_type = MENU_INPUT_DIALOG_KB_TYPE_PASSWORD;
          break;
       default:
          break;
@@ -697,6 +703,7 @@ static int setting_generic_action_ok_linefeed(
    line.label_setting = setting->name;
    line.type          = 0;
    line.idx           = 0;
+   line.text_type     = text_type;
    line.cb            = cb;
 
    if (!menu_input_dialog_start(&line))
@@ -3002,6 +3009,7 @@ static int setting_action_ok_color_rgb(rarch_setting_t *setting, size_t idx,
    line.label_setting = setting->name;
    line.type          = 0;
    line.idx           = 0;
+   line.text_type     = MENU_INPUT_DIALOG_KB_TYPE_TEXT;
    line.cb            = setting_action_ok_color_rgb_cb;
 
    if (!menu_input_dialog_start(&line))

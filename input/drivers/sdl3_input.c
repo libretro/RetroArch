@@ -30,6 +30,11 @@
 
 #include "../../configuration.h"
 #include "../../retroarch.h"
+#include "../../verbosity.h"
+
+#ifdef HAVE_MENU
+#include "../../menu/menu_input.h"
+#endif
 
 #include "../../gfx/common/sdl3_common.h"
 
@@ -468,27 +473,6 @@ static bool sdl3_set_sensor_state(void *data, unsigned port,
    return false;
 }
 
-/* Gets the SDL_Window, if it exists. */
-static SDL_Window *sdl3_input_window(void)
-{
-   gfx_ctx_ident_t ident_info;
-
-   if (string_is_equal(video_driver_get_ident(), "sdl3"))
-   {
-      sdl3_video_t *video_ptr = (sdl3_video_t*)video_driver_get_ptr();
-      return video_ptr != NULL ? video_ptr->window : NULL;
-   }
-
-   /* gl/gl1/glcore/vulkan running on the SDL3 context drivers. They
-    * register their SDL_Window as the display userdata via sdl3_set_handles. */
-   ident_info.ident = NULL;
-   video_context_driver_get_ident(&ident_info);
-   if (string_is_equal(ident_info.ident, "gl_sdl3") || string_is_equal(ident_info.ident, "vk_sdl3"))
-      return (SDL_Window*)video_driver_display_userdata_get();
-
-   return NULL;
-}
-
 static void sdl3_poll_mouse(sdl3_input_t *sdl)
 {
    SDL_Window *win;
@@ -515,7 +499,7 @@ static void sdl3_poll_mouse(sdl3_input_t *sdl)
 
    /* SDL reports mouse coordinates in window coordinates (points),
     * while the video driver's viewport metrics are in output pixels. */
-   if (!(win = sdl3_input_window()))
+   if (!(win = sdl3_get_window()))
       win = SDL_GetMouseFocus();
 
    if (win)
@@ -620,6 +604,66 @@ static uint16_t sdl3_translate_mod(SDL_Keymod smod)
    return mod;
 }
 
+/* On mobile devices, SDL_StartTextInput() brings up the
+ * on-screen keyboard. On desktop, text input stays quietly
+ * enabled in the background, ensuring normal keyboard
+ * controls work. */
+static void sdl3_manage_text_input(void)
+{
+   bool want = false;
+   SDL_Window *win = sdl3_get_window();
+
+   if (!win || !SDL_HasScreenKeyboardSupport())
+      return;
+
+#ifdef HAVE_MENU
+   want = menu_input_dialog_get_display_kb();
+#endif
+
+   if (want && !SDL_TextInputActive(win))
+   {
+      int w, h;
+      SDL_Rect area;
+      SDL_TextInputType type = SDL_TEXTINPUT_TYPE_TEXT;
+      SDL_PropertiesID props = SDL_CreateProperties();
+
+#ifdef HAVE_MENU
+      switch (menu_input_dialog_get_kb_text_type())
+      {
+         case MENU_INPUT_DIALOG_KB_TYPE_PASSWORD:
+            type = SDL_TEXTINPUT_TYPE_TEXT_PASSWORD_HIDDEN;
+            break;
+         case MENU_INPUT_DIALOG_KB_TYPE_NUMBER:
+            type = SDL_TEXTINPUT_TYPE_NUMBER;
+            break;
+         default:
+            break;
+      }
+#endif
+
+      /* Menu drivers draw the dialog's entry field in the top half of
+       * the screen, so keep the system keyboard/IME from covering it.
+       * Uses window coordinates, not pixels. */
+      SDL_GetWindowSize(win, &w, &h);
+      area.x = 0;
+      area.y = 0;
+      area.w = w;
+      area.h = h / 2;
+      SDL_SetTextInputArea(win, &area, 0);
+
+      SDL_SetNumberProperty(props, SDL_PROP_TEXTINPUT_TYPE_NUMBER, type);
+      SDL_StartTextInputWithProperties(win, props);
+      SDL_DestroyProperties(props);
+
+      RARCH_LOG("[SDL3] Started text input (type %d) for menu dialog.\n", (int)type);
+   }
+   else if (!want && SDL_TextInputActive(win))
+   {
+      SDL_StopTextInput(win);
+      RARCH_LOG("[SDL3] Stopped text input; menu dialog closed.\n");
+   }
+}
+
 static void sdl3_input_poll(void *data)
 {
    SDL_Event event;
@@ -631,6 +675,7 @@ static void sdl3_input_poll(void *data)
     * never updates. */
    SDL_PumpEvents();
 
+   sdl3_manage_text_input();
    sdl3_poll_mouse(sdl);
    sdl3_poll_touch(sdl);
 
@@ -697,7 +742,7 @@ static void sdl3_input_poll(void *data)
 
 static void sdl3_grab_mouse(void *data, bool state)
 {
-   SDL_Window *win = sdl3_input_window();
+   SDL_Window *win = sdl3_get_window();
 
    if (win)
       SDL_SetWindowMouseGrab(win, state);

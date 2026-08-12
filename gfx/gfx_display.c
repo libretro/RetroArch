@@ -38,6 +38,10 @@
 #include "../ui/drivers/cocoa/apple_platform.h"
 #endif
 
+#ifdef HAVE_SDL3
+#include "common/sdl3_common.h"
+#endif
+
 /* Standard reference DPI value, used when determining
  * DPI-aware scaling factors */
 #define REFERENCE_DPI 96.0f
@@ -1040,6 +1044,10 @@ void gfx_display_draw_keyboard(
 #endif
 #ifdef HAVE_COCOATOUCH
    if (ios_keyboard_active())
+      return;
+#endif
+#ifdef HAVE_SDL3
+   if (sdl3_screen_keyboard_shown())
       return;
 #endif
 
