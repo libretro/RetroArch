@@ -2357,6 +2357,11 @@ struct string_list *net_http_headers_ex(struct http_t *state, bool accept_err)
 {
    if (!state)
       return NULL;
+   /* Same predicate as net_http_data(): with no status line there is
+    * no header set, only the empty (or half-filled) list allocated by
+    * net_http_new(). */
+   if (state->response.status < 0)
+      return NULL;
    if (!accept_err && state->err)
       return NULL;
    state->response.owns_headers = false;
@@ -2381,6 +2386,26 @@ uint8_t* net_http_data(struct http_t *state, size_t* len, bool accept_err)
 {
    if (!state)
       return NULL;
+
+   /* No response was ever parsed, so there is no body to hand back.
+    *
+    * net_http_new() allocates response.data up front as the receive
+    * buffer -- 64KiB of plain malloc().  On a transport failure
+    * nothing is written into it and response.len stays 0, but the
+    * pointer is non-NULL, and accept_err skipped the check below and
+    * returned it: 64KiB of uninitialised, unterminated heap published
+    * as a body.  A torn body is equally unusable, since response.len
+    * is the T_LEN remainder rather than the bytes that landed.
+    *
+    * Every give-up path resets status to -1 (and net_http_new()
+    * initialises it so), which is the exact predicate.  Returning NULL
+    * leaves owns_data true, so net_http_delete() frees the buffer. */
+   if (state->response.status < 0)
+   {
+      if (len)
+         *len = 0;
+      return NULL;
+   }
 
    if (!accept_err && (state->err || state->response.status < 200 || state->response.status > 299))
    {

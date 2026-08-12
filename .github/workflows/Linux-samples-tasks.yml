@@ -781,6 +781,58 @@ jobs:
           make -f Makefile.stress clean
           echo "[pass] http_transfer_stress_test (TSan)"
 
+      - name: Build and run http_transport_failure_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/http
+        run: |
+          set -eu
+          # What a failed transfer is allowed to hand back, across
+          # libretro-common/net/net_http.c and tasks/task_http.c.
+          #
+          # net_http_new() allocates response.data up front as the
+          # receive buffer - 64KiB of plain malloc().  On a transport
+          # failure nothing is written into it and response.len stays
+          # 0, but the pointer is non-NULL, and net_http_data()'s
+          # accept_err returned it, so every failed download published
+          # uninitialised, unterminated heap as
+          # http_transfer_data_t::data.  On a torn body it was worse:
+          # the caller got the Content-Length remainder as the length,
+          # over bytes that never arrived.  Meanwhile task_http.c gated
+          # task_set_error() on RETRO_TASK_FLG_MUTE, which only ever
+          # suppressed the on-screen notification - so muted transfers
+          # (achievements, netplay lobby, core list refresh) reported
+          # failure to their callbacks as success.
+          #
+          # Four failure lanes entering net_http_update() at four
+          # different points, plus two contrast lanes: a 200 must still
+          # deliver body, headers and status, and a 404 must still
+          # deliver its body under accept_err, or the fix could be
+          # satisfied by an accessor that returns NULL rather more
+          # often than that and cloud sync's WWW-Authenticate path
+          # would break silently.  Both contrast lanes pass on the
+          # pre-fix tree, which is what makes them a guard.  Two task
+          # lanes run the same failure through the real task_http.c and
+          # task_queue.c, muted and unmuted.
+          #
+          # getaddrinfo is wrapped at link time so the DNS lane cannot
+          # quietly start testing a successful lookup on a runner whose
+          # resolver answers for everything.  Leak detection is on
+          # because the fix changes ownership: net_http_delete() is now
+          # the only thing that frees the receive buffer on failure.
+          #
+          # To confirm this still bites, drop the `status < 0` guard
+          # from net_http_data() and rerun.
+          make -f Makefile.transport_fail clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 300 \
+             ./http_transport_failure_test
+          echo "[pass] http_transport_failure_test (ASan)"
+          make -f Makefile.transport_fail clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 300 \
+             ./http_transport_failure_test
+          make -f Makefile.transport_fail clean
+          echo "[pass] http_transport_failure_test (TSan)"
+
       - name: Build and run http_dns_evict_deadlock_test (ASan, TSan)
         shell: bash
         working-directory: samples/tasks/http
