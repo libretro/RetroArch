@@ -608,7 +608,7 @@ static void sdl3_poke_set_video_mode(void *data, unsigned width,
       return;
    }
 
-   /* On the next frame, recompute the viewport pixel size.. */
+   /* On the next frame, recompute the viewport pixel size. */
    vid->flags |= SDL3_FLAG_SHOULD_RESIZE;
    vid->video.width = width;
    vid->video.height = height;
