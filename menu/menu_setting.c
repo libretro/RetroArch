@@ -85,9 +85,7 @@
 
 #include "../core.h"
 #include "../configuration.h"
-#ifdef HAVE_NETWORKING
 #include "../network/screenscraper.h"
-#endif
 #include "../msg_hash.h"
 #include "../defaults.h"
 #include "../driver.h"
@@ -3708,14 +3706,13 @@ static size_t setting_get_string_representation_uint_dynamic_wallpaper_mode(
    return strlcpy(s, "Per System", len);
 }
 
-/* Extended thumbnail modes (3D boxarts, fan art, marquees) are
- * ScreenScraper-sourced; expose them only while signed in. */
+/* Extended thumbnail modes (3D boxarts, fan art, marquees, video
+ * snaps) are ScreenScraper-sourced; expose them when an account is
+ * configured or when such media is already on disk. */
 static unsigned menu_setting_thumbnail_mode_max(void)
 {
-#ifdef HAVE_NETWORKING
-   if (screenscraper_signed_in())
+   if (screenscraper_extended_media_allowed())
       return PLAYLIST_THUMBNAIL_MODE_LAST - PLAYLIST_THUMBNAIL_MODE_OFF - 1;
-#endif
    return PLAYLIST_THUMBNAIL_MODE_LOGOS - PLAYLIST_THUMBNAIL_MODE_OFF;
 }
 

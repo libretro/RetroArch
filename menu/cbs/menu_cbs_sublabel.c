@@ -25,10 +25,8 @@
 #include <file/file_path.h>
 
 #include "../menu_driver.h"
-#ifdef HAVE_NETWORKING
 #include "../../network/screenscraper.h"
 #include "../../gfx/gfx_thumbnail.h"
-#endif
 #include "../menu_cbs.h"
 #include "../../input/input_remapping.h"
 
@@ -1248,7 +1246,6 @@ static int action_bind_sublabel_playlist_entry(
 
    _len = 0;
 
-#if defined(HAVE_NETWORKING)
    /* Scraped facts come first, when this entry has a metadata sidecar.
     * Drivers that draw the facts in a panel of their own are skipped,
     * or the same text would appear twice: Ozone always does, XMB does
@@ -1306,7 +1303,6 @@ static int action_bind_sublabel_playlist_entry(
          }
       }
    }
-#endif
 
    /* Add core name */
    _len     += strlcpy(s + _len,

@@ -25,6 +25,23 @@
 
 RETRO_BEGIN_DECLS
 
+/* This header is safe to include unconditionally, but the declarations
+ * below come from two translation units with different availability:
+ *
+ *   network/screenscraper_meta.c  - always compiled. The metadata
+ *      sidecar reader (screenscraper_meta_t, screenscraper_metadata_*,
+ *      screenscraper_rating_stars) plus screenscraper_signed_in().
+ *      Local files only, so menus can show scraped facts on a target
+ *      built without networking.
+ *
+ *   network/screenscraper.c       - HAVE_NETWORKING only. Request
+ *      building, jeuInfos/ssuserInfos parsing, media selection and the
+ *      daily allowance. Everything here needs the network.
+ *
+ * Calling anything from the second group outside #ifdef HAVE_NETWORKING
+ * will link-fail on a no-networking build. The groups are marked below.
+ */
+
 #define SCREENSCRAPER_API_URL "https://api.screenscraper.fr/api2"
 #define SCREENSCRAPER_SOFTNAME "RetroArch"
 
@@ -122,6 +139,16 @@ bool screenscraper_metadata_load(const char *path,
 bool screenscraper_metadata_load_entry(const char *dir_thumbnails,
       const char *db_name, const char *img_name,
       screenscraper_meta_t *meta);
+
+/* True when the menus should offer the ScreenScraper-only thumbnail
+ * types (3D boxart, fan art, marquee, video snap): either an account
+ * is configured, or the thumbnail tree already holds media of those
+ * kinds. Scraped media stays usable after signing out, and on a tree
+ * copied over from another machine - including on a build with no
+ * networking at all, where nobody can ever be "signed in".
+ * Walks the thumbnail directory, so call it when building a menu
+ * list, not per frame. */
+bool screenscraper_extended_media_allowed(void);
 
 /* Converts a scraped rating (ScreenScraper's native 0-20 scale, held
  * as a string) into a count of filled stars out of five, rounded to

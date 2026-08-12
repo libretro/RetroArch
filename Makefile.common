@@ -411,6 +411,7 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/time/rtime.o \
        manual_content_scan.o \
        tasks/task_database.o \
+       network/screenscraper_meta.o \
        disk_control_interface.o
 
 ifeq ($(HAVE_CONFIGFILE), 1)

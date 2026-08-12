@@ -1448,6 +1448,11 @@ PLAYLISTS
 #include "../playlist.c"
 
 /*============================================================
+SCREENSCRAPER (display half - reads local sidecars, no network)
+============================================================ */
+#include "../network/screenscraper_meta.c"
+
+/*============================================================
 MENU
 ============================================================ */
 #ifdef HAVE_GFX_WIDGETS

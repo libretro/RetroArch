@@ -39,9 +39,7 @@
 #include "../menu_screensaver.h"
 
 #include "../../msg_hash_lbl_str.h"
-#ifdef HAVE_NETWORKING
 #include "../../network/screenscraper.h"
-#endif
 #include "../../gfx/gfx_animation.h"
 #include "../../gfx/gfx_display.h"
 #include "../../gfx/gfx_thumbnail.h"
@@ -4571,7 +4569,6 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
             core_label = menu_st->thumbnail_path_data->content_core_name;
       }
 
-#if defined(HAVE_NETWORKING)
       /* Scraped metadata for this entry, if it was ever scraped */
       {
          settings_t *ss_settings          = config_get_ptr();
@@ -4661,7 +4658,6 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
                   ozone_count_lines(ozone->selection_ss_description_wrapped);
          }
       }
-#endif
 
       _len  = strlcpy(ozone->selection_core_name,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE),
@@ -5781,7 +5777,6 @@ static void ozone_content_metadata_line(
             + (unsigned)((float)ozone->fonts.footer.line_height * 1.5f);
 }
 
-#if defined(HAVE_NETWORKING)
 /* Draws a scraped rating as a row of five stars: 'stars' of them at
  * full opacity, the remainder dimmed. Occupies exactly the space of a
  * one-line ozone_content_metadata_line() row - same clipping rule,
@@ -6070,7 +6065,6 @@ static bool ozone_draw_metadata_description_vertical(
          + (unsigned)((float)line_height * 1.5f);
    return true;
 }
-#endif
 
 
 /* Compute new scroll position
@@ -7366,7 +7360,6 @@ static void ozone_draw_thumbnail_bar(
             : 1.0f;
       uint32_t text_color                    = COLOR_TEXT_ALPHA(
             ozone->theme->text_rgba, (uint32_t)(metadata_alpha * 255.0f));
-#if defined(HAVE_NETWORKING)
       /* These govern the scraped synopsis only; every other row keeps
        * whatever ozone_scroll_content_metadata gives it. Neither being
        * set is the Horizontal default, i.e. upstream behaviour. */
@@ -7376,7 +7369,6 @@ static void ozone_draw_thumbnail_bar(
             (metadata_scroll_style == OZONE_METADATA_SCROLL_VERTICAL);
       bool metadata_scroll_off               =
             (metadata_scroll_style == OZONE_METADATA_SCROLL_OFF);
-#endif
 
       if (scroll_content_metadata)
       {
@@ -7432,7 +7424,6 @@ static void ozone_draw_thumbnail_bar(
 
       if (scroll_content_metadata)
       {
-#if defined(HAVE_NETWORKING)
          /* Scraped facts first. Each is run through the ticker, so a
           * synopsis longer than the panel scrolls through in a loop
           * instead of being cut off. */
@@ -7529,7 +7520,6 @@ static void ozone_draw_thumbnail_bar(
                      text_color,
                      ozone->selection_ss_description_lines);
          }
-#endif
 
          /* Entry enumeration */
          if (show_entry_idx)
@@ -7645,7 +7635,6 @@ static void ozone_draw_thumbnail_bar(
       }
       else
       {
-#if defined(HAVE_NETWORKING)
          /* Scraped facts first: rating, publisher, description */
          if (ozone->selection_ss_valid)
          {
@@ -7727,7 +7716,6 @@ static void ozone_draw_thumbnail_bar(
                         ozone->selection_ss_description_lines);
             }
          }
-#endif
 
          /* Entry enumeration */
          if (show_entry_idx)
@@ -11180,7 +11168,6 @@ static void ozone_render(void *data,
    if (!ozone)
       return;
 
-#if defined(HAVE_NETWORKING)
    /* The scraped facts are resolved from the selected entry's thumbnail
     * data, which is still empty when a list is first entered - so the
     * set gathered then belongs to no entry, or to the previous one.
@@ -11206,7 +11193,6 @@ static void ozone_render(void *data,
             ozone_update_content_metadata(ozone);
       }
    }
-#endif
 
    /* Advance animated thumbnails (animated WebP) once per frame on the
     * main thread. No-op for still images. */

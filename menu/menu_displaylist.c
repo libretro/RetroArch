@@ -131,9 +131,7 @@
 #endif
 #include "../tasks/task_content.h"
 #include "../tasks/tasks_internal.h"
-#ifdef HAVE_NETWORKING
 #include "../network/screenscraper.h"
-#endif
 #include "../dynamic.h"
 #include "../runtime_file.h"
 #include "../manual_content_scan.h"
@@ -2866,9 +2864,10 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    unsigned i, j, k;
    char query[256];
    char path_base[NAME_MAX_LENGTH];
-#ifdef HAVE_NETWORKING
+   /* Thumbnail-tree directory name, i.e. what a scrape filed this
+    * system's metadata sidecars under. Reading them is a local-file
+    * operation, so this is not conditional on networking. */
    char ss_system[NAME_MAX_LENGTH];
-#endif
    playlist_config_t playlist_config;
    playlist_t *playlist                = NULL;
    database_info_list_t *db_info       = NULL;
@@ -2916,12 +2915,10 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    gfx_thumbnail_set_system(menu_st->thumbnail_path_data,
          path_base, playlist_get_cached());
 
-#ifdef HAVE_NETWORKING
    /* The bare .rdb basename is also the thumbnail-tree directory
     * name, i.e. what the scraper filed this system's sidecars under.
     * Kept before the ".lpl" below overwrites it. */
    strlcpy(ss_system, path_base, sizeof(ss_system));
-#endif
 
    strlcpy(path_base + _len, ".lpl", sizeof(path_base) - _len);
 
@@ -2939,7 +2936,6 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
       char crc_str[20];
       database_info_t *db_info_entry = &db_info->list[i];
       size_t tmp_len;
-#ifdef HAVE_NETWORKING
       /* Scraped facts for this title, when it has a sidecar. They
        * take precedence over the offline database below; see the
        * RDB_ENTRY_STR_SS() comment. */
@@ -2947,7 +2943,6 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
       screenscraper_meta_t ss;
 
       ss.valid = false;
-#endif
 
       snprintf(crc_str, sizeof(crc_str), "%08lX", (unsigned long)db_info_entry->crc32);
 
@@ -3009,14 +3004,11 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                continue;
 
             menu->scratchpad.unsigned_var = j;
-#ifdef HAVE_NETWORKING
             ss_pl_entry                   = entry;
-#endif
             break;
          }
       }
 
-#ifdef HAVE_NETWORKING
       /* The scraper keys its sidecars off the playlist label, so the
        * matched playlist entry is the reliable way in; the database's
        * own name only stands in when this title is not on a playlist
@@ -3058,7 +3050,6 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                0, 0, 0, NULL);
       }
       else
-#endif
       if (db_info_entry->name)
       {
          tmp_len  = strlcpy(tmp,
@@ -3072,7 +3063,6 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                0, 0, 0, NULL);
       }
 
-#ifdef HAVE_NETWORKING
       if (ss.valid && !string_is_empty(ss.description))
       {
          tmp_len  = strlcpy(tmp,
@@ -3086,7 +3076,6 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                0, 0, 0, NULL);
       }
       else
-#endif
       if (db_info_entry->description)
       {
          tmp_len  = strlcpy(tmp,
@@ -3117,7 +3106,6 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
  * scrape wins because it covers content the shipped .rdb has never
  * heard of, and where the two overlap it is the fresher of the two;
  * the .rdb then fills in whatever the scrape left blank. */
-#ifdef HAVE_NETWORKING
 #define RDB_ENTRY_STR_SS(ss_field, field, enum_label, enum_val_label) \
       { \
          const char *_ss_val = (ss.valid && !string_is_empty(ss.ss_field)) \
@@ -3132,10 +3120,6 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                goto error; \
          } \
       }
-#else
-#define RDB_ENTRY_STR_SS(ss_field, field, enum_label, enum_val_label) \
-      RDB_ENTRY_STR(field, enum_label, enum_val_label)
-#endif
 
 #define RDB_ENTRY_INT(field, enum_label, enum_val_label) \
       if (db_info_entry->field) \
@@ -3195,7 +3179,6 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
       RDB_ENTRY_STR(vehicular,   MENU_ENUM_LABEL_RDB_ENTRY_VEHICULAR,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR)
 
-#ifdef HAVE_NETWORKING
       /* The .rdb can list several developers, the scrape only ever
        * one - so the scraped name replaces the whole list rather than
        * being merged into it */
@@ -3209,7 +3192,6 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
             goto error;
       }
       else
-#endif
       if (db_info_entry->developer)
       {
          const char *val_rdb_entry_dev =
@@ -6715,13 +6697,12 @@ static unsigned populate_playlist_thumbnail_mode_dropdown_list(
                   : MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_LEFT_THUMBNAIL_MODE;
 
       /* Loop over all thumbnail modes; the ScreenScraper-sourced
-       * extended types are offered only while signed in */
+       * extended types are offered when an account is configured or
+       * when such media is already on disk */
       {
          unsigned max_mode = (unsigned)PLAYLIST_THUMBNAIL_MODE_LOGOS;
-#ifdef HAVE_NETWORKING
-         if (screenscraper_signed_in())
+         if (screenscraper_extended_media_allowed())
             max_mode = (unsigned)PLAYLIST_THUMBNAIL_MODE_VIDEOS;
-#endif
       for (i = 0; i <= max_mode; i++)
       {
          enum msg_hash_enums label_value;
@@ -12661,25 +12642,18 @@ unsigned menu_displaylist_build_list(
                      build_list[i].checked = settings->bools.menu_dynamic_wallpaper_enable;
                      break;
                   case MENU_ENUM_LABEL_XMB_SHOW_METADATA_PANEL:
-                     /* The panel is drawn by XMB only, and its content
-                      * comes from the scraper */
-#if defined(HAVE_NETWORKING)
+                     /* The panel is drawn by XMB only. Its content is a
+                      * local sidecar, so this stays available on a
+                      * target that cannot scrape but has had a
+                      * thumbnails tree copied onto it. */
                      build_list[i].checked = string_is_equal(
                            settings->arrays.menu_driver, "xmb");
-#else
-                     build_list[i].checked = false;
-#endif
                      break;
                   case MENU_ENUM_LABEL_OZONE_METADATA_SCROLL_STYLE:
-                     /* Only the Ozone content metadata panel honours
-                      * this, and the synopsis it scrolls comes from
-                      * the scraper */
-#if defined(HAVE_NETWORKING)
+                     /* Likewise, Ozone only - and likewise independent
+                      * of whether this build can scrape */
                      build_list[i].checked = string_is_equal(
                            settings->arrays.menu_driver, "ozone");
-#else
-                     build_list[i].checked = false;
-#endif
                      break;
                   default:
                      break;

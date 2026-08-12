@@ -63,9 +63,7 @@
 #include "../../cheevos/cheevos_menu.h"
 #endif
 
-#ifdef HAVE_NETWORKING
 #include "../../network/screenscraper.h"
-#endif
 
 /* Force a helper out of line even though it has a single call site.
  *
@@ -504,7 +502,6 @@ typedef struct xmb_handle
    char savestate_thumbnail_file_path[PATH_MAX_LENGTH];
    char fullscreen_thumbnail_label[NAME_MAX_LENGTH];
 
-#ifdef HAVE_NETWORKING
    /* Scraped facts for the selected entry, drawn in the metadata
     * panel that stands in for the left thumbnail */
    char ss_publisher[NAME_MAX_LENGTH];
@@ -515,7 +512,6 @@ typedef struct xmb_handle
    unsigned ss_stars;
    bool ss_has_rating;
    bool ss_valid;
-#endif
 
    char thumbnails_left_status_prev;
    char thumbnails_right_status_prev;
@@ -541,11 +537,9 @@ typedef struct xmb_handle
     * is skipped while a scroll is still moving - so the update is
     * deferred to a frame where both are settled. */
    bool pending_dynamic_wallpaper;
-#ifdef HAVE_NETWORKING
    /* Scraped facts resolve from the same thumbnail data as the
     * per-game wallpaper, so the reload rides the same deferral */
    bool pending_ss_metadata;
-#endif
    bool show_thumbnails;
    bool show_mouse;
    bool show_screensaver;
@@ -1851,7 +1845,6 @@ static void xmb_path_dynamic_wallpaper(xmb_handle_t *xmb, char *s, size_t len)
    }
 }
 
-#ifdef HAVE_NETWORKING
 /* Reloads the scraped facts for the selected entry into the handle.
  * Resolves from the same thumbnail path data as the per-game
  * wallpaper, so it is called from the same settled frame - by which
@@ -1908,7 +1901,6 @@ static void xmb_update_ss_metadata(xmb_handle_t *xmb)
       strlcpy(xmb->ss_description, meta.description,
             sizeof(xmb->ss_description));
 }
-#endif
 
 static void xmb_update_dynamic_wallpaper(xmb_handle_t *xmb, bool reset)
 {
@@ -2747,9 +2739,7 @@ static void xmb_selection_pointer_changed(
     * wallpaper path, and on the first entry of a freshly entered list
     * the thumbnail data it resolves from is not populated yet. */
    xmb->pending_dynamic_wallpaper = true;
-#ifdef HAVE_NETWORKING
    xmb->pending_ss_metadata       = true;
-#endif
 }
 
 static void xmb_list_open_new(xmb_handle_t *xmb,
@@ -4224,11 +4214,9 @@ static void xmb_populate_entries(void *data,
       xmb->pending_dynamic_wallpaper = true;
    }
 
-#ifdef HAVE_NETWORKING
    /* Same story for the scraped facts panel: the newly selected entry
     * has no thumbnail data to resolve a sidecar from yet */
    xmb->pending_ss_metadata = true;
-#endif
 
    /* Determine whether to show entry index */
    xmb->entry_index_str[0] = '\0';
@@ -7274,9 +7262,7 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
     * deferred pass then re-resolves the selected entry's per-game
     * media once its thumbnail data is back in place. */
    xmb->pending_dynamic_wallpaper = true;
-#ifdef HAVE_NETWORKING
    xmb->pending_ss_metadata       = true;
-#endif
 
    menu_screensaver_context_destroy(xmb->screensaver);
 
@@ -7402,7 +7388,6 @@ static void xmb_render(void *data,
       }
    }
 
-#ifdef HAVE_NETWORKING
    /* Deferred scraped-facts reload, on the same settled frame. Kept
     * separate from the wallpaper flag above because it is gated on a
     * different setting. */
@@ -7414,7 +7399,6 @@ static void xmb_render(void *data,
       if (settings->bools.menu_xmb_show_metadata_panel)
          xmb_update_ss_metadata(xmb);
    }
-#endif
 
    if (      xmb->pending_dynamic_icons_repopulate
          && (menu_st->scroll.acceleration == 0))
@@ -8561,7 +8545,6 @@ error:
       xmb_hide_fullscreen_thumbnails(xmb, false);
 }
 
-#ifdef HAVE_NETWORKING
 /* Draws the scraped facts for the selected entry into the rectangle
  * the left thumbnail would otherwise occupy: a five-star rating, the
  * publisher, then the synopsis.
@@ -8808,7 +8791,6 @@ XMB_NOINLINE static void xmb_draw_metadata_panel(
       }
    }
 }
-#endif
 
 static void xmb_frame(void *data, video_frame_info_t *video_info)
 {
@@ -9456,7 +9438,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                || (  xmb->thumbnails.left.status       < GFX_THUMBNAIL_STATUS_AVAILABLE
                   && xmb->thumbnails_left_status_prev <= GFX_THUMBNAIL_STATUS_AVAILABLE
                   && xmb->thumbnails_left_status_prev != GFX_THUMBNAIL_STATUS_UNKNOWN));
-#ifdef HAVE_NETWORKING
       /* Scraped facts panel: it stands in for the left thumbnail, so
        * the layout below is asked to make room for a left thumbnail
        * whether or not one actually exists, and every left thumbnail
@@ -9470,9 +9451,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
       if (show_ss_panel)
          show_left_thumbnail    = true;
-#else
-      bool show_ss_panel        = false;
-#endif
 
       /* Check if we are using the proper PS3 layout,
        * or the aborted PSP layout */
@@ -9548,7 +9526,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                      GFX_THUMBNAIL_ALIGN_CENTRE,
                      1.0f, 1.0f, &thumbnail_shadow);
 
-#ifdef HAVE_NETWORKING
                if (show_ss_panel)
                   xmb_draw_metadata_panel(
                         xmb, p_disp, p_anim, dispctx, settings, userdata,
@@ -9558,7 +9535,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                         scaled_thumb_width, scaled_thumb_height,
                         &mymat);
                else
-#endif
                gfx_thumbnail_draw(
                      userdata,
                      video_width,
@@ -9597,7 +9573,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                         background_color,
                         NULL);
 
-#ifdef HAVE_NETWORKING
                /* Only when the right thumbnail is absent does this
                 * slot belong to the left one, and therefore to the
                 * panel that replaces it */
@@ -9610,7 +9585,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                         scaled_thumb_width, scaled_thumb_height,
                         &mymat);
                else
-#endif
                gfx_thumbnail_draw(
                      userdata,
                      video_width,
@@ -9700,7 +9674,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                            background_color,
                            NULL);
 
-#ifdef HAVE_NETWORKING
                   if (show_ss_panel)
                      xmb_draw_metadata_panel(
                            xmb, p_disp, p_anim, dispctx, settings, userdata,
@@ -9710,7 +9683,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                            scaled_thumb_width, scaled_thumb_height,
                            &mymat);
                   else
-#endif
                   gfx_thumbnail_draw(
                         userdata,
                         video_width,
@@ -9766,7 +9738,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                      background_color,
                      NULL);
 
-#ifdef HAVE_NETWORKING
             /* The single slot of this layout is the left one, so the
              * panel takes it whenever it is active */
             if (show_ss_panel)
@@ -9778,7 +9749,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                      scaled_thumb_width, scaled_thumb_height,
                      &mymat);
             else
-#endif
             gfx_thumbnail_draw(
                   userdata,
                   video_width,
