@@ -3380,14 +3380,6 @@ static size_t setting_get_string_representation_max_users(
    return 0;
 }
 
-static size_t setting_get_string_representation_uint_stylus_pressure_sensitivity(
-      rarch_setting_t *setting, char *s, size_t len)
-{
-   if (setting)
-      return snprintf(s, len, "%d", *setting->value.target.unsigned_integer);
-   return 0;
-}
-
 #if defined(HAVE_CHEEVOS) || defined(HAVE_CLOUDSYNC)
 static size_t setting_get_string_representation_password(
       rarch_setting_t *setting, char *s, size_t len)
@@ -14978,16 +14970,15 @@ static void settings_build_input(
                   &settings->uints.input_stylus_pressure_sensitivity,
                   MENU_ENUM_LABEL_INPUT_STYLUS_PRESSURE_SENSITIVITY,
                   MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_PRESSURE_SENSITIVITY,
-                  70,
+                  DEFAULT_INPUT_STYLUS_PRESSURE_SENSITIVITY,
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
                   general_read_handler);
-            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
+            SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &setting_get_string_representation_max_users)
             (*list)[list_info->index - 1].offset_by = 1;
-            (*list)[list_info->index - 1].get_string_representation =
-               &setting_get_string_representation_uint_stylus_pressure_sensitivity;
             menu_settings_list_current_add_range(list, list_info, 1, 100, 1, true, true);
 #endif
 
