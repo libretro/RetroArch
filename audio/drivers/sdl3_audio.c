@@ -239,8 +239,7 @@ static void *sdl3_audio_init(const char *device,
          2, &sdl->spec, &device_sample_frames)))
       goto error;
 
-   /* Buffer the requested latency's worth of audio, with at least
-    * two device periods to avoid underruns. */
+   /* Buffer the requested latency's worth of audio. */
    frame_size = SDL_AUDIO_FRAMESIZE(sdl->spec);
    sdl->buffer_size = (size_t)((uint64_t)sdl->spec.freq * latency / 1000) * frame_size;
    min_size = (size_t)(2 * device_sample_frames) * frame_size;
@@ -319,15 +318,13 @@ static ssize_t sdl3_audio_write(void *data, const void *s, size_t len)
          /* Add as many samples as we are able to without hitting
           * the maximum limit. */
          size_t write_amt = MIN(len - size, avail);
-         if (!SDL_PutAudioStreamData(sdl->stream,
-               (const char*)s + size, (int)write_amt))
+         if (!SDL_PutAudioStreamData(sdl->stream, (const char*)s + size, (int)write_amt))
          {
-            RARCH_ERR("[SDL3 audio] Failed to write to audio stream: %s.\n",
-                  SDL_GetError());
+            RARCH_ERR("[SDL3 audio] Failed to write to audio stream: %s.\n", SDL_GetError());
             break;
          }
          size += write_amt;
-         deadline = 0; /* Progress was made; reset the stall clock. */
+         deadline = 0; /* Reset the stall clock. */
       }
    }
 
@@ -431,7 +428,6 @@ static void *sdl3_microphone_init(void)
 {
    sdl3_audio_t *sdl = NULL;
 
-   /* Reference-counted; balanced by SDL_QuitSubSystem in free. */
    if (!SDL_InitSubSystem(SDL_INIT_AUDIO))
    {
       RARCH_ERR("[SDL3 audio] Failed to initialize microphone subsystem: %s.\n",
@@ -481,7 +477,7 @@ static void *sdl3_microphone_open_mic(void *driver_context, const char *device,
 
    if (!SDL_WasInit(SDL_INIT_AUDIO))
    {
-      RARCH_ERR("[SDL3 audio] Attempted to initialize input device before initializing the audio subsystem.\n");
+      RARCH_ERR("[SDL3 audio] Attempted to initialize input device before the audio subsystem.\n");
       return NULL;
    }
 
@@ -495,27 +491,23 @@ static void *sdl3_microphone_open_mic(void *driver_context, const char *device,
       if (sl)
       {
          size_t i;
-         RARCH_DBG("[SDL3 audio] %u input devices found:\n",
-               (unsigned)sl->size);
+         RARCH_DBG("[SDL3 audio] %d input devices found:\n", (int)sl->size);
          for (i = 0; i < sl->size; i++)
             RARCH_DBG("[SDL3 audio]    - %s\n", sl->elems[i].data);
          string_list_free(sl);
       }
    }
 
-   /* Device streams open in a paused state;
-    * the frontend starts them with start_mic.
-    * Microphones usually provide mono input. */
+   /* Device streams open in a paused state. The frontend starts
+    * them with start_mic. Microphones usually provide mono input. */
    if (!(mic->stream = sdl3_audio_open_stream(device, true, rate, latency,
          1, &mic->spec, &device_sample_frames)))
       goto error;
 
-   /* Buffer up to double the latency budget (with a floor of four
-    * device periods) before the backlog starts getting dropped. */
+   /* Buffer up to double the latency budget. */
    frame_size = SDL_AUDIO_FRAMESIZE(mic->spec);
-   mic->buffer_size = (size_t)((uint64_t)mic->spec.freq * latency / 1000)
-         * frame_size * 2;
-   min_size         = (size_t)(4 * device_sample_frames) * frame_size;
+   mic->buffer_size = (size_t)((uint64_t)mic->spec.freq * latency / 1000) * frame_size * 2;
+   min_size = (size_t)(4 * device_sample_frames) * frame_size;
    if (mic->buffer_size < min_size)
       mic->buffer_size = min_size;
 
@@ -591,20 +583,17 @@ static int sdl3_microphone_read(void *driver_context, void *mic_context,
    while (size < len)
    {
       int got = SDL_GetAudioStreamData(mic->stream, (char*)s + size, (int)(len - size));
-
       if (got < 0)
       {
-         RARCH_ERR("[SDL3 audio] Failed to read from microphone stream: %s.\n",
-               SDL_GetError());
+         RARCH_ERR("[SDL3 audio] Failed to read from microphone stream: %s.\n", SDL_GetError());
          if (size == 0)
             return -1;
          break;
       }
-
       if (got > 0)
       {
          size += (size_t)got;
-         deadline = 0; /* Progress was made; reset the stall clock. */
+         deadline = 0; /* Reset the stall clock. */
       }
       else
       {
