@@ -1279,7 +1279,7 @@ static void* rc_hash_handle_chd_open_track(
    }
    else
    {
-      rcheevos_locals.hash_error = "Could not open CHD file (check log for detail)";
+      rcheevos_locals.hash_error = "Could not open CHD file";
    }
 
    return NULL;

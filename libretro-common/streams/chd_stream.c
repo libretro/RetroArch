@@ -27,8 +27,6 @@
 #include <boolean.h>
 #include <compat/strl.h>
 
-#include "../../verbosity.h"
-
 #include <streams/chd_stream.h>
 #include <retro_endianness.h>
 #ifdef HAVE_RCHD
@@ -580,10 +578,8 @@ chdstream_t *chdstream_open(const char *path, int32_t track)
    chdstream_t *stream     = NULL;
    chd_file *chd           = NULL;
    chd_error err           = chd_open(path, CHD_OPEN_READ, NULL, &chd);
-   if (err != CHDERR_NONE) {
-      RARCH_LOG("[CHD] %s\n", chd_error_string(err));
+   if (err != CHDERR_NONE)
       return NULL;
-   }
    if (!chdstream_find_track(chd, track, &meta))
       goto error;
    stream                  = (chdstream_t*)malloc(sizeof(*stream));
