@@ -456,6 +456,35 @@ void sdl3_ctx_check_window(void *data, bool *quit, bool *resize,
       sdl3_window_get_video_size(win, width, height);
 }
 
+bool sdl3_ctx_get_metrics(void *data,
+      enum display_metric_types type, float *value)
+{
+   SDL_Window *win       = sdl3_ctx_window(data);
+   SDL_DisplayID display = win
+         ? SDL_GetDisplayForWindow(win)
+         : SDL_GetPrimaryDisplay();
+
+   switch (type)
+   {
+      case DISPLAY_METRIC_DPI:
+         {
+            /* SDL3 only exposes the desktop scale factor, not the
+             * physical DPI, so report it relative to the 96 DPI
+             * baseline (X11: Xft.dpi, Wayland: compositor scale). */
+            float scale = SDL_GetDisplayContentScale(display);
+            if (scale <= 0.0f)
+               return false;
+            *value = scale * 96.0f;
+         }
+         return true;
+      default:
+         break;
+   }
+
+   *value = 0.0f;
+   return false;
+}
+
 void sdl3_show_mouse(void *data, bool state)
 {
    if (state)

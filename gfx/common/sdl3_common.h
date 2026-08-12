@@ -115,6 +115,12 @@ bool sdl3_ctx_has_focus(void *data);
 void sdl3_ctx_check_window(void *data, bool *quit, bool *resize,
       unsigned *width, unsigned *height);
 
+/* Reports DISPLAY_METRIC_DPI derived from the display content scale
+ * (scale * 96 DPI). SDL3 exposes no physical display size, so the
+ * MM_WIDTH/MM_HEIGHT metrics are unavailable and return false. */
+bool sdl3_ctx_get_metrics(void *data, enum display_metric_types type,
+      float *value);
+
 /* Shows or hides the mouse cursor. */
 void sdl3_show_mouse(void *data, bool state);
 
