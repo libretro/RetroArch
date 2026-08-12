@@ -2191,9 +2191,12 @@ bool gfx_animation_line_ticker_smooth(gfx_animation_t *p_anim, gfx_animation_ctx
    else
       word_wrap_func      = word_wrap;
 
-   /* > Height */
-   if ((glyph_height = font_driver_get_line_height(
-         line_ticker->font, line_ticker->font_scale)) <= 0)
+   /* > Height. Line metrics live on the font itself now (they are
+    * filled once at font init), scaled here to the ticker's draw
+    * scale. */
+   if ((glyph_height = (int)roundf(
+         line_ticker->font->metrics.height * line_ticker->font_scale))
+         <= 0)
       goto fail;
 
    /* Determine line wrap parameters */

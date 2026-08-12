@@ -8596,7 +8596,7 @@ XMB_NOINLINE static void xmb_draw_metadata_panel(
          || !xmb->font2)
       return;
 
-   if ((line_height = (float)font_driver_get_line_height(xmb->font2, 1.0f)) < 1.0f)
+   if ((line_height = xmb->font2->metrics.height) < 1.0f)
       line_height = xmb->font2_size;
 
    if ((glyph_w = font_driver_get_message_width(xmb->font2, "a", 1, 1.0f)) < 1)
