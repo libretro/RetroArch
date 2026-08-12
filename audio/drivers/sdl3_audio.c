@@ -42,14 +42,14 @@
 
 /* Context for an audio device. Covered by three different states:
  * 1. Output Driver, used for playback
- * 2. Input Driver, used for recoring, like from a microphone
+ * 2. Input Driver, used for recording, like from a microphone
  * 3. Microphone Device, holds the state for each individual microphone */
 typedef struct sdl3_audio
 {
-   SDL_AudioStream *stream; /** The device stream. */
-   SDL_AudioSpec spec; /** The format for the given audio sample. */
-   size_t buffer_size; /** Cap in bytes on queued audio: writes block past it, capture backlog is dropped past it. */
-   bool nonblock; /** When true, drop samples instead of waiting for the device to clear. */
+   SDL_AudioStream *stream; /**< The device stream. */
+   SDL_AudioSpec spec; /**< The format for the given audio sample. */
+   size_t buffer_size; /**< Cap in bytes on queued audio: writes block past it, capture backlog is dropped past it. */
+   bool nonblock; /**< When true, drop samples instead of waiting for the device to clear. */
 } sdl3_audio_t;
 
 /**
@@ -158,7 +158,10 @@ static SDL_AudioStream *sdl3_audio_open_stream(const char *device,
    if (!SDL_GetAudioDeviceFormat(devid, &device_spec, &device_sample_frames) || device_spec.freq <= 0)
       device_spec.freq = rate;
 
-   frames = (int)((uint64_t)device_spec.freq * (latency / 4) / 1000);
+   /* Aim for a device period of a quarter of the requested latency. */
+   frames = (int)((uint64_t)device_spec.freq * latency / 4000);
+   if (frames < 1)
+      frames = 1;
    snprintf(frames_str, sizeof(frames_str), "%d", frames);
    SDL_SetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES, frames_str);
 
@@ -303,7 +306,7 @@ static ssize_t sdl3_audio_write(void *data, const void *s, size_t len)
 
          /* When the queue is full, and we can't wait on the
           * process for the queue to clear a bit, we're unable
-          * to do anything, so skip it the rest. */
+          * to do anything, so skip the rest. */
          if (sdl->nonblock)
             break;
          now = SDL_GetTicksNS();
@@ -321,6 +324,8 @@ static ssize_t sdl3_audio_write(void *data, const void *s, size_t len)
          if (!SDL_PutAudioStreamData(sdl->stream, (const char*)s + size, (int)write_amt))
          {
             RARCH_ERR("[SDL3 audio] Failed to write to audio stream: %s.\n", SDL_GetError());
+            if (size == 0)
+               return -1;
             break;
          }
          size += write_amt;
@@ -447,7 +452,8 @@ static void sdl3_microphone_free(void *driver_context)
 {
    sdl3_audio_t *sdl = (sdl3_audio_t*)driver_context;
 
-   if (sdl) {
+   if (sdl)
+   {
       SDL_QuitSubSystem(SDL_INIT_AUDIO);
       free(sdl);
    }
