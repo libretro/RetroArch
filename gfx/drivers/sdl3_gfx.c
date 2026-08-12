@@ -608,13 +608,11 @@ static void sdl3_poke_set_video_mode(void *data, unsigned width,
       return;
    }
 
-   vid->video.width      = width;
-   vid->video.height     = height;
-   vid->video.fullscreen = fullscreen;
-
-   /* Recompute the viewport from the new pixel size on the next
-    * frame. */
+   /* On the next frame, recompute the viewport pixel size.. */
    vid->flags |= SDL3_FLAG_SHOULD_RESIZE;
+   vid->video.width = width;
+   vid->video.height = height;
+   vid->video.fullscreen = fullscreen;
 }
 
 static void sdl3_poke_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)
