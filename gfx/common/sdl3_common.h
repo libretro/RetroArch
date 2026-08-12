@@ -123,8 +123,8 @@ void sdl3_show_mouse(void *data, bool state);
  * SDL3 isn't driving the window. */
 SDL_Window *sdl3_get_window(void);
 
-/* True while the system on-screen keyboard is up for the SDL3
- * window (Android, iOS, Steam Deck). Always false on desktop. */
+/* True if the on-screen keyboard is being displayed for the SDL3
+ * window. Always false on desktop. */
 bool sdl3_screen_keyboard_shown(void);
 
 #endif
