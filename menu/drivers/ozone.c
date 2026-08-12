@@ -52,6 +52,9 @@
 #include "../../file_path_special.h"
 #include "../../runtime_file.h"
 #include "../../input/input_osk.h"
+#ifdef HAVE_NETWORKING
+#include "../../tasks/tasks_internal.h"
+#endif
 
 #ifdef HAVE_AUDIOMIXER
 #include "../../audio/audio_driver.h"
@@ -4623,6 +4626,23 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
                         meta.description,
                         sizeof(ozone->selection_ss_description));
             }
+#if defined(HAVE_NETWORKING)
+            else if (ozone->flags & OZONE_FLAG_IS_PLAYLIST)
+            {
+               /* No sidecar for this entry. Entries whose artwork is
+                * already complete never fire the on-demand artwork
+                * path, so this is the only chance to fetch their
+                * metadata; the push declines by itself when signed
+                * out, when on-demand downloads are off, or when a
+                * not-found marker says the service has nothing. The
+                * facts appear the next time the entry is selected. */
+               playlist_t *ss_pl = playlist_get_cached();
+               if (ss_pl)
+                  task_push_pl_entry_screenscraper_meta(pdata->system,
+                        ss_db, ss_img, ss_pl,
+                        (unsigned)pdata->playlist_index);
+            }
+#endif
          }
 
          /* Pre-wrap the synopsis to the metadata column. This runs
@@ -5776,6 +5796,78 @@ static void ozone_content_metadata_line(
       *y += (unsigned)(ozone->fonts.footer.line_height * (lines_count - 1))
             + (unsigned)((float)ozone->fonts.footer.line_height * 1.5f);
 }
+
+#if defined(HAVE_OZONE)
+/* Draws the pre-wrapped synopsis, clamped to the lines that actually
+ * fit above the footer.
+ *
+ * ozone_content_metadata_line() draws nothing at all when a block
+ * would overflow, which is right for the short rows it was written
+ * for but wrong here: a synopsis wrapped to this narrow sidebar runs
+ * to far more lines than the panel has room for, so the whole
+ * description silently disappeared. Showing as much as fits, ending
+ * in an ellipsis, is what a reader wants - the full text is still on
+ * the information screen. */
+static void ozone_draw_metadata_description_static(
+      unsigned video_width,
+      unsigned video_height,
+      ozone_handle_t *ozone,
+      unsigned *y,
+      unsigned column_x,
+      uint32_t color)
+{
+   char clamped[sizeof(ozone->selection_ss_description_wrapped)];
+   const char *src    = ozone->selection_ss_description_wrapped;
+   unsigned line_h    = (unsigned)ozone->fonts.footer.line_height;
+   unsigned floor_y   = video_height - ozone->dimensions.footer_height;
+   unsigned max_lines;
+   unsigned lines     = ozone->selection_ss_description_lines;
+   size_t cut         = 0;
+   unsigned seen      = 0;
+
+   if (string_is_empty(src) || line_h == 0 || *y >= floor_y)
+      return;
+
+   max_lines = (floor_y - *y) / line_h;
+
+   if (max_lines == 0)
+      return;
+
+   /* Fits as-is */
+   if (lines <= max_lines)
+   {
+      ozone_content_metadata_line(video_width, video_height, ozone,
+            y, column_x, src, color, (uint8_t)lines);
+      return;
+   }
+
+   /* Cut at the newline that ends the last line that fits */
+   while (src[cut])
+   {
+      if (src[cut] == '\n')
+      {
+         seen++;
+         if (seen == max_lines)
+            break;
+      }
+      cut++;
+   }
+
+   if (cut >= sizeof(clamped))
+      cut = sizeof(clamped) - 1;
+
+   memcpy(clamped, src, cut);
+   clamped[cut] = '\0';
+
+   /* Mark the truncation in place, so the width stays within the
+    * wrap the text was laid out for */
+   if (cut >= 3)
+      memcpy(clamped + cut - 3, "...", 3);
+
+   ozone_content_metadata_line(video_width, video_height, ozone,
+         y, column_x, clamped, color, (uint8_t)max_lines);
+}
+#endif
 
 /* Draws a scraped rating as a row of five stars: 'stars' of them at
  * full opacity, the remainder dimmed. Occupies exactly the space of a
@@ -7510,15 +7602,13 @@ static void ozone_draw_thumbnail_bar(
             /* Off: the pre-wrapped copy, drawn as a static block, even
              * though every other row on this panel is ticker text */
             else if (*ozone->selection_ss_description && metadata_scroll_off)
-               ozone_content_metadata_line(
+               ozone_draw_metadata_description_static(
                      video_width,
                      video_height,
                      ozone,
                      &y,
                      column_x,
-                     ozone->selection_ss_description_wrapped,
-                     text_color,
-                     ozone->selection_ss_description_lines);
+                     text_color);
          }
 
          /* Entry enumeration */
@@ -7710,10 +7800,9 @@ static void ozone_draw_thumbnail_bar(
                 * for Horizontal to scroll along and both draw the
                 * pre-wrapped copy statically. */
                else
-                  ozone_content_metadata_line(
+                  ozone_draw_metadata_description_static(
                         video_width, video_height, ozone, &y, column_x,
-                        ozone->selection_ss_description_wrapped, text_color,
-                        ozone->selection_ss_description_lines);
+                        text_color);
             }
          }
 

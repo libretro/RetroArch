@@ -188,6 +188,16 @@ bool task_push_pl_entry_screenscraper(
       playlist_t *playlist,
       unsigned idx);
 
+/* As above, but only when the entry's metadata sidecar is genuinely
+ * absent - lets menu drivers backfill metadata for entries whose
+ * artwork already exists (which never fire the artwork path again) */
+bool task_push_pl_entry_screenscraper_meta(
+      const char *system,
+      const char *db_name,
+      const char *img_name,
+      playlist_t *playlist,
+      unsigned idx);
+
 /* Startup: resume a scrape that the request allowance interrupted */
 bool task_push_screenscraper_resume_check(void);
 #endif

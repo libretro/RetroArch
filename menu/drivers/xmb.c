@@ -1880,7 +1880,21 @@ static void xmb_update_ss_metadata(xmb_handle_t *xmb)
    if (!screenscraper_metadata_load_entry(
             settings->paths.directory_thumbnails,
             ss_db, ss_img, &meta))
+   {
+#if defined(HAVE_NETWORKING)
+      /* No sidecar for this entry. Entries whose artwork is already
+       * complete never fire the on-demand artwork path, so this is
+       * the only chance to fetch their metadata; the push declines
+       * by itself when signed out, when on-demand downloads are off,
+       * or when a not-found marker says the service has nothing. The
+       * facts appear the next time the entry is selected. */
+      playlist_t *pl = playlist_get_cached();
+      if (pl && xmb->is_playlist)
+         task_push_pl_entry_screenscraper_meta(pdata->system,
+               ss_db, ss_img, pl, (unsigned)pdata->playlist_index);
+#endif
       return;
+   }
 
    xmb->ss_valid = true;
 

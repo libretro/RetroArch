@@ -51,7 +51,10 @@ enum ss_scrape_status
 enum ss_scrape_flags
 {
    SS_SCRAPE_FLAG_HTTP_COMPLETE = (1 << 0),
-   SS_SCRAPE_FLAG_INFO_VALID    = (1 << 1)
+   SS_SCRAPE_FLAG_INFO_VALID    = (1 << 1),
+   /* The service answered and does not know this game - a definitive
+    * miss, as opposed to a network/parameter failure */
+   SS_SCRAPE_FLAG_INFO_MISS     = (1 << 2)
 };
 
 typedef struct ss_scrape_handle
@@ -225,7 +228,14 @@ static void ss_scrape_write_metadata(ss_scrape_handle_t *ss)
    if (!ss_scrape_get_metadata_path(ss, path, sizeof(path)))
       return;
    if (path_is_valid(path) && !ss->overwrite)
-      return;
+   {
+      /* A not-found marker is not data: real facts replace it even
+       * with overwriting off. Anything that parses as actual
+       * metadata is left alone. */
+      screenscraper_meta_t existing;
+      if (screenscraper_metadata_load(path, &existing))
+         return;
+   }
    if (!(json = screenscraper_metadata_to_json(ss->game)))
       return;
 
@@ -240,6 +250,33 @@ static void ss_scrape_write_metadata(ss_scrape_handle_t *ss)
       RARCH_LOG("[ScreenScraper] Metadata \"%s\".\n", path);
 
    free(json);
+}
+
+/* Records a definitive "the service does not know this game" as a
+ * stub sidecar. The reader does not recognise its key, so it never
+ * shows up as scraped facts - but its presence stops the metadata
+ * backfill from spending a lookup on the same answer every time the
+ * entry is browsed. A later successful lookup replaces it (the
+ * metadata writer treats markers as absent), and Overwrite Existing
+ * Media forces a retry. */
+static void ss_scrape_write_miss_marker(ss_scrape_handle_t *ss)
+{
+   char path[PATH_MAX_LENGTH];
+   char output_dir[PATH_MAX_LENGTH];
+   static const char *marker = "{\"screenscraper\":\"not-found\"}";
+
+   if (!ss->metadata_enabled)
+      return;
+   if (!ss_scrape_get_metadata_path(ss, path, sizeof(path)))
+      return;
+   if (path_is_valid(path))
+      return;
+
+   strlcpy(output_dir, path, sizeof(output_dir));
+   path_basedir_wrapper(output_dir);
+
+   if (path_mkdir(output_dir))
+      filestream_write_file(path, marker, strlen(marker));
 }
 
 /* Resume point for a scrape interrupted by the request allowance.
@@ -311,6 +348,16 @@ static void ss_scrape_info_cb(retro_task_t *task, void *task_data,
       return;
    }
 
+   if (data->status == 404)
+   {
+      /* Definitive answer: the service knows the system and does not
+       * know this game. Recorded so the entry is not asked about
+       * again on every browse. */
+      ss->flags |= SS_SCRAPE_FLAG_INFO_MISS;
+      RARCH_LOG("[ScreenScraper] Game not found.\n");
+      return;
+   }
+
    if (data->status != 200)
    {
       /* The service explains parameter/quota problems in the response
@@ -346,6 +393,10 @@ static void ss_scrape_info_cb(retro_task_t *task, void *task_data,
       if ((ss->game = screenscraper_parse_game_info(
             data->data, data->len, &creds)))
          ss->flags |= SS_SCRAPE_FLAG_INFO_VALID;
+      else
+         /* A 200 whose body does not parse as a game description is
+          * the API's other way of saying "not found" */
+         ss->flags |= SS_SCRAPE_FLAG_INFO_MISS;
    }
 }
 
@@ -491,7 +542,8 @@ static bool ss_scrape_request_info(ss_scrape_handle_t *ss)
       return false;
 
    ss->flags &= ~(SS_SCRAPE_FLAG_HTTP_COMPLETE
-                | SS_SCRAPE_FLAG_INFO_VALID);
+                | SS_SCRAPE_FLAG_INFO_VALID
+                | SS_SCRAPE_FLAG_INFO_MISS);
 
    if (!(ss->http_task = (retro_task_t*)task_push_http_transfer(
          url, true, NULL, ss_scrape_info_cb, ss)))
@@ -771,6 +823,8 @@ static void task_screenscraper_handler(retro_task_t *task)
 
          if (ss->flags & SS_SCRAPE_FLAG_INFO_VALID)
             ss_scrape_write_metadata(ss);
+         else if (ss->flags & SS_SCRAPE_FLAG_INFO_MISS)
+            ss_scrape_write_miss_marker(ss);
 
          /* Iterate media even when the ScreenScraper lookup missed:
           * the libretro thumbnail server can still provide the classic
@@ -1179,6 +1233,39 @@ bool task_push_screenscraper_resume_check(void)
 /* On-demand variant: scrapes a single playlist entry. Lets artwork
  * appear while browsing, using ScreenScraper's hash/name matching
  * rather than the libretro server's exact-label lookup. */
+/* Metadata backfill: an entry whose thumbnails are all present never
+ * fires the on-demand artwork path again, so a missing sidecar would
+ * stay missing forever. Menu drivers call this when a sidecar load
+ * fails; it pushes a single-entry scrape only when the file is
+ * genuinely absent - a not-found marker counts as present, so entries
+ * the service does not know are not re-queried on every browse. */
+bool task_push_pl_entry_screenscraper_meta(
+      const char *system,
+      const char *db_name,
+      const char *img_name,
+      playlist_t *playlist,
+      unsigned idx)
+{
+   char path[PATH_MAX_LENGTH];
+   settings_t *settings = config_get_ptr();
+
+   if (!settings || !playlist)
+      return false;
+   if (!settings->bools.network_on_demand_thumbnails)
+      return false;
+   if (!settings->bools.screenscraper_metadata)
+      return false;
+   if (!screenscraper_signed_in())
+      return false;
+   if (!screenscraper_metadata_path(path, sizeof(path),
+            settings->paths.directory_thumbnails, db_name, img_name))
+      return false;
+   if (path_is_valid(path))
+      return false;
+
+   return task_push_pl_entry_screenscraper(system, playlist, idx);
+}
+
 bool task_push_pl_entry_screenscraper(
       const char *system,
       playlist_t *playlist,
