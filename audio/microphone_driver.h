@@ -655,6 +655,11 @@ extern microphone_driver_t microphone_alsathread;
 extern microphone_driver_t microphone_sdl;
 
 /**
+ * The SDL3-backed microphone driver.
+ */
+extern microphone_driver_t microphone_sdl3;
+
+/**
  * The WASAPI-backed microphone driver.
  */
 extern microphone_driver_t microphone_wasapi;

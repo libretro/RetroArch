@@ -200,6 +200,9 @@ audio_driver_t *audio_drivers[] = {
 #if defined(HAVE_SDL) || defined(HAVE_SDL2)
    &audio_sdl,
 #endif
+#ifdef HAVE_SDL3
+   &audio_sdl3,
+#endif
 #ifdef HAVE_PULSE
    &audio_pulse,
 #endif
@@ -276,6 +279,9 @@ microphone_driver_t *microphone_drivers[] = {
 #endif
 #ifdef HAVE_SDL2
       &microphone_sdl, /* Microphones are not supported in SDL 1 */
+#endif
+#ifdef HAVE_SDL3
+      &microphone_sdl3,
 #endif
 #ifdef HAVE_PIPEWIRE
       &microphone_pipewire,
