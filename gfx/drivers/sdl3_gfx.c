@@ -169,8 +169,10 @@ static void sdl3_refresh_input_size(sdl3_video_t *vid, bool menu, bool rgb32,
             (menu || !vid->video.smooth)
             ? SDL_SCALEMODE_NEAREST : SDL_SCALEMODE_LINEAR);
 
-      if (menu)
-         SDL_SetTextureBlendMode(target->tex, SDL_BLENDMODE_BLEND);
+      /* Blend when displaying the menu, but disable it otherwise
+       * because the alpha byte may be 0 like when rendering
+       * XRGB8888 content. */
+      SDL_SetTextureBlendMode(target->tex, menu ? SDL_BLENDMODE_BLEND : SDL_BLENDMODE_NONE);
 
       target->w     = width;
       target->h     = height;
