@@ -488,7 +488,7 @@ static bool ss_handle_start(void *context)
     * "jeu > noms > noms" for each item of the noms array. */
    if (   ctx->depth >= 2 && ctx->depth <= SS_MAX_DEPTH
        && ctx->stack[ctx->depth - 1][0] == '\0')
-      strlcpy(ctx->stack[ctx->depth - 1], ctx->stack[ctx->depth - 2],
+      memmove(ctx->stack[ctx->depth - 1], ctx->stack[ctx->depth - 2],
             sizeof(ctx->stack[0]));
 
    /* A fresh item of one of the collected arrays begins */

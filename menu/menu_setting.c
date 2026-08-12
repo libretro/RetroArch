@@ -3381,17 +3381,19 @@ static size_t setting_get_string_representation_max_users(
    return 0;
 }
 
-#if defined(HAVE_CHEEVOS) || defined(HAVE_CLOUDSYNC)
+#if defined(HAVE_CHEEVOS) || defined(HAVE_CLOUDSYNC) || defined(HAVE_NETWORKING)
 static size_t setting_get_string_representation_password(
       rarch_setting_t *setting, char *s, size_t len)
 {
-   if (setting)
+   if (setting && setting->value.target.string)
    {
-      if (   setting->value.target.string
-          && setting->value.target.string[0] != '\0')
+      if (setting->value.target.string[0] != '\0')
          return strlcpy(s, "********", len);
-      if (config_get_ptr()->arrays.cheevos_token[0])
+#ifdef HAVE_CHEEVOS
+      if (   setting->enum_idx == MENU_ENUM_LABEL_CHEEVOS_PASSWORD
+          && config_get_ptr()->arrays.cheevos_token[0])
          return strlcpy(s, "********", len);
+#endif
       *setting->value.target.string = '\0';
    }
    return 0;

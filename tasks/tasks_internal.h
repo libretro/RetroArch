@@ -168,6 +168,7 @@ bool task_push_pl_thumbnail_download(
       const char *system,
       const playlist_config_t *playlist_config,
       const char *dir_thumbnails);
+#endif
 
 /* ScreenScraper playlist scrape (metadata + media) */
 bool task_push_pl_screenscraper(
@@ -200,7 +201,6 @@ bool task_push_pl_entry_screenscraper_meta(
 
 /* Startup: resume a scrape that the request allowance interrupted */
 bool task_push_screenscraper_resume_check(void);
-#endif
 
 #endif
 
