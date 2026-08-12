@@ -26,6 +26,7 @@
 
 #include <boolean.h>
 #include <compat/strl.h>
+#include <verbosity.h>
 
 #include <streams/chd_stream.h>
 #include <retro_endianness.h>
