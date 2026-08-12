@@ -2192,6 +2192,7 @@ static const struct
    char s_59f183c8[27];
    char s_59f183c9[26];
    char s_6b395e21[16];
+   char s_00ab7f5e[39];
    char s_71747541[18];
    char s_b45e4c28[26];
    char s_e92f8e07[47];
@@ -3495,6 +3496,7 @@ static const struct
    char s_0d96ed73[50];
    char s_9f0fd076[145];
    char s_9f0fd077[144];
+   char s_c315b54c[491];
    char s_7a2050af[53];
    char s_d2859556[60];
    char s_ef13be35[99];
@@ -6595,6 +6597,7 @@ static const struct
    "Ancho en pantalla completa",
    "Alto en pantalla completa",
    "Gamma de v\303\255deo",
+   "Soporte directo de SPIR-V (sugerencia)",
    "\303\215ndice de la GPU",
    "Activar grabaci\303\263n de GPU",
    "Capturas de pantalla: capturar mediante la GPU",
@@ -8527,6 +8530,12 @@ static const struct
    " valor, se usar\303\241 la resoluci\303\263n del escritorio.",
    "Establece una altura personalizada para la imagen a pantalla completa. En caso de no asignar un "
    "valor, se usar\303\241 la resoluci\303\263n del escritorio.",
+   "Env\303\255a los shaders al controlador gr\303\241fico en formato SPIR-V en vez de hacer primero"
+   " una compilaci\303\263n cruzada a GLSL, lo que podr\303\255a reducir los tiempos de carga de los"
+   " preajustes de shaders. Esta opci\303\263n es solo una sugerencia para el emulador: necesita la "
+   "extensi\303\263n de controlador \"GL_ARB_gl_spirv\" y todo shader o controlador que no pueda uti"
+   "lizarlo volver\303\241 a utilizar la compilaci\303\263n cruzada sin avisar. Esta opci\303\263n h"
+   "ar\303\241 efecto la pr\303\263xima vez que se cargue un preajuste de shaders.",
    "Selecciona la tarjeta gr\303\241fica que quieras utilizar.",
    "Graba la salida de la GPU con shaders, si est\303\241 disponible.",
    "Si es posible, las capturas de pantalla mostrar\303\241n la imagen con los shaders aplicados por"
@@ -9354,7 +9363,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (207722u
+      (sizeof(msg_hash_es_blob) == (208252u
 #ifdef ANDROID
        + 329u
 #endif
@@ -11947,6 +11956,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GL_DIRECT_SPIRV,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -13248,6 +13258,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GL_DIRECT_SPIRV,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,

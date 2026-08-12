@@ -2168,6 +2168,7 @@ static const struct
    char s_59f183c8[32];
    char s_59f183c9[32];
    char s_6b395e21[17];
+   char s_00ab7f5e[26];
    char s_71747541[17];
    char s_b45e4c28[36];
    char s_e92f8e07[52];
@@ -3469,6 +3470,7 @@ static const struct
    char s_0d96ed73[50];
    char s_9f0fd076[156];
    char s_9f0fd077[156];
+   char s_c315b54c[319];
    char s_7a2050af[45];
    char s_d2859556[66];
    char s_ef13be35[91];
@@ -6540,6 +6542,7 @@ static const struct
    "Amplada de la pantalla completa",
    "Al\303\247ada de la pantalla completa",
    "Gamma del v\303\255deo",
+   "Suport per SPIR-V (Ajuda)",
    "\303\215ndex de la GPU",
    "Fes servir l'enregistrament per GPU",
    "Captura de pantalla: Fes servir la targeta gr\303\240fica",
@@ -8439,6 +8442,10 @@ static const struct
    "tilitzar\303\240 la resoluci\303\263 de l'escriptori si no s'estableix.",
    "Estableix una mida personalitzada de l'al\303\247ada per mode de pantalla completa sense finestr"
    "a. S'utilitzar\303\240 la resoluci\303\263 de l'escriptori si no s'estableix.",
+   "Maneja els shaders al controlador gr\303\240fic com SPIR-V en comptes de compilar-los primer com"
+   " a GLSL, aix\303\262 redueix el temps de c\303\240rrega. Aix\303\262 \303\251s nom\303\251s una "
+   "ajuda: cal tenir l'extensi\303\263 'GL_ARB_gl_spirv' i qualsevol shader que no es faci servir, e"
+   "s compilar\303\240. Tindr\303\240 efecte el proper cop que el shader sigui carregat.",
    "Selecciona quina targeta gr\303\240fica utilitzar.",
    "Enregistra la sortida de la GPU amb shaders, si est\303\240 disponible.",
    "Les captures de pantalla prendran la GPU amb el material d'ombreig si es troba disponible.",
@@ -9259,7 +9266,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (200009u
+      (sizeof(msg_hash_ca_blob) == (200354u
 #ifdef ANDROID
        + 281u
 #endif
@@ -11827,6 +11834,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GL_DIRECT_SPIRV,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -13126,6 +13134,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GL_DIRECT_SPIRV,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,

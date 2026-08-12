@@ -2161,6 +2161,7 @@ static const struct
    char s_59f183c8[22];
    char s_59f183c9[21];
    char s_6b395e21[15];
+   char s_00ab7f5e[44];
    char s_71747541[15];
    char s_b45e4c28[23];
    char s_e92f8e07[26];
@@ -3458,6 +3459,7 @@ static const struct
    char s_0d96ed73[46];
    char s_9f0fd076[137];
    char s_9f0fd077[136];
+   char s_c315b54c[435];
    char s_7a2050af[44];
    char s_d2859556[67];
    char s_ef13be35[58];
@@ -6524,6 +6526,7 @@ static const struct
    "Largura em tela cheia",
    "Altura em tela cheia",
    "Gama de v\303\255deo",
+   "Suporte direto para SPIR-V (recomenda\303\247\303\243o)",
    "\303\215ndice da GPU",
    "Usar grava\303\247\303\243o da GPU",
    "Captura de Tela: Usar GPU",
@@ -8416,6 +8419,12 @@ static const struct
    " ir\303\241 usar a resolu\303\247\303\243o da \303\241rea de trabalho.",
    "Define a altura personalizada para o modo de tela cheia em n\303\243o-janela. Deixar desativado "
    "ir\303\241 usar a resolu\303\247\303\243o da \303\241rea de trabalho.",
+   "Envia os sombreamentos para o driver gr\303\241fico como SPIR-V em vez de usar compila\303\247"
+   "\303\243o cruzada em GLSL, que pode encurtar o tempo de carregamento da predefini\303\247\303"
+   "\243o de sombreador. Apenas uma recomenda\303\247\303\243o: requer a extens\303\243o de driver "
+   "\"GL_ARB_gl_spiry\", e qualquer sombreador ou driver que n\303\243o pode usa-l\303\241 discretam"
+   "ente retorna \303\240 compila\303\247\303\243o cruzada. A mudan\303\247a \303\251 aplicada no pr"
+   "\303\263ximo carregamento da predefini\303\247\303\243o de sombreador.",
    "Seleciona qual placa de v\303\255deo ser\303\241 usada.",
    "Se dispon\303\255vel, grave o material gerado atrav\303\251s do shader da GPU.",
    "Captura a tela com shader de GPU caso esteja dispon\303\255vel.",
@@ -9241,7 +9250,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_br_blob_check[
-      (sizeof(msg_hash_pt_br_blob) == (193234u
+      (sizeof(msg_hash_pt_br_blob) == (193713u
 #ifdef ANDROID
        + 352u
 #endif
@@ -11807,6 +11816,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GL_DIRECT_SPIRV,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -13103,6 +13113,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GL_DIRECT_SPIRV,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,

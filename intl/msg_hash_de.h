@@ -2119,6 +2119,7 @@ static const struct
    char s_59f183c8[15];
    char s_59f183c9[14];
    char s_6b395e21[6];
+   char s_00ab7f5e[40];
    char s_71747541[10];
    char s_b45e4c28[22];
    char s_e92f8e07[26];
@@ -3412,6 +3413,7 @@ static const struct
    char s_0d96ed73[35];
    char s_9f0fd076[125];
    char s_9f0fd077[124];
+   char s_c315b54c[453];
    char s_7a2050af[39];
    char s_d2859556[67];
    char s_ef13be35[66];
@@ -6420,6 +6422,7 @@ static const struct
    "Vollbildbreite",
    "Vollbildh\303\266he",
    "Gamma",
+   "Direkte SPIR-V-Unterst\303\274tzung (Hinweis)",
    "GPU-Index",
    "Verwende GPU-Aufnahme",
    "Screenshot: GPU verwenden",
@@ -8240,6 +8243,12 @@ static const struct
    " die Desktop-Aufl\303\266sung verwendet.",
    "Benutzerdefinierte Bildh\303\266he f\303\274r den Vollbildmodus. Wird dieser Wert nicht gesetzt,"
    " wird die Desktop-Aufl\303\266sung verwendet.",
+   "Shader als SPIR-V an den Grafiktreiber \303\274bergeben, anstatt sie zun\303\244chst in GLSL zu "
+   "kompilieren, was die Ladezeiten von Shader-Voreinstellungen verk\303\274rzen kann. Dies ist ledi"
+   "glich ein Hinweis: Es ist die Treibererweiterung \342\200\236GL_ARB_gl_spirv\342\200\234 erforde"
+   "rlich, und alle Shader oder Treiber, die diese nicht nutzen k\303\266nnen, greifen automatisch a"
+   "uf die Kreuzkompilierung zur\303\274ck. Die \303\204nderung wird beim n\303\244chsten Laden eine"
+   "r Shader-Voreinstellung wirksam.",
    "Zu verwendende Grafikkarte ausw\303\244hlen.",
    "Bildmaterial nach Shaderdurchl\303\244ufen aufnehmen, sofern verf\303\274gbar.",
    "Screenshots erfassen GPU-schattiertes Material, falls verf\303\274gbar.",
@@ -9033,7 +9042,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (191741u
+      (sizeof(msg_hash_de_blob) == (192234u
 #ifdef ANDROID
        + 358u
 #endif
@@ -11557,6 +11566,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GL_DIRECT_SPIRV,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -12848,6 +12858,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GL_DIRECT_SPIRV,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,

@@ -74,21 +74,21 @@ static const struct
    char s_793f841a[408];
    char s_b4ed19c0[34];
    char s_3a147fac[111];
-   char s_a4a373a7[28];
+   char s_a4a373a7[32];
    char s_61afc6bd[290];
    char s_550d5320[260];
    char s_2aa9ecfe[179];
    char s_d179d08d[200];
-   char s_70c7c198[447];
+   char s_70c7c198[489];
    char s_bed75ef8[215];
-   char s_a4d0f03f[139];
+   char s_a4d0f03f[322];
    char s_1aa5e88e[423];
    char s_5d67fad5[305];
    char s_4081ac3b[22];
    char s_1d921fac[23];
    char s_513ae2ac[32];
    char s_11786a7f[94];
-   char s_952ec37c[59];
+   char s_952ec37c[106];
    char s_51a9df54[41];
    char s_17671a2b[47];
    char s_117a0f2d[29];
@@ -97,9 +97,9 @@ static const struct
    char s_cdf5ba47[52];
    char s_bf709068[54];
    char s_201dd59e[86];
-   char s_2409f1f8[23];
+   char s_2409f1f8[19];
    char s_30330589[17];
-   char s_3e97494e[28];
+   char s_3e97494e[19];
    char s_f319134a[29];
    char s_418f98ab[24];
    char s_7607974d[37];
@@ -111,12 +111,12 @@ static const struct
    char s_7af11c30[143];
    char s_91bc1342[437];
    char s_78cabcca_0[500];
-   char s_78cabcca_1[88];
+   char s_78cabcca_1[106];
    char s_0e85a0d1[59];
    char s_ff583ef3_0[500];
    char s_ff583ef3_1[197];
 #ifdef ANDROID
-   char s_2bd047ef[422];
+   char s_2bd047ef[373];
 #endif
    char s_285ad699[57];
    char s_a6f4e7fa[77];
@@ -126,29 +126,29 @@ static const struct
    char s_8598f359_0[500];
    char s_8598f359_1[8];
    char s_5702032d[101];
-   char s_131d086f[308];
-   char s_ddad8b7f[419];
+   char s_131d086f[322];
+   char s_ddad8b7f[411];
    char s_99bfa829_0[500];
    char s_99bfa829_1[38];
-   char s_b14a1674[166];
+   char s_b14a1674[194];
    char s_54241480[256];
-   char s_ceafef5e[215];
+   char s_ceafef5e[177];
    char s_c073450a[265];
    char s_e6cd4ada[185];
 #ifdef HAVE_MICROPHONE
    char s_86e940b7[155];
 #endif
    char s_3f5ab0a6[205];
-   char s_39308167_0[500];
-   char s_39308167_1[62];
+   char s_39308167_0[498];
+   char s_39308167_1[32];
    char s_60255deb_0[500];
    char s_60255deb_1[209];
    char s_f39c636f[459];
    char s_4c991c18[492];
    char s_4b299805[221];
    char s_1bd35af2[28];
-   char s_24e40f00[402];
-   char s_1382c258[280];
+   char s_24e40f00[373];
+   char s_1382c258[308];
    char s_4caab10c[301];
    char s_03580e17[206];
    char s_9998fdce[351];
@@ -202,8 +202,8 @@ static const struct
    char s_c0a60ee2[228];
    char s_14a6bfe2[273];
    char s_4b0e8809[221];
-   char s_efd6795c_0[499];
-   char s_efd6795c_1[129];
+   char s_efd6795c_0[500];
+   char s_efd6795c_1[126];
    char s_7a7a3d56[254];
    char s_378ad7dc[210];
    char s_95f467be[367];
@@ -211,10 +211,10 @@ static const struct
    char s_ae87ea53[327];
    char s_9834febe_0[499];
    char s_9834febe_1[67];
-   char s_93805cc8_0[498];
-   char s_93805cc8_1[66];
+   char s_93805cc8_0[500];
+   char s_93805cc8_1[132];
    char s_b495662b[171];
-   char s_9953f4e2[284];
+   char s_9953f4e2[325];
    char s_de76d2dc[33];
    char s_79e212bd[11];
    char s_6342700c[12];
@@ -243,7 +243,7 @@ static const struct
    char s_3a45376e[19];
    char s_314e7dec[24];
    char s_5b62430e[51];
-   char s_d15cd993[47];
+   char s_d15cd993[51];
    char s_cc9c4921[51];
    char s_7136ec46[57];
    char s_65d202a6[62];
@@ -269,7 +269,7 @@ static const struct
    char s_f72667c9[19];
    char s_adce4374[28];
 #ifndef HAVE_DYNAMIC
-   char s_e011fe61[45];
+   char s_e011fe61[59];
 #endif
    char s_4e447c6c[60];
    char s_d9a51d02[29];
@@ -287,6 +287,8 @@ static const struct
    char s_3c9950ad[70];
    char s_aafc147d[21];
    char s_734f5242[34];
+   char s_55404857[12];
+   char s_5577bdb3[20];
    char s_792e0069[35];
    char s_a9d2227f[35];
    char s_76e73138[28];
@@ -296,7 +298,7 @@ static const struct
    char s_b271ae95[27];
    char s_fb84857a[10];
    char s_3943c7ae[51];
-   char s_5b2d8d2f[27];
+   char s_5b2d8d2f[33];
    char s_affd948c[43];
    char s_d2d4c381[33];
    char s_a95aa0fc[27];
@@ -323,7 +325,7 @@ static const struct
    char s_8584f1d6[15];
    char s_7fc52043[12];
    char s_0cadcd1e[13];
-   char s_9509d1c2[24];
+   char s_9509d1c2[23];
    char s_c7a999e6[17];
    char s_f0c9c4c0[23];
    char s_95a3cbcb[62];
@@ -487,15 +489,16 @@ static const struct
    char s_f33a0acb[30];
    char s_8b47a498[19];
    char s_f445b2f8[36];
-   char s_2a7ec0c3[18];
-   char s_ec59110b[27];
+   char s_2a7ec0c3[11];
+   char s_ec59110b[41];
    char s_9d8cfc8b[21];
    char s_638978e9[29];
    char s_d39fc80f[38];
    char s_ac35d688[33];
    char s_43c4664e[28];
    char s_c03808ea[23];
-   char s_8c2cbcbd[24];
+   char s_8c2cbcbd[28];
+   char s_225da616[19];
    char s_304c0542[21];
    char s_d6f91d43[15];
    char s_0fd30a6d[5];
@@ -503,7 +506,7 @@ static const struct
    char s_7c9bfdda[22];
    char s_4e254ff1[18];
    char s_5ff40648[24];
-   char s_7d19b727[47];
+   char s_7d19b727[61];
    char s_be87312d[50];
    char s_36265c93[11];
    char s_6f6d3a5c[37];
@@ -525,22 +528,22 @@ static const struct
    char s_342dd239[25];
    char s_01c4f556[32];
    char s_63a07f7e[23];
-   char s_1e1c0557[11];
+   char s_1e1c0557[14];
    char s_e68b50a2[15];
    char s_feb1c160[15];
    char s_b2e4b4c3[17];
-   char s_97242f99[14];
-   char s_8cefb843[10];
+   char s_97242f99[28];
+   char s_8cefb843[24];
    char s_177845b3[20];
    char s_8fe1a777[29];
-   char s_881efe76[16];
+   char s_881efe76[30];
    char s_1e4264a1[11];
-   char s_58072ab5[39];
+   char s_58072ab5[53];
    char s_babee9c1[13];
-   char s_78c58363[18];
-   char s_78071664[16];
+   char s_78c58363[32];
+   char s_78071664[30];
    char s_78083010[29];
-   char s_cc781d49[24];
+   char s_cc781d49[38];
    char s_e3d18c38[26];
    char s_19e9df3c[85];
    char s_0a2e0504[21];
@@ -548,42 +551,42 @@ static const struct
    char s_04ecbe77[19];
    char s_525068d3[36];
    char s_18cc5aec[22];
-   char s_34083fbc[45];
+   char s_34083fbc[59];
    char s_b0b9ca3e[66];
    char s_66ed0f42[7];
    char s_ba582576[37];
-   char s_33ed5ede[27];
+   char s_33ed5ede[30];
    char s_8d30abf0[44];
    char s_38b82e6c[31];
    char s_8f133960[18];
    char s_9c5329ad[16];
-   char s_d7f2cfac[11];
+   char s_d7f2cfac[25];
    char s_87e07c0e[12];
-   char s_d7f2e719[28];
-   char s_e567aa86[16];
+   char s_d7f2e719[42];
+   char s_e567aa86[30];
 #ifdef HAVE_MIST
-   char s_c3f0e1ff[16];
+   char s_c3f0e1ff[30];
 #endif
    char s_93e2fd9c[17];
    char s_8ea1aafd[30];
    char s_8f76f01e[30];
-   char s_16eade0c[28];
+   char s_16eade0c[42];
    char s_a49f04f3[39];
    char s_a4a09683[28];
    char s_b95e3404[28];
    char s_734d2a61[16];
-   char s_a7a97316[72];
-   char s_8b421107[25];
+   char s_a7a97316[74];
+   char s_8b421107[39];
 #ifdef HAVE_MIST
-   char s_3e0f9900[17];
-   char s_67b3c923[22];
+   char s_3e0f9900[31];
+   char s_67b3c923[36];
 #endif
    char s_543b5a62[20];
    char s_d1dc5a72[31];
-   char s_1d9a045d[51];
-   char s_9ada0438[47];
-   char s_eb66d46b[21];
-   char s_145f5880[18];
+   char s_1d9a045d[65];
+   char s_9ada0438[50];
+   char s_eb66d46b[35];
+   char s_145f5880[33];
    char s_b1b9fd35[30];
    char s_0cc72b4d[33];
    char s_9af4bf52[17];
@@ -619,7 +622,7 @@ static const struct
 #endif
    char s_06f25fc0[21];
    char s_0a176c2e[25];
-   char s_f0ce97f7[36];
+   char s_f0ce97f7[23];
    char s_704e200c[5];
    char s_a82728ec[16];
    char s_7ca0c97c[42];
@@ -647,14 +650,14 @@ static const struct
    char s_77b74366[12];
    char s_3b7e9d77[14];
    char s_10342503[14];
-   char s_d31f6d88[19];
-   char s_f03e9c42[17];
+   char s_d31f6d88[36];
+   char s_f03e9c42[22];
    char s_7088df5e[55];
    char s_3aff8242[22];
    char s_ca087dbf[17];
    char s_2d63d454[22];
    char s_3674ba44[23];
-   char s_6b38a08b[56];
+   char s_6b38a08b[70];
    char s_3e073ed3[73];
    char s_6ebb6a00[15];
    char s_f4116974[20];
@@ -734,9 +737,9 @@ static const struct
 #endif
    char s_3ca7402d[28];
    char s_5ebe01e7[28];
-   char s_ad8d5812[69];
-   char s_8055d56c[46];
-   char s_c4842e2d[27];
+   char s_ad8d5812[73];
+   char s_8055d56c[61];
+   char s_c4842e2d[41];
    char s_fd3e287f[11];
    char s_550b1e93[12];
    char s_d2224db6[12];
@@ -798,24 +801,24 @@ static const struct
    char s_58de51be[13];
    char s_cde2111a[12];
    char s_aded1e43[44];
-   char s_0b32f489[45];
+   char s_0b32f489[38];
    char s_1c82054d[34];
    char s_d458f013[32];
-   char s_56e1b31e[16];
+   char s_56e1b31e[7];
    char s_56e1b31f[17];
    char s_597c4715[14];
-   char s_56e1b329[13];
-   char s_3318187b[23];
-   char s_3318187c[21];
+   char s_56e1b329[8];
+   char s_3318187b[8];
+   char s_3318187c[8];
    char s_59807d68[12];
-   char s_56e1b32f[13];
-   char s_33181941[23];
-   char s_33181942[21];
+   char s_56e1b32f[8];
+   char s_33181941[8];
+   char s_33181942[8];
    char s_89fef1fb[18];
    char s_cbeca73d[12];
    char s_8a16fa6b[11];
    char s_331819c2[11];
-   char s_56e1b335[15];
+   char s_56e1b335[7];
    char s_56e1b336[15];
    char s_313d15c0[9];
    char s_e9f0dd82[39];
@@ -838,7 +841,7 @@ static const struct
    char s_41b61e1c[27];
    char s_bacd98a3[29];
    char s_f8b9e275[18];
-   char s_8bc79213[27];
+   char s_8bc79213[26];
    char s_574cdfa6[18];
    char s_574e2d44[20];
    char s_63fbe677[18];
@@ -850,14 +853,14 @@ static const struct
    char s_b3a9ff57[37];
    char s_f4eaed02[28];
    char s_a9f5617a[23];
-   char s_50e34bc5[16];
+   char s_50e34bc5[20];
    char s_00ea00d3[17];
    char s_b43e2e98[24];
-   char s_f858d2c9[57];
-   char s_7b4aa4e9[62];
-   char s_2f4cd458[45];
-   char s_fc2d1328[34];
-   char s_e5a6dde5[55];
+   char s_f858d2c9[55];
+   char s_7b4aa4e9[59];
+   char s_2f4cd458[54];
+   char s_fc2d1328[47];
+   char s_e5a6dde5[52];
    char s_c56f6b97[43];
    char s_0d38382a[37];
    char s_b2f8c11d[24];
@@ -867,7 +870,7 @@ static const struct
    char s_160873b5[45];
    char s_87071f08[7];
    char s_08b5bffb[24];
-   char s_5d93fbb0[22];
+   char s_5d93fbb0[28];
    char s_a9323d96[30];
    char s_3b6fd3ae[28];
    char s_3c55b220[24];
@@ -875,7 +878,7 @@ static const struct
    char s_c70e3826[9];
    char s_75af4246[30];
    char s_a7c46427[36];
-   char s_21c5b854[16];
+   char s_21c5b854[19];
    char s_cbdeb67b[24];
    char s_bd92cd5a[32];
    char s_bd95eeb2[29];
@@ -884,7 +887,7 @@ static const struct
    char s_dd9a9026[39];
    char s_d6d350e0[38];
    char s_bd250a0a[33];
-   char s_1540e1a2[28];
+   char s_1540e1a2[50];
    char s_7bbc8e49[52];
    char s_75408168[35];
    char s_8c477d6f[34];
@@ -892,7 +895,7 @@ static const struct
    char s_6f4cf03a[46];
    char s_652788cc[20];
    char s_0cc981b9[19];
-   char s_6b84e5e6[79];
+   char s_6b84e5e6[85];
    char s_baff47af[10];
    char s_baff47b0[10];
    char s_3cba0b76[27];
@@ -1008,9 +1011,9 @@ static const struct
    char s_72f288e3[14];
    char s_6107eb09[17];
    char s_b6172513[22];
-   char s_e3d18a3d[16];
+   char s_e3d18a3d[17];
    char s_d15b342a[11];
-   char s_fdd6e708[16];
+   char s_fdd6e708[20];
 #ifdef HAVE_LAKKA
    char s_d3e11c2a[25];
 #endif
@@ -1028,16 +1031,16 @@ static const struct
    char s_e2f51ded[13];
    char s_d9685b01[12];
    char s_74b6dd31[11];
-   char s_3e39918c[19];
+   char s_3e39918c[33];
    char s_96380b84[22];
    char s_981e8bbb[17];
    char s_16846b20[22];
    char s_1fef6c42[21];
-   char s_4441ee26[24];
+   char s_4441ee26[25];
    char s_1de157ff[17];
    char s_5eeb3a8a[37];
-   char s_a497674d[22];
-   char s_7dea99f5[16];
+   char s_a497674d[23];
+   char s_7dea99f5[32];
    char s_da90bf11[19];
    char s_abd11e88[29];
    char s_83f3b962[35];
@@ -1158,7 +1161,7 @@ static const struct
 #ifdef HAVE_MIST
    char s_53788998[31];
 #endif
-   char s_d02afc79[33];
+   char s_d02afc79[41];
    char s_7a2033d4[34];
 #ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
@@ -1170,7 +1173,7 @@ static const struct
    char s_11926382[26];
    char s_645ae416[35];
    char s_df92f5b5[53];
-   char s_dcbf8b04[30];
+   char s_dcbf8b04[35];
    char s_dcbffdfe[31];
    char s_7816d5d5[43];
    char s_2b1f17e8[32];
@@ -1263,7 +1266,7 @@ static const struct
    char s_52fbb99d[38];
    char s_2950bbb6[40];
    char s_f62b34ed[67];
-   char s_6951a166[24];
+   char s_6951a166[38];
    char s_9d8a8d82[36];
    char s_1cfe55cb[48];
    char s_38311095[44];
@@ -1275,7 +1278,7 @@ static const struct
    char s_3ea5e8ac[49];
    char s_5c487242[24];
    char s_d95b4346[20];
-   char s_1adb7f60[84];
+   char s_1adb7f60[98];
    char s_21e6be74[24];
    char s_4327ffcc[37];
    char s_737c9877[18];
@@ -1475,7 +1478,7 @@ static const struct
    char s_313105c8[36];
    char s_e3530b74[17];
    char s_ee8b2d27[29];
-   char s_1078c6c0[19];
+   char s_1078c6c0[33];
    char s_6a83206c[31];
    char s_b514ae30[32];
    char s_b0c5ea29[23];
@@ -1486,7 +1489,7 @@ static const struct
    char s_4e2d78a1[32];
    char s_7ea8ec8f[28];
    char s_e1606ab3[30];
-   char s_7772fc51[30];
+   char s_7772fc51[44];
    char s_29889f9f[28];
    char s_1360da58[27];
    char s_99f3b063[27];
@@ -1501,6 +1504,7 @@ static const struct
    char s_bcc17320[53];
    char s_ce39f356[48];
    char s_a8618aba[56];
+   char s_5bbcf84b[20];
    char s_62c35c34[20];
    char s_9d544d44[54];
    char s_3dabafc0[18];
@@ -1566,16 +1570,16 @@ static const struct
    char s_99d648f2[11];
    char s_dc2e5316[9];
    char s_6d0744cc[6];
-   char s_e4b4fc92[20];
-   char s_2aeb5474[11];
-   char s_dc83c30e[27];
+   char s_e4b4fc92[34];
+   char s_2aeb5474[26];
+   char s_dc83c30e[42];
    char s_7f6cd38e[11];
    char s_cdfd863e[26];
    char s_75332606[7];
    char s_e475c03b[13];
    char s_7533c800[11];
    char s_3baf3619[7];
-   char s_6cc148e7[15];
+   char s_6cc148e7[29];
    char s_74b77b4a[11];
    char s_7534cfc9[13];
    char s_36259b63[30];
@@ -1594,7 +1598,7 @@ static const struct
    char s_153a031d[51];
    char s_c0267103[39];
    char s_c4994969[36];
-   char s_c471147e[36];
+   char s_c471147e[41];
    char s_5f152b98[13];
    char s_7ea47472[16];
    char s_cb75ab99[6];
@@ -1631,7 +1635,7 @@ static const struct
    char s_6d0ae29b[5];
 #ifdef HAVE_QT
    char s_974d8c3a_0[500];
-   char s_974d8c3a_1[218];
+   char s_974d8c3a_1[249];
 #endif
    char s_21083aca[12];
    char s_213b38be[18];
@@ -1733,7 +1737,7 @@ static const struct
    char s_f8883f70[12];
    char s_09ba892e[12];
    char s_58b9d895[35];
-   char s_0a2aa953[20];
+   char s_0a2aa953[16];
    char s_ffd0dac4[19];
    char s_80a2b273[21];
    char s_91dd478e[22];
@@ -1741,7 +1745,7 @@ static const struct
    char s_1b8a5cb5[10];
    char s_6f9583dc[29];
    char s_721e7bb2[31];
-   char s_91df2193[22];
+   char s_91df2193[28];
    char s_9335605c[23];
    char s_ca631dbd[36];
    char s_a90c6e87[44];
@@ -1765,7 +1769,7 @@ static const struct
    char s_1ece29a0[59];
    char s_b7b13f3e[77];
    char s_ef4c4376[16];
-   char s_632691cf[30];
+   char s_632691cf[44];
    char s_1938dce6[27];
    char s_302ec787[13];
    char s_59980356[21];
@@ -1848,14 +1852,14 @@ static const struct
 #endif
    char s_8dec52be[43];
    char s_8fa632ab[16];
-   char s_7614d29f[48];
+   char s_7614d29f[51];
    char s_827ceb62[56];
    char s_b191aa47[47];
    char s_71fe510f[36];
    char s_7201eede[35];
-   char s_091f50ec[16];
+   char s_091f50ec[19];
    char s_fe3e1d48[22];
-   char s_6f16fab3[16];
+   char s_6f16fab3[19];
    char s_53b632e1[81];
    char s_f246e141[33];
    char s_dff02a9f[32];
@@ -1866,7 +1870,7 @@ static const struct
    char s_18fce787[17];
    char s_6f02b5b0[24];
    char s_a11934f5[23];
-   char s_69b36417[16];
+   char s_69b36417[19];
    char s_e7a63560[5];
    char s_42066550[10];
    char s_fcac9b51[27];
@@ -1931,7 +1935,7 @@ static const struct
    char s_af1fcb4f[21];
    char s_9932960f[14];
    char s_302fdd56[14];
-   char s_22a76378[31];
+   char s_22a76378[45];
    char s_832d681f[17];
    char s_2630397c[23];
    char s_3783f4ea[17];
@@ -1949,7 +1953,7 @@ static const struct
    char s_ed013a05[36];
    char s_33f012e4[11];
    char s_3613967e[30];
-   char s_01a73130[39];
+   char s_01a73130[53];
    char s_44ebca0d[30];
    char s_608ac5a1[19];
 #ifdef HAVE_SMBCLIENT
@@ -1968,9 +1972,9 @@ static const struct
    char s_1cbc2657[22];
 #endif
    char s_e2ffc38b[67];
-   char s_9d7898f7[55];
+   char s_9d7898f7[69];
    char s_00ea07cc[72];
-   char s_3be90bd8[63];
+   char s_3be90bd8[77];
    char s_369df8fa[80];
    char s_467f06c1[10];
    char s_084af156[12];
@@ -1987,11 +1991,11 @@ static const struct
 #ifdef HAVE_MIST
    char s_943e9be1[43];
    char s_96af5ce3[46];
-   char s_6889b69d[18];
-   char s_262290e5[23];
+   char s_6889b69d[11];
+   char s_262290e5[37];
    char s_5f12b2a1[31];
-   char s_4efdaf69[43];
-   char s_cf0912eb[16];
+   char s_4efdaf69[52];
+   char s_cf0912eb[30];
    char s_dba1ce27[18];
    char s_22ce4612[19];
 #endif
@@ -2013,35 +2017,35 @@ static const struct
 #ifdef HAVE_LIBNX
    char s_09902e71[13];
 #endif
-   char s_ea80654d[54];
+   char s_ea80654d[68];
 #ifdef HAVE_LAKKA
 #ifdef HAVE_LAKKA_SWITCH
    char s_37eb8e31[13];
 #endif
 #endif
-   char s_be8e02b4[57];
+   char s_be8e02b4[52];
    char s_002e83c8[17];
    char s_6a739141[18];
    char s_bab74532[24];
    char s_7d2035c4[12];
    char s_b3565d3d[16];
    char s_f8fa3e2f[11];
-   char s_8356c98c[17];
-   char s_5c7bbce1[30];
+   char s_8356c98c[37];
+   char s_5c7bbce1[28];
    char s_cd916c68[31];
    char s_8fe41f79[26];
    char s_2c296537[17];
-   char s_519cd5f8[16];
+   char s_519cd5f8[19];
    char s_43ac80a0[17];
    char s_6959ce80[19];
    char s_886631ec[22];
-   char s_ebe994b4[23];
-   char s_1c62c301[11];
+   char s_ebe994b4[16];
+   char s_1c62c301[18];
    char s_a8bb35b6[12];
    char s_6d353bd6[13];
    char s_3f874a40[19];
    char s_da093426[23];
-   char s_d9b00fbd[48];
+   char s_d9b00fbd[42];
    char s_0a008a9d[13];
    char s_9c6ed9ca[24];
    char s_68664e16[22];
@@ -2118,7 +2122,7 @@ static const struct
    char s_c7e66e0a[37];
    char s_48da4695[24];
    char s_2fa1d6ef[31];
-   char s_9914967d[28];
+   char s_9914967d[38];
    char s_04f1138c[30];
    char s_91887598[20];
    char s_1b88da11[31];
@@ -2127,10 +2131,10 @@ static const struct
    char s_6b80a1bc[48];
    char s_eb0d7f1d[33];
    char s_99a77122[28];
-   char s_51cbf8f0[40];
+   char s_51cbf8f0[54];
    char s_4a5b7672[34];
    char s_8fa79de5[35];
-   char s_5eee10e5[49];
+   char s_5eee10e5[63];
    char s_79a4338e[19];
    char s_eb3c8b7f[25];
    char s_6ae93e68[36];
@@ -2151,7 +2155,7 @@ static const struct
    char s_2f86932b[26];
    char s_b2f7627c[34];
    char s_ad5ff591[31];
-   char s_a79acb40[25];
+   char s_a79acb40[39];
    char s_adcf82d6[13];
    char s_e7033e0e[17];
    char s_c79d5013[22];
@@ -2171,7 +2175,7 @@ static const struct
 #if defined(DINGUX)
    char s_bfd4c6ef[16];
    char s_ce997004[11];
-   char s_52153570[12];
+   char s_52153570[27];
    char s_805730a0[22];
    char s_d374d67d[36];
 #endif
@@ -2181,7 +2185,7 @@ static const struct
 #if defined(DINGUX)
 #if defined(RS90) || defined(MIYOO)
    char s_5a03a511[17];
-   char s_fec3d9e4[12];
+   char s_fec3d9e4[27];
    char s_c1e9447c[22];
 #endif
 #endif
@@ -2206,6 +2210,7 @@ static const struct
    char s_020e2bc5[29];
    char s_59f183c8[32];
    char s_59f183c9[29];
+   char s_00ab7f5e[43];
    char s_71747541[15];
    char s_b45e4c28[26];
    char s_e92f8e07[41];
@@ -2424,11 +2429,11 @@ static const struct
    char s_579b5e71[60];
    char s_0367a7dc[135];
    char s_4f75c71a[52];
-   char s_3e72b1fc[186];
+   char s_3e72b1fc[198];
    char s_911970c1[83];
-   char s_11ba95cf[236];
+   char s_11ba95cf[251];
    char s_28866934[83];
-   char s_a61feb54[87];
+   char s_a61feb54[107];
    char s_820e384e[173];
    char s_243da114[65];
    char s_f4805a53[37];
@@ -2445,7 +2450,7 @@ static const struct
    char s_06d75b77[79];
    char s_bd956922[94];
 #ifndef HAVE_DYNAMIC
-   char s_08ce894f[219];
+   char s_08ce894f[253];
 #endif
    char s_984f7ada[170];
    char s_f7cc6630[42];
@@ -2561,7 +2566,7 @@ static const struct
    char s_e08d9e1a[130];
    char s_69ad6757[255];
    char s_2e28a155[69];
-   char s_40e095c6[85];
+   char s_40e095c6[79];
    char s_6fc5fb8e[72];
    char s_19b6373a[110];
    char s_f63531f4[65];
@@ -2586,8 +2591,8 @@ static const struct
    char s_29a48680[60];
    char s_d0746a0f[51];
    char s_12bc32b9[59];
-   char s_d20d86c6[48];
-   char s_13c7dae6[65];
+   char s_d20d86c6[54];
+   char s_13c7dae6[71];
    char s_3ecc1739[63];
    char s_2cabe957[56];
    char s_e350bbbd[305];
@@ -2617,41 +2622,41 @@ static const struct
    char s_794c1ee7[31];
    char s_b9147244[45];
    char s_e04176ec[50];
-   char s_e0863b45[64];
+   char s_e0863b45[67];
    char s_43d00e0e[34];
    char s_dc427c47[67];
-   char s_684b0cb1[34];
+   char s_684b0cb1[48];
    char s_1d47af21[56];
    char s_6b3cfbe5[48];
    char s_a64647a4[53];
-   char s_67b81e63[155];
-   char s_d5475a6a[164];
+   char s_67b81e63[220];
+   char s_d5475a6a[178];
    char s_89c3a7db[45];
-   char s_35f2309a[29];
+   char s_35f2309a[43];
    char s_a607c53c[49];
-   char s_35f24807[280];
-   char s_c8781974[144];
+   char s_35f24807[322];
+   char s_c8781974[158];
 #ifdef HAVE_MIST
    char s_c9c04b6d[70];
 #endif
    char s_daa8dfca[45];
    char s_d3bff7ab[199];
    char s_d4953ccc[85];
-   char s_e00d4e7a[146];
+   char s_e00d4e7a[200];
    char s_5bee81e1[53];
    char s_5bf01371[67];
-   char s_791acb32[82];
+   char s_791acb32[96];
    char s_92cf524f[30];
-   char s_48e88dc4[155];
+   char s_48e88dc4[190];
    char s_3d233cd0[89];
    char s_9198f1a0[210];
-   char s_165e564b[332];
-   char s_c3968f26[107];
-   char s_a2b65159[89];
-   char s_9831f77b[211];
+   char s_165e564b[360];
+   char s_c3968f26[100];
+   char s_a2b65159[103];
+   char s_9831f77b[262];
    char s_dd6f37e4[61];
    char s_79b8ce4a[92];
-   char s_a1a8257e[135];
+   char s_a1a8257e[136];
    char s_282f7955[134];
    char s_d5231783[131];
    char s_a68d6d11[85];
@@ -2659,7 +2664,7 @@ static const struct
    char s_8abad013[111];
    char s_a39ca959[111];
    char s_16b9856e[39];
-   char s_0ef5e125[26];
+   char s_0ef5e125[17];
    char s_b714023a[41];
    char s_b0d3045a[53];
    char s_fe3fb37b[50];
@@ -2670,12 +2675,13 @@ static const struct
    char s_aa6534cc[30];
    char s_51d334ea[22];
    char s_95de8c94[24];
-   char s_f2a19576[48];
+   char s_f2a19576[109];
    char s_b2a8d230[65];
    char s_11c7fa0c[130];
    char s_28700070[93];
    char s_3f2095b2[57];
    char s_711cd0b9[142];
+   char s_4db83281[138];
    char s_ccbacaee[101];
    char s_d721d862[51];
    char s_ef4a2ca9[72];
@@ -2689,8 +2695,8 @@ static const struct
    char s_aa30afc7[67];
    char s_6775eaa0[55];
    char s_37f2ecc0[98];
-   char s_3ecf5d5d[132];
-   char s_60e61f17[132];
+   char s_3ecf5d5d[142];
+   char s_60e61f17[145];
    char s_368efbdf[56];
    char s_b462c6e5[136];
    char s_5bdf892a[61];
@@ -2705,10 +2711,10 @@ static const struct
    char s_328f4fd9[27];
    char s_6d4b21bf[19];
 #endif
-   char s_6563cb1b[68];
-   char s_877a8cd5[78];
-   char s_6ff78e00[80];
-   char s_693db7da[232];
+   char s_6563cb1b[94];
+   char s_877a8cd5[92];
+   char s_6ff78e00[94];
+   char s_693db7da[260];
    char s_d43521db[124];
    char s_44040aad[113];
    char s_64d24441[81];
@@ -2730,7 +2736,7 @@ static const struct
    char s_50f43cfa[317];
 #endif
    char s_e85b309d[92];
-   char s_cd94bb16[277];
+   char s_cd94bb16[291];
    char s_a17a67e1[67];
    char s_1c4b447a[118];
    char s_df4225b9[72];
@@ -2740,7 +2746,7 @@ static const struct
    char s_5b920f01[147];
    char s_5d20ea2c[54];
    char s_b339b327[224];
-   char s_a9e0aaa3[91];
+   char s_a9e0aaa3[99];
    char s_bd0737d6[53];
    char s_c4ade6bf[43];
    char s_c245fbde[57];
@@ -2749,13 +2755,13 @@ static const struct
    char s_475ff311[176];
    char s_2e4a5d12[58];
    char s_13005dc8[119];
-   char s_6da9b571[330];
+   char s_6da9b571[339];
    char s_c2827177[166];
-   char s_09f2837b[391];
+   char s_09f2837b[413];
    char s_85147d5c[99];
    char s_0b56ad4c[56];
    char s_c312b1ca[46];
-   char s_35c689e5[172];
+   char s_35c689e5[156];
    char s_65b253f2[57];
    char s_0ad88e8a[57];
    char s_c09d0211[50];
@@ -2764,27 +2770,27 @@ static const struct
    char s_5d310fd4[113];
    char s_5d325d72[114];
    char s_23b87da5_0[500];
-   char s_23b87da5_1[36];
-   char s_80d9d1fb[109];
+   char s_23b87da5_1[29];
+   char s_80d9d1fb[95];
    char s_1dc7d995[78];
    char s_24c62bf5[66];
    char s_ecbb9248[66];
    char s_603f8de7[81];
-   char s_a11a7d85[226];
+   char s_a11a7d85[299];
    char s_e25b6b30[184];
    char s_4b347c28[49];
    char s_0832c8b3[69];
-   char s_109af481[68];
+   char s_109af481[61];
    char s_bcea0a06[23];
-   char s_4263d137[98];
-   char s_16cae8d7[104];
-   char s_3ad59606[50];
-   char s_07b5d4d6[80];
-   char s_f12f9f93[67];
+   char s_4263d137[113];
+   char s_16cae8d7[90];
+   char s_3ad59606[54];
+   char s_07b5d4d6[76];
+   char s_f12f9f93[76];
    char s_be33bd85[107];
    char s_1cff5dd8[36];
    char s_b8c82a8b[107];
-   char s_30fd562a[86];
+   char s_30fd562a[68];
    char s_7cddce75[69];
    char s_8c424989[47];
    char s_0eccc5a3[106];
@@ -2795,16 +2801,16 @@ static const struct
    char s_0492441c[63];
    char s_5a7cfb4e[46];
    char s_fc0122d8[146];
-   char s_aa1ea714[99];
+   char s_aa1ea714[93];
    char s_16ee5cf4[41];
    char s_a088b615[62];
-   char s_d9153542[55];
+   char s_d9153542[62];
    char s_8e48ec69[38];
    char s_cd43c108[82];
    char s_cd46e260[116];
    char s_cd482ffe[132];
    char s_49336383[59];
-   char s_e92351d4[112];
+   char s_e92351d4[123];
    char s_8e22cdce[92];
    char s_86477a78[71];
    char s_b67ffc50[71];
@@ -2815,7 +2821,7 @@ static const struct
    char s_7ad5b1e8[50];
    char s_74d87c7a[37];
    char s_12adb1e7[36];
-   char s_070529d4[78];
+   char s_070529d4[79];
    char s_30d1fc05[52];
 #ifdef GEKKO
    char s_3180dcf5[74];
@@ -2858,7 +2864,7 @@ static const struct
    char s_47df0525[56];
    char s_03e272fc[66];
    char s_5c2cc60f[102];
-   char s_d6d8d4be[107];
+   char s_d6d8d4be[121];
    char s_e86d2704[92];
    char s_dda608b5[396];
    char s_6f5a032a[64];
@@ -2890,7 +2896,7 @@ static const struct
    char s_43cd6373[96];
    char s_a7fd96b0[102];
    char s_1d42d613[131];
-   char s_eaa7274b[46];
+   char s_eaa7274b[60];
    char s_10994fc9[103];
    char s_bde8a108[92];
 #ifdef HAVE_LAKKA_SWITCH
@@ -2918,19 +2924,19 @@ static const struct
    char s_e29f9539[117];
    char s_824e2e0c[225];
    char s_c5a7263e[44];
-   char s_d9b9d57a[85];
-   char s_858f09e9[148];
-   char s_608f698e[143];
+   char s_d9b9d57a[99];
+   char s_858f09e9[153];
+   char s_608f698e[142];
    char s_25bed5b0[57];
-   char s_dfc23214[220];
-   char s_dd9def2d[105];
-   char s_fa6b7e78[230];
-   char s_eea265bb[168];
-   char s_8f3929a3[115];
+   char s_dfc23214[251];
+   char s_dd9def2d[121];
+   char s_fa6b7e78[256];
+   char s_eea265bb[193];
+   char s_8f3929a3[134];
    char s_91e03bff[30];
    char s_287215f6[242];
    char s_95424910[62];
-   char s_f4d41494[253];
+   char s_f4d41494[256];
    char s_cfb4dee1[124];
    char s_2b208bc6[221];
    char s_37ab0764[67];
@@ -3007,7 +3013,7 @@ static const struct
    char s_d3fc9970[57];
    char s_740bd7c4[66];
    char s_f052dae3[68];
-   char s_c5a76d72[61];
+   char s_c5a76d72[66];
    char s_c5a7e06c[62];
    char s_37d36d03[74];
    char s_eadbaf16[63];
@@ -3186,7 +3192,7 @@ static const struct
    char s_802613d6[57];
    char s_6b5b3e1a[92];
    char s_fb9a3cb9[129];
-   char s_a6fec2ae[162];
+   char s_a6fec2ae[176];
    char s_d34eb231[94];
    char s_e0bdee74[199];
    char s_9fd2f8b9[221];
@@ -3194,12 +3200,12 @@ static const struct
    char s_bfe5a026[59];
    char s_bfe5efd0[66];
    char s_d72464dc[244];
-   char s_6b2c2495[87];
-   char s_abf90aae[118];
+   char s_6b2c2495[101];
+   char s_abf90aae[146];
    char s_b48e1eda[77];
    char s_4113227d[64];
    char s_0a1cf5a1[188];
-   char s_64e37a7f[88];
+   char s_64e37a7f[102];
    char s_cac7ba4d[71];
    char s_e124c89f[501];
    char s_70a53ed8[42];
@@ -3216,7 +3222,7 @@ static const struct
    char s_061c8cb7[70];
    char s_86dc83bd[62];
    char s_0e319bcf[51];
-   char s_c11a10f0[166];
+   char s_c11a10f0[171];
    char s_e8bf64a4[44];
    char s_b4bf3f71[52];
    char s_b91e9f23[55];
@@ -3253,7 +3259,7 @@ static const struct
    char s_dd51dec4[54];
    char s_00961284[144];
    char s_a5962f42[64];
-   char s_0c7750cd[60];
+   char s_0c7750cd[94];
    char s_f3b31ef1[74];
    char s_331c623c[64];
    char s_279c08f7[52];
@@ -3265,28 +3271,28 @@ static const struct
    char s_b1b9f2a9[61];
    char s_ac857f5f[92];
    char s_9c077f8f[133];
-   char s_b298ccdf[89];
+   char s_b298ccdf[103];
    char s_b29ac230[79];
    char s_e95fac0c[77];
    char s_03d6fa4b[77];
    char s_af063b30[127];
-   char s_557fcba0[95];
+   char s_557fcba0[109];
    char s_5581c0f1[79];
-   char s_68c3966e[124];
+   char s_68c3966e[135];
    char s_c07e8fd2[132];
-   char s_f660f282[94];
-   char s_f662e7d3[77];
+   char s_f660f282[108];
+   char s_f662e7d3[78];
    char s_24b9a99f[37];
    char s_e391b0d2[180];
    char s_b464a65a[139];
    char s_c00d444e[151];
    char s_c05d1aac[334];
    char s_caa797e4[53];
-   char s_72d7857d[62];
+   char s_72d7857d[53];
    char s_1f084654[56];
    char s_38daa2f5[84];
    char s_3ca87244[32];
-   char s_01be7381[52];
+   char s_01be7381[54];
    char s_2b36bd4d[38];
    char s_5deae9b2[130];
    char s_c840d2cd[132];
@@ -3305,7 +3311,7 @@ static const struct
    char s_c565bc2d[367];
 #endif
    char s_5c75640f[55];
-   char s_59bd45fa[169];
+   char s_59bd45fa[174];
    char s_05e0fc7e[122];
    char s_d3921d65[128];
 #ifdef HAVE_LAKKA
@@ -3331,9 +3337,9 @@ static const struct
    char s_efb7504d[56];
    char s_70d6077c[41];
    char s_31124733[181];
-   char s_2d24a503[143];
+   char s_2d24a503[157];
    char s_2d269a54[127];
-   char s_db671d75[248];
+   char s_db671d75[314];
    char s_8d29fede[55];
    char s_a9c51063[51];
    char s_879ee2c5[42];
@@ -3383,14 +3389,14 @@ static const struct
    char s_e21d8d55[55];
    char s_9807adbd[34];
    char s_35ff46c4[60];
-   char s_288b93a6[54];
+   char s_288b93a6[47];
    char s_2c1469aa[209];
    char s_474b1a98[64];
    char s_934cf7a1[114];
    char s_d512ad1c[69];
    char s_4555fdb4[80];
    char s_4b009af3[42];
-   char s_46c57dde[69];
+   char s_46c57dde[86];
    char s_7eb20ecf[65];
 #ifdef HAVE_SMBCLIENT
    char s_3e1e294b[87];
@@ -3406,15 +3412,15 @@ static const struct
    char s_9bb85635[44];
    char s_22a05685[30];
 #endif
-   char s_f3bfa8b9[105];
-   char s_5fe2cee5[87];
+   char s_f3bfa8b9[100];
+   char s_5fe2cee5[102];
    char s_29a692ba[109];
-   char s_4b99ff86[96];
+   char s_4b99ff86[110];
    char s_76ebe1a8[113];
 #ifdef HAVE_LAKKA
    char s_6124594a[55];
 #endif
-   char s_9b51352c[47];
+   char s_9b51352c[61];
    char s_12510638[53];
    char s_ac067981[56];
    char s_82d064b1[26];
@@ -3433,7 +3439,7 @@ static const struct
 #ifdef HAVE_LIBNX
    char s_4eae7b1f[27];
 #endif
-   char s_8bbf7ffb[151];
+   char s_8bbf7ffb[165];
 #ifdef HAVE_LAKKA
 #ifdef HAVE_LAKKA_SWITCH
    char s_5612d75f[35];
@@ -3456,10 +3462,10 @@ static const struct
 #endif
    char s_e7cb5685[69];
    char s_2beab583[36];
-   char s_a1c071eb[102];
+   char s_a1c071eb[99];
    char s_0d9ceefa[85];
    char s_c4acbf9b[48];
-   char s_6e9f0493[79];
+   char s_6e9f0493[93];
    char s_78474a95[52];
    char s_a18602f8[54];
    char s_5a1f9d45[82];
@@ -3477,7 +3483,7 @@ static const struct
    char s_f64dfe3c[140];
 #endif
    char s_dcdfbf2c[317];
-   char s_74a4dfd9[161];
+   char s_74a4dfd9[175];
    char s_f815af2a[96];
    char s_8759e741[43];
    char s_1ec5857f[55];
@@ -3494,7 +3500,7 @@ static const struct
    char s_c0e554ab[184];
 #endif
 #if defined(DINGUX) && defined(DINGUX_BETA)
-   char s_b0dd9b14[140];
+   char s_b0dd9b14[135];
 #endif
 #if defined(DINGUX)
 #if defined(RS90) || defined(MIYOO)
@@ -3519,6 +3525,8 @@ static const struct
    char s_0d96ed73[54];
    char s_9f0fd076[183];
    char s_9f0fd077[180];
+   char s_c315b54c_0[500];
+   char s_c315b54c_1[52];
    char s_7a2050af[49];
    char s_d2859556[84];
    char s_ef13be35[78];
@@ -3527,7 +3535,7 @@ static const struct
    char s_7e43d750[244];
    char s_87ca7bc6[240];
    char s_cfa51e8c_0[500];
-   char s_cfa51e8c_1[55];
+   char s_cfa51e8c_1[69];
    char s_b62c2f7e[409];
    char s_456fcbc9[357];
    char s_82fab47a[41];
@@ -3556,7 +3564,7 @@ static const struct
 #ifdef HAVE_ODROIDGO2
    char s_e8460c46[66];
 #endif
-   char s_7c07f6fc[131];
+   char s_7c07f6fc[145];
    char s_36667d81[158];
    char s_eec252b5[165];
    char s_f4e4e921[280];
@@ -3575,20 +3583,20 @@ static const struct
    char s_19d9726f[59];
    char s_812153e8[84];
    char s_27d53122[54];
-   char s_1aecfa2a[99];
+   char s_1aecfa2a[127];
    char s_1aeeef7b[84];
-   char s_9330dc72[101];
+   char s_9330dc72[104];
    char s_a769f02b[126];
    char s_e84a3a16[96];
    char s_23c22a2b[86];
    char s_c9a8c2e5[50];
    char s_23c41f7c[84];
    char s_261210b3[103];
-   char s_3a4b246c[131];
+   char s_3a4b246c[125];
    char s_2ceab671[186];
    char s_977f8e82[131];
    char s_3c679f0a[372];
-   char s_5b059407[180];
+   char s_5b059407[194];
    char s_36033606[213];
    char s_d62ed5dc[325];
    char s_2e69508b[437];
@@ -3649,7 +3657,7 @@ static const struct
    char s_3d02018d[24];
    char s_5c75e18b[27];
 #endif
-   char s_007587a5[64];
+   char s_007587a5[78];
    char s_52c66e88[29];
    char s_63a238b1[28];
    char s_fef5e730[33];
@@ -3712,17 +3720,17 @@ static const struct
    char s_af4b70f4[52];
    char s_d9afe3b5[52];
    char s_312fd783[78];
-   char s_96df643a[120];
-   char s_150b4ebe[114];
+   char s_96df643a[122];
+   char s_150b4ebe[123];
    char s_0d212ca9[88];
    char s_be02ba0f[140];
    char s_059f98c0[68];
    char s_b077bb95[101];
    char s_48720114[66];
    char s_853088a2[128];
-   char s_2e919cd0[78];
-   char s_8244c736[99];
-   char s_1af7df08[105];
+   char s_2e919cd0[118];
+   char s_8244c736[111];
+   char s_1af7df08[115];
    char s_db1e4390[57];
    char s_27af84c0[122];
    char s_867e4ca5[19];
@@ -3741,7 +3749,7 @@ static const struct
    char s_79eac1d9[30];
    char s_0ca1ef5c[16];
    char s_7f5044a4[71];
-   char s_20296ebc[65];
+   char s_20296ebc[67];
    char s_3301eae2[42];
    char s_f0b48289[59];
    char s_19b9a241[28];
@@ -3765,20 +3773,20 @@ static const struct
    char s_42e027a9[33];
    char s_6d1e6304[44];
    char s_581bc3a1[70];
-   char s_04cf17ef[55];
+   char s_04cf17ef[60];
    char s_628fcf0d[60];
    char s_b3f00b45[32];
    char s_df3e97e4[58];
    char s_fb59e491[33];
-   char s_96e03bed[46];
-   char s_824867fd[63];
+   char s_96e03bed[61];
+   char s_824867fd[102];
 #ifdef HAVE_MIST
-   char s_30512c09[41];
-   char s_35b60281[25];
+   char s_30512c09[55];
+   char s_35b60281[39];
    char s_91e3840f[46];
 #endif
    char s_e5668863[31];
-   char s_0638fe80[62];
+   char s_0638fe80[101];
    char s_902526ad[54];
    char s_e487a402[59];
    char s_3b5b6155[48];
@@ -3807,15 +3815,15 @@ static const struct
    char s_db16e78f[29];
    char s_d28086c9[28];
    char s_eeabb721[20];
-   char s_056d83e9[19];
+   char s_056d83e9[32];
    char s_c8991447[27];
    char s_38e7fc6d[13];
    char s_a3030e21[25];
    char s_e3834478[15];
    char s_d0f27355[6];
-   char s_faafda68[80];
-   char s_b69a6428[106];
-   char s_720c9bdc[84];
+   char s_faafda68[109];
+   char s_b69a6428[120];
+   char s_720c9bdc[90];
    char s_973bf41d[35];
    char s_07d69dad[38];
    char s_ed18242e[39];
@@ -3938,11 +3946,11 @@ static const struct
    char s_98e55de8[39];
    char s_03d08020[49];
    char s_e9fb0749[12];
-   char s_7d2afbe2[28];
+   char s_7d2afbe2[29];
    char s_55f9c8cd[37];
    char s_f7c1ff1a[29];
    char s_e01973d9[46];
-   char s_e8e6cf09[23];
+   char s_e8e6cf09[26];
    char s_9033e61a[37];
    char s_d16f3816[11];
 #ifdef HAVE_LAKKA
@@ -3953,9 +3961,9 @@ static const struct
    char s_f279fcb2[72];
    char s_8b487430[32];
 #endif
-   char s_a602dd84[42];
-   char s_aa7139c6[74];
-   char s_4ae9f9f9[69];
+   char s_a602dd84[43];
+   char s_aa7139c6[75];
+   char s_4ae9f9f9[70];
    char s_5123ee7d[20];
    char s_3692d4a2[49];
    char s_08f50667[43];
@@ -4014,7 +4022,7 @@ static const struct
    char s_3f47f1dd[56];
    char s_12552dca[28];
    char s_7d819a1a[110];
-   char s_3589d4e0[55];
+   char s_3589d4e0[57];
    char s_2dc9eea7[47];
    char s_992592e3[49];
    char s_52d42c75[50];
@@ -4151,7 +4159,7 @@ static const struct
    char s_50ebaaa1[28];
    char s_1055e4c5[25];
    char s_842b54ed[17];
-   char s_b30573ed[112];
+   char s_b30573ed[118];
    char s_914b3efd[32];
    char s_8f35069c[32];
    char s_6cc672f6[28];
@@ -4316,7 +4324,7 @@ static const struct
    "Tri\341\273\203n khai l\341\272\245y m\341\272\253u l\341\272\241i g\341\272\247n nh\341\272\245"
    "t. B\341\273\231 l\341\272\245y m\341\272\253u l\341\272\241i n\303\240y b\341\273\217 qua c\303"
    "\240i \304\221\341\272\267t ch\341\272\245t l\306\260\341\273\243ng.",
-   "Tri\341\273\203n khai Windowed Sinc.",
+   "C\303\241ch x\341\273\255 l\303\275 Sinc c\341\273\255a s\341\273\225.",
    "\303\202m l\306\260\341\273\243ng, \304\221\306\260\341\273\243c bi\341\273\203u th\341\273\213 "
    "b\341\272\261ng dB. 0 dB l\303\240 \303\242m l\306\260\341\273\243ng b\303\254nh th\306\260\341"
    "\273\235ng, kh\303\264ng \303\241p d\341\273\245ng \304\221\341\273\231 khu\341\272\277ch \304"
@@ -4342,53 +4350,58 @@ static const struct
    "\273\207n trong menu. Ghi \304\221\303\250 file c\341\272\245u h\303\254nh, #include v\303\240 c"
    "\303\241c ch\303\272 th\303\255ch s\341\272\275 kh\303\264ng \304\221\306\260\341\273\243c gi"
    "\341\273\257 l\341\272\241i.",
-   "Duy\341\273\207t qua c\303\241c Core libretro. Khi tr\303\254nh qu\341\272\243n l\303\275 t\341"
-   "\272\255p tin b\341\272\257t \304\221\341\272\247u d\341\273\261a v\303\240o \304\221\306\260"
-   "\341\273\235ng d\341\272\253n th\306\260 m\341\273\245c Core. N\341\272\277u n\303\263 tr\341"
-   "\273\221ng, n\303\263 s\341\272\275 \304\221\306\260\341\273\243c b\341\272\257t \304\221\341"
-   "\272\247u \341\273\237 th\306\260 m\341\273\245c g\341\273\221c.\nN\341\272\277u th\306\260 m"
-   "\341\273\245c l\303\265i c\341\273\247a b\341\272\241n l\303\240 m\341\273\231t th\306\260 m\341"
-   "\273\245c, menu s\341\272\275 s\341\273\255 d\341\273\245ng th\306\260 m\341\273\245c \304\221"
-   "\303\263 l\303\240 th\306\260 m\341\273\245c tr\303\252n c\303\271ng. N\341\272\277u th\306\260 "
-   "m\341\273\245c Core c\341\273\247a b\341\272\241n l\303\240 \304\221\306\260\341\273\235ng d\341"
-   "\272\253n \304\221\341\272\247y \304\221\341\273\247, n\303\263 s\341\272\275 b\341\272\257t "
-   "\304\221\341\272\247u \341\273\237 th\306\260 m\341\273\245c n\306\241i t\341\273\207p n\341\272"
-   "\261m \341\273\237 \304\221\303\263.",
+   "Duy\341\273\207t qua c\303\241c tr\303\254nh gi\341\272\243 l\341\272\255p libretro. Khi tr\303"
+   "\254nh qu\341\272\243n l\303\275 t\341\272\255p tin b\341\272\257t \304\221\341\272\247u d\341"
+   "\273\261a v\303\240o \304\221\306\260\341\273\235ng d\341\272\253n th\306\260 m\341\273\245c tr"
+   "\303\254nh gi\341\272\243 l\341\272\255p. N\341\272\277u n\303\263 tr\341\273\221ng, n\303\263 s"
+   "\341\272\275 \304\221\306\260\341\273\243c b\341\272\257t \304\221\341\272\247u \341\273\237 th"
+   "\306\260 m\341\273\245c g\341\273\221c.\nN\341\272\277u th\306\260 m\341\273\245c l\303\265i c"
+   "\341\273\247a b\341\272\241n l\303\240 m\341\273\231t th\306\260 m\341\273\245c, menu s\341\272"
+   "\275 s\341\273\255 d\341\273\245ng th\306\260 m\341\273\245c \304\221\303\263 l\303\240 th\306"
+   "\260 m\341\273\245c tr\303\252n c\303\271ng. N\341\272\277u th\306\260 m\341\273\245c tr\303\254"
+   "nh gi\341\272\243 l\341\272\255p c\341\273\247a b\341\272\241n l\303\240 \304\221\306\260\341"
+   "\273\235ng d\341\272\253n \304\221\341\272\247y \304\221\341\273\247, n\303\263 s\341\272\275 b"
+   "\341\272\257t \304\221\341\272\247u \341\273\237 th\306\260 m\341\273\245c n\306\241i t\341\273"
+   "\207p n\341\272\261m \341\273\237 \304\221\303\263.",
    "Ch\341\273\215n m\341\273\231t \304\221\304\251a m\341\273\233i t\341\273\253 h\341\273\207 th"
    "\341\273\221ng t\341\272\255p tin v\303\240 th\303\252m n\303\263 v\303\240o danh s\303\241ch ch"
    "\341\273\211 m\341\273\245c.\nL\306\257U \303\235: \304\220\303\242y l\303\240 t\303\255nh n\304"
    "\203ng c\305\251. Thay v\303\240o \304\221\303\263, n\303\252n d\303\271ng danh s\303\241ch ph"
    "\303\241t M3U cho c\303\241c tr\303\262 ch\306\241i nhi\341\273\201u \304\221\304\251a.",
-   "M\341\273\231t s\341\273\221 core c\303\263 th\341\273\203 c\303\263 t\303\255nh n\304\203ng t"
-   "\341\272\257t. N\341\272\277u t\303\271y ch\341\273\215n n\303\240y b\341\273\213 t\341\272\257t"
-   ", ch\341\273\215n quy tr\303\254nh t\341\272\257t s\341\272\275 khi\341\272\277n RetroArch \304"
-   "\221\303\263ng.",
-   "N\341\272\277u ph\303\255m n\303\263ng n\303\240y \304\221\306\260\341\273\243c li\303\252n k"
+   "M\341\273\231t s\341\273\221 tr\303\254nh gi\341\272\243 l\341\272\255p c\303\263 th\341\273\203"
+   " c\303\263 t\303\255nh n\304\203ng t\341\272\257t m\303\241y. N\341\272\277u t\303\271y ch\341"
+   "\273\215n n\303\240y b\341\273\213 t\341\272\257t, vi\341\273\207c ch\341\273\215n quy tr\303"
+   "\254nh t\341\272\257t m\303\241y s\341\272\275 khi\341\272\277n RetroArch tho\303\241t.\nB\341"
+   "\272\255t t\303\271y ch\341\273\215n n\303\240y s\341\272\275 thay v\303\240o \304\221\303\263 t"
+   "\341\272\243i m\341\273\231t tr\303\254nh gi\341\272\243 l\341\272\255p gi\341\272\243, gi\303"
+   "\272p ch\303\272ng ta v\341\272\253n \341\273\237 trong menu v\303\240 RetroArch s\341\272\275 k"
+   "h\303\264ng tho\303\241t.",
+   "N\341\272\277u ph\303\255m t\341\272\257t n\303\240y \304\221\306\260\341\273\243c li\303\252n k"
    "\341\272\277t v\341\273\233i b\303\240n ph\303\255m, n\303\272t \304\221i\341\273\201u khi\341"
    "\273\203n ho\341\272\267c tr\341\273\245c \304\221i\341\273\201u khi\341\273\203n, t\341\272\245"
-   "t c\341\272\243 c\303\241c ph\303\255m n\303\263ng kh\303\241c s\341\272\275 b\341\273\213 v\303"
-   "\264 hi\341\273\207u h\303\263a tr\341\273\253 khi ph\303\255m n\303\263ng n\303\240y c\305\251n"
-   "g \304\221\306\260\341\273\243c gi\341\273\257 c\303\271ng l\303\272c.\n\304\220i\341\273\201u n"
-   "\303\240y h\341\273\257u \303\255ch cho c\303\241c tri\341\273\203n khai t\341\272\255p trung v"
-   "\303\240o RETRO_KEYBOARD truy v\341\272\245n m\341\273\231t v\303\271ng r\341\273\231ng tr\303"
-   "\252n b\303\240n ph\303\255m, trong \304\221\303\263 c\303\241c ph\303\255m n\303\263ng kh\303"
-   "\264ng \304\221\306\260\341\273\243c ph\303\251p c\341\272\243n tr\341\273\237.",
-   "T\341\273\221c \304\221\341\273\231 t\341\273\221i \304\221a m\303\240 tr\303\262 ch\306\241i s"
-   "\341\272\275 ch\341\272\241y khi s\341\273\255 d\341\273\245ng tua nhanh. (V\303\255 d\341\273"
-   "\245 5.0 cho n\341\273\231i dung 60 fps => gi\341\273\233i h\341\272\241n 300 fps).\nRetroArch s"
-   "\341\272\275 t\341\272\241m ngh\341\273\211 \304\221\341\273\203 \304\221\341\272\243m b\341\272"
-   "\243o t\341\273\221c \304\221\341\273\231 t\341\273\221i \304\221a kh\303\264ng b\341\273\213 v"
-   "\306\260\341\273\243t qu\303\241. Kh\303\264ng n\303\252n d\341\273\261a v\303\240o gi\341\273"
-   "\233i h\341\272\241n n\303\240y \304\221\341\273\203 ch\303\255nh x\303\241c ho\303\240n to\303"
-   "\240n.",
+   "t c\341\272\243 c\303\241c ph\303\255m t\341\272\257t kh\303\241c s\341\272\275 b\341\273\213 v"
+   "\303\264 hi\341\273\207u h\303\263a tr\341\273\253 khi ph\303\255m t\341\272\257t n\303\240y c"
+   "\305\251ng \304\221\306\260\341\273\243c gi\341\273\257 c\303\271ng l\303\272c.\n\304\220i\341"
+   "\273\201u n\303\240y h\341\273\257u \303\255ch cho c\303\241c tri\341\273\203n khai t\341\272"
+   "\255p trung v\303\240o RETRO_KEYBOARD truy v\341\272\245n m\341\273\231t v\303\271ng r\341\273"
+   "\231ng tr\303\252n b\303\240n ph\303\255m, trong \304\221\303\263 c\303\241c ph\303\255m t\341"
+   "\272\257t kh\303\264ng \304\221\306\260\341\273\243c ph\303\251p c\341\272\243n tr\341\273\237.",
+   "T\341\273\221c \304\221\341\273\231 t\341\273\221i \304\221a m\303\240 n\341\273\231i dung s\341"
+   "\272\275 ch\341\272\241y khi s\341\273\255 d\341\273\245ng tua nhanh. (V\303\255 d\341\273\245 5"
+   ".0 cho n\341\273\231i dung 60 fps => gi\341\273\233i h\341\272\241n 300 fps).\nRetroArch s\341"
+   "\272\275 t\341\272\241m ngh\341\273\211 \304\221\341\273\203 \304\221\341\272\243m b\341\272\243"
+   "o t\341\273\221c \304\221\341\273\231 t\341\273\221i \304\221a kh\303\264ng b\341\273\213 v\306"
+   "\260\341\273\243t qu\303\241. Kh\303\264ng n\303\252n d\341\273\261a v\303\240o gi\341\273\233i "
+   "h\341\272\241n n\303\240y \304\221\341\273\203 ch\303\255nh x\303\241c ho\303\240n to\303\240n.",
    "T\341\273\207p m\303\243 gian l\341\272\255n.",
    "T\341\273\207p l\306\260u tr\341\273\257 n\303\251n.",
    "T\341\273\207p c\341\272\245u h\303\254nh h\341\273\207 th\341\273\221ng.",
    "Tr\303\254nh gi\341\272\243 l\341\272\255p Libretro. Ch\341\273\215n t\341\273\207p n\303\240y "
    "\304\221\341\273\203 RetroArch n\341\272\241p tr\303\254nh gi\341\272\243 l\341\272\255p n\303"
    "\240y.",
-   "Core Libretro. Ch\341\273\215n \304\221\341\273\203 g\303\241n core n\303\240y cho tr\303\262 ch"
-   "\306\241i.",
+   "Tr\303\254nh gi\341\272\243 l\341\272\255p Libretro. Ch\341\273\215n m\341\273\245c n\303\240y s"
+   "\341\272\275 li\303\252n k\341\272\277t tr\303\254nh gi\341\272\243 l\341\272\255p n\303\240y v"
+   "\341\273\233i tr\303\262 ch\306\241i.",
    "T\341\273\207p l\306\260u tr\341\273\257 d\303\262ng \304\221ang ch\341\273\211 v\303\240o.",
    "Th\306\260 m\341\273\245c. Ch\341\273\215n \304\221\341\273\203 m\341\273\237 th\306\260 m\341"
    "\273\245c n\303\240y.",
@@ -4402,9 +4415,9 @@ static const struct
    " ph\303\241t nh\341\272\241c.",
    "M\341\273\237 c\303\240i \304\221\341\272\267t quy\341\273\201n tr\303\252n Windows \304\221\341"
    "\273\203 b\341\272\255t t\303\255nh n\304\203ng broadFileSystemAccess.",
-   "T\341\273\207p l\341\273\233p che ph\341\273\247.",
+   "T\341\273\207p l\341\273\233p ph\341\273\247.",
    "T\341\273\207p th\306\260\341\273\235ng.",
-   "T\341\273\207p c\306\241 s\341\273\237 d\341\273\257 li\341\273\207u.",
+   "T\341\273\207p d\341\273\257 li\341\273\207u.",
    "T\341\273\207p c\341\272\245u h\303\254nh ghi h\303\254nh.",
    "T\341\273\207p g\303\241n l\341\272\241i ph\303\255m.",
    "T\341\273\207p hi\341\273\207u \341\273\251ng b\341\273\231 \304\221\341\273\225 b\303\263ng.",
@@ -4451,22 +4464,21 @@ static const struct
    "\203 thi\341\272\277t l\341\272\255p m\341\273\231t quy t\341\272\257c udev \304\221\341\273\203"
    " cho ph\303\251p nh\341\273\257ng ng\306\260\341\273\235i d\303\271ng kh\303\264ng ph\341\272"
    "\243i root c\303\263 th\341\273\203 truy c\341\272\255p c\303\241c n\303\272t n\303\240y.",
-   "\341\272\242nh h\306\260\341\273\237ng \304\221\341\272\277n c\303\241ch th\341\273\261c hi\341"
-   "\273\207n th\304\203m d\303\262 \304\221\341\272\247u v\303\240o b\303\252n trong RetroArch.\nS"
-   "\341\273\233m - Th\304\203m d\303\262 \304\221i\341\273\201u khi\341\273\203n \304\221\306\260"
-   "\341\273\243c th\341\273\261c hi\341\273\207n tr\306\260\341\273\233c khi khung \304\221\306\260"
-   "\341\273\243c x\341\273\255 l\303\275.\nB\303\254nh th\306\260\341\273\235ng - Th\304\203m d\303"
-   "\262 \304\221i\341\273\201u khi\341\273\203n \304\221\306\260\341\273\243c th\341\273\261c hi"
-   "\341\273\207n khi c\303\263 y\303\252u c\341\272\247u th\304\203m d\303\262.\nTr\341\273\205 - T"
-   "h\304\203m d\303\262 \304\221i\341\273\201u khi\341\273\203n \304\221\306\260\341\273\243c th"
-   "\341\273\261c hi\341\273\207n khi c\303\263 y\303\252u c\341\272\247u tr\341\272\241ng th\303"
-   "\241i \304\221i\341\273\201u khi\341\273\203n \304\221\341\272\247u ti\303\252n tr\303\252n m"
-   "\341\273\227i khung.\n\304\220\341\272\267t th\303\240nh 'S\341\273\233m' ho\341\272\267c 'Tr"
-   "\341\273\205' c\303\263 th\341\273\203 gi\341\272\243m \304\221\341\273\231 tr\341\273\205, t"
-   "\303\271y thu\341\273\231c v\303\240o",
-   " c\341\272\245u h\303\254nh c\341\273\247a b\341\272\241n. S\341\272\275 b\341\273\213 b\341\273"
-   "\217 qua khi s\341\273\255 d\341\273\245ng Tr\303\262 ch\306\241i tr\341\273\261c tuy\341\272"
-   "\277n.",
+   "\341\272\242nh h\306\260\341\273\237ng \304\221\341\272\277n c\303\241ch RetroArch ki\341\273"
+   "\203m tra tr\341\272\241ng th\303\241i thi\341\272\277t b\341\273\213 nh\341\272\255p li\341\273"
+   "\207u.\nS\341\273\233m - Ki\341\273\203m tra tr\341\272\241ng th\303\241i thi\341\272\277t b\341"
+   "\273\213 nh\341\272\255p li\341\273\207u tr\306\260\341\273\233c khi x\341\273\255 l\303\275 khu"
+   "ng h\303\254nh.\nB\303\254nh th\306\260\341\273\235ng - Ki\341\273\203m tra tr\341\272\241ng th"
+   "\303\241i thi\341\272\277t b\341\273\213 nh\341\272\255p li\341\273\207u khi \304\221\306\260"
+   "\341\273\243c y\303\252u c\341\272\247u.\nTr\341\273\205 - Ki\341\273\203m tra tr\341\272\241ng "
+   "th\303\241i thi\341\272\277t b\341\273\213 nh\341\272\255p li\341\273\207u \341\273\237 l\341"
+   "\272\247n \304\221\341\272\247u ti\303\252n m\341\273\227i khung h\303\254nh khi c\303\263 y\303"
+   "\252u c\341\272\247u v\341\273\201 tr\341\272\241ng th\303\241i \304\221\341\272\247u v\303\240o"
+   ".\n\304\220\341\272\267t th\303\240nh 'S\341\273\233m' ho\341\272\267c 'Tr\341\273\205' c\303"
+   "\263 th\341\273\203 gi\303\272p gi\341\272\243m \304\221\341\273\231 t",
+   "r\341\273\205 t\303\271y theo c\341\272\245u h\303\254nh c\341\273\247a b\341\272\241n. T\303"
+   "\271y ch\341\273\215n n\303\240y s\341\272\275 b\341\273\213 b\341\273\217 qua khi s\341\273\255"
+   " d\341\273\245ng ch\306\241i m\341\272\241ng.",
    "S\341\273\255 d\341\273\245ng c\341\272\243m \341\273\251ng ph\303\255a tr\306\260\341\273\233c "
    "thay v\303\254 ph\303\255a sau.",
    "Libretro s\341\273\255 d\341\273\245ng m\341\273\231t kh\303\241i ni\341\273\207m tr\341\273\253"
@@ -4488,17 +4500,15 @@ static const struct
    "\341\273\203 cho Core, n\303\252n s\341\273\255 d\341\273\245ng menu ph\341\273\245 '\304\220i"
    "\341\273\201u khi\341\273\203n' c\341\273\247a Menu Nhanh.",
 #ifdef ANDROID
-   "N\341\272\277u RetroArch x\303\241c \304\221\341\273\213nh b\303\240n ph\303\255m ph\341\272\247"
-   "n c\341\273\251ng l\303\240 m\341\273\231t lo\341\272\241i tay c\341\272\247m ch\306\241i game, "
-   "b\341\272\241n c\303\263 th\341\273\203 s\341\273\255 d\341\273\245ng c\303\240i \304\221\341"
-   "\272\267t n\303\240y \304\221\341\273\203 bu\341\273\231c RetroArch coi thi\341\272\277t b\341"
-   "\273\213 b\341\273\213 x\303\241c \304\221\341\273\213nh nh\341\272\247m \304\221\303\263 l\303"
-   "\240 b\303\240n ph\303\255m.\n\304\220i\341\273\201u n\303\240y c\303\263 th\341\273\203 h\341"
-   "\273\257u \303\255ch n\341\272\277u b\341\272\241n \304\221ang c\341\273\221 g\341\272\257ng m"
-   "\303\264 ph\341\273\217ng m\303\241y t\303\255nh tr\303\252n m\341\273\231t s\341\273\221 thi"
-   "\341\272\277t b\341\273\213 Android TV v\303\240 c\305\251ng s\341\273\237 h\341\273\257u b\303"
-   "\240n ph\303\255m v\341\272\255t l\303\275 c\303\263 th\341\273\203 g\341\272\257n v\303\240o h"
-   "\341\273\231p.",
+   "N\341\272\277u RetroArch nh\341\272\255n di\341\273\207n nh\341\272\247m b\303\240n ph\303\255m "
+   "ph\341\272\247n c\341\273\251ng th\303\240nh m\341\273\231t lo\341\272\241i tay c\341\272\247m c"
+   "h\306\241i game, t\303\271y ch\341\273\215n n\303\240y c\303\263 th\341\273\203 bu\341\273\231c "
+   "RetroArch nh\341\272\255n thi\341\272\277t b\341\273\213 \304\221\303\263 l\303\240 b\303\240n p"
+   "h\303\255m.\n\304\220i\341\273\201u n\303\240y h\341\273\257u \303\255ch khi b\341\272\241n mu"
+   "\341\273\221n gi\341\272\243 l\341\272\255p m\303\241y t\303\255nh tr\303\252n m\341\273\231t th"
+   "i\341\272\277t b\341\273\213 Android TV v\303\240 \304\221\341\273\223ng th\341\273\235i s\341"
+   "\273\255 d\341\273\245ng b\303\240n ph\303\255m v\341\272\255t l\303\275 k\341\272\277t n\341"
+   "\273\221i v\341\273\233i thi\341\272\277t b\341\273\213.",
 #endif
    "Tr\303\254nh \304\221i\341\273\201u khi\341\273\203n b\341\273\231 \304\221i\341\273\201u khi"
    "\341\273\203n DirectInput.",
@@ -4529,22 +4539,23 @@ static const struct
    "Tr\303\254nh \304\221i\341\273\201u khi\341\273\203n b\341\273\231 \304\221i\341\273\201u khi"
    "\341\273\203n XInput. Ch\341\273\247 y\341\272\277u d\303\240nh cho b\341\273\231 \304\221i\341"
    "\273\201u khi\341\273\203n XBox.",
-   "Thi\341\272\277t l\341\272\255p m\341\273\251c ghi nh\341\272\255t k\303\275 cho c\303\241c core"
-   " libretro (GET_LOG_INTERFACE). N\341\272\277u m\341\273\251c log do core libretro g\341\273\255i"
-   " th\341\272\245p h\306\241n m\341\273\251c log libretro, n\303\263 s\341\272\275 b\341\273\213 b"
-   "\341\273\217 qua. C\303\241c log DEBUG lu\303\264n b\341\273\213 b\341\273\217 qua tr\341\273"
-   "\253 khi ch\341\272\277 \304\221\341\273\231 chi ti\341\272\277t \304\221\306\260\341\273\243c b"
-   "\341\272\255t (--verbose).\nDEBUG = 0\nINFO = 1\nWARN = 2\nERROR = 3",
-   "Khi t\341\272\243i n\341\273\231i dung, c\341\272\267p n\341\273\231i dung v\303\240 l\303\265i "
-   "libretro s\341\272\275 \304\221\306\260\341\273\243c l\306\260u v\303\240o danh s\303\241ch \304"
-   "\221\303\243 m\341\273\237 g\341\272\247n \304\221\303\242y.\nDanh s\303\241ch n\303\240y \304"
-   "\221\306\260\341\273\243c l\306\260u trong m\341\273\231t t\341\273\207p \341\273\237 c\303\271n"
-   "g th\306\260 m\341\273\245c v\341\273\233i t\341\273\207p c\341\272\245u h\303\254nh RetroArch. "
-   "N\341\272\277u kh\303\264ng c\303\263 t\341\273\207p c\341\272\245u h\303\254nh n\303\240o \304"
-   "\221\306\260\341\273\243c t\341\272\243i khi kh\341\273\237i \304\221\341\273\231ng, danh s\303"
-   "\241ch s\341\272\275 kh\303\264ng \304\221\306\260\341\273\243c l\306\260u ho\341\272\267c t\341"
-   "\272\243i, \304\221\341\273\223ng th\341\273\235i c\305\251ng s\341\272\275 kh\303\264ng xu\341"
-   "\272\245t hi\341\273\207n trong tr\303\254nh \304\221\306\241n ch\303\255nh.",
+   "Thi\341\272\277t l\341\272\255p m\341\273\251c ghi nh\341\272\255t k\303\275 cho c\303\241c tr"
+   "\303\254nh gi\341\272\243 l\341\272\255p libretro (GET_LOG_INTERFACE). N\341\272\277u m\341\273"
+   "\251c log do core libretro g\341\273\255i th\341\272\245p h\306\241n m\341\273\251c log libretro"
+   ", n\303\263 s\341\272\275 b\341\273\213 b\341\273\217 qua. C\303\241c log DEBUG lu\303\264n b"
+   "\341\273\213 b\341\273\217 qua tr\341\273\253 khi ch\341\272\277 \304\221\341\273\231 chi ti\341"
+   "\272\277t \304\221\306\260\341\273\243c b\341\272\255t (--verbose).\nDEBUG = 0\nINFO = 1\nWARN ="
+   " 2\nERROR = 3",
+   "Khi n\341\273\231i dung \304\221\306\260\341\273\243c t\341\272\243i, c\303\241c k\341\272\277t "
+   "h\341\273\243p gi\341\273\257a n\341\273\231i dung v\303\240 tr\303\254nh gi\341\272\243 l\341"
+   "\272\255p libretro s\341\272\275 \304\221\306\260\341\273\243c l\306\260u v\303\240o l\341\273"
+   "\213ch s\341\273\255.\nL\341\273\213ch s\341\273\255 \304\221\306\260\341\273\243c l\306\260u v"
+   "\303\240o m\341\273\231t t\341\273\207p trong c\303\271ng th\306\260 m\341\273\245c v\341\273"
+   "\233i t\341\273\207p c\341\272\245u h\303\254nh RetroArch. N\341\272\277u kh\303\264ng c\303\263"
+   " t\341\273\207p c\341\272\245u h\303\254nh n\303\240o \304\221\306\260\341\273\243c t\341\272"
+   "\243i khi kh\341\273\237i \304\221\341\273\231ng, l\341\273\213ch s\341\273\255 s\341\272\275 kh"
+   "\303\264ng \304\221\306\260\341\273\243c l\306\260u ho\341\272\267c t\341\272\243i v\303\240 s"
+   "\341\272\275 kh\303\264ng xu\341\272\245t hi\341\273\207n trong menu ch\303\255nh.",
    "Duy\341\273\207t t\303\254m n\341\273\231i dung. \304\220\341\273\203 t\341\272\243i n\341\273"
    "\231i dung, b\341\272\241n c\341\272\247n ch\341\273\215n m\341\273\231t 'Tr\303\254nh gi\341"
    "\272\243 l\341\272\255p' \304\221\341\273\203 s\341\273\255 d\341\273\245ng v\303\240 m\341\273"
@@ -4559,23 +4570,22 @@ static const struct
    "\254nh gi\341\272\243 l\341\272\255p', v\303\240 s\341\273\255 d\341\273\245ng tr\303\254nh gi"
    "\341\272\243 l\341\272\255",
    "p \304\221\303\263 khi n\341\273\231i dung \304\221\306\260\341\273\243c t\341\272\243i.",
-   "T\341\272\243i tr\341\272\241ng th\303\241i \304\221\303\243 l\306\260u t\341\273\253 khe \304"
-   "\221ang ch\341\273\215n. L\306\260u \303\275: c\303\263 th\341\273\203 kh\303\264ng ho\341\272"
-   "\241t \304\221\341\273\231ng n\341\272\277u tr\341\272\241ng th\303\241i \304\221\306\260\341"
-   "\273\243c l\306\260u b\341\272\261ng phi\303\252n b\341\272\243n kh\303\241c c\341\273\247a core"
-   ".",
+   "T\341\272\243i tr\341\272\241ng th\303\241i \304\221\303\243 l\306\260u t\341\273\253 \303\264 l"
+   "\306\260u hi\341\273\207n \304\221\306\260\341\273\243c ch\341\273\215n. L\306\260u \303\275: c"
+   "\303\263 th\341\273\203 kh\303\264ng ho\341\272\241t \304\221\341\273\231ng n\341\272\277u tr"
+   "\341\272\241ng th\303\241i \304\221\306\260\341\273\243c l\306\260u b\341\272\261ng phi\303\252n"
+   " b\341\272\243n kh\303\241c c\341\273\247a tr\303\254nh gi\341\272\243 l\341\272\255p.",
    "Tr\303\252n thi\341\272\277t b\341\273\213 di \304\221\341\273\231ng, RetroArch m\341\272\267c "
    "\304\221\341\273\213nh s\341\273\255 d\341\273\245ng giao di\341\273\207n ng\306\260\341\273\235"
    "i d\303\271ng di \304\221\341\273\231ng MaterialUI. Giao di\341\273\207n n\303\240y \304\221\306"
    "\260\341\273\243c thi\341\272\277t k\341\272\277 d\303\240nh cho m\303\240n h\303\254nh c\341"
    "\272\243m \341\273\251ng v\303\240 c\303\241c thi\341\272\277t b\341\273\213 tr\341\273\217, ch"
    "\341\272\263ng h\341\272\241n nh\306\260 chu\341\273\231t/trackball.",
-   "Ozone l\303\240 giao di\341\273\207n ng\306\260\341\273\235i d\303\271ng \304\221\341\273\223 h"
-   "\341\273\215a (GUI) m\341\272\267c \304\221\341\273\213nh c\341\273\247a RetroArch tr\303\252n h"
-   "\341\272\247u h\341\272\277t c\303\241c n\341\273\201n t\341\272\243ng. Giao di\341\273\207n n"
-   "\303\240y \304\221\306\260\341\273\243c t\341\273\221i \306\260u h\303\263a \304\221\341\273\203"
-   " \304\221i\341\273\201u h\306\260\341\273\233ng b\341\272\261ng tay c\341\272\247m ch\306\241i g"
-   "ame.",
+   "Ozone l\303\240 giao di\341\273\207n m\341\272\267c \304\221\341\273\213nh c\341\273\247a RetroA"
+   "rch tr\303\252n h\341\272\247u h\341\272\277t c\303\241c n\341\273\201n t\341\272\243ng. Giao di"
+   "\341\273\207n n\303\240y \304\221\306\260\341\273\243c t\341\273\221i \306\260u \304\221\341\273"
+   "\203 \304\221i\341\273\201u h\306\260\341\273\233ng b\341\272\261ng tay c\341\272\247m ch\306"
+   "\241i game.",
    "RGUI l\303\240 m\341\273\231t giao di\341\273\207n ng\306\260\341\273\235i d\303\271ng \304\221"
    "\341\273\223 h\341\273\215a t\303\255ch h\341\273\243p \304\221\306\241n gi\341\272\243n d\303"
    "\240nh cho RetroArch. N\303\263 c\303\263 y\303\252u c\341\272\247u hi\341\273\207u su\341\272"
@@ -4600,21 +4610,19 @@ static const struct
    "t\", \304\221\341\272\247u v\303\240o MIDI s\341\272\275 b\341\273\213 t\341\272\257t. B\341\272"
    "\241n c\305\251ng c\303\263 th\341\273\203 nh\341\272\255p t\303\252n thi\341\272\277t b\341\273"
    "\213.",
-   "Thi\341\272\277t l\341\272\255p thi\341\272\277t b\341\273\213 \304\221\341\272\247u ra (t\303"
-   "\271y thu\341\273\231c v\303\240o tr\303\254nh \304\221i\341\273\201u khi\341\273\203n). Khi "
-   "\304\221\306\260\341\273\243c \304\221\341\272\267t th\303\240nh \"T\341\272\257t\", \304\221"
-   "\341\272\247u ra MIDI s\341\272\275 b\341\273\213 t\341\272\257t. B\341\272\241n c\305\251ng c"
-   "\303\263 th\341\273\203 nh\341\272\255p t\303\252n thi\341\272\277t b\341\273\213.\nKhi \304\221"
-   "\341\272\247u ra MIDI \304\221\306\260\341\273\243c b\341\272\255t v\303\240 Core v\303\240 tr"
-   "\303\262 ch\306\241i/\341\273\251ng d\341\273\245ng h\341\273\227 tr\341\273\243 \304\221\341"
-   "\272\247u ra MIDI, m\341\273\231t s\341\273\221 ho\341\272\267c t\341\272\245t c\341\272\243 "
-   "\303\242m thanh (t\303\271y thu\341\273\231c v\303\240o tr\303\262 ch\306\241i/\341\273\251ng d"
-   "\341\273\245ng) s\341\272\275 \304\221\306\260\341\273\243c t\341\272\241o ra b\341\273\237i thi"
-   "\341\272\277t b\341\273\213 MIDI. Trong tr\306\260\341\273\235ng h\341\273\243p tr\303\254nh "
-   "\304\221i\341\273\201u khi\341\273\203n MIDI \"null\", \304\221i\341\273\201u n\303\240y c\303"
-   "\263",
-   " ngh\304\251a l\303\240 nh\341\273\257ng \303\242m thanh \304\221\303\263 s\341\272\275 kh\303"
-   "\264ng nghe \304\221\306\260\341\273\243c.",
+   "Thi\341\272\277t l\341\272\255p thi\341\272\277t b\341\273\213 xu\341\272\245t \303\242m thanh M"
+   "IDI (t\303\271y theo tr\303\254nh \304\221i\341\273\201u khi\341\273\203n). Khi \304\221\341\272"
+   "\267t th\303\240nh 'T\341\272\257t', \304\221\341\272\247u ra MIDI s\341\272\275 b\341\273\213 v"
+   "\303\264 hi\341\273\207u h\303\263a. B\341\272\241n c\305\251ng c\303\263 th\341\273\203 nh\341"
+   "\272\255p t\303\252n thi\341\272\277t b\341\273\213.\nKhi \304\221\341\272\247u ra MIDI \304\221"
+   "\306\260\341\273\243c b\341\272\255t v\303\240 tr\303\254nh gi\341\272\243 l\341\272\255p c\303"
+   "\271ng tr\303\262 ch\306\241i/\341\273\251ng d\341\273\245ng h\341\273\227 tr\341\273\243 MIDI, "
+   "m\341\273\231t ph\341\272\247n ho\341\272\267c to\303\240n b\341\273\231 \303\242m thanh t\303"
+   "\271y thu\341\273\231c v\303\240o tr\303\262 ch\306\241i/\341\273\251ng d\341\273\245ng s\341"
+   "\272\275 \304\221\306\260\341\273\243c ph\303\241t qua thi\341\272\277t b\341\273\213 MIDI. V"
+   "\341\273\233i tr\303\254nh \304\221i\341\273\201u khi\341\273\203n MIDI 'null', nh\341\273\257ng"
+   " \303\242m thanh \304\221\303\263 s",
+   "\341\272\275 kh\303\264ng th\341\273\203 nghe \304\221\306\260\341\273\243c.",
    "T\341\272\247n s\341\273\221 t\303\255nh theo khung h\303\254nh m\303\240 Tr\303\262 ch\306\241i"
    " tr\341\273\261c tuy\341\272\277n s\341\272\275 ki\341\273\203m tra xem m\303\241y ch\341\273"
    "\247 v\303\240 m\303\241y kh\303\241ch c\303\263 \304\221\341\273\223ng b\341\273\231 hay kh\303"
@@ -4665,22 +4673,23 @@ static const struct
    "\231 kh\303\241n gi\341\272\243. Lu\303\264n c\303\263 th\341\273\203 thay \304\221\341\273\225i"
    " ch\341\272\277 \304\221\341\273\231 sau n\303\240y.",
    "Quay l\341\272\241i th\306\260 m\341\273\245c m\341\272\271.",
-   "Tho\303\241t RetroArch. N\341\272\277u b\341\272\241n c\306\260\341\273\241ng \303\251p t\341"
-   "\272\257t \341\273\251ng d\341\273\245ng theo b\341\272\245t k\341\273\263 c\303\241ch n\303\240"
-   "o (SIGKILL,...), RetroArch s\341\272\275 kh\303\264ng k\341\273\213p l\306\260u b\341\272\245t k"
-   "\341\273\263 c\341\272\245u h\303\254nh n\303\240o trong m\341\273\215i tr\306\260\341\273\235ng"
-   " h\341\273\243p.Tr\303\252n h\341\273\207 Unix (Linux, macOS,...), c\303\241c t\303\255n hi\341"
-   "\273\207u SIGINT/SIGTERM cho ph\303\251p RetroArch t\341\272\257t \304\221\303\272ng c\303\241ch"
-   ", gi\341\272\243i ph\303\263ng b\341\273\231 nh\341\273\233 \304\221\341\272\247y \304\221\341"
-   "\273\247 v\303\240 l\306\260u c\341\272\245u h\303\254nh n\341\272\277u 'L\306\260u t\341\273"
-   "\261 \304\221\341\273\231ng' \304\221\306\260\341\273\243c b\341\272\255t.",
+   "Tho\303\241t RetroArch. Bu\341\273\231c \304\221\303\263ng ch\306\260\306\241ng tr\303\254nh b"
+   "\341\272\261ng b\341\272\245t k\341\273\263 c\303\241ch m\341\272\241nh n\303\240o (SIGKILL, v.v"
+   ".) s\341\272\275 khi\341\272\277n RetroArch k\341\272\277t th\303\272c m\303\240 kh\303\264ng l"
+   "\306\260u c\341\272\245u h\303\254nh trong m\341\273\215i tr\306\260\341\273\235ng h\341\273\243"
+   "p. Tr\303\252n c\303\241c h\341\273\207 \304\221i\341\273\201u h\303\240nh Unix, SIGINT/SIGTERM "
+   "cho ph\303\251p ch\306\260\306\241ng tr\303\254nh \304\221\306\260\341\273\243c k\341\272\277t t"
+   "h\303\272c m\341\273\231t c\303\241ch an to\303\240n, bao g\341\273\223m c\341\272\243 vi\341"
+   "\273\207c l\306\260u c\341\272\245u h\303\254nh n\341\272\277u \304\221\306\260\341\273\243c b"
+   "\341\272\255t.",
    "C\303\263 n\303\252n gi\341\272\243i tu\341\272\247n t\341\273\261 c\303\241c \304\221i\341\273"
    "\203m ki\341\273\203m tra \304\221\306\260\341\273\243c l\306\260u trong c\303\241c ph\303\241t "
    "l\341\272\241i trong khi ph\303\241t l\341\272\241i b\303\254nh th\306\260\341\273\235ng hay kh"
-   "\303\264ng. N\303\252n b\341\272\255t cho h\341\272\247u h\341\272\277t c\303\241c core, nh\306"
-   "\260ng m\341\273\231t s\341\273\221 core c\303\263 th\341\273\203 ho\341\272\241t \304\221\341"
-   "\273\231ng kh\303\264ng \341\273\225n \304\221\341\273\213nh khi gi\341\272\243i tu\341\272\247n"
-   " t\341\273\261 tr\303\262 ch\306\241i.",
+   "\303\264ng. N\303\252n b\341\272\255t cho h\341\272\247u h\341\272\277t c\303\241c tr\303\254nh "
+   "gi\341\272\243 l\341\272\255p, nh\306\260ng m\341\273\231t s\341\273\221 tr\303\254nh gi\341\272"
+   "\243 l\341\272\255p c\303\263 th\341\273\203 ho\341\272\241t \304\221\341\273\231ng kh\303\264ng"
+   " \341\273\225n \304\221\341\273\213nh khi gi\341\272\243i tu\341\272\247n t\341\273\261 tr\303"
+   "\262 ch\306\241i.",
    "T\341\273\261 \304\221\341\273\231ng l\306\260u tr\341\272\241ng th\303\241i tr\303\262 ch\306"
    "\241i trong qu\303\241 tr\303\254nh ghi l\341\272\241i ph\303\241t l\341\272\241i theo kho\341"
    "\272\243ng th\341\273\235i gian \304\221\341\273\213nh s\341\272\265n. M\341\272\267c \304\221"
@@ -4708,7 +4717,7 @@ static const struct
    "\273\231ng v\341\273\233i c\303\241c phi\303\252n b\341\272\243n kh\303\241c c\341\273\247a core"
    " n\303\240y.",
    "Ch\341\273\215n m\341\273\245c n\303\240y \304\221\341\273\203 qu\303\251t th\306\260 m\341\273"
-   "\245c hi\341\273\207n t\341\272\241i t\303\254m tr\303\262 ch\306\241i.",
+   "\245c hi\341\273\207n t\341\272\241i t\303\254m n\341\273\231i dung.",
    "Sau khi thay \304\221\341\273\225i c\303\240i \304\221\341\272\267t b\341\273\231 \304\221\341"
    "\273\225 b\303\263ng nh\306\260 s\341\273\221 l\306\260\341\273\243ng pass, l\341\273\215c, t"
    "\341\273\211 l\341\273\207 FBO, h\303\243y d\303\271ng t\303\271y ch\341\273\215n n\303\240y "
@@ -4728,7 +4737,7 @@ static const struct
    "khi l\306\260u thay \304\221\341\273\225i v\303\240o t\341\272\255p tin b\341\273\231 \304\221"
    "\341\273\225 b\303\263ng, n\303\263 s\341\272\275 t\341\273\261 \304\221\341\273\231ng \304\221"
    "\306\260\341\273\243c bi\303\252n d\341\273\213ch l\341\272\241i v\303\240 \303\241p d\341\273"
-   "\245ng cho tr\303\262 ch\306\241i.",
+   "\245ng cho n\341\273\231i dung.",
    "T\341\272\241m d\341\273\253ng tr\303\254nh b\341\272\243o v\341\273\207 m\303\240n h\303\254nh."
    " \304\220\303\242y l\303\240 m\341\273\231t g\341\273\243i \303\275 kh\303\264ng nh\341\272\245t"
    " thi\341\272\277t ph\341\272\243i \304\221\306\260\341\273\243c tr\303\254nh \304\221i\341\273"
@@ -4950,21 +4959,20 @@ static const struct
    " \303\275 RetroArch s\341\273\255 d\341\273\245ng m\303\240n h\303\254nh c\341\273\245 th\341"
    "\273\203 \304\221\303\263.",
    "T\341\272\247n s\341\273\221 qu\303\251t ch\303\255nh x\303\241c c\341\273\247a m\303\240n h\303"
-   "\254nh (Hz). Th\303\264ng s\341\273\221 n\303\240y \304\221\306\260\341\273\243c s\341\273\255 d"
-   "\341\273\245ng \304\221\341\273\203 t\303\255nh to\303\241n t\341\272\247n s\341\273\221 \304"
-   "\221\341\272\247u v\303\240o \303\242m thanh theo c\303\264ng th\341\273\251c:\naudio_input_rate"
-   " = t\341\272\247n s\341\273\221 \304\221\341\272\247u v\303\240o c\341\273\247a tr\303\262 ch"
-   "\306\241i * t\341\272\247n s\341\273\221 qu\303\251t m\303\240n h\303\254nh / t\341\272\247n s"
-   "\341\273\221 qu\303\251t tr\303\262 ch\306\241i\nN\341\272\277u Core kh\303\264ng b\303\241o c"
-   "\303\241o b\341\272\245t k\341\273\263 gi\303\241 tr\341\273\213 n\303\240o, gi\303\241 tr\341"
-   "\273\213 m\341\272\267c \304\221\341\273\213nh c\341\273\247a NTSC s\341\272\275 \304\221\306"
-   "\260\341\273\243c s\341\273\255 d\341\273\245ng \304\221\341\273\203 \304\221\341\272\243m b\341"
-   "\272\243o t\303\255nh t\306\260\306\241ng th\303\255ch.\nGi\303\241 tr\341\273\213 n\303\240y n"
-   "\303\252n g\341\272\247n 60Hz \304\221\341\273\203 tr\303\241nh thay \304\221\341\273\225i cao ",
-   "\304\221\341\273\231 l\341\273\233n. N\341\272\277u m\303\240n h\303\254nh c\341\273\247a b\341"
-   "\272\241n kh\303\264ng ch\341\272\241y \341\273\237 ho\341\272\267c g\341\272\247n 60Hz, h\303"
-   "\243y t\341\272\257t VSync v\303\240 gi\341\273\257 nguy\303\252n m\341\272\267c \304\221\341"
-   "\273\213nh.",
+   "\254nh (Hz). Gi\303\241 tr\341\273\213 n\303\240y \304\221\306\260\341\273\243c d\303\271ng \304"
+   "\221\341\273\203 t\303\255nh t\341\273\221c \304\221\341\273\231 l\341\272\245y m\341\272\253u "
+   "\303\242m thanh \304\221\341\272\247u v\303\240o theo c\303\264ng th\341\273\251c:\naudio_input_"
+   "rate = game input rate * display refresh rate / game refresh rate\nN\341\272\277u tr\303\254nh g"
+   "i\341\272\243 l\341\272\255p kh\303\264ng cung c\341\272\245p gi\303\241 tr\341\273\213 n\303"
+   "\240o, c\303\241c gi\303\241 tr\341\273\213 m\341\272\267c \304\221\341\273\213nh c\341\273\247a"
+   " NTSC s\341\272\275 \304\221\306\260\341\273\243c s\341\273\255 d\341\273\245ng \304\221\341\273"
+   "\203 \304\221\341\272\243m b\341\272\243o kh\341\272\243 n\304\203ng t\306\260\306\241ng th\303"
+   "\255ch.\nGi\303\241 tr\341\273\213 n\303\240y n\303\252n gi\341\273\257 g\341\272\247n 60Hz \304"
+   "\221\341\273\203 tr\303\241nh thay \304\221\341\273\225i cao \304\221\341\273\231 \303\242m than"
+   "h qu\303\241 ",
+   "l\341\273\233n. N\341\272\277u m\303\240n h\303\254nh kh\303\264ng ch\341\272\241y \341\273\237 "
+   "m\341\273\251c g\341\272\247n 60Hz, h\303\243y t\341\272\257t VSync v\303\240 gi\341\273\257 ngu"
+   "y\303\252n gi\303\241 tr\341\273\213 m\341\272\267c \304\221\341\273\213nh n\303\240y.",
    "M\303\264 ph\341\273\217ng \304\221\306\260\341\273\235ng qu\303\251t c\306\241 b\341\272\243n t"
    "r\303\252n nhi\341\273\201u khung h\303\254nh ph\341\273\245 b\341\272\261ng c\303\241ch chia m"
    "\303\240n h\303\254nh theo chi\341\273\201u d\341\273\215c v\303\240 hi\341\273\203n th\341\273"
@@ -5016,32 +5024,35 @@ static const struct
    "\303\240n h\303\254nh t\303\271y thu",
    "\341\273\231c vi\341\273\207c \304\221\303\242y c\303\263 ph\341\272\243i l\303\240 l\341\272"
    "\247n x\341\273\255 l\303\275 cu\341\273\221i hay kh\303\264ng.",
-   "Ch\303\250n th\303\252m khung \304\221\341\273\225 b\303\263ng v\303\240o gi\341\273\257a c\303"
-   "\241c khung h\303\254nh \304\221\341\273\203 t\341\272\241o hi\341\273\207u \341\273\251ng \304"
-   "\221\341\273\225 b\303\263ng c\303\263 th\341\273\203 ch\341\272\241y nhanh h\306\241n t\341\273"
-   "\221c \304\221\341\273\231 tr\303\262 ch\306\241i. Ch\341\273\211 s\341\273\255 d\341\273\245ng "
-   "t\303\271y ch\341\273\215n \304\221\306\260\341\273\243c ch\341\273\211 \304\221\341\273\213nh c"
-   "ho t\341\273\221c \304\221\341\273\231 l\303\240m m\341\273\233i m\303\240n h\303\254nh hi\341"
-   "\273\207n t\341\272\241i c\341\273\247a b\341\272\241n. Kh\303\264ng s\341\273\255 d\341\273\245"
-   "ng \341\273\237 t\341\273\221c \304\221\341\273\231 l\303\240m m\341\273\233i kh\303\264ng ph"
-   "\341\272\243i b\341\273\231i s\341\273\221 c\341\273\247a 60Hz, ch\341\272\263ng h\341\272\241n "
-   "nh\306\260 144Hz, 165Hz, v.v. Kh\303\264ng k\341\272\277t h\341\273\243p v\341\273\233i Swap Int"
-   "erval > 1, BFI, Frame Delay ho\341\272\267c Sync to Exact Content Framerate. C\303\263 th\341"
-   "\273\203 b",
-   "\341\272\255t VRR h\341\273\207 th\341\273\221ng, nh\306\260ng kh\303\264ng n\303\252n d\303\271"
-   "ng t\303\271y ch\341\273\215n \304\221\303\263.",
+   "Ch\303\250n th\303\252m khung h\303\254nh \304\221\341\273\225 b\303\263ng v\303\240o gi\341\273"
+   "\257a c\303\241c khung h\303\254nh \304\221\341\273\203 h\341\273\227 tr\341\273\243 c\303\241c "
+   "hi\341\273\207u \341\273\251ng \304\221\341\273\225 b\303\263ng \304\221\306\260\341\273\243c th"
+   "i\341\272\277t k\341\272\277 ch\341\272\241y nhanh h\306\241n t\341\273\221c \304\221\341\273"
+   "\231 khung h\303\254nh c\341\273\247a n\341\273\231i dung. Ch\341\273\211 s\341\273\255 d\341"
+   "\273\245ng t\303\271y ch\341\273\215n t\306\260\306\241ng \341\273\251ng v\341\273\233i t\341"
+   "\272\247n s\341\273\221 qu\303\251t hi\341\273\207n t\341\272\241i c\341\273\247a m\303\240n h"
+   "\303\254nh. Kh\303\264ng d\303\271ng v\341\273\233i t\341\272\247n s\341\273\221 qu\303\251t kh"
+   "\303\264ng ph\341\272\243i b\341\273\231i s\341\273\221 c\341\273\247a 60Hz nh\306\260 144Hz, 16"
+   "5Hz, v.v. Kh\303\264ng k\341\272\277t h\341\273\243p v\341\273\233i Kho\341\272\243ng th\341\273"
+   "\235i gian ho\303\241n \304\221\341\273\225i > 1, BFI, \304\220\341\273\231 tr\341\273\205 khung"
+   " h\303\254nh ho\341\272\267c \304\220\341\273\223ng b\341\273\231",
+   " ch\303\255nh x\303\241c t\341\273\221c \304\221\341\273\231 khung h\303\254nh n\341\273\231i du"
+   "ng. C\303\263 th\341\273\203 \304\221\341\273\203 VRR c\341\273\247a h\341\273\207 th\341\273"
+   "\221ng b\341\272\255t, ch\341\273\211 kh\303\264ng b\341\272\255t t\303\271y ch\341\273\215n "
+   "\304\221\303\263.",
    "S\341\273\255 d\341\273\245ng tr\303\254nh \304\221i\341\273\201u khi\341\273\203n video lu\341"
    "\273\223ng. Vi\341\273\207c n\303\240y c\303\263 th\341\273\203 c\341\272\243i thi\341\273\207n "
    "hi\341\273\207u su\341\272\245t nh\306\260ng c\303\263 th\341\273\203 g\303\242y ra \304\221\341"
    "\273\231 tr\341\273\205 v\303\240 hi\341\273\207n t\306\260\341\273\243ng gi\341\272\255t h\303"
    "\254nh.",
-   "\304\220\341\273\223ng b\341\273\231 v\341\273\233i T\341\273\221c \304\221\341\273\231 Khung h"
-   "\303\254nh tr\303\262 ch\306\241i Ch\303\255nh x\303\241c. T\303\271y ch\341\273\215n n\303\240y"
-   " t\306\260\306\241ng \304\221\306\260\306\241ng v\341\273\233i vi\341\273\207c \303\251p t\341"
-   "\273\221c \304\221\341\273\231 x1 trong khi v\341\272\253n cho ph\303\251p tua nhanh. Kh\303\264"
-   "ng l\341\273\207ch so v\341\273\233i t\341\273\221c \304\221\341\273\231 l\303\240m m\341\273"
-   "\233i y\303\252u c\341\272\247u c\341\273\247a Core, kh\303\264ng c\303\263 Ki\341\273\203m so"
-   "\303\241t T\341\273\221c \304\221\341\273\231 \304\220\341\273\231ng.",
+   "\304\220\341\273\223ng b\341\273\231 ch\303\255nh x\303\241c v\341\273\233i t\341\273\221c \304"
+   "\221\341\273\231 khung h\303\254nh n\341\273\231i dung. T\303\271y ch\341\273\215n n\303\240y t"
+   "\306\260\306\241ng \304\221\306\260\306\241ng v\341\273\233i vi\341\273\207c bu\341\273\231c t"
+   "\341\273\221c \304\221\341\273\231 ch\341\272\241y \341\273\237 m\341\273\251c x1 nh\306\260ng v"
+   "\341\272\253n cho ph\303\251p tua nhanh. Kh\303\264ng c\303\263 sai l\341\273\207ch so v\341\273"
+   "\233i t\341\272\247n s\341\273\221 qu\303\251t m\303\240 tr\303\254nh gi\341\272\243 l\341\272"
+   "\255p y\303\252u c\341\272\247u, kh\303\264ng s\341\273\255 d\341\273\245ng Dynamic Rate Control"
+   " cho \303\242m thanh.",
    "Lu\341\273\223ng tr\341\273\231n \303\242m thanh #%d: %s",
    "T\341\272\245t c\341\272\243",
    "Thay \304\221\341\273\225i",
@@ -5074,8 +5085,8 @@ static const struct
    "Danh s\303\241ch th\303\240nh t\303\255ch",
    "T\341\272\241m d\341\273\253ng Ch\341\272\277 \304\221\341\273\231 Th\303\240nh t\303\255ch Th"
    "\341\273\255 th\303\241ch",
-   "T\341\272\241m d\341\273\253ng ch\341\272\277 \304\221\341\273\231 th\303\240nh t\303\255ch Hard"
-   "core",
+   "T\341\272\241m d\341\273\253ng ch\341\272\277 \304\221\341\273\231 th\303\240nh t\303\255ch th"
+   "\341\273\255 th\303\241ch",
    "Ti\341\272\277p t\341\273\245c Ch\341\272\277 \304\221\341\273\231 Th\303\240nh t\303\255ch Th"
    "\341\273\255 th\303\241ch",
    "H\341\273\247y ti\341\272\277p t\341\273\245c ch\341\272\277 \304\221\341\273\231 th\303\240nh t"
@@ -5083,8 +5094,8 @@ static const struct
    "Ti\341\272\277p t\341\273\245c ch\341\272\277 \304\221\341\273\231 th\303\240nh t\303\255ch th"
    "\341\273\255 th\303\241ch \304\221\303\243 T\341\272\257t",
    "M\303\241y ch\341\273\247 RetroAchievements kh\303\264ng th\341\273\203 truy c\341\272\255p",
-   "Nh\341\272\255p tr\303\262 ch\306\241i",
-   "Nh\341\272\255p tr\303\262 ch\306\241i",
+   "Nh\341\272\255p n\341\273\231i dung",
+   "Nh\341\272\255p n\341\273\231i dung",
    "Th\303\252m v\303\240o Y\303\252u Th\303\255ch",
    "Th\303\252m v\303\240o Y\303\252u Th\303\255ch",
    "Th\303\252m v\303\240o B\341\273\231 tr\341\273\231n",
@@ -5104,7 +5115,8 @@ static const struct
    "Ng\303\264n ng\341\273\257 \304\221\303\255ch",
    "\304\220\341\273\213a ch\341\273\211 d\341\273\213ch v\341\273\245 AI",
 #ifndef HAVE_DYNAMIC
-   "Lu\303\264n t\341\272\243i l\341\272\241i Core khi ch\341\272\241y tr\303\262 ch\306\241i",
+   "Lu\303\264n t\341\272\243i l\341\272\241i tr\303\254nh gi\341\272\243 l\341\272\255p khi ch\341"
+   "\272\241y n\341\273\231i dung",
 #endif
    "Gi\341\272\243i ph\303\241p kh\341\272\257c ph\341\273\245c l\341\273\227i ng\341\272\257t k\341"
    "\272\277t n\341\273\221i Android",
@@ -5124,6 +5136,8 @@ static const struct
    "\252n c\341\273\221 \304\221\341\273\213nh (G\341\273\243i \303\275)",
    "B\341\273\231 l\341\273\215c \303\242m thanh",
    "G\341\273\243i \303\275 \304\221\341\273\213nh d\341\272\241ng \303\242m thanh",
+   "S\341\273\221 th\341\273\261c",
+   "S\341\273\221 nguy\303\252n 16-bit",
    "\304\220\341\273\231 tr\341\273\205 \303\242m thanh (mili gi\303\242y)",
    "\304\220\341\273\231 l\341\273\207ch th\341\273\235i gian t\341\273\221i \304\221a",
    "T\341\272\257t b\341\273\231 tr\341\273\231n \303\242m thanh",
@@ -5135,7 +5149,7 @@ static const struct
    "\304\220\341\272\247u ra",
    "T\341\273\261 \304\221\341\273\231ng \304\221i\341\273\201u ch\341\273\211nh t\341\273\221c \304"
    "\221\341\273\231 \303\242m thanh",
-   "\303\202m thanh Resampler Driver",
+   "B\341\273\231 l\341\272\245y m\341\272\253u l\341\272\241i \303\242m thanh",
    "Ch\341\272\245t l\306\260\341\273\243ng t\303\241i t\341\272\241o m\341\272\253u \303\242m thanh",
    "Tu\303\242n theo ch\341\272\277 \304\221\341\273\231 im l\341\272\267ng",
    "T\341\272\257t ti\341\272\277ng khi tua l\303\271i",
@@ -5164,7 +5178,7 @@ static const struct
    "Cu\341\273\231n xu\341\273\221ng",
    "Cu\341\273\231n l\303\252n",
    "B\341\272\257t \304\221\341\272\247u",
-   "B\341\272\255t/T\341\272\257t ph\303\255m n\303\263ng",
+   "B\341\272\255t/t\341\272\257t b\303\240n ph\303\255m",
    "B\341\272\255t/T\341\272\257t Menu",
    "Hi\341\273\203n th\341\273\213 m\341\273\251c pin",
    "T\341\273\207p l\306\260u: Kh\303\264ng ghi \304\221\303\250 SaveRAM khi t\341\272\243i l\306"
@@ -5278,7 +5292,7 @@ static const struct
    "\273\231ng",
    "Th\303\240nh t\303\255ch Retro",
    "\304\220ang l\341\272\245y d\341\273\257 li\341\273\207u tr\303\262 ch\306\241i",
-   "Ch\341\272\277 \304\221\341\273\231 Th\341\273\255 th\303\241ch",
+   "Ch\341\272\277 \304\221\341\273\231 th\341\273\255 th\303\241ch",
    "\304\220ang nh\341\272\255n di\341\273\207n tr\303\262 ch\306\241i",
    "B\341\272\243ng x\341\272\277p h\341\272\241ng",
    "\304\220\303\243 kh\303\263a",
@@ -5291,7 +5305,7 @@ static const struct
    "Ki\341\273\203m tra th\303\240nh t\303\255ch kh\303\264ng ch\303\255nh th\341\273\251c",
    "Ch\341\273\211 Tr\303\254nh theo d\303\265i",
    "\304\220\303\243 m\341\273\237",
-   "Ch\341\272\277 \304\221\341\273\231 Th\341\273\255 th\303\241ch",
+   "Ch\341\272\277 \304\221\341\273\231 th\341\273\255 th\303\241ch",
    "\303\202m thanh M\341\273\237 Kh\303\263a",
    "Kh\303\264ng ch\303\255nh th\341\273\251c",
    "Kh\303\264ng \304\221\306\260\341\273\243c h\341\273\227 tr\341\273\243",
@@ -5312,7 +5326,7 @@ static const struct
    "Tr\303\262 ch\306\241i c\303\263 th\303\240nh t\303\255ch",
    "Th\303\264ng b\303\241o m\341\273\237 kh\303\263a",
    "X\303\263a",
-   "Tho\303\241t tr\303\262 ch\306\241i",
+   "\304\220\303\263ng n\341\273\231i dung",
    "ID kh\303\263a truy c\341\272\255p",
    "\304\220\341\273\223ng b\341\273\231 \304\221\303\241m m\303\242y c\303\263 kh\341\272\243 n\304"
    "\203ng ghi \304\221\303\250.",
@@ -5339,20 +5353,21 @@ static const struct
    "T\341\272\243i c\341\272\245u h\303\254nh",
    "T\341\272\255p tin c\341\272\245u h\303\254nh",
    "C\341\272\245u h\303\254nh",
-   "L\306\260u C\341\272\245u H\303\254nh T\341\273\221i Thi\341\273\203u",
+   "L\306\260u c\341\272\245u h\303\254nh t\341\273\221i thi\341\273\203u",
    "L\306\260u c\341\272\245u h\303\254nh khi tho\303\241t",
-   "X\303\241c nh\341\272\255n \304\221\303\263ng Tr\303\262 ch\306\241i",
+   "X\303\241c nh\341\272\255n \304\221\303\263ng n\341\273\231i dung",
    "X\303\241c nh\341\272\255n Tho\303\241t",
-   "X\303\241c nh\341\272\255n \304\221\341\272\267t l\341\272\241i Tr\303\262 ch\306\241i",
-   "Ch\341\273\215n tr\303\262 ch\306\241i",
-   "Core kh\303\264ng c\341\272\247n ROM/GAME",
+   "X\303\241c nh\341\272\255n \304\221\341\272\267t l\341\272\241i n\341\273\231i dung",
+   "N\341\273\231i dung",
+   "Tr\303\254nh gi\341\272\243 l\341\272\255p kh\303\264ng c\303\263 n\341\273\231i dung",
    "C\306\241 s\341\273\237 d\341\273\257 li\341\273\207u",
    "Danh s\303\241ch ph\303\241t Y\303\252u th\303\255ch",
    "K\303\255ch th\306\260\341\273\233c danh s\303\241ch y\303\252u th\303\255ch",
    "Danh s\303\241ch \304\221\303\243 m\341\273\237 g\341\272\247n \304\221\303\242y",
    "S\341\273\221 m\341\273\245c l\306\260u g\341\272\247n \304\221\303\242y",
    "Danh s\303\241ch ph\303\241t \341\272\242nh",
-   "Hash Th\303\240nh t\303\255ch Retro",
+   "M\303\243 b\304\203m th\303\240nh t\303\255ch Retro",
+   "Tr\303\254nh gi\341\272\243 l\341\272\255p",
    "C\306\241 s\341\273\237 d\341\273\257 li\341\273\207u",
    "M\341\273\245c: %lu/%lu",
    "T\303\252n",
@@ -5360,7 +5375,8 @@ static const struct
    "\304\220\306\260\341\273\235ng d\341\272\253n t\341\273\207p",
    "Th\341\273\235i gian ch\306\241i",
    "Danh s\303\241ch ph\303\241t Nh\341\272\241c",
-   "L\306\260u Nh\341\272\255t k\303\275 Th\341\273\235i gian Ch\341\272\241y (Theo Core)",
+   "L\306\260u nh\341\272\255t k\303\275 th\341\273\235i gian ch\341\272\241y (Theo tr\303\254nh gi"
+   "\341\272\243 l\341\272\255p)",
    "L\306\260u Nh\341\272\255t k\303\275 Th\341\273\235i gian Ch\341\272\241y (T\341\273\225ng h\341"
    "\273\243p)",
    "Menu nhanh",
@@ -5387,22 +5403,23 @@ static const struct
    "Hi\341\273\203n th\341\273\213 \342\200\230Video\342\200\231",
    "Hi\341\273\203n th\341\273\213 'B\341\273\221 c\341\273\245c Video'",
    "Danh s\303\241ch ph\303\241t Video",
-   "T\341\272\243i v\341\273\201",
+   "T\341\272\243i xu\341\273\221ng",
    "[T\341\273\261 \304\221\341\273\231ng]",
    "M\303\243 gian l\341\272\255n",
    "B\341\273\231 \304\221\341\272\277m Core",
-   "Sao l\306\260u Core",
-   "X\303\263a Core",
+   "Sao l\306\260u tr\303\254nh gi\341\272\243 l\341\272\255p",
+   "X\303\263a tr\303\254nh gi\341\272\243 l\341\272\255p",
    "X\303\263a b\341\272\243n sao l\306\260u",
    "Hi\341\273\203n th\341\273\213 t\303\252n c\341\273\247a core",
-   "Th\303\264ng tin Core",
+   "Th\303\264ng tin tr\303\254nh gi\341\272\243 l\341\272\255p",
    "T\303\241c gi\341\272\243",
-   "L\306\260u b\341\273\231 nh\341\273\233 \304\221\341\273\207m th\303\264ng tin Core",
+   "L\306\260u b\341\273\231 nh\341\273\233 \304\221\341\273\207m th\303\264ng tin tr\303\254nh gi"
+   "\341\272\243 l\341\272\255p",
    "Th\341\273\203 lo\341\272\241i",
-   "Nh\303\243n hi\341\273\207u Core",
-   "T\303\252n c\341\273\247a Core",
+   "Nh\303\243n hi\341\273\207u tr\303\254nh gi\341\272\243 l\341\272\255p",
+   "T\303\252n c\341\273\247a tr\303\254nh gi\341\272\243 l\341\272\255p",
    "\304\220\306\260\341\273\235ng d\341\272\253n \304\221\341\272\247y \304\221\341\273\247",
-   "Phi\303\252n b\341\272\243n c\341\273\247a Core",
+   "Phi\303\252n b\341\272\243n c\341\273\247a tr\303\254nh gi\341\272\243 l\341\272\255p",
    "Ph\341\272\247n m\341\273\201m h\341\273\207 th\341\273\221ng",
    "L\306\260u \303\275: 'T\341\273\207p H\341\273\207 th\341\273\221ng n\341\272\261m trong Th\306"
    "\260 m\341\273\245c N\341\273\231i dung' \304\221\303\243 \304\221\306\260\341\273\243c b\341"
@@ -5412,47 +5429,49 @@ static const struct
    "Quy\341\273\201n truy c\341\272\255p",
    "API \304\221\341\273\223 h\341\273\215a \304\221\306\260\341\273\243c y\303\252u c\341\272\247u",
    "C\306\241 b\341\272\243n (L\306\260u/M\341\273\237)",
-   "B\341\273\217 qua t\303\255nh n\304\203ng L\306\260u tr\341\272\241ng th\303\241i Core",
+   "B\341\273\217 qua t\303\255nh n\304\203ng l\306\260u tr\341\272\241ng th\303\241i tr\303\254nh g"
+   "i\341\272\243 l\341\272\255p",
    "X\303\241c \304\221\341\273\213nh (L\306\260u / M\341\273\237, Tua l\303\271i, Tua t\341\273\233"
    "i, Ch\306\241i qua m\341\272\241ng)",
    "Kh\303\264ng",
    "N\341\273\221i ti\341\272\277p (L\306\260u / M\341\273\237, Tua l\303\271i)",
-   "H\341\273\227 tr\341\273\243 l\306\260u tr\303\262 ch\306\241i",
+   "H\341\273\227 tr\341\273\243 l\306\260u tr\341\272\241ng th\303\241i",
    "Ti\341\273\207n \303\255ch m\341\273\237 r\341\273\231ng \304\221\306\260\341\273\243c h\341\273"
    "\227 tr\341\273\243",
    "Nh\303\240 s\341\272\243n xu\341\272\245t h\341\273\207 th\341\273\221ng",
    "T\303\252n h\341\273\207 th\341\273\221ng",
    "\304\220i\341\273\201u khi\341\273\203n",
-   "T\341\272\243i Core",
+   "T\341\272\243i tr\303\254nh gi\341\272\243 l\341\272\255p",
    "\304\220\303\263ng Core",
-   "Kho\303\241 Core \304\221\303\243 c\303\240i \304\221\341\272\267t",
-   "Qu\341\272\243n l\303\275 Core",
+   "Kho\303\241 tr\303\254nh gi\341\272\243 l\341\272\255p \304\221\303\243 c\303\240i \304\221\341"
+   "\272\267t",
+   "Qu\341\272\243n l\303\275 tr\303\254nh gi\341\272\243 l\341\272\255p",
 #ifdef HAVE_MIST
-   "Qu\341\272\243n l\303\275 Core",
+   "Qu\341\272\243n l\303\275 tr\303\254nh gi\341\272\243 l\341\272\255p",
 #endif
    "T\303\271y ch\341\273\215n Core",
    "Ghi t\303\271y ch\341\273\215n xu\341\273\221ng \304\221\304\251a",
    "\304\220\341\272\267t l\341\272\241i T\303\271y ch\341\273\215n Core",
-   "Danh m\341\273\245c T\303\271y ch\341\273\215n Core",
+   "Danh m\341\273\245c t\303\271y ch\341\273\215n tr\303\254nh gi\341\272\243 l\341\272\255p",
    "T\341\273\207p T\303\271y ch\341\273\215n \304\220ang ho\341\272\241t \304\221\341\273\231ng",
    "Qu\341\272\243n l\303\275 T\303\271y ch\341\273\215n Core",
    "Kh\303\264i ph\341\273\245c b\341\272\243n sao l\306\260u",
    "Danh m\341\273\245c Core",
-   "Lo\341\272\241i core n\303\240y kh\341\273\217i menu 'Core t\341\273\261 ch\341\272\241y kh\303"
-   "\264ng c\341\272\247n tr\303\262 ch\306\241i'",
-   "T\341\273\261 \304\221\341\273\231ng ch\341\272\241y Core",
+   "Kh\303\264ng hi\341\273\203n th\341\273\213 trong menu 'Tr\303\254nh gi\341\272\243 l\341\272"
+   "\255p kh\303\264ng c\303\263 n\341\273\231i dung'",
+   "T\341\273\261 \304\221\341\273\231ng ch\341\272\241y tr\303\254nh gi\341\272\243 l\341\272\255p",
 #ifdef HAVE_MIST
-   "C\303\240i \304\221\341\272\267t core",
-   "G\341\273\241 c\303\240i \304\221\341\272\267t core",
+   "C\303\240i \304\221\341\272\267t tr\303\254nh gi\341\272\243 l\341\272\255p",
+   "G\341\273\241 c\303\240i \304\221\341\272\267t tr\303\254nh gi\341\272\243 l\341\272\255p",
 #endif
    "Lu\303\264n G\341\273\243i \303\275 Core",
    "Sao l\306\260u Core khi C\341\272\255p Nh\341\272\255t",
-   "Sao l\306\260u core k\303\255ch th\306\260\341\273\233c \304\221\303\243 m\341\273\237 g\341\272"
-   "\247n \304\221\303\242y",
-   "T\341\273\261 \304\221\341\273\231ng gi\341\272\243i n\303\251n l\306\260u tr\341\273\257 t\341"
-   "\272\243i v\341\273\201",
-   "\304\220\306\260\341\273\235ng d\341\272\253n Core",
-   "Tr\303\254nh t\341\272\243i Core",
+   "Sao l\306\260u tr\303\254nh gi\341\272\243 l\341\272\255p k\303\255ch th\306\260\341\273\233c "
+   "\304\221\303\243 m\341\273\237 g\341\272\247n \304\221\303\242y",
+   "T\341\273\261 \304\221\341\273\231ng gi\341\272\243i n\303\251n t\341\273\207p \304\221\303\243 "
+   "t\341\272\243i xu\341\273\221ng",
+   "\304\220\306\260\341\273\235ng d\341\272\253n tr\303\254nh gi\341\272\243 l\341\272\255p",
+   "T\341\272\243i xu\341\273\221ng tr\303\254nh gi\341\272\243 l\341\272\255p",
    "C\303\240i \304\221\341\272\267t C\341\272\255p nh\341\272\255t Core",
    "Hi\341\273\203n th\341\273\213 Core Th\341\273\255 Nghi\341\273\207m",
    "Ki\341\272\277n tr\303\272c CPU",
@@ -5488,7 +5507,7 @@ static const struct
 #endif
    "Qu\341\272\243n l\303\275 con tr\341\273\217",
    "Chuy\341\273\203n h\303\254nh thu nh\341\273\217",
-   "Qu\341\272\243n l\303\275 cho c\306\241 s\341\273\237 d\341\273\257 li\341\273\207u",
+   "Qu\341\272\243n l\303\275 d\341\273\257 li\341\273\207u",
    "X\303\263a",
    "X\303\263a danh m\341\273\245c",
    "Menu Desktop (c\341\272\247n kh\341\273\237i \304\221\341\273\231ng l\341\272\241i)",
@@ -5496,7 +5515,7 @@ static const struct
    "Kh\303\264ng d\303\240nh ri\303\252ng",
    "\306\257u ti\303\252n",
    "D\303\240nh ri\303\252ng",
-   "<M\341\273\245c tr\303\262 ch\306\241i>",
+   "<M\341\273\245c n\341\273\231i dung>",
    "<M\341\272\267c \304\221\341\273\213nh>",
    "<Kh\303\264ng c\303\263 g\303\254>",
    "Kh\303\264ng t\303\254m th\341\272\245y th\306\260 m\341\273\245c.",
@@ -5516,16 +5535,16 @@ static const struct
    "Th\303\252m \304\221\304\251a",
    "M\341\272\267c \304\221\341\273\213nh",
    "T\341\272\243i xu\341\273\221ng",
-   "T\341\272\243i v\341\273\201 Core...",
-   "T\341\272\243i n\341\273\231i dung",
+   "T\341\272\243i xu\341\273\221ng tr\303\254nh gi\341\272\243 l\341\272\255p...",
+   "T\341\272\243i v\341\273\201 n\341\273\231i dung",
    "Tr\303\254nh t\341\272\243i t\341\273\207p h\341\273\207 th\341\273\221ng cho tr\303\254nh gi"
    "\341\272\243 l\341\272\255p",
    "T\341\272\243i h\303\254nh thu nh\341\273\217",
    "Xu\341\273\221ng + Select",
    "Xu\341\273\221ng + Y + L1 + R1",
    "Tr\303\254nh \304\221i\341\273\201u khi\341\273\203n",
-   "Cho ph\303\251p Core thay \304\221\341\273\225i tr\303\254nh \304\221i\341\273\201u khi\341\273"
-   "\203n video",
+   "Cho ph\303\251p tr\303\254nh gi\341\272\243 l\341\272\255p thay \304\221\341\273\225i tr\303\254"
+   "nh \304\221i\341\273\201u khi\341\273\203n video",
    "T\341\272\243i tr\303\254nh gi\341\272\243 l\341\272\255p t\341\272\241m khi tr\303\254nh gi\341"
    "\272\243 l\341\272\255p hi\341\273\207n t\341\272\241i t\341\272\257t",
    "Sao l\306\260u \304\221\304\251a",
@@ -5587,8 +5606,8 @@ static const struct
    "B\341\272\255t truy c\341\272\255p file b\303\252n ngo\303\240i",
    "B\341\273\231 l\341\273\215c",
    "L\341\273\215c theo Core hi\341\273\207n t\341\272\241i",
-   "L\306\260u t\303\271y ch\341\273\215n th\306\260 m\341\273\245c tr\303\262 ch\306\241i",
-   "X\303\263a t\303\271y ch\341\273\215n th\306\260 m\341\273\245c tr\303\262 ch\306\241i",
+   "L\306\260u t\303\271y ch\341\273\215n th\306\260 m\341\273\245c n\341\273\231i dung",
+   "X\303\263a t\303\271y ch\341\273\215n th\306\260 m\341\273\245c n\341\273\231i dung",
    "Hi\341\273\203n th\341\273\213 t\341\273\221c \304\221\341\273\231 khung h\303\254nh",
    "Kho\341\272\243ng th\341\273\235i gian c\341\272\255p nh\341\272\255t t\341\273\221c \304\221"
    "\341\273\231 khung h\303\254nh (t\303\255nh theo khung)",
@@ -5607,12 +5626,13 @@ static const struct
    "Ghi \304\221\303\250 p2",
    "Hi\341\273\203n th\341\273\213 Debug",
 #endif
-   "L\306\260u T\303\271y ch\341\273\215n Tr\303\262 ch\306\241i",
+   "T\303\271y ch\341\273\215n l\306\260u tr\303\262 ch\306\241i",
    "X\303\263a t\303\271y ch\341\273\215n tr\303\262 ch\306\241i",
-   "T\341\273\261 \304\221\341\273\231ng t\341\272\243i c\303\241c t\303\271y ch\341\273\215n Core d"
-   "\303\240nh ri\303\252ng cho tr\303\262 ch\306\241i",
-   "S\341\273\255 d\341\273\245ng file T\303\271y ch\341\273\215n Core To\303\240n c\341\273\245c",
-   "Core kh\303\264ng c\341\272\247n ROM/GAME",
+   "T\341\273\261 \304\221\341\273\231ng t\341\272\243i t\303\271y ch\341\273\215n tr\303\254nh gi"
+   "\341\272\243 l\341\272\255p theo t\341\273\253ng n\341\273\231i dung",
+   "S\341\273\255 d\341\273\245ng t\341\273\207p t\303\271y ch\341\273\215n tr\303\254nh gi\341\272"
+   "\243 l\341\272\255p d\303\271ng chung",
+   "Tr\303\254nh gi\341\272\243 l\341\272\255p kh\303\264ng c\303\263 n\341\273\231i dung",
    "Kh\303\241m ph\303\241",
    "Y\303\252u th\303\255ch",
    "H\303\254nh \341\272\243nh",
@@ -5666,11 +5686,11 @@ static const struct
    "Ng\306\260\341\273\241ng tr\341\273\245c n\303\272t \304\221i\341\273\201u khi\341\273\203n",
    "\341\272\250n M\303\264 T\341\272\243 Input Core Kh\303\264ng R\303\240ng Bu\341\273\231c",
    "Hi\341\273\203n Th\341\273\213 Nh\303\243n M\303\264 T\341\272\243 Input",
-   "Ch\341\273\211 s\341\273\221 Thi\341\272\277t b\341\273\213",
+   "Ch\341\273\211 s\341\273\221 thi\341\272\277t b\341\273\213",
    "Lo\341\272\241i D\303\240nh ri\303\252ng Thi\341\272\277t b\341\273\213",
    "Thi\341\272\277t b\341\273\213 \304\221\306\260\341\273\243c d\303\240nh ri\303\252ng cho ng\306"
    "\260\341\273\235i ch\306\241i n\303\240y",
-   "Lo\341\272\241i Thi\341\272\277t B\341\273\213",
+   "Lo\341\272\241i thi\341\272\277t b\341\273\213",
    "V\303\264 hi\341\273\207u n\303\272t th\303\264ng tin",
    "T\341\272\257t Analog tr\303\241i trong Menu",
    "T\341\272\257t Analog ph\341\272\243i trong Menu",
@@ -5678,27 +5698,27 @@ static const struct
    "\304\220i\341\273\201u khi\341\273\203n",
    "Ph\341\272\243n h\341\273\223i x\303\272c gi\303\241c/rung",
    "Nh\341\272\245n gi\341\273\257",
-   "Ph\303\255m n\303\263ng",
-   "Ph\303\255m n\303\263ng B\341\272\255t \304\220\341\273\231 tr\341\273\205 (Khung h\303\254nh)",
-   "Lo\341\272\241i thi\341\272\277t b\341\273\213 ph\303\255m n\303\263ng H\341\273\243p nh\341\272"
-   "\245t",
-   "Ph\303\255m n\303\263ng theo Ng\306\260\341\273\235i ch\306\241i 1",
+   "Ph\303\255m t\341\272\257t",
+   "\304\220\341\273\231 tr\341\273\205 b\341\272\255t ph\303\255m t\341\272\257t (Khung h\303\254nh"
+   ")",
+   "G\341\273\231p lo\341\272\241i thi\341\272\277t b\341\273\213 ph\303\255m t\341\272\257t",
+   "Ph\303\255m t\341\272\257t theo Ng\306\260\341\273\235i ch\306\241i 1",
    "B\341\272\243n \304\221\341\273\223 ph\303\255m cho tay c\341\272\247m",
-   "N\303\272t A (Ph\341\272\243i)",
+   "N\303\272t A",
    "N\303\272t B (Xu\341\273\221ng)",
    "D-Pad Xu\341\273\221ng",
-   "N\303\272t L (Vai)",
-   "N\303\272t L2 (K\303\255ch ho\341\272\241t)",
-   "N\303\272t L3 (Ng\303\263n c\303\241i)",
+   "N\303\272t L1",
+   "N\303\272t L2",
+   "N\303\272t L3",
    "D-Pad Tr\303\241i",
-   "N\303\272t R (Vai)",
-   "N\303\272t R2 (K\303\255ch ho\341\272\241t)",
-   "N\303\272t R3 (Ng\303\263n c\303\241i)",
+   "N\303\272t R1",
+   "N\303\272t R2",
+   "N\303\272t R3",
    "N\303\272t D-Pad Ph\341\272\243i",
    "N\303\272t SELECT",
    "N\303\272t START",
    "D-Pad L\303\252n",
-   "N\303\272t X (Tr\303\252n)",
+   "N\303\272t X",
    "N\303\272t Y (Tr\303\241i)",
    "Ph\303\255m %s",
    "Lo\341\272\241i b\341\272\243n \304\221\341\273\223 ph\303\255m cho tay c\341\272\247m",
@@ -5721,50 +5741,51 @@ static const struct
    "Ch\341\273\211 m\341\273\245c m\303\243 gian l\341\272\255n tr\306\260\341\273\233c",
    "M\303\243 gian l\341\272\255n ti\341\272\277p theo",
    "M\303\243 gian l\341\272\255n (B\341\272\255t/T\341\272\257t)",
-   "\304\220\303\263ng tr\303\262 ch\306\241i",
-   "\304\220\341\272\251y \304\221\304\251a (B\341\272\255t/T\341\272\257t)",
+   "\304\220\303\263ng n\341\273\231i dung",
+   "Th\303\241o \304\221\304\251a (B\341\272\255t/T\341\272\257t)",
    "\304\220\304\251a ti\341\272\277p theo",
    "\304\220\304\251a tr\306\260\341\273\233c \304\221\303\263",
-   "B\341\272\255t ph\303\255m n\303\263ng",
+   "B\341\272\255t ph\303\255m t\341\272\257t",
    "Tua nhanh (Nh\341\272\245n gi\341\273\257)",
    "Tua nhanh (B\341\272\255t/T\341\272\257t)",
    "Hi\341\273\203n th\341\273\213 FPS (B\341\272\255t/T\341\272\257t)",
    "T\341\273\253ng khung h\303\254nh",
    "To\303\240n m\303\240n h\303\254nh (B\341\272\255t/T\341\272\257t)",
-   "T\341\272\255p trung Tr\303\262 ch\306\241i (B\341\272\255t/T\341\272\257t)",
+   "T\341\272\255p trung tr\303\262 ch\306\241i (B\341\272\255t/T\341\272\257t)",
    "C\341\272\247m Chu\341\273\231t (B\341\272\255t/T\341\272\257t)",
    "D\341\273\253ng Ghi/Ph\303\241t l\341\272\241i",
-   "M\341\273\237 tr\303\262 ch\306\241i",
+   "T\341\272\243i tr\341\272\241ng th\303\241i",
    "B\341\272\255t/T\341\272\257t Menu",
    "T\341\272\257t ti\341\272\277ng \303\242m thanh",
-   "\341\272\250n/Hi\341\273\207n chat Tr\303\262 ch\306\241i tr\341\273\261c tuy\341\272\277n (B"
+   "L\303\240m m\341\273\235 tr\303\262 chuy\341\273\207n ch\306\241i qua m\341\272\241ng (B\341\272"
+   "\255t/T\341\272\257t)",
+   "Ch\341\272\277 \304\221\341\273\231 Ch\306\241i/Quan s\303\241t ch\306\241i qua m\341\272\241ng "
+   "(B\341\272\255t/T\341\272\257t)",
+   "Ch\341\272\277 \304\221\341\273\231 m\303\241y ch\341\273\247 ch\306\241i qua m\341\272\241ng (B"
    "\341\272\255t/T\341\272\257t)",
-   "Ch\341\272\277 \304\221\341\273\231 Ch\306\241i/Xem Tr\303\262 ch\306\241i tr\341\273\261c tuy"
-   "\341\272\277n (B\341\272\255t/T\341\272\257t)",
-   "Ch\341\272\277 \304\221\341\273\231 m\303\241y ch\341\273\247 Netplay (B\341\272\255t/T\341\272"
-   "\257t)",
-   "\304\220\341\273\231 tr\341\273\205 Netplay (B\341\272\255t/T\341\272\257t)",
-   "Tr\303\262 chuy\341\273\207n ng\306\260\341\273\235i ch\306\241i Tr\303\262 ch\306\241i tr\341"
-   "\273\261c tuy\341\272\277n",
-   "\304\220i\341\273\203m ki\341\273\203m tra Ph\303\241t l\341\272\241i Ti\341\272\277p theo",
+   "\304\220\341\273\231 tr\341\273\205 khi ch\306\241i qua m\341\272\241ng (B\341\272\255t/T\341"
+   "\272\257t)",
+   "Tr\303\262 chuy\341\273\207n ng\306\260\341\273\235i ch\306\241i trong ch\306\241i qua m\341\272"
+   "\241ng",
+   "\304\220i\341\273\203m ki\341\273\203m tra ph\303\241t l\341\272\241i ti\341\272\277p theo",
    "L\341\273\233p ph\341\273\247 B\303\240n ph\303\255m (B\341\272\255t/T\341\272\257t)",
    "L\341\273\233p ph\341\273\247 Ti\341\272\277p theo",
    "T\341\272\241m d\341\273\253ng",
    "Ph\303\241t l\341\272\241i",
-   "Khung H\303\254nh \306\257u Ti\303\252n (B\341\272\255t/T\341\272\257t)",
-   "\304\220i\341\273\203m ki\341\273\203m tra Ph\303\241t l\341\272\241i Tr\306\260\341\273\233c "
+   "Khung h\303\254nh \306\260u ti\303\252n (B\341\272\255t/T\341\272\257t)",
+   "\304\220i\341\273\203m ki\341\273\203m tra ph\303\241t l\341\272\241i tr\306\260\341\273\233c "
    "\304\221\303\263",
    "Tho\303\241t",
    "Ghi h\303\254nh (B\341\272\255t/T\341\272\257t)",
-   "Ghi l\341\272\241i Ph\303\241t l\341\272\241i",
-   "Khe Ph\303\241t l\341\272\241i Tr\306\260\341\273\233c \304\221\303\263",
-   "Khe Ph\303\241t l\341\272\241i Ti\341\272\277p theo",
-   "\304\220\341\272\267t l\341\272\241i tr\303\262 ch\306\241i",
+   "Ghi l\341\272\241i b\341\272\243n ph\303\241t l\341\272\241i",
+   "Khe ph\303\241t l\341\272\241i tr\306\260\341\273\233c \304\221\303\263",
+   "Khe ph\303\241t l\341\272\241i ti\341\272\277p theo",
+   "\304\220\341\272\267t l\341\272\241i n\341\273\231i dung",
    "Kh\341\273\237i \304\221\341\273\231ng l\341\272\241i RetroArch",
    "Tua l\303\271i",
-   "Ch\341\272\241y Tr\306\260\341\273\233c (B\341\272\255t/T\341\272\257t)",
-   "L\306\260u \304\220i\341\273\203m ki\341\273\203m tra Ph\303\241t l\341\272\241i",
-   "L\306\260u tr\303\262 ch\306\241i",
+   "Ch\341\272\241y tr\306\260\341\273\233c (B\341\272\255t/T\341\272\257t)",
+   "L\306\260u \304\221i\341\273\203m ki\341\273\203m tra ph\303\241t l\341\272\241i",
+   "L\306\260u tr\341\272\241ng th\303\241i",
    "Ch\341\273\245p \341\272\243nh m\303\240n h\303\254nh",
    "B\341\273\231 \304\221\341\273\225 b\303\263ng (Nh\341\272\245n gi\341\273\257)",
    "B\341\273\231 \304\221\341\273\225 b\303\263ng ti\341\272\277p theo",
@@ -5773,7 +5794,8 @@ static const struct
    "Chuy\341\273\203n \304\221\341\273\231ng ch\341\272\255m (Nh\341\272\245n gi\341\273\257)",
    "Chuy\341\273\203n \304\221\341\273\231ng ch\341\272\255m (B\341\272\255t/T\341\272\257t)",
    "L\306\260u tr\341\272\241ng th\303\241i tr\306\260\341\273\233c \304\221\303\263",
-   "L\306\260u tr\303\262 ch\306\241i ti\341\272\277p theo",
+   "Chuy\341\273\203n \304\221\341\272\277n \303\264 l\306\260u tr\341\272\241ng th\303\241i ti\341"
+   "\272\277p theo",
    "Hi\341\273\203n th\341\273\213 Th\341\273\221ng k\303\252 K\341\273\271 thu\341\272\255t (B\341"
    "\272\255t/T\341\272\257t)",
    "Ph\303\241t tr\341\273\261c tuy\341\272\277n (B\341\272\255t/T\341\272\257t)",
@@ -5784,7 +5806,7 @@ static const struct
    "Gi\341\272\243m \303\242m l\306\260\341\273\243ng",
    "T\304\203ng \303\242m l\306\260\341\273\243ng",
    "\304\220\341\273\223ng b\341\273\231 theo t\341\273\221c \304\221\341\273\231 khung h\303\254nh "
-   "tr\303\262 ch\306\241i ch\303\255nh x\303\241c (B\341\272\255t/T\341\272\257t)",
+   "ch\303\255nh x\303\241c c\341\273\247a n\341\273\231i dung (B\341\272\255t/T\341\272\257t)",
    "Chu\341\273\231t 4",
    "Chu\341\273\231t 5",
    "Cu\341\273\231n chu\341\273\231t sang ph\341\272\243i",
@@ -5799,8 +5821,8 @@ static const struct
    "Cu\341\273\231n chu\341\273\231t xu\341\273\221ng",
    "Cu\341\273\231n chu\341\273\231t l\303\252n",
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
-   "T\341\272\257t ph\303\255m n\303\263ng Windows (C\341\272\247n kh\341\273\237i \304\221\341\273"
-   "\231ng l\341\272\241i)",
+   "T\341\272\257t ph\303\255m t\341\272\257t Windows (C\341\272\247n kh\341\273\237i \304\221\341"
+   "\273\231ng l\341\272\241i)",
 #endif
    "T\341\273\261 \304\221\341\273\231ng \304\221i\341\273\201u ch\341\273\211nh l\341\273\233p ph"
    "\341\273\247 b\303\240n ph\303\255m",
@@ -5910,9 +5932,9 @@ static const struct
    "Tuy\341\272\277n t\303\255nh",
    "T\341\272\243i n\341\273\231i dung",
    "\304\220\303\243 m\341\273\237 g\341\272\247n \304\221\303\242y",
-   "M\341\273\237 tr\303\262 ch\306\241i",
+   "T\341\272\243i n\341\273\231i dung",
    "M\341\273\237 \304\221\304\251a",
-   "M\341\273\237 tr\303\262 ch\306\241i",
+   "T\341\272\243i tr\341\272\241ng th\303\241i",
 #ifdef HAVE_LAKKA
    "\304\220i\341\273\203m truy c\341\272\255p Wi-Fi",
 #endif
@@ -5930,23 +5952,23 @@ static const struct
    "M\341\273\245c ch\303\255nh",
    "Menu ch\303\255nh",
    "Qu\341\272\243n l\303\275",
-   "Core m\341\272\267c \304\221\341\273\213nh",
+   "Tr\303\254nh gi\341\272\243 l\341\272\255p m\341\272\267c \304\221\341\273\213nh",
    "<Kh\303\264ng x\303\241c \304\221\341\273\213nh>",
    "T\341\273\207p DAT Arcade",
    "B\341\273\231 L\341\273\215c DAT Arcade",
-   "V\341\273\213 Tr\303\255 tr\303\262 ch\306\241i",
-   "Ph\341\272\247n m\341\273\237 r\341\273\231ng file",
-   "Qu\303\251t tr\303\262 ch\306\241i",
+   "V\341\273\213 tr\303\255 n\341\273\231i dung",
+   "Ph\341\272\247n m\341\273\237 r\341\273\231ng t\341\273\207p",
+   "Qu\303\251t n\341\273\231i dung",
    "Ghi \304\220\303\250 Danh S\303\241ch Ph\303\241t Hi\341\273\207n C\303\263",
-   "Qu\303\251t trong file n\303\251n",
-   "Qu\303\251t \304\221\341\273\207 quy",
-   "B\341\272\257t \304\220\341\272\247u Qu\303\251t",
+   "Qu\303\251t trong t\341\273\207p n\303\251n",
+   "Qu\303\251t t\341\272\245t c\341\272\243 th\306\260 m\341\273\245c con",
+   "B\341\272\257t \304\221\341\272\247u qu\303\251t",
    "Danh s\303\241ch ph\303\241t m\341\273\245c ti\303\252u",
    "T\303\252n danh s\303\241ch ph\303\241t t\303\271y ch\341\273\211nh",
    "<T\341\273\261 \304\221\341\273\231ng>",
-   "<Th\306\260 m\341\273\245c tr\303\262 ch\306\241i>",
+   "<Th\306\260 m\341\273\245c n\341\273\231i dung>",
    "<T\303\271y ch\341\273\211nh>",
-   "X\303\241c Th\341\273\261c M\341\273\245c Hi\341\273\207n C\303\263",
+   "X\303\241c th\341\273\261c m\341\273\245c hi\341\273\207n c\303\263",
    "G\303\241n ph\303\255m",
    "T\341\273\261 \304\221\341\273\231ng xoay thanh \304\221i\341\273\201u h\306\260\341\273\233ng",
    "Hi\341\273\203n th\341\273\213 h\303\254nh thu nh\341\273\217 ph\341\273\245 trong ch\341\272"
@@ -6005,7 +6027,7 @@ static const struct
    "Kho\341\272\243ng th\341\273\235i gian c\341\272\255p nh\341\272\255t m\341\273\251c s\341\273"
    "\255 d\341\273\245ng b\341\273\231 nh\341\273\233 (t\303\255nh theo khung h\303\254nh)",
    "Menu ch\303\255nh",
-   "Menu Danh s\303\241ch Ph\303\241t",
+   "Menu danh s\303\241ch ph\303\241t",
    "Cho ph\303\251p quay l\341\272\241i t\341\273\253 c\303\241c tab",
 #ifdef _3DS
    "Hi\341\273\203n th\341\273\213 m\303\240n h\303\254nh d\306\260\341\273\233i c\341\273\247a 3DS",
@@ -6071,7 +6093,7 @@ static const struct
 #ifdef HAVE_MIST
    "Hi\341\273\203n th\341\273\213 'Qu\341\272\243n l\303\275 Core'",
 #endif
-   "Hi\341\273\203n th\341\273\213 'Tr\303\254nh t\341\272\243i Core'",
+   "Hi\341\273\207n 'Tr\303\254nh t\341\272\243i tr\303\254nh gi\341\272\243 l\341\272\255p'",
    "Hi\341\273\203n th\341\273\213 \342\200\234Sao l\306\260u \304\220\304\251a\342\200\235",
 #ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
@@ -6085,7 +6107,7 @@ static const struct
    "Hi\341\273\203n th\341\273\213 \342\200\234M\341\273\237 tr\303\262 ch\306\241i\342\200\235",
    "Th\303\264ng b\303\241o khi kh\341\273\237i \304\221\341\273\231ng \342\200\234M\341\273\237 tr"
    "\303\262 ch\306\241i\342\200\235",
-   "Hi\341\273\203n th\341\273\213 \342\200\234T\341\272\243i Core\342\200\235",
+   "Hi\341\273\207n 'Ch\341\273\215n tr\303\254nh gi\341\272\243 l\341\272\255p'",
    "Hi\341\273\203n th\341\273\213 \342\200\234T\341\272\243i \304\220\304\251a\342\200\235",
    "Hi\341\273\203n th\341\273\213 'C\341\272\255p nh\341\272\255t Tr\341\273\261c tuy\341\272\277n'",
    "Hi\341\273\203n th\341\273\213 'Tho\303\241t RetroArch'",
@@ -6184,11 +6206,11 @@ static const struct
    "M\303\240u ch\341\273\257 tr\303\262 chuy\341\273\207n (Tin nh\341\272\257n)",
    "M\303\240u tr\303\262 chuy\341\273\207n (T\303\252n hi\341\273\203n th\341\273\213)",
    "Ki\341\273\203m tra khung h\303\254nh Tr\303\262 ch\306\241i tr\341\273\261c tuy\341\272\277n",
-   "T\303\254m th\341\272\245y tr\303\262 ch\306\241i t\306\260\306\241ng th\303\255ch",
-   "\304\220ang t\303\254m tr\303\262 ch\306\241i t\306\260\306\241ng th\303\255ch...",
-   "Kh\303\264ng th\341\273\203 t\303\254m tr\303\262 ch\306\241i ph\303\271 h\341\273\243p theo CRC"
-   " ho\341\272\267c t\303\252n t\341\273\207p",
-   "Kh\303\264ng t\303\254m th\341\272\245y core",
+   "T\303\254m th\341\272\245y n\341\273\231i dung t\306\260\306\241ng th\303\255ch",
+   "\304\220ang t\303\254m n\341\273\231i dung t\306\260\306\241ng th\303\255ch...",
+   "Kh\303\264ng th\341\273\203 t\303\254m n\341\273\231i dung ph\303\271 h\341\273\243p theo CRC ho"
+   "\341\272\267c t\303\252n t\341\273\207p",
+   "Kh\303\264ng t\303\254m th\341\272\245y tr\303\254nh gi\341\272\243 l\341\272\255p",
    "Kh\303\264ng t\303\254m th\341\272\245y danh s\303\241ch ph\303\241t",
    "\304\220\341\273\213a Ch\341\273\211 M\303\241y Ch\341\273\247 Trung Gian T\303\271y Ch\341\273"
    "\211nh",
@@ -6206,8 +6228,9 @@ static const struct
    "\273\203n",
    "\304\220\341\273\213a ch\341\273\211 m\303\241y ch\341\273\247",
    "\304\220u\341\273\225i m\303\241y kh\303\241ch",
-   "Kh\303\264ng t\303\254m th\341\272\245y core ho\341\272\267c t\341\273\207p tr\303\262 ch\306"
-   "\241i ph\303\271 h\341\273\243p, h\303\243y t\341\272\243i th\341\273\247 c\303\264ng.",
+   "Kh\303\264ng t\303\254m th\341\272\245y tr\303\254nh gi\341\272\243 l\341\272\255p ho\341\272"
+   "\267c t\341\273\207p n\341\273\231i dung ph\303\271 h\341\273\243p, h\303\243y t\341\272\243i th"
+   "\341\273\247 c\303\264ng.",
    "B\341\273\231 l\341\273\215c ph\303\262ng ch\306\241i",
    "K\341\272\277t n\341\273\221i \304\221\341\273\223ng th\341\273\235i t\341\273\221i \304\221a",
    "Gi\341\273\233i h\341\272\241n ping",
@@ -6248,7 +6271,7 @@ static const struct
    "Ch\341\272\277 \304\221\341\273\231 kh\303\241n gi\341\272\243 Tr\303\262 ch\306\241i tr\341\273"
    "\261c tuy\341\272\277n",
    "Tr\303\262 ch\306\241i tr\341\273\261c tuy\341\272\277n s\341\272\275 b\341\272\257t \304\221"
-   "\341\272\247u khi tr\303\262 ch\306\241i \304\221\306\260\341\273\243c m\341\273\237.",
+   "\341\272\247u khi n\341\273\231i dung \304\221\306\260\341\273\243c m\341\273\237.",
    "Ch\306\241i qua m\341\272\241ng",
    "C\341\273\225ng TCP Tr\303\262 ch\306\241i tr\341\273\261c tuy\341\272\277n",
    "S\341\273\255 d\341\273\245ng m\303\241y ch\341\273\247 chuy\341\273\203n ti\341\272\277p",
@@ -6449,18 +6472,19 @@ static const struct
    "\304\220\303\243 m\341\273\237 g\341\272\247n \304\221\303\242y & Y\303\252u th\303\255ch",
    "Kh\303\264ng bao gi\341\273\235",
    "D\341\273\215n d\341\272\271p danh s\303\241ch ph\303\241t",
-   "Core m\341\272\267c \304\221\341\273\213nh",
+   "Tr\303\254nh gi\341\272\243 l\341\272\255p m\341\272\267c \304\221\341\273\213nh",
    "Ch\341\272\277 \304\221\341\273\231 hi\341\273\203n th\341\273\213 nh\303\243n",
    "Hi\341\273\203n th\341\273\213 nh\303\243n \304\221\341\272\247y \304\221\341\273\247",
    "Gi\341\273\257 ch\341\273\211 s\341\273\221 \304\221\304\251a",
    "Gi\341\273\257 nguy\303\252n v\303\271ng",
    "Gi\341\273\257 v\303\271ng v\303\240 ch\341\273\211 s\341\273\221 \304\221\304\251a",
-   "X\303\263a tr\303\262 ch\306\241i trong []",
-   "X\303\263a tr\303\262 ch\306\241i trong ()",
+   "X\303\263a n\341\273\231i dung trong []",
+   "X\303\263a n\341\273\231i dung trong ()",
    "X\303\263a tr\303\262 ch\306\241i trong () v\303\240 []",
    "Qu\341\272\243n l\303\275 danh s\303\241ch ph\303\241t",
    "C\341\272\255p nh\341\272\255t danh s\303\241ch ph\303\241t",
-   "\304\220\341\272\267t l\341\272\241i li\303\252n k\341\272\277t Core",
+   "\304\220\341\272\267t l\341\272\241i li\303\252n k\341\272\277t tr\303\254nh gi\341\272\243 l"
+   "\341\272\255p",
    "Ph\306\260\306\241ng th\341\273\251c s\341\272\257p x\341\272\277p",
    "Theo th\341\273\251 t\341\273\261 ch\341\273\257 c\303\241i",
    "M\341\272\267c \304\221\341\273\213nh h\341\273\207 th\341\273\221ng",
@@ -6480,6 +6504,7 @@ static const struct
    "\241t",
    "S\341\272\257p x\341\272\277p danh s\303\241ch ph\303\241t theo th\341\273\251 t\341\273\261 ch"
    "\341\273\257 c\303\241i",
+   "Tr\303\254nh gi\341\272\243 l\341\272\255p:",
    "L\341\272\247n ch\306\241i cu\341\273\221i:",
    "Ki\341\273\203u ng\303\240y v\303\240 gi\341\273\235 c\341\273\247a \342\200\230L\341\272\247n c"
    "h\306\241i cu\341\273\221i\342\200\231",
@@ -6555,16 +6580,16 @@ static const struct
    "Th\303\264ng tin",
    "%1 m\341\273\245c",
    "T\341\272\243i",
-   "\304\220ang t\341\272\243i Core...",
-   "T\341\272\243i Core",
-   "T\341\272\243i Core t\303\271y ch\341\273\211nh...",
+   "\304\220ang t\341\272\243i tr\303\254nh gi\341\272\243 l\341\272\255p...",
+   "Ch\341\273\215n tr\303\254nh gi\341\272\243 l\341\272\255p",
+   "Ch\341\273\215n tr\303\254nh gi\341\272\243 l\341\272\255p t\303\271y ch\341\273\211nh...",
    "Nh\341\272\255t k\303\275",
-   "Tr\303\254nh duy\341\273\207t tr\303\262 ch\306\241i",
+   "Tr\303\254nh duy\341\273\207t n\341\273\231i dung",
    "&S\341\273\255a",
    "&T\303\254m ki\341\272\277m",
    "&T\341\272\255p tin",
    "&T\341\272\257t",
-   "&T\341\272\243i Core...",
+   "&T\341\272\243i tr\303\254nh gi\341\272\243 l\341\272\255p...",
    "&G\341\273\241 Core",
    "&Tr\341\273\243 gi\303\272p",
    "Gi\341\273\233i thi\341\273\207u v\341\273\201 RetroArch",
@@ -6582,11 +6607,12 @@ static const struct
    "M\303\240u n\341\273\225i b\341\272\255t:",
    "Ghi nh\341\273\233 v\341\273\213 tr\303\255 dock:",
    "Ghi nh\341\273\233 h\303\254nh d\341\272\241ng c\341\273\255a s\341\273\225:",
-   "Ghi nh\341\273\233 th\341\272\273 tr\303\262 ch\306\241i cu\341\273\221i c\303\271ng \304\221"
-   "\303\243 m\341\273\237:",
+   "Ghi nh\341\273\233 th\341\272\273 n\341\273\231i dung cu\341\273\221i c\303\271ng \304\221\303"
+   "\243 m\341\273\237:",
    "Hi\341\273\203n th\341\273\213 file v\303\240 th\306\260 m\341\273\245c \341\272\251n:",
    "B\341\272\257t \304\221\341\272\247u t\341\273\253 danh s\303\241ch ph\303\241t:",
-   "G\341\273\243i \303\275: h\303\243y t\341\272\243i Core tr\306\260\341\273\233c:",
+   "\306\257u ti\303\252n tr\303\254nh gi\341\272\243 l\341\272\255p \304\221\303\243 t\341\272\243i"
+   ":",
    "Giao di\341\273\207n:",
    "T\303\271y ch\341\273\211nh...",
    "T\341\273\221i",
@@ -6630,20 +6656,21 @@ static const struct
 #ifdef HAVE_QT
    "Qu\303\251t ho\303\240n t\341\272\245t.<br><br>\n\304\220\341\273\203 tr\303\262 ch\306\241i "
    "\304\221\306\260\341\273\243c qu\303\251t ch\303\255nh x\303\241c, b\341\272\241n ph\341\272\243"
-   "i:\n<ul><li>\304\221\303\243 t\341\272\243i v\341\273\201 Core t\306\260\306\241ng th\303\255ch<"
-   "/li>\n<li>c\341\272\255p nh\341\272\255t \"Th\303\264ng tin t\341\273\207p Core\" qua Tr\303\254"
-   "nh c\341\272\255p nh\341\272\255t tr\341\273\261c tuy\341\272\277n</li>\n<li>c\341\272\255p nh"
-   "\341\272\255t \"C\306\241 s\341\273\237 d\341\273\257 li\341\273\207u\" qua Tr\303\254nh c\341"
-   "\272\255p nh\341\272\255t tr\341\273\261c tuy\341\272\277n</li>\n<li>kh\341\273\237i \304\221"
-   "\341\273\231ng l\341\272\241i RetroArch n\341\272\277u v\341\273\253a th\341\273\261c hi\341\273"
-   "\207n b\341\272\245t k\341\273\263 b\306\260\341\273\233c n\303\240o \341\273\237 tr\303\252n</l"
-   "i></ul>\nCu\341\273\221i c\303\271ng, tr\303\262 ch\306\241i ph\341\272\243i kh\341\273\233p v"
-   "\341\273\233i c\306\241 s\341\273\237 d\341\273\257 li\341\273\207u hi\341\273\207n c\303\263 t"
-   "\341\273\253 <a href=\"",
-   "https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">\304\221\303\242y</a>. N"
-   "\341\272\277u v\341\272\253n kh\303\264ng ho\341\272\241t \304\221\341\273\231ng, h\303\243y c"
-   "\303\242n nh\341\272\257c <a href=\"https://www.github.com/libretro/RetroArch/issues\">g\341\273"
-   "\255i b\303\241o c\303\241o l\341\273\227i</a>.",
+   "i:\n<ul><li>\304\221\303\243 t\341\272\243i xu\341\273\221ng tr\303\254nh gi\341\272\243 l\341"
+   "\272\255p t\306\260\306\241ng th\303\255ch</li>\n<li>c\341\272\255p nh\341\272\255t \"Th\303\264"
+   "ng tin t\341\273\207p tr\303\254nh gi\341\272\243 l\341\272\255p\" qua Tr\303\254nh c\341\272"
+   "\255p nh\341\272\255t tr\341\273\261c tuy\341\272\277n</li>\n<li>c\341\272\255p nh\341\272\255t "
+   "\"C\306\241 s\341\273\237 d\341\273\257 li\341\273\207u\" qua Tr\303\254nh c\341\272\255p nh\341"
+   "\272\255t tr\341\273\261c tuy\341\272\277n</li>\n<li>kh\341\273\237i \304\221\341\273\231ng l"
+   "\341\272\241i RetroArch n\341\272\277u v\341\273\253a th\341\273\261c hi\341\273\207n b\341\272"
+   "\245t k\341\273\263 b\306\260\341\273\233c n\303\240o \341\273\237 tr\303\252n</li></ul>\nCu\341"
+   "\273\221i c\303\271ng, tr\303\262 ch\306\241i ph\341\272\243i kh\341\273\233p v\341\273\233i c"
+   "\306\241 s\341\273\237 d\341\273\257 l",
+   "i\341\273\207u hi\341\273\207n c\303\263 t\341\273\253 <a href=\"https://docs.libretro.com/guide"
+   "s/roms-playlists-thumbnails/#sources\">\304\221\303\242y</a>. N\341\272\277u v\341\272\253n kh"
+   "\303\264ng ho\341\272\241t \304\221\341\273\231ng, h\303\243y c\303\242n nh\341\272\257c <a href"
+   "=\"https://www.github.com/libretro/RetroArch/issues\">g\341\273\255i b\303\241o c\303\241o l\341"
+   "\273\227i</a>.",
 #endif
    "Ch\341\273\215n m\303\240u",
    "Ch\341\273\215n Th\306\260 m\341\273\245c",
@@ -6760,7 +6787,7 @@ static const struct
    "S\341\273\221 s\303\252-ri",
    "C\303\240i \304\221\341\272\267t",
    "\304\220\303\241nh gi\303\241 \304\221\341\273\231 tu\341\273\225i theo TGDB",
-   "C\303\263 ph\306\260\306\241ng ti\341\273\207n",
+   "Ph\306\260\306\241ng ti\341\273\207n",
    "\304\220\341\273\223 ho\341\272\241 ch\303\255nh",
    "Kh\341\273\237i \304\221\341\273\231ng l\341\272\241i",
    "C\341\272\245u h\303\254nh b\341\272\243n ghi",
@@ -6768,7 +6795,7 @@ static const struct
    "Ghi h\303\254nh",
    "C\341\272\245u h\303\254nh ghi t\303\271y ch\341\273\211nh",
    "Tr\303\254nh \304\221i\341\273\201u khi\341\273\203n ghi \303\242m",
-   "Ghi l\341\272\241i Ph\303\241t l\341\272\241i",
+   "Ghi l\341\272\241i b\341\272\243n ph\303\241t l\341\272\241i",
    "T\341\273\207p g\303\241n l\341\272\241i ph\303\255m",
    "C\341\272\255p nh\341\272\255t t\341\273\207p g\303\241n l\341\272\241i ph\303\255m",
    "T\341\273\207p g\303\241n l\341\272\241i ph\303\255m \304\221ang ho\341\272\241t \304\221\341"
@@ -6782,8 +6809,8 @@ static const struct
    "\304\220\341\272\267t l\341\272\241i B\341\272\243n \304\221\341\273\223 Ph\303\255m/\304\220i"
    "\341\273\201u khi\341\273\203n",
    "L\306\260u t\341\273\207p g\303\241n l\341\272\241i ph\303\255m th\303\240nh",
-   "L\306\260u t\341\273\207p g\303\241n l\341\272\241i ph\303\255m cho th\306\260 m\341\273\245c tr"
-   "\303\262 ch\306\241i",
+   "L\306\260u t\341\273\207p g\303\241n l\341\272\241i ph\303\255m cho th\306\260 m\341\273\245c n"
+   "\341\273\231i dung",
    "L\306\260u t\341\273\207p g\303\241n l\341\272\241i ph\303\255m cho Core",
    "L\306\260u t\341\273\207p g\303\241n l\341\272\241i ph\303\255m Tr\303\262 ch\306\241i",
    "L\306\260u t\341\273\207p g\303\241n ph\303\255m khi tho\303\241t",
@@ -6801,7 +6828,8 @@ static const struct
    "\231ng t\304\203ng t\341\273\221i \304\221a \304\221\306\260\341\273\243c gi\341\273\257 l\341"
    "\272\241i",
    "Khe ph\303\241t l\341\272\241i",
-   "\304\220\341\272\267t l\341\272\241i Li\303\252n k\341\272\277t Core",
+   "\304\220\341\272\267t l\341\272\241i Li\303\252n k\341\272\277t Tr\303\254nh gi\341\272\243 l"
+   "\341\272\255p",
    "Kh\303\264i ph\341\273\245c m\341\272\267c \304\221\341\273\213nh",
    "\304\220\341\272\267t l\341\272\241i",
    "Kh\341\273\237i \304\221\341\273\231ng l\341\272\241i",
@@ -6886,29 +6914,30 @@ static const struct
 #endif
    "T\341\273\207p l\306\260u: Ghi v\303\240o th\306\260 m\341\273\245c n\341\273\231i dung",
    "Th\306\260 m\341\273\245c l\306\260u",
-   "L\306\260u tr\303\262 ch\306\241i: Ghi v\303\240o th\306\260 m\341\273\245c n\341\273\231i dung",
+   "L\306\260u tr\341\272\241ng th\303\241i: Ghi v\303\240o th\306\260 m\341\273\245c n\341\273\231i"
+   " dung",
    "L\306\260u tr\303\262 ch\306\241i: Kho\341\272\243ng th\341\273\235i gian t\341\273\261 \304\221"
    "\341\273\231ng l\306\260u",
    "L\306\260u tr\303\262 ch\306\241i: T\341\273\261 \304\221\341\273\231ng t\304\203ng ch\341\273"
    "\211 s\341\273\221",
    "L\306\260u tr\303\262 ch\306\241i: T\341\273\261 \304\221\341\273\231ng t\341\272\243i",
    "L\306\260u tr\303\262 ch\306\241i: T\341\273\261 \304\221\341\273\231ng l\306\260u",
-   "L\306\260u tr\303\262 ch\306\241i",
+   "L\306\260u tr\341\272\241ng th\303\241i",
    "L\306\260u tr\303\262 ch\306\241i: N\303\251n",
-   "L\306\260u tr\303\262 ch\306\241i",
+   "L\306\260u tr\341\272\241ng th\303\241i",
    "L\306\260u tr\303\262 ch\306\241i: S\341\273\221 l\306\260\341\273\243ng t\341\273\261 \304\221"
    "\341\273\231ng t\304\203ng t\341\273\221i \304\221a \304\221\306\260\341\273\243c gi\341\273\257"
    " l\341\272\241i",
    "L\306\260u tr\303\262 ch\306\241i: H\303\254nh thu nh\341\273\217",
    "L\306\260u c\341\272\245u h\303\254nh d\306\260\341\273\233i d\341\272\241ng",
    "L\306\260u c\341\272\245u h\303\254nh hi\341\273\207n t\341\272\241i",
-   "L\306\260u ghi \304\221\303\250 th\306\260 m\341\273\245c tr\303\262 ch\306\241i",
+   "L\306\260u ghi \304\221\303\250 th\306\260 m\341\273\245c n\341\273\231i dung",
    "L\306\260u ghi \304\221\303\250 Core",
    "L\306\260u ghi \304\221\303\250 tr\303\262 ch\306\241i",
    "T\341\273\207p l\306\260u: N\303\251n",
    "L\306\260u c\341\272\245u h\303\254nh ch\303\255nh",
    "L\306\260u c\341\272\245u h\303\254nh m\341\273\233i",
-   "L\306\260u tr\303\262 ch\306\241i",
+   "L\306\260u tr\341\272\241ng th\303\241i",
    "L\306\260u",
    "T\341\273\267 l\341\273\207",
    "\304\220\341\273\221i chi\341\272\277u d\341\273\257 li\341\273\207u",
@@ -6979,7 +7008,8 @@ static const struct
    "Hi\341\273\203n th\341\273\213 \"Video\"",
    "Thi\341\272\277t l\341\272\255p",
    "Thi\341\272\277t l\341\272\255p",
-   "Thi\341\272\277t l\341\272\255p Li\303\252n k\341\272\277t Core",
+   "Thi\341\272\277t l\341\272\255p Li\303\252n k\341\272\277t Tr\303\254nh gi\341\272\243 l\341\272"
+   "\255p",
    "B\341\273\231 \304\221\341\273\225 b\303\263ng",
    "\303\201p d\341\273\245ng thay \304\221\341\273\225i",
    "B\341\273\231 \304\221\341\273\225 b\303\263ng",
@@ -6998,7 +7028,8 @@ static const struct
    "Hi\341\273\203n th\341\273\213 giao di\341\273\207n m\303\241y t\303\255nh",
    "T\341\272\257t M\303\241y",
    "C\303\240i \304\221\341\272\267t core th\341\272\245t b\341\272\241i",
-   "C\303\240i \304\221\341\272\267t ho\341\272\267c kh\303\264i ph\341\273\245c 1 Core",
+   "C\303\240i \304\221\341\272\267t ho\341\272\267c kh\303\264i ph\341\273\245c 1 tr\303\254nh gi"
+   "\341\272\243 l\341\272\255p",
    "C\303\240i \304\221\341\272\267t core th\303\240nh c\303\264ng",
    "T\341\273\221c \304\221\341\273\231 Ch\341\272\255m",
 #ifdef HAVE_SMBCLIENT
@@ -7020,11 +7051,11 @@ static const struct
    "T\341\273\207p l\306\260u: S\341\272\257p x\341\272\277p v\303\240o th\306\260 m\341\273\245c th"
    "eo th\306\260 m\341\273\245c n\341\273\231i dung",
    "T\341\273\207p l\306\260u: S\341\272\257p x\341\272\277p v\303\240o th\306\260 m\341\273\245c th"
-   "eo t\303\252n core",
+   "eo t\303\252n tr\303\254nh gi\341\272\243 l\341\272\255p",
    "L\306\260u tr\303\262 ch\306\241i: S\341\272\257p x\341\272\277p v\303\240o th\306\260 m\341\273"
    "\245c theo th\306\260 m\341\273\245c n\341\273\231i dung",
    "L\306\260u tr\341\272\241ng th\303\241i: S\341\272\257p x\341\272\277p v\303\240o th\306\260 m"
-   "\341\273\245c theo t\303\252n core",
+   "\341\273\245c theo t\303\252n tr\303\254nh gi\341\272\243 l\341\272\255p",
    "\341\272\242nh ch\341\273\245p m\303\240n h\303\254nh: S\341\272\257p x\341\272\277p v\303\240o "
    "th\306\260 m\341\273\245c theo th\306\260 m\341\273\245c n\341\273\231i dung",
    "\303\202m thanh",
@@ -7044,11 +7075,12 @@ static const struct
    "B\341\272\255t hi\341\273\203n th\341\273\213 tr\341\272\241ng th\303\241i n\303\242ng cao",
    "\304\220\341\273\213nh d\341\272\241ng hi\341\273\207n di\341\273\207n c\341\273\247a tr\303\262"
    " ch\306\241i",
-   "Ch\341\273\215n tr\303\262 ch\306\241i",
-   "Tr\303\262 ch\306\241i (T\303\252n core)",
-   "Tr\303\262 ch\306\241i (T\303\252n h\341\273\207 th\341\273\221ng)",
-   "Tr\303\262 ch\306\241i (T\303\252n h\341\273\207 th\341\273\221ng - T\303\252n core)",
-   "T\303\252n c\341\273\247a Core",
+   "N\341\273\231i dung",
+   "N\341\273\231i dung (T\303\252n tr\303\254nh gi\341\272\243 l\341\272\255p)",
+   "N\341\273\231i dung (T\303\252n h\341\273\207 th\341\273\221ng)",
+   "N\341\273\231i dung (T\303\252n h\341\273\207 th\341\273\221ng - Tr\303\254nh gi\341\272\243 l"
+   "\341\272\255p)",
+   "T\303\252n c\341\273\247a Tr\303\254nh gi\341\272\243 l\341\272\255p",
    "T\303\252n h\341\273\207 th\341\273\221ng",
    "N\341\273\201n t\341\272\243ng Steam",
 #endif
@@ -7058,7 +7090,7 @@ static const struct
    "URL Ph\303\241t tr\341\273\261c ti\341\272\277p",
    "C\341\272\245u h\303\254nh Ph\303\241t tr\341\273\261c ti\341\272\277p T\303\271y ch\341\273\211"
    "nh",
-   "Tr\303\262 ch\306\241i hi\341\273\207n t\341\272\241i: %s",
+   "N\341\273\231i dung hi\341\273\207n t\341\272\241i: %s",
    "H\341\273\207 th\341\273\221ng con",
    "C\303\241c core \304\221\306\260\341\273\243c \304\221\341\273\201 xu\341\272\245t",
    "T\341\272\241m d\341\273\253ng tr\303\254nh b\341\272\243o v\341\273\207 m\303\240n h\303\254nh",
@@ -7072,38 +7104,37 @@ static const struct
 #ifdef HAVE_LIBNX
    "\303\211p xung CPU",
 #endif
-   "Chuy\341\273\203n c\303\241c Core sang phi\303\252n b\341\272\243n C\341\273\255a h\303\240ng Pl"
-   "ay",
+   "Chuy\341\273\203n c\303\241c tr\303\254nh gi\341\272\243 l\341\272\255p sang phi\303\252n b\341"
+   "\272\243n C\341\273\255a h\303\240ng Play",
 #ifdef HAVE_LAKKA
 #ifdef HAVE_LAKKA_SWITCH
    "\303\211p xung CPU",
 #endif
 #endif
-   "T\341\272\255p tin h\341\273\207 th\341\273\221ng n\341\272\261m trong th\306\260 m\341\273\245c"
-   " tr\303\262 ch\306\241i",
+   "File h\341\273\207 th\341\273\221ng n\341\272\261m trong th\306\260 m\341\273\245c n\341\273\231"
+   "i dung",
    "H\341\273\207 th\341\273\221ng BGM",
    "H\341\273\207 th\341\273\221ng/BIOS",
    "Th\303\264ng tin h\341\273\207 th\341\273\221ng",
    "Ng\303\240y t\341\272\241o",
    "T\303\255nh n\304\203ng CPU",
    "Lo\341\272\241i CPU",
-   "Hi\341\273\203n th\341\273\213 DPI",
-   "Chi\341\273\201u cao hi\341\273\203n th\341\273\213 (mm)",
-   "\304\220\341\273\231 r\341\273\231ng hi\341\273\203n th\341\273\213 (mm)",
+   "M\341\272\255t \304\221\341\273\231 \304\221i\341\273\203m \341\272\243nh m\303\240n h\303\254nh",
+   "Chi\341\273\201u cao m\303\240n h\303\254nh (mm)",
+   "Chi\341\273\201u r\341\273\231ng m\303\240n h\303\254nh (mm)",
    "Lo\341\272\241i h\341\273\207 \304\221i\341\273\201u h\303\240nh",
    "T\303\252n giao di\341\273\207n",
-   "Phi\303\252n b\341\272\243n OS",
+   "H\341\273\207 \304\221i\341\273\201u h\303\240nh",
    "Phi\303\252n b\341\272\243n Git",
    "Phi\303\252n b\341\272\243n Lakka",
    "Phi\303\252n b\341\272\243n MoltenVK",
-   "Ngu\341\273\223n n\304\203ng l\306\260\341\273\243ng",
-   "\304\220\303\243 s\341\272\241c",
+   "Ngu\341\273\223n \304\221i\341\273\207n",
+   "\304\220\303\243 s\341\272\241c \304\221\341\272\247y",
    "\304\220ang s\341\272\241c",
    "Kh\303\264ng s\341\272\241c",
    "Kh\303\264ng c\303\263 ngu\341\273\223n",
    "Phi\303\252n b\341\272\243n RetroArch",
-   "Tr\303\254nh \304\221i\341\273\201u khi\341\273\203n ng\341\273\257 c\341\272\243nh h\303\254nh "
-   "\341\272\243nh",
+   "Tr\303\254nh \304\221i\341\273\201u khi\341\273\203n ng\341\273\257 c\341\272\243nh video",
    "H\341\273\207 th\341\273\221ng",
    "Ch\341\273\245p \341\272\243nh m\303\240n h\303\254nh",
    "T\303\241c v\341\273\245 \304\221a lu\341\273\223ng",
@@ -7112,7 +7143,7 @@ static const struct
    "H\303\254nh thu nh\341\273\217 ch\303\255nh",
    "\341\272\242nh Thu Nh\341\273\217 Tr\303\252n",
    "\341\272\242nh b\303\254a",
-   "Logo tr\303\262 ch\306\241i",
+   "Logo n\341\273\231i dung",
    "Ch\341\273\245p \341\272\243nh m\303\240n h\303\254nh",
    "M\303\240n h\303\254nh ti\303\252u \304\221\341\273\201",
    "Tr\306\260\341\273\233c",
@@ -7181,7 +7212,7 @@ static const struct
    "M\341\273\237 Menu Desktop khi kh\341\273\237i \304\221\341\273\231ng",
    "Hi\341\273\203n th\341\273\213 thanh menu",
    "Kh\303\264ng th\341\273\203 \304\221\341\273\215c file n\303\251n.",
-   "Ho\303\240n t\303\241c t\341\272\243i tr\303\262 ch\306\241i",
+   "Ho\303\240n t\303\241c vi\341\273\207c t\341\272\243i tr\341\272\241ng th\303\241i",
    "Ho\303\240n t\303\241c tr\341\272\241ng th\303\241i l\306\260u",
    "Kh\303\264ng x\303\241c \304\221\341\273\213nh",
    "Tr\303\262 ch\306\241i kh\303\264ng x\303\241c \304\221\341\273\213nh",
@@ -7191,11 +7222,12 @@ static const struct
    "i\341\273\203n",
    "C\341\272\255p nh\341\272\255t b\341\273\231 \304\221\341\273\225 b\303\263ng Cg",
    "C\341\272\255p nh\341\272\255t m\303\243 gian l\341\272\255n",
-   "C\341\272\255p nh\341\272\255t c\303\241c t\341\273\207p th\303\264ng tin Core",
+   "C\341\272\255p nh\341\272\255t c\303\241c t\341\273\207p th\303\264ng tin tr\303\254nh gi\341"
+   "\272\243 l\341\272\255p",
    "C\341\272\255p nh\341\272\255t c\306\241 s\341\273\237 d\341\273\257 li\341\273\207u",
    "C\341\272\255p nh\341\272\255t b\341\273\231 \304\221\341\273\225 b\303\263ng GLSL",
-   "C\341\272\255p nh\341\272\255t c\303\241c Core \304\221\303\243 \304\221\306\260\341\273\243c c"
-   "\303\240i \304\221\341\272\267t",
+   "C\341\272\255p nh\341\272\255t c\303\241c tr\303\254nh gi\341\272\243 l\341\272\255p \304\221"
+   "\303\243 \304\221\306\260\341\273\243c c\303\240i \304\221\341\272\267t",
    "C\341\272\255p nh\341\272\255t Lakka",
    "C\341\272\255p nh\341\272\255t l\341\273\233p ph\341\273\247",
    "C\341\272\255p nh\341\272\255t b\341\273\231 \304\221\341\273\225 b\303\263ng Slang",
@@ -7219,7 +7251,7 @@ static const struct
    "Cho ph\303\251p xoay m\303\240n h\303\254nh",
    "C\341\272\245u h\303\254nh t\341\273\267 l\341\273\207 khung h\303\254nh",
    "Theo c\341\272\245u h\303\254nh m\341\272\267c \304\221\341\273\213nh",
-   "Core \304\221\306\260\341\273\243c cung c\341\272\245p",
+   "Tr\303\254nh gi\341\272\243 l\341\272\255p \304\221\306\260\341\273\243c cung c\341\272\245p",
    "T\303\271y ch\341\273\211nh",
    "To\303\240n m\303\240n h\303\254nh",
    "T\341\273\267 l\341\273\207 khung h\303\254nh",
@@ -7245,7 +7277,7 @@ static const struct
 #if defined(DINGUX)
    "Bo tr\303\262n c\341\272\241nh",
    "L\303\240m m\341\273\213n",
-   "Pixel g\341\273\221c",
+   "\304\220i\341\273\203m \341\272\243nh g\341\272\247n nh\341\272\245t",
    "N\341\273\231i suy h\303\254nh \341\272\243nh",
    "Gi\341\273\257 nguy\303\252n t\341\273\267 l\341\273\207 khung h\303\254nh",
 #endif
@@ -7256,7 +7288,7 @@ static const struct
 #if defined(DINGUX)
 #if defined(RS90) || defined(MIYOO)
    "L\303\240m m\341\273\213n nh\341\272\271",
-   "Pixel g\341\273\221c",
+   "\304\220i\341\273\203m \341\272\243nh g\341\272\247n nh\341\272\245t",
    "N\341\273\231i suy h\303\254nh \341\272\243nh",
 #endif
 #endif
@@ -7287,6 +7319,7 @@ static const struct
    "Ch\341\272\277 \304\221\341\273\231 to\303\240n m\303\240n h\303\254nh",
    "Chi\341\273\201u r\341\273\231ng to\303\240n m\303\240n h\303\254nh",
    "Chi\341\273\201u cao to\303\240n m\303\240n h\303\254nh",
+   "H\341\273\227 tr\341\273\243 SPIR-V tr\341\273\261c ti\341\272\277p (G\341\273\243i \303\275)",
    "Ch\341\273\211 s\341\273\221 GPU",
    "S\341\273\255 d\341\273\245ng Ghi h\303\254nh GPU",
    "Ch\341\273\245p \341\272\243nh m\303\240n h\303\254nh: S\341\273\255 d\341\273\245ng GPU",
@@ -7380,14 +7413,14 @@ static const struct
    "X\303\263a thi\341\272\277t l\341\272\255p Core",
    "X\303\263a thi\341\272\277t l\341\272\255p tr\303\262 ch\306\241i",
    "X\303\263a thi\341\272\277t l\341\272\255p to\303\240n h\341\273\207 th\341\273\221ng",
-   "X\303\263a thi\341\272\277t l\341\272\255p th\306\260 m\341\273\245c tr\303\262 ch\306\241i",
+   "X\303\263a thi\341\272\277t l\341\272\255p th\306\260 m\341\273\245c n\341\273\231i dung",
    "L\306\260u c\303\240i \304\221\341\272\267t s\341\272\265n th\303\240nh",
    "L\306\260u C\303\240i \304\221\341\272\267t M\341\272\267c \304\221\341\273\213nh c\341\273\247a"
    " Core",
    "L\306\260u c\303\240i \304\221\341\272\267t s\341\272\265n hi\341\273\207n t\341\272\241i",
    "L\306\260u thi\341\272\277t l\341\272\255p tr\303\262 ch\306\241i",
    "L\306\260u c\303\240i \304\221\341\272\267t to\303\240n h\341\273\207 th\341\273\221ng",
-   "L\306\260u thi\341\272\277t l\341\272\255p th\306\260 m\341\273\245c tr\303\262 ch\306\241i",
+   "L\306\260u thi\341\272\277t l\341\272\255p th\306\260 m\341\273\245c n\341\273\231i dung",
    "C\303\240i \304\221\341\272\267t s\341\272\265n \304\221\306\241n gi\341\272\243n",
    "Ghi nh\341\273\233 th\306\260 m\341\273\245c b\341\273\231 \304\221\341\273\225 b\303\263ng \304"
    "\221\306\260\341\273\243c d\303\271ng l\341\272\247n cu\341\273\221i",
@@ -7450,7 +7483,7 @@ static const struct
    "Hi\341\273\203n th\341\273\213 trang tr\303\255 c\341\273\255a s\341\273\225",
    "Chi\341\273\201u r\341\273\231ng c\341\273\255a s\341\273\225",
    "\304\220\341\273\223ng b\341\273\231 v\341\273\233i t\341\273\221c \304\221\341\273\231 khung h"
-   "\303\254nh tr\303\262 ch\306\241i ch\303\255nh x\303\241c (G-Sync, FreeSync)",
+   "\303\254nh n\341\273\231i dung ch\303\255nh x\303\241c (G-Sync, FreeSync)",
    "Ng\341\272\257t k\341\272\277t n\341\273\221i",
    "Tr\303\254nh \304\221i\341\273\201u khi\341\273\203n Wi-Fi",
    "B\341\272\255t Wi-Fi",
@@ -7537,26 +7570,26 @@ static const struct
    "c\341\272\255p \342\200\230https://retroachievements.org\342\200\231.",
    "Xem th\303\240nh t\303\255ch v\303\240 c\303\241c thi\341\272\277t l\341\272\255p li\303\252n qu"
    "an.",
-   "T\341\272\241m d\341\273\253ng Ch\341\272\277 \304\221\341\273\231 Hardcore c\341\273\247a th"
-   "\303\240nh t\303\255ch trong phi\303\252n hi\341\273\207n t\341\272\241i. Thao t\303\241c n\303"
-   "\240y s\341\272\275 b\341\272\255t m\303\243 gian l\341\272\255n, tua l\303\271i, chuy\341\273"
-   "\203n \304\221\341\273\231ng ch\341\272\255m v\303\240 t\341\272\243i tr\341\272\241ng th\303"
-   "\241i l\306\260u.",
+   "T\341\272\241m d\341\273\253ng Ch\341\272\277 \304\221\341\273\231 th\341\273\255 th\303\241ch c"
+   "\341\273\247a Th\303\240nh t\303\255ch trong phi\303\252n ch\306\241i hi\341\273\207n t\341\272"
+   "\241i. Thao t\303\241c n\303\240y s\341\272\275 b\341\272\255t gian l\341\272\255n, tua l\341"
+   "\272\241i, chuy\341\273\203n \304\221\341\273\231ng ch\341\272\255m v\303\240 t\341\272\243i tr"
+   "\341\272\241ng th\303\241i \304\221\303\243 l\306\260u.",
    "Gi\341\273\257 ch\341\272\277 \304\221\341\273\231 th\303\240nh t\303\255ch th\341\273\255 th"
    "\303\241ch \304\221\306\260\341\273\243c b\341\272\255t cho phi\303\252n hi\341\273\207n t\341"
    "\272\241i",
-   "Ti\341\272\277p t\341\273\245c ch\341\272\277 \304\221\341\273\231 th\303\240nh t\303\255ch hard"
-   "core cho phi\303\252n hi\341\273\207n t\341\272\241i. H\303\240nh \304\221\341\273\231ng n\303"
-   "\240y s\341\272\275 t\341\272\257t m\303\243 gian l\341\272\255n, tua l\341\272\241i, chuy\341"
-   "\273\203n \304\221\341\273\231ng ch\341\272\255m v\303\240 t\341\272\243i tr\341\272\241ng th"
-   "\303\241i l\306\260u, \304\221\341\273\223ng th\341\273\235i \304\221\341\272\267t l\341\272\241"
-   "i tr\303\262 ch\306\241i hi\341\273\207n t\341\272\241i.",
+   "Ti\341\272\277p t\341\273\245c Ch\341\272\277 \304\221\341\273\231 Th\341\273\255 th\303\241ch c"
+   "\341\273\247a Th\303\240nh t\303\255ch trong phi\303\252n ch\306\241i hi\341\273\207n t\341\272"
+   "\241i. Thao t\303\241c n\303\240y s\341\272\275 t\341\272\257t gian l\341\272\255n, tua l\341"
+   "\272\241i, chuy\341\273\203n \304\221\341\273\231ng ch\341\272\255m v\303\240 t\341\272\243i tr"
+   "\341\272\241ng th\303\241i \304\221\303\243 l\306\260u, \304\221\341\273\223ng th\341\273\235i "
+   "\304\221\341\272\267t l\341\272\241i tr\303\262 ch\306\241i hi\341\273\207n t\341\272\241i.",
    "Gi\341\273\257 ch\341\272\277 \304\221\341\273\231 th\303\240nh t\303\255ch th\341\273\255 th"
    "\303\241ch \304\221\306\260\341\273\243c t\341\272\257t cho phi\303\252n hi\341\273\207n t\341"
    "\272\241i",
-   "B\341\272\241n ph\341\272\243i t\341\272\243i l\341\272\241i core \304\221\341\273\203 ti\341"
-   "\272\277p t\341\273\245c Ch\341\272\277 \304\221\341\273\231 Th\303\240nh t\303\255ch Th\341\273"
-   "\255 th\303\241ch",
+   "B\341\272\241n ph\341\272\243i t\341\272\243i l\341\272\241i tr\303\254nh gi\341\272\243 l\341"
+   "\272\255p \304\221\341\273\203 ti\341\272\277p t\341\273\245c Ch\341\272\277 \304\221\341\273"
+   "\231 Th\341\273\255 th\303\241ch c\341\273\247a Th\303\240nh t\303\255ch",
    "M\341\273\231t ho\341\272\267c nhi\341\273\201u Th\303\240nh t\303\255ch m\341\273\237 kh\303"
    "\263a kh\303\264ng \304\221\306\260\341\273\243c g\341\273\255i \304\221\341\272\277n m\303\241y"
    " ch\341\273\247. Vi\341\273\207c g\341\273\255i l\341\272\241i s\341\272\275 \304\221\306\260"
@@ -7564,8 +7597,8 @@ static const struct
    "\341\273\203 \341\273\251ng d\341\273\245ng m\341\273\237.",
    "T\341\272\241o v\303\240 c\341\272\255p nh\341\272\255t danh s\303\241ch b\341\272\261ng c\303"
    "\241ch qu\303\251t tr\303\262 ch\306\241i.",
-   "Th\303\252m tr\303\262 ch\306\241i v\303\240o 'Y\303\252u th\303\255ch'.",
-   "Th\303\252m tr\303\262 ch\306\241i v\303\240o 'Y\303\252u th\303\255ch'.",
+   "Th\303\252m n\341\273\231i dung v\303\240o 'Y\303\252u th\303\255ch'.",
+   "Th\303\252m n\341\273\231i dung v\303\240o 'Y\303\252u th\303\255ch'.",
    "Th\303\252m b\341\272\243n \303\242m thanh n\303\240y v\303\240o m\341\273\231t khe lu\341\273"
    "\223ng \303\242m thanh c\303\262n tr\341\273\221ng. N\341\272\277u hi\341\273\207n kh\303\264ng "
    "c\303\263 khe n\303\240o kh\341\272\243 d\341\273\245ng th\303\254 s\341\272\275 b\341\273\213 b"
@@ -7580,7 +7613,7 @@ static const struct
    "\341\272\277t l\341\272\255p. Apple d\303\271ng OCR v\303\240 d\341\273\213ch thu\341\272\255t n"
    "gay tr\303\252n thi\341\272\277t b\341\273\213 (macOS/iOS).",
    "B\341\272\255t d\341\273\213ch v\341\273\245 AI \304\221\341\273\203 ch\341\272\241y khi nh\341"
-   "\272\245n ph\303\255m n\303\263ng c\341\273\247a d\341\273\213ch v\341\273\245 AI.",
+   "\272\245n ph\303\255m t\341\272\257t c\341\273\247a d\341\273\213ch v\341\273\245 AI.",
    "Hi\341\273\203n th\341\273\213 b\341\272\243n d\341\273\213ch d\306\260\341\273\233i d\341\272"
    "\241ng l\341\273\233p ch\341\273\257 (Ch\341\272\277 \304\221\341\273\231 H\303\254nh \341\272"
    "\243nh), ph\303\241t b\341\272\261ng gi\341\273\215ng \304\221\341\273\215c t\341\273\261 \304"
@@ -7603,11 +7636,12 @@ static const struct
    "\341\273\243c s\341\273\255 d\341\273\245ng.",
 #ifndef HAVE_DYNAMIC
    "Kh\341\273\237i \304\221\341\273\231ng l\341\272\241i RetroArch khi kh\341\273\237i ch\341\272"
-   "\241y tr\303\262 ch\306\241i, ngay c\341\272\243 khi core y\303\252u c\341\272\247u \304\221\303"
-   "\243 \304\221\306\260\341\273\243c t\341\272\243i. \304\220i\341\273\201u n\303\240y c\303\263 t"
-   "h\341\273\203 c\341\272\243i thi\341\273\207n \304\221\341\273\231 \341\273\225n \304\221\341"
-   "\273\213nh h\341\273\207 th\341\273\221ng, nh\306\260ng th\341\273\235i gian t\341\272\243i s"
-   "\341\272\275 t\304\203ng.",
+   "\241y n\341\273\231i dung, ngay c\341\272\243 khi tr\303\254nh gi\341\272\243 l\341\272\255p "
+   "\304\221\306\260\341\273\243c y\303\252u c\341\272\247u \304\221\303\243 \304\221\306\260\341"
+   "\273\243c t\341\272\243i. \304\220i\341\273\201u n\303\240y c\303\263 th\341\273\203 gi\303\272p"
+   " h\341\273\207 th\341\273\221ng ho\341\272\241t \304\221\341\273\231ng \341\273\225n \304\221"
+   "\341\273\213nh h\306\241n, nh\306\260ng s\341\272\275 l\303\240m t\304\203ng th\341\273\235i gia"
+   "n t\341\272\243i.",
 #endif
    "Gi\341\272\243i ph\303\241p kh\341\272\257c ph\341\273\245c t\303\254nh tr\341\272\241ng b\341"
    "\273\231 \304\221i\341\273\201u khi\341\273\203n b\341\273\213 ng\341\272\257t k\341\272\277t n"
@@ -7871,17 +7905,17 @@ static const struct
    "Ki\341\272\277m th\303\240nh t\303\255ch trong c\303\241c tr\303\262 ch\306\241i c\341\273\225 "
    "\304\221i\341\273\203n. \304\220\341\273\203 bi\341\272\277t th\303\252m th\303\264ng tin, truy "
    "c\341\272\255p \342\200\230https://retroachievements.org\342\200\231.",
-   "T\341\272\257t m\303\243 gian l\341\272\255n, tua l\303\271i, chuy\341\273\203n \304\221\341\273"
-   "\231ng ch\341\272\255m v\303\240 t\341\272\243i tr\341\272\241ng th\303\241i l\306\260u. Th\303"
-   "\240nh t\303\255ch \304\221\341\272\241t \304\221\306\260\341\273\243c \341\273\237 ch\341\272"
-   "\277 \304\221\341\273\231 Hardcore s\341\272\275 \304\221\306\260\341\273\243c \304\221\303\241n"
-   "h d\341\272\245u ri\303\252ng \304\221\341\273\203 b\341\272\241n c\303\263 th\341\273\203 ch"
-   "\341\273\251ng minh th\303\240nh qu\341\272\243 c\341\273\247a m\303\254nh m\303\240 kh\303\264n"
-   "g c\341\272\247n s\341\273\255 d\341\273\245ng c\303\241c t\303\255nh n\304\203ng h\341\273\227 "
-   "tr\341\273\243 c\341\273\247a tr\303\254nh gi\341\272\243 l\341\272\255p. Vi\341\273\207c b\341"
-   "\272\255t ho\341\272\267c t\341\272\257t c\303\240i \304\221\341\272\267t n\303\240y trong khi t"
-   "r\303\262 ch\306\241i \304\221ang ch\341\272\241y s\341\272\275 kh\341\273\237i \304\221\341\273"
-   "\231ng l\341\272\241i tr\303\262 ch\306\241i.",
+   "T\341\272\257t gian l\341\272\255n, tua l\303\271i, chuy\341\273\203n \304\221\341\273\231ng ch"
+   "\341\272\255m v\303\240 t\341\272\243i tr\341\272\241ng th\303\241i \304\221\303\243 l\306\260u."
+   " Th\303\240nh t\303\255ch \304\221\341\272\241t \304\221\306\260\341\273\243c trong ch\341\272"
+   "\277 \304\221\341\273\231 th\341\273\255 th\303\241ch s\341\272\275 \304\221\306\260\341\273\243"
+   "c \304\221\303\241nh d\341\272\245u ri\303\252ng, gi\303\272p b\341\272\241n c\303\263 th\341"
+   "\273\203 cho ng\306\260\341\273\235i kh\303\241c th\341\272\245y nh\341\273\257ng g\303\254 m"
+   "\303\254nh \304\221\303\243 \304\221\341\272\241t \304\221\306\260\341\273\243c m\303\240 kh\303"
+   "\264ng c\341\272\247n c\303\241c t\303\255nh n\304\203ng h\341\273\227 tr\341\273\243 c\341\273"
+   "\247a tr\303\254nh gi\341\272\243 l\341\272\255p. B\341\272\255t ho\341\272\267c t\341\272\257t "
+   "thi\341\272\277t l\341\272\255p n\303\240y khi \304\221ang ch\306\241i s\341\272\275 kh\341\273"
+   "\237i \304\221\341\273\231ng l\341\272\241i tr\303\262 ch\306\241i.",
    "Nh\341\272\255p m\341\272\255t kh\341\272\251u c\341\273\247a t\303\240i kho\341\272\243n RetroA"
    "chievements. \304\220\341\273\231 d\303\240i t\341\273\221i \304\221a: 255 k\303\275 t\341\273"
    "\261.",
@@ -7936,9 +7970,8 @@ static const struct
    "\243c ph\303\241t h\303\240nh.",
    "Hi\341\273\203n th\341\273\213 th\303\264ng b\303\241o khi m\341\273\231t th\303\240nh t\303\255"
    "ch \304\221\306\260\341\273\243c m\341\273\237 kh\303\263a.",
-   "\304\220\303\263ng tr\303\262 ch\306\241i. B\341\272\245t k\341\273\263 thay \304\221\341\273"
-   "\225i ch\306\260a l\306\260u n\303\240o c\303\263 th\341\273\203 s\341\272\275 b\341\273\213 m"
-   "\341\272\245t.",
+   "\304\220\303\263ng n\341\273\231i dung. M\341\273\215i thay \304\221\341\273\225i ch\306\260a "
+   "\304\221\306\260\341\273\243c l\306\260u c\303\263 th\341\273\203 b\341\273\213 m\341\272\245t.",
    "ID kh\303\263a truy c\341\272\255p c\341\273\247a b\341\272\241n cho t\303\240i kho\341\272\243n"
    " l\306\260u tr\341\273\257 \304\221\303\241m m\303\242y.",
    "Khi t\341\272\257t, c\303\241c t\341\273\207p s\341\272\275 \304\221\306\260\341\273\243c chuy"
@@ -8000,12 +8033,12 @@ static const struct
    "\233i m\341\272\267c \304\221\341\273\213nh.",
    "L\306\260u thay \304\221\341\273\225i v\303\240o file c\341\272\245u h\303\254nh khi tho\303\241"
    "t.",
-   "Y\303\252u c\341\272\247u nh\341\272\245n ph\303\255m n\303\263ng \304\220\303\263ng tr\303\262 "
-   "ch\306\241i hai l\341\272\247n.",
-   "Y\303\252u c\341\272\247u nh\341\272\245n ph\303\255m n\303\263ng Tho\303\241t hai l\341\272\247"
-   "n.",
-   "Y\303\252u c\341\272\247u nh\341\272\245n ph\303\255m n\303\263ng \304\220\341\272\267t l\341"
-   "\272\241i tr\303\262 ch\306\241i hai l\341\272\247n.",
+   "Y\303\252u c\341\272\247u nh\341\272\245n ph\303\255m n\303\263ng \304\220\303\263ng n\341\273"
+   "\231i dung hai l\341\272\247n.",
+   "Y\303\252u c\341\272\247u nh\341\272\245n hai l\341\272\247n ph\303\255m t\341\272\257t \304\221"
+   "\341\273\203 tho\303\241t.",
+   "Y\303\252u c\341\272\247u nh\341\272\245n ph\303\255m t\341\272\257t hai l\341\272\247n \304\221"
+   "\341\273\203 \304\221\341\272\267t l\341\272\241i n\341\273\231i dung.",
    "C\303\241c c\306\241 s\341\273\237 d\341\273\257 li\341\273\207u \304\221\306\260\341\273\243c l"
    "\306\260u trong th\306\260 m\341\273\245c n\303\240y.",
    "L\306\260u danh s\303\241ch ph\303\241t Y\303\252u th\303\255ch v\303\240o th\306\260 m\341\273"
@@ -8074,45 +8107,49 @@ static const struct
    "Hi\341\273\203n th\341\273\213 menu \342\200\230Video\342\200\231.",
    "Hi\341\273\203n th\341\273\213 t\303\271y ch\341\273\215n 'B\341\273\221 c\341\273\245c Video'.",
    "L\306\260u danh s\303\241ch ph\303\241t Video v\303\240o th\306\260 m\341\273\245c n\303\240y.",
-   "C\303\241c t\341\273\207p \304\221\303\243 t\341\272\243i v\341\273\201 \304\221\306\260\341\273"
-   "\243c l\306\260u trong th\306\260 m\341\273\245c n\303\240y.",
+   "C\303\241c t\341\273\207p \304\221\303\243 t\341\272\243i xu\341\273\221ng \304\221\306\260\341"
+   "\273\243c l\306\260u trong th\306\260 m\341\273\245c n\303\240y.",
    "Thi\341\272\277t l\341\272\255p m\303\243 m\303\243 gian l\341\272\255n.",
    "T\341\272\241o m\341\273\231t b\341\272\243n sao l\306\260u c\341\273\247a core hi\341\273\207n "
    "\304\221\306\260\341\273\243c c\303\240i \304\221\341\272\267t.",
-   "X\303\263a Core n\303\240y kh\341\273\217i b\341\273\231 nh\341\273\233.",
+   "X\303\263a tr\303\254nh gi\341\272\243 l\341\272\255p n\303\240y kh\341\273\217i b\341\273\231 n"
+   "h\341\273\233.",
    "X\303\263a m\341\273\231t t\341\273\207p kh\341\273\217i danh s\303\241ch c\303\241c b\341\272"
    "\243n sao l\306\260u.",
    "Hi\341\273\203n th\341\273\213 t\303\252n core hi\341\273\207n t\341\272\241i trong menu.",
    "Xem th\303\264ng tin v\341\273\201 \341\273\251ng d\341\273\245ng/tr\303\254nh gi\341\272\243 l"
    "\341\272\255p.",
-   "Duy tr\303\254 b\341\273\231 nh\341\273\233 \304\221\341\273\207m c\341\273\245c b\341\273\231 t"
-   "h\303\264ng tin core \304\221\303\243 c\303\240i. Gi\341\272\243m \304\221\303\241ng k\341\273"
-   "\203 th\341\273\235i gian t\341\272\243i tr\303\252n c\303\241c n\341\273\201n t\341\272\243ng c"
-   "\303\263 truy c\341\272\255p \304\221\304\251a ch\341\272\255m.",
+   "Duy tr\303\254 b\341\273\231 nh\341\273\233 \304\221\341\273\207m c\341\273\245c b\341\273\231 l"
+   "i\303\252n t\341\273\245c v\341\273\201 th\303\264ng tin c\303\241c tr\303\254nh gi\341\272\243 "
+   "l\341\272\255p \304\221\303\243 c\303\240i \304\221\341\272\267t. Gi\303\272p gi\341\272\243m "
+   "\304\221\303\241ng k\341\273\203 th\341\273\235i gian t\341\272\243i tr\303\252n c\303\241c thi"
+   "\341\272\277t b\341\273\213 c\303\263 t\341\273\221c \304\221\341\273\231 truy c\341\272\255p "
+   "\341\273\225 \304\221\304\251a ch\341\272\255m.",
    "Ch\341\273\211 \304\221\341\273\213nh c\303\263 b\341\273\217 qua kh\341\272\243 n\304\203ng l"
-   "\306\260u tr\341\272\241ng th\303\241i core hay kh\303\264ng, cho ph\303\251p th\341\273\255 ngh"
-   "i\341\273\207m c\303\241c t\303\255nh n\304\203ng li\303\252n quan (ch\341\272\241y tr\306\260"
-   "\341\273\233c, tua l\341\272\241i, v.v.).",
-   "Thay \304\221\341\273\225i c\303\241c t\303\271y ch\341\273\215n cho tr\303\262 ch\306\241i.",
-   "Ch\341\273\215n Core n\303\240o s\341\272\275 d\303\271ng.",
+   "\306\260u tr\341\272\241ng th\303\241i tr\303\254nh gi\341\272\243 l\341\272\255p hay kh\303\264"
+   "ng, cho ph\303\251p th\341\273\255 nghi\341\273\207m c\303\241c t\303\255nh n\304\203ng li\303"
+   "\252n quan (ch\341\272\241y tr\306\260\341\273\233c, tua l\341\272\241i, v.v.).",
+   "Thay \304\221\341\273\225i c\303\241c t\303\271y ch\341\273\215n cho n\341\273\231i dung.",
+   "Ch\341\273\215n tr\303\254nh gi\341\272\243 l\341\272\255p n\303\240o s\341\272\275 d\303\271ng.",
    "Gi\341\272\243i ph\303\263ng Core \304\221\303\243 n\341\272\241p kh\341\273\217i b\341\273\231 "
    "nh\341\273\233.",
-   "Ng\304\203n ch\341\272\267n s\341\273\255a core \304\221ang c\303\240i \304\221\341\272\267t. C"
-   "\303\263 th\341\273\203 \304\221\306\260\341\273\243c d\303\271ng \304\221\341\273\203 n\303\251"
-   " c\303\241c b\341\272\243n c\341\272\255p nh\341\272\255t kh\303\264ng mong mu\341\273\221n, nh"
-   "\341\272\245t l\303\240 khi ROM (v\303\255 d\341\273\245: Arcade ROM) c\341\272\247n \304\221"
-   "\303\272ng phi\303\252n b\341\272\243n core c\341\273\245 th\341\273\203, ho\341\272\267c khi co"
-   "re thay \304\221\341\273\225i \304\221\341\273\213nh d\341\272\241ng tr\341\272\241ng th\303\241"
-   "i l\306\260u c\341\273\247a n\303\263.",
+   "Ng\304\203n ch\341\272\267n s\341\273\255a tr\303\254nh gi\341\272\243 l\341\272\255p \304\221an"
+   "g c\303\240i \304\221\341\272\267t. C\303\263 th\341\273\203 \304\221\306\260\341\273\243c d\303"
+   "\271ng \304\221\341\273\203 n\303\251 c\303\241c b\341\272\243n c\341\272\255p nh\341\272\255t k"
+   "h\303\264ng mong mu\341\273\221n, nh\341\272\245t l\303\240 khi ROM (v\303\255 d\341\273\245: Ar"
+   "cade ROM) c\341\272\247n \304\221\303\272ng phi\303\252n b\341\272\243n tr\303\254nh gi\341\272"
+   "\243 l\341\272\255p c\341\273\245 th\341\273\203, ho\341\272\267c khi tr\303\254nh gi\341\272"
+   "\243 l\341\272\255p thay \304\221\341\273\225i \304\221\341\273\213nh d\341\272\241ng tr\341\272"
+   "\241ng th\303\241i l\306\260u c\341\273\247a n\303\263.",
    "Th\341\273\261c hi\341\273\207n c\303\241c t\303\241c v\341\273\245 b\341\272\243o tr\303\254 ng"
-   "o\341\272\241i tuy\341\272\277n tr\303\252n c\303\241c core \304\221\303\243 c\303\240i (sao l"
-   "\306\260u, ph\341\273\245c h\341\273\223i, x\303\263a, v.v.) v\303\240 xem th\303\264ng tin core"
-   ".",
+   "o\341\272\241i tuy\341\272\277n tr\303\252n c\303\241c tr\303\254nh gi\341\272\243 l\341\272\255"
+   "p \304\221\303\243 c\303\240i (sao l\306\260u, ph\341\273\245c h\341\273\223i, x\303\263a, v.v.)"
+   " v\303\240 xem th\303\264ng tin core.",
 #ifdef HAVE_MIST
    "C\303\240i \304\221\341\272\267t ho\341\272\267c g\341\273\241 c\303\240i \304\221\341\272\267t "
    "c\303\241c core ph\303\242n ph\341\273\221i qua Steam.",
 #endif
-   "Thay \304\221\341\273\225i c\303\241c t\303\271y ch\341\273\215n cho tr\303\262 ch\306\241i.",
+   "Thay \304\221\341\273\225i c\303\241c t\303\271y ch\341\273\215n cho n\341\273\231i dung.",
    "Bu\341\273\231c ghi c\303\241c thi\341\272\277t l\341\272\255p hi\341\273\207n t\341\272\241i v"
    "\303\240o file t\303\271y ch\341\273\215n \304\221ang d\303\271ng. \304\220\341\272\243m b\341"
    "\272\243o t\303\271y ch\341\273\215n \304\221\306\260\341\273\243c gi\341\273\257 l\341\272\241i"
@@ -8121,21 +8158,24 @@ static const struct
    "\304\220\341\272\267t t\341\272\245t c\341\272\243 t\303\271y ch\341\273\215n c\341\273\247a Cor"
    "e hi\341\273\207n t\341\272\241i v\341\273\201 gi\303\241 tr\341\273\213 m\341\272\267c \304\221"
    "\341\273\213nh.",
-   "Cho ph\303\251p core hi\341\273\203n th\341\273\213 c\303\241c t\303\271y ch\341\273\215n trong "
-   "menu con theo danh m\341\273\245c. Core ph\341\272\243i \304\221\306\260\341\273\243c t\341\272"
-   "\243i l\341\272\241i \304\221\341\273\203 thay \304\221\341\273\225i c\303\263 hi\341\273\207u l"
-   "\341\273\261c.",
+   "Cho ph\303\251p tr\303\254nh gi\341\272\243 l\341\272\255p hi\341\273\203n th\341\273\213 c\303"
+   "\241c t\303\271y ch\341\273\215n trong c\303\241c menu con \304\221\306\260\341\273\243c ph\303"
+   "\242n lo\341\272\241i theo nh\303\263m. L\306\257U \303\235: C\341\272\247n t\341\272\243i l\341"
+   "\272\241i tr\303\254nh gi\341\272\243 l\341\272\255p \304\221\341\273\203 c\303\241c thay \304"
+   "\221\341\273\225i c\303\263 hi\341\273\207u l\341\273\261c.",
    "T\341\273\207p t\303\271y ch\341\273\215n hi\341\273\207n \304\221ang \304\221\306\260\341\273"
    "\243c s\341\273\255 d\341\273\245ng.",
-   "L\306\260u ho\341\272\267c x\303\263a ghi \304\221\303\250 t\303\271y ch\341\273\215n cho tr\303"
-   "\262 ch\306\241i hi\341\273\207n t\341\272\241i.",
+   "L\306\260u ho\341\272\267c x\303\263a ghi \304\221\303\250 t\303\271y ch\341\273\215n cho n\341"
+   "\273\231i dung hi\341\273\207n t\341\272\241i.",
    "C\303\240i \304\221\341\272\267t phi\303\252n b\341\272\243n tr\306\260\341\273\233c c\341\273"
-   "\247a Core t\341\273\253 danh s\303\241ch c\303\241c b\341\272\243n sao l\306\260u.",
+   "\247a tr\303\254nh gi\341\272\243 l\341\272\255p t\341\273\253 danh s\303\241ch c\303\241c b\341"
+   "\272\243n sao l\306\260u.",
    "Thay \304\221\341\273\225i c\303\240i \304\221\341\272\267t Core.",
-   "Ng\304\203n kh\303\264ng cho core n\303\240y xu\341\272\245t hi\341\273\207n trong tab/menu 'Cor"
-   "e t\341\273\261 ch\341\272\241y'. Ch\341\273\211 \303\241p d\341\273\245ng khi ch\341\272\277 "
-   "\304\221\341\273\231 hi\341\273\203n th\341\273\213 \304\221ang \304\221\341\272\267t \341\273"
-   "\237 'T\303\271y ch\341\273\211nh'.",
+   "Kh\303\264ng hi\341\273\203n th\341\273\213 tr\303\254nh gi\341\272\243 l\341\272\255p n\303\240"
+   "y trong th\341\272\273/menu 'Tr\303\254nh gi\341\272\243 l\341\272\255p kh\303\264ng c\303\263 n"
+   "\341\273\231i dung'. Ch\341\273\211 \303\241p d\341\273\245ng khi ch\341\272\277 \304\221\341"
+   "\273\231 hi\341\273\203n th\341\273\213 \304\221\306\260\341\273\243c \304\221\341\272\267t th"
+   "\303\240nh 'T\303\271y ch\341\273\211nh'.",
    "Cung c\341\272\245p c\303\241c l\303\265i c\303\263 s\341\272\265n ngay c\341\272\243 khi m\341"
    "\273\231t l\303\265i \304\221\303\243 \304\221\306\260\341\273\243c t\341\272\243i th\341\273"
    "\247 c\303\264ng.",
@@ -8146,22 +8186,26 @@ static const struct
    "\272\277u b\341\272\243n c\341\272\255p nh\341\272\255t g\303\242y ra l\341\273\227i.",
    "Ch\341\273\211 \304\221\341\273\213nh s\341\273\221 l\306\260\341\273\243ng b\341\272\243n sao l"
    "\306\260u t\341\273\261 \304\221\341\273\231ng \304\221\306\260\341\273\243c gi\341\273\257 cho "
-   "m\341\273\227i core \304\221\303\243 c\303\240i. Khi \304\221\341\272\241t gi\341\273\233i h\341"
-   "\272\241n n\303\240y, vi\341\273\207c t\341\272\241o b\341\272\243n sao l\306\260u m\341\273\233"
-   "i th\303\264ng qua c\341\272\255p nh\341\272\255t tr\341\273\261c tuy\341\272\277n s\341\272\275"
-   " x\303\263a b\341\272\243n sao l\306\260u c\305\251 nh\341\272\245t. C\303\241c b\341\272\243n s"
-   "ao l\306\260u core th\341\273\247 c\303\264ng s\341\272\275 kh\303\264ng b\341\273\213 \341\272"
-   "\243nh h\306\260\341\273\237ng b\341\273\237i thi\341\272\277t l\341\272\255p n\303\240y.",
+   "m\341\273\227i tr\303\254nh gi\341\272\243 l\341\272\255p \304\221\303\243 c\303\240i. Khi \304"
+   "\221\341\272\241t gi\341\273\233i h\341\272\241n n\303\240y, vi\341\273\207c t\341\272\241o b"
+   "\341\272\243n sao l\306\260u m\341\273\233i th\303\264ng qua c\341\272\255p nh\341\272\255t tr"
+   "\341\273\261c tuy\341\272\277n s\341\272\275 x\303\263a b\341\272\243n sao l\306\260u c\305\251 "
+   "nh\341\272\245t. C\303\241c b\341\272\243n sao l\306\260u tr\303\254nh gi\341\272\243 l\341\272"
+   "\255p th\341\273\247 c\303\264ng s\341\272\275 kh\303\264ng b\341\273\213 \341\272\243nh h\306"
+   "\260\341\273\237ng b\341\273\237i thi\341\272\277t l\341\272\255p n\303\240y.",
    "Sau khi t\341\272\243i xu\341\273\221ng, t\341\273\261 \304\221\341\273\231ng gi\341\272\243i n"
-   "\303\251n c\303\241c t\341\273\207p trong c\303\241c t\341\273\207p l\306\260u tr\341\273\257 "
-   "\304\221\303\243 t\341\272\243i xu\341\273\221ng.",
+   "\303\251n c\303\241c t\341\273\207p c\303\263 trong t\341\273\207p n\303\251n \304\221\303\243 t"
+   "\341\272\243i xu\341\273\221ng.",
    "URL \304\221\341\272\277n th\306\260 m\341\273\245c tr\303\254nh c\341\272\255p nh\341\272\255t "
-   "core tr\303\252n m\303\241y ch\341\273\247 buildbot c\341\273\247a libretro.",
-   "Bao g\341\273\223m c\303\241c core \342\200\234th\341\273\255 nghi\341\273\207m\342\200\235 tron"
-   "g danh s\303\241ch T\341\272\243i Core. Nh\341\273\257ng core n\303\240y th\306\260\341\273\235n"
-   "g ch\341\273\211 d\303\240nh cho m\341\273\245c \304\221\303\255ch ph\303\241t tri\341\273\203n/"
-   "th\341\273\255 nghi\341\273\207m v\303\240 kh\303\264ng \304\221\306\260\341\273\243c khuy\341"
-   "\272\277n ngh\341\273\213 s\341\273\255 d\341\273\245ng chung.",
+   "tr\303\254nh gi\341\272\243 l\341\272\255p tr\303\252n m\303\241y ch\341\273\247 buildbot c\341"
+   "\273\247a libretro.",
+   "Bao g\341\273\223m c\303\241c tr\303\254nh gi\341\272\243 l\341\272\255p 'th\341\273\255 nghi"
+   "\341\273\207m' trong danh s\303\241ch Tr\303\254nh t\341\272\243i tr\303\254nh gi\341\272\243 l"
+   "\341\272\255p. C\303\241c tr\303\254nh gi\341\272\243 l\341\272\255p n\303\240y th\306\260\341"
+   "\273\235ng ch\341\273\211 d\303\271ng cho m\341\273\245c \304\221\303\255ch ph\303\241t tri\341"
+   "\273\203n/ki\341\273\203m th\341\273\255 v\303\240 kh\303\264ng \304\221\306\260\341\273\243c kh"
+   "uy\341\272\277n ngh\341\273\213 s\341\273\255 d\341\273\245ng th\303\264ng th\306\260\341\273"
+   "\235ng.",
    "T\341\272\241o danh s\303\241ch ph\303\241t m\341\273\233i v\303\240 th\303\252m m\341\273\245c "
    "n\303\240y v\303\240o \304\221\303\263.",
    "Xu\341\272\245t t\303\255n hi\341\273\207u g\341\273\221c, \304\221\341\273\231 ph\303\242n gi"
@@ -8169,8 +8213,8 @@ static const struct
    "m\303\240n h\303\254nh CRT.",
    "Chuy\341\273\203n sang ch\341\272\277 \304\221\341\273\231 hi\341\273\203n th\341\273\213 \304"
    "\221\341\273\231 ph\303\242n gi\341\272\243i cao \304\221\341\273\203 d\303\271ng v\341\273\233i"
-   " menu \304\221\341\273\231 ph\303\242n gi\341\272\243i cao khi ch\306\260a m\341\273\237 tr\303"
-   "\262 ch\306\241i.",
+   " menu \304\221\341\273\231 ph\303\242n gi\341\272\243i cao khi ch\306\260a t\341\272\243i n\341"
+   "\273\231i dung.",
    "Duy\341\273\207t qua c\303\241c t\303\271y ch\341\273\215n n\303\240y \304\221\341\273\203 \304"
    "\221i\341\273\201u ch\341\273\211nh c\303\240i \304\221\341\272\267t theo chi\341\273\201u ngang"
    " nh\341\272\261m thay \304\221\341\273\225i k\303\255ch th\306\260\341\273\233c h\303\254nh \341"
@@ -8192,7 +8236,7 @@ static const struct
    " \341\272\243nh kh\303\264ng \304\221\306\260\341\273\243c c\304\203n gi\341\273\257a \304\221"
    "\303\272ng c\303\241ch tr\303\252n m\303\240n h\303\254nh.",
    "Xem nh\341\273\257ng t\303\254m ki\341\272\277m tr\306\260\341\273\233c \304\221\303\263.",
-   "Xem c\306\241 s\341\273\237 d\341\273\257 li\341\273\207u.",
+   "Xem d\341\273\257 li\341\273\207u.",
    "X\303\263a m\341\273\245c n\303\240y kh\341\273\217i danh s\303\241ch ph\303\241t.",
    "X\303\263a danh s\303\241ch ph\303\241t kh\341\273\217i h\341\273\207 th\341\273\221ng t\341\272"
    "\255p tin.",
@@ -8212,8 +8256,9 @@ static const struct
    "Qu\341\272\243n l\303\275 h\303\254nh \341\272\243nh \304\221\304\251a.",
    "M\341\273\237 khay \304\221\304\251a \341\272\243o.",
    "\304\220\303\263ng khay \304\221\304\251a \341\272\243o.",
-   "T\341\272\243i v\341\273\201 v\303\240 c\303\240i \304\221\341\272\267t nh\303\242n t\341\273"
-   "\253 internet.",
+   "T\341\272\243i xu\341\273\221ng v\303\240 c\303\240i \304\221\341\272\267t b\341\272\243n c\341"
+   "\272\255p nh\341\272\255t tr\303\254nh gi\341\272\243 l\341\272\255p t\341\273\253 tr\303\254nh "
+   "c\341\272\255p nh\341\272\255t tr\341\273\261c tuy\341\272\277n.",
    "T\341\272\243i n\341\273\231i dung mi\341\273\205n ph\303\255 cho tr\303\254nh gi\341\272\243 l"
    "\341\272\255p \304\221\303\243 ch\341\273\215n.",
    "T\341\272\243i xu\341\273\221ng c\303\241c t\341\273\207p h\341\273\207 th\341\273\221ng b\341"
@@ -8229,6 +8274,10 @@ static const struct
    "\304\221i\341\273\201u khi\341\273\203n h\303\254nh \341\272\243nh kh\303\241c v\341\273\233i tr"
    "\303\254nh \304\221i\341\273\201u khi\341\273\203n hi\341\273\207n \304\221ang \304\221\306\260"
    "\341\273\243c t\341\272\243i.",
+   "M\341\273\231t s\341\273\221 tr\303\254nh gi\341\272\243 l\341\272\255p c\303\263 ch\341\273\251"
+   "c n\304\203ng t\341\272\257t, vi\341\273\207c t\341\272\243i m\341\273\231t tr\303\254nh gi\341"
+   "\272\243 l\341\272\255p t\341\272\241m s\341\272\275 ng\304\203n RetroArch t\341\272\257t ho\303"
+   "\240n to\303\240n.",
    "Sao ch\303\251p \304\221\304\251a v\341\272\255t l\303\275 v\303\240o b\341\273\231 nh\341\273"
    "\233 trong. T\341\273\207p s\341\272\275 \304\221\306\260\341\273\243c l\306\260u d\306\260\341"
    "\273\233i d\341\272\241ng file \341\272\243nh.",
@@ -8246,11 +8295,11 @@ static const struct
    "i\341\273\201u n\303\240y ti\341\272\277t ki\341\273\207m n\304\203ng l\306\260\341\273\243ng v"
    "\303\240 cho ph\303\251p s\341\273\255 d\341\273\245ng gi\341\273\233i h\341\272\241n khung h"
    "\303\254nh t\341\273\253 b\303\252n th\341\273\251 ba.",
-   "T\341\273\221c \304\221\341\273\231 t\341\273\221i \304\221a m\303\240 tr\303\262 ch\306\241i s"
-   "\341\272\275 ch\341\272\241y khi s\341\273\255 d\341\273\245ng tua nhanh (v\303\255 d\341\273"
-   "\245, 5.0x cho n\341\273\231i dung 60 fps = gi\341\273\233i h\341\272\241n 300 fps). N\341\272"
-   "\277u \304\221\341\272\267t th\303\240nh 0.0x, t\341\273\267 l\341\273\207 tua nhanh l\303\240 k"
-   "h\303\264ng gi\341\273\233i h\341\272\241n (kh\303\264ng gi\341\273\233i h\341\272\241n FPS).",
+   "T\341\273\221c \304\221\341\273\231 t\341\273\221i \304\221a m\303\240 n\341\273\231i dung s\341"
+   "\272\275 ch\341\272\241y khi s\341\273\255 d\341\273\245ng tua nhanh (v\303\255 d\341\273\245, 5"
+   ".0x cho n\341\273\231i dung 60 fps = gi\341\273\233i h\341\272\241n 300 fps). N\341\272\277u "
+   "\304\221\341\272\267t th\303\240nh 0.0x, t\341\273\267 l\341\273\207 tua nhanh l\303\240 kh\303"
+   "\264ng gi\341\273\233i h\341\272\241n (kh\303\264ng gi\341\273\233i h\341\272\241n FPS).",
    "M\341\273\237 th\306\260 m\341\273\245c kh\303\241c b\341\272\261ng tr\303\254nh ch\341\273\215n"
    " file c\341\273\247a h\341\273\207 th\341\273\221ng",
    "M\341\273\237 c\303\240i \304\221\341\272\267t quy\341\273\201n truy c\341\272\255p file tr\303"
@@ -8258,14 +8307,14 @@ static const struct
    "L\341\273\215c c\303\241c t\341\272\255p tin \304\221\306\260\341\273\243c hi\341\273\203n th"
    "\341\273\213 trong Tr\303\254nh duy\341\273\207t T\341\272\255p tin theo core hi\341\273\207n t"
    "\341\272\241i.",
-   "L\306\260u c\303\241c t\303\271y ch\341\273\215n core s\341\272\275 \303\241p d\341\273\245ng ch"
-   "o t\341\272\245t c\341\272\243 tr\303\262 ch\306\241i \304\221\306\260\341\273\243c t\341\272"
-   "\243i t\341\273\253 c\303\271ng th\306\260 m\341\273\245c v\341\273\233i t\341\273\207p hi\341"
-   "\273\207n t\341\272\241i.",
-   "X\303\263a c\303\241c t\303\271y ch\341\273\215n core s\341\272\275 \303\241p d\341\273\245ng ch"
-   "o t\341\272\245t c\341\272\243 tr\303\262 ch\306\241i \304\221\306\260\341\273\243c t\341\272"
-   "\243i t\341\273\253 c\303\271ng th\306\260 m\341\273\245c v\341\273\233i t\341\273\207p hi\341"
-   "\273\207n t\341\272\241i.",
+   "L\306\260u c\303\241c t\303\271y ch\341\273\215n tr\303\254nh gi\341\272\243 l\341\272\255p \304"
+   "\221\341\273\203 \303\241p d\341\273\245ng cho m\341\273\215i n\341\273\231i dung \304\221\306"
+   "\260\341\273\243c t\341\272\243i t\341\273\253 c\303\271ng th\306\260 m\341\273\245c v\341\273"
+   "\233i t\341\273\207p hi\341\273\207n t\341\272\241i.",
+   "X\303\263a c\303\241c t\303\271y ch\341\273\215n tr\303\254nh gi\341\272\243 l\341\272\255p \304"
+   "\221\306\260\341\273\243c \303\241p d\341\273\245ng cho m\341\273\215i n\341\273\231i dung \304"
+   "\221\306\260\341\273\243c t\341\272\243i t\341\273\253 c\303\271ng th\306\260 m\341\273\245c v"
+   "\341\273\233i t\341\273\207p hi\341\273\207n t\341\272\241i.",
    "Hi\341\273\203n th\341\273\213 s\341\273\221 khung h\303\254nh tr\303\252n gi\303\242y hi\341"
    "\273\207n t\341\272\241i.",
    "Hi\341\273\203n th\341\273\213 t\341\273\221c \304\221\341\273\231 khung h\303\254nh s\341\272"
@@ -8305,17 +8354,21 @@ static const struct
    "Ghi \304\221\303\250 ng\306\260\341\273\235i ch\306\241i 02",
    "Hi\341\273\203n th\341\273\213 Debug",
 #endif
-   "L\306\260u t\303\271y ch\341\273\215n core \303\241p d\341\273\245ng ch\341\273\211 cho tr\303"
-   "\262 ch\306\241i hi\341\273\207n t\341\272\241i.",
-   "X\303\263a c\303\241c t\303\271y ch\341\273\215n core s\341\272\275 ch\341\273\211 \303\241p d"
-   "\341\273\245ng cho tr\303\262 ch\306\241i hi\341\273\207n t\341\272\241i.",
-   "T\341\272\243i c\303\241c t\303\271y ch\341\273\215n Core t\303\271y ch\341\273\211nh theo m\341"
-   "\272\267c \304\221\341\273\213nh khi kh\341\273\237i \304\221\341\273\231ng.",
-   "L\306\260u t\341\272\245t c\341\272\243 t\303\271y ch\341\273\215n core v\303\240o m\341\273\231"
-   "t file c\303\240i \304\221\341\272\267t chung (retroarch-core-options.cfg). Khi t\341\272\257t, "
-   "c\303\241c t\303\271y ch\341\273\215n cho t\341\273\253ng core s\341\272\275 \304\221\306\260"
-   "\341\273\243c l\306\260u v\303\240o th\306\260 m\341\273\245c/file ri\303\252ng trong th\306\260"
-   " m\341\273\245c 'Configs' c\341\273\247a RetroArch.",
+   "L\306\260u c\303\241c t\303\271y ch\341\273\215n c\341\273\247a tr\303\254nh gi\341\272\243 l"
+   "\341\272\255p, ch\341\273\211 \303\241p d\341\273\245ng cho n\341\273\231i dung hi\341\273\207n "
+   "t\341\272\241i.",
+   "X\303\263a c\303\241c t\303\271y ch\341\273\215n tr\303\254nh gi\341\272\243 l\341\272\255p s"
+   "\341\272\275 ch\341\273\211 \303\241p d\341\273\245ng cho tr\303\262 ch\306\241i hi\341\273\207n"
+   " t\341\272\241i.",
+   "M\341\272\267c \304\221\341\273\213nh t\341\272\243i c\303\241c t\303\271y ch\341\273\215n tr"
+   "\303\254nh gi\341\272\243 l\341\272\255p \304\221\303\243 t\303\271y ch\341\273\211nh khi kh\341"
+   "\273\237i \304\221\341\273\231ng.",
+   "L\306\260u t\341\272\245t c\341\272\243 t\303\271y ch\341\273\215n tr\303\254nh gi\341\272\243 l"
+   "\341\272\255p v\303\240o m\341\273\231t file c\303\240i \304\221\341\272\267t chung (retroarch-c"
+   "ore-options.cfg). Khi t\341\272\257t, c\303\241c t\303\271y ch\341\273\215n cho t\341\273\253ng "
+   "tr\303\254nh gi\341\272\243 l\341\272\255p s\341\272\275 \304\221\306\260\341\273\243c l\306\260"
+   "u v\303\240o th\306\260 m\341\273\245c/file ri\303\252ng trong th\306\260 m\341\273\245c 'Config"
+   "s' c\341\273\247a RetroArch.",
    "C\303\241c tr\303\254nh gi\341\272\243 l\341\272\255p \304\221\303\243 c\303\240i \304\221\341"
    "\272\267t c\303\263 th\341\273\203 ch\341\272\241y m\303\240 kh\303\264ng c\341\272\247n t\341"
    "\272\243i n\341\273\231i dung s\341\272\275 xu\341\272\245t hi\341\273\207n t\341\272\241i \304"
@@ -8376,9 +8429,9 @@ static const struct
    " tr\303\262 ch\306\241i\" khi kh\341\273\237i ch\341\272\241y v\303\240 ti\341\272\277p t\341"
    "\273\245c n\341\273\231i dung. Khi \304\221\306\260\341\273\243c \304\221\341\272\267t th\303"
    "\240nh \"Ph\303\241t hi\341\273\207n\", t\303\271y ch\341\273\215n s\341\272\275 \304\221\306"
-   "\260\341\273\243c b\341\272\255t n\341\272\277u Core hi\341\273\207n t\341\272\241i tri\341\273"
-   "\203n khai ch\341\273\251c n\304\203ng g\341\273\215i l\341\272\241i b\303\240n ph\303\255m giao"
-   " di\341\273\207n ng\306\260\341\273\235i d\303\271ng.",
+   "\260\341\273\243c b\341\272\255t n\341\272\277u tr\303\254nh gi\341\272\243 l\341\272\255p hi"
+   "\341\273\207n t\341\272\241i tri\341\273\203n khai ch\341\273\251c n\304\203ng g\341\273\215i l"
+   "\341\272\241i b\303\240n ph\303\255m giao di\341\273\207n ng\306\260\341\273\235i d\303\271ng.",
    "B\341\272\255t t\303\255nh n\304\203ng b\341\272\257t chu\341\273\231t khi t\341\272\255p trung "
    "v\303\240o \341\273\251ng d\341\273\245ng.",
    "Ch\341\273\211 \304\221\341\273\213nh t\341\272\245t c\341\272\243 c\303\241c h\306\260\341\273"
@@ -8408,8 +8461,8 @@ static const struct
    "\341\273\201u khi\341\273\203n n\303\240o kh\303\241c \304\221\306\260\341\273\243c ph\303\242n "
    "b\341\273\225 cho tr\303\254nh ph\303\241t n\303\240y.",
    "Tay c\341\272\247m n\303\240y s\341\272\275 \304\221\306\260\341\273\243c c\341\272\245p cho ng"
-   "\306\260\341\273\235i ch\306\241i n\303\240y, theo ch\341\272\277 \304\221\341\273\231 d\303\240"
-   "nh ri\303\252ng.",
+   "\306\260\341\273\235i ch\306\241i n\303\240y, t\303\271y theo ch\341\272\277 \304\221\341\273"
+   "\231 \304\221\341\272\267t tr\306\260\341\273\233c.",
    "Ch\341\273\211 \304\221\341\273\213nh lo\341\272\241i tay c\341\272\247m \304\221\306\260\341"
    "\273\243c gi\341\272\243 l\341\272\255p.",
    "Ng\304\203n ch\341\272\267n ch\341\273\251c n\304\203ng th\303\264ng tin menu.",
@@ -8428,31 +8481,31 @@ static const struct
    "Thay \304\221\341\273\225i c\303\240i \304\221\341\272\267t ph\341\272\243n h\341\273\223i x\303"
    "\272c gi\303\241c v\303\240 rung.",
    "Thay \304\221\341\273\225i c\303\240i \304\221\341\272\267t v\303\240 ch\341\273\211 \304\221"
-   "\341\273\213nh ph\303\255m n\303\263ng, ch\341\272\263ng h\341\272\241n nh\306\260 b\341\272\255"
-   "t/t\341\272\257t menu trong khi ch\306\241i tr\303\262 ch\306\241i.",
-   "Th\303\252m \304\221\341\273\231 tr\341\273\205 khung h\303\254nh tr\306\260\341\273\233c khi "
-   "\304\221i\341\273\201u khi\341\273\203n b\303\254nh th\306\260\341\273\235ng b\341\273\213 ch"
-   "\341\272\267n sau khi nh\341\272\245n ph\303\255m 'B\341\272\255t ph\303\255m n\303\263ng' \304"
-   "\221\306\260\341\273\243c ch\341\273\211 \304\221\341\273\213nh. Cho ph\303\251p ghi l\341\272"
-   "\241i \304\221i\341\273\201u khi\341\273\203n b\303\254nh th\306\260\341\273\235ng t\341\273\253"
-   " ph\303\255m 'B\341\272\255t ph\303\255m n\303\263ng' khi n\303\263 \304\221\306\260\341\273\243"
-   "c \303\241nh x\341\272\241 sang m\341\273\231t h\303\240nh \304\221\341\273\231ng kh\303\241c (v"
-   "\303\255 d\341\273\245: 'Ch\341\273\215n' c\341\273\247a RetroPad).",
+   "\341\273\213nh ph\303\255m t\341\272\257t, ch\341\272\263ng h\341\272\241n nh\306\260 b\341\272"
+   "\255t/t\341\272\257t menu trong khi ch\306\241i tr\303\262 ch\306\241i.",
+   "Th\303\252m \304\221\341\273\231 tr\341\273\205 theo s\341\273\221 khung h\303\254nh tr\306\260"
+   "\341\273\233c khi ch\341\272\267n thao t\303\241c nh\341\272\255p th\303\264ng th\306\260\341"
+   "\273\235ng sau khi nh\341\272\245n ph\303\255m t\341\272\257t 'B\341\272\255t ph\303\255m t\341"
+   "\272\257t' \304\221\303\243 g\303\241n. Cho ph\303\251p ghi nh\341\272\255n thao t\303\241c nh"
+   "\341\272\255p th\303\264ng th\306\260\341\273\235ng t\341\273\253 ph\303\255m t\341\272\257t 'B"
+   "\341\272\255t ph\303\255m t\341\272\257t' khi ph\303\255m n\303\240y \304\221\306\260\341\273"
+   "\243c g\303\241n cho m\341\273\231t ch\341\273\251c n\304\203ng kh\303\241c (v\303\255 d\341\273"
+   "\245: 'Select' tr\303\252n RetroPad).",
    "Ch\341\272\267n t\341\272\245t c\341\272\243 ph\303\255m t\341\272\257t t\341\273\253 c\341\272"
    "\243 hai lo\341\272\241i thi\341\272\277t b\341\273\213 b\303\240n ph\303\255m v\303\240 b\341"
    "\273\231 \304\221i\341\273\201u khi\341\273\203n n\341\272\277u m\341\273\231t trong hai lo\341"
    "\272\241i c\303\263 c\303\240i \304\221\341\272\267t 'B\341\272\255t ph\303\255m t\341\272\257t'"
    ".",
    "C\303\241c ph\303\255m t\341\272\257t \304\221\306\260\341\273\243c g\303\241n cho c\341\273\225"
-   "ng l\303\265i s\341\273\221 1, ngay c\341\272\243 khi c\341\273\225ng \304\221\303\263 \304\221"
-   "\303\243 \304\221\306\260\341\273\243c g\303\241n l\341\272\241i cho m\341\273\231t ng\306\260"
-   "\341\273\235i d\303\271ng kh\303\241c.L\306\260u \303\275: C\303\241c ph\303\255m t\341\272\257t"
-   " tr\303\252n b\303\240n ph\303\255m s\341\272\275 kh\303\264ng ho\341\272\241t \304\221\341\273"
-   "\231ng n\341\272\277u c\341\273\225ng l\303\265i s\341\273\221 1 \304\221\306\260\341\273\243c g"
-   "\303\241n cho ng\306\260\341\273\235i ch\306\241i c\303\263 s\341\273\221 th\341\273\251 t\341"
-   "\273\261 l\341\273\233n h\306\241n 1 (v\303\254 b\303\240n ph\303\255m lu\303\264n \304\221\306"
-   "\260\341\273\243c xem l\303\240 thi\341\272\277t b\341\273\213 \304\221i\341\273\201u khi\341"
-   "\273\203n c\341\273\247a Ng\306\260\341\273\235i ch\306\241i 1).",
+   "ng tay c\341\272\247m 1 c\341\273\247a tr\303\254nh gi\341\272\243 l\341\272\255p, ngay c\341"
+   "\272\243 khi c\341\273\225ng tay c\341\272\247m 1 c\341\273\247a tr\303\254nh gi\341\272\243 l"
+   "\341\272\255p \304\221\306\260\341\273\243c g\303\241n l\341\272\241i cho ng\306\260\341\273\235"
+   "i d\303\271ng kh\303\241c. L\306\260u \303\275: c\303\241c ph\303\255m t\341\272\257t tr\303\252"
+   "n b\303\240n ph\303\255m s\341\272\275 kh\303\264ng ho\341\272\241t \304\221\341\273\231ng n\341"
+   "\272\277u c\341\273\225ng tay c\341\272\247m 1 c\341\273\247a tr\303\254nh gi\341\272\243 l\341"
+   "\272\255p \304\221\306\260\341\273\243c g\303\241n l\341\272\241i cho b\341\272\245t k\341\273"
+   "\263 ng\306\260\341\273\235i d\303\271ng n\303\240o > 1 (b\303\240n ph\303\255m nh\341\272\255n "
+   "l\341\273\207nh t\341\273\253 ng\306\260\341\273\235i d\303\271ng 1).",
    "S\341\273\221 l\306\260\341\273\243ng ng\306\260\341\273\235i d\303\271ng t\341\273\221i \304"
    "\221a \304\221\306\260\341\273\243c RetroArch h\341\273\227 tr\341\273\243. (C\341\272\247n kh"
    "\341\273\237i \304\221\341\273\231ng l\341\272\241i)",
@@ -8460,18 +8513,17 @@ static const struct
    "\203 B\341\272\255t/T\341\272\257t menu.",
    "Thay \304\221\341\273\225i c\303\240i \304\221\341\272\267t \304\221i\341\273\201u khi\341\273"
    "\203n menu.",
-   "Ch\341\273\245p \341\272\243nh tr\303\262 ch\306\241i hi\341\273\207n t\341\272\241i \304\221"
-   "\341\273\203 d\341\273\213ch v\303\240/ho\341\272\267c \304\221\341\273\215c to b\341\272\245t k"
-   "\341\273\263 v\304\203n b\341\272\243n n\303\240o tr\303\252n m\303\240n h\303\254nh. 'D\341\273"
-   "\213ch v\341\273\245 AI' ph\341\272\243i \304\221\306\260\341\273\243c b\341\272\255t v\303\240 "
-   "c\341\272\245u h\303\254nh.",
+   "Ch\341\273\245p \341\272\243nh n\341\273\231i dung hi\341\273\207n t\341\272\241i \304\221\341"
+   "\273\203 d\341\273\213ch v\303\240/ho\341\272\267c \304\221\341\273\215c to v\304\203n b\341\272"
+   "\243n tr\303\252n m\303\240n h\303\254nh. 'D\341\273\213ch v\341\273\245 AI' ph\341\272\243i "
+   "\304\221\306\260\341\273\243c b\341\272\255t v\303\240 c\341\272\245u h\303\254nh.",
    "Gi\341\272\243m ch\341\273\211 s\341\273\221 m\303\243 gian l\341\272\255n hi\341\273\207n \304"
    "\221\306\260\341\273\243c ch\341\273\215n.",
    "T\304\203ng ch\341\273\211 m\341\273\245c m\303\243 gian l\341\272\255n hi\341\273\207n \304\221"
    "\306\260\341\273\243c ch\341\273\215n.",
    "B\341\272\255t/t\341\272\257t m\303\243 gian l\341\272\255n \304\221ang \304\221\306\260\341\273"
    "\243c ch\341\273\215n.",
-   "\304\220\303\263ng tr\303\262 ch\306\241i hi\341\273\207n t\341\272\241i.",
+   "\304\220\303\263ng n\341\273\231i dung hi\341\273\207n t\341\272\241i.",
    "N\341\272\277u khay \304\221\304\251a \341\272\243o \304\221ang \304\221\303\263ng, h\303\243y m"
    "\341\273\237 khay v\303\240 l\341\272\245y \304\221\304\251a \304\221\303\243 n\341\272\241p ra."
    " N\341\272\277u kh\303\264ng, h\303\243y \304\221\306\260a \304\221\304\251a hi\341\273\207n "
@@ -8483,38 +8535,40 @@ static const struct
    "Gi\341\272\243m s\341\273\221 th\341\273\251 t\341\273\261 \304\221\304\251a \304\221ang ch\341"
    "\273\215n v\303\240 th\341\273\261c hi\341\273\207n n\341\272\241p \304\221\304\251a tr\341\273"
    "\205 n\341\272\277u khay \304\221\304\251a \341\272\243o \304\221ang \304\221\303\263ng.",
-   "Khi \304\221\306\260\341\273\243c g\303\241n, ph\303\255m 'Hotkey Enable' ph\341\272\243i \304"
-   "\221\306\260\341\273\243c gi\341\273\257 tr\306\260\341\273\233c khi b\341\272\245t k\341\273"
-   "\263 ph\303\255m n\303\263ng n\303\240o kh\303\241c \304\221\306\260\341\273\243c nh\341\272\255"
-   "n d\341\272\241ng. Cho ph\303\251p c\303\241c n\303\272t \304\221i\341\273\201u khi\341\273\203n"
-   " \304\221\306\260\341\273\243c \303\241nh x\341\272\241 \304\221\341\272\277n c\303\241c ch\341"
-   "\273\251c n\304\203ng ph\303\255m n\303\263ng m\303\240 kh\303\264ng \341\272\243nh h\306\260"
+   "Khi \304\221\306\260\341\273\243c g\303\241n, ph\303\255m 'Ph\303\255m t\341\272\257t' ph\341"
+   "\272\243i \304\221\306\260\341\273\243c gi\341\273\257 tr\306\260\341\273\233c khi b\341\272\245"
+   "t k\341\273\263 ph\303\255m n\303\263ng n\303\240o kh\303\241c \304\221\306\260\341\273\243c nh"
+   "\341\272\255n d\341\272\241ng. Cho ph\303\251p c\303\241c n\303\272t \304\221i\341\273\201u khi"
+   "\341\273\203n \304\221\306\260\341\273\243c g\303\241n \304\221\341\272\277n c\303\241c ch\341"
+   "\273\251c n\304\203ng ph\303\255m t\341\272\257t m\303\240 kh\303\264ng \341\272\243nh h\306\260"
    "\341\273\237ng \304\221\341\272\277n thao t\303\241c nh\341\272\255p li\341\273\207u th\303\264n"
    "g th\306\260\341\273\235ng. Vi\341\273\207c g\303\241n b\341\273\231 \304\221i\341\273\201u ch"
    "\341\273\211nh ch\341\273\211 cho b\341\273\231 \304\221i\341\273\201u khi\341\273\203n s\341"
-   "\272\275 kh\303\264ng y\303\252u c\341\272\247u n\303\263 cho c\303\241c ph\303\255m n\303\263ng"
-   " tr\303\252n b\303\240n ph\303\255m v\303\240 ng\306\260\341\273\243c l\341\272\241i, nh\306\260"
-   "ng c\341\272\243 hai b\341\273\231 \304\221i\341\273\201u ch\341\273\211nh \304\221\341\273\201u"
-   " ho\341\272\241t",
-   " \304\221\341\273\231ng cho c\341\272\243 hai thi\341\272\277t b\341\273\213.",
-   "Cho ph\303\251p tua nhanh khi gi\341\273\257 ph\303\255m. Tr\303\262 ch\306\241i s\341\272\275 c"
-   "h\341\272\241y \341\273\237 t\341\273\221c \304\221\341\273\231 b\303\254nh th\306\260\341\273"
-   "\235ng khi nh\341\272\243 ph\303\255m.",
+   "\272\275 kh\303\264ng y\303\252u c\341\272\247u n\303\263 cho c\303\241c ph\303\255m t\341\272"
+   "\257t tr\303\252n b\303\240n ph\303\255m v\303\240 ng\306\260\341\273\243c l\341\272\241i, nh"
+   "\306\260ng c\341\272\243 hai b\341\273\231 \304\221i\341\273\201u ch\341\273\211nh \304\221\341"
+   "\273\201u ho\341\272\241t \304\221\341\273\231n",
+   "g cho c\341\272\243 hai thi\341\272\277t b\341\273\213.",
+   "Tua nhanh khi nh\341\272\245n gi\341\273\257. N\341\273\231i dung ch\341\272\241y \341\273\237 t"
+   "\341\273\221c \304\221\341\273\231 b\303\254nh th\306\260\341\273\235ng khi th\341\272\243 ph"
+   "\303\255m.",
    "Chuy\341\273\203n \304\221\341\273\225i gi\341\273\257a ch\341\272\277 \304\221\341\273\231 tua "
    "nhanh v\303\240 t\341\273\221c \304\221\341\273\231 b\303\254nh th\306\260\341\273\235ng.",
    "B\341\272\255t/t\341\272\257t hi\341\273\203n th\341\273\213 tr\341\272\241ng th\303\241i 'khung"
    " h\303\254nh tr\303\252n gi\303\242y'.",
-   "Khi t\341\272\241m d\341\273\253ng, tr\303\262 ch\306\241i s\341\272\275 ti\341\272\277n th\303"
-   "\252m m\341\273\231t khung h\303\254nh.",
+   "Ti\341\272\277n n\341\273\231i dung th\303\252m m\341\273\231t khung h\303\254nh khi \304\221ang"
+   " t\341\272\241m d\341\273\253ng.",
    "Chuy\341\273\203n \304\221\341\273\225i gi\341\273\257a ch\341\272\277 \304\221\341\273\231 hi"
    "\341\273\203n th\341\273\213 to\303\240n m\303\240n h\303\254nh v\303\240 c\341\273\255a s\341"
    "\273\225.",
-   "Chuy\341\273\203n ch\341\272\277 \304\221\341\273\231 'T\341\272\255p trung v\303\240o tr\303"
-   "\262 ch\306\241i' b\341\272\255t/t\341\272\257t. Khi n\341\273\231i dung \304\221ang t\341\272"
-   "\255p trung, c\303\241c ph\303\255m n\303\263ng b\341\273\213 v\303\264 hi\341\273\207u h\303"
-   "\263a (to\303\240n b\341\273\231 b\303\240n ph\303\255m \304\221\306\260\341\273\243c chuy\341"
-   "\273\203n t\341\273\233i core \304\221ang ch\341\272\241y) v\303\240 chu\341\273\231t b\341\273"
-   "\213 kh\303\263a.",
+   "B\341\272\255t/t\341\272\257t ch\341\272\277 \304\221\341\273\231 'T\341\272\255p trung v\303"
+   "\240o tr\303\262 ch\306\241i'. Khi n\341\273\231i dung \304\221ang ch\341\272\241y \304\221\306"
+   "\260\341\273\243c \306\260u ti\303\252n, c\303\241c ph\303\255m t\341\272\257t s\341\272\275 b"
+   "\341\273\213 v\303\264 hi\341\273\207u h\303\263a (to\303\240n b\341\273\231 thao t\303\241c t"
+   "\341\273\253 b\303\240n ph\303\255m \304\221\306\260\341\273\243c chuy\341\273\203n \304\221\341"
+   "\272\277n tr\303\254nh gi\341\272\243 l\341\272\255p \304\221ang ch\341\272\241y) v\303\240 chu"
+   "\341\273\231t s\341\272\275 \304\221\306\260\341\273\243c gi\341\273\257 quy\341\273\201n \304"
+   "\221i\341\273\201u khi\341\273\203n.",
    "C\341\272\247m ho\341\272\267c th\341\272\243 chu\341\273\231t. Khi c\341\272\247m, con tr\341"
    "\273\217 h\341\273\207 th\341\273\221ng s\341\272\275 \341\272\251n v\303\240 gi\341\273\233i h"
    "\341\272\241n trong c\341\273\255a s\341\273\225 hi\341\273\203n th\341\273\213 RetroArch, c\341"
@@ -8524,21 +8578,20 @@ static const struct
    "\272\241i.",
    "T\341\272\243i tr\341\272\241ng th\303\241i \304\221\303\243 l\306\260u t\341\273\253 khe hi\341"
    "\273\207n \304\221ang \304\221\306\260\341\273\243c ch\341\273\215n.",
-   "Chuy\341\273\203n \304\221\341\273\225i m\303\240n h\303\254nh hi\341\273\207n t\341\272\241i gi"
-   "\341\273\257a menu v\303\240 tr\303\262 ch\306\241i.",
+   "Chuy\341\273\203n m\303\240n h\303\254nh hi\341\273\207n t\341\272\241i gi\341\273\257a menu v"
+   "\303\240 n\341\273\231i dung.",
    "B\341\272\255t/t\341\272\257t \303\242m thanh.",
-   "Chuy\341\273\203n \304\221\341\273\225i gi\341\273\257a hi\341\273\203n th\341\273\213 m\341\273"
-   "\235 v\303\240 t\304\251nh cho tin nh\341\272\257n chat Tr\303\262 ch\306\241i tr\341\273\261c t"
-   "uy\341\272\277n.",
-   "Chuy\341\273\203n \304\221\341\273\225i phi\303\252n Tr\303\262 ch\306\241i tr\341\273\261c tuy"
-   "\341\272\277n hi\341\273\207n t\341\272\241i gi\341\273\257a ch\341\272\277 \304\221\341\273\231"
-   " 'play' v\303\240 'spectate'.",
-   "B\341\272\255t/t\341\272\257t m\303\241y ch\341\273\247 Tr\303\262 ch\306\241i tr\341\273\261c t"
-   "uy\341\272\277n.",
-   "B\341\272\255t/t\341\272\257t b\341\273\231 \304\221\341\272\277m ping cho ph\303\262ng Tr\303"
-   "\262 ch\306\241i tr\341\273\261c tuy\341\272\277n hi\341\273\207n t\341\272\241i.",
+   "Chuy\341\273\203n gi\341\273\257a tin nh\341\272\257n tr\303\262 chuy\341\273\207n ch\306\241i q"
+   "ua m\341\272\241ng t\341\273\261 \304\221\341\273\231ng m\341\273\235 d\341\272\247n v\303\240 h"
+   "i\341\273\203n th\341\273\213 c\341\273\221 \304\221\341\273\213nh.",
+   "Chuy\341\273\203n phi\303\252n ch\306\241i qua m\341\272\241ng hi\341\273\207n t\341\272\241i gi"
+   "\341\273\257a ch\341\272\277 \304\221\341\273\231 'ch\306\241i' v\303\240 'quan s\303\241t'.",
+   "B\341\272\255t/t\341\272\257t ch\341\273\251c n\304\203ng m\303\241y ch\341\273\247 ch\306\241i "
+   "qua m\341\272\241ng.",
+   "B\341\272\255t/t\341\272\257t b\341\273\231 \304\221\341\272\277m \304\221\341\273\231 tr\341"
+   "\273\205 c\341\273\247a ph\303\262ng ch\306\241i m\341\272\241ng hi\341\273\207n t\341\272\241i.",
    "G\341\273\255i tin nh\341\272\257n tr\303\262 chuy\341\273\207n \304\221\341\272\277n phi\303"
-   "\252n netplay hi\341\273\207n t\341\272\241i.",
+   "\252n ch\306\241i qua m\341\272\241ng hi\341\273\207n t\341\272\241i.",
    "Tua nhanh ph\303\241t l\341\272\241i \304\221\341\272\277n \304\221i\341\273\203m ki\341\273\203"
    "m tra ti\341\272\277p theo \304\221\306\260\341\273\243c l\306\260u t\341\273\261 \304\221\341"
    "\273\231ng ho\341\272\267c th\341\273\247 c\303\264ng.",
@@ -8546,12 +8599,11 @@ static const struct
    "Chuy\341\273\203n sang b\341\273\221 c\341\273\245c kh\341\272\243 d\341\273\245ng ti\341\272"
    "\277p theo c\341\273\247a l\341\273\233p ph\341\273\247 \304\221ang ho\341\272\241t \304\221\341"
    "\273\231ng tr\303\252n m\303\240n h\303\254nh.",
-   "Chuy\341\273\203n \304\221\341\273\225i tr\303\262 ch\306\241i gi\341\273\257a tr\341\272\241ng "
-   "th\303\241i t\341\272\241m d\341\273\253ng v\303\240 kh\303\264ng t\341\272\241m d\341\273\253ng"
-   ".",
+   "Chuy\341\273\203n \304\221\341\273\225i gi\341\273\257a tr\341\272\241ng th\303\241i t\341\272"
+   "\241m d\341\273\253ng v\303\240 \304\221ang ch\341\272\241y.",
    "Ph\303\241t t\341\273\207p ph\303\241t l\341\272\241i t\341\273\253 v\341\273\213 tr\303\255 hi"
    "\341\273\207n \304\221ang \304\221\306\260\341\273\243c ch\341\273\215n.",
-   "B\341\272\255t/t\341\272\257t t\303\255nh n\304\203ng Khung H\303\254nh \306\257u Ti\303\252n.",
+   "B\341\272\255t/t\341\272\257t t\303\255nh n\304\203ng khung h\303\254nh \306\260u ti\303\252n.",
    "Tua l\303\271i ph\303\241t l\341\272\241i v\341\273\201 \304\221i\341\273\203m ki\341\273\203m t"
    "ra tr\306\260\341\273\233c \304\221\303\263 \304\221\306\260\341\273\243c l\306\260u t\341\273"
    "\261 \304\221\341\273\231ng ho\341\272\267c th\341\273\247 c\303\264ng.",
@@ -8567,21 +8619,20 @@ static const struct
    "\221ang \304\221\306\260\341\273\243c ch\341\273\215n.",
    "T\304\203ng ch\341\273\211 s\341\273\221 khe ph\303\241t l\341\272\241i hi\341\273\207n \304\221"
    "ang \304\221\306\260\341\273\243c ch\341\273\215n.",
-   "Kh\341\273\237i \304\221\341\273\231ng l\341\272\241i tr\303\262 ch\306\241i hi\341\273\207n t"
-   "\341\272\241i.",
+   "Kh\341\273\237i \304\221\341\273\231ng l\341\272\241i n\341\273\231i dung hi\341\273\207n t\341"
+   "\272\241i.",
    "Tho\303\241t r\341\273\223i kh\341\273\237i \304\221\341\273\231ng l\341\272\241i RetroArch. C"
    "\341\272\247n thi\341\272\277t \304\221\341\273\203 k\303\255ch ho\341\272\241t m\341\273\231t s"
    "\341\273\221 c\303\240i \304\221\341\272\267t menu (v\303\255 d\341\273\245 khi thay \304\221"
    "\341\273\225i menu driver).",
-   "Tua l\303\271i tr\303\262 ch\306\241i hi\341\273\207n t\341\272\241i khi gi\341\273\257 ph\303"
-   "\255m. Ph\341\272\243i b\341\272\255t ch\341\273\251c n\304\203ng 'H\341\273\227 tr\341\273\243 "
-   "Tua l\303\271i'.",
-   "B\341\272\255t/t\341\272\257t t\303\255nh n\304\203ng Ch\341\272\241y Tr\306\260\341\273\233c.",
+   "Tua l\303\271i n\341\273\231i dung hi\341\273\207n t\341\272\241i khi nh\341\272\245n gi\341\273"
+   "\257 ph\303\255m. Ph\341\272\243i b\341\272\255t 'H\341\273\227 tr\341\273\243 tua l\303\271i'.",
+   "B\341\272\255t/t\341\272\257t t\303\255nh n\304\203ng ch\341\272\241y tr\306\260\341\273\233c.",
    "G\341\272\257n \304\221i\341\273\203m ki\341\273\203m tra v\303\240o ph\303\241t l\341\272\241i "
    "hi\341\273\207n \304\221ang ph\303\241t.",
-   "L\306\260u tr\303\262 ch\306\241i v\303\240o khe hi\341\273\207n \304\221ang \304\221\306\260"
-   "\341\273\243c ch\341\273\215n.",
-   "Ch\341\273\245p \341\272\243nh tr\303\262 ch\306\241i hi\341\273\207n t\341\272\241i.",
+   "L\306\260u tr\341\272\241ng th\303\241i v\303\240o \303\264 l\306\260u hi\341\273\207n \304\221a"
+   "ng \304\221\306\260\341\273\243c ch\341\273\215n.",
+   "Ch\341\273\245p \341\272\243nh n\341\273\231i dung hi\341\273\207n t\341\272\241i.",
    "Gi\341\273\257 b\341\273\231 \304\221\341\273\225 b\303\263ng hi\341\273\207n \304\221ang \304"
    "\221\306\260\341\273\243c ch\341\273\215n b\341\272\255t/t\341\272\257t khi nh\341\272\245n ph"
    "\303\255m.",
@@ -8594,9 +8645,9 @@ static const struct
    "\273\245c 'Video Shaders'.",
    "B\341\272\255t/t\341\272\257t b\341\273\231 \304\221\341\273\225 b\303\263ng hi\341\273\207n "
    "\304\221ang \304\221\306\260\341\273\243c ch\341\273\215n.",
-   "Cho ph\303\251p chuy\341\273\203n \304\221\341\273\231ng ch\341\272\255m khi gi\341\273\257. Tr"
-   "\303\262 ch\306\241i ch\341\272\241y \341\273\237 t\341\273\221c \304\221\341\273\231 b\303\254n"
-   "h th\306\260\341\273\235ng khi nh\341\272\243 ph\303\255m.",
+   "Chuy\341\273\203n sang chuy\341\273\203n \304\221\341\273\231ng ch\341\272\255m khi nh\341\272"
+   "\245n gi\341\273\257. N\341\273\231i dung ch\341\272\241y \341\273\237 t\341\273\221c \304\221"
+   "\341\273\231 b\303\254nh th\306\260\341\273\235ng khi th\341\272\243 ph\303\255m.",
    "Chuy\341\273\203n \304\221\341\273\225i gi\341\273\257a ch\341\272\277 \304\221\341\273\231 chuy"
    "\341\273\203n \304\221\341\273\231ng ch\341\272\255m v\303\240 t\341\273\221c \304\221\341\273"
    "\231 b\303\254nh th\306\260\341\273\235ng.",
@@ -8609,7 +8660,7 @@ static const struct
    "B\341\272\257t \304\221\341\272\247u/d\341\273\253ng ph\303\241t tr\341\273\261c tuy\341\272\277"
    "n phi\303\252n hi\341\273\207n t\341\272\241i v\303\240o n\341\273\201n t\341\272\243ng video tr"
    "\341\273\261c tuy\341\272\277n.",
-   "B\341\272\255t/t\341\272\257t ch\341\272\277 \304\221\341\273\231 T\341\273\261 \304\221\341\273"
+   "B\341\272\255t/T\341\272\257t ch\341\272\277 \304\221\341\273\231 t\341\273\261 \304\221\341\273"
    "\231ng nh\341\272\245n.",
    "M\341\273\237 giao di\341\273\207n ng\306\260\341\273\235i d\303\271ng desktop WIMP (Windows, Ic"
    "ons, Menus, Pointer) \304\221i k\303\250m.",
@@ -8617,8 +8668,8 @@ static const struct
    " m\341\273\201m.",
    "Gi\341\272\243m m\341\273\251c \303\242m l\306\260\341\273\243ng \304\221\341\272\247u ra.",
    "T\304\203ng m\341\273\251c \303\242m l\306\260\341\273\243ng \304\221\341\272\247u ra.",
-   "B\341\272\255t/t\341\272\257t \304\221\341\273\223ng b\341\273\231 theo t\341\273\221c \304\221"
-   "\341\273\231 khung h\303\254nh tr\303\262 ch\306\241i ch\303\255nh x\303\241c.",
+   "B\341\272\255t/t\341\272\257t \304\221\341\273\223ng b\341\273\231 theo \304\221\303\272ng t\341"
+   "\273\221c \304\221\341\273\231 khung h\303\254nh c\341\273\247a n\341\273\231i dung.",
    "Chu\341\273\231t v\341\272\255t l\303\275 \304\221\306\260\341\273\243c RetroArch nh\341\272\255"
    "n d\341\272\241ng.",
 #ifdef GEKKO
@@ -8750,9 +8801,9 @@ static const struct
    "Ghi \304\221\303\250 c\341\272\245u h\303\254nh \304\221i\341\273\201u khi\341\273\203n b\341"
    "\272\261ng thi\341\272\277t l\341\272\255p g\303\241n ph\303\255m \304\221\303\243 l\306\260u ch"
    "o Core hi\341\273\207n t\341\272\241i.",
-   "Ch\341\273\211 \304\221\341\273\213nh c\341\273\225ng c\341\273\247a core s\341\272\275 nh\341"
-   "\272\255n \304\221\341\272\247u v\303\240o t\341\273\253 c\341\273\225ng tay c\341\272\247m %u c"
-   "\341\273\247a giao di\341\273\207n ch\303\255nh.",
+   "Ch\341\273\211 \304\221\341\273\213nh c\341\273\225ng c\341\273\247a tr\303\254nh gi\341\272\243"
+   " l\341\272\255p s\341\272\275 nh\341\272\255n \304\221\341\272\247u v\303\240o t\341\273\253 c"
+   "\341\273\225ng tay c\341\272\247m %u c\341\273\247a giao di\341\273\207n ch\303\255nh.",
    "C\341\272\245u h\303\254nh g\303\241n l\341\272\241i ph\303\255m ch\341\273\211 \303\241p d\341"
    "\273\245ng cho tay c\341\272\247m \304\221ang ho\341\272\241t \304\221\341\273\231ng l\303\272c "
    "l\306\260u.",
@@ -8844,7 +8895,8 @@ static const struct
    "\243c \303\241nh x\341\272\241 t\341\273\233i thi\341\272\277t b\341\273\213 \304\221i\341\273"
    "\201u khi\341\273\203n v\341\272\255t l\303\275 c\341\273\247a b\341\272\241n cho c\341\273\225n"
    "g \341\272\243o n\303\240y.",
-   "Thay \304\221\341\273\225i g\303\241n l\341\272\241i ph\303\255m ri\303\252ng cho l\303\265i.",
+   "Thay \304\221\341\273\225i g\303\241n l\341\272\241i ph\303\255m ri\303\252ng cho tr\303\254nh g"
+   "i\341\272\243 l\341\272\255p.",
    "H\341\273\223 s\306\241 tay c\341\272\247m d\303\271ng \304\221\341\273\203 t\341\273\261 \304"
    "\221\341\273\231ng c\341\272\245u h\303\254nh tay c\341\272\247m \304\221\306\260\341\273\243c l"
    "\306\260u trong th\306\260 m\341\273\245c n\303\240y.",
@@ -8865,8 +8917,8 @@ static const struct
    "\241t. C\303\241ch s\341\273\255 d\341\273\245ng ph\341\273\245 thu\341\273\231c v\303\240o ch"
    "\341\272\277 \304\221\341\273\231 hi\341\273\203n th\341\273\213 h\303\254nh thu nh\341\273\217 "
    "hi\341\273\207n t\341\272\241i c\341\273\247a danh s\303\241ch ph\303\241t.",
-   "Thay th\341\272\277 b\341\272\243ng th\303\264ng tin tr\303\262 ch\306\241i b\341\272\261ng m"
-   "\341\273\231t \341\272\243nh thu nh\341\273\217 kh\303\241c.",
+   "Thay th\341\272\277 b\341\272\243ng th\303\264ng tin n\341\273\231i dung b\341\272\261ng m\341"
+   "\273\231t \341\272\243nh thu nh\341\273\217 kh\303\241c.",
    "Lo\341\272\241i h\303\254nh thu nh\341\273\217 hi\341\273\203n th\341\273\213 \341\273\237 d\306"
    "\260\341\273\233i c\303\271ng.",
    "C\303\241c core Libretro \304\221\306\260\341\273\243c l\306\260u trong th\306\260 m\341\273\245"
@@ -8878,8 +8930,8 @@ static const struct
    "\341\273\213 n\303\240y, n\303\263 s\341\272\275 b\341\273\213 b\341\273\217 qua.",
    "Ch\341\273\215n tr\303\262 ch\306\241i t\341\273\253 danh s\303\241ch ch\306\241i g\341\272\247n"
    " \304\221\303\242y nh\341\272\245t.",
-   "Ch\341\273\215n tr\303\262 ch\306\241i n\303\240o s\341\272\275 b\341\272\257t \304\221\341\272"
-   "\247u.",
+   "Ch\341\273\215n n\341\273\231i dung n\303\240o s\341\272\275 b\341\272\257t \304\221\341\272\247"
+   "u.",
    "M\341\273\237 \304\221\304\251a ph\306\260\306\241ng ti\341\273\207n v\341\272\255t l\303\275. "
    "\304\220\341\272\247u ti\303\252n l\303\240 ch\341\273\215n nh\303\242n (N\341\272\241p nh\303"
    "\242n) \304\221\341\273\203 d\303\271ng v\341\273\233i \304\221\304\251a.",
@@ -8905,42 +8957,44 @@ static const struct
    "\277u t\341\272\257t, log s\341\272\275 b\341\273\213 ghi \304\221\303\250 m\341\273\227i khi Re"
    "troArch \304\221\306\260\341\273\243c kh\341\273\237i \304\221\341\273\231ng l\341\272\241i.",
    "Ghi s\341\273\261 ki\341\273\207n v\303\240o Terminal ho\341\272\267c t\341\273\207p.",
-   "Ch\341\273\215n core m\341\272\267c \304\221\341\273\213nh \304\221\341\273\203 s\341\273\255 d"
-   "\341\273\245ng khi kh\341\273\237i ch\341\272\241y tr\303\262 ch\306\241i \304\221\303\243 qu"
-   "\303\251t.",
-   "Ch\341\273\215n t\341\273\207p DAT Logiqx ho\341\272\267c MAME List XML \304\221\341\273\203 b"
-   "\341\272\255t \304\221\341\272\267t t\303\252n t\341\273\261 \304\221\341\273\231ng cho tr\303"
-   "\262 ch\306\241i arcade \304\221\306\260\341\273\243c qu\303\251t (MAME, FinalBurn Neo, v.v.).",
-   "Khi s\341\273\255 d\341\273\245ng t\341\273\207p DAT arcade, tr\303\262 ch\306\241i ch\341\273"
-   "\211 \304\221\306\260\341\273\243c th\303\252m v\303\240o danh s\303\241ch ph\303\241t n\341\272"
-   "\277u t\303\254m th\341\272\245y m\341\273\245c t\306\260\306\241ng \341\273\251ng trong t\341"
-   "\273\207p DAT.",
+   "Ch\341\273\215n tr\303\254nh gi\341\272\243 l\341\272\255p m\341\272\267c \304\221\341\273\213nh"
+   " \304\221\341\273\203 s\341\273\255 d\341\273\245ng khi kh\341\273\237i ch\341\272\241y n\341"
+   "\273\231i dung \304\221\303\243 qu\303\251t.",
+   "Ch\341\273\215n t\341\273\207p DAT XML c\341\273\247a Logiqx ho\341\272\267c MAME List \304\221"
+   "\341\273\203 t\341\273\261 \304\221\341\273\231ng \304\221\341\272\267t t\303\252n cho n\341\273"
+   "\231i dung game arcade \304\221\306\260\341\273\243c qu\303\251t (MAME, FinalBurn Neo, v.v.).",
+   "Khi s\341\273\255 d\341\273\245ng t\341\273\207p DAT arcade, n\341\273\231i dung ch\341\273\211 "
+   "\304\221\306\260\341\273\243c th\303\252m v\303\240o danh s\303\241ch game n\341\272\277u t\303"
+   "\254m th\341\272\245y m\341\273\245c t\306\260\306\241ng \341\273\251ng trong t\341\273\207p DAT"
+   ".",
    "Ch\341\273\215n th\306\260 m\341\273\245c (ho\341\272\267c t\341\273\207p) \304\221\341\273\203 "
    "qu\303\251t n\341\273\231i dung.",
-   "Danh s\303\241ch lo\341\272\241i file s\341\272\275 \304\221\306\260\341\273\243c qu\303\251t, c"
-   "\303\241ch nhau b\341\272\261ng d\341\272\245u c\303\241ch. N\341\272\277u \304\221\341\273\203 "
-   "tr\341\273\221ng, bao g\341\273\223m t\341\272\245t c\341\272\243 lo\341\272\241i file, ho\341"
-   "\272\267c n\341\272\277u \304\221\303\243 ch\341\273\211 \304\221\341\273\213nh core, bao g\341"
-   "\273\223m t\341\272\245t c\341\272\243 file \304\221\306\260\341\273\243c core h\341\273\227 tr"
-   "\341\273\243.",
+   "Danh s\303\241ch lo\341\272\241i t\341\273\207p s\341\272\275 \304\221\306\260\341\273\243c qu"
+   "\303\251t, c\303\241ch nhau b\341\272\261ng d\341\272\245u c\303\241ch. N\341\272\277u \304\221"
+   "\341\273\203 tr\341\273\221ng, bao g\341\273\223m t\341\272\245t c\341\272\243 lo\341\272\241i t"
+   "\341\273\207p, ho\341\272\267c n\341\272\277u \304\221\303\243 ch\341\273\211 \304\221\341\273"
+   "\213nh tr\303\254nh gi\341\272\243 l\341\272\255p, bao g\341\273\223m t\341\272\245t c\341\272"
+   "\243 t\341\273\207p \304\221\306\260\341\273\243c tr\303\254nh gi\341\272\243 l\341\272\255p h"
+   "\341\273\227 tr\341\273\243.",
    "Qu\303\251t c\303\263 th\341\273\203 t\303\271y ch\341\273\211nh d\341\273\261a tr\303\252n t"
-   "\303\252n t\341\273\207p tr\303\262 ch\306\241i ho\341\272\267c kh\341\273\233p v\341\273\233i c"
-   "\306\241 s\341\273\237 d\341\273\257 li\341\273\207u.",
-   "Khi b\341\272\255t, b\341\272\245t k\341\273\263 danh s\303\241ch ph\303\241t hi\341\273\207n c"
-   "\303\263 n\303\240o s\341\272\275 b\341\273\213 x\303\263a tr\306\260\341\273\233c khi qu\303"
-   "\251t tr\303\262 ch\306\241i. Khi t\341\272\257t, c\303\241c m\341\273\245c hi\341\273\207n c"
-   "\303\263 \304\221\306\260\341\273\243c gi\341\273\257 nguy\303\252n v\303\240 ch\341\273\211 th"
-   "\303\252m nh\341\273\257ng tr\303\262 ch\306\241i \304\221ang thi\341\272\277u trong danh s\303"
-   "\241ch ch\306\241i.",
-   "Khi b\341\272\255t, c\303\241c file n\303\251n (.zip, .7z, v.v.) s\341\272\275 \304\221\306\260"
-   "\341\273\243c t\303\254m ki\341\272\277m tr\303\262 ch\306\241i h\341\273\243p l\341\273\207/h"
-   "\341\273\227 tr\341\273\243. C\303\263 th\341\273\203 \341\272\243nh h\306\260\341\273\237ng "
-   "\304\221\303\241ng k\341\273\203 \304\221\341\272\277n hi\341\273\207u n\304\203ng qu\303\251t.",
-   "Khi b\341\272\255t, t\341\272\245t c\341\272\243 th\306\260 m\341\273\245c con c\341\273\247a "
-   "\342\200\230Th\306\260 m\341\273\245c tr\303\262 ch\306\241i\342\200\231 \304\221\306\260\341"
-   "\273\243c ch\341\273\211 \304\221\341\273\213nh s\341\272\275 \304\221\306\260\341\273\243c qu"
-   "\303\251t.",
-   "Qu\303\251t tr\303\262 ch\306\241i \304\221\303\243 ch\341\273\215n.",
+   "\303\252n t\341\273\207p n\341\273\231i dung v\303\240/ho\341\272\267c k\341\272\277t qu\341\272"
+   "\243 kh\341\273\233p v\341\273\233i c\306\241 s\341\273\237 d\341\273\257 li\341\273\207u.",
+   "Khi b\341\272\255t, m\341\273\215i danh s\303\241ch game hi\341\273\207n c\303\263 s\341\272\275"
+   " b\341\273\213 x\303\263a tr\306\260\341\273\233c khi qu\303\251t n\341\273\231i dung. Khi t\341"
+   "\272\257t, c\303\241c m\341\273\245c hi\341\273\207n c\303\263 trong danh s\303\241ch game \304"
+   "\221\306\260\341\273\243c gi\341\273\257 nguy\303\252n v\303\240 ch\341\273\211 nh\341\273\257ng"
+   " n\341\273\231i dung ch\306\260a c\303\263 trong danh s\303\241ch game m\341\273\233i \304\221"
+   "\306\260\341\273\243c th\303\252m v\303\240o.",
+   "Khi b\341\272\255t, c\303\241c t\341\273\207p l\306\260u tr\341\273\257 (.zip, .7z, v.v.) s\341"
+   "\272\275 \304\221\306\260\341\273\243c ki\341\273\203m tra \304\221\341\273\203 t\303\254m n\341"
+   "\273\231i dung h\341\273\243p l\341\273\207 \304\221\306\260\341\273\243c h\341\273\227 tr\341"
+   "\273\243. C\303\263 th\341\273\203 \341\272\243nh h\306\260\341\273\237ng \304\221\303\241ng k"
+   "\341\273\203 \304\221\341\272\277n t\341\273\221c \304\221\341\273\231 qu\303\251t.",
+   "Khi b\341\272\255t, t\341\272\245t c\341\272\243 th\306\260 m\341\273\245c con c\341\273\247a 'T"
+   "h\306\260 m\341\273\245c n\341\273\231i dung' \304\221\306\260\341\273\243c ch\341\273\211 \304"
+   "\221\341\273\213nh s\341\272\275 \304\221\306\260\341\273\243c \304\221\306\260a v\303\240o qu"
+   "\303\241 tr\303\254nh qu\303\251t.",
+   "Qu\303\251t n\341\273\231i dung \304\221\303\243 ch\341\273\215n.",
    "T\303\252n t\341\273\207p danh s\303\241ch ph\303\241t \304\221\306\260\341\273\243c t\341\272"
    "\241o, c\305\251ng d\303\271ng \304\221\341\273\203 nh\341\272\255n di\341\273\207n h\303\254nh "
    "thu nh\341\273\217 c\341\273\247a danh s\303\241ch ph\303\241t. Thi\341\272\277t l\341\272\255p "
@@ -8949,12 +9003,12 @@ static const struct
    "h\306\260 m\341\273\245c n\341\273\231i dung t\306\260\306\241ng \341\273\251ng.",
    "T\303\252n danh s\303\241ch ph\303\241t t\303\271y ch\341\273\211nh cho n\341\273\231i dung \304"
    "\221\303\243 qu\303\251t.",
-   "Khi b\341\272\255t, c\303\241c m\341\273\245c trong b\341\272\245t k\341\273\263 danh s\303\241c"
-   "h ch\306\241i hi\341\273\207n c\303\263 n\303\240o s\341\272\275 \304\221\306\260\341\273\243c x"
-   "\303\241c minh tr\306\260\341\273\233c khi qu\303\251t tr\303\262 ch\306\241i m\341\273\233i. C"
-   "\303\241c m\341\273\245c tham chi\341\272\277u \304\221\341\272\277n tr\303\262 ch\306\241i thi"
-   "\341\272\277u v\303\240/ho\341\272\267c t\341\273\207p c\303\263 \304\221\341\273\213nh d\341"
-   "\272\241ng kh\303\264ng h\341\273\243p l\341\273\207 s\341\272\275 b\341\273\213 x\303\263a.",
+   "Khi b\341\272\255t, c\303\241c m\341\273\245c trong m\341\273\215i danh s\303\241ch game hi\341"
+   "\273\207n c\303\263 s\341\272\275 \304\221\306\260\341\273\243c ki\341\273\203m tra tr\306\260"
+   "\341\273\233c khi qu\303\251t n\341\273\231i dung m\341\273\233i. C\303\241c m\341\273\245c tr"
+   "\341\273\217 \304\221\341\272\277n n\341\273\231i dung kh\303\264ng c\303\262n t\341\273\223n t"
+   "\341\272\241i v\303\240/ho\341\272\267c t\341\273\207p c\303\263 ph\341\272\247n m\341\273\237 r"
+   "\341\273\231ng kh\303\264ng h\341\273\243p l\341\273\207 s\341\272\275 b\341\273\213 x\303\263a.",
    "T\341\273\261 \304\221\341\273\231ng di chuy\341\273\203n thanh \304\221i\341\273\201u h\306\260"
    "\341\273\233ng sang b\303\252n ph\341\272\243i m\303\240n h\303\254nh khi s\341\273\255 d\341"
    "\273\245ng ch\341\272\277 \304\221\341\273\231 hi\341\273\203n th\341\273\213 ngang.",
@@ -9182,8 +9236,8 @@ static const struct
    "h\306\241i\342\200\235 trong Menu ch\303\255nh.",
    "Hi\341\273\203n th\341\273\213 hi\341\273\207u \341\273\251ng ph\341\272\243n h\341\273\223i ng"
    "\341\272\257n khi t\341\272\243i tr\303\262 ch\306\241i.",
-   "Hi\341\273\203n th\341\273\213 t\303\271y ch\341\273\215n \342\200\234T\341\272\243i Core\342"
-   "\200\235 trong Menu ch\303\255nh.",
+   "Hi\341\273\207n t\303\271y ch\341\273\215n 'Ch\341\273\215n tr\303\254nh gi\341\272\243 l\341"
+   "\272\255p' trong Menu ch\303\255nh.",
    "Hi\341\273\203n th\341\273\213 t\303\271y ch\341\273\215n \342\200\234T\341\272\243i \304\220"
    "\304\251a\342\200\235 trong Menu ch\303\255nh.",
    "Hi\341\273\203n th\341\273\213 t\303\271y ch\341\273\215n 'C\341\272\255p nh\341\272\255t Tr\341"
@@ -9543,7 +9597,7 @@ static const struct
    "Ch\341\273\211 hi\341\273\203n th\341\273\213 th\303\264ng b\303\241o khi menu \304\221ang m\341"
    "\273\237.",
    "T\341\272\243i xu\341\273\221ng c\303\241c ti\341\273\207n \303\255ch b\341\273\225 sung, th\303"
-   "\240nh ph\341\272\247n v\303\240 tr\303\262 ch\306\241i cho RetroArch.",
+   "\240nh ph\341\272\247n v\303\240 n\341\273\231i dung cho RetroArch.",
    "Thay \304\221\341\273\225i hi\341\273\203n th\341\273\213 che ph\341\273\247, b\303\240n ph\303"
    "\255m \341\272\243o v\303\240 thi\341\272\277t l\341\272\255p th\303\264ng b\303\241o tr\303\252"
    "n m\303\240n h\303\254nh.",
@@ -9723,9 +9777,10 @@ static const struct
    "\277t n\341\273\221i. Ti\341\272\277p t\341\273\245c b\341\272\261ng n\303\272t B\341\272\257t "
    "\304\221\341\272\247u.",
    "B\341\273\231 \304\221\341\272\277m hi\341\273\207u su\341\272\245t cho RetroArch v\303\240 c"
-   "\303\241c core. D\341\273\257 li\341\273\207u b\341\273\231 \304\221\341\272\277m c\303\263 th"
-   "\341\273\203 gi\303\272p x\303\241c \304\221\341\273\213nh n\303\272t th\341\272\257t h\341\273"
-   "\207 th\341\273\221ng v\303\240 t\341\273\221i \306\260u hi\341\273\207u su\341\272\245t.",
+   "\303\241c tr\303\254nh gi\341\272\243 l\341\272\255p. D\341\273\257 li\341\273\207u b\341\273"
+   "\231 \304\221\341\272\277m c\303\263 th\341\273\203 gi\303\272p x\303\241c \304\221\341\273\213n"
+   "h n\303\272t th\341\272\257t h\341\273\207 th\341\273\221ng v\303\240 t\341\273\221i \306\260u h"
+   "i\341\273\207u su\341\272\245t.",
    "N\341\273\231i dung \304\221\303\243 qu\303\251t tr\303\271ng kh\341\273\233p v\341\273\233i c"
    "\306\241 s\341\273\237 d\341\273\257 li\341\273\207u s\341\272\275 hi\341\273\203n th\341\273"
    "\213 t\341\272\241i \304\221\303\242y.",
@@ -9752,13 +9807,15 @@ static const struct
    "B\341\272\255t t\303\271y ch\341\273\215n n\303\240y \304\221\341\273\203 tr\303\241nh c\303\241"
    "c m\341\273\245c l\341\273\213ch s\341\273\255 tr\303\271ng l\341\272\267p khi t\341\272\243i fi"
    "le n\303\251n.",
-   "Ki\341\273\203m tra li\303\252n k\341\272\277t core v\303\240 x\303\263a c\303\241c m\341\273"
-   "\245c kh\303\264ng h\341\273\243p l\341\273\207 ho\341\272\267c tr\303\271ng l\341\272\267p.",
-   "Ch\341\273\211 \304\221\341\273\213nh core \304\221\341\273\203 s\341\273\255 d\341\273\245ng kh"
-   "i ch\341\272\241y tr\303\262 ch\306\241i qua m\341\273\245c danh s\303\241ch ph\303\241t m\303"
-   "\240 ch\306\260a c\303\263 li\303\252n k\341\272\277t core.",
-   "Thay \304\221\341\273\225i c\303\241ch hi\341\273\203n th\341\273\213 nh\303\243n tr\303\262 ch"
-   "\306\241i trong danh s\303\241ch ph\303\241t n\303\240y.",
+   "Ki\341\273\203m tra li\303\252n k\341\272\277t Tr\303\254nh gi\341\272\243 l\341\272\255p v\303"
+   "\240 x\303\263a c\303\241c m\341\273\245c kh\303\264ng h\341\273\243p l\341\273\207 ho\341\272"
+   "\267c tr\303\271ng l\341\272\267p.",
+   "Ch\341\273\211 \304\221\341\273\213nh tr\303\254nh gi\341\272\243 l\341\272\255p \304\221\341"
+   "\273\203 s\341\273\255 d\341\273\245ng khi ch\341\272\241y n\341\273\231i dung qua m\341\273\245"
+   "c danh s\303\241ch ph\303\241t m\303\240 ch\306\260a c\303\263 li\303\252n k\341\272\277t tr\303"
+   "\254nh gi\341\272\243 l\341\272\255p.",
+   "Thay \304\221\341\273\225i c\303\241ch hi\341\273\203n th\341\273\213 nh\303\243n n\341\273\231i"
+   " dung trong danh s\303\241ch ph\303\241t n\303\240y.",
    "Th\341\273\261c hi\341\273\207n c\303\241c t\303\241c v\341\273\245 b\341\272\243o tr\303\254 tr"
    "\303\252n danh s\303\241ch ph\303\241t.",
    "Th\303\252m n\341\273\231i dung m\341\273\233i v\303\240 x\303\263a c\303\241c m\341\273\245c kh"
@@ -9766,8 +9823,9 @@ static const struct
    "i thao t\303\241c qu\303\251t n\341\273\231i dung \304\221\303\243 d\303\271ng \304\221\341\273"
    "\203 t\341\272\241o ho\341\272\267c ch\341\273\211nh s\341\273\255a danh s\303\241ch ph\303\241t"
    " l\341\272\247n cu\341\273\221i.",
-   "X\303\263a c\303\241c li\303\252n k\341\272\277t core hi\341\273\207n c\303\263 cho t\341\272"
-   "\245t c\341\272\243 c\303\241c m\341\273\245c trong danh s\303\241ch ph\303\241t.",
+   "X\303\263a c\303\241c li\303\252n k\341\272\277t Tr\303\254nh gi\341\272\243 l\341\272\255p hi"
+   "\341\273\207n c\303\263 cho t\341\272\245t c\341\272\243 c\303\241c m\341\273\245c trong danh s"
+   "\303\241ch ph\303\241t.",
    "X\303\241c \304\221\341\273\213nh c\303\241ch s\341\272\257p x\341\272\277p c\303\241c m\341\273"
    "\245c trong danh s\303\241ch ph\303\241t n\303\240y.",
    "Khi b\341\272\255t, v\303\240 th\306\260 m\341\273\245c 'Tr\303\254nh duy\341\273\207t t\341\273"
@@ -9834,10 +9892,11 @@ static const struct
    "\254nh c\341\272\243m \341\273\251ng.",
    "Thay \304\221\341\273\225i c\303\240i \304\221\341\272\267t qu\341\272\243n l\303\275 n\304\203n"
    "g l\306\260\341\273\243ng.",
-   "S\341\273\221 khung h\303\254nh \304\221\341\273\203 ch\341\272\241y l\341\272\241i. G\303\242y "
-   "ra c\303\241c v\341\272\245n \304\221\341\273\201 khi ch\306\241i nh\306\260 gi\341\272\255t h"
-   "\303\254nh n\341\272\277u s\341\273\221 khung h\303\254nh tr\341\273\205 n\341\273\231i b\341"
-   "\273\231 trong tr\303\262 ch\306\241i b\341\273\213 v\306\260\341\273\243t qu\303\241.",
+   "S\341\273\221 khung h\303\254nh ch\341\272\241y l\341\272\241i. C\303\263 th\341\273\203 g\303"
+   "\242y ra c\303\241c v\341\272\245n \304\221\341\273\201 khi ch\306\241i nh\306\260 gi\341\272"
+   "\255t h\303\254nh n\341\272\277u v\306\260\341\273\243t qu\303\241 s\341\273\221 khung h\303\254"
+   "nh tr\341\273\205 m\303\240 tr\303\262 ch\306\241i c\303\263 th\341\273\203 x\341\273\255 l\303"
+   "\275.",
    "Thay \304\221\341\273\225i c\303\240i \304\221\341\272\267t quy\341\273\201n ri\303\252ng t\306"
    "\260.",
    "T\303\271y ch\341\273\215n \304\221\341\273\203 ghi \304\221\303\250 c\341\272\245u h\303\254nh "
@@ -9908,10 +9967,11 @@ static const struct
    "\241y qua d\303\262ng l\341\273\207nh.",
    "Tho\303\241t RetroArch. L\306\260u thi\341\272\277t l\341\272\255p khi tho\303\241t \304\221\306"
    "\260\341\273\243c b\341\272\255t.",
-   "Tho\303\241t RetroArch. L\306\260u thi\341\272\277t l\341\272\255p khi tho\303\241t b\341\273"
-   "\213 t\341\272\257t.",
+   "Tho\303\241t \341\273\251ng d\341\273\245ng RetroArch. Ch\341\273\251c n\304\203ng l\306\260u c"
+   "\341\272\245u h\303\254nh khi tho\303\241t \304\221\303\243 b\341\273\213 v\303\264 hi\341\273"
+   "\207u.",
    "Hi\341\273\203n th\341\273\213 th\303\264ng tin c\306\241 s\341\273\237 d\341\273\257 li\341\273"
-   "\207u cho tr\303\262 ch\306\241i hi\341\273\207n t\341\272\241i.",
+   "\207u cho n\341\273\231i dung hi\341\273\207n t\341\272\241i.",
    "C\303\241c c\341\272\245u h\303\254nh b\341\272\243n ghi \304\221\306\260\341\273\243c l\306\260"
    "u trong th\306\260 m\341\273\245c n\303\240y.",
    "C\303\241c b\341\272\243n ghi \304\221\306\260\341\273\243c l\306\260u trong th\306\260 m\341"
@@ -9929,43 +9989,44 @@ static const struct
    "T\341\272\243i v\303\240 thay th\341\272\277 g\303\241n n\303\272t \304\221i\341\273\201u khi"
    "\341\273\203n hi\341\273\207n t\341\272\241i.",
    "T\341\272\243i, l\306\260u ho\341\272\267c x\303\263a t\341\273\207p g\303\241n l\341\272\241i p"
-   "h\303\255m \304\221i\341\273\201u khi\341\273\203n cho tr\303\262 ch\306\241i hi\341\273\207n t"
-   "\341\272\241i.",
+   "h\303\255m \304\221i\341\273\201u khi\341\273\203n cho n\341\273\231i dung hi\341\273\207n t\341"
+   "\272\241i.",
    "X\303\263a t\341\273\207p g\303\241n l\341\272\241i ph\303\255m s\341\272\275 \303\241p d\341"
-   "\273\245ng cho t\341\272\245t c\341\272\243 tr\303\262 ch\306\241i \304\221\306\260\341\273\243c"
-   " t\341\272\243i t\341\273\253 c\303\271ng th\306\260 m\341\273\245c v\341\273\233i t\341\273\207"
-   "p hi\341\273\207n t\341\272\241i.",
+   "\273\245ng cho t\341\272\245t c\341\272\243 n\341\273\231i dung \304\221\306\260\341\273\243c t"
+   "\341\272\243i t\341\273\253 c\303\271ng th\306\260 m\341\273\245c v\341\273\233i t\341\273\207p "
+   "hi\341\273\207n t\341\272\241i.",
    "X\303\263a t\341\273\207p g\303\241n l\341\272\241i ph\303\255m \303\241p d\341\273\245ng cho t"
-   "\341\272\245t c\341\272\243 tr\303\262 ch\306\241i ch\341\272\241y v\341\273\233i Core n\303\240"
-   "y.",
+   "\341\272\245t c\341\272\243 n\341\273\231i dung ch\341\272\241y v\341\273\233i tr\303\254nh gi"
+   "\341\272\243 l\341\272\255p n\303\240y.",
    "X\303\263a t\341\273\207p g\303\241n l\341\272\241i ph\303\255m s\341\272\275 \303\241p d\341"
-   "\273\245ng ch\341\273\211 cho tr\303\262 ch\306\241i hi\341\273\207n t\341\272\241i.",
+   "\273\245ng ch\341\273\211 cho n\341\273\231i dung hi\341\273\207n t\341\272\241i.",
    "\304\220\341\272\267t t\341\272\245t c\341\272\243 t\303\271y ch\341\273\215n g\303\241n n\303"
    "\272t b\341\272\245m v\341\273\201 gi\303\241 tr\341\273\213 m\341\272\267c \304\221\341\273\213"
    "nh.",
    "L\306\260u g\303\241n l\341\272\241i ph\303\255m \304\221i\341\273\201u khi\341\273\203n hi\341"
    "\273\207n t\341\272\241i th\303\240nh m\341\273\231t t\341\273\207p m\341\273\233i.",
    "L\306\260u t\341\273\207p g\303\241n ph\303\255m s\341\272\275 \303\241p d\341\273\245ng cho t"
-   "\341\272\245t c\341\272\243 tr\303\262 ch\306\241i \304\221\306\260\341\273\243c t\341\272\243i "
-   "t\341\273\253 c\303\271ng th\306\260 m\341\273\245c v\341\273\233i t\341\273\207p hi\341\273\207"
-   "n t\341\272\241i.",
+   "\341\272\245t c\341\272\243 n\341\273\231i dung \304\221\306\260\341\273\243c t\341\272\243i t"
+   "\341\273\253 c\303\271ng th\306\260 m\341\273\245c v\341\273\233i t\341\273\207p hi\341\273\207n"
+   " t\341\272\241i.",
    "L\306\260u m\341\273\231t t\341\273\207p g\303\241n l\341\272\241i ph\303\255m \303\241p d\341"
-   "\273\245ng cho t\341\272\245t c\341\272\243 tr\303\262 ch\306\241i ch\341\272\241y v\341\273\233"
-   "i Core n\303\240y.",
+   "\273\245ng cho t\341\272\245t c\341\272\243 n\341\273\231i dung ch\341\272\241y v\341\273\233i t"
+   "r\303\254nh gi\341\272\243 l\341\272\255p n\303\240y.",
    "L\306\260u t\341\273\207p g\303\241n l\341\272\241i ph\303\255m s\341\272\275 \303\241p d\341"
-   "\273\245ng ch\341\273\211 cho tr\303\262 ch\306\241i hi\341\273\207n t\341\272\241i.",
-   "L\306\260u c\303\241c thay \304\221\341\273\225i v\303\240o m\341\273\215i t\341\273\207p g\303"
-   "\241n l\341\272\241i ph\303\255m \304\221ang ho\341\272\241t \304\221\341\273\231ng khi \304\221"
-   "\303\263ng n\341\273\231i dung ho\341\272\267c tho\303\241t RetroArch.",
+   "\273\245ng ch\341\273\211 cho n\341\273\231i dung hi\341\273\207n t\341\272\241i.",
+   "L\306\260u c\303\241c thay \304\221\341\273\225i v\303\240o m\341\273\215i t\341\273\207p \303"
+   "\241nh x\341\272\241 l\341\272\241i ph\303\255m \304\221ang \304\221\306\260\341\273\243c s\341"
+   "\273\255 d\341\273\245ng khi \304\221\303\263ng n\341\273\231i dung ho\341\272\267c tho\303\241t"
+   " RetroArch.",
    "X\303\263a t\341\273\207p c\341\272\245u h\303\254nh ghi \304\221\303\250 \303\241p d\341\273"
-   "\245ng cho t\341\272\245t c\341\272\243 tr\303\262 ch\306\241i \304\221\306\260\341\273\243c t"
-   "\341\272\243i t\341\273\253 c\303\271ng th\306\260 m\341\273\245c v\341\273\233i t\341\273\207p "
-   "hi\341\273\207n t\341\272\241i.",
+   "\245ng cho t\341\272\245t c\341\272\243 n\341\273\231i dung \304\221\306\260\341\273\243c t\341"
+   "\272\243i t\341\273\253 c\303\271ng th\306\260 m\341\273\245c v\341\273\233i t\341\273\207p hi"
+   "\341\273\207n t\341\272\241i.",
    "X\303\263a t\341\273\207p c\341\272\245u h\303\254nh ghi \304\221\303\250 \303\241p d\341\273"
-   "\245ng cho t\341\272\245t c\341\272\243 tr\303\262 ch\306\241i ch\341\272\241y b\341\272\261ng C"
-   "ore n\303\240y.",
-   "X\303\263a file c\341\272\245u h\303\254nh ghi \304\221\303\250 ch\341\273\211 \303\241p d\341"
-   "\273\245ng cho tr\303\262 ch\306\241i hi\341\273\207n t\341\272\241i.",
+   "\245ng cho t\341\272\245t c\341\272\243 n\341\273\231i dung ch\341\272\241y b\341\272\261ng tr"
+   "\303\254nh gi\341\272\243 l\341\272\255p n\303\240y.",
+   "X\303\263a t\341\273\207p c\341\272\245u h\303\254nh ghi \304\221\303\250 ch\341\273\211 \303"
+   "\241p d\341\273\245ng cho n\341\273\231i dung hi\341\273\207n t\341\272\241i.",
    "\304\220\341\273\225i t\303\252n ti\303\252u \304\221\341\273\201 c\341\273\247a m\341\273\245c.",
    "Tr\306\260\341\273\233c khi t\341\272\241o m\341\273\231t ph\303\241t l\341\272\241i, ch\341\273"
    "\211 s\341\273\221 ph\303\241t l\341\272\241i s\341\272\275 t\341\273\261 \304\221\341\273\231ng"
@@ -9991,15 +10052,15 @@ static const struct
    "ph\303\241t l\341\272\241i \304\221\306\260\341\273\243c ghi.",
    "Thay \304\221\341\273\225i khe tr\341\272\241ng th\303\241i \304\221ang \304\221\306\260\341\273"
    "\243c ch\341\273\215n.",
-   "\304\220\341\272\267t l\341\272\241i Core \304\221\306\260\341\273\243c li\303\252n k\341\272"
-   "\277t v\341\273\233i tr\303\262 ch\306\241i n\303\240y.",
+   "\304\220\341\272\267t l\341\272\241i tr\303\254nh gi\341\272\243 l\341\272\255p cho n\341\273"
+   "\231i dung n\303\240y.",
    "Kh\303\264i ph\341\273\245c c\341\272\245u h\303\254nh v\341\273\201 gi\303\241 tr\341\273\213 m"
    "\341\272\267c \304\221\341\273\213nh.",
    "K\303\255ch ho\341\272\241t reset m\341\273\201m. N\303\272t Start tr\303\252n RetroPad s\341"
    "\272\275 k\303\255ch ho\341\272\241t reset c\341\273\251ng.",
    "Kh\341\273\237i \304\221\341\273\231ng l\341\272\241i RetroArch.",
-   "Ti\341\272\277p t\341\273\245c tr\303\262 ch\306\241i v\303\240 gi\341\273\257 l\341\272\241i Me"
-   "nu Nhanh.",
+   "Ti\341\272\277p t\341\273\245c n\341\273\231i dung v\303\240 tho\303\241t kh\341\273\217i Menu n"
+   "hanh.",
    "Thay \304\221\341\273\225i c\303\240i \304\221\341\272\267t Th\303\240nh t\303\255ch.",
    "L\306\260\341\273\243ng b\341\273\231 nh\341\273\233 (MB) \304\221\306\260\341\273\243c d\303"
    "\240nh cho b\341\273\231 \304\221\341\273\207m tua l\303\271i. T\304\203ng gi\303\241 tr\341\273"
@@ -10029,7 +10090,7 @@ static const struct
    "ng menu. T\303\271y ch\341\273\215n n\303\240y s\341\272\275 t\341\273\261 \304\221\341\273\231n"
    "g chuy\341\273\203n th\303\240nh t\341\272\257t sau khi ch\306\260\306\241ng tr\303\254nh kh\341"
    "\273\237i ch\341\272\241y l\341\272\247n \304\221\341\272\247u.",
-   "B\341\272\257t \304\221\341\272\247u tr\303\262 ch\306\241i.",
+   "B\341\272\257t \304\221\341\272\247u n\341\273\231i dung.",
    "Ch\341\272\241y th\303\252m c\303\241c t\303\241c v\341\273\245 c\341\273\247a tr\303\254nh gi"
    "\341\272\243 l\341\272\255p \304\221\341\273\203 gi\341\272\243m \304\221\341\273\231 tr\341\273"
    "\205. Ch\341\272\277 \304\221\341\273\231 M\341\273\231t phi\303\252n b\341\272\243n s\341\272"
@@ -10059,11 +10120,11 @@ static const struct
 #endif
    "Nh\341\272\255t k\303\275 ch\341\272\241y \304\221\306\260\341\273\243c l\306\260u trong th\306"
    "\260 m\341\273\245c n\303\240y.",
-   "S\341\273\221 khung h\303\254nh \304\221\341\273\203 ch\341\272\241y tr\306\260\341\273\233c. G"
-   "\303\242y ra c\303\241c v\341\272\245n \304\221\341\273\201 khi ch\306\241i nh\306\260 gi\341"
-   "\272\255t h\303\254nh n\341\272\277u s\341\273\221 khung h\303\254nh tr\341\273\205 n\341\273"
-   "\231i b\341\273\231 trong tr\303\262 ch\306\241i b\341\273\213 v\306\260\341\273\243t qu\303\241"
-   ".",
+   "S\341\273\221 khung h\303\254nh ch\341\272\241y tr\306\260\341\273\233c. C\303\263 th\341\273"
+   "\203 g\303\242y ra c\303\241c v\341\272\245n \304\221\341\273\201 khi ch\306\241i nh\306\260 gi"
+   "\341\272\255t h\303\254nh n\341\272\277u v\306\260\341\273\243t qu\303\241 s\341\273\221 khung h"
+   "\303\254nh tr\341\273\205 m\303\240 tr\303\262 ch\306\241i c\303\263 th\341\273\203 x\341\273"
+   "\255 l\303\275.",
    "\341\272\250n th\303\264ng b\303\241o c\341\272\243nh b\303\241o xu\341\272\245t hi\341\273\207n"
    " khi s\341\273\255 d\341\273\245ng Ch\341\272\241y tr\306\260\341\273\233c m\303\240 core kh\303"
    "\264ng h\341\273\227 tr\341\273\243 l\306\260u tr\341\272\241ng th\303\241i.",
@@ -10080,13 +10141,13 @@ static const struct
    "Chia s\341\272\273 th\306\260 m\341\273\245c m\341\272\241ng th\303\264ng qua giao th\341\273"
    "\251c SMB.",
 #endif
-   "S\341\273\255 d\341\273\245ng th\306\260 m\341\273\245c tr\303\262 ch\306\241i l\303\240m th\306"
+   "S\341\273\255 d\341\273\245ng th\306\260 m\341\273\245c n\341\273\231i dung l\303\240m th\306"
    "\260 m\341\273\245c l\306\260u t\341\273\207p.",
    "L\306\260u t\341\272\245t c\341\272\243 c\303\241c file l\306\260u tr\341\273\257 v\303\240o th"
    "\306\260 m\341\273\245c n\303\240y. N\341\272\277u kh\303\264ng thi\341\272\277t l\341\272\255p,"
    " s\341\272\275 c\341\273\221 g\341\272\257ng l\306\260u trong th\306\260 m\341\273\245c l\303"
    "\240m vi\341\273\207c c\341\273\247a t\341\273\207p tr\303\262 ch\306\241i.",
-   "S\341\273\255 d\341\273\245ng th\306\260 m\341\273\245c tr\303\262 ch\306\241i l\303\240m th\306"
+   "S\341\273\255 d\341\273\245ng th\306\260 m\341\273\245c n\341\273\231i dung l\303\240m th\306"
    "\260 m\341\273\245c l\306\260u tr\341\272\241ng th\303\241i.",
    "T\341\273\261 \304\221\341\273\231ng l\306\260u tr\341\272\241ng th\303\241i theo kho\341\272"
    "\243ng th\341\273\235i gian \304\221\341\273\213nh k\341\273\263 (t\303\255nh b\341\272\261ng gi"
@@ -10129,24 +10190,26 @@ static const struct
    "y ch\341\273\211nh.",
    "Ghi \304\221\303\250 t\341\273\207p c\341\272\245u h\303\254nh hi\341\273\207n t\341\272\241i.",
    "L\306\260u t\341\273\207p c\341\272\245u h\303\254nh ghi \304\221\303\250 \303\241p d\341\273"
-   "\245ng cho t\341\272\245t c\341\272\243 tr\303\262 ch\306\241i \304\221\306\260\341\273\243c t"
-   "\341\272\243i t\341\273\253 c\303\271ng th\306\260 m\341\273\245c v\341\273\233i t\341\273\207p "
-   "hi\341\273\207n t\341\272\241i. S\341\272\275 \304\221\306\260\341\273\243c \306\260u ti\303\252"
-   "n h\306\241n c\341\272\245u h\303\254nh ch\303\255nh.",
+   "\245ng cho t\341\272\245t c\341\272\243 n\341\273\231i dung \304\221\306\260\341\273\243c t\341"
+   "\272\243i t\341\273\253 c\303\271ng th\306\260 m\341\273\245c v\341\273\233i t\341\273\207p hi"
+   "\341\273\207n t\341\272\241i. S\341\272\275 \304\221\306\260\341\273\243c \306\260u ti\303\252n "
+   "h\306\241n c\341\272\245u h\303\254nh ch\303\255nh.",
    "L\306\260u t\341\273\207p c\341\272\245u h\303\254nh ghi \304\221\303\250 \303\241p d\341\273"
-   "\245ng cho t\341\272\245t c\341\272\243 tr\303\262 ch\306\241i ch\341\272\241y b\341\272\261ng C"
-   "ore n\303\240y. S\341\272\275 \304\221\306\260\341\273\243c \306\260u ti\303\252n h\306\241n c"
-   "\341\272\245u h\303\254nh ch\303\255nh.",
+   "\245ng cho t\341\272\245t c\341\272\243 n\341\273\231i dung ch\341\272\241y b\341\272\261ng tr"
+   "\303\254nh gi\341\272\243 l\341\272\255p n\303\240y. S\341\272\275 \304\221\306\260\341\273\243c"
+   " \306\260u ti\303\252n h\306\241n c\341\272\245u h\303\254nh ch\303\255nh.",
    "L\306\260u t\341\273\207p c\341\272\245u h\303\254nh ghi \304\221\303\250 \303\241p d\341\273"
-   "\245ng ch\341\273\211 cho tr\303\262 ch\306\241i hi\341\273\207n t\341\272\241i. S\341\272\275 "
-   "\304\221\306\260\341\273\243c \306\260u ti\303\252n h\306\241n c\341\272\245u h\303\254nh ch\303"
-   "\255nh.",
-   "Ghi c\303\241c file SaveRAM kh\303\264ng thay \304\221\341\273\225i v\303\240o \304\221\341\273"
-   "\213nh d\341\272\241ng l\306\260u tr\341\273\257. Gi\341\272\243m \304\221\303\241ng k\341\273"
-   "\203 k\303\255ch th\306\260\341\273\233c file nh\306\260ng th\341\273\235i gian l\306\260u/t\341"
-   "\272\243i s\341\272\275 t\304\203ng nh\341\272\271. Ch\341\273\211 \303\241p d\341\273\245ng cho"
-   " c\303\241c core cho ph\303\251p l\306\260u qua giao di\341\273\207n chu\341\272\251n libretro S"
-   "aveRAM.",
+   "\245ng ch\341\273\211 cho n\341\273\231i dung hi\341\273\207n t\341\272\241i. S\341\272\275 \304"
+   "\221\306\260\341\273\243c \306\260u ti\303\252n h\306\241n c\341\272\245u h\303\254nh ch\303\255"
+   "nh.",
+   "L\306\260u c\303\241c t\341\273\207p SaveRAM kh\303\264ng m\341\272\245t d\341\273\257 li\341"
+   "\273\207u d\306\260\341\273\233i d\341\272\241ng t\341\273\207p n\303\251n. Gi\341\272\243m \304"
+   "\221\303\241ng k\341\273\203 dung l\306\260\341\273\243ng t\341\273\207p, \304\221\341\273\225i "
+   "l\341\272\241i th\341\273\235i gian l\306\260u/t\341\272\243i t\304\203ng (kh\303\264ng \304\221"
+   "\303\241ng k\341\273\203).\nCh\341\273\211 \303\241p d\341\273\245ng cho c\303\241c tr\303\254nh"
+   " gi\341\272\243 l\341\272\255p h\341\273\227 tr\341\273\243 l\306\260u d\341\273\257 li\341\273"
+   "\207u th\303\264ng qua giao di\341\273\207n SaveRAM ti\303\252u chu\341\272\251n c\341\273\247a "
+   "libretro.",
    "L\306\260u c\341\272\245u h\303\254nh hi\341\273\207n t\341\272\241i l\303\240m c\341\272\245u h"
    "\303\254nh ch\303\255nh.",
    "L\306\260u c\341\272\245u h\303\254nh hi\341\273\207n t\341\272\241i th\303\240nh t\341\273\207p"
@@ -10158,11 +10221,11 @@ static const struct
    "\203, ho\341\272\267c ch\341\273\211 d\303\271ng d\341\273\257 li\341\273\207u \304\221\341\272"
    "\247u ti\303\252n kh\341\273\233p \304\221\341\273\203 t\304\203ng t\341\273\221c \304\221\341"
    "\273\231 qu\303\251t.",
-   "Qu\303\251t m\341\273\231t th\306\260 m\341\273\245c \304\221\341\273\203 t\303\254m tr\303\262 "
-   "ch\306\241i ph\303\271 h\341\273\243p v\341\273\233i c\306\241 s\341\273\237 d\341\273\257 li"
-   "\341\273\207u.",
-   "Qu\303\251t m\341\273\231t t\341\273\207p \304\221\341\273\203 t\303\254m tr\303\262 ch\306\241i"
-   " ph\303\271 h\341\273\243p v\341\273\233i c\306\241 s\341\273\237 d\341\273\257 li\341\273\207u.",
+   "Qu\303\251t m\341\273\231t th\306\260 m\341\273\245c \304\221\341\273\203 t\303\254m n\341\273"
+   "\231i dung ph\303\271 h\341\273\243p v\341\273\233i c\306\241 s\341\273\237 d\341\273\257 li\341"
+   "\273\207u.",
+   "Qu\303\251t m\341\273\231t t\341\273\207p \304\221\341\273\203 t\303\254m n\341\273\231i dung ph"
+   "\303\271 h\341\273\243p v\341\273\233i c\306\241 s\341\273\237 d\341\273\257 li\341\273\207u.",
    "T\341\273\261 \304\221\341\273\231ng ho\341\272\267c t\303\271y ch\341\273\211nh v\341\273\233i "
    "c\303\241c t\303\271y ch\341\273\215n chi ti\341\272\277t.",
    "Khi d\303\271ng t\303\252n danh s\303\241ch ph\303\241t t\303\271y ch\341\273\211nh, lu\303\264n"
@@ -10199,7 +10262,7 @@ static const struct
    "Cho ph\303\251p tr\303\262 ch\306\241i \304\221\306\260\341\273\243c qu\303\251t v\303\240 th"
    "\303\252m v\303\240o danh s\303\241ch ph\303\241t m\303\240 kh\303\264ng c\341\272\247n c\303"
    "\240i \304\221\341\272\267t core h\341\273\227 tr\341\273\243.",
-   "S\341\273\255 d\341\273\245ng th\306\260 m\341\273\245c tr\303\262 ch\306\241i l\303\240m th\306"
+   "S\341\273\255 d\341\273\245ng th\306\260 m\341\273\245c n\341\273\231i dung l\303\240m th\306"
    "\260 m\341\273\245c l\306\260u \341\272\243nh ch\341\273\245p m\303\240n h\303\254nh.",
    "\341\272\242nh ch\341\273\245p m\303\240n h\303\254nh \304\221\306\260\341\273\243c l\306\260u t"
    "rong th\306\260 m\341\273\245c n\303\240y.",
@@ -10260,8 +10323,8 @@ static const struct
    "Hi\341\273\203n th\341\273\213 c\303\240i \304\221\341\272\267t \"Video\".",
    "B\341\272\255t/t\341\272\257t hi\341\273\203n th\341\273\213 c\303\241c m\341\273\245c trong men"
    "u C\303\240i \304\221\341\272\267t.",
-   "Thi\341\272\277t l\341\272\255p core li\303\252n k\341\272\277t v\341\273\233i tr\303\262 ch\306"
-   "\241i n\303\240y.",
+   "\304\220\341\272\267t tr\303\254nh gi\341\272\243 l\341\272\255p cho n\341\273\231i dung n\303"
+   "\240y.",
    "C\303\241c thay \304\221\341\273\225i trong c\341\272\245u h\303\254nh b\341\273\231 \304\221"
    "\341\273\225 b\303\263ng s\341\272\275 c\303\263 hi\341\273\207u l\341\273\261c ngay l\341\272"
    "\255p t\341\273\251c. D\303\271ng t\303\271y ch\341\273\215n n\303\240y n\341\272\277u b\341\272"
@@ -10277,8 +10340,9 @@ static const struct
    "Hi\341\273\203n th\341\273\213 c\303\241c t\341\272\255p tin v\303\240 th\306\260 m\341\273\245c"
    " \341\272\251n trong Tr\303\254nh duy\341\273\207t T\341\272\255p tin.",
    "M\341\273\237 giao di\341\273\207n m\303\241y t\303\255nh c\341\273\225 \304\221i\341\273\203n.",
-   "C\303\240i \304\221\341\272\267t ho\341\272\267c kh\303\264i ph\341\273\245c 1 core t\341\273"
-   "\253 th\306\260 m\341\273\245c 'T\341\272\243i v\341\273\201'.",
+   "C\303\240i \304\221\341\272\267t ho\341\272\267c kh\303\264i ph\341\273\245c 1 tr\303\254nh gi"
+   "\341\272\243 l\341\272\255p t\341\273\253 th\306\260 m\341\273\245c 'T\341\272\243i xu\341\273"
+   "\221ng'.",
    "T\341\273\221c \304\221\341\273\231 ph\303\241t tr\303\262 ch\306\241i khi s\341\273\255 d\341"
    "\273\245ng ch\341\272\277 \304\221\341\273\231 ch\341\272\255m.",
 #ifdef HAVE_SMBCLIENT
@@ -10309,27 +10373,27 @@ static const struct
    "\273\261c.",
    "T\303\252n Workgroup ho\341\272\267c Domain.",
 #endif
-   "S\341\272\257p x\341\272\277p c\303\241c t\341\273\207p l\306\260u v\303\240o c\303\241c th\306"
-   "\260 m\341\273\245c \304\221\306\260\341\273\243c \304\221\341\272\267t t\303\252n theo th\306"
-   "\260 m\341\273\245c ch\341\273\251a tr\303\262 ch\306\241i.",
-   "S\341\272\257p x\341\272\277p file l\306\260u v\303\240o c\303\241c th\306\260 m\341\273\245c "
-   "\304\221\341\272\267t theo t\303\252n core \304\221\306\260\341\273\243c s\341\273\255 d\341\273"
-   "\245ng.",
+   "S\341\272\257p x\341\272\277p t\341\273\207p l\306\260u v\303\240o c\303\241c th\306\260 m\341"
+   "\273\245c \304\221\306\260\341\273\243c \304\221\341\272\267t t\303\252n theo th\306\260 m\341"
+   "\273\245c ch\341\273\251a n\341\273\231i dung.",
+   "S\341\272\257p x\341\272\277p t\341\273\207p l\306\260u v\303\240o c\303\241c th\306\260 m\341"
+   "\273\245c \304\221\341\272\267t theo t\303\252n tr\303\254nh gi\341\272\243 l\341\272\255p \304"
+   "\221\306\260\341\273\243c s\341\273\255 d\341\273\245ng.",
    "S\341\272\257p x\341\272\277p tr\341\272\241ng th\303\241i l\306\260u trong c\303\241c th\306"
    "\260 m\341\273\245c \304\221\306\260\341\273\243c \304\221\341\272\267t t\303\252n theo th\306"
    "\260 m\341\273\245c ch\341\273\251a tr\303\262 ch\306\241i.",
    "S\341\272\257p x\341\272\277p tr\341\272\241ng th\303\241i l\306\260u v\303\240o c\303\241c th"
-   "\306\260 m\341\273\245c \304\221\341\272\267t theo t\303\252n core \304\221\306\260\341\273\243c"
-   " s\341\273\255 d\341\273\245ng.",
+   "\306\260 m\341\273\245c \304\221\341\272\267t theo t\303\252n tr\303\254nh gi\341\272\243 l\341"
+   "\272\255p \304\221\306\260\341\273\243c s\341\273\255 d\341\273\245ng.",
    "S\341\272\257p x\341\272\277p \341\272\243nh ch\341\273\245p m\303\240n h\303\254nh v\303\240o c"
    "\303\241c th\306\260 m\341\273\245c \304\221\306\260\341\273\243c \304\221\341\272\267t theo t"
-   "\303\252n th\306\260 m\341\273\245c ch\341\273\251a tr\303\262 ch\306\241i.",
+   "\303\252n th\306\260 m\341\273\245c ch\341\273\251a n\341\273\231i dung.",
 #ifdef HAVE_LAKKA
    "S\341\273\255 d\341\273\245ng SSH \304\221\341\273\203 truy c\341\272\255p d\303\262ng l\341\273"
    "\207nh t\341\273\253 xa.",
 #endif
-   "Kh\341\273\237i \304\221\341\273\231ng Core m\303\240 kh\303\264ng c\303\263 tr\303\262 ch\306"
-   "\241i.",
+   "Kh\341\273\237i \304\221\341\273\231ng tr\303\254nh gi\341\272\243 l\341\272\255p m\303\240 kh"
+   "\303\264ng c\303\263 n\341\273\231i dung.",
    "Thay \304\221\341\273\225i khe tr\341\272\241ng th\303\241i \304\221ang \304\221\306\260\341\273"
    "\243c ch\341\273\215n.",
    "Hi\341\273\203n th\341\273\213 th\341\273\221ng k\303\252 k\341\273\271 thu\341\272\255t tr\303"
@@ -10343,8 +10407,8 @@ static const struct
    "Thay \304\221\341\273\225i c\303\240i \304\221\341\272\267t li\303\252n quan \304\221\341\272"
    "\277n Steam.",
 #endif
-   "Truy c\341\272\255p c\303\240i \304\221\341\272\267t h\341\273\207 th\341\273\221ng con cho tr"
-   "\303\262 ch\306\241i hi\341\273\207n t\341\272\241i.",
+   "Truy c\341\272\255p c\303\240i \304\221\341\272\267t h\341\273\207 th\341\273\221ng con cho n"
+   "\341\273\231i dung hi\341\273\207n t\341\272\241i.",
    "Ng\304\203n kh\303\264ng cho tr\303\254nh b\341\272\243o v\341\273\207 m\303\240n h\303\254nh c"
    "\341\273\247a h\341\273\207 th\341\273\221ng ho\341\272\241t \304\221\341\273\231ng.",
 #ifdef HAVE_LAKKA
@@ -10356,16 +10420,17 @@ static const struct
 #ifdef HAVE_LIBNX
    "\303\211p xung CPU c\341\273\247a Switch.",
 #endif
-   "Thay th\341\272\277 t\341\272\245t c\341\272\243 c\303\241c Core c\305\251 v\303\240 \304\221"
-   "\306\260\341\273\243c c\303\240i \304\221\341\272\267t th\341\273\247 c\303\264ng b\341\272\261n"
-   "g c\303\241c phi\303\252n b\341\272\243n m\341\273\233i nh\341\272\245t t\341\273\253 \342\200"
-   "\213\342\200\213C\341\273\255a h\303\240ng Play, n\341\272\277u c\303\263.",
+   "Thay th\341\272\277 t\341\272\245t c\341\272\243 c\303\241c tr\303\254nh gi\341\272\243 l\341"
+   "\272\255p c\305\251 v\303\240 \304\221\306\260\341\273\243c c\303\240i \304\221\341\272\267t th"
+   "\341\273\247 c\303\264ng b\341\272\261ng c\303\241c phi\303\252n b\341\272\243n m\341\273\233i n"
+   "h\341\272\245t t\341\273\253 \342\200\213\342\200\213C\341\273\255a h\303\240ng Play, n\341\272"
+   "\277u c\303\263.",
 #ifdef HAVE_LAKKA
 #ifdef HAVE_LAKKA_SWITCH
    "B\341\272\255t c\303\241c t\341\272\247n s\341\273\221 \303\211p xung CPU",
 #endif
 #endif
-   "S\341\273\255 d\341\273\245ng th\306\260 m\341\273\245c tr\303\262 ch\306\241i l\303\240m th\306"
+   "S\341\273\255 d\341\273\245ng th\306\260 m\341\273\245c n\341\273\231i dung l\303\240m th\306"
    "\260 m\341\273\245c H\341\273\207 th\341\273\221ng/BIOS.",
    "BIOS, ROM kh\341\273\237i \304\221\341\273\231ng v\303\240 c\303\241c t\341\273\207p h\341\273"
    "\207 th\341\273\221ng \304\221\341\272\267c th\303\271 kh\303\241c \304\221\306\260\341\273\243c"
@@ -10380,8 +10445,8 @@ static const struct
    "\306\260\341\273\243c l\306\260u trong th\306\260 m\341\273\245c n\303\240y.",
    "Lo\341\272\241i h\303\254nh thu nh\341\273\217 ch\303\255nh li\303\252n k\341\272\277t v\341\273"
    "\233i m\341\273\227i m\341\273\245c trong danh s\303\241ch. Th\306\260\341\273\235ng \304\221"
-   "\306\260\341\273\243c d\303\271ng l\303\240m bi\341\273\203u t\306\260\341\273\243ng tr\303\262 "
-   "ch\306\241i.",
+   "\306\260\341\273\243c d\303\271ng l\303\240m bi\341\273\203u t\306\260\341\273\243ng n\341\273"
+   "\231i dung.",
    "Lo\341\272\241i h\303\254nh thu nh\341\273\217 hi\341\273\203n th\341\273\213 \341\273\237 g\303"
    "\263c tr\303\252n b\303\252n ph\341\272\243i c\341\273\247a danh s\303\241ch ph\303\241t. C\303"
    "\263 th\341\273\203 thay \304\221\341\273\225i b\341\272\261ng c\341\272\247n analog ph\341\272"
@@ -10401,16 +10466,17 @@ static const struct
    "Hi\341\273\203n th\341\273\213 th\341\273\235i gian hi\341\273\207n t\341\272\241i theo \304\221"
    "\341\273\213nh d\341\272\241ng \306\260u ti\303\252n.",
    "Hi\341\273\203n th\341\273\213 thanh menu c\341\273\255a s\341\273\225.",
-   "N\341\272\277u tr\341\272\241ng th\303\241i \304\221\303\243 \304\221\306\260\341\273\243c t\341"
-   "\272\243i, tr\303\262 ch\306\241i s\341\272\275 tr\341\273\237 v\341\273\201 tr\341\272\241ng th"
-   "\303\241i tr\306\260\341\273\233c khi t\341\272\243i.",
+   "N\341\272\277u \304\221\303\243 t\341\272\243i m\341\273\231t tr\341\272\241ng th\303\241i, n"
+   "\341\273\231i dung s\341\272\275 tr\341\273\237 v\341\273\201 tr\341\272\241ng th\303\241i tr"
+   "\306\260\341\273\233c khi t\341\272\243i.",
    "N\341\272\277u tr\341\272\241ng th\303\241i b\341\273\213 ghi \304\221\303\250, s\341\272\275 qu"
    "ay l\341\272\241i tr\341\272\241ng th\303\241i l\306\260u tr\306\260\341\273\233c \304\221\303"
    "\263.",
    "Truy c\341\272\255p c\303\240i \304\221\341\272\267t tr\303\254nh c\341\272\255p nh\341\272\255t"
    " core",
-   "C\341\272\255p nh\341\272\245t t\341\272\245t c\341\272\243 c\303\241c Core l\303\252n phi\303"
-   "\252n b\341\272\243n kh\341\272\243 d\341\273\245ng m\341\273\233i nh\341\272\245t.",
+   "C\341\272\255p nh\341\272\245t t\341\272\245t c\341\272\243 c\303\241c tr\303\254nh gi\341\272"
+   "\243 l\341\272\255p l\303\252n phi\303\252n b\341\272\243n kh\341\272\243 d\341\273\245ng m\341"
+   "\273\233i nh\341\272\245t.",
    "Thay \304\221\341\273\225i c\303\240i \304\221\341\272\267t giao di\341\273\207n ng\306\260\341"
    "\273\235i d\303\271ng.",
    "Thi\341\272\277t l\341\272\255p ng\303\264n ng\341\273\257 giao di\341\273\207n ng\306\260\341"
@@ -10469,10 +10535,10 @@ static const struct
    "h\341\273\235i gian th\341\273\261c v\303\240 ti\341\272\277t ki\341\273\207m n\304\203ng l\306"
    "\260\341\273\243ng h\306\241n. Kh\303\264ng t\306\260\306\241ng th\303\255ch v\341\273\233i '"
    "\304\220\341\273\231 tr\341\273\205 khung h\303\254nh'.",
-   "Cho ph\303\251p core thi\341\272\277t l\341\272\255p xoay m\303\240n h\303\254nh. Khi t\341\272"
-   "\257t, c\303\241c y\303\252u c\341\272\247u xoay s\341\272\275 b\341\273\213 b\341\273\217 qua. "
-   "H\341\273\257u \303\255ch cho c\303\241c thi\341\272\277t l\341\272\255p xoay m\303\240n h\303"
-   "\254nh th\341\273\247 c\303\264ng.",
+   "Cho ph\303\251p tr\303\254nh gi\341\272\243 l\341\272\255p thi\341\272\277t l\341\272\255p xoay "
+   "m\303\240n h\303\254nh. Khi t\341\272\257t, c\303\241c y\303\252u c\341\272\247u xoay s\341\272"
+   "\275 b\341\273\213 b\341\273\217 qua. H\341\273\257u \303\255ch cho c\303\241c thi\341\272\277t "
+   "l\341\272\255p xoay m\303\240n h\303\254nh th\341\273\247 c\303\264ng.",
    "Gi\303\241 tr\341\273\213 d\341\272\245u ph\341\272\251y \304\221\341\273\231ng cho t\341\273"
    "\267 l\341\273\207 khung h\303\254nh video (chi\341\273\201u r\341\273\231ng / chi\341\273\201u "
    "cao).",
@@ -10481,8 +10547,8 @@ static const struct
    "T\341\273\221c \304\221\341\273\231 l\303\240m m\341\273\233i t\341\273\221i \304\221a \304\221"
    "\306\260\341\273\243c coi l\303\240 PAL.",
    "T\341\273\261 \304\221\341\273\231ng chuy\341\273\203n \304\221\341\273\225i t\341\273\221c \304"
-   "\221\341\273\231 l\303\240m m\341\273\233i m\303\240n h\303\254nh d\341\273\261a tr\303\252n tr"
-   "\303\262 ch\306\241i hi\341\273\207n t\341\272\241i.",
+   "\221\341\273\231 l\303\240m m\341\273\233i m\303\240n h\303\254nh d\341\273\261a tr\303\252n n"
+   "\341\273\231i dung hi\341\273\207n t\341\272\241i.",
    "\304\220i\341\273\201u ch\341\273\211nh s\341\273\221 khung h\303\254nh \304\221en trong t\341"
    "\273\225ng s\341\273\221 chu\341\273\227i qu\303\251t BFI. Nhi\341\273\201u h\306\241n th\303"
    "\254 \304\221\341\273\231 r\303\265 n\303\251t chuy\341\273\203n \304\221\341\273\231ng cao h"
@@ -10512,12 +10578,12 @@ static const struct
 #endif
 #if defined(DINGUX)
    "Ch\341\273\211 \304\221\341\273\213nh ph\306\260\306\241ng ph\303\241p n\341\273\231i suy h\303"
-   "\254nh \341\272\243nh khi chia t\341\273\267 l\341\273\207 tr\303\262 ch\306\241i th\303\264ng q"
-   "ua IPU n\341\273\231i b\341\273\231. Khuy\341\272\277n ngh\341\273\213 s\341\273\255 d\341\273"
-   "\245ng 'Bo tr\303\262n c\341\272\241nh' ho\341\272\267c 'L\303\240m m\341\273\213n' khi s\341"
-   "\273\255 d\341\273\245ng b\341\273\231 l\341\273\215c video ch\341\272\241y b\341\272\261ng CPU."
-   " T\303\271y ch\341\273\215n n\303\240y kh\303\264ng \341\272\243nh h\306\260\341\273\237ng \304"
-   "\221\341\272\277n hi\341\273\207u su\341\272\245t.",
+   "\254nh \341\272\243nh khi chia t\341\273\267 l\341\273\207 n\341\273\231i dung th\303\264ng qua "
+   "IPU n\341\273\231i b\341\273\231. Khuy\341\272\277n ngh\341\273\213 s\341\273\255 d\341\273\245n"
+   "g 'Bo tr\303\262n c\341\272\241nh' ho\341\272\267c 'L\303\240m m\341\273\213n' khi s\341\273\255"
+   " d\341\273\245ng b\341\273\231 l\341\273\215c video ch\341\272\241y b\341\272\261ng CPU. T\303"
+   "\271y ch\341\273\215n n\303\240y kh\303\264ng \341\272\243nh h\306\260\341\273\237ng \304\221"
+   "\341\272\277n hi\341\273\207u su\341\272\245t.",
    "Duy tr\303\254 t\341\273\267 l\341\273\207 khung h\303\254nh 1:1 khi chia t\341\273\267 l\341"
    "\273\207 tr\303\262 ch\306\241i th\303\264ng qua IPU n\341\273\231i b\341\273\231. N\341\272\277"
    "u t\341\272\257t, h\303\254nh \341\272\243nh s\341\272\275 \304\221\306\260\341\273\243c k\303"
@@ -10527,8 +10593,7 @@ static const struct
 #if defined(DINGUX) && defined(DINGUX_BETA)
    "\304\220\341\272\267t t\341\273\221c \304\221\341\273\231 l\303\240m m\341\273\233i theo chi\341"
    "\273\201u d\341\273\215c c\341\273\247a m\303\240n h\303\254nh. '50 Hz' s\341\272\275 cho ph\303"
-   "\251p video m\306\260\341\273\243t m\303\240 khi ch\341\272\241y tr\303\262 ch\306\241i h\341"
-   "\273\207 PAL.",
+   "\251p video m\306\260\341\273\243t m\303\240 khi ch\341\272\241y n\341\273\231i dung PAL.",
 #endif
 #if defined(DINGUX)
 #if defined(RS90) || defined(MIYOO)
@@ -10606,6 +10671,20 @@ static const struct
    "ng c\303\263 c\341\273\255a s\341\273\225. N\341\272\277u kh\303\264ng \304\221\341\272\267t, "
    "\304\221\341\273\231 ph\303\242n gi\341\272\243i m\303\240n h\303\254nh s\341\272\275 b\341\273"
    "\213 \341\272\243nh h\306\260\341\273\237ng.",
+   "G\341\273\255i b\341\273\231 \304\221\341\273\225 b\303\263ng tr\341\273\261c ti\341\272\277p "
+   "\304\221\341\272\277n tr\303\254nh \304\221i\341\273\201u khi\341\273\203n \304\221\341\273\223 "
+   "h\341\273\215a d\306\260\341\273\233i d\341\272\241ng SPIR-V thay v\303\254 bi\303\252n d\341"
+   "\273\213ch ch\303\251o ch\303\272ng sang GLSL tr\306\260\341\273\233c, gi\303\272p r\303\272t ng"
+   "\341\272\257n th\341\273\235i gian t\341\272\243i b\341\273\231 b\341\273\231 \304\221\341\273"
+   "\225 b\303\263ng. \304\220\303\242y ch\341\273\211 l\303\240 m\341\273\231t g\341\273\243i \303"
+   "\275: y\303\252u c\341\272\247u tr\303\254nh \304\221i\341\273\201u khi\341\273\203n c\303\263 p"
+   "h\341\272\247n m\341\273\237 r\341\273\231ng 'GL_ARB_gl_spirv', v\303\240 b\341\272\245t k\341"
+   "\273\263 shader ho\341\272\267c tr\303\254nh \304\221i\341\273\201u khi\341\273\203n n\303\240o "
+   "kh\303\264ng th\341\273\203 s\341\273\255 d\341\273\245ng t\303\255nh n\304\203ng n\303\240y s"
+   "\341\272\275 t\341\273\261 \304\221\341\273\231ng chuy\341\273\203n sang bi\303\252n d\341\273"
+   "\213ch ch\303\251o. C\303\263 hi\341\273\207u l\341\273\261c v\303\240o l\341\272\247",
+   "n ti\341\272\277p theo b\341\273\231 b\341\273\231 \304\221\341\273\225 b\303\263ng \304\221\306"
+   "\260\341\273\243c t\341\272\243i.",
    "Ch\341\273\215n lo\341\272\241i card \304\221\341\273\223 h\341\273\215a s\341\272\275 s\341\273"
    "\255 d\341\273\245ng.",
    "Ghi l\341\272\241i \304\221\341\272\247u ra c\341\273\247a v\341\272\255t li\341\273\207u \304"
@@ -10634,17 +10713,17 @@ static const struct
    "\273\247a b\341\272\241n c\303\263 th\341\273\203 \304\221\341\272\241t \304\221\306\260\341\273"
    "\243c, t\303\255nh b\341\272\261ng nit. Thi\341\272\277t l\341\272\255p kho\341\272\243ng s\303"
    "\241ng ph\303\255a tr\303\252n \304\220\341\273\231 s\303\241ng, \304\221\341\273\203 c\303\241c"
-   " l\303\265i c\303\263 kh\341\272\243 n\304\203ng k\341\272\277t xu\341\272\245t HDR c\303\263 th"
-   "\341\273\203 bi\341\272\277t gi\341\273\233i h\341\272\241n \304\221\341\273\231 s\303\241ng tr"
-   "\306\260\341\273\233c khi b\341\272\257t \304\221\341\272\247u gi\341\272\243m s\303\241ng d\341"
-   "\272\247n. H\303\243y ki\341\273\203m tra th\303\264ng s\341\273\221 k\341\273\271 thu\341\272"
-   "\255t c\341\273\247a m\303\240n h\303\254nh; n\341\272\277u kh\303\264ng ch\341\272\257c, h\303"
-   "\243y gi\341\273\257 \341\273\237 1000. \304\220\341\272\267t gi\303\241 tr\341\273\213 n\303"
-   "\240y cao h\306\241n kh\341\272\243 n\304\203ng th\341\273\261c t\341\272\277 c\341\273\247a m"
-   "\303\240n h\303\254nh s\341\272\275 khi\341\272\277n c\303\241c chi ti\341\272\277t v\303\271ng "
-   "s\303\241ng ",
-   "b\341\273\213 c\341\272\257t m\341\272\245t thay v\303\254 \304\221\306\260\341\273\243c gi\341"
-   "\272\243m s\303\241ng d\341\272\247n.",
+   " tr\303\254nh gi\341\272\243 l\341\272\255p c\303\263 kh\341\272\243 n\304\203ng k\341\272\277t "
+   "xu\341\272\245t HDR c\303\263 th\341\273\203 bi\341\272\277t gi\341\273\233i h\341\272\241n \304"
+   "\221\341\273\231 s\303\241ng tr\306\260\341\273\233c khi b\341\272\257t \304\221\341\272\247u gi"
+   "\341\272\243m s\303\241ng d\341\272\247n. H\303\243y ki\341\273\203m tra th\303\264ng s\341\273"
+   "\221 k\341\273\271 thu\341\272\255t c\341\273\247a m\303\240n h\303\254nh, n\341\272\277u kh\303"
+   "\264ng ch\341\272\257c, h\303\243y gi\341\273\257 \341\273\237 1000. \304\220\341\272\267t gi"
+   "\303\241 tr\341\273\213 n\303\240y cao h\306\241n kh\341\272\243 n\304\203ng th\341\273\261c t"
+   "\341\272\277 c\341\273\247a m\303\240n h\303\254nh s\341\272\275 khi\341\272\277n c\303\241c chi"
+   " ti\341\272\277",
+   "t v\303\271ng s\303\241ng b\341\273\213 c\341\272\257t m\341\272\245t thay v\303\254 \304\221"
+   "\306\260\341\273\243c gi\341\272\243m s\303\241ng d\341\272\247n.",
    "Thi\341\272\277t l\341\272\255p m\341\273\251c \304\221\341\273\231 s\303\241ng HDR (\304\221"
    "\306\241n v\341\273\213 nit). S\341\273\255 d\341\273\245ng k\341\272\277t h\341\273\243p v\341"
    "\273\233i thi\341\272\277t l\341\272\255p \304\221\341\273\231 s\303\241ng v\341\272\255t l\303"
@@ -10742,7 +10821,8 @@ static const struct
 #endif
    "Bu\341\273\231c video ph\341\272\243i xoay m\341\273\231t g\303\263c nh\341\272\245t \304\221"
    "\341\273\213nh. G\303\263c xoay n\303\240y s\341\272\275 \304\221\306\260\341\273\243c th\303"
-   "\252m v\303\240o c\303\241c g\303\263c xoay m\303\240 Core thi\341\272\277t l\341\272\255p.",
+   "\252m v\303\240o c\303\241c g\303\263c xoay m\303\240 tr\303\254nh gi\341\272\243 l\341\272\255p"
+   " thi\341\272\277t l\341\272\255p.",
    "Ch\341\273\211 chia t\341\273\267 l\341\273\207 video theo s\341\273\221 nguy\303\252n. K\303"
    "\255ch th\306\260\341\273\233c c\306\241 s\341\273\237 ph\341\273\245 thu\341\273\231c v\303\240"
    "o h\303\254nh h\341\273\215c \304\221\306\260\341\273\243c b\303\241o c\303\241o tr\303\252n Cor"
@@ -10806,18 +10886,19 @@ static const struct
    "\207n \304\221ang \304\221\306\260\341\273\243c s\341\273\255 d\341\273\245ng trong menu.",
    "Th\303\252m preset v\303\240o tr\306\260\341\273\233c preset hi\341\273\207n \304\221ang t\341"
    "\272\243i.",
-   "X\303\263a thi\341\272\277t l\341\272\255p Core, \304\221\306\260\341\273\243c d\303\271ng cho t"
-   "\341\272\245t c\341\272\243 tr\303\262 ch\306\241i ch\341\272\241y b\341\272\261ng Core hi\341"
-   "\273\207n t\341\272\241i.",
+   "X\303\263a thi\341\272\277t l\341\272\255p tr\303\254nh gi\341\272\243 l\341\272\255p, \304\221"
+   "\306\260\341\273\243c d\303\271ng cho t\341\272\245t c\341\272\243 n\341\273\231i dung ch\341"
+   "\272\241y b\341\272\261ng tr\303\254nh gi\341\272\243 l\341\272\255p hi\341\273\207n t\341\272"
+   "\241i.",
    "X\303\263a thi\341\272\277t l\341\272\255p tr\303\262 ch\306\241i, ch\341\273\211 \304\221\306"
    "\260\341\273\243c d\303\271ng cho tr\303\262 ch\306\241i c\341\273\245 th\341\273\203 n\303\240y"
    ".",
    "X\303\263a thi\341\272\277t l\341\272\255p to\303\240n h\341\273\207 th\341\273\221ng, \304\221"
-   "\306\260\341\273\243c d\303\271ng cho t\341\272\245t c\341\272\243 tr\303\262 ch\306\241i v\303"
-   "\240 t\341\272\245t c\341\272\243 Core.",
-   "X\303\263a thi\341\272\277t l\341\272\255p th\306\260 m\341\273\245c tr\303\262 ch\306\241i, "
-   "\304\221\306\260\341\273\243c d\303\271ng cho t\341\272\245t c\341\272\243 tr\303\262 ch\306\241"
-   "i trong th\306\260 m\341\273\245c l\303\240m vi\341\273\207c hi\341\273\207n t\341\272\241i.",
+   "\306\260\341\273\243c d\303\271ng cho t\341\272\245t c\341\272\243 n\341\273\231i dung v\303\240"
+   " tr\303\254nh gi\341\272\243 l\341\272\255p.",
+   "X\303\263a thi\341\272\277t l\341\272\255p th\306\260 m\341\273\245c n\341\273\231i dung, \304"
+   "\221\306\260\341\273\243c d\303\271ng cho t\341\272\245t c\341\272\243 n\341\273\231i dung trong"
+   " th\306\260 m\341\273\245c l\303\240m vi\341\273\207c hi\341\273\207n t\341\272\241i.",
    "L\306\260u thi\341\272\277t l\341\272\255p b\341\273\231 \304\221\341\273\225 b\303\263ng hi\341"
    "\273\207n t\341\272\241i th\303\240nh m\341\273\231t b\341\273\231 \304\221\341\273\225 b\303"
    "\263ng s\341\272\265n c\303\263 m\341\273\233i.",
@@ -10827,15 +10908,15 @@ static const struct
    "L\306\260u thi\341\272\277t l\341\272\255p b\341\273\231 \304\221\341\273\225 b\303\263ng hi\341"
    "\273\207n t\341\272\241i.",
    "L\306\260u thi\341\272\277t l\341\272\255p b\341\273\231 \304\221\341\273\225 b\303\263ng hi\341"
-   "\273\207n t\341\272\241i l\303\240m m\341\272\267c \304\221\341\273\213nh cho tr\303\262 ch\306"
-   "\241i.",
+   "\273\207n t\341\272\241i l\303\240m m\341\272\267c \304\221\341\273\213nh cho n\341\273\231i dun"
+   "g.",
    "L\306\260u c\303\241c c\303\240i \304\221\341\272\267t b\341\273\231 \304\221\341\273\225 b\303"
    "\263ng hi\341\273\207n t\341\272\241i l\303\240m c\303\240i \304\221\341\272\267t m\341\272\267c"
    " \304\221\341\273\213nh to\303\240n h\341\273\207 th\341\273\221ng.",
-   "L\306\260u thi\341\272\277t l\341\272\255p b\341\273\231 \304\221\341\273\225 b\303\263ng hi\341"
-   "\273\207n t\341\272\241i l\303\240m m\341\272\267c \304\221\341\273\213nh cho t\341\272\245t c"
-   "\341\272\243 t\341\273\207p trong th\306\260 m\341\273\245c tr\303\262 ch\306\241i hi\341\273"
-   "\207n t\341\272\241i.",
+   "L\306\260u thi\341\272\277t l\341\272\255p b\341\273\231 l\341\273\215c hi\341\273\207n t\341"
+   "\272\241i l\303\240m m\341\272\267c \304\221\341\273\213nh cho t\341\272\245t c\341\272\243 t"
+   "\341\273\207p trong th\306\260 m\341\273\245c n\341\273\231i dung hi\341\273\207n t\341\272\241i"
+   ".",
    "L\306\260u m\341\273\231t b\341\273\231 \304\221\341\273\225 b\303\263ng \304\221\303\243 thi"
    "\341\272\277t l\341\272\255p s\341\272\265n, li\303\252n k\341\272\277t v\341\273\233i b\341\273"
    "\231 l\341\273\215c g\341\273\221c \304\221ang t\341\272\243i v\303\240 ch\341\273\211 bao g\341"
@@ -10854,11 +10935,11 @@ static const struct
    "\303\254nh theo chi\341\273\201u d\341\273\215c v\303\240 hi\341\273\203n th\341\273\213 t\341"
    "\273\253ng ph\341\272\247n c\341\273\247a m\303\240n h\303\254nh theo s\341\273\221 l\306\260"
    "\341\273\243ng khung h\303\254nh ph\341\273\245.",
-   "Cho c\303\241c core s\341\273\255 d\341\273\245ng ph\341\272\247n c\341\273\251ng hi\341\273\203"
-   "n th\341\273\213 ri\303\252ng m\341\273\231t ng\341\273\257 c\341\272\243nh ri\303\252ng. Tr\303"
-   "\241nh ph\341\272\243i gi\341\272\243 \304\221\341\273\213nh thay \304\221\341\273\225i tr\341"
-   "\272\241ng th\303\241i ph\341\272\247n c\341\273\251ng gi\341\273\257a c\303\241c khung h\303"
-   "\254nh.",
+   "Cho c\303\241c tr\303\254nh gi\341\272\243 l\341\272\255p s\341\273\255 d\341\273\245ng ph\341"
+   "\272\247n c\341\273\251ng hi\341\273\203n th\341\273\213 ri\303\252ng m\341\273\231t ng\341\273"
+   "\257 c\341\272\243nh ri\303\252ng. Tr\303\241nh ph\341\272\243i gi\341\272\243 \304\221\341\273"
+   "\213nh thay \304\221\341\273\225i tr\341\272\241ng th\303\241i ph\341\272\247n c\341\273\251ng g"
+   "i\341\273\257a c\303\241c khung h\303\254nh.",
    "Th\303\252m hi\341\273\207u \341\273\251ng l\303\240m m\341\273\235 nh\341\272\271 cho h\303\254"
    "nh \341\272\243nh \304\221\341\273\203 l\303\240m m\341\273\201m c\303\241c c\341\272\241nh pixe"
    "l c\341\273\251ng. T\303\271y ch\341\273\215n n\303\240y h\341\272\247u nh\306\260 kh\303\264ng "
@@ -10899,23 +10980,23 @@ static const struct
    "\341\273\251ng ho\341\272\267c phi\303\252n b\341\272\243n h\341\273\207 \304\221i\341\273\201u "
    "h\303\240nh c\305\251.",
 #if defined(RARCH_MOBILE)
-   "V\341\273\213 tr\303\255 theo chi\341\273\201u ngang c\341\273\247a tr\303\262 ch\306\241i khi k"
-   "hung nh\303\254n r\341\273\231ng h\306\241n chi\341\273\201u r\341\273\231ng n\341\273\231i dung"
-   ". 0,0 l\303\240 c\341\273\261c tr\303\241i, 0,5 l\303\240 \341\273\237 gi\341\273\257a, 1,0 l"
-   "\303\240 c\341\273\261c ph\341\272\243i. (H\306\260\341\273\233ng d\341\273\215c)",
-   "V\341\273\213 tr\303\255 theo chi\341\273\201u d\341\273\215c c\341\273\247a tr\303\262 ch\306"
-   "\241i khi khung nh\303\254n cao h\306\241n chi\341\273\201u cao c\341\273\247a n\341\273\231i du"
-   "ng. 0,0 l\303\240 tr\303\252n c\303\271ng, 0,5 l\303\240 \341\273\237 gi\341\273\257a, 1,0 l\303"
-   "\240 d\306\260\341\273\233i c\303\271ng. (H\306\260\341\273\233ng d\341\273\215c)",
+   "V\341\273\213 tr\303\255 theo chi\341\273\201u ngang c\341\273\247a n\341\273\231i dung khi khun"
+   "g nh\303\254n r\341\273\231ng h\306\241n chi\341\273\201u r\341\273\231ng n\341\273\231i dung. 0"
+   ",0 l\303\240 c\341\273\261c tr\303\241i, 0,5 l\303\240 \341\273\237 gi\341\273\257a, 1,0 l\303"
+   "\240 c\341\273\261c ph\341\272\243i. (H\306\260\341\273\233ng d\341\273\215c)",
+   "V\341\273\213 tr\303\255 theo chi\341\273\201u d\341\273\215c c\341\273\247a n\341\273\231i dung"
+   " khi khung nh\303\254n cao h\306\241n chi\341\273\201u cao c\341\273\247a n\341\273\231i dung. 0"
+   ",0 l\303\240 tr\303\252n c\303\271ng, 0,5 l\303\240 \341\273\237 gi\341\273\257a, 1,0 l\303\240 "
+   "d\306\260\341\273\233i c\303\271ng. (H\306\260\341\273\233ng d\341\273\215c)",
 #endif
-   "V\341\273\213 tr\303\255 theo chi\341\273\201u ngang c\341\273\247a tr\303\262 ch\306\241i khi k"
-   "hung nh\303\254n r\341\273\231ng h\306\241n chi\341\273\201u r\341\273\231ng c\341\273\247a n"
-   "\341\273\231i dung. 0,0 l\303\240 c\341\273\261c tr\303\241i, 0,5 l\303\240 \341\273\237 gi\341"
-   "\273\257a, 1,0 l\303\240 c\341\273\261c ph\341\272\243i.",
-   "V\341\273\213 tr\303\255 theo chi\341\273\201u d\341\273\215c c\341\273\247a tr\303\262 ch\306"
-   "\241i khi khung nh\303\254n cao h\306\241n chi\341\273\201u cao c\341\273\247a n\341\273\231i du"
-   "ng. 0,0 l\303\240 tr\303\252n c\303\271ng, 0,5 l\303\240 \341\273\237 gi\341\273\257a, 1,0 l\303"
-   "\240 d\306\260\341\273\233i c\303\271ng.",
+   "V\341\273\213 tr\303\255 theo chi\341\273\201u ngang c\341\273\247a n\341\273\231i dung khi khun"
+   "g nh\303\254n r\341\273\231ng h\306\241n chi\341\273\201u r\341\273\231ng c\341\273\247a n\341"
+   "\273\231i dung. 0,0 l\303\240 c\341\273\261c tr\303\241i, 0,5 l\303\240 \341\273\237 gi\341\273"
+   "\257a, 1,0 l\303\240 c\341\273\261c ph\341\272\243i.",
+   "V\341\273\213 tr\303\255 theo chi\341\273\201u d\341\273\215c c\341\273\247a n\341\273\231i dung"
+   " khi khung nh\303\254n cao h\306\241n chi\341\273\201u cao c\341\273\247a n\341\273\231i dung. 0"
+   ",0 l\303\240 tr\303\252n c\303\271ng, 0,5 l\303\240 \341\273\237 gi\341\273\257a, 1,0 l\303\240 "
+   "d\306\260\341\273\233i c\303\271ng.",
    "Chi\341\273\201u cao khung nh\303\254n t\303\271y ch\341\273\211nh \304\221\306\260\341\273\243c"
    " s\341\273\255 d\341\273\245ng n\341\272\277u T\341\273\267 l\341\273\207 khung h\303\254nh \304"
    "\221\306\260\341\273\243c \304\221\341\272\267t th\303\240nh 'T\341\273\267 l\341\273\207 khung "
@@ -11041,7 +11122,7 @@ static const struct
    "T\341\272\241o\n\304\220i\341\273\203m ph\341\273\245c h\341\273\223i",
 #endif
    "Ch\341\272\277 \304\221\341\273\231 truy c\341\272\255p RetroArch b\341\272\255t. Menu Ch\303"
-   "\255nh T\341\272\243i Core.",
+   "\255nh T\341\272\243i tr\303\254nh gi\341\272\243 l\341\272\255p.",
    "Th\303\240nh t\303\255ch \304\221\303\243 m\341\273\237 kh\303\263a",
    "\304\220\303\243 th\303\252m v\303\240o y\303\252u th\303\255ch",
    "\304\220\303\243 th\303\252m v\303\240o danh s\303\241ch ph\303\241t",
@@ -11134,12 +11215,14 @@ static const struct
    "\262 ch\306\241i.",
    "Ch\341\272\277 \304\221\341\273\231 Th\341\273\255 th\303\241ch Th\303\240nh t\303\255ch \304"
    "\221\303\243 b\341\273\213 thay \304\221\341\273\225i b\341\273\237i m\303\241y ch\341\273\247.",
-   "M\341\273\231t tr\341\272\241ng th\303\241i l\306\260u \304\221\303\243 \304\221\306\260\341\273"
-   "\243c t\341\272\243i. Ch\341\272\277 \304\221\341\273\231 Th\341\273\255 th\303\241ch Th\303\240"
-   "nh t\303\255ch b\341\273\213 t\341\272\257t cho phi\303\252n hi\341\273\207n t\341\272\241i.",
-   "M\341\273\231t cheat \304\221\303\243 \304\221\306\260\341\273\243c k\303\255ch ho\341\272\241t."
-   " Ch\341\272\277 \304\221\341\273\231 Th\341\273\255 th\303\241ch Th\303\240nh t\303\255ch b\341"
-   "\273\213 t\341\272\257t cho phi\303\252n hi\341\273\207n t\341\272\241i.",
+   "\304\220\303\243 t\341\272\243i tr\341\272\241ng th\303\241i l\306\260u. Ch\341\272\277 \304\221"
+   "\341\273\231 th\341\273\255 th\303\241ch c\341\273\247a Th\303\240nh t\303\255ch \304\221\303"
+   "\243 \304\221\306\260\341\273\243c t\341\272\257t trong phi\303\252n hi\341\273\207n t\341\272"
+   "\241i.",
+   "M\341\273\231t m\303\243 gian l\341\272\255n \304\221\303\243 \304\221\306\260\341\273\243c k"
+   "\303\255ch ho\341\272\241t. Ch\341\272\277 \304\221\341\273\231 Th\341\273\255 th\303\241ch Th"
+   "\303\240nh t\303\255ch b\341\273\213 t\341\272\257t cho phi\303\252n hi\341\273\207n t\341\272"
+   "\241i.",
    "Ch\341\272\277 \304\221\341\273\231 Th\303\240nh T\303\255ch Kh\303\263 \304\221\303\243 b\341"
    "\272\255t, L\306\260u tr\341\272\241ng th\303\241i v\303\240 Quay l\341\272\241i b\341\273\213 t"
    "\341\272\257t.",
@@ -11157,14 +11240,15 @@ static const struct
    "Ch\341\272\277 \304\221\341\273\231 Th\341\273\255 th\303\241ch \304\221\303\243 t\341\272\241m "
    "d\341\273\253ng. B\341\272\241n kh\303\264ng th\341\273\203 nh\341\272\255n Th\303\240nh t\303"
    "\255ch Ch\341\272\277 \304\221\341\273\231 Th\341\273\255 th\303\241ch cho %s khi d\303\271ng %s",
-   "Th\341\273\255 th\303\241ch t\341\272\241m d\341\273\253ng. Kh\303\264ng cho ph\303\251p vsync s"
-   "wap interval l\341\273\233n h\306\241n 1.",
+   "Ch\341\272\277 \304\221\341\273\231 th\341\273\255 th\303\241ch \304\221\303\243 t\341\272\241m "
+   "d\341\273\253ng. Kh\303\264ng cho ph\303\251p kho\341\272\243ng th\341\273\235i gian chuy\341"
+   "\273\203n \304\221\341\273\225i VSync l\341\273\233n h\306\241n 1.",
    "B\341\272\241n ph\341\272\243i t\341\272\241m d\341\273\253ng ho\341\272\267c t\341\272\257t Ch"
-   "\341\272\277 \304\221\341\273\231 Th\341\273\255 th\303\241ch Th\303\240nh t\303\255ch \304\221"
-   "\341\273\203 t\341\272\243i l\306\260u srm.",
+   "\341\272\277 \304\221\341\273\231 th\341\273\255 th\303\241ch c\341\273\247a Th\303\240nh t\303"
+   "\255ch \304\221\341\273\203 t\341\272\243i b\341\272\243n l\306\260u srm.",
    "B\341\272\241n ph\341\272\243i t\341\272\241m d\341\273\253ng ho\341\272\267c t\341\272\257t Ch"
-   "\341\272\277 \304\221\341\273\231 Hardcore Achievements \304\221\341\273\203 t\341\272\243i tr"
-   "\341\272\241ng th\303\241i l\306\260u.",
+   "\341\272\277 \304\221\341\273\231 th\341\273\255 th\303\241ch c\341\273\247a Th\303\240nh t\303"
+   "\255ch \304\221\341\273\203 t\341\272\243i tr\341\272\241ng th\303\241i l\306\260u.",
    "RetroAchievements: \304\220\303\243 \304\221\304\203ng nh\341\272\255p d\306\260\341\273\233i t"
    "\303\252n \"%s\".",
    "Phi\303\252n \304\221\304\203ng nh\341\272\255p Th\303\240nh t\303\255ch Retro \304\221\303\243 "
@@ -11191,10 +11275,10 @@ static const struct
    "\341\272\241ng",
    "\304\220ang k\341\272\277t n\341\273\221i v\303\240o c\341\273\225ng",
    "Khe k\341\272\277t n\341\273\221i",
-   "Tr\303\262 ch\306\241i CRC32 kh\303\241c nhau. Kh\303\264ng th\341\273\203 d\303\271ng c\303\241"
-   "c tr\303\262 ch\306\241i kh\303\241c.",
-   "B\341\273\217 qua vi\341\273\207c m\341\273\237 tr\303\262 ch\306\241i. B\341\273\231 th\341\273"
-   "\261c thi s\341\272\275 t\341\273\261 m\341\273\237.",
+   "N\341\273\231i dung CRC32 kh\303\241c nhau. Kh\303\264ng th\341\273\203 d\303\271ng c\303\241c t"
+   "r\303\262 ch\306\241i kh\303\241c.",
+   "B\341\273\217 qua vi\341\273\207c t\341\272\243i n\341\273\231i dung. B\341\273\231 th\341\273"
+   "\261c thi s\341\272\275 t\341\273\261 t\341\272\243i.",
    "M\303\241y ch\341\273\247 \304\221ang ch\341\272\241y tr\303\262 ch\306\241i kh\303\241c.",
    "Sao l\306\260u core \304\221\303\243 c\303\240i \304\221\341\272\267t tr\306\260\341\273\233c "
    "\304\221\303\263 t\341\273\223n t\341\272\241i: ",
@@ -11229,26 +11313,29 @@ static const struct
    ":",
    "T\341\272\245t c\341\272\243 t\303\271y ch\341\273\215n core \304\221\303\243 \304\221\306\260"
    "\341\273\243c \304\221\341\272\267t l\341\272\241i m\341\272\267c \304\221\341\273\213nh.",
-   "T\341\273\207p g\303\241n l\341\272\241i ph\303\255m c\341\273\247a core \304\221\303\243 \304"
-   "\221\306\260\341\273\243c t\341\272\243i.",
+   "\304\220\303\243 t\341\272\243i t\341\273\207p g\303\241n l\341\272\241i ph\303\255m c\341\273"
+   "\247a tr\303\254nh gi\341\272\243 l\341\272\255p.",
    "B\341\272\243n sao l\306\260u core \304\221\303\243 ch\341\273\215n \304\221\303\243 \304\221"
    "\306\260\341\273\243c c\303\240i \304\221\341\272\267t: ",
    "Kh\303\264i ph\341\273\245c core ho\303\240n t\341\272\245t: ",
    "C\303\240i \304\221\341\272\267t core b\341\273\213 v\303\264 hi\341\273\207u h\303\263a - core "
    "b\341\273\213 kh\303\263a: ",
    "Kh\303\264i ph\341\273\245c core th\341\272\245t b\341\272\241i: ",
-   "File core \304\221\306\260\341\273\243c ch\341\273\215n kh\303\264ng h\341\273\243p l\341\273"
-   "\207: ",
-   "X\303\263a core kh\341\273\217i danh s\303\241ch 'Contentless Cores' th\341\272\245t b\341\272"
-   "\241i: ",
+   "T\341\273\207p tr\303\254nh gi\341\272\243 l\341\272\255p \304\221\306\260\341\273\243c ch\341"
+   "\273\215n kh\303\264ng h\341\273\243p l\341\273\207: ",
+   "X\303\263a tr\303\254nh gi\341\272\243 l\341\272\255p kh\341\273\217i danh s\303\241ch 'Tr\303"
+   "\254nh gi\341\272\243 l\341\272\255p kh\303\264ng c\341\272\247n n\341\273\231i dung' th\341\272"
+   "\245t b\341\272\241i: ",
 #ifdef HAVE_MIST
-   "Core hi\341\273\207n \304\221ang \304\221\306\260\341\273\243c t\341\272\243i xu\341\273\221ng",
-   "\304\220ang c\303\240i \304\221\341\272\267t core: ",
+   "Tr\303\254nh gi\341\272\243 l\341\272\255p hi\341\273\207n \304\221ang \304\221\306\260\341\273"
+   "\243c t\341\272\243i xu\341\273\221ng",
+   "\304\220ang c\303\240i \304\221\341\272\267t tr\303\254nh gi\341\272\243 l\341\272\255p: ",
    "Core s\341\272\275 \304\221\306\260\341\273\243c g\341\273\241 khi tho\303\241t RetroArch.",
 #endif
    "M\341\273\237 kh\303\263a core th\341\272\245t b\341\272\241i: ",
-   "Th\303\252m core v\303\240o danh s\303\241ch 'Contentless Cores' th\341\272\245t b\341\272\241i:"
-   " ",
+   "Th\303\252m tr\303\254nh gi\341\272\243 l\341\272\255p v\303\240o danh s\303\241ch 'Tr\303\254nh"
+   " gi\341\272\243 l\341\272\255p kh\303\264ng c\341\272\247n n\341\273\231i dung' th\341\272\245t "
+   "b\341\272\241i: ",
    "C\341\272\255p nh\341\272\255t core b\341\273\213 t\341\272\257t - core \304\221\303\243 b\341"
    "\273\213 kh\303\263a: ",
    "Kh\303\264ng t\303\254m th\341\272\245y tr\303\254nh \304\221i\341\273\201u khi\341\273\203n ti"
@@ -11259,15 +11346,15 @@ static const struct
    "\207u h\341\273\243p l\341\273\207",
    "Kh\303\264ng th\341\273\203 m\341\273\237 \304\221\306\260\341\273\235ng d\341\273\257 li\341"
    "\273\207u",
-   "Kh\303\264ng th\341\273\203 \304\221\341\273\215c t\341\273\207p tr\303\262 ch\306\241i",
+   "Kh\303\264ng th\341\273\203 \304\221\341\273\215c t\341\273\207p n\341\273\231i dung",
    "Kh\303\264ng th\341\273\203 \304\221\341\273\215c ti\303\252u \304\221\341\273\201 movie.",
    "Kh\303\264ng th\341\273\203 \304\221\341\273\215c tr\341\272\241ng th\303\241i t\341\273\253 mov"
    "ie.",
    "Kh\303\264ng kh\341\273\233p m\303\243 ki\341\273\203m tra CRC32 gi\341\273\257a t\341\273\207p "
-   "tr\303\262 ch\306\241i v\303\240 m\303\243 \304\221\303\243 l\306\260u trong ph\341\272\247n "
-   "\304\221\341\272\247u t\341\273\207p ph\303\241t l\341\272\241i. Vi\341\273\207c ph\303\241t l"
-   "\341\272\241i r\341\272\245t c\303\263 th\341\273\203 s\341\272\275 b\341\273\213 l\341\273\207c"
-   "h \304\221\341\273\223ng b\341\273\231.",
+   "n\341\273\231i dung v\303\240 m\303\243 \304\221\303\243 l\306\260u trong ph\341\272\247n \304"
+   "\221\341\272\247u t\341\273\207p ph\303\241t l\341\272\241i. Vi\341\273\207c ph\303\241t l\341"
+   "\272\241i r\341\272\245t c\303\263 th\341\273\203 s\341\272\275 b\341\273\213 l\341\273\207ch "
+   "\304\221\341\273\223ng b\341\273\231.",
    "Th\341\273\235i gian t\303\271y ch\341\273\211nh \304\221\303\243 \304\221\306\260\341\273\243c "
    "cung c\341\272\245p",
    "\304\220ang gi\341\272\243i n\303\251n d\341\273\257 li\341\273\207u.",
@@ -11278,10 +11365,10 @@ static const struct
    "%s (%u/%u) ch\306\260a c\341\272\245u h\303\254nh, s\341\273\255 d\341\273\245ng d\341\273\261 p"
    "h\303\262ng",
    "%s (%u/%u) ch\306\260a c\341\272\245u h\303\254nh",
-   "Kh\303\264ng t\303\254m th\341\272\245y b\341\272\243n v\303\241 tr\303\262 ch\306\241i h\341"
-   "\273\243p l\341\273\207.",
+   "Kh\303\264ng t\303\254m th\341\272\245y b\341\272\243n v\303\241 n\341\273\231i dung h\341\273"
+   "\243p l\341\273\207.",
    "\304\220\303\243 t\341\272\243i t\341\273\207p g\303\241n l\341\272\241i ph\303\255m cho th\306"
-   "\260 m\341\273\245c tr\303\262 ch\306\241i.",
+   "\260 m\341\273\245c n\341\273\231i dung.",
    "T\341\272\257t Wi-Fi...",
    "Ng\341\272\257t k\341\272\277t n\341\273\221i Wi-Fi...",
    "Ng\341\272\257t k\341\272\277t n\341\273\221i thi\341\272\277t b\341\273\213 kh\341\273\217i c"
@@ -11295,19 +11382,21 @@ static const struct
    "\304\220\303\243 \304\221\303\263ng khay \304\221\304\251a \341\272\243o.",
    "\304\220\303\243 nh\341\272\243 khay \304\221\304\251a \341\272\243o.",
    "\304\220ang t\341\272\243i xu\341\273\221ng",
-   "\304\220ang t\341\272\243i core: ",
+   "\304\220ang t\341\272\243i tr\303\254nh gi\341\272\243 l\341\272\255p:",
    "T\341\272\243i xu\341\273\221ng th\341\272\245t b\341\272\241i",
    "\341\273\224 \304\221\304\251a %d",
    "\304\220ang sao ch\303\251p \304\221\304\251a...",
    "B\341\272\255t Wi-Fi...",
    "L\341\273\227i",
-   "Core Libretro y\303\252u c\341\272\247u tr\303\262 ch\306\241i, nh\306\260ng kh\303\264ng c\303"
-   "\263 g\303\254 \304\221\306\260\341\273\243c cung c\341\272\245p.",
-   "Core Libretro y\303\252u c\341\272\247u tr\303\262 ch\306\241i \304\221\341\272\267c bi\341\273"
-   "\207t, nh\306\260ng kh\303\264ng c\303\263 tr\303\262 ch\306\241i n\303\240o \304\221\306\260"
-   "\341\273\243c cung c\341\272\245p.",
-   "Core kh\303\264ng h\341\273\227 tr\341\273\243 VFS, v\303\240 vi\341\273\207c t\341\272\243i t"
-   "\341\273\253 b\341\272\243n sao c\341\273\245c b\341\273\231 th\341\272\245t b\341\272\241i",
+   "Tr\303\254nh gi\341\272\243 l\341\272\255p Libretro y\303\252u c\341\272\247u c\303\263 n\341"
+   "\273\231i dung, nh\306\260ng ch\306\260a c\303\263 n\341\273\231i dung n\303\240o \304\221\306"
+   "\260\341\273\243c cung c\341\272\245p.",
+   "Tr\303\254nh gi\341\272\243 l\341\272\255p Libretro y\303\252u c\341\272\247u n\341\273\231i dun"
+   "g \304\221\341\272\267c bi\341\273\207t, nh\306\260ng kh\303\264ng c\303\263 n\341\273\231i dung"
+   " n\303\240o \304\221\306\260\341\273\243c cung c\341\272\245p.",
+   "Tr\303\254nh gi\341\272\243 l\341\272\255p kh\303\264ng h\341\273\227 tr\341\273\243 VFS v\303"
+   "\240 kh\303\264ng th\341\273\203 t\341\272\243i t\341\273\253 b\341\272\243n sao c\341\273\245c "
+   "b\341\273\231",
    "L\341\273\227i khi ph\303\242n t\303\255ch \304\221\341\273\221i s\341\273\221.",
    "L\341\273\227i khi x\303\263a file t\303\271y ch\341\273\215n core.",
    "L\341\273\227i khi x\303\263a t\341\273\207p g\303\241n l\341\272\241i ph\303\255m.",
@@ -11325,7 +11414,7 @@ static const struct
    "Kh\303\264ng ch\341\272\245p nh\341\272\255n \304\221\306\260\341\273\243c spectator \304\221"
    "\341\272\277n.",
    "Kh\303\264ng c\341\272\245p ph\303\241t \304\221\306\260\341\273\243c b\341\273\231 nh\341\273"
-   "\233 cho tr\303\262 ch\306\241i \304\221\303\243 v\303\241...",
+   "\233 cho n\341\273\231i dung \304\221\303\243 v\303\241...",
    "Kh\303\264ng th\341\273\203 th\303\252m \304\221\304\251a",
    "Kh\303\264ng \303\241p d\341\273\245ng \304\221\306\260\341\273\243c b\341\273\231 \304\221\341"
    "\273\225 b\303\263ng.",
@@ -11340,7 +11429,7 @@ static const struct
    "Kh\303\264ng th\341\273\203 v\303\240o Ch\341\272\277 \304\221\341\273\231 Game \342\200\223 h"
    "\303\243y \304\221\341\272\243m b\341\272\243o daemon GameMode \304\221\303\243 \304\221\306\260"
    "\341\273\243c c\303\240i \304\221\341\272\267t v\303\240 \304\221ang ch\341\272\241y",
-   "Gi\341\272\243i n\303\251n tr\303\262 ch\306\241i t\341\273\253 t\341\273\207p n\303\251n th\341"
+   "Gi\341\272\243i n\303\251n n\341\273\231i dung t\341\273\253 t\341\273\207p n\303\251n th\341"
    "\272\245t b\341\272\241i",
    "L\341\272\245y bi\341\273\207t danh t\341\273\253 client th\341\272\245t b\341\272\241i.",
    "T\341\272\243i th\341\272\245t b\341\272\241i.",
@@ -11468,12 +11557,12 @@ static const struct
    "\304\220\303\243 t\341\272\243i tr\341\272\241ng th\303\241i t\341\273\253 khe: T\341\273\261 "
    "\304\221\341\273\231ng.",
    "\304\220ang t\341\272\243i",
-   "\304\220ang m\341\273\237 t\341\273\207p tr\303\262 ch\306\241i",
+   "\304\220ang t\341\272\243i t\341\273\207p n\341\273\231i dung",
    "\304\220ang t\341\272\243i tr\341\272\241ng th\303\241i m\341\273\245c t\341\273\253",
    "\304\220ang t\341\272\243i file y\303\252u th\303\255ch",
    "\304\220ang t\341\272\243i t\341\273\207p m\341\273\245c \304\221\303\243 m\341\273\237 g\341"
    "\272\247n \304\221\303\242y",
-   "\304\220ang t\341\272\243i tr\303\262 ch\306\241i",
+   "\304\220ang t\341\272\243i tr\341\272\241ng th\303\241i",
    "Vui l\303\262ng t\341\272\243i m\341\273\231t core tr\306\260\341\273\233c.",
    "C\341\273\245c b\341\273\231",
 #ifdef HAVE_LAKKA
@@ -11488,19 +11577,19 @@ static const struct
    "\233i SSID=%s v\303\240 M\341\272\255t kh\341\272\251u=%s",
    "T\341\272\257t \304\220i\341\273\203m Truy c\341\272\255p Wi-Fi.",
 #endif
-   "File DAT arcade ch\341\273\215n kh\303\264ng h\341\273\243p l\341\273\207.",
-   "Kh\303\264ng t\341\272\243i \304\221\306\260\341\273\243c file DAT arcade (\304\221\341\273\213n"
-   "h d\341\272\241ng kh\303\264ng h\341\273\243p l\341\273\207?)",
-   "File DAT arcade ch\341\273\215n qu\303\241 l\341\273\233n (kh\303\264ng \304\221\341\273\247 b"
-   "\341\273\231 nh\341\273\233 tr\341\273\221ng).",
+   "T\341\273\207p DAT arcade ch\341\273\215n kh\303\264ng h\341\273\243p l\341\273\207.",
+   "Kh\303\264ng t\341\272\243i \304\221\306\260\341\273\243c t\341\273\207p DAT arcade (\304\221"
+   "\341\273\213nh d\341\272\241ng kh\303\264ng h\341\273\243p l\341\273\207?)",
+   "T\341\273\207p DAT arcade ch\341\273\215n qu\303\241 l\341\273\233n (kh\303\264ng \304\221\341"
+   "\273\247 b\341\273\231 nh\341\273\233 tr\341\273\221ng).",
    "Qu\303\251t ho\303\240n t\341\272\245t: ",
    "C\341\272\245u h\303\254nh qu\303\251t th\341\273\247 c\303\264ng kh\303\264ng h\341\273\243p l"
    "\341\273\207.",
-   "Kh\303\264ng ph\303\241t hi\341\273\207n tr\303\262 ch\306\241i h\341\273\243p l\341\273\207.",
+   "Kh\303\264ng ph\303\241t hi\341\273\207n n\341\273\231i dung h\341\273\243p l\341\273\207.",
    "\304\220ang qu\303\251t: ",
    "D\341\273\215n c\303\241c m\341\273\245c M3U: ",
    "Ki\341\273\203m tra c\303\241c m\341\273\245c hi\341\273\207n t\341\272\241i: ",
-   "Qu\303\251t tr\303\262 ch\306\241i ",
+   "Qu\303\251t n\341\273\231i dung ",
    "B\341\273\231 nh\341\273\233",
    "C\341\272\243nh b\303\241o: Thi\341\272\277u t\303\240i nguy\303\252n, h\303\243y s\341\273\255 "
    "d\341\273\245ng Online Updater n\341\272\277u c\303\263.",
@@ -11557,7 +11646,7 @@ static const struct
    "Qu\303\251t m\303\241y ch\341\273\247 Tr\303\262 ch\306\241i tr\341\273\261c tuy\341\272\277n...",
    "Qu\303\251t Tr\303\262 ch\306\241i tr\341\273\261c tuy\341\272\277n ho\303\240n t\341\272\245t.",
    "Ph\341\272\243i m\341\273\237 tr\303\262 ch\306\241i tr\306\260\341\273\233c khi b\341\272\257t "
-   "\304\221\341\272\247u Tr\303\262 ch\306\241i tr\341\273\261c tuy\341\272\277n.",
+   "\304\221\341\272\247u n\341\273\231i dung tr\341\273\261c tuy\341\272\277n.",
    "M\341\273\231t l\341\272\247n th\341\273\255 k\341\272\277t n\341\273\221i Tr\303\262 ch\306\241"
    "i tr\341\273\261c tuy\341\272\277n th\341\272\245t b\341\272\241i v\303\254 \304\221\341\273\221"
    "i ph\306\260\306\241ng kh\303\264ng ch\341\272\241y RetroArch, ho\341\272\267c \304\221ang ch"
@@ -11592,8 +11681,8 @@ static const struct
    "Kh\303\264ng c\303\263 tham s\341\273\221 n\303\240o \304\221\306\260\341\273\243c cung c\341"
    "\272\245p v\303\240 kh\303\264ng c\303\263 menu t\303\255ch h\341\273\243p, hi\341\273\203n th"
    "\341\273\213 h\306\260\341\273\233ng d\341\272\253n...",
-   "Kh\303\264ng c\303\263 tr\303\262 ch\306\241i, kh\341\273\237i ch\341\272\241y core gi\341\272"
-   "\243 l\341\272\255p.",
+   "Kh\303\264ng c\303\263 n\341\273\231i dung, kh\341\273\237i ch\341\272\241y tr\303\254nh gi\341"
+   "\272\243 l\341\272\255p.",
    "Kh\303\264ng c\303\263 \304\221\304\251a n\303\240o \304\221\306\260\341\273\243c \304\221\306"
    "\260a v\303\240o \341\273\225.",
    "Ch\306\260a c\303\263 L\306\260u tr\341\272\241ng th\303\241i n\303\240o b\341\273\213 ghi \304"
@@ -11629,8 +11718,8 @@ static const struct
    "\241ch: ",
    "L\303\240m m\341\273\233i th\341\272\245t b\341\272\241i - file DAT arcade qu\303\241 l\341\273"
    "\233n (b\341\273\231 nh\341\273\233 kh\303\264ng \304\221\341\273\247): ",
-   "L\303\240m m\341\273\233i th\341\272\245t b\341\272\241i - th\306\260 m\341\273\245c tr\303\262 "
-   "ch\306\241i kh\303\264ng h\341\273\243p l\341\273\207/b\341\273\213 thi\341\272\277u: ",
+   "L\303\240m m\341\273\233i th\341\272\245t b\341\272\241i - th\306\260 m\341\273\245c n\341\273"
+   "\231i dung kh\303\264ng h\341\273\243p l\341\273\207/b\341\273\213 thi\341\272\277u: ",
    "L\303\240m m\341\273\233i th\341\272\245t b\341\272\241i - core kh\303\264ng h\341\273\243p l"
    "\341\273\207: ",
    "L\303\240m m\341\273\233i th\341\272\245t b\341\272\241i - file DAT arcade kh\303\264ng h\341"
@@ -11656,8 +11745,8 @@ static const struct
    "\304\221o\303\241n \304\221\303\243 b\341\273\213 v\303\264 hi\341\273\207u.",
    "L\306\260u tr\341\272\241ng th\303\241i th\341\272\245t b\341\272\241i. Khung d\341\273\261 \304"
    "\221o\303\241n \304\221\303\243 b\341\273\213 v\303\264 hi\341\273\207u.",
-   "Chu\341\272\251n b\341\273\213 qu\303\251t tr\303\262 ch\306\241i...",
-   "Nh\341\272\245n l\341\272\241i \304\221\341\273\203 \304\221\303\263ng tr\303\262 ch\306\241i...",
+   "Chu\341\272\251n b\341\273\213 qu\303\251t n\341\273\231i dung...",
+   "Nh\341\272\245n l\341\272\241i \304\221\341\273\203 \304\221\303\263ng n\341\273\231i dung...",
    "Nh\341\272\245n l\341\272\241i \304\221\341\273\203 tho\303\241t...",
    "Nh\341\272\245n l\341\272\241i \304\221\341\273\203 \304\221\341\272\267t l\341\272\241i...",
    "M\341\272\241ng ngo\303\240i c\303\263 \304\221\341\273\213a ch\341\273\211 ri\303\252ng ho\341"
@@ -11694,7 +11783,7 @@ static const struct
    "B\341\273\231 Nh\341\273\233 Th\303\241o R\341\273\235i",
    "\304\220\304\251a \304\221\303\243 \304\221\306\260\341\273\243c l\341\272\245y ra kh\341\273"
    "\217i khay.",
-   "\304\220ang x\303\263a t\341\273\207p tr\303\262 ch\306\241i t\341\272\241m th\341\273\235i",
+   "\304\220ang x\303\263a t\341\273\207p n\341\273\231i dung t\341\272\241m th\341\273\235i",
    "Kh\303\264ng th\341\273\203 t\341\272\243i tr\341\272\241ng th\303\241i t\306\260\306\241ng lai "
    "trong khi ph\303\241t l\341\272\241i",
    "Kh\303\264ng ph\341\272\243i t\341\273\253 b\341\272\243n ghi hi\341\273\207n t\341\272\241i",
@@ -11809,9 +11898,9 @@ static const struct
    "B\341\273\217 qua vi\341\273\207c n\341\272\241p SRAM.",
    "Chuy\341\273\203n \304\221\341\273\231ng ch\341\272\255m.",
    "Tua l\303\271i ch\341\272\255m.",
-   "Xin l\341\273\227i, ch\306\260a h\341\273\227 tr\341\273\243: c\303\241c core kh\303\264ng c\341"
-   "\272\247n tr\303\262 ch\306\241i kh\303\264ng th\341\273\203 tham gia Tr\303\262 ch\306\241i tr"
-   "\341\273\261c tuy\341\272\277n.",
+   "R\341\272\245t ti\341\272\277c, ch\306\260a h\341\273\227 tr\341\273\243: c\303\241c tr\303\254n"
+   "h gi\341\272\243 l\341\272\255p kh\303\264ng c\341\272\247n n\341\273\231i dung kh\303\264ng th"
+   "\341\273\203 tham gia tr\341\273\261c tuy\341\272\277n.",
    "SRAM s\341\272\275 kh\303\264ng \304\221\306\260\341\273\243c l\306\260u.",
    "B\341\272\257t \304\221\341\272\247u ph\303\241t l\341\272\241i movie.",
    "B\341\272\257t \304\221\341\272\247u ghi movie v\303\240o",
@@ -11870,9 +11959,9 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (221030u
+      (sizeof(msg_hash_vn_blob) == (224287u
 #ifdef ANDROID
-       + 422u
+       + 373u
 #endif
 #ifdef HAVE_MICROPHONE
        + 155u
@@ -11881,7 +11970,7 @@ typedef char msg_hash_vn_blob_check[
        + 230u
 #endif
 #ifndef HAVE_DYNAMIC
-       + 45u
+       + 59u
 #endif
 #ifdef HAVE_LAKKA
 #ifdef HAVE_LAKKA_SWITCH
@@ -11898,9 +11987,9 @@ typedef char msg_hash_vn_blob_check[
        + 23u
 #endif
 #ifdef HAVE_MIST
-       + 16u
-       + 17u
-       + 22u
+       + 30u
+       + 31u
+       + 36u
 #endif
 #ifdef _3DS
        + 40u
@@ -11981,7 +12070,7 @@ typedef char msg_hash_vn_blob_check[
        + 49u
 #endif
 #ifdef HAVE_QT
-       + 718u
+       + 749u
 #endif
 #ifdef HAVE_GAME_AI
        + 23u
@@ -12016,11 +12105,11 @@ typedef char msg_hash_vn_blob_check[
 #ifdef HAVE_MIST
        + 43u
        + 46u
-       + 18u
-       + 23u
+       + 11u
+       + 37u
        + 31u
-       + 43u
-       + 16u
+       + 52u
+       + 30u
        + 18u
        + 19u
 #endif
@@ -12051,7 +12140,7 @@ typedef char msg_hash_vn_blob_check[
 #if defined(DINGUX)
        + 16u
        + 11u
-       + 12u
+       + 27u
        + 22u
        + 36u
 #endif
@@ -12061,7 +12150,7 @@ typedef char msg_hash_vn_blob_check[
 #if defined(DINGUX)
 #if defined(RS90) || defined(MIYOO)
        + 17u
-       + 12u
+       + 27u
        + 22u
 #endif
 #endif
@@ -12082,7 +12171,7 @@ typedef char msg_hash_vn_blob_check[
        + 51u
 #endif
 #ifndef HAVE_DYNAMIC
-       + 219u
+       + 253u
 #endif
 #ifdef HAVE_LAKKA
        + 38u
@@ -12245,7 +12334,7 @@ typedef char msg_hash_vn_blob_check[
        + 184u
 #endif
 #if defined(DINGUX) && defined(DINGUX_BETA)
-       + 140u
+       + 135u
 #endif
 #if defined(DINGUX)
 #if defined(RS90) || defined(MIYOO)
@@ -12274,8 +12363,8 @@ typedef char msg_hash_vn_blob_check[
        + 27u
 #endif
 #ifdef HAVE_MIST
-       + 41u
-       + 25u
+       + 55u
+       + 39u
        + 46u
 #endif
 #ifdef HAVE_LAKKA
@@ -12555,6 +12644,8 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTPATH_S16,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FORMAT_NEGOTIATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FORMAT_NEGOTIATION_FLOAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FORMAT_NEGOTIATION_INT16,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
@@ -12764,6 +12855,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_IMAGE_HISTORY_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_ENTRY_IDX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
@@ -13769,6 +13861,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SORT_ALPHABETICAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_PLAY_COUNT,
@@ -14473,6 +14566,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GL_DIRECT_SPIRV,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -14941,6 +15035,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_PL_ENTRY_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_DRIVER_SWITCH_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_DUMP_DISC,
    (uint32_t)MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPER,
    (uint32_t)MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPERS_DIRECTORY,
@@ -15782,6 +15877,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GL_DIRECT_SPIRV,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,

@@ -340,7 +340,7 @@ static const struct
    char s_c2f41987[16];
    char s_327b2550[10];
    char s_bbb615a1[44];
-   char s_314539a4[22];
+   char s_314539a4[23];
    char s_8fc168f0[7];
    char s_213c44cf[27];
    char s_502f623c[16];
@@ -576,8 +576,8 @@ static const struct
    char s_145f5880[27];
    char s_b1b9fd35[37];
    char s_0cc72b4d[35];
-   char s_9af4bf52[27];
-   char s_e5d096ab[21];
+   char s_9af4bf52[28];
+   char s_e5d096ab[22];
    char s_b3d0e60e[34];
    char s_044f35cc[34];
    char s_a64d0cc9[45];
@@ -2012,9 +2012,9 @@ static const struct
    char s_8356c98c[26];
    char s_5c7bbce1[26];
    char s_cd916c68[26];
-   char s_8fe41f79[37];
+   char s_8fe41f79[38];
    char s_2c296537[30];
-   char s_519cd5f8[49];
+   char s_519cd5f8[50];
    char s_43ac80a0[13];
    char s_6959ce80[18];
    char s_886631ec[20];
@@ -2023,7 +2023,7 @@ static const struct
    char s_a8bb35b6[10];
    char s_6d353bd6[12];
    char s_3f874a40[14];
-   char s_da093426[21];
+   char s_da093426[22];
    char s_d9b00fbd[27];
    char s_0a008a9d[9];
    char s_9c6ed9ca[18];
@@ -2184,6 +2184,7 @@ static const struct
    char s_59f183c8[24];
    char s_59f183c9[24];
    char s_6b395e21[13];
+   char s_00ab7f5e[45];
    char s_71747541[32];
    char s_b45e4c28[55];
    char s_e92f8e07[52];
@@ -3487,6 +3488,7 @@ static const struct
    char s_0d96ed73[45];
    char s_9f0fd076[131];
    char s_9f0fd077[131];
+   char s_c315b54c[451];
    char s_7a2050af[46];
    char s_d2859556[82];
    char s_ef13be35[97];
@@ -3777,7 +3779,7 @@ static const struct
    char s_eeabb721[17];
    char s_056d83e9[29];
    char s_c8991447[27];
-   char s_38e7fc6d[11];
+   char s_38e7fc6d[12];
    char s_a3030e21[25];
    char s_e3834478[23];
    char s_d0f27355[7];
@@ -3929,7 +3931,7 @@ static const struct
    char s_583a8462[30];
    char s_3c214e5f[40];
    char s_2ada2134[22];
-   char s_00fc26e4[9];
+   char s_00fc26e4[10];
    char s_7c4c8dd7[88];
    char s_45fa49af[64];
    char s_143f28c7[113];
@@ -4753,7 +4755,7 @@ static const struct
    "Parcourir l'URL",
    "Connect\303\251",
    "Adresse URL des ressources sur le buildbot ",
-   "Identifiant du Bundle",
+   "Identifiant du Bundle ",
    "Cache ",
    "Autoriser l'appareil photo",
    "Appareil photo ",
@@ -4991,8 +4993,8 @@ static const struct
    "T\303\251l\303\251chargement de c\305\223urs",
    "R\303\251glages de mise \303\240 jour des c\305\223urs",
    "Afficher les c\305\223urs exp\303\251rimentaux",
-   "Architecture du processeur",
-   "C\305\223urs de processeur",
+   "Architecture du processeur ",
+   "C\305\223urs de processeur ",
    "Fr\303\251quence maximale pour le c\305\223ur",
    "Fr\303\251quence minimale pour le c\305\223ur",
    "Performance et puissance du processeur (CPU)",
@@ -6442,9 +6444,9 @@ static const struct
    "Points/pouce de l'\303\251cran ",
    "Hauteur de l'\303\251cran (mm) ",
    "Largeur de l'\303\251cran (mm) ",
-   "Identifiant de l'interface graphique",
+   "Identifiant de l'interface graphique ",
    "Nom de l'interface graphique ",
-   "Syst\303\250me d'exploitation de l'interface graphique",
+   "Syst\303\250me d'exploitation de l'interface graphique ",
    "Version Git ",
    "Version de Lakka ",
    "Version de MoltenVK",
@@ -6453,7 +6455,7 @@ static const struct
    "En charge",
    "Non charg\303\251",
    "Non aliment\303\251",
-   "Version de RetroArch",
+   "Version de RetroArch ",
    "Pilote de contexte vid\303\251o ",
    "Syst\303\250me",
    "Capturer l'\303\251cran",
@@ -6616,6 +6618,7 @@ static const struct
    "Largeur en plein \303\251cran",
    "Hauteur en plein \303\251cran",
    "Gamma vid\303\251o",
+   "Prise en charge directe de SPIR-V (requ\303\252te)",
    "Num\303\251ro du processeur graphique",
    "Utiliser le processeur graphique pour l'enregistrement",
    "Capture d'\303\251cran : utiliser le processeur graphique",
@@ -8624,6 +8627,12 @@ static const struct
    "\251. La laisser non d\303\251finie utilisera la r\303\251solution du bureau.",
    "D\303\251finir la hauteur personnalis\303\251e pour le plein \303\251cran non fen\303\252tr\303"
    "\251. La laisser non d\303\251finie utilisera la r\303\251solution du bureau.",
+   "Transmet les shaders au pilote graphique au format SPIR-V plut\303\264t que de les convertir d'a"
+   "bord en GLSL, ce qui peut r\303\251duire les temps de chargement des pr\303\251r\303\251glages d"
+   "e shaders. Il ne s'agit que d'une requ\303\252te : cette option n\303\251cessite l'extension de "
+   "pilote 'GL_ARB_gl_spirv', tout shader ou pilote ne pouvant pas l'utiliser revient automatiquemen"
+   "t et silencieusement \303\240 la conversion. Prend effet au prochain chargement d'un pr\303\251r"
+   "\303\251glage de shader.",
    "S\303\251lectionner la carte graphique \303\240 utiliser.",
    "Enregistrer avec les shaders produits par le processeur graphique si disponibles.",
    "Les captures d'\303\251cran capturent les shaders produits par le processeur graphique si dispon"
@@ -9060,7 +9069,7 @@ static const struct
    "T\303\251l\303\251chargement",
    "T\303\251l\303\251chargement du c\305\223ur : ",
    "\303\211chec du t\303\251l\303\251chargement",
-   "Lecteur %d",
+   "Lecteur %d ",
    "Importation du disque...",
    "Activation du Wi-Fi...",
    "Erreur",
@@ -9218,7 +9227,7 @@ static const struct
    "Nettoyage des entr\303\251es M3U : ",
    "V\303\251rification des entr\303\251es actuelles : ",
    "Analyse de contenu : ",
-   "M\303\251moire",
+   "M\303\251moire ",
    "Avertissement : Ressources manquantes, utilisez la mise \303\240 jour en ligne si disponible.",
    "Le fichier vid\303\251o de replay n'est pas un fichier REPLAY valide.",
    "Le format de la vid\303\251o de relecture semble avoir une version diff\303\251rente du s\303"
@@ -9480,7 +9489,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (215288u
+      (sizeof(msg_hash_fr_blob) == (215792u
 #ifdef ANDROID
        + 373u
 #endif
@@ -12058,6 +12067,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GL_DIRECT_SPIRV,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -13358,6 +13368,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GL_DIRECT_SPIRV,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,

@@ -2182,6 +2182,7 @@ static const struct
    char s_59f183c8[28];
    char s_59f183c9[27];
    char s_6b395e21[12];
+   char s_00ab7f5e[34];
    char s_71747541[11];
    char s_b45e4c28[21];
    char s_e92f8e07[26];
@@ -3486,6 +3487,7 @@ static const struct
    char s_0d96ed73[42];
    char s_9f0fd076[144];
    char s_9f0fd077[143];
+   char s_c315b54c[398];
    char s_7a2050af[38];
    char s_d2859556[77];
    char s_ef13be35[92];
@@ -6606,6 +6608,7 @@ static const struct
    "Szeroko\305\233\304\207 pe\305\202nego ekranu",
    "Wysoko\305\233\304\207 pe\305\202nego ekranu",
    "Gamma wideo",
+   "Wsparcie dla Direct SPIR-V (Hint)",
    "Indeks GPU",
    "U\305\274yj nagrywania GPU",
    "Zrzut ekranu: U\305\274ywaj GPU",
@@ -8615,6 +8618,12 @@ static const struct
    "tawienie go na 0 spowoduje u\305\274ycie rozdzielczo\305\233ci pulpitu.",
    "Ustaw niestandardowy rozmiar wysoko\305\233ci dla trybu pe\305\202noekranowego bez okien. Pozost"
    "awienie go na 0 spowoduje u\305\274ycie rozdzielczo\305\233ci pulpitu.",
+   "Dostarcz shadery do sterownika graficznego jako SPIR-V, zamiast kompilowa\304\207 je najpierw do"
+   " GLSL, co mo\305\274e skr\303\263ci\304\207 czas \305\202adowania wst\304\231pnych ustawie\305"
+   "\204 shader\303\263w. To tylko wskaz\303\263wka: wymaga rozszerzenia sterownika \"GL_ARB_gl_spir"
+   "v\", a ka\305\274dy shader lub sterownik, kt\303\263ry nie mo\305\274e go u\305\274ywa\304\207 c"
+   "icho wraca do kompilowania. Przynosi efekt po nast\304\231pnym za\305\202adowaniu ustawie\305"
+   "\204 wst\304\231pnych shader\303\263w.",
    "Wybierz kart\304\231 graficzn\304\205 do u\305\274ycia.",
    "Nagrywaj dane wyj\305\233ciowe shaderowanego materia\305\202u GPU, je\305\233li s\304\205 dost"
    "\304\231pne.",
@@ -9474,7 +9483,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (188017u
+      (sizeof(msg_hash_pl_blob) == (188449u
 #ifdef ANDROID
        + 385u
 #endif
@@ -12063,6 +12072,7 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GL_DIRECT_SPIRV,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -13365,6 +13375,7 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GL_DIRECT_SPIRV,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
