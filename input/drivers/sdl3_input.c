@@ -620,10 +620,8 @@ static uint16_t sdl3_translate_mod(SDL_Keymod smod)
    return mod;
 }
 
-/* Feeds the clipboard text through the keyboard-line character path,
- * one codepoint at a time, as if the user had typed it. Only called
- * while line input (netplay password, achievement login, search,
- * on-screen keyboard) is active. */
+/* Gets the text in the clipboard, and interprets it as libretro
+ * keyboard input. */
 static void sdl3_paste_clipboard(void)
 {
    char *text      = SDL_GetClipboardText();
@@ -637,7 +635,8 @@ static void sdl3_paste_clipboard(void)
       uint32_t c = utf8_walk(&ptr);
 
       /* Drop control characters: a pasted newline would submit the
-       * line and DEL/backspace would eat previous input. */
+      /* Skip newline and backspace characters, since those would
+       * negatively affect the input. */
       if (c >= 0x20 && c != 0x7f)
          input_keyboard_event(true, RETROK_UNKNOWN, c, 0,
                RETRO_DEVICE_KEYBOARD);
@@ -674,11 +673,7 @@ static void sdl3_input_poll(void *data)
          unsigned code = input_keymaps_translate_keysym_to_rk(
                event.key.key);
 
-         /* Ctrl+V pastes the clipboard into an active keyboard line
-          * (Ctrl combinations produce no SDL_EVENT_TEXT_INPUT, so
-          * nothing is double-delivered below). Swallow the key-down
-          * entirely; the matching key-up still goes through and is
-          * ignored by the line editor. */
+         /* Allow pasting the clipboard. */
          if (     event.type == SDL_EVENT_KEY_DOWN
                && event.key.key == SDLK_V
                && (event.key.mod & SDL_KMOD_CTRL)
