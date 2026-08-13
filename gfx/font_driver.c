@@ -82,17 +82,22 @@ static font_file_use_t *font_file_uses;
  * the case this exists for.  The file read deliberately happens outside
  * the lock; spinning while another thread pulls megabytes off a memory
  * card would be far worse than the contention it avoids. */
+/* retro_atomic.h's fallback backend has no compare-and-swap: it is
+ * selected precisely on the targets whose toolchains offer no
+ * lock-free integer atomics, which are the single-core consoles, and
+ * there the list is only ever touched from one thread.  Gate on the
+ * primitive rather than on a platform list, so a target that gains
+ * atomics gains the locking with them. */
+#if defined(HAVE_THREADS) && defined(retro_atomic_cas_int)
 static retro_atomic_int_t font_file_lock_word;
-
-static void font_file_lock_acquire(void)
-{
-   while (!retro_atomic_cas_int(&font_file_lock_word, 0, 1)) { }
-}
-
-static void font_file_lock_release(void)
-{
-   retro_atomic_store_release_int(&font_file_lock_word, 0);
-}
+#define FONT_FILE_LOCK() \
+   do { while (!retro_atomic_cas_int(&font_file_lock_word, 0, 1)) { } } while (0)
+#define FONT_FILE_UNLOCK() \
+   retro_atomic_store_release_int(&font_file_lock_word, 0)
+#else
+#define FONT_FILE_LOCK()   do { } while (0)
+#define FONT_FILE_UNLOCK() do { } while (0)
+#endif
 
 /* Caller holds the lock. */
 static font_file_ref_t *font_file_ref_lookup(const char *path)
@@ -120,9 +125,9 @@ static font_file_ref_t *font_file_ref_acquire(const char *path)
    void            *data = NULL;
    int64_t          len  = 0;
 
-   font_file_lock_acquire();
+   FONT_FILE_LOCK();
    entry = font_file_ref_lookup(path);
-   font_file_lock_release();
+   FONT_FILE_UNLOCK();
 
    if (entry)
       return entry;
@@ -156,10 +161,10 @@ static font_file_ref_t *font_file_ref_acquire(const char *path)
    entry->len     = (size_t)len;
    entry->refs    = 1;
 
-   font_file_lock_acquire();
+   FONT_FILE_LOCK();
    if ((raced = font_file_ref_lookup(path)))
    {
-      font_file_lock_release();
+      FONT_FILE_UNLOCK();
       free(entry->data);
       free(entry->path);
       free(entry);
@@ -167,7 +172,7 @@ static font_file_ref_t *font_file_ref_acquire(const char *path)
    }
    entry->next    = font_file_refs;
    font_file_refs = entry;
-   font_file_lock_release();
+   FONT_FILE_UNLOCK();
    return entry;
 }
 
@@ -238,7 +243,7 @@ static void font_renderer_shared_free_for(void *data,
    if (!data)
       return;
 
-   font_file_lock_acquire();
+   FONT_FILE_LOCK();
    for (link = &font_file_uses; *link; link = &(*link)->next)
       if ((*link)->handle == data)
       {
@@ -246,7 +251,7 @@ static void font_renderer_shared_free_for(void *data,
          *link = use->next;
          break;
       }
-   font_file_lock_release();
+   FONT_FILE_UNLOCK();
 
    /* No record means the bookkeeping allocation failed at creation.
     * The font itself is still real and still owns an atlas and
@@ -264,9 +269,9 @@ static void font_renderer_shared_free_for(void *data,
    if (use->real_free)
       use->real_free(data);
 
-   font_file_lock_acquire();
+   FONT_FILE_LOCK();
    font_file_ref_release(use->ref);
-   font_file_lock_release();
+   FONT_FILE_UNLOCK();
 
    free(use);
 }
@@ -552,9 +557,9 @@ int font_renderer_create_default(
                   memcpy(data, entry->data, entry->len);
                   len = (int64_t)entry->len;
                }
-               font_file_lock_acquire();
+               FONT_FILE_LOCK();
                font_file_ref_release(entry);
-               font_file_lock_release();
+               FONT_FILE_UNLOCK();
                entry = NULL;
             }
          }
@@ -573,19 +578,19 @@ int font_renderer_create_default(
          /* Recorded even when no file was involved - a built-in or
           * system font still has to reach the backend's own free
           * through the wrapper below. */
-         font_file_lock_acquire();
+         FONT_FILE_LOCK();
          font_file_use_add(*handle, entry,
                font_backends[i]->free);
-         font_file_lock_release();
+         FONT_FILE_UNLOCK();
          *drv = font_renderer_shared_driver(font_backends[i]);
          return 1;
       }
 
       if (entry)
       {
-         font_file_lock_acquire();
+         FONT_FILE_LOCK();
          font_file_ref_release(entry);
-         font_file_lock_release();
+         FONT_FILE_UNLOCK();
          entry = NULL;
       }
    }
