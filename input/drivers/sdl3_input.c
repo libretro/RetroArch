@@ -636,8 +636,7 @@ static void sdl3_paste_clipboard(void)
       /* Skip newline and backspace characters, since those would
        * negatively affect the input. */
       if (c >= 0x20 && c != 0x7f)
-         input_keyboard_event(true, RETROK_UNKNOWN, c, 0,
-               RETRO_DEVICE_KEYBOARD);
+         input_keyboard_event(true, RETROK_UNKNOWN, c, 0, RETRO_DEVICE_KEYBOARD);
    }
 
    SDL_free(text);
