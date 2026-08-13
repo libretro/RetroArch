@@ -52,8 +52,10 @@ struct sdl3_overlay
    SDL_Texture *tex;
    unsigned  tex_w;
    unsigned  tex_h;
-   float     tex_coords[4];
-   float     vert_coords[4];
+   /* Both are normalised 0..1 rects: tex_coords slices the source
+    * texture, vert_coords places the quad within its base area. */
+   SDL_FRect tex_coords;
+   SDL_FRect vert_coords;
    float     alpha_mod;
    bool      fullscreen;
 };

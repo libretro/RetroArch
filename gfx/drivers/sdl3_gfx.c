@@ -1800,10 +1800,10 @@ static bool sdl3_overlay_load(void *data,
       o->alpha_mod      = 1.0f;
       /* Whole texture / whole target until tex_geom and vertex_geom
        * provide the real values (calloc zeroed x/y). */
-      o->tex_coords[2]  = 1.0f;
-      o->tex_coords[3]  = 1.0f;
-      o->vert_coords[2] = 1.0f;
-      o->vert_coords[3] = 1.0f;
+      o->tex_coords.w   = 1.0f;
+      o->tex_coords.h   = 1.0f;
+      o->vert_coords.w  = 1.0f;
+      o->vert_coords.h  = 1.0f;
    }
 
    return true;
@@ -1815,10 +1815,10 @@ static void sdl3_overlay_tex_geom(void *data, unsigned index,
    sdl3_video_t *vid = (sdl3_video_t*)data;
    if (!vid || index >= vid->overlays_size)
       return;
-   vid->overlays[index].tex_coords[0] = x;
-   vid->overlays[index].tex_coords[1] = y;
-   vid->overlays[index].tex_coords[2] = w;
-   vid->overlays[index].tex_coords[3] = h;
+   vid->overlays[index].tex_coords.x = x;
+   vid->overlays[index].tex_coords.y = y;
+   vid->overlays[index].tex_coords.w = w;
+   vid->overlays[index].tex_coords.h = h;
 }
 
 static void sdl3_overlay_vertex_geom(void *data, unsigned index,
@@ -1827,10 +1827,10 @@ static void sdl3_overlay_vertex_geom(void *data, unsigned index,
    sdl3_video_t *vid = (sdl3_video_t*)data;
    if (!vid || index >= vid->overlays_size)
       return;
-   vid->overlays[index].vert_coords[0] = x;
-   vid->overlays[index].vert_coords[1] = y;
-   vid->overlays[index].vert_coords[2] = w;
-   vid->overlays[index].vert_coords[3] = h;
+   vid->overlays[index].vert_coords.x = x;
+   vid->overlays[index].vert_coords.y = y;
+   vid->overlays[index].vert_coords.w = w;
+   vid->overlays[index].vert_coords.h = h;
 }
 
 static void sdl3_overlay_enable(void *data, bool state)
@@ -1893,10 +1893,10 @@ static void sdl3_overlays_render(sdl3_video_t *vid)
          base_h = (float)vid->vp.height;
       }
 
-      dst.x = base_x + o->vert_coords[0] * base_w;
-      dst.y = base_y + o->vert_coords[1] * base_h;
-      dst.w =          o->vert_coords[2] * base_w;
-      dst.h =          o->vert_coords[3] * base_h;
+      dst.x = base_x + o->vert_coords.x * base_w;
+      dst.y = base_y + o->vert_coords.y * base_h;
+      dst.w =          o->vert_coords.w * base_w;
+      dst.h =          o->vert_coords.h * base_h;
 
       if (dst.w <= 0.0f || dst.h <= 0.0f)
          continue;
@@ -1904,10 +1904,10 @@ static void sdl3_overlays_render(sdl3_video_t *vid)
       /* tex_coords sub-rect into the source texture - touch
        * overlays pack many buttons into one atlas and slice it
        * via tex_geom. */
-      src.x = o->tex_coords[0] * (float)o->tex_w;
-      src.y = o->tex_coords[1] * (float)o->tex_h;
-      src.w = o->tex_coords[2] * (float)o->tex_w;
-      src.h = o->tex_coords[3] * (float)o->tex_h;
+      src.x = o->tex_coords.x * (float)o->tex_w;
+      src.y = o->tex_coords.y * (float)o->tex_h;
+      src.w = o->tex_coords.w * (float)o->tex_w;
+      src.h = o->tex_coords.h * (float)o->tex_h;
       if (src.w <= 0.0f || src.h <= 0.0f)
       {
          src.x = 0.0f;
