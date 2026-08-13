@@ -1928,7 +1928,6 @@ static const struct
    char s_c7bc8298[27];
    char s_e63b035a[31];
    char s_d21d875b[23];
-   char s_ae86fed0[29];
    char s_b12ae22e[20];
    char s_b2d073c7[20];
    char s_1cbc2657[22];
@@ -3312,14 +3311,10 @@ static const struct
    char s_69c0e487[58];
    char s_706ff4dc[199];
    char s_a0d1a85c[67];
-   char s_b5966528[35];
    char s_907ef7cc[33];
    char s_b0a46506[56];
    char s_04624c88[40];
-   char s_91976dbe[45];
    char s_f6492edc[57];
-   char s_9bb85635[39];
-   char s_22a05685[41];
 #endif
    char s_f3bfa8b9[92];
    char s_5fe2cee5[73];
@@ -6260,7 +6255,6 @@ static const struct
    "Configuraci\303\263n da rede SMB",
    "Nome do recurso compartido SMB",
    "Recurso compartido SMB",
-   "Subdirectorio SMB (opcional)",
    "Tempo de espera SMB",
    "Nome de usuario SMB",
    "Grupo de traballo SMB",
@@ -8138,14 +8132,10 @@ static const struct
    "ernet en lugar de Wi-Fi para unha conexi\303\263n m\303\241is fiable. Nota: cambiar estes axuste"
    "s require reiniciar RetroArch.",
    "Selecciona o n\303\272mero m\303\241ximo de conexi\303\263ns usadas no teu contorno.",
-   "Contrasinal para a autenticaci\303\263n.",
    "Enderezo IP ou nome do servidor.",
    "Configura os axustes da carpeta compartida en rede SMB.",
    "Nome do recurso de rede ao que acceder.",
-   "Ruta do subdirectorio no recurso compartido.",
    "Selecciona o tempo de espera predeterminado en segundos.",
-   "Nome de usuario para a autenticaci\303\263n.",
-   "Nome do grupo de traballo ou do dominio.",
 #endif
    "Ordena os ficheiros gardados en cartafoles co nome do directorio no que se atopa o contido.",
    "Ordena os ficheiros gardados en cartafoles co nome do n\303\272cleo utilizado.",
@@ -9242,7 +9232,6 @@ typedef char msg_hash_gl_blob_check[
        + 27u
        + 31u
        + 23u
-       + 29u
        + 20u
        + 20u
        + 22u
@@ -9426,14 +9415,10 @@ typedef char msg_hash_gl_blob_check[
        + 58u
        + 199u
        + 67u
-       + 35u
        + 33u
        + 56u
        + 40u
-       + 45u
        + 57u
-       + 39u
-       + 41u
 #endif
 #ifdef HAVE_LAKKA
        + 64u
@@ -11428,7 +11413,6 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
@@ -12811,14 +12795,10 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
