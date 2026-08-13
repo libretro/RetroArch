@@ -32,7 +32,16 @@ OBJS        := vfs_read_overflow_test.o vfs_mapped_ptr_test.o \
 # fallback never runs - so the window-boundary cases would be
 # asserting on code that was not executed.  Build with MMAP=0 to put
 # that path under test; the test reports which one it took.
-MMAP ?= 1
+# Windows has no <sys/mman.h>.  The Win32 file-mapping backend is
+# picked up from _WIN32 inside vfs.h and needs no flag here, so
+# default this off there rather than leave a plain `make` in an MSYS2
+# shell failing on a missing POSIX header.
+UNAME_S := $(shell uname -s 2>/dev/null)
+ifneq (,$(filter MINGW% MSYS% CYGWIN%,$(UNAME_S)))
+   MMAP ?= 0
+else
+   MMAP ?= 1
+endif
 ifeq ($(MMAP),1)
    CFLAGS += -DHAVE_MMAP
 endif

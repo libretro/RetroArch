@@ -62,8 +62,17 @@ jobs:
         include:
           - name: glibc (ubuntu-latest)
             runner: ubuntu-latest
+            # LeakSanitizer exists here, so run it at full strictness.
+            asan_opts: detect_leaks=1
           - name: Apple libc (macos-latest)
             runner: macos-latest
+            # LeakSanitizer is not implemented on Darwin, and asking
+            # for it is fatal rather than ignored: the runtime prints
+            # "detect_leaks is not supported on this platform" and
+            # aborts.  Leak coverage for these sources comes from the
+            # Linux leg above; this one is here for Apple's libc
+            # behaviour, which is what differs.
+            asan_opts: detect_leaks=0
 
     steps:
       - uses: actions/checkout@v4
@@ -77,7 +86,7 @@ jobs:
             echo "==> $*"
             make clean >/dev/null
             make "$@" SANITIZER=address,undefined
-            ASAN_OPTIONS=detect_leaks=1 ./vfs_bulk_read_test
+            ASAN_OPTIONS=${{ matrix.asan_opts }} ./vfs_bulk_read_test
             ./vfs_seek_contract_test
             ./vfs_mapped_ptr_test
           }
@@ -139,11 +148,16 @@ jobs:
           # job is which C runtime the calls land on, not memory
           # safety - the Linux job covers that with the same sources.
           #
-          # MMAP is left off: the Win32 file-mapping backend is
-          # selected by _WIN32 inside vfs.h rather than by this flag,
-          # so VFS_HAVE_FILE_MAPPING (and with it descriptor I/O) is
-          # already on.
-          make clean
-          make
+          # MMAP=0 is required, not cosmetic: -DHAVE_MMAP pulls in
+          # <sys/mman.h>, which does not exist here.  The Win32
+          # file-mapping backend is selected by _WIN32 inside vfs.h
+          # rather than by that flag, so VFS_HAVE_FILE_MAPPING - and
+          # with it descriptor I/O and the mapped-pointer path - is on
+          # regardless.
+          make clean MMAP=0
+          make MMAP=0
           ./vfs_bulk_read_test.exe
           ./vfs_seek_contract_test.exe
+          # Exercises the Win32 CreateFileMapping/MapViewOfFile
+          # backend, which no other job in the tree reaches.
+          ./vfs_mapped_ptr_test.exe
