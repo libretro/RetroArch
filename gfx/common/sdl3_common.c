@@ -459,30 +459,31 @@ void sdl3_ctx_check_window(void *data, bool *quit, bool *resize,
 bool sdl3_ctx_get_metrics(void *data,
       enum display_metric_types type, float *value)
 {
+   float scale;
    SDL_Window *win       = sdl3_ctx_window(data);
    SDL_DisplayID display = win
          ? SDL_GetDisplayForWindow(win)
          : SDL_GetPrimaryDisplay();
 
-   switch (type)
+   /* DPI is the only metric this can answer. Of the rest, MM_WIDTH
+    * and MM_HEIGHT are asked for (System Information) but SDL3
+    * exposes no physical display size to answer them with, and
+    * PIXEL_WIDTH / PIXEL_HEIGHT are only ever queried through the
+    * display server interface, never through a context driver. */
+   if (type != DISPLAY_METRIC_DPI)
    {
-      case DISPLAY_METRIC_DPI:
-         {
-            /* SDL3 only exposes the desktop scale factor, not the
-             * physical DPI, so report it relative to the 96 DPI
-             * baseline (X11: Xft.dpi, Wayland: compositor scale). */
-            float scale = SDL_GetDisplayContentScale(display);
-            if (scale <= 0.0f)
-               return false;
-            *value = scale * 96.0f;
-         }
-         return true;
-      default:
-         break;
+      *value = 0.0f;
+      return false;
    }
 
-   *value = 0.0f;
-   return false;
+   /* SDL3 only exposes the desktop scale factor, not the physical
+    * DPI, so report it relative to the 96 DPI baseline (X11:
+    * Xft.dpi, Wayland: compositor scale). */
+   if ((scale = SDL_GetDisplayContentScale(display)) <= 0.0f)
+      return false;
+
+   *value = scale * 96.0f;
+   return true;
 }
 
 void sdl3_show_mouse(void *data, bool state)
