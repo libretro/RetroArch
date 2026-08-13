@@ -2555,6 +2555,8 @@ static bool menu_driver_displaylist_push(
       path      = list->list[list->size - 1].path;
       label     = list->list[list->size - 1].label;
       type      = list->list[list->size - 1].type;
+
+      info.directory_ptr = list->list[list->size - 1].directory_ptr;
    }
 
    if (cbs)
@@ -3676,7 +3678,7 @@ MENU_NOINLINE static int menu_dialog_iterate(
 
 #ifdef HAVE_CHEEVOS
       case MENU_DIALOG_HELP_CHEEVOS_DESCRIPTION:
-         if (!rcheevos_menu_get_sublabel(p_dialog->current_id, s, len))
+         if (!rcheevos_menu_get_help_text(p_dialog->current_id, s, len))
             return 1;
          break;
 #endif

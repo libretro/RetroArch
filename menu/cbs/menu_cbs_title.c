@@ -30,6 +30,7 @@
 
 #ifdef HAVE_CHEEVOS
 #include "../../cheevos/cheevos.h"
+#include "../../cheevos/cheevos_menu.h"
 #endif
 
 #include "../../audio/audio_driver.h"
@@ -839,13 +840,10 @@ static int action_get_title_dropdown_input_description_kbd(
 }
 
 #ifdef HAVE_CHEEVOS
-static int action_get_title_achievement_pause_menu(
+static int action_get_title_achievements_submenu_list(
       const char* path, const char* label, unsigned menu_type, char* s, size_t len)
 {
-   if (rcheevos_hardcore_active())
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE), len);
-   else
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME), len);
+   rcheevos_menu_get_submenu_title(s, len);
    return 1;
 }
 #endif
@@ -1096,8 +1094,8 @@ static int menu_cbs_init_bind_title_compare_label(menu_file_list_cbs_t *cbs,
       {MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST,
          action_get_title_input_binds_list},
 #ifdef HAVE_CHEEVOS
-      {MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_MENU,
-         action_get_title_achievement_pause_menu},
+      {MENU_ENUM_LABEL_DEFERRED_ACHIEVEMENTS_SUBMENU_LIST,
+         action_get_title_achievements_submenu_list},
 #endif
 #if defined(HAVE_LIBNX)
 #endif

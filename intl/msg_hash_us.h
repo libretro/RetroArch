@@ -32750,6 +32750,14 @@ MSG_HASH(
    "RetroAchievements: Logged in as \"%s\"."
    )
 MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE,
+   "Hardcore"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_CASUAL_MODE,
+   "Casual"
+   )
+MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
    "You must pause or disable Achievements Hardcore Mode to load states."
    )

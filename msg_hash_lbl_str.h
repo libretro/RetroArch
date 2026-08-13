@@ -6,7 +6,6 @@
 #endif
 
 #define MENU_ENUM_LABEL_ACCOUNTS_CHEEVOS_USERNAME_STR "accounts_cheevos_username"
-#define MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_MENU_STR "achievement_pause_menu"
 #define MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_CANCEL_STR "achievement_pause_cancel"
 #define MENU_ENUM_LABEL_ACHIEVEMENT_RESUME_CANCEL_STR "achievement_resume_cancel"
 #define MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_STR "achievement_pause"
@@ -105,6 +104,7 @@
 #define MENU_ENUM_LABEL_CHEAT_FILE_LOAD_STR "cheat_file_load"
 #define MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND_STR "cheat_file_load_append"
 #define MENU_ENUM_LABEL_CHEAT_FILE_SAVE_AS_STR "cheat_file_save_as"
+#define MENU_ENUM_LABEL_CHEEVOS_DESCRIPTION_STR "cheevos_description"
 #define MENU_ENUM_LABEL_CHEEVOS_ENABLE_STR "cheevos_enable"
 #define MENU_ENUM_LABEL_CHEEVOS_HARDCORE_MODE_ENABLE_STR "cheevos_hardcore_mode_enable"
 #define MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY_STR "cheevos_locked_entry"
@@ -271,6 +271,8 @@
 #define MENU_ENUM_LABEL_DEFERRED_RETRO_ACHIEVEMENTS_SETTINGS_LIST_STR "deferred_retro_achievements_settings_list"
 #define MENU_ENUM_LABEL_DEFERRED_CHEEVOS_APPEARANCE_SETTINGS_LIST_STR "deferred_cheevos_appearance_settings_list"
 #define MENU_ENUM_LABEL_DEFERRED_CHEEVOS_VISIBILITY_SETTINGS_LIST_STR "deferred_cheevos_visibility_settings_list"
+#define MENU_ENUM_LABEL_DEFERRED_CHEEVOS_VISIBILITY_SETTINGS_LIST_STR "deferred_cheevos_visibility_settings_list"
+#define MENU_ENUM_LABEL_DEFERRED_ACHIEVEMENTS_SUBMENU_LIST_STR "deferred_achievements_submenu"
 #define MENU_ENUM_LABEL_DEFERRED_REWIND_SETTINGS_LIST_STR "deferred_rewind_settings_list"
 #define MENU_ENUM_LABEL_DEFERRED_CHEAT_DETAILS_SETTINGS_LIST_STR "deferred_cheat_details_settings_list"
 #define MENU_ENUM_LABEL_DEFERRED_CHEAT_SEARCH_SETTINGS_LIST_STR "deferred_cheat_search_settings_list"
@@ -999,6 +1001,7 @@
 #define MENU_ENUM_LABEL_CHEEVOS_CHALLENGE_INDICATORS_STR "cheevos_challenge_indicators"
 #define MENU_ENUM_LABEL_CHEEVOS_RICHPRESENCE_ENABLE_STR "cheevos_richpresence_enable"
 #define MENU_ENUM_LABEL_CHEEVOS_START_ACTIVE_STR "cheevos_start_active"
+#define MENU_ENUM_LABEL_CHEEVOS_MENU_SUBMENU_STR "cheevos_menu_submenu"
 #define MENU_ENUM_LABEL_CHEEVOS_TEST_UNOFFICIAL_STR "cheevos_test_unofficial"
 #define MENU_ENUM_LABEL_CHEEVOS_UNLOCK_SOUND_ENABLE_STR "cheevos_unlock_sound_enable"
 #define MENU_ENUM_LABEL_CHEEVOS_VERBOSE_ENABLE_STR "cheevos_verbose_enable"

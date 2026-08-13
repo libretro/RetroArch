@@ -1,6 +1,6 @@
 /*  RetroArch - A frontend for libretro.
  *  Copyright (C) 2015-2018 - Andre Leiradella
- *  Copyright (C) 2019-2023 - Brian Weiss
+ *  Copyright (C) 2019-2026 - Brian Weiss
  *
  *  RetroArch is free software: you can redistribute it and/or modify it under the terms
  *  of the GNU General Public License as published by the Free Software Found-
@@ -71,11 +71,26 @@ enum rcheevos_summary_notif
 
 typedef struct rcheevos_menuitem_t
 {
-   const rc_client_achievement_t* achievement;
+   union rcheevos_menuitem_source_t {
+      struct rcheevos_menuitem_text_t {
+         const char* label;
+         const char* sublabel;
+      } text;
+      struct rcheevos_menuitem_achievement_t {
+         const rc_client_achievement_t* achievement;
+      } achievement;
+      struct rcheevos_menuitem_action_t {
+         int type; /* enum msg_hash_enums */
+         int label; /* enum msg_hash_enums */
+         int sublabel; /* enum msg_hash_enums */
+         int action; /* enum menu_settings_type */
+      } action;
+   } source;
    uintptr_t menu_badge_texture;
    uint32_t subset_id;
+   int state_label_idx; /* enum msg_hash_enums */
    uint8_t menu_badge_grayscale;
-   enum msg_hash_enums state_label_idx;
+   uint8_t type;
 } rcheevos_menuitem_t;
 
 #endif
@@ -115,6 +130,9 @@ typedef struct rcheevos_locals_t
    rcheevos_menuitem_t* menuitems;    /* array of items for the achievements quick menu */
    unsigned menuitem_capacity;        /* maximum number of items in the menuitems array */
    unsigned menuitem_count;           /* current number of items in the menuitems array */
+   uint32_t menuitem_info_type;       /* current submenu */
+   uint32_t menuitem_submenu_type;    /* current submenu */
+   uint32_t menuitem_submenu_id;      /* current submenu */
 #endif
 
    const char* hash_error;            /* message to display if an error occurred identifying the game */
@@ -124,6 +142,7 @@ typedef struct rcheevos_locals_t
    bool hardcore_being_enabled;       /* allows callers to detect hardcore mode while it's being enabled */
 
    bool core_supports;                /* false if core explicitly disables achievements */
+   bool has_unsupported_achievements; /* true if unsupported achievements were detected */
    bool badges_loaded;                /* true once all badges have been loaded */
    bool badges_loading;               /* true if the download queue is running */
 } rcheevos_locals_t;

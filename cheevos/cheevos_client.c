@@ -22,6 +22,8 @@
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 
+#include <sys/stat.h>
+
 #include "../frontend/frontend_driver.h"
 #include "../tasks/tasks_internal.h"
 
@@ -451,11 +453,11 @@ static void rcheevos_client_download_task_callback(retro_task_t* task,
 
    if (!http_data)
    {
-      CHEEVOS_LOG(RCHEEVOS_TAG "No data received for badge %s\n", callback_data->badge_name);
+      CHEEVOS_LOG(RCHEEVOS_TAG "No data received for badge %s (%s)\n", callback_data->badge_name, callback_data->url);
    }
    else if (http_data->status != 200)
    {
-      CHEEVOS_LOG(RCHEEVOS_TAG "HTTP status code %d for badge %s\n", http_data->status, callback_data->badge_name);
+      CHEEVOS_LOG(RCHEEVOS_TAG "HTTP status code %d for badge %s (%s)\n", http_data->status, callback_data->badge_name, callback_data->url);
 
       /* -1 status code is an internal networking failure. go ahead and retry a few times */
       if (http_data->status == -1 && callback_data->retry_count++ < 4)
@@ -495,17 +497,13 @@ static void rcheevos_client_download_task_callback(retro_task_t* task,
    free(callback_data);
 }
 
-bool rcheevos_client_download_badge(rc_client_download_queue_t* queue,
-   const char* url, const char* badge_name)
+static bool rcheevos_client_build_local_badge_path(char badge_fullpath[], size_t badge_fullpath_size, const char* badge_name)
 {
    char* badge_fullname;
    size_t badge_fullname_size;
-   rc_client_download_task_data_t* taskdata;
-   char badge_fullpath[512] = "";
-   rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
 
    /* make sure the directory exists */
-   fill_pathname_application_special(badge_fullpath, sizeof(badge_fullpath),
+   fill_pathname_application_special(badge_fullpath, badge_fullpath_size,
       APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES);
 
    if (!path_is_directory(badge_fullpath))
@@ -514,9 +512,9 @@ bool rcheevos_client_download_badge(rc_client_download_queue_t* queue,
       path_mkdir(badge_fullpath);
    }
 
-   fill_pathname_slash(badge_fullpath, sizeof(badge_fullpath));
-   badge_fullname      = badge_fullpath + strlen(badge_fullpath);
-   badge_fullname_size = sizeof(badge_fullpath) - (badge_fullname - badge_fullpath);
+   fill_pathname_slash(badge_fullpath, badge_fullpath_size);
+   badge_fullname = badge_fullpath + strlen(badge_fullpath);
+   badge_fullname_size = badge_fullpath_size - (badge_fullname - badge_fullpath);
 
    /* badge_name is supplied by the achievement server (or, on a
     * compromised TLS path, an attacker-controlled MITM).
@@ -532,15 +530,15 @@ bool rcheevos_client_download_badge(rc_client_download_queue_t* queue,
     * version, since a bogus badge name from the server is itself
     * a signal that something is wrong. */
    {
-      const char *p;
+      const char* p;
       bool        ok = (badge_name && *badge_name);
       for (p = badge_name; ok && *p; p++)
       {
          char c = *p;
-         if (!(   (c >= '0' && c <= '9')
-               || (c >= 'a' && c <= 'z')
-               || (c >= 'A' && c <= 'Z')
-               || c == '_' || c == '-'))
+         if (!((c >= '0' && c <= '9')
+            || (c >= 'a' && c <= 'z')
+            || (c >= 'A' && c <= 'Z')
+            || c == '_' || c == '-'))
             ok = false;
       }
       if (!ok)
@@ -551,6 +549,18 @@ bool rcheevos_client_download_badge(rc_client_download_queue_t* queue,
    }
 
    snprintf(badge_fullname, badge_fullname_size, "%s" FILE_PATH_PNG_EXTENSION, badge_name);
+   return true;
+}
+
+bool rcheevos_client_download_badge(rc_client_download_queue_t* queue,
+   const char* url, const char* badge_name)
+{
+   rc_client_download_task_data_t* taskdata;
+   rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
+   char badge_fullpath[512] = "";
+
+   if (!rcheevos_client_build_local_badge_path(badge_fullpath, sizeof(badge_fullpath), badge_name))
+      return false;
 
    if (path_is_valid(badge_fullpath))
       return false;
@@ -589,6 +599,21 @@ bool rcheevos_client_download_badge(rc_client_download_queue_t* queue,
       rcheevos_client_download_task_callback, taskdata);
 
    return true;
+}
+
+void rcheevos_client_expire_badge(const char* badge_name, time_t expire_at)
+{
+   char badge_fullpath[512] = "";
+
+   if (!rcheevos_client_build_local_badge_path(badge_fullpath, sizeof(badge_fullpath), badge_name))
+      return;
+
+   if (path_is_valid(badge_fullpath))
+   {
+      struct stat file_stat;
+      if (stat(badge_fullpath, &file_stat) != 0 && file_stat.st_mtime < expire_at)
+         filestream_delete(badge_fullpath);
+   }
 }
 
 bool rcheevos_client_download_badge_from_url(const char* url, const char* badge_name)

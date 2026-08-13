@@ -14647,13 +14647,13 @@ static bool menu_displaylist_ctl_internal(
 #endif
             }
             break;
-         case DISPLAYLIST_ACHIEVEMENT_PAUSE_MENU:
+         case DISPLAYLIST_ACHIEVEMENT_SUBMENU_LIST:
 #ifdef HAVE_CHEEVOS
             menu_entries_clear(info->list);
-            rcheevos_menu_populate_hardcore_pause_submenu(info, settings->bools.cheevos_hardcore_mode_enable);
-#endif
+            rcheevos_menu_populate_submenu(info);
             info->flags    |= MD_FLAG_NEED_REFRESH
                | MD_FLAG_NEED_PUSH;
+#endif
             break;
          case DISPLAYLIST_ACHIEVEMENT_LIST:
 #ifdef HAVE_CHEEVOS

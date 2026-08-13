@@ -199,18 +199,6 @@ static int menu_action_sublabel_contentless_core(file_list_t *list,
    return 0;
 }
 
-#ifdef HAVE_CHEEVOS
-static int menu_action_sublabel_achievement_pause_menu(file_list_t* list,
-      unsigned type, unsigned i, const char* label, const char* path, char* s, size_t len)
-{
-   if (string_is_equal(path, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE)))
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE), len);
-   else
-      strlcpy(s, msg_hash_to_str(MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME), len);
-   return 1;
-}
-#endif
-
 #ifdef HAVE_AUDIOMIXER
 DEFAULT_SUBLABEL_MACRO(menu_action_sublabel_setting_audio_mixer_add_to_mixer_and_play,
       MENU_ENUM_SUBLABEL_ADD_TO_MIXER_AND_PLAY)
@@ -804,8 +792,7 @@ static int action_bind_sublabel_cheevos_entry(
       const char *label, const char *path,
       char *s, size_t len)
 {
-   unsigned offset = type - MENU_SETTINGS_CHEEVOS_START;
-   rcheevos_menu_get_sublabel(offset, s, len);
+   rcheevos_menu_get_sublabel(i, s, len);
    return 0;
 }
 #endif
@@ -3327,9 +3314,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_ACHIEVEMENT_LIST:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_achievement_list);
             break;
-         case MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_MENU:
-            BIND_ACTION_SUBLABEL(cbs, menu_action_sublabel_achievement_pause_menu);
-            break;
          case MENU_ENUM_LABEL_ACHIEVEMENT_PAUSE_CANCEL:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_achievement_pause_cancel);
             break;
@@ -3342,11 +3326,8 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_ACHIEVEMENT_SERVER_UNREACHABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_achievement_server_unreachable);
             break;
-         case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY:
-         case MENU_ENUM_LABEL_CHEEVOS_UNLOCKED_ENTRY_HARDCORE:
-         case MENU_ENUM_LABEL_CHEEVOS_LOCKED_ENTRY:
-         case MENU_ENUM_LABEL_CHEEVOS_UNSUPPORTED_ENTRY:
-         case MENU_ENUM_LABEL_CHEEVOS_UNOFFICIAL_ENTRY:
+         case MENU_ENUM_LABEL_CHEEVOS_MENU_ENTRY:
+         case MENU_ENUM_LABEL_CHEEVOS_MENU_SUBMENU:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_cheevos_entry);
             break;
          case MENU_ENUM_LABEL_CHEEVOS_ENABLE:

@@ -8885,10 +8885,21 @@ static bool ozone_is_current_entry_settings(size_t current_selection)
 
    menu_entry_get(&last_entry, 0, current_selection, NULL, true);
 
-   if (last_entry.enum_idx == MENU_ENUM_LABEL_CHEEVOS_PASSWORD)
+   switch (last_entry.enum_idx)
+   {
+   case MENU_ENUM_LABEL_CHEEVOS_PASSWORD:
       entry_value = last_entry.password_value;
-   else
+      break;
+
+   case MENU_ENUM_LABEL_CHEEVOS_MENU_ENTRY:
+   case MENU_ENUM_LABEL_CHEEVOS_MENU_SUBMENU:
+      /* don't display Reset to Defaults for Locked/Unlocked achievement status messages */
+      return false;
+
+   default:
       entry_value = last_entry.value;
+      break;
+   }
 
    entry_file_type = msg_hash_to_file_type(entry_value);
    entry_type      = last_entry.type;
