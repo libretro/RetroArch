@@ -2,6 +2,7 @@ TARGET      := vfs_read_overflow_test
 TARGET_TEST := vfs_mapped_ptr_test
 TARGET_TEST2 := vfs_large_file_test
 TARGET_TEST3 := vfs_seek_contract_test
+TARGET_TEST4 := vfs_bulk_read_test
 
 LIBRETRO_COMM_DIR := ../../..
 
@@ -17,7 +18,8 @@ COMMON_SOURCES := \
 
 COMMON_OBJS := $(COMMON_SOURCES:.c=.o)
 OBJS        := vfs_read_overflow_test.o vfs_mapped_ptr_test.o \
-	vfs_large_file_test.o vfs_seek_contract_test.o $(COMMON_OBJS)
+	vfs_large_file_test.o vfs_seek_contract_test.o \
+	vfs_bulk_read_test.o $(COMMON_OBJS)
 
 # -DHAVE_MMAP is required for vfs_read_overflow_test to exercise the
 # patched code path; without it the implementation falls back to
@@ -35,6 +37,17 @@ ifeq ($(MMAP),1)
    CFLAGS += -DHAVE_MMAP
 endif
 
+# vfs_bulk_read_test asserts which I/O path an open lands on, and the
+# interesting configuration - descriptor I/O with no file mapping - is
+# the one the consoles have and no desktop does.  Build
+# 'make MMAP=0 DESCRIPTOR_IO=1' to reproduce it here; MMAP=0 on its
+# own gives the other case, a target that is on neither list and must
+# keep its buffered behaviour unchanged.
+DESCRIPTOR_IO ?=
+ifeq ($(DESCRIPTOR_IO),1)
+   CFLAGS += -DVFS_HAVE_DESCRIPTOR_IO=1
+endif
+
 CFLAGS += -Wall -pedantic -std=gnu99 -g -I$(LIBRETRO_COMM_DIR)/include
 
 # The samples workflow passes SANITIZER=address,undefined to every
@@ -45,7 +58,7 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3)
+all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -68,8 +81,20 @@ $(TARGET_TEST2): vfs_large_file_test.o $(COMMON_OBJS)
 $(TARGET_TEST3): vfs_seek_contract_test.o $(COMMON_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
+# vfs_bulk_read_test covers filestream_read_file() and the descriptor
+# path RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK selects.  It spawns
+# threads to check that whole-file reads hold no shared state, so it
+# is the one target here that needs -lpthread; that also makes it the
+# one worth running under SANITIZER=thread.
+$(TARGET_TEST4): vfs_bulk_read_test.o $(COMMON_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS) -lpthread
+
 clean:
-	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(OBJS)
+	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) \
+		$(TARGET_TEST4) $(OBJS)
 	rm -f large_3gib.bin large_5gib.bin seek_small.bin seek_4gib.bin
+	rm -f bulk_select.bin bulk_select_w.bin bulk_roundtrip.bin \
+		bulk_short.bin bulk_shrank.bin bulk_error.bin \
+		bulk_binary.bin bulk_threads.bin
 
 .PHONY: clean

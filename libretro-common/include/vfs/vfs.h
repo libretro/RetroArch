@@ -65,6 +65,34 @@ typedef struct
 #define VFS_HAVE_FILE_MAPPING 1
 #endif
 
+/* Descriptor-backed I/O: open()/read()/close() with no stdio layer in
+ * between.  The code for it is compiled on every target - it is the
+ * path a file mapping falls back to - but until this existed it was
+ * only ever *reached* where VFS_HAVE_FILE_MAPPING was defined, since
+ * that was the sole gate on the hint that selects it.  Everything
+ * else was pinned to stdio no matter what the caller asked for.
+ *
+ * That matters most on the targets that were excluded.  With newlib,
+ * fread() on a buffered stream refills through the stream buffer and
+ * memcpy()s each refill into the caller's buffer (see _fread_r), so a
+ * whole-file read costs one read() per buffer-full plus a second copy
+ * of every byte; glibc's fread() bypasses its buffer once the request
+ * reaches a block, which is why this is invisible on desktop.
+ *
+ * Listed rather than assumed: the descriptor path compiles everywhere
+ * but has only ever run on the mapping targets, so a platform joins
+ * this list once its open()/read()/lseek() have been exercised.  A
+ * target that is not listed keeps the behaviour it has today. */
+#ifndef VFS_HAVE_DESCRIPTOR_IO
+#if defined(VFS_HAVE_FILE_MAPPING) \
+ || defined(VITA) \
+ || defined(_3DS) \
+ || defined(WIIU) \
+ || defined(__SWITCH__)
+#define VFS_HAVE_DESCRIPTOR_IO 1
+#endif
+#endif
+
 enum vfs_scheme
 {
    VFS_SCHEME_NONE = 0,

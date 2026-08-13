@@ -649,6 +649,23 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
 #endif
       stream->hints &= ~RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS;
 
+#ifdef VFS_HAVE_DESCRIPTOR_IO
+   /* A read-once-and-close stream wants the descriptor path for the
+    * opposite reason a mapped one does: not to keep the bytes around,
+    * but to avoid a buffer it will never reuse.  Deliberately after
+    * the block above and never touching the mapping hint, so a
+    * stream asking for both still maps and behaves exactly as before.
+    *
+    * Restricted to VFS_SCHEME_NONE: the descriptor branch below knows
+    * about plain files and (on Android) SAF, and has no case for
+    * cdrom:// or smb://, which have their own read/seek entry points
+    * that only the buffered branch dispatches to. */
+   if (     (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK)
+         && mode == RETRO_VFS_FILE_ACCESS_READ
+         && stream->scheme == VFS_SCHEME_NONE)
+      stream->hints |= RFILE_HINT_UNBUFFERED;
+#endif
+
    switch (mode)
    {
       case RETRO_VFS_FILE_ACCESS_READ:
