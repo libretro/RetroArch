@@ -54,8 +54,8 @@ static unsigned sdl3_gl_minor = 0;
 static SDL_GLContext sdl3_gl_cached_ctx = NULL;
 static SDL_GLContext sdl3_gl_cached_shared_ctx = NULL;
 
-/* The make_current hook receives no instance pointer, so track the
- * live instance at file scope (mirrors x_ctx's current_context_data). */
+/* The make_current hook receives no pointer, so track it at
+ * the file scope (same as x_ctx). */
 static gfx_ctx_sdl3_data_t *sdl3_gl_current = NULL;
 
 /* Core-profile context: explicitly requested, or GL 3.1+. */
@@ -322,18 +322,9 @@ static void sdl3_ctx_bind_hw_render(void *data, bool enable)
 }
 
 /* With threaded video, gl3/gl2 bind the GL context on the video
- * thread around menu/widget texture loads and raster-font teardown.
- * Without this hook those binds are silent no-ops and the textures
- * are created without a current context (black menu icons).
- *
- * No locking is needed here, and none of the other ctx drivers that
- * implement this hook take any either: every caller reaches it from
- * inside a custom command that video_thread_texture_handle has
- * dispatched onto the video thread and blocks on, so this runs
- * serialised with frame rendering rather than alongside it. That is
- * the same thread sdl3_gl_current is assigned on - the wrapper
- * handles CMD_INIT from within video_thread_loop, so the ctx init
- * that sets it already runs on the video thread. */
+ * thread. Without this hook those binds don't do anything and
+ * the textures created without a current context, resulting in
+ * black menu icons. */
 static void sdl3_ctx_make_current(bool release)
 {
    if (!sdl3_gl_current || !sdl3_gl_current->win)
