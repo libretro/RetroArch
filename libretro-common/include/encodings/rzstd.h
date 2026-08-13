@@ -62,11 +62,12 @@
  *                             recognise one.
  *   formats/chd/rchd.c        decompresses a hunk, output size known
  *                             in advance.
- *   formats/libchdr/          decompresses a hunk through a streaming
- *     libchdr_zstd.c          interface, re-initialising per hunk. It
- *                             is the only caller that streams and it
- *                             goes away with libchdr, which is why no
- *                             streaming interface is offered here.
+ *   formats/libchdr/          decompresses a hunk, output size known in
+ *     libchdr_zstd.c          advance, same as rchd. It reaches the
+ *                             reference library through a streaming
+ *                             interface when built against that, but a
+ *                             hunk is one whole frame either way, so
+ *                             nothing here has to stream.
  *
  * None of them uses a dictionary.
  */
@@ -178,12 +179,12 @@ int rzstd_encode(uint8_t *dst, size_t dst_len,
 
 /* No streaming interface is offered.
  *
- * One was declared here, both directions, for a caller that cannot
- * hold a whole frame. The only such caller in this tree is
- * formats/libchdr, which formats/chd/rchd.c replaces and which holds
- * a hunk entire. Eleven entry points were declared and none was ever
- * implemented: nothing would have noticed them breaking, because
- * nothing called them. Absent is honest where declared was not.
+ * One was declared here, both directions, for a caller that cannot hold
+ * a whole frame. No caller in this tree is one: both CHD readers hold a
+ * hunk entire, and every other user above starts from a complete frame.
+ * Eleven entry points were declared and none was ever implemented:
+ * nothing would have noticed them breaking, because nothing called
+ * them. Absent is honest where declared was not.
  */
 
 /**

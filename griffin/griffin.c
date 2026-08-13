@@ -1548,7 +1548,7 @@ DEPENDENCIES
 #define GRIFFIN_HAVE_R7Z_LZMA 1
 #include "../libretro-common/formats/7z/r7z_lzma.c"
 
-#ifdef HAVE_ZSTD
+#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
 #include "../libretro-common/formats/libchdr/libchdr_zstd.c"
 #endif
 #endif  /* !HAVE_RCHD */
