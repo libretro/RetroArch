@@ -35,6 +35,36 @@
 #ifdef _WIN32
 #include <intrin.h>
 #endif
+
+/* Widen a pair of adjacent taps to [c0 c0 c0 c0 | c1 c1 c1 c1].
+ *
+ * The generic passes built this with two _mm_set1_epi16 and a join,
+ * which is a movd and a pair of shuffles each.  The taps are adjacent
+ * int16_t, so one 32-bit load carries both, and two unpacks spread
+ * them - three instructions against roughly seven, for the identical
+ * register.
+ *
+ * memcpy rather than a cast: reading an int16_t array through an
+ * int32_t lvalue breaks aliasing.  Every compiler we build with folds
+ * this to the load it is. */
+static INLINE __m128i scaler_coeff_pair(const int16_t *filter)
+{
+   int32_t pair;
+   __m128i c;
+
+   memcpy(&pair, filter, sizeof(pair));
+
+   c = _mm_cvtsi32_si128(pair);
+   c = _mm_unpacklo_epi16(c, c);
+   return _mm_unpacklo_epi32(c, c);
+}
+
+/* Vertical taps are the same for every pixel in an output row, so they
+ * are built once per row into this and reused across the row rather
+ * than rebuilt per pixel.  32 pairs covers a 64-tap filter, which is
+ * scaler_gen_filter()'s sinc_size for downscale ratios up to 8:1;
+ * beyond that the per-pixel path still applies. */
+#define SCALER_MAX_HOISTED_PAIRS 32
 #endif
 
 /* ARGB8888 scaler is split in two:
@@ -161,6 +191,17 @@ void scaler_argb8888_vert(const struct scaler_ctx *ctx, void *output_, int strid
    {
       const uint64_t *input_base = input + ctx->vert.filter_pos[h]
          * (ctx->scaled.stride >> 3);
+#if defined(__SSE2__)
+      __m128i coeffs[SCALER_MAX_HOISTED_PAIRS];
+      int pairs = ctx->vert.filter_len >> 1;
+      int p;
+
+      if (pairs > SCALER_MAX_HOISTED_PAIRS)
+         pairs = 0;
+
+      for (p = 0; p < pairs; p++)
+         coeffs[p] = scaler_coeff_pair(filter_vert + p * 2);
+#endif
 
       for (w = 0; w < ctx->out_width; w++)
       {
@@ -169,12 +210,12 @@ void scaler_argb8888_vert(const struct scaler_ctx *ctx, void *output_, int strid
          __m128i final;
          __m128i res = _mm_setzero_si128();
 
-         for (y = 0; (y + 1) < ctx->vert.filter_len; y += 2,
+         for (p = 0, y = 0; (y + 1) < ctx->vert.filter_len; y += 2, p++,
                input_base_y += (ctx->scaled.stride >> 2))
          {
-            __m128i coeff = _mm_unpacklo_epi64(
-                  _mm_set1_epi16(filter_vert[y + 0]),
-                  _mm_set1_epi16(filter_vert[y + 1]));
+            __m128i coeff = (p < pairs)
+                  ? coeffs[p]
+                  : scaler_coeff_pair(filter_vert + y);
             __m128i col   = _mm_set_epi64x(input_base_y[ctx->scaled.stride >> 3], input_base_y[0]);
 
             res           = _mm_adds_epi16(_mm_mulhi_epi16(col, coeff), res);
@@ -340,12 +381,13 @@ void scaler_argb8888_horiz(const struct scaler_ctx *ctx, const void *input_, int
 #endif
          for (x = 0; (x + 1) < ctx->horiz.filter_len; x += 2)
          {
-            __m128i coeff = _mm_unpacklo_epi64(
-                  _mm_set1_epi16(filter_horiz[x + 0]),
-                  _mm_set1_epi16(filter_horiz[x + 1]));
+            __m128i coeff = scaler_coeff_pair(filter_horiz + x);
 
-            __m128i col   = _mm_unpacklo_epi8(_mm_set_epi64x(0,
-                     ((uint64_t)input_base_x[x + 1] << 32) | input_base_x[x + 0]), _mm_setzero_si128());
+            /* The two source pixels of a tap pair are adjacent, and
+             * fixup_filter_sub() keeps filter_pos[w] + filter_len
+             * inside the row, so one movq fetches both. */
+            __m128i col   = _mm_unpacklo_epi8(_mm_loadl_epi64(
+                     (const __m128i*)(input_base_x + x)), _mm_setzero_si128());
 
             col           = _mm_slli_epi16(col, 7);
             res           = _mm_adds_epi16(_mm_mulhi_epi16(col, coeff), res);
