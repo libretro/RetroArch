@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 #include <math.h>
 
 #include <gfx/scaler/scaler.h>
@@ -30,15 +31,63 @@
 #include <gfx/scaler/filter.h>
 #include <gfx/scaler/pixconv.h>
 
+/* Byte size of a frame buffer, or 0 if it is not one this scaler can
+ * address.
+ *
+ * Every frame here is described by an int stride, and the passes walk
+ * rows with int arithmetic - scaler_argb8888_vert() forms its row base
+ * as filter_pos[h] * (scaled.stride >> 3), which is an int multiply.
+ * A frame is therefore only usable if its whole byte size fits in an
+ * int, and computing that size has to happen in size_t to find out.
+ *
+ * It did not.  allocate_frames() multiplied the int stride by the int
+ * row count directly, and for a large enough frame that product does
+ * not merely overflow, it wraps to something small and plausible: a
+ * 262144-wide output over an 8192-row input needs 16 GB and asked for
+ * 1 byte, whereupon scaler_ctx_gen_filter() reported success and the
+ * horizontal pass wrote through it:
+ *
+ *   ERROR: AddressSanitizer: heap-buffer-overflow
+ *   WRITE of size 8
+ *     #0 scaler_argb8888_horiz scaler_int.c
+ *     #1 scaler_ctx_scale scaler.c
+ *   0x502000000011 is located 0 bytes after 1-byte region
+ *
+ * Anything that wraps to a large value instead simply fails the
+ * allocation, which was always the harmless half of this. */
+static size_t frame_bytes(size_t stride, size_t rows)
+{
+   if ((stride == 0) || (rows == 0))
+      return 0;
+   if (stride > (size_t)INT_MAX)
+      return 0;
+   if (rows > (size_t)INT_MAX / stride)
+      return 0;
+   return stride * rows;
+}
+
 static bool allocate_frames(struct scaler_ctx *ctx)
 {
    uint64_t *scaled_frame = NULL;
-   ctx->scaled.stride     = ((ctx->out_width + 7) & ~7) * sizeof(uint64_t);
+   size_t stride;
+   size_t bytes;
+
+   /* Nothing below is meaningful for a degenerate rectangle, and the
+    * size arithmetic assumes these are positive. */
+   if (     (ctx->in_width  <= 0) || (ctx->in_height  <= 0)
+         || (ctx->out_width <= 0) || (ctx->out_height <= 0))
+      return false;
+
+   stride                 = (((size_t)ctx->out_width + 7) & ~(size_t)7)
+                          * sizeof(uint64_t);
+
+   if (!(bytes = frame_bytes(stride, (size_t)ctx->in_height)))
+      return false;
+
+   ctx->scaled.stride     = (int)stride;
    ctx->scaled.width      = ctx->out_width;
    ctx->scaled.height     = ctx->in_height;
-   scaled_frame           = (uint64_t*)calloc(
-            (ctx->scaled.stride * ctx->scaled.height) >> 3,
-            sizeof(uint64_t));
+   scaled_frame           = (uint64_t*)calloc(bytes >> 3, sizeof(uint64_t));
 
    if (!scaled_frame)
       return false;
@@ -49,10 +98,15 @@ static bool allocate_frames(struct scaler_ctx *ctx)
            && ctx->in_fmt != SCALER_FMT_XRGB2101010)
    {
       uint32_t *input_frame = NULL;
-      ctx->input.stride     = ((ctx->in_width + 7) & ~7) * sizeof(uint32_t);
-      input_frame           = (uint32_t*)calloc(
-               (ctx->input.stride * ctx->in_height) >> 2,
-               sizeof(uint32_t));
+
+      stride                = (((size_t)ctx->in_width + 7) & ~(size_t)7)
+                            * sizeof(uint32_t);
+
+      if (!(bytes = frame_bytes(stride, (size_t)ctx->in_height)))
+         return false;
+
+      ctx->input.stride     = (int)stride;
+      input_frame           = (uint32_t*)calloc(bytes >> 2, sizeof(uint32_t));
 
       if (!input_frame)
          return false;
@@ -64,11 +118,15 @@ static bool allocate_frames(struct scaler_ctx *ctx)
            && ctx->out_fmt != SCALER_FMT_XRGB2101010)
    {
       uint32_t *output_frame = NULL;
-      ctx->output.stride     = ((ctx->out_width + 7) & ~7) * sizeof(uint32_t);
 
-      output_frame           = (uint32_t*)calloc(
-               (ctx->output.stride * ctx->out_height) >> 2,
-               sizeof(uint32_t));
+      stride                 = (((size_t)ctx->out_width + 7) & ~(size_t)7)
+                             * sizeof(uint32_t);
+
+      if (!(bytes = frame_bytes(stride, (size_t)ctx->out_height)))
+         return false;
+
+      ctx->output.stride     = (int)stride;
+      output_frame           = (uint32_t*)calloc(bytes >> 2, sizeof(uint32_t));
 
       if (!output_frame)
          return false;
