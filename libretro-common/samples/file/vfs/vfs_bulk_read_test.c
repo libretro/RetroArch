@@ -136,6 +136,7 @@ static int fixture_matches(const uint8_t *buf, int64_t size)
 /* would.                                                             */
 /* ------------------------------------------------------------------ */
 
+static int64_t wrap_size       = -1; /* override the reported size     */
 static int64_t wrap_chunk      = 0;  /* cap per read call; 0 = no cap  */
 static int64_t wrap_stop_after = -1; /* deliver N bytes, then EOF      */
 static int     wrap_fail_at    = -1; /* return -1 on the Nth call      */
@@ -144,6 +145,7 @@ static int     wrap_calls      = 0;
 
 static void wrap_reset(void)
 {
+   wrap_size       = -1;
    wrap_chunk      = 0;
    wrap_stop_after = -1;
    wrap_fail_at    = -1;
@@ -183,6 +185,18 @@ static int64_t wrap_read(struct retro_vfs_file_handle *stream,
    return got;
 }
 
+/* Report whatever size the test asked for.  Platforms disagree about
+ * what a directory's length is - Linux says INT64_MAX, others report
+ * a small plausible number or zero - and this is how each of those
+ * answers gets reproduced on whichever machine is running. */
+static int64_t wrap_size_cb(struct retro_vfs_file_handle *stream)
+{
+   if (wrap_size >= 0)
+      return wrap_size;
+   return retro_vfs_file_size_impl(
+         (libretro_vfs_implementation_file*)stream);
+}
+
 static struct retro_vfs_interface wrap_iface;
 
 static void wrap_install(void)
@@ -198,7 +212,7 @@ static void wrap_install(void)
    wrap_iface.get_path = (retro_vfs_get_path_t)retro_vfs_file_get_path_impl;
    wrap_iface.open     = (retro_vfs_open_t)retro_vfs_file_open_impl;
    wrap_iface.close    = (retro_vfs_close_t)retro_vfs_file_close_impl;
-   wrap_iface.size     = (retro_vfs_size_t)retro_vfs_file_size_impl;
+   wrap_iface.size     = wrap_size_cb;
    wrap_iface.tell     = (retro_vfs_tell_t)retro_vfs_file_tell_impl;
    wrap_iface.seek     = (retro_vfs_seek_t)retro_vfs_file_seek_impl;
    wrap_iface.read     = wrap_read;
@@ -548,11 +562,64 @@ static void test_directory_path(void)
 
    printf("test_directory_path\n");
 
+   /* However the platform presents it. */
    rc = filestream_read_file(".", &buf, &len);
-
    CHECK(rc == 0, "reading a directory reported success");
    CHECK(buf == NULL, "reading a directory produced a buffer");
    free(buf);
+
+   /* The three answers a platform can give for a directory's length,
+    * forced one at a time so every machine runs all of them rather
+    * than only its own.  Linux reports INT64_MAX from lseek and is
+    * refused by the size ceiling; Darwin reports something small and
+    * plausible through stdio and then delivers no bytes; a third
+    * could report zero, which is also what an empty file reports.
+    * All three must fail, and none may hand back a buffer. */
+   wrap_install();
+
+   {
+      static const int64_t sizes[] = { 0, 128, 4096 };
+      size_t i;
+
+      for (i = 0; i < sizeof(sizes) / sizeof(sizes[0]); i++)
+      {
+         wrap_reset();
+         wrap_size = sizes[i];
+         buf       = NULL;
+         len       = 0;
+
+         rc = filestream_read_file(".", &buf, &len);
+
+         CHECK(rc == 0, "directory reporting size %lld read as a file",
+               (long long)sizes[i]);
+         CHECK(buf == NULL, "directory reporting size %lld produced a buffer",
+               (long long)sizes[i]);
+         free(buf);
+
+         /* And with the read reporting end-of-stream rather than an
+          * error.  Linux answers EISDIR, which fails on its own;
+          * Darwin's buffered path answers zero bytes, which without
+          * the guard below reads as "the file shrank to nothing" and
+          * returns an empty buffer as a success.  Forced here so
+          * every platform exercises both answers. */
+         wrap_reset();
+         wrap_size       = sizes[i];
+         wrap_stop_after = 0;
+         buf             = NULL;
+         len             = 0;
+
+         rc = filestream_read_file(".", &buf, &len);
+
+         CHECK(rc == 0, "directory reporting size %lld and no bytes "
+               "read as an empty file", (long long)sizes[i]);
+         CHECK(buf == NULL, "directory reporting size %lld and no bytes "
+               "produced a buffer", (long long)sizes[i]);
+         free(buf);
+      }
+   }
+
+   wrap_uninstall();
+   wrap_reset();
 }
 
 static void test_missing_file(void)

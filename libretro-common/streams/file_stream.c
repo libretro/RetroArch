@@ -1883,9 +1883,21 @@ int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
       goto error;
 
    /* No usable size hint: read to EOF instead of trusting the zero.
-    * See filestream_read_file_to_eof() above. */
+    * See filestream_read_file_to_eof() above.
+    *
+    * A zero here is one of three things: a genuinely empty file, a
+    * stream whose length is not known in advance (procfs and the
+    * like), or a directory - which opens and seeks like a file on
+    * every platform checked and then yields nothing.  Only the last
+    * is an error, and nothing about the bytes distinguishes it from
+    * the first, so it costs one stat.  Paid only on this branch: a
+    * file with a size never reaches it, which is every read on the
+    * paths that matter for throughput. */
    if (content_buf_size == 0)
    {
+      if (path_is_directory(path))
+         goto error;
+
       if ((ret = filestream_read_file_to_eof(file, &content_buf)) < 0)
          goto error;
 
@@ -1958,6 +1970,19 @@ int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
 
       ret += got;
    }
+
+   /* The size said there were bytes and not one arrived.  That is not
+    * a file that shrank - a shrunk file still hands over what it has,
+    * which the loop above accepts - it is a stream that cannot be
+    * read at all.  A directory is exactly that shape wherever the
+    * platform lets one through: Linux reports INT64_MAX from lseek
+    * and is turned away by the ceiling above, but Darwin's buffered
+    * path reports a small plausible length and then reads zero
+    * bytes, and treating that as success handed back an empty buffer
+    * indistinguishable from an empty file.  Same call, same
+    * arguments, a different answer per platform. */
+   if (ret == 0)
+      goto error;
 
    if (filestream_close(file) != 0)
       free(file);
