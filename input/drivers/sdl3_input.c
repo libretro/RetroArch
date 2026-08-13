@@ -634,7 +634,6 @@ static void sdl3_paste_clipboard(void)
    {
       uint32_t c = utf8_walk(&ptr);
 
-      /* Drop control characters: a pasted newline would submit the
       /* Skip newline and backspace characters, since those would
        * negatively affect the input. */
       if (c >= 0x20 && c != 0x7f)
