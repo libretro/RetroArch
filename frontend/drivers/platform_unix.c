@@ -1932,18 +1932,22 @@ static void frontend_unix_get_env(int *argc,
       /* set paths depending on the ability to write
        * to internal_storage_path */
 
-      if (*internal_storage_path)
+      if (*internal_storage_path &&
+         test_permissions(internal_storage_path))
       {
-         if (test_permissions(internal_storage_path))
-            storage_permissions = INTERNAL_STORAGE_WRITABLE;
+         storage_permissions = INTERNAL_STORAGE_WRITABLE;
       }
-      else if (*internal_storage_app_path)
+      else if (*internal_storage_app_path &&
+               test_permissions(internal_storage_app_path))
       {
-         if (test_permissions(internal_storage_app_path))
-            storage_permissions = INTERNAL_STORAGE_APPDIR_WRITABLE;
+         storage_permissions = INTERNAL_STORAGE_APPDIR_WRITABLE;
       }
       else
+      {
+         // fallback to private data storage
+         // e.g. /data/user/0/com.retroarch.aarch64 then saves/ etc.
          storage_permissions = INTERNAL_STORAGE_NOT_WRITABLE;
+      }
 
       /* code to populate default paths*/
       if (*app_dir)

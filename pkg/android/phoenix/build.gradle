@@ -90,7 +90,7 @@ android {
       targetSdkVersion 36
       versionCode getPlayStoreVersionCode()
       versionName getPlayStoreVersionName()
-  
+
       resValue "string", "app_name", "RetroArch"
       buildConfigField "boolean", "PLAY_STORE_BUILD", "true"
 
