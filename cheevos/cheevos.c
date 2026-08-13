@@ -106,6 +106,7 @@ static rcheevos_locals_t rcheevos_locals =
    0,    /* menuitem_capacity */
    0,    /* menuitem_count */
 #endif
+   NULL, /* hash_error */
    true, /* hardcore_allowed */
    false,/* hardcore_requires_reload */
    false,/* hardcore_being_enabled */
@@ -1201,7 +1202,13 @@ bool rcheevos_get_support_cheevos(void)
 const char* rcheevos_get_hash(void)
 {
    const rc_client_game_t* game = rc_client_get_game_info(rcheevos_locals.client);
-   return game ? game->hash : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
+   if (game)
+      return game->hash;
+
+   if (rcheevos_locals.hash_error)
+      return rcheevos_locals.hash_error;
+
+   return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
 }
 
 /* hooks for rc_hash library */
@@ -1270,6 +1277,10 @@ static void* rc_hash_handle_chd_open_track(
       CHEEVOS_FREE(file);
       cdfs_close_track(cdfs_track); /* ASSERT: this free()s cdfs_track */
    }
+   else
+   {
+      rcheevos_locals.hash_error = "Could not open CHD file";
+   }
 
    return NULL;
 }
@@ -1330,6 +1341,7 @@ static void* rc_hash_handle_cd_open_track(
 
       return rc_hash_handle_chd_open_track(path, track);
 #else
+      rcheevos_locals.hash_error = "No CHD support";
       CHEEVOS_LOG(RCHEEVOS_TAG "Cannot generate hash from CHD without HAVE_CHD compile flag\n");
       return NULL;
 #endif
@@ -1711,6 +1723,7 @@ static void rcheevos_client_load_game_callback(int result,
       {
          CHEEVOS_LOG(RCHEEVOS_TAG "Game not recognized, pausing hardcore\n");
          rcheevos_pause_hardcore();
+         rcheevos_locals.hash_error = "Unrecognized";
 
          if (!settings->bools.cheevos_verbose_enable)
             return;
@@ -1726,6 +1739,11 @@ static void rcheevos_client_load_game_callback(int result,
             error_message = "Unknown error";
 
          CHEEVOS_LOG(RCHEEVOS_TAG "Game load failed: %s\n", error_message);
+
+         if (rcheevos_locals.hash_error)
+            error_message = rcheevos_locals.hash_error;
+         else
+            rcheevos_locals.hash_error = rc_error_str(result);
 
          if (result == RC_LOGIN_REQUIRED)
          {
@@ -1882,6 +1900,7 @@ bool rcheevos_load(const void *data)
       rcheevos_client_download_placeholder_badge();
    }
 
+   rcheevos_locals.hash_error = NULL;
    rc_client_set_hardcore_enabled(rcheevos_locals.client, settings->bools.cheevos_hardcore_mode_enable);
    rc_client_set_unofficial_enabled(rcheevos_locals.client, settings->bools.cheevos_test_unofficial);
    rc_client_set_encore_mode_enabled(rcheevos_locals.client, settings->bools.cheevos_start_active);
