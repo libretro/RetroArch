@@ -623,7 +623,7 @@ static uint16_t sdl3_translate_mod(SDL_Keymod smod)
 /* Grabs text from the clipboard, and passes it as keyboard input. */
 static void sdl3_paste_clipboard(void)
 {
-   char *text      = SDL_GetClipboardText();
+   char *text = SDL_GetClipboardText();
    const char *ptr = text;
 
    if (!text)
