@@ -115,7 +115,7 @@ bool sdl3_ctx_has_focus(void *data);
 void sdl3_ctx_check_window(void *data, bool *quit, bool *resize,
       unsigned *width, unsigned *height);
 
-/* Retrieve the DISPLAY_METRIC_DPI for the display content scale.
+/* Retrieve the DISPLAY_METRIC_DPI for the window's display scale.
  * This usually ends up being scale * 96 DPI, or false otherwise. */
 bool sdl3_ctx_get_metrics(void *data, enum display_metric_types type,
       float *value);

@@ -460,10 +460,7 @@ bool sdl3_ctx_get_metrics(void *data,
       enum display_metric_types type, float *value)
 {
    float scale;
-   SDL_Window *win = sdl3_ctx_window(data);
-   SDL_DisplayID display = win
-         ? SDL_GetDisplayForWindow(win)
-         : SDL_GetPrimaryDisplay();
+   SDL_Window *win;
 
    /* This currently only reports on the display's metric DPI. */
    if (type != DISPLAY_METRIC_DPI)
@@ -472,11 +469,21 @@ bool sdl3_ctx_get_metrics(void *data,
       return false;
    }
 
+   /* Find the scale from the window, or the primary display if the
+    * window doesn't exist yet. */
+   if ((win = sdl3_ctx_window(data)))
+      scale = SDL_GetWindowDisplayScale(win);
+   else
+      scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
+
    /* SDL3 only exposes the desktop scale factor, not the physical
     * DPI, so use a 96 DPI baseline. For reference, X11 has Xft.dpi,
     * and Wayland uses the compositor scale. */
-   if ((scale = SDL_GetDisplayContentScale(display)) <= 0.0f)
+   if (scale <= 0.0f)
+   {
+      *value = 0.0f;
       return false;
+   }
 
    *value = scale * 96.0f;
    return true;
