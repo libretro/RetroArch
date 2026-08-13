@@ -575,6 +575,23 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
          savedState, savedStateSize);
 }
 
+void frontend_android_get_manufacturer_model(char *s, size_t len)
+{
+   char manufacturer[PROP_VALUE_MAX] = {0};
+   char model[PROP_VALUE_MAX]        = {0};
+
+   if (!s || len == 0)
+      return;
+
+   __system_property_get("ro.product.manufacturer", manufacturer);
+   __system_property_get("ro.product.model", model);
+
+   if (manufacturer[0])
+      manufacturer[0] = (char)toupper((unsigned char)manufacturer[0]);
+
+   snprintf(s, len, "%s %s", manufacturer, model);
+}
+
 void frontend_android_get_name(char *s, size_t len)
 {
    system_property_get("getprop", "ro.product.model", s, len);
