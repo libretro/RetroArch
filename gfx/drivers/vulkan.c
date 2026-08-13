@@ -6119,8 +6119,19 @@ static void vulkan_readback(vk_t *vk, struct vk_image *readback_image)
    vulkan_viewport_info(vk, &vp);
 
    region.bufferOffset                    = 0;
-   region.bufferRowLength                 = 0;
-   region.bufferImageHeight               = 0;
+   /* The staging buffer is allocated at vk->vp.width x vk->vp.height and
+    * is walked on the host side (vulkan_read_viewport /
+    * vulkan_read_viewport_hdr / the recording scalers) with a row pitch of
+    * staging->stride, i.e. vk->vp.width texels.  imageExtent below may be
+    * clamped to *less* than that - by translate_x/y for a negative viewport
+    * origin, or against the swapchain dimensions - and a bufferRowLength of
+    * 0 means "tightly packed at imageExtent.width", which would make the GPU
+    * write rows at a narrower pitch than the host reads them at.  The result
+    * is a constant per-row shear of (vp.width - imageExtent.width) pixels
+    * across the whole screenshot.  State the destination pitch explicitly so
+    * the two sides agree no matter how the extent is clamped. */
+   region.bufferRowLength                 = vk->vp.width;
+   region.bufferImageHeight               = vk->vp.height;
    region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
    region.imageSubresource.mipLevel       = 0;
    region.imageSubresource.baseArrayLayer = 0;
