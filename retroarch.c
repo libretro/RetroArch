@@ -8355,6 +8355,20 @@ bool retroarch_main_init(int argc, char *argv[])
       RARCH_ERR("%s: \"%s\"\n",
             msg_hash_to_str(MSG_FATAL_ERROR_RECEIVED_IN),
             global_get_ptr()->error_string);
+#ifdef HAVE_SDL3
+      /* Fatal startup errors otherwise only reach the log; there is
+       * no window yet to display anything in. SDL3 message boxes are
+       * documented to be safe to call at any time, even before
+       * SDL_Init(), so pop up a native dialog for the user. */
+      {
+         char _msg[NAME_MAX_LENGTH + 64];
+         snprintf(_msg, sizeof(_msg), "%s: \"%s\"",
+               msg_hash_to_str(MSG_FATAL_ERROR_RECEIVED_IN),
+               global->error_string);
+         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
+               msg_hash_to_str(MSG_PROGRAM), _msg, NULL);
+      }
+#endif
       goto error;
    }
 
