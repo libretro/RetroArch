@@ -631,7 +631,7 @@ static void task_netplay_crc_scan_callback(retro_task_t *task,
                   command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED,
                      data->hostname);
 
-               task_push_load_subsystem_with_core(NULL,
+               task_push_load_subsystem_with_core(NULL, NULL,
                   &content_info, CORE_TYPE_PLAIN, NULL, NULL);
             }
             else

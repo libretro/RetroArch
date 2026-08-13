@@ -3004,12 +3004,27 @@ bool task_push_load_content_with_current_core_from_companion_ui(
 
 bool task_push_load_subsystem_with_core(
       const char *fullpath,
+      const char *label,
       content_ctx_info_t *content_info,
       enum rarch_core_type type,
       retro_task_callback_t cb,
       void *user_data)
 {
    content_state_t  *p_content = content_state_get_ptr();
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+
+   /* The content label is global state that survives until
+    * the next content load overwrites it, and it is what
+    * task_push_to_history_list() writes into the history
+    * playlist entry. Every other load path either sets it
+    * or clears it; this one did neither, so a subsystem
+    * launch inherited - and recorded - the label belonging
+    * to whatever content was loaded before it. */
+   if (label && *label)
+      strlcpy(runloop_st->name.label, label,
+            sizeof(runloop_st->name.label));
+   else
+      runloop_st->name.label[0] = '\0';
 
    p_content->flags |= CONTENT_ST_FLAG_PENDING_SUBSYSTEM_INIT;
    return task_load_content_internal_wrap(content_info, type, false);
