@@ -4707,6 +4707,14 @@ static bool gl3_frame(void *data, const void *frame,
          texture.width      = 1;
       if (texture.height == 0)
          texture.height     = 1;
+
+      /* Scissor is global context state, so a core that returns
+       * with the test still enabled clips every frontend draw that
+       * follows - the filter chain's final pass, the menu and the
+       * widgets - to the core's last scissor rectangle. Reset here
+       * rather than in the chain.active block below, which the
+       * slang filter chain path never enters. */
+      glDisable(GL_SCISSOR_TEST);
    }
    else
    {
