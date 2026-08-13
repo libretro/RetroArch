@@ -59,9 +59,7 @@ typedef struct _sdl3_video
    uint8_t flags;
 } sdl3_video_t;
 
-/* Registers the application name, version and identifier with SDL so
- * Wayland taskbars, PipeWire streams and desktop portals identify
- * RetroArch properly. Call before initializing the video subsystem. */
+/* Registers the application name, version and metadata. */
 void sdl3_set_app_metadata(void);
 
 /* Sets the window's native display/window handles (X11, Wayland,

@@ -32,8 +32,7 @@
 #include "../../retroarch.h"
 #include "../../version.h"
 
-/* 16x16 ARGB8888 window icon, same pixels as the embedded icon used
- * by x_ctx.c and wayland_common.c. */
+/* 16x16 ARGB8888 window icon, matching x_ctx.c, wayland_common.c, ui_qt.cpp. */
 static const uint32_t sdl3_icon_data[16 * 16] = {
 0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,
 0x00000000,0x00000000,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0x00000000,0x00000000,0x00000000,
@@ -55,16 +54,13 @@ static const uint32_t sdl3_icon_data[16 * 16] = {
 
 void sdl3_set_app_metadata(void)
 {
-   /* Identifies RetroArch to Wayland taskbars, PipeWire streams and
-    * desktop portals. The identifier matches the installed desktop
-    * file (com.libretro.RetroArch.desktop) and the Wayland app id
-    * used by wayland_common.h. */
    SDL_SetAppMetadata("RetroArch", PACKAGE_VERSION, "com.libretro.RetroArch");
+   SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_CREATOR_STRING, "libretro");
+   SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_URL_STRING, "https://www.retroarch.com");
+   SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_TYPE_STRING, "game");
 }
 
-/* Sets the taskbar/alt-tab window icon. Backends without window
- * icons (e.g. Wayland compositors lacking xdg-toplevel-icon) simply
- * ignore it. */
+/* Sets the window icon so that the RetroArch icon appears in the taskbar. */
 static void sdl3_window_set_icon(SDL_Window *win)
 {
    SDL_Surface *icon = SDL_CreateSurfaceFrom(16, 16,
