@@ -598,6 +598,7 @@ static void sdl3_poll_touch(sdl3_input_t *sdl)
    sdl->num_touch_devices = num_direct;
 }
 
+/* Translates an SDL_Keymod to a RETROKMOD. */
 static uint16_t sdl3_translate_mod(SDL_Keymod smod)
 {
    uint16_t mod = 0;
@@ -618,6 +619,47 @@ static uint16_t sdl3_translate_mod(SDL_Keymod smod)
       mod |= RETROKMOD_SCROLLOCK;
 
    return mod;
+}
+
+/* Translates control/modifier keys into their ASCII character counterpart. */
+static uint32_t sdl3_translate_control_key(unsigned code, uint16_t mod)
+{
+   switch (code)
+   {
+      case RETROK_BACKSPACE:
+      case RETROK_TAB:
+      case RETROK_RETURN:
+      case RETROK_ESCAPE:
+      case RETROK_DELETE:
+      case RETROK_KP_ENTER:
+         return input_keymaps_translate_rk_to_ascii((enum retro_key)code, (enum retro_mod)mod);
+      default:
+         break;
+   }
+
+   return 0;
+}
+
+/* Grabs text from the clipboard, and passes it as keyboard input. */
+static void sdl3_paste_clipboard(void)
+{
+   char *text = SDL_GetClipboardText();
+   const char *ptr = text;
+
+   if (!text)
+      return;
+
+   while (*ptr)
+   {
+      uint32_t c = utf8_walk(&ptr);
+
+      /* Skip newline and backspace characters, since those would
+       * negatively affect the input. */
+      if (c >= 0x20 && c != 0x7f)
+         input_keyboard_event(true, RETROK_UNKNOWN, c, 0, RETRO_DEVICE_KEYBOARD);
+   }
+
+   SDL_free(text);
 }
 
 static void sdl3_input_poll(void *data)
@@ -648,12 +690,19 @@ static void sdl3_input_poll(void *data)
          unsigned code = input_keymaps_translate_keysym_to_rk(
                event.key.key);
 
-         /* Character 0: typed characters are delivered separately
-          * through SDL_EVENT_TEXT_INPUT below (mirroring the win32
-          * WM_KEYDOWN / WM_CHAR split), so don't also synthesize one
-          * from the keycode or text entry would double up. */
+         /* Allow pasting the clipboard. */
+         if (     event.type == SDL_EVENT_KEY_DOWN
+               && event.key.key == SDLK_V
+               && (event.key.mod & SDL_KMOD_CTRL)
+               && input_state_get_ptr()->keyboard_line.enabled)
+         {
+            sdl3_paste_clipboard();
+            continue;
+         }
+
          input_keyboard_event(event.type == SDL_EVENT_KEY_DOWN,
-               code, 0, mod, RETRO_DEVICE_KEYBOARD);
+               code, sdl3_translate_control_key(code, mod), mod,
+               RETRO_DEVICE_KEYBOARD);
       }
       else if (event.type == SDL_EVENT_TEXT_INPUT)
       {
