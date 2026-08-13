@@ -460,16 +460,12 @@ bool sdl3_ctx_get_metrics(void *data,
       enum display_metric_types type, float *value)
 {
    float scale;
-   SDL_Window *win       = sdl3_ctx_window(data);
+   SDL_Window *win = sdl3_ctx_window(data);
    SDL_DisplayID display = win
          ? SDL_GetDisplayForWindow(win)
          : SDL_GetPrimaryDisplay();
 
-   /* DPI is the only metric this can answer. Of the rest, MM_WIDTH
-    * and MM_HEIGHT are asked for (System Information) but SDL3
-    * exposes no physical display size to answer them with, and
-    * PIXEL_WIDTH / PIXEL_HEIGHT are only ever queried through the
-    * display server interface, never through a context driver. */
+   /* This currently only reports on the display's metric DPI. */
    if (type != DISPLAY_METRIC_DPI)
    {
       *value = 0.0f;
@@ -477,8 +473,8 @@ bool sdl3_ctx_get_metrics(void *data,
    }
 
    /* SDL3 only exposes the desktop scale factor, not the physical
-    * DPI, so report it relative to the 96 DPI baseline (X11:
-    * Xft.dpi, Wayland: compositor scale). */
+    * DPI, so use a 96 DPI baseline. For reference, X11 has Xft.dpi,
+    * and Wayland uses the compositor scale. */
    if ((scale = SDL_GetDisplayContentScale(display)) <= 0.0f)
       return false;
 

@@ -115,11 +115,8 @@ bool sdl3_ctx_has_focus(void *data);
 void sdl3_ctx_check_window(void *data, bool *quit, bool *resize,
       unsigned *width, unsigned *height);
 
-/* Reports DISPLAY_METRIC_DPI derived from the display content scale
- * (scale * 96 DPI). Every other metric returns false: SDL3 exposes
- * no physical display size for MM_WIDTH/MM_HEIGHT, and the
- * PIXEL_WIDTH/PIXEL_HEIGHT pair is never asked of a context
- * driver. */
+/* Retrieve the DISPLAY_METRIC_DPI for the display content scale.
+ * This usually ends up being scale * 96 DPI, or false otherwise. */
 bool sdl3_ctx_get_metrics(void *data, enum display_metric_types type,
       float *value);
 
