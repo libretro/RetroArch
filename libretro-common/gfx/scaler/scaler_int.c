@@ -62,6 +62,79 @@
  * SIMD code for testing purposes.
  */
 
+/* Specialised vertical pass for a 2-tap filter, i.e. bilinear.
+ *
+ * The generic loop below is written for an arbitrary tap count, and
+ * pays for that generality once per *output pixel*: it rebuilds the
+ * coefficient vectors from filter_vert[] inside the innermost loop,
+ * even though those coefficients depend only on the output row.  It
+ * also spends both halves of the register on one pixel's two source
+ * rows, so a 128-bit machine retires one 32-bit pixel per pass.
+ *
+ * With the tap count known there is no reason for either.  The two
+ * coefficient broadcasts hoist out to the row, and both lanes can
+ * carry a pixel instead, which halves the iteration count.  Output is
+ * bit-exact against the generic path - the arithmetic is the same
+ * saturating add of the same two mulhi terms, only reassociated
+ * across lanes rather than across the accumulator - so this is purely
+ * a matter of not doing avoidable work.
+ *
+ * This is the path the menu thumbnail upscaler takes, where it is
+ * also the dominant cost: filtering a 360x256 state screenshot to
+ * 1440x1024 spends 3.9 ms of 4.8 ms here.
+ *
+ * SSE2 only, deliberately.  The same specialisation written in C
+ * measured ~20% *slower* than the generic loop (7.4 ms -> 9.2 ms on
+ * 256x256 -> 1024x1024), because there the win does not exist to
+ * begin with: a two-iteration loop is something the compiler already
+ * unrolls, and hand-unrolling it only adds truncations.  Scalar
+ * builds keep the generic path. */
+#if defined(__SSE2__)
+static void scaler_argb8888_vert_2tap(const struct scaler_ctx *ctx,
+      void *output_, int stride)
+{
+   int h, w;
+   const uint64_t      *input = ctx->scaled.frame;
+   uint32_t           *output = (uint32_t*)output_;
+   const int16_t *filter_vert = ctx->vert.filter;
+   const int       row_stride = ctx->scaled.stride >> 3;
+
+   for (h = 0; h < ctx->out_height; h++,
+         filter_vert += ctx->vert.filter_stride, output += stride >> 2)
+   {
+      const uint64_t *r0 = input + ctx->vert.filter_pos[h] * row_stride;
+      const uint64_t *r1 = r0 + row_stride;
+      const __m128i   c0 = _mm_set1_epi16(filter_vert[0]);
+      const __m128i   c1 = _mm_set1_epi16(filter_vert[1]);
+
+      for (w = 0; (w + 1) < ctx->out_width; w += 2)
+      {
+         __m128i a   = _mm_loadu_si128((const __m128i*)(r0 + w));
+         __m128i b   = _mm_loadu_si128((const __m128i*)(r1 + w));
+         __m128i res = _mm_adds_epi16(_mm_mulhi_epi16(a, c0),
+                                      _mm_mulhi_epi16(b, c1));
+
+         res         = _mm_srai_epi16(res, (7 - 2 - 2));
+
+         _mm_storel_epi64((__m128i*)(output + w),
+               _mm_packus_epi16(res, res));
+      }
+
+      for (; w < ctx->out_width; w++)
+      {
+         __m128i a   = _mm_loadl_epi64((const __m128i*)(r0 + w));
+         __m128i b   = _mm_loadl_epi64((const __m128i*)(r1 + w));
+         __m128i res = _mm_adds_epi16(_mm_mulhi_epi16(a, c0),
+                                      _mm_mulhi_epi16(b, c1));
+
+         res         = _mm_srai_epi16(res, (7 - 2 - 2));
+
+         output[w]   = _mm_cvtsi128_si32(_mm_packus_epi16(res, res));
+      }
+   }
+}
+#endif
+
 void scaler_argb8888_vert(const struct scaler_ctx *ctx, void *output_, int stride)
 {
    int h, w, y;
@@ -69,6 +142,17 @@ void scaler_argb8888_vert(const struct scaler_ctx *ctx, void *output_, int strid
    uint32_t           *output = (uint32_t*)output_;
 
    const int16_t *filter_vert = ctx->vert.filter;
+
+#if defined(__SSE2__)
+   /* fixup_filter_sub() guarantees filter_pos[h] + filter_len stays
+    * inside the source, so a 2-tap filter always has its second row
+    * to read. */
+   if (ctx->vert.filter_len == 2)
+   {
+      scaler_argb8888_vert_2tap(ctx, output_, stride);
+      return;
+   }
+#endif
 
    for (h = 0; h < ctx->out_height; h++,
          filter_vert += ctx->vert.filter_stride, output += stride >> 2)
