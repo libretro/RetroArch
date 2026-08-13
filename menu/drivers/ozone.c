@@ -7621,6 +7621,9 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
       height                = slice_new_h;
       margin                = slice_margin;
 
+      if (dispctx && dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
+
       gfx_display_draw_texture_slice(
             p_disp,
             userdata,
@@ -7640,6 +7643,9 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
             ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_DIALOG_SLICE],
             mymat
             );
+
+      if (dispctx && dispctx->blend_end)
+         dispctx->blend_end(userdata);
    }
 
    for (i = 0; i < line_count; i++)

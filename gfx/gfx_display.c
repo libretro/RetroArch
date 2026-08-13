@@ -714,6 +714,8 @@ void gfx_display_draw_texture_slice(
    draw.texture             = texture;
    draw.x                   = 0;
    draw.y                   = 0;
+   draw.scale_factor        = 1.0f;
+   draw.rotation            = 0.0f;
 
    /* vertex coords are specified bottom-up in this order: BL BR TL TR */
    /* texture coords are specified top-down in this order: BL BR TL TR */
