@@ -620,8 +620,7 @@ static uint16_t sdl3_translate_mod(SDL_Keymod smod)
    return mod;
 }
 
-/* Gets the text in the clipboard, and interprets it as libretro
- * keyboard input. */
+/* Grabs text from the clipboard, and passes it as keyboard input. */
 static void sdl3_paste_clipboard(void)
 {
    char *text      = SDL_GetClipboardText();
