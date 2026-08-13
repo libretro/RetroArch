@@ -76,23 +76,19 @@ typedef struct sdl3_input
       float y;
    } touches[SDL3_MAX_TOUCH];
 
-   /* Pen/stylus state, fed by the SDL_EVENT_PEN_* range. Multiple
-    * pens are merged into one: last writer wins. */
+   /* Pen/stylus state, fed by the SDL_EVENT_PEN_* range. The pen is
+    * reported as libretro pointer input, so only what the pointer
+    * needs is kept: whether it's in range, whether it's touching,
+    * and where. Multiple pens are merged into one: last writer
+    * wins. */
    bool pen_in_proximity;
    bool pen_down;
-   /* The contact is the eraser end of the pen. */
-   bool pen_eraser;
-   /* Barrel button state, bit (button - 1). */
-   uint8_t pen_buttons;
    /* Last reported position in window coordinates (points). */
    float pen_raw_x;
    float pen_raw_y;
    /* Position in output pixels, matching mouse_abs_*. */
    float pen_abs_x;
    float pen_abs_y;
-   /* SDL_PEN_AXIS_* values (pressure, tilt, ...). Nothing maps them
-    * onto the libretro API yet; tracked so a later mapping has them. */
-   float pen_axes[SDL_PEN_AXIS_COUNT];
 } sdl3_input_t;
 
 /* Rebuilt on SDL_EVENT_KEYMAP_CHANGED (e.g. system layout switch). */
@@ -386,13 +382,9 @@ static int16_t sdl3_input_state(
                   int16_t res_y        = 0;
                   int16_t res_screen_x = 0;
                   int16_t res_screen_y = 0;
-                  /* A pen in range aims the gun; the mouse state SDL
-                   * synthesizes from it tracks the same spot anyway. */
-                  int abs_x = (int)(sdl->pen_in_proximity ? sdl->pen_abs_x : sdl->mouse_abs_x);
-                  int abs_y = (int)(sdl->pen_in_proximity ? sdl->pen_abs_y : sdl->mouse_abs_y);
 
                   if (video_driver_translate_coord_viewport_wrap(
-                              &vp, abs_x, abs_y,
+                              &vp, (int)sdl->mouse_abs_x, (int)sdl->mouse_abs_y,
                               &res_x, &res_y, &res_screen_x, &res_screen_y))
                   {
                      switch (id)
@@ -654,8 +646,10 @@ static void sdl3_poll_touch(sdl3_input_t *sdl)
 }
 
 /* Consume the pen event range. Unlike fingers there is no polled
- * counterpart to read instead (SDL keeps per-pen axis state but has
- * no query API for it), so this tracks the events by hand. */
+ * counterpart to read instead, so this tracks the events by hand.
+ * Only proximity, contact and position are kept - the rest of the
+ * range (barrel buttons, pressure and the other axes) has nothing
+ * to map onto the pointer, and is peeped purely to drain it. */
 static void sdl3_poll_pen(sdl3_input_t *sdl)
 {
    SDL_Event event;
@@ -670,44 +664,21 @@ static void sdl3_poll_pen(sdl3_input_t *sdl)
             sdl->pen_in_proximity = true;
             break;
          case SDL_EVENT_PEN_PROXIMITY_OUT:
-            /* Everything is cleared so nothing keeps acting on stale
-             * button or pressure state once the pen leaves hover
-             * range; the position is kept as a last-known-good. */
+            /* Contact is cleared so nothing keeps reading the pointer
+             * as pressed once the pen leaves hover range; the position
+             * is kept as a last-known-good. */
             sdl->pen_in_proximity = false;
             sdl->pen_down         = false;
-            sdl->pen_eraser       = false;
-            sdl->pen_buttons      = 0;
-            memset(sdl->pen_axes, 0, sizeof(sdl->pen_axes));
             break;
          case SDL_EVENT_PEN_DOWN:
          case SDL_EVENT_PEN_UP:
-            sdl->pen_down   = event.ptouch.down;
-            sdl->pen_eraser = event.ptouch.eraser;
-            sdl->pen_raw_x  = event.ptouch.x;
-            sdl->pen_raw_y  = event.ptouch.y;
+            sdl->pen_down  = event.ptouch.down;
+            sdl->pen_raw_x = event.ptouch.x;
+            sdl->pen_raw_y = event.ptouch.y;
             break;
          case SDL_EVENT_PEN_MOTION:
             sdl->pen_raw_x = event.pmotion.x;
             sdl->pen_raw_y = event.pmotion.y;
-            break;
-         case SDL_EVENT_PEN_BUTTON_DOWN:
-         case SDL_EVENT_PEN_BUTTON_UP:
-            /* Buttons are numbered from 1. */
-            if (event.pbutton.button >= 1 && event.pbutton.button <= 8)
-            {
-               uint8_t bit = 1 << (event.pbutton.button - 1);
-               if (event.pbutton.down)
-                  sdl->pen_buttons |= bit;
-               else
-                  sdl->pen_buttons &= ~bit;
-            }
-            sdl->pen_raw_x = event.pbutton.x;
-            sdl->pen_raw_y = event.pbutton.y;
-            break;
-         case SDL_EVENT_PEN_AXIS:
-            if ((int)event.paxis.axis >= 0
-                  && (int)event.paxis.axis < SDL_PEN_AXIS_COUNT)
-               sdl->pen_axes[event.paxis.axis] = event.paxis.value;
             break;
       }
    }
@@ -813,12 +784,6 @@ static void sdl3_input_poll(void *data)
    SDL_FlushEvents(SDL_EVENT_FINGER_DOWN, SDL_EVENT_FINGER_CANCELED);
 
    sdl3_poll_pen(sdl);
-
-   /* The barrel buttons double as right/middle mouse buttons so the
-    * stock mouse and lightgun binds can reach them; SDL's own
-    * pen-to-mouse synthesis only covers the tip. */
-   sdl->mouse_r |= (sdl->pen_buttons & 1) != 0;
-   sdl->mouse_m |= (sdl->pen_buttons & 2) != 0;
 }
 
 static void sdl3_grab_mouse(void *data, bool state)
