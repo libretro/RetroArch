@@ -324,7 +324,16 @@ static void sdl3_ctx_bind_hw_render(void *data, bool enable)
 /* With threaded video, gl3/gl2 bind the GL context on the video
  * thread around menu/widget texture loads and raster-font teardown.
  * Without this hook those binds are silent no-ops and the textures
- * are created without a current context (black menu icons). */
+ * are created without a current context (black menu icons).
+ *
+ * No locking is needed here, and none of the other ctx drivers that
+ * implement this hook take any either: every caller reaches it from
+ * inside a custom command that video_thread_texture_handle has
+ * dispatched onto the video thread and blocks on, so this runs
+ * serialised with frame rendering rather than alongside it. That is
+ * the same thread sdl3_gl_current is assigned on - the wrapper
+ * handles CMD_INIT from within video_thread_loop, so the ctx init
+ * that sets it already runs on the video thread. */
 static void sdl3_ctx_make_current(bool release)
 {
    if (!sdl3_gl_current || !sdl3_gl_current->win)
