@@ -697,48 +697,60 @@ static void sdl3_input_poll(void *data)
 
    while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_EVENT_KEY_DOWN, SDL_EVENT_MOUSE_REMOVED) > 0)
    {
-      if (     event.type == SDL_EVENT_KEY_DOWN
-            || event.type == SDL_EVENT_KEY_UP)
+      switch (event.type)
       {
-         uint16_t mod  = sdl3_translate_mod(event.key.mod);
-         unsigned code = input_keymaps_translate_keysym_to_rk(
-               event.key.key);
+         case SDL_EVENT_KEY_DOWN:
+         case SDL_EVENT_KEY_UP:
+            {
+               uint16_t mod = sdl3_translate_mod(event.key.mod);
+               uint32_t character = 0;
+               unsigned code = input_keymaps_translate_keysym_to_rk(event.key.key);
 
-         /* Character 0: typed characters are delivered separately
-          * through SDL_EVENT_TEXT_INPUT below (mirroring the win32
-          * WM_KEYDOWN / WM_CHAR split), so don't also synthesize one
-          * from the keycode or text entry would double up. */
-         input_keyboard_event(event.type == SDL_EVENT_KEY_DOWN,
-               code, 0, mod, RETRO_DEVICE_KEYBOARD);
-      }
-      else if (event.type == SDL_EVENT_TEXT_INPUT)
-      {
-         const char *text = event.text.text;
-         uint16_t mod = sdl3_translate_mod(SDL_GetModState());
+               /* Fix newline and backspace characters. */
+               switch (event.key.key)
+               {
+                  case SDLK_RETURN: case SDLK_KP_ENTER: character = '\r'; break;
+                  case SDLK_BACKSPACE: character = '\b'; break;
+                  default: break;
+               }
 
-         while (text && *text)
-            input_keyboard_event(true, RETROK_UNKNOWN,
-                  utf8_walk(&text), mod, RETRO_DEVICE_KEYBOARD);
-      }
-      else if (event.type == SDL_EVENT_MOUSE_WHEEL)
-      {
-         float wx = event.wheel.x;
-         float wy = event.wheel.y;
+               input_keyboard_event(event.type == SDL_EVENT_KEY_DOWN, code, character, mod, RETRO_DEVICE_KEYBOARD);
+            }
+            break;
+         case SDL_EVENT_TEXT_INPUT:
+            {
+               const char *text = event.text.text;
+               uint16_t mod = sdl3_translate_mod(SDL_GetModState());
 
-         /* FLIPPED = "natural" scrolling: SDL delivers inverted
-          * signs and expects the caller to negate them. */
-         if (event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED)
-         {
-            wx = -wx;
-            wy = -wy;
-         }
-         sdl->mouse_wu |= wy > 0;
-         sdl->mouse_wd |= wy < 0;
-         sdl->mouse_wl |= wx < 0;
-         sdl->mouse_wr |= wx > 0;
+               while (text && *text)
+                  input_keyboard_event(true, RETROK_UNKNOWN, utf8_walk(&text), mod, RETRO_DEVICE_KEYBOARD);
+            }
+            break;
+         case SDL_EVENT_MOUSE_WHEEL:
+            {
+               /* FLIPPED = "natural" scrolling: SDL delivers inverted
+               * signs and expects the caller to negate them. */
+               if (event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED)
+               {
+                  sdl->mouse_wu |= event.wheel.y < 0;
+                  sdl->mouse_wd |= event.wheel.y > 0;
+                  sdl->mouse_wl |= event.wheel.x > 0;
+                  sdl->mouse_wr |= event.wheel.x < 0;
+               }
+               else {
+                  sdl->mouse_wu |= event.wheel.y > 0;
+                  sdl->mouse_wd |= event.wheel.y < 0;
+                  sdl->mouse_wl |= event.wheel.x < 0;
+                  sdl->mouse_wr |= event.wheel.x > 0;
+               }
+            }
+            break;
+         case SDL_EVENT_KEYMAP_CHANGED:
+            sdl3_build_scancode_lut(sdl);
+            break;
+         default:
+            break;
       }
-      else if (event.type == SDL_EVENT_KEYMAP_CHANGED)
-         sdl3_build_scancode_lut(sdl);
    }
 
    /* Neither range is consumed anywhere: sdl3_poll_touch reads finger
