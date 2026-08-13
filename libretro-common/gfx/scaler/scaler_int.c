@@ -138,10 +138,10 @@ void scaler_argb8888_vert(const struct scaler_ctx *ctx, void *output_, int strid
          res_b           >>= (7 - 2 - 2);
 
          output[w]         =
-            (clamp_8bit(res_a) << 24) |
-            (clamp_8bit(res_r) << 16) |
-            (clamp_8bit(res_g) << 8)  |
-            (clamp_8bit(res_b) << 0);
+            ((uint32_t)clamp_8bit(res_a) << 24) |
+            ((uint32_t)clamp_8bit(res_r) << 16) |
+            ((uint32_t)clamp_8bit(res_g) << 8)  |
+            ((uint32_t)clamp_8bit(res_b) << 0);
 #endif
       }
    }
