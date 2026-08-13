@@ -700,27 +700,19 @@ static void sdl3_input_poll(void *data)
       if (     event.type == SDL_EVENT_KEY_DOWN
             || event.type == SDL_EVENT_KEY_UP)
       {
-         uint16_t mod       = sdl3_translate_mod(event.key.mod);
+         uint16_t mod = sdl3_translate_mod(event.key.mod);
          uint32_t character = 0;
-         unsigned code      = input_keymaps_translate_keysym_to_rk(
-               event.key.key);
+         unsigned code = input_keymaps_translate_keysym_to_rk( event.key.key);
 
          /* Fix newline and backspace characters. */
          switch (event.key.key)
          {
-            case SDLK_RETURN:
-            case SDLK_KP_ENTER:
-               character = '\r';
-               break;
-            case SDLK_BACKSPACE:
-               character = '\b';
-               break;
-            default:
-               break;
+            case SDLK_RETURN: case SDLK_KP_ENTER: character = '\r'; break;
+            case SDLK_BACKSPACE: character = '\b'; break;
+            default: break;
          }
 
-         input_keyboard_event(event.type == SDL_EVENT_KEY_DOWN,
-               code, character, mod, RETRO_DEVICE_KEYBOARD);
+         input_keyboard_event(event.type == SDL_EVENT_KEY_DOWN, code, character, mod, RETRO_DEVICE_KEYBOARD);
       }
       else if (event.type == SDL_EVENT_TEXT_INPUT)
       {
