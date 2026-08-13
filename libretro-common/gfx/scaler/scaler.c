@@ -79,7 +79,7 @@ static bool allocate_frames(struct scaler_ctx *ctx)
    return true;
 }
 
-bool scaler_ctx_gen_filter(struct scaler_ctx *ctx)
+static bool scaler_ctx_gen_filter_internal(struct scaler_ctx *ctx)
 {
    scaler_ctx_gen_reset(ctx);
 
@@ -298,6 +298,51 @@ bool scaler_ctx_gen_filter(struct scaler_ctx *ctx)
    return true;
 }
 
+/* Fail with nothing left attached.
+ *
+ * The body above bails from a dozen places, several of them after it
+ * has already allocated buffers or bound a scaling function, and it
+ * left all of that behind on the way out.  Two consequences, both
+ * live:
+ *
+ * The buffers leaked.  Only rgui cleaned up after a failure, with a
+ * defensive scaler_ctx_gen_reset() and a comment guessing there might
+ * be leftovers; every other caller - both in tasks/task_image.c, the
+ * gl2/gl3/vulkan readback paths, the camera drivers - simply returned.
+ *
+ * Worse, a context could fail with scaler_horiz and scaler_vert bound
+ * but their filters freed or never validated, and scaler_ctx_scale()
+ * has no way to tell that apart from a working context.  Callers that
+ * ignore the return value - tasks/task_translation.c does, twice -
+ * then scale through it.  Scaling a 1x1 source, where validate_filter()
+ * rejects the generated positions, reads past the end of the source
+ * row:
+ *
+ *   ERROR: AddressSanitizer: stack-buffer-overflow
+ *     #0 scaler_argb8888_horiz scaler_int.c
+ *     #1 scaler_ctx_scale scaler.c
+ *
+ * So release what was allocated and unbind everything.  A failed
+ * context is then inert rather than half-built, and scaler_ctx_scale()
+ * on one is a no-op - see the guard there. */
+bool scaler_ctx_gen_filter(struct scaler_ctx *ctx)
+{
+   if (scaler_ctx_gen_filter_internal(ctx))
+      return true;
+
+   scaler_ctx_gen_reset(ctx);
+
+   ctx->scaler_horiz   = NULL;
+   ctx->scaler_vert    = NULL;
+   ctx->scaler_special = NULL;
+   ctx->direct_pixconv = NULL;
+   ctx->in_pixconv     = NULL;
+   ctx->out_pixconv    = NULL;
+   ctx->unscaled       = false;
+
+   return false;
+}
+
 void scaler_ctx_gen_reset(struct scaler_ctx *ctx)
 {
    if (ctx->horiz.filter)
@@ -371,6 +416,16 @@ void scaler_ctx_scale(struct scaler_ctx *ctx,
                ctx->out_stride, ctx->in_stride);
       return;
    }
+
+   /* Nothing bound to scale with: either scaler_ctx_gen_filter() was
+    * never called on this context, or it failed and unbound itself.
+    * Return before the pixel converters below, which are called
+    * unconditionally on their formats and would run against the
+    * buffers a failure just freed. */
+   if (     !ctx->scaler_special
+         && !ctx->scaler_horiz
+         && !ctx->scaler_vert)
+      return;
 
    if (       ctx->in_fmt != SCALER_FMT_ARGB8888
            && ctx->in_fmt != SCALER_FMT_XRGB2101010)
