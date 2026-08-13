@@ -54,6 +54,10 @@ static unsigned sdl3_gl_minor = 0;
 static SDL_GLContext sdl3_gl_cached_ctx = NULL;
 static SDL_GLContext sdl3_gl_cached_shared_ctx = NULL;
 
+/* The make_current hook receives no pointer, so track it at
+ * the file scope (same as x_ctx). */
+static gfx_ctx_sdl3_data_t *sdl3_gl_current = NULL;
+
 /* Core-profile context: explicitly requested, or GL 3.1+. */
 static bool sdl3_gl_core_profile(gfx_ctx_sdl3_data_t *sdl)
 {
@@ -100,6 +104,9 @@ static void sdl3_ctx_destroy(void *data)
    if (!sdl3_gl_cached_ctx)
       SDL_QuitSubSystem(SDL_INIT_VIDEO);
 
+   if (sdl3_gl_current == sdl)
+      sdl3_gl_current = NULL;
+
    free(sdl);
 }
 
@@ -130,6 +137,8 @@ static void *sdl3_ctx_init(void *video_driver)
 
    RARCH_LOG("[SDL3 GL] SDL %d.%d.%d gfx context driver initialized.\n",
          SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_MICRO_VERSION);
+
+   sdl3_gl_current = sdl;
 
    return sdl;
 }
@@ -314,6 +323,18 @@ static void sdl3_ctx_bind_hw_render(void *data, bool enable)
       SDL_GL_MakeCurrent(sdl->win, sdl->ctx);
 }
 
+/* With threaded video, gl3/gl2 bind the GL context on the video
+ * thread. Without this hook those binds don't do anything and
+ * the textures created without a current context, resulting in
+ * black menu icons. */
+static void sdl3_ctx_make_current(bool release)
+{
+   if (!sdl3_gl_current || !sdl3_gl_current->win)
+      return;
+   SDL_GL_MakeCurrent(sdl3_gl_current->win,
+         release ? NULL : sdl3_gl_current->ctx);
+}
+
 const gfx_ctx_driver_t gfx_ctx_sdl3_gl =
 {
    sdl3_ctx_init,
@@ -346,7 +367,7 @@ const gfx_ctx_driver_t gfx_ctx_sdl3_gl =
    sdl3_ctx_set_flags,
    sdl3_ctx_bind_hw_render,
    NULL, /* get_context_data */
-   NULL, /* make_current */
+   sdl3_ctx_make_current,
    NULL, /* create_surface */
    NULL  /* destroy_surface */
 };

@@ -297,7 +297,10 @@ const gfx_ctx_driver_t gfx_ctx_sdl3_vk = {
    sdl3_vk_ctx_set_flags,
    sdl3_vk_ctx_bind_hw_render,
    sdl3_vk_ctx_get_context_data,
-   NULL, /* make_current */
+   /* make_current: GL-only. Vulkan has no per-thread context
+    * to bind. x, wayland, android, and other Vulkan drivers
+    * do the same. */
+   NULL,
    NULL, /* create_surface */
    NULL  /* destroy_surface */
 };
