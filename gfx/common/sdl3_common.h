@@ -59,6 +59,9 @@ typedef struct _sdl3_video
    uint8_t flags;
 } sdl3_video_t;
 
+/* Registers the application name, version and metadata. */
+void sdl3_set_app_metadata(void);
+
 /* Sets the window's native display/window handles (X11, Wayland,
  * Win32, Cocoa, KMS) to the video driver state via SDL's window
  * properties API, so subsystems that require the raw handles

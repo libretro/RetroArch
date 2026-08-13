@@ -116,6 +116,8 @@ static void *sdl3_ctx_init(void *video_driver)
    if (!sdl)
       return NULL;
 
+   sdl3_set_app_metadata();
+
    /* When a cached context is stashed, the previous instance kept its
     * video-subsystem reference to protect it - adopt that reference
     * instead of initializing again. */

@@ -84,6 +84,8 @@ static void *sdl3_vk_ctx_init(void *video_driver)
    if (!sdl)
       return NULL;
 
+   sdl3_set_app_metadata();
+
    /* SDL's X11 backend calls XInitThreads itself, so no Xlib setup
     * is needed here. */
    if (!SDL_InitSubSystem(SDL_INIT_VIDEO))

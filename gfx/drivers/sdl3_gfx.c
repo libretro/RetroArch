@@ -225,6 +225,8 @@ static void *sdl3_gfx_init(const video_info_t *video,
    int i;
    sdl3_video_t *vid = NULL;
 
+   sdl3_set_app_metadata();
+
    /* Initialize the video system. */
    if (!SDL_InitSubSystem(SDL_INIT_VIDEO))
       return NULL;
