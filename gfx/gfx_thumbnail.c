@@ -1878,10 +1878,16 @@ void gfx_thumbnail_request(
             /* Load thumbnail, if required */
             if (path_is_valid(thumbnail_path))
             {
-               gfx_thumbnail_tag_t *thumbnail_tag =
-                  (gfx_thumbnail_tag_t*)malloc(sizeof(gfx_thumbnail_tag_t));
+               gfx_thumbnail_tag_t *thumbnail_tag;
 
-               if (!thumbnail_tag)
+               /* A WebM or MP4 that serves as its own thumbnail takes
+                * the sliding window rather than the whole-file still
+                * decode; see gfx_thumbnail_try_video_open. */
+               if (gfx_thumbnail_try_video_open(thumbnail, thumbnail_path))
+                  goto end;
+
+               if (!(thumbnail_tag = (gfx_thumbnail_tag_t*)
+                        malloc(sizeof(gfx_thumbnail_tag_t))))
                   goto end;
 
                /* Configure user data */
