@@ -269,8 +269,14 @@ public final class MainMenuActivity extends PreferenceActivity
 		retro.putExtra("APK", dataSourcePath);
 
 		String external;
-		if (BuildConfig.PLAY_STORE_BUILD)
+
+		boolean hasFullStorageAccess = true;
+		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R)
+			hasFullStorageAccess = Environment.isExternalStorageManager();
+
+		if (BuildConfig.PLAY_STORE_BUILD || !hasFullStorageAccess)
 		{
+			// use the scoped external media directory
 			File[] mediaDirs = ctx.getExternalMediaDirs();
 			if (mediaDirs != null && mediaDirs.length > 0 && mediaDirs[0] != null)
 			{
@@ -281,13 +287,14 @@ public final class MainMenuActivity extends PreferenceActivity
 			}
 			else
 			{
-				// Fallback: external media unavailable
+				// fallback: external media unavailable - use private data storage
 				external = Environment.getExternalStorageDirectory().getAbsolutePath()
 						+ "/Android/data/" + PACKAGE_NAME + "/files";
 			}
 		}
 		else
 		{
+			// full "all files access" granted (or pre-R) - use the real SD root /RetroArch
 			external = Environment.getExternalStorageDirectory().getAbsolutePath();
 		}
 
