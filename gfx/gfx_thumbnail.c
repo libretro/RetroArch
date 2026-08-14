@@ -813,6 +813,55 @@ static void gfx_thumbnail_audio_win_release(void *owner)
    free(w);
 }
 
+/* Locate the container's metadata box so the preview-audio window can
+ * make it resident.  The media floor is NOT a usable proxy: it is the
+ * first sample's offset, which sits just past a LEADING moov but is 44
+ * on a trailing-moov file whose moov is at the far end.  Sizing the
+ * head from the floor left the decoder unable to open at all on every
+ * trailing-moov recording - its open takes a PREFIX bound, so it can
+ * only reach the moov if the head reaches it too.
+ *
+ * Walks top-level box headers only, peeked 16 bytes at a time, so it
+ * costs a handful of reads whatever the file's size.  Returns the
+ * offset one past the moov, or 0 when it cannot be found.  WebM keeps
+ * its header material at the front and is left alone. */
+static size_t gfx_thumbnail_audio_meta_end(struct data_transfer *dt,
+      size_t blen)
+{
+   size_t pos = 0;
+   int    n   = 0;
+
+   while (pos + 8 <= blen && n++ < 64)
+   {
+      uint8_t  h[16];
+      uint64_t sz;
+      size_t   hs = 8;
+
+      if (!data_transfer_window_peek(dt, pos, h, 8))
+         return 0;
+      sz = ((uint64_t)h[0] << 24) | ((uint64_t)h[1] << 16)
+         | ((uint64_t)h[2] << 8)  |  (uint64_t)h[3];
+      if (sz == 1)
+      {
+         int i;
+         if (!data_transfer_window_peek(dt, pos + 8, h + 8, 8))
+            return 0;
+         sz = 0;
+         for (i = 0; i < 8; i++)
+            sz = (sz << 8) | (uint64_t)h[8 + i];
+         hs = 16;
+      }
+      else if (sz == 0)
+         sz = (uint64_t)blen - (uint64_t)pos;
+      if (sz < hs || sz > (uint64_t)blen - (uint64_t)pos)
+         return 0;
+      if (h[4] == 'm' && h[5] == 'o' && h[6] == 'o' && h[7] == 'v')
+         return (size_t)((uint64_t)pos + sz);
+      pos += (size_t)sz;
+   }
+   return 0;
+}
+
 static void gfx_thumbnail_anim_audio_begin(gfx_thumbnail_t *thumbnail)
 {
    enum image_type_enum type = (enum image_type_enum)thumbnail->anim_type;
@@ -884,6 +933,34 @@ static void gfx_thumbnail_anim_audio_begin(gfx_thumbnail_t *thumbnail)
       {
          free(w);
          return;
+      }
+      /* Re-size the head against where the metadata actually is. */
+      if (type == IMAGE_TYPE_MP4)
+      {
+         size_t probe_len = 0;
+         if (data_transfer_window_base(w->dt, &probe_len) && probe_len)
+         {
+            size_t meta_end = gfx_thumbnail_audio_meta_end(w->dt,
+                  probe_len);
+            if (meta_end > keep)
+            {
+               /* Bounded: a trailing moov past the ceiling would mean
+                * holding most of the file resident, which is the cost
+                * the window exists to avoid.  Such a file keeps its
+                * video preview and goes without audio. */
+               if (   meta_end > GFX_THUMB_AUDIO_HEAD_MAX
+                   || !data_transfer_window_grow_keep(w->dt, meta_end))
+               {
+                  gfx_thumbnail_audio_win_release(w);
+                  return;
+               }
+               keep = meta_end;
+            }
+            else if (meta_end > GFX_THUMB_AUDIO_WINDOW_KEEP)
+               /* Leading moov: the head need only cover it, which is
+                * usually less than the floor-plus-slack figure. */
+               keep = meta_end;
+         }
       }
       if (!(base = data_transfer_window_base(w->dt, &blen)) || !blen)
       {
