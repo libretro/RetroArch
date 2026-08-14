@@ -1067,6 +1067,17 @@ static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
                image_transfer_anim_stream_free(stream, type);
                stream = NULL;
             }
+            else
+               /* The open settled at an avail of need_hi - the end of
+                * the moov island.  With a LEADING moov that lands just
+                * below the media floor, so the very first sample is
+                * outside the demuxer's valid range and every decode
+                * returns "not yet".  Raise it to what was just made
+                * resident; the feeder in gfx_thumbnail_animate carries
+                * it from here.  A trailing moov reached avail == the
+                * file length on its way in, and set_avail is monotonic,
+                * so this is a no-op there. */
+               image_transfer_anim_stream_set_avail(stream, type, hi);
          }
 
          /* Types without a progressive open (animated WEBP) return
@@ -1270,16 +1281,25 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
    {
       size_t tell = image_transfer_anim_stream_consumed(thumbnail->anim,
             type);
-      if (tell > 0)
+      size_t floor_off = image_transfer_anim_stream_media_floor(
+            thumbnail->anim, type);
+      /* Anchor at the media floor until the decoder has consumed
+       * anything.  The guard here used to be 'tell > 0', which held
+       * whenever the first decode had not yet succeeded - and on a
+       * leading-moov file it never could, because the bytes it needed
+       * were outside the demuxer's avail.  That was a standstill with
+       * no way out: no decode, so no tell; no tell, so no feed; no
+       * feed, so no avail. */
+      size_t anchor    = (tell > 0) ? tell : floor_off;
+      if (anchor > 0)
       {
-         size_t floor_off = image_transfer_anim_stream_media_floor(
-               thumbnail->anim, type);
-         size_t margin    = GFX_THUMB_ANIM_WINDOW_BACK;
+         size_t margin = GFX_THUMB_ANIM_WINDOW_BACK;
+         size_t hi     = anchor + GFX_THUMB_ANIM_WINDOW_AHEAD;
          /* Never decommit below the media floor: the demuxer revisits
           * the header/index there on every loop. */
-         if (tell > floor_off && tell - floor_off < margin)
-            margin = tell - floor_off;
-         if (!data_transfer_window_feed(thumbnail->anim_dt, tell,
+         if (anchor > floor_off && anchor - floor_off < margin)
+            margin = anchor - floor_off;
+         if (!data_transfer_window_feed(thumbnail->anim_dt, anchor,
                   GFX_THUMB_ANIM_WINDOW_AHEAD, margin))
          {
             /* An I/O failure while extending: the decoder would hit
@@ -1287,6 +1307,12 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
             gfx_thumbnail_anim_close(thumbnail);
             return;
          }
+         /* Hand the demuxer the range the feed just made resident.
+          * Monotonic, so a stream that already sees the whole file
+          * (any trailing-moov open) is unaffected. */
+         if (hi > thumbnail->anim_buf_len)
+            hi = thumbnail->anim_buf_len;
+         image_transfer_anim_stream_set_avail(thumbnail->anim, type, hi);
       }
    }
 
