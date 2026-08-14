@@ -814,6 +814,278 @@ bool playlist_entry_exists(playlist_t *playlist,
    return false;
 }
 
+/* ============================================================
+ * Content path dedup index
+ *
+ * Open-addressing hash table over content path IDs, answering
+ * playlist_entry_exists() queries in O(1) expected time.  Any two
+ * path IDs that playlist_path_ids_match() accepts share at least
+ * one hash value between their {real, archive} pairs: an exact
+ * match implies equal real-path hashes, and the fuzzy bare-archive
+ * vs inside-archive match implies equal parent-archive hashes,
+ * where a bare archive's archive hash equals its real hash.
+ * Indexing every ID under both of its hashes and probing under
+ * both of the query's hashes therefore yields a candidate superset,
+ * and each candidate is verified with playlist_path_ids_match()
+ * itself - the index can never change an answer, only the cost.
+ *
+ * The index owns every path ID it stores (entries are re-derived
+ * from the entry path strings during seeding, never borrowed from
+ * the entries' lazy caches), so entry deletion and playlist
+ * teardown cannot dangle it.  Any allocation failure degrades the
+ * index permanently: queries fall back to the linear
+ * playlist_entry_exists() scan and stay correct.
+ * ============================================================ */
+
+typedef struct
+{
+   uint32_t hash;
+   playlist_path_id_t *pid;   /* non-owning; NULL = empty slot */
+} playlist_dedup_slot_t;
+
+struct playlist_dedup
+{
+   playlist_dedup_slot_t *table;   /* power-of-two slot count */
+   size_t table_cap;
+   size_t table_used;
+   playlist_path_id_t **owned;     /* every stored ID, exactly once */
+   size_t owned_cnt;
+   size_t owned_cap;
+   size_t seed_pos;                /* next entry index to seed */
+   bool seeded;
+   bool degraded;
+};
+
+static void playlist_dedup_degrade(playlist_dedup_t *dedup)
+{
+   if (dedup->table)
+      free(dedup->table);
+   dedup->table      = NULL;
+   dedup->table_cap  = 0;
+   dedup->table_used = 0;
+   dedup->degraded   = true;
+}
+
+/* Places @pid into the table under @hash; assumes capacity headroom
+ * was already ensured. */
+static void playlist_dedup_place(playlist_dedup_slot_t *table,
+      size_t cap, uint32_t hash, playlist_path_id_t *pid)
+{
+   size_t idx = (size_t)hash & (cap - 1);
+   while (table[idx].pid)
+      idx = (idx + 1) & (cap - 1);
+   table[idx].hash = hash;
+   table[idx].pid  = pid;
+}
+
+/* True when @pid indexes under two distinct hash values (a path
+ * inside an archive: parent hash differs from the full hash). */
+static bool playlist_dedup_two_hashes(const playlist_path_id_t *pid)
+{
+   return pid->is_in_archive
+       && (pid->archive_path_hash != pid->real_path_hash);
+}
+
+/* Ensures room for up to two more slots, growing (or degrading)
+ * as required.  Returns false when the index became degraded. */
+static bool playlist_dedup_reserve(playlist_dedup_t *dedup)
+{
+   playlist_dedup_slot_t *grown = NULL;
+   size_t new_cap;
+   size_t i;
+
+   if (dedup->degraded)
+      return false;
+
+   /* Keep load at or below 3/4 after inserting two slots */
+   if ((dedup->table_used + 2) * 4 <= dedup->table_cap * 3)
+      return true;
+
+   new_cap = (dedup->table_cap == 0) ? 64 : (dedup->table_cap << 1);
+   if (!(grown = (playlist_dedup_slot_t*)calloc(new_cap, sizeof(*grown))))
+   {
+      playlist_dedup_degrade(dedup);
+      return false;
+   }
+
+   for (i = 0; i < dedup->owned_cnt; i++)
+   {
+      playlist_path_id_t *pid = dedup->owned[i];
+      playlist_dedup_place(grown, new_cap, pid->real_path_hash, pid);
+      if (playlist_dedup_two_hashes(pid))
+         playlist_dedup_place(grown, new_cap, pid->archive_path_hash, pid);
+   }
+
+   if (dedup->table)
+      free(dedup->table);
+   dedup->table     = grown;
+   dedup->table_cap = new_cap;
+   return true;
+}
+
+/* Takes ownership of @pid and indexes it under its hash(es).
+ * On failure the index is degraded and @pid is freed. */
+static void playlist_dedup_insert(playlist_dedup_t *dedup,
+      playlist_path_id_t *pid)
+{
+   /* IDs with no real path can never satisfy the matcher;
+    * do not store them */
+   if (!pid->real_path || !*pid->real_path)
+   {
+      playlist_path_id_free(pid);
+      return;
+   }
+
+   if (!playlist_dedup_reserve(dedup))
+   {
+      playlist_path_id_free(pid);
+      return;
+   }
+
+   if (dedup->owned_cnt == dedup->owned_cap)
+   {
+      size_t new_cap = (dedup->owned_cap == 0) ? 64 : (dedup->owned_cap << 1);
+      playlist_path_id_t **grown = (playlist_path_id_t**)realloc(
+            dedup->owned, new_cap * sizeof(*grown));
+      if (!grown)
+      {
+         playlist_dedup_degrade(dedup);
+         playlist_path_id_free(pid);
+         return;
+      }
+      dedup->owned     = grown;
+      dedup->owned_cap = new_cap;
+   }
+   dedup->owned[dedup->owned_cnt++] = pid;
+
+   playlist_dedup_place(dedup->table, dedup->table_cap,
+         pid->real_path_hash, pid);
+   dedup->table_used++;
+   if (playlist_dedup_two_hashes(pid))
+   {
+      playlist_dedup_place(dedup->table, dedup->table_cap,
+            pid->archive_path_hash, pid);
+      dedup->table_used++;
+   }
+}
+
+/* Probes the chain of @hash for a stored ID matching @probe. */
+static bool playlist_dedup_probe_hash(playlist_dedup_t *dedup,
+      const playlist_path_id_t *probe, uint32_t hash,
+      const playlist_config_t *config)
+{
+   size_t idx = (size_t)hash & (dedup->table_cap - 1);
+   while (dedup->table[idx].pid)
+   {
+      if (   dedup->table[idx].hash == hash
+          && playlist_path_ids_match(probe, dedup->table[idx].pid, config))
+         return true;
+      idx = (idx + 1) & (dedup->table_cap - 1);
+   }
+   return false;
+}
+
+static bool playlist_dedup_lookup(playlist_dedup_t *dedup,
+      const playlist_path_id_t *probe, const playlist_config_t *config)
+{
+   if (!dedup->table_cap)
+      return false;
+   if (playlist_dedup_probe_hash(dedup, probe,
+         probe->real_path_hash, config))
+      return true;
+   if (playlist_dedup_two_hashes(probe))
+      return playlist_dedup_probe_hash(dedup, probe,
+            probe->archive_path_hash, config);
+   return false;
+}
+
+playlist_dedup_t *playlist_dedup_init(void)
+{
+   return (playlist_dedup_t*)calloc(1, sizeof(playlist_dedup_t));
+}
+
+bool playlist_dedup_seed_step(playlist_dedup_t *dedup,
+      playlist_t *playlist,
+      bool (*budget_cb)(void *userdata), void *userdata)
+{
+   size_t _len;
+   bool progressed = false;
+
+   if (!dedup || dedup->seeded || dedup->degraded)
+      return true;
+   if (!playlist)
+   {
+      dedup->seeded = true;
+      return true;
+   }
+
+   _len = RBUF_LEN(playlist->entries);
+   while (dedup->seed_pos < _len)
+   {
+      playlist_path_id_t *pid;
+
+      /* Guarantee forward progress: seed at least one entry per
+       * call before consulting the budget */
+      if (progressed && budget_cb && !budget_cb(userdata))
+         return false;
+
+      if (!(pid = playlist_path_id_init(
+            playlist->entries[dedup->seed_pos].path)))
+      {
+         playlist_dedup_degrade(dedup);
+         return true;
+      }
+      playlist_dedup_insert(dedup, pid);
+      if (dedup->degraded)
+         return true;
+
+      dedup->seed_pos++;
+      progressed = true;
+   }
+
+   dedup->seeded = true;
+   return true;
+}
+
+bool playlist_dedup_check_add(playlist_dedup_t *dedup,
+      playlist_t *playlist, const char *path, bool will_add)
+{
+   playlist_path_id_t *path_id = NULL;
+   bool found                  = false;
+
+   if (!playlist || (!path || !*path))
+      return false;
+
+   if (!dedup || dedup->degraded)
+      return playlist_entry_exists(playlist, path);
+
+   if (!(path_id = playlist_path_id_init(path)))
+      return false;
+
+   found = playlist_dedup_lookup(dedup, path_id, &playlist->config);
+
+   if (!found && will_add)
+      playlist_dedup_insert(dedup, path_id);   /* consumes path_id */
+   else
+      playlist_path_id_free(path_id);
+
+   return found;
+}
+
+void playlist_dedup_free(playlist_dedup_t *dedup)
+{
+   size_t i;
+   if (!dedup)
+      return;
+   for (i = 0; i < dedup->owned_cnt; i++)
+      playlist_path_id_free(dedup->owned[i]);
+   if (dedup->owned)
+      free(dedup->owned);
+   if (dedup->table)
+      free(dedup->table);
+   free(dedup);
+}
+
 void playlist_update(playlist_t *playlist, size_t idx,
       const struct playlist_entry *update_entry)
 {
