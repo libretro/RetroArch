@@ -481,6 +481,17 @@ jobs:
           # the shared window deliberately opts threaded queues out of
           # its static state, and this is where a mistake in that
           # opt-out would surface.
+          #
+          # Two dedup lanes guard the playlist path-hash index that
+          # replaced the flush's quadratic existence probes: a
+          # differential lane asserts the index answers exactly like
+          # the linear playlist_entry_exists scan over plain, bare-
+          # archive, inside-archive and case-variant paths with fuzzy
+          # archive matching both off and on, and a no-overwrite
+          # rescan lane re-scans the fixture into the populated
+          # playlist and asserts zero duplicates, driving the index's
+          # budgeted seeding at scale.  The throughput factor is
+          # tightened to reject the pre-index quadratic flush.
           make clean all
           test -x scan_begin_budget_test
           timeout 600 ./scan_begin_budget_test
