@@ -246,6 +246,19 @@ static int dir_list_read_ctx(size_t dir_len, struct dir_list_ctx *ctx)
          path[_len++] = '/';
       _len += strlcpy(path + _len, name, PATH_MAX_LENGTH - _len);
 
+#if defined(WEBOS)
+      /* Skip virtual / dangerous FS nodes under jail root — readdir+stat
+       * on /proc or /sys can stall the main thread for a long time.
+       * Use strcmp (not string_is_equal): dir_list intentionally has no
+       * stdstring dependency. */
+      if (   (strcmp(dir, "/") == 0 || strcmp(dir, "//") == 0)
+          && (   strcmp(name, "proc") == 0
+              || strcmp(name, "sys") == 0
+              || strcmp(name, "dev") == 0
+              || strcmp(name, "run") == 0))
+         continue;
+#endif
+
       if (retro_dirent_is_dir(entry, NULL))
       {
          /* Exclude this frequent hidden dir on platforms which can not handle hidden attribute */
