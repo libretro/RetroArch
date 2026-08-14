@@ -71,6 +71,11 @@ unsigned playlist_get_thumbnail_mode(void *p, unsigned t)
 bool task_image_detach_video_stream(void *t, void **s, int *ty,
       void **x, void **b, size_t *l)
 { (void)t; (void)s; (void)ty; (void)x; (void)b; (void)l; return false; }
+/* No task, no verdict: the real accessor answers -1 (unknown) for
+ * anything that is not a completed PNG image task, and unknown is
+ * exactly what sends the open down its historical file probe. */
+int task_image_png_probe(void *t) { (void)t; return -1; }
+
 bool task_push_image_load(const char *a, bool b, unsigned c, unsigned d,
       void *e, void *f)
 { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; return false; }

@@ -224,6 +224,15 @@ bool task_image_detach_video_stream(retro_task_t *task,
       void **stream, enum image_type_enum *type,
       struct data_transfer **xfer_owner, void **buf, size_t *len);
 
+/* What the image task learned about a PNG from the buffer it read:
+ * 1 the file is an APNG, 0 conclusively a still PNG, -1 unknown
+ * (not an image task, not a PNG, or the read did not complete).
+ * Same validity window as the detach above: the task's completion
+ * callback, while the task still owns its buffer.  Lets the caller
+ * skip re-opening the file to answer a question the task's bytes
+ * already answer. */
+int task_image_png_probe(retro_task_t *task);
+
 /* Async icon/texture loading.  generation_ptr must point to a static
  * variable in the calling module (not a heap struct field). */
 bool task_push_icon_load(const char *fullpath,

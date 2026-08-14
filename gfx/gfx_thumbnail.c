@@ -300,6 +300,26 @@ static void gfx_thumbnail_init_fade(
  * stereo AAC track that is ~66 seconds of audio, against a feeder
  * that ticks once per menu frame, so the decoder reaching the bound
  * is a theoretical case rather than a paced one.  MARGIN trails it. */
+/* Ceiling on the bytes either feeder reads in ONE animate() tick.
+ * Both feeders run on the main thread, and window_extend performs its
+ * read synchronously, so before this cap the first tick after an open
+ * - and the first tick after every loop of a looping video - read the
+ * whole lookahead in one filestream_read: 8 MiB on the video window,
+ * a 400 ms frame stall on 20 MB/s storage, repeated at every lap.
+ * The budget spreads the same catch-up over consecutive vsyncs; the
+ * bytes that end up resident are identical, only never all at once.
+ *
+ * The values are rates, not tastes: at 60 ticks/s these sustain
+ * 30 MB/s of video and 15 MB/s of audio, an order of magnitude above
+ * any stream a thumbnail previews (a 100 Mbps master needs 12.5 MB/s;
+ * preview audio tops out three decimal orders below its budget), so
+ * the feeder gains on the decoder every tick it is behind and the
+ * steady state is unchanged.  The catch-up case the budget must not
+ * touch - a frontier behind the consumer, where pacing means faulting
+ * - is exempted inside feed_budget itself, not here. */
+#define GFX_THUMB_ANIM_FEED_BUDGET  (512 * 1024)
+#define GFX_THUMB_AUDIO_FEED_BUDGET (256 * 1024)
+
 #define GFX_THUMB_AUDIO_WINDOW_KEEP (2 * 1024 * 1024)
 #define GFX_THUMB_AUDIO_HEAD_SLACK  (1 * 1024 * 1024)
 #define GFX_THUMB_AUDIO_LOOKAHEAD   (2 * 1024 * 1024)
@@ -1195,8 +1215,13 @@ fail:
    return false;
 }
 
-static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
-      const char *path)
+/* png_probe carries what the still-load task already learned about a
+ * PNG from the buffer it read anyway: < 0 unknown (probe the file
+ * here, as always), 0 conclusively still (return without opening
+ * anything), 1 APNG (skip the probe read and open the window).  Only
+ * consulted for IMAGE_TYPE_PNG; every other type ignores it. */
+static void gfx_thumbnail_anim_open_probed(gfx_thumbnail_t *thumbnail,
+      const char *path, int png_probe)
 {
    enum image_type_enum type;
    int64_t len              = 0;
@@ -1223,8 +1248,19 @@ static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
     * file would add a full extra read to the common path.  APNG puts
     * its acTL control chunk before the first IDAT, i.e. within the
     * first few hundred bytes, so probe a small header window first and
-    * bail out early for ordinary PNGs. */
-   if (type == IMAGE_TYPE_PNG)
+    * bail out early for ordinary PNGs.
+    *
+    * When the still-load task settled the question already - it held
+    * the whole file in memory, so its verdict is at least as good as
+    * this prefix probe's - honour it and skip the open+read+close
+    * below entirely.  That read ran on the main thread for every PNG
+    * the menu highlighted, purely to say "not APNG": one filesystem
+    * round trip per thumbnail that a chunk walk over bytes the task
+    * had anyway answers for free.  The file probe remains for every
+    * caller with no task verdict to offer. */
+   if (type == IMAGE_TYPE_PNG && png_probe == 0)
+      return;
+   if (type == IMAGE_TYPE_PNG && png_probe < 0)
    {
       /* Heap-held: this runs on the menu hot path from task threads,
        * where 4 KiB is half the smallest thread stack in the tree.
@@ -1432,6 +1468,16 @@ static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
    }
 }
 
+/* The historical entry point, and the symbol the anim oracle in
+ * samples/gfx/gfx_thumbnail_anim globalizes and drives directly: no
+ * task in sight there, so no verdict to pass - probe the file, as
+ * this path always has. */
+static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
+      const char *path)
+{
+   gfx_thumbnail_anim_open_probed(thumbnail, path, -1);
+}
+
 /* Video containers open over a sliding window before anything else:
  * the still task reads the whole file into memory, which a
  * multi-gigabyte recording fails outright (the allocation) or turns
@@ -1621,21 +1667,29 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
       {
          size_t margin = GFX_THUMB_ANIM_WINDOW_BACK;
          size_t hi     = anchor + GFX_THUMB_ANIM_WINDOW_AHEAD;
+         size_t res_hi = 0;
          /* Never decommit below the media floor: the demuxer revisits
           * the header/index there on every loop. */
          if (anchor > floor_off && anchor - floor_off < margin)
             margin = anchor - floor_off;
-         if (!data_transfer_window_feed(thumbnail->anim_dt, anchor,
-                  GFX_THUMB_ANIM_WINDOW_AHEAD, margin))
+         if (!data_transfer_window_feed_budget(thumbnail->anim_dt,
+                  anchor, GFX_THUMB_ANIM_WINDOW_AHEAD, margin,
+                  GFX_THUMB_ANIM_FEED_BUDGET, &res_hi))
          {
             /* An I/O failure while extending: the decoder would hit
              * the end-of-data wall and loop early.  Keep the still. */
             gfx_thumbnail_anim_close(thumbnail);
             return;
          }
-         /* Hand the demuxer the range the feed just made resident.
-          * Monotonic, so a stream that already sees the whole file
-          * (any trailing-moov open) is unaffected. */
+         /* Hand the demuxer the range the feed just made resident -
+          * res_hi, not the lookahead target: under the budget the
+          * frontier may still be short of it, and avail past the
+          * frontier is a read of reserved pages.  Monotonic, so a
+          * stream that already sees the whole file (any trailing-moov
+          * open) is unaffected, and later ticks carry the bound the
+          * rest of the way. */
+         if (hi > res_hi)
+            hi = res_hi;
          if (hi > thumbnail->anim_buf_len)
             hi = thumbnail->anim_buf_len;
          image_transfer_anim_stream_set_avail(thumbnail->anim, type, hi);
@@ -1663,11 +1717,13 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
          size_t anchor = (size_t)tell;
          size_t margin = GFX_THUMB_AUDIO_MARGIN;
          size_t hi     = anchor + GFX_THUMB_AUDIO_LOOKAHEAD;
+         size_t res_hi = 0;
 
          if (hi > thumbnail->anim_buf_len)
             hi = thumbnail->anim_buf_len;
-         if (!data_transfer_window_feed(thumbnail->anim_audio_dt, anchor,
-                  GFX_THUMB_AUDIO_LOOKAHEAD, margin))
+         if (!data_transfer_window_feed_budget(thumbnail->anim_audio_dt,
+                  anchor, GFX_THUMB_AUDIO_LOOKAHEAD, margin,
+                  GFX_THUMB_AUDIO_FEED_BUDGET, &res_hi))
          {
             /* The window cannot be maintained: stop the stream rather
              * than leave a decoder playing against a frozen one. */
@@ -1676,11 +1732,21 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
             thumbnail->anim_audio_slot = -1;
             thumbnail->anim_audio_hi   = 0;
          }
-         else if (hi > thumbnail->anim_audio_hi)
+         else
          {
-            thumbnail->anim_audio_hi = hi;
-            audio_driver_mixer_stream_set_avail(
-                  (unsigned)thumbnail->anim_audio_slot, hi);
+            /* Raise the bound only to the resident frontier: under
+             * the budget it can lag the lookahead target, and the
+             * decoder refusing to read past the bound is what makes
+             * a lagging feeder a stall instead of a fault.  Later
+             * ticks carry it the rest of the way. */
+            if (hi > res_hi)
+               hi = res_hi;
+            if (hi > thumbnail->anim_audio_hi)
+            {
+               thumbnail->anim_audio_hi = hi;
+               audio_driver_mixer_stream_set_avail(
+                     (unsigned)thumbnail->anim_audio_slot, hi);
+            }
          }
       }
    }
@@ -2082,9 +2148,18 @@ static void gfx_thumbnail_handle_upload(
           * a benefit that is one file open and a chunk walk.  The
           * open-by-path route is windowed, so an animated PNG already
           * streams over a sliding window rather than a whole-file
-          * read; adoption would not change its footprint. */
-         gfx_thumbnail_anim_open(thumbnail_tag->thumbnail,
-               thumbnail_tag->path);
+          * read; adoption would not change its footprint.
+          *
+          * The chunk walk itself, though, IS worth inheriting: the
+          * task read the whole file, so ask it whether the PNG was
+          * animated instead of re-opening the file here (on the main
+          * thread) to read a 4 KiB prefix that answers the same
+          * question.  Inconclusive (< 0: not a PNG task, adopted
+          * transfer, decode path without the buffer) falls back to
+          * the probe inside the open, exactly as before. */
+         gfx_thumbnail_anim_open_probed(thumbnail_tag->thumbnail,
+               thumbnail_tag->path,
+               task_image_png_probe(task));
    }
 
 end:

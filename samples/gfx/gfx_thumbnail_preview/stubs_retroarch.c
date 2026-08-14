@@ -68,6 +68,11 @@ bool task_push_image_load(const char *path, bool rgba, unsigned t,
 bool task_image_detach_video_stream(void *t, void **s, int *ty, void **x,
       void **b, size_t *l)
 { (void)t; (void)s; (void)ty; (void)x; (void)b; (void)l; return false; }
+/* No task, no verdict: the real accessor answers -1 (unknown) for
+ * anything that is not a completed PNG image task, and unknown is
+ * exactly what sends the open down its historical file probe. */
+int task_image_png_probe(void *t) { (void)t; return -1; }
+
 void *task_queue_find(void *id) { (void)id; return NULL; }
 void task_set_flags(void *t, uint32_t f, bool s) { (void)t; (void)f; (void)s; }
 

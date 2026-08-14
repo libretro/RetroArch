@@ -965,6 +965,45 @@ bool task_image_detach_video_stream(retro_task_t *task,
    return true;
 }
 
+int task_image_png_probe(retro_task_t *task)
+{
+#ifdef HAVE_RPNG
+   nbio_handle_t *nbio;
+   struct nbio_image_handle *image;
+   const uint8_t *buf;
+   size_t len = 0;
+   int   more = 0;
+
+   if (!task || !(nbio = (nbio_handle_t*)task->state))
+      return -1;
+   if (!BIT32_GET(nbio->status_flags, NBIO_FLAG_IMAGE_TASK))
+      return -1;
+   if (!(image = (struct nbio_image_handle*)nbio->data))
+      return -1;
+   if (image->type != IMAGE_TYPE_PNG)
+      return -1;
+   /* Only a completed read is a verdict: rpng_is_apng_ex over a
+    * partial buffer can only say "not yet", and "not yet" from here
+    * would be mistaken for "still".  A short or detached transfer
+    * reports unknown and the caller probes the file, as it always
+    * did. */
+   if (!nbio->xfer || !data_transfer_complete(nbio->xfer))
+      return -1;
+   if (!(buf = nbio_xfer_ptr(nbio, &len)) || !len)
+      return -1;
+   if (rpng_is_apng_ex(buf, len, &more))
+      return 1;
+   /* The walk saw the whole file, so there is no acTL to find past
+    * a window: conclusively a still PNG.  (need_more cannot ask for
+    * bytes beyond a complete buffer; a truncated file with no acTL
+    * in what exists decodes as a still anyway.) */
+   return 0;
+#else
+   (void)task;
+   return -1;
+#endif
+}
+
 bool task_push_image_load(const char *fullpath,
       bool supports_rgba, unsigned upscale_threshold,
       unsigned downscale_cap,
