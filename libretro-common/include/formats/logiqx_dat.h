@@ -78,6 +78,28 @@ typedef struct
  * Logiqx/MAME XML. */
 logiqx_dat_t *logiqx_dat_init_owned(char *xml_data, size_t len);
 
+/* Incremental variant of logiqx_dat_init_owned(): the same
+ * ownership contract for @xml_data, with the XML parse and the
+ * search-index build spread over as many logiqx_dat_parse_step()
+ * calls as the caller's budget requires.
+ *
+ * logiqx_dat_parse_begin_owned() returns NULL only on allocation
+ * failure (having freed @xml_data).  Each step performs roughly
+ * @max_work bytes' worth of parsing or indexing (0 removes the
+ * budget) and returns 0 to continue, 1 when the DAT is ready, or
+ * -1 when the document is not valid Logiqx/MAME XML.
+ * logiqx_dat_parse_end() releases the parse state and returns the
+ * DAT after success, NULL otherwise (discarding partial work).
+ * logiqx_dat_parse_abort() releases everything unconditionally.
+ * The result must be freed with logiqx_dat_free(). */
+typedef struct logiqx_dat_parse logiqx_dat_parse_t;
+
+logiqx_dat_parse_t *logiqx_dat_parse_begin_owned(char *xml_data,
+      size_t len);
+int logiqx_dat_parse_step(logiqx_dat_parse_t *parse, size_t max_work);
+logiqx_dat_t *logiqx_dat_parse_end(logiqx_dat_parse_t *parse);
+void logiqx_dat_parse_abort(logiqx_dat_parse_t *parse);
+
 /* Frees specified DAT file */
 void logiqx_dat_free(logiqx_dat_t *dat_file);
 
