@@ -2189,8 +2189,13 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
    /* Free accumulated scan results */
    scan_results_free(&manual_scan->scan_results);
 
-   if (manual_scan->playlist_directory && *manual_scan->playlist_directory)
+   /* strdup'd unconditionally at push; the old guard also tested
+    * *playlist_directory, so a strdup("") - which is a real
+    * allocation - was never released.  16 bytes per scan push,
+    * found by the cancellation sweep under LeakSanitizer. */
+   if (manual_scan->playlist_directory)
       free(manual_scan->playlist_directory);
+   manual_scan->playlist_directory = NULL;
 
 #ifdef HAVE_LIBRETRODB
    if (1)
@@ -2247,9 +2252,10 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
          dbstate->flags     = NULL;
       }
 
-      if (    manual_scan->content_database_path 
-          && *manual_scan->content_database_path)
+      /* Same empty-string leak as playlist_directory above. */
+      if (manual_scan->content_database_path)
          free(manual_scan->content_database_path);
+      manual_scan->content_database_path = NULL;
       if (manual_scan->state.buf)
          free(manual_scan->state.buf);
       if (manual_scan->handle)
