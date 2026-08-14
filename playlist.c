@@ -447,35 +447,29 @@ static bool playlist_path_equal(const char *real_path,
  * contained in specified 'entry'. Will update path_id
  * cache inside specified 'entry', if not already present.
  **/
-static bool playlist_path_matches_entry(playlist_path_id_t *path_id,
-      struct playlist_entry *entry, const playlist_config_t *config)
+/* Compares two content path IDs under the playlist's matching rules:
+ * exact real-path equality first (case-insensitive on
+ * case-insensitive operating systems), then - when fuzzy archive
+ * matching is enabled - the bare-archive vs inside-archive
+ * equivalence on the parent archive path.  Symmetric in its
+ * arguments. */
+static bool playlist_path_ids_match(const playlist_path_id_t *a,
+      const playlist_path_id_t *b, const playlist_config_t *config)
 {
-   /* Sanity check */
-   if (!path_id || !entry || !config)
-      return false;
-
-   /* Check whether entry contains a path ID cache */
-   if (!entry->path_id)
-   {
-      if (!(entry->path_id = playlist_path_id_init(entry->path)))
-         return false;
-   }
-
    /* Ensure we have valid real_path strings */
-   if (   (!path_id->real_path || !*path_id->real_path)
-       || (!entry->path_id->real_path || !*entry->path_id->real_path))
+   if (   (!a->real_path || !*a->real_path)
+       || (!b->real_path || !*b->real_path))
       return false;
 
    /* First pass comparison */
-   if (path_id->real_path_hash == entry->path_id->real_path_hash)
+   if (a->real_path_hash == b->real_path_hash)
    {
 #ifdef _WIN32
       /* Handle case-insensitive operating systems*/
-      if (string_is_equal_noncase(path_id->real_path,
-            entry->path_id->real_path))
+      if (string_is_equal_noncase(a->real_path, b->real_path))
          return true;
 #else
-      if (string_is_equal(path_id->real_path, entry->path_id->real_path))
+      if (string_is_equal(a->real_path, b->real_path))
          return true;
 #endif
    }
@@ -500,31 +494,46 @@ static bool playlist_path_matches_entry(playlist_path_id_t *path_id,
     * loads an archive file via the command line or some
     * external launcher (where the [delimiter][rom_file]
     * part is almost always omitted) */
-   if (   ((path_id->is_archive        && !path_id->is_in_archive)        && entry->path_id->is_in_archive)
-       || ((entry->path_id->is_archive && !entry->path_id->is_in_archive) && path_id->is_in_archive))
+   if (   ((a->is_archive && !a->is_in_archive) && b->is_in_archive)
+       || ((b->is_archive && !b->is_in_archive) && a->is_in_archive))
    {
       /* Ensure we have valid parent archive path
        * strings */
-      if (   (!path_id->archive_path || !*path_id->archive_path)
-          || (!entry->path_id->archive_path || !*entry->path_id->archive_path))
+      if (   (!a->archive_path || !*a->archive_path)
+          || (!b->archive_path || !*b->archive_path))
          return false;
 
-      if (path_id->archive_path_hash == entry->path_id->archive_path_hash)
+      if (a->archive_path_hash == b->archive_path_hash)
       {
 #ifdef _WIN32
          /* Handle case-insensitive operating systems*/
-         if (string_is_equal_noncase(path_id->archive_path,
-               entry->path_id->archive_path))
+         if (string_is_equal_noncase(a->archive_path, b->archive_path))
             return true;
 #else
-         if (string_is_equal(path_id->archive_path,
-               entry->path_id->archive_path))
+         if (string_is_equal(a->archive_path, b->archive_path))
             return true;
 #endif
       }
    }
 
    return false;
+}
+
+static bool playlist_path_matches_entry(playlist_path_id_t *path_id,
+      struct playlist_entry *entry, const playlist_config_t *config)
+{
+   /* Sanity check */
+   if (!path_id || !entry || !config)
+      return false;
+
+   /* Check whether entry contains a path ID cache */
+   if (!entry->path_id)
+   {
+      if (!(entry->path_id = playlist_path_id_init(entry->path)))
+         return false;
+   }
+
+   return playlist_path_ids_match(path_id, entry->path_id, config);
 }
 
 /**
