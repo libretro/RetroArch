@@ -51,8 +51,25 @@
 #include <mbedtls/platform.h>
 #include <mbedtls/net_sockets.h>
 #include <mbedtls/ssl.h>
+#if MBEDTLS_VERSION_MAJOR >= 4
+#include <psa/crypto.h>
+#else
 #include <mbedtls/ctr_drbg.h>
 #include <mbedtls/entropy.h>
+#endif
+#endif
+
+/* Mbed TLS 4.x moved the crypto code out into TF-PSA-Crypto and dropped
+ * the legacy entropy/CTR_DRBG interfaces from the public API - the
+ * headers now live under mbedtls/private/ and the RNG callback
+ * parameters were removed from every function that took them.  All
+ * randomness comes from the PSA subsystem instead, which just needs a
+ * one-time psa_crypto_init(). */
+#if !defined(HAVE_BUILTINMBEDTLS) && defined(MBEDTLS_VERSION_MAJOR) \
+ && MBEDTLS_VERSION_MAJOR >= 4
+#define SSL_MBED_LEGACY_RNG 0
+#else
+#define SSL_MBED_LEGACY_RNG 1
 #endif
 
 /* Not part of the mbedtls upstream source */
@@ -64,8 +81,10 @@ struct ssl_state
 {
    mbedtls_net_context net_ctx;
    mbedtls_ssl_context ctx;
+#if SSL_MBED_LEGACY_RNG
    mbedtls_entropy_context entropy;
    mbedtls_ctr_drbg_context ctr_drbg;
+#endif
    mbedtls_ssl_config conf;
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
    mbedtls_x509_crt ca;
@@ -81,7 +100,7 @@ static void ssl_debug(void *ctx, int level,
    fflush((FILE*)ctx);
 }
 
-#ifdef _3DS
+#if defined(_3DS) && SSL_MBED_LEGACY_RNG
 int ctr_entropy_func(void *data, unsigned char *s, size_t len)
 {
    (void)data;
@@ -92,7 +111,9 @@ int ctr_entropy_func(void *data, unsigned char *s, size_t len)
 
 void* ssl_socket_init(int fd, const char *domain)
 {
+#if SSL_MBED_LEGACY_RNG
    static const char *pers = "libretro";
+#endif
    struct ssl_state *state = (struct ssl_state*)calloc(1, sizeof(*state));
 
    /* NULL-check before 'state->domain = domain' on the next line
@@ -114,11 +135,14 @@ void* ssl_socket_init(int fd, const char *domain)
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
    mbedtls_x509_crt_init(&state->ca);
 #endif
+#if SSL_MBED_LEGACY_RNG
    mbedtls_ctr_drbg_init(&state->ctr_drbg);
    mbedtls_entropy_init(&state->entropy);
+#endif
 
    state->net_ctx.fd = fd;
 
+#if SSL_MBED_LEGACY_RNG
    if (mbedtls_ctr_drbg_seed(&state->ctr_drbg,
 #ifdef _3DS
       ctr_entropy_func,
@@ -127,6 +151,11 @@ void* ssl_socket_init(int fd, const char *domain)
 #endif
       &state->entropy, (const unsigned char*)pers, strlen(pers)) != 0)
       goto error;
+#else
+   /* Idempotent - safe to call once per socket. */
+   if (psa_crypto_init() != PSA_SUCCESS)
+      goto error;
+#endif
 
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
    if (mbedtls_x509_crt_parse(&state->ca, (const unsigned char*)cacert_pem, sizeof(cacert_pem) / sizeof(cacert_pem[0])) < 0)
@@ -158,8 +187,10 @@ error:
     * state == NULL - but leave it to keep the diff minimal. */
    if (state)
    {
+#if SSL_MBED_LEGACY_RNG
       mbedtls_entropy_free(&state->entropy);
       mbedtls_ctr_drbg_free(&state->ctr_drbg);
+#endif
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
       mbedtls_x509_crt_free(&state->ca);
 #endif
@@ -198,7 +229,9 @@ int ssl_socket_connect(void *state_data,
 
    mbedtls_ssl_conf_authmode(&state->conf, MBEDTLS_SSL_VERIFY_OPTIONAL);
    mbedtls_ssl_conf_ca_chain(&state->conf, &state->ca, NULL);
+#if SSL_MBED_LEGACY_RNG
    mbedtls_ssl_conf_rng(&state->conf, mbedtls_ctr_drbg_random, &state->ctr_drbg);
+#endif
    mbedtls_ssl_conf_dbg(&state->conf, ssl_debug, stderr);
 
    if (mbedtls_ssl_setup(&state->ctx, &state->conf) != 0)
@@ -383,8 +416,10 @@ void ssl_socket_free(void *state_data)
 
    mbedtls_ssl_free(&state->ctx);
    mbedtls_ssl_config_free(&state->conf);
+#if SSL_MBED_LEGACY_RNG
    mbedtls_ctr_drbg_free(&state->ctr_drbg);
    mbedtls_entropy_free(&state->entropy);
+#endif
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
    mbedtls_x509_crt_free(&state->ca);
 #endif
