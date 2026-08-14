@@ -42,13 +42,11 @@ struct logiqx_dat
    rxml_document_t *data;
    rxml_node_t *current_node;
    /* Lazy search index, built on the first logiqx_dat_search() and
-    * sorted by name for binary search.  logiqx_dat_search() used to
-    * walk every child of the root per call; the manual content
-    * scanner calls it once per content file, which made a DAT-backed
-    * scan O(files x games) - 29% of a 5000-file scan's wall time
-    * under gprof, and quadratic into MAME-sized lists.  On any
-    * allocation failure index_failed is set and the linear walk
-    * remains the answer. */
+    * sorted by name for binary search: without it every search
+    * walks every child of the root, which is O(files x games) for
+    * the scanner's per-file label lookups and quadratic into
+    * MAME-sized lists.  On any allocation failure index_failed is
+    * set and the linear walk remains the answer. */
    logiqx_dat_index_entry_t *index;
    size_t index_size;
    bool index_failed;

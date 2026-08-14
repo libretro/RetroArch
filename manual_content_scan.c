@@ -267,12 +267,10 @@ void manual_content_scan_scrub_file_exts_custom(void)
  * to prevent obvious errors), optionally returning the
  * file size (DAT files can be very large, so callers
  * use it for free-memory checks).
- * This subsumes what logiqx_dat.c used to do in
- * logiqx_dat_path_is_valid(): the parser is fully
- * path-agnostic now - bytes in, structs out - so both
- * the extension whitelist and the file system checks
- * live with the scan configuration that owns the
- * path. */
+ * The parser (logiqx_dat.c) is path-agnostic - bytes
+ * in, structs out - so both the extension whitelist
+ * and the file system checks live here, with the scan
+ * configuration that owns the path. */
 bool manual_content_scan_dat_path_is_valid(
       const char *path, uint64_t *file_size)
 {

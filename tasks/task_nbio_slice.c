@@ -66,11 +66,8 @@ static retro_time_t nbio_slice_start;
 static retro_time_t nbio_slice_used;
 
 /* The budget is handed to the work loop rather than checked around
- * it, so it is consulted between the loop's own items.  In the fill
- * spine this used to be a do/while around iterate() with a 256 KiB
- * byte budget standing in for the time slice, which meant the
- * deadline could only be noticed every 256 KiB - once per whole
- * chunk, however long that chunk took to arrive. */
+ * it, so the deadline is noticed between the loop's own items - not
+ * once per whole chunk, however long a chunk takes to arrive. */
 bool task_nbio_slice_within_budget(void *ud, size_t avail,
       size_t len)
 {

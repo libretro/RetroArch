@@ -208,11 +208,6 @@ else
 	LD = $(CC)
 endif
 
-# The budget oracle is part of all: the CI step for it (and anyone
-# typing plain make) does `make clean all` and then expects the
-# binary, and `all` producing only database_task left that step
-# probing for a binary the build never made - masked locally by a
-# stale binary from an earlier explicit `make scan_begin_budget_test`.
 all: $(TARGET)$(EXE_EXT) $(BEGIN_TEST)$(EXE_EXT)
 $(TARGET)$(EXE_EXT): $(OBJECTS)
 	$(LD)  $(LINKOUT)$@ $(SHARED) $(OBJECTS) $(LDFLAGS) $(LIBS)
@@ -224,8 +219,6 @@ $(INDEX_TEST)$(EXE_EXT): $(INDEX_TEST_OBJECTS)
 $(SCAN_TEST)$(EXE_EXT): $(SCAN_TEST_OBJECTS)
 	$(LD)  $(LINKOUT)$@ $(SHARED) $(SCAN_TEST_OBJECTS) $(LDFLAGS) $(LIBS)
 
-# Builds its own content tree + DAT, so it needs nothing but a
-# writable dir (honours TMPDIR).
 $(BEGIN_TEST)$(EXE_EXT): $(BEGIN_TEST_OBJECTS)
 	$(LD)  $(LINKOUT)$@ $(SHARED) $(BEGIN_TEST_OBJECTS) $(LDFLAGS) $(LIBS)
 

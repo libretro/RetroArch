@@ -267,17 +267,15 @@ enum db_flags_enum
 
 enum manual_scan_status
 {
-   /* The BEGIN family: what used to be one monolithic BEGIN state
-    * doing a full recursive directory walk, a whole-file DAT load
-    * and the playlist setup in a single handler invocation - a
-    * multi-hundred-millisecond freeze on a large library when
-    * Threaded Tasks is off.  Each sub-state now respects the shared
-    * per-frame I/O window (task_nbio_slice_*, the same window the
-    * file-transfer spine uses), and completed sub-states collapse
-    * into one invocation while the window lasts, so small libraries
-    * keep their single-tick latency.  The task's public identity
-    * (handler, state) is untouched, so task_queue_find()-based
-    * duplicate-scan suppression is unaffected. */
+   /* The BEGIN family: setup, the recursive directory walk, the DAT
+    * load and the playlist setup as separate sub-states, each
+    * respecting the shared per-frame I/O window (task_nbio_slice_*,
+    * the same window the file-transfer spine uses).  Completed
+    * sub-states collapse into one invocation while the window
+    * lasts, so small libraries keep single-tick latency.  The
+    * task's public identity (handler, state) is one task across all
+    * sub-states, so task_queue_find()-based duplicate-scan
+    * suppression is unaffected. */
    MANUAL_SCAN_BEGIN = 0,
    MANUAL_SCAN_BEGIN_DIR_LIST,
    MANUAL_SCAN_BEGIN_DAT_LOAD,
@@ -312,11 +310,10 @@ typedef struct manual_scan_handle
    /* Resumable batch playlist flush (MANUAL_SCAN_END): position in
     * scan_results, the playlist currently open for the group being
     * written, its group key and running count, and the path scratch
-    * buffer - all of what used to be locals of a single monolithic
-    * call, promoted so the flush can yield on the shared window and
-    * resume next gather.  flush_group points into either the task
-    * config or the owned results array, both of which outlive the
-    * flush. */
+    * buffer, kept on the handle so the flush can yield on the
+    * shared window and resume next gather.  flush_group points into
+    * either the task config or the owned results array, both of
+    * which outlive the flush. */
    size_t flush_pos;
    playlist_t *flush_playlist;
    const char *flush_group;
@@ -1968,26 +1965,19 @@ static void task_database_cleanup_state(database_state_handle_t *db_state)
 }
 #endif
 /* Batch update playlists from accumulated scan results */
-/* Resumable form of what used to be
- * scan_results_batch_update_playlists(): one gather's worth of the
- * batch playlist flush, under the same shared window as the BEGIN
- * family.  The old call added every accumulated result - each add a
- * linear playlist_entry_exists() probe - then sorted and wrote the
- * playlist, all in the gather that reached MANUAL_SCAN_END: 166 ms
- * measured for a 5000-file scan, the largest single freeze left
- * after the BEGIN split.  The loop's locals (position, open
- * playlist, group key, counters, path scratch) live on the handle
- * now so the loop can yield between results and resume.
+/* One gather's worth of the batch playlist flush, under the same
+ * shared window as the BEGIN family, yielding between results and
+ * resuming from the state kept on the handle.
  *
  * The group-close write for multi-playlist scans and the final
- * sort+write remain single blocking operations: a playlist file
- * write is atomic by design (a partial write would corrupt the
- * playlist on a cancelled scan), so those are the floor this flush
- * cannot go below.
+ * sort+write are single blocking operations: a playlist file write
+ * is atomic by design (a partial write would corrupt the playlist
+ * on a cancelled scan), so those are the floor this flush cannot
+ * go below.
  *
  * Returns true when the flush has fully completed (including the
- * failure mode of the scratch allocation, which skips the batch
- * exactly as the old code did), false when yielding. */
+ * failure mode of the scratch allocation, which skips the batch),
+ * false when yielding. */
 static bool manual_scan_end_flush_tick(
    manual_scan_handle_t* manual_scan, bool single_playlist)
 {
@@ -2025,20 +2015,11 @@ static bool manual_scan_end_flush_tick(
    {
       scan_result_t *result = &sr->results[manual_scan->flush_pos];
       char db_name_noext[PATH_MAX_LENGTH];
-      /* The key identifying which playlist this result belongs to.
-       * With a fixed playlist file every result goes to the same
-       * playlist, so the key is that path; otherwise results are
-       * grouped by database name.
-       *
-       * This used to compare the group key against result->db_name
-       * unconditionally, but the fixed-file branch below assigns
-       * task_config->playlist_file as the group - a path like
-       * ".../MyList.lpl", which never equals a db_name, those being
-       * the database's own file name.  The test was therefore true on every
-       * iteration, and each result closed the playlist (a full
-       * playlist_write_file()) and reopened it (a full
-       * playlist_init() parse from disk).  N results meant N complete
-       * loads and N complete writes of the same file. */
+      /* The key identifying which playlist this result belongs to:
+       * the fixed playlist file when one is set, else the database
+       * name.  The fixed path never equals a db_name, so comparing
+       * against db_name unconditionally here would close and reopen
+       * the playlist (a full write + parse) once per result. */
       const char *group_key = (*manual_scan->task_config->playlist_file)
          ? manual_scan->task_config->playlist_file
          : result->db_name;
@@ -2096,9 +2077,9 @@ static bool manual_scan_end_flush_tick(
          {
             RARCH_ERR("[Scanner] Failed to open playlist: \"%s\".\n", result->db_name);
             manual_scan->flush_group = NULL;
-            /* The old for loop's continue advanced the index; this
-             * loop must advance the position itself or the same
-             * unopenable playlist would be retried forever. */
+            /* Advance past this result before continuing, or the
+             * same unopenable playlist is retried every gather
+             * forever. */
             manual_scan->flush_pos++;
             continue;
          }
@@ -2316,10 +2297,6 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
    /* Free accumulated scan results */
    scan_results_free(&manual_scan->scan_results);
 
-   /* strdup'd unconditionally at push; the old guard also tested
-    * *playlist_directory, so a strdup("") - which is a real
-    * allocation - was never released.  16 bytes per scan push,
-    * found by the cancellation sweep under LeakSanitizer. */
    if (manual_scan->playlist_directory)
       free(manual_scan->playlist_directory);
    manual_scan->playlist_directory = NULL;
@@ -2379,7 +2356,6 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
          dbstate->flags     = NULL;
       }
 
-      /* Same empty-string leak as playlist_directory above. */
       if (manual_scan->content_database_path)
          free(manual_scan->content_database_path);
       manual_scan->content_database_path = NULL;
@@ -2489,15 +2465,13 @@ static void task_manual_content_scan_free(retro_task_t *task)
 
 /* --- MANUAL_SCAN_BEGIN family ---------------------------------------
  *
- * What used to be one monolithic BEGIN case is a short sequence of
- * budgeted sub-states sharing the per-frame I/O window with the
- * file-transfer spine (task_nbio_slice_*).  The same total work is
- * performed - the walk is incremental rather than done twice, the
- * DAT is read in chunks into a single buffer that is then handed to
- * the parser whole - so end-to-end scan time is preserved while no
- * single gather freezes the frame.  Each sub-state function returns
- * true when the task must finish (error or nothing to scan), exactly
- * where the old code went to task_finished. */
+ * A short sequence of budgeted sub-states sharing the per-frame I/O
+ * window with the file-transfer spine (task_nbio_slice_*).  The walk
+ * is incremental and lands directly in the content list, and the DAT
+ * is read in chunks into a single buffer that is then handed to the
+ * parser whole, so no single gather freezes the frame.  Each
+ * sub-state function returns true when the task must finish (error
+ * or nothing to scan). */
 
 /* Chunk size for the budgeted DAT read.  Large enough that fast
  * storage delivers a big DAT in a handful of gathers, small enough
@@ -2530,16 +2504,14 @@ static bool manual_scan_begin_setup(retro_task_t *task,
 
       manual_scan->flags       |= DB_HANDLE_FLAG_SCAN_STARTED;
 
-      /* No content dir: same terminal exit the old code took when
-       * no handle came into being. */
+      /* No content dir: nothing to scan. */
       if (!*manual_scan->task_config->content_dir)
          return true;
 
       if (manual_scan->flags & DB_HANDLE_FLAG_IS_DIRECTORY)
       {
-         /* Start the incremental walk that replaces
-          * database_info_dir_init()'s blocking dir_list_new().
-          * Extension derivation matches it: all supported core
+         /* Start the incremental walk.  Extension derivation
+          * matches database_info_dir_init(): all supported core
           * extensions unless an explicit list is given.  The
           * cue/gdi-prioritising sort follows on completion in
           * database_info_dir_init_from_list(). */
@@ -2655,9 +2627,9 @@ static bool manual_scan_begin_setup(retro_task_t *task,
          manual_scan->file_exts_list = string_split(
                manual_scan->task_config->file_exts, "|");
 
-      /* Start the incremental walk that replaces
-       * manual_content_scan_get_content_list(); the same policy
-       * (extension filter, compressed inclusion) is applied by the
+      /* Start the incremental walk.  The same policy (extension
+       * filter, compressed inclusion) as
+       * manual_content_scan_get_content_list() is applied by the
        * shared helper, and a plain-file content dir completes here
        * with no iterator. */
       if (!manual_content_scan_content_list_iter_new(
@@ -2933,9 +2905,8 @@ static bool manual_scan_begin_playlist(retro_task_t *task,
 /* One gather's worth of BEGIN-family work.  Opens a share of the
  * per-frame window once, then runs sub-states back to back while they
  * complete inside it - so a small library still finishes the whole
- * BEGIN sequence (and often the whole scan setup) in a single tick,
- * exactly the latency it had before the split.  Returns true when the
- * task must finish. */
+ * BEGIN sequence (and often the whole scan setup) in a single tick.
+ * Returns true when the task must finish. */
 static bool task_manual_scan_begin_tick(retro_task_t *task,
       manual_scan_handle_t *manual_scan)
 {
@@ -3363,10 +3334,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
             const char *msg = NULL;
 
             /* Batch update all playlists with accumulated results,
-             * spread across gathers under the shared window - the
-             * monolithic form of this flush was the largest single
-             * freeze left after the BEGIN split (166 ms on a
-             * 5000-file scan). */
+             * spread across gathers under the shared window. */
             if (manual_scan->scan_results.count > 0)
             {
                if (!manual_scan_end_flush_tick(manual_scan,
