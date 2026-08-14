@@ -1,0 +1,163 @@
+name: CI cross-libc libretro-common/vfs samples
+
+# libretro-common/samples runs on ubuntu-latest only, which means
+# every VFS test in the tree is validated against exactly one C
+# library.  That is the wrong number for this code: file_stream.c and
+# vfs_implementation.c sit directly on top of stdio and the file
+# descriptor API, and the libraries disagree about both.
+#
+#   glibc      fread() reads straight into the caller's buffer once
+#              the request reaches the block size, whoever owns the
+#              buffer (libio/fileops.c, _IO_file_xsgetn).
+#   Apple libc the same bypass exists but is skipped when setvbuf()
+#              supplied the buffer - '__SMBF' is then clear - which is
+#              exactly what retro_vfs_file_open_impl() does
+#              (Libc/stdio/FreeBSD/fread.c, radar 5980080 / 6180417).
+#   UCRT       not open source; behaviour is inferred and therefore
+#              worth measuring rather than assuming.
+#   msvcrt     the older runtime MINGW64 links against, again
+#              different code from UCRT.
+#
+# The tests here assert behaviour, not performance, so a difference in
+# any of the above shows up as a failure rather than a slowdown.  The
+# Windows entries matter most for the descriptor path, which opens
+# with open()/_wopen() instead of fopen(mode "rb") and so depends on
+# O_BINARY being in the flags; vfs_bulk_read_test's binary
+# transparency case is the one that catches its absence.
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'libretro-common/streams/file_stream.c'
+      - 'libretro-common/vfs/**'
+      - 'libretro-common/include/vfs/**'
+      - 'libretro-common/include/streams/file_stream.h'
+      - 'libretro-common/samples/file/vfs/**'
+      - '.github/workflows/Cross-libc-vfs-samples.yml'
+  pull_request:
+    paths:
+      - 'libretro-common/streams/file_stream.c'
+      - 'libretro-common/vfs/**'
+      - 'libretro-common/include/vfs/**'
+      - 'libretro-common/include/streams/file_stream.h'
+      - 'libretro-common/samples/file/vfs/**'
+      - '.github/workflows/Cross-libc-vfs-samples.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # glibc and Apple libc.  Both take the descriptor path, since
+  # VFS_HAVE_FILE_MAPPING covers anything with mmap.
+  unix:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: glibc (ubuntu-latest)
+            runner: ubuntu-latest
+            # LeakSanitizer exists here, so run it at full strictness.
+            asan_opts: detect_leaks=1
+          - name: Apple libc (macos-latest)
+            runner: macos-latest
+            # LeakSanitizer is not implemented on Darwin, and asking
+            # for it is fatal rather than ignored: the runtime prints
+            # "detect_leaks is not supported on this platform" and
+            # aborts.  Leak coverage for these sources comes from the
+            # Linux leg above; this one is here for Apple's libc
+            # behaviour, which is what differs.
+            asan_opts: detect_leaks=0
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and run
+        shell: bash
+        working-directory: libretro-common/samples/file/vfs
+        run: |
+          set -euo pipefail
+          run_cfg() {
+            echo "==> $*"
+            make clean >/dev/null
+            make "$@" SANITIZER=address,undefined
+            ASAN_OPTIONS=${{ matrix.asan_opts }} ./vfs_bulk_read_test
+            ./vfs_seek_contract_test
+            ./vfs_mapped_ptr_test
+          }
+          # Mapping on (what the platform actually ships), mapping off
+          # with the descriptor path forced (what the consoles have),
+          # and neither (a target on no list, which must keep its
+          # buffered behaviour).
+          run_cfg MMAP=1
+          run_cfg MMAP=0 DESCRIPTOR_IO=1
+          run_cfg MMAP=0
+
+      - name: Thread sanitizer
+        # Not on macOS: TSan there reports on system libraries the
+        # runner image ships, which is noise this job cannot fix.
+        if: matrix.runner == 'ubuntu-latest'
+        shell: bash
+        working-directory: libretro-common/samples/file/vfs
+        run: |
+          set -euo pipefail
+          make clean >/dev/null
+          make SANITIZER=thread
+          ./vfs_bulk_read_test
+
+  # UCRT and msvcrt, through MSYS2.  Same C runtimes an MSVC-built
+  # RetroArch links against, so the runtime behaviour these tests
+  # check is the behaviour that ships; the MSVC job covers the
+  # compiler.
+  windows:
+    name: ${{ matrix.sys }} (windows-latest)
+    runs-on: windows-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        sys: [UCRT64, MINGW64]
+
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.sys }}
+          update: true
+          install: >-
+            base-devel
+          pacboy: >-
+            toolchain:p
+
+      - name: Build and run
+        working-directory: libretro-common/samples/file/vfs
+        run: |
+          set -euo pipefail
+          # No sanitizers here: the MSYS2 toolchains do not ship a
+          # usable ASan runtime for this target, and the point of this
+          # job is which C runtime the calls land on, not memory
+          # safety - the Linux job covers that with the same sources.
+          #
+          # MMAP=0 is required, not cosmetic: -DHAVE_MMAP pulls in
+          # <sys/mman.h>, which does not exist here.  The Win32
+          # file-mapping backend is selected by _WIN32 inside vfs.h
+          # rather than by that flag, so VFS_HAVE_FILE_MAPPING - and
+          # with it descriptor I/O and the mapped-pointer path - is on
+          # regardless.
+          make clean MMAP=0
+          make MMAP=0
+          ./vfs_bulk_read_test.exe
+          ./vfs_seek_contract_test.exe
+          # Exercises the Win32 CreateFileMapping/MapViewOfFile
+          # backend, which no other job in the tree reaches.
+          ./vfs_mapped_ptr_test.exe

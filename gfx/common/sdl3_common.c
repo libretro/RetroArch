@@ -30,6 +30,49 @@
 #include "../../configuration.h"
 #include "../../input/input_driver.h"
 #include "../../retroarch.h"
+#include "../../version.h"
+
+/* 16x16 ARGB8888 window icon, matching x_ctx.c, wayland_common.c, ui_qt.cpp. */
+static const uint32_t sdl3_icon_data[16 * 16] = {
+0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,
+0x00000000,0x00000000,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0x00000000,0x00000000,0x00000000,
+0x00000000,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xff333333,0xff333333,0xfff2f2f2,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xfff2f2f2,0xff333333,0xff333333,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xfff2f2f2,0xff333333,0xff333333,0xfff2f2f2,0xff333333,0xff333333,0xff333333,0xfff2f2f2,0xff333333,0xff333333,0xfff2f2f2,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xfff2f2f2,0xff333333,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xff333333,0xfff2f2f2,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xff333333,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xff333333,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xff333333,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xfff2f2f2,0xff333333,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xff333333,0xff333333,0xfff2f2f2,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xfff2f2f2,0xff333333,0xff333333,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xff333333,0xfff2f2f2,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xfff2f2f2,0xff333333,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0x00000000,0x00000000,
+0x00000000,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0x00000000,0x00000000,
+0x00000000,0x00000000,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0xff333333,0x00000000,0x00000000,0x00000000,
+0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000,0x00000000
+};
+
+void sdl3_set_app_metadata(void)
+{
+   SDL_SetAppMetadata("RetroArch", PACKAGE_VERSION, "com.libretro.RetroArch");
+   SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_CREATOR_STRING, "libretro");
+   SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_URL_STRING, "https://www.retroarch.com");
+   SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_TYPE_STRING, "game");
+}
+
+/* Sets the window icon so that the RetroArch icon appears in the taskbar. */
+static void sdl3_window_set_icon(SDL_Window *win)
+{
+   SDL_Surface *icon = SDL_CreateSurfaceFrom(16, 16,
+         SDL_PIXELFORMAT_ARGB8888,
+         (void*)sdl3_icon_data, 16 * sizeof(uint32_t));
+
+   if (!icon)
+      return;
+
+   SDL_SetWindowIcon(win, icon);
+   SDL_DestroySurface(icon);
+}
 
 /* Keeps track of the window position to allow video_window_save_positions. */
 static void sdl3_window_save_position(SDL_Window *win)
@@ -210,6 +253,8 @@ static SDL_Window *sdl3_window_create(unsigned width, unsigned height,
 
    if (!(win = SDL_CreateWindow("RetroArch", width, height, flags)))
       return NULL;
+
+   sdl3_window_set_icon(win);
 
    /* Set either the window position, or the active monitor. This is ignored
     * in Wayland where windows are not manually positioned. */
@@ -454,6 +499,39 @@ void sdl3_ctx_check_window(void *data, bool *quit, bool *resize,
 
    if (*resize && win)
       sdl3_window_get_video_size(win, width, height);
+}
+
+bool sdl3_ctx_get_metrics(void *data,
+      enum display_metric_types type, float *value)
+{
+   float scale;
+   SDL_Window *win;
+
+   /* This currently only reports on the display's metric DPI. */
+   if (type != DISPLAY_METRIC_DPI)
+   {
+      *value = 0.0f;
+      return false;
+   }
+
+   /* Find the scale from the window, or the primary display if the
+    * window doesn't exist yet. */
+   if ((win = sdl3_ctx_window(data)))
+      scale = SDL_GetWindowDisplayScale(win);
+   else
+      scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
+
+   /* SDL3 only exposes the desktop scale factor, not the physical
+    * DPI, so use a 96 DPI baseline. For reference, X11 has Xft.dpi,
+    * and Wayland uses the compositor scale. */
+   if (scale <= 0.0f)
+   {
+      *value = 0.0f;
+      return false;
+   }
+
+   *value = scale * 96.0f;
+   return true;
 }
 
 void sdl3_show_mouse(void *data, bool state)

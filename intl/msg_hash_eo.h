@@ -1967,7 +1967,6 @@ static const struct
    char s_c7bc8298[20];
    char s_e63b035a[25];
    char s_d21d875b[20];
-   char s_ae86fed0[25];
    char s_b12ae22e[17];
    char s_b2d073c7[17];
    char s_1cbc2657[18];
@@ -3380,14 +3379,10 @@ static const struct
    char s_69c0e487[57];
    char s_706ff4dc[180];
    char s_a0d1a85c[51];
-   char s_b5966528[1];
    char s_907ef7cc[39];
    char s_b0a46506[47];
    char s_04624c88[44];
-   char s_91976dbe[33];
    char s_f6492edc[45];
-   char s_9bb85635[32];
-   char s_22a05685[32];
 #endif
    char s_f3bfa8b9[97];
    char s_5fe2cee5[67];
@@ -6331,7 +6326,6 @@ static const struct
    "Agordoj de reto SMB",
    "Kunhaviga\304\265a nomo de SMB",
    "Kunhaviga\304\265o de SMB",
-   "Subdosierujo SMB (opcia)",
    "Tempolimo de SMB",
    "Uzantnomo de SMB",
    "Laborgrupo de SMB",
@@ -8136,14 +8130,10 @@ static const struct
    "-Fi por pli fidinda konekto. Noto: \305\235an\304\235i \304\211i tiujn agordojn bezonas restarti"
    "gon de RetroArch.",
    "Elekti la maksimumaj konektoj uzotaj en via medio.",
-   "",
    "Adreso IP a\305\255 gastiga nomo de servilo.",
    "Konfiguri agordojn pri kunhava\304\265o de reto SMB.",
    "Nomo de la reta kunhaviga\304\265o, al kiu aliri.",
-   "Subdosierujo en la kunhaviga\304\265o.",
    "Elekti la defa\305\255ltan tempolimon je sekundoj.",
-   "Uzantnomo por a\305\255tentokontrolo.",
-   "Nomo de laborgrupo a\305\255 domajno.",
 #endif
    "Ordigi konservdosieroj en dosierujojn nomitaj la\305\255 la dosierujoj, en kiu la enhavo estas l"
    "okita.",
@@ -9214,7 +9204,6 @@ typedef char msg_hash_eo_blob_check[
        + 20u
        + 25u
        + 20u
-       + 25u
        + 17u
        + 17u
        + 18u
@@ -9402,14 +9391,10 @@ typedef char msg_hash_eo_blob_check[
        + 57u
        + 180u
        + 51u
-       + 1u
        + 39u
        + 47u
        + 44u
-       + 33u
        + 45u
-       + 32u
-       + 32u
 #endif
 #ifdef HAVE_LAKKA
        + 42u
@@ -11443,7 +11428,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
@@ -12856,14 +12840,10 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,

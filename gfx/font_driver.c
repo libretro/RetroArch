@@ -29,6 +29,296 @@
 #include "../verbosity.h"
 #include "font_driver.h"
 #include "video_thread_wrapper.h"
+#include <retro_atomic.h>
+
+/* ------------------------------------------------------------------
+ * Shared font file bytes.
+ *
+ * Ozone builds six fonts and gfx_widgets three, and between them they
+ * name two files: nine whole-file reads of two faces, every context
+ * reset, which is twice per content load/close.  On a Vita that was
+ * 21.91 MiB off the memory card and the same again in resident
+ * buffers each time round.
+ *
+ * The bytes of one path are read once and handed to every font built
+ * from it, and freed when the last of them is gone.  A renderer that
+ * only reads what it is given (borrows_font_data) gets the shared
+ * buffer; one that disposes of the bytes on its own schedule gets a
+ * private copy and is unaffected, which is why coretext - whose
+ * buffer is released by CoreGraphics rather than at font teardown -
+ * needs no change.
+ * ------------------------------------------------------------------ */
+
+typedef struct font_file_ref
+{
+   struct font_file_ref *next;
+   char                 *path;
+   uint8_t              *data;
+   size_t                len;
+   unsigned              refs;
+} font_file_ref_t;
+
+/* handle -> buffer, so the teardown path can find what a renderer was
+ * handed without the renderer or font_data_t having to carry it. */
+typedef struct font_file_use
+{
+   struct font_file_use *next;
+   const void           *handle;
+   font_file_ref_t      *ref;      /* NULL when no file was involved */
+   void                (*real_free)(void *data);
+} font_file_use_t;
+
+static font_file_ref_t *font_file_refs;
+static font_file_use_t *font_file_uses;
+
+/* A plain int rather than an slock_t, because an slock_t has to be
+ * created and there is nowhere race-free to create it: rthreads has no
+ * one-time-init primitive, and the first font is not reliably built on
+ * a known thread - with threaded video, init is dispatched to the video
+ * thread.  A statically initialised word needs no such moment.
+ *
+ * Spinning is only acceptable because every critical section here is a
+ * walk of a list that holds one entry per distinct font file - two, in
+ * the case this exists for.  The file read deliberately happens outside
+ * the lock; spinning while another thread pulls megabytes off a memory
+ * card would be far worse than the contention it avoids. */
+/* retro_atomic.h's fallback backend has no compare-and-swap: it is
+ * selected precisely on the targets whose toolchains offer no
+ * lock-free integer atomics, which are the single-core consoles, and
+ * there the list is only ever touched from one thread.  Gate on the
+ * primitive rather than on a platform list, so a target that gains
+ * atomics gains the locking with them. */
+#if defined(HAVE_THREADS) && defined(retro_atomic_cas_int)
+static retro_atomic_int_t font_file_lock_word;
+#define FONT_FILE_LOCK() \
+   do { while (!retro_atomic_cas_int(&font_file_lock_word, 0, 1)) { } } while (0)
+#define FONT_FILE_UNLOCK() \
+   retro_atomic_store_release_int(&font_file_lock_word, 0)
+#else
+#define FONT_FILE_LOCK()   do { } while (0)
+#define FONT_FILE_UNLOCK() do { } while (0)
+#endif
+
+/* Caller holds the lock. */
+static font_file_ref_t *font_file_ref_lookup(const char *path)
+{
+   font_file_ref_t *entry;
+
+   for (entry = font_file_refs; entry; entry = entry->next)
+      if (string_is_equal(entry->path, path))
+      {
+         entry->refs++;
+         return entry;
+      }
+   return NULL;
+}
+
+/* Takes the lock itself, and does the file read outside it.  A second
+ * thread asking for the same path while the read is in flight will
+ * read it too and lose the race to insert; that costs one redundant
+ * read in a case that does not arise in this codebase, and is the
+ * price of not holding a lock across storage I/O. */
+static font_file_ref_t *font_file_ref_acquire(const char *path)
+{
+   font_file_ref_t *entry;
+   font_file_ref_t *raced;
+   void            *data = NULL;
+   int64_t          len  = 0;
+
+   FONT_FILE_LOCK();
+   entry = font_file_ref_lookup(path);
+   FONT_FILE_UNLOCK();
+
+   if (entry)
+      return entry;
+
+   if (!filestream_read_file(path, &data, &len) || len <= 0)
+   {
+      if (data)
+         free(data);
+      return NULL;
+   }
+
+   if (!(entry = (font_file_ref_t*)calloc(1, sizeof(*entry))))
+   {
+      free(data);
+      return NULL;
+   }
+   {
+      /* strlcpy rather than strdup: the latter is not declared under
+       * a strict C89 compile, and this file is built that way. */
+      size_t path_len = strlen(path) + 1;
+      if (!(entry->path = (char*)malloc(path_len)))
+      {
+         free(data);
+         free(entry);
+         return NULL;
+      }
+      strlcpy(entry->path, path, path_len);
+   }
+
+   entry->data    = (uint8_t*)data;
+   entry->len     = (size_t)len;
+   entry->refs    = 1;
+
+   FONT_FILE_LOCK();
+   if ((raced = font_file_ref_lookup(path)))
+   {
+      FONT_FILE_UNLOCK();
+      free(entry->data);
+      free(entry->path);
+      free(entry);
+      return raced;
+   }
+   entry->next    = font_file_refs;
+   font_file_refs = entry;
+   FONT_FILE_UNLOCK();
+   return entry;
+}
+
+/* Caller holds the lock. */
+static void font_file_ref_release(font_file_ref_t *entry)
+{
+   font_file_ref_t **link;
+
+   if (!entry || --entry->refs)
+      return;
+
+   for (link = &font_file_refs; *link; link = &(*link)->next)
+      if (*link == entry)
+      {
+         *link = entry->next;
+         break;
+      }
+
+   free(entry->data);
+   free(entry->path);
+   free(entry);
+}
+
+/* Caller holds the lock.  On failure the reference is dropped rather
+ * than leaked: a font whose use cannot be recorded would keep the
+ * buffer alive for the rest of the run. */
+static void font_file_use_add(const void *handle, font_file_ref_t *entry,
+      void (*real_free)(void *data))
+{
+   font_file_use_t *use;
+
+   if (!handle || !(use = (font_file_use_t*)calloc(1, sizeof(*use))))
+   {
+      font_file_ref_release(entry);
+      return;
+   }
+
+   use->handle    = handle;
+   use->ref       = entry;
+   use->real_free = real_free;
+   use->next      = font_file_uses;
+   font_file_uses = use;
+}
+
+/* The free() every caller of font_renderer_create_default() ends up
+ * invoking.
+ *
+ * The reference cannot be dropped by whoever tears the font down: some
+ * thirty video drivers hold the driver pointer and the handle and call
+ * 'font_driver->free(font_data)' themselves, and asking every one of
+ * them to call a new destructor instead would be thirty edits in files
+ * that mostly cannot be built outside their own platform.  So the
+ * release rides on the free itself.  The driver handed back by
+ * font_renderer_create_default() is a copy of the backend's with this
+ * in place of its free, which means the reference is dropped wherever
+ * the font is destroyed, by callers that need to know nothing about
+ * any of it.
+ *
+ * The backend's own teardown runs first and outside the lock: freetype
+ * disposes of its face there, and the face holds a pointer into the
+ * bytes this is about to release. */
+static void font_renderer_shared_free_for(void *data,
+      const font_renderer_driver_t *backend)
+{
+   font_file_use_t **link;
+   font_file_use_t  *use  = NULL;
+
+   if (!data)
+      return;
+
+   FONT_FILE_LOCK();
+   for (link = &font_file_uses; *link; link = &(*link)->next)
+      if ((*link)->handle == data)
+      {
+         use   = *link;
+         *link = use->next;
+         break;
+      }
+   FONT_FILE_UNLOCK();
+
+   /* No record means the bookkeeping allocation failed at creation.
+    * The font itself is still real and still owns an atlas and
+    * whatever the backend hung off it, so tear it down regardless -
+    * returning here would turn a failed calloc of a few bytes into a
+    * leaked font, which is the worse of the two by a wide margin.
+    * There is no reference to drop in that case, by construction. */
+   if (!use)
+   {
+      if (backend && backend->free)
+         backend->free(data);
+      return;
+   }
+
+   if (use->real_free)
+      use->real_free(data);
+
+   FONT_FILE_LOCK();
+   font_file_ref_release(use->ref);
+   FONT_FILE_UNLOCK();
+
+   free(use);
+}
+
+/* One wrapper per backend, built on first use.  Static, so the pointer
+ * handed to callers stays valid for the life of the process exactly as
+ * the backend's own struct did. */
+#define FONT_SHARED_DRV_MAX 4
+static font_renderer_driver_t  font_shared_drv[FONT_SHARED_DRV_MAX];
+static const font_renderer_driver_t *font_shared_src[FONT_SHARED_DRV_MAX];
+static unsigned                font_shared_drv_count;
+
+/* One trampoline per slot, so the wrapper knows which backend it
+ * stands for without the record it may not have. */
+static void font_renderer_shared_free_0(void *d)
+{ font_renderer_shared_free_for(d, font_shared_src[0]); }
+static void font_renderer_shared_free_1(void *d)
+{ font_renderer_shared_free_for(d, font_shared_src[1]); }
+static void font_renderer_shared_free_2(void *d)
+{ font_renderer_shared_free_for(d, font_shared_src[2]); }
+static void font_renderer_shared_free_3(void *d)
+{ font_renderer_shared_free_for(d, font_shared_src[3]); }
+
+static void (* const font_shared_free_fn[FONT_SHARED_DRV_MAX])(void *) =
+{
+   font_renderer_shared_free_0, font_renderer_shared_free_1,
+   font_renderer_shared_free_2, font_renderer_shared_free_3
+};
+
+static const font_renderer_driver_t *font_renderer_shared_driver(
+      const font_renderer_driver_t *backend)
+{
+   unsigned i;
+
+   for (i = 0; i < font_shared_drv_count; i++)
+      if (font_shared_src[i] == backend)
+         return &font_shared_drv[i];
+
+   if (font_shared_drv_count >= FONT_SHARED_DRV_MAX)
+      return backend;
+
+   i                    = font_shared_drv_count++;
+   font_shared_src[i]   = backend;
+   font_shared_drv[i]   = *backend;
+   font_shared_drv[i].free = font_shared_free_fn[i];
+   return &font_shared_drv[i];
+}
 
 /* Monotonic counter incremented whenever any font instance is
  * freed. Consumers that cache per-font derived data (e.g. the
@@ -212,10 +502,11 @@ int font_renderer_create_default(
 
    for (i = 0; font_backends[i]; i++)
    {
-      const char *path      = font_path;
-      uint8_t    *data      = NULL;
-      int64_t     len       = 0;
-      unsigned    face      = 0;
+      const char      *path  = font_path;
+      uint8_t         *data  = NULL;
+      int64_t          len   = 0;
+      unsigned         face  = 0;
+      font_file_ref_t *entry = NULL;
 
       /* Ask the renderer where to look. It gets the requested path so
        * it can resolve against it - freetype hands it to fontconfig,
@@ -245,24 +536,62 @@ int font_renderer_create_default(
             continue;
       }
 
+      /* One read per path, however many fonts are built from it.  A
+       * renderer that borrows gets the shared buffer and the
+       * reference is held for as long as its handle lives; one that
+       * takes ownership gets a copy and the reference is dropped
+       * here, so its teardown is exactly as it was. */
       if (path && *path)
-         if (!filestream_read_file(path, (void**)&data, &len) || len <= 0)
+      {
+         if ((entry = font_file_ref_acquire(path)))
          {
-            data = NULL;
-            len  = 0;
+            if (font_backends[i]->borrows_font_data)
+            {
+               data = entry->data;
+               len  = (int64_t)entry->len;
+            }
+            else
+            {
+               if ((data = (uint8_t*)malloc(entry->len)))
+               {
+                  memcpy(data, entry->data, entry->len);
+                  len = (int64_t)entry->len;
+               }
+               FONT_FILE_LOCK();
+               font_file_ref_release(entry);
+               FONT_FILE_UNLOCK();
+               entry = NULL;
+            }
          }
+      }
 
-      /* Ownership passes to the renderer the moment init() is called,
-       * not when it succeeds: a renderer can take the buffer and then
-       * fail - stb stores it, then rejects a malformed font and frees
-       * it on the way out of init(). Freeing here as well was a double
-       * free on any unreadable or truncated font file. */
+      /* A renderer that takes ownership does so the moment init() is
+       * called, not when it succeeds: stb stores the buffer, then
+       * rejects a malformed font and frees it on the way out. Freeing
+       * here as well was a double free on any unreadable or truncated
+       * font file. A borrowing renderer frees nothing, so the
+       * reference is dropped below on either outcome. */
       *handle = font_backends[i]->init(data, (size_t)len, face,
             font_size, fmt);
       if (*handle)
       {
-         *drv = font_backends[i];
+         /* Recorded even when no file was involved - a built-in or
+          * system font still has to reach the backend's own free
+          * through the wrapper below. */
+         FONT_FILE_LOCK();
+         font_file_use_add(*handle, entry,
+               font_backends[i]->free);
+         FONT_FILE_UNLOCK();
+         *drv = font_renderer_shared_driver(font_backends[i]);
          return 1;
+      }
+
+      if (entry)
+      {
+         FONT_FILE_LOCK();
+         font_file_ref_release(entry);
+         FONT_FILE_UNLOCK();
+         entry = NULL;
       }
    }
 

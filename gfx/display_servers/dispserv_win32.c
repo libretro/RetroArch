@@ -908,6 +908,7 @@ static bool win32_display_server_get_metrics(void *data,
          break;
       default:
          *value = 0;
+         ReleaseDC(NULL, monitor);
          return false;
    }
 

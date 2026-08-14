@@ -58,6 +58,39 @@
 #define FILESTREAM_RBUF_LEN 16384
 #endif
 
+/* Largest single read filestream_read_file() will ask for.  Every
+ * backend it can reach expresses a count in something at least this
+ * wide - the narrowest is Windows' _read(), an unsigned int returning
+ * int - so a request of this size can be satisfied in full and a
+ * short return means what it says rather than "too big to ask for".
+ * Whole-file reads above it just take another turn of the loop. */
+#ifndef FILESTREAM_BULK_READ_MAX
+#define FILESTREAM_BULK_READ_MAX ((int64_t)64 * 1024 * 1024)
+#endif
+
+/* Largest whole-file read filestream_read_file() will attempt.
+ *
+ * Relying on malloc() to refuse an absurd request is not enough: a
+ * directory opens like a file on Linux through both fopen() and
+ * open(), and seeking to its end reports INT64_MAX, so a caller that
+ * hands this function a path that turns out to be a directory asks
+ * the allocator for 8 EiB.  Ordinarily that just fails and the call
+ * returns an error, but under AddressSanitizer an allocation past its
+ * ceiling is fatal - the process aborts rather than returning NULL,
+ * so every sanitizer build inherits a crash from a path that merely
+ * needed to fail.
+ *
+ * A ceiling refuses it without a syscall, and refuses any other
+ * backend that reports a size which cannot be one.  The value is far
+ * above anything read whole - the largest are ROMs and disc images,
+ * and a machine able to hold one of these in a single heap buffer is
+ * not what this function is sized for - and far below the sanitizer
+ * threshold, so the failure is a clean one.  On 32-bit hosts the
+ * address space binds first and this never applies. */
+#ifndef FILESTREAM_READ_FILE_MAX
+#define FILESTREAM_READ_FILE_MAX ((uint64_t)64 * 1024 * 1024 * 1024)
+#endif
+
 struct RFILE
 {
    struct retro_vfs_file_handle *hfile;
@@ -1832,9 +1865,13 @@ int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
    int64_t ret              = 0;
    int64_t content_buf_size = 0;
    void *content_buf        = NULL;
+   /* This function is the definition of a bulk sequential read: open,
+    * take the whole file in one go, close.  Saying so lets the VFS
+    * skip a read buffer that cannot be reused - the bytes are already
+    * going straight into storage the caller keeps. */
    RFILE *file              = filestream_open(path,
          RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+         RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
 
    if (!file)
    {
@@ -1846,9 +1883,21 @@ int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
       goto error;
 
    /* No usable size hint: read to EOF instead of trusting the zero.
-    * See filestream_read_file_to_eof() above. */
+    * See filestream_read_file_to_eof() above.
+    *
+    * A zero here is one of three things: a genuinely empty file, a
+    * stream whose length is not known in advance (procfs and the
+    * like), or a directory - which opens and seeks like a file on
+    * every platform checked and then yields nothing.  Only the last
+    * is an error, and nothing about the bytes distinguishes it from
+    * the first, so it costs one stat.  Paid only on this branch: a
+    * file with a size never reaches it, which is every read on the
+    * paths that matter for throughput. */
    if (content_buf_size == 0)
    {
+      if (path_is_directory(path))
+         goto error;
+
       if ((ret = filestream_read_file_to_eof(file, &content_buf)) < 0)
          goto error;
 
@@ -1867,15 +1916,72 @@ int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
     * for any positive int64_t), and on 32-bit hosts any file
     * larger than ~4 GiB silently truncated through (size_t),
     * the malloc was undersized, and the filestream_read below
-    * overran it. */
-   if ((uint64_t)content_buf_size + 1 > (uint64_t)((size_t)-1))
+    * overran it.
+    *
+    * The '+ 1' for the terminator is done in the unsigned domain and
+    * only after the bound is known to hold.  It used to sit inside
+    * the malloc argument as '(size_t)(content_buf_size + 1)', where
+    * the addition happens in int64_t first: a size of INT64_MAX
+    * overflows there, which is undefined behaviour rather than a
+    * large number.  That is not hypothetical - opening a directory
+    * succeeds on Linux through both fopen() and open(), and seeking
+    * to its end reports exactly INT64_MAX, so any caller that hands
+    * this function a path that turns out to be a directory reaches
+    * it.  See FILESTREAM_READ_FILE_MAX above for why such a size is
+    * refused here rather than left for malloc() to decline. */
+   if (     content_buf_size < 0
+         || (uint64_t)content_buf_size >= (uint64_t)((size_t)-1)
+         || (uint64_t)content_buf_size >  FILESTREAM_READ_FILE_MAX)
       goto error;
 
-   if (!(content_buf = malloc((size_t)(content_buf_size + 1))))
+   if (!(content_buf = malloc((size_t)content_buf_size + 1)))
       goto error;
 
-   if ((ret = filestream_read(file, content_buf, (int64_t)content_buf_size)) <
-         0)
+   /* Read in a loop rather than trusting a single call to satisfy the
+    * whole request.  A read is permitted to come up short and try
+    * again: fread() loops internally so the buffered path always did
+    * return the full count, but a descriptor-backed one - which is
+    * what the hint above now selects - hands back whatever read(2)
+    * gave it, and a frontend-supplied VFS may do anything at all.
+    * The single call this replaces then returned a buffer holding
+    * fewer bytes than the file, with nothing to distinguish it from a
+    * complete read of a shorter file.
+    *
+    * Requests are capped so no single read exceeds what a platform's
+    * count argument can express: read(2) takes a size_t on POSIX but
+    * _read() takes an unsigned int on Windows and returns int, so a
+    * >2 GiB request there fails outright instead of coming up short.
+    *
+    * A genuinely short *file* - one truncated between the size query
+    * and the read - still succeeds with the byte count it had, which
+    * is what this function has always done. */
+   while (ret < content_buf_size)
+   {
+      int64_t want = content_buf_size - ret;
+      int64_t got;
+
+      if (want > FILESTREAM_BULK_READ_MAX)
+         want = FILESTREAM_BULK_READ_MAX;
+
+      if ((got = filestream_read(file, (uint8_t*)content_buf + ret, want)) < 0)
+         goto error;
+      if (got == 0)
+         break;
+
+      ret += got;
+   }
+
+   /* The size said there were bytes and not one arrived.  That is not
+    * a file that shrank - a shrunk file still hands over what it has,
+    * which the loop above accepts - it is a stream that cannot be
+    * read at all.  A directory is exactly that shape wherever the
+    * platform lets one through: Linux reports INT64_MAX from lseek
+    * and is turned away by the ceiling above, but Darwin's buffered
+    * path reports a small plausible length and then reads zero
+    * bytes, and treating that as success handed back an empty buffer
+    * indistinguishable from an empty file.  Same call, same
+    * arguments, a different answer per platform. */
+   if (ret == 0)
       goto error;
 
    if (filestream_close(file) != 0)

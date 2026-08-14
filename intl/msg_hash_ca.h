@@ -1938,7 +1938,7 @@ static const struct
    char s_c7bc8298[30];
    char s_e63b035a[32];
    char s_d21d875b[21];
-   char s_ae86fed0[31];
+   char s_ae86fed0[15];
    char s_b12ae22e[20];
    char s_b2d073c7[20];
    char s_1cbc2657[23];
@@ -3348,14 +3348,14 @@ static const struct
    char s_69c0e487[42];
    char s_706ff4dc[198];
    char s_a0d1a85c[53];
-   char s_b5966528[33];
+   char s_b5966528[200];
    char s_907ef7cc[37];
    char s_b0a46506[54];
    char s_04624c88[38];
-   char s_91976dbe[38];
+   char s_91976dbe[48];
    char s_f6492edc[50];
-   char s_9bb85635[34];
-   char s_22a05685[34];
+   char s_9bb85635[201];
+   char s_22a05685[74];
 #endif
    char s_f3bfa8b9[90];
    char s_5fe2cee5[73];
@@ -6310,7 +6310,7 @@ static const struct
    "Configuraci\303\263 de xarxa de SMB",
    "Nom del recurs compartit de SMB",
    "Xarxa compartida SMB",
-   "Subdirectori de SMB (opcional)",
+   "Subcarpeta SMB",
    "Temps l\303\255mit de SMB",
    "Nom d'usuari de SMB",
    "Grup de treball de SMB",
@@ -8258,14 +8258,18 @@ static const struct
    "bre de Wifi per una connexi\303\263 m\303\251s fiable. Nota: Si fas canvis en aquesta configurac"
    "i\303\263, cal reiniciar RetroArch.",
    "Selecciona el nombre m\303\240xim de connexions possibles.",
-   "Contrasenya per l'autenticaci\303\263.",
+   "Contrasenya per l'autentificaci\303\263. \303\211s opcional si est\303\240 activat l'acc\303\251"
+   "s com a convidat en el servidor. Windows 10 o superior: l'acc\303\251s de convidat est\303\240 d"
+   "esactivat per defecte, cal una contrasenya.",
    "Adre\303\247a IP del servidor o amfitri\303\263.",
    "Modifica la configuraci\303\263 de la xarxa compartida SMB.",
    "Nom de la xarxa compartida a accedir.",
-   "Adre\303\247a del subdirectori a compartir.",
+   "Adre\303\247a del subdirectori a compartir. Opcional.",
    "Selecciona el temps l\303\255mit per defecte en segons.",
-   "Nom d'usuari per l'autenticaci\303\263.",
-   "Grup de treball o nom del domini.",
+   "Nom d'usuari per l'autentificaci\303\263. \303\211s opcional si est\303\240 activat l'acc\303"
+   "\251s com a convidat en el servidor. Windows 10 o superior: l'acc\303\251s de convidat est\303"
+   "\240 desactivat per defecte, cal un nom d'usuari.",
+   "Nom del domini o del grup de treball. Opcional en algunes configuracions.",
 #endif
    "Endre\303\247a els fitxers de desat mitjan\303\247ant carpetes amb els noms on es troba el conti"
    "ngut.",
@@ -9401,7 +9405,7 @@ typedef char msg_hash_ca_blob_check[
        + 30u
        + 32u
        + 21u
-       + 31u
+       + 15u
        + 20u
        + 20u
        + 23u
@@ -9591,14 +9595,14 @@ typedef char msg_hash_ca_blob_check[
        + 42u
        + 198u
        + 53u
-       + 33u
+       + 200u
        + 37u
        + 54u
        + 38u
-       + 38u
+       + 48u
        + 50u
-       + 34u
-       + 34u
+       + 201u
+       + 74u
 #endif
 #ifdef HAVE_LAKKA
        + 55u

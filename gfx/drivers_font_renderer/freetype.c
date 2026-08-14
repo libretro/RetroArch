@@ -114,8 +114,11 @@ static void font_renderer_ft_free(void *data)
 
    if (handle->face)
       FT_Done_Face(handle->face);
-   if (handle->file_data)
-      free(handle->file_data);
+   /* Borrowed, not owned: font_renderer_create_default() holds these
+    * bytes and may be sharing them with other fonts built from the
+    * same path.  FT_New_Memory_Face keeps a pointer into the buffer
+    * for the life of the face, so the face is torn down above before
+    * the reference is dropped by the owner. */
    handle->file_data = NULL;
    if (handle->lib)
       FT_Done_FreeType(handle->lib);
@@ -605,5 +608,6 @@ font_renderer_driver_t freetype_font_renderer = {
    font_renderer_ft_free,
    font_renderer_ft_get_default_fonts,
    "font_renderer_ft",
-   font_renderer_ft_get_line_metrics
+   font_renderer_ft_get_line_metrics,
+   true                        /* borrows_font_data */
 };

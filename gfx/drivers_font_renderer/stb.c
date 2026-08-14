@@ -1678,10 +1678,15 @@ static void *font_renderer_stb_init(
    }
    else
    {
-      /* Ownership transfers on success. */
+      /* Borrowed: font_renderer_create_default() owns these bytes and
+       * may be sharing them with other fonts built from the same
+       * path, so this renderer must not free them.  It only ever
+       * reads them - rtt_font_t keeps a pointer into the buffer for
+       * glyph rasterisation, which is why the owner has to outlive
+       * every font using it rather than hand out copies. */
       self->font_data       = font_data;
       self->font_data_size  = font_data_len;
-      self->font_data_owned = true;
+      self->font_data_owned = false;
    }
 
    /* Guard against empty/corrupt font files */
@@ -1804,5 +1809,6 @@ font_renderer_driver_t stb_font_renderer = {
    font_renderer_stb_free,
    font_renderer_stb_get_default_fonts,
    "font_renderer_stb",
-   font_renderer_stb_get_line_metrics
+   font_renderer_stb_get_line_metrics,
+   true                        /* borrows_font_data */
 };

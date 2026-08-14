@@ -121,6 +121,7 @@ bool task_push_load_content_with_core(
 
 bool task_push_load_subsystem_with_core(
       const char *fullpath,
+      const char *label,
       content_ctx_info_t *content_info,
       enum rarch_core_type type,
       retro_task_callback_t cb,

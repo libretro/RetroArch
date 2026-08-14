@@ -59,6 +59,9 @@ typedef struct _sdl3_video
    uint8_t flags;
 } sdl3_video_t;
 
+/* Registers the application name, version and metadata. */
+void sdl3_set_app_metadata(void);
+
 /* Sets the window's native display/window handles (X11, Wayland,
  * Win32, Cocoa, KMS) to the video driver state via SDL's window
  * properties API, so subsystems that require the raw handles
@@ -114,6 +117,11 @@ void sdl3_ctx_update_title(void *data);
 bool sdl3_ctx_has_focus(void *data);
 void sdl3_ctx_check_window(void *data, bool *quit, bool *resize,
       unsigned *width, unsigned *height);
+
+/* Retrieve the DISPLAY_METRIC_DPI for the window's display scale.
+ * This usually ends up being scale * 96 DPI, or false otherwise. */
+bool sdl3_ctx_get_metrics(void *data, enum display_metric_types type,
+      float *value);
 
 /* Shows or hides the mouse cursor. */
 void sdl3_show_mouse(void *data, bool state);

@@ -36150,11 +36150,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
-   "SMB Sub directory (optional)"
+   "SMB Sub directory"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
-   "Sub directory path on the share."
+   "Sub directory path on the share. Optional."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
@@ -36162,7 +36162,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
-   "Username for authentication."
+   "Username for authentication. This is optional when guest access is enabled on the server. Windows 10 and above: guest access is disabled by default, so a username is required here."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
@@ -36170,7 +36170,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
-   "Password for authentication."
+   "Password for authentication. This is optional when guest access is enabled on the server. Windows 10 and above: guest access is disabled by default, so a password is required here."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
@@ -36178,7 +36178,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
-   "Workgroup or domain name."
+   "Workgroup or domain name. Optional in some setups."
    )
 /* GENERATED REGION: SMB client authentication group (see settings_def_smb_client_auth.h). */
 #define SETTINGS_DEF_STRINGS_PASS

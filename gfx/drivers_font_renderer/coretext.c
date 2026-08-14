@@ -665,5 +665,10 @@ font_renderer_driver_t coretext_font_renderer = {
    font_renderer_ct_free,
    font_renderer_ct_get_default_fonts,
    "font_renderer_ct",
-   font_renderer_ct_get_line_metrics
+   font_renderer_ct_get_line_metrics,
+   false                       /* borrows_font_data: the buffer goes to
+                                * CGDataProviderCreateWithData and is
+                                * released by CoreGraphics on its own
+                                * schedule, so this renderer keeps
+                                * ownership and takes a private copy. */
 };

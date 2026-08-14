@@ -1891,7 +1891,7 @@ static const struct
    char s_c7bc8298[26];
    char s_e63b035a[17];
    char s_d21d875b[13];
-   char s_ae86fed0[32];
+   char s_ae86fed0[21];
    char s_b12ae22e[24];
    char s_b2d073c7[17];
    char s_1cbc2657[18];
@@ -3291,14 +3291,14 @@ static const struct
    char s_69c0e487[57];
    char s_706ff4dc[201];
    char s_a0d1a85c[71];
-   char s_b5966528[37];
+   char s_b5966528[211];
    char s_907ef7cc[33];
    char s_b0a46506[50];
    char s_04624c88[60];
-   char s_91976dbe[39];
+   char s_91976dbe[49];
    char s_f6492edc[56];
-   char s_9bb85635[41];
-   char s_22a05685[35];
+   char s_9bb85635[219];
+   char s_22a05685[61];
 #endif
    char s_f3bfa8b9[119];
    char s_5fe2cee5[78];
@@ -6192,7 +6192,7 @@ static const struct
    "SMB-Netzwerkeinstellungen",
    "SMB-Freigabename",
    "SMB-Freigabe",
-   "SMB-Unterverzeichnis (optional)",
+   "SMB-Unterverzeichnis",
    "SMB-Zeit\303\274berschreitung",
    "SMB-Benutzername",
    "SMB-Arbeitsgruppe",
@@ -8070,14 +8070,18 @@ static const struct
    "gegen\303\274ber WLAN dringend empfohlen. Hinweis: Um diese Einstellungen zu \303\244ndern, muss"
    " RetroArch neu gestartet werden.",
    "Die maximale Anzahl der im Umfeld verwendeten Verbindungen ausw\303\244hlen.",
-   "Passwort f\303\274r die Authentifizierung.",
+   "Passwort f\303\274r die Authentifizierung. Dies ist optional, wenn Gastzugang auf dem Server akt"
+   "iviert ist. Windows 10 und h\303\266her: Gastzugang ist standardm\303\244\303\237ig deaktiviert,"
+   " daher ist hier ein Passwort erforderlich.",
    "Server-IP-Adresse oder Hostname.",
    "SMB-Netzwerkfreigabe-Einstellungen konfigurieren.",
    "Name der Netzwerkfreigabe, auf die zugegriffen werden soll.",
-   "Unterverzeichnispfad auf der Freigabe.",
+   "Unterverzeichnispfad auf der Freigabe. Optional.",
    "Die Standardzeit\303\274berschreitung in Sekunden ausw\303\244hlen.",
-   "Benutzername f\303\274r die Authentifizierung.",
-   "Arbeitsgruppen- oder Dom\303\244nenname.",
+   "Benutzername f\303\274r die Authentifizierung. Dies ist optional, wenn Gastzugang auf dem Server"
+   " aktiviert ist. Windows 10 und h\303\266her: Gastzugang ist standardm\303\244\303\237ig deaktivi"
+   "ert, daher ist hier ein Benutzername erforderlich.",
+   "Arbeitsgruppe oder Dom\303\244nenname. Optional in einigen Setups.",
 #endif
    "Speicherdaten in Ordnern sichern, die nach dem Verzeichnis benannt sind, in dem sich der ausgef"
    "\303\274hrte Inhalt befindet.",
@@ -9180,7 +9184,7 @@ typedef char msg_hash_de_blob_check[
        + 26u
        + 17u
        + 13u
-       + 32u
+       + 21u
        + 24u
        + 17u
        + 18u
@@ -9372,14 +9376,14 @@ typedef char msg_hash_de_blob_check[
        + 57u
        + 201u
        + 71u
-       + 37u
+       + 211u
        + 33u
        + 50u
        + 60u
-       + 39u
+       + 49u
        + 56u
-       + 41u
-       + 35u
+       + 219u
+       + 61u
 #endif
 #ifdef HAVE_LAKKA
        + 45u

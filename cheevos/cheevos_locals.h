@@ -117,6 +117,8 @@ typedef struct rcheevos_locals_t
    unsigned menuitem_count;           /* current number of items in the menuitems array */
 #endif
 
+   const char* hash_error;            /* message to display if an error occurred identifying the game */
+
    bool hardcore_allowed;             /* prevents enabling hardcore if illegal settings detected */
    bool hardcore_requires_reload;     /* prevents enabling hardcore until the core is reloaded */
    bool hardcore_being_enabled;       /* allows callers to detect hardcore mode while it's being enabled */

@@ -1076,6 +1076,42 @@ static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
    }
 }
 
+/* Video containers open over a sliding window before anything else:
+ * the still task reads the whole file into memory, which a
+ * multi-gigabyte recording fails outright (the allocation) or turns
+ * into a minute of disk reads for one frame - while the windowed
+ * animation path holds a fixed few-MiB footprint at any length, and
+ * its first decoded frame doubles as the still.
+ *
+ * Returns true when the window took and the thumbnail is now PENDING
+ * on it.  A false return (not a video, admission refused, no
+ * reservation support, malformed container) leaves the thumbnail
+ * untouched for the caller to fall through to the historical
+ * whole-file still decode, which keeps small files on exotic
+ * platforms working exactly as before. */
+static bool gfx_thumbnail_try_video_open(gfx_thumbnail_t *thumbnail,
+      const char *path)
+{
+   enum image_type_enum ptype;
+
+   if (!thumbnail || string_is_empty(path))
+      return false;
+
+   ptype = image_texture_get_type(path);
+   if (   (ptype != IMAGE_TYPE_WEBM)
+       && (ptype != IMAGE_TYPE_MP4))
+      return false;
+
+   gfx_thumbnail_anim_open(thumbnail, path);
+   if (!thumbnail->anim)
+      return false;
+
+   thumbnail->list_id = gfx_thumb_st.list_id;
+   GFX_THUMB_STATUS_STORE(&thumbnail->status,
+         GFX_THUMBNAIL_STATUS_PENDING);
+   return true;
+}
+
 /* Uploads one final-format animation frame as the thumbnail's texture.
  * 'pixels' must already be in the format the video driver expects
  * ('use_rgba' describes it). Runs on the main thread. */
@@ -1842,10 +1878,16 @@ void gfx_thumbnail_request(
             /* Load thumbnail, if required */
             if (path_is_valid(thumbnail_path))
             {
-               gfx_thumbnail_tag_t *thumbnail_tag =
-                  (gfx_thumbnail_tag_t*)malloc(sizeof(gfx_thumbnail_tag_t));
+               gfx_thumbnail_tag_t *thumbnail_tag;
 
-               if (!thumbnail_tag)
+               /* A WebM or MP4 that serves as its own thumbnail takes
+                * the sliding window rather than the whole-file still
+                * decode; see gfx_thumbnail_try_video_open. */
+               if (gfx_thumbnail_try_video_open(thumbnail, thumbnail_path))
+                  goto end;
+
+               if (!(thumbnail_tag = (gfx_thumbnail_tag_t*)
+                        malloc(sizeof(gfx_thumbnail_tag_t))))
                   goto end;
 
                /* Configure user data */
@@ -1955,31 +1997,10 @@ void gfx_thumbnail_request_file(
        || !path_is_valid(file_path))
       return;
 
-   /* Video containers open over a sliding window before anything
-    * else: the still task reads the whole file into memory, which a
-    * multi-gigabyte recording fails outright (the allocation) or
-    * turns into a minute of disk reads for one frame - while the
-    * windowed animation path holds a fixed few-MiB footprint at any
-    * length, and its first decoded frame doubles as the still.  Only
-    * when the windowed open declines (admission, no reservation
-    * support, malformed container) does the file fall through to the
-    * historical whole-file still decode, which keeps small files on
-    * exotic platforms working exactly as before. */
-   {
-      enum image_type_enum ptype = image_texture_get_type(file_path);
-      if (   (ptype == IMAGE_TYPE_WEBM)
-          || (ptype == IMAGE_TYPE_MP4))
-      {
-         gfx_thumbnail_anim_open(thumbnail, file_path);
-         if (thumbnail->anim)
-         {
-            thumbnail->list_id = p_gfx_thumb->list_id;
-            GFX_THUMB_STATUS_STORE(&thumbnail->status,
-                  GFX_THUMBNAIL_STATUS_PENDING);
-            return;
-         }
-      }
-   }
+   /* Video containers take the sliding window before the still task
+    * is ever queued; see gfx_thumbnail_try_video_open. */
+   if (gfx_thumbnail_try_video_open(thumbnail, file_path))
+      return;
 
    /* Load thumbnail */
    if (!(thumbnail_tag = (gfx_thumbnail_tag_t*)malloc(sizeof(gfx_thumbnail_tag_t))))
@@ -3428,15 +3449,31 @@ bool gfx_thumbnail_update_path(
       if (path_is_media_type(path_data->content_path) == RARCH_CONTENT_IMAGE)
          strlcpy(thumbnail_path,
                path_data->content_path, PATH_MAX_LENGTH * sizeof(char));
-      /* A WebM or MP4 file is likewise its own (animated) thumbnail,
-       * but unlike an image the entire file must be read to decode it,
-       * so refuse anything past the animation decoder's file-size cap */
+      /* A WebM or MP4 file is likewise its own (animated) thumbnail.
+       *
+       * Where the platform can reserve address space the load opens
+       * over a sliding window and commits only its head plus that
+       * window, so the file's length costs nothing and only the
+       * window has to be admitted - a multi-hour 4K recording
+       * previews from the same budget as a ten-second clip.  The
+       * whole-file cap applied here unconditionally, which refused
+       * every video past GFX_THUMB_ANIM_ABS_MAX_FILE outright: the
+       * path resolved empty, the thumbnail went MISSING, and no
+       * decode was ever attempted.  That cap predates the windowed
+       * open and had simply never been revisited.
+       *
+       * Without reservation support the open degrades to a whole-file
+       * read, so the length-based test is still the right one there.
+       * This mirrors the admission in gfx_thumbnail_anim_open. */
       else if (   (   (image_texture_get_type(path_data->content_path)
                         == IMAGE_TYPE_WEBM)
                    || (image_texture_get_type(path_data->content_path)
                         == IMAGE_TYPE_MP4))
-               && gfx_thumb_anim_mem_ok(
-                     (uint64_t)path_get_size(path_data->content_path), 0))
+               && (data_transfer_reserve_supported()
+                     ? gfx_thumb_anim_window_ok(0)
+                     : gfx_thumb_anim_mem_ok(
+                        (uint64_t)path_get_size(
+                           path_data->content_path), 0)))
          strlcpy(thumbnail_path,
                path_data->content_path, PATH_MAX_LENGTH * sizeof(char));
    }

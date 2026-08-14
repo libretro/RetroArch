@@ -649,6 +649,23 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
 #endif
       stream->hints &= ~RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS;
 
+#ifdef VFS_HAVE_DESCRIPTOR_IO
+   /* A read-once-and-close stream wants the descriptor path for the
+    * opposite reason a mapped one does: not to keep the bytes around,
+    * but to avoid a buffer it will never reuse.  Deliberately after
+    * the block above and never touching the mapping hint, so a
+    * stream asking for both still maps and behaves exactly as before.
+    *
+    * Restricted to VFS_SCHEME_NONE: the descriptor branch below knows
+    * about plain files and (on Android) SAF, and has no case for
+    * cdrom:// or smb://, which have their own read/seek entry points
+    * that only the buffered branch dispatches to. */
+   if (     (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK)
+         && mode == RETRO_VFS_FILE_ACCESS_READ
+         && stream->scheme == VFS_SCHEME_NONE)
+      stream->hints |= RFILE_HINT_UNBUFFERED;
+#endif
+
    switch (mode)
    {
       case RETRO_VFS_FILE_ACCESS_READ:
@@ -829,11 +846,28 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
       if (stream->scheme != VFS_SCHEME_CDROM)
       {
          const int bufsize = 64 * 1024;
-         if ((stream->buf = (char*)malloc(bufsize)))
-         {
-            if (stream->fp)
-               setvbuf(stream->fp, stream->buf, _IOFBF, bufsize);
-         }
+         /* NULL rather than a buffer of our own, so the C library
+          * allocates and owns it.
+          *
+          * Who owns the buffer is not a detail on every library.
+          * Apple's fread() has a fast path that reads a large request
+          * straight into the caller's buffer instead of copying it
+          * through the stream, and gates it on __SMBF - "this buffer
+          * is mine" - which setvbuf() clears when handed a buffer
+          * from outside (Libc stdio/FreeBSD/setvbuf.c sets __SMBF
+          * only on the branch that allocates, and fread.c tests it;
+          * see also radars 5980080 and 6180417).  So the 64 KiB
+          * buffer added here for write throughput was disqualifying
+          * the read fast path on every Apple target, and measured at
+          * roughly half the whole-file read speed on macOS.
+          *
+          * The size argument still applies, so writes keep the buffer
+          * they were given.  A library that will not allocate for a
+          * NULL buffer leaves the stream on its own default, which is
+          * slower for small writes but correct - the same outcome the
+          * malloc failing used to produce. */
+         if (stream->fp)
+            setvbuf(stream->fp, NULL, _IOFBF, bufsize);
       }
 #endif
    }

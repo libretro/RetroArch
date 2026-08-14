@@ -4053,6 +4053,14 @@ static bool gl2_frame(void *data, const void *frame,
 
       gl2_renderchain_restore_default_state(gl);
 
+      /* GL_SCISSOR_TEST is global context state, so a core that
+       * leaves it enabled clips everything we draw afterwards -
+       * including the menu and the widgets - to whatever rectangle
+       * the core last set. Menu drivers that use
+       * gfx_display_scissor_begin()/scissor_end() (Ozone) reset it
+       * by accident on their first clipped draw; the ones that never
+       * touch scissor (XMB, RGUI) stay clipped indefinitely. */
+      glDisable(GL_SCISSOR_TEST);
       glDisable(GL_STENCIL_TEST);
       glDisable(GL_BLEND);
       glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

@@ -575,6 +575,23 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
          savedState, savedStateSize);
 }
 
+void frontend_android_get_manufacturer_model(char *s, size_t len)
+{
+   char manufacturer[PROP_VALUE_MAX] = {0};
+   char model[PROP_VALUE_MAX]        = {0};
+
+   if (!s || len == 0)
+      return;
+
+   __system_property_get("ro.product.manufacturer", manufacturer);
+   __system_property_get("ro.product.model", model);
+
+   if (manufacturer[0])
+      manufacturer[0] = (char)toupper((unsigned char)manufacturer[0]);
+
+   snprintf(s, len, "%s %s", manufacturer, model);
+}
+
 void frontend_android_get_name(char *s, size_t len)
 {
    system_property_get("getprop", "ro.product.model", s, len);
@@ -1915,18 +1932,22 @@ static void frontend_unix_get_env(int *argc,
       /* set paths depending on the ability to write
        * to internal_storage_path */
 
-      if (*internal_storage_path)
+      if (*internal_storage_path &&
+         test_permissions(internal_storage_path))
       {
-         if (test_permissions(internal_storage_path))
-            storage_permissions = INTERNAL_STORAGE_WRITABLE;
+         storage_permissions = INTERNAL_STORAGE_WRITABLE;
       }
-      else if (*internal_storage_app_path)
+      else if (*internal_storage_app_path &&
+               test_permissions(internal_storage_app_path))
       {
-         if (test_permissions(internal_storage_app_path))
-            storage_permissions = INTERNAL_STORAGE_APPDIR_WRITABLE;
+         storage_permissions = INTERNAL_STORAGE_APPDIR_WRITABLE;
       }
       else
+      {
+         // fallback to private data storage
+         // e.g. /data/user/0/com.retroarch.aarch64 then saves/ etc.
          storage_permissions = INTERNAL_STORAGE_NOT_WRITABLE;
+      }
 
       /* code to populate default paths*/
       if (*app_dir)

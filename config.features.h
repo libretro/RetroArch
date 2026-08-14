@@ -284,6 +284,12 @@
 #define SUPPORTS_ZLIB false
 #endif
 
+#ifdef HAVE_CHD
+#define SUPPORTS_CHD true
+#else
+#define SUPPORTS_CHD false
+#endif
+
 #ifdef HAVE_7ZIP
 #define SUPPORTS_7ZIP true
 #else

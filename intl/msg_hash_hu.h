@@ -1899,7 +1899,6 @@ static const struct
    char s_c7bc8298[30];
    char s_e63b035a[20];
    char s_d21d875b[15];
-   char s_ae86fed0[31];
    char s_b12ae22e[20];
    char s_b2d073c7[22];
    char s_1cbc2657[17];
@@ -3296,14 +3295,10 @@ static const struct
    char s_69c0e487[55];
    char s_706ff4dc[153];
    char s_a0d1a85c[56];
-   char s_b5966528[28];
    char s_907ef7cc[39];
    char s_b0a46506[45];
    char s_04624c88[48];
-   char s_91976dbe[57];
    char s_f6492edc[51];
-   char s_9bb85635[38];
-   char s_22a05685[48];
 #endif
    char s_f3bfa8b9[91];
    char s_5fe2cee5[70];
@@ -6338,7 +6333,6 @@ static const struct
    "SMB h\303\241l\303\263zati be\303\241ll\303\255t\303\241sok",
    "SMB megoszt\303\241s neve",
    "SMB megoszt\303\241s",
-   "SMB alk\303\266nyvt\303\241r (opcion\303\241lis)",
    "SMB id\305\221t\303\272ll\303\251p\303\251s",
    "SMB felhaszn\303\241l\303\263n\303\251v",
    "SMB munkacsoport",
@@ -8614,15 +8608,10 @@ static const struct
    "\255zhat\303\263 kapcsolathoz az Ethernet sokkal ink\303\241bb aj\303\241nlott, mint a Wi-Fi. "
    "\303\232jraind\303\255t\303\241st ig\303\251nyel.",
    "A k\303\266rnyezet \303\241ltal haszn\303\241lhat\303\263 maxim\303\241lis kapcsolat.",
-   "Jelsz\303\263 a hiteles\303\255t\303\251shez.",
    "A kiszolg\303\241l\303\263 IP c\303\255me vagy hostneve.",
    "Az SMB h\303\241l\303\263zati megoszt\303\241s be\303\241ll\303\255t\303\241sai.",
    "Az el\303\251rni k\303\255v\303\241nt h\303\241l\303\263zati megoszt\303\241s neve.",
-   "A megoszt\303\241son bel\303\274li alk\303\266nyvt\303\241r el\303\251r\303\251si \303\272tvonal"
-   "a.",
    "Az alap\303\251rtelmezett id\305\221t\303\272ll\303\251p\303\251s m\303\241sodpercben.",
-   "Felhaszn\303\241l\303\263n\303\251v a hiteles\303\255t\303\251shez.",
-   "A munkacsoport vagy h\303\241l\303\263zati tartom\303\241ny neve.",
 #endif
    "A ment\303\251seket olyan mapp\303\241kba rendezi, amelyeket a tartalom k\303\266nyvt\303\241ra "
    "alapj\303\241n nevez el.",
@@ -9878,7 +9867,6 @@ typedef char msg_hash_hu_blob_check[
        + 30u
        + 20u
        + 15u
-       + 31u
        + 20u
        + 22u
        + 17u
@@ -10065,14 +10053,10 @@ typedef char msg_hash_hu_blob_check[
        + 55u
        + 153u
        + 56u
-       + 28u
        + 39u
        + 45u
        + 48u
-       + 57u
        + 51u
-       + 38u
-       + 48u
 #endif
 #ifdef HAVE_LAKKA
        + 51u
@@ -12041,7 +12025,6 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
@@ -13436,14 +13419,10 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,

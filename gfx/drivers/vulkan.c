@@ -308,6 +308,11 @@ typedef struct vk
       struct scaler_ctx scaler_bgr;
       struct scaler_ctx scaler_rgb;
       struct vk_texture staging[VULKAN_MAX_SWAPCHAIN_IMAGES];
+      /* Extent actually copied by the last vulkan_readback(). May be
+       * smaller than the staging texture when the copy region had to be
+       * clamped; the remainder of the staging buffer is never written. */
+      unsigned copied_width;
+      unsigned copied_height;
    } readback;
 
    struct
@@ -6119,8 +6124,19 @@ static void vulkan_readback(vk_t *vk, struct vk_image *readback_image)
    vulkan_viewport_info(vk, &vp);
 
    region.bufferOffset                    = 0;
-   region.bufferRowLength                 = 0;
-   region.bufferImageHeight               = 0;
+   /* The staging buffer is allocated at vk->vp.width x vk->vp.height and
+    * is walked on the host side (vulkan_read_viewport /
+    * vulkan_read_viewport_hdr / the recording scalers) with a row pitch of
+    * staging->stride, i.e. vk->vp.width texels.  imageExtent below may be
+    * clamped to *less* than that - by translate_x/y for a negative viewport
+    * origin, or against the swapchain dimensions - and a bufferRowLength of
+    * 0 means "tightly packed at imageExtent.width", which would make the GPU
+    * write rows at a narrower pitch than the host reads them at.  The result
+    * is a constant per-row shear of (vp.width - imageExtent.width) pixels
+    * across the whole screenshot.  State the destination pitch explicitly so
+    * the two sides agree no matter how the extent is clamped. */
+   region.bufferRowLength                 = vk->vp.width;
+   region.bufferImageHeight               = vk->vp.height;
    region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
    region.imageSubresource.mipLevel       = 0;
    region.imageSubresource.baseArrayLayer = 0;
@@ -6155,6 +6171,9 @@ static void vulkan_readback(vk_t *vk, struct vk_image *readback_image)
       region.imageExtent.height           = (unsigned)rh;
    }
    region.imageExtent.depth               = 1;
+
+   vk->readback.copied_width              = region.imageExtent.width;
+   vk->readback.copied_height             = region.imageExtent.height;
 
    staging  = &vk->readback.staging[vk->context->current_frame_index];
    {
@@ -8726,20 +8745,33 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 
       {
          int y;
-         unsigned vp_width  = (vk->vp.width  > vk->video_width)  ? vk->video_width  : vk->vp.width;
-         unsigned vp_height = (vk->vp.height > vk->video_height) ? vk->video_height : vk->vp.height;
-         const uint8_t *src = (const uint8_t*)staging->mapped;
+         unsigned vp_width   = (vk->vp.width  > vk->video_width)  ? vk->video_width  : vk->vp.width;
+         unsigned vp_height  = (vk->vp.height > vk->video_height) ? vk->video_height : vk->vp.height;
+         unsigned cp_width   = vk->readback.copied_width;
+         unsigned cp_height  = vk->readback.copied_height;
+         const uint8_t *src  = (const uint8_t*)staging->mapped;
+
+         /* Only the region vulkan_readback() actually copied holds valid
+          * pixels; anything past it is untouched staging memory. Clamp the
+          * walk to it and blank the rest so a clamped extent shows up as
+          * black borders rather than uninitialised contents. */
+         if (cp_width == 0 || cp_width > vp_width)
+            cp_width         = vp_width;
+         if (cp_height == 0 || cp_height > vp_height)
+            cp_height        = vp_height;
+         if (cp_width < vp_width || cp_height < vp_height)
+            memset(buffer, 0, (size_t)vp_width * vp_height * 3);
 
          buffer            += 3 * (vp_height - 1) * vp_width;
 
          switch (format)
          {
             case VK_FORMAT_B8G8R8A8_UNORM:
-               for (y = 0; y < (int) vp_height; y++,
+               for (y = 0; y < (int) cp_height; y++,
                      src += staging->stride, buffer -= 3 * vp_width)
                {
                   int x;
-                  for (x = 0; x < (int) vp_width; x++)
+                  for (x = 0; x < (int) cp_width; x++)
                   {
                      buffer[3 * x + 0] = src[4 * x + 0];
                      buffer[3 * x + 1] = src[4 * x + 1];
@@ -8750,11 +8782,11 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 
             case VK_FORMAT_R8G8B8A8_UNORM:
             case VK_FORMAT_A8B8G8R8_UNORM_PACK32:
-               for (y = 0; y < (int) vp_height; y++,
+               for (y = 0; y < (int) cp_height; y++,
                      src += staging->stride, buffer -= 3 * vp_width)
                {
                   int x;
-                  for (x = 0; x < (int) vp_width; x++)
+                  for (x = 0; x < (int) cp_width; x++)
                   {
                      buffer[3 * x + 2] = src[4 * x + 0];
                      buffer[3 * x + 1] = src[4 * x + 1];

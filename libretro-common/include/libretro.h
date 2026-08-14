@@ -2994,6 +2994,20 @@ struct retro_vfs_dir_handle;
  */
 #define RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS   (1 << 0)
 
+/**
+ * Indicates that the file will be read once, from start to finish,
+ * and then closed.
+ *
+ * No mapping or caching is wanted: the caller already keeps the bytes
+ * it asked for, so anything the frontend holds on to beyond the call
+ * is dead weight.  A frontend that buffers its reads may wish to skip
+ * doing so for such a stream, since a whole-file read gains nothing
+ * from being split across a buffer and copied twice.
+ *
+ * Only meaningful together with \c RETRO_VFS_FILE_ACCESS_READ.
+ */
+#define RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK   (1 << 1)
+
 /** @} */
 
 /** @defgroup RETRO_VFS_SEEK_POSITION File Seek Positions
