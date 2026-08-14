@@ -882,6 +882,10 @@ struct audio_transfer_aac
     * track. */
    const uint8_t *buf;
    size_t      buf_size;
+   /* Resident prefix of 'buf' for a windowed caller; 0 means all of
+    * it.  Raised through audio_transfer_set_avail as the window
+    * slides, exactly as the Vorbis and Opus arms take it. */
+   size_t      avail;
    int         adts;        /* buffer is an ADTS stream                  */
    size_t      adts_pos;    /* byte cursor of the next ADTS frame        */
 #ifdef HAVE_RMP4
@@ -1533,6 +1537,28 @@ void audio_transfer_set_avail(void *data, enum audio_type_enum type,
          op->avail = avail;
          if (op->demux)
             rwebm_set_avail(op->demux, avail);
+         return;
+      }
+#endif
+#ifdef HAVE_RAAC
+      case AUDIO_TYPE_AAC:
+      {
+         struct audio_transfer_aac *ac = (struct audio_transfer_aac*)data;
+         if (!ac)
+            return;
+         ac->avail = avail;
+#ifdef HAVE_RMP4
+         /* MP4: the sample tables address the whole file, so the
+          * demuxer must be told which of those bytes have actually
+          * arrived - it withholds a packet whose extent is past the
+          * bound rather than reading reserved pages. */
+         if (ac->demux)
+            rmp4_set_avail(ac->demux, avail);
+#endif
+#ifdef HAVE_RWEBM
+         if (ac->wdemux)
+            rwebm_set_avail(ac->wdemux, avail);
+#endif
          return;
       }
 #endif
@@ -3252,7 +3278,16 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          {
             const rmp4_track *at = NULL;
             int i;
-            if (!(ac->demux = rmp4_open_memory(ac->buf, ac->buf_size)))
+            /* Bounded open: a windowed caller has only a prefix
+             * resident, and the unbounded open walks the box tree to
+             * the end of the file - which for a leading-moov movie is
+             * a reserved-page read past the head.  avail == 0 is the
+             * whole-file caller and behaves exactly as before. */
+            if (!(ac->demux = rmp4_open_memory_avail(ac->buf,
+                        ac->buf_size,
+                        (ac->avail && ac->avail < ac->buf_size)
+                           ? ac->avail : ac->buf_size,
+                        NULL, NULL, NULL)))
                return false;
             ac->track_idx = -1;
             for (i = 0; i < rmp4_num_tracks(ac->demux); i++)
@@ -3941,6 +3976,10 @@ static int audio_transfer_aac_pull(struct audio_transfer_aac *ac,
       const uint8_t **pdata, uint32_t *plen)
 {
    {
+      /* Windowed ADTS: stop at the resident prefix rather than the
+       * buffer end, and say "again" instead of "end of stream". */
+      if (ac->adts && ac->avail && ac->adts_pos + 7 > ac->avail)
+         return 2;
       if (ac->adts)
       {
          /* walk the next ADTS frame: 12-bit sync, CRC flag choosing a
@@ -3987,7 +4026,14 @@ static int audio_transfer_aac_pull(struct audio_transfer_aac *ac,
          rmp4_packet pkt;
          for (;;)
          {
-            if (rmp4_read_packet(ac->demux, &pkt) != 1)
+            int r = rmp4_read_packet(ac->demux, &pkt);
+            /* The sample's bytes are not resident yet.  This is NOT
+             * end of stream: reporting 0 here would have the mixer
+             * loop or stop the voice mid-file the moment the feeder
+             * fell a window behind. */
+            if (r == RMP4_READ_AGAIN)
+               return 2;
+            if (r != 1)
                return 0;
             if (pkt.track == ac->track_idx)
                break;
@@ -4054,7 +4100,11 @@ static int64_t audio_transfer_aac_seek_to(struct audio_transfer_aac *ac,
       uint32_t plen;
       int64_t d = flen;
       int r = audio_transfer_aac_pull(ac, &pdata, &plen);
-      if (r <= 0)
+      /* r == 2 left pdata/plen unset: a target past the resident wall
+       * is refused rather than approximated, per the windowing
+       * contract, and the caller retries once the feeder has raised
+       * the bound past it. */
+      if (r == 2 || r <= 0)
          return -1;              /* asked past the end of the stream   */
       /* the encoder delay is dropped rather than emitted, so it does
        * not count towards the position */
@@ -4074,7 +4124,7 @@ static int64_t audio_transfer_aac_seek_to(struct audio_transfer_aac *ac,
       int r = audio_transfer_aac_fill(ac);
       if (r < 0)
          return -1;
-      if (r == 0)
+      if (r == 0 || r == 2)   /* 2: refused, see the walk above */
          return -1;
       take = frame - pos;
       if (take > (int64_t)ac->pend_frames)
@@ -4095,6 +4145,8 @@ static int audio_transfer_aac_fill(struct audio_transfer_aac *ac)
       int r;
       uint64_t skip;
       r = audio_transfer_aac_pull(ac, &pdata, &plen);
+      if (r == 2)
+         return 2;               /* not yet resident; no frames, no EOF */
       if (r <= 0)
          return r;
       r = raac_decode_f32(ac->handle, pdata, plen, ac->pend_f32);
@@ -4249,7 +4301,11 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
             int r = audio_transfer_aac_fill(ac);
             if (r < 0)
                return AUDIO_PROCESS_ERROR;
-            if (r == 0)
+            /* 2 is "not resident yet".  It must break like end of
+             * stream and not fall through: pend_frames is 0 there, so
+             * take would be 0 and this loop would spin forever on a
+             * window the feeder has not caught up with. */
+            if (r == 0 || r == 2)
                break;
             take = frames - produced;
             if (take > ac->pend_frames)
@@ -4544,7 +4600,7 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
             int r = audio_transfer_aac_fill(ac);
             if (r < 0)
                return AUDIO_PROCESS_ERROR;
-            if (r == 0)
+            if (r == 0 || r == 2)   /* see the s16 arm: 2 must break */
                break;
             take = frames - produced;
             if (take > ac->pend_frames)
@@ -4705,8 +4761,20 @@ size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type)
           * set. */
          if (ac->handle && ac->packets)
             return ac->pkt_offset;
-         /* The MP4 and Matroska paths read where their demuxer points
-          * and expose no cursor of their own. */
+#ifdef HAVE_RMP4
+         /* MP4: the packets are decoded where the demuxer points at
+          * them in the caller's buffer, so its consumed offset is the
+          * compressed frontier a feeder needs - the same quantity
+          * rwebm_tell reports for the WebM arms.  Without this a
+          * windowed M4A stream could be given a bound but the feeder
+          * could never learn where to move it. */
+         if (ac->handle && ac->demux)
+            return rmp4_consumed(ac->demux);
+#endif
+#ifdef HAVE_RWEBM
+         if (ac->handle && ac->wdemux)
+            return rwebm_tell(ac->wdemux);
+#endif
          return 0;
       }
 #endif

@@ -1656,10 +1656,14 @@ static bool audio_mixer_play_stream(
    audio_transfer_set_buffer_ptr(xfer, type,
          (void*)sound->types.stream.data, sound->types.stream.size);
 
-#if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
-   /* Windowed WebM: bound the container header parse to the resident
-    * head, so opening does not walk the segment to the end of a file
-    * whose middle is reserved rather than populated. */
+#if (defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))) \
+ || (defined(HAVE_RAAC) && defined(HAVE_RMP4))
+   /* Windowed container: bound the header parse to the resident head,
+    * so opening does not walk to the end of a file whose middle is
+    * reserved rather than populated.  MP4/AAC takes this too now that
+    * its arm honours the bound - the guard used to admit only the
+    * WebM-backed arms, so an M4A stream could be handed an avail that
+    * was then compiled out and silently ignored. */
    if (sound->avail)
       audio_transfer_set_avail(xfer, type, sound->avail);
 #endif
@@ -1785,9 +1789,10 @@ static bool audio_mixer_play_stream_s16(
       return false;
    audio_transfer_set_buffer_ptr(xfer, type,
          (void*)sound->types.stream.data, sound->types.stream.size);
-#if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
-   /* Windowed WebM: bound the header parse to the head (see the f32
-    * path). */
+#if (defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))) \
+ || (defined(HAVE_RAAC) && defined(HAVE_RMP4))
+   /* Windowed container: bound the header parse to the head (see the
+    * f32 path). */
    if (sound->avail)
       audio_transfer_set_avail(xfer, type, sound->avail);
 #endif
