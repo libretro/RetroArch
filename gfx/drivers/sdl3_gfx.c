@@ -14,6 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -219,6 +220,61 @@ static void sdl3_stream_upload(sdl3_tex_t *target, const void *src,
    SDL_UnlockTexture(target->tex);
 }
 
+static void sdl3_free_video_modes(sdl3_video_t *vid)
+{
+   if (vid->video_modes)
+      SDL_free(vid->video_modes);
+   vid->video_modes      = NULL;
+   vid->num_video_modes  = 0;
+   vid->video_mode_index = 0;
+}
+
+/* (Re)fetches the fullscreen mode list for the window's display and
+ * points the cursor at the active mode. */
+static bool sdl3_refresh_video_modes(sdl3_video_t *vid)
+{
+   int i;
+   int count                      = 0;
+   const SDL_DisplayMode *current = NULL;
+   SDL_DisplayID display          = SDL_GetDisplayForWindow(vid->window);
+
+   sdl3_free_video_modes(vid);
+
+   if (!display)
+      return false;
+
+   vid->video_modes = SDL_GetFullscreenDisplayModes(display, &count);
+   if (!vid->video_modes || count < 1)
+   {
+      sdl3_free_video_modes(vid);
+      return false;
+   }
+   vid->num_video_modes = count;
+
+   /* NULL means borderless desktop fullscreen - fall back to the
+    * display's current mode so the cursor still starts somewhere
+    * sensible. */
+   if (!(current = SDL_GetWindowFullscreenMode(vid->window)))
+      current = SDL_GetCurrentDisplayMode(display);
+
+   if (current)
+   {
+      for (i = 0; i < count; i++)
+      {
+         const SDL_DisplayMode *mode = vid->video_modes[i];
+         if (   mode->w == current->w
+             && mode->h == current->h
+             && mode->refresh_rate == current->refresh_rate)
+         {
+            vid->video_mode_index = i;
+            break;
+         }
+      }
+   }
+
+   return true;
+}
+
 static void *sdl3_gfx_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
@@ -277,6 +333,14 @@ static void sdl3_check_window(sdl3_video_t *vid)
 {
    bool quit   = false;
    bool resize = false;
+
+   /* Display hot-plugs, mode changes and moves to another display
+    * invalidate the cached fullscreen mode list. Peek before
+    * sdl3_pump_window_events consumes the events. */
+   SDL_PumpEvents();
+   if (   SDL_HasEvents(SDL_EVENT_DISPLAY_FIRST, SDL_EVENT_DISPLAY_LAST)
+       || SDL_HasEvent(SDL_EVENT_WINDOW_DISPLAY_CHANGED))
+      sdl3_free_video_modes(vid);
 
    sdl3_pump_window_events(&quit, &resize);
 
@@ -552,6 +616,8 @@ static void sdl3_gfx_free(void *data)
    sdl3_tex_zero(&vid->frame);
    sdl3_tex_zero(&vid->menu);
 
+   sdl3_free_video_modes(vid);
+
    if (vid->window)
       SDL_StopTextInput(vid->window);
 
@@ -630,6 +696,95 @@ static void sdl3_poke_set_filtering(void *data, unsigned index, bool smooth, boo
    if (vid->frame.tex)
       SDL_SetTextureScaleMode(vid->frame.tex,
             smooth ? SDL_SCALEMODE_LINEAR : SDL_SCALEMODE_NEAREST);
+}
+
+/* Screen Resolution menu pokes. Only meaningful for exclusive
+ * fullscreen (the kmsdrm backend in particular); a normal window is
+ * freely resizable instead, so cycling no-ops there. */
+static bool sdl3_can_switch_video_mode(sdl3_video_t *vid)
+{
+   return vid && vid->window
+         && (SDL_GetWindowFlags(vid->window) & SDL_WINDOW_FULLSCREEN);
+}
+
+/* Switches to the mode under the cursor and asks the next frame to
+ * recompute the viewport from the new pixel size. */
+static void sdl3_apply_video_mode(sdl3_video_t *vid)
+{
+   const SDL_DisplayMode *mode = vid->video_modes[vid->video_mode_index];
+
+   if (!SDL_SetWindowFullscreenMode(vid->window, mode))
+   {
+      RARCH_WARN("[SDL3] Failed to set video mode %dx%d @ %.2f Hz: %s.\n",
+            mode->w, mode->h, mode->refresh_rate, SDL_GetError());
+      return;
+   }
+
+   vid->flags |= SDL3_FLAG_SHOULD_RESIZE;
+}
+
+static void sdl3_get_video_output_size(void *data,
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
+{
+   sdl3_video_t *vid = (sdl3_video_t*)data;
+   const SDL_DisplayMode *mode;
+
+   if (!vid || !vid->window)
+      return;
+
+   /* Windowed mode has no mode list - report the current window
+    * pixel size instead. */
+   if (!sdl3_can_switch_video_mode(vid))
+   {
+      int w = 0, h = 0;
+      SDL_GetWindowSizeInPixels(vid->window, &w, &h);
+      *width  = (unsigned)w;
+      *height = (unsigned)h;
+      return;
+   }
+
+   if (!vid->video_modes && !sdl3_refresh_video_modes(vid))
+      return;
+
+   mode    = vid->video_modes[vid->video_mode_index];
+   *width  = (unsigned)mode->w;
+   *height = (unsigned)mode->h;
+   if (desc_len)
+      snprintf(desc, desc_len, "%.2f Hz", mode->refresh_rate);
+}
+
+static void sdl3_get_video_output_prev(void *data)
+{
+   sdl3_video_t *vid = (sdl3_video_t*)data;
+
+   if (!sdl3_can_switch_video_mode(vid))
+      return;
+   if (!vid->video_modes && !sdl3_refresh_video_modes(vid))
+      return;
+
+   if (vid->video_mode_index > 0)
+      vid->video_mode_index--;
+   else
+      vid->video_mode_index = vid->num_video_modes - 1;
+
+   sdl3_apply_video_mode(vid);
+}
+
+static void sdl3_get_video_output_next(void *data)
+{
+   sdl3_video_t *vid = (sdl3_video_t*)data;
+
+   if (!sdl3_can_switch_video_mode(vid))
+      return;
+   if (!vid->video_modes && !sdl3_refresh_video_modes(vid))
+      return;
+
+   if (vid->video_mode_index < vid->num_video_modes - 1)
+      vid->video_mode_index++;
+   else
+      vid->video_mode_index = 0;
+
+   sdl3_apply_video_mode(vid);
 }
 
 static void sdl3_poke_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
@@ -1594,9 +1749,9 @@ static video_poke_interface_t sdl3_video_poke_interface = {
    sdl3_poke_set_video_mode,
    sdl3_ctx_get_refresh_rate,
    sdl3_poke_set_filtering,
-   NULL,                            /* get_video_output_size */
-   NULL,                            /* get_video_output_prev */
-   NULL,                            /* get_video_output_next */
+   sdl3_get_video_output_size,
+   sdl3_get_video_output_prev,
+   sdl3_get_video_output_next,
    NULL,                            /* get_current_framebuffer */
    NULL,                            /* get_proc_address */
    sdl3_poke_set_aspect_ratio,
