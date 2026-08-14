@@ -83,6 +83,17 @@ typedef struct rxml_parse_error
 rxml_document_t *rxml_load_document(const char *path);
 rxml_document_t *rxml_load_document_string(const char *str);
 
+/* As rxml_load_document_string, but takes ownership of @buf - a heap
+ * allocation of at least @len + 1 bytes with buf[len] == '\0' -
+ * instead of copying it.  The document keeps the buffer alive for its
+ * whole lifetime (the tree points into it) and releases it in
+ * rxml_free_document; on failure the buffer is freed here before NULL
+ * is returned, so the caller must not touch it again either way.
+ * For large inputs this halves peak memory against the copying string
+ * entry point, which is what callers that already hold the document
+ * bytes (e.g. a task that read the file itself) should care about. */
+rxml_document_t *rxml_load_document_owned(char *buf, size_t len);
+
 /* As rxml_load_document_string, with parse options; on failure, *err
  * (when non-NULL) receives the position the parser stopped at. */
 rxml_document_t *rxml_load_document_string_opts(const char *str,
