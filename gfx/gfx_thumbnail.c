@@ -601,15 +601,14 @@ static void gfx_thumbnail_preview_audio_stop(const gfx_thumbnail_t *owner)
    gfx_thumb_audio_slot  = -1;
 }
 
+static void gfx_thumbnail_preview_audio_start_owned(
+      gfx_thumbnail_t *thumbnail, void *copy, size_t container_size,
+      enum image_type_enum type);
+
 static void gfx_thumbnail_preview_audio_start(gfx_thumbnail_t *thumbnail,
       void *container, size_t container_size, enum image_type_enum type)
 {
-   audio_mixer_stream_params_t params;
-   int out_slot = -1;
    void *copy;
-
-   /* One preview stream at a time */
-   gfx_thumbnail_preview_audio_stop(gfx_thumb_audio_owner);
 
    /* The mixer decodes the container incrementally on the audio flush,
     * so it must own bytes that outlive this thumbnail: the animation's
@@ -624,6 +623,26 @@ static void gfx_thumbnail_preview_audio_start(gfx_thumbnail_t *thumbnail,
    if (!(copy = malloc(container_size)))
       return;
    memcpy(copy, container, container_size);
+   gfx_thumbnail_preview_audio_start_owned(thumbnail, copy,
+         container_size, type);
+}
+
+/* As above, but the caller has already produced a private buffer and
+ * donates it: the mixer takes ownership and releases it on every
+ * teardown path.  Split out for the windowed read-back, which builds
+ * its buffer by reading the file rather than copying anim_buf. */
+static void gfx_thumbnail_preview_audio_start_owned(
+      gfx_thumbnail_t *thumbnail, void *copy, size_t container_size,
+      enum image_type_enum type)
+{
+   audio_mixer_stream_params_t params;
+   int out_slot = -1;
+
+   if (!copy)
+      return;
+
+   /* One preview stream at a time */
+   gfx_thumbnail_preview_audio_stop(gfx_thumb_audio_owner);
 
    params.buf                 = copy;
    params.bufsize             = container_size;
@@ -653,6 +672,11 @@ static void gfx_thumbnail_preview_audio_start(gfx_thumbnail_t *thumbnail,
       /* add_stream releases the donated buffer on its failure paths */
       return;
    }
+   /* add_stream keeps its own strdup of basename (audio_driver.c), so
+    * ours is ours to release on the success path too - it was only
+    * being freed when the call failed, leaking the name on every
+    * preview that actually started. */
+   free(params.basename);
    /* add_stream reports the granted slot directly; the sentinel name
     * remains only as the staleness guard at stop time, where the slot
     * may since have been handed to another subsystem. */
@@ -660,6 +684,10 @@ static void gfx_thumbnail_preview_audio_start(gfx_thumbnail_t *thumbnail,
    gfx_thumb_audio_owner = thumbnail;
 }
 #endif /* GFX_THUMB_PREVIEW_AUDIO */
+
+#if defined(GFX_THUMB_PREVIEW_AUDIO)
+static void gfx_thumbnail_audio_src_free(gfx_thumbnail_t *thumbnail);
+#endif
 
 static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
 {
@@ -694,6 +722,20 @@ static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
     * An adopted animation's buffer lives inside the nbio handle
     * (possibly as a file mapping) and is released with it; only the
     * open-by-path fallback malloc's anim_buf. */
+#if defined(GFX_THUMB_PREVIEW_AUDIO)
+   if (thumbnail->anim_audio_dt)
+   {
+      /* Cancels the in-flight read before releasing the handle. */
+      data_transfer_free(thumbnail->anim_audio_dt);
+      thumbnail->anim_audio_dt = NULL;
+   }
+   gfx_thumbnail_audio_src_free(thumbnail);
+#endif
+   if (thumbnail->anim_audio_path)
+   {
+      free(thumbnail->anim_audio_path);
+      thumbnail->anim_audio_path = NULL;
+   }
    if (thumbnail->anim_dt)
       /* Deselected before the adopted read finished: the transfer
        * cancels the in-flight read before releasing the handle - the
@@ -735,44 +777,107 @@ static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
  * moov is not yet in - but feeding it a growing buffer from the
  * worker while the render thread pumps the read is a cross-thread
  * hand-off this path does not yet do. */
+/* Read context for the windowed preview-audio read-back.  The
+ * transfer is opened in SOURCE mode rather than prefix mode
+ * deliberately: a prefix transfer's buffer is a memreserve() mapping
+ * wherever the platform can reserve address space, so it cannot be
+ * handed to the mixer, which releases what it owns with free().  A
+ * source transfer is documented as one exact malloc the consumer may
+ * adopt and free(), which is precisely the ownership the mixer wants -
+ * so the completed buffer is donated straight across with no second
+ * copy and no large memcpy on the menu thread. */
+typedef struct
+{
+   RFILE *f;
+} gfx_thumb_audio_src_t;
+
+static int64_t gfx_thumbnail_audio_src_read(void *ud, uint8_t *dst,
+      size_t n)
+{
+   gfx_thumb_audio_src_t *src = (gfx_thumb_audio_src_t*)ud;
+   if (!src || !src->f)
+      return -1;
+   return filestream_read(src->f, dst, (int64_t)n);
+}
+
+static void gfx_thumbnail_audio_src_free(gfx_thumbnail_t *thumbnail)
+{
+   gfx_thumb_audio_src_t *src =
+      (gfx_thumb_audio_src_t*)thumbnail->anim_audio_src;
+   if (!src)
+      return;
+   if (src->f)
+      filestream_close(src->f);
+   free(src);
+   thumbnail->anim_audio_src = NULL;
+}
+
 static void gfx_thumbnail_anim_audio_begin(gfx_thumbnail_t *thumbnail)
 {
    enum image_type_enum type = (enum image_type_enum)thumbnail->anim_type;
 
-   /* A windowed handle has no container to hand over.  anim_buf_len is
-    * the file's full length, but only the permanently resident head
-    * plus the sliding window is committed - the rest is reserved
-    * address space, and reading it faults.  The mixer hand-off below
-    * copies container_size bytes out of anim_buf, so on a window it
-    * walks off the head into unmapped pages: SIGSEGV inside memcpy,
-    * with a copy destination the allocator was happy to provide
-    * because a multi-gigabyte commit charge is satisfiable from the
-    * pagefile.
-    *
-    * Streaming the mixer a windowed source needs the same feeder the
-    * video decoder gets, driven from the audio thread - the
-    * cross-thread change anim_install already notes as out of scope.
-    * Until then a windowed preview is silent rather than fatal; the
-    * fully-resident path is unaffected and keeps its audio. */
-   if (thumbnail->anim_windowed)
+   if (   (   (type != IMAGE_TYPE_WEBM)
+           && (type != IMAGE_TYPE_MP4))
+       || !config_get_ptr()->bools.menu_thumbnail_preview_audio)
       return;
 
-   if (     (   (type == IMAGE_TYPE_WEBM)
-             || (type == IMAGE_TYPE_MP4))
-         && config_get_ptr()->bools.menu_thumbnail_preview_audio)
-      /* The mixer streams the container's audio track, decoding it on
-       * the audio flush as it plays.  There is nothing to decode up
-       * front, so no worker job and no waiting for one to finish -
-       * playback starts here and the clip is no longer truncated to a
-       * fixed preview length. */
-      gfx_thumbnail_preview_audio_start(thumbnail,
-            thumbnail->anim_buf, thumbnail->anim_buf_len, type);
+   /* A windowed handle has no container to hand over.  anim_buf_len is
+    * the file's full length, but only the resident head plus the
+    * sliding window is committed - copying anim_buf_len bytes out of
+    * it walks off the head into unmapped pages.
+    *
+    * The mixer needs the whole container regardless: it demuxes the
+    * audio track itself and seeks its index.  So read the file again,
+    * independently of the window, and hand that over.  The read is
+    * asynchronous - gfx_thumbnail_animate pumps it a frame budget at a
+    * time, so the menu never blocks on it - and bounded by the same
+    * admission the whole-file paths use, which is what keeps a
+    * multi-gigabyte recording silent instead of resident.
+    *
+    * Cost note: this restores exactly the pre-window footprint, where
+    * the still decode had already read the file and the hand-off
+    * copied it.  Files that were previewing with audio before the
+    * windowed path existed keep it; only those above the cap - which
+    * previously had no preview at all - stay silent. */
+   if (thumbnail->anim_windowed)
+   {
+      gfx_thumb_audio_src_t *src;
+      if (thumbnail->anim_audio_dt)   /* already reading */
+         return;
+      if (!gfx_thumb_anim_mem_ok((uint64_t)thumbnail->anim_buf_len, 0))
+         return;
+      if (!thumbnail->anim_audio_path || !*thumbnail->anim_audio_path)
+         return;
+      if (!(src = (gfx_thumb_audio_src_t*)calloc(1, sizeof(*src))))
+         return;
+      if (!(src->f = filestream_open(thumbnail->anim_audio_path,
+                  RETRO_VFS_FILE_ACCESS_READ,
+                  RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+      {
+         free(src);
+         return;
+      }
+      thumbnail->anim_audio_src = src;
+      if (!(thumbnail->anim_audio_dt = data_transfer_open_source(
+                  thumbnail->anim_buf_len,
+                  gfx_thumbnail_audio_src_read, src)))
+         gfx_thumbnail_audio_src_free(thumbnail);
+      return;
+   }
+
+   /* Fully resident: anim_buf IS the whole container, so the hand-off
+    * is an immediate copy.  The mixer streams the audio track from it,
+    * decoding on the audio flush as it plays - nothing to decode up
+    * front, no worker job, and no fixed preview length. */
+   gfx_thumbnail_preview_audio_start(thumbnail,
+         thumbnail->anim_buf, thumbnail->anim_buf_len, type);
 }
 #endif
 
 static bool gfx_thumbnail_anim_install(gfx_thumbnail_t *thumbnail,
       void *stream, enum image_type_enum type,
-      void *buf, size_t len, struct data_transfer *xfer, int windowed)
+      void *buf, size_t len, struct data_transfer *xfer, int windowed,
+      const char *path)
 {
    unsigned anim_w          = 0;
    unsigned anim_h          = 0;
@@ -828,6 +933,14 @@ static bool gfx_thumbnail_anim_install(gfx_thumbnail_t *thumbnail,
     * thing this function does) had just zeroed it - so a caller-side
     * assignment always arrived one decision too late. */
    thumbnail->anim_windowed   = windowed ? 1 : 0;
+   /* Only a windowed handle needs it: every other path hands the
+    * mixer anim_buf directly and never re-reads the file. */
+   if (windowed && path && *path)
+   {
+      size_t plen = strlen(path) + 1;
+      if ((thumbnail->anim_audio_path = (char*)malloc(plen)))
+         strlcpy(thumbnail->anim_audio_path, path, plen);
+   }
    thumbnail->anim_buf        = buf;
    thumbnail->anim_buf_len    = len;
    thumbnail->anim_type       = (uint8_t)type;
@@ -1102,7 +1215,7 @@ static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
       len = (int64_t)blen;
       /* The transfer owns the mapping; the install borrows it. */
       gfx_thumbnail_anim_install(thumbnail, stream, type,
-            buf, (size_t)len, dt, 1);
+            buf, (size_t)len, dt, 1, path);
    }
 }
 
@@ -1315,6 +1428,43 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
          image_transfer_anim_stream_set_avail(thumbnail->anim, type, hi);
       }
    }
+
+#if defined(GFX_THUMB_PREVIEW_AUDIO)
+   /* The windowed preview-audio read-back: a second, independent pass
+    * over the file, advanced by the same per-frame budget the adopted
+    * read below uses so the menu never blocks on it.  Handing the
+    * mixer a partial container would have it demux a truncated index,
+    * so nothing starts until the read completes. */
+   if (thumbnail->anim_audio_dt)
+   {
+      data_transfer_iterate_while(thumbnail->anim_audio_dt, 0,
+            gfx_thumb_frame_budget, &now);
+      if (data_transfer_failed(thumbnail->anim_audio_dt))
+      {
+         /* Short read: no audio, but the animation is unaffected. */
+         data_transfer_free(thumbnail->anim_audio_dt);
+         thumbnail->anim_audio_dt = NULL;
+         gfx_thumbnail_audio_src_free(thumbnail);
+      }
+      else if (data_transfer_complete(thumbnail->anim_audio_dt))
+      {
+         /* Detach rather than copy: the source buffer is one exact
+          * malloc, which is what the mixer's owner/free contract wants,
+          * so ownership moves across whole.  detach() frees the
+          * transfer itself on success - hence no free below it. */
+         size_t   alen = 0;
+         uint8_t *own  = data_transfer_source_detach(
+               thumbnail->anim_audio_dt, &alen);
+         thumbnail->anim_audio_dt = NULL;
+         gfx_thumbnail_audio_src_free(thumbnail);
+         if (own && alen)
+            gfx_thumbnail_preview_audio_start_owned(thumbnail, own, alen,
+                  type);
+         else
+            free(own);
+      }
+   }
+#endif
 
    if (thumbnail->anim_read_pending)
    {
@@ -1695,7 +1845,8 @@ static void gfx_thumbnail_handle_upload(
       if (task_image_detach_video_stream(task, &vstream, &vtype,
             &vxfer, &vbuf, &vlen))
          gfx_thumbnail_anim_install(thumbnail_tag->thumbnail,
-               vstream, vtype, vbuf, vlen, vxfer, 0);
+               vstream, vtype, vbuf, vlen, vxfer, 0,
+               thumbnail_tag->path);
       else
          /* Everything without a stream to hand over opens by path.
           * For the video types adoption is the fast route because the
