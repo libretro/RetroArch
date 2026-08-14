@@ -3449,15 +3449,31 @@ bool gfx_thumbnail_update_path(
       if (path_is_media_type(path_data->content_path) == RARCH_CONTENT_IMAGE)
          strlcpy(thumbnail_path,
                path_data->content_path, PATH_MAX_LENGTH * sizeof(char));
-      /* A WebM or MP4 file is likewise its own (animated) thumbnail,
-       * but unlike an image the entire file must be read to decode it,
-       * so refuse anything past the animation decoder's file-size cap */
+      /* A WebM or MP4 file is likewise its own (animated) thumbnail.
+       *
+       * Where the platform can reserve address space the load opens
+       * over a sliding window and commits only its head plus that
+       * window, so the file's length costs nothing and only the
+       * window has to be admitted - a multi-hour 4K recording
+       * previews from the same budget as a ten-second clip.  The
+       * whole-file cap applied here unconditionally, which refused
+       * every video past GFX_THUMB_ANIM_ABS_MAX_FILE outright: the
+       * path resolved empty, the thumbnail went MISSING, and no
+       * decode was ever attempted.  That cap predates the windowed
+       * open and had simply never been revisited.
+       *
+       * Without reservation support the open degrades to a whole-file
+       * read, so the length-based test is still the right one there.
+       * This mirrors the admission in gfx_thumbnail_anim_open. */
       else if (   (   (image_texture_get_type(path_data->content_path)
                         == IMAGE_TYPE_WEBM)
                    || (image_texture_get_type(path_data->content_path)
                         == IMAGE_TYPE_MP4))
-               && gfx_thumb_anim_mem_ok(
-                     (uint64_t)path_get_size(path_data->content_path), 0))
+               && (data_transfer_reserve_supported()
+                     ? gfx_thumb_anim_window_ok(0)
+                     : gfx_thumb_anim_mem_ok(
+                        (uint64_t)path_get_size(
+                           path_data->content_path), 0)))
          strlcpy(thumbnail_path,
                path_data->content_path, PATH_MAX_LENGTH * sizeof(char));
    }
