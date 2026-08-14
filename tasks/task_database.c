@@ -320,6 +320,7 @@ typedef struct manual_scan_handle
    char *flush_path_buf;
    unsigned flush_added;
    bool flush_started;
+   playlist_dedup_t *flush_dedup;
    logiqx_dat_t *dat_file;
    struct string_list *m3u_list;
    playlist_config_t playlist_config; /* size_t alignment */
@@ -1978,6 +1979,8 @@ static void task_database_cleanup_state(database_state_handle_t *db_state)
  * Returns true when the flush has fully completed (including the
  * failure mode of the scratch allocation, which skips the batch),
  * false when yielding. */
+static bool manual_scan_walk_within_budget(void *ud);
+
 static bool manual_scan_end_flush_tick(
    manual_scan_handle_t* manual_scan, bool single_playlist)
 {
@@ -2003,6 +2006,9 @@ static bool manual_scan_end_flush_tick(
       {
          manual_scan->flush_group    = manual_scan->task_config->playlist_file;
          manual_scan->flush_playlist = manual_scan->playlist;
+         /* NULL on failure: existence checks then take the linear
+          * fallback below */
+         manual_scan->flush_dedup    = playlist_dedup_init();
       }
    }
    else if (!manual_scan->flush_path_buf)
@@ -2023,6 +2029,8 @@ static bool manual_scan_end_flush_tick(
       const char *group_key = (*manual_scan->task_config->playlist_file)
          ? manual_scan->task_config->playlist_file
          : result->db_name;
+      bool entry_present;
+      bool is_m3u;
 
       /* The floor: one result per gather regardless of the window,
        * then yield between any two results. */
@@ -2049,6 +2057,8 @@ static bool manual_scan_end_flush_tick(
             manual_scan->flush_playlist = NULL;
             manual_scan->flush_added = 0;
          }
+         playlist_dedup_free(manual_scan->flush_dedup);
+         manual_scan->flush_dedup = NULL;
 
          /* Open new playlist - if not fixed, use database name */
          if (!*manual_scan->task_config->playlist_file)
@@ -2083,6 +2093,10 @@ static bool manual_scan_end_flush_tick(
             manual_scan->flush_pos++;
             continue;
          }
+
+         /* NULL on failure: existence checks then take the linear
+          * fallback below */
+         manual_scan->flush_dedup = playlist_dedup_init();
 
          /* Set default core, if required */
          if (manual_scan->task_config->core_set)
@@ -2122,17 +2136,40 @@ static bool manual_scan_end_flush_tick(
          RARCH_LOG("[Scanner] Processing playlist: \"%s\".\n", result->db_name);
       }
 
+      /* Index the playlist's pre-existing entries before consulting
+       * the dedup index, resuming across gathers on the shared
+       * window.  flush_pos has not advanced, so a resumed gather
+       * re-enters here with the same group. */
+      if (   manual_scan->flush_dedup
+          && manual_scan->flush_playlist
+          && !playlist_dedup_seed_step(manual_scan->flush_dedup,
+                manual_scan->flush_playlist,
+                manual_scan_walk_within_budget, &b))
+      {
+         task_nbio_slice_close(&b);
+         return false;
+      }
+
       /* Add entry to playlist if it doesn't already exist */
       /* ...except for M3U, since the processing occurs at the end,
          we overwrite any previous m3u entry (which has same file,
          but less descriptive label, database, crc */
-      if (manual_scan->flush_playlist && 
-          (!playlist_entry_exists(manual_scan->flush_playlist, result->entry_path) ||
-           m3u_file_is_m3u(result->entry_path)))
+      is_m3u        = m3u_file_is_m3u(result->entry_path);
+      /* will_add records the path as present exactly when this
+       * result is pushed below: when absent (the push is
+       * unconditional), and in the m3u-present case the path
+       * remains present across the delete + re-push. */
+      entry_present = manual_scan->flush_dedup
+         ? playlist_dedup_check_add(manual_scan->flush_dedup,
+               manual_scan->flush_playlist, result->entry_path, true)
+         : playlist_entry_exists(manual_scan->flush_playlist,
+               result->entry_path);
+
+      if (manual_scan->flush_playlist && (!entry_present || is_m3u))
       {
          struct playlist_entry entry;
 
-         if(m3u_file_is_m3u(result->entry_path))
+         if(is_m3u)
             playlist_delete_by_path(manual_scan->flush_playlist, result->entry_path);
          
          /* Build entry */
@@ -2156,7 +2193,11 @@ static bool manual_scan_end_flush_tick(
          entry.last_played_minute= 0;
          entry.last_played_second= 0;
 
-         playlist_push(manual_scan->flush_playlist, &entry);
+         /* Absence is proven: the existence check above said so, or
+          * this is an m3u whose previous entries were just deleted.
+          * The checked playlist_push() would re-scan the entire
+          * playlist for the same answer. */
+         playlist_push_unchecked(manual_scan->flush_playlist, &entry);
          manual_scan->flush_added++;
 
          RARCH_LOG("[Scanner] Add \"%s / %s\".\n", db_name_noext, result->entry_label);
@@ -2190,6 +2231,9 @@ static bool manual_scan_end_flush_tick(
          playlist_free(manual_scan->flush_playlist);
       manual_scan->flush_playlist = NULL;
    }
+
+   playlist_dedup_free(manual_scan->flush_dedup);
+   manual_scan->flush_dedup = NULL;
 
    free(manual_scan->flush_path_buf);
    manual_scan->flush_path_buf = NULL;
@@ -2235,6 +2279,11 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
        && manual_scan->flush_playlist != manual_scan->playlist)
       playlist_free(manual_scan->flush_playlist);
    manual_scan->flush_playlist = NULL;
+
+   /* The dedup index owns all of its state; order relative to the
+    * playlist frees is immaterial. */
+   playlist_dedup_free(manual_scan->flush_dedup);
+   manual_scan->flush_dedup = NULL;
 
    if (manual_scan->flush_path_buf)
    {
