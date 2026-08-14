@@ -492,6 +492,15 @@ jobs:
           # playlist and asserts zero duplicates, driving the index's
           # budgeted seeding at scale.  The throughput factor is
           # tightened to reject the pre-index quadratic flush.
+          #
+          # The big-DAT lane scans 50 files against a 300k-game DAT
+          # and asserts the same pacing budget: no gather may grow
+          # with DAT size now that the rxml parse and the search-
+          # index build step under the shared window.  Its label
+          # check samples the end of the list, so an index that
+          # silently covered only a prefix fails correctness, and
+          # three extra cancel points land inside the budgeted read
+          # and parse of the large document.
           make clean all
           test -x scan_begin_budget_test
           timeout 600 ./scan_begin_budget_test

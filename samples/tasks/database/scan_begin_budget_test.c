@@ -240,6 +240,60 @@ static bool build_fixture(const char *root, char *dat_path, size_t dat_path_len,
    return true;
 }
 
+/* Big-DAT lane fixture: a DAT large enough that an unbudgeted parse
+ * or index build would blow the pacing budget many times over, and
+ * a small content set whose names sample the start, middle and end
+ * of the list.  Scanning it asserts that no gather grows with DAT
+ * size - the last input-proportional single-gather work in the
+ * scan.  ~300k games come to ~40MB of XML; the fixture's own cost
+ * is one streamed write. */
+#define BIG_DAT_GAMES         300000
+#define BIG_DAT_CONTENT_FILES 50
+
+static bool build_big_fixture(const char *root, char *dat_path,
+      size_t dat_path_len, char *content_dir, size_t content_dir_len,
+      char *playlist_dir, size_t playlist_dir_len)
+{
+   size_t i;
+   FILE *dat;
+   char path[4096];
+
+   snprintf(content_dir, content_dir_len, "%s/bigcontent", root);
+   snprintf(dat_path, dat_path_len, "%s/biggames.dat", root);
+   snprintf(playlist_dir, playlist_dir_len, "%s/bigplaylists", root);
+
+   if (   !path_mkdir(content_dir)
+       || !path_mkdir(playlist_dir))
+      return false;
+
+   /* Every 6000th game exists as a file: hits across the whole
+    * list, so a search index that silently covered only a prefix
+    * would mislabel the tail. */
+   for (i = 0; i < BIG_DAT_CONTENT_FILES; i++)
+   {
+      char body[64];
+      unsigned id = (unsigned)(i * (BIG_DAT_GAMES / BIG_DAT_CONTENT_FILES));
+      snprintf(path, sizeof(path), "%s/big%06u.bin", content_dir, id);
+      snprintf(body, sizeof(body), "big-%06u", id);
+      if (!write_text_file(path, body))
+         return false;
+   }
+
+   if (!(dat = fopen(dat_path, "w")))
+      return false;
+   fputs("<?xml version=\"1.0\"?>\n<datafile>\n"
+         "<header><name>ScanBench</name></header>\n", dat);
+   for (i = 0; i < BIG_DAT_GAMES; i++)
+      fprintf(dat,
+            "<game name=\"big%06u\">"
+            "<description>Big Game %06u</description>"
+            "<year>2026</year></game>\n",
+            (unsigned)i, (unsigned)i);
+   fputs("</datafile>\n", dat);
+   fclose(dat);
+   return true;
+}
+
 /* ------------------------------------------------------------------ */
 /* Scan driver                                                        */
 /* ------------------------------------------------------------------ */
@@ -844,6 +898,96 @@ int main(int argc, char *argv[])
          goto out_queue;
    }
    fprintf(stderr, "[pass] no-overwrite rescan lane (0 duplicates)\n");
+
+   /* Big-DAT lane: the pacing contract must not scale with DAT
+    * size.  Before the incremental DAT parse, this lane's whole
+    * ~40MB parse (and the index build after it) sat in single
+    * gathers; the assertion below fails on any return to that. */
+   {
+      char big_dat[4096];
+      char big_content[4096];
+      char big_playlists[4352];
+      scan_metrics_t mb;
+
+      if (!build_big_fixture(fixture_root,
+            big_dat, sizeof(big_dat),
+            big_content, sizeof(big_content),
+            big_playlists, sizeof(big_playlists)))
+      {
+         fprintf(stderr, "big fixture build failed\n");
+         goto out_queue;
+      }
+      if (!run_scan(big_content, big_dat, big_playlists, &mb))
+         goto out_queue;
+
+      /* Correctness: all files present, labelled from the DAT -
+       * including the last sample, whose label only an index
+       * covering the full list can supply. */
+      {
+         char plpath[4608];
+         playlist_config_t cfg;
+         playlist_t *pl;
+         const struct playlist_entry *e = NULL;
+         size_t n, k;
+         bool tail_seen = false;
+
+         memset(&cfg, 0, sizeof(cfg));
+         snprintf(plpath, sizeof(plpath), "%s/ScanBench.lpl",
+               big_playlists);
+         playlist_config_set_path(&cfg, plpath);
+         cfg.capacity = COLLECTION_SIZE;
+         if (!(pl = playlist_init(&cfg)))
+            goto out_queue;
+         n = playlist_size(pl);
+         for (k = 0; k < n; k++)
+         {
+            playlist_get_index(pl, k, &e);
+            if (e && e->label
+                  && !strcmp(e->label, "Big Game 294000"))
+               tail_seen = true;
+         }
+         playlist_free(pl);
+         if (n != BIG_DAT_CONTENT_FILES || !tail_seen)
+         {
+            fprintf(stderr,
+                  "big-DAT lane: %u entries (want %u), tail label %s\n",
+                  (unsigned)n, (unsigned)BIG_DAT_CONTENT_FILES,
+                  tail_seen ? "ok" : "missing");
+            goto out_queue;
+         }
+      }
+
+      if (!sanitize && !bench_only)
+      {
+         retro_time_t limit = 4000 * PACING_SLACK_MULTIPLIER;
+         if (mb.max_gather_usec > limit)
+         {
+            fprintf(stderr,
+                  "FAIL big-DAT pacing: max gather %.2fms CPU exceeds "
+                  "%.2fms budget\n",
+                  mb.max_gather_usec / 1000.0, limit / 1000.0);
+            goto out_queue;
+         }
+      }
+
+      /* Land cancels inside the budgeted DAT read and parse, which
+       * the small fixture's sweep passes in a couple of gathers. */
+      {
+         static const unsigned big_cancel_points[] = { 32, 128, 512 };
+         size_t ci;
+         for (ci = 0;
+              ci < sizeof(big_cancel_points) / sizeof(big_cancel_points[0]);
+              ci++)
+         {
+            if (!run_scan_cancelled(big_content, big_dat, big_playlists,
+                  big_cancel_points[ci]))
+               goto out_queue;
+         }
+      }
+      fprintf(stderr, "[pass] big-DAT lane (%u games, pacing%s)\n",
+            (unsigned)BIG_DAT_GAMES,
+            sanitize ? " skipped under sanitizer" : " held");
+   }
 
    /* The regular-queue metrics lanes are done; tear that queue down
     * before the threaded and cancellation lanes bring up their own. */
