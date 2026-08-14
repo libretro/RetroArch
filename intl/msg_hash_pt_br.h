@@ -1920,17 +1920,17 @@ static const struct
    char s_44ebca0d[37];
    char s_608ac5a1[22];
 #ifdef HAVE_SMBCLIENT
-   char s_3839f91d[27];
+   char s_3839f91d[32];
    char s_86b07599[36];
    char s_8d5f85ee[19];
-   char s_9b023eee[25];
+   char s_9b023eee[27];
    char s_ccae82ba[13];
    char s_ad6e88de[13];
-   char s_c7bc8298[28];
+   char s_c7bc8298[31];
    char s_e63b035a[29];
    char s_d21d875b[21];
    char s_ae86fed0[21];
-   char s_b12ae22e[17];
+   char s_b12ae22e[20];
    char s_b2d073c7[27];
    char s_1cbc2657[25];
 #endif
@@ -3333,16 +3333,16 @@ static const struct
    char s_46c57dde[58];
    char s_7eb20ecf[66];
 #ifdef HAVE_SMBCLIENT
-   char s_3e1e294b[50];
+   char s_3e1e294b[49];
    char s_69c0e487[59];
    char s_706ff4dc[226];
-   char s_a0d1a85c[57];
+   char s_a0d1a85c[62];
    char s_b5966528[194];
    char s_907ef7cc[53];
-   char s_b0a46506[59];
+   char s_b0a46506[62];
    char s_04624c88[47];
    char s_91976dbe[58];
-   char s_f6492edc[46];
+   char s_f6492edc[43];
    char s_9bb85635[215];
    char s_22a05685[76];
 #endif
@@ -6283,17 +6283,17 @@ static const struct
    "Instala\303\247\303\243o do n\303\272cleo bem-sucedida",
    "Taxa de c\303\242mera lenta",
 #ifdef HAVE_SMBCLIENT
-   "Modo de Autentica\303\247\303\243o SMB",
+   "Modo de autentifica\303\247\303\243o do SMB",
    "Navegador pelo Compartilhamento SMB",
    "Ativar Cliente SMB",
-   "M\303\241ximo de conex\303\265es SMB",
+   "Limite de conex\303\265es do SMB",
    "Senha do SMB",
    "Servidor SMB",
-   "Configura\303\247\303\265es de Rede SMB",
+   "Configura\303\247\303\265es de rede do SMB",
    "Nome do Compartilhamento SMB",
    "Compartilhamento SMB",
    "Subdiret\303\263rio do SMB",
-   "Tempo limite SMB",
+   "Tempo limite do SMB",
    "\342\200\213Nome de usu\303\241rio do SMB",
    "Grupo de trabalho do SMB",
 #endif
@@ -8232,20 +8232,20 @@ static const struct
    "Instala ou restaura um n\303\272cleo do diret\303\263rio \"Downloads\".",
    "A taxa que o conte\303\272do ser\303\241 reproduzido ao usar a c\303\242mera lenta.",
 #ifdef HAVE_SMBCLIENT
-   "Selecione a autentica\303\247\303\243o usada no seu ambiente.",
+   "Define a autentifica\303\247\303\243o usada no seu ambiente.",
    "Navega pelos arquivos no compartilhamento SMB configurado.",
    "Ativa o acesso a compartilhamento de rede via SMB. Recomenda-se fortemente o uso de Ethernet em "
    "vez de Wi-Fi para uma conex\303\243o mais est\303\241vel. Nota: a altera\303\247\303\243o destas"
    " configura\303\247\303\265es requer a reinicializa\303\247\303\243o do RetroArch.",
-   "Selecione o m\303\241ximo de conex\303\265es usadas no seu ambiente.",
+   "Define o n\303\272mero m\303\241ximo de conex\303\265es usadas no seu ambiente.",
    "Senha para autentifica\303\247\303\243o. Opcional ao habilitar o acesso de convidade no servidor"
    ". Windows 10 e posterior: o acesso de convidade \303\251 desabilitado por padr\303\243o, ent\303"
    "\243o uma senha \303\251 necess\303\241ria.",
    "Endere\303\247o IP do Servidor ou nome do host (hostname).",
-   "Define as configura\303\247\303\265es de compartilhamento de rede SMB.",
+   "Define as configura\303\247\303\265es do compartilhamento de rede do SMB.",
    "Nome do compartilhamento de rede para acessar.",
    "Endere\303\247o do subdiret\303\263rio no compartilhamento. Opcional.",
-   "Selecione o tempo limite padr\303\243o em segundos.",
+   "Define o tempo limite padr\303\243o em segundos.",
    "Nome de usu\303\241rio para autentifica\303\247\303\243o. Opcional ao habilitar o acesso de conv"
    "idado no servidor. Windows 10 e posterior: o acesso de convidado \303\251 desabilitado por padr"
    "\303\243o, ent\303\243o um nome de usu\303\241rio \303\251 necess\303\241rio.",
@@ -9386,17 +9386,17 @@ typedef char msg_hash_pt_br_blob_check[
 #endif
 #ifdef HAVE_SMBCLIENT
        + 22u
-       + 27u
+       + 32u
        + 36u
        + 19u
-       + 25u
+       + 27u
        + 13u
        + 13u
-       + 28u
+       + 31u
        + 29u
        + 21u
        + 21u
-       + 17u
+       + 20u
        + 27u
        + 25u
 #endif
@@ -9581,16 +9581,16 @@ typedef char msg_hash_pt_br_blob_check[
 #endif
 #ifdef HAVE_SMBCLIENT
        + 44u
-       + 50u
+       + 49u
        + 59u
        + 226u
-       + 57u
+       + 62u
        + 194u
        + 53u
-       + 59u
+       + 62u
        + 47u
        + 58u
-       + 46u
+       + 43u
        + 215u
        + 76u
 #endif

@@ -1949,6 +1949,7 @@ static const struct
    char s_c7bc8298[27];
    char s_e63b035a[19];
    char s_d21d875b[12];
+   char s_ae86fed0[17];
    char s_b12ae22e[21];
    char s_b2d073c7[22];
    char s_1cbc2657[22];
@@ -3365,10 +3366,14 @@ static const struct
    char s_69c0e487[54];
    char s_706ff4dc[204];
    char s_a0d1a85c[81];
+   char s_b5966528[229];
    char s_907ef7cc[38];
    char s_b0a46506[54];
    char s_04624c88[43];
+   char s_91976dbe[50];
    char s_f6492edc[76];
+   char s_9bb85635[244];
+   char s_22a05685[82];
 #endif
    char s_f3bfa8b9[108];
    char s_5fe2cee5[89];
@@ -6376,6 +6381,7 @@ static const struct
    "Param\303\250tres de r\303\251seau SMB",
    "Nom du partage SMB",
    "Partage SMB",
+   "Sous-dossier SMB",
    "D\303\251lai d'attente SMB",
    "Nom d'utilisateur SMB",
    "Groupe de travail SMB",
@@ -8432,10 +8438,19 @@ static const struct
    "r rapport au Wi-Fi pour une connexion plus fiable. Remarque : modifier ces r\303\251glages n\303"
    "\251cessite un red\303\251marrage de RetroArch.",
    "S\303\251lectionnez le nombre de connexions maximal utilis\303\251 dans votre environnement.",
+   "Mot de passe d'authentification. Ce champ est facultatif lorsque l'acc\303\250s invit\303\251 es"
+   "t activ\303\251 sur le serveur. Windows 10 et versions ult\303\251rieures : l'acc\303\250s invit"
+   "\303\251 \303\251tant d\303\251sactiv\303\251 par d\303\251faut, un mot de passe est requis ici.",
    "Adresse IP ou nom d'h\303\264te du serveur.",
    "Configurer les param\303\250tres de partage en r\303\251seau SMB.",
    "Nom du partage en r\303\251seau auquel acc\303\251der.",
+   "Chemin du sous-dossier sur le partage. Optionnel.",
    "S\303\251lectionnez le d\303\251lai d'attente avant expiration par d\303\251faut en secondes.",
+   "Nom d'utilisateur pour l'authentification. Ce champ est facultatif lorsque l'acc\303\250s invit"
+   "\303\251 est activ\303\251 sur le serveur. Windows 10 et versions ult\303\251rieures : l'acc\303"
+   "\250s invit\303\251 \303\251tant d\303\251sactiv\303\251 par d\303\251faut, un nom d'utilisateur"
+   " est requis ici.",
+   "Nom du groupe de travail ou du domaine. Facultatif dans certaines configurations.",
 #endif
    "Trie les fichiers de sauvegarde dans des dossiers nomm\303\251s en fonction du dossier o\303\271"
    " le contenu est situ\303\251.",
@@ -9611,6 +9626,7 @@ typedef char msg_hash_fr_blob_check[
        + 27u
        + 19u
        + 12u
+       + 17u
        + 21u
        + 22u
        + 22u
@@ -9800,10 +9816,14 @@ typedef char msg_hash_fr_blob_check[
        + 54u
        + 204u
        + 81u
+       + 229u
        + 38u
        + 54u
        + 43u
+       + 50u
        + 76u
+       + 244u
+       + 82u
 #endif
 #ifdef HAVE_LAKKA
        + 64u
@@ -11817,6 +11837,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
@@ -13230,10 +13251,14 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
