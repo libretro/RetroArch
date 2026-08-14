@@ -94,6 +94,30 @@ rxml_document_t *rxml_load_document_string(const char *str);
  * bytes (e.g. a task that read the file itself) should care about. */
 rxml_document_t *rxml_load_document_owned(char *buf, size_t len);
 
+/* Incremental variant of rxml_load_document_owned(): the same
+ * ownership contract (@buf is heap, NUL-terminated at @len, and is
+ * either given to the resulting document or freed on failure /
+ * abort), with the parse spread over as many rxml_parse_step()
+ * calls as the caller's budget requires.
+ *
+ * rxml_parse_begin_owned() returns NULL only on allocation failure
+ * (having freed @buf).  Each rxml_parse_step() consumes roughly
+ * @max_bytes of input - the bound is @max_bytes plus one construct,
+ * since parsing pauses only between constructs - and returns 0 to
+ * continue, 1 when the document reached its verdict successfully,
+ * or -1 when it failed (@max_bytes of 0 runs to the verdict in one
+ * call).  rxml_parse_end() releases the parse state and returns the
+ * document after a successful verdict, NULL otherwise (discarding
+ * any partial parse).  rxml_parse_abort() releases everything
+ * unconditionally. */
+typedef struct rxml_parse rxml_parse_t;
+
+rxml_parse_t *rxml_parse_begin_owned(char *buf, size_t len,
+      unsigned opts);
+int rxml_parse_step(rxml_parse_t *parse, size_t max_bytes);
+rxml_document_t *rxml_parse_end(rxml_parse_t *parse);
+void rxml_parse_abort(rxml_parse_t *parse);
+
 /* As rxml_load_document_string, with parse options; on failure, *err
  * (when non-NULL) receives the position the parser stopped at. */
 rxml_document_t *rxml_load_document_string_opts(const char *str,
