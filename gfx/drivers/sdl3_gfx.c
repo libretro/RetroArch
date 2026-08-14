@@ -676,7 +676,7 @@ static void sdl3_get_video_output_size(void *data,
 
    *width  = (unsigned)mode->w;
    *height = (unsigned)mode->h;
-   snprintf(desc, desc_len, "%.2f Hz", mode->refresh_rate);
+   SDL_snprintf(desc, desc_len, "%.2f Hz", mode->refresh_rate);
 }
 
 /* Steps the exclusive fullscreen mode one entry through the display's
