@@ -1166,8 +1166,18 @@ static void gfx_thumbnail_anim_upload(gfx_thumbnail_t *thumbnail,
        * as with the still upload. */
       if (GFX_THUMB_STATUS_LOAD(&thumbnail->status) ==
             GFX_THUMBNAIL_STATUS_PENDING)
+      {
          GFX_THUMB_STATUS_STORE(&thumbnail->status,
                GFX_THUMBNAIL_STATUS_AVAILABLE);
+         /* ...and start the fade the still upload would have started.
+          * gfx_thumbnail_reset zeroes alpha, and the request's end:
+          * label skips init_fade precisely because the status it sees
+          * is PENDING - so on this route nothing else ever raises it.
+          * The texture was live and the status correct, but every
+          * frame drew at zero opacity: a video preview that decoded
+          * perfectly and was invisible. */
+         gfx_thumbnail_init_fade(&gfx_thumb_st, thumbnail);
+      }
    }
 }
 
