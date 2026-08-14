@@ -169,8 +169,10 @@ static void sdl3_refresh_input_size(sdl3_video_t *vid, bool menu, bool rgb32,
             (menu || !vid->video.smooth)
             ? SDL_SCALEMODE_NEAREST : SDL_SCALEMODE_LINEAR);
 
-      if (menu)
-         SDL_SetTextureBlendMode(target->tex, SDL_BLENDMODE_BLEND);
+      /* Blend when displaying the menu, but disable it otherwise
+       * because the alpha byte may be 0 like when rendering
+       * XRGB8888 content. */
+      SDL_SetTextureBlendMode(target->tex, menu ? SDL_BLENDMODE_BLEND : SDL_BLENDMODE_NONE);
 
       target->w     = width;
       target->h     = height;
@@ -222,6 +224,8 @@ static void *sdl3_gfx_init(const video_info_t *video,
 {
    int i;
    sdl3_video_t *vid = NULL;
+
+   sdl3_set_app_metadata();
 
    /* Initialize the video system. */
    if (!SDL_InitSubSystem(SDL_INIT_VIDEO))
@@ -590,6 +594,29 @@ static bool sdl3_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    sdl3_blit_frame(vid);
 
    return sdl3_capture_viewport(vid, buffer);
+}
+
+/* Applies a new window size / fullscreen in place, without tearing
+ * down the entire driver. */
+static void sdl3_poke_set_video_mode(void *data, unsigned width,
+      unsigned height, bool fullscreen)
+{
+   sdl3_video_t *vid = (sdl3_video_t*)data;
+
+   if (!vid || !vid->window)
+      return;
+
+   if (!sdl3_window_set_video_mode(&vid->window, width, height, fullscreen, 0))
+   {
+      RARCH_WARN("[SDL3] Failed to set video mode: %s.\n", SDL_GetError());
+      return;
+   }
+
+   /* On the next frame, recompute the viewport pixel size. */
+   vid->flags |= SDL3_FLAG_SHOULD_RESIZE;
+   vid->video.width = width;
+   vid->video.height = height;
+   vid->video.fullscreen = fullscreen;
 }
 
 static void sdl3_poke_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)
@@ -1564,7 +1591,7 @@ static video_poke_interface_t sdl3_video_poke_interface = {
    sdl3_get_flags,
    sdl3_load_texture,
    sdl3_unload_texture,
-   NULL,                            /* set_video_mode */
+   sdl3_poke_set_video_mode,
    sdl3_ctx_get_refresh_rate,
    sdl3_poke_set_filtering,
    NULL,                            /* get_video_output_size */

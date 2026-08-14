@@ -1961,7 +1961,7 @@ static const struct
    char s_c7bc8298[19];
    char s_e63b035a[36];
    char s_d21d875b[19];
-   char s_ae86fed0[29];
+   char s_ae86fed0[21];
    char s_b12ae22e[24];
    char s_b2d073c7[25];
    char s_1cbc2657[24];
@@ -3374,14 +3374,14 @@ static const struct
    char s_69c0e487[75];
    char s_706ff4dc[243];
    char s_a0d1a85c[70];
-   char s_b5966528[39];
+   char s_b5966528[236];
    char s_907ef7cc[51];
    char s_b0a46506[48];
    char s_04624c88[64];
-   char s_91976dbe[50];
+   char s_91976dbe[60];
    char s_f6492edc[61];
-   char s_9bb85635[45];
-   char s_22a05685[46];
+   char s_9bb85635[247];
+   char s_22a05685[79];
 #endif
    char s_f3bfa8b9[124];
    char s_5fe2cee5[87];
@@ -6365,7 +6365,7 @@ static const struct
    "Ajustes de red SMB",
    "Nombre de recurso compartido de SMB",
    "Red compartida SMB",
-   "Subdirectorio SMB (opcional)",
+   "Subdirectorio de SMB",
    "Tiempo de espera de SMB",
    "Nombre de usuario de SMB",
    "Grupo de trabajo de SMB",
@@ -8344,14 +8344,18 @@ static const struct
    "et en vez de una se\303\261al wifi para tener una conexi\303\263n m\303\241s fiable. Nota: si ca"
    "mbias cualquiera de estos ajustes, es necesario reiniciar RetroArch.",
    "Selecciona el n\303\272mero m\303\241ximo de conexiones permitidas en tu entorno.",
-   "La contrase\303\261a para la autenticaci\303\263n.",
+   "La contrase\303\261a para la autenticaci\303\263n. Opcional si el acceso de invitado est\303\241"
+   " activado en el servidor. Para Windows 10 en adelante: el acceso de invitado est\303\241 desacti"
+   "vado por defecto, as\303\255 que es necesario introducir una contrase\303\261a.",
    "La direcci\303\263n IP o el nombre de host del servidor.",
    "Configura los ajustes de la red compartida SMB.",
    "El nombre del recurso compartido de red al que quieres acceder.",
-   "La ruta del subdirectorio del recurso compartido.",
+   "La ruta del subdirectorio del recurso compartido. Opcional.",
    "Selecciona el tiempo de espera predeterminado (en segundos).",
-   "El nombre de usuario para la autenticaci\303\263n.",
-   "El nombre del grupo de trabajo o del dominio.",
+   "El nombre de usuario para la autenticaci\303\263n. Opcional si el acceso de invitado est\303\241"
+   " activado en el servidor. Para Windows 10 en adelante: el acceso de invitado est\303\241 desacti"
+   "vado por defecto, as\303\255 que es necesario introducir un nombre de usuario.",
+   "El nombre del grupo de trabajo o dominio. Opcional en algunas configuraciones.",
 #endif
    "Organiza los archivos de guardado mediante carpetas que llevar\303\241n el nombre del directorio"
    " donde se encuentre el contenido.",
@@ -9501,7 +9505,7 @@ typedef char msg_hash_es_blob_check[
        + 19u
        + 36u
        + 19u
-       + 29u
+       + 21u
        + 24u
        + 25u
        + 24u
@@ -9691,14 +9695,14 @@ typedef char msg_hash_es_blob_check[
        + 75u
        + 243u
        + 70u
-       + 39u
+       + 236u
        + 51u
        + 48u
        + 64u
-       + 50u
+       + 60u
        + 61u
-       + 45u
-       + 46u
+       + 247u
+       + 79u
 #endif
 #ifdef HAVE_LAKKA
        + 66u

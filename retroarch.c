@@ -6843,7 +6843,7 @@ static void retroarch_print_features(void)
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_SDL2,            "SDL2",            "SDL2 input/audio/video drivers");
 #endif
 #ifdef HAVE_SDL3
-   _len += _PSUPP_BUF(buf, _len, SUPPORTS_SDL3,            "SDL3",            "SDL3 input/video drivers");
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_SDL3,            "SDL3",            "SDL3 input/audio/video drivers");
 #endif
 #ifdef HAVE_X11
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_X11,             "X11",             "X11 input/video drivers");
@@ -6939,6 +6939,9 @@ static void retroarch_print_features(void)
 #endif
 #ifdef HAVE_XAUDIO
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_XAUDIO,          "XAudio2",         "Audio driver");
+#endif
+#ifdef HAVE_CHD
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_CHD,             "CHD",             "CHD support");
 #endif
 #ifdef HAVE_7ZIP
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_7ZIP,            "7zip",            "7zip support");
@@ -8447,6 +8450,7 @@ bool retroarch_main_init(int argc, char *argv[])
 #if defined(ANDROID)
       {
          char str_output[128];
+         char manufacturer_model[PROP_VALUE_MAX * 2];
          int32_t major = 0;
          int32_t minor = 0;
          int32_t rel   = 0;
@@ -8457,15 +8461,17 @@ bool retroarch_main_init(int argc, char *argv[])
             "Sideload";
 
          frontend_android_get_version(&major, &minor, &rel);
+         frontend_android_get_manufacturer_model(
+            manufacturer_model, sizeof(manufacturer_model));
 
          snprintf(str_output, sizeof(str_output),
-            FILE_PATH_LOG_INFO " Running on: Android v%d.%d.%d (API %d) (%s)\n",
+            FILE_PATH_LOG_INFO " Running on: Android v%d.%d.%d (%s)\n"
+            FILE_PATH_LOG_INFO " Device: %s\n",
             major,
             minor,
             rel,
-            android_get_device_api_level(),
-            build_type);
-
+            build_type,
+            manufacturer_model);
          RARCH_LOG_OUTPUT("%s", str_output);
       }
 #elif defined(WEBOS)

@@ -272,7 +272,6 @@ task_finished:
          }
          else
          {
-            bool mute;
             data->data    = tmp;
             data->len     = _len;
             data->headers = net_http_headers_ex(http->handle, http->headers_accept_err);
@@ -280,9 +279,17 @@ task_finished:
 
             task_set_data(task, data);
 
-            mute          = ((task->flags & RETRO_TASK_FLG_MUTE) > 0);
-
-            if (!mute && net_http_error(http->handle))
+            /* RETRO_TASK_FLG_MUTE must not gate this.  MUTE suppresses
+             * the on-screen notification only, in
+             * task_queue_push_progress(); task->error is a separate
+             * channel handed to the callback unconditionally.  Gating
+             * it here quietened nothing and deleted the only failure
+             * signal muted transfers had -- and muted is the common
+             * case for internal traffic.  task_core_updater.c's list
+             * callback computes `data && (!err || !*err)`, which a
+             * failed DNS lookup satisfied, so an unreachable host
+             * looked like a successfully downloaded empty core list. */
+            if (net_http_error(http->handle))
                task_set_error(task, strldup("Download failed.",
                   sizeof("Download failed.")));
          }

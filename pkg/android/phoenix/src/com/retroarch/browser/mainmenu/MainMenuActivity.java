@@ -36,9 +36,21 @@ public final class MainMenuActivity extends PreferenceActivity
 
 	public void showMessageOKCancel(String message, DialogInterface.OnClickListener onClickListener)
 	{
-		new AlertDialog.Builder(this).setMessage(message)
-			.setPositiveButton("OK", onClickListener).setCancelable(false)
-			.setNegativeButton("Cancel", null).create().show();
+		new AlertDialog.Builder(this)
+			.setMessage(message)
+			.setPositiveButton("OK", onClickListener)
+			.setCancelable(false)
+			.setNegativeButton("Cancel", new DialogInterface.OnClickListener()
+			{
+				@Override
+				public void onClick(DialogInterface dialog, int which)
+				{
+					checkPermissions = false;
+					finalStartup();
+				}
+			})
+			.create()
+			.show();
 	}
 
 	private boolean addPermission(List<String> permissionsList, String permission)
@@ -79,14 +91,34 @@ public final class MainMenuActivity extends PreferenceActivity
 									Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
 									intent.addCategory("android.intent.category.DEFAULT");
 									intent.setData(Uri.parse(String.format("package:%s", getPackageName())));
+
 									startActivityForResult(intent, REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS);
 								}
-								catch (Exception e)
+								catch (android.content.ActivityNotFoundException e)
 								{
-									Intent intent = new Intent();
-									intent.setAction(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
-									startActivityForResult(intent, REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS);
+									try
+									{
+										Intent intent = new Intent(
+											Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+
+										startActivityForResult(
+											intent,
+											REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS);
+									}
+									catch (android.content.ActivityNotFoundException e2)
+									{
+										Log.w("MainMenuActivity",
+											"All files access settings are not available on this device.");
+										// The device does not provide an all files access
+										checkPermissions = false;
+										finalStartup();
+									}
 								}
+							}
+							else
+							{
+								/* User rejected all files access - data written to private storage */
+								finalStartup();
 							}
 						}
 					});
@@ -147,22 +179,6 @@ public final class MainMenuActivity extends PreferenceActivity
 		if (!checkPermissions)
 		{
 			finalStartup();
-		}
-	}
-
-	@Override
-	protected void onResume()
-	{
-		super.onResume();
-
-		// If the user just came back from settings and granted the permission, boot immediately
-		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R)
-		{
-			if (Environment.isExternalStorageManager() && checkPermissions)
-			{
-				checkPermissions = false;
-				finalStartup();
-			}
 		}
 	}
 
@@ -295,5 +311,17 @@ public final class MainMenuActivity extends PreferenceActivity
 			finalStartup();
 		else
 			checkRuntimePermissions();
+	}
+
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data)
+	{
+		super.onActivityResult(requestCode, resultCode, data);
+
+		if (requestCode == REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS)
+		{
+			checkPermissions = false;
+			finalStartup();
+		}
 	}
 }

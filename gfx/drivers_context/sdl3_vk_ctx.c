@@ -84,6 +84,8 @@ static void *sdl3_vk_ctx_init(void *video_driver)
    if (!sdl)
       return NULL;
 
+   sdl3_set_app_metadata();
+
    /* SDL's X11 backend calls XInitThreads itself, so no Xlib setup
     * is needed here. */
    if (!SDL_InitSubSystem(SDL_INIT_VIDEO))
@@ -276,7 +278,7 @@ const gfx_ctx_driver_t gfx_ctx_sdl3_vk = {
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
-   NULL, /* get_metrics */
+   sdl3_ctx_get_metrics,
    NULL, /* translate_aspect */
    sdl3_ctx_update_title,
    sdl3_vk_ctx_check_window,
@@ -295,7 +297,10 @@ const gfx_ctx_driver_t gfx_ctx_sdl3_vk = {
    sdl3_vk_ctx_set_flags,
    sdl3_vk_ctx_bind_hw_render,
    sdl3_vk_ctx_get_context_data,
-   NULL, /* make_current */
+   /* make_current: GL-only. Vulkan has no per-thread context
+    * to bind. x, wayland, android, and other Vulkan drivers
+    * do the same. */
+   NULL,
    NULL, /* create_surface */
    NULL  /* destroy_surface */
 };

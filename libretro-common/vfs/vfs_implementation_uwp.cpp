@@ -408,22 +408,25 @@ libretro_vfs_implementation_file* retro_vfs_file_open_impl(
 
     /* Regarding setvbuf:
         *
-        * https://www.freebsd.org/cgi/man.cgi?query=setvbuf&apropos=0&sektion=0&manpath=FreeBSD+11.1-RELEASE&arch=default&format=html
-        *
-        * If the size argument is not zero but buf is NULL,
-        * a buffer of the given size will be allocated immediately, and
-        * released on close. This is an extension to ANSI C.
-        *
-        * Since C89 does not support specifying a NULL buffer
-        * with a non-zero size, we create and track our own buffer for it.
+        * A NULL buffer with a non-zero size asks the C library to
+        * allocate one of that size and release it with the stream.
+        * That is an extension to ANSI C, which is why this used to
+        * supply a buffer of its own instead; it is honoured by every
+        * runtime this backend is built against, and unlike the
+        * portable VFS this one targets a single known runtime.
         */
-        /* TODO: this is only useful for a few platforms,
-        * find which and add ifdef */
     if (stream->scheme != VFS_SCHEME_CDROM)
     {
-        stream->buf = (char*)calloc(1, 0x4000);
+        /* NULL, so the C runtime allocates and owns the buffer: it is
+         * then released with the stream and there is nothing to track
+         * here.  Kept in step with retro_vfs_file_open_impl(), where
+         * ownership also decides whether Apple's fread() may use its
+         * large-read fast path - not a concern on this backend, but
+         * two implementations of the same VFS differing in how they
+         * buffer is a trap for whoever reads one and edits the
+         * other. */
         if (stream->fp)
-            setvbuf(stream->fp, stream->buf, _IOFBF, 0x4000);
+            setvbuf(stream->fp, NULL, _IOFBF, 0x4000);
     }
 
     retro_vfs_file_seek_internal(stream, 0, SEEK_SET);

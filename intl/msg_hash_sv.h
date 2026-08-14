@@ -1836,7 +1836,6 @@ static const struct
    char s_c7bc8298[33];
    char s_e63b035a[19];
    char s_d21d875b[14];
-   char s_ae86fed0[28];
    char s_b12ae22e[20];
    char s_b2d073c7[18];
    char s_1cbc2657[16];
@@ -3110,14 +3109,10 @@ static const struct
    char s_69c0e487[53];
    char s_706ff4dc[205];
    char s_a0d1a85c[63];
-   char s_b5966528[30];
    char s_907ef7cc[36];
    char s_b0a46506[54];
    char s_04624c88[45];
-   char s_91976dbe[44];
    char s_f6492edc[37];
-   char s_9bb85635[34];
-   char s_22a05685[30];
 #endif
    char s_f3bfa8b9[81];
    char s_5fe2cee5[62];
@@ -5935,7 +5930,6 @@ static const struct
    "N\303\244tverksinst\303\244llningar f\303\266r SMB",
    "SMB-utdelningsnamn",
    "SMB-utdelning",
-   "SMB-underkatalog (valfritt)",
    "Tidsgr\303\244ns f\303\266r SMB",
    "SMB-anv\303\244ndarnamn",
    "SMB-arbetsgrupp",
@@ -7726,14 +7720,10 @@ static const struct
    "\303\266ver Wi-Fi f\303\266r en mer tillf\303\266rlitlig anslutning. Observera: \303\244ndring a"
    "v dessa inst\303\244llningar kr\303\244ver en omstart av RetroArch.",
    "V\303\244lj maximala antalet anslutningar som anv\303\244nds i din milj\303\266.",
-   "L\303\266senord f\303\266r autentisering.",
    "Serverns IP-adress eller v\303\244rdnamn.",
    "Konfigurera inst\303\244llningar f\303\266r SMB-n\303\244tverksdelning.",
    "Namn p\303\245 n\303\244tverksutdelningen att komma \303\245t.",
-   "S\303\266kv\303\244g till underkatalog p\303\245 utdelningen.",
    "V\303\244lj standardtidsgr\303\244ns i sekunder.",
-   "Anv\303\244ndarnamn f\303\266r autentisering.",
-   "Arbetsgrupp eller dom\303\244nnamn.",
 #endif
    "Sortera sparade filer i mappar med namn efter katalogen som inneh\303\245llet finns i.",
    "Sortera sparade filer i mappar med namn efter anv\303\244nd k\303\244rna.",
@@ -8795,7 +8785,6 @@ typedef char msg_hash_sv_blob_check[
        + 33u
        + 19u
        + 14u
-       + 28u
        + 20u
        + 18u
        + 16u
@@ -8972,14 +8961,10 @@ typedef char msg_hash_sv_blob_check[
        + 53u
        + 205u
        + 63u
-       + 30u
        + 36u
        + 54u
        + 45u
-       + 44u
        + 37u
-       + 34u
-       + 30u
 #endif
 #ifdef HAVE_LAKKA
        + 55u
@@ -10882,7 +10867,6 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
@@ -12156,14 +12140,10 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,

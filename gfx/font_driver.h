@@ -63,7 +63,9 @@ typedef struct font_renderer_driver
     * within a collection. Renderers do no file I/O and are not given a
     * path: a NULL font_data means nothing usable was found and the
     * renderer should fall back to whatever internal or system source
-    * it has. On success the renderer takes ownership of font_data. */
+    * it has. On success a renderer with borrows_font_data set only
+    * reads font_data and never frees it; one without takes
+    * ownership, as the field below explains. */
    void *(*init)(uint8_t *font_data, size_t font_data_len,
          unsigned face_index,
          float font_size, enum font_atlas_format fmt);
@@ -92,6 +94,19 @@ typedef struct font_renderer_driver
    const char *ident;
 
    void (*get_line_metrics)(void* data, struct font_line_metrics **metrics);
+
+   /* True when the renderer only reads the bytes it is handed and
+    * never frees them.  font_renderer_create_default() can then give
+    * the same buffer to every font built from one path and free it
+    * once the last of them is gone - which is what turns nine reads
+    * of a menu face into one.
+    *
+    * False means the renderer takes the bytes and disposes of them on
+    * a schedule of its own, so it gets a private copy.  coretext is
+    * the case: it hands the buffer to CGDataProviderCreateWithData
+    * and CoreGraphics calls the release callback when it is finished,
+    * which is not necessarily when the font is freed. */
+   bool borrows_font_data;
 } font_renderer_driver_t;
 
 typedef struct font_data

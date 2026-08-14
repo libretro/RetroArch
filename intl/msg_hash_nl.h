@@ -1856,7 +1856,6 @@ static const struct
    char s_c7bc8298[24];
    char s_e63b035a[15];
    char s_d21d875b[10];
-   char s_ae86fed0[23];
    char s_b12ae22e[13];
    char s_b2d073c7[19];
    char s_1cbc2657[14];
@@ -3205,14 +3204,10 @@ static const struct
    char s_69c0e487[55];
    char s_706ff4dc[202];
    char s_a0d1a85c[78];
-   char s_b5966528[29];
    char s_907ef7cc[29];
    char s_b0a46506[52];
    char s_04624c88[64];
-   char s_91976dbe[29];
    char s_f6492edc[41];
-   char s_9bb85635[35];
-   char s_22a05685[25];
 #endif
    char s_f3bfa8b9[90];
    char s_5fe2cee5[76];
@@ -6002,7 +5997,6 @@ static const struct
    "SMB netwerkinstellingen",
    "SMB share naam",
    "SMB share",
-   "SMB submap (optioneel)",
    "SMB time-out",
    "SMB gebruikersnaam",
    "SMB werkgroep",
@@ -7700,14 +7694,10 @@ static const struct
    "etrouwbaardere verbinding. Let op: het wijzigen van deze instellingen vereist een herstart van R"
    "etroArch.",
    "Selecteer het maximale aantal verbindingen dat in he omgeving wordt gebruikt.",
-   "Wachtwoord voor verificatie.",
    "Server IP-adres of hostnaam.",
    "Configureer de instellingen voor SMB-netwerkshares.",
    "Naam van de netwerkshare waartoe toegang moet worden verkregen.",
-   "Pad naar submap op de share.",
    "Selecteer standaard timeout in seconden.",
-   "Gebruikersnaam voor authenticatie.",
-   "Werkgroep of domeinnaam.",
 #endif
    "Sorteer de slaag-bestanden in folders vernoemd naar de map waarin de inhoud zich bevindt.",
    "Sorteer opslagbestanden in mappen die zijn vernoemd naar de gebruikte core.",
@@ -8730,7 +8720,6 @@ typedef char msg_hash_nl_blob_check[
        + 24u
        + 15u
        + 10u
-       + 23u
        + 13u
        + 19u
        + 14u
@@ -8919,13 +8908,9 @@ typedef char msg_hash_nl_blob_check[
        + 202u
        + 78u
        + 29u
-       + 29u
        + 52u
        + 64u
-       + 29u
        + 41u
-       + 35u
-       + 25u
 #endif
 #ifdef HAVE_LAKKA
        + 46u
@@ -10850,7 +10835,6 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
@@ -12199,14 +12183,10 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,

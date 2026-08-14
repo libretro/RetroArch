@@ -472,7 +472,7 @@ int64_t retro_vfs_file_read_smb(libretro_vfs_implementation_file *stream,
    struct smb2_context *ctx;
    struct smb2fh *fh;
 
-   if (!smb_initialized || !stream || !s || stream->smb_fh < 0)
+   if (!smb_initialized || !stream || !s || !stream->smb_fh)
       return -1;
 
    if (len == 0)
@@ -519,7 +519,7 @@ int64_t retro_vfs_file_write_smb(libretro_vfs_implementation_file *stream,
    struct smb2_context *ctx;
    struct smb2fh *fh;
 
-   if (!smb_initialized || !stream || !s || stream->smb_fh < 0)
+   if (!smb_initialized || !stream || !s || !stream->smb_fh)
       return -1;
 
    if (len == 0)
@@ -622,7 +622,7 @@ int retro_vfs_file_close_smb(libretro_vfs_implementation_file *stream)
    if (!smb_initialized)
       return -1;
 
-   if (!stream || stream->smb_fh < 0)
+   if (!stream || !stream->smb_fh)
       return -1;
 
    ctx = (struct smb2_context *)(void *)(uintptr_t)stream->smb_ctx;

@@ -1962,7 +1962,7 @@ static const struct
    char s_c7bc8298[22];
    char s_e63b035a[22];
    char s_d21d875b[14];
-   char s_ae86fed0[26];
+   char s_ae86fed0[15];
    char s_b12ae22e[17];
    char s_b2d073c7[24];
    char s_1cbc2657[17];
@@ -2203,6 +2203,7 @@ static const struct
    char s_59f183c8[25];
    char s_59f183c9[22];
    char s_6b395e21[15];
+   char s_00ab7f5e[35];
    char s_71747541[13];
    char s_b45e4c28[23];
    char s_e92f8e07[36];
@@ -3388,14 +3389,14 @@ static const struct
    char s_69c0e487[52];
    char s_706ff4dc[196];
    char s_a0d1a85c[65];
-   char s_b5966528[40];
+   char s_b5966528[252];
    char s_907ef7cc[45];
    char s_b0a46506[44];
    char s_04624c88[55];
-   char s_91976dbe[37];
+   char s_91976dbe[47];
    char s_f6492edc[54];
-   char s_9bb85635[47];
-   char s_22a05685[32];
+   char s_9bb85635[266];
+   char s_22a05685[61];
 #endif
    char s_f3bfa8b9[107];
    char s_5fe2cee5[91];
@@ -3510,6 +3511,7 @@ static const struct
    char s_0d96ed73[41];
    char s_9f0fd076[148];
    char s_9f0fd077[145];
+   char s_c315b54c[464];
    char s_7a2050af[50];
    char s_d2859556[53];
    char s_ef13be35[57];
@@ -6486,7 +6488,7 @@ static const struct
    "Socruithe L\303\255onra SMB",
    "Ainm an Comhroinn SMB",
    "Comhroinn SMB",
-   "Fo-eolaire SMB (roghnach)",
+   "Fo-eolaire SMB",
    "Am Teorann\303\272 SMB",
    "Ainm an \303\232s\303\241ideora SMB",
    "Gr\303\272pa Oibre SMB",
@@ -6734,6 +6736,7 @@ static const struct
    "Leithead L\303\241nsc\303\241ile\303\241in",
    "Airde L\303\241nsc\303\241ile\303\241in",
    "F\303\255se\303\241n G\303\241ma",
+   "Taca\303\255ocht Dh\303\255reach SPIR-V (Leid)",
    "Inn\303\251acs GPU",
    "\303\232s\303\241id Taifeadadh GPU",
    "Sc\303\241ile\303\241n sc\303\241ile\303\241in: \303\232s\303\241id GPU",
@@ -8738,14 +8741,20 @@ static const struct
    "e haghaidh nasc n\303\255os iontaofa. Tabhair faoi deara: n\303\255 m\303\263r RetroArch a atos"
    "\303\272 chun na socruithe seo a athr\303\272.",
    "Roghnaigh an l\303\255on uasta naisc a \303\272s\303\241idtear i do thimpeallacht.",
-   "Pasfhocal le haghaidh f\303\255ordheimhnithe.",
+   "Pasfhocal le haghaidh f\303\255ordheimhnithe. T\303\241 s\303\251 seo roghnach nuair a bh\303"
+   "\255onn rochtain aoi cumasaithe ar an bhfreastala\303\255. Windows 10 agus n\303\255os airde: t"
+   "\303\241 rochtain aoi d\303\255chumasaithe de r\303\251ir r\303\251amhshocraithe, mar sin t\303"
+   "\241 pasfhocal ag teast\303\241il anseo.",
    "Seoladh IP n\303\263 ainm \303\263stach an fhreastala\303\255.",
    "Cumraigh socruithe comhroinnte l\303\255onra SMB.",
    "Ainm an chomhroinnte l\303\255onra le rochtain a fh\303\241il air.",
-   "Cos\303\241n fo-eolaire ar an gcomhroinnt.",
+   "Cos\303\241n fo-eolaire ar an gcomhroinnt. Roghnach.",
    "Roghnaigh an t-am scoir r\303\251amhshocraithe i soicind\303\255.",
-   "Ainm \303\272s\303\241ideora le haghaidh f\303\255ordheimhnithe.",
-   "Ainm gr\303\272pa oibre n\303\263 fearainn.",
+   "Ainm \303\272s\303\241ideora le haghaidh f\303\255ordheimhnithe. T\303\241 s\303\251 seo roghnac"
+   "h nuair a bh\303\255onn rochtain aoi cumasaithe ar an bhfreastala\303\255. Windows 10 agus n\303"
+   "\255os airde: t\303\241 rochtain aoi d\303\255chumasaithe de r\303\251ir r\303\251amhshocraithe,"
+   " mar sin t\303\241 ainm \303\272s\303\241ideora ag teast\303\241il anseo.",
+   "Ainm gr\303\272pa oibre n\303\263 fearainn. Roghnach i roinnt socruithe.",
 #endif
    "S\303\263rt\303\241il comhaid sh\303\241bh\303\241ilte i bhfillte\303\241in ainmnithe i ndiaidh "
    "an eolaire ina bhfuil an t-\303\241bhar suite.",
@@ -8947,6 +8956,14 @@ static const struct
    "Socraigh an m\303\251id airde saincheaptha don mhodh l\303\241nsc\303\241ile\303\241in neamhfhui"
    "nneogach. M\303\241 fh\303\241gtar gan \303\251 socraithe, \303\272s\303\241idfear taifeach an d"
    "eisce.",
+   "Tabhair sc\303\241thl\303\241in chuig an tiom\303\241na\303\255 grafaic\303\255 mar SPIR-V in io"
+   "nad iad a thras-thioms\303\272 chuig GLSL ar dt\303\272s, rud a fh\303\251adann amanna l\303\263"
+   "d\303\241la r\303\251amhshocraithe sc\303\241thl\303\241in a ghiorr\303\272. N\303\255l anseo ac"
+   "h leid: teasta\303\255onn an s\303\255neadh tiom\303\241na\303\255 'GL_ARB_gl_spirv' uaidh, agus"
+   " aon sc\303\241thl\303\241n n\303\263 tiom\303\241na\303\255 nach f\303\251idir leo \303\251 a "
+   "\303\272s\303\241id go ci\303\272in, titeann s\303\251 ar ais chuig tras-thioms\303\272. Tagann "
+   "s\303\251 i bhfeidhm an ch\303\251ad uair eile a l\303\263d\303\241lfar r\303\251amhshocr\303"
+   "\272 sc\303\241thl\303\241in.",
    "Roghnaigh c\303\251n c\303\241rta grafaic\303\255 at\303\241 le h\303\272s\303\241id.",
    "Taifead aschur \303\241bhair sc\303\241thaithe GPU m\303\241s f\303\251idir.",
    "Gabhann sc\303\241ile\303\241in \303\241bhar sc\303\241thaithe GPU m\303\241s f\303\251idir.",
@@ -9849,7 +9866,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (203625u
+      (sizeof(msg_hash_ga_blob) == (204124u
 #ifdef ANDROID
        + 390u
 #endif
@@ -9984,7 +10001,7 @@ typedef char msg_hash_ga_blob_check[
        + 22u
        + 22u
        + 14u
-       + 26u
+       + 15u
        + 17u
        + 24u
        + 17u
@@ -10174,14 +10191,14 @@ typedef char msg_hash_ga_blob_check[
        + 52u
        + 196u
        + 65u
-       + 40u
+       + 252u
        + 45u
        + 44u
        + 55u
-       + 37u
-       + 54u
        + 47u
-       + 32u
+       + 54u
+       + 266u
+       + 61u
 #endif
 #ifdef HAVE_LAKKA
        + 75u
@@ -12449,6 +12466,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GL_DIRECT_SPIRV,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -13754,6 +13772,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GL_DIRECT_SPIRV,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,

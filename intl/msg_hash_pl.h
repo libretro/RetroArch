@@ -1946,7 +1946,6 @@ static const struct
    char s_c7bc8298[21];
    char s_e63b035a[17];
    char s_d21d875b[11];
-   char s_ae86fed0[28];
    char s_b12ae22e[16];
    char s_b2d073c7[23];
    char s_1cbc2657[18];
@@ -3365,14 +3364,10 @@ static const struct
    char s_69c0e487[50];
    char s_706ff4dc[216];
    char s_a0d1a85c[72];
-   char s_b5966528[28];
    char s_907ef7cc[34];
    char s_b0a46506[45];
    char s_04624c88[54];
-   char s_91976dbe[34];
    char s_f6492edc[43];
-   char s_9bb85635[40];
-   char s_22a05685[33];
 #endif
    char s_f3bfa8b9[93];
    char s_5fe2cee5[78];
@@ -6371,7 +6366,6 @@ static const struct
    "Ustawienia sieci SMB",
    "Nazwa zasobu SMB",
    "Zas\303\263b SMB",
-   "Podkatalog SMB (opcjonalny)",
    "Limit czasu SMB",
    "Nazwa u\305\274ytkownika SMB",
    "Grupa robocza SMB",
@@ -8427,14 +8421,10 @@ static const struct
    "a: zmiana tych ustawie\305\204 wymaga ponownego uruchomienia RetroArch.",
    "Wybierz maksymaln\304\205 liczb\304\231 po\305\202\304\205cze\305\204 u\305\274ywanych w twoim "
    "\305\233rodowisku.",
-   "Has\305\202o do uwierzytelniania.",
    "Adres IP serwera lub nazwa hosta.",
    "Konfiguruj ustawienia sieciowego zasobu SMB.",
    "Nazwa zasobu sieciowego do kt\303\263rego uzyska\304\207 dost\304\231p.",
-   "\305\232cie\305\274ka podkatalogu na zasobie.",
    "Wybierz domy\305\233lny limit czasu w sekundach.",
-   "Nazwa u\305\274ytkownika do uwierzytelniania.",
-   "Nazwa grupy roboczej lub domeny.",
 #endif
    "Sortuj pliki zapisu do folder\303\263w nazwanych po katalogu, w kt\303\263rym znajduje si\304"
    "\231 zawarto\305\233\304\207.",
@@ -9624,7 +9614,6 @@ typedef char msg_hash_pl_blob_check[
        + 21u
        + 17u
        + 11u
-       + 28u
        + 16u
        + 23u
        + 18u
@@ -9817,14 +9806,10 @@ typedef char msg_hash_pl_blob_check[
        + 50u
        + 216u
        + 72u
-       + 28u
        + 34u
        + 45u
        + 54u
-       + 34u
        + 43u
-       + 40u
-       + 33u
 #endif
 #ifdef HAVE_LAKKA
        + 57u
@@ -11836,7 +11821,6 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
@@ -13253,14 +13237,10 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,

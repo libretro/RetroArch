@@ -61,7 +61,7 @@
 #include <libchdr/lzma.h>
 #endif
 
-#ifdef HAVE_ZSTD
+#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
 #include <libchdr/libchdr_zstd.h>
 #endif
 
@@ -237,7 +237,7 @@ struct _chd_file
 	flac_codec_data			flac_codec_data;		/* flac codec data */
 	cdfl_codec_data			cdfl_codec_data;		/* cdfl codec data */
 #endif
-#ifdef HAVE_ZSTD
+#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
 	zstd_codec_data			zstd_codec_data;		/* zstd codec data */
 	cdzs_codec_data			cdzs_codec_data;		/* cdzs codec data */
 #endif
@@ -500,7 +500,7 @@ static const codec_interface codec_interfaces[] =
 		NULL
 	},
 #endif
-#ifdef HAVE_ZSTD
+#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
 	/* V5 zstd compression */
 	{
 		CHD_CODEC_ZSTD,
@@ -1140,7 +1140,7 @@ CHD_EXPORT chd_error chd_open_core_file(core_file *file, int mode, chd_file *par
 						break;
 
 					case CHD_CODEC_ZSTD:
-#ifdef HAVE_ZSTD
+#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
 						codec = &newchd->zstd_codec_data;
 #endif
 						break;
@@ -1164,7 +1164,7 @@ CHD_EXPORT chd_error chd_open_core_file(core_file *file, int mode, chd_file *par
 						break;
 
 					case CHD_CODEC_CD_ZSTD:
-#ifdef HAVE_ZSTD
+#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
 						codec = &newchd->cdzs_codec_data;
 #endif
 						break;
@@ -1319,7 +1319,7 @@ CHD_EXPORT void chd_close(chd_file *chd)
 					break;
 
 				case CHD_CODEC_ZSTD:
-#ifdef HAVE_ZSTD
+#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
 					codec = &chd->zstd_codec_data;
 #endif
 					break;
@@ -1343,7 +1343,7 @@ CHD_EXPORT void chd_close(chd_file *chd)
 					break;
 
 				case CHD_CODEC_CD_ZSTD:
-#ifdef HAVE_ZSTD
+#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
 					codec = &chd->cdzs_codec_data;
 #endif
 					break;
@@ -2110,7 +2110,7 @@ static chd_error hunk_read_into_memory(chd_file *chd, uint32_t hunknum, uint8_t 
 						break;
 
 					case CHD_CODEC_ZSTD:
-#ifdef HAVE_ZSTD
+#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
 						codec = &chd->zstd_codec_data;
 #endif
 						break;
@@ -2134,7 +2134,7 @@ static chd_error hunk_read_into_memory(chd_file *chd, uint32_t hunknum, uint8_t 
 						break;
 
 					case CHD_CODEC_CD_ZSTD:
-#ifdef HAVE_ZSTD
+#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
 						codec = &chd->cdzs_codec_data;
 #endif
 						break;

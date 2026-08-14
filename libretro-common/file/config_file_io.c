@@ -181,26 +181,24 @@ bool config_file_write(config_file_t *conf, const char *path, bool sort)
           * here, which is the path a gamepad being plugged in takes.
           * -fstack-usage put the frame at 16432 bytes.
           *
-          * C89 has no way to ask setvbuf for a buffer of a given size
-          * without supplying one, so it is allocated here and freed
-          * after fclose - the buffer has to outlive every write
-          * through the stream.  If the allocation fails the C library
-          * default is used, exactly as in
-          * retro_vfs_file_open_impl(): a platform under real memory
-          * pressure gets slower writes rather than no config. */
-         char *buf  = (char*)malloc(0x4000);
+          * The buffer is the C library's, asked for by passing NULL
+          * with a size: it then allocates, owns and releases it with
+          * the stream, so there is nothing here to keep alive across
+          * the writes or to free afterwards.  A library that declines
+          * leaves the stream on its own default, which is slower for
+          * small writes rather than fatal - the same outcome the
+          * allocation failing used to have.  retro_vfs_file_open_impl()
+          * asks the same way, and for a stronger reason there: on
+          * Apple, a buffer supplied from outside clears __SMBF and
+          * disqualifies fread()'s large-read fast path for the life of
+          * the stream. */
          FILE *file = (FILE*)fopen_utf8(path, "wb");
          if (!file)
-         {
-            free(buf);
             return false;
-         }
-         if (buf)
-            setvbuf(file, buf, _IOFBF, 0x4000);
+         setvbuf(file, NULL, _IOFBF, 0x4000);
          config_file_dump(conf, file, sort);
          if (file != stdout)
             fclose(file);
-         free(buf);
          conf->flags &= ~CONF_FILE_FLG_MODIFIED;
       }
    }
