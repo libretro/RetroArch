@@ -75,6 +75,14 @@ typedef struct sdl3_input
       float x;
       float y;
    } touches[SDL3_MAX_TOUCH];
+
+   /* Host device sensors, opened on demand by sdl3_set_sensor_state.
+    * Gamepad gyro/accel are handled by the SDL3 joypad driver. */
+   SDL_Sensor *accel;
+   SDL_Sensor *gyro;
+   float accel_data[3];
+   float gyro_data[3];
+   bool sensors_init;
 } sdl3_input_t;
 
 /* Rebuilt on SDL_EVENT_KEYMAP_CHANGED (e.g. system layout switch). */
@@ -445,20 +453,88 @@ static void sdl3_input_free(void *data)
    SDL_FlushEvents(SDL_EVENT_FINGER_DOWN,      SDL_EVENT_FINGER_CANCELED);
    SDL_FlushEvents(SDL_EVENT_PEN_PROXIMITY_IN, SDL_EVENT_PEN_AXIS);
 
+   if (sdl->accel)
+      SDL_CloseSensor(sdl->accel);
+   if (sdl->gyro)
+      SDL_CloseSensor(sdl->gyro);
+   if (sdl->sensors_init)
+      SDL_QuitSubSystem(SDL_INIT_SENSOR);
+
    SDL_QuitSubSystem(SDL_INIT_EVENTS);
    free(sdl);
 }
 
+/* Opens the first host sensor of the given type, if any. */
+static SDL_Sensor *sdl3_open_sensor(SDL_SensorType type)
+{
+   int i;
+   int num_sensors        = 0;
+   SDL_Sensor *sensor     = NULL;
+   SDL_SensorID *sensors  = SDL_GetSensors(&num_sensors);
+
+   if (!sensors)
+      return NULL;
+
+   for (i = 0; i < num_sensors; i++)
+   {
+      if (SDL_GetSensorTypeForID(sensors[i]) == type)
+      {
+         sensor = SDL_OpenSensor(sensors[i]);
+         break;
+      }
+   }
+
+   SDL_free(sensors);
+   return sensor;
+}
+
+/* Enables the host device's own accelerometer/gyroscope. The requested
+ * rate is ignored - SDL3 offers no sensor rate control. */
 static bool sdl3_set_sensor_state(void *data, unsigned port,
       enum retro_sensor_action action, unsigned rate)
 {
-   /* Sensors are not exposed through the SDL3 keyboard/mouse driver.
-    * Gamepad gyro/accel are handled by the SDL3 joypad driver. */
+   sdl3_input_t *sdl = (sdl3_input_t*)data;
+
    switch (action)
    {
-      case RETRO_SENSOR_ILLUMINANCE_DISABLE:
-      case RETRO_SENSOR_GYROSCOPE_DISABLE:
+      case RETRO_SENSOR_ACCELEROMETER_ENABLE:
+      case RETRO_SENSOR_GYROSCOPE_ENABLE:
+         {
+            bool accel          = action == RETRO_SENSOR_ACCELEROMETER_ENABLE;
+            SDL_Sensor **sensor = accel ? &sdl->accel : &sdl->gyro;
+
+            if (*sensor)
+               return true;
+
+            /* Deferred so launches that never touch sensors don't pay
+             * for sensor enumeration. */
+            if (!sdl->sensors_init)
+            {
+               if (!SDL_InitSubSystem(SDL_INIT_SENSOR))
+                  return false;
+               sdl->sensors_init = true;
+            }
+
+            return (*sensor = sdl3_open_sensor(
+                  accel ? SDL_SENSOR_ACCEL : SDL_SENSOR_GYRO)) != NULL;
+         }
       case RETRO_SENSOR_ACCELEROMETER_DISABLE:
+         if (sdl->accel)
+         {
+            SDL_CloseSensor(sdl->accel);
+            sdl->accel = NULL;
+            memset(sdl->accel_data, 0, sizeof(sdl->accel_data));
+         }
+         return true;
+      case RETRO_SENSOR_GYROSCOPE_DISABLE:
+         if (sdl->gyro)
+         {
+            SDL_CloseSensor(sdl->gyro);
+            sdl->gyro = NULL;
+            memset(sdl->gyro_data, 0, sizeof(sdl->gyro_data));
+         }
+         return true;
+      case RETRO_SENSOR_ILLUMINANCE_DISABLE:
          /* Disabling an unsupported sensor shouldn't fail. */
          return true;
       default:
@@ -466,6 +542,35 @@ static bool sdl3_set_sensor_state(void *data, unsigned port,
    }
 
    return false;
+}
+
+static float sdl3_get_sensor_input(void *data, unsigned port, unsigned id)
+{
+   sdl3_input_t *sdl = (sdl3_input_t*)data;
+
+   /* The host device's sensors only ever map to port 0. */
+   if (port != 0)
+      return 0.0f;
+
+   switch (id)
+   {
+      /* SDL reports acceleration in m/s^2; libretro expects g. */
+      case RETRO_SENSOR_ACCELEROMETER_X:
+         return sdl->accel_data[0] / SDL_STANDARD_GRAVITY;
+      case RETRO_SENSOR_ACCELEROMETER_Y:
+         return sdl->accel_data[1] / SDL_STANDARD_GRAVITY;
+      case RETRO_SENSOR_ACCELEROMETER_Z:
+         return sdl->accel_data[2] / SDL_STANDARD_GRAVITY;
+      /* Both sides use radians per second. */
+      case RETRO_SENSOR_GYROSCOPE_X:
+         return sdl->gyro_data[0];
+      case RETRO_SENSOR_GYROSCOPE_Y:
+         return sdl->gyro_data[1];
+      case RETRO_SENSOR_GYROSCOPE_Z:
+         return sdl->gyro_data[2];
+   }
+
+   return 0.0f;
 }
 
 /* Gets the SDL_Window, if it exists. */
@@ -676,6 +781,17 @@ static void sdl3_input_poll(void *data)
    sdl3_poll_mouse(sdl);
    sdl3_poll_touch(sdl);
 
+   if (sdl->accel || sdl->gyro)
+   {
+      /* The event pump only refreshes sensor state alongside window
+       * events; SDL_UpdateSensors works without a focused window. */
+      SDL_UpdateSensors();
+      if (sdl->accel)
+         SDL_GetSensorData(sdl->accel, sdl->accel_data, 3);
+      if (sdl->gyro)
+         SDL_GetSensorData(sdl->gyro, sdl->gyro_data, 3);
+   }
+
    sdl->mouse_wu = false;
    sdl->mouse_wd = false;
    sdl->mouse_wl = false;
@@ -739,9 +855,12 @@ static void sdl3_input_poll(void *data)
     * all. Both fire at device rate for as long as there's contact, so
     * left in the queue they grow until SDL's queue fills and starts
     * refusing pushes - at which point the events that do matter (quit,
-    * keys) get dropped along with them. */
+    * keys) get dropped along with them. Sensor updates likewise arrive
+    * at device rate and are read by polling above. */
    SDL_FlushEvents(SDL_EVENT_FINGER_DOWN,      SDL_EVENT_FINGER_CANCELED);
    SDL_FlushEvents(SDL_EVENT_PEN_PROXIMITY_IN, SDL_EVENT_PEN_AXIS);
+   if (sdl->sensors_init)
+      SDL_FlushEvent(SDL_EVENT_SENSOR_UPDATE);
 }
 
 static void sdl3_grab_mouse(void *data, bool state)
@@ -773,7 +892,7 @@ input_driver_t input_sdl3 = {
    sdl3_input_state,
    sdl3_input_free,
    sdl3_set_sensor_state,
-   NULL,                   /* get_sensor_input */
+   sdl3_get_sensor_input,
    sdl3_get_capabilities,
    "sdl3",
    sdl3_grab_mouse,
