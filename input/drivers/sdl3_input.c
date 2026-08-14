@@ -89,6 +89,12 @@ typedef struct sdl3_input
    /* Position in output pixels, matching mouse_abs_*. */
    float pen_abs_x;
    float pen_abs_y;
+
+   /* The SDL_Window input is read against, refreshed once per poll
+    * (see sdl3_input_poll). Never dereferenced across frames, so a
+    * window destroyed on a driver switch can't dangle past the next
+    * refresh. */
+   SDL_Window *window;
 } sdl3_input_t;
 
 /* Rebuilt on SDL_EVENT_KEYMAP_CHANGED (e.g. system layout switch). */
@@ -524,16 +530,11 @@ static SDL_Window *sdl3_input_window(void)
 /* SDL reports mouse and pen coordinates in window coordinates
  * (points), while the video driver's viewport metrics are in
  * output pixels. */
-static float sdl3_window_pixel_density(void)
+static float sdl3_window_pixel_density(sdl3_input_t *sdl)
 {
-   SDL_Window *win;
-
-   if (!(win = sdl3_input_window()))
-      win = SDL_GetMouseFocus();
-
-   if (win)
+   if (sdl->window)
    {
-      float density = SDL_GetWindowPixelDensity(win);
+      float density = SDL_GetWindowPixelDensity(sdl->window);
       if (density > 0.0f)
          return density;
    }
@@ -565,7 +566,7 @@ static void sdl3_poll_mouse(sdl3_input_t *sdl)
    sdl->mouse_rel_x -= (float)sdl->mouse_x;
    sdl->mouse_rel_y -= (float)sdl->mouse_y;
 
-   density = sdl3_window_pixel_density();
+   density = sdl3_window_pixel_density(sdl);
    sdl->mouse_abs_x *= density;
    sdl->mouse_abs_y *= density;
 
@@ -688,7 +689,7 @@ static void sdl3_poll_pen(sdl3_input_t *sdl)
    if (!sdl->pen_in_proximity)
       return;
 
-   density = sdl3_window_pixel_density();
+   density = sdl3_window_pixel_density(sdl);
    sdl->pen_abs_x = sdl->pen_raw_x * density;
    sdl->pen_abs_y = sdl->pen_raw_y * density;
 }
@@ -768,6 +769,11 @@ static void sdl3_input_poll(void *data)
     * never updates. */
    SDL_PumpEvents();
 
+   /* Cache the window for the frame: the mouse and pen coordinate
+    * scaling both read it. */
+   if (!(sdl->window = sdl3_input_window()))
+      sdl->window = SDL_GetMouseFocus();
+
    sdl3_poll_mouse(sdl);
    sdl3_poll_touch(sdl);
 
@@ -829,12 +835,13 @@ static void sdl3_input_poll(void *data)
          sdl3_build_scancode_lut(sdl);
    }
 
-   /* Finger events aren't consumed anywhere: sdl3_poll_touch reads
-    * finger state by polling instead of by event. They fire at device
-    * rate for as long as there's contact, so left in the queue they
-    * grow until SDL's queue fills and starts refusing pushes - at
-    * which point the events that do matter (quit, keys) get dropped
-    * along with them. */
+   /* Fingers are reported as pointer input, but from polled state
+    * (sdl3_poll_touch / SDL_GetTouchFingers) rather than from these
+    * events, so the event range itself is consumed nowhere. The
+    * events fire at device rate for as long as there's contact, so
+    * left in the queue they grow until SDL's queue fills and starts
+    * refusing pushes - at which point the events that do matter
+    * (quit, keys) get dropped along with them. */
    SDL_FlushEvents(SDL_EVENT_FINGER_DOWN, SDL_EVENT_FINGER_CANCELED);
 
    sdl3_poll_pen(sdl);
