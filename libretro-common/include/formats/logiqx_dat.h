@@ -58,19 +58,6 @@ typedef struct
    bool is_runnable;
 } logiqx_dat_game_info_t;
 
-/* Validation */
-
-/* Returns true if @path carries a file extension a
- * Logiqx XML DAT file may legitimately have (.dat or
- * .xml, case-insensitive).  A pure string check: it
- * does not touch the file system.  Callers wanting
- * full path validation (existence, size - e.g. for
- * free-memory checks against very large DAT files)
- * should combine this with path_is_valid() and
- * path_get_size() themselves; this module performs
- * no I/O of any kind. */
-bool logiqx_dat_extension_is_valid(const char *path);
-
 /* Initialisation/de-initialisation */
 
 /* Parses the specified Logiqx XML DAT document held

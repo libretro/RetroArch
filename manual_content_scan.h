@@ -322,6 +322,16 @@ bool manual_content_scan_get_task_config(
       const char *path_dir_playlist
       );
 
+/* Performs rudimentary validation of a Logiqx XML DAT
+ * file path: extension whitelist (.dat / .xml,
+ * case-insensitive), existence, size > 0, with the
+ * size optionally returned for free-memory checks.
+ * The parser itself (logiqx_dat.c) is path-agnostic
+ * and performs no validation or I/O; every consumer
+ * of a DAT path goes through this one predicate. */
+bool manual_content_scan_dat_path_is_valid(const char *path,
+      uint64_t *file_size);
+
 /* Creates a list of all valid content in the specified
  * content directory
  * > Returns NULL in the event of failure

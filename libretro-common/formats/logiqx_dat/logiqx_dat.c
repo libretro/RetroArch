@@ -20,7 +20,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include <file/file_path.h>
 #include <string/stdstring.h>
 #include <formats/rxml.h>
 
@@ -66,30 +65,6 @@ const char *logiqx_dat_html_code_list[][2] = {
 };
 
 #define LOGIQX_DAT_HTML_CODE_LIST_SIZE 5
-
-/* Validation */
-
-/* Returns true if @path carries a file extension a
- * Logiqx XML DAT file may legitimately have (.dat or
- * .xml, case-insensitive).  A pure string check -
- * no file system access.  Existence and size checks
- * are the caller's job; this module performs no I/O. */
-bool logiqx_dat_extension_is_valid(const char *path)
-{
-   const char *file_ext = NULL;
-
-   if (!path || !*path)
-      return false;
-
-   /* Check file extension */
-   file_ext = path_get_extension(path);
-
-   if (!file_ext || !*file_ext)
-      return false;
-
-   return    string_is_equal_noncase(file_ext, "dat")
-          || string_is_equal_noncase(file_ext, "xml");
-}
 
 /* Initialisation/de-initialisation */
 

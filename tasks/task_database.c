@@ -2767,18 +2767,20 @@ static bool manual_scan_begin_dat_load(retro_task_t *task,
 
    if (!manual_scan->dat_stream)
    {
-      /* Validate path and size up front - the checks the parser
-       * itself used to perform before it became I/O-free - and
-       * size the destination buffer once. */
-      int64_t _len = 0;
+      /* Validate path and size up front through the same
+       * predicate the menu applied when the path was chosen, so
+       * the task cannot drift from the menu's acceptance rules,
+       * and size the destination buffer once. */
+      uint64_t dat_file_size = 0;
+      int64_t _len           = 0;
 
-      if (   !logiqx_dat_extension_is_valid(manual_scan->task_config->dat_file_path)
-          || !path_is_valid(manual_scan->task_config->dat_file_path)
-          || (_len = path_get_size(manual_scan->task_config->dat_file_path)) <= 0
+      if (   !manual_content_scan_dat_path_is_valid(
+                manual_scan->task_config->dat_file_path, &dat_file_size)
           /* Reject any size that would not fit in size_t on this
            * platform (mirrors rxml_load_document's guard). */
-          || (uint64_t)_len >= (uint64_t)((size_t)-1))
+          || dat_file_size >= (uint64_t)((size_t)-1))
          goto error;
+      _len = (int64_t)dat_file_size;
 
       if (!(manual_scan->dat_buf = (char*)malloc((size_t)(_len + 1))))
          goto error;

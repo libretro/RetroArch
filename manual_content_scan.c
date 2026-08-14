@@ -267,18 +267,30 @@ void manual_content_scan_scrub_file_exts_custom(void)
  * to prevent obvious errors), optionally returning the
  * file size (DAT files can be very large, so callers
  * use it for free-memory checks).
- * This used to live in logiqx_dat.c as
- * logiqx_dat_path_is_valid(); the parser is now
- * I/O-free, so the extension whitelist stays with it
- * (logiqx_dat_extension_is_valid()) while the file
- * system checks live with the caller, here. */
-static bool content_scan_dat_path_is_valid(
+ * This subsumes what logiqx_dat.c used to do in
+ * logiqx_dat_path_is_valid(): the parser is fully
+ * path-agnostic now - bytes in, structs out - so both
+ * the extension whitelist and the file system checks
+ * live with the scan configuration that owns the
+ * path. */
+bool manual_content_scan_dat_path_is_valid(
       const char *path, uint64_t *file_size)
 {
+   const char *file_ext = NULL;
    int64_t file_size_int;
 
-   /* Check file extension */
-   if (!logiqx_dat_extension_is_valid(path))
+   if (!path || !*path)
+      return false;
+
+   /* Check file extension (.dat / .xml, the extensions
+    * a Logiqx XML DAT may legitimately carry) */
+   file_ext = path_get_extension(path);
+
+   if (!file_ext || !*file_ext)
+      return false;
+
+   if (   !string_is_equal_noncase(file_ext, "dat")
+       && !string_is_equal_noncase(file_ext, "xml"))
       return false;
 
    /* Ensure file exists */
@@ -311,7 +323,7 @@ enum manual_content_scan_dat_file_path_status
       uint64_t file_size;
 
       /* Check if path itself is valid */
-      if (content_scan_dat_path_is_valid(scan_dat_file_path, &file_size))
+      if (manual_content_scan_dat_path_is_valid(scan_dat_file_path, &file_size))
       {
          uint64_t free_memory = mem_stats_free();
          dat_file_path_status = MANUAL_CONTENT_SCAN_DAT_FILE_OK;
@@ -1560,7 +1572,7 @@ bool manual_content_scan_get_task_config(
        || scan_settings.db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE)
        && *scan_dat_file_path)
    {
-      if (!content_scan_dat_path_is_valid(scan_dat_file_path, NULL))
+      if (!manual_content_scan_dat_path_is_valid(scan_dat_file_path, NULL))
          return false;
       strlcpy(
             task_config->dat_file_path,
