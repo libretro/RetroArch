@@ -226,6 +226,15 @@ database_info_handle_t *database_info_dir_init(const char *dir,
       bool show_hidden_files, bool recursive, bool include_archive, 
       struct string_list **content_list);
 
+/* As database_info_dir_init(), but over a content list the caller has
+ * already built (e.g. incrementally via dir_list_iter_step() so the
+ * walk could be spread across task gathers).  Applies the same
+ * cue/gdi-prioritising sort the directory variant applies and borrows
+ * @list without taking ownership.  Returns NULL only on allocation
+ * failure. */
+database_info_handle_t *database_info_dir_init_from_list(
+      enum database_type type, struct string_list *list);
+
 database_info_handle_t *database_info_file_init(const char *path,
       enum database_type type, retro_task_t *task, struct string_list **content_list);
 
