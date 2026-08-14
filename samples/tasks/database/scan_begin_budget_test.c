@@ -54,6 +54,27 @@
 #define CONTENT_DIRS  50
 #define CONTENT_FILES 5000
 
+/* Per-gather cost for the pacing lane is measured in thread CPU
+ * time, not wall time.  The property under test is how much work the
+ * scanner chooses to do in one gather; on a shared CI runner a cheap
+ * gather can be preempted mid-flight and charged tens of wall-clock
+ * milliseconds it never spent, which fails the lane spuriously,
+ * while the regression the lane exists for - the pre-split tree
+ * doing the whole walk+load+flush in one invocation - burns its
+ * >160 ms as CPU and is caught either way.  Wall time remains the
+ * clock for the total/throughput and first-feedback lanes, where
+ * elapsed time is the property. */
+static retro_time_t thread_cpu_usec(void)
+{
+#if defined(CLOCK_THREAD_CPUTIME_ID)
+   struct timespec ts;
+   if (clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts) == 0)
+      return (retro_time_t)ts.tv_sec * 1000000
+           + (retro_time_t)(ts.tv_nsec / 1000);
+#endif
+   return cpu_features_get_time_usec();
+}
+
 /* Slack multiplier over the shared window for the pacing assertion.
  * The window bounds the work the scanner *chooses* to start in a
  * gather; a single readdir()/stat() that straddles the deadline, plus
@@ -335,9 +356,9 @@ static bool run_scan(const char *content_dir, const char *dat_path,
          }
       }
 
-      g0 = cpu_features_get_time_usec();
+      g0 = thread_cpu_usec();
       task_queue_check();
-      g1 = cpu_features_get_time_usec();
+      g1 = thread_cpu_usec();
 
       m->gathers++;
       if (g1 - g0 > m->max_gather_usec)
@@ -590,7 +611,7 @@ int main(int argc, char *argv[])
       goto out_queue;
 
    fprintf(stderr,
-         "[metrics] files=%u total=%.1fms max_gather=%.2fms "
+         "[metrics] files=%u total=%.1fms max_gather_cpu=%.2fms "
          "first_feedback=%.2fms gathers=%u walk_ref=%.1fms dat_ref=%.1fms\n",
          (unsigned)CONTENT_FILES,
          m.total_usec      / 1000.0,
@@ -614,7 +635,7 @@ int main(int argc, char *argv[])
       if (m.max_gather_usec > limit)
       {
          fprintf(stderr,
-               "FAIL pacing: max gather %.2fms exceeds %.2fms budget\n",
+               "FAIL pacing: max gather %.2fms CPU exceeds %.2fms budget\n",
                m.max_gather_usec / 1000.0, limit / 1000.0);
          goto out_queue;
       }
