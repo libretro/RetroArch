@@ -19,7 +19,7 @@ jobs:
   samples-gfx:
     name: Build and run samples/gfx
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
 
     steps:
       - name: Install dependencies
@@ -544,19 +544,27 @@ jobs:
           # moov outgrows the head - because layout is what every one
           # of these faults turned on.  The multi-gigabyte ones are
           # sparse: two 7.28 GB files cost ~400 KB of disk.
+          #
+          # Frame counts are set from measurement, not taste.  At 300
+          # ASan / 200 TSan frames this step took ~5.6 min on one
+          # core, against a job budget shared with a dozen others;
+          # 120 / 60 brings it to ~1.5 min and still crosses every
+          # window boundary the assertions rest on (the feeder moves
+          # at AUDIO_BYTES_PER_TICK, not per frame).  The job timeout
+          # goes to 20 min to leave headroom for the slowest runner.
           sudo apt-get install -y ffmpeg
           make clean all SANITIZER=address,undefined
           make fixtures
           test -x gfx_thumbnail_preview_test
           ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 \
           UBSAN_OPTIONS=print_stacktrace=1 \
-          AUDIO_BYTES_PER_TICK=65536 FRAMES=300 timeout 300 \
+          AUDIO_BYTES_PER_TICK=65536 FRAMES=120 timeout 300 \
              ./gfx_thumbnail_preview_test fixtures/*.mp4
           echo "[pass] gfx_thumbnail_preview_test (ASan)"
           # clean keeps fixtures/ by design; regenerate anyway so the
           # step cannot silently run against an empty glob.
           make clean all SANITIZER=thread
           make fixtures
-          TSAN_OPTIONS=halt_on_error=1 FRAMES=200 timeout 300 \
+          TSAN_OPTIONS=halt_on_error=1 FRAMES=60 timeout 300 \
              ./gfx_thumbnail_preview_test fixtures/*.mp4
           echo "[pass] gfx_thumbnail_preview_test (TSan)"
