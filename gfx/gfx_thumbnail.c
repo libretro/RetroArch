@@ -1363,7 +1363,18 @@ static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
             if (!data_transfer_window_extend(dt, avail))
                break;
          }
-         if (stream && jumps)
+         /* Not gated on 'jumps' any more.  The prime was only run
+          * when the open had to jump for a trailing moov, but a
+          * LEADING moov small enough to sit inside the resident head
+          * opens with no jump at all - and if that file's media
+          * begins far past the head, avail stays at the head, the
+          * first sample is unreachable, and the animation is
+          * installed and then torn down without ever decoding a
+          * frame.  What decides whether the prime is needed is where
+          * the media starts, not how the open got there; rebase
+          * declines when the frontier already covers the floor, so
+          * the ordinary case is unaffected. */
+         if (stream)
          {
             /* The open jumped over the media to reach a trailing
              * moov; the sequential read frontier is still at the
