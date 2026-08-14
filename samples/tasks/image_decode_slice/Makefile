@@ -22,6 +22,7 @@ LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 SOURCES := image_decode_slice_test.c \
            $(REPO_ROOT)/tasks/task_image.c \
            $(REPO_ROOT)/tasks/task_file_transfer.c \
+           $(REPO_ROOT)/tasks/task_nbio_slice.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strldup.c \
            $(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \

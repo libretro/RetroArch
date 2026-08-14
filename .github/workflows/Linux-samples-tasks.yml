@@ -434,6 +434,68 @@ jobs:
              ./image_decode_slice_test
           echo "[pass] image_decode_slice_test (ASan)"
 
+      - name: Build and run scan_begin_budget_test (plain, ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/database
+        run: |
+          set -eu
+          # Pacing + throughput oracle for the manual content scanner's
+          # BEGIN/END split in tasks/task_database.c, compiled from the
+          # tree so it exercises the shipping translation units.
+          #
+          # The regression it pins: MANUAL_SCAN_BEGIN used to perform
+          # the entire recursive directory walk, the whole DAT load and
+          # the playlist setup in one handler invocation, and
+          # MANUAL_SCAN_END flushed every accumulated result (each add
+          # a linear playlist_entry_exists probe) plus a sort and a
+          # write in another - 166 ms measured for the 5000-file
+          # fixture, a hard frame freeze whenever Threaded Tasks is
+          # off.  Both are now sequences of sub-states under the shared
+          # per-frame I/O window (tasks/task_nbio_slice.c, the same
+          # window the file-transfer spine uses), with completed
+          # sub-states collapsing into one gather so small libraries
+          # keep single-tick latency.
+          #
+          # Three wall-clock assertions guard the plain build, because
+          # any one alone can be satisfied by a scanner that is worse:
+          # pacing (no gather over the window plus bounded slack),
+          # first feedback within two frames of the push, and total
+          # scan time within a factor of the blocking walk + DAT parse
+          # it replaced - a scanner that no longer freezes but takes
+          # twice as long fails the third lane.  Playlist parity (every
+          # fixture file present exactly once) is asserted in every
+          # mode.
+          #
+          # The sanitizer runs use the 'sanitize' mode, which runs
+          # every lane but skips the wall-clock assertions a sanitized
+          # build cannot honestly meet.  Those lanes are where the
+          # in-flight resources the split introduced - an open
+          # directory iterator, an open DAT stream over a half-filled
+          # buffer, an open flush playlist - are made to die at every
+          # phase: a 14-point cancellation sweep lands a cancel in
+          # setup, mid-walk, mid-DAT-read, content iteration and
+          # mid-flush, and LeakSanitizer decides whether the teardown
+          # released everything (it already found one 16-byte-per-scan
+          # leak that predates the split).  The threaded lane runs the
+          # same scan under the threaded queue and is the TSan target:
+          # the shared window deliberately opts threaded queues out of
+          # its static state, and this is where a mistake in that
+          # opt-out would surface.
+          make clean all
+          test -x scan_begin_budget_test
+          timeout 600 ./scan_begin_budget_test
+          echo "[pass] scan_begin_budget_test"
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 900 \
+             ./scan_begin_budget_test sanitize
+          echo "[pass] scan_begin_budget_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 900 \
+             ./scan_begin_budget_test sanitize
+          make clean
+          echo "[pass] scan_begin_budget_test (TSan)"
+
       - name: Build and run save_state_io_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/tasks/save_state
@@ -604,7 +666,13 @@ jobs:
                    tasks/task_pl_thumbnail_download.c \
                    tasks/task_core_backup.c \
                    core_backup.c \
-                   libretro-common/streams/interface_stream.c; do
+                   libretro-common/streams/interface_stream.c \
+                   tasks/task_file_transfer.c \
+                   tasks/task_nbio_slice.c \
+                   libretro-common/lists/dir_list.c \
+                   libretro-common/formats/logiqx_dat/logiqx_dat.c \
+                   libretro-common/formats/xml/rxml.c \
+                   database_info.c; do
             if gcc -fsyntax-only $C89 $INC $DEF "$f"; then
               echo "[pass] C89 $f"
             else

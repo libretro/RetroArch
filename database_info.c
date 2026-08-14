@@ -809,6 +809,26 @@ database_info_handle_t *database_info_dir_init(const char *dir,
    return db;
 }
 
+database_info_handle_t *database_info_dir_init_from_list(
+      enum database_type type, struct string_list *list)
+{
+   database_info_handle_t *db = (database_info_handle_t*)
+      malloc(sizeof(*db));
+
+   if (!db)
+      return NULL;
+
+   /* dir list prioritize - same cue/gdi ordering as
+    * database_info_dir_init() */
+   qsort(list->elems, list->size, sizeof(*list->elems),
+         dir_entry_compare);
+
+   db->status = DATABASE_STATUS_ITERATE;
+   db->type   = type;
+
+   return db;
+}
+
 database_info_handle_t *database_info_file_init(const char *path,
       enum database_type type, retro_task_t *task, struct string_list **content_list)
 {

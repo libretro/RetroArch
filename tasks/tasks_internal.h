@@ -57,6 +57,32 @@ typedef struct nbio_buf
    unsigned bufsize;
 } nbio_buf_t;
 
+/* Shared per-frame I/O window (implementation and rationale in
+ * task_file_transfer.c).  A handler that performs bounded work per
+ * gather claims a share with task_nbio_slice_open(), consults
+ * task_nbio_slice_within_budget() between work items, and charges
+ * back what it actually spent with task_nbio_slice_close().  The
+ * window is shared by every participating task in a gather - file
+ * transfers, the content scanner - rather than handed to each one
+ * separately, because a per-task slice multiplies with the task
+ * count.  Every open grants a floor of one work item so a queue
+ * whose window is already spent still makes progress.  Under a
+ * threaded task queue each task simply gets a whole slice: there is
+ * no frame to protect there, and a shared static across threads
+ * would be a race for no benefit. */
+typedef struct
+{
+   retro_time_t start;       /* when this task's work began       */
+   retro_time_t allowance;   /* usec this task may spend in it    */
+   uint8_t      floor;       /* the guaranteed first work item    */
+} nbio_budget_t;
+
+void task_nbio_slice_open(nbio_budget_t *b);
+void task_nbio_slice_close(nbio_budget_t *b);
+/* Signature matches data_transfer's within-budget callback; the
+ * @avail / @len arguments are unused. */
+bool task_nbio_slice_within_budget(void *ud, size_t avail, size_t len);
+
 /* Generic progress_cb that forwards a task's progress (0-100) to the
  * platform's window/taskbar progress indicator (e.g. ITaskbarList3 on
  * Win32). Set this on any task whose progress should be reflected on
