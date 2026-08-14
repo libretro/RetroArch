@@ -586,8 +586,6 @@ static void sdl3_gfx_free(void *data)
    sdl3_tex_zero(&vid->menu);
 
 #ifdef HAVE_OVERLAY
-   /* Overlay textures are owned by vid->renderer - free them
-    * before it goes away. */
    sdl3_overlay_free(vid);
 #endif
 
@@ -1721,13 +1719,6 @@ font_renderer_t sdl3_raster_font = {
  * them in 0..1 normalised space via vertex_geom() / tex_geom(), and
  * they are drawn over the game frame each frame with per-texture
  * alpha modulation.
- *
- * The descriptor coordinates arrive y-down with (x, y) naming the
- * top-left corner of the rect - the same convention as SDL's render
- * space - so they are stored verbatim and rendered with a straight
- * multiply, no flip. See sdl2_overlay_vertex_geom for the full
- * rationale (the y-flip that d3d/gl drivers do is a pipeline
- * compatibility shim which would be a bug here).
  */
 static void sdl3_overlay_free(sdl3_video_t *vid)
 {

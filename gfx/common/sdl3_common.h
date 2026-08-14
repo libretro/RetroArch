@@ -42,11 +42,7 @@ typedef struct sdl3_tex
    bool rgb32;
 } sdl3_tex_t;
 
-/* On-screen input overlay entry (see the video_overlay_interface_t
- * implementation in sdl3_gfx.c). Fields are unconditional - not
- * HAVE_OVERLAY-gated - so sdl3_video_t has one layout in every
- * translation unit that includes this header, whether or not it
- * included config.h first. */
+/* On-screen input overlay entry for SDL3. */
 struct sdl3_overlay
 {
    SDL_Texture *tex;
