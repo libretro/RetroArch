@@ -28,6 +28,7 @@
 #include <formats/m3u_file.h>
 #include <encodings/crc32.h>
 #include <streams/interface_stream.h>
+#include <streams/file_stream.h>
 #include "tasks_internal.h"
 
 #include "../core_info.h"
@@ -2541,9 +2542,33 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                  manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE) &&
                 *manual_scan->task_config->dat_file_path)
             {
-               if (!(manual_scan->dat_file =
-                     logiqx_dat_init(
-                        manual_scan->task_config->dat_file_path)))
+               /* The parser is I/O-free now: validate the path (the
+                * checks logiqx_dat_init() used to perform), read the
+                * whole document, hand the buffer over.  Still one
+                * blocking read in this state - a following commit
+                * spreads it across gathers under the shared window. */
+               char *dat_xml     = NULL;
+               int64_t dat_len   = 0;
+               logiqx_dat_t *dat = NULL;
+
+               if (   logiqx_dat_extension_is_valid(manual_scan->task_config->dat_file_path)
+                   && path_is_valid(manual_scan->task_config->dat_file_path)
+                   && filestream_read_file(manual_scan->task_config->dat_file_path,
+                        (void**)&dat_xml, &dat_len) > 0
+                   && dat_len > 0)
+               {
+                  /* Ownership of dat_xml transfers unconditionally:
+                   * logiqx_dat_init_owned() frees it on failure. */
+                  dat = logiqx_dat_init_owned(dat_xml, (size_t)dat_len);
+                  dat_xml = NULL;
+               }
+               else if (dat_xml)
+               {
+                  free(dat_xml);
+                  dat_xml = NULL;
+               }
+
+               if (!(manual_scan->dat_file = dat))
                {
                   const char *_msg = msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR);
                   runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,

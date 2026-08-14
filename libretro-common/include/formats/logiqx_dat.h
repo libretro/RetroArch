@@ -60,23 +60,36 @@ typedef struct
 
 /* Validation */
 
-/* Performs rudimentary validation of the specified
- * Logiqx XML DAT file path (not rigorous - just
- * enough to prevent obvious errors).
- * Also provides access to file size (DAT files can
- * be very large, so it is useful to have this information
- * on hand - i.e. so we can check that the system has
- * enough free memory to load the file). */
-bool logiqx_dat_path_is_valid(const char *path, uint64_t *file_size);
+/* Returns true if @path carries a file extension a
+ * Logiqx XML DAT file may legitimately have (.dat or
+ * .xml, case-insensitive).  A pure string check: it
+ * does not touch the file system.  Callers wanting
+ * full path validation (existence, size - e.g. for
+ * free-memory checks against very large DAT files)
+ * should combine this with path_is_valid() and
+ * path_get_size() themselves; this module performs
+ * no I/O of any kind. */
+bool logiqx_dat_extension_is_valid(const char *path);
 
-/* File initialisation/de-initialisation */
+/* Initialisation/de-initialisation */
 
-/* Loads specified Logiqx XML DAT file from disk.
+/* Parses the specified Logiqx XML DAT document held
+ * in memory.  Takes ownership of @xml_data - a heap
+ * allocation of at least @len + 1 bytes with
+ * xml_data[len] == '\0' - which is kept for the
+ * lifetime of the returned object and released by
+ * logiqx_dat_free(); on failure it is freed here
+ * before NULL is returned, so the caller must not
+ * touch it again either way.
+ * Reading the document from disk is the caller's
+ * job (see e.g. the chunked, budgeted read in
+ * tasks/task_database.c); this module performs no
+ * file I/O.
  * Returned logiqx_dat_t object must be free'd using
  * logiqx_dat_free().
- * Returns NULL if file is invalid or a read error
- * occurs. */
-logiqx_dat_t *logiqx_dat_init(const char *path);
+ * Returns NULL if the document is not valid
+ * Logiqx/MAME XML. */
+logiqx_dat_t *logiqx_dat_init_owned(char *xml_data, size_t len);
 
 /* Frees specified DAT file */
 void logiqx_dat_free(logiqx_dat_t *dat_file);

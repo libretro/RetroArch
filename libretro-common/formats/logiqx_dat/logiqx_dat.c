@@ -47,17 +47,14 @@ const char *logiqx_dat_html_code_list[][2] = {
 
 /* Validation */
 
-/* Performs rudimentary validation of the specified
- * Logiqx XML DAT file path (not rigorous - just
- * enough to prevent obvious errors).
- * Also provides access to file size (DAT files can
- * be very large, so it is useful to have this information
- * on hand - i.e. so we can check that the system has
- * enough free memory to load the file). */
-bool logiqx_dat_path_is_valid(const char *path, uint64_t *file_size)
+/* Returns true if @path carries a file extension a
+ * Logiqx XML DAT file may legitimately have (.dat or
+ * .xml, case-insensitive).  A pure string check -
+ * no file system access.  Existence and size checks
+ * are the caller's job; this module performs no I/O. */
+bool logiqx_dat_extension_is_valid(const char *path)
 {
    const char *file_ext = NULL;
-   int64_t file_size_int;
 
    if (!path || !*path)
       return false;
@@ -68,50 +65,42 @@ bool logiqx_dat_path_is_valid(const char *path, uint64_t *file_size)
    if (!file_ext || !*file_ext)
       return false;
 
-   if (   !string_is_equal_noncase(file_ext, "dat")
-       && !string_is_equal_noncase(file_ext, "xml"))
-      return false;
-
-   /* Ensure file exists */
-   if (!path_is_valid(path))
-      return false;
-
-   /* Get file size */
-   file_size_int = path_get_size(path);
-
-   if (file_size_int <= 0)
-      return false;
-
-   if (file_size)
-      *file_size = (uint64_t)file_size_int;
-
-   return true;
+   return    string_is_equal_noncase(file_ext, "dat")
+          || string_is_equal_noncase(file_ext, "xml");
 }
 
-/* File initialisation/de-initialisation */
+/* Initialisation/de-initialisation */
 
-/* Loads specified Logiqx XML DAT file from disk.
- * Returned logiqx_dat_t object must be free'd using
- * logiqx_dat_free().
- * Returns NULL if file is invalid or a read error
- * occurs. */
-logiqx_dat_t *logiqx_dat_init(const char *path)
+/* Parses the specified Logiqx XML DAT document held in
+ * memory.  Takes ownership of @xml_data (heap, len + 1
+ * bytes, NUL-terminated at len); it is released by
+ * logiqx_dat_free(), or here on failure.  Reading the
+ * document from disk is the caller's job - this module
+ * performs no file I/O.
+ * Returns NULL if the document is not valid Logiqx/MAME
+ * XML. */
+logiqx_dat_t *logiqx_dat_init_owned(char *xml_data, size_t len)
 {
    logiqx_dat_t *dat_file = NULL;
    rxml_node_t *root_node = NULL;
 
-   /* Check file path */
-   if (!logiqx_dat_path_is_valid(path, NULL))
-      goto error;
+   if (!xml_data)
+      return NULL;
 
-   /* Create logiqx_dat_t object */
-   dat_file = (logiqx_dat_t*)calloc(1, sizeof(*dat_file));
+   /* Create logiqx_dat_t object.  On this one failure
+    * path the buffer has not yet been handed to rxml,
+    * so it is freed here to honour the ownership
+    * contract. */
+   if (!(dat_file = (logiqx_dat_t*)calloc(1, sizeof(*dat_file))))
+   {
+      free(xml_data);
+      return NULL;
+   }
 
-   if (!dat_file)
-      goto error;
-
-   /* Read file from disk */
-   dat_file->data = rxml_load_document(path);
+   /* Parse document.  rxml_load_document_owned takes
+    * the buffer: the tree points into it on success,
+    * and it is freed on failure. */
+   dat_file->data = rxml_load_document_owned(xml_data, len);
 
    if (!dat_file->data)
       goto error;
