@@ -58,6 +58,18 @@ static void run(const char *path, const char *label, int expect_video)
    int i;
    double rss0, peak;
 
+   /* An unreadable path is a broken invocation, not a result.  Left
+    * unchecked the run reported MISSING with A7/A8 passing vacuously
+    * (file_len is 0, so "mixer got the whole container" compares 0
+    * against 0), which is how a CI step that had deleted its own
+    * fixtures still went half-green. */
+   if (!file_len(path))
+   {
+      printf("  %s\n", label);
+      check(label, "F0 fixture readable", 0);
+      return;
+   }
+
    memset(&th, 0, sizeof(th));
    memset(&hp, 0, sizeof(hp));
    hp.force_preview_audio = getenv("NOAUDIO") ? 0 : 1;

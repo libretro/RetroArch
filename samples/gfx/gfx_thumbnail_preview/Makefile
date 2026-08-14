@@ -88,8 +88,13 @@ fixtures:
 check: $(TARGET) fixtures
 	./$(TARGET) fixtures/*.mp4
 
+# Deliberately keeps fixtures/: the sanitizer passes each rebuild with
+# a different SANITIZER=, and a clean that took the fixtures with it
+# left the following run globbing nothing.  Use distclean to drop them.
 clean:
 	rm -f $(TARGET) $(OBJS) $(UUT_OBJ)
+
+distclean: clean
 	rm -rf fixtures
 
-.PHONY: all check fixtures clean
+.PHONY: all check fixtures clean distclean
