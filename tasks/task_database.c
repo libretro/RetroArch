@@ -309,6 +309,20 @@ typedef struct manual_scan_handle
    char *dat_buf;
    int64_t dat_size;
    int64_t dat_read;
+   /* Resumable batch playlist flush (MANUAL_SCAN_END): position in
+    * scan_results, the playlist currently open for the group being
+    * written, its group key and running count, and the path scratch
+    * buffer - all of what used to be locals of a single monolithic
+    * call, promoted so the flush can yield on the shared window and
+    * resume next gather.  flush_group points into either the task
+    * config or the owned results array, both of which outlive the
+    * flush. */
+   size_t flush_pos;
+   playlist_t *flush_playlist;
+   const char *flush_group;
+   char *flush_path_buf;
+   unsigned flush_added;
+   bool flush_started;
    logiqx_dat_t *dat_file;
    struct string_list *m3u_list;
    playlist_config_t playlist_config; /* size_t alignment */
@@ -1954,43 +1968,71 @@ static void task_database_cleanup_state(database_state_handle_t *db_state)
 }
 #endif
 /* Batch update playlists from accumulated scan results */
-static void scan_results_batch_update_playlists(scan_results_t *sr,
+/* Resumable form of what used to be
+ * scan_results_batch_update_playlists(): one gather's worth of the
+ * batch playlist flush, under the same shared window as the BEGIN
+ * family.  The old call added every accumulated result - each add a
+ * linear playlist_entry_exists() probe - then sorted and wrote the
+ * playlist, all in the gather that reached MANUAL_SCAN_END: 166 ms
+ * measured for a 5000-file scan, the largest single freeze left
+ * after the BEGIN split.  The loop's locals (position, open
+ * playlist, group key, counters, path scratch) live on the handle
+ * now so the loop can yield between results and resume.
+ *
+ * The group-close write for multi-playlist scans and the final
+ * sort+write remain single blocking operations: a playlist file
+ * write is atomic by design (a partial write would corrupt the
+ * playlist on a cancelled scan), so those are the floor this flush
+ * cannot go below.
+ *
+ * Returns true when the flush has fully completed (including the
+ * failure mode of the scratch allocation, which skips the batch
+ * exactly as the old code did), false when yielding. */
+static bool manual_scan_end_flush_tick(
    manual_scan_handle_t* manual_scan, bool single_playlist)
 {
-   size_t i;
-   const char *current_playlist = NULL;
-   playlist_t *playlist = NULL;
-   unsigned added_count = 0;
+   scan_results_t *sr = &manual_scan->scan_results;
+   nbio_budget_t b;
+   bool first = true;
    size_t str_len = PATH_MAX_LENGTH * sizeof(char);
-   char *db_playlist_path = (char*)malloc(str_len);
 
-   if (!db_playlist_path)
+   if (!manual_scan->flush_started)
    {
-      RARCH_ERR("[Scanner] Failed to allocate memory for batch playlist update.\n");
-      return;
-   }
+      manual_scan->flush_started = true;
 
-   RARCH_LOG("[Scanner] Batch updating playlists with %u results...\n",
-            (unsigned)sr->count);
+      if (!(manual_scan->flush_path_buf = (char*)malloc(str_len)))
+      {
+         RARCH_ERR("[Scanner] Failed to allocate memory for batch playlist update.\n");
+         return true;
+      }
 
-   if (single_playlist)
-   {
-      current_playlist = manual_scan->task_config->playlist_file;
-      playlist = manual_scan->playlist;
+      RARCH_LOG("[Scanner] Batch updating playlists with %u results...\n",
+               (unsigned)sr->count);
+
+      if (single_playlist)
+      {
+         manual_scan->flush_group    = manual_scan->task_config->playlist_file;
+         manual_scan->flush_playlist = manual_scan->playlist;
+      }
    }
+   else if (!manual_scan->flush_path_buf)
+      return true;   /* scratch allocation failed on a previous gather */
+
+   task_nbio_slice_open(&b);
+
    /* Process results, grouping by playlist */
-   for (i = 0; i < sr->count; i++)
+   while (manual_scan->flush_pos < sr->count)
    {
-      scan_result_t *result = &sr->results[i];
+      scan_result_t *result = &sr->results[manual_scan->flush_pos];
       char db_name_noext[PATH_MAX_LENGTH];
       /* The key identifying which playlist this result belongs to.
        * With a fixed playlist file every result goes to the same
        * playlist, so the key is that path; otherwise results are
        * grouped by database name.
        *
-       * This used to compare current_playlist against result->db_name
+       * This used to compare the group key against result->db_name
        * unconditionally, but the fixed-file branch below assigns
-       * task_config->playlist_file to current_playlist - a path like
+       * task_config->playlist_file as the group - a path like
        * ".../MyList.lpl", which never equals a db_name, those being
        * the database's own file name.  The test was therefore true on every
        * iteration, and each result closed the playlist (a full
@@ -2001,85 +2043,99 @@ static void scan_results_batch_update_playlists(scan_results_t *sr,
          ? manual_scan->task_config->playlist_file
          : result->db_name;
 
+      /* The floor: one result per gather regardless of the window,
+       * then yield between any two results. */
+      if (!first && !task_nbio_slice_within_budget(&b, 0, 0))
+      {
+         task_nbio_slice_close(&b);
+         return false;
+      }
+      first = false;
+
       strlcpy(db_name_noext, result->db_name, sizeof(db_name_noext));
       path_remove_extension(db_name_noext);
 
       /* Check if we need to switch to a different playlist */
-      if (!single_playlist && (!current_playlist || !string_is_equal(current_playlist, group_key)))
+      if (!single_playlist && (!manual_scan->flush_group || !string_is_equal(manual_scan->flush_group, group_key)))
       {
-         /* Write and close previous playlist if any */
-         if (playlist)
+         /* Write and close previous playlist if any.  One blocking
+          * write per group. */
+         if (manual_scan->flush_playlist)
          {
-            RARCH_LOG("[Scanner] Added %u entries to \"%s\".\n", added_count, current_playlist);
-            playlist_write_file(playlist);
-            playlist_free(playlist);
-            playlist = NULL;
-            added_count = 0;
+            RARCH_LOG("[Scanner] Added %u entries to \"%s\".\n", manual_scan->flush_added, manual_scan->flush_group);
+            playlist_write_file(manual_scan->flush_playlist);
+            playlist_free(manual_scan->flush_playlist);
+            manual_scan->flush_playlist = NULL;
+            manual_scan->flush_added = 0;
          }
 
          /* Open new playlist - if not fixed, use database name */
          if (!*manual_scan->task_config->playlist_file)
          {
-            current_playlist = result->db_name;
-            db_playlist_path[0] = '\0';
+            manual_scan->flush_group = result->db_name;
+            manual_scan->flush_path_buf[0] = '\0';
             if (manual_scan->playlist_directory && *manual_scan->playlist_directory)
-               fill_pathname_join_special(db_playlist_path, manual_scan->playlist_directory,
+               fill_pathname_join_special(manual_scan->flush_path_buf, manual_scan->playlist_directory,
                      result->db_name, str_len);
-            playlist_config_set_path(&manual_scan->playlist_config, db_playlist_path);
+            playlist_config_set_path(&manual_scan->playlist_config, manual_scan->flush_path_buf);
          }
          else
          {
-            current_playlist = manual_scan->task_config->playlist_file;
-            playlist_config_set_path(&manual_scan->playlist_config, current_playlist);
+            manual_scan->flush_group = manual_scan->task_config->playlist_file;
+            playlist_config_set_path(&manual_scan->playlist_config, manual_scan->flush_group);
          }
 
-         playlist = playlist_init(&manual_scan->playlist_config);
+         manual_scan->flush_playlist = playlist_init(&manual_scan->playlist_config);
 
          /* Check before use: the playlist_set_scan_* calls below are
           * not all NULL-guarded (playlist_set_scan_search_recursively,
           * playlist_set_sort_mode, playlist_qsort, playlist_write_file
           * and several others dereference unconditionally).  The test
           * used to sit after all of them. */
-         if (!playlist)
+         if (!manual_scan->flush_playlist)
          {
             RARCH_ERR("[Scanner] Failed to open playlist: \"%s\".\n", result->db_name);
-            current_playlist = NULL;
+            manual_scan->flush_group = NULL;
+            /* The old for loop's continue advanced the index; this
+             * loop must advance the position itself or the same
+             * unopenable playlist would be retried forever. */
+            manual_scan->flush_pos++;
             continue;
          }
 
          /* Set default core, if required */
          if (manual_scan->task_config->core_set)
          {
-            playlist_set_default_core_path(playlist,
+            playlist_set_default_core_path(manual_scan->flush_playlist,
                   manual_scan->task_config->core_path);
-            playlist_set_default_core_name(playlist,
+            playlist_set_default_core_name(manual_scan->flush_playlist,
                   manual_scan->task_config->core_name);
          }
 
          /* Record remaining scan parameters to enable
           * subsequent 'refresh playlist' operations */
-         playlist_set_scan_content_dir(playlist,
+         playlist_set_scan_content_dir(manual_scan->flush_playlist,
                manual_scan->task_config->content_dir);
-         playlist_set_scan_file_exts(playlist,
+         playlist_set_scan_file_exts(manual_scan->flush_playlist,
                manual_scan->task_config->file_exts_custom_set ?
                      manual_scan->task_config->file_exts : NULL);
          if (manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE ||
              manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT)
-            playlist_set_scan_dat_file_path(playlist,
+            playlist_set_scan_dat_file_path(manual_scan->flush_playlist,
                   manual_scan->task_config->dat_file_path);
-         playlist_set_scan_database_name(playlist,
+         playlist_set_scan_database_name(manual_scan->flush_playlist,
                   manual_scan->task_config->database_name);
-         playlist_set_scan_search_recursively(playlist,
+         playlist_set_scan_search_recursively(manual_scan->flush_playlist,
                manual_scan->task_config->search_recursively);
-         playlist_set_scan_search_archives(playlist,
+         playlist_set_scan_search_archives(manual_scan->flush_playlist,
                manual_scan->task_config->search_archives);
-         playlist_set_scan_filter_dat_content(playlist,
+         playlist_set_scan_filter_dat_content(manual_scan->flush_playlist,
                manual_scan->task_config->filter_dat_content);
-         playlist_set_scan_overwrite_playlist(playlist,
+         playlist_set_scan_overwrite_playlist(manual_scan->flush_playlist,
                manual_scan->task_config->overwrite_playlist);
-         playlist_set_scan_db_usage(playlist,
+         playlist_set_scan_db_usage(manual_scan->flush_playlist,
                manual_scan->task_config->db_usage);
-         playlist_set_scan_omit_db_ref(playlist,
+         playlist_set_scan_omit_db_ref(manual_scan->flush_playlist,
                manual_scan->task_config->omit_db_reference);
 
          RARCH_LOG("[Scanner] Processing playlist: \"%s\".\n", result->db_name);
@@ -2089,14 +2145,14 @@ static void scan_results_batch_update_playlists(scan_results_t *sr,
       /* ...except for M3U, since the processing occurs at the end,
          we overwrite any previous m3u entry (which has same file,
          but less descriptive label, database, crc */
-      if (playlist && 
-          (!playlist_entry_exists(playlist, result->entry_path) ||
+      if (manual_scan->flush_playlist && 
+          (!playlist_entry_exists(manual_scan->flush_playlist, result->entry_path) ||
            m3u_file_is_m3u(result->entry_path)))
       {
          struct playlist_entry entry;
 
          if(m3u_file_is_m3u(result->entry_path))
-            playlist_delete_by_path(playlist, result->entry_path);
+            playlist_delete_by_path(manual_scan->flush_playlist, result->entry_path);
          
          /* Build entry */
          entry.path              = result->entry_path;
@@ -2119,8 +2175,8 @@ static void scan_results_batch_update_playlists(scan_results_t *sr,
          entry.last_played_minute= 0;
          entry.last_played_second= 0;
 
-         playlist_push(playlist, &entry);
-         added_count++;
+         playlist_push(manual_scan->flush_playlist, &entry);
+         manual_scan->flush_added++;
 
          RARCH_LOG("[Scanner] Add \"%s / %s\".\n", db_name_noext, result->entry_label);
 
@@ -2129,30 +2185,36 @@ static void scan_results_batch_update_playlists(scan_results_t *sr,
                   db_name_noext, true);
       }
       /* Entry already exists - output duplicate indicator for CLI scans */
-      else if (playlist && retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL))
+      else if (manual_scan->flush_playlist && retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL))
          task_database_scan_console_output(result->entry_label,
                db_name_noext, false);
+
+      manual_scan->flush_pos++;
    }
 
    /* Write and close final playlist */
-   if (playlist)
+   if (manual_scan->flush_playlist)
    {
-      RARCH_LOG("[Scanner] Added %u entries to \"%s\".\n", added_count, current_playlist);
+      RARCH_LOG("[Scanner] Added %u entries to \"%s\".\n", manual_scan->flush_added, manual_scan->flush_group);
       /* Ensure playlist is alphabetically sorted (matches manual scan behavior) */
-      playlist_set_sort_mode(playlist, PLAYLIST_SORT_MODE_DEFAULT);
-      playlist_qsort(playlist);
-      playlist_write_file(playlist);
-      /* Free whatever this function opened.  Only the single-playlist
+      playlist_set_sort_mode(manual_scan->flush_playlist, PLAYLIST_SORT_MODE_DEFAULT);
+      playlist_qsort(manual_scan->flush_playlist);
+      playlist_write_file(manual_scan->flush_playlist);
+      /* Free whatever this flush opened.  Only the single-playlist
        * path borrows manual_scan->playlist, which the handle teardown
        * owns; comparing the handles says that exactly, where the
        * previous string compare against playlist_file also matched
-       * the playlist this function had opened itself and leaked it. */
-      if (playlist != manual_scan->playlist)
-         playlist_free(playlist);
+       * the playlist this flush had opened itself and leaked it. */
+      if (manual_scan->flush_playlist != manual_scan->playlist)
+         playlist_free(manual_scan->flush_playlist);
+      manual_scan->flush_playlist = NULL;
    }
 
-   free(db_playlist_path);
+   free(manual_scan->flush_path_buf);
+   manual_scan->flush_path_buf = NULL;
    RARCH_LOG("[Scanner] Batch playlist update complete.\n");
+   task_nbio_slice_close(&b);
+   return true;
 }
 
 #ifdef HAVE_LIBRETRODB
@@ -2181,6 +2243,22 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
    {
       free(manual_scan->task_config);
       manual_scan->task_config = NULL;
+   }
+
+   /* A cancelled task can die mid-flush: close the playlist the
+    * flush had open.  This must run before manual_scan->playlist is
+    * released below - in single-playlist mode flush_playlist borrows
+    * that handle, and the identity comparison that prevents a double
+    * free needs the pointer still live to say so. */
+   if (  manual_scan->flush_playlist
+       && manual_scan->flush_playlist != manual_scan->playlist)
+      playlist_free(manual_scan->flush_playlist);
+   manual_scan->flush_playlist = NULL;
+
+   if (manual_scan->flush_path_buf)
+   {
+      free(manual_scan->flush_path_buf);
+      manual_scan->flush_path_buf = NULL;
    }
 
    if (manual_scan->playlist)
@@ -3282,9 +3360,17 @@ static void task_manual_content_scan_handler(retro_task_t *task)
          {
             const char *msg = NULL;
 
-            /* Batch update all playlists with accumulated results */
+            /* Batch update all playlists with accumulated results,
+             * spread across gathers under the shared window - the
+             * monolithic form of this flush was the largest single
+             * freeze left after the BEGIN split (166 ms on a
+             * 5000-file scan). */
             if (manual_scan->scan_results.count > 0)
-               scan_results_batch_update_playlists(&manual_scan->scan_results, manual_scan, manual_scan->task_config->target_is_single_determined_playlist);
+            {
+               if (!manual_scan_end_flush_tick(manual_scan,
+                     manual_scan->task_config->target_is_single_determined_playlist))
+                  break;   /* more results next gather */
+            }
             /* If no results, still write an empty playlist, if it is specified. */
             else if (manual_scan->task_config->target_is_single_determined_playlist)
                playlist_write_file(manual_scan->playlist);
