@@ -2331,10 +2331,10 @@ static void frontend_unix_get_env(int *argc,
        fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM], base_path,
              "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
 
-   if (test_permissions("/tmp"))
+   if (test_permissions("/tmp") && path_mkdir("/tmp/retroarch-tmp"))
    {
-      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE], "/",
-         "tmp", sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE], "/tmp",
+         "retroarch-tmp", sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
    }
    else
    {
