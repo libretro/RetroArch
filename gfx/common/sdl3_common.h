@@ -56,13 +56,6 @@ typedef struct _sdl3_video
 
    SDL_Renderer *renderer;
 
-   /* Cached SDL_GetFullscreenDisplayModes list (SDL-allocated,
-    * freed with SDL_free) plus the mode the resolution pokes have
-    * currently selected. */
-   SDL_DisplayMode **video_modes;
-   int num_video_modes;
-   int video_mode_index;
-
    uint8_t flags;
 } sdl3_video_t;
 
