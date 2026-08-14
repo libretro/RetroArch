@@ -91,6 +91,7 @@ SOURCES_C := \
 	$(CORE_DIR)/samples/tasks/database/main.c \
 	$(LIBRETRO_COMM_DIR)/memory/mem_stats.c \
 	$(CORE_DIR)/tasks/task_database.c \
+	$(CORE_DIR)/tasks/task_nbio_slice.c \
 	$(CORE_DIR)/tasks/task_database_cue.c \
 	$(CORE_DIR)/database_info.c \
 	$(CORE_DIR)/core_info.c \

@@ -1591,6 +1591,91 @@ bool manual_content_scan_get_task_config(
  * content directory
  * > Returns NULL in the event of failure
  * > Returned string list must be free()'d */
+/* Shared policy for both content-list builders below:
+ * whether extension filtering applies and whether
+ * compressed files must be listed. */
+static void manual_content_scan_content_list_policy(
+      manual_content_scan_task_config_t *task_config,
+      bool *filter_exts, bool *include_compressed)
+{
+   /* Check whether files should be filtered by
+    * extension */
+   *filter_exts = *task_config->file_exts;
+
+   /* Check whether compressed files should be
+    * included in the directory list
+    * > If compressed files are already listed in
+    *   the 'file_exts' string, they will be included
+    *   automatically
+    * > If we don't have a 'file_exts' list, then all
+    *   files must be included regardless of type
+    * > If user has enabled 'search inside archives',
+    *   then compressed files must of course be included */
+   *include_compressed = (!*filter_exts || task_config->search_archives);
+}
+
+bool manual_content_scan_content_list_iter_new(
+      manual_content_scan_task_config_t *task_config,
+      struct string_list **list, dir_list_iter_t **iter)
+{
+   bool filter_exts;
+   bool include_compressed;
+
+   if (list)
+      *list = NULL;
+   if (iter)
+      *iter = NULL;
+
+   /* Sanity check */
+   if (!task_config || !*task_config->content_dir || !list || !iter)
+      return false;
+
+   manual_content_scan_content_list_policy(task_config,
+         &filter_exts, &include_compressed);
+
+   if (path_is_directory(task_config->content_dir))
+   {
+      if (!(*list = string_list_new()))
+         return false;
+
+      /* Same parameters as the blocking getter's
+       * dir_list_new() call: exclude directories and
+       * hidden files */
+      *iter = dir_list_iter_new(
+            task_config->content_dir,
+            filter_exts ? task_config->file_exts : NULL,
+            false, /* include_dirs */
+            false, /* include_hidden */ /* todo: obey global settings? */
+            include_compressed,
+            task_config->search_recursively,
+            *list);
+
+      if (!*iter)
+      {
+         string_list_free(*list);
+         *list = NULL;
+         return false;
+      }
+      return true;
+   }
+
+   /* A plain-file content dir needs no walk: the list
+    * is complete here and *iter stays NULL. */
+   if (!(*list = string_list_new()))
+      return false;
+   {
+      union string_list_elem_attr attr;
+      attr.i = 0;
+      if (!string_list_append(*list, task_config->content_dir, attr))
+      {
+         string_list_free(*list);
+         *list = NULL;
+         return false;
+      }
+   }
+   return true;
+}
+
 struct string_list *manual_content_scan_get_content_list(
       manual_content_scan_task_config_t *task_config)
 {
@@ -1602,20 +1687,8 @@ struct string_list *manual_content_scan_get_content_list(
    if (!task_config || !*task_config->content_dir)
       return NULL;
 
-   /* Check whether files should be filtered by
-    * extension */
-   filter_exts = *task_config->file_exts;
-
-   /* Check whether compressed files should be
-    * included in the directory list
-    * > If compressed files are already listed in
-    *   the 'file_exts' string, they will be included
-    *   automatically
-    * > If we don't have a 'file_exts' list, then all
-    *   files must be included regardless of type
-    * > If user has enabled 'search inside archives',
-    *   then compressed files must of course be included */
-   include_compressed = (!filter_exts || task_config->search_archives);
+   manual_content_scan_content_list_policy(task_config,
+         &filter_exts, &include_compressed);
 
    if (path_is_directory(task_config->content_dir))
    {

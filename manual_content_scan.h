@@ -29,6 +29,7 @@
 #include <boolean.h>
 
 #include <lists/string_list.h>
+#include <lists/dir_list.h>
 #include <formats/logiqx_dat.h>
 
 #include "playlist.h"
@@ -327,6 +328,24 @@ bool manual_content_scan_get_task_config(
  * > Returned string list must be free()'d */
 struct string_list *manual_content_scan_get_content_list(
       manual_content_scan_task_config_t *task_config);
+
+/* Resumable counterpart of
+ * manual_content_scan_get_content_list(): creates
+ * @*list and, when the content dir is a directory, a
+ * dir_list_iter_t in @*iter that fills it under the
+ * caller's budget via dir_list_iter_step().  The same
+ * extension / compressed-file policy is applied.  A
+ * content dir that is a plain file fills the list here
+ * and leaves *iter NULL.  When the walk completes the
+ * caller owes the list the same treatment the blocking
+ * getter applied: reject it when empty, then
+ * dir_list_sort(list, true).
+ * > Returns false (leaving *list / *iter NULL) if
+ *   config is invalid or the directory cannot be
+ *   opened */
+bool manual_content_scan_content_list_iter_new(
+      manual_content_scan_task_config_t *task_config,
+      struct string_list **list, dir_list_iter_t **iter);
 
 /* Adds specified content to playlist, if not already
  * present */
