@@ -641,6 +641,16 @@ static bool sdl3_can_switch_video_mode(sdl3_video_t *vid)
          && (SDL_GetWindowFlags(vid->window) & SDL_WINDOW_FULLSCREEN);
 }
 
+/* NULL fullscreen mode means borderless desktop fullscreen - fall
+ * back to the display's current mode. */
+static const SDL_DisplayMode *sdl3_current_video_mode(sdl3_video_t *vid)
+{
+   const SDL_DisplayMode *mode = SDL_GetWindowFullscreenMode(vid->window);
+   if (!mode)
+      mode = SDL_GetCurrentDisplayMode(SDL_GetDisplayForWindow(vid->window));
+   return mode;
+}
+
 static void sdl3_get_video_output_size(void *data,
       unsigned *width, unsigned *height, char *desc, size_t desc_len)
 {
@@ -661,17 +671,12 @@ static void sdl3_get_video_output_size(void *data,
       return;
    }
 
-   /* NULL means borderless desktop fullscreen - report the display's
-    * current mode instead. */
-   if (!(mode = SDL_GetWindowFullscreenMode(vid->window)))
-      mode = SDL_GetCurrentDisplayMode(SDL_GetDisplayForWindow(vid->window));
-   if (!mode)
+   if (!(mode = sdl3_current_video_mode(vid)))
       return;
 
    *width  = (unsigned)mode->w;
    *height = (unsigned)mode->h;
-   if (desc_len)
-      snprintf(desc, desc_len, "%.2f Hz", mode->refresh_rate);
+   snprintf(desc, desc_len, "%.2f Hz", mode->refresh_rate);
 }
 
 /* Steps the exclusive fullscreen mode one entry through the display's
@@ -700,13 +705,7 @@ static void sdl3_cycle_video_mode(sdl3_video_t *vid, int dir)
       return;
    }
 
-   /* NULL means borderless desktop fullscreen - fall back to the
-    * display's current mode so the cycle still starts somewhere
-    * sensible. */
-   if (!(current = SDL_GetWindowFullscreenMode(vid->window)))
-      current = SDL_GetCurrentDisplayMode(display);
-
-   if (current)
+   if ((current = sdl3_current_video_mode(vid)))
    {
       for (i = 0; i < count; i++)
       {
