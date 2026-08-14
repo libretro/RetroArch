@@ -291,6 +291,19 @@ bool playlist_content_path_is_valid(const char *path);
 bool playlist_push(playlist_t *playlist,
       const struct playlist_entry *entry);
 
+/**
+ * playlist_push_unchecked:
+ *
+ * Appends @entry at the front of @playlist WITHOUT searching for an
+ * existing matching entry.  The caller must have already proven the
+ * entry's content path absent (via playlist_entry_exists() or a
+ * playlist_dedup_t index); pushing a path that is present creates a
+ * duplicate.  Applies the same validation, capacity and eviction
+ * rules as playlist_push().
+ **/
+bool playlist_push_unchecked(playlist_t *playlist,
+      const struct playlist_entry *entry);
+
 bool playlist_push_runtime(playlist_t *playlist,
       const struct playlist_entry *entry);
 
@@ -317,6 +330,43 @@ void playlist_get_index_by_path(playlist_t *playlist,
 
 bool playlist_entry_exists(playlist_t *playlist,
       const char *path);
+
+/* Content path dedup index: answers playlist_entry_exists() queries
+ * in O(1) expected time for repeated probes against the same
+ * playlist.  Verified candidates go through the same matching rules
+ * as the linear scan (including fuzzy archive matching), so answers
+ * are identical; internal allocation failure degrades the index to
+ * the linear scan transparently.  The index owns all of its state
+ * and may be freed before or after the playlist. */
+typedef struct playlist_dedup playlist_dedup_t;
+
+playlist_dedup_t *playlist_dedup_init(void);
+
+/**
+ * playlist_dedup_seed_step:
+ *
+ * Indexes @playlist's current entries, resuming from where the
+ * previous call stopped.  When @budget_cb is non-NULL it is
+ * consulted between entries and seeding yields (returning false)
+ * once it reports the budget exhausted; at least one entry is
+ * seeded per call.  Returns true when seeding has completed.
+ **/
+bool playlist_dedup_seed_step(playlist_dedup_t *dedup,
+      playlist_t *playlist,
+      bool (*budget_cb)(void *userdata), void *userdata);
+
+/**
+ * playlist_dedup_check_add:
+ *
+ * Returns what playlist_entry_exists(@playlist, @path) would
+ * return.  When @will_add is true and the path was absent, the
+ * path is recorded in the index so that subsequent queries see it;
+ * the caller is expected to push the corresponding entry.
+ **/
+bool playlist_dedup_check_add(playlist_dedup_t *dedup,
+      playlist_t *playlist, const char *path, bool will_add);
+
+void playlist_dedup_free(playlist_dedup_t *dedup);
 
 char *playlist_get_conf_path(playlist_t *playlist);
 

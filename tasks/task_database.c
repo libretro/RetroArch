@@ -302,9 +302,12 @@ typedef struct manual_scan_handle
    /* Chunked DAT read in flight (MANUAL_SCAN_BEGIN_DAT_LOAD): the
     * file handle, the destination buffer (dat_size + 1 bytes) and
     * the fill position.  dat_buf ownership passes to
-    * logiqx_dat_init_owned() once the read completes. */
+    * logiqx_dat_parse_begin_owned() once the read completes, and
+    * dat_parse holds the budgeted parse + index build until its
+    * verdict. */
    RFILE *dat_stream;
    char *dat_buf;
+   logiqx_dat_parse_t *dat_parse;
    int64_t dat_size;
    int64_t dat_read;
    /* Resumable batch playlist flush (MANUAL_SCAN_END): position in
@@ -320,6 +323,7 @@ typedef struct manual_scan_handle
    char *flush_path_buf;
    unsigned flush_added;
    bool flush_started;
+   playlist_dedup_t *flush_dedup;
    logiqx_dat_t *dat_file;
    struct string_list *m3u_list;
    playlist_config_t playlist_config; /* size_t alignment */
@@ -1978,6 +1982,8 @@ static void task_database_cleanup_state(database_state_handle_t *db_state)
  * Returns true when the flush has fully completed (including the
  * failure mode of the scratch allocation, which skips the batch),
  * false when yielding. */
+static bool manual_scan_walk_within_budget(void *ud);
+
 static bool manual_scan_end_flush_tick(
    manual_scan_handle_t* manual_scan, bool single_playlist)
 {
@@ -2003,6 +2009,9 @@ static bool manual_scan_end_flush_tick(
       {
          manual_scan->flush_group    = manual_scan->task_config->playlist_file;
          manual_scan->flush_playlist = manual_scan->playlist;
+         /* NULL on failure: existence checks then take the linear
+          * fallback below */
+         manual_scan->flush_dedup    = playlist_dedup_init();
       }
    }
    else if (!manual_scan->flush_path_buf)
@@ -2023,6 +2032,8 @@ static bool manual_scan_end_flush_tick(
       const char *group_key = (*manual_scan->task_config->playlist_file)
          ? manual_scan->task_config->playlist_file
          : result->db_name;
+      bool entry_present;
+      bool is_m3u;
 
       /* The floor: one result per gather regardless of the window,
        * then yield between any two results. */
@@ -2049,6 +2060,8 @@ static bool manual_scan_end_flush_tick(
             manual_scan->flush_playlist = NULL;
             manual_scan->flush_added = 0;
          }
+         playlist_dedup_free(manual_scan->flush_dedup);
+         manual_scan->flush_dedup = NULL;
 
          /* Open new playlist - if not fixed, use database name */
          if (!*manual_scan->task_config->playlist_file)
@@ -2083,6 +2096,10 @@ static bool manual_scan_end_flush_tick(
             manual_scan->flush_pos++;
             continue;
          }
+
+         /* NULL on failure: existence checks then take the linear
+          * fallback below */
+         manual_scan->flush_dedup = playlist_dedup_init();
 
          /* Set default core, if required */
          if (manual_scan->task_config->core_set)
@@ -2122,17 +2139,40 @@ static bool manual_scan_end_flush_tick(
          RARCH_LOG("[Scanner] Processing playlist: \"%s\".\n", result->db_name);
       }
 
+      /* Index the playlist's pre-existing entries before consulting
+       * the dedup index, resuming across gathers on the shared
+       * window.  flush_pos has not advanced, so a resumed gather
+       * re-enters here with the same group. */
+      if (   manual_scan->flush_dedup
+          && manual_scan->flush_playlist
+          && !playlist_dedup_seed_step(manual_scan->flush_dedup,
+                manual_scan->flush_playlist,
+                manual_scan_walk_within_budget, &b))
+      {
+         task_nbio_slice_close(&b);
+         return false;
+      }
+
       /* Add entry to playlist if it doesn't already exist */
       /* ...except for M3U, since the processing occurs at the end,
          we overwrite any previous m3u entry (which has same file,
          but less descriptive label, database, crc */
-      if (manual_scan->flush_playlist && 
-          (!playlist_entry_exists(manual_scan->flush_playlist, result->entry_path) ||
-           m3u_file_is_m3u(result->entry_path)))
+      is_m3u        = m3u_file_is_m3u(result->entry_path);
+      /* will_add records the path as present exactly when this
+       * result is pushed below: when absent (the push is
+       * unconditional), and in the m3u-present case the path
+       * remains present across the delete + re-push. */
+      entry_present = manual_scan->flush_dedup
+         ? playlist_dedup_check_add(manual_scan->flush_dedup,
+               manual_scan->flush_playlist, result->entry_path, true)
+         : playlist_entry_exists(manual_scan->flush_playlist,
+               result->entry_path);
+
+      if (manual_scan->flush_playlist && (!entry_present || is_m3u))
       {
          struct playlist_entry entry;
 
-         if(m3u_file_is_m3u(result->entry_path))
+         if(is_m3u)
             playlist_delete_by_path(manual_scan->flush_playlist, result->entry_path);
          
          /* Build entry */
@@ -2156,7 +2196,11 @@ static bool manual_scan_end_flush_tick(
          entry.last_played_minute= 0;
          entry.last_played_second= 0;
 
-         playlist_push(manual_scan->flush_playlist, &entry);
+         /* Absence is proven: the existence check above said so, or
+          * this is an m3u whose previous entries were just deleted.
+          * The checked playlist_push() would re-scan the entire
+          * playlist for the same answer. */
+         playlist_push_unchecked(manual_scan->flush_playlist, &entry);
          manual_scan->flush_added++;
 
          RARCH_LOG("[Scanner] Add \"%s / %s\".\n", db_name_noext, result->entry_label);
@@ -2190,6 +2234,9 @@ static bool manual_scan_end_flush_tick(
          playlist_free(manual_scan->flush_playlist);
       manual_scan->flush_playlist = NULL;
    }
+
+   playlist_dedup_free(manual_scan->flush_dedup);
+   manual_scan->flush_dedup = NULL;
 
    free(manual_scan->flush_path_buf);
    manual_scan->flush_path_buf = NULL;
@@ -2236,6 +2283,11 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
       playlist_free(manual_scan->flush_playlist);
    manual_scan->flush_playlist = NULL;
 
+   /* The dedup index owns all of its state; order relative to the
+    * playlist frees is immaterial. */
+   playlist_dedup_free(manual_scan->flush_dedup);
+   manual_scan->flush_dedup = NULL;
+
    if (manual_scan->flush_path_buf)
    {
       free(manual_scan->flush_path_buf);
@@ -2274,6 +2326,13 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
    {
       free(manual_scan->dat_buf);
       manual_scan->dat_buf = NULL;
+   }
+
+   /* A cancelled task can also die mid-parse. */
+   if (manual_scan->dat_parse)
+   {
+      logiqx_dat_parse_abort(manual_scan->dat_parse);
+      manual_scan->dat_parse = NULL;
    }
 
    if (manual_scan->content_list)
@@ -2478,6 +2537,13 @@ static void task_manual_content_scan_free(retro_task_t *task)
  * that the guaranteed floor chunk of a spent window costs well under
  * a millisecond. */
 #define MANUAL_SCAN_DAT_CHUNK (256 * 1024)
+
+/* Bytes of XML handed to logiqx_dat_parse_step() per step: small
+ * enough that several steps fit one shared window in a plain build
+ * and one step stays frame-sized even under sanitizer inflation,
+ * large enough that a MAME-sized list completes in a few hundred
+ * steps. */
+#define MANUAL_SCAN_DAT_PARSE_STEP (256 * 1024)
 
 /* dir_list_iter_step()'s budget callback carries no sizes. */
 static bool manual_scan_walk_within_budget(void *ud)
@@ -2737,6 +2803,9 @@ static bool manual_scan_begin_dat_load(retro_task_t *task,
       return false;
    }
 
+   if (manual_scan->dat_parse)
+      goto parse_phase;
+
    if (!manual_scan->dat_stream)
    {
       /* Validate path and size up front through the same
@@ -2794,13 +2863,40 @@ static bool manual_scan_begin_dat_load(retro_task_t *task,
    filestream_close(manual_scan->dat_stream);
    manual_scan->dat_stream = NULL;
 
-   /* Hand the completed document to the parser.  Ownership of the
-    * buffer transfers unconditionally: on failure
-    * logiqx_dat_init_owned() frees it. */
+   /* Hand the completed document to the incremental parser.
+    * Ownership of the buffer transfers unconditionally: on failure
+    * logiqx_dat_parse_begin_owned() frees it. */
    manual_scan->dat_buf[manual_scan->dat_size] = '\0';
-   manual_scan->dat_file = logiqx_dat_init_owned(
+   manual_scan->dat_parse = logiqx_dat_parse_begin_owned(
          manual_scan->dat_buf, (size_t)manual_scan->dat_size);
-   manual_scan->dat_buf  = NULL;
+   manual_scan->dat_buf   = NULL;
+
+   if (!manual_scan->dat_parse)
+      goto error_no_cleanup;
+
+parse_phase:
+   /* Budgeted parse and index build: one step per gather whatever
+    * the window says (the floor), then further steps while it
+    * lasts.  A resumed gather jumps straight back here. */
+   for (;;)
+   {
+      int r = logiqx_dat_parse_step(manual_scan->dat_parse,
+            MANUAL_SCAN_DAT_PARSE_STEP);
+
+      if (r < 0)
+      {
+         logiqx_dat_parse_end(manual_scan->dat_parse);   /* discards */
+         manual_scan->dat_parse = NULL;
+         goto error_no_cleanup;
+      }
+      if (r > 0)
+         break;
+      if (!task_nbio_slice_within_budget(b, 0, 0))
+         return false;   /* resume next gather */
+   }
+
+   manual_scan->dat_file  = logiqx_dat_parse_end(manual_scan->dat_parse);
+   manual_scan->dat_parse = NULL;
 
    if (!manual_scan->dat_file)
       goto error_no_cleanup;

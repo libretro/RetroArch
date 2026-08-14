@@ -86,9 +86,10 @@ static retro_time_t thread_cpu_usec(void)
 
 /* Throughput guard: incremental scan total time must stay within
  * this factor of (blocking walk + DAT parse + per-entry floor).
- * Measured locally the ratio is ~1.0; the margin absorbs shared-
- * runner noise without admitting a 2x regression. */
-#define THROUGHPUT_FACTOR 1.60
+ * With the playlist dedup index the measured ratio is ~0.35-0.41;
+ * the margin absorbs shared-runner noise while still rejecting the
+ * pre-index quadratic flush, which lands at ~1.1. */
+#define THROUGHPUT_FACTOR 0.80
 
 /* ------------------------------------------------------------------ */
 /* Stubs (same set as database_scan_test.c - see rationale there)     */
@@ -239,9 +240,66 @@ static bool build_fixture(const char *root, char *dat_path, size_t dat_path_len,
    return true;
 }
 
+/* Big-DAT lane fixture: a DAT large enough that an unbudgeted parse
+ * or index build would blow the pacing budget many times over, and
+ * a small content set whose names sample the start, middle and end
+ * of the list.  Scanning it asserts that no gather grows with DAT
+ * size - the last input-proportional single-gather work in the
+ * scan.  ~300k games come to ~40MB of XML; the fixture's own cost
+ * is one streamed write. */
+#define BIG_DAT_GAMES         300000
+#define BIG_DAT_CONTENT_FILES 50
+
+static bool build_big_fixture(const char *root, char *dat_path,
+      size_t dat_path_len, char *content_dir, size_t content_dir_len,
+      char *playlist_dir, size_t playlist_dir_len)
+{
+   size_t i;
+   FILE *dat;
+   char path[4096];
+
+   snprintf(content_dir, content_dir_len, "%s/bigcontent", root);
+   snprintf(dat_path, dat_path_len, "%s/biggames.dat", root);
+   snprintf(playlist_dir, playlist_dir_len, "%s/bigplaylists", root);
+
+   if (   !path_mkdir(content_dir)
+       || !path_mkdir(playlist_dir))
+      return false;
+
+   /* Every 6000th game exists as a file: hits across the whole
+    * list, so a search index that silently covered only a prefix
+    * would mislabel the tail. */
+   for (i = 0; i < BIG_DAT_CONTENT_FILES; i++)
+   {
+      char body[64];
+      unsigned id = (unsigned)(i * (BIG_DAT_GAMES / BIG_DAT_CONTENT_FILES));
+      snprintf(path, sizeof(path), "%s/big%06u.bin", content_dir, id);
+      snprintf(body, sizeof(body), "big-%06u", id);
+      if (!write_text_file(path, body))
+         return false;
+   }
+
+   if (!(dat = fopen(dat_path, "w")))
+      return false;
+   fputs("<?xml version=\"1.0\"?>\n<datafile>\n"
+         "<header><name>ScanBench</name></header>\n", dat);
+   for (i = 0; i < BIG_DAT_GAMES; i++)
+      fprintf(dat,
+            "<game name=\"big%06u\">"
+            "<description>Big Game %06u</description>"
+            "<year>2026</year></game>\n",
+            (unsigned)i, (unsigned)i);
+   fputs("</datafile>\n", dat);
+   fclose(dat);
+   return true;
+}
+
 /* ------------------------------------------------------------------ */
 /* Scan driver                                                        */
 /* ------------------------------------------------------------------ */
+
+/* The rescan lane flips this to drive the no-overwrite path. */
+static bool scan_overwrite = true;
 
 static bool scan_done;
 static bool scan_err;
@@ -309,7 +367,7 @@ static bool configure_scan(const char *content_dir, const char *dat_path,
       return false;
    }
    *manual_content_scan_get_search_recursively_ptr() = true;
-   *manual_content_scan_get_overwrite_playlist_ptr() = true;
+   *manual_content_scan_get_overwrite_playlist_ptr() = scan_overwrite;
    return true;
 }
 
@@ -513,6 +571,164 @@ static bool check_playlist(const char *playlist_dir)
    return true;
 }
 
+/* Differential check: the dedup index must answer exactly like the
+ * linear playlist_entry_exists() scan, with fuzzy archive matching
+ * both off and on.  Path IDs are syntactic (archive detection is a
+ * string operation), so none of these paths needs to exist.  Also
+ * pins the will_add contract: a recorded path becomes visible to
+ * the index at once, and playlist_push_unchecked() then brings the
+ * playlist into agreement. */
+static bool check_dedup_differential(const char *root)
+{
+   char plpath[4352];
+   char p_plain[4352], p_zip[4352], p_inzip[4352], p_case[4352];
+   char q_absent[4352], q_bare[4352], q_inother[4352], q_casevar[4352];
+   int fz;
+
+   snprintf(plpath,   sizeof(plpath),   "%s/DedupDiff.lpl", root);
+   snprintf(p_plain,  sizeof(p_plain),  "%s/dd/plain.bin", root);
+   snprintf(p_zip,    sizeof(p_zip),    "%s/dd/archive.zip", root);
+   snprintf(p_inzip,  sizeof(p_inzip),  "%s/dd/inner.zip#rom.bin", root);
+   snprintf(p_case,   sizeof(p_case),   "%s/dd/CaseFile.BIN", root);
+   snprintf(q_absent, sizeof(q_absent), "%s/dd/absent.bin", root);
+   snprintf(q_bare,   sizeof(q_bare),   "%s/dd/inner.zip", root);
+   snprintf(q_inother,sizeof(q_inother),"%s/dd/archive.zip#other.rom", root);
+   snprintf(q_casevar,sizeof(q_casevar),"%s/dd/casefile.bin", root);
+
+   for (fz = 0; fz < 2; fz++)
+   {
+      playlist_config_t cfg;
+      playlist_t *pl        = NULL;
+      playlist_dedup_t *dd  = NULL;
+      const char *entries[4];
+      const char *probes[10];
+      size_t i;
+      bool ok = false;
+
+      entries[0] = p_plain;
+      entries[1] = p_zip;      /* bare archive entry */
+      entries[2] = p_inzip;    /* inside-archive entry (distinct archive) */
+      entries[3] = p_case;
+
+      probes[0] = p_plain;     /* exact hits */
+      probes[1] = p_zip;
+      probes[2] = p_inzip;
+      probes[3] = p_case;
+      probes[4] = q_absent;    /* miss */
+      probes[5] = q_bare;      /* bare probe vs inside-archive entry  */
+      probes[6] = q_inother;   /* inside probe vs bare-archive entry  */
+      probes[7] = q_casevar;   /* case variant: OS-dependent - exactly
+                                  why this lane is differential */
+      probes[8] = plpath;      /* unrelated existing file: miss */
+      probes[9] = "";          /* empty probe: guard parity */
+
+      filestream_delete(plpath);
+      memset(&cfg, 0, sizeof(cfg));
+      playlist_config_set_path(&cfg, plpath);
+      cfg.capacity            = 100;
+      cfg.fuzzy_archive_match = (fz == 1);
+
+      if (!(pl = playlist_init(&cfg)))
+         return false;
+
+      for (i = 0; i < 4; i++)
+      {
+         struct playlist_entry e;
+         memset(&e, 0, sizeof(e));
+         e.path      = (char*)entries[i];
+         e.core_path = (char*)"DETECT";
+         e.core_name = (char*)"DETECT";
+         if (!playlist_push(pl, &e))
+         {
+            fprintf(stderr, "dedup diff: seed push failed\n");
+            goto lane_out;
+         }
+      }
+
+      if (!(dd = playlist_dedup_init()))
+         goto lane_out;
+      /* NULL budget callback: seed everything in one call */
+      if (!playlist_dedup_seed_step(dd, pl, NULL, NULL))
+      {
+         fprintf(stderr, "dedup diff: unbudgeted seeding did not finish\n");
+         goto lane_out;
+      }
+
+      for (i = 0; i < sizeof(probes) / sizeof(probes[0]); i++)
+      {
+         bool lin = playlist_entry_exists(pl, probes[i]);
+         bool idx = playlist_dedup_check_add(dd, pl, probes[i], false);
+         if (lin != idx)
+         {
+            fprintf(stderr,
+                  "dedup diff: fuzzy=%d probe %u \"%s\": linear=%d index=%d\n",
+                  fz, (unsigned)i, probes[i], (int)lin, (int)idx);
+            goto lane_out;
+         }
+      }
+
+      /* Anchor the fuzzy semantics themselves so the differential
+       * cannot rot into vacuity.  In RetroArch proper
+       * (RARCH_INTERNAL) the config gates fuzzy matching; this
+       * sample builds without RARCH_INTERNAL, where the gate is
+       * compiled out and both archive equivalences always hold. */
+      {
+#ifdef RARCH_INTERNAL
+         bool expect_fuzzy = (fz == 1);
+#else
+         bool expect_fuzzy = true;
+#endif
+         if (playlist_entry_exists(pl, q_bare)    != expect_fuzzy
+          || playlist_entry_exists(pl, q_inother) != expect_fuzzy)
+         {
+            fprintf(stderr, "dedup diff: fuzzy anchor changed (fuzzy=%d)\n", fz);
+            goto lane_out;
+         }
+      }
+
+      /* will_add: recording makes the path visible to the index
+       * immediately; the unchecked push then makes the playlist
+       * agree with it. */
+      if (playlist_dedup_check_add(dd, pl, q_absent, true))
+      {
+         fprintf(stderr, "dedup diff: absent path reported present\n");
+         goto lane_out;
+      }
+      if (!playlist_dedup_check_add(dd, pl, q_absent, false))
+      {
+         fprintf(stderr, "dedup diff: recorded path not visible\n");
+         goto lane_out;
+      }
+      {
+         struct playlist_entry e;
+         memset(&e, 0, sizeof(e));
+         e.path      = (char*)q_absent;
+         e.core_path = (char*)"DETECT";
+         e.core_name = (char*)"DETECT";
+         if (!playlist_push_unchecked(pl, &e))
+         {
+            fprintf(stderr, "dedup diff: unchecked push failed\n");
+            goto lane_out;
+         }
+      }
+      if (!playlist_entry_exists(pl, q_absent))
+      {
+         fprintf(stderr, "dedup diff: playlist disagrees after push\n");
+         goto lane_out;
+      }
+
+      ok = true;
+lane_out:
+      playlist_dedup_free(dd);
+      playlist_free(pl);
+      if (!ok)
+         return false;
+   }
+   filestream_delete(plpath);
+   fprintf(stderr, "[pass] dedup differential lane (fuzzy off/on)\n");
+   return true;
+}
+
 int main(int argc, char *argv[])
 {
    char content_dir[4096];
@@ -605,6 +821,9 @@ int main(int argc, char *argv[])
    task_queue_init(false /* regular queue: the case that freezes */,
          msgq_push);
 
+   if (!check_dedup_differential(fixture_root))
+      goto out_queue;
+
    if (!run_scan(content_dir, dat_path, playlist_dir, &m))
       goto out_queue;
    if (!check_playlist(playlist_dir))
@@ -663,6 +882,111 @@ int main(int argc, char *argv[])
                (double)m.total_usec / ref, THROUGHPUT_FACTOR);
          goto out_queue;
       }
+   }
+
+   /* Rescan without overwrite: every result must hit the dedup
+    * index against the 5000 entries the first pass wrote, nothing
+    * may be added twice, and the pre-existing entries drive the
+    * budgeted seeding path at scale. */
+   scan_overwrite = false;
+   {
+      scan_metrics_t m2;
+      bool rescan_ok = run_scan(content_dir, dat_path, playlist_dir, &m2)
+            && check_playlist(playlist_dir);
+      scan_overwrite = true;
+      if (!rescan_ok)
+         goto out_queue;
+   }
+   fprintf(stderr, "[pass] no-overwrite rescan lane (0 duplicates)\n");
+
+   /* Big-DAT lane: the pacing contract must not scale with DAT
+    * size.  Before the incremental DAT parse, this lane's whole
+    * ~40MB parse (and the index build after it) sat in single
+    * gathers; the assertion below fails on any return to that. */
+   {
+      char big_dat[4096];
+      char big_content[4096];
+      char big_playlists[4352];
+      scan_metrics_t mb;
+
+      if (!build_big_fixture(fixture_root,
+            big_dat, sizeof(big_dat),
+            big_content, sizeof(big_content),
+            big_playlists, sizeof(big_playlists)))
+      {
+         fprintf(stderr, "big fixture build failed\n");
+         goto out_queue;
+      }
+      if (!run_scan(big_content, big_dat, big_playlists, &mb))
+         goto out_queue;
+
+      /* Correctness: all files present, labelled from the DAT -
+       * including the last sample, whose label only an index
+       * covering the full list can supply. */
+      {
+         char plpath[4608];
+         playlist_config_t cfg;
+         playlist_t *pl;
+         const struct playlist_entry *e = NULL;
+         size_t n, k;
+         bool tail_seen = false;
+
+         memset(&cfg, 0, sizeof(cfg));
+         snprintf(plpath, sizeof(plpath), "%s/ScanBench.lpl",
+               big_playlists);
+         playlist_config_set_path(&cfg, plpath);
+         cfg.capacity = COLLECTION_SIZE;
+         if (!(pl = playlist_init(&cfg)))
+            goto out_queue;
+         n = playlist_size(pl);
+         for (k = 0; k < n; k++)
+         {
+            playlist_get_index(pl, k, &e);
+            if (e && e->label
+                  && !strcmp(e->label, "Big Game 294000"))
+               tail_seen = true;
+         }
+         playlist_free(pl);
+         if (n != BIG_DAT_CONTENT_FILES || !tail_seen)
+         {
+            fprintf(stderr,
+                  "big-DAT lane: %u entries (want %u), tail label %s\n",
+                  (unsigned)n, (unsigned)BIG_DAT_CONTENT_FILES,
+                  tail_seen ? "ok" : "missing");
+            goto out_queue;
+         }
+      }
+
+      if (!sanitize && !bench_only)
+      {
+         retro_time_t limit = 4000 * PACING_SLACK_MULTIPLIER;
+         if (mb.max_gather_usec > limit)
+         {
+            fprintf(stderr,
+                  "FAIL big-DAT pacing: max gather %.2fms CPU exceeds "
+                  "%.2fms budget\n",
+                  mb.max_gather_usec / 1000.0, limit / 1000.0);
+            goto out_queue;
+         }
+      }
+
+      /* Land cancels inside the budgeted DAT read and parse, which
+       * the small fixture's sweep passes in a couple of gathers. */
+      {
+         static const unsigned big_cancel_points[] = { 32, 128, 512 };
+         size_t ci;
+         for (ci = 0;
+              ci < sizeof(big_cancel_points) / sizeof(big_cancel_points[0]);
+              ci++)
+         {
+            if (!run_scan_cancelled(big_content, big_dat, big_playlists,
+                  big_cancel_points[ci]))
+               goto out_queue;
+         }
+      }
+      fprintf(stderr, "[pass] big-DAT lane (%u games, pacing%s)\n",
+            (unsigned)BIG_DAT_GAMES,
+            sanitize ? " skipped under sanitizer" : " held");
    }
 
    /* The regular-queue metrics lanes are done; tear that queue down

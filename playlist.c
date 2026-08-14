@@ -447,35 +447,29 @@ static bool playlist_path_equal(const char *real_path,
  * contained in specified 'entry'. Will update path_id
  * cache inside specified 'entry', if not already present.
  **/
-static bool playlist_path_matches_entry(playlist_path_id_t *path_id,
-      struct playlist_entry *entry, const playlist_config_t *config)
+/* Compares two content path IDs under the playlist's matching rules:
+ * exact real-path equality first (case-insensitive on
+ * case-insensitive operating systems), then - when fuzzy archive
+ * matching is enabled - the bare-archive vs inside-archive
+ * equivalence on the parent archive path.  Symmetric in its
+ * arguments. */
+static bool playlist_path_ids_match(const playlist_path_id_t *a,
+      const playlist_path_id_t *b, const playlist_config_t *config)
 {
-   /* Sanity check */
-   if (!path_id || !entry || !config)
-      return false;
-
-   /* Check whether entry contains a path ID cache */
-   if (!entry->path_id)
-   {
-      if (!(entry->path_id = playlist_path_id_init(entry->path)))
-         return false;
-   }
-
    /* Ensure we have valid real_path strings */
-   if (   (!path_id->real_path || !*path_id->real_path)
-       || (!entry->path_id->real_path || !*entry->path_id->real_path))
+   if (   (!a->real_path || !*a->real_path)
+       || (!b->real_path || !*b->real_path))
       return false;
 
    /* First pass comparison */
-   if (path_id->real_path_hash == entry->path_id->real_path_hash)
+   if (a->real_path_hash == b->real_path_hash)
    {
 #ifdef _WIN32
       /* Handle case-insensitive operating systems*/
-      if (string_is_equal_noncase(path_id->real_path,
-            entry->path_id->real_path))
+      if (string_is_equal_noncase(a->real_path, b->real_path))
          return true;
 #else
-      if (string_is_equal(path_id->real_path, entry->path_id->real_path))
+      if (string_is_equal(a->real_path, b->real_path))
          return true;
 #endif
    }
@@ -500,31 +494,46 @@ static bool playlist_path_matches_entry(playlist_path_id_t *path_id,
     * loads an archive file via the command line or some
     * external launcher (where the [delimiter][rom_file]
     * part is almost always omitted) */
-   if (   ((path_id->is_archive        && !path_id->is_in_archive)        && entry->path_id->is_in_archive)
-       || ((entry->path_id->is_archive && !entry->path_id->is_in_archive) && path_id->is_in_archive))
+   if (   ((a->is_archive && !a->is_in_archive) && b->is_in_archive)
+       || ((b->is_archive && !b->is_in_archive) && a->is_in_archive))
    {
       /* Ensure we have valid parent archive path
        * strings */
-      if (   (!path_id->archive_path || !*path_id->archive_path)
-          || (!entry->path_id->archive_path || !*entry->path_id->archive_path))
+      if (   (!a->archive_path || !*a->archive_path)
+          || (!b->archive_path || !*b->archive_path))
          return false;
 
-      if (path_id->archive_path_hash == entry->path_id->archive_path_hash)
+      if (a->archive_path_hash == b->archive_path_hash)
       {
 #ifdef _WIN32
          /* Handle case-insensitive operating systems*/
-         if (string_is_equal_noncase(path_id->archive_path,
-               entry->path_id->archive_path))
+         if (string_is_equal_noncase(a->archive_path, b->archive_path))
             return true;
 #else
-         if (string_is_equal(path_id->archive_path,
-               entry->path_id->archive_path))
+         if (string_is_equal(a->archive_path, b->archive_path))
             return true;
 #endif
       }
    }
 
    return false;
+}
+
+static bool playlist_path_matches_entry(playlist_path_id_t *path_id,
+      struct playlist_entry *entry, const playlist_config_t *config)
+{
+   /* Sanity check */
+   if (!path_id || !entry || !config)
+      return false;
+
+   /* Check whether entry contains a path ID cache */
+   if (!entry->path_id)
+   {
+      if (!(entry->path_id = playlist_path_id_init(entry->path)))
+         return false;
+   }
+
+   return playlist_path_ids_match(path_id, entry->path_id, config);
 }
 
 /**
@@ -803,6 +812,278 @@ bool playlist_entry_exists(playlist_t *playlist,
 
    playlist_path_id_free(path_id);
    return false;
+}
+
+/* ============================================================
+ * Content path dedup index
+ *
+ * Open-addressing hash table over content path IDs, answering
+ * playlist_entry_exists() queries in O(1) expected time.  Any two
+ * path IDs that playlist_path_ids_match() accepts share at least
+ * one hash value between their {real, archive} pairs: an exact
+ * match implies equal real-path hashes, and the fuzzy bare-archive
+ * vs inside-archive match implies equal parent-archive hashes,
+ * where a bare archive's archive hash equals its real hash.
+ * Indexing every ID under both of its hashes and probing under
+ * both of the query's hashes therefore yields a candidate superset,
+ * and each candidate is verified with playlist_path_ids_match()
+ * itself - the index can never change an answer, only the cost.
+ *
+ * The index owns every path ID it stores (entries are re-derived
+ * from the entry path strings during seeding, never borrowed from
+ * the entries' lazy caches), so entry deletion and playlist
+ * teardown cannot dangle it.  Any allocation failure degrades the
+ * index permanently: queries fall back to the linear
+ * playlist_entry_exists() scan and stay correct.
+ * ============================================================ */
+
+typedef struct
+{
+   uint32_t hash;
+   playlist_path_id_t *pid;   /* non-owning; NULL = empty slot */
+} playlist_dedup_slot_t;
+
+struct playlist_dedup
+{
+   playlist_dedup_slot_t *table;   /* power-of-two slot count */
+   size_t table_cap;
+   size_t table_used;
+   playlist_path_id_t **owned;     /* every stored ID, exactly once */
+   size_t owned_cnt;
+   size_t owned_cap;
+   size_t seed_pos;                /* next entry index to seed */
+   bool seeded;
+   bool degraded;
+};
+
+static void playlist_dedup_degrade(playlist_dedup_t *dedup)
+{
+   if (dedup->table)
+      free(dedup->table);
+   dedup->table      = NULL;
+   dedup->table_cap  = 0;
+   dedup->table_used = 0;
+   dedup->degraded   = true;
+}
+
+/* Places @pid into the table under @hash; assumes capacity headroom
+ * was already ensured. */
+static void playlist_dedup_place(playlist_dedup_slot_t *table,
+      size_t cap, uint32_t hash, playlist_path_id_t *pid)
+{
+   size_t idx = (size_t)hash & (cap - 1);
+   while (table[idx].pid)
+      idx = (idx + 1) & (cap - 1);
+   table[idx].hash = hash;
+   table[idx].pid  = pid;
+}
+
+/* True when @pid indexes under two distinct hash values (a path
+ * inside an archive: parent hash differs from the full hash). */
+static bool playlist_dedup_two_hashes(const playlist_path_id_t *pid)
+{
+   return pid->is_in_archive
+       && (pid->archive_path_hash != pid->real_path_hash);
+}
+
+/* Ensures room for up to two more slots, growing (or degrading)
+ * as required.  Returns false when the index became degraded. */
+static bool playlist_dedup_reserve(playlist_dedup_t *dedup)
+{
+   playlist_dedup_slot_t *grown = NULL;
+   size_t new_cap;
+   size_t i;
+
+   if (dedup->degraded)
+      return false;
+
+   /* Keep load at or below 3/4 after inserting two slots */
+   if ((dedup->table_used + 2) * 4 <= dedup->table_cap * 3)
+      return true;
+
+   new_cap = (dedup->table_cap == 0) ? 64 : (dedup->table_cap << 1);
+   if (!(grown = (playlist_dedup_slot_t*)calloc(new_cap, sizeof(*grown))))
+   {
+      playlist_dedup_degrade(dedup);
+      return false;
+   }
+
+   for (i = 0; i < dedup->owned_cnt; i++)
+   {
+      playlist_path_id_t *pid = dedup->owned[i];
+      playlist_dedup_place(grown, new_cap, pid->real_path_hash, pid);
+      if (playlist_dedup_two_hashes(pid))
+         playlist_dedup_place(grown, new_cap, pid->archive_path_hash, pid);
+   }
+
+   if (dedup->table)
+      free(dedup->table);
+   dedup->table     = grown;
+   dedup->table_cap = new_cap;
+   return true;
+}
+
+/* Takes ownership of @pid and indexes it under its hash(es).
+ * On failure the index is degraded and @pid is freed. */
+static void playlist_dedup_insert(playlist_dedup_t *dedup,
+      playlist_path_id_t *pid)
+{
+   /* IDs with no real path can never satisfy the matcher;
+    * do not store them */
+   if (!pid->real_path || !*pid->real_path)
+   {
+      playlist_path_id_free(pid);
+      return;
+   }
+
+   if (!playlist_dedup_reserve(dedup))
+   {
+      playlist_path_id_free(pid);
+      return;
+   }
+
+   if (dedup->owned_cnt == dedup->owned_cap)
+   {
+      size_t new_cap = (dedup->owned_cap == 0) ? 64 : (dedup->owned_cap << 1);
+      playlist_path_id_t **grown = (playlist_path_id_t**)realloc(
+            dedup->owned, new_cap * sizeof(*grown));
+      if (!grown)
+      {
+         playlist_dedup_degrade(dedup);
+         playlist_path_id_free(pid);
+         return;
+      }
+      dedup->owned     = grown;
+      dedup->owned_cap = new_cap;
+   }
+   dedup->owned[dedup->owned_cnt++] = pid;
+
+   playlist_dedup_place(dedup->table, dedup->table_cap,
+         pid->real_path_hash, pid);
+   dedup->table_used++;
+   if (playlist_dedup_two_hashes(pid))
+   {
+      playlist_dedup_place(dedup->table, dedup->table_cap,
+            pid->archive_path_hash, pid);
+      dedup->table_used++;
+   }
+}
+
+/* Probes the chain of @hash for a stored ID matching @probe. */
+static bool playlist_dedup_probe_hash(playlist_dedup_t *dedup,
+      const playlist_path_id_t *probe, uint32_t hash,
+      const playlist_config_t *config)
+{
+   size_t idx = (size_t)hash & (dedup->table_cap - 1);
+   while (dedup->table[idx].pid)
+   {
+      if (   dedup->table[idx].hash == hash
+          && playlist_path_ids_match(probe, dedup->table[idx].pid, config))
+         return true;
+      idx = (idx + 1) & (dedup->table_cap - 1);
+   }
+   return false;
+}
+
+static bool playlist_dedup_lookup(playlist_dedup_t *dedup,
+      const playlist_path_id_t *probe, const playlist_config_t *config)
+{
+   if (!dedup->table_cap)
+      return false;
+   if (playlist_dedup_probe_hash(dedup, probe,
+         probe->real_path_hash, config))
+      return true;
+   if (playlist_dedup_two_hashes(probe))
+      return playlist_dedup_probe_hash(dedup, probe,
+            probe->archive_path_hash, config);
+   return false;
+}
+
+playlist_dedup_t *playlist_dedup_init(void)
+{
+   return (playlist_dedup_t*)calloc(1, sizeof(playlist_dedup_t));
+}
+
+bool playlist_dedup_seed_step(playlist_dedup_t *dedup,
+      playlist_t *playlist,
+      bool (*budget_cb)(void *userdata), void *userdata)
+{
+   size_t _len;
+   bool progressed = false;
+
+   if (!dedup || dedup->seeded || dedup->degraded)
+      return true;
+   if (!playlist)
+   {
+      dedup->seeded = true;
+      return true;
+   }
+
+   _len = RBUF_LEN(playlist->entries);
+   while (dedup->seed_pos < _len)
+   {
+      playlist_path_id_t *pid;
+
+      /* Guarantee forward progress: seed at least one entry per
+       * call before consulting the budget */
+      if (progressed && budget_cb && !budget_cb(userdata))
+         return false;
+
+      if (!(pid = playlist_path_id_init(
+            playlist->entries[dedup->seed_pos].path)))
+      {
+         playlist_dedup_degrade(dedup);
+         return true;
+      }
+      playlist_dedup_insert(dedup, pid);
+      if (dedup->degraded)
+         return true;
+
+      dedup->seed_pos++;
+      progressed = true;
+   }
+
+   dedup->seeded = true;
+   return true;
+}
+
+bool playlist_dedup_check_add(playlist_dedup_t *dedup,
+      playlist_t *playlist, const char *path, bool will_add)
+{
+   playlist_path_id_t *path_id = NULL;
+   bool found                  = false;
+
+   if (!playlist || (!path || !*path))
+      return false;
+
+   if (!dedup || dedup->degraded)
+      return playlist_entry_exists(playlist, path);
+
+   if (!(path_id = playlist_path_id_init(path)))
+      return false;
+
+   found = playlist_dedup_lookup(dedup, path_id, &playlist->config);
+
+   if (!found && will_add)
+      playlist_dedup_insert(dedup, path_id);   /* consumes path_id */
+   else
+      playlist_path_id_free(path_id);
+
+   return found;
+}
+
+void playlist_dedup_free(playlist_dedup_t *dedup)
+{
+   size_t i;
+   if (!dedup)
+      return;
+   for (i = 0; i < dedup->owned_cnt; i++)
+      playlist_path_id_free(dedup->owned[i]);
+   if (dedup->owned)
+      free(dedup->owned);
+   if (dedup->table)
+      free(dedup->table);
+   free(dedup);
 }
 
 void playlist_update(playlist_t *playlist, size_t idx,
@@ -1318,35 +1599,42 @@ bool playlist_content_path_is_valid(const char *path)
  *
  * Push entry to top of playlist.
  **/
-bool playlist_push(playlist_t *playlist,
-      const struct playlist_entry *entry)
+/* Shared validation preamble of playlist_push() and
+ * playlist_push_unchecked(): checks the core path, builds the path
+ * ID (returned to the caller, who owns it), resolves the real core
+ * path into @real_core_path and derives the core name into
+ * @core_name (which may point at @core_name_buf or at the entry's
+ * own string).  Returns false, having freed nothing but its own
+ * partial work, when the entry cannot legally be pushed. */
+static bool playlist_push_prepare(playlist_t *playlist,
+      const struct playlist_entry *entry,
+      playlist_path_id_t **path_id,
+      char *real_core_path, size_t real_core_path_size,
+      char *core_name_buf, size_t core_name_buf_size,
+      const char **core_name)
 {
-   size_t i, _len;
-   char real_core_path[PATH_MAX_LENGTH];
-   char base_path[NAME_MAX_LENGTH];
-   playlist_path_id_t *path_id = NULL;
-   const char *core_name       = entry->core_name;
-   bool entry_updated          = false;
+   *path_id   = NULL;
+   *core_name = entry ? entry->core_name : NULL;
 
    if (!playlist || !entry)
-      goto error;
+      return false;
 
    if (!entry->core_path || !*entry->core_path)
    {
       RARCH_ERR("[Playlist] Cannot push NULL or empty core path into the playlist.\n");
-      goto error;
+      return false;
    }
 
    /* Get path ID */
-   if (!(path_id = playlist_path_id_init(entry->path)))
-      goto error;
+   if (!(*path_id = playlist_path_id_init(entry->path)))
+      return false;
 
    /* Get 'real' core path */
-   strlcpy(real_core_path, entry->core_path, sizeof(real_core_path));
+   strlcpy(real_core_path, entry->core_path, real_core_path_size);
    if (   !string_is_equal(real_core_path, FILE_PATH_DETECT)
        && !string_is_equal(real_core_path, FILE_PATH_BUILTIN))
       playlist_resolve_path(PLAYLIST_SAVE, true, real_core_path,
-             sizeof(real_core_path));
+             real_core_path_size);
 
    if (!*real_core_path)
    {
@@ -1354,20 +1642,160 @@ bool playlist_push(playlist_t *playlist,
       goto error;
    }
 
-   if (!core_name || !*core_name)
+   if (!*core_name || !**core_name)
    {
-      base_path[0] = '\0';
-      fill_pathname(base_path, path_basename(real_core_path), "",
-            sizeof(base_path));
+      core_name_buf[0] = '\0';
+      fill_pathname(core_name_buf, path_basename(real_core_path), "",
+            core_name_buf_size);
 
-      core_name = base_path;
+      *core_name = core_name_buf;
 
-      if (!core_name || !*core_name)
+      if (!*core_name || !**core_name)
       {
          RARCH_ERR("[Playlist] Cannot push NULL or empty core name into the playlist.\n");
          goto error;
       }
    }
+
+   return true;
+
+error:
+   playlist_path_id_free(*path_id);
+   *path_id = NULL;
+   return false;
+}
+
+/* Appends @entry at the front of @playlist without searching for an
+ * existing match.  @path_id ownership transfers to the new entry on
+ * success and stays with the caller on failure.  Applies the
+ * capacity policy (evicting the oldest entry when full) and marks
+ * the playlist modified. */
+static bool playlist_push_new_entry(playlist_t *playlist,
+      const struct playlist_entry *entry,
+      playlist_path_id_t *path_id,
+      const char *real_core_path, const char *core_name)
+{
+   size_t i;
+   size_t _len = RBUF_LEN(playlist->entries);
+
+   if (playlist->config.capacity == 0)
+      return false;
+
+   if (_len == playlist->config.capacity)
+   {
+      struct playlist_entry *last_entry = &playlist->entries[_len - 1];
+      playlist_free_entry(last_entry);
+      _len--;
+   }
+   else
+   {
+      /* Allocate memory to fit one more item and resize the buffer */
+      if (!RBUF_TRYFIT(playlist->entries, _len + 1))
+         return false; /* out of memory */
+      RBUF_RESIZE(playlist->entries, _len + 1);
+   }
+
+   if (playlist->entries)
+   {
+      memmove(playlist->entries + 1, playlist->entries,
+            _len * sizeof(struct playlist_entry));
+
+      playlist->entries[0].path               = NULL;
+      playlist->entries[0].label              = NULL;
+      playlist->entries[0].core_path          = NULL;
+      playlist->entries[0].core_name          = NULL;
+      playlist->entries[0].db_name            = NULL;
+      playlist->entries[0].crc32              = NULL;
+      playlist->entries[0].subsystem_ident    = NULL;
+      playlist->entries[0].subsystem_name     = NULL;
+      playlist->entries[0].runtime_str        = NULL;
+      playlist->entries[0].last_played_str    = NULL;
+      playlist->entries[0].subsystem_roms     = NULL;
+      playlist->entries[0].path_id            = NULL;
+      playlist->entries[0].runtime_status     = PLAYLIST_RUNTIME_UNKNOWN;
+      playlist->entries[0].runtime_hours      = 0;
+      playlist->entries[0].runtime_minutes    = 0;
+      playlist->entries[0].runtime_seconds    = 0;
+      playlist->entries[0].last_played_year   = 0;
+      playlist->entries[0].last_played_month  = 0;
+      playlist->entries[0].last_played_day    = 0;
+      playlist->entries[0].last_played_hour   = 0;
+      playlist->entries[0].last_played_minute = 0;
+      playlist->entries[0].last_played_second = 0;
+
+      if (path_id->real_path && *path_id->real_path)
+         playlist->entries[0].path            = strdup(path_id->real_path);
+      playlist->entries[0].path_id            = path_id;
+
+      playlist->entries[0].entry_slot         = entry->entry_slot;
+
+      if (entry->label && *entry->label)
+         playlist->entries[0].label           = strdup(entry->label);
+      if (*real_core_path)
+         playlist->entries[0].core_path       = strdup(real_core_path);
+      if (core_name && *core_name)
+         playlist->entries[0].core_name       = strdup(core_name);
+      if (entry->db_name && *entry->db_name)
+         playlist->entries[0].db_name         = strdup(entry->db_name);
+      if (entry->crc32 && *entry->crc32)
+         playlist->entries[0].crc32           = strdup(entry->crc32);
+      if (entry->subsystem_ident && *entry->subsystem_ident)
+         playlist->entries[0].subsystem_ident = strdup(entry->subsystem_ident);
+      if (entry->subsystem_name && *entry->subsystem_name)
+         playlist->entries[0].subsystem_name  = strdup(entry->subsystem_name);
+
+      if (entry->subsystem_roms)
+      {
+         union string_list_elem_attr attributes = {0};
+
+         playlist->entries[0].subsystem_roms    = string_list_new();
+
+         for (i = 0; i < entry->subsystem_roms->size; i++)
+            string_list_append(playlist->entries[0].subsystem_roms, entry->subsystem_roms->elems[i].data, attributes);
+      }
+   }
+
+   playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
+   return true;
+}
+
+bool playlist_push_unchecked(playlist_t *playlist,
+      const struct playlist_entry *entry)
+{
+   char real_core_path[PATH_MAX_LENGTH];
+   char base_path[NAME_MAX_LENGTH];
+   playlist_path_id_t *path_id = NULL;
+   const char *core_name       = NULL;
+
+   if (!playlist_push_prepare(playlist, entry, &path_id,
+         real_core_path, sizeof(real_core_path),
+         base_path, sizeof(base_path), &core_name))
+      return false;
+
+   if (!playlist_push_new_entry(playlist, entry, path_id,
+         real_core_path, core_name))
+   {
+      playlist_path_id_free(path_id);
+      return false;
+   }
+
+   return true;
+}
+
+bool playlist_push(playlist_t *playlist,
+      const struct playlist_entry *entry)
+{
+   size_t i, _len;
+   char real_core_path[PATH_MAX_LENGTH];
+   char base_path[NAME_MAX_LENGTH];
+   playlist_path_id_t *path_id = NULL;
+   const char *core_name       = NULL;
+   bool entry_updated          = false;
+
+   if (!playlist_push_prepare(playlist, entry, &path_id,
+         real_core_path, sizeof(real_core_path),
+         base_path, sizeof(base_path), &core_name))
+      goto error;
 
    _len = RBUF_LEN(playlist->entries);
    for (i = 0; i < _len; i++)
@@ -1496,83 +1924,10 @@ bool playlist_push(playlist_t *playlist,
       goto success;
    }
 
-   if (playlist->config.capacity == 0)
+   if (!playlist_push_new_entry(playlist, entry, path_id,
+         real_core_path, core_name))
       goto error;
-
-   if (_len == playlist->config.capacity)
-   {
-      struct playlist_entry *last_entry = &playlist->entries[_len - 1];
-      playlist_free_entry(last_entry);
-      _len--;
-   }
-   else
-   {
-      /* Allocate memory to fit one more item and resize the buffer */
-      if (!RBUF_TRYFIT(playlist->entries, _len + 1))
-         goto error; /* out of memory */
-      RBUF_RESIZE(playlist->entries, _len + 1);
-   }
-
-   if (playlist->entries)
-   {
-      memmove(playlist->entries + 1, playlist->entries,
-            _len * sizeof(struct playlist_entry));
-
-      playlist->entries[0].path               = NULL;
-      playlist->entries[0].label              = NULL;
-      playlist->entries[0].core_path          = NULL;
-      playlist->entries[0].core_name          = NULL;
-      playlist->entries[0].db_name            = NULL;
-      playlist->entries[0].crc32              = NULL;
-      playlist->entries[0].subsystem_ident    = NULL;
-      playlist->entries[0].subsystem_name     = NULL;
-      playlist->entries[0].runtime_str        = NULL;
-      playlist->entries[0].last_played_str    = NULL;
-      playlist->entries[0].subsystem_roms     = NULL;
-      playlist->entries[0].path_id            = NULL;
-      playlist->entries[0].runtime_status     = PLAYLIST_RUNTIME_UNKNOWN;
-      playlist->entries[0].runtime_hours      = 0;
-      playlist->entries[0].runtime_minutes    = 0;
-      playlist->entries[0].runtime_seconds    = 0;
-      playlist->entries[0].last_played_year   = 0;
-      playlist->entries[0].last_played_month  = 0;
-      playlist->entries[0].last_played_day    = 0;
-      playlist->entries[0].last_played_hour   = 0;
-      playlist->entries[0].last_played_minute = 0;
-      playlist->entries[0].last_played_second = 0;
-
-      if (path_id->real_path && *path_id->real_path)
-         playlist->entries[0].path            = strdup(path_id->real_path);
-      playlist->entries[0].path_id            = path_id;
-      path_id                                 = NULL;
-
-      playlist->entries[0].entry_slot         = entry->entry_slot;
-
-      if (entry->label && *entry->label)
-         playlist->entries[0].label           = strdup(entry->label);
-      if (*real_core_path)
-         playlist->entries[0].core_path       = strdup(real_core_path);
-      if (core_name && *core_name)
-         playlist->entries[0].core_name       = strdup(core_name);
-      if (entry->db_name && *entry->db_name)
-         playlist->entries[0].db_name         = strdup(entry->db_name);
-      if (entry->crc32 && *entry->crc32)
-         playlist->entries[0].crc32           = strdup(entry->crc32);
-      if (entry->subsystem_ident && *entry->subsystem_ident)
-         playlist->entries[0].subsystem_ident = strdup(entry->subsystem_ident);
-      if (entry->subsystem_name && *entry->subsystem_name)
-         playlist->entries[0].subsystem_name  = strdup(entry->subsystem_name);
-
-      if (entry->subsystem_roms)
-      {
-         union string_list_elem_attr attributes = {0};
-
-         playlist->entries[0].subsystem_roms    = string_list_new();
-
-         for (i = 0; i < entry->subsystem_roms->size; i++)
-            string_list_append(playlist->entries[0].subsystem_roms, entry->subsystem_roms->elems[i].data, attributes);
-      }
-   }
+   path_id = NULL;   /* ownership transferred to the new entry */
 
 success:
    if (path_id)
