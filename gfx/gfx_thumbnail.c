@@ -738,6 +738,25 @@ static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
 static void gfx_thumbnail_anim_audio_begin(gfx_thumbnail_t *thumbnail)
 {
    enum image_type_enum type = (enum image_type_enum)thumbnail->anim_type;
+
+   /* A windowed handle has no container to hand over.  anim_buf_len is
+    * the file's full length, but only the permanently resident head
+    * plus the sliding window is committed - the rest is reserved
+    * address space, and reading it faults.  The mixer hand-off below
+    * copies container_size bytes out of anim_buf, so on a window it
+    * walks off the head into unmapped pages: SIGSEGV inside memcpy,
+    * with a copy destination the allocator was happy to provide
+    * because a multi-gigabyte commit charge is satisfiable from the
+    * pagefile.
+    *
+    * Streaming the mixer a windowed source needs the same feeder the
+    * video decoder gets, driven from the audio thread - the
+    * cross-thread change anim_install already notes as out of scope.
+    * Until then a windowed preview is silent rather than fatal; the
+    * fully-resident path is unaffected and keeps its audio. */
+   if (thumbnail->anim_windowed)
+      return;
+
    if (     (   (type == IMAGE_TYPE_WEBM)
              || (type == IMAGE_TYPE_MP4))
          && config_get_ptr()->bools.menu_thumbnail_preview_audio)
