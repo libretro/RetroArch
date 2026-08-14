@@ -126,8 +126,7 @@
 - VIDEO/METAL: Add HDR10/scRGB output support
 - VIDEO/METAL: Add support for GPU index
 - VIDEO/SDL2: Add hardware-accelerated support for widgets, XMB, Ozone
-- VIDEO/SDL3: Add SDL3 video driver (software-rendered frames only; hardware-rendered cores and shader presets need gl/glcore/vulkan)
-- VIDEO/SDL3: Add OpenGL and Vulkan context drivers for SDL3 windows
+- VIDEO/SDL3: Add SDL3 video driver (software/gl/glcore/vulkan)
 - VIDEO/VULKAN: VK_EXT_full_screen_exclusive is now optional
 - VIDEO/WAYLAND: Fix fullscreen window offset/incorrect sizing
 - VIDEO/WAYLAND: Fix issue with tiny menu in case of fullscreen
