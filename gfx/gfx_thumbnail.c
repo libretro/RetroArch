@@ -826,7 +826,7 @@ static void gfx_thumbnail_audio_win_release(void *owner)
  * offset one past the moov, or 0 when it cannot be found.  WebM keeps
  * its header material at the front and is left alone. */
 static size_t gfx_thumbnail_audio_meta_end(struct data_transfer *dt,
-      size_t blen)
+      size_t blen, size_t *lo_out)
 {
    size_t pos = 0;
    int    n   = 0;
@@ -856,7 +856,11 @@ static size_t gfx_thumbnail_audio_meta_end(struct data_transfer *dt,
       if (sz < hs || sz > (uint64_t)blen - (uint64_t)pos)
          return 0;
       if (h[4] == 'm' && h[5] == 'o' && h[6] == 'o' && h[7] == 'v')
+      {
+         if (lo_out)
+            *lo_out = pos;
          return (size_t)((uint64_t)pos + sz);
+      }
       pos += (size_t)sz;
    }
    return 0;
@@ -912,6 +916,7 @@ static void gfx_thumbnail_anim_audio_begin(gfx_thumbnail_t *thumbnail)
       size_t                 blen = 0;
       size_t                 floor_off;
       size_t                 keep;
+      size_t                 island_hi = 0;
 
       if (thumbnail->anim_audio_dt)   /* already streaming */
          return;
@@ -934,32 +939,78 @@ static void gfx_thumbnail_anim_audio_begin(gfx_thumbnail_t *thumbnail)
          free(w);
          return;
       }
-      /* Re-size the head against where the metadata actually is. */
+      /* Make the metadata reachable, wherever it sits.
+       *
+       * The decoder's open takes a PREFIX bound, so a LEADING moov is
+       * covered by growing the head - and the head must also clear the
+       * first sample, which begins just past the moov: sizing it to
+       * the moov's end alone left avail sixteen bytes short of the
+       * media floor on a real file, the decoder could not reach packet
+       * one, and the feeder anchors at tell==0 so nothing ever raised
+       * the bound.  Silence, from a head that looked generous.
+       *
+       * A TRAILING moov cannot be reached by a head at all without
+       * holding the whole file.  Commit just its island instead and
+       * open against the full length: from there the feeder keeps the
+       * committed band straddling the decoder, exactly as the video
+       * path has always done for the same layout.  Residency is the
+       * head, the island, and the slide - a few MiB whatever the file
+       * weighs - so there is no size limit on this path. */
       if (type == IMAGE_TYPE_MP4)
       {
          size_t probe_len = 0;
          if (data_transfer_window_base(w->dt, &probe_len) && probe_len)
          {
+            size_t meta_lo  = 0;
             size_t meta_end = gfx_thumbnail_audio_meta_end(w->dt,
-                  probe_len);
-            if (meta_end > keep)
+                  probe_len, &meta_lo);
+
+            if (!meta_end)
+            {   /* no moov found: leave the floor-derived head */
+            }
+            else if (meta_end <= GFX_THUMB_AUDIO_HEAD_MAX)
             {
-               /* Bounded: a trailing moov past the ceiling would mean
-                * holding most of the file resident, which is the cost
-                * the window exists to avoid.  Such a file keeps its
-                * video preview and goes without audio. */
-               if (   meta_end > GFX_THUMB_AUDIO_HEAD_MAX
-                   || !data_transfer_window_grow_keep(w->dt, meta_end))
+               /* Reachable by a head.  Cover the moov AND the media
+                * floor past it, never shrinking below either. */
+               size_t need = meta_end;
+               if (floor_off + GFX_THUMB_AUDIO_HEAD_SLACK > need)
+                  need = floor_off + GFX_THUMB_AUDIO_HEAD_SLACK;
+               if (need < GFX_THUMB_AUDIO_WINDOW_KEEP)
+                  need = GFX_THUMB_AUDIO_WINDOW_KEEP;
+               if (need > probe_len)
+                  need = probe_len;
+               /* The floor can be far past the moov - media that
+                * starts gigabytes in - and a head is not the way to
+                * reach that.  Keep the head on the metadata and let
+                * the feeder carry the decoder out to the media, which
+                * is what the full-length bound below is for. */
+               if (need > GFX_THUMB_AUDIO_HEAD_MAX)
+               {
+                  need       = meta_end;
+                  island_hi  = meta_end;
+                  if (need < GFX_THUMB_AUDIO_WINDOW_KEEP)
+                     need = GFX_THUMB_AUDIO_WINDOW_KEEP;
+               }
+               if (need > keep)
+               {
+                  if (!data_transfer_window_grow_keep(w->dt, need))
+                  {
+                     gfx_thumbnail_audio_win_release(w);
+                     return;
+                  }
+                  keep = need;
+               }
+            }
+            else
+            {
+               /* Too far for a head: commit the island alone. */
+               if (!data_transfer_window_ensure(w->dt, meta_lo, meta_end))
                {
                   gfx_thumbnail_audio_win_release(w);
                   return;
                }
-               keep = meta_end;
+               island_hi = meta_end;
             }
-            else if (meta_end > GFX_THUMB_AUDIO_WINDOW_KEEP)
-               /* Leading moov: the head need only cover it, which is
-                * usually less than the floor-plus-slack figure. */
-               keep = meta_end;
          }
       }
       if (!(base = data_transfer_window_base(w->dt, &blen)) || !blen)
@@ -967,10 +1018,14 @@ static void gfx_thumbnail_anim_audio_begin(gfx_thumbnail_t *thumbnail)
          gfx_thumbnail_audio_win_release(w);
          return;
       }
-      /* Resident right now: the head.  Never claim more than this -
-       * the decoder stops at the bound, so an over-claim is a read of
-       * reserved pages while an under-claim is merely a stall. */
-      thumbnail->anim_audio_hi = (keep < blen) ? keep : blen;
+      /* The bound handed over at open.  Normally the head, since the
+       * decoder stops at the bound and an over-claim would be a read
+       * of reserved pages.  With a committed island the metadata sits
+       * above the head, so the open needs the full length to reach it;
+       * from that point residency is the feeder's job, which is the
+       * same contract the video path runs under. */
+      thumbnail->anim_audio_hi = island_hi
+            ? blen : ((keep < blen) ? keep : blen);
 
       {
          audio_mixer_stream_params_t params;
