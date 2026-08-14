@@ -683,6 +683,11 @@ static void sdl3_poll_pen(sdl3_input_t *sdl)
       }
    }
 
+   /* Nothing reads pen_abs_* outside proximity, so pen-less setups
+    * (the common case) skip the per-frame density lookup. */
+   if (!sdl->pen_in_proximity)
+      return;
+
    density = sdl3_window_pixel_density();
    sdl->pen_abs_x = sdl->pen_raw_x * density;
    sdl->pen_abs_y = sdl->pen_raw_y * density;
