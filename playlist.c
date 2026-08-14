@@ -1327,35 +1327,42 @@ bool playlist_content_path_is_valid(const char *path)
  *
  * Push entry to top of playlist.
  **/
-bool playlist_push(playlist_t *playlist,
-      const struct playlist_entry *entry)
+/* Shared validation preamble of playlist_push() and
+ * playlist_push_unchecked(): checks the core path, builds the path
+ * ID (returned to the caller, who owns it), resolves the real core
+ * path into @real_core_path and derives the core name into
+ * @core_name (which may point at @core_name_buf or at the entry's
+ * own string).  Returns false, having freed nothing but its own
+ * partial work, when the entry cannot legally be pushed. */
+static bool playlist_push_prepare(playlist_t *playlist,
+      const struct playlist_entry *entry,
+      playlist_path_id_t **path_id,
+      char *real_core_path, size_t real_core_path_size,
+      char *core_name_buf, size_t core_name_buf_size,
+      const char **core_name)
 {
-   size_t i, _len;
-   char real_core_path[PATH_MAX_LENGTH];
-   char base_path[NAME_MAX_LENGTH];
-   playlist_path_id_t *path_id = NULL;
-   const char *core_name       = entry->core_name;
-   bool entry_updated          = false;
+   *path_id   = NULL;
+   *core_name = entry ? entry->core_name : NULL;
 
    if (!playlist || !entry)
-      goto error;
+      return false;
 
    if (!entry->core_path || !*entry->core_path)
    {
       RARCH_ERR("[Playlist] Cannot push NULL or empty core path into the playlist.\n");
-      goto error;
+      return false;
    }
 
    /* Get path ID */
-   if (!(path_id = playlist_path_id_init(entry->path)))
-      goto error;
+   if (!(*path_id = playlist_path_id_init(entry->path)))
+      return false;
 
    /* Get 'real' core path */
-   strlcpy(real_core_path, entry->core_path, sizeof(real_core_path));
+   strlcpy(real_core_path, entry->core_path, real_core_path_size);
    if (   !string_is_equal(real_core_path, FILE_PATH_DETECT)
        && !string_is_equal(real_core_path, FILE_PATH_BUILTIN))
       playlist_resolve_path(PLAYLIST_SAVE, true, real_core_path,
-             sizeof(real_core_path));
+             real_core_path_size);
 
    if (!*real_core_path)
    {
@@ -1363,20 +1370,160 @@ bool playlist_push(playlist_t *playlist,
       goto error;
    }
 
-   if (!core_name || !*core_name)
+   if (!*core_name || !**core_name)
    {
-      base_path[0] = '\0';
-      fill_pathname(base_path, path_basename(real_core_path), "",
-            sizeof(base_path));
+      core_name_buf[0] = '\0';
+      fill_pathname(core_name_buf, path_basename(real_core_path), "",
+            core_name_buf_size);
 
-      core_name = base_path;
+      *core_name = core_name_buf;
 
-      if (!core_name || !*core_name)
+      if (!*core_name || !**core_name)
       {
          RARCH_ERR("[Playlist] Cannot push NULL or empty core name into the playlist.\n");
          goto error;
       }
    }
+
+   return true;
+
+error:
+   playlist_path_id_free(*path_id);
+   *path_id = NULL;
+   return false;
+}
+
+/* Appends @entry at the front of @playlist without searching for an
+ * existing match.  @path_id ownership transfers to the new entry on
+ * success and stays with the caller on failure.  Applies the
+ * capacity policy (evicting the oldest entry when full) and marks
+ * the playlist modified. */
+static bool playlist_push_new_entry(playlist_t *playlist,
+      const struct playlist_entry *entry,
+      playlist_path_id_t *path_id,
+      const char *real_core_path, const char *core_name)
+{
+   size_t i;
+   size_t _len = RBUF_LEN(playlist->entries);
+
+   if (playlist->config.capacity == 0)
+      return false;
+
+   if (_len == playlist->config.capacity)
+   {
+      struct playlist_entry *last_entry = &playlist->entries[_len - 1];
+      playlist_free_entry(last_entry);
+      _len--;
+   }
+   else
+   {
+      /* Allocate memory to fit one more item and resize the buffer */
+      if (!RBUF_TRYFIT(playlist->entries, _len + 1))
+         return false; /* out of memory */
+      RBUF_RESIZE(playlist->entries, _len + 1);
+   }
+
+   if (playlist->entries)
+   {
+      memmove(playlist->entries + 1, playlist->entries,
+            _len * sizeof(struct playlist_entry));
+
+      playlist->entries[0].path               = NULL;
+      playlist->entries[0].label              = NULL;
+      playlist->entries[0].core_path          = NULL;
+      playlist->entries[0].core_name          = NULL;
+      playlist->entries[0].db_name            = NULL;
+      playlist->entries[0].crc32              = NULL;
+      playlist->entries[0].subsystem_ident    = NULL;
+      playlist->entries[0].subsystem_name     = NULL;
+      playlist->entries[0].runtime_str        = NULL;
+      playlist->entries[0].last_played_str    = NULL;
+      playlist->entries[0].subsystem_roms     = NULL;
+      playlist->entries[0].path_id            = NULL;
+      playlist->entries[0].runtime_status     = PLAYLIST_RUNTIME_UNKNOWN;
+      playlist->entries[0].runtime_hours      = 0;
+      playlist->entries[0].runtime_minutes    = 0;
+      playlist->entries[0].runtime_seconds    = 0;
+      playlist->entries[0].last_played_year   = 0;
+      playlist->entries[0].last_played_month  = 0;
+      playlist->entries[0].last_played_day    = 0;
+      playlist->entries[0].last_played_hour   = 0;
+      playlist->entries[0].last_played_minute = 0;
+      playlist->entries[0].last_played_second = 0;
+
+      if (path_id->real_path && *path_id->real_path)
+         playlist->entries[0].path            = strdup(path_id->real_path);
+      playlist->entries[0].path_id            = path_id;
+
+      playlist->entries[0].entry_slot         = entry->entry_slot;
+
+      if (entry->label && *entry->label)
+         playlist->entries[0].label           = strdup(entry->label);
+      if (*real_core_path)
+         playlist->entries[0].core_path       = strdup(real_core_path);
+      if (core_name && *core_name)
+         playlist->entries[0].core_name       = strdup(core_name);
+      if (entry->db_name && *entry->db_name)
+         playlist->entries[0].db_name         = strdup(entry->db_name);
+      if (entry->crc32 && *entry->crc32)
+         playlist->entries[0].crc32           = strdup(entry->crc32);
+      if (entry->subsystem_ident && *entry->subsystem_ident)
+         playlist->entries[0].subsystem_ident = strdup(entry->subsystem_ident);
+      if (entry->subsystem_name && *entry->subsystem_name)
+         playlist->entries[0].subsystem_name  = strdup(entry->subsystem_name);
+
+      if (entry->subsystem_roms)
+      {
+         union string_list_elem_attr attributes = {0};
+
+         playlist->entries[0].subsystem_roms    = string_list_new();
+
+         for (i = 0; i < entry->subsystem_roms->size; i++)
+            string_list_append(playlist->entries[0].subsystem_roms, entry->subsystem_roms->elems[i].data, attributes);
+      }
+   }
+
+   playlist->flags   |= CNT_PLAYLIST_FLG_MOD;
+   return true;
+}
+
+bool playlist_push_unchecked(playlist_t *playlist,
+      const struct playlist_entry *entry)
+{
+   char real_core_path[PATH_MAX_LENGTH];
+   char base_path[NAME_MAX_LENGTH];
+   playlist_path_id_t *path_id = NULL;
+   const char *core_name       = NULL;
+
+   if (!playlist_push_prepare(playlist, entry, &path_id,
+         real_core_path, sizeof(real_core_path),
+         base_path, sizeof(base_path), &core_name))
+      return false;
+
+   if (!playlist_push_new_entry(playlist, entry, path_id,
+         real_core_path, core_name))
+   {
+      playlist_path_id_free(path_id);
+      return false;
+   }
+
+   return true;
+}
+
+bool playlist_push(playlist_t *playlist,
+      const struct playlist_entry *entry)
+{
+   size_t i, _len;
+   char real_core_path[PATH_MAX_LENGTH];
+   char base_path[NAME_MAX_LENGTH];
+   playlist_path_id_t *path_id = NULL;
+   const char *core_name       = NULL;
+   bool entry_updated          = false;
+
+   if (!playlist_push_prepare(playlist, entry, &path_id,
+         real_core_path, sizeof(real_core_path),
+         base_path, sizeof(base_path), &core_name))
+      goto error;
 
    _len = RBUF_LEN(playlist->entries);
    for (i = 0; i < _len; i++)
@@ -1505,83 +1652,10 @@ bool playlist_push(playlist_t *playlist,
       goto success;
    }
 
-   if (playlist->config.capacity == 0)
+   if (!playlist_push_new_entry(playlist, entry, path_id,
+         real_core_path, core_name))
       goto error;
-
-   if (_len == playlist->config.capacity)
-   {
-      struct playlist_entry *last_entry = &playlist->entries[_len - 1];
-      playlist_free_entry(last_entry);
-      _len--;
-   }
-   else
-   {
-      /* Allocate memory to fit one more item and resize the buffer */
-      if (!RBUF_TRYFIT(playlist->entries, _len + 1))
-         goto error; /* out of memory */
-      RBUF_RESIZE(playlist->entries, _len + 1);
-   }
-
-   if (playlist->entries)
-   {
-      memmove(playlist->entries + 1, playlist->entries,
-            _len * sizeof(struct playlist_entry));
-
-      playlist->entries[0].path               = NULL;
-      playlist->entries[0].label              = NULL;
-      playlist->entries[0].core_path          = NULL;
-      playlist->entries[0].core_name          = NULL;
-      playlist->entries[0].db_name            = NULL;
-      playlist->entries[0].crc32              = NULL;
-      playlist->entries[0].subsystem_ident    = NULL;
-      playlist->entries[0].subsystem_name     = NULL;
-      playlist->entries[0].runtime_str        = NULL;
-      playlist->entries[0].last_played_str    = NULL;
-      playlist->entries[0].subsystem_roms     = NULL;
-      playlist->entries[0].path_id            = NULL;
-      playlist->entries[0].runtime_status     = PLAYLIST_RUNTIME_UNKNOWN;
-      playlist->entries[0].runtime_hours      = 0;
-      playlist->entries[0].runtime_minutes    = 0;
-      playlist->entries[0].runtime_seconds    = 0;
-      playlist->entries[0].last_played_year   = 0;
-      playlist->entries[0].last_played_month  = 0;
-      playlist->entries[0].last_played_day    = 0;
-      playlist->entries[0].last_played_hour   = 0;
-      playlist->entries[0].last_played_minute = 0;
-      playlist->entries[0].last_played_second = 0;
-
-      if (path_id->real_path && *path_id->real_path)
-         playlist->entries[0].path            = strdup(path_id->real_path);
-      playlist->entries[0].path_id            = path_id;
-      path_id                                 = NULL;
-
-      playlist->entries[0].entry_slot         = entry->entry_slot;
-
-      if (entry->label && *entry->label)
-         playlist->entries[0].label           = strdup(entry->label);
-      if (*real_core_path)
-         playlist->entries[0].core_path       = strdup(real_core_path);
-      if (core_name && *core_name)
-         playlist->entries[0].core_name       = strdup(core_name);
-      if (entry->db_name && *entry->db_name)
-         playlist->entries[0].db_name         = strdup(entry->db_name);
-      if (entry->crc32 && *entry->crc32)
-         playlist->entries[0].crc32           = strdup(entry->crc32);
-      if (entry->subsystem_ident && *entry->subsystem_ident)
-         playlist->entries[0].subsystem_ident = strdup(entry->subsystem_ident);
-      if (entry->subsystem_name && *entry->subsystem_name)
-         playlist->entries[0].subsystem_name  = strdup(entry->subsystem_name);
-
-      if (entry->subsystem_roms)
-      {
-         union string_list_elem_attr attributes = {0};
-
-         playlist->entries[0].subsystem_roms    = string_list_new();
-
-         for (i = 0; i < entry->subsystem_roms->size; i++)
-            string_list_append(playlist->entries[0].subsystem_roms, entry->subsystem_roms->elems[i].data, attributes);
-      }
-   }
+   path_id = NULL;   /* ownership transferred to the new entry */
 
 success:
    if (path_id)

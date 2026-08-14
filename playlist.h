@@ -291,6 +291,19 @@ bool playlist_content_path_is_valid(const char *path);
 bool playlist_push(playlist_t *playlist,
       const struct playlist_entry *entry);
 
+/**
+ * playlist_push_unchecked:
+ *
+ * Appends @entry at the front of @playlist WITHOUT searching for an
+ * existing matching entry.  The caller must have already proven the
+ * entry's content path absent (via playlist_entry_exists() or a
+ * playlist_dedup_t index); pushing a path that is present creates a
+ * duplicate.  Applies the same validation, capacity and eviction
+ * rules as playlist_push().
+ **/
+bool playlist_push_unchecked(playlist_t *playlist,
+      const struct playlist_entry *entry);
+
 bool playlist_push_runtime(playlist_t *playlist,
       const struct playlist_entry *entry);
 
