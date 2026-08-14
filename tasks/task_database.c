@@ -302,9 +302,12 @@ typedef struct manual_scan_handle
    /* Chunked DAT read in flight (MANUAL_SCAN_BEGIN_DAT_LOAD): the
     * file handle, the destination buffer (dat_size + 1 bytes) and
     * the fill position.  dat_buf ownership passes to
-    * logiqx_dat_init_owned() once the read completes. */
+    * logiqx_dat_parse_begin_owned() once the read completes, and
+    * dat_parse holds the budgeted parse + index build until its
+    * verdict. */
    RFILE *dat_stream;
    char *dat_buf;
+   logiqx_dat_parse_t *dat_parse;
    int64_t dat_size;
    int64_t dat_read;
    /* Resumable batch playlist flush (MANUAL_SCAN_END): position in
@@ -2325,6 +2328,13 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
       manual_scan->dat_buf = NULL;
    }
 
+   /* A cancelled task can also die mid-parse. */
+   if (manual_scan->dat_parse)
+   {
+      logiqx_dat_parse_abort(manual_scan->dat_parse);
+      manual_scan->dat_parse = NULL;
+   }
+
    if (manual_scan->content_list)
    {
       string_list_free(manual_scan->content_list);
@@ -2527,6 +2537,13 @@ static void task_manual_content_scan_free(retro_task_t *task)
  * that the guaranteed floor chunk of a spent window costs well under
  * a millisecond. */
 #define MANUAL_SCAN_DAT_CHUNK (256 * 1024)
+
+/* Bytes of XML handed to logiqx_dat_parse_step() per step: small
+ * enough that several steps fit one shared window in a plain build
+ * and one step stays frame-sized even under sanitizer inflation,
+ * large enough that a MAME-sized list completes in a few hundred
+ * steps. */
+#define MANUAL_SCAN_DAT_PARSE_STEP (256 * 1024)
 
 /* dir_list_iter_step()'s budget callback carries no sizes. */
 static bool manual_scan_walk_within_budget(void *ud)
@@ -2786,6 +2803,9 @@ static bool manual_scan_begin_dat_load(retro_task_t *task,
       return false;
    }
 
+   if (manual_scan->dat_parse)
+      goto parse_phase;
+
    if (!manual_scan->dat_stream)
    {
       /* Validate path and size up front through the same
@@ -2843,13 +2863,40 @@ static bool manual_scan_begin_dat_load(retro_task_t *task,
    filestream_close(manual_scan->dat_stream);
    manual_scan->dat_stream = NULL;
 
-   /* Hand the completed document to the parser.  Ownership of the
-    * buffer transfers unconditionally: on failure
-    * logiqx_dat_init_owned() frees it. */
+   /* Hand the completed document to the incremental parser.
+    * Ownership of the buffer transfers unconditionally: on failure
+    * logiqx_dat_parse_begin_owned() frees it. */
    manual_scan->dat_buf[manual_scan->dat_size] = '\0';
-   manual_scan->dat_file = logiqx_dat_init_owned(
+   manual_scan->dat_parse = logiqx_dat_parse_begin_owned(
          manual_scan->dat_buf, (size_t)manual_scan->dat_size);
-   manual_scan->dat_buf  = NULL;
+   manual_scan->dat_buf   = NULL;
+
+   if (!manual_scan->dat_parse)
+      goto error_no_cleanup;
+
+parse_phase:
+   /* Budgeted parse and index build: one step per gather whatever
+    * the window says (the floor), then further steps while it
+    * lasts.  A resumed gather jumps straight back here. */
+   for (;;)
+   {
+      int r = logiqx_dat_parse_step(manual_scan->dat_parse,
+            MANUAL_SCAN_DAT_PARSE_STEP);
+
+      if (r < 0)
+      {
+         logiqx_dat_parse_end(manual_scan->dat_parse);   /* discards */
+         manual_scan->dat_parse = NULL;
+         goto error_no_cleanup;
+      }
+      if (r > 0)
+         break;
+      if (!task_nbio_slice_within_budget(b, 0, 0))
+         return false;   /* resume next gather */
+   }
+
+   manual_scan->dat_file  = logiqx_dat_parse_end(manual_scan->dat_parse);
+   manual_scan->dat_parse = NULL;
 
    if (!manual_scan->dat_file)
       goto error_no_cleanup;
