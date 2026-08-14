@@ -2465,9 +2465,10 @@ static void audio_mixer_mix_stream_s16(int16_t* buffer, size_t num_frames,
    {
 again:
       {
+         unsigned sch;
          size_t got = 0;
-         st = AUDIO_PROCESS_END;
-         unsigned sch = voice->types.stream.channels;
+         st  = AUDIO_PROCESS_END;
+         sch = voice->types.stream.channels;
          if (sch == 1)
          {
             /* Mono: the resampler downstream reads input_frames as
