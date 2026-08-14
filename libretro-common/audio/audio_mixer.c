@@ -138,7 +138,11 @@ struct audio_mixer_sound
       {
          /* shared streaming source (WAV / OGG / FLAC / MP3 / ...) */
          const void* data;
-         unsigned size;
+         /* size_t, not unsigned: a windowed container is the whole
+          * file's length, and a 7 GB one truncated to 32 bits became
+          * 3.5 GB - the demuxer then treated every sample past that
+          * as out of range and the stream ended seconds in. */
+         size_t size;
       } stream;
 #endif
 
@@ -1043,7 +1047,7 @@ static bool wav_build_float(audio_mixer_sound_t* sound,
 static bool wav_build_s16(audio_mixer_sound_t* sound,
       enum resampler_quality quality);
 
-audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size,
+audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, size_t size,
       const char *resampler_ident, enum resampler_quality quality,
       bool want_s16)
 {
@@ -1114,7 +1118,7 @@ audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size,
 #endif
 }
 
-audio_mixer_sound_t* audio_mixer_load_wav_stream(void *buffer, int32_t size)
+audio_mixer_sound_t* audio_mixer_load_wav_stream(void *buffer, size_t size)
 {
 #ifdef HAVE_RWAV
    audio_mixer_sound_t* sound;
@@ -1139,7 +1143,7 @@ audio_mixer_sound_t* audio_mixer_load_wav_stream(void *buffer, int32_t size)
 #endif
 }
 
-audio_mixer_sound_t* audio_mixer_load_ogg(void *buffer, int32_t size)
+audio_mixer_sound_t* audio_mixer_load_ogg(void *buffer, size_t size)
 {
 #if defined(HAVE_RVORBIS) || defined(HAVE_ROPUS) || defined(HAVE_RFLAC)
    audio_mixer_sound_t* sound;
@@ -1182,7 +1186,7 @@ audio_mixer_sound_t* audio_mixer_load_ogg(void *buffer, int32_t size)
 #endif
 }
 
-audio_mixer_sound_t* audio_mixer_load_flac(void *buffer, int32_t size)
+audio_mixer_sound_t* audio_mixer_load_flac(void *buffer, size_t size)
 {
 #ifdef HAVE_RFLAC
    audio_mixer_sound_t* sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
@@ -1200,7 +1204,7 @@ audio_mixer_sound_t* audio_mixer_load_flac(void *buffer, int32_t size)
 #endif
 }
 
-audio_mixer_sound_t* audio_mixer_load_mp3(void *buffer, int32_t size)
+audio_mixer_sound_t* audio_mixer_load_mp3(void *buffer, size_t size)
 {
 #ifdef HAVE_RMP3
    audio_mixer_sound_t* sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
@@ -1218,7 +1222,7 @@ audio_mixer_sound_t* audio_mixer_load_mp3(void *buffer, int32_t size)
 #endif
 }
 
-audio_mixer_sound_t* audio_mixer_load_m4a(void *buffer, int32_t size)
+audio_mixer_sound_t* audio_mixer_load_m4a(void *buffer, size_t size)
 {
 #ifdef HAVE_RAAC
    audio_mixer_sound_t* sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
@@ -1236,7 +1240,7 @@ audio_mixer_sound_t* audio_mixer_load_m4a(void *buffer, int32_t size)
 #endif
 }
 
-audio_mixer_sound_t* audio_mixer_load_opus(void *buffer, int32_t size)
+audio_mixer_sound_t* audio_mixer_load_opus(void *buffer, size_t size)
 {
 #ifdef HAVE_ROPUS
    audio_mixer_sound_t* sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
@@ -1254,13 +1258,19 @@ audio_mixer_sound_t* audio_mixer_load_opus(void *buffer, int32_t size)
 #endif
 }
 
-audio_mixer_sound_t* audio_mixer_load_weba(void *buffer, int32_t size)
+audio_mixer_sound_t* audio_mixer_load_weba_avail(void *buffer, size_t size,
+      size_t avail)
 {
 #if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) \
  || defined(HAVE_RAAC) || defined(HAVE_RFLAC))
    audio_mixer_sound_t* sound;
+   /* Bound the sniff to what is resident.  This runs before the sound
+    * exists, so sound_set_avail cannot have been applied yet - and
+    * with the whole file's length it walked the segment straight off
+    * the committed head of a windowed buffer and died inside
+    * rwebm_open_memory_avail. */
    enum audio_type_enum ty = audio_transfer_webm_audio_type(buffer,
-         (size_t)size);
+         (avail && avail < size) ? avail : size);
    enum audio_mixer_type mt;
 
    /* Resolve to the existing sound type whose streaming arm accepts
@@ -1287,11 +1297,17 @@ audio_mixer_sound_t* audio_mixer_load_weba(void *buffer, int32_t size)
    sound->types.stream.data = buffer;
    return sound;
 #else
+   (void)avail;
    return NULL;
 #endif
 }
 
-audio_mixer_sound_t* audio_mixer_load_mod(void *buffer, int32_t size)
+audio_mixer_sound_t* audio_mixer_load_weba(void *buffer, size_t size)
+{
+   return audio_mixer_load_weba_avail(buffer, size, 0);
+}
+
+audio_mixer_sound_t* audio_mixer_load_mod(void *buffer, size_t size)
 {
 #ifdef HAVE_RMODTRACKER
    audio_mixer_sound_t* sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
@@ -1349,7 +1365,8 @@ void audio_mixer_sound_set_end_granule(audio_mixer_sound_t *sound,
  * voice lock: safe against the mixing thread. */
 void audio_mixer_voice_set_avail(audio_mixer_voice_t *voice, size_t avail)
 {
-#if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
+#if (defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))) \
+ || defined(HAVE_RAAC) || defined(HAVE_RFLAC)
    if (!voice)
       return;
 #ifdef AUDIO_MIXER_HAS_STREAM
@@ -1366,6 +1383,23 @@ void audio_mixer_voice_set_avail(audio_mixer_voice_t *voice, size_t avail)
       case AUDIO_MIXER_TYPE_OPUS:
          audio_transfer_set_avail(voice->types.stream.stream,
                AUDIO_TYPE_OPUS, avail);
+         break;
+#endif
+#ifdef HAVE_RAAC
+      /* The arm a windowed M4A actually lands on.  Its absence meant
+       * every feeder raise was accepted and dropped: the decoder kept
+       * the bound it was given at add_stream, hit it a second or so
+       * in, reported end of stream, and a looping voice restarted -
+       * the same second of audio over and over. */
+      case AUDIO_MIXER_TYPE_M4A:
+         audio_transfer_set_avail(voice->types.stream.stream,
+               AUDIO_TYPE_AAC, avail);
+         break;
+#endif
+#ifdef HAVE_RFLAC
+      case AUDIO_MIXER_TYPE_FLAC:
+         audio_transfer_set_avail(voice->types.stream.stream,
+               AUDIO_TYPE_FLAC, avail);
          break;
 #endif
       default:

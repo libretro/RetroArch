@@ -2478,7 +2478,7 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
    switch (params->type)
    {
       case AUDIO_MIXER_TYPE_WAV:
-         handle = audio_mixer_load_wav(buf, (int32_t)params->bufsize,
+         handle = audio_mixer_load_wav(buf, params->bufsize,
                audio_driver_st.resampler_ident,
                audio_driver_st.resampler_quality,
                audio_driver_mixer_use_s16(
@@ -2499,37 +2499,38 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
           * them as it mixes, so the source stays owned by the sound
           * (or by its lender) exactly as the compressed types' does */
          handle = audio_mixer_load_wav_stream(buf,
-               (int32_t)params->bufsize);
+               params->bufsize);
          break;
       case AUDIO_MIXER_TYPE_OGG:
-         handle = audio_mixer_load_ogg(buf, (int32_t)params->bufsize);
+         handle = audio_mixer_load_ogg(buf, params->bufsize);
          break;
       case AUDIO_MIXER_TYPE_MOD:
-         handle = audio_mixer_load_mod(buf, (int32_t)params->bufsize);
+         handle = audio_mixer_load_mod(buf, params->bufsize);
          break;
       case AUDIO_MIXER_TYPE_FLAC:
 #ifdef HAVE_RFLAC
-         handle = audio_mixer_load_flac(buf, (int32_t)params->bufsize);
+         handle = audio_mixer_load_flac(buf, params->bufsize);
 #endif
          break;
       case AUDIO_MIXER_TYPE_MP3:
 #ifdef HAVE_RMP3
-         handle = audio_mixer_load_mp3(buf, (int32_t)params->bufsize);
+         handle = audio_mixer_load_mp3(buf, params->bufsize);
 #endif
          break;
       case AUDIO_MIXER_TYPE_M4A:
 #ifdef HAVE_RAAC
-         handle = audio_mixer_load_m4a(buf, (int32_t)params->bufsize);
+         handle = audio_mixer_load_m4a(buf, params->bufsize);
 #endif
          break;
       case AUDIO_MIXER_TYPE_OPUS:
 #ifdef HAVE_ROPUS
-         handle = audio_mixer_load_opus(buf, (int32_t)params->bufsize);
+         handle = audio_mixer_load_opus(buf, params->bufsize);
 #endif
          break;
       case AUDIO_MIXER_TYPE_WEBA:
 #if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
-         handle = audio_mixer_load_weba(buf, (int32_t)params->bufsize);
+         handle = audio_mixer_load_weba_avail(buf, params->bufsize,
+               params->avail);
 #endif
          break;
       case AUDIO_MIXER_TYPE_NONE:
@@ -2554,9 +2555,13 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
     * skips its full-file end scan when it opens at play time. */
    if (params->end_granule > 0)
       audio_mixer_sound_set_end_granule(handle, params->end_granule);
+#endif
+   /* NOT under HAVE_ROPUS: the resident bound applies to every
+    * windowed arm, and a build without Opus silently dropped it -
+    * the decoder then opened against the whole file's length with
+    * only the head committed. */
    if (params->avail)
       audio_mixer_sound_set_avail(handle, params->avail);
-#endif
 
    switch (params->state)
    {
