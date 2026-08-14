@@ -1083,6 +1083,29 @@ static void gfx_thumbnail_anim_audio_begin(gfx_thumbnail_t *thumbnail)
          thumbnail->anim_audio_slot = out_slot;
          gfx_thumb_audio_slot       = out_slot;
          gfx_thumb_audio_owner      = thumbnail;
+
+         /* An island open needed the full length as its bound so the
+          * walk could reach the trailing moov; but left there, the
+          * packet path has no wall at all, and safety rests on the
+          * feeder always being ahead - which a driver prefill or a fat
+          * video-interleave stride outruns, and the decoder then reads
+          * access units off pages the window never committed (the
+          * raac_decode_frame crash).  Clamp the wall down to the
+          * resident head now that the open is done: the demuxer's
+          * tables were copied out at parse, packets all sit below the
+          * moov, and rmp4_read_packet answers "again" past the bound,
+          * which the mixer now treats as silence rather than end of
+          * stream.  The animate ticks take it from here, following the
+          * feed frontier both ways.  (A threaded mixer may run one
+          * period before this store lands; it decodes from byte zero,
+          * inside the head, so the brief full-length bound cannot be
+          * reached in that window.) */
+         if (island_hi)
+         {
+            thumbnail->anim_audio_hi = (keep < blen) ? keep : blen;
+            audio_driver_mixer_stream_set_avail((unsigned)out_slot,
+                  thumbnail->anim_audio_hi);
+         }
       }
       return;
    }
@@ -1434,11 +1457,13 @@ static void gfx_thumbnail_anim_open_probed(gfx_thumbnail_t *thumbnail,
                 * the moov island.  With a LEADING moov that lands just
                 * below the media floor, so the very first sample is
                 * outside the demuxer's valid range and every decode
-                * returns "not yet".  Raise it to what was just made
+                * returns "not yet".  Set it to what was just made
                 * resident; the feeder in gfx_thumbnail_animate carries
                 * it from here.  A trailing moov reached avail == the
-                * file length on its way in, and set_avail is monotonic,
-                * so this is a no-op there. */
+                * file length on its way in; this pulls that bound back
+                * to the primed window, which is where it belongs - the
+                * demuxer bound is "readable right now", and the pages
+                * between the window and the island are not. */
                image_transfer_anim_stream_set_avail(stream, type, hi);
          }
 
@@ -1684,10 +1709,11 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
          /* Hand the demuxer the range the feed just made resident -
           * res_hi, not the lookahead target: under the budget the
           * frontier may still be short of it, and avail past the
-          * frontier is a read of reserved pages.  Monotonic, so a
-          * stream that already sees the whole file (any trailing-moov
-          * open) is unaffected, and later ticks carry the bound the
-          * rest of the way. */
+          * frontier is a read of reserved pages.  The bound follows
+          * the frontier both ways: after a loop's rewind the frontier
+          * drops back to the head, and a bound left at its old height
+          * would admit reads of the pages the rewind decommitted.
+          * Later ticks carry it the rest of the way forward again. */
          if (hi > res_hi)
             hi = res_hi;
          if (hi > thumbnail->anim_buf_len)
@@ -1734,14 +1760,23 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
          }
          else
          {
-            /* Raise the bound only to the resident frontier: under
-             * the budget it can lag the lookahead target, and the
-             * decoder refusing to read past the bound is what makes
-             * a lagging feeder a stall instead of a fault.  Later
-             * ticks carry it the rest of the way. */
+            /* The bound follows the resident frontier: under the
+             * budget it can lag the lookahead target, and the decoder
+             * refusing to read past the bound is what makes a lagging
+             * feeder a stall instead of a fault.  Later ticks carry it
+             * the rest of the way.
+             *
+             * Following means both directions.  After the mixer loops
+             * and the feed rewinds the window, the frontier drops back
+             * to the head; a bound left at its old height would admit
+             * packets on the pages between the new frontier and the
+             * old bound, which the rewind decommitted - the same fault
+             * the bound exists to prevent, one lap later.  Lowering is
+             * safe exactly then: the decoder that caused the rewind is
+             * back at the head, below any bound this can set. */
             if (hi > res_hi)
                hi = res_hi;
-            if (hi > thumbnail->anim_audio_hi)
+            if (hi != thumbnail->anim_audio_hi)
             {
                thumbnail->anim_audio_hi = hi;
                audio_driver_mixer_stream_set_avail(

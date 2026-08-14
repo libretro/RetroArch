@@ -200,7 +200,12 @@ bool  audio_transfer_info(void *data, enum audio_type_enum type,
  * into 'out', stores the number of frames actually produced in *frames_out
  * (may be NULL), and returns AUDIO_PROCESS_NEXT while data remains,
  * AUDIO_PROCESS_END at end of stream (frames produced 0), or
- * AUDIO_PROCESS_ERROR. s16 is exact for the integer codecs (FLAC, and
+ * AUDIO_PROCESS_ERROR.  NEXT with zero frames produced means starved,
+ * not finished: a windowed source stopped at its resident bound
+ * (audio_transfer_set_avail) and the same call succeeds once the
+ * feeder has raised it - the caller must not treat the empty read as
+ * the stream ending, or a looping voice rewinds mid-file whenever its
+ * feeder runs a tick behind.  s16 is exact for the integer codecs (FLAC, and
  * WAV other than its float form); f32 is
  * the native path for the float mixer.  Producing fewer frames than asked
  * is not end of stream, and END is not latched: a demuxed packet set that

@@ -2313,6 +2313,7 @@ static void audio_mixer_mix_stream(float* buffer, size_t num_frames,
    unsigned temp_samples            = 0;
    float* pcm                       = NULL;
    int rewound                      = 0;
+   int st                           = AUDIO_PROCESS_END;
 
    if (!voice->types.stream.stream)
       return;
@@ -2322,6 +2323,7 @@ static void audio_mixer_mix_stream(float* buffer, size_t num_frames,
 again:
       {
          size_t got = 0;
+         st = AUDIO_PROCESS_END;
          if (voice->types.stream.channels == 1)
          {
             /* mono source: read into the front, then expand to
@@ -2329,7 +2331,7 @@ again:
              * is read before any destination at or above it is
              * written, so the source is never clobbered */
             unsigned n;
-            audio_transfer_read_f32(voice->types.stream.stream, type,
+            st = audio_transfer_read_f32(voice->types.stream.stream, type,
                   temp_buffer, AUDIO_MIXER_TEMP_BUFFER / 2, &got);
             for (n = (unsigned)got; n > 0; n--)
             {
@@ -2339,7 +2341,7 @@ again:
             }
          }
          else if (voice->types.stream.channels == 2)
-            audio_transfer_read_f32(voice->types.stream.stream, type,
+            st = audio_transfer_read_f32(voice->types.stream.stream, type,
                   temp_buffer, AUDIO_MIXER_TEMP_BUFFER / 2, &got);
          else
          {
@@ -2347,7 +2349,7 @@ again:
              * the channel count, not the stereo figure, or the buffer
              * overruns.  Folded in place afterwards. */
             unsigned sch = voice->types.stream.channels;
-            audio_transfer_read_f32(voice->types.stream.stream, type,
+            st = audio_transfer_read_f32(voice->types.stream.stream, type,
                   temp_buffer,
                   audio_mixer_frames_for(sch, AUDIO_MIXER_TEMP_BUFFER),
                   &got);
@@ -2359,6 +2361,17 @@ again:
 
       if (temp_samples == 0)
       {
+         /* Empty because the stream is starved, not finished: the
+          * windowed source's feeder has not raised the resident bound
+          * past the next packet yet.  Contribute silence to this call
+          * and keep the voice exactly where it is - the next mix
+          * retries.  Rewinding here is what played the same seconds
+          * over and over, and releasing on the second stall is what
+          * killed the voice outright, the moment a feeder ran one or
+          * two ticks behind. */
+         if (st == AUDIO_PROCESS_NEXT)
+            return;
+
          /* A repeat that comes back empty from the start of the stream
           * has nothing left to hand out, and going round again would
           * not change that - it would spin here forever, holding the
@@ -2443,6 +2456,7 @@ static void audio_mixer_mix_stream_s16(int16_t* buffer, size_t num_frames,
    unsigned temp_samples = 0;
    int16_t *pcm          = NULL;
    int rewound           = 0;
+   int st                = AUDIO_PROCESS_END;
 
    if (!voice->types.stream.stream)
       return;
@@ -2452,6 +2466,7 @@ static void audio_mixer_mix_stream_s16(int16_t* buffer, size_t num_frames,
 again:
       {
          size_t got = 0;
+         st = AUDIO_PROCESS_END;
          unsigned sch = voice->types.stream.channels;
          if (sch == 1)
          {
@@ -2462,7 +2477,7 @@ again:
              * written - the f32 path has always done this and this
              * one never did. */
             unsigned n;
-            audio_transfer_read_s16(voice->types.stream.stream, type,
+            st = audio_transfer_read_s16(voice->types.stream.stream, type,
                   temp_buffer, AUDIO_MIXER_TEMP_BUFFER / 2, &got);
             for (n = (unsigned)got; n > 0; n--)
             {
@@ -2475,7 +2490,7 @@ again:
          {
             /* See the f32 path: read what the buffer holds at this
              * channel count, then fold to stereo in place. */
-            audio_transfer_read_s16(voice->types.stream.stream, type,
+            st = audio_transfer_read_s16(voice->types.stream.stream, type,
                   temp_buffer,
                   audio_mixer_frames_for(sch, AUDIO_MIXER_TEMP_BUFFER),
                   &got);
@@ -2483,12 +2498,18 @@ again:
                   audio_mixer_downmix_table(type, sch));
          }
          else
-            audio_transfer_read_s16(voice->types.stream.stream, type,
+            st = audio_transfer_read_s16(voice->types.stream.stream, type,
                   temp_buffer, AUDIO_MIXER_TEMP_BUFFER / 2, &got);
          temp_samples = (unsigned)(got * 2);
       }
       if (temp_samples == 0)
       {
+         /* Starved, not finished: see audio_mixer_mix_stream.  Silence
+          * for this call; the voice stays put and the next mix
+          * retries. */
+         if (st == AUDIO_PROCESS_NEXT)
+            return;
+
          /* See audio_mixer_mix_stream: one rewind per empty read, so a
           * repeat that yields nothing twice ends the voice instead of
           * spinning here with no frame ever produced. */

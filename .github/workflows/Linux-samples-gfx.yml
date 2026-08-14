@@ -561,6 +561,27 @@ jobs:
           AUDIO_BYTES_PER_TICK=65536 FRAMES=120 timeout 300 \
              ./gfx_thumbnail_preview_test fixtures/*.mp4
           echo "[pass] gfx_thumbnail_preview_test (ASan)"
+          # The decode test is the missing half of the harness above:
+          # the REAL mixer -> audio_transfer -> rmp4 -> raac chain over
+          # a budget-fed window, at budgets small enough that the
+          # decoder reaches the resident frontier.  The stubbed audio
+          # thread above models exactly the layer these faults lived
+          # in: no wall over the packets on the trailing-moov path
+          # (SIGSEGV inside raac_decode_frame the moment the decoder
+          # outran the feeder), demuxer bounds that refused to lower,
+          # a wall stall taken for end of stream (mid-file rewinds,
+          # then the voice released), and set_avail compiling to a
+          # no-op without HAVE_RWEBM - the _norwebm build exists for
+          # that last one.
+          test -x preview_audio_decode_test
+          test -x preview_audio_decode_test_norwebm
+          ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 \
+          UBSAN_OPTIONS=print_stacktrace=1 timeout 600 bash -c '
+             ./preview_audio_decode_test fixtures/trailing_large.mp4 1024 island
+             ./preview_audio_decode_test fixtures/trailing_large.mp4 262144 island
+             ./preview_audio_decode_test_norwebm fixtures/trailing_large.mp4 1024 island
+             ./preview_audio_decode_test_norwebm fixtures/trailing_large.mp4 262144 island'
+          echo "[pass] preview_audio_decode_test (ASan)"
           # clean keeps fixtures/ by design; regenerate anyway so the
           # step cannot silently run against an empty glob.
           make clean all SANITIZER=thread
@@ -568,3 +589,7 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 FRAMES=60 timeout 300 \
              ./gfx_thumbnail_preview_test fixtures/*.mp4
           echo "[pass] gfx_thumbnail_preview_test (TSan)"
+          TSAN_OPTIONS=halt_on_error=1 timeout 600 bash -c '
+             ./preview_audio_decode_test fixtures/trailing_large.mp4 1024 island
+             ./preview_audio_decode_test fixtures/trailing_large.mp4 262144 island'
+          echo "[pass] preview_audio_decode_test (TSan)"
