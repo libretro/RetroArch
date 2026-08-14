@@ -188,6 +188,11 @@ INDEX_TEST_MAIN   := $(CORE_DIR)/samples/tasks/database/database_index_test.o
 INDEX_TEST_OBJECTS = $(filter-out $(CORE_DIR)/samples/tasks/database/main.o,$(OBJECTS)) \
 	$(INDEX_TEST_MAIN)
 
+BEGIN_TEST        := scan_begin_budget_test
+BEGIN_TEST_MAIN   := $(CORE_DIR)/samples/tasks/database/scan_begin_budget_test.o
+BEGIN_TEST_OBJECTS = $(filter-out $(CORE_DIR)/samples/tasks/database/main.o,$(OBJECTS)) \
+	$(BEGIN_TEST_MAIN)
+
 OBJOUT   = -o
 LINKOUT  = -o
 
@@ -214,9 +219,15 @@ $(INDEX_TEST)$(EXE_EXT): $(INDEX_TEST_OBJECTS)
 $(SCAN_TEST)$(EXE_EXT): $(SCAN_TEST_OBJECTS)
 	$(LD)  $(LINKOUT)$@ $(SHARED) $(SCAN_TEST_OBJECTS) $(LDFLAGS) $(LIBS)
 
-check: $(INDEX_TEST)$(EXE_EXT) $(SCAN_TEST)$(EXE_EXT)
+# Builds its own content tree + DAT, so it needs nothing but a
+# writable dir (honours TMPDIR).
+$(BEGIN_TEST)$(EXE_EXT): $(BEGIN_TEST_OBJECTS)
+	$(LD)  $(LINKOUT)$@ $(SHARED) $(BEGIN_TEST_OBJECTS) $(LDFLAGS) $(LIBS)
+
+check: $(INDEX_TEST)$(EXE_EXT) $(SCAN_TEST)$(EXE_EXT) $(BEGIN_TEST)$(EXE_EXT)
 	./$(INDEX_TEST)$(EXE_EXT)
 	./$(SCAN_TEST)$(EXE_EXT)
+	./$(BEGIN_TEST)$(EXE_EXT)
 
 %.o: %.c
 	$(CC) $(INCFLAGS) $(CFLAGS) -c $(OBJOUT)$@ $<
