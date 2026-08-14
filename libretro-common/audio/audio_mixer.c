@@ -1339,13 +1339,19 @@ void audio_mixer_sound_set_data_owner(audio_mixer_sound_t *sound,
    sound->data_release = release;
 }
 
-#ifdef HAVE_ROPUS
+/* NOT under HAVE_ROPUS.  The resident bound applies to every windowed
+ * arm, not just Ogg-Opus, and add_stream calls this unconditionally -
+ * leaving the definition behind the Opus guard broke the link on every
+ * target built without it (3DS and the other console ports).  The
+ * field is unconditional, so the body needs no guard either; only the
+ * end-granule setter below is genuinely Opus-specific. */
 void audio_mixer_sound_set_avail(audio_mixer_sound_t *sound, size_t avail)
 {
    if (sound)
       sound->avail = avail;
 }
 
+#ifdef HAVE_ROPUS
 void audio_mixer_sound_set_end_granule(audio_mixer_sound_t *sound,
       int64_t end_granule)
 {
