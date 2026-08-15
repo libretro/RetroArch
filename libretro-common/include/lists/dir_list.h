@@ -142,6 +142,24 @@ bool dir_list_initialize(struct string_list *list,
       bool include_hidden, bool include_compressed,
       bool recursive);
 
+/* The comparator type dir_list orders listings with (qsort
+ * signature over struct string_list_elem). */
+typedef int (*dir_list_sort_cmp_t)(const void *a, const void *b);
+
+/**
+ * dir_list_sort_cmp:
+ * @dir_first  : sort directories before files?
+ * @ignore_ext : ignore file extensions when comparing?
+ *
+ * The exact comparator dir_list_sort() / dir_list_sort_ignore_ext()
+ * use, for callers that need the same ordering through a different
+ * sorting strategy (e.g. an incremental sort under a time budget).
+ * Two listings sorted with the same comparator agree everywhere
+ * except among entries that compare equal, whose relative order was
+ * never specified (qsort is not stable).
+ **/
+dir_list_sort_cmp_t dir_list_sort_cmp(bool dir_first, bool ignore_ext);
+
 /**
  * dir_list_sort:
  * @list      : pointer to the directory listing.

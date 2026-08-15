@@ -131,6 +131,24 @@ static int qstrcmp_dir_noext(const void *a_, const void *b_)
 }
 
 /**
+ * dir_list_sort_cmp:
+ * @dir_first  : sort directories before files?
+ * @ignore_ext : ignore file extensions when comparing?
+ *
+ * The exact comparator dir_list_sort() / dir_list_sort_ignore_ext()
+ * order a listing with, for callers that need to apply the same
+ * ordering through a different sorting strategy (e.g. an
+ * incremental sort under a time budget).  Operates on
+ * struct string_list_elem.
+ **/
+dir_list_sort_cmp_t dir_list_sort_cmp(bool dir_first, bool ignore_ext)
+{
+   if (ignore_ext)
+      return dir_first ? qstrcmp_dir_noext : qstrcmp_plain_noext;
+   return dir_first ? qstrcmp_dir : qstrcmp_plain;
+}
+
+/**
  * dir_list_sort:
  * @list      : pointer to the directory listing.
  * @dir_first : move the directories in the listing to the top?
@@ -141,7 +159,7 @@ void dir_list_sort(struct string_list *list, bool dir_first)
 {
    if (list)
       qsort(list->elems, list->size, sizeof(struct string_list_elem),
-            dir_first ? qstrcmp_dir : qstrcmp_plain);
+            dir_list_sort_cmp(dir_first, false));
 }
 
 /**
@@ -155,7 +173,7 @@ void dir_list_sort_ignore_ext(struct string_list *list, bool dir_first)
 {
    if (list)
       qsort(list->elems, list->size, sizeof(struct string_list_elem),
-            dir_first ? qstrcmp_dir_noext : qstrcmp_plain_noext);
+            dir_list_sort_cmp(dir_first, true));
 }
 
 /**
