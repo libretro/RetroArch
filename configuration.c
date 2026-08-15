@@ -3903,11 +3903,9 @@ static struct config_uint_setting *populate_settings_uint(
 
 #ifdef ANDROID
    SETTING_UINT("input_stylus_pressure_sensitivity", &settings->uints.input_stylus_pressure_sensitivity, true, DEFAULT_INPUT_STYLUS_PRESSURE_SENSITIVITY, false);
-#endif
-#ifdef ANDROID
-   SETTING_UINT("input_sensor_orientation", &settings->uints.input_sensor_orientation, true, 0, false);
+   SETTING_UINT("input_sensor_orientation",          &settings->uints.input_sensor_orientation, true, 0, false);
 #else
-   SETTING_UINT("input_sensor_orientation", &settings->uints.input_sensor_orientation, true, 1, false);
+   SETTING_UINT("input_sensor_orientation",          &settings->uints.input_sensor_orientation, true, 1, false);
 #endif
 
 #if defined(HAVE_OVERLAY)
