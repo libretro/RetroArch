@@ -1263,6 +1263,9 @@ static INLINE void android_input_poll_event_type_motion(
       if (!settings)
          return;
 
+      if (motion_ptr >= MAX_TOUCH)
+         return;
+
       if (!settings->bools.input_stylus_enable)
       {
 #ifdef DEBUG_ANDROID_INPUT
