@@ -183,8 +183,7 @@ static bool sdl3_ctx_set_video_mode(void *data,
 #ifdef GL_DEBUG
       bool debug = true;
 #else
-      struct retro_hw_render_callback *hwr =
-         video_driver_get_hw_context();
+      struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
       bool debug = hwr && hwr->debug_context;
 #endif
 
