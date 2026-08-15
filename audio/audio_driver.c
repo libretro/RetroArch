@@ -734,6 +734,74 @@ static double audio_driver_fastforward_ratio_mult(
    return mult;
 }
 
+/* Frames of headroom deliberately resampled beyond what the device
+ * reports writable.  Covers the drain between the write_avail() sample
+ * below and the write itself (a fast-forward flush interval is a few
+ * hundred microseconds, i.e. some tens of frames at typical output
+ * rates), plus any avail rounding inside the driver.  Overfilling by
+ * this margin reproduces today's behaviour exactly - the driver's
+ * non-blocking write drops the excess - while underfilling would starve
+ * the device and open audible gaps, so the margin errs on the side of
+ * a little discarded work: at 16 taps the slack costs ~1 us per flush. */
+#define AUDIO_FF_DISCARD_SLACK_FRAMES 64
+
+/**
+ * audio_driver_ff_discard_bound:
+ *
+ * During fast-forward without "speedup" pitch tracking, the driver is
+ * non-blocking and its buffer is pinned close to full - it drains at
+ * real-time rate while flushes arrive at fast-forward rate - so almost
+ * every frame the resampler produces is dropped by the write below.
+ * At high multipliers that is >90% of the convolution (and of the
+ * conversion/clamp/write stages after it) spent on frames that are
+ * never heard.
+ *
+ * Bound the resampler's *input* so it only produces what the device
+ * can accept (plus slack): frames the write would have dropped from
+ * the tail of the chunk are instead never resampled.  The audible
+ * result is unchanged - the same head-of-chunk fragments reach the
+ * device either way - only the discard moves from after the resampler
+ * to before it.
+ *
+ * Deliberately input capping and not ratio bounding: shrinking the
+ * ratio would time-compress the chunk into the writable space, which
+ * is exactly the pitch-raising "speedup" behaviour the user declined
+ * by leaving that option off.
+ *
+ * write_avail() returns bytes (see wasapi/alsa/dsound implementations);
+ * under threaded audio it is the same locked accessor the rate-control
+ * path already calls once per DRC interval.  Drivers without
+ * write_avail() keep the old behaviour.
+ *
+ * Returns: capped input frame count (<= in_frames, never 0 while the
+ * slack is non-zero, so the resampler ring stays warm).
+ **/
+static size_t audio_driver_ff_discard_bound(audio_driver_state_t *audio_st,
+      double ratio, size_t in_frames)
+{
+   size_t avail_bytes;
+   size_t out_frame_bytes;
+   size_t max_out_frames;
+   size_t max_in_frames;
+   const audio_driver_t *audio = audio_st->current_audio;
+
+   if (!audio || !audio->write_avail || !audio_st->context_audio_data)
+      return in_frames;
+   /* Also rejects NaN. */
+   if (!(ratio > 0.0))
+      return in_frames;
+
+   avail_bytes     = audio->write_avail(audio_st->context_audio_data);
+   out_frame_bytes = (audio_st->flags & AUDIO_FLAG_USE_FLOAT)
+         ? (2 * sizeof(float))
+         : (2 * sizeof(int16_t));
+   max_out_frames  = avail_bytes / out_frame_bytes
+         + AUDIO_FF_DISCARD_SLACK_FRAMES;
+   max_in_frames   = (size_t)((double)max_out_frames / ratio);
+
+   return (in_frames < max_in_frames) ? in_frames : max_in_frames;
+}
+
 /* Whether the deterministic integer (s16) game path would run for a core
  * delivering samples in format is_float.  Mirrors the use_i16 gate in
  * audio_driver_flush; also used at mixer play() time to choose the voice
@@ -1011,10 +1079,18 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          i16_ratio = audio_st->src_ratio_curr;
          if (is_slowmotion)
             i16_ratio *= slowmotion_ratio;
-         if (     is_fastforward
-               && config_get_ptr()->bools.audio_fastforward_speedup)
-            i16_ratio *= audio_driver_fastforward_ratio_mult(
-                  audio_st, rs_frames);
+         if (is_fastforward)
+         {
+            if (config_get_ptr()->bools.audio_fastforward_speedup)
+               i16_ratio *= audio_driver_fastforward_ratio_mult(
+                     audio_st, rs_frames);
+            /* Without speedup the device is pinned near full and the
+             * write below drops most of the output; resample only what
+             * it can accept.  See audio_driver_ff_discard_bound. */
+            else
+               rs_frames = (unsigned)audio_driver_ff_discard_bound(
+                     audio_st, i16_ratio, rs_frames);
+         }
 
          /* The int16 resampler writes to output_samples_int16 with no
           * capacity argument; bound the ratio to what that buffer holds. */
@@ -1307,9 +1383,18 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
    if (is_slowmotion)
       src_data.ratio       *= slowmotion_ratio;
 
-   if (is_fastforward && config_get_ptr()->bools.audio_fastforward_speedup)
-      src_data.ratio *= audio_driver_fastforward_ratio_mult(
-            audio_st, src_data.input_frames);
+   if (is_fastforward)
+   {
+      if (config_get_ptr()->bools.audio_fastforward_speedup)
+         src_data.ratio *= audio_driver_fastforward_ratio_mult(
+               audio_st, src_data.input_frames);
+      /* Without speedup the device is pinned near full and the write
+       * below drops most of the output; resample only what it can
+       * accept.  See audio_driver_ff_discard_bound. */
+      else
+         src_data.input_frames = audio_driver_ff_discard_bound(
+               audio_st, src_data.ratio, src_data.input_frames);
+   }
 
    /* Bound the ratio to what the output scratch holds.  The float result is
     * later narrowed into output_samples_int16 for s16 drivers, so take the
