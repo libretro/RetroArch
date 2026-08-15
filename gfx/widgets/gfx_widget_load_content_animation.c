@@ -100,15 +100,18 @@ struct gfx_widget_load_content_animation_state
 
    bool has_icon;
 
+   /* Read progress as a percentage, drawn after the content name.
+    * -1 means "no progress to show": the state for a load that did
+    * not stream its content in ahead of time, and the state this
+    * widget has always been in.  Read every frame while a load is
+    * streaming, so it belongs with the hot fields rather than the
+    * cold ones below. */
+   int8_t progress;
+
    /* Cold fields - only touched at startup/layout, not per-frame.
     * Kept at end to avoid polluting cache lines used by _frame(). */
    char content_name[512];
    char system_name[512];
-   /* Read progress as a percentage, drawn after the content name.
-    * -1 means "no progress to show", which is the state for a load
-    * that did not stream its content in ahead of time, and the state
-    * this widget has always been in. */
-   int8_t progress;
    char icon_directory[DIR_MAX_LENGTH];
    char icon_file[NAME_MAX_LENGTH];
 
@@ -167,6 +170,8 @@ static gfx_widget_load_content_animation_state_t p_w_load_content_animation_st =
    0,                                  /* system_name_len */
 
    false,                              /* has_icon */
+
+   -1,                                 /* progress */
 
    {'\0'},                             /* content_name */
    {'\0'},                             /* system_name */
