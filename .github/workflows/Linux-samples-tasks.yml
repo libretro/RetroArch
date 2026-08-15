@@ -516,6 +516,39 @@ jobs:
           make clean
           echo "[pass] scan_begin_budget_test (TSan)"
 
+      - name: Build and run task_watchdog_test (plain, ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/watchdog
+        run: |
+          set -eu
+          # Oracle for the task queue's slow-handler watchdog,
+          # compiled against the shipping queue.  With Threaded Tasks
+          # off, handlers run on the thread that drives the frame
+          # loop, so a handler that does not return promptly is a
+          # visible stall - and the queue is the only place that can
+          # attribute one to a specific task instead of to "something
+          # in the frame".
+          #
+          # The lanes pin: a handler inside its budget is silent; one
+          # that overruns is reported once, attributed to that task,
+          # with a duration above the budget; the threaded queue is
+          # deliberately not measured, because a long handler on a
+          # worker is what the worker is for; and an unregistered
+          # watchdog never fires, which is the default and the state
+          # release builds ship in.
+          make clean >/dev/null
+          make all -j$(nproc)
+          ./task_watchdog_test
+          make clean >/dev/null
+          make all SANITIZER=address,undefined -j$(nproc)
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+          UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+            ./task_watchdog_test
+          make clean >/dev/null
+          make all SANITIZER=thread -j$(nproc)
+          TSAN_OPTIONS=halt_on_error=1 ./task_watchdog_test
+          make clean >/dev/null
+
       - name: Build and run nat_task_serialisation_test (plain, ASan + UBSan)
         shell: bash
         working-directory: samples/tasks/netplay_nat

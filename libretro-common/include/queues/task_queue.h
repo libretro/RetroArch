@@ -721,6 +721,37 @@ void task_queue_deinit(void);
 void task_queue_init(bool threaded, retro_task_queue_msg_t msg_push);
 
 /**
+ * Called when a task handler occupies the calling thread for longer
+ * than the configured budget.
+ *
+ * @param task The task whose handler ran long.
+ * @param usec How long the handler call took, in microseconds.
+ * @see task_queue_set_slow_handler_cb
+ */
+typedef void (*retro_task_slow_handler_t)(retro_task_t *task,
+      retro_time_t usec);
+
+/**
+ * Report task handlers that occupy the calling thread too long.
+ *
+ * This measures the UNTHREADED queue only, which is the
+ * configuration where task handlers run on the thread that also
+ * drives the frame loop: there, a handler that does not return
+ * within a frame's worth of time is a visible stall, and the
+ * queue is the only place that can attribute one to a specific
+ * task.  On the threaded queue handlers run on a worker, where
+ * taking a long time is the point, so nothing is measured.
+ *
+ * @param cb Called for each handler invocation exceeding
+ * \c budget_usec, or \c NULL to disable the check (the default -
+ * with no callback registered, no clock is read).
+ * @param budget_usec Threshold in microseconds; values below 1
+ * are treated as 1.
+ */
+void task_queue_set_slow_handler_cb(retro_task_slow_handler_t cb,
+      retro_time_t budget_usec);
+
+/**
  * Allocates and initializes a new task.
  * Deallocated by the task queue after it finishes executing.
  *
