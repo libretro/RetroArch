@@ -297,13 +297,51 @@ static void android_app_set_activity_state(
    slock_unlock(android_app->mutex);
 }
 
+/* Upper bound on how long onDestroy() will block waiting for the app
+ * thread to unwind. ActivityManager gives a destroying activity on the
+ * order of ten seconds before it stops waiting, so stay well inside
+ * that: overrunning it buys nothing and turns a slow exit into an ANR. */
+#define ANDROID_DESTROY_TIMEOUT_US (5 * 1000 * 1000)
+
 static void android_app_free(struct android_app* android_app)
 {
+   bool acked;
+
+   /* Nothing ever wrote APP_CMD_DESTROY, so destroyRequested was dead
+    * and the app thread was never told to stop - while this function
+    * joined it holding the very mutex the thread needs to finish. If
+    * onDestroy() arrived with the thread still running, the Java UI
+    * thread blocked here until ActivityManager gave up.
+    *
+    * Ask the thread to shut down, then wait on the condvar (which
+    * releases the mutex, so the thread can take it in
+    * android_app_destroy). */
    slock_lock(android_app->mutex);
 
-   sthread_join(android_app->thread);
+   android_app->destroy_from_framework = 1;
+   android_app_write_cmd(android_app, APP_CMD_DESTROY);
+
+   acked = true;
+   while (!android_app->destroyed && acked)
+      acked = scond_wait_timeout(android_app->cond, android_app->mutex,
+            ANDROID_DESTROY_TIMEOUT_US);
+   acked = (android_app->destroyed != 0);
 
    slock_unlock(android_app->mutex);
+
+   /* If the thread did not acknowledge it may still be running and still
+    * holding references into this struct. Returning without joining lets
+    * the framework proceed instead of blocking the UI thread forever;
+    * leaking the allocation is the right trade against freeing memory a
+    * live thread is using, and the process is being torn down anyway. */
+   if (!acked)
+   {
+      RARCH_ERR("[Android] App thread did not acknowledge destroy; "
+            "skipping teardown.\n");
+      return;
+   }
+
+   sthread_join(android_app->thread);
 
    close(android_app->msgread);
    close(android_app->msgwrite);
@@ -2403,7 +2441,12 @@ static void android_app_destroy(struct android_app *android_app)
 
    env = jni_thread_getenv();
 
-   if (env && android_app->onRetroArchExit)
+   /* onRetroArchExit() calls finish() on the activity. When the destroy
+    * originated from the framework we are already inside onDestroy(),
+    * so asking it to finish again is at best redundant. */
+   if (     env
+         && android_app->onRetroArchExit
+         && !android_app->destroy_from_framework)
       CALL_VOID_METHOD(env, android_app->activity->clazz,
             android_app->onRetroArchExit);
 

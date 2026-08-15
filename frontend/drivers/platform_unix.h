@@ -139,6 +139,11 @@ struct android_app
 
    int running;
    int destroyed;
+
+   /* Set by android_app_free() before it asks the app thread to shut
+    * down, so android_app_destroy() knows the activity is already being
+    * torn down by the framework and must not call finish() on it. */
+   int destroy_from_framework;
    AInputQueue* pendingInputQueue;
    ANativeWindow* pendingWindow;
 
