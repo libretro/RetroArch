@@ -176,6 +176,7 @@ static void (*android_input_poll_input)(android_input_t *android);
 
 static bool android_input_set_sensor_state(void *data, unsigned port,
       enum retro_sensor_action action, unsigned event_rate);
+static void android_keycode_map_free(JNIEnv *env);
 static void android_input_enable_sensor_manager(struct android_app *android_app);
 static bool android_enable_sensor(struct android_app *android_app,
       const ASensor *sensor, unsigned rate,
@@ -672,6 +673,12 @@ static void android_input_poll_main_cmd(void)
 
          scond_broadcast(android_app->cond);
          slock_unlock(android_app->mutex);
+
+         /* The set of attached input devices has changed, so a cached
+          * KeyCharacterMap may now belong to a device that is gone or
+          * has been replaced under the same id. Drop the cache and let
+          * it re-resolve on the next key event. */
+         android_keycode_map_free((JNIEnv*)jni_thread_getenv());
 
          break;
 
@@ -1302,45 +1309,128 @@ static bool android_is_keyboard_id(int id)
  *
  * Also returns 0 (rather than failing) whenever JNI is unavailable, so
  * the caller can fall back to its previous keysym-based behaviour. */
+/* Resolved once and held for the lifetime of the input driver.
+ * @kcm_class is a global reference: the method IDs below stay valid only
+ * while the class is reachable, and a local reference would not survive
+ * the call that created it. */
+#define ANDROID_KCM_CACHE_SIZE 4
+
+static jclass    kcm_class                                   = NULL;
+static jmethodID kcm_load                                    = NULL;
+static jmethodID kcm_get                                     = NULL;
+static jobject   kcm_obj[ANDROID_KCM_CACHE_SIZE];
+static int       kcm_obj_device[ANDROID_KCM_CACHE_SIZE];
+static int       kcm_obj_next                                = 0;
+static bool      kcm_resolve_failed                          = false;
+
+static void android_keycode_map_free(JNIEnv *env)
+{
+   int i;
+
+   if (!env)
+      return;
+
+   for (i = 0; i < ANDROID_KCM_CACHE_SIZE; i++)
+   {
+      if (kcm_obj[i])
+         (*env)->DeleteGlobalRef(env, kcm_obj[i]);
+      kcm_obj[i]        = NULL;
+      kcm_obj_device[i] = 0;
+   }
+
+   if (kcm_class)
+      (*env)->DeleteGlobalRef(env, kcm_class);
+
+   kcm_class          = NULL;
+   kcm_load           = NULL;
+   kcm_get            = NULL;
+   kcm_obj_next       = 0;
+   kcm_resolve_failed = false;
+}
+
+/* Return the KeyCharacterMap for @device_id, resolving and caching the
+ * class, its method IDs and the per-device map object on first use.
+ *
+ * Devices are few and long-lived, so a small round-robin cache covers
+ * the realistic case (one or two attached keyboards) without needing
+ * invalidation on hotplug: a stale entry is simply evicted in turn, and
+ * a reconnected device re-resolves. */
+static jobject android_keycode_map_get(JNIEnv *env, int device_id)
+{
+   int     i;
+   jobject local = NULL;
+
+   if (kcm_resolve_failed)
+      return NULL;
+
+   if (!kcm_class)
+   {
+      jclass found = NULL;
+
+      FIND_CLASS(env, found, "android/view/KeyCharacterMap");
+      if (!found)
+      {
+         kcm_resolve_failed = true;
+         return NULL;
+      }
+
+      kcm_class = (jclass)(*env)->NewGlobalRef(env, found);
+      (*env)->DeleteLocalRef(env, found);
+      if (!kcm_class)
+      {
+         kcm_resolve_failed = true;
+         return NULL;
+      }
+
+      GET_STATIC_METHOD_ID(env, kcm_load, kcm_class, "load",
+            "(I)Landroid/view/KeyCharacterMap;");
+      GET_METHOD_ID(env, kcm_get, kcm_class, "get", "(II)I");
+
+      if (!kcm_load || !kcm_get)
+      {
+         android_keycode_map_free(env);
+         kcm_resolve_failed = true;
+         return NULL;
+      }
+   }
+
+   for (i = 0; i < ANDROID_KCM_CACHE_SIZE; i++)
+      if (kcm_obj[i] && kcm_obj_device[i] == device_id)
+         return kcm_obj[i];
+
+   CALL_OBJ_STATIC_METHOD_PARAM(env, local, kcm_class, kcm_load,
+         (jint)device_id);
+   if (!local)
+      return NULL;
+
+   if (kcm_obj[kcm_obj_next])
+      (*env)->DeleteGlobalRef(env, kcm_obj[kcm_obj_next]);
+
+   kcm_obj[kcm_obj_next]        = (*env)->NewGlobalRef(env, local);
+   kcm_obj_device[kcm_obj_next] = device_id;
+   (*env)->DeleteLocalRef(env, local);
+
+   local        = kcm_obj[kcm_obj_next];
+   kcm_obj_next = (kcm_obj_next + 1) % ANDROID_KCM_CACHE_SIZE;
+
+   return local;
+}
+
 static unsigned android_keycode_to_unicode(int device_id,
       int keycode, int meta_state)
 {
    jint      unicode = 0;
    jobject   kcm     = NULL;
-   jmethodID load    = NULL;
-   jmethodID get     = NULL;
-   jclass    class   = NULL;
    JNIEnv   *env     = (JNIEnv*)jni_thread_getenv();
 
    if (!env)
       return 0;
 
-   /* Bound the local references created below so they are released as
-    * soon as the lookup completes, rather than accumulating in the
-    * thread-local reference table across key presses. */
-   if ((*env)->PushLocalFrame(env, 4) < 0)
-      return 0;
-
-   FIND_CLASS(env, class, "android/view/KeyCharacterMap");
-   if (class)
-   {
-      GET_STATIC_METHOD_ID(env, load, class, "load",
-            "(I)Landroid/view/KeyCharacterMap;");
-      if (load)
-      {
-         CALL_OBJ_STATIC_METHOD_PARAM(env, kcm, class, load,
-               (jint)device_id);
-         if (kcm)
-         {
-            GET_METHOD_ID(env, get, class, "get", "(II)I");
-            if (get)
-               CALL_INT_METHOD_PARAM(env, unicode, kcm, get,
-                     (jint)keycode, (jint)meta_state);
-         }
-      }
-   }
-
-   (*env)->PopLocalFrame(env, NULL);
+   /* No local frame: the cached path creates no local references at all,
+    * and the resolve path deletes the two it makes explicitly. */
+   if ((kcm = android_keycode_map_get(env, device_id)))
+      CALL_INT_METHOD_PARAM(env, unicode, kcm, kcm_get,
+            (jint)keycode, (jint)meta_state);
 
    /* KeyCharacterMap.get() sets the COMBINING_ACCENT (0x80000000) flag
     * for dead keys; the menu line-editor cannot compose those, so strip
@@ -2477,6 +2567,8 @@ static void android_input_free_input(void *data)
    dylib_close((dylib_t)libandroid_handle);
    libandroid_handle = NULL;
 #endif
+
+   android_keycode_map_free((JNIEnv*)jni_thread_getenv());
 
    android_keyboard_free();
    free(data);
