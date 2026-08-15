@@ -273,7 +273,6 @@ struct overlay
 
    unsigned load_images_size;
    unsigned id;
-   unsigned pos_increment;
 
    size_t size;
    size_t pos;

@@ -80,102 +80,20 @@ void task_window_progress_cb(retro_task_t *task)
  * JPEG are avail-aware and decode against the partial buffer, but
  * they still need every byte to finish, so the time budget is theirs
  * too - task_image.c's is_prefix grouping answers a different
- * question from this one and the two are meant to differ.) */
-#define NBIO_XFER_TICK_USEC        4000
-
-/* ...and that budget is shared by every file-transfer task in a tick,
- * not handed to each one separately.
+ * question from this one and the two are meant to differ.)
  *
- * retro_task_regular_gather() calls every running task's handler once
- * per task_queue_check(), i.e. once per frame, so a per-task slice
- * multiplies: eight concurrent loads spent 30.65 ms in a single
- * frame, four already spent 15.07 ms, and it scaled linearly with
- * the task count.  A window is the fix - at most NBIO_XFER_TICK_USEC
- * of file I/O per NBIO_XFER_TICK_PERIOD_USEC of wall time, whatever
- * the number of tasks.
- *
- * A tick has no identity this file can see, so the window is a plain
- * fixed one rather than something keyed to the gather: consumed
- * microseconds accumulate until a period has elapsed, then reset.
- * It over-counts nothing (only time actually spent filling is
- * charged) and needs no cooperation from task_queue. */
-#define NBIO_XFER_TICK_PERIOD_USEC 16666
+ * The time budget's value itself lives with the window in
+ * task_nbio_slice.c (NBIO_XFER_TICK_USEC): the slice open/close
+ * calls below hand out exactly that allowance. */
 
-/* Every task gets one read regardless of the window, or a queue
- * whose budget is already spent would make no progress at all.  The
- * frame is then bounded by the window plus one chunk per task, which
- * is a few hundred microseconds for a queue of dozens, rather than
- * by the task count times the whole slice. */
-typedef struct
-{
-   retro_time_t start;       /* when this task's fill began       */
-   retro_time_t allowance;   /* usec this task may spend in it    */
-   uint8_t      floor;       /* the guaranteed first read         */
-} nbio_budget_t;
-
-/* Window state.  Only ever touched on the thread that runs handlers,
- * and only when that is the frame thread - see slice_open(). */
-static retro_time_t nbio_slice_start;
-static retro_time_t nbio_slice_used;
-
-/* The budget is handed to the fill rather than checked around it, so
- * it is consulted between the fill's own reads.  This used to be a
- * do/while around iterate() with a 256 KiB byte budget standing in
- * for the time slice, which meant the deadline could only be noticed
- * every 256 KiB - once per whole chunk, however long that chunk took
- * to arrive. */
-static bool task_file_transfer_within_budget(void *ud, size_t avail,
-      size_t len)
-{
-   nbio_budget_t *b = (nbio_budget_t*)ud;
-   (void)avail;
-   (void)len;
-   if (b->floor)
-   {
-      b->floor = 0;
-      return true;
-   }
-   return cpu_features_get_time_usec() - b->start < b->allowance;
-}
-
-/* Claim this task's share of the window.
- *
- * Declined entirely under a threaded task queue.  There the handler
- * runs on the worker thread, which rotates the task and re-enters
- * immediately; there is no frame to protect, slicing buys only
- * round-robin fairness between file tasks, and a shared static
- * across threads would be a race for no benefit.  Each task gets the
- * whole slice there, which is what it effectively had before. */
-static void task_file_transfer_slice_open(nbio_budget_t *b)
-{
-   retro_time_t now = cpu_features_get_time_usec();
-
-   b->start = now;
-   b->floor = 1;
-
-   if (task_queue_is_threaded())
-   {
-      b->allowance = NBIO_XFER_TICK_USEC;
-      return;
-   }
-   if (now - nbio_slice_start >= (retro_time_t)NBIO_XFER_TICK_PERIOD_USEC)
-   {
-      nbio_slice_start = now;
-      nbio_slice_used  = 0;
-   }
-   b->allowance = (nbio_slice_used < (retro_time_t)NBIO_XFER_TICK_USEC)
-      ? (retro_time_t)NBIO_XFER_TICK_USEC - nbio_slice_used
-      : 0;
-}
-
-/* Charge back what the fill actually spent, including the floor read
- * that ran outside the allowance. */
-static void task_file_transfer_slice_close(nbio_budget_t *b)
-{
-   if (task_queue_is_threaded())
-      return;
-   nbio_slice_used += cpu_features_get_time_usec() - b->start;
-}
+/* The shared per-frame I/O window itself (state + the three
+ * task_nbio_slice_* entry points) lives in task_nbio_slice.c: it is
+ * shared with other budgeted handlers (the manual content scanner's
+ * BEGIN spine), and a TU of its own keeps its dependencies to the
+ * clock and the task queue, so tests can link the real window
+ * without dragging the image/nbio spine in with it.  The design
+ * rationale - why a shared window rather than a per-task slice, why
+ * the floor - is documented there. */
 
 const uint8_t *nbio_xfer_ptr(nbio_handle_t *nbio, size_t *len)
 {
@@ -225,10 +143,10 @@ static int task_file_transfer_iterate_transfer(nbio_handle_t *nbio)
                         || nbio->type == NBIO_TYPE_WEBP)
          ? (size_t)NBIO_XFER_TICK_BYTES : 0;
 
-      task_file_transfer_slice_open(&b);
+      task_nbio_slice_open(&b);
       data_transfer_iterate_while(nbio->xfer, bytes,
-            task_file_transfer_within_budget, &b);
-      task_file_transfer_slice_close(&b);
+            task_nbio_slice_within_budget, &b);
+      task_nbio_slice_close(&b);
    }
    if (data_transfer_complete(nbio->xfer)
          || data_transfer_failed(nbio->xfer)
@@ -298,9 +216,9 @@ void task_file_load_handler(retro_task_t *task)
                 * much less. */
                {
                   nbio_budget_t b;
-                  task_file_transfer_slice_open(&b);
+                  task_nbio_slice_open(&b);
                   nbio->xfer = data_transfer_open_prefix(nbio->path, 0);
-                  task_file_transfer_slice_close(&b);
+                  task_nbio_slice_close(&b);
                }
                if (nbio->xfer)
                {

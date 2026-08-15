@@ -1398,8 +1398,15 @@ static void rvp9_build_intra(rvp9_dec *d, const RVP9_PIXEL *ref, int ref_stride,
    RVP9_PIXEL *above_row = above_data + 16;
    const RVP9_PIXEL *const_above_row = above_row;
    const int bs = 4 << tx_size;
-   int frame_width  = plane ? d->uvw : d->yw;
-   int frame_height = plane ? d->uvh : d->yh;
+   /* libvpx's dec_build_intra_predictors bounds the edge extension by
+    * xd->cur_buf->y_width / y_height, which are the frame dimensions
+    * ALIGNED UP TO 8 - not the crop dimensions.  The rows and columns
+    * between the crop size and the alignment are coded and
+    * reconstructed like any other, so a block in the last mi row of a
+    * frame whose height is not a multiple of 8 must read them rather
+    * than replicating the last visible line. */
+   int frame_width  = plane ? d->mi_cols * 4 : d->mi_cols * 8;
+   int frame_height = plane ? d->mi_rows * 4 : d->mi_rows * 8;
    int x0, y0, i;
    int ss = plane ? 1 : 0;
 
@@ -1659,9 +1666,18 @@ static int rvp9_read_inter_mode(rvp9_dec *d, rvp9_br *r, int ctx)
 }
 
 static void rvp9_read_ref_frames(rvp9_dec *d, rvp9_br *r,
-      const rvp9_mi *above, const rvp9_mi *left, int8_t ref_frame[2])
+      const rvp9_mi *above, const rvp9_mi *left, int8_t ref_frame[2],
+      int segment_id)
 {
    int mode;   /* block reference mode */
+   /* SEG_LVL_REF_FRAME names the reference outright; nothing is coded. */
+   if (rvp9_segfeature_active(&d->hd, segment_id, RVP9_SEG_LVL_REF_FRAME))
+   {
+      ref_frame[0] = (int8_t)rvp9_segdata(&d->hd, segment_id,
+         RVP9_SEG_LVL_REF_FRAME);
+      ref_frame[1] = -1;
+      return;
+   }
    if (d->reference_mode == 2)
    {
       int ctx = rvp9_get_reference_mode_context(d, above, left);
@@ -1764,11 +1780,20 @@ static int rvp9_read_inter_block_mode(rvp9_dec *d, rvp9_mi *mi,
    best_ref[0].row = best_ref[0].col = 0;
    best_ref[1].row = best_ref[1].col = 0;
 
-   rvp9_read_ref_frames(d, r, above, left, mi->ref_frame);
+   rvp9_read_ref_frames(d, r, above, left, mi->ref_frame, mi->segment_id);
    is_compound = rvp9_compound(mi);
    mode_ctx = rvp9_get_mode_context(d, search, mi_row, mi_col);
 
-   if (bsize >= 3)
+   if (rvp9_segfeature_active(&d->hd, mi->segment_id, RVP9_SEG_LVL_SKIP))
+   {
+      /* SEG_LVL_SKIP forces ZEROMV and codes no inter mode.  libvpx
+       * rejects the feature outright on sub-8x8 blocks, where the
+       * per-sub-block modes would have nowhere to come from. */
+      if (bsize < 3)
+         return 0;
+      mi->mode = RVP9_ZEROMV;
+   }
+   else if (bsize >= 3)
       mi->mode = (uint8_t)rvp9_read_inter_mode(d, r, mode_ctx);
 
    if (d->hd.interp_filter == 4)
@@ -1944,13 +1969,74 @@ static void rvp9_decode_block(rvp9_dec *d, int mi_row, int mi_col,
    d->mb_to_top_edge    = -((mi_row * 8) * 8);
 
    mi->sb_type = (uint8_t)bsize;
-   mi->segment_id = 0;                    /* segmentation off in corpus */
+   mi->seg_id_predicted = 0;
    mi->ref_frame[0] = 0;
    mi->ref_frame[1] = -1;
    mi->interp_filter = 3;                 /* SWITCHABLE_FILTERS for intra */
    mi->mv[0].row = mi->mv[0].col = 0;
    mi->mv[1].row = mi->mv[1].col = 0;
    memset(mi->bmv, 0, sizeof mi->bmv);
+
+   /* Segment id comes first in the block header, ahead of skip.  The
+    * intra and inter forms differ: an intra frame has no previous map to
+    * predict from, so an absent seg_update_map means segment 0 outright,
+    * whereas an inter frame inherits the co-located id from the last
+    * frame's map (the MINIMUM over the block's footprint, not the
+    * top-left cell).  Either way the block's footprint in the current
+    * map is written, because the next frame reads this one as its
+    * predictor. */
+   if (!d->hd.seg_enabled)
+      mi->segment_id = 0;
+   else
+   {
+      const int mi_offset = mi_row * d->mi_cols + mi_col;
+      if (d->hd.frame_type == 0 || d->hd.intra_only)
+      {
+         if (!d->hd.seg_update_map)
+         {
+            rvp9_copy_segment_id(d, mi_offset, x_mis, y_mis);
+            mi->segment_id = 0;
+         }
+         else
+         {
+            mi->segment_id = (uint8_t)rvp9_read_segment_id(&d->r, &d->hd);
+            rvp9_set_segment_id(d, mi_offset, x_mis, y_mis, mi->segment_id);
+         }
+      }
+      else
+      {
+         int predicted = rvp9_get_segment_id(d, d->seg_map_prev,
+            mi_offset, x_mis, y_mis);
+         if (!d->hd.seg_update_map)
+         {
+            rvp9_copy_segment_id(d, mi_offset, x_mis, y_mis);
+            mi->segment_id = (uint8_t)predicted;
+         }
+         else
+         {
+            if (d->hd.seg_temporal_update)
+            {
+               /* One bit says "same as the co-located id last frame";
+                * its context is how many of the above/left neighbours
+                * took that shortcut. */
+               int ctx = (above ? above->seg_id_predicted : 0)
+                       + (left  ? left->seg_id_predicted  : 0);
+               mi->seg_id_predicted = (uint8_t)rvp9_br_read(&d->r,
+                  d->hd.seg_pred_probs[ctx]);
+               mi->segment_id = (uint8_t)(mi->seg_id_predicted ? predicted
+                  : rvp9_read_segment_id(&d->r, &d->hd));
+            }
+            else
+               mi->segment_id = (uint8_t)rvp9_read_segment_id(&d->r, &d->hd);
+            rvp9_set_segment_id(d, mi_offset, x_mis, y_mis, mi->segment_id);
+         }
+      }
+   }
+
+   /* skip: SEG_LVL_SKIP forces it and codes no bit */
+   if (rvp9_segfeature_active(&d->hd, mi->segment_id, RVP9_SEG_LVL_SKIP))
+      mi->skip = 1;
+   else
    {
       /* skip: context from above/left mi */
       int ctx = (above ? above->skip : 0) + (left ? left->skip : 0);
@@ -1962,6 +2048,13 @@ static void rvp9_decode_block(rvp9_dec *d, int mi_row, int mi_col,
    else
    {
       int inter_block;
+      /* SEG_LVL_REF_FRAME names the reference, and intra is reference 0,
+       * so the intra/inter bit is implied rather than coded. */
+      if (rvp9_segfeature_active(&d->hd, mi->segment_id,
+             RVP9_SEG_LVL_REF_FRAME))
+         inter_block = rvp9_segdata(&d->hd, mi->segment_id,
+            RVP9_SEG_LVL_REF_FRAME) != 0;
+      else
       {
          int ctx = rvp9_intra_inter_ctx(above, left);
          inter_block = rvp9_br_read(&d->r, d->fc.intra_inter[ctx]);
@@ -2209,7 +2302,8 @@ modes_done:
                   : rvp9_mode2txtype[mode];
                const int16_t *scan = rvp9_scan_tab(tx_size, tx_type);
                const int16_t *nb   = rvp9_nb_tab(tx_size, tx_type);
-               const int16_t *dq   = plane ? d->uv_dq[0] : d->y_dq[0];
+               const int16_t *dq   = plane ? d->uv_dq[mi->segment_id]
+                                           : d->y_dq[mi->segment_id];
                uint8_t *a = d->above_ctx[plane] + ((mi_col * 2) >> ss) + col;
                uint8_t *l = d->left_ctx[plane] + ((mi_row * 2 & 15) >> ss) + row;
                int ctx, eob, k;
@@ -2388,6 +2482,8 @@ static int rvp9_decode_frame_impl(rvp9_dec *d, const uint8_t *data,
       free(d->prev_mvs);  d->prev_mvs = NULL;
       free(d->cur_mvs);   d->cur_mvs = NULL;
       free(d->above_seg); d->above_seg = NULL;
+      free(d->seg_map);      d->seg_map = NULL;
+      free(d->seg_map_prev); d->seg_map_prev = NULL;
       for (i = 0; i < 3; i++)
       { free(d->above_ctx[i]); d->above_ctx[i] = NULL; }
       d->buf_y = d->buf_u = d->buf_v = NULL;
@@ -2410,9 +2506,15 @@ static int rvp9_decode_frame_impl(rvp9_dec *d, const uint8_t *data,
       d->cur_mvs = (rvp9_mv_ref*)calloc((size_t)d->mi_cols * d->mi_rows,
          sizeof(rvp9_mv_ref));
       d->above_seg = (uint8_t*)calloc(d->mi_cols + 8, 1);
+      /* Segmentation maps: one mi cell each, zeroed - a stream whose
+       * first frame has seg_update_map == 0 reads them as all-segment-0,
+       * which is what setup_past_independence would have left. */
+      d->seg_map      = (uint8_t*)calloc((size_t)d->mi_cols * d->mi_rows, 1);
+      d->seg_map_prev = (uint8_t*)calloc((size_t)d->mi_cols * d->mi_rows, 1);
       for (i = 0; i < 3; i++)
          d->above_ctx[i] = (uint8_t*)calloc(d->mi_cols * 2 + 16, 1);
       if (!d->mi || !d->prev_mvs || !d->cur_mvs || !d->above_seg ||
+          !d->seg_map || !d->seg_map_prev ||
           !d->above_ctx[0] || !d->above_ctx[1] || !d->above_ctx[2])
          return -7;
       for (i = 0; i < 8; i++) d->ref_frame_map[i] = -1;
@@ -2461,6 +2563,29 @@ static int rvp9_decode_frame_impl(rvp9_dec *d, const uint8_t *data,
       for (i = 0; i < 2; i++)
          if (hd->lf_mode_delta_upd[i])
             d->lf_mode_deltas[i] = hd->lf_mode_deltas[i];
+   }
+
+   /* Same merge for the segmentation feature table.  seg_update_data
+    * replaces it wholesale (libvpx clears every feature before reading,
+    * so an absent feature is absent, not inherited); without the flag
+    * the frame runs on whatever the last one left, which is the common
+    * case - an AQ stream signals the table once per key frame and every
+    * inter frame in between inherits it. */
+   if (hd->seg_update_data)
+   {
+      memcpy(d->seg_feature_enabled, hd->seg_feature_enabled,
+             sizeof d->seg_feature_enabled);
+      memcpy(d->seg_feature_data, hd->seg_feature_data,
+             sizeof d->seg_feature_data);
+      d->seg_abs_delta = hd->seg_abs_delta;
+   }
+   else
+   {
+      memcpy(hd->seg_feature_enabled, d->seg_feature_enabled,
+             sizeof hd->seg_feature_enabled);
+      memcpy(hd->seg_feature_data, d->seg_feature_data,
+             sizeof hd->seg_feature_data);
+      hd->seg_abs_delta = d->seg_abs_delta;
    }
 
    /* compressed header */
@@ -2522,10 +2647,29 @@ static int rvp9_decode_frame_impl(rvp9_dec *d, const uint8_t *data,
          d->cat6_prob = rvp9_cat6_prob_high12;
          d->cat6_bits = 18;
       }
-      d->y_dq[0][0]  = dcq[ydc];
-      d->y_dq[0][1]  = acq[hd->base_qindex];
-      d->uv_dq[0][0] = dcq[uvdc];
-      d->uv_dq[0][1] = acq[uvac];
+      if (hd->seg_enabled)
+      {
+         /* setup_segmentation_dequant: every segment gets its own pair.
+          * The per-segment qindex replaces base_qindex as the origin the
+          * y_dc/uv_dc/uv_ac deltas are applied to, and the AC lookups
+          * take it directly. */
+         int seg;
+         for (seg = 0; seg < RVP9_MAX_SEGMENTS; seg++)
+         {
+            int q = rvp9_seg_qindex(hd, seg);
+            d->y_dq[seg][0]  = dcq[rvp9_clamp(q + hd->y_dc_delta_q, 0, 255)];
+            d->y_dq[seg][1]  = acq[q];
+            d->uv_dq[seg][0] = dcq[rvp9_clamp(q + hd->uv_dc_delta_q, 0, 255)];
+            d->uv_dq[seg][1] = acq[rvp9_clamp(q + hd->uv_ac_delta_q, 0, 255)];
+         }
+      }
+      else
+      {
+         d->y_dq[0][0]  = dcq[ydc];
+         d->y_dq[0][1]  = acq[hd->base_qindex];
+         d->uv_dq[0][0] = dcq[uvdc];
+         d->uv_dq[0][1] = acq[uvac];
+      }
    }
 
 
@@ -2607,6 +2751,19 @@ static int rvp9_decode_frame_impl(rvp9_dec *d, const uint8_t *data,
       }
       d->prev_mvs = d->cur_mvs;
       d->cur_mvs = tmp;
+   }
+
+   /* Hand this frame's segmentation map to the next one as its
+    * predictor.  libvpx only swaps while segmentation is enabled: a
+    * frame that codes no map leaves both buffers as the last
+    * segmented frame left them, so a later frame that re-enables
+    * segmentation without an update still predicts from that map
+    * rather than from an all-zero one. */
+   if (hd->seg_enabled)
+   {
+      uint8_t *tmp    = d->seg_map_prev;
+      d->seg_map_prev = d->seg_map;
+      d->seg_map      = tmp;
    }
 
    /* probability adaptation */
@@ -6449,7 +6606,7 @@ static const uint16_t rvp9_size_mask_uv[13] = {
 typedef struct
 {
    rvp9_lfthr lfthr[RVP9_MAX_LOOP_FILTER + 1];
-   uint8_t    lvl[4][2];    /* [ref_frame][mode_lf_lut]; seg off      */
+   uint8_t    lvl[RVP9_MAX_SEGMENTS][4][2];  /* [seg][ref][mode_lf_lut] */
 } rvp9_lf_info;
 #endif /* !RVP9_RECON_HBD */
 
@@ -6460,7 +6617,7 @@ static const uint8_t rvp9_mode_lf_lut[14] =
 static void rvp9_lf_init(rvp9_lf_info *lfi, const rvp9_hdr *hd,
       const int *ref_deltas, const int *mode_deltas)
 {
-   int lvl;
+   int lvl, seg;
    int sharpness = hd->lf_sharpness;
    int scale = 1 << (hd->lf_level >> 5);
    int intra_lvl;
@@ -6476,25 +6633,42 @@ static void rvp9_lf_init(rvp9_lf_info *lfi, const rvp9_hdr *hd,
       lfi->lfthr[lvl].mblim = (uint8_t)(2 * (lvl + 2) + block_inside_limit);
       lfi->lfthr[lvl].hev_thr = (uint8_t)(lvl >> 4);
    }
-   /* filter levels (seg off): lvl[ref][mode] */
-   if (hd->lf_delta_enabled)
+   /* filter levels: lvl[seg][ref][mode].  SEG_LVL_ALT_LF moves the
+    * segment's base level (absolute or as a delta on lf_level); the
+    * ref/mode deltas then apply on top of that per-segment base.  With
+    * segmentation off only segment 0 is ever indexed, but filling all
+    * eight costs nothing and keeps the lookup branch-free. */
+   for (seg = 0; seg < RVP9_MAX_SEGMENTS; seg++)
    {
-      int ref, mode;
-      intra_lvl = hd->lf_level + ref_deltas[0] * scale;
-      lfi->lvl[0][0] = (uint8_t)rvp9_clamp(intra_lvl, 0,
-         RVP9_MAX_LOOP_FILTER);
-      lfi->lvl[0][1] = lfi->lvl[0][0];
-      for (ref = 1; ref < 4; ref++)
-         for (mode = 0; mode < 2; mode++)
-         {
-            int lvl2 = hd->lf_level + ref_deltas[ref] * scale +
-               mode_deltas[mode] * scale;
-            lfi->lvl[ref][mode] = (uint8_t)rvp9_clamp(lvl2, 0,
-               RVP9_MAX_LOOP_FILTER);
-         }
+      int lvl_seg = hd->lf_level;
+      if (rvp9_segfeature_active(hd, seg, RVP9_SEG_LVL_ALT_LF))
+      {
+         int data = rvp9_segdata(hd, seg, RVP9_SEG_LVL_ALT_LF);
+         lvl_seg = rvp9_clamp(hd->seg_abs_delta ? data : hd->lf_level + data,
+            0, RVP9_MAX_LOOP_FILTER);
+      }
+      if (hd->lf_delta_enabled)
+      {
+         int ref, mode;
+         intra_lvl = lvl_seg + ref_deltas[0] * scale;
+         lfi->lvl[seg][0][0] = (uint8_t)rvp9_clamp(intra_lvl, 0,
+            RVP9_MAX_LOOP_FILTER);
+         lfi->lvl[seg][0][1] = lfi->lvl[seg][0][0];
+         for (ref = 1; ref < 4; ref++)
+            for (mode = 0; mode < 2; mode++)
+            {
+               int lvl2 = lvl_seg + ref_deltas[ref] * scale +
+                  mode_deltas[mode] * scale;
+               lfi->lvl[seg][ref][mode] = (uint8_t)rvp9_clamp(lvl2, 0,
+                  RVP9_MAX_LOOP_FILTER);
+            }
+      }
+      else
+         memset(lfi->lvl[seg], lvl_seg, sizeof lfi->lvl[seg]);
+      /* Segmentation off: only segment 0 is reachable, so stop. */
+      if (!hd->seg_enabled)
+         break;
    }
-   else
-      memset(lfi->lvl, hd->lf_level, sizeof lfi->lvl);
 }
 
 static void rvp9_build_masks(const rvp9_lf_info *lfi,
@@ -6506,7 +6680,8 @@ static void rvp9_build_masks(const rvp9_lf_info *lfi,
    int mt = rvp9_max_tx[ssb];
    int tx_uv = tx_y < mt ? tx_y : mt;
    int filter_level =
-      lfi->lvl[mi->ref_frame[0] > 0 ? mi->ref_frame[0] : 0]
+      lfi->lvl[mi->segment_id]
+              [mi->ref_frame[0] > 0 ? mi->ref_frame[0] : 0]
               [rvp9_mode_lf_lut[mi->mode]];
    int i;
 
@@ -6551,7 +6726,8 @@ static void rvp9_build_y_mask(const rvp9_lf_info *lfi,
    int bs = mi->sb_type;
    int tx_y = mi->tx_size;
    int filter_level =
-      lfi->lvl[mi->ref_frame[0] > 0 ? mi->ref_frame[0] : 0]
+      lfi->lvl[mi->segment_id]
+              [mi->ref_frame[0] > 0 ? mi->ref_frame[0] : 0]
               [rvp9_mode_lf_lut[mi->mode]];
    int i;
 

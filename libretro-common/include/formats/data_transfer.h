@@ -221,6 +221,33 @@ void data_transfer_window_punch(data_transfer_t *dt, size_t from,
  * an I/O failure (the consumer will hit the end-of-data wall). */
 bool data_transfer_window_feed(data_transfer_t *dt, size_t tell,
       size_t lookahead, size_t margin);
+/* window_feed with a ceiling on the bytes one call may read.  The
+ * policy is identical - same rewind detection, same advance, same
+ * target of tell + lookahead - but when the frontier already covers
+ * the consumer (frontier >= tell), a call extends it by at most
+ * 'budget' bytes and later calls carry on from there, so a feeder
+ * ticking on a frame loop pays a bounded read per tick instead of
+ * the whole lookahead in one burst (the first tick after open, and
+ * every lap of a looping consumer, are exactly such bursts).
+ *
+ * The budget is deliberately NOT applied while the frontier is
+ * behind the consumer.  There the bytes at tell itself are what is
+ * missing - a lap that landed past the head, an open that rebased -
+ * and leaving them for a later tick leaves the consumer's very next
+ * read on unresident pages; that catch-up is one unbudgeted extend,
+ * exactly what window_feed has always done.  budget == 0 disables
+ * the ceiling entirely, making this window_feed by another name.
+ *
+ * *resident_hi (may be NULL) reports the sequential bound this call
+ * left resident: the offset the owner may advertise to its consumer
+ * as readable, clamped nowhere - on the no-reservation fallback it
+ * is the full length, since everything is.  It is feed-owner state,
+ * valid between this call and the owner's next feed, for the one
+ * consumer the window serves; it is not the shared-frontier accessor
+ * the single-owner contract above declines to provide. */
+bool data_transfer_window_feed_budget(data_transfer_t *dt, size_t tell,
+      size_t lookahead, size_t margin, size_t budget,
+      size_t *resident_hi);
 
 bool data_transfer_arena_ensure(data_transfer_arena_t *a, size_t need);
 void data_transfer_arena_release(data_transfer_arena_t *a);

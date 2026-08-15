@@ -82,7 +82,6 @@ typedef struct nbio_handle
    transfer_cb_t  cb;
 
    unsigned status;
-   unsigned pos_increment;
    uint32_t status_flags;
 
    enum nbio_type type;

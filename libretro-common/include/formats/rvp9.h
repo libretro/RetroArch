@@ -7,10 +7,14 @@
  * management (including show_existing_frame) and the full loop filter.
  * Every path is verified byte-identical against libvpx.
  *
+ * Segmentation decodes in full: the map (coded, temporally predicted
+ * or inherited) and all four features - SEG_LVL_ALT_Q, ALT_LF,
+ * REF_FRAME and SKIP - in both absolute and delta form.
+ *
  * Deliberately unsupported (rvp9_decode_frame returns an error):
- * segmentation, scaled (different-size) reference frames, and
- * profiles 1-3 (profile 2/3 are the 10/12-bit streams used for HDR;
- * these return -15 specifically so callers can report them as such).
+ * scaled (different-size) reference frames, and profiles 1-3
+ * (profile 2/3 are the 10/12-bit streams used for HDR; these return
+ * -15 specifically so callers can report them as such).
  * Tiled streams (tile columns and tile rows) decode
  * fully, so encoder defaults at any resolution are covered.
  *
@@ -173,6 +177,8 @@ typedef struct
    uint8_t tx_size;
    uint8_t skip;
    uint8_t segment_id;
+   uint8_t seg_id_predicted;  /* temporal seg-id prediction flag; feeds
+                               * the above/left context of the next block */
    uint8_t bmodes[4];    /* sub-8x8 y modes / b inter modes        */
    int8_t  ref_frame[2]; /* 0=intra 1=last 2=golden 3=alt -1=none  */
    uint8_t interp_filter;
@@ -271,6 +277,21 @@ typedef struct
    int      mb_to_left_edge, mb_to_top_edge;
    int      corrupted;
    int      lf_ref_deltas[4], lf_mode_deltas[2];   /* persistent */
+
+   /* Segmentation state that outlives a frame.  The header struct is
+    * wiped per frame, but a frame carrying seg_update_data == 0
+    * inherits the previous frame's feature table, so the surviving
+    * copy lives here (libvpx keeps it in cm->seg).  Reset by
+    * rvp9_past_independence, exactly like the loop filter deltas. */
+   int      seg_feature_enabled[RVP9_MAX_SEGMENTS][RVP9_SEG_LVL_MAX];
+   int      seg_feature_data[RVP9_MAX_SEGMENTS][RVP9_SEG_LVL_MAX];
+   int      seg_abs_delta;
+   /* Segmentation maps, mi_cols * mi_rows bytes each: the one this
+    * frame writes and the one the previous frame left behind (the
+    * predictor for temporal_update and the source a frame without
+    * seg_update_map copies forward).  Swapped after every decoded
+    * frame while segmentation is enabled. */
+   uint8_t *seg_map, *seg_map_prev;
 } rvp9_dec;
 
 /* Decode one coded VP9 frame (one WebM block / IVF frame payload).

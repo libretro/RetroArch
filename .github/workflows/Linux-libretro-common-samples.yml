@@ -86,6 +86,7 @@ jobs:
             strlcpy_append_test
             http_parse_test
             rjson_test
+            rm3u_test
             rtga_test
             rbmp_test
             rpng_chunk_overflow_test

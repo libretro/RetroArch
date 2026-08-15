@@ -24,6 +24,7 @@
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <formats/rjson.h>
+#include <formats/rjson_stream.h>
 
 #include "file_path_special.h"
 #include "verbosity.h"
@@ -105,7 +106,8 @@ static bool disk_index_file_read(disk_index_file_t *disk_index_file)
    const char *file_path   = NULL;
    bool success            = false;
    DCifJSONContext context = {0};
-   RFILE *file             = NULL;
+   uint8_t *file_buf       = NULL;
+   int64_t file_len        = 0;
    rjson_t* parser;
 
    /* Sanity check */
@@ -114,27 +116,28 @@ static bool disk_index_file_read(disk_index_file_t *disk_index_file)
 
    file_path = disk_index_file->file_path;
 
-   if (  (!file_path || !*file_path)
-       || !path_is_valid(file_path)
-      )
+   if (!file_path || !*file_path)
       return false;
 
-   /* Attempt to open disk index file */
-   file = filestream_open(
-         file_path,
-         RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-   if (!file)
+   /* Read the whole record in one operation: these files are tiny
+    * and always parsed in full, so a single open/size/read/close
+    * beats a pre-open stat plus the chunked callback path (which
+    * itself sizes the stream with an extra fstat).  Most content
+    * has no disk index record - that common case is one failed
+    * open, and the stat runs only to classify a failure as worth
+    * logging. */
+   if (filestream_read_file(file_path,
+         (void**)&file_buf, &file_len) < 0)
    {
-      RARCH_ERR(
-            "[Disk index file] Failed to open disk index record file: \"%s\".\n",
-            file_path);
+      if (path_is_valid(file_path))
+         RARCH_ERR(
+               "[Disk index file] Failed to open disk index record file: \"%s\".\n",
+               file_path);
       return false;
    }
 
    /* Initialise JSON parser */
-   if (!(parser = rjson_open_rfile(file)))
+   if (!(parser = rjson_open_buffer(file_buf, (size_t)file_len)))
    {
       RARCH_ERR("[Disk index file] Failed to create JSON parser.\n");
       goto end;
@@ -189,8 +192,8 @@ end:
    if (context.image_path)
       free(context.image_path);
 
-   /* Close log file */
-   filestream_close(file);
+   /* Release file contents */
+   free(file_buf);
 
    return success;
 }
@@ -354,7 +357,7 @@ bool disk_index_file_save(disk_index_file_t *disk_index_file)
    }
 
    /* Initialise JSON writer */
-   if (!(writer = rjsonwriter_open_rfile(file)))
+   if (!(writer = rjsonwriter_open_filestream(file)))
    {
       RARCH_ERR("[Disk index file] Failed to create JSON writer.\n");
       goto end;

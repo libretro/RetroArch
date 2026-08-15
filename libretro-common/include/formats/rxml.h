@@ -80,8 +80,42 @@ typedef struct rxml_parse_error
    unsigned col;    /* 1-based, in bytes */
 } rxml_parse_error_t;
 
-rxml_document_t *rxml_load_document(const char *path);
 rxml_document_t *rxml_load_document_string(const char *str);
+
+/* As rxml_load_document_string, but takes ownership of @buf - a heap
+ * allocation of at least @len + 1 bytes with buf[len] == '\0' -
+ * instead of copying it.  The document keeps the buffer alive for its
+ * whole lifetime (the tree points into it) and releases it in
+ * rxml_free_document; on failure the buffer is freed here before NULL
+ * is returned, so the caller must not touch it again either way.
+ * For large inputs this halves peak memory against the copying string
+ * entry point, which is what callers that already hold the document
+ * bytes (e.g. a task that read the file itself) should care about. */
+rxml_document_t *rxml_load_document_owned(char *buf, size_t len);
+
+/* Incremental variant of rxml_load_document_owned(): the same
+ * ownership contract (@buf is heap, NUL-terminated at @len, and is
+ * either given to the resulting document or freed on failure /
+ * abort), with the parse spread over as many rxml_parse_step()
+ * calls as the caller's budget requires.
+ *
+ * rxml_parse_begin_owned() returns NULL only on allocation failure
+ * (having freed @buf).  Each rxml_parse_step() consumes roughly
+ * @max_bytes of input - the bound is @max_bytes plus one construct,
+ * since parsing pauses only between constructs - and returns 0 to
+ * continue, 1 when the document reached its verdict successfully,
+ * or -1 when it failed (@max_bytes of 0 runs to the verdict in one
+ * call).  rxml_parse_end() releases the parse state and returns the
+ * document after a successful verdict, NULL otherwise (discarding
+ * any partial parse).  rxml_parse_abort() releases everything
+ * unconditionally. */
+typedef struct rxml_parse rxml_parse_t;
+
+rxml_parse_t *rxml_parse_begin_owned(char *buf, size_t len,
+      unsigned opts);
+int rxml_parse_step(rxml_parse_t *parse, size_t max_bytes);
+rxml_document_t *rxml_parse_end(rxml_parse_t *parse);
+void rxml_parse_abort(rxml_parse_t *parse);
 
 /* As rxml_load_document_string, with parse options; on failure, *err
  * (when non-NULL) receives the position the parser stopped at. */

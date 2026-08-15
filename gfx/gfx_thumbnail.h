@@ -229,6 +229,26 @@ typedef struct
    void *anim_buf;
    struct data_transfer *anim_dt; /* transfer owning anim_buf (and the
                                       adopted nbio handle beneath it)   */
+   /* Preview audio on a WINDOWED handle.  anim_buf is a sliding
+    * mapping there, only partly resident, so the mixer cannot be
+    * handed a copy of it - it needs the whole container.  This is a
+    * second, independent read of the same file, pumped a frame
+    * budget at a time by gfx_thumbnail_animate and handed over when
+    * complete.  NULL on every other path, where anim_buf is already
+    * the whole file and the hand-off is immediate. */
+   struct data_transfer *anim_audio_dt;
+   /* Windowed preview audio: the mixer borrows this window's mapping
+    * for the container and is told, through params.avail and
+    * audio_driver_mixer_stream_set_avail, how much of it is resident.
+    * anim_audio_hi is that figure - never above the committed
+    * frontier, which is what keeps a stale feeder a stall rather than
+    * a read of reserved pages.  anim_audio_slot is the mixer slot the
+    * feeder follows with audio_driver_mixer_stream_byte_tell. */
+   size_t anim_audio_hi;
+   int    anim_audio_slot;
+   char *anim_audio_path;  /* strdup'd source for the read above; only
+                              set on windowed handles, freed by
+                              gfx_thumbnail_anim_close */
    /* Decode-worker ping-pong job pair (HAVE_THREADS builds): while
     * the frame held in one job waits for its due time, the other is
     * already decoding its successor.  anim_job_upload selects which
@@ -286,6 +306,10 @@ static INLINE void gfx_thumbnail_init_blank(gfx_thumbnail_t *t)
    t->anim            = NULL;
    t->anim_buf        = NULL;
    t->anim_dt         = NULL;
+   t->anim_audio_dt   = NULL;
+   t->anim_audio_hi   = 0;
+   t->anim_audio_slot = -1;
+   t->anim_audio_path = NULL;
    t->anim_job        = NULL;
    t->anim_job2       = NULL;
    t->anim_buf_len    = 0;

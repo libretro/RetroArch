@@ -30,6 +30,7 @@
 #include <retro_miscellaneous.h>
 #include <streams/file_stream.h>
 #include <formats/rjson.h>
+#include <formats/rjson_stream.h>
 #include <string/stdstring.h>
 #include <encodings/utf.h>
 #include <time/rtime.h>
@@ -126,18 +127,26 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
    unsigned state_slot         = 0;
 
    RtlJSONContext context      = {0};
-   /* Attempt to open log file */
-   RFILE *file                 = filestream_open(runtime_log->path,
-         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   uint8_t *file_buf           = NULL;
+   int64_t file_len            = 0;
 
-   if (!file)
+   /* Read the whole log in one operation: these files are a few
+    * hundred bytes and always parsed in full, so a single
+    * open/size/read/close beats a pre-open stat plus the chunked
+    * callback path (which itself sizes the stream with an extra
+    * fstat).  A missing log - the first-run case - is silent, as
+    * it always was; the stat runs only when there is a failure to
+    * classify. */
+   if (filestream_read_file(runtime_log->path,
+         (void**)&file_buf, &file_len) < 0)
    {
-      RARCH_ERR("[Runtime] Failed to open runtime log file: \"%s\".\n", runtime_log->path);
+      if (path_is_valid(runtime_log->path))
+         RARCH_ERR("[Runtime] Failed to open runtime log file: \"%s\".\n", runtime_log->path);
       return;
    }
 
    /* Initialise JSON parser */
-   if (!(parser = rjson_open_rfile(file)))
+   if (!(parser = rjson_open_buffer(file_buf, (size_t)file_len)))
    {
       RARCH_ERR("[Runtime] Failed to create JSON parser.\n");
       goto end;
@@ -314,8 +323,8 @@ end:
    if (context.state_slot)
       free(context.state_slot);
 
-   /* Close log file */
-   filestream_close(file);
+   /* Release file contents */
+   free(file_buf);
 }
 
 /* Initialise runtime log, loading current parameters
@@ -484,9 +493,9 @@ runtime_log_t *runtime_log_init(
 
    strlcpy(runtime_log->path, log_file_path, sizeof(runtime_log->path));
 
-   /* Load existing log file, if it exists */
-   if (path_is_valid(runtime_log->path))
-      runtime_log_read_file(runtime_log);
+   /* Load existing log file, if it exists (a missing file is
+    * handled - silently - inside) */
+   runtime_log_read_file(runtime_log);
 
    return runtime_log;
 }
@@ -1193,7 +1202,7 @@ void runtime_log_save(runtime_log_t *runtime_log)
    }
 
    /* Initialise JSON writer */
-   if (!(writer = rjsonwriter_open_rfile(file)))
+   if (!(writer = rjsonwriter_open_filestream(file)))
    {
       RARCH_ERR("[Runtime] Failed to create JSON writer.\n");
       goto end;

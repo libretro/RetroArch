@@ -22,6 +22,7 @@
 #include <streams/file_stream.h>
 #include <streams/interface_stream.h>
 #include <formats/rjson.h>
+#include <formats/rjson_stream.h>
 #include <lists/dir_list.h>
 #include <file/archive_file.h>
 
@@ -833,7 +834,7 @@ static core_info_cache_list_t *core_info_cache_read(const char *info_dir)
       return core_info_cache_list_new();
 
    /* Parse info cache file */
-   if (!(parser = rjson_open_stream(file)))
+   if (!(parser = rjson_open_intfstream(file)))
    {
       RARCH_ERR("[Core info] Failed to create JSON parser.\n");
       goto end;
@@ -1011,7 +1012,7 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
    }
 
    /* Write info cache */
-   if (!(writer = rjsonwriter_open_stream(file)))
+   if (!(writer = rjsonwriter_open_intfstream(file)))
    {
       RARCH_ERR("[Core info] Failed to create JSON writer.\n");
       goto end;

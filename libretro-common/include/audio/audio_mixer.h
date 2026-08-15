@@ -76,21 +76,26 @@ void audio_mixer_done(void);
  * mixer's current mode will play.  The other format derives on
  * demand at the first mode-mismatched play (see the derivation notes
  * in the implementation), so a WAV holds one PCM copy, not two. */
-audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size,
+audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, size_t size,
       const char *resampler_ident, enum resampler_quality quality,
       bool want_s16);
 audio_mixer_sound_t* audio_mixer_load_wav_stream(void *buffer,
-      int32_t size);
-audio_mixer_sound_t* audio_mixer_load_ogg(void *buffer, int32_t size);
-audio_mixer_sound_t* audio_mixer_load_mod(void *buffer, int32_t size);
-audio_mixer_sound_t* audio_mixer_load_flac(void *buffer, int32_t size);
-audio_mixer_sound_t* audio_mixer_load_mp3(void *buffer, int32_t size);
-audio_mixer_sound_t* audio_mixer_load_m4a(void *buffer, int32_t size);
-audio_mixer_sound_t* audio_mixer_load_opus(void *buffer, int32_t size);
+      size_t size);
+audio_mixer_sound_t* audio_mixer_load_ogg(void *buffer, size_t size);
+audio_mixer_sound_t* audio_mixer_load_mod(void *buffer, size_t size);
+audio_mixer_sound_t* audio_mixer_load_flac(void *buffer, size_t size);
+audio_mixer_sound_t* audio_mixer_load_mp3(void *buffer, size_t size);
+audio_mixer_sound_t* audio_mixer_load_m4a(void *buffer, size_t size);
+audio_mixer_sound_t* audio_mixer_load_opus(void *buffer, size_t size);
 /* WebM audio (.weba): identifies the track's codec and returns a sound
  * of the matching existing type (OPUS or OGG), or NULL when the
  * container carries no supported track. */
-audio_mixer_sound_t* audio_mixer_load_weba(void *buffer, int32_t size);
+audio_mixer_sound_t* audio_mixer_load_weba(void *buffer, size_t size);
+/* As above, but the codec sniff reads no further than 'avail' bytes.
+ * A windowed caller must use this: the plain form walks the segment
+ * with the file's whole length, which is not resident. */
+audio_mixer_sound_t* audio_mixer_load_weba_avail(void *buffer, size_t size,
+      size_t avail);
 
 /* Compressed-byte read position of a stream voice's decoder (0 when
  * not a live buffer-mode stream voice).  Thread-safe. */

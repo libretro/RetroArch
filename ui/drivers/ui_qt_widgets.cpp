@@ -7754,6 +7754,11 @@ void MainWindow::addFilesToPlaylist(QStringList files)
             MENU_ENUM_LABEL_VALUE_QT_ADDING_FILES_TO_PLAYLIST));
    dialog->setMaximum(list.count());
 
+   /* Deliberately not cached-first (unlike the other playlist
+    * loads here): this is a bulk add whose cancel path discards
+    * the half-modified playlist by freeing it unwritten, which a
+    * borrowed cached instance cannot offer.  The modal progress
+    * dialog pumps events, so this is not a UI-thread freeze. */
    playlist_config_set_path(&playlist_config, currentPlaylistData);
    playlist = playlist_init(&playlist_config);
 
@@ -7971,26 +7976,46 @@ bool MainWindow::updateCurrentPlaylistEntry(
       }
    }
 
-   playlist_config_set_path(&playlist_config, playlistPathData);
-   playlist = playlist_init(&playlist_config);
-
    {
-      struct playlist_entry entry = {0};
+      /* Reuse the cached playlist when it is the same file (the
+       * update then goes through the object the menu reads, and
+       * the write keeps disk coherent); parse otherwise. */
+      playlist_t *cachedPlaylist = playlist_get_cached();
+      bool loadPlaylist          = true;
 
-      /* The update function reads our entry as const,
-       * so these casts are safe */
-      entry.path      = const_cast<char*>(pathData);
-      entry.label     = const_cast<char*>(labelData);
-      entry.core_path = const_cast<char*>(corePathData);
-      entry.core_name = const_cast<char*>(coreNameData);
-      entry.crc32     = const_cast<char*>(crc32Data);
-      entry.db_name   = const_cast<char*>(dbNameData);
+      if (   cachedPlaylist
+          && string_is_equal(playlistPathData,
+               playlist_get_conf_path(cachedPlaylist)))
+      {
+         playlist     = cachedPlaylist;
+         loadPlaylist = false;
+      }
 
-      playlist_update(playlist, contentEntry.index, &entry);
+      if (loadPlaylist)
+      {
+         playlist_config_set_path(&playlist_config, playlistPathData);
+         playlist = playlist_init(&playlist_config);
+      }
+
+      {
+         struct playlist_entry entry = {0};
+
+         /* The update function reads our entry as const,
+          * so these casts are safe */
+         entry.path      = const_cast<char*>(pathData);
+         entry.label     = const_cast<char*>(labelData);
+         entry.core_path = const_cast<char*>(corePathData);
+         entry.core_name = const_cast<char*>(coreNameData);
+         entry.crc32     = const_cast<char*>(crc32Data);
+         entry.db_name   = const_cast<char*>(dbNameData);
+
+         playlist_update(playlist, contentEntry.index, &entry);
+      }
+
+      playlist_write_file(playlist);
+      if (loadPlaylist)
+         playlist_free(playlist);
    }
-
-   playlist_write_file(playlist);
-   playlist_free(playlist);
 
    reloadPlaylists();
 
@@ -8598,12 +8623,29 @@ void MainWindow::deleteCurrentPlaylistItem()
    if (!showMessageBox(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM)).arg(contentEntry.label), MainWindow::MSGBOX_TYPE_QUESTION_YESNO, Qt::ApplicationModal, false))
       return;
 
-   playlist_config_set_path(&playlist_config, playlistData);
-   playlist = playlist_init(&playlist_config);
+   {
+      playlist_t *cachedPlaylist = playlist_get_cached();
+      bool loadPlaylist          = true;
 
-   playlist_delete_index(playlist, contentEntry.index);
-   playlist_write_file(playlist);
-   playlist_free(playlist);
+      if (   cachedPlaylist
+          && string_is_equal(playlistData,
+               playlist_get_conf_path(cachedPlaylist)))
+      {
+         playlist     = cachedPlaylist;
+         loadPlaylist = false;
+      }
+
+      if (loadPlaylist)
+      {
+         playlist_config_set_path(&playlist_config, playlistData);
+         playlist = playlist_init(&playlist_config);
+      }
+
+      playlist_delete_index(playlist, contentEntry.index);
+      playlist_write_file(playlist);
+      if (loadPlaylist)
+         playlist_free(playlist);
+   }
 
    reloadPlaylists();
 }
@@ -8689,6 +8731,7 @@ void PlaylistModel::getPlaylistItems(QString path)
    const char *pathData                = NULL;
    const char *playlistName            = NULL;
    playlist_t *playlist                = NULL;
+   bool playlistCached                 = false;
    unsigned playlistSize               = 0;
    unsigned            i               = 0;
    settings_t *settings                = config_get_ptr();
@@ -8706,8 +8749,35 @@ void PlaylistModel::getPlaylistItems(QString path)
    if (pathData && *pathData)
       playlistName       = path_basename(pathData);
 
-   playlist_config_set_path(&playlist_config, pathData);
-   playlist              = playlist_init(&playlist_config);
+   {
+      /* First touch of a large playlist is the grid view's hitch:
+       * the whole file parses on the UI thread.  Borrow the menu's
+       * cached playlist when it is the same file - the loop below
+       * deep-copies every field into QStrings, so nothing outlives
+       * the borrow - and parse only otherwise.
+       *
+       * The cold path stays blocking deliberately: this function
+       * must return a fully populated model to its callers, so the
+       * budgeted playlist_init_cached_deferred() the menu uses
+       * would need Qt-side continuation (a timer driving the parse
+       * plus a model reset on completion) rather than a drop-in
+       * swap.  The cache borrow above already removes the common
+       * case of that cost. */
+      playlist_t *cachedPlaylist = playlist_get_cached();
+
+      if (   cachedPlaylist
+          && string_is_equal(pathData,
+               playlist_get_conf_path(cachedPlaylist)))
+      {
+         playlist       = cachedPlaylist;
+         playlistCached = true;
+      }
+      else
+      {
+         playlist_config_set_path(&playlist_config, pathData);
+         playlist = playlist_init(&playlist_config);
+      }
+   }
    playlistSize          = playlist_get_size(playlist);
 
    for (i = 0; i < playlistSize; i++)
@@ -8758,7 +8828,8 @@ void PlaylistModel::getPlaylistItems(QString path)
       m_contents.append(rowEntry);
    }
 
-   playlist_free(playlist);
+   if (!playlistCached)
+      playlist_free(playlist);
    playlist = NULL;
 }
 

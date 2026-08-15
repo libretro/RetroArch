@@ -25,9 +25,11 @@
 #include <lists/string_list.h>
 #include <file/file_path.h>
 #include <formats/logiqx_dat.h>
-#include <formats/m3u_file.h>
+#include <formats/rm3u.h>
+#include <formats/rm3u_stream.h>
 #include <encodings/crc32.h>
 #include <streams/interface_stream.h>
+#include <streams/file_stream.h>
 #include "tasks_internal.h"
 
 #include "../core_info.h"
@@ -266,7 +268,19 @@ enum db_flags_enum
 
 enum manual_scan_status
 {
+   /* The BEGIN family: setup, the recursive directory walk, the DAT
+    * load and the playlist setup as separate sub-states, each
+    * respecting the shared per-frame I/O window (task_nbio_slice_*,
+    * the same window the file-transfer spine uses).  Completed
+    * sub-states collapse into one invocation while the window
+    * lasts, so small libraries keep single-tick latency.  The
+    * task's public identity (handler, state) is one task across all
+    * sub-states, so task_queue_find()-based duplicate-scan
+    * suppression is unaffected. */
    MANUAL_SCAN_BEGIN = 0,
+   MANUAL_SCAN_BEGIN_DIR_LIST,
+   MANUAL_SCAN_BEGIN_DAT_LOAD,
+   MANUAL_SCAN_BEGIN_PLAYLIST,
    MANUAL_SCAN_ITERATE_CLEAN,
    DATABASE_SCAN_ITERATE_START,
    DATABASE_SCAN_ITERATE_CONTENT,
@@ -282,6 +296,35 @@ typedef struct manual_scan_handle
    playlist_t *playlist;
    struct string_list *file_exts_list;
    struct string_list *content_list;
+   /* Resumable walk filling content_list across gathers; non-NULL
+    * only between MANUAL_SCAN_BEGIN and the completion of
+    * MANUAL_SCAN_BEGIN_DIR_LIST. */
+   dir_list_iter_t *content_iter;
+   /* Chunked DAT read in flight (MANUAL_SCAN_BEGIN_DAT_LOAD): the
+    * file handle, the destination buffer (dat_size + 1 bytes) and
+    * the fill position.  dat_buf ownership passes to
+    * logiqx_dat_parse_begin_owned() once the read completes, and
+    * dat_parse holds the budgeted parse + index build until its
+    * verdict. */
+   RFILE *dat_stream;
+   char *dat_buf;
+   logiqx_dat_parse_t *dat_parse;
+   int64_t dat_size;
+   int64_t dat_read;
+   /* Resumable batch playlist flush (MANUAL_SCAN_END): position in
+    * scan_results, the playlist currently open for the group being
+    * written, its group key and running count, and the path scratch
+    * buffer, kept on the handle so the flush can yield on the
+    * shared window and resume next gather.  flush_group points into
+    * either the task config or the owned results array, both of
+    * which outlive the flush. */
+   size_t flush_pos;
+   playlist_t *flush_playlist;
+   const char *flush_group;
+   char *flush_path_buf;
+   unsigned flush_added;
+   bool flush_started;
+   playlist_dedup_t *flush_dedup;
    logiqx_dat_t *dat_file;
    struct string_list *m3u_list;
    playlist_config_t playlist_config; /* size_t alignment */
@@ -621,26 +664,26 @@ static void task_database_iterate_m3u(
    char first_matched_db[NAME_MAX_LENGTH];
    char first_matched_crc[128];
    char collapsed_title[NAME_MAX_LENGTH];
-   m3u_file_t *m3u_file = NULL;
+   rm3u_t *m3u = NULL;
 
    first_matched_db[0] = '\0';
    first_matched_crc[0] = '\0';
    collapsed_title[0] = '\0';
 
    /* Open M3U file */
-   if (!(m3u_file = m3u_file_init(m3u_path)))
+   if (!(m3u = rm3u_load_filestream(m3u_path)))
    {
       RARCH_ERR("[Scanner] Failed to open M3U file: \"%s\".\n", m3u_path);
       return;
    }
 
    /* Scan each referenced file and check if it's in scan_results */
-   for (i = 0; i < m3u_file_get_size(m3u_file); i++)
+   for (i = 0; i < rm3u_get_size(m3u); i++)
    {
-      m3u_file_entry_t *entry = NULL;
+      rm3u_entry_t *entry = NULL;
       const char *ref_path = NULL;
 
-      if (!m3u_file_get_entry(m3u_file, i, &entry))
+      if (!rm3u_get_entry(m3u, i, &entry))
          continue;
 
       ref_path = entry->full_path;
@@ -699,7 +742,7 @@ static void task_database_iterate_m3u(
       }
    }
 
-   m3u_file_free(m3u_file);
+   rm3u_free(m3u);
 
    /* If we found at least one match, add M3U entry */
    if (found_match)
@@ -1927,149 +1970,211 @@ static void task_database_cleanup_state(database_state_handle_t *db_state)
 }
 #endif
 /* Batch update playlists from accumulated scan results */
-static void scan_results_batch_update_playlists(scan_results_t *sr,
+/* One gather's worth of the batch playlist flush, under the same
+ * shared window as the BEGIN family, yielding between results and
+ * resuming from the state kept on the handle.
+ *
+ * The group-close write for multi-playlist scans and the final
+ * sort+write are single blocking operations: a playlist file write
+ * is atomic by design (a partial write would corrupt the playlist
+ * on a cancelled scan), so those are the floor this flush cannot
+ * go below.
+ *
+ * Returns true when the flush has fully completed (including the
+ * failure mode of the scratch allocation, which skips the batch),
+ * false when yielding. */
+static bool manual_scan_walk_within_budget(void *ud);
+
+static bool manual_scan_end_flush_tick(
    manual_scan_handle_t* manual_scan, bool single_playlist)
 {
-   size_t i;
-   const char *current_playlist = NULL;
-   playlist_t *playlist = NULL;
-   unsigned added_count = 0;
+   scan_results_t *sr = &manual_scan->scan_results;
+   nbio_budget_t b;
+   bool first = true;
    size_t str_len = PATH_MAX_LENGTH * sizeof(char);
-   char *db_playlist_path = (char*)malloc(str_len);
 
-   if (!db_playlist_path)
+   if (!manual_scan->flush_started)
    {
-      RARCH_ERR("[Scanner] Failed to allocate memory for batch playlist update.\n");
-      return;
-   }
+      manual_scan->flush_started = true;
 
-   RARCH_LOG("[Scanner] Batch updating playlists with %u results...\n",
-            (unsigned)sr->count);
+      if (!(manual_scan->flush_path_buf = (char*)malloc(str_len)))
+      {
+         RARCH_ERR("[Scanner] Failed to allocate memory for batch playlist update.\n");
+         return true;
+      }
 
-   if (single_playlist)
-   {
-      current_playlist = manual_scan->task_config->playlist_file;
-      playlist = manual_scan->playlist;
+      RARCH_LOG("[Scanner] Batch updating playlists with %u results...\n",
+               (unsigned)sr->count);
+
+      if (single_playlist)
+      {
+         manual_scan->flush_group    = manual_scan->task_config->playlist_file;
+         manual_scan->flush_playlist = manual_scan->playlist;
+         /* NULL on failure: existence checks then take the linear
+          * fallback below */
+         manual_scan->flush_dedup    = playlist_dedup_init();
+      }
    }
+   else if (!manual_scan->flush_path_buf)
+      return true;   /* scratch allocation failed on a previous gather */
+
+   task_nbio_slice_open(&b);
+
    /* Process results, grouping by playlist */
-   for (i = 0; i < sr->count; i++)
+   while (manual_scan->flush_pos < sr->count)
    {
-      scan_result_t *result = &sr->results[i];
+      scan_result_t *result = &sr->results[manual_scan->flush_pos];
       char db_name_noext[PATH_MAX_LENGTH];
-      /* The key identifying which playlist this result belongs to.
-       * With a fixed playlist file every result goes to the same
-       * playlist, so the key is that path; otherwise results are
-       * grouped by database name.
-       *
-       * This used to compare current_playlist against result->db_name
-       * unconditionally, but the fixed-file branch below assigns
-       * task_config->playlist_file to current_playlist - a path like
-       * ".../MyList.lpl", which never equals a db_name, those being
-       * the database's own file name.  The test was therefore true on every
-       * iteration, and each result closed the playlist (a full
-       * playlist_write_file()) and reopened it (a full
-       * playlist_init() parse from disk).  N results meant N complete
-       * loads and N complete writes of the same file. */
+      /* The key identifying which playlist this result belongs to:
+       * the fixed playlist file when one is set, else the database
+       * name.  The fixed path never equals a db_name, so comparing
+       * against db_name unconditionally here would close and reopen
+       * the playlist (a full write + parse) once per result. */
       const char *group_key = (*manual_scan->task_config->playlist_file)
          ? manual_scan->task_config->playlist_file
          : result->db_name;
+      bool entry_present;
+      bool is_m3u;
+
+      /* The floor: one result per gather regardless of the window,
+       * then yield between any two results. */
+      if (!first && !task_nbio_slice_within_budget(&b, 0, 0))
+      {
+         task_nbio_slice_close(&b);
+         return false;
+      }
+      first = false;
 
       strlcpy(db_name_noext, result->db_name, sizeof(db_name_noext));
       path_remove_extension(db_name_noext);
 
       /* Check if we need to switch to a different playlist */
-      if (!single_playlist && (!current_playlist || !string_is_equal(current_playlist, group_key)))
+      if (!single_playlist && (!manual_scan->flush_group || !string_is_equal(manual_scan->flush_group, group_key)))
       {
-         /* Write and close previous playlist if any */
-         if (playlist)
+         /* Write and close previous playlist if any.  One blocking
+          * write per group. */
+         if (manual_scan->flush_playlist)
          {
-            RARCH_LOG("[Scanner] Added %u entries to \"%s\".\n", added_count, current_playlist);
-            playlist_write_file(playlist);
-            playlist_free(playlist);
-            playlist = NULL;
-            added_count = 0;
+            RARCH_LOG("[Scanner] Added %u entries to \"%s\".\n", manual_scan->flush_added, manual_scan->flush_group);
+            playlist_write_file(manual_scan->flush_playlist);
+            playlist_free(manual_scan->flush_playlist);
+            manual_scan->flush_playlist = NULL;
+            manual_scan->flush_added = 0;
          }
+         playlist_dedup_free(manual_scan->flush_dedup);
+         manual_scan->flush_dedup = NULL;
 
          /* Open new playlist - if not fixed, use database name */
          if (!*manual_scan->task_config->playlist_file)
          {
-            current_playlist = result->db_name;
-            db_playlist_path[0] = '\0';
+            manual_scan->flush_group = result->db_name;
+            manual_scan->flush_path_buf[0] = '\0';
             if (manual_scan->playlist_directory && *manual_scan->playlist_directory)
-               fill_pathname_join_special(db_playlist_path, manual_scan->playlist_directory,
+               fill_pathname_join_special(manual_scan->flush_path_buf, manual_scan->playlist_directory,
                      result->db_name, str_len);
-            playlist_config_set_path(&manual_scan->playlist_config, db_playlist_path);
+            playlist_config_set_path(&manual_scan->playlist_config, manual_scan->flush_path_buf);
          }
          else
          {
-            current_playlist = manual_scan->task_config->playlist_file;
-            playlist_config_set_path(&manual_scan->playlist_config, current_playlist);
+            manual_scan->flush_group = manual_scan->task_config->playlist_file;
+            playlist_config_set_path(&manual_scan->playlist_config, manual_scan->flush_group);
          }
 
-         playlist = playlist_init(&manual_scan->playlist_config);
+         manual_scan->flush_playlist = playlist_init(&manual_scan->playlist_config);
 
          /* Check before use: the playlist_set_scan_* calls below are
           * not all NULL-guarded (playlist_set_scan_search_recursively,
           * playlist_set_sort_mode, playlist_qsort, playlist_write_file
           * and several others dereference unconditionally).  The test
           * used to sit after all of them. */
-         if (!playlist)
+         if (!manual_scan->flush_playlist)
          {
             RARCH_ERR("[Scanner] Failed to open playlist: \"%s\".\n", result->db_name);
-            current_playlist = NULL;
+            manual_scan->flush_group = NULL;
+            /* Advance past this result before continuing, or the
+             * same unopenable playlist is retried every gather
+             * forever. */
+            manual_scan->flush_pos++;
             continue;
          }
+
+         /* NULL on failure: existence checks then take the linear
+          * fallback below */
+         manual_scan->flush_dedup = playlist_dedup_init();
 
          /* Set default core, if required */
          if (manual_scan->task_config->core_set)
          {
-            playlist_set_default_core_path(playlist,
+            playlist_set_default_core_path(manual_scan->flush_playlist,
                   manual_scan->task_config->core_path);
-            playlist_set_default_core_name(playlist,
+            playlist_set_default_core_name(manual_scan->flush_playlist,
                   manual_scan->task_config->core_name);
          }
 
          /* Record remaining scan parameters to enable
           * subsequent 'refresh playlist' operations */
-         playlist_set_scan_content_dir(playlist,
+         playlist_set_scan_content_dir(manual_scan->flush_playlist,
                manual_scan->task_config->content_dir);
-         playlist_set_scan_file_exts(playlist,
+         playlist_set_scan_file_exts(manual_scan->flush_playlist,
                manual_scan->task_config->file_exts_custom_set ?
                      manual_scan->task_config->file_exts : NULL);
          if (manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE ||
              manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT)
-            playlist_set_scan_dat_file_path(playlist,
+            playlist_set_scan_dat_file_path(manual_scan->flush_playlist,
                   manual_scan->task_config->dat_file_path);
-         playlist_set_scan_database_name(playlist,
+         playlist_set_scan_database_name(manual_scan->flush_playlist,
                   manual_scan->task_config->database_name);
-         playlist_set_scan_search_recursively(playlist,
+         playlist_set_scan_search_recursively(manual_scan->flush_playlist,
                manual_scan->task_config->search_recursively);
-         playlist_set_scan_search_archives(playlist,
+         playlist_set_scan_search_archives(manual_scan->flush_playlist,
                manual_scan->task_config->search_archives);
-         playlist_set_scan_filter_dat_content(playlist,
+         playlist_set_scan_filter_dat_content(manual_scan->flush_playlist,
                manual_scan->task_config->filter_dat_content);
-         playlist_set_scan_overwrite_playlist(playlist,
+         playlist_set_scan_overwrite_playlist(manual_scan->flush_playlist,
                manual_scan->task_config->overwrite_playlist);
-         playlist_set_scan_db_usage(playlist,
+         playlist_set_scan_db_usage(manual_scan->flush_playlist,
                manual_scan->task_config->db_usage);
-         playlist_set_scan_omit_db_ref(playlist,
+         playlist_set_scan_omit_db_ref(manual_scan->flush_playlist,
                manual_scan->task_config->omit_db_reference);
 
          RARCH_LOG("[Scanner] Processing playlist: \"%s\".\n", result->db_name);
+      }
+
+      /* Index the playlist's pre-existing entries before consulting
+       * the dedup index, resuming across gathers on the shared
+       * window.  flush_pos has not advanced, so a resumed gather
+       * re-enters here with the same group. */
+      if (   manual_scan->flush_dedup
+          && manual_scan->flush_playlist
+          && !playlist_dedup_seed_step(manual_scan->flush_dedup,
+                manual_scan->flush_playlist,
+                manual_scan_walk_within_budget, &b))
+      {
+         task_nbio_slice_close(&b);
+         return false;
       }
 
       /* Add entry to playlist if it doesn't already exist */
       /* ...except for M3U, since the processing occurs at the end,
          we overwrite any previous m3u entry (which has same file,
          but less descriptive label, database, crc */
-      if (playlist && 
-          (!playlist_entry_exists(playlist, result->entry_path) ||
-           m3u_file_is_m3u(result->entry_path)))
+      is_m3u        = rm3u_is_m3u_filestream(result->entry_path);
+      /* will_add records the path as present exactly when this
+       * result is pushed below: when absent (the push is
+       * unconditional), and in the m3u-present case the path
+       * remains present across the delete + re-push. */
+      entry_present = manual_scan->flush_dedup
+         ? playlist_dedup_check_add(manual_scan->flush_dedup,
+               manual_scan->flush_playlist, result->entry_path, true)
+         : playlist_entry_exists(manual_scan->flush_playlist,
+               result->entry_path);
+
+      if (manual_scan->flush_playlist && (!entry_present || is_m3u))
       {
          struct playlist_entry entry;
 
-         if(m3u_file_is_m3u(result->entry_path))
-            playlist_delete_by_path(playlist, result->entry_path);
+         if(is_m3u)
+            playlist_delete_by_path(manual_scan->flush_playlist, result->entry_path);
          
          /* Build entry */
          entry.path              = result->entry_path;
@@ -2092,8 +2197,12 @@ static void scan_results_batch_update_playlists(scan_results_t *sr,
          entry.last_played_minute= 0;
          entry.last_played_second= 0;
 
-         playlist_push(playlist, &entry);
-         added_count++;
+         /* Absence is proven: the existence check above said so, or
+          * this is an m3u whose previous entries were just deleted.
+          * The checked playlist_push() would re-scan the entire
+          * playlist for the same answer. */
+         playlist_push_unchecked(manual_scan->flush_playlist, &entry);
+         manual_scan->flush_added++;
 
          RARCH_LOG("[Scanner] Add \"%s / %s\".\n", db_name_noext, result->entry_label);
 
@@ -2102,30 +2211,39 @@ static void scan_results_batch_update_playlists(scan_results_t *sr,
                   db_name_noext, true);
       }
       /* Entry already exists - output duplicate indicator for CLI scans */
-      else if (playlist && retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL))
+      else if (manual_scan->flush_playlist && retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL))
          task_database_scan_console_output(result->entry_label,
                db_name_noext, false);
+
+      manual_scan->flush_pos++;
    }
 
    /* Write and close final playlist */
-   if (playlist)
+   if (manual_scan->flush_playlist)
    {
-      RARCH_LOG("[Scanner] Added %u entries to \"%s\".\n", added_count, current_playlist);
+      RARCH_LOG("[Scanner] Added %u entries to \"%s\".\n", manual_scan->flush_added, manual_scan->flush_group);
       /* Ensure playlist is alphabetically sorted (matches manual scan behavior) */
-      playlist_set_sort_mode(playlist, PLAYLIST_SORT_MODE_DEFAULT);
-      playlist_qsort(playlist);
-      playlist_write_file(playlist);
-      /* Free whatever this function opened.  Only the single-playlist
+      playlist_set_sort_mode(manual_scan->flush_playlist, PLAYLIST_SORT_MODE_DEFAULT);
+      playlist_qsort(manual_scan->flush_playlist);
+      playlist_write_file(manual_scan->flush_playlist);
+      /* Free whatever this flush opened.  Only the single-playlist
        * path borrows manual_scan->playlist, which the handle teardown
        * owns; comparing the handles says that exactly, where the
        * previous string compare against playlist_file also matched
-       * the playlist this function had opened itself and leaked it. */
-      if (playlist != manual_scan->playlist)
-         playlist_free(playlist);
+       * the playlist this flush had opened itself and leaked it. */
+      if (manual_scan->flush_playlist != manual_scan->playlist)
+         playlist_free(manual_scan->flush_playlist);
+      manual_scan->flush_playlist = NULL;
    }
 
-   free(db_playlist_path);
+   playlist_dedup_free(manual_scan->flush_dedup);
+   manual_scan->flush_dedup = NULL;
+
+   free(manual_scan->flush_path_buf);
+   manual_scan->flush_path_buf = NULL;
    RARCH_LOG("[Scanner] Batch playlist update complete.\n");
+   task_nbio_slice_close(&b);
+   return true;
 }
 
 #ifdef HAVE_LIBRETRODB
@@ -2156,6 +2274,27 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
       manual_scan->task_config = NULL;
    }
 
+   /* A cancelled task can die mid-flush: close the playlist the
+    * flush had open.  This must run before manual_scan->playlist is
+    * released below - in single-playlist mode flush_playlist borrows
+    * that handle, and the identity comparison that prevents a double
+    * free needs the pointer still live to say so. */
+   if (  manual_scan->flush_playlist
+       && manual_scan->flush_playlist != manual_scan->playlist)
+      playlist_free(manual_scan->flush_playlist);
+   manual_scan->flush_playlist = NULL;
+
+   /* The dedup index owns all of its state; order relative to the
+    * playlist frees is immaterial. */
+   playlist_dedup_free(manual_scan->flush_dedup);
+   manual_scan->flush_dedup = NULL;
+
+   if (manual_scan->flush_path_buf)
+   {
+      free(manual_scan->flush_path_buf);
+      manual_scan->flush_path_buf = NULL;
+   }
+
    if (manual_scan->playlist)
    {
       playlist_free(manual_scan->playlist);
@@ -2166,6 +2305,35 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
    {
       string_list_free(manual_scan->file_exts_list);
       manual_scan->file_exts_list = NULL;
+   }
+
+   /* A cancelled task can die mid-walk or mid-DAT-read; the
+    * iterator closes any directory handles still open, and the
+    * read buffer is only non-NULL while its ownership is still
+    * here (it passes to logiqx_dat_init_owned() on completion). */
+   if (manual_scan->content_iter)
+   {
+      dir_list_iter_free(manual_scan->content_iter);
+      manual_scan->content_iter = NULL;
+   }
+
+   if (manual_scan->dat_stream)
+   {
+      filestream_close(manual_scan->dat_stream);
+      manual_scan->dat_stream = NULL;
+   }
+
+   if (manual_scan->dat_buf)
+   {
+      free(manual_scan->dat_buf);
+      manual_scan->dat_buf = NULL;
+   }
+
+   /* A cancelled task can also die mid-parse. */
+   if (manual_scan->dat_parse)
+   {
+      logiqx_dat_parse_abort(manual_scan->dat_parse);
+      manual_scan->dat_parse = NULL;
    }
 
    if (manual_scan->content_list)
@@ -2189,8 +2357,9 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
    /* Free accumulated scan results */
    scan_results_free(&manual_scan->scan_results);
 
-   if (manual_scan->playlist_directory && *manual_scan->playlist_directory)
+   if (manual_scan->playlist_directory)
       free(manual_scan->playlist_directory);
+   manual_scan->playlist_directory = NULL;
 
 #ifdef HAVE_LIBRETRODB
    if (1)
@@ -2247,9 +2416,9 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
          dbstate->flags     = NULL;
       }
 
-      if (    manual_scan->content_database_path 
-          && *manual_scan->content_database_path)
+      if (manual_scan->content_database_path)
          free(manual_scan->content_database_path);
+      manual_scan->content_database_path = NULL;
       if (manual_scan->state.buf)
          free(manual_scan->state.buf);
       if (manual_scan->handle)
@@ -2354,6 +2523,533 @@ static void task_manual_content_scan_free(retro_task_t *task)
    free_manual_content_scan_handle(manual_scan);
 }
 
+/* --- MANUAL_SCAN_BEGIN family ---------------------------------------
+ *
+ * A short sequence of budgeted sub-states sharing the per-frame I/O
+ * window with the file-transfer spine (task_nbio_slice_*).  The walk
+ * is incremental and lands directly in the content list, and the DAT
+ * is read in chunks into a single buffer that is then handed to the
+ * parser whole, so no single gather freezes the frame.  Each
+ * sub-state function returns true when the task must finish (error
+ * or nothing to scan). */
+
+/* Chunk size for the budgeted DAT read.  Large enough that fast
+ * storage delivers a big DAT in a handful of gathers, small enough
+ * that the guaranteed floor chunk of a spent window costs well under
+ * a millisecond. */
+#define MANUAL_SCAN_DAT_CHUNK (256 * 1024)
+
+/* Bytes of XML handed to logiqx_dat_parse_step() per step: small
+ * enough that several steps fit one shared window in a plain build
+ * and one step stays frame-sized even under sanitizer inflation,
+ * large enough that a MAME-sized list completes in a few hundred
+ * steps. */
+#define MANUAL_SCAN_DAT_PARSE_STEP (256 * 1024)
+
+/* dir_list_iter_step()'s budget callback carries no sizes. */
+static bool manual_scan_walk_within_budget(void *ud)
+{
+   return task_nbio_slice_within_budget(ud, 0, 0);
+}
+
+static bool manual_scan_begin_setup(retro_task_t *task,
+      manual_scan_handle_t *manual_scan)
+{
+   /* Initialize scan results accumulation */
+   if (!scan_results_init(&manual_scan->scan_results, 1024))
+   {
+      RARCH_ERR("[Scanner] Failed to initialize scan results\n");
+      return true;
+   }
+
+#ifdef HAVE_LIBRETRODB
+   if ((manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_STRICT ||
+        manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_LOOSE) &&
+       !(manual_scan->flags & DB_HANDLE_FLAG_SCAN_STARTED))
+   {
+      database_state_handle_t *dbstate = &manual_scan->state;
+
+      manual_scan->flags       |= DB_HANDLE_FLAG_SCAN_STARTED;
+
+      /* No content dir: nothing to scan. */
+      if (!*manual_scan->task_config->content_dir)
+         return true;
+
+      if (manual_scan->flags & DB_HANDLE_FLAG_IS_DIRECTORY)
+      {
+         /* Start the incremental walk.  Extension derivation
+          * matches database_info_dir_init(): all supported core
+          * extensions unless an explicit list is given.  The
+          * cue/gdi-prioritising sort follows on completion in
+          * database_info_dir_init_from_list(). */
+         core_info_list_t *core_info_list = NULL;
+         char *file_exts                  =
+               manual_scan->task_config->file_exts;
+
+         if (!file_exts || !*file_exts)
+            core_info_get_list(&core_info_list);
+
+         if ((manual_scan->content_list = string_list_new()))
+            manual_scan->content_iter = dir_list_iter_new(
+                  manual_scan->task_config->content_dir,
+                  core_info_list ? core_info_list->all_ext : file_exts,
+                  false,
+                  manual_scan->flags & DB_HANDLE_FLAG_SHOW_HIDDEN_FILES,
+                  manual_scan->task_config->search_archives,
+                  manual_scan->task_config->search_recursively,
+                  manual_scan->content_list);
+
+         if (!manual_scan->content_iter)
+            return true;
+      }
+      else
+      {
+         if (!(manual_scan->handle = database_info_file_init(
+               manual_scan->task_config->content_dir,
+               DATABASE_TYPE_ITERATE,
+               task, &manual_scan->content_list)))
+            return true;
+         manual_scan->handle->status = DATABASE_STATUS_ITERATE_START;
+      }
+
+      if (dbstate && !dbstate->list)
+      {
+         if (manual_scan->content_database_path && *manual_scan->content_database_path)
+         {
+            if (manual_scan->task_config->db_selection == MANUAL_CONTENT_SCAN_SELECT_DB_SPECIFIC)
+            {
+               size_t str_len     = PATH_MAX_LENGTH * sizeof(char);
+               char* rdb_name     = (char*)malloc(str_len);
+               char* rdb_fullpath = (char*)malloc(str_len);
+               union string_list_elem_attr attr;
+               attr.i = 0;
+
+               /* Bail out if either heap allocation failed.
+                * fill_pathname and fill_pathname_join_special
+                * both call strlcpy on their destination buffer
+                * with no NULL guard, so proceeding with a NULL
+                * rdb_name / rdb_fullpath would segfault.  Free
+                * the one that did succeed (free(NULL) is a
+                * no-op so no conditional needed) before taking
+                * the task-finished exit. */
+               if (!rdb_name || !rdb_fullpath)
+               {
+                  free(rdb_name);
+                  free(rdb_fullpath);
+                  return true;
+               }
+
+               fill_pathname(rdb_name,
+                     manual_scan->task_config->database_name,
+                     ".rdb", str_len);
+
+               fill_pathname_join_special(rdb_fullpath,
+                     manual_scan->content_database_path,
+                     rdb_name, str_len);
+
+               dbstate->list = string_list_new();
+               if (!dbstate->list)
+               {
+                  /* Earlier code goto'd here without freeing
+                   * the two buffers above, leaking ~8 KiB on
+                   * this OOM path.  Free them explicitly. */
+                  free(rdb_name);
+                  free(rdb_fullpath);
+                  return true;
+               }
+               string_list_append(dbstate->list, rdb_fullpath, attr);
+               free(rdb_name);
+               free(rdb_fullpath);
+            }
+            else
+            {
+               dbstate->list        = dir_list_new(
+                     manual_scan->content_database_path,
+                     "rdb", false,
+                     manual_scan->flags & DB_HANDLE_FLAG_SHOW_HIDDEN_FILES,
+                     false, false);
+            }
+
+            /* Size the per-database size/flag caches to the
+             * database list we just built.  Both branches
+             * above land here. */
+            if (   dbstate->list
+                && !task_database_state_alloc_arrays(dbstate))
+            {
+               RARCH_ERR("[Scanner] Out of memory allocating database state\n");
+               return true;
+            }
+         }
+
+         RARCH_LOG("[Scanner] %s\"%s\"...\n", msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_START), manual_scan->content_database_path);
+         if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL))
+            printf("%s\"%s\"...\n", msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_START), manual_scan->content_database_path);
+      }
+   }
+   else
+#endif
+   {
+      /* Get allowed file extensions list */
+      if (*manual_scan->task_config->file_exts)
+         manual_scan->file_exts_list = string_split(
+               manual_scan->task_config->file_exts, "|");
+
+      /* Start the incremental walk.  The same policy (extension
+       * filter, compressed inclusion) as
+       * manual_content_scan_get_content_list() is applied by the
+       * shared helper, and a plain-file content dir completes here
+       * with no iterator. */
+      if (!manual_content_scan_content_list_iter_new(
+               manual_scan->task_config,
+               &manual_scan->content_list,
+               &manual_scan->content_iter))
+      {
+         const char *_msg = msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,\
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         return true;
+      }
+   }
+
+   manual_scan->status = MANUAL_SCAN_BEGIN_DIR_LIST;
+   return false;
+}
+
+static bool manual_scan_begin_dir_list(retro_task_t *task,
+      manual_scan_handle_t *manual_scan, nbio_budget_t *b)
+{
+#ifdef HAVE_LIBRETRODB
+   bool is_db_scan =
+         (manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_STRICT ||
+          manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_LOOSE);
+#endif
+
+   (void)task;
+
+   if (manual_scan->content_iter)
+   {
+      int r = dir_list_iter_step(manual_scan->content_iter,
+            manual_scan_walk_within_budget, b);
+
+      if (r == 0)   /* window spent - resume next gather */
+         return false;
+
+      dir_list_iter_free(manual_scan->content_iter);
+      manual_scan->content_iter = NULL;
+
+      if (r < 0)
+      {
+         /* Allocation failure mid-walk: the same terminal the old
+          * code took when dir_list_new() returned NULL. */
+#ifdef HAVE_LIBRETRODB
+         if (!is_db_scan)
+#endif
+         {
+            const char *_msg = msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT);
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,\
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         }
+         return true;
+      }
+   }
+
+   /* Walk complete (or was never needed): finalize per branch. */
+#ifdef HAVE_LIBRETRODB
+   if (is_db_scan)
+   {
+      if (  (manual_scan->flags & DB_HANDLE_FLAG_IS_DIRECTORY)
+          && !manual_scan->handle)
+      {
+         /* cue, gdi prioritization in sorting */
+         if (!(manual_scan->handle = database_info_dir_init_from_list(
+               DATABASE_TYPE_ITERATE, manual_scan->content_list)))
+            return true;
+         manual_scan->handle->status = DATABASE_STATUS_ITERATE_START;
+      }
+   }
+   else
+#endif
+   {
+      /* The blocking getter rejected an empty listing before the
+       * task ever saw it; apply the same rule, then the same
+       * alphabetical sort (task status messages would be
+       * unintuitive in readdir order). */
+      if (  !manual_scan->content_list
+          || manual_scan->content_list->size < 1)
+      {
+         const char *_msg = msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,\
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         return true;
+      }
+      dir_list_sort(manual_scan->content_list, true);
+   }
+
+   manual_scan->status = MANUAL_SCAN_BEGIN_DAT_LOAD;
+   return false;
+}
+
+static bool manual_scan_begin_dat_load(retro_task_t *task,
+      manual_scan_handle_t *manual_scan, nbio_budget_t *b)
+{
+   bool first = true;
+
+   (void)task;
+
+   if (!((manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT ||
+          manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE) &&
+         *manual_scan->task_config->dat_file_path))
+   {
+      manual_scan->status = MANUAL_SCAN_BEGIN_PLAYLIST;
+      return false;
+   }
+
+   if (manual_scan->dat_parse)
+      goto parse_phase;
+
+   if (!manual_scan->dat_stream)
+   {
+      /* Validate path and size up front through the same
+       * predicate the menu applied when the path was chosen, so
+       * the task cannot drift from the menu's acceptance rules,
+       * and size the destination buffer once. */
+      uint64_t dat_file_size = 0;
+      int64_t _len           = 0;
+
+      if (   !manual_content_scan_dat_path_is_valid(
+                manual_scan->task_config->dat_file_path, &dat_file_size)
+          /* Reject any size that would not fit in size_t on this
+           * platform (mirrors rxml_load_document's guard). */
+          || dat_file_size >= (uint64_t)((size_t)-1))
+         goto error;
+      _len = (int64_t)dat_file_size;
+
+      if (!(manual_scan->dat_buf = (char*)malloc((size_t)(_len + 1))))
+         goto error;
+
+      if (!(manual_scan->dat_stream = filestream_open(
+            manual_scan->task_config->dat_file_path,
+            RETRO_VFS_FILE_ACCESS_READ,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+         goto error;
+
+      manual_scan->dat_size = _len;
+      manual_scan->dat_read = 0;
+   }
+
+   /* Budgeted fill.  The floor guarantees one chunk per gather even
+    * when the shared window is already spent, so progress is made
+    * whatever the concurrent load. */
+   while (manual_scan->dat_read < manual_scan->dat_size)
+   {
+      int64_t want = manual_scan->dat_size - manual_scan->dat_read;
+      int64_t got;
+
+      if (!first && !task_nbio_slice_within_budget(b, 0, 0))
+         return false;   /* resume next gather */
+      first = false;
+
+      if (want > MANUAL_SCAN_DAT_CHUNK)
+         want = MANUAL_SCAN_DAT_CHUNK;
+
+      got = filestream_read(manual_scan->dat_stream,
+            manual_scan->dat_buf + manual_scan->dat_read, want);
+
+      if (got <= 0)   /* truncated underneath us, or a read error */
+         goto error;
+
+      manual_scan->dat_read += got;
+   }
+
+   filestream_close(manual_scan->dat_stream);
+   manual_scan->dat_stream = NULL;
+
+   /* Hand the completed document to the incremental parser.
+    * Ownership of the buffer transfers unconditionally: on failure
+    * logiqx_dat_parse_begin_owned() frees it. */
+   manual_scan->dat_buf[manual_scan->dat_size] = '\0';
+   manual_scan->dat_parse = logiqx_dat_parse_begin_owned(
+         manual_scan->dat_buf, (size_t)manual_scan->dat_size);
+   manual_scan->dat_buf   = NULL;
+
+   if (!manual_scan->dat_parse)
+      goto error_no_cleanup;
+
+parse_phase:
+   /* Budgeted parse and index build: one step per gather whatever
+    * the window says (the floor), then further steps while it
+    * lasts.  A resumed gather jumps straight back here. */
+   for (;;)
+   {
+      int r = logiqx_dat_parse_step(manual_scan->dat_parse,
+            MANUAL_SCAN_DAT_PARSE_STEP);
+
+      if (r < 0)
+      {
+         logiqx_dat_parse_end(manual_scan->dat_parse);   /* discards */
+         manual_scan->dat_parse = NULL;
+         goto error_no_cleanup;
+      }
+      if (r > 0)
+         break;
+      if (!task_nbio_slice_within_budget(b, 0, 0))
+         return false;   /* resume next gather */
+   }
+
+   manual_scan->dat_file  = logiqx_dat_parse_end(manual_scan->dat_parse);
+   manual_scan->dat_parse = NULL;
+
+   if (!manual_scan->dat_file)
+      goto error_no_cleanup;
+
+   manual_scan->status = MANUAL_SCAN_BEGIN_PLAYLIST;
+   return false;
+
+error:
+   if (manual_scan->dat_stream)
+   {
+      filestream_close(manual_scan->dat_stream);
+      manual_scan->dat_stream = NULL;
+   }
+   if (manual_scan->dat_buf)
+   {
+      free(manual_scan->dat_buf);
+      manual_scan->dat_buf = NULL;
+   }
+error_no_cleanup:
+   {
+      const char *_msg = msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
+   return true;
+}
+
+static bool manual_scan_begin_playlist(retro_task_t *task,
+      manual_scan_handle_t *manual_scan)
+{
+   (void)task;
+
+   /* Open playlist */
+   if (manual_scan->task_config->target_is_single_determined_playlist &&
+       !(manual_scan->playlist =
+            playlist_init(&manual_scan->playlist_config)))
+      return true;
+
+   /* Reset playlist, if required */
+   if (manual_scan->task_config->overwrite_playlist)
+      playlist_clear(manual_scan->playlist);
+
+   /* Get initial playlist size */
+   manual_scan->playlist_size =
+      playlist_size(manual_scan->playlist);
+
+   /* Set default core, if required */
+   if (manual_scan->task_config->core_set)
+   {
+      playlist_set_default_core_path(manual_scan->playlist,
+            manual_scan->task_config->core_path);
+      playlist_set_default_core_name(manual_scan->playlist,
+            manual_scan->task_config->core_name);
+   }
+
+   /* Record remaining scan parameters to enable
+    * subsequent 'refresh playlist' operations */
+   playlist_set_scan_content_dir(manual_scan->playlist,
+         manual_scan->task_config->content_dir);
+   playlist_set_scan_file_exts(manual_scan->playlist,
+         manual_scan->task_config->file_exts_custom_set ?
+               manual_scan->task_config->file_exts : NULL);
+   if (manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE ||
+       manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT)
+      playlist_set_scan_dat_file_path(manual_scan->playlist,
+            manual_scan->task_config->dat_file_path);
+   playlist_set_scan_database_name(manual_scan->playlist,
+         manual_scan->task_config->database_name);
+   playlist_set_scan_search_recursively(manual_scan->playlist,
+         manual_scan->task_config->search_recursively);
+   playlist_set_scan_search_archives(manual_scan->playlist,
+         manual_scan->task_config->search_archives);
+   playlist_set_scan_filter_dat_content(manual_scan->playlist,
+         manual_scan->task_config->filter_dat_content);
+   playlist_set_scan_overwrite_playlist(manual_scan->playlist,
+         manual_scan->task_config->overwrite_playlist);
+   playlist_set_scan_db_usage(manual_scan->playlist,
+         manual_scan->task_config->db_usage);
+   playlist_set_scan_omit_db_ref(manual_scan->playlist,
+         manual_scan->task_config->omit_db_reference);
+
+   /* All good - can start iterating
+    * > If playlist has content and 'validate
+    *   entries' is enabled, go to clean-up phase
+    * > Otherwise go straight to content scan phase */
+   if (manual_scan->task_config->validate_entries &&
+       (manual_scan->playlist_size > 0))
+      manual_scan->status = MANUAL_SCAN_ITERATE_CLEAN;
+   else
+   {
+#ifdef HAVE_LIBRETRODB
+      if (manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_LOOSE ||
+          manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_STRICT)
+         manual_scan->status = DATABASE_SCAN_ITERATE_START;
+      else
+#endif
+         manual_scan->status = MANUAL_SCAN_ITERATE_CONTENT;
+   }
+   return false;
+}
+
+/* One gather's worth of BEGIN-family work.  Opens a share of the
+ * per-frame window once, then runs sub-states back to back while they
+ * complete inside it - so a small library still finishes the whole
+ * BEGIN sequence (and often the whole scan setup) in a single tick.
+ * Returns true when the task must finish. */
+static bool task_manual_scan_begin_tick(retro_task_t *task,
+      manual_scan_handle_t *manual_scan)
+{
+   nbio_budget_t b;
+   bool error = false;
+
+   task_nbio_slice_open(&b);
+
+   for (;;)
+   {
+      enum manual_scan_status entry_status = manual_scan->status;
+
+      switch (manual_scan->status)
+      {
+         case MANUAL_SCAN_BEGIN:
+            error = manual_scan_begin_setup(task, manual_scan);
+            break;
+         case MANUAL_SCAN_BEGIN_DIR_LIST:
+            error = manual_scan_begin_dir_list(task, manual_scan, &b);
+            break;
+         case MANUAL_SCAN_BEGIN_DAT_LOAD:
+            error = manual_scan_begin_dat_load(task, manual_scan, &b);
+            break;
+         case MANUAL_SCAN_BEGIN_PLAYLIST:
+            error = manual_scan_begin_playlist(task, manual_scan);
+            break;
+         default:
+            /* Left the BEGIN family: done for this gather. */
+            task_nbio_slice_close(&b);
+            return false;
+      }
+
+      if (error)
+         break;
+      /* A sub-state that kept its status yielded on the window. */
+      if (manual_scan->status == entry_status)
+         break;
+      /* Collapse into the next sub-state only while budget lasts. */
+      if (!task_nbio_slice_within_budget(&b, 0, 0))
+         break;
+   }
+
+   task_nbio_slice_close(&b);
+   return error;
+}
+
 static void task_manual_content_scan_handler(retro_task_t *task)
 {
    uint8_t flg;
@@ -2393,227 +3089,20 @@ static void task_manual_content_scan_handler(retro_task_t *task)
    switch (manual_scan->status)
    {
       case MANUAL_SCAN_BEGIN:
-         {
-
-            /* Initialize scan results accumulation */
-            if (!scan_results_init(&manual_scan->scan_results, 1024))
-            {
-               RARCH_ERR("[Scanner] Failed to initialize scan results\n");
-               goto task_finished;
-            }
-
+      case MANUAL_SCAN_BEGIN_DIR_LIST:
+      case MANUAL_SCAN_BEGIN_DAT_LOAD:
+      case MANUAL_SCAN_BEGIN_PLAYLIST:
+         if (task_manual_scan_begin_tick(task, manual_scan))
+            goto task_finished;
 #ifdef HAVE_LIBRETRODB
-            if ((manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_STRICT ||
-                 manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_LOOSE) &&
-                !(manual_scan->flags & DB_HANDLE_FLAG_SCAN_STARTED))
-            {
-               manual_scan->flags       |= DB_HANDLE_FLAG_SCAN_STARTED;
-
-               if (*manual_scan->task_config->content_dir)
-               {
-                  /* cue, gdi prioritization in sorting */
-                  if (manual_scan->flags & DB_HANDLE_FLAG_IS_DIRECTORY)
-                     manual_scan->handle = database_info_dir_init(
-                           manual_scan->task_config->content_dir, DATABASE_TYPE_ITERATE,
-                           manual_scan->task_config->file_exts,
-                           manual_scan->flags & DB_HANDLE_FLAG_SHOW_HIDDEN_FILES, 
-                           manual_scan->task_config->search_recursively,
-                           manual_scan->task_config->search_archives,
-                           &manual_scan->content_list);
-                  else
-                     manual_scan->handle = database_info_file_init(
-                           manual_scan->task_config->content_dir, DATABASE_TYPE_ITERATE,
-                           task, &manual_scan->content_list);
-               }
-
-               if (manual_scan->handle)
-                  manual_scan->handle->status = DATABASE_STATUS_ITERATE_BEGIN;
-
-               if (!manual_scan->handle)
-                  goto task_finished;
-
-               dbinfo  = manual_scan->handle;
-               dbstate = &manual_scan->state;
-
-               if (dbstate && !dbstate->list)
-               {
-                  if (manual_scan->content_database_path && *manual_scan->content_database_path)
-                  {
-                     if (manual_scan->task_config->db_selection == MANUAL_CONTENT_SCAN_SELECT_DB_SPECIFIC)
-                     {
-                        size_t str_len     = PATH_MAX_LENGTH * sizeof(char);
-                        char* rdb_name     = (char*)malloc(str_len);
-                        char* rdb_fullpath = (char*)malloc(str_len);
-                        union string_list_elem_attr attr;
-                        attr.i = 0;
-
-                        /* Bail out if either heap allocation failed.
-                         * fill_pathname and fill_pathname_join_special
-                         * both call strlcpy on their destination buffer
-                         * with no NULL guard, so proceeding with a NULL
-                         * rdb_name / rdb_fullpath would segfault.  Free
-                         * the one that did succeed (free(NULL) is a
-                         * no-op so no conditional needed) before taking
-                         * the task-finished exit. */
-                        if (!rdb_name || !rdb_fullpath)
-                        {
-                           free(rdb_name);
-                           free(rdb_fullpath);
-                           goto task_finished;
-                        }
-
-                        fill_pathname(rdb_name,
-                              manual_scan->task_config->database_name,
-                              ".rdb", str_len);
-
-                        fill_pathname_join_special(rdb_fullpath,
-                              manual_scan->content_database_path,
-                              rdb_name, str_len);
-
-                        dbstate->list = string_list_new();
-                        if (!dbstate->list)
-                        {
-                           /* Earlier code goto'd here without freeing
-                            * the two buffers above, leaking ~8 KiB on
-                            * this OOM path.  Free them explicitly. */
-                           free(rdb_name);
-                           free(rdb_fullpath);
-                           goto task_finished;
-                        }
-                        string_list_append(dbstate->list, rdb_fullpath, attr);
-                        free(rdb_name);
-                        free(rdb_fullpath);
-                     }
-                     else
-                     {
-                        dbstate->list        = dir_list_new(
-                              manual_scan->content_database_path,
-                              "rdb", false,
-                              manual_scan->flags & DB_HANDLE_FLAG_SHOW_HIDDEN_FILES,
-                              false, false);
-                     }
-
-                     /* Size the per-database size/flag caches to the
-                      * database list we just built.  Both branches
-                      * above land here. */
-                     if (   dbstate->list
-                         && !task_database_state_alloc_arrays(dbstate))
-                     {
-                        RARCH_ERR("[Scanner] Out of memory allocating database state\n");
-                        goto task_finished;
-                     }
-                  }
-
-                  RARCH_LOG("[Scanner] %s\"%s\"...\n", msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_START), manual_scan->content_database_path);
-                  if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL))
-                     printf("%s\"%s\"...\n", msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_START), manual_scan->content_database_path);
-               }
-               dbinfo->status = DATABASE_STATUS_ITERATE_START;
-            }
-            else
+         /* The BEGIN family may have created the database handle
+          * this invocation; refresh the locals the ITERATE cases
+          * of later ticks are fetched from at handler entry. */
+         dbinfo  = manual_scan->handle;
+         dbstate = &manual_scan->state;
 #endif
-            {
-               /* Get allowed file extensions list */
-               if (*manual_scan->task_config->file_exts)
-                  manual_scan->file_exts_list = string_split(
-                        manual_scan->task_config->file_exts, "|");
-
-               /* Get content list */
-               if (!(manual_scan->content_list
-                        = manual_content_scan_get_content_list(
-                           manual_scan->task_config)))
-               {
-                  const char *_msg = msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT);
-                  runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,\
-                        MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-                  goto task_finished;
-               }
-            }
-
-            /* Load DAT file, if required */
-            if ((manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT ||
-                 manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE) &&
-                *manual_scan->task_config->dat_file_path)
-            {
-               if (!(manual_scan->dat_file =
-                     logiqx_dat_init(
-                        manual_scan->task_config->dat_file_path)))
-               {
-                  const char *_msg = msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR);
-                  runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, true, NULL,
-                        MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-                  goto task_finished;
-               }
-            }
-
-            /* Open playlist */
-            if (manual_scan->task_config->target_is_single_determined_playlist &&
-                !(manual_scan->playlist =
-                     playlist_init(&manual_scan->playlist_config)))
-               goto task_finished;
-
-            /* Reset playlist, if required */
-            if (manual_scan->task_config->overwrite_playlist)
-               playlist_clear(manual_scan->playlist);
-
-            /* Get initial playlist size */
-            manual_scan->playlist_size =
-               playlist_size(manual_scan->playlist);
-
-            /* Set default core, if required */
-            if (manual_scan->task_config->core_set)
-            {
-               playlist_set_default_core_path(manual_scan->playlist,
-                     manual_scan->task_config->core_path);
-               playlist_set_default_core_name(manual_scan->playlist,
-                     manual_scan->task_config->core_name);
-            }
-
-            /* Record remaining scan parameters to enable
-             * subsequent 'refresh playlist' operations */
-            playlist_set_scan_content_dir(manual_scan->playlist,
-                  manual_scan->task_config->content_dir);
-            playlist_set_scan_file_exts(manual_scan->playlist,
-                  manual_scan->task_config->file_exts_custom_set ?
-                        manual_scan->task_config->file_exts : NULL);
-            if (manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE ||
-                manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_STRICT)
-               playlist_set_scan_dat_file_path(manual_scan->playlist,
-                     manual_scan->task_config->dat_file_path);
-            playlist_set_scan_database_name(manual_scan->playlist,
-                  manual_scan->task_config->database_name);
-            playlist_set_scan_search_recursively(manual_scan->playlist,
-                  manual_scan->task_config->search_recursively);
-            playlist_set_scan_search_archives(manual_scan->playlist,
-                  manual_scan->task_config->search_archives);
-            playlist_set_scan_filter_dat_content(manual_scan->playlist,
-                  manual_scan->task_config->filter_dat_content);
-            playlist_set_scan_overwrite_playlist(manual_scan->playlist,
-                  manual_scan->task_config->overwrite_playlist);
-            playlist_set_scan_db_usage(manual_scan->playlist,
-                  manual_scan->task_config->db_usage);
-            playlist_set_scan_omit_db_ref(manual_scan->playlist,
-                  manual_scan->task_config->omit_db_reference);
-
-            /* All good - can start iterating
-             * > If playlist has content and 'validate
-             *   entries' is enabled, go to clean-up phase
-             * > Otherwise go straight to content scan phase */
-            if (manual_scan->task_config->validate_entries &&
-                (manual_scan->playlist_size > 0))
-               manual_scan->status = MANUAL_SCAN_ITERATE_CLEAN;
-            else
-            {
-#ifdef HAVE_LIBRETRODB
-               if (manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_LOOSE ||
-                   manual_scan->task_config->db_usage == MANUAL_CONTENT_SCAN_USE_DB_STRICT)
-                  manual_scan->status = DATABASE_SCAN_ITERATE_START;
-               else
-#endif
-                  manual_scan->status = MANUAL_SCAN_ITERATE_CONTENT;
-            }
-         }
          break;
+
       case MANUAL_SCAN_ITERATE_CLEAN:
          {
             const struct playlist_entry *entry = NULL;
@@ -2702,7 +3191,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                   manual_scan->content_list_index].data;
 
             /* Check if this is an M3U file and add to list for post-processing */
-            if (m3u_file_is_m3u(content_path))
+            if (rm3u_is_m3u_filestream(content_path))
             {
                union string_list_elem_attr attr;
                attr.i = 0;
@@ -2867,7 +3356,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                }
                /* If this is an M3U file, add it to the
                 * M3U list for later processing */
-               if (m3u_file_is_m3u(content_path))
+               if (rm3u_is_m3u_filestream(content_path))
                {
                   union string_list_elem_attr attr;
                   attr.i = 0;
@@ -2941,9 +3430,14 @@ static void task_manual_content_scan_handler(retro_task_t *task)
          {
             const char *msg = NULL;
 
-            /* Batch update all playlists with accumulated results */
+            /* Batch update all playlists with accumulated results,
+             * spread across gathers under the shared window. */
             if (manual_scan->scan_results.count > 0)
-               scan_results_batch_update_playlists(&manual_scan->scan_results, manual_scan, manual_scan->task_config->target_is_single_determined_playlist);
+            {
+               if (!manual_scan_end_flush_tick(manual_scan,
+                     manual_scan->task_config->target_is_single_determined_playlist))
+                  break;   /* more results next gather */
+            }
             /* If no results, still write an empty playlist, if it is specified. */
             else if (manual_scan->task_config->target_is_single_determined_playlist)
                playlist_write_file(manual_scan->playlist);

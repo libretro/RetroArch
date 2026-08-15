@@ -39,6 +39,7 @@
 - INPUT/MFI: Controller disconnection fix
 - INPUT/SDL: Fix controller vid/pid detection on Windows
 - INPUT/SDL: Add wiimote sensor capabilities
+- INPUT/SDL3: Add SDL3 input driver
 - INPUT/UDEV: Fix multi-touch detection
 - INPUT/UDEV: Gyroscope and accelerometer sensor support
 - INPUT/UDEV: Add wiimote sensor capabilities
@@ -125,6 +126,7 @@
 - VIDEO/METAL: Add HDR10/scRGB output support
 - VIDEO/METAL: Add support for GPU index
 - VIDEO/SDL2: Add hardware-accelerated support for widgets, XMB, Ozone
+- VIDEO/SDL3: Add SDL3 video driver (software/gl/glcore/vulkan)
 - VIDEO/VULKAN: VK_EXT_full_screen_exclusive is now optional
 - VIDEO/WAYLAND: Fix fullscreen window offset/incorrect sizing
 - VIDEO/WAYLAND: Fix issue with tiny menu in case of fullscreen
