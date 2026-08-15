@@ -852,6 +852,212 @@ static void lane_cache_reuse(void)
       fprintf(stderr, "[pass] cache-reuse lane\n");
 }
 
+
+/* ------------------------------------------------------------------ */
+/* Switching between playlists must never expose the previous one.    */
+/*                                                                    */
+/* Reported from the field, on MaterialUI/Android: open "A"           */
+/* go back, open "B",                                                 */
+/* and the A titles are listed under the B heading.                   */
+/*                                                                    */
+/* The blocking playlist_init_cached() replaces the cache within a    */
+/* single call, so no caller can observe an in-between state.  The    */
+/* deferred variant can yield mid-parse, and the menu reads           */
+/* playlist_get_cached() while building its entry list - so for as    */
+/* long as the cache still held the PREVIOUS playlist, that is what   */
+/* got drawn.  Not merely a wrong label: selecting one of those rows  */
+/* launches content from the wrong system.                            */
+/*                                                                    */
+/* The invariant this pins is absolute: from the moment a different   */
+/* playlist is requested, playlist_get_cached() must never return the */
+/* old one.  NULL while the new one is still parsing is correct and   */
+/* is what callers already handle.                                    */
+/* ------------------------------------------------------------------ */
+
+static void lane_switch_playlist_never_shows_previous(void)
+{
+   char path_a[512];
+   char path_b[512];
+   char *doc_a          = NULL;
+   char *doc_b          = NULL;
+   playlist_config_t cfg_a;
+   playlist_config_t cfg_b;
+   playlist_t *cached   = NULL;
+   unsigned had         = failures;
+   unsigned yields      = 0;
+   int r;
+
+   /* Two distinct playlists, distinguishable by their entries. */
+   if (!(doc_a = big_fixture_doc(400, "/games/n64")))
+   {
+      CHECK(false, "switch lane: fixture alloc");
+      return;
+   }
+   if (!(doc_b = big_fixture_doc(400, "/games/nes")))
+   {
+      free(doc_a);
+      CHECK(false, "switch lane: fixture alloc");
+      return;
+   }
+
+   snprintf(path_a, sizeof(path_a), "%s/n64.lpl", fixture_dir);
+   snprintf(path_b, sizeof(path_b), "%s/nes.lpl", fixture_dir);
+   CHECK(write_whole(path_a, doc_a), "fixture write");
+   CHECK(write_whole(path_b, doc_b), "fixture write");
+   free(doc_a);
+   free(doc_b);
+
+   config_defaults(&cfg_a, path_a);
+   cfg_a.capacity = 8192;
+   playlist_config_set_base_content_directory(&cfg_a, "/games/n64");
+   config_defaults(&cfg_b, path_b);
+   cfg_b.capacity = 8192;
+   playlist_config_set_base_content_directory(&cfg_b, "/games/nes");
+
+   playlist_free_cached();
+
+   /* Step 1-2: open the first playlist. */
+   CHECK(playlist_init_cached(&cfg_a), "switch lane: first init");
+   cached = playlist_get_cached();
+   CHECK(cached && streq(playlist_get_conf_path(cached), path_a),
+         "switch lane: first playlist not cached");
+
+   /* Step 3-4: open the second.  Budget it so it MUST yield part
+    * way, which is the window the bug lived in. */
+   for (;;)
+   {
+      int k = 2;
+
+      r = playlist_init_cached_deferred(&cfg_b, budget_countdown, &k);
+
+      /* The assertion, checked on every single yield: whatever the
+       * cache holds now, it is not the playlist we navigated away
+       * from. */
+      cached = playlist_get_cached();
+      if (cached)
+         CHECK(streq(playlist_get_conf_path(cached), path_b),
+               "switch lane: while loading \"%s\", the cache still "
+               "returned \"%s\" - the menu would draw the previous "
+               "playlist's entries under the new one's heading",
+               path_b, playlist_get_conf_path(cached));
+
+      if (r != 0)
+         break;
+      yields++;
+   }
+
+   CHECK(r == 1, "switch lane: deferred init returned %d", r);
+   CHECK(yields > 0,
+         "switch lane: the parse never yielded, so the window this "
+         "lane exists to cover was not exercised");
+
+   /* Step 5: the second playlist, and its own entries. */
+   cached = playlist_get_cached();
+   CHECK(cached != NULL, "switch lane: nothing cached at the end");
+   if (cached)
+   {
+      const struct playlist_entry *e = NULL;
+      CHECK(streq(playlist_get_conf_path(cached), path_b),
+            "switch lane: wrong playlist cached at the end");
+      CHECK(playlist_size(cached) == 400,
+            "switch lane: %u entries, wanted 400",
+            (unsigned)playlist_size(cached));
+      playlist_get_index(cached, 0, &e);
+      CHECK(e && e->path && strncmp(e->path, "/games/nes/", 11) == 0,
+            "switch lane: first entry is \"%s\", not from the "
+            "requested playlist",
+            (e && e->path) ? e->path : "(null)");
+   }
+
+   playlist_free_cached();
+
+   if (failures == had)
+      fprintf(stderr, "[pass] playlist-switch lane (%u yields)\n",
+            yields);
+}
+
+
+/* Same invariant under the impatient case: the user opens one
+ * playlist, backs out and opens another before the first has
+ * finished loading.  Each request supersedes the last, and at no
+ * point may the cache hand back a playlist that is not the one
+ * currently being asked for. */
+static void lane_switch_supersedes_pending(void)
+{
+   char path_a[512], path_b[512], path_c[512];
+   playlist_config_t cfg_a, cfg_b, cfg_c;
+   playlist_t *cached = NULL;
+   unsigned had       = failures;
+   char *doc          = NULL;
+   int k, r;
+
+   if (!(doc = big_fixture_doc(400, "/games/sw")))
+   {
+      CHECK(false, "supersede lane: fixture alloc");
+      return;
+   }
+   snprintf(path_a, sizeof(path_a), "%s/sw_a.lpl", fixture_dir);
+   snprintf(path_b, sizeof(path_b), "%s/sw_b.lpl", fixture_dir);
+   snprintf(path_c, sizeof(path_c), "%s/sw_c.lpl", fixture_dir);
+   CHECK(write_whole(path_a, doc), "fixture write");
+   CHECK(write_whole(path_b, doc), "fixture write");
+   CHECK(write_whole(path_c, doc), "fixture write");
+   free(doc);
+
+   config_defaults(&cfg_a, path_a);
+   cfg_a.capacity = 8192;
+   playlist_config_set_base_content_directory(&cfg_a, "/games/sw");
+   config_defaults(&cfg_b, path_b);
+   cfg_b.capacity = 8192;
+   playlist_config_set_base_content_directory(&cfg_b, "/games/sw");
+   config_defaults(&cfg_c, path_c);
+   cfg_c.capacity = 8192;
+   playlist_config_set_base_content_directory(&cfg_c, "/games/sw");
+
+   playlist_free_cached();
+
+   /* Start A, yield part way. */
+   k = 2;
+   r = playlist_init_cached_deferred(&cfg_a, budget_countdown, &k);
+   CHECK(r == 0, "supersede lane: A did not yield (%d)", r);
+   cached = playlist_get_cached();
+   CHECK(!cached, "supersede lane: something was cached mid-parse");
+
+   /* Switch to B before A finishes, yield again. */
+   k = 2;
+   r = playlist_init_cached_deferred(&cfg_b, budget_countdown, &k);
+   cached = playlist_get_cached();
+   if (cached)
+      CHECK(streq(playlist_get_conf_path(cached), path_b),
+            "supersede lane: cache returned \"%s\" while B was "
+            "loading", playlist_get_conf_path(cached));
+
+   /* And again to C, then run it out. */
+   for (;;)
+   {
+      k = 2;
+      r = playlist_init_cached_deferred(&cfg_c, budget_countdown, &k);
+      cached = playlist_get_cached();
+      if (cached)
+         CHECK(streq(playlist_get_conf_path(cached), path_c),
+               "supersede lane: cache returned \"%s\" while C was "
+               "the requested playlist",
+               playlist_get_conf_path(cached));
+      if (r != 0)
+         break;
+   }
+
+   CHECK(r == 1, "supersede lane: C did not complete (%d)", r);
+   cached = playlist_get_cached();
+   CHECK(cached && streq(playlist_get_conf_path(cached), path_c),
+         "supersede lane: C is not the cached playlist at the end");
+
+   playlist_free_cached();
+
+   if (failures == had)
+      fprintf(stderr, "[pass] playlist-supersede lane\n");
+}
+
 int main(int argc, char *argv[])
 {
    char cmd[600];
@@ -881,6 +1087,8 @@ int main(int argc, char *argv[])
    lane_budgeted_autofix();
    lane_abort_midway();
    lane_cache_reuse();
+   lane_switch_playlist_never_shows_previous();
+   lane_switch_supersedes_pending();
 
    snprintf(cmd, sizeof(cmd), "rm -rf %s", fixture_dir);
    if (system(cmd) != 0) { }

@@ -4058,6 +4058,27 @@ int playlist_init_cached_deferred(const playlist_config_t *config,
       if (!(playlist_cached_pending = playlist_parse_begin(config)))
          return -1;
       playlist_config_copy(config, &playlist_cached_pending_config);
+
+      /* Drop the cached playlist the moment a DIFFERENT one is
+       * requested, rather than when the new one is ready.
+       *
+       * The blocking playlist_init_cached() replaces the cache in a
+       * single call, so there is no window in which a caller can see
+       * the wrong playlist.  This one can yield, and a caller that
+       * reads playlist_get_cached() during that window - the menu
+       * does, to build its entry list - would be handed the playlist
+       * it was looking at BEFORE, and would render those entries
+       * under the new playlist's heading.  That is not a cosmetic
+       * mismatch: selecting an entry would launch content from the
+       * wrong system.
+       *
+       * Freeing here costs nothing that is not already being paid:
+       * we only reach this point because the cache could not be
+       * reused, so it was going to be replaced regardless.  Callers
+       * see NULL until the parse completes, which they already
+       * handle - it is the same thing they see before any playlist
+       * has been loaded. */
+      playlist_free_cached();
    }
 
    if ((r = playlist_init_cached_continue(budget_cb, budget_ud)) == 0)

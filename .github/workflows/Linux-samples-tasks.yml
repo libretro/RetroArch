@@ -789,6 +789,19 @@ jobs:
           # playlist is never reused and the menu re-parses on every
           # navigation.
           #
+          # The switch and supersede lanes cover a field report -
+          # MaterialUI on Android showing one playlist's titles under
+          # another's heading, where selecting a row launches content
+          # from the wrong system.  The deferred cached init yields
+          # mid-parse, and the menu reads playlist_get_cached() while
+          # building its list, so leaving the previous playlist
+          # installed until the new one is ready is user-visible and
+          # wrong.  The lanes assert on EVERY yield that the cache is
+          # either empty or already the requested playlist, including
+          # when a request is superseded before it finishes, and that
+          # the parse really yielded - a lane that stops exercising
+          # its own window is worse than no lane.
+          #
           # The truncated-JSON lane also guards the staged-entry
           # cleanup in playlist_read_file: an entry interrupted
           # mid-object is reserved but never committed, and its
