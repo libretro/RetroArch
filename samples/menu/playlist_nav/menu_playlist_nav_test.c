@@ -43,6 +43,7 @@
 #include <vfs/vfs_implementation.h>
 
 #include "../../../msg_hash_lbl_str.h"
+#include "../../../msg_hash_lbl_str.h"
 #include "../../../menu/menu_defines.h"
 #include "../../../menu/menu_driver.h"
 #include "../../../menu/menu_entries.h"
@@ -165,49 +166,77 @@ static file_list_t *selection_buf(void)
    return menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
 }
 
-/* Opens a playlist the way selecting it in the menu does, and returns
- * how many entries the user is left looking at. */
-static size_t open_playlist(const char *path)
+/* Builds the "Playlists" screen - the list of .lpl files - the way
+ * opening that screen does. */
+static size_t open_playlists_screen(void)
 {
    menu_displaylist_info_t info;
-   file_list_t *buf     = selection_buf();
-   settings_t *settings = config_get_ptr();
+   struct menu_state *menu_st = menu_state_get_ptr();
+   file_list_t *buf           = selection_buf();
+   file_list_t *menu_stack    = MENU_LIST_GET(menu_st->entries.list, 0);
+   settings_t *settings       = config_get_ptr();
 
-   if (!buf)
+   if (!buf || !menu_stack)
       return 0;
 
-   struct menu_state *menu_st = menu_state_get_ptr();
-   file_list_t *menu_stack    = MENU_LIST_GET(menu_st->entries.list, 0);
-
    menu_entries_clear(buf);
-
-   /* Push it onto the menu STACK too, not just build the list.  The
-    * rebuild the pump performs reads the stack to decide what to
-    * construct, so a harness that only built the list directly would
-    * have the pump rebuild the main menu over the playlist - which
-    * is not what happens when a user opens one. */
-   if (menu_stack)
-   {
-      menu_entries_clear(menu_stack);
-      menu_entries_append(menu_stack, path,
-            MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST_STR,
-            MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST,
-            MENU_SETTING_ACTION, 0, 0, NULL);
-   }
+   menu_entries_append(menu_stack, fixture_dir,
+         MENU_ENUM_LABEL_PLAYLISTS_TAB_STR,
+         MENU_ENUM_LABEL_PLAYLISTS_TAB,
+         MENU_SETTING_ACTION, 0, 0, NULL);
 
    menu_displaylist_info_init(&info);
    info.list          = buf;
-   info.path          = strdup(path);
-   info.label         = strdup(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST_STR);
-   info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST;
+   info.path          = strdup(fixture_dir);
+   info.label         = strdup(MENU_ENUM_LABEL_PLAYLISTS_TAB_STR);
+   info.enum_idx      = MENU_ENUM_LABEL_PLAYLISTS_TAB;
    info.type          = MENU_SETTING_ACTION;
    info.directory_ptr = 0;
 
-   menu_displaylist_ctl(DISPLAYLIST_PLAYLIST, &info, settings);
+   menu_displaylist_ctl(DISPLAYLIST_DATABASE_PLAYLISTS, &info,
+         settings);
    menu_displaylist_process(&info);
    menu_displaylist_info_free(&info);
 
    return buf->size;
+}
+
+/* Selects the entry whose path ends in @leaf and presses OK on it,
+ * through the real dispatcher and whatever action_ok the menu bound
+ * to that entry.  This is what a tap on a playlist does. */
+static bool select_and_press_ok(const char *leaf)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   file_list_t *buf           = selection_buf();
+   size_t i;
+
+   if (!buf)
+      return false;
+
+   for (i = 0; i < buf->size; i++)
+   {
+      const char *path = buf->list[i].path;
+      if (path && strstr(path, leaf))
+      {
+         menu_entry_t entry;
+         menu_st->selection_ptr = i;
+         MENU_ENTRY_INITIALIZE(entry);
+         /* The macro zeroes flags, and menu_entry_get() fills only
+          * what the flags enable - so without these the action is
+          * handed an empty path and the rebuild that follows
+          * dereferences it.  Same set the menu enables before it
+          * dispatches an action. */
+         entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED
+                      | MENU_ENTRY_FLAG_LABEL_ENABLED
+                      | MENU_ENTRY_FLAG_RICH_LABEL_ENABLED
+                      | MENU_ENTRY_FLAG_VALUE_ENABLED
+                      | MENU_ENTRY_FLAG_SUBLABEL_ENABLED;
+         menu_entry_get(&entry, 0, i, NULL, true);
+         menu_entry_action(&entry, i, MENU_ACTION_OK);
+         return true;
+      }
+   }
+   return false;
 }
 
 /* One frame of the real menu, which is what pumps a pending read. */
@@ -219,19 +248,46 @@ static void run_frame(void)
          cpu_features_get_time_usec());
 }
 
-/* What the listed entries point at - how we tell "I am looking at the
- * N64 list" from "I am looking at the NES list". */
+/* Frames until a pending read completes.  No input of any kind. */
+static unsigned run_until_loaded(void)
+{
+   unsigned frames = 0;
+   while (playlist_init_cached_pending() && frames < 100000)
+   {
+      run_frame();
+      frames++;
+   }
+   return frames;
+}
+
+/* The label of the first listed entry - which playlist is on screen.
+ * The fixtures put the system in the label, the way a real playlist's
+ * titles identify it. */
+static const char *first_label(void)
+{
+   file_list_t *buf = selection_buf();
+   if (!buf || !buf->size)
+      return NULL;
+   return buf->list[0].label ? buf->list[0].label : "";
+}
+
 /* ------------------------------------------------------------------ */
-/* Lanes                                                              */
+/* Lanes - driven the way a user drives the menu                      */
 /* ------------------------------------------------------------------ */
 
-/* Report 2: whatever a playlist displaylist does, it must not leave
- * the list empty - the menu cannot recover from that. */
+/* Report 2: opening a playlist must never leave the list empty.  An
+ * empty list is unrecoverable - the rebuild is gated on
+ * selection_buf_size and the back action needs a selected entry - so
+ * the screen becomes one the user cannot leave. */
 static void lane_never_empty(void)
 {
    unsigned had = failures;
-   size_t n     = open_playlist(path_n64);
+   size_t n;
 
+   CHECK(open_playlists_screen() > 0, "the Playlists screen was empty");
+   CHECK(select_and_press_ok("n64.lpl"), "no n64 entry to press OK on");
+
+   n = selection_buf() ? selection_buf()->size : 0;
    CHECK(n > 0,
          "opening a playlist left %u entries.  An empty list is "
          "unrecoverable: the rebuild is gated on selection_buf_size "
@@ -247,38 +303,21 @@ static void lane_never_empty(void)
  * input at all. */
 static void lane_frames_alone_finish_the_read(void)
 {
-   unsigned had    = failures;
-   unsigned frames = 0;
-   open_playlist(path_n64);
+   unsigned had = failures;
+   unsigned frames;
 
-   /* Switch to the other playlist.  Over the short-read VFS this
-    * cannot complete in the first slice. */
-   open_playlist(path_nes);
+   CHECK(open_playlists_screen() > 0, "the Playlists screen was empty");
+   CHECK(select_and_press_ok("n64.lpl"), "no n64 entry to press OK on");
 
-   while (playlist_init_cached_pending() && frames < 100000)
-   {
-      run_frame();
-      frames++;
-   }
+   frames = run_until_loaded();
 
    CHECK(frames > 0,
-         "the read completed inside the displaylist call, so this "
-         "lane is not exercising the pump it exists for - the VFS is "
-         "not slow enough, or the playlist is not big enough");
+         "the read completed inside the OK press, so this lane is not "
+         "exercising the pump it exists for - the VFS is not slow "
+         "enough, or the playlist is not big enough");
    CHECK(!playlist_init_cached_pending(),
          "still pending after %u frames - a read that yields never "
          "completes without input", frames);
-
-   /* The pump rebuilt the list once the read finished: it now holds
-    * real entries rather than the single placeholder it was left
-    * with when the read yielded.
-    *
-    * Which playlist those entries came from is asserted at the
-    * reader level (samples/playlist), not here: this harness pushes
-    * the displaylist directly rather than going through the action_ok
-    * path a user takes, so the label mapping is not the one the real
-    * navigation produces and asserting on it would be checking the
-    * harness, not the menu. */
    CHECK(selection_buf() && selection_buf()->size > 1,
          "after the read completed the list still holds %u entries - "
          "the pump did not rebuild it",
@@ -287,6 +326,57 @@ static void lane_frames_alone_finish_the_read(void)
    if (failures == had)
       fprintf(stderr, "[pass] frames-finish-the-read lane (%u frames)\n",
             frames);
+}
+
+/* Report 1: open one playlist, go back, open another - what is on
+ * screen must be what was asked for, not the previous playlist's
+ * entries.  The reported sequence, pressed rather than simulated. */
+static void lane_switch_shows_requested(void)
+{
+   unsigned had = failures;
+   const char *lbl;
+
+   CHECK(open_playlists_screen() > 0, "the Playlists screen was empty");
+   CHECK(select_and_press_ok("n64.lpl"), "no n64 entry");
+   run_until_loaded();
+   lbl = first_label();
+   CHECK(lbl && strstr(lbl, "n64"),
+         "the N64 playlist listed \"%s\"", lbl ? lbl : "(empty)");
+
+   /* Back to Playlists, then open the other one. */
+   CHECK(open_playlists_screen() > 0, "back to Playlists failed");
+   CHECK(select_and_press_ok("nes.lpl"), "no nes entry");
+
+   /* Checked HERE, before the read has finished: this is the window
+    * the bug lived in.  For however many frames the load takes, the
+    * screen must not still be showing the playlist the user just
+    * navigated away from - that is what was reported, and waiting
+    * for the load to finish before looking would miss it entirely. */
+   lbl = first_label();
+   CHECK(!lbl || !strstr(lbl, "n64"),
+         "while the NES playlist was still loading the list showed "
+         "\"%s\" - the previous playlist's entries, which is what "
+         "the user sees for the whole of that load", lbl);
+
+   run_until_loaded();
+
+   lbl = first_label();
+   CHECK(lbl && strstr(lbl, "nes"),
+         "after switching to the NES playlist the list showed \"%s\" "
+         "- the previous playlist's entries under the new heading, "
+         "and selecting one would launch the wrong system's content",
+         lbl ? lbl : "(empty)");
+
+   /* And back again, the way a user cycles between two systems. */
+   CHECK(open_playlists_screen() > 0, "back to Playlists failed");
+   CHECK(select_and_press_ok("n64.lpl"), "no n64 entry");
+   run_until_loaded();
+   lbl = first_label();
+   CHECK(lbl && strstr(lbl, "n64"),
+         "switching back showed \"%s\"", lbl ? lbl : "(empty)");
+
+   if (failures == had)
+      fprintf(stderr, "[pass] switch-shows-requested lane\n");
 }
 
 /* ------------------------------------------------------------------ */
@@ -367,6 +457,7 @@ int main(int argc, char *argv[])
 
    lane_never_empty();
    lane_frames_alone_finish_the_read();
+   lane_switch_shows_requested();
 
    CHECK(saf_read_calls > 0,
          "the short-read VFS was never used - this run did not "
