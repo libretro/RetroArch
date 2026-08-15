@@ -6297,7 +6297,6 @@ MENU_NOINLINE static int menu_input_post_iterate(
          /* Normal menu input */
          else
          {
-            /* Only touchscreen produces gesture-based taps; mouse/stylus skip. */
             if (menu_input->pointer.type != MENU_POINTER_TOUCHSCREEN)
                point.gesture = MENU_INPUT_GESTURE_NONE;
             else if (!(menu_input->pointer.flags & MENU_INP_PTR_FLG_DRAGGED))
