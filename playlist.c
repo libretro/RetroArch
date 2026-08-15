@@ -3686,9 +3686,6 @@ playlist_parse_t *playlist_parse_begin(const playlist_config_t *config)
    p->res      = true;
    p->phase    = PLAYLIST_PARSE_PHASE_DONE;   /* until proven otherwise */
 
-   /* Attempt to read any existing playlist file */
-   playlist->file_size = path_get_size(playlist->config.path);
-
 #if defined(HAVE_COMPRESSION)
       /* Always use RZIP interface when reading playlists
        * > this will automatically handle uncompressed
@@ -3707,14 +3704,33 @@ playlist_parse_t *playlist_parse_begin(const playlist_config_t *config)
     * create an empty playlist instead */
    if (!p->file)
    {
+      /* Records -1, exactly as the stat did for a missing file, so
+       * a later reuse check compares like with like. */
+      playlist->file_size = path_get_size(playlist->config.path);
       playlist_parse_enter_autofix(p);
       return p;
    }
 
    if (intfstream_is_compressed(p->file))
-      playlist->flags |=  CNT_PLAYLIST_FLG_COMPRESSED;
+   {
+      playlist->flags    |=  CNT_PLAYLIST_FLG_COMPRESSED;
+      /* The size stamp must be the ON-DISK size: it is compared
+       * against path_get_size() to decide whether a cached playlist
+       * is still current.  A compressed stream reports the
+       * UNCOMPRESSED size from its rzip header - a different number
+       * entirely - so this case still pays the stat. */
+      playlist->file_size = path_get_size(playlist->config.path);
+   }
    else
-      playlist->flags &= ~CNT_PLAYLIST_FLG_COMPRESSED;
+   {
+      playlist->flags    &= ~CNT_PLAYLIST_FLG_COMPRESSED;
+      /* Uncompressed: the stream is the file, and its size is the
+       * on-disk size the reuse check wants.  Taking it from the
+       * handle already open saves a stat per playlist read - one
+       * filesystem round trip on the network VFS backends, on a
+       * path the menu takes for every playlist it has not cached. */
+      playlist->file_size = intfstream_get_size(p->file);
+   }
 
    /* Detect format of playlist
     * > Read file until we find the first printable
@@ -3915,7 +3931,21 @@ static void playlist_init_cached_install(playlist_t *playlist)
        (pl_compressed != playlist->config.compress) ||
 #endif
        (pl_old_fmt != playlist->config.old_format))
+   {
       playlist_write_file(playlist);
+      /* The rewrite changed the file this playlist records the size
+       * of - a format or compression conversion changes it a lot -
+       * so the stamp taken at read time now describes a file that no
+       * longer exists.  Left stale, playlist_cached_is_reusable()
+       * compares it against the new on-disk size, never matches, and
+       * every subsequent request re-reads and re-parses the same
+       * playlist for as long as the on-disk format disagrees with
+       * the settings.  playlist_write_file() cannot refresh it
+       * itself here: it defers to playlist_cached_after_write(),
+       * which only knows how to update the playlist that is already
+       * installed as the cache, and this one is installed below. */
+      playlist->file_size = path_get_size(playlist->config.path);
+   }
 
    playlist_free_cached();
    playlist_cached       = playlist;

@@ -749,6 +749,109 @@ static void lane_abort_midway(void)
       fprintf(stderr, "[pass] abort lane\n");
 }
 
+
+/* ------------------------------------------------------------------ */
+/* Cache-reuse invariant.                                             */
+/*                                                                    */
+/* playlist_cached_is_reusable() decides whether the cached playlist  */
+/* can stand in for a request by comparing the size recorded at read  */
+/* time against path_get_size() now.  Whatever the read path records  */
+/* must therefore be the ON-DISK size - which is not the same number  */
+/* the stream reports for a compressed playlist, where rzip yields    */
+/* the uncompressed size from its header.  Recording the wrong one    */
+/* costs no correctness but defeats the cache completely: every menu  */
+/* navigation would re-read and re-parse the file.                    */
+/*                                                                    */
+/* Observable via pointer identity: a reused cache returns the same   */
+/* playlist object, a defeated one a freshly parsed object.           */
+/* ------------------------------------------------------------------ */
+
+static void check_cache_reuse(const char *path, bool compressed,
+      const char *base_content_dir, const char *lane)
+{
+   playlist_config_t config;
+   playlist_t *first  = NULL;
+   playlist_t *second = NULL;
+
+   config_defaults(&config, path);
+   config.capacity = 8192;
+   /* Match the on-disk format so the cached init does not rewrite
+    * the file underneath the comparison, and the recorded base
+    * content directory so reuse is not rejected before the size
+    * comparison is even reached. */
+   config.compress = compressed;
+   playlist_config_set_base_content_directory(&config, base_content_dir);
+
+   playlist_free_cached();
+
+   CHECK(playlist_init_cached(&config), "%s: first cached init", lane);
+   if (!(first = playlist_get_cached()))
+   {
+      CHECK(false, "%s: first cached playlist", lane);
+      return;
+   }
+
+   /* Mark the cached object in memory only.  Pointer identity is
+    * not a sound observable here - a re-parse frees the old
+    * playlist and the allocator hands the same address straight
+    * back - but a marker cannot survive a re-read from disk. */
+   playlist_set_default_core_name(first, "CACHE_REUSE_SENTINEL");
+
+   CHECK(playlist_init_cached(&config), "%s: second cached init", lane);
+   second = playlist_get_cached();
+
+   CHECK(second && streq(playlist_get_default_core_name(second),
+            "CACHE_REUSE_SENTINEL"),
+         "%s: cache was not reused - the size recorded at read time "
+         "does not match path_get_size(), so every request re-parses",
+         lane);
+
+   playlist_free_cached();
+}
+
+static void lane_cache_reuse(void)
+{
+   char path[512];
+   unsigned had = failures;
+
+   /* Uncompressed JSON */
+   snprintf(path, sizeof(path), "%s/full.lpl", fixture_dir);
+   CHECK(write_whole(path, json_full), "fixture write");
+   check_cache_reuse(path, false, "/games", "cache reuse (json)");
+
+   /* Old format, with the configuration asking for the new one: the
+    * cached init converts the file on the spot.  That rewrite
+    * changes the on-disk size out from under the stamp taken while
+    * reading, so this case is the one that catches a stamp left
+    * stale after a format or compression conversion - the state in
+    * which the cache can never be reused again. */
+   snprintf(path, sizeof(path), "%s/old.lpl", fixture_dir);
+   CHECK(write_whole(path, old_format), "fixture write");
+   check_cache_reuse(path, false, "", "cache reuse (old format converted)");
+
+#if defined(HAVE_COMPRESSION)
+   /* RZIP compressed: the case where the stream size and the
+    * on-disk size differ. */
+   {
+      intfstream_t *stream = NULL;
+      snprintf(path, sizeof(path), "%s/comp.lpl", fixture_dir);
+      stream = intfstream_open_rzip_file(path,
+            RETRO_VFS_FILE_ACCESS_WRITE);
+      CHECK(stream != NULL, "cache reuse: rzip open");
+      if (stream)
+      {
+         intfstream_write(stream, json_full, (int64_t)strlen(json_full));
+         intfstream_close(stream);
+         free(stream);
+         check_cache_reuse(path, true, "/games", "cache reuse (compressed)");
+      }
+   }
+#endif
+
+   if (failures == had)
+      fprintf(stderr, "[pass] cache-reuse lane\n");
+}
+
 int main(int argc, char *argv[])
 {
    char cmd[600];
@@ -777,6 +880,7 @@ int main(int argc, char *argv[])
    lane_budgeted_old_format();
    lane_budgeted_autofix();
    lane_abort_midway();
+   lane_cache_reuse();
 
    snprintf(cmd, sizeof(cmd), "rm -rf %s", fixture_dir);
    if (system(cmd) != 0) { }
