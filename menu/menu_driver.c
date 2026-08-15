@@ -45,6 +45,7 @@
 #include "../audio/audio_driver.h"
 
 #include "menu_driver.h"
+#include "menu_dirwalk.h"
 #include "menu_cbs.h"
 #include "../driver.h"
 #include "../list_special.h"
@@ -6876,6 +6877,10 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             return true;
 
          playlist_free_cached();
+
+         /* End any in-flight background directory walk and drop an
+          * unconsumed listing; late completions become no-ops. */
+         menu_dirwalk_cancel();
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          menu_shader_manager_free();
 #endif
