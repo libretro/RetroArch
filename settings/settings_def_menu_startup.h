@@ -31,3 +31,16 @@ S_BOOL(menu_ticker_smooth, MENU_TICKER_SMOOTH,
       "Smooth Ticker Text",
       "Use smooth scrolling animation when displaying long menu text. Has a small performance impact.")
 #endif
+/* Descriptor and configuration rows are #ifdef HAVE_OZONE; the string
+ * tables always carry this row via the strings pass. */
+#if defined(HAVE_OZONE) || defined(SETTINGS_DEF_STRINGS_PASS)
+/* The configuration row lives under defined(HAVE_MENU); other passes are
+ * unaffected. */
+#if !defined(SETTINGS_DEF_CONFIG_PASS) || (defined(HAVE_MENU))
+S_UINT_EX(ozone_metadata_scroll_style, OZONE_METADATA_SCROLL_STYLE,
+      "ozone_metadata_scroll_style",
+      DEFAULT_OZONE_METADATA_SCROLL_STYLE, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, OZONE_METADATA_SCROLL_LAST-1, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_ozone_metadata_scroll_style, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_RADIO_BUTTONS,
+      "Metadata Text Animation",
+      "Whether a scraped synopsis too long for the content metadata panel animates, and which way it moves. 'Horizontal' moves it sideways along a single line. 'Vertical' wraps it to the width of the sidebar and moves the whole block upwards, the way the XMB metadata panel does. 'Off' leaves it static, wrapped over as many lines as the panel has room for. Speed, smoothness, and whether the movement scrolls or bounces, all come from the ticker text settings alongside this one.")
+#endif
+#endif

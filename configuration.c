@@ -1647,6 +1647,10 @@ static struct config_array_setting *populate_settings_array(
 #endif
 
 #ifdef HAVE_NETWORKING
+   SETTING_ARRAY("screenscraper_username",       settings->arrays.screenscraper_username, false, NULL, true);
+   SETTING_ARRAY("screenscraper_password",       settings->arrays.screenscraper_password, false, NULL, true);
+   SETTING_ARRAY("screenscraper_devid",          settings->arrays.screenscraper_devid, false, NULL, true);
+   SETTING_ARRAY("screenscraper_devpassword",    settings->arrays.screenscraper_devpassword, false, NULL, true);
    SETTING_ARRAY("netplay_mitm_server",          settings->arrays.netplay_mitm_server, false, NULL, true);
 #ifdef HAVE_CLOUDSYNC
    SETTING_ARRAY("webdav_url",                   settings->arrays.webdav_url, false, NULL, true);
@@ -1984,6 +1988,8 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_widget_scale.h"
 #endif
 #include "settings/settings_def_cheevos_account.h"
+#include "settings/settings_def_screenscraper.h"
+#include "settings/settings_def_screenscraper_account.h"
 #include "settings/settings_def_menu_show_restart.h"
 #include "settings/settings_def_quit_restart.h"
 #include "settings/settings_def_menu_throttle.h"
@@ -2696,6 +2702,8 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_widget_scale.h"
 #endif
 #include "settings/settings_def_cheevos_account.h"
+#include "settings/settings_def_screenscraper.h"
+#include "settings/settings_def_screenscraper_account.h"
 #include "settings/settings_def_menu_show_restart.h"
 #include "settings/settings_def_quit_restart.h"
 #include "settings/settings_def_menu_throttle.h"
@@ -3360,6 +3368,8 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_widget_scale.h"
 #endif
 #include "settings/settings_def_cheevos_account.h"
+#include "settings/settings_def_screenscraper.h"
+#include "settings/settings_def_screenscraper_account.h"
 #include "settings/settings_def_menu_show_restart.h"
 #include "settings/settings_def_quit_restart.h"
 #include "settings/settings_def_menu_throttle.h"
@@ -4072,6 +4082,8 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_widget_scale.h"
 #endif
 #include "settings/settings_def_cheevos_account.h"
+#include "settings/settings_def_screenscraper.h"
+#include "settings/settings_def_screenscraper_account.h"
 #include "settings/settings_def_menu_show_restart.h"
 #include "settings/settings_def_quit_restart.h"
 #include "settings/settings_def_menu_throttle.h"
@@ -4665,6 +4677,8 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_widget_scale.h"
 #endif
 #include "settings/settings_def_cheevos_account.h"
+#include "settings/settings_def_screenscraper.h"
+#include "settings/settings_def_screenscraper_account.h"
 #include "settings/settings_def_menu_show_restart.h"
 #include "settings/settings_def_quit_restart.h"
 #include "settings/settings_def_menu_throttle.h"

@@ -39,6 +39,9 @@
 
 #include "gfx_thumbnail.h"
 #include "../frontend/frontend_driver.h"
+#ifdef HAVE_NETWORKING
+#include "../network/screenscraper.h"
+#endif
 
 #if (defined(HAVE_RWEBM) || defined(HAVE_RMP4)) && \
       defined(HAVE_AUDIOMIXER) && \
@@ -2490,6 +2493,18 @@ void gfx_thumbnail_request(
                /* Trigger thumbnail download *
                 * Note: download will grab all 3 possible thumbnails, no matter
                 * what left/right thumbnails are set at the moment */
+#if defined(HAVE_NETWORKING) && defined(HAVE_MENU)
+               /* While signed in to ScreenScraper, on-demand artwork
+                * also goes through the scraper (hash/name matching plus
+                * the extended media types), with the libretro server as
+                * the per-item fallback inside the task */
+               if (screenscraper_signed_in())
+               {
+                  task_push_pl_entry_screenscraper(path_data->system,
+                        playlist, (unsigned)idx);
+               }
+               else
+#endif
                task_push_pl_entry_thumbnail_download(path_data->system, playlist,
                      (unsigned)idx, false, true);
             }
@@ -3382,6 +3397,14 @@ static const char *gfx_thumbnail_get_type(
             return "Named_Boxarts";
          case 4:
             return "Named_Logos";
+         case 5:
+            return "Named_Boxarts3D";
+         case 6:
+            return "Named_Fanarts";
+         case 7:
+            return "Named_Marquees";
+         case 8:
+            return "Named_Videos";
          case 0:
          default:
             break;

@@ -196,6 +196,38 @@ bool task_push_pl_thumbnail_download(
       const char *dir_thumbnails);
 #endif
 
+/* ScreenScraper playlist scrape (metadata + media) */
+bool task_push_pl_screenscraper(
+      const char *system,
+      const playlist_config_t *playlist_config,
+      const char *dir_thumbnails);
+
+/* As above, resuming at a given playlist entry */
+bool task_push_pl_screenscraper_at(
+      const char *system,
+      const playlist_config_t *playlist_config,
+      const char *dir_thumbnails,
+      size_t start_index);
+
+/* ScreenScraper on-demand scrape of a single playlist entry */
+bool task_push_pl_entry_screenscraper(
+      const char *system,
+      playlist_t *playlist,
+      unsigned idx);
+
+/* As above, but only when the entry's metadata sidecar is genuinely
+ * absent - lets menu drivers backfill metadata for entries whose
+ * artwork already exists (which never fire the artwork path again) */
+bool task_push_pl_entry_screenscraper_meta(
+      const char *system,
+      const char *db_name,
+      const char *img_name,
+      playlist_t *playlist,
+      unsigned idx);
+
+/* Startup: resume a scrape that the request allowance interrupted */
+bool task_push_screenscraper_resume_check(void);
+
 #endif
 
 /* Core backup/restore tasks */

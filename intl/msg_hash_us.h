@@ -22289,6 +22289,14 @@ MSG_HASH(
    "Validate core associations and remove invalid and duplicate entries."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SCREENSCRAPER,
+   "Scrape Using ScreenScraper"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_SCREENSCRAPER,
+   "Download media and metadata for every entry in this playlist from screenscraper.fr, using the ScreenScraper settings under Settings > Playlists."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
    "Refresh Playlist"
    )
@@ -22900,6 +22908,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
 MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
 #define S_ACTION_LV_NS(T, TV, n, sd, ok, rp, c, us)
 #include "../settings/settings_def_cheevos_account.h"
+#include "../settings/settings_def_screenscraper.h"
+#include "../settings/settings_def_screenscraper_account.h"
 #undef S_BOOL
 #undef S_BOOL_NS
 #undef S_BOOL_H
@@ -25691,11 +25701,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_BOUNCE,
-   "Bounce Left/Right"
+   "Bounce"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_LOOP,
-   "Scroll Left"
+   "Scroll"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_IMAGE_MODE,
@@ -26072,6 +26082,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_LOGOS,
    "Content Logo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS_3D,
+   "3D Boxart (ScreenScraper)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_FANARTS,
+   "Fan Art (ScreenScraper)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_MARQUEES,
+   "Marquee (ScreenScraper)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_VIDEOS,
+   "Video Snap (ScreenScraper)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCROLL_NORMAL,
@@ -32575,6 +32601,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_PREEMPT_FAILED_TO_LOAD_STATE,
    "Failed to load state. Preemptive Frames has been disabled."
+   )
+MSG_HASH(
+   MSG_SCREENSCRAPER_QUOTA_PAUSED,
+   "ScreenScraper daily requests used up. Scraping paused; it resumes automatically once the allowance refreshes."
+   )
+MSG_HASH(
+   MSG_SCREENSCRAPER_QUOTA_RESUMED,
+   "ScreenScraper allowance refreshed. Resuming the paused scrape."
    )
 MSG_HASH(
    MSG_SCANNING_OF_FILE_FINISHED,

@@ -75,6 +75,9 @@
 #include "../../tasks/task_content.h"
 #include "../../tasks/task_file_transfer.h"
 #include "../../tasks/tasks_internal.h"
+#ifdef HAVE_NETWORKING
+#include "../../network/screenscraper.h"
+#endif
 #include "../../input/input_remapping.h"
 #include "../../paths.h"
 #include "../../playlist.h"
@@ -504,6 +507,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_PLAYLIST_MANAGER_SETTINGS;
       case ACTION_OK_DL_ACCOUNTS_CHEEVOS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_CHEEVOS_LIST;
+      case ACTION_OK_DL_ACCOUNTS_SCREENSCRAPER_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_SCREENSCRAPER_LIST;
       case ACTION_OK_DL_ACCOUNTS_TWITCH_LIST:
          return MENU_ENUM_LABEL_DEFERRED_ACCOUNTS_TWITCH_LIST;
       case ACTION_OK_DL_ACCOUNTS_FACEBOOK_LIST:
@@ -1853,6 +1858,7 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_PLAYLIST_MANAGER_SETTINGS:
       case ACTION_OK_DL_ACCOUNTS_CHEEVOS_LIST:
       case ACTION_OK_DL_ACCOUNTS_YOUTUBE_LIST:
+      case ACTION_OK_DL_ACCOUNTS_SCREENSCRAPER_LIST:
       case ACTION_OK_DL_ACCOUNTS_TWITCH_LIST:
       case ACTION_OK_DL_ACCOUNTS_FACEBOOK_LIST:
       case ACTION_OK_DL_ACCOUNTS_KICK_LIST:
@@ -6894,6 +6900,7 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_smb_client_settings_list, ACTION_OK
 #endif
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_user_binds_list, ACTION_OK_DL_USER_BINDS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_accounts_cheevos_list, ACTION_OK_DL_ACCOUNTS_CHEEVOS_LIST)
+STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_accounts_screenscraper_list, ACTION_OK_DL_ACCOUNTS_SCREENSCRAPER_LIST)
 #ifdef HAVE_LAKKA
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_eject_disc, ACTION_OK_DL_EJECT_DISC)
 #endif
@@ -9051,8 +9058,15 @@ static int action_ok_pl_content_thumbnails(const char *path,
                sizeof(playlist_path));
          playlist_config_set_path(&playlist_config, playlist_path);
 
-         task_push_pl_thumbnail_download(path, &playlist_config,
-               path_dir_thumbnails);
+         /* While signed in to ScreenScraper it acts as the primary
+          * scraper (with the libretro server as per-item fallback,
+          * ordered by the scraper-order setting) */
+         if (screenscraper_signed_in())
+            task_push_pl_screenscraper(path, &playlist_config,
+                  path_dir_thumbnails);
+         else
+            task_push_pl_thumbnail_download(path, &playlist_config,
+                  path_dir_thumbnails);
 
          return 0;
       }
@@ -9103,6 +9117,28 @@ static int action_ok_playlist_clean(const char *path,
    task_push_pl_manager_clean_playlist(playlist_config);
    return 0;
 }
+
+#ifdef HAVE_NETWORKING
+static int action_ok_playlist_screenscraper(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   char system[NAME_MAX_LENGTH];
+   playlist_t *playlist               = playlist_get_cached();
+   playlist_config_t *playlist_config = NULL;
+   settings_t *settings               = config_get_ptr();
+   if (!playlist || !settings)
+      return -1;
+   playlist_config = playlist_get_config(playlist);
+   if (!playlist_config || !*playlist_config->path)
+      return -1;
+   /* System name: playlist file name without extension */
+   fill_pathname(system,
+         path_basename(playlist_config->path), "", sizeof(system));
+   task_push_pl_screenscraper(system, playlist_config,
+         settings->paths.directory_thumbnails);
+   return 0;
+}
+#endif
 
 static int action_ok_playlist_refresh(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -9544,8 +9580,14 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_SETTINGS,           action_ok_push_playlist_manager_settings},
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_RESET_CORES,        action_ok_playlist_reset_cores},
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST,     action_ok_playlist_clean},
+#ifdef HAVE_NETWORKING
+         {MENU_ENUM_LABEL_PLAYLIST_MANAGER_SCREENSCRAPER,      action_ok_playlist_screenscraper},
+#endif
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,   action_ok_playlist_refresh},
          {MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,         action_ok_push_accounts_cheevos_list},
+#ifdef HAVE_NETWORKING
+         {MENU_ENUM_LABEL_ACCOUNTS_SCREENSCRAPER,              action_ok_push_accounts_screenscraper_list},
+#endif
 #ifdef HAVE_LAKKA
          {MENU_ENUM_LABEL_EJECT_DISC,                          action_ok_push_eject_disc},
 #endif
@@ -9678,6 +9720,9 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_STREAM_CONFIG,                       action_ok_stream_configfile},
          {MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET,              action_ok_rgui_menu_theme_preset},
          {MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,         action_ok_push_accounts_cheevos_list},
+#ifdef HAVE_NETWORKING
+         {MENU_ENUM_LABEL_ACCOUNTS_SCREENSCRAPER,              action_ok_push_accounts_screenscraper_list},
+#endif
          {MENU_ENUM_LABEL_FAVORITES,                           action_ok_push_content_list},
          {MENU_ENUM_LABEL_DOWNLOADED_FILE_DETECT_CORE_LIST,    action_ok_push_downloads_dir},
          {MENU_ENUM_LABEL_DETECT_CORE_LIST_OK,                 action_ok_file_load_detect_core},

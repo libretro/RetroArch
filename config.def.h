@@ -739,6 +739,8 @@
 #define DEFAULT_OZONE_COLLAPSE_SIDEBAR false
 #define DEFAULT_OZONE_SHOW_SIDEBAR true
 #define DEFAULT_OZONE_SCROLL_CONTENT_METADATA false
+/* 0 == OZONE_METADATA_SCROLL_HORIZONTAL, i.e. upstream behaviour */
+#define DEFAULT_OZONE_METADATA_SCROLL_STYLE 0
 #define DEFAULT_OZONE_THUMBNAIL_SCALE_FACTOR 1.0f
 #define DEFAULT_OZONE_FONT_SCALE 0
 #define DEFAULT_OZONE_FONT_SCALE_FACTOR_GLOBAL 1.0f
@@ -1581,6 +1583,11 @@
 #define DEFAULT_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE 1
 
 #define DEFAULT_NETWORK_ON_DEMAND_THUMBNAILS false
+
+/* Default state for the classic thumbnail media types */
+#define DEFAULT_SCREENSCRAPER_MEDIA_ON true
+/* Default state for the extended media types (videos, manuals, ...) */
+#define DEFAULT_SCREENSCRAPER_MEDIA_OFF false
 
 /* Number of entries that will be kept in content history playlist file. */
 #define DEFAULT_CONTENT_HISTORY_SIZE 200

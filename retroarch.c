@@ -6553,6 +6553,11 @@ int rarch_main(int argc, char *argv[], void *data)
    if (settings->uints.cloud_sync_sync_mode == CLOUD_SYNC_MODE_AUTOMATIC)
       task_push_cloud_sync();
 #endif
+#if defined(HAVE_NETWORKING) && defined(HAVE_MENU)
+   /* A scrape halted by the ScreenScraper request allowance resumes
+    * here, once the service confirms the allowance has refreshed */
+   task_push_screenscraper_resume_check();
+#endif
 #ifdef HAVE_LAKKA
    sd_notify(0, "READY=1");
 #endif

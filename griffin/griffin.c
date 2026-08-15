@@ -1392,6 +1392,8 @@ NETPLAY
 #endif
 #include "../tasks/task_netplay_find_content.c"
 #include "../tasks/task_pl_thumbnail_download.c"
+#include "../network/screenscraper.c"
+#include "../tasks/task_screenscraper.c"
 #endif
 
 /*============================================================
@@ -1446,6 +1448,11 @@ SCREENSHOTS
 PLAYLISTS
 ============================================================ */
 #include "../playlist.c"
+
+/*============================================================
+SCREENSCRAPER (display half - reads local sidecars, no network)
+============================================================ */
+#include "../network/screenscraper_meta.c"
 
 /*============================================================
 MENU

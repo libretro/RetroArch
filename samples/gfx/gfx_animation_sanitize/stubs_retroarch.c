@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/* The only two frontend symbols gfx/gfx_animation.c reaches for.
+/* The frontend symbols gfx/gfx_animation.c reaches for.
  *
  * The smooth ticker takes either a font_data_t or, when that is NULL,
  * a fixed glyph_width; the test passes NULL so the width path is the
@@ -43,4 +43,9 @@ unsigned font_driver_get_generation(void *font)
 {
    (void)font;
    return 0;
+}
+
+const char *msg_hash_get_wideglyph_str(void)
+{
+   return NULL;
 }
