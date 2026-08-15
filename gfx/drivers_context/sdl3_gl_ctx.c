@@ -181,10 +181,11 @@ static bool sdl3_ctx_set_video_mode(void *data,
    if (!sdl->win)
    {
 #ifdef GL_DEBUG
-      bool debug = true;
+      SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 #else
       struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
-      bool debug = hwr && hwr->debug_context;
+      if (hwr && hwr->debug_context)
+         SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 #endif
 
       if (sdl3_gl_api == GFX_CTX_OPENGL_ES_API)
@@ -199,9 +200,6 @@ static bool sdl3_ctx_set_video_mode(void *data,
          SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, sdl3_gl_major);
          SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, sdl3_gl_minor);
       }
-
-      if (debug)
-         SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
    }
 
    if (!sdl3_window_set_video_mode(&sdl->win, width, height, fullscreen, SDL_WINDOW_OPENGL))
