@@ -80,7 +80,6 @@ typedef struct rxml_parse_error
    unsigned col;    /* 1-based, in bytes */
 } rxml_parse_error_t;
 
-rxml_document_t *rxml_load_document(const char *path);
 rxml_document_t *rxml_load_document_string(const char *str);
 
 /* As rxml_load_document_string, but takes ownership of @buf - a heap
