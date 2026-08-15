@@ -339,76 +339,119 @@ enum
    APP_CMD_REINIT_DONE
 };
 
+/* Every macro below is wrapped in do/while(0). Without it the trailing
+ * JNI_EXCEPTION escapes any unbraced guard at the call site, so
+ *
+ *    if (env != NULL)
+ *       CALL_BOOLEAN_METHOD(env, ...);
+ *
+ * expanded to a guarded call followed by an *unguarded* exception check
+ * that dereferences env regardless - a null dereference on exactly the
+ * path the guard existed to protect. */
 #define JNI_EXCEPTION(env) \
-   if ((*env)->ExceptionOccurred(env)) \
-   { \
-      (*env)->ExceptionDescribe(env); \
-      (*env)->ExceptionClear(env); \
-   }
+   do { \
+      if ((*env)->ExceptionOccurred(env)) \
+      { \
+         (*env)->ExceptionDescribe(env); \
+         (*env)->ExceptionClear(env); \
+      } \
+   } while (0)
 
 #define FIND_CLASS(env, var, classname) \
-   var = (*env)->FindClass(env, classname); \
-   JNI_EXCEPTION(env)
+   do { \
+      var = (*env)->FindClass(env, classname); \
+      JNI_EXCEPTION(env); \
+   } while (0)
 
 #define GET_OBJECT_CLASS(env, var, clazz_obj) \
-   var = (*env)->GetObjectClass(env, clazz_obj); \
-   JNI_EXCEPTION(env)
+   do { \
+      var = (*env)->GetObjectClass(env, clazz_obj); \
+      JNI_EXCEPTION(env); \
+   } while (0)
 
 #define GET_FIELD_ID(env, var, clazz, fieldName, fieldDescriptor) \
-   var = (*env)->GetFieldID(env, clazz, fieldName, fieldDescriptor); \
-   JNI_EXCEPTION(env)
+   do { \
+      var = (*env)->GetFieldID(env, clazz, fieldName, fieldDescriptor); \
+      JNI_EXCEPTION(env); \
+   } while (0)
 
 #define GET_METHOD_ID(env, var, clazz, methodName, fieldDescriptor) \
-   var = (*env)->GetMethodID(env, clazz, methodName, fieldDescriptor); \
-   JNI_EXCEPTION(env)
+   do { \
+      var = (*env)->GetMethodID(env, clazz, methodName, fieldDescriptor); \
+      JNI_EXCEPTION(env); \
+   } while (0)
 
 #define GET_STATIC_METHOD_ID(env, var, clazz, methodName, fieldDescriptor) \
-   var = (*env)->GetStaticMethodID(env, clazz, methodName, fieldDescriptor); \
-   JNI_EXCEPTION(env)
+   do { \
+      var = (*env)->GetStaticMethodID(env, clazz, methodName, fieldDescriptor); \
+      JNI_EXCEPTION(env); \
+   } while (0)
 
 #define CALL_OBJ_METHOD(env, var, clazz_obj, methodId) \
-   var = (*env)->CallObjectMethod(env, clazz_obj, methodId); \
-   JNI_EXCEPTION(env)
+   do { \
+      var = (*env)->CallObjectMethod(env, clazz_obj, methodId); \
+      JNI_EXCEPTION(env); \
+   } while (0)
 
 #define CALL_OBJ_STATIC_METHOD(env, var, clazz, methodId) \
-   var = (*env)->CallStaticObjectMethod(env, clazz, methodId); \
-   JNI_EXCEPTION(env)
+   do { \
+      var = (*env)->CallStaticObjectMethod(env, clazz, methodId); \
+      JNI_EXCEPTION(env); \
+   } while (0)
 
 #define CALL_OBJ_STATIC_METHOD_PARAM(env, var, clazz, methodId, ...) \
-   var = (*env)->CallStaticObjectMethod(env, clazz, methodId, __VA_ARGS__); \
-   JNI_EXCEPTION(env)
+   do { \
+      var = (*env)->CallStaticObjectMethod(env, clazz, methodId, __VA_ARGS__); \
+      JNI_EXCEPTION(env); \
+   } while (0)
 
 #define CALL_OBJ_METHOD_PARAM(env, var, clazz_obj, methodId, ...) \
-   var = (*env)->CallObjectMethod(env, clazz_obj, methodId, __VA_ARGS__); \
-   JNI_EXCEPTION(env)
+   do { \
+      var = (*env)->CallObjectMethod(env, clazz_obj, methodId, __VA_ARGS__); \
+      JNI_EXCEPTION(env); \
+   } while (0)
 
 #define CALL_VOID_METHOD(env, clazz_obj, methodId) \
-   (*env)->CallVoidMethod(env, clazz_obj, methodId); \
-   JNI_EXCEPTION(env)
+   do { \
+      (*env)->CallVoidMethod(env, clazz_obj, methodId); \
+      JNI_EXCEPTION(env); \
+   } while (0)
 
 #define CALL_VOID_METHOD_PARAM(env, clazz_obj, methodId, ...) \
-   (*env)->CallVoidMethod(env, clazz_obj, methodId, __VA_ARGS__); \
-   JNI_EXCEPTION(env)
+   do { \
+      (*env)->CallVoidMethod(env, clazz_obj, methodId, __VA_ARGS__); \
+      JNI_EXCEPTION(env); \
+   } while (0)
 
 #define CALL_BOOLEAN_METHOD(env, var, clazz_obj, methodId) \
-   var = (*env)->CallBooleanMethod(env, clazz_obj, methodId); \
-   JNI_EXCEPTION(env)
+   do { \
+      var = (*env)->CallBooleanMethod(env, clazz_obj, methodId); \
+      JNI_EXCEPTION(env); \
+   } while (0)
 
 #define CALL_BOOLEAN_METHOD_PARAM(env, var, clazz_obj, methodId, ...) \
-   var = (*env)->CallBooleanMethod(env, clazz_obj, methodId, __VA_ARGS__); \
-   JNI_EXCEPTION(env)
+   do { \
+      var = (*env)->CallBooleanMethod(env, clazz_obj, methodId, __VA_ARGS__); \
+      JNI_EXCEPTION(env); \
+   } while (0)
 
 #define CALL_DOUBLE_METHOD(env, var, clazz_obj, methodId) \
-   var = (*env)->CallDoubleMethod(env, clazz_obj, methodId); \
-   JNI_EXCEPTION(env)
+   do { \
+      var = (*env)->CallDoubleMethod(env, clazz_obj, methodId); \
+      JNI_EXCEPTION(env); \
+   } while (0)
 
 #define CALL_INT_METHOD(env, var, clazz_obj, methodId) \
-   var = (*env)->CallIntMethod(env, clazz_obj, methodId); \
-   JNI_EXCEPTION(env)
+   do { \
+      var = (*env)->CallIntMethod(env, clazz_obj, methodId); \
+      JNI_EXCEPTION(env); \
+   } while (0)
 
 #define CALL_INT_METHOD_PARAM(env, var, clazz_obj, methodId, ...) \
-   var = (*env)->CallIntMethod(env, clazz_obj, methodId, __VA_ARGS__); \
-   JNI_EXCEPTION(env)
+   do { \
+      var = (*env)->CallIntMethod(env, clazz_obj, methodId, __VA_ARGS__); \
+      JNI_EXCEPTION(env); \
+   } while (0)
 
 extern JNIEnv *jni_thread_getenv(void);
 
