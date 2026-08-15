@@ -2674,7 +2674,17 @@ static void rvp9_past_independence(rvp9_dec *d)
       d->frame_ctxs_init = 1;
    }
    else if (d->hd.reset_frame_context == 2)
+   {
+      /* Only the context this frame names is reset.  That context is
+       * the one the frame is about to load, so it is now valid even
+       * though no key frame has been seen - a stream may legitimately
+       * open on an intra-only frame carrying reset_frame_context 2
+       * (the vp90-2-16-intra-only vector does exactly that).  The
+       * remaining three stay as they were, zeroed by the decoder's
+       * calloc, matching libvpx's calloc'd cm->frame_contexts. */
       d->frame_ctxs[d->hd.frame_context_idx] = d->fc;
+      d->frame_ctxs_init = 1;
+   }
 }
 
 /* Probability adaptation (backward), vp9_adapt_*_probs. */
