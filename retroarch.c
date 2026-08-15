@@ -4600,10 +4600,7 @@ bool command_event(enum event_command cmd, void *data)
                   && (runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING)
                   && !(runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
                   && settings->bools.savestate_auto_save)
-            {
                command_event_save_auto_state();
-               content_wait_for_save_state_task();
-            }
 
             /* Wait for any in-flight save / load state tasks before
              * tearing down the core. Both task_save_handler and
@@ -4614,11 +4611,14 @@ bool command_event(enum event_command cmd, void *data)
              * runloop_event_deinit_core runs uninit_libretro_symbols,
              * the worker dispatches into a closed dylib.
              *
-             * The autosave_auto_save wait above only covers the
-             * auto-state save we just kicked off; it does not cover
-             * a manually-triggered save state task (menu / hotkey /
-             * netplay) that was already in flight when the user
-             * closed content with savestate_auto_save disabled. */
+             * This covers the auto-state save conditionally kicked
+             * off just above as well: it runs unconditionally,
+             * against the same condition, with nothing in between
+             * that can push a task, so the auto-save path needs no
+             * wait of its own. It also covers what that one could
+             * not - a manually triggered save (menu / hotkey /
+             * netplay) already in flight when the user closed
+             * content with savestate_auto_save disabled. */
             content_wait_for_save_state_task();
             content_wait_for_load_state_task();
 
