@@ -25,6 +25,7 @@
 #include <lists/string_list.h>
 #include <file/file_path.h>
 #include <formats/rm3u.h>
+#include <formats/rm3u_stream.h>
 
 #include "tasks_internal.h"
 
@@ -584,7 +585,7 @@ static void task_pl_manager_clean_playlist_handler(retro_task_t *task)
             {
                /* If this is an M3U file, add it to the
                 * M3U list for later processing */
-               if (rm3u_is_m3u(entry->path))
+               if (rm3u_is_m3u_filestream(entry->path))
                {
                   union string_list_elem_attr attr;
                   attr.i = 0;
@@ -623,7 +624,7 @@ static void task_pl_manager_clean_playlist_handler(retro_task_t *task)
                task_set_progress(task, (pl_manager->m3u_index * 100) / pl_manager->m3u_list->size);
 
                /* Load M3U file */
-               m3u = rm3u_init(m3u_path);
+               m3u = rm3u_load_filestream(m3u_path);
 
                if (m3u)
                {

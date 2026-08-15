@@ -31,7 +31,14 @@
 
 RETRO_BEGIN_DECLS
 
-/* Trivial handler for M3U playlist files */
+/* Trivial handler for M3U playlist files.
+ *
+ * The codec performs no file I/O and imposes none: contents parse
+ * from a caller-supplied buffer (rm3u_parse) and render to a
+ * caller-owned string (rm3u_dump); how the bytes are read or
+ * written is the caller's decision.  formats/rm3u_stream.h is that
+ * decision made for filestream, reproducing the old load/save
+ * behaviour as opt-in adapters. */
 
 /* M3U file extension */
 #define RM3U_EXT "m3u"
@@ -59,15 +66,20 @@ enum rm3u_label_type
 
 /* File Initialisation / De-Initialisation */
 
-/* Creates and initialises an M3U file
- * - If 'path' refers to an existing file,
- *   contents is parsed
- * - If path does not exist, an empty M3U file
- *   is created
+/* Creates an empty M3U handle for 'path'.  No file I/O occurs;
+ * feed existing contents through rm3u_parse()
  * - Returned rm3u_t object must be free'd using
  *   rm3u_free()
  * - Returns NULL in the event of an error */
 rm3u_t *rm3u_init(const char *path);
+
+/* Parses M3U data from 'data' (a NUL-terminated buffer the caller
+ * read however it likes) and appends the entries to 'm3u'.  The
+ * buffer is borrowed: nothing points into it afterwards.
+ * - NULL 'data' is an empty playlist, not an error
+ * - Returns false only on allocation failure, after which the
+ *   handle must be considered invalid */
+bool rm3u_parse(rm3u_t *m3u, const char *data);
 
 /* Frees specified M3U file */
 void rm3u_free(rm3u_t *m3u);
@@ -100,21 +112,27 @@ void rm3u_clear(rm3u_t *m3u);
 
 /* Saving */
 
-/* Saves M3U file to disk
+/* Renders the M3U file contents as a single heap string - the
+ * exact bytes the old per-line writer produced - so the caller
+ * writes the whole file with one I/O operation
  * - Setting 'label_type' to RM3U_LABEL_NONE
  *   just outputs entry paths - this the most
  *   common format supported by most cores
- * - Returns false in the event of an error */
-bool rm3u_save(
-      rm3u_t *m3u, enum rm3u_label_type label_type);
+ * - When 'out_len' is non-NULL it receives the string length
+ * - Returns NULL if there is nothing to write or on allocation
+ *   failure; the caller frees the result */
+char *rm3u_dump(rm3u_t *m3u,
+      enum rm3u_label_type label_type, size_t *out_len);
 
 /* Utilities */
 
 /* Sorts M3U file entries in alphabetical order */
 void rm3u_qsort(rm3u_t *m3u);
 
-/* Returns true if specified path corresponds
- * to an M3U file (simple convenience function) */
+/* Returns true if specified path names an M3U file by extension.
+ * A pure string check - whether the file exists is the caller's
+ * question (rm3u_is_m3u_filestream() in formats/rm3u_stream.h
+ * answers it with a single stat) */
 bool rm3u_is_m3u(const char *path);
 
 RETRO_END_DECLS

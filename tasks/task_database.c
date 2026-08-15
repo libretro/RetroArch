@@ -26,6 +26,7 @@
 #include <file/file_path.h>
 #include <formats/logiqx_dat.h>
 #include <formats/rm3u.h>
+#include <formats/rm3u_stream.h>
 #include <encodings/crc32.h>
 #include <streams/interface_stream.h>
 #include <streams/file_stream.h>
@@ -670,7 +671,7 @@ static void task_database_iterate_m3u(
    collapsed_title[0] = '\0';
 
    /* Open M3U file */
-   if (!(m3u = rm3u_init(m3u_path)))
+   if (!(m3u = rm3u_load_filestream(m3u_path)))
    {
       RARCH_ERR("[Scanner] Failed to open M3U file: \"%s\".\n", m3u_path);
       return;
@@ -2157,7 +2158,7 @@ static bool manual_scan_end_flush_tick(
       /* ...except for M3U, since the processing occurs at the end,
          we overwrite any previous m3u entry (which has same file,
          but less descriptive label, database, crc */
-      is_m3u        = rm3u_is_m3u(result->entry_path);
+      is_m3u        = rm3u_is_m3u_filestream(result->entry_path);
       /* will_add records the path as present exactly when this
        * result is pushed below: when absent (the push is
        * unconditional), and in the m3u-present case the path
@@ -3190,7 +3191,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                   manual_scan->content_list_index].data;
 
             /* Check if this is an M3U file and add to list for post-processing */
-            if (rm3u_is_m3u(content_path))
+            if (rm3u_is_m3u_filestream(content_path))
             {
                union string_list_elem_attr attr;
                attr.i = 0;
@@ -3355,7 +3356,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                }
                /* If this is an M3U file, add it to the
                 * M3U list for later processing */
-               if (rm3u_is_m3u(content_path))
+               if (rm3u_is_m3u_filestream(content_path))
                {
                   union string_list_elem_attr attr;
                   attr.i = 0;

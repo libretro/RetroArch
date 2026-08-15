@@ -28,7 +28,7 @@
  * relative and absolute entry paths (resolved against the playlist
  * location), Windows line endings (trailing whitespace including the
  * carriage return is trimmed), and saving back out in a chosen label
- * style via rm3u_save.
+ * style via rm3u_dump.
  *
  * What it does not implement: other extended directives (#EXTM3U,
  * #EXTGRP, #PLAYLIST and friends are treated as comments and dropped -
@@ -39,9 +39,7 @@
 #include <retro_miscellaneous.h>
 
 #include <string/stdstring.h>
-#include <lists/string_list.h>
 #include <file/file_path.h>
-#include <streams/file_stream.h>
 #include <array/rbuf.h>
 
 #include <formats/rm3u.h>
@@ -69,151 +67,109 @@ struct rm3u
 
 /* File Initialisation / De-Initialisation */
 
-/* Reads M3U file contents from disk
- * - Does nothing if file does not exist
- * - Returns false in the event of an error */
-static bool rm3u_load(rm3u_t *m3u)
+/* Parses M3U data from a caller-supplied buffer.
+ * A single bounded pass over the lines: no intermediate line list,
+ * no per-line heap allocation - the only allocations are the
+ * entries themselves. */
+bool rm3u_parse(rm3u_t *m3u, const char *data)
 {
-   size_t i;
    char entry_label[NAME_MAX_LENGTH];
    char entry_path[PATH_MAX_LENGTH];
-   const char *file_ext      = NULL;
-   int64_t file_len          = 0;
-   uint8_t *file_buf         = NULL;
-   struct string_list *lines = NULL;
-   bool success              = false;
+   const char *line = data;
 
    entry_path[0]  = '\0';
    entry_label[0] = '\0';
 
    if (!m3u)
-      goto end;
+      return false;
 
-   /* Check whether file exists
-    * > If path is empty, then an error
-    *   has occurred... */
-   if (!m3u->path || !*m3u->path)
-      goto end;
+   /* No data is an empty playlist, not an error */
+   if (!data)
+      return true;
 
-   /* > File must have the correct extension */
-   file_ext = path_get_extension(m3u->path);
-
-   if (    (!file_ext || !*file_ext)
-       || !string_is_equal_noncase(file_ext, RM3U_EXT))
-      goto end;
-
-   /* > If file does not exist, no action
-    *   is required */
-   if (!path_is_valid(m3u->path))
+   while (*line)
    {
-      success = true;
-      goto end;
-   }
+      const char *line_end = strchr(line, '\n');
+      size_t line_len      = line_end
+            ? (size_t)(line_end - line) : strlen(line);
 
-   /* Read file from disk */
-   if (filestream_read_file(m3u->path, (void**)&file_buf, &file_len) >= 0)
-   {
-      /* Split file into lines */
-      if (file_len > 0)
-         lines = string_split((const char*)file_buf, "\n");
-
-      /* File buffer no longer required */
-      if (file_buf)
+      if (line_len == 0)
       {
-         free(file_buf);
-         file_buf = NULL;
-      }
-   }
-   /* File IO error... */
-   else
-      goto end;
-
-   /* If file was empty, no action is required */
-   if (!lines)
-   {
-      success = true;
-      goto end;
-   }
-
-   /* Parse lines of file */
-   for (i = 0; i < lines->size; i++)
-   {
-      const char *line = lines->elems[i].data;
-
-      if (!line || !*line)
+         line = line_end ? line_end + 1 : line + line_len;
          continue;
+      }
 
       /* Determine line 'type' */
 
       /* > '#LABEL:' */
-      if (string_starts_with_size(line, RM3U_NONSTD_LABEL,
-            STRLEN_CONST(RM3U_NONSTD_LABEL)))
+      if (    line_len > STRLEN_CONST(RM3U_NONSTD_LABEL)
+          && string_starts_with_size(line, RM3U_NONSTD_LABEL,
+               STRLEN_CONST(RM3U_NONSTD_LABEL)))
       {
-         /* Label is the string to the right
-          * of '#LABEL:' */
-         const char *label = line + STRLEN_CONST(RM3U_NONSTD_LABEL);
+         /* Label is the string to the right of '#LABEL:' */
+         const char *seg = line + STRLEN_CONST(RM3U_NONSTD_LABEL);
+         size_t seg_len  = line_len - STRLEN_CONST(RM3U_NONSTD_LABEL);
+         size_t n        = (seg_len < sizeof(entry_label) - 1)
+               ? seg_len : sizeof(entry_label) - 1;
+         memcpy(entry_label, seg, n);
+         entry_label[n]  = '\0';
+         string_trim_whitespace_right(entry_label);
+         string_trim_whitespace_left(entry_label);
+      }
+      /* > '#EXTINF:' */
+      else if (    line_len > STRLEN_CONST(RM3U_EXTSTD_LABEL)
+               && string_starts_with_size(line, RM3U_EXTSTD_LABEL,
+                    STRLEN_CONST(RM3U_EXTSTD_LABEL)))
+      {
+         /* Label is the string to the right of the first comma */
+         const char *seg = line + STRLEN_CONST(RM3U_EXTSTD_LABEL);
+         size_t seg_len  = line_len - STRLEN_CONST(RM3U_EXTSTD_LABEL);
+         const char *label_ptr = (const char*)memchr(seg,
+               RM3U_EXTSTD_LABEL_TOKEN, seg_len);
 
-         if (label && *label)
+         if (label_ptr && (size_t)(label_ptr + 1 - seg) < seg_len)
          {
-            strlcpy(
-                  entry_label, line + STRLEN_CONST(RM3U_NONSTD_LABEL),
-                  sizeof(entry_label));
+            size_t label_len = seg_len - (size_t)(label_ptr + 1 - seg);
+            size_t n         = (label_len < sizeof(entry_label) - 1)
+                  ? label_len : sizeof(entry_label) - 1;
+            memcpy(entry_label, label_ptr + 1, n);
+            entry_label[n]   = '\0';
             string_trim_whitespace_right(entry_label);
             string_trim_whitespace_left(entry_label);
          }
       }
-      /* > '#EXTINF:' */
-      else if (string_starts_with_size(line, RM3U_EXTSTD_LABEL,
-            STRLEN_CONST(RM3U_EXTSTD_LABEL)))
-      {
-         /* Label is the string to the right
-          * of the first comma */
-         const char* label_ptr = strchr(
-               line + STRLEN_CONST(RM3U_EXTSTD_LABEL),
-               RM3U_EXTSTD_LABEL_TOKEN);
-
-         if (label_ptr && *label_ptr)
-         {
-            label_ptr++;
-            if (label_ptr && *label_ptr)
-            {
-               strlcpy(entry_label, label_ptr, sizeof(entry_label));
-               string_trim_whitespace_right(entry_label);
-               string_trim_whitespace_left(entry_label);
-            }
-         }
-      }
       /* > Ignore other comments/directives */
       else if (line[0] == RM3U_COMMENT)
-         continue;
+         ;
       /* > An actual 'content' line */
       else
       {
          /* This is normally a file name/path, but may
           * have the format <content path>|<label> */
-         const char *token_ptr = strchr(line, RM3U_RETRO_LABEL_TOKEN);
+         const char *token_ptr = (const char*)memchr(line,
+               RM3U_RETRO_LABEL_TOKEN, line_len);
 
          if (token_ptr)
          {
-            size_t _len = (size_t)(1 + token_ptr - line);
+            size_t path_len = (size_t)(token_ptr - line);
+            size_t n        = (path_len < sizeof(entry_path) - 1)
+                  ? path_len : sizeof(entry_path) - 1;
 
             /* Get entry_path segment */
-            if (_len > 0)
-            {
-               memset(entry_path, 0, sizeof(entry_path));
-               strlcpy(
-                     entry_path, line,
-                     ((_len < PATH_MAX_LENGTH ?
-                       _len : PATH_MAX_LENGTH) * sizeof(char)));
-               string_trim_whitespace_right(entry_path);
-               string_trim_whitespace_left(entry_path);
-            }
+            memcpy(entry_path, line, n);
+            entry_path[n]   = '\0';
+            string_trim_whitespace_right(entry_path);
+            string_trim_whitespace_left(entry_path);
 
             /* Get entry_label segment */
-            token_ptr++;
-            if (*token_ptr != '\0')
+            if ((size_t)(token_ptr + 1 - line) < line_len)
             {
-               strlcpy(entry_label, token_ptr, sizeof(entry_label));
+               size_t label_len = line_len
+                     - (size_t)(token_ptr + 1 - line);
+               n                = (label_len < sizeof(entry_label) - 1)
+                     ? label_len : sizeof(entry_label) - 1;
+               memcpy(entry_label, token_ptr + 1, n);
+               entry_label[n]   = '\0';
                string_trim_whitespace_right(entry_label);
                string_trim_whitespace_left(entry_label);
             }
@@ -221,7 +177,10 @@ static bool rm3u_load(rm3u_t *m3u)
          else
          {
             /* Just a normal file name/path */
-            strlcpy(entry_path, line, sizeof(entry_path));
+            size_t n      = (line_len < sizeof(entry_path) - 1)
+                  ? line_len : sizeof(entry_path) - 1;
+            memcpy(entry_path, line, n);
+            entry_path[n] = '\0';
             string_trim_whitespace_right(entry_path);
             string_trim_whitespace_left(entry_path);
          }
@@ -233,40 +192,25 @@ static bool rm3u_load(rm3u_t *m3u)
           *   be considered invalid in this case */
          if (*entry_path
              && !rm3u_add_entry(m3u, entry_path, entry_label))
-            goto end;
+            return false;
 
          /* Reset entry_path/entry_label */
          entry_path[0]  = '\0';
          entry_label[0] = '\0';
       }
+
+      line = line_end ? line_end + 1 : line + line_len;
    }
 
-   success = true;
-
-end:
-   /* Clean up */
-   if (lines)
-   {
-      string_list_free(lines);
-      lines = NULL;
-   }
-
-   if (file_buf)
-   {
-      free(file_buf);
-      file_buf = NULL;
-   }
-
-   return success;
+   return true;
 }
 
-/* Creates and initialises an M3U file
- * - If 'path' refers to an existing file,
- *   contents is parsed
- * - If path does not exist, an empty M3U file
- *   is created
- * - Returned rm3u_t object must be free'd using
- *   rm3u_free()
+/* Creates an empty M3U handle for @path.  No file I/O occurs:
+ * feed existing contents through rm3u_parse(), render for writing
+ * with rm3u_dump() - or use the filestream adapters in
+ * formats/rm3u_stream.h, which reproduce the old load/save
+ * behaviour.
+ * - Returned rm3u_t object must be free'd using rm3u_free()
  * - Returns NULL in the event of an error */
 rm3u_t *rm3u_init(const char *path)
 {
@@ -293,13 +237,9 @@ rm3u_t *rm3u_init(const char *path)
    m3u->entries = NULL;
 
    /* Copy file path */
-   m3u->path    = strdup(m3u_path);
-
-   /* Read existing file contents from
-    * disk, if required */
-   if (!rm3u_load(m3u))
+   if (!(m3u->path = strdup(m3u_path)))
    {
-      rm3u_free(m3u);
+      free(m3u);
       return NULL;
    }
 
@@ -477,24 +417,28 @@ void rm3u_clear(rm3u_t *m3u)
 
 /* Saving */
 
-/* Saves M3U file to disk
- * - Setting 'label_type' to RM3U_LABEL_NONE
- *   just outputs entry paths - this the most
- *   common format supported by most cores
- * - Returns false in the event of an error */
-bool rm3u_save(
-      rm3u_t *m3u, enum rm3u_label_type label_type)
+/* Renders the M3U file contents as a single heap string
+ * (the exact bytes rm3u_save wrote line-by-line before it), so a
+ * caller writes the whole file with one I/O operation instead of
+ * one or two per entry.  Returns NULL if there is nothing to
+ * write or on allocation failure; the caller frees the result.
+ * When @out_len is non-NULL it receives the string length. */
+char *rm3u_dump(rm3u_t *m3u,
+      enum rm3u_label_type label_type, size_t *out_len)
 {
    size_t i;
    char base_dir[DIR_MAX_LENGTH];
-   RFILE *file      = NULL;
+   char scratch[PATH_MAX_LENGTH + NAME_MAX_LENGTH + 16];
+   char *out    = NULL;
+   size_t _len  = 0;
+   size_t cap   = 0;
 
    if (!m3u || !m3u->entries)
-      return false;
+      return NULL;
 
    /* This should never happen */
    if (!m3u->path || !*m3u->path)
-      return false;
+      return NULL;
 
    /* Get M3U file base directory */
    if (find_last_slash(m3u->path))
@@ -502,17 +446,12 @@ bool rm3u_save(
    else
       base_dir[0]   = '\0';
 
-   /* Open file for writing */
-   if (!(file = filestream_open(m3u->path,
-         RETRO_VFS_FILE_ACCESS_WRITE,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE)))
-      return false;
-
    /* Loop over entries */
    for (i = 0; i < RBUF_LEN(m3u->entries); i++)
    {
       rm3u_entry_t *entry = &m3u->entries[i];
       char entry_path[PATH_MAX_LENGTH];
+      size_t line_len;
 
       entry_path[0] = '\0';
 
@@ -533,45 +472,69 @@ bool rm3u_save(
       if (!*entry_path)
          continue;
 
-      /* Check if we need to write a label */
+      /* Format this entry - the format strings are the ones the
+       * per-line writer used, unchanged.  The scratch buffer is
+       * sized for the largest possible line pair, so snprintf
+       * cannot truncate. */
       if (entry->label && *entry->label)
       {
          switch (label_type)
          {
             case RM3U_LABEL_NONSTD:
-               filestream_printf(
-                     file, "%s%s\n%s\n",
+               line_len = (size_t)snprintf(
+                     scratch, sizeof(scratch), "%s%s\n%s\n",
                      RM3U_NONSTD_LABEL, entry->label,
                      entry_path);
                break;
             case RM3U_LABEL_EXTSTD:
-               filestream_printf(
-                     file, "%s%c%s\n%s\n",
+               line_len = (size_t)snprintf(
+                     scratch, sizeof(scratch), "%s%c%s\n%s\n",
                      RM3U_EXTSTD_LABEL, RM3U_EXTSTD_LABEL_TOKEN, entry->label,
                      entry_path);
                break;
             case RM3U_LABEL_RETRO:
-               filestream_printf(
-                     file, "%s%c%s\n",
+               line_len = (size_t)snprintf(
+                     scratch, sizeof(scratch), "%s%c%s\n",
                      entry_path, RM3U_RETRO_LABEL_TOKEN, entry->label);
                break;
             case RM3U_LABEL_NONE:
             default:
-               filestream_printf(
-                     file, "%s\n", entry_path);
+               line_len = (size_t)snprintf(
+                     scratch, sizeof(scratch), "%s\n", entry_path);
                break;
          }
       }
       /* No label - just write entry path */
       else
-         filestream_printf(
-               file, "%s\n", entry_path);
+         line_len = (size_t)snprintf(
+               scratch, sizeof(scratch), "%s\n", entry_path);
+
+      /* Append to the output, growing by doubling */
+      if (_len + line_len + 1 > cap)
+      {
+         char *tmp;
+         size_t new_cap = (cap == 0) ? 512 : cap;
+         while (_len + line_len + 1 > new_cap)
+            new_cap <<= 1;
+         if (!(tmp = (char*)realloc(out, new_cap)))
+         {
+            free(out);
+            return NULL;
+         }
+         out = tmp;
+         cap = new_cap;
+      }
+      memcpy(out + _len, scratch, line_len);
+      _len      += line_len;
+      out[_len]  = '\0';
    }
 
-   /* Close file */
-   filestream_close(file);
+   if (!out)
+      return NULL;   /* every entry filtered out: nothing to write */
 
-   return true;
+   if (out_len)
+      *out_len = _len;
+   return out;
 }
 
 /* Utilities */
@@ -610,22 +573,17 @@ void rm3u_qsort(rm3u_t *m3u)
 
 /* Returns true if specified path corresponds
  * to an M3U file (simple convenience function) */
+/* True when @path names an M3U file by extension.  A pure string
+ * check: whether such a file exists on any filesystem is the
+ * caller's question (rm3u_is_m3u_filestream() in the adapter asks
+ * it with a single stat). */
 bool rm3u_is_m3u(const char *path)
 {
    const char *file_ext = NULL;
    if (!path || !*path)
       return false;
-   /* Check file extension */
    file_ext = path_get_extension(path);
    if (!file_ext || !*file_ext)
       return false;
-   if (!string_is_equal_noncase(file_ext, RM3U_EXT))
-      return false;
-   /* Ensure file exists */
-   if (!path_is_valid(path))
-      return false;
-   /* Ensure we have non-zero file size */
-   if (path_get_size(path) <= 0)
-      return false;
-   return true;
+   return string_is_equal_noncase(file_ext, RM3U_EXT);
 }
