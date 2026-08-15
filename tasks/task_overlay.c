@@ -1455,7 +1455,7 @@ bool task_push_overlay_load_default(
       {
          RARCH_ERR("[Overlay] Failed to read config from archive.\n");
          free(loader);
-         free(image_list);
+         string_list_free(image_list);
          return false;
       }
       RARCH_DBG("[Overlay] Read %lld bytes from archive.\n",
@@ -1466,7 +1466,7 @@ bool task_push_overlay_load_default(
          {
             free(buf);
             free(loader);
-            free(image_list);
+            string_list_free(image_list);
             return false;
          }
          str[buf_len] = '\0';
@@ -1481,7 +1481,7 @@ bool task_push_overlay_load_default(
             {
                free(str);
                free(loader);
-               free(image_list);
+               string_list_free(image_list);
                return false;
             }
             memcpy(loader->conf_archive, overlay_path, archive_len);
@@ -1508,7 +1508,7 @@ bool task_push_overlay_load_default(
    {
       free(loader->conf_archive);
       free(loader);
-      free(image_list);
+      string_list_free(image_list);
       return false;
    }
 
@@ -1518,7 +1518,7 @@ bool task_push_overlay_load_default(
       config_file_free(conf);
       free(loader->conf_archive);
       free(loader);
-      free(image_list);
+      string_list_free(image_list);
       return false;
    }
 
@@ -1530,7 +1530,7 @@ bool task_push_overlay_load_default(
       config_file_free(conf);
       free(loader->conf_archive);
       free(loader);
-      free(image_list);
+      string_list_free(image_list);
       return false;
    }
 
@@ -1553,7 +1553,7 @@ bool task_push_overlay_load_default(
       free(loader->overlays);
       free(loader->conf_archive);
       free(loader);
-      free(image_list);
+      string_list_free(image_list);
       return false;
    }
 
