@@ -632,6 +632,98 @@ static void sdl3_poke_set_filtering(void *data, unsigned index, bool smooth, boo
             smooth ? SDL_SCALEMODE_LINEAR : SDL_SCALEMODE_NEAREST);
 }
 
+/* Retrieves the exclusive full screen display mode of the window, or
+ * NULL when the window is windowed or in borderless full screen. */
+static const SDL_DisplayMode *sdl3_current_video_mode(sdl3_video_t *vid)
+{
+   if (!vid || !vid->window)
+      return NULL;
+   /* SDL_WINDOW_FULLSCREEN covers borderless full screen as well, where
+    * the mode is left at the desktop's and must not be switched. */
+   if (!(SDL_GetWindowFlags(vid->window) & SDL_WINDOW_FULLSCREEN))
+      return NULL;
+   return SDL_GetWindowFullscreenMode(vid->window);
+}
+
+static void sdl3_get_video_output_size(void *data,
+      unsigned *width, unsigned *height, char *desc, size_t desc_len)
+{
+   sdl3_video_t *vid = (sdl3_video_t*)data;
+   const SDL_DisplayMode *mode;
+
+   if (!vid || !vid->window)
+      return;
+
+   if (!(mode = sdl3_current_video_mode(vid)))
+   {
+      int w = 0, h = 0;
+      SDL_GetWindowSizeInPixels(vid->window, &w, &h);
+      *width  = (unsigned)w;
+      *height = (unsigned)h;
+      return;
+   }
+
+   *width  = (unsigned)mode->w;
+   *height = (unsigned)mode->h;
+   SDL_snprintf(desc, desc_len, "%.2f Hz", mode->refresh_rate);
+}
+
+/* Switch the display's fullscreen mode to the next one in the list. */
+static void sdl3_cycle_video_mode(sdl3_video_t *vid, int dir)
+{
+   int i;
+   int count = 0;
+   int index = 0;
+   const SDL_DisplayMode *current = NULL;
+   const SDL_DisplayMode *target = NULL;
+   SDL_DisplayMode **modes = NULL;
+   SDL_DisplayID display;
+
+   if (!(current = sdl3_current_video_mode(vid)))
+      return;
+   if (!(display = SDL_GetDisplayForWindow(vid->window)))
+      return;
+
+   modes = SDL_GetFullscreenDisplayModes(display, &count);
+   if (!modes || count < 1)
+   {
+      SDL_free(modes);
+      return;
+   }
+
+   for (i = 0; i < count; i++)
+   {
+      if (modes[i]->w == current->w
+          && modes[i]->h == current->h
+          && modes[i]->refresh_rate == current->refresh_rate)
+      {
+         index = i;
+         break;
+      }
+   }
+
+   target = modes[(index + dir + count) % count];
+
+   /* Switch the mode, and clear the mode list afterwards. */
+   if (SDL_SetWindowFullscreenMode(vid->window, target))
+      vid->flags |= SDL3_FLAG_SHOULD_RESIZE;
+   else
+      RARCH_WARN("[SDL3] Failed to set video mode %dx%d @ %.2f Hz: %s.\n",
+            target->w, target->h, target->refresh_rate, SDL_GetError());
+
+   SDL_free(modes);
+}
+
+static void sdl3_get_video_output_prev(void *data)
+{
+   sdl3_cycle_video_mode((sdl3_video_t*)data, -1);
+}
+
+static void sdl3_get_video_output_next(void *data)
+{
+   sdl3_cycle_video_mode((sdl3_video_t*)data, 1);
+}
+
 static void sdl3_poke_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    sdl3_video_t *vid = (sdl3_video_t*)data;
@@ -1594,9 +1686,9 @@ static video_poke_interface_t sdl3_video_poke_interface = {
    sdl3_poke_set_video_mode,
    sdl3_ctx_get_refresh_rate,
    sdl3_poke_set_filtering,
-   NULL,                            /* get_video_output_size */
-   NULL,                            /* get_video_output_prev */
-   NULL,                            /* get_video_output_next */
+   sdl3_get_video_output_size,
+   sdl3_get_video_output_prev,
+   sdl3_get_video_output_next,
    NULL,                            /* get_current_framebuffer */
    NULL,                            /* get_proc_address */
    sdl3_poke_set_aspect_ratio,
