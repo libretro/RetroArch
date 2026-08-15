@@ -3189,6 +3189,22 @@ static bool playlist_read_file(playlist_t *playlist)
                   (*rjson_get_error(parser) ? rjson_get_error(parser) : "format error"));
          }
       }
+
+      /* A parse that stopped inside an items object - malformed
+       * input or OOM - leaves an entry staged in the slot one past
+       * the committed length: JSONStartObjectHandler only reserves
+       * the slot (RBUF_TRYFIT) and the commit (RBUF_RESIZE) happens
+       * in JSONEndObjectHandler, which never ran.  playlist_free
+       * walks the committed length only, so any members already
+       * strdup'd into the staged slot would leak.  Between complete
+       * entries current_entry legitimately points at the LAST
+       * committed slot, so only the one-past position identifies a
+       * staged entry. */
+      if (     context.current_entry
+            && context.current_entry ==
+                  playlist->entries + RBUF_LEN(playlist->entries))
+         playlist_free_entry(context.current_entry);
+
       rjson_free(parser);
    }
    else

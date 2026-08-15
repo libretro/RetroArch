@@ -516,6 +516,38 @@ jobs:
           make clean
           echo "[pass] scan_begin_budget_test (TSan)"
 
+      - name: Build and run playlist_parity_test (plain, ASan + UBSan)
+        shell: bash
+        working-directory: samples/playlist
+        run: |
+          set -eu
+          # Parity oracle for playlist.c's read path (playlist_init /
+          # playlist_read_file), compiled from the shipping
+          # translation unit.  Pins the reader's observable behaviour
+          # ahead of its restructuring into a budgeted resumable
+          # parse: the full JSON schema, the
+          # malformed-JSON-keeps-partial-data contract, the old
+          # six-line format with its trailing metadata block, RZIP
+          # compressed input, missing-file-reads-empty, and capacity
+          # clamping.
+          #
+          # The truncated-JSON lane also guards the staged-entry
+          # cleanup in playlist_read_file: an entry interrupted
+          # mid-object is reserved but never committed, and its
+          # already-parsed members must be freed on the error path -
+          # the leak the lane originally flushed out.  LSan gates it
+          # here permanently.  No threads on this path, so no TSan
+          # flavor.
+          make clean >/dev/null
+          make all -j$(nproc)
+          ./playlist_parity_test
+          make clean >/dev/null
+          make all SANITIZER=address,undefined -j$(nproc)
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+          UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+            ./playlist_parity_test
+          make clean >/dev/null
+
       - name: Build and run dirwalk_budget_test (plain, ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/menu/dirwalk
