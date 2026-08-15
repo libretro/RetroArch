@@ -638,10 +638,10 @@ static const SDL_DisplayMode *sdl3_current_video_mode(sdl3_video_t *vid)
 {
    if (!vid || !vid->window)
       return NULL;
-   if (!(SDL_GetWindowFlags(vid->window) & SDL_WINDOW_FULLSCREEN))
-      return NULL;
    /* SDL_WINDOW_FULLSCREEN covers borderless full screen as well, where
     * the mode is left at the desktop's and must not be switched. */
+   if (!(SDL_GetWindowFlags(vid->window) & SDL_WINDOW_FULLSCREEN))
+      return NULL;
    return SDL_GetWindowFullscreenMode(vid->window);
 }
 
@@ -668,22 +668,19 @@ static void sdl3_get_video_output_size(void *data,
    SDL_snprintf(desc, desc_len, "%.2f Hz", mode->refresh_rate);
 }
 
-/* Steps the exclusive fullscreen mode one entry through the display's
- * mode list, wrapping at either end, and asks the next frame to
- * recompute the viewport from the new pixel size. */
+/* Switch the display's fullscreen mode to the next one in the list. */
 static void sdl3_cycle_video_mode(sdl3_video_t *vid, int dir)
 {
    int i;
-   int count                      = 0;
-   int index                      = 0;
+   int count = 0;
+   int index = 0;
    const SDL_DisplayMode *current = NULL;
-   const SDL_DisplayMode *target  = NULL;
-   SDL_DisplayMode **modes        = NULL;
+   const SDL_DisplayMode *target = NULL;
+   SDL_DisplayMode **modes = NULL;
    SDL_DisplayID display;
 
    if (!(current = sdl3_current_video_mode(vid)))
       return;
-
    if (!(display = SDL_GetDisplayForWindow(vid->window)))
       return;
 
@@ -696,7 +693,7 @@ static void sdl3_cycle_video_mode(sdl3_video_t *vid, int dir)
 
    for (i = 0; i < count; i++)
    {
-      if (   modes[i]->w == current->w
+      if (modes[i]->w == current->w
           && modes[i]->h == current->h
           && modes[i]->refresh_rate == current->refresh_rate)
       {
@@ -707,7 +704,7 @@ static void sdl3_cycle_video_mode(sdl3_video_t *vid, int dir)
 
    target = modes[(index + dir + count) % count];
 
-   /* SDL copies the mode, so the list can be freed right after. */
+   /* Switch the mode, and clear the mode list afterwards. */
    if (SDL_SetWindowFullscreenMode(vid->window, target))
       vid->flags |= SDL3_FLAG_SHOULD_RESIZE;
    else
