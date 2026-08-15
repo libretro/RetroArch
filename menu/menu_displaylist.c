@@ -4332,6 +4332,8 @@ static unsigned menu_displaylist_parse_playlists(
 {
    size_t i, list_size;
    struct string_list str_list  = {0};
+   struct string_list *walk_list = NULL;
+   enum menu_dirwalk_status walk_status;
    unsigned count               = 0;
    unsigned content_count       = 0;
    bool show_hidden_files       = settings->bools.show_hidden_files;
@@ -4464,13 +4466,30 @@ static unsigned menu_displaylist_parse_playlists(
 #endif
    }
 
-   if (!dir_list_initialize(&str_list, path, NULL, true,
-         show_hidden_files, true, false))
+   menu_dirwalk_set_refresh_cb(menu_displaylist_dirwalk_refresh);
+   walk_status = menu_dirwalk_request(path, NULL, true,
+         show_hidden_files, true, MENU_DIRWALK_SORT_IGNORE_EXT,
+         MENU_DIRWALK_TAG_PLAYLISTS, &walk_list);
+
+   if (walk_status == MENU_DIRWALK_PENDING)
+   {
+      /* The playlist-directory walk continues in the background;
+       * the refresh callback rebuilds this list on completion. */
+      if (menu_entries_append(info_list,
+            msg_hash_to_str(MSG_LOADING), "",
+            MSG_UNKNOWN, MENU_SETTING_NO_ITEM, 0, 0, NULL))
+         count++;
       return count;
+   }
+   if (walk_status != MENU_DIRWALK_DONE || !walk_list)
+      return count;   /* same early-out as a failed walk before */
+
+   /* Move the completed listing (sorted by the module) into the
+    * local list the loop below reads. */
+   str_list = *walk_list;
+   free(walk_list);
 
    content_count = count;
-
-   dir_list_sort_ignore_ext(&str_list, true);
 
    list_size = str_list.size;
 
@@ -4746,14 +4765,28 @@ static unsigned menu_displaylist_parse_add_to_playlist_list(file_list_t *list,
 {
    char playlist_display_name[NAME_MAX_LENGTH];
    unsigned count               = 0;
-   struct string_list *str_list = dir_list_new_special(
-         dir_playlist, DIR_LIST_COLLECTIONS, NULL, show_hidden_files);
+   struct string_list *str_list = NULL;
+   enum menu_dirwalk_status walk_status;
+
+   /* The playlist-directory listing DIR_LIST_COLLECTIONS produced:
+    * "lpl" extension, no directories, no compressed files. */
+   menu_dirwalk_set_refresh_cb(menu_displaylist_dirwalk_refresh);
+   walk_status = menu_dirwalk_request(dir_playlist, "lpl", false,
+         show_hidden_files, false, MENU_DIRWALK_SORT_DIR_FIRST,
+         MENU_DIRWALK_TAG_ADD_TO_PLAYLIST, &str_list);
+
+   if (walk_status == MENU_DIRWALK_PENDING)
+   {
+      if (menu_entries_append(list,
+            msg_hash_to_str(MSG_LOADING), "",
+            MSG_UNKNOWN, MENU_SETTING_NO_ITEM, 0, 0, NULL))
+         count++;
+      return count;
+   }
 
    if (str_list && str_list->size)
    {
       unsigned i;
-
-      dir_list_sort(str_list, true);
 
       for (i = 0; i < str_list->size; i++)
       {
@@ -4808,14 +4841,26 @@ static unsigned menu_displaylist_parse_playlist_manager_list(
    const char *dir_playlist     = settings->paths.directory_playlist;
    bool show_hidden_files       = settings->bools.show_hidden_files;
    bool history_list_enable     = settings->bools.history_list_enable;
-   struct string_list *str_list = dir_list_new_special(
-         dir_playlist, DIR_LIST_COLLECTIONS, NULL, show_hidden_files);
+   struct string_list *str_list = NULL;
+   enum menu_dirwalk_status walk_status;
+
+   menu_dirwalk_set_refresh_cb(menu_displaylist_dirwalk_refresh);
+   walk_status = menu_dirwalk_request(dir_playlist, "lpl", false,
+         show_hidden_files, false, MENU_DIRWALK_SORT_DIR_FIRST,
+         MENU_DIRWALK_TAG_PLAYLIST_MANAGER, &str_list);
+
+   if (walk_status == MENU_DIRWALK_PENDING)
+   {
+      if (menu_entries_append(list,
+            msg_hash_to_str(MSG_LOADING), "",
+            MSG_UNKNOWN, MENU_SETTING_NO_ITEM, 0, 0, NULL))
+         count++;
+      return count;
+   }
 
    if (str_list && str_list->size)
    {
       unsigned i;
-
-      dir_list_sort(str_list, true);
 
       for (i = 0; i < str_list->size; i++)
       {
@@ -5071,14 +5116,26 @@ static unsigned menu_displaylist_parse_pl_thumbnail_download_list(
       bool show_hidden_files)
 {
    unsigned count               = 0;
-   struct string_list *str_list = dir_list_new_special(
-         dir_playlist, DIR_LIST_COLLECTIONS, NULL, show_hidden_files);
+   struct string_list *str_list = NULL;
+   enum menu_dirwalk_status walk_status;
+
+   menu_dirwalk_set_refresh_cb(menu_displaylist_dirwalk_refresh);
+   walk_status = menu_dirwalk_request(dir_playlist, "lpl", false,
+         show_hidden_files, false, MENU_DIRWALK_SORT_DIR_FIRST,
+         MENU_DIRWALK_TAG_PL_THUMBNAILS, &str_list);
+
+   if (walk_status == MENU_DIRWALK_PENDING)
+   {
+      if (menu_entries_append(list,
+            msg_hash_to_str(MSG_LOADING), "",
+            MSG_UNKNOWN, MENU_SETTING_NO_ITEM, 0, 0, NULL))
+         count++;
+      return count;
+   }
 
    if (str_list && str_list->size)
    {
       unsigned i;
-
-      dir_list_sort(str_list, true);
 
       for (i = 0; i < str_list->size; i++)
       {
