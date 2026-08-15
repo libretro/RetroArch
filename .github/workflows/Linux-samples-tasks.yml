@@ -516,6 +516,41 @@ jobs:
           make clean
           echo "[pass] scan_begin_budget_test (TSan)"
 
+      - name: Build and run pl_manager_budget_test (plain, ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/playlist_manager
+        run: |
+          set -eu
+          # Oracle for the playlist manager tasks' load phase,
+          # compiled from the shipping translation unit against the
+          # real task queue, the real playlist reader and the real
+          # shared per-frame I/O window, with a virtual clock so the
+          # pacing assertions are exact.
+          #
+          # Both handlers were already per-entry state machines with
+          # one exception: the load read the whole playlist in a
+          # single blocking call, which for a large collection is
+          # tens of milliseconds of JSON on the thread driving the
+          # frame loop whenever Threaded Tasks is off.
+          #
+          # The pacing lane isolates that phase: the per-entry
+          # iteration costs the same number of invocations either
+          # way, so the difference between a paced and an unpaced run
+          # is the load.  The cancel lane, under LSan, covers
+          # abandoning a task while its playlist is still being read.
+          make clean >/dev/null
+          make all -j$(nproc)
+          ./pl_manager_budget_test
+          make clean >/dev/null
+          make all SANITIZER=address,undefined -j$(nproc)
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+          UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+            ./pl_manager_budget_test
+          make clean >/dev/null
+          make all SANITIZER=thread -j$(nproc)
+          TSAN_OPTIONS=halt_on_error=1 ./pl_manager_budget_test
+          make clean >/dev/null
+
       - name: Build and run overlay_budget_test (plain, ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/tasks/overlay
