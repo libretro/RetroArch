@@ -585,6 +585,37 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 ./overlay_budget_test
           make clean >/dev/null
 
+      - name: Build and run task_ordering_test (plain, ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/ordering
+        run: |
+          set -eu
+          # Pins the task queue's visibility contract, which is what
+          # made a movie-record ordering guard fail.
+          #
+          # retro_task_regular_gather() lifts every running task off
+          # the queue and puts each one BACK as it processes it, so
+          # whether a finder called from inside a handler sees a
+          # sibling depends on where that sibling sits in the pass.
+          # At least one invocation reports "nothing in progress"
+          # while the task is genuinely pending - which an ordering
+          # guard only has to get wrong once.  A main-thread flag is
+          # visible from inside a handler and is what the guards use
+          # now; the ordering lane fails if a task guarded that way
+          # runs before the one it waits on.
+          make clean >/dev/null
+          make all -j$(nproc)
+          ./task_ordering_test
+          make clean >/dev/null
+          make all SANITIZER=address,undefined -j$(nproc)
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+          UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+            ./task_ordering_test
+          make clean >/dev/null
+          make all SANITIZER=thread -j$(nproc)
+          TSAN_OPTIONS=halt_on_error=1 ./task_ordering_test
+          make clean >/dev/null
+
       - name: Build and run task_watchdog_test (plain, ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/tasks/watchdog

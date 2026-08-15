@@ -179,6 +179,9 @@ static struct
 static struct ram_save_state_buf ram_buf;
 
 static bool save_state_in_background       = false;
+/* See content_load_state_in_progress() for why this is a flag and
+ * not a task_queue_find(). */
+static bool load_state_task_pending        = false;
 static bool save_state_disable_undo        = false;
 
 /* Time tracking for automatic savestate interval */
@@ -1320,6 +1323,10 @@ static void content_load_state_cb(retro_task_t *task,
    struct sram_block *blocks   = NULL;
    struct string_list *savefile_list = (struct string_list*)savefile_ptr_get();
 
+   /* The state is applied below; the load is no longer pending
+    * whichever way this callback exits. */
+   load_state_task_pending     = false;
+
    /* NULL-check load_data: task_load_handler_finished may fail
     * to allocate the task_data copy on OOM and leave it NULL.
     * Skip all processing - the emulator state is unchanged and
@@ -1657,6 +1664,8 @@ static void task_push_load_and_save_state(const char *path, void *data,
    task->callback               = content_load_and_save_state_cb;
    task->title                  = strdup(msg_hash_to_str(MSG_LOADING_STATE));
 
+   load_state_task_pending      = true;
+
    if (state->flags & SAVE_TASK_FLAG_MUTE)
       task->flags              |=  RETRO_TASK_FLG_MUTE;
    else
@@ -1664,7 +1673,9 @@ static void task_push_load_and_save_state(const char *path, void *data,
 
    if (!task_queue_push(task))
    {
-      /* Another blocking task is already active. */
+      /* Another blocking task is already active.  No callback will
+       * run for this task, so clear the flag here. */
+      load_state_task_pending   = false;
       if (data)
          free(data);
       if (task->title)
@@ -1884,20 +1895,29 @@ void content_wait_for_save_state_task(void)
 }
 
 
-static bool task_load_state_finder(retro_task_t *task, void *user_data)
-{
-   return (task && task->handler == task_load_handler);
-}
-
-/* Returns true if a load state task is in progress */
+/* Returns true if a load state task is in progress.
+ *
+ * Declared with the other file statics above.
+ *
+ * True from the moment a load task is pushed until its main-thread
+ * callback has applied the state.
+ *
+ * Deliberately NOT derived from task_queue_find().  The unthreaded
+ * gather lifts EVERY running task off the queue into a local list
+ * before invoking any handler, so for the whole of that pass the
+ * queue looks empty to a finder - including to a finder called from
+ * inside another task's handler, which is exactly how this is used.
+ * A sibling load task is invisible there, so a finder answers "no
+ * load in progress" while the load is sitting a few entries away in
+ * the same pass, waiting its turn.  The threaded gather has a
+ * narrower version of the same window between a worker finishing and
+ * its callback running.
+ *
+ * The flag transitions strictly on the main thread (push, then
+ * callback), so neither window exists. */
 bool content_load_state_in_progress(void* data)
 {
-   task_finder_data_t find_data;
-
-   find_data.func     = task_load_state_finder;
-   find_data.userdata = data;
-
-   return task_queue_find(&find_data);
+   return load_state_task_pending;
 }
 
 void content_wait_for_load_state_task(void)
@@ -1962,6 +1982,8 @@ bool content_load_state(const char *path,
    task->handler                = task_load_handler;
    task->callback               = content_load_state_cb;
    task->title                  = strdup(msg_hash_to_str(MSG_LOADING_STATE));
+
+   load_state_task_pending      = true;
 
    if (state->flags & SAVE_TASK_FLAG_MUTE)
       task->flags               |=  RETRO_TASK_FLG_MUTE;
