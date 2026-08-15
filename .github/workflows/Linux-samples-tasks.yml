@@ -529,7 +529,12 @@ jobs:
           # malformed-JSON-keeps-partial-data contract, the old
           # six-line format with its trailing metadata block, RZIP
           # compressed input, missing-file-reads-empty, and capacity
-          # clamping.
+          # clamping.  The budgeted lanes then assert the resumable
+          # API (playlist_parse_begin/step/end/abort) produces
+          # playlists identical to the blocking path while yielding
+          # repeatedly, for JSON, the old format and the autofix
+          # pass, and that abandoning a parse mid-document leaks
+          # nothing.
           #
           # The truncated-JSON lane also guards the staged-entry
           # cleanup in playlist_read_file: an entry interrupted

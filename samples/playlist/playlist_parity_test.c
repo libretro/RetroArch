@@ -500,6 +500,255 @@ static void lane_capacity(void)
       fprintf(stderr, "[pass] capacity lane\n");
 }
 
+
+/* ------------------------------------------------------------------ */
+/* Budgeted lanes: the resumable API must produce byte-identical      */
+/* playlists to the blocking path, yielding along the way.            */
+/* ------------------------------------------------------------------ */
+
+static bool budget_countdown(void *ud)
+{
+   int *k = (int*)ud;
+   if (*k <= 0)
+      return false;
+   (*k)--;
+   return true;
+}
+
+static char *big_fixture_doc(unsigned entries, const char *base_dir)
+{
+   size_t cap  = (size_t)entries * 160 + 512;
+   char *doc   = (char*)malloc(cap);
+   size_t _len = 0;
+   unsigned i;
+
+   if (!doc)
+      return NULL;
+   _len += (size_t)snprintf(doc + _len, cap - _len,
+         "{\n  \"version\": \"1.5\",\n"
+         "  \"base_content_directory\": \"%s\",\n"
+         "  \"items\": [\n", base_dir);
+   for (i = 0; i < entries; i++)
+      _len += (size_t)snprintf(doc + _len, cap - _len,
+            "    { \"path\": \"%s/dir%03u/game%05u.bin\","
+            " \"label\": \"Game %05u\" }%s\n",
+            base_dir, i % 251, i, i, (i + 1 < entries) ? "," : "");
+   _len += (size_t)snprintf(doc + _len, cap - _len, "  ]\n}\n");
+   return doc;
+}
+
+static void check_playlists_equal(playlist_t *a, playlist_t *b,
+      const char *lane)
+{
+   size_t i, n = playlist_size(a);
+   CHECK(n == playlist_size(b), "%s: sizes differ (%u vs %u)",
+         lane, (unsigned)n, (unsigned)playlist_size(b));
+   if (n != playlist_size(b))
+      return;
+   for (i = 0; i < n; i++)
+   {
+      const struct playlist_entry *ea = NULL;
+      const struct playlist_entry *eb = NULL;
+      playlist_get_index(a, i, &ea);
+      playlist_get_index(b, i, &eb);
+      if (!ea || !eb
+            || !streq(ea->path, eb->path)
+            || !streq(ea->label, eb->label))
+      {
+         CHECK(false, "%s: entry %u differs", lane, (unsigned)i);
+         return;
+      }
+   }
+   CHECK(streq(playlist_get_default_core_path(a),
+               playlist_get_default_core_path(b)),
+         "%s: default_core_path differs", lane);
+}
+
+static void lane_budgeted_json(void)
+{
+   char path[512];
+   char *doc = NULL;
+   playlist_config_t config;
+   playlist_t *blocking = NULL;
+   playlist_t *stepped  = NULL;
+   playlist_parse_t *p  = NULL;
+   unsigned had = failures;
+   unsigned yields = 0;
+   int r;
+
+   if (!(doc = big_fixture_doc(5000, "/games")))
+   {
+      CHECK(false, "budgeted json: doc alloc");
+      return;
+   }
+   snprintf(path, sizeof(path), "%s/big.lpl", fixture_dir);
+   CHECK(write_whole(path, doc), "fixture write");
+   free(doc);
+   config_defaults(&config, path);
+   config.capacity = 8192;
+
+   blocking = playlist_init(&config);
+   CHECK(blocking && playlist_size(blocking) == 5000,
+         "budgeted json: blocking reference");
+
+   p = playlist_parse_begin(&config);
+   CHECK(p != NULL, "budgeted json: begin");
+   for (;;)
+   {
+      int k = 4;   /* four event batches per slice */
+      r = playlist_parse_step(p, budget_countdown, &k);
+      if (r != 0)
+         break;
+      yields++;
+   }
+   CHECK(r == 1, "budgeted json: step result %d", r);
+   stepped = playlist_parse_end(p);
+   CHECK(stepped != NULL, "budgeted json: end");
+
+   /* 5000 entries at ~14 events each vs 4*256-event slices: the
+    * parse cannot possibly fit one slice. */
+   CHECK(yields >= 10, "budgeted json: only %u yields", yields);
+
+   if (blocking && stepped)
+      check_playlists_equal(blocking, stepped, "budgeted json");
+
+   playlist_free(blocking);
+   playlist_free(stepped);
+   if (failures == had)
+      fprintf(stderr, "[pass] budgeted json lane (%u yields)\n", yields);
+}
+
+static void lane_budgeted_old_format(void)
+{
+   char path[512];
+   playlist_config_t config;
+   playlist_t *blocking = NULL;
+   playlist_t *stepped  = NULL;
+   playlist_parse_t *p  = NULL;
+   unsigned had = failures;
+   unsigned yields = 0;
+   int r;
+
+   snprintf(path, sizeof(path), "%s/old.lpl", fixture_dir);
+   CHECK(write_whole(path, old_format), "fixture write");
+   config_defaults(&config, path);
+
+   blocking = playlist_init(&config);
+
+   p = playlist_parse_begin(&config);
+   CHECK(p != NULL, "budgeted old: begin");
+   for (;;)
+   {
+      int k = 1;   /* one line group per slice */
+      r = playlist_parse_step(p, budget_countdown, &k);
+      if (r != 0)
+         break;
+      yields++;
+   }
+   CHECK(r == 1, "budgeted old: step result %d", r);
+   stepped = playlist_parse_end(p);
+   CHECK(stepped && blocking, "budgeted old: results");
+   CHECK(yields >= 1, "budgeted old: no yields at group granularity");
+   if (blocking && stepped)
+      check_playlists_equal(blocking, stepped, "budgeted old");
+   playlist_free(blocking);
+   playlist_free(stepped);
+   if (failures == had)
+      fprintf(stderr, "[pass] budgeted old-format lane (%u yields)\n", yields);
+}
+
+static void lane_budgeted_autofix(void)
+{
+   char path[512];
+   char *doc = NULL;
+   playlist_config_t config;
+   playlist_t *blocking = NULL;
+   playlist_t *stepped  = NULL;
+   playlist_parse_t *p  = NULL;
+   const struct playlist_entry *e = NULL;
+   unsigned had = failures;
+   int r;
+
+   if (!(doc = big_fixture_doc(600, "/games")))
+   {
+      CHECK(false, "autofix: doc alloc");
+      return;
+   }
+   snprintf(path, sizeof(path), "%s/fix.lpl", fixture_dir);
+   CHECK(write_whole(path, doc), "fixture write");
+
+   config_defaults(&config, path);
+   config.capacity      = 8192;
+   config.autofix_paths = true;
+   strlcpy(config.base_content_directory, "/mnt/newgames",
+         sizeof(config.base_content_directory));
+
+   blocking = playlist_init(&config);
+   CHECK(blocking && playlist_size(blocking) == 600,
+         "autofix: blocking reference");
+   playlist_get_index(blocking, 0, &e);
+   CHECK(e && e->path && strncmp(e->path, "/mnt/newgames/", 14) == 0,
+         "autofix: blocking rewrote paths (got \"%s\")",
+         (e && e->path) ? e->path : "(null)");
+
+   /* The fixture write above rewrote the file (autofix saves), so
+    * regenerate it for the stepped run to see identical input. */
+   CHECK(write_whole(path, doc), "fixture rewrite");
+   free(doc);
+
+   p = playlist_parse_begin(&config);
+   CHECK(p != NULL, "autofix: begin");
+   for (;;)
+   {
+      int k = 2;
+      r = playlist_parse_step(p, budget_countdown, &k);
+      if (r != 0)
+         break;
+   }
+   CHECK(r == 1, "autofix: step result %d", r);
+   stepped = playlist_parse_end(p);
+   CHECK(stepped != NULL, "autofix: end");
+   if (blocking && stepped)
+      check_playlists_equal(blocking, stepped, "autofix");
+   playlist_free(blocking);
+   playlist_free(stepped);
+   if (failures == had)
+      fprintf(stderr, "[pass] budgeted autofix lane\n");
+}
+
+static void lane_abort_midway(void)
+{
+   char path[512];
+   playlist_config_t config;
+   playlist_parse_t *p = NULL;
+   unsigned had = failures;
+   int k;
+
+   /* Reuse the big fixture from the budgeted lane. */
+   snprintf(path, sizeof(path), "%s/big.lpl", fixture_dir);
+   config_defaults(&config, path);
+   config.capacity = 8192;
+
+   p = playlist_parse_begin(&config);
+   CHECK(p != NULL, "abort: begin");
+   k = 2;
+   CHECK(playlist_parse_step(p, budget_countdown, &k) == 0,
+         "abort: expected a yield mid-parse");
+   /* Abandon with entries staged and the parser mid-document: LSan
+    * verifies nothing leaks. */
+   playlist_parse_abort(p);
+
+   /* Abort immediately after begin, and end-after-abort misuse
+    * guards. */
+   p = playlist_parse_begin(&config);
+   CHECK(p != NULL, "abort: second begin");
+   playlist_parse_abort(p);
+   CHECK(playlist_parse_end(NULL) == NULL, "end(NULL)");
+   CHECK(playlist_parse_step(NULL, NULL, NULL) == -1, "step(NULL)");
+   if (failures == had)
+      fprintf(stderr, "[pass] abort lane\n");
+}
+
 int main(int argc, char *argv[])
 {
    char cmd[600];
@@ -524,6 +773,10 @@ int main(int argc, char *argv[])
    lane_compressed();
    lane_missing();
    lane_capacity();
+   lane_budgeted_json();
+   lane_budgeted_old_format();
+   lane_budgeted_autofix();
+   lane_abort_midway();
 
    snprintf(cmd, sizeof(cmd), "rm -rf %s", fixture_dir);
    if (system(cmd) != 0) { }

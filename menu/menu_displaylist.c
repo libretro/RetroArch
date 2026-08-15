@@ -199,6 +199,11 @@ void filebrowser_set_type(enum filebrowser_enums type)
  * completes (either way): mark the entries for refresh, exactly as
  * the explore init task does, so the repopulation re-issues the
  * request and consumes the finished listing. */
+static bool menu_displaylist_playlist_within_budget(void *ud)
+{
+   return task_nbio_slice_within_budget(ud, 0, 0);
+}
+
 static void menu_displaylist_dirwalk_refresh(unsigned tag)
 {
    struct menu_state *menu_st = menu_state_get_ptr();
@@ -3486,7 +3491,31 @@ static void menu_displaylist_set_new_playlist(
          playlist_config.capacity = (unsigned)content_favorites_size;
    }
 
-   if (playlist_init_cached(&playlist_config))
+   /* Budgeted first touch: one pass under the shared per-frame I/O
+    * window.  Small and medium playlists finish inside it and this
+    * behaves exactly as the blocking call did; a large one yields,
+    * and the refresh below re-issues the request, which resumes the
+    * same parse where it stopped.  The list is left empty for that
+    * frame rather than stalling the UI for the whole parse. */
+   {
+      nbio_budget_t b;
+      int pl_r;
+
+      task_nbio_slice_open(&b);
+      pl_r = playlist_init_cached_deferred(&playlist_config,
+            menu_displaylist_playlist_within_budget, &b);
+      task_nbio_slice_close(&b);
+
+      if (pl_r == 0)
+      {
+         /* Still parsing: come back next frame. */
+         menu_displaylist_dirwalk_refresh(0);
+         return;
+      }
+      if (pl_r < 0)
+         return;
+   }
+
    {
       playlist_t *playlist                      = playlist_get_cached();
       enum playlist_sort_mode current_sort_mode = playlist_get_sort_mode(playlist);

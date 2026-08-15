@@ -3097,86 +3097,212 @@ static size_t playlist_get_old_format_metadata_value(
    return strlcpy(s, start, len);
 }
 
-static bool playlist_read_file(playlist_t *playlist)
+/* ------------------------------------------------------------------ */
+/* Resumable playlist parse                                            */
+/*                                                                     */
+/* playlist_init() runs the same machinery to completion, so the      */
+/* blocking and budgeted paths cannot drift apart.  The parse state   */
+/* is the parser plus the JSONContext (JSON) or the line-group        */
+/* buffer (old format); rjson_next() plus the public context queries  */
+/* reproduce the rjson_parse() driver exactly (a string at object     */
+/* level with an odd context count is a member name; everything else  */
+/* dispatches by type), so stopping between events loses nothing.     */
+/* ------------------------------------------------------------------ */
+
+/* Budget check cadence: JSON events are cheap, so consult the        */
+/* budget once per batch; a power of two so the check is a mask.      */
+#define PLAYLIST_PARSE_EVENT_BATCH 256
+/* Autofix rewrites paths per entry; cheaper than events, pricier     */
+/* than nothing. */
+#define PLAYLIST_PARSE_AUTOFIX_BATCH 64
+
+enum playlist_parse_phase
 {
-   int test_char;
-   bool res             = true;
-#if defined(HAVE_COMPRESSION)
-      /* Always use RZIP interface when reading playlists
-       * > this will automatically handle uncompressed
-       *   data */
-   intfstream_t *file   = intfstream_open_rzip_file(
-         playlist->config.path,
-         RETRO_VFS_FILE_ACCESS_READ);
-#else
-   intfstream_t *file   = intfstream_open_file(
-         playlist->config.path,
-         RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-#endif
+   PLAYLIST_PARSE_PHASE_JSON = 0,
+   PLAYLIST_PARSE_PHASE_OLD,
+   PLAYLIST_PARSE_PHASE_AUTOFIX,
+   PLAYLIST_PARSE_PHASE_DONE,
+   PLAYLIST_PARSE_PHASE_ERROR
+};
 
-   /* If playlist file does not exist,
-    * create an empty playlist instead */
-   if (!file)
-      return true;
+struct playlist_parse
+{
+   playlist_t *playlist;
+   intfstream_t *file;
+   rjson_t *parser;                       /* JSON phase */
+   JSONContext context;                   /* JSON phase */
+   char (*line_buf)[PATH_MAX_LENGTH];     /* old-format phase */
+   size_t autofix_idx;
+   size_t oldref_len;
+   size_t newref_len;
+   unsigned events;
+   enum playlist_parse_phase phase;
+   bool res;
+   bool autofix_scan_done;
+};
 
-   if (intfstream_is_compressed(file))
-      playlist->flags |=  CNT_PLAYLIST_FLG_COMPRESSED;
-   else
-      playlist->flags &= ~CNT_PLAYLIST_FLG_COMPRESSED;
-
-   /* Detect format of playlist
-    * > Read file until we find the first printable
-    *   non-whitespace ASCII character */
-   do
+static void playlist_parse_close_io(playlist_parse_t *p)
+{
+   if (p->parser)
    {
-      /* Read error or EOF (end of file) */
-      if ((test_char = intfstream_getc(file)) == EOF)
-         goto end;
-   }while(!isgraph(test_char) || test_char > 0x7F);
-
-   if (test_char != '{')
-      playlist->flags |=  (CNT_PLAYLIST_FLG_OLD_FMT);
-   else
-      playlist->flags &= ~(CNT_PLAYLIST_FLG_OLD_FMT);
-
-   /* Reset file to start */
-   intfstream_rewind(file);
-
-   if (!(playlist->flags & CNT_PLAYLIST_FLG_OLD_FMT))
-   {
-      rjson_t* parser;
-      JSONContext context = {0};
-      context.playlist    = playlist;
-
-      if (!(parser = rjson_open_intfstream(file)))
+      /* A live parser means the JSON phase never finished - an
+       * abort (or end after an unfinished step) mid-document.  The
+       * same staged-entry hazard the finish path handles applies
+       * here: an entry reserved one past the committed length with
+       * members already strdup'd into it. */
+      if (     p->playlist
+            && p->context.current_entry
+            && p->context.current_entry ==
+                  p->playlist->entries + RBUF_LEN(p->playlist->entries))
       {
-         RARCH_ERR("[Playlist] Failed to create JSON parser.\n");
-         goto end;
+         playlist_free_entry(p->context.current_entry);
+         p->context.current_entry = NULL;
+      }
+      rjson_free(p->parser);
+      p->parser = NULL;
+   }
+   if (p->file)
+   {
+      intfstream_close(p->file);
+      free(p->file);
+      p->file   = NULL;
+   }
+   if (p->line_buf)
+   {
+      free(p->line_buf);
+      p->line_buf = NULL;
+   }
+}
+
+/* Decide what follows the parse: the autofix pass when it applies,   */
+/* completion otherwise.  Mirrors the condition playlist_init         */
+/* historically evaluated after playlist_read_file returned.          */
+static void playlist_parse_enter_autofix(playlist_parse_t *p)
+{
+   playlist_t *playlist = p->playlist;
+
+   playlist_parse_close_io(p);
+
+   if (!p->res)
+   {
+      p->phase = PLAYLIST_PARSE_PHASE_ERROR;
+      return;
+   }
+
+   if (    playlist->config.autofix_paths
+       && !string_is_equal(playlist->base_content_directory,
+            playlist->config.base_content_directory)
+       && playlist->base_content_directory
+       && *playlist->base_content_directory)
+   {
+      p->oldref_len = strlen(playlist->base_content_directory);
+      p->newref_len = strlen(playlist->config.base_content_directory);
+      p->phase      = PLAYLIST_PARSE_PHASE_AUTOFIX;
+      return;
+   }
+
+   /* No fixing applies; but when autofix is on the base content
+    * directory record must still be refreshed and the file saved -
+    * the tail playlist_init always ran. */
+   if (    playlist->config.autofix_paths
+       && !string_is_equal(playlist->base_content_directory,
+            playlist->config.base_content_directory))
+   {
+      p->phase      = PLAYLIST_PARSE_PHASE_AUTOFIX;
+      p->autofix_idx = RBUF_LEN(playlist->entries);   /* skip entries */
+      return;
+   }
+
+   p->phase = PLAYLIST_PARSE_PHASE_DONE;
+}
+
+/* One budgeted slice of the JSON event stream.  This is the          */
+/* rjson_parse() driver, transcribed: same handlers, same member      */
+/* discrimination, same stop conditions - with a budget consult       */
+/* between event batches.                                             */
+static int playlist_parse_step_json(playlist_parse_t *p,
+      bool (*budget_cb)(void *), void *budget_ud)
+{
+   playlist_t *playlist   = p->playlist;
+   rjson_t *parser        = p->parser;
+   JSONContext context;   /* alias for the moved error block below */
+   enum rjson_type stop;
+
+   for (;;)
+   {
+      enum rjson_type t;
+      bool ok = true;
+
+      if (     budget_cb
+            && ((++p->events & (PLAYLIST_PARSE_EVENT_BATCH - 1)) == 0)
+            && !budget_cb(budget_ud))
+         return 0;
+
+      t = rjson_next(parser);
+
+      switch (t)
+      {
+         case RJSON_STRING:
+            {
+               size_t _len;
+               const char *str = rjson_get_string(parser, &_len);
+               if (     rjson_get_context_type(parser) == RJSON_OBJECT
+                     && (rjson_get_context_count(parser) & 1))
+                  ok = JSONObjectMemberHandler(&p->context, str, _len);
+               else
+                  ok = JSONStringHandler(&p->context, str, _len);
+            }
+            break;
+         case RJSON_NUMBER:
+            {
+               size_t _len;
+               const char *str = rjson_get_string(parser, &_len);
+               ok = JSONNumberHandler(&p->context, str, _len);
+            }
+            break;
+         case RJSON_OBJECT:
+            ok = JSONStartObjectHandler(&p->context);
+            break;
+         case RJSON_OBJECT_END:
+            ok = JSONEndObjectHandler(&p->context);
+            break;
+         case RJSON_ARRAY:
+            ok = JSONStartArrayHandler(&p->context);
+            break;
+         case RJSON_ARRAY_END:
+            ok = JSONEndArrayHandler(&p->context);
+            break;
+         case RJSON_TRUE:
+            ok = JSONBoolHandler(&p->context, true);
+            break;
+         case RJSON_FALSE:
+            ok = JSONBoolHandler(&p->context, false);
+            break;
+         case RJSON_NULL:
+            /* The driver was given no null handler: a no-op. */
+            break;
+         case RJSON_ERROR:
+         case RJSON_DONE:
+         default:
+            stop = t;
+            goto stopped;
       }
 
-      rjson_set_options(parser,
-              RJSON_OPTION_ALLOW_UTF8BOM
-            | RJSON_OPTION_ALLOW_COMMENTS
-            | RJSON_OPTION_ALLOW_UNESCAPED_CONTROL_CHARACTERS
-            | RJSON_OPTION_REPLACE_INVALID_ENCODING);
+      if (!ok)
+      {
+         stop = t;
+         goto stopped;
+      }
+   }
 
-      if (rjson_parse(parser, &context,
-            JSONObjectMemberHandler,
-            JSONStringHandler,
-            JSONNumberHandler,
-            JSONStartObjectHandler,
-            JSONEndObjectHandler,
-            JSONStartArrayHandler,
-            JSONEndArrayHandler,
-            JSONBoolHandler,
-            NULL) /* Unused null handler */
-            != RJSON_DONE)
+stopped:
+   context = p->context;   /* the moved block below reads context.flags */
+   if (stop != RJSON_DONE)
       {
          if (context.flags & JSON_CTX_FLG_OOM)
          {
             RARCH_WARN("[Playlist] Ran out of memory while parsing JSON playlist.\n");
-            res = false;
+            p->res = false;
          }
          else
          {
@@ -3190,97 +3316,101 @@ static bool playlist_read_file(playlist_t *playlist)
          }
       }
 
-      /* A parse that stopped inside an items object - malformed
-       * input or OOM - leaves an entry staged in the slot one past
-       * the committed length: JSONStartObjectHandler only reserves
-       * the slot (RBUF_TRYFIT) and the commit (RBUF_RESIZE) happens
-       * in JSONEndObjectHandler, which never ran.  playlist_free
-       * walks the committed length only, so any members already
-       * strdup'd into the staged slot would leak.  Between complete
-       * entries current_entry legitimately points at the LAST
-       * committed slot, so only the one-past position identifies a
-       * staged entry. */
-      if (     context.current_entry
-            && context.current_entry ==
-                  playlist->entries + RBUF_LEN(playlist->entries))
-         playlist_free_entry(context.current_entry);
+   /* A parse that stopped inside an items object - malformed
+    * input or OOM - leaves an entry staged in the slot one past
+    * the committed length: JSONStartObjectHandler only reserves
+    * the slot (RBUF_TRYFIT) and the commit (RBUF_RESIZE) happens
+    * in JSONEndObjectHandler, which never ran.  playlist_free
+    * walks the committed length only, so any members already
+    * strdup'd into the staged slot would leak.  Between complete
+    * entries current_entry legitimately points at the LAST
+    * committed slot, so only the one-past position identifies a
+    * staged entry. */
+   if (     p->context.current_entry
+         && p->context.current_entry ==
+               playlist->entries + RBUF_LEN(playlist->entries))
+      playlist_free_entry(p->context.current_entry);
 
-      rjson_free(parser);
-   }
-   else
+   playlist_parse_enter_autofix(p);
+   return (p->phase == PLAYLIST_PARSE_PHASE_ERROR) ? -1 : 1;
+}
+
+/* One budgeted slice of the old six-line format: a group per         */
+/* iteration, budget between groups.                                  */
+static int playlist_parse_step_old(playlist_parse_t *p,
+      bool (*budget_cb)(void *), void *budget_ud)
+{
+   playlist_t *playlist              = p->playlist;
+   intfstream_t *file                = p->file;
+   char (*line_buf)[PATH_MAX_LENGTH] = p->line_buf;
+
+   for (;;)
    {
-      size_t _len = RBUF_LEN(playlist->entries);
-      /* Heap-held: at six entries this is 3 KiB even at the console
-       * path length, on the playlist load path that runs from task
-       * threads.  On allocation failure the legacy-format file simply
-       * reads as empty, matching every other read failure here. */
-      char (*line_buf)[PATH_MAX_LENGTH] = (char (*)[PATH_MAX_LENGTH])
-            calloc(PLAYLIST_ENTRIES, PATH_MAX_LENGTH);
+      size_t i;
+      size_t lines_read = 0;
+      size_t _len       = RBUF_LEN(playlist->entries);
 
-      if (!line_buf)
-         goto end;   /* reads as an empty playlist, like a missing file */
+      if (budget_cb && !budget_cb(budget_ud))
+         return 0;
 
-      /* Read playlist entries */
-      while (_len < playlist->config.capacity)
+      if (_len >= playlist->config.capacity)
+         break;
+
+      /* Attempt to read the next 'PLAYLIST_ENTRIES'
+       * lines from the file */
+      for (i = 0; i < PLAYLIST_ENTRIES; i++)
       {
-         size_t i;
-         size_t lines_read = 0;
+         *line_buf[i] = '\0';
 
-         /* Attempt to read the next 'PLAYLIST_ENTRIES'
-          * lines from the file */
-         for (i = 0; i < PLAYLIST_ENTRIES; i++)
+         if (!intfstream_gets(file, line_buf[i], sizeof(line_buf[i])))
+            break;
+         /* Ensure line is NULL terminated, regardless of
+          * Windows or Unix line endings */
+         string_replace_all_chars(line_buf[i], '\r', '\0');
+         string_replace_all_chars(line_buf[i], '\n', '\0');
+
+         lines_read++;
+      }
+
+      /* If a 'full set' of lines were read, then this
+       * is a valid playlist entry */
+      if (lines_read >= PLAYLIST_ENTRIES)
+      {
+         struct playlist_entry* entry;
+
+         if (!RBUF_TRYFIT(playlist->entries, _len + 1))
          {
-            *line_buf[i] = '\0';
-
-            if (!intfstream_gets(file, line_buf[i], sizeof(line_buf[i])))
-               break;
-            /* Ensure line is NULL terminated, regardless of
-             * Windows or Unix line endings */
-            string_replace_all_chars(line_buf[i], '\r', '\0');
-            string_replace_all_chars(line_buf[i], '\n', '\0');
-
-            lines_read++;
+            p->res = false; /* out of memory */
+            break;
          }
+         RBUF_RESIZE(playlist->entries, _len + 1);
+         entry = &playlist->entries[_len];
 
-         /* If a 'full set' of lines were read, then this
-          * is a valid playlist entry */
-         if (lines_read >= PLAYLIST_ENTRIES)
-         {
-            struct playlist_entry* entry;
+         memset(entry, 0, sizeof(*entry));
 
-            if (!RBUF_TRYFIT(playlist->entries, _len + 1))
-            {
-               res = false; /* out of memory */
-               goto end;
-            }
-            RBUF_RESIZE(playlist->entries, _len + 1);
-            entry = &playlist->entries[_len++];
-
-            memset(entry, 0, sizeof(*entry));
-
-            /* Path */
-            if (*line_buf[0])
-               entry->path      = strdup(line_buf[0]);
-            /* Label */
-            if (*line_buf[1])
-               entry->label     = strdup(line_buf[1]);
-            /* Core_path */
-            if (*line_buf[2])
-               entry->core_path = strdup(line_buf[2]);
-            /* Core_name */
-            if (*line_buf[3])
-               entry->core_name = strdup(line_buf[3]);
-            /* CRC32 */
-            if (*line_buf[4])
-               entry->crc32     = strdup(line_buf[4]);
-            /* db_name */
-            if (*line_buf[5])
-               entry->db_name   = strdup(line_buf[5]);
-         }
-         /* If fewer than 'PLAYLIST_ENTRIES' lines were
-          * read, then this is metadata */
-         else
-         {
+         /* Path */
+         if (*line_buf[0])
+            entry->path      = strdup(line_buf[0]);
+         /* Label */
+         if (*line_buf[1])
+            entry->label     = strdup(line_buf[1]);
+         /* Core_path */
+         if (*line_buf[2])
+            entry->core_path = strdup(line_buf[2]);
+         /* Core_name */
+         if (*line_buf[3])
+            entry->core_name = strdup(line_buf[3]);
+         /* CRC32 */
+         if (*line_buf[4])
+            entry->crc32     = strdup(line_buf[4]);
+         /* db_name */
+         if (*line_buf[5])
+            entry->db_name   = strdup(line_buf[5]);
+         continue;
+      }
+      /* If fewer than 'PLAYLIST_ENTRIES' lines were
+       * read, then this is metadata */
+      {
             char default_core_path[PATH_MAX_LENGTH];
             char default_core_name[NAME_MAX_LENGTH];
 
@@ -3289,7 +3419,7 @@ static bool playlist_read_file(playlist_t *playlist)
 
             /* Get default_core_path */
             if (lines_read < 1)
-               break;
+               goto meta_done;
 
             if (strncmp("default_core_path",
                      line_buf[0],
@@ -3299,7 +3429,7 @@ static bool playlist_read_file(playlist_t *playlist)
 
             /* Get default_core_name */
             if (lines_read < 2)
-               break;
+               goto meta_done;
 
             if (strncmp("default_core_name",
                      line_buf[1],
@@ -3318,7 +3448,7 @@ static bool playlist_read_file(playlist_t *playlist)
 
             /* Get label_display_mode */
             if (lines_read < 3)
-               break;
+               goto meta_done;
 
             if (strncmp("label_display_mode",
                      line_buf[2],
@@ -3336,7 +3466,7 @@ static bool playlist_read_file(playlist_t *playlist)
 
             /* Get thumbnail modes */
             if (lines_read < 4)
-               break;
+               goto meta_done;
 
             if (strncmp("thumbnail_mode",
                      line_buf[3],
@@ -3366,7 +3496,7 @@ static bool playlist_read_file(playlist_t *playlist)
 
             /* Get sort_mode */
             if (lines_read < 5)
-               break;
+               goto meta_done;
 
             if (strncmp("sort_mode",
                      line_buf[4],
@@ -3382,18 +3512,340 @@ static bool playlist_read_file(playlist_t *playlist)
                }
             }
 
-            /* All metadata parsed -> end of file */
-            break;
-         }
+meta_done: ;
       }
-      free(line_buf);
+      break;
    }
 
-end:
-   intfstream_close(file);
-   free(file);
-   return res;
+   playlist_parse_enter_autofix(p);
+   return (p->phase == PLAYLIST_PARSE_PHASE_ERROR) ? -1 : 1;
 }
+
+/* The autofix pass playlist_init historically ran after reading:     */
+/* per-entry path rewriting when the recorded base content directory  */
+/* differs from the configured one, then the scan-record fixups and   */
+/* the refreshed record + save.                                       */
+static int playlist_parse_step_autofix(playlist_parse_t *p,
+      bool (*budget_cb)(void *), void *budget_ud)
+{
+   playlist_t *playlist = p->playlist;
+   size_t count         = RBUF_LEN(playlist->entries);
+   char tmp_entry_path[PATH_MAX_LENGTH];
+
+   if (     playlist->base_content_directory
+         && *playlist->base_content_directory)
+   {
+      for (; p->autofix_idx < count; p->autofix_idx++)
+      {
+         size_t j;
+         struct playlist_entry* entry = &playlist->entries[p->autofix_idx];
+
+         if (     budget_cb
+               && ((p->autofix_idx & (PLAYLIST_PARSE_AUTOFIX_BATCH - 1)) == 0)
+               && !budget_cb(budget_ud))
+            return 0;
+
+         if (!entry || (!entry->path || !*entry->path))
+            continue;
+
+         /* Fix entry path */
+         tmp_entry_path[0] = '\0';
+         path_replace_base_path_and_convert_to_local_file_system(
+               tmp_entry_path, entry->path,
+               playlist->base_content_directory, p->oldref_len,
+               playlist->config.base_content_directory, p->newref_len,
+               sizeof(tmp_entry_path));
+
+         free(entry->path);
+         entry->path = strdup(tmp_entry_path);
+
+         /* Fix subsystem roms paths*/
+         if (     (entry->subsystem_roms)
+               && (entry->subsystem_roms->size > 0))
+         {
+            struct string_list* subsystem_roms_new_paths = string_list_new();
+            union string_list_elem_attr attributes       = { 0 };
+
+            if (!subsystem_roms_new_paths)
+            {
+               p->res   = false;
+               p->phase = PLAYLIST_PARSE_PHASE_ERROR;
+               return -1;
+            }
+
+            for (j = 0; j < entry->subsystem_roms->size; j++)
+            {
+               const char* subsystem_rom_path = entry->subsystem_roms->elems[j].data;
+
+               if (!subsystem_rom_path || !*subsystem_rom_path)
+                  continue;
+
+               tmp_entry_path[0] = '\0';
+               path_replace_base_path_and_convert_to_local_file_system(
+                     tmp_entry_path,
+                     subsystem_rom_path,
+                     playlist->base_content_directory, p->oldref_len,
+                     playlist->config.base_content_directory, p->newref_len,
+                     sizeof(tmp_entry_path));
+               string_list_append(subsystem_roms_new_paths, tmp_entry_path, attributes);
+            }
+
+            string_list_free(entry->subsystem_roms);
+            entry->subsystem_roms = subsystem_roms_new_paths;
+         }
+      }
+
+      if (!p->autofix_scan_done)
+      {
+         p->autofix_scan_done = true;
+
+         /* Fix scan record content directory */
+         if (playlist->scan_record.content_dir && *playlist->scan_record.content_dir)
+         {
+            tmp_entry_path[0] = '\0';
+            path_replace_base_path_and_convert_to_local_file_system(
+                  tmp_entry_path,
+                  playlist->scan_record.content_dir,
+                  playlist->base_content_directory, p->oldref_len,
+                  playlist->config.base_content_directory, p->newref_len,
+                  sizeof(tmp_entry_path));
+
+            free(playlist->scan_record.content_dir);
+            playlist->scan_record.content_dir = strdup(tmp_entry_path);
+         }
+
+         /* Fix scan record arcade DAT file */
+         if (playlist->scan_record.dat_file_path && *playlist->scan_record.dat_file_path)
+         {
+            tmp_entry_path[0] = '\0';
+            path_replace_base_path_and_convert_to_local_file_system(
+                  tmp_entry_path,
+                  playlist->scan_record.dat_file_path,
+                  playlist->base_content_directory, p->oldref_len,
+                  playlist->config.base_content_directory, p->newref_len,
+                  sizeof(tmp_entry_path));
+
+            free(playlist->scan_record.dat_file_path);
+            playlist->scan_record.dat_file_path = strdup(tmp_entry_path);
+         }
+      }
+   }
+
+   /* Update playlist base content directory*/
+   if (playlist->base_content_directory)
+      free(playlist->base_content_directory);
+   playlist->base_content_directory = strdup(playlist->config.base_content_directory);
+
+   /* Save playlist */
+   playlist->flags   |=  CNT_PLAYLIST_FLG_MOD;
+   playlist_write_file(playlist);
+
+   p->phase = PLAYLIST_PARSE_PHASE_DONE;
+   return 1;
+}
+
+playlist_parse_t *playlist_parse_begin(const playlist_config_t *config)
+{
+   playlist_parse_t *p  = NULL;
+   playlist_t *playlist = (playlist_t*)malloc(sizeof(*playlist));
+   int test_char;
+
+   if (!playlist)
+      return NULL;
+
+   /* Set initial values */
+   playlist->flags                          = 0;
+   playlist->default_core_name              = NULL;
+   playlist->default_core_path              = NULL;
+   playlist->base_content_directory         = NULL;
+   playlist->entries                        = NULL;
+   playlist->label_display_mode             = LABEL_DISPLAY_MODE_DEFAULT;
+   playlist->right_thumbnail_mode           = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   playlist->left_thumbnail_mode            = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
+   playlist->thumbnail_match_mode           = PLAYLIST_THUMBNAIL_MATCH_MODE_DEFAULT;
+   playlist->sort_mode                      = PLAYLIST_SORT_MODE_DEFAULT;
+
+   playlist->scan_record.search_recursively = false;
+   playlist->scan_record.search_archives    = false;
+   playlist->scan_record.filter_dat_content = false;
+   playlist->scan_record.overwrite_playlist = false;
+   playlist->scan_record.omit_db_ref        = false;
+   playlist->scan_record.content_dir        = NULL;
+   playlist->scan_record.file_exts          = NULL;
+   playlist->scan_record.dat_file_path      = NULL;
+   playlist->scan_record.database_name      = NULL;
+   playlist->scan_record.db_usage           = 4; /*MANUAL_CONTENT_SCAN_USE_DB_NONE*/
+
+   /* Cache configuration parameters */
+   if (!playlist_config_copy(config, &playlist->config))
+      goto error;
+   if (!(p = (playlist_parse_t*)calloc(1, sizeof(*p))))
+      goto error;
+
+   p->playlist = playlist;
+   p->res      = true;
+   p->phase    = PLAYLIST_PARSE_PHASE_DONE;   /* until proven otherwise */
+
+   /* Attempt to read any existing playlist file */
+   playlist->file_size = path_get_size(playlist->config.path);
+
+#if defined(HAVE_COMPRESSION)
+      /* Always use RZIP interface when reading playlists
+       * > this will automatically handle uncompressed
+       *   data */
+   p->file = intfstream_open_rzip_file(
+         playlist->config.path,
+         RETRO_VFS_FILE_ACCESS_READ);
+#else
+   p->file = intfstream_open_file(
+         playlist->config.path,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+#endif
+
+   /* If playlist file does not exist,
+    * create an empty playlist instead */
+   if (!p->file)
+   {
+      playlist_parse_enter_autofix(p);
+      return p;
+   }
+
+   if (intfstream_is_compressed(p->file))
+      playlist->flags |=  CNT_PLAYLIST_FLG_COMPRESSED;
+   else
+      playlist->flags &= ~CNT_PLAYLIST_FLG_COMPRESSED;
+
+   /* Detect format of playlist
+    * > Read file until we find the first printable
+    *   non-whitespace ASCII character */
+   do
+   {
+      /* Read error or EOF (end of file) */
+      if ((test_char = intfstream_getc(p->file)) == EOF)
+      {
+         /* Empty file: an empty playlist, successfully. */
+         playlist_parse_enter_autofix(p);
+         return p;
+      }
+   }while(!isgraph(test_char) || test_char > 0x7F);
+
+   if (test_char != '{')
+      playlist->flags |=  (CNT_PLAYLIST_FLG_OLD_FMT);
+   else
+      playlist->flags &= ~(CNT_PLAYLIST_FLG_OLD_FMT);
+
+   /* Reset file to start */
+   intfstream_rewind(p->file);
+
+   if (!(playlist->flags & CNT_PLAYLIST_FLG_OLD_FMT))
+   {
+      p->context.playlist = playlist;
+
+      if (!(p->parser = rjson_open_intfstream(p->file)))
+      {
+         RARCH_ERR("[Playlist] Failed to create JSON parser.\n");
+         playlist_parse_enter_autofix(p);
+         return p;
+      }
+
+      rjson_set_options(p->parser,
+              RJSON_OPTION_ALLOW_UTF8BOM
+            | RJSON_OPTION_ALLOW_COMMENTS
+            | RJSON_OPTION_ALLOW_UNESCAPED_CONTROL_CHARACTERS
+            | RJSON_OPTION_REPLACE_INVALID_ENCODING);
+
+      p->phase = PLAYLIST_PARSE_PHASE_JSON;
+      return p;
+   }
+
+   /* Heap-held: at six entries this is 3 KiB even at the console
+    * path length, on the playlist load path that runs from task
+    * threads.  On allocation failure the legacy-format file simply
+    * reads as empty, matching every other read failure here. */
+   if (!(p->line_buf = (char (*)[PATH_MAX_LENGTH])
+         calloc(PLAYLIST_ENTRIES, PATH_MAX_LENGTH)))
+   {
+      playlist_parse_enter_autofix(p);
+      return p;
+   }
+
+   p->phase = PLAYLIST_PARSE_PHASE_OLD;
+   return p;
+
+error:
+   playlist_free(playlist);
+   return NULL;
+}
+
+int playlist_parse_step(playlist_parse_t *p,
+      bool (*budget_cb)(void *), void *budget_ud)
+{
+   if (!p)
+      return -1;
+
+   for (;;)
+   {
+      int r;
+      switch (p->phase)
+      {
+         case PLAYLIST_PARSE_PHASE_JSON:
+            r = playlist_parse_step_json(p, budget_cb, budget_ud);
+            break;
+         case PLAYLIST_PARSE_PHASE_OLD:
+            r = playlist_parse_step_old(p, budget_cb, budget_ud);
+            break;
+         case PLAYLIST_PARSE_PHASE_AUTOFIX:
+            r = playlist_parse_step_autofix(p, budget_cb, budget_ud);
+            break;
+         case PLAYLIST_PARSE_PHASE_DONE:
+            return 1;
+         case PLAYLIST_PARSE_PHASE_ERROR:
+         default:
+            return -1;
+      }
+      if (r <= 0)
+         return r;
+      /* Phase completed; the next phase may still fit the budget -
+       * loop and let its own budget consults decide. */
+      if (p->phase == PLAYLIST_PARSE_PHASE_DONE)
+         return 1;
+      if (p->phase == PLAYLIST_PARSE_PHASE_ERROR)
+         return -1;
+   }
+}
+
+playlist_t *playlist_parse_end(playlist_parse_t *p)
+{
+   playlist_t *playlist = NULL;
+
+   if (!p)
+      return NULL;
+
+   playlist_parse_close_io(p);
+
+   if (p->phase == PLAYLIST_PARSE_PHASE_DONE)
+   {
+      playlist = p->playlist;
+      p->playlist = NULL;
+   }
+   else if (p->playlist)
+      playlist_free(p->playlist);
+
+   free(p);
+   return playlist;
+}
+
+void playlist_parse_abort(playlist_parse_t *p)
+{
+   if (!p)
+      return;
+   playlist_parse_close_io(p);
+   if (p->playlist)
+      playlist_free(p->playlist);
+   free(p);
+}
+
 
 void playlist_free_cached(void)
 {
@@ -3447,21 +3899,14 @@ static bool playlist_cached_is_reusable(const playlist_config_t *config)
    return true;
 }
 
-bool playlist_init_cached(const playlist_config_t *config)
+/* Shared tail of the cached-init paths: sync the on-disk
+ * format/compression with the requested settings and install the
+ * playlist as the cache.  Main-thread only, like every other
+ * mutation of playlist_cached. */
+static void playlist_init_cached_install(playlist_t *playlist)
 {
-   bool pl_compressed, pl_old_fmt;
-   playlist_t *playlist;
-
-   if (playlist_cached_is_reusable(config))
-      return true;
-
-   playlist_free_cached();
-
-   if (!(playlist = playlist_init(config)))
-      return false;
-
-   pl_compressed   = ((playlist->flags & CNT_PLAYLIST_FLG_COMPRESSED) > 0);
-   pl_old_fmt      = ((playlist->flags & CNT_PLAYLIST_FLG_OLD_FMT)    > 0);
+   bool pl_compressed = ((playlist->flags & CNT_PLAYLIST_FLG_COMPRESSED) > 0);
+   bool pl_old_fmt    = ((playlist->flags & CNT_PLAYLIST_FLG_OLD_FMT)    > 0);
    /* If playlist format/compression state
     * does not match requested settings, update
     * file on disk immediately */
@@ -3472,167 +3917,143 @@ bool playlist_init_cached(const playlist_config_t *config)
        (pl_old_fmt != playlist->config.old_format))
       playlist_write_file(playlist);
 
+   playlist_free_cached();
    playlist_cached       = playlist;
    playlist_cached_stale = false;
+}
+
+bool playlist_init_cached(const playlist_config_t *config)
+{
+   playlist_t *playlist;
+
+   if (playlist_cached_is_reusable(config))
+      return true;
+
+   playlist_free_cached();
+
+   if (!(playlist = playlist_init(config)))
+      return false;
+
+   playlist_init_cached_install(playlist);
    return true;
+}
+
+/* ------------------------------------------------------------------ */
+/* Deferred cached init: the same contract as playlist_init_cached,   */
+/* spread over budgeted steps.  One pending parse at a time (the      */
+/* menu asks for one playlist at a time); a request for a different   */
+/* playlist abandons the previous pending parse.                      */
+/*                                                                    */
+/* Threading discipline mirrors menu_dirwalk: _deferred and _finish   */
+/* run on the main thread (they touch the global cache);              */
+/* _continue only advances the private parse handle, so a worker      */
+/* task may drive it, with the install handed back to the main        */
+/* thread through _finish.                                            */
+/* ------------------------------------------------------------------ */
+
+static playlist_parse_t   *playlist_cached_pending        = NULL;
+static playlist_config_t   playlist_cached_pending_config;
+
+static bool playlist_config_matches(const playlist_config_t *a,
+      const playlist_config_t *b)
+{
+   return  string_is_equal(a->path, b->path)
+        && string_is_equal(a->base_content_directory, b->base_content_directory)
+        && (a->capacity            == b->capacity)
+        && (a->old_format          == b->old_format)
+        && (a->compress            == b->compress)
+        && (a->fuzzy_archive_match == b->fuzzy_archive_match)
+        && (a->autofix_paths       == b->autofix_paths);
+}
+
+void playlist_init_cached_defer_abort(void)
+{
+   if (playlist_cached_pending)
+   {
+      playlist_parse_abort(playlist_cached_pending);
+      playlist_cached_pending = NULL;
+   }
+}
+
+int playlist_init_cached_continue(bool (*budget_cb)(void *), void *budget_ud)
+{
+   int r;
+   if (!playlist_cached_pending)
+      return -1;
+   if ((r = playlist_parse_step(playlist_cached_pending,
+         budget_cb, budget_ud)) == 0)
+      return 0;
+   if (r < 0)
+   {
+      playlist_init_cached_defer_abort();
+      return -1;
+   }
+   /* Parse complete; the playlist is not yet installed - that step
+    * belongs to playlist_init_cached_finish() on the main thread. */
+   return 1;
+}
+
+int playlist_init_cached_finish(void)
+{
+   playlist_t *playlist;
+   if (!playlist_cached_pending)
+      return -1;
+   playlist                = playlist_parse_end(playlist_cached_pending);
+   playlist_cached_pending = NULL;
+   if (!playlist)
+      return -1;
+   playlist_init_cached_install(playlist);
+   return 1;
+}
+
+int playlist_init_cached_deferred(const playlist_config_t *config,
+      bool (*budget_cb)(void *), void *budget_ud)
+{
+   int r;
+
+   if (playlist_cached_is_reusable(config))
+   {
+      /* A pending parse for anything is now moot. */
+      playlist_init_cached_defer_abort();
+      return 1;
+   }
+
+   /* A pending parse for a different playlist is superseded. */
+   if (     playlist_cached_pending
+         && !playlist_config_matches(&playlist_cached_pending_config, config))
+      playlist_init_cached_defer_abort();
+
+   if (!playlist_cached_pending)
+   {
+      if (!(playlist_cached_pending = playlist_parse_begin(config)))
+         return -1;
+      playlist_config_copy(config, &playlist_cached_pending_config);
+   }
+
+   if ((r = playlist_init_cached_continue(budget_cb, budget_ud)) == 0)
+      return 0;
+   if (r < 0)
+      return -1;
+   return playlist_init_cached_finish();
 }
 
 /**
  * playlist_init:
  * @config            : Playlist configuration object.
  *
- * Creates and initializes a playlist.
+ * Creates and initializes a playlist.  Runs the resumable parse
+ * machinery to completion, so this and the budgeted path share one
+ * implementation.
  *
  * Returns: handle to new playlist if successful, otherwise NULL
  **/
 playlist_t *playlist_init(const playlist_config_t *config)
 {
-   playlist_t *playlist = (playlist_t*)malloc(sizeof(*playlist));
-   if (!playlist)
+   playlist_parse_t *p = playlist_parse_begin(config);
+   if (!p)
       return NULL;
-
-   /* Set initial values */
-   playlist->flags                          = 0;
-   playlist->default_core_name              = NULL;
-   playlist->default_core_path              = NULL;
-   playlist->base_content_directory         = NULL;
-   playlist->entries                        = NULL;
-   playlist->label_display_mode             = LABEL_DISPLAY_MODE_DEFAULT;
-   playlist->right_thumbnail_mode           = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
-   playlist->left_thumbnail_mode            = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
-   playlist->thumbnail_match_mode           = PLAYLIST_THUMBNAIL_MATCH_MODE_DEFAULT;
-   playlist->sort_mode                      = PLAYLIST_SORT_MODE_DEFAULT;
-
-   playlist->scan_record.search_recursively = false;
-   playlist->scan_record.search_archives    = false;
-   playlist->scan_record.filter_dat_content = false;
-   playlist->scan_record.overwrite_playlist = false;
-   playlist->scan_record.omit_db_ref        = false;
-   playlist->scan_record.content_dir        = NULL;
-   playlist->scan_record.file_exts          = NULL;
-   playlist->scan_record.dat_file_path      = NULL;
-   playlist->scan_record.database_name      = NULL;
-   playlist->scan_record.db_usage           = 4; /*MANUAL_CONTENT_SCAN_USE_DB_NONE*/
-
-   /* Cache configuration parameters */
-   if (!playlist_config_copy(config, &playlist->config))
-      goto error;
-
-   /* Attempt to read any existing playlist file */
-   playlist->file_size = path_get_size(playlist->config.path);
-
-   if (!playlist_read_file(playlist))
-      goto error;
-
-   /* Try auto-fixing paths if enabled, and playlist
-    * base content directory is different */
-   if (    config->autofix_paths
-       && !string_is_equal(playlist->base_content_directory,
-            config->base_content_directory))
-   {
-      if (playlist->base_content_directory && *playlist->base_content_directory)
-      {
-         size_t i, j, _len;
-         size_t oldref_len = strlen(playlist->base_content_directory);
-         size_t newref_len = strlen(playlist->config.base_content_directory);
-         char tmp_entry_path[PATH_MAX_LENGTH];
-
-         for (i = 0, _len = RBUF_LEN(playlist->entries); i < _len; i++)
-         {
-            struct playlist_entry* entry = &playlist->entries[i];
-
-            if (!entry || (!entry->path || !*entry->path))
-               continue;
-
-            /* Fix entry path */
-            tmp_entry_path[0] = '\0';
-            path_replace_base_path_and_convert_to_local_file_system(
-                  tmp_entry_path, entry->path,
-                  playlist->base_content_directory, oldref_len,
-                  playlist->config.base_content_directory, newref_len,
-                  sizeof(tmp_entry_path));
-
-            free(entry->path);
-            entry->path = strdup(tmp_entry_path);
-
-            /* Fix subsystem roms paths*/
-            if (     (entry->subsystem_roms)
-                  && (entry->subsystem_roms->size > 0))
-            {
-               struct string_list* subsystem_roms_new_paths = string_list_new();
-               union string_list_elem_attr attributes       = { 0 };
-
-               if (!subsystem_roms_new_paths)
-                  goto error;
-
-               for (j = 0; j < entry->subsystem_roms->size; j++)
-               {
-                  const char* subsystem_rom_path = entry->subsystem_roms->elems[j].data;
-
-                  if (!subsystem_rom_path || !*subsystem_rom_path)
-                     continue;
-
-                  tmp_entry_path[0] = '\0';
-                  path_replace_base_path_and_convert_to_local_file_system(
-                        tmp_entry_path,
-                        subsystem_rom_path,
-                        playlist->base_content_directory, oldref_len,
-                        playlist->config.base_content_directory, newref_len,
-                        sizeof(tmp_entry_path));
-                  string_list_append(subsystem_roms_new_paths, tmp_entry_path, attributes);
-               }
-
-               string_list_free(entry->subsystem_roms);
-               entry->subsystem_roms = subsystem_roms_new_paths;
-            }
-         }
-
-         /* Fix scan record content directory */
-         if (playlist->scan_record.content_dir && *playlist->scan_record.content_dir)
-         {
-            tmp_entry_path[0] = '\0';
-            path_replace_base_path_and_convert_to_local_file_system(
-                  tmp_entry_path,
-                  playlist->scan_record.content_dir,
-                  playlist->base_content_directory, oldref_len,
-                  playlist->config.base_content_directory, newref_len,
-                  sizeof(tmp_entry_path));
-
-            free(playlist->scan_record.content_dir);
-            playlist->scan_record.content_dir = strdup(tmp_entry_path);
-         }
-
-         /* Fix scan record arcade DAT file */
-         if (playlist->scan_record.dat_file_path && *playlist->scan_record.dat_file_path)
-         {
-            tmp_entry_path[0] = '\0';
-            path_replace_base_path_and_convert_to_local_file_system(
-                  tmp_entry_path,
-                  playlist->scan_record.dat_file_path,
-                  playlist->base_content_directory, oldref_len,
-                  playlist->config.base_content_directory, newref_len,
-                  sizeof(tmp_entry_path));
-
-            free(playlist->scan_record.dat_file_path);
-            playlist->scan_record.dat_file_path = strdup(tmp_entry_path);
-         }
-      }
-
-      /* Update playlist base content directory*/
-      if (playlist->base_content_directory)
-         free(playlist->base_content_directory);
-      playlist->base_content_directory = strdup(playlist->config.base_content_directory);
-
-      /* Save playlist */
-      playlist->flags   |=  CNT_PLAYLIST_FLG_MOD;
-      playlist_write_file(playlist);
-   }
-
-   return playlist;
-
-error:
-   playlist_free(playlist);
-   return NULL;
+   playlist_parse_step(p, NULL, NULL);
+   return playlist_parse_end(p);
 }
 
 static int playlist_qsort_func(const void *a_ptr,

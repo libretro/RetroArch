@@ -8754,7 +8754,15 @@ void PlaylistModel::getPlaylistItems(QString path)
        * the whole file parses on the UI thread.  Borrow the menu's
        * cached playlist when it is the same file - the loop below
        * deep-copies every field into QStrings, so nothing outlives
-       * the borrow - and parse only otherwise. */
+       * the borrow - and parse only otherwise.
+       *
+       * The cold path stays blocking deliberately: this function
+       * must return a fully populated model to its callers, so the
+       * budgeted playlist_init_cached_deferred() the menu uses
+       * would need Qt-side continuation (a timer driving the parse
+       * plus a model reset on completion) rather than a drop-in
+       * swap.  The cache borrow above already removes the common
+       * case of that cost. */
       playlist_t *cachedPlaylist = playlist_get_cached();
 
       if (   cachedPlaylist

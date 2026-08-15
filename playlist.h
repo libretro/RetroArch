@@ -186,6 +186,44 @@ playlist_config_t *playlist_get_config(playlist_t *playlist);
  **/
 playlist_t *playlist_init(const playlist_config_t *config);
 
+/* Resumable playlist parse.
+ *
+ * playlist_parse_begin() opens and sniffs the playlist file and
+ * returns a parse handle (NULL only on allocation failure; a missing
+ * or unreadable file resolves - as it always has - to an empty
+ * playlist at the first step).  playlist_parse_step() advances the
+ * parse, consulting @budget_cb between batches of work when
+ * non-NULL: it returns 1 when the playlist is complete, 0 when the
+ * budget ran out mid-parse (call again), and -1 on a failed parse.
+ * With a NULL @budget_cb the step runs to completion -
+ * playlist_init() is exactly begin + one unbudgeted step + end, so
+ * the blocking and budgeted paths cannot drift apart.
+ * playlist_parse_end() returns the finished playlist (or NULL after
+ * a failure) and frees the handle; playlist_parse_abort() abandons a
+ * parse at any point, releasing everything. */
+typedef struct playlist_parse playlist_parse_t;
+
+playlist_parse_t *playlist_parse_begin(const playlist_config_t *config);
+int playlist_parse_step(playlist_parse_t *p,
+      bool (*budget_cb)(void *), void *budget_ud);
+playlist_t *playlist_parse_end(playlist_parse_t *p);
+void playlist_parse_abort(playlist_parse_t *p);
+
+/* Deferred variant of playlist_init_cached(): same contract, spread
+ * over budgeted steps.  playlist_init_cached_deferred() returns 1
+ * when the requested playlist is cached and ready (cache hit, or the
+ * parse completed within budget), 0 while a parse is pending, -1 on
+ * failure.  While pending, playlist_init_cached_continue() advances
+ * the parse (it never touches the global cache, so a worker task may
+ * drive it; 1 means the parse finished and
+ * playlist_init_cached_finish() - main thread - must install it).
+ * playlist_init_cached_defer_abort() abandons any pending parse. */
+int playlist_init_cached_deferred(const playlist_config_t *config,
+      bool (*budget_cb)(void *), void *budget_ud);
+int playlist_init_cached_continue(bool (*budget_cb)(void *), void *budget_ud);
+int playlist_init_cached_finish(void);
+void playlist_init_cached_defer_abort(void);
+
 /**
  * playlist_free:
  * @playlist        	   : Playlist handle.
