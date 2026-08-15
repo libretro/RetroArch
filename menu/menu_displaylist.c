@@ -90,6 +90,7 @@
 #include "../msg_hash_lbl_str.h"
 #include "menu_cbs.h"
 #include "menu_driver.h"
+#include "menu_dirwalk.h"
 #include "menu_entries.h"
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "menu_shader.h"
@@ -194,6 +195,18 @@ void filebrowser_set_type(enum filebrowser_enums type)
    p_displist->filebrowser_types = type;
 }
 
+/* Fired on the main thread when a background directory walk
+ * completes (either way): mark the entries for refresh, exactly as
+ * the explore init task does, so the repopulation re-issues the
+ * request and consumes the finished listing. */
+static void menu_displaylist_dirwalk_refresh(unsigned tag)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   (void)tag;
+   menu_st->flags            |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                              |  MENU_ST_FLAG_PREVENT_POPULATE;
+}
+
 static int filebrowser_parse(
       file_list_t *info_list,
       const char *path,
@@ -210,6 +223,10 @@ static int filebrowser_parse(
    size_t i, list_size;
    const struct retro_subsystem_info *subsystem = NULL;
    bool ret                                     = false;
+   bool walk_deferred                           = false;
+   bool list_presorted                          = false;
+   struct string_list *walk_list                = NULL;
+   enum menu_dirwalk_status walk_status         = MENU_DIRWALK_FAILED;
    struct string_list str_list                  = {0};
    unsigned count                               = 0;
    enum menu_displaylist_ctl_state type         = (enum menu_displaylist_ctl_state)type_data;
@@ -273,6 +290,8 @@ static int filebrowser_parse(
             || !strcmp(label, "cursor_manager_list"))
          allow_parent_directory = false;
 
+      menu_dirwalk_set_refresh_cb(menu_displaylist_dirwalk_refresh);
+
       if (filebrowser_type == FILEBROWSER_SELECT_FILE_SUBSYSTEM)
       {
          runloop_state_t    *runloop_st = runloop_state_get_ptr();
@@ -282,19 +301,45 @@ static int filebrowser_parse(
          if (     subsystem
                && (runloop_st->subsystem_current_count > 0)
                && (content_get_subsystem_rom_id() < subsystem->num_roms))
-            ret = dir_list_initialize(&str_list,
-                  full_path,
+            walk_status = menu_dirwalk_request(full_path,
                   filter_ext ? subsystem->roms[content_get_subsystem_rom_id()].valid_extensions : NULL,
-                  true, show_hidden_files, true, false);
+                  true, show_hidden_files, true,
+                  MENU_DIRWALK_SORT_DIR_FIRST,
+                  MENU_DIRWALK_TAG_FILEBROWSER, &walk_list);
       }
       else if (   type_default == FILE_TYPE_MANUAL_SCAN_DAT
                || type_default == FILE_TYPE_SIDELOAD_CORE)
-         ret = dir_list_initialize(&str_list, full_path,
-               exts, true, show_hidden_files, false, false);
+         walk_status = menu_dirwalk_request(full_path,
+               exts, true, show_hidden_files, false,
+               MENU_DIRWALK_SORT_DIR_FIRST,
+               MENU_DIRWALK_TAG_FILEBROWSER, &walk_list);
       else
-         ret = dir_list_initialize(&str_list, full_path,
+         walk_status = menu_dirwalk_request(full_path,
                filter_ext ? exts : NULL,
-               true, show_hidden_files, true, false);
+               true, show_hidden_files, true,
+               MENU_DIRWALK_SORT_DIR_FIRST,
+               MENU_DIRWALK_TAG_FILEBROWSER, &walk_list);
+
+      if (walk_status == MENU_DIRWALK_DONE && walk_list)
+      {
+         /* Move the completed heap listing into the local list the
+          * append loop reads; the module sorted it already. */
+         str_list       = *walk_list;
+         free(walk_list);
+         list_presorted = true;
+         ret            = true;
+      }
+      else if (walk_status == MENU_DIRWALK_PENDING)
+      {
+         /* The walk continues in the background (off the main
+          * thread when Threaded Tasks is on); the refresh callback
+          * lands when it finishes and the re-issued request above
+          * consumes the listing.  Show a placeholder meanwhile. */
+         walk_deferred = true;
+         ret           = true;
+      }
+      /* MENU_DIRWALK_FAILED: ret stays false, same directory-not-
+       * found entry as a failed dir_list_initialize() today. */
    }
 
    switch (filebrowser_type)
@@ -343,7 +388,17 @@ static int filebrowser_parse(
       goto end;
    }
 
-   dir_list_sort(&str_list, true);
+   if (walk_deferred)
+   {
+      menu_entries_append(info_list,
+            msg_hash_to_str(MSG_LOADING), "",
+            MSG_UNKNOWN, MENU_SETTING_NO_ITEM, 0, 0, NULL);
+      count++;
+      goto end;   /* the parent-directory entry still applies */
+   }
+
+   if (!list_presorted)
+      dir_list_sort(&str_list, true);
 
    list_size = str_list.size;
 

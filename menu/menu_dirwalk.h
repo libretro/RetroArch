@@ -66,6 +66,18 @@ enum menu_dirwalk_status
                                    to the caller (string_list_free) */
 };
 
+/* Consumer tags: which displaylist a completed walk belongs to.
+ * Part of the request identity and handed to the refresh callback. */
+enum menu_dirwalk_tag
+{
+   MENU_DIRWALK_TAG_NONE = 0,
+   MENU_DIRWALK_TAG_FILEBROWSER,
+   MENU_DIRWALK_TAG_PLAYLISTS,
+   MENU_DIRWALK_TAG_ADD_TO_PLAYLIST,
+   MENU_DIRWALK_TAG_PLAYLIST_MANAGER,
+   MENU_DIRWALK_TAG_PL_THUMBNAILS
+};
+
 enum menu_dirwalk_sort
 {
    MENU_DIRWALK_SORT_NONE = 0,
