@@ -632,17 +632,15 @@ static void sdl3_poke_set_filtering(void *data, unsigned index, bool smooth, boo
             smooth ? SDL_SCALEMODE_LINEAR : SDL_SCALEMODE_NEAREST);
 }
 
-/* Screen Resolution menu pokes. Only meaningful for exclusive
- * fullscreen (the kmsdrm backend in particular); a normal window is
- * freely resizable instead, so cycling no-ops there. */
+/* Returns whether or not the screen can switch video modes. This
+ * is only the case when in exclusive full screen.
 static bool sdl3_can_switch_video_mode(sdl3_video_t *vid)
 {
    return vid && vid->window
          && (SDL_GetWindowFlags(vid->window) & SDL_WINDOW_FULLSCREEN);
 }
 
-/* NULL fullscreen mode means borderless desktop fullscreen - fall
- * back to the display's current mode. */
+/* Retrieves the display mode of the window. */
 static const SDL_DisplayMode *sdl3_current_video_mode(sdl3_video_t *vid)
 {
    const SDL_DisplayMode *mode = SDL_GetWindowFullscreenMode(vid->window);
@@ -660,8 +658,6 @@ static void sdl3_get_video_output_size(void *data,
    if (!vid || !vid->window)
       return;
 
-   /* Windowed mode has no mode list - report the current window
-    * pixel size instead. */
    if (!sdl3_can_switch_video_mode(vid))
    {
       int w = 0, h = 0;
