@@ -516,6 +516,73 @@ jobs:
           make clean
           echo "[pass] scan_begin_budget_test (TSan)"
 
+      - name: Build and run dirwalk_budget_test (plain, ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/menu/dirwalk
+        run: |
+          set -eu
+          # Oracle for menu/menu_dirwalk.c, the budgeted, cancellable
+          # directory enumeration behind interactive menu list
+          # building, compiled from the tree so it exercises the
+          # shipping translation unit.
+          #
+          # The regression it pins: filebrowser_parse and the
+          # playlist-directory displaylists walk and sort their
+          # directory synchronously on the thread that drives the UI,
+          # a stall proportional to directory size.  menu_dirwalk
+          # caps it: one budgeted synchronous pass under the shared
+          # per-frame I/O window (small and medium directories
+          # complete on the spot, identical result, single tick),
+          # with oversized walks - and oversized sorts, which for a
+          # 40k-entry directory cost more than the walk - continuing
+          # on a task as a resumable enumeration plus a resumable
+          # bottom-up mergesort, ordered by the exact comparator
+          # dir_list_sort() uses.
+          #
+          # The clock is the test's instrument (the save_state
+          # pattern): the sample provides cpu_features_get_time_usec()
+          # itself.  Step 0 reads the real clock for the pacing and
+          # bench lanes; a fixed virtual step per observation makes
+          # window exhaustion deterministic for the deferral, cancel
+          # and threaded lanes on any machine at any cache
+          # temperature.  The build also shrinks the sort-machinery
+          # constants (run length, merge batch, synchronous-sort
+          # ceiling) so run sorting, the element-granular resumable
+          # merge, and sort-only deferral are all driven across many
+          # invocations by a 200-entry fixture.
+          #
+          # Parity is the contract: a consumed listing equals
+          # dir_list_new() plus the same sort, entry for entry with
+          # attributes, across the flag and sort-mode combinations
+          # the displaylist callers use.  The pacing lane asserts no
+          # single main-thread stall - request, task gather, or
+          # consume - exceeds the window plus bounded slack on a
+          # 40k-file flat fixture (the walk under test is
+          # non-recursive: the menu browses one level, so the files
+          # sit flat, which is also what a large ROM directory looks
+          # like).  The bench lane holds the hard precondition:
+          # wall-clock from first request to consumed result may not
+          # regress past the blocking walk + sort it replaces.  The
+          # cancel lane supersedes and cancels mid-walk and drains
+          # stale completions, with LeakSanitizer judging the
+          # teardown; the threaded lane hands the walk to a worker
+          # and is the TSan target for the handler-to-main-callback
+          # hand-off.
+          make clean all
+          test -x dirwalk_budget_test
+          timeout 600 ./dirwalk_budget_test
+          echo "[pass] dirwalk_budget_test"
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 900 \
+             ./dirwalk_budget_test sanitize
+          echo "[pass] dirwalk_budget_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 900 \
+             ./dirwalk_budget_test sanitize
+          make clean
+          echo "[pass] dirwalk_budget_test (TSan)"
+
       - name: Build and run save_state_io_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/tasks/save_state
