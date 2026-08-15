@@ -12971,7 +12971,8 @@ bool menu_displaylist_has_subsystems(void)
    return (subsystem && runloop_st->subsystem_current_count > 0);
 }
 
-bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
+static bool menu_displaylist_ctl_internal(
+      enum menu_displaylist_ctl_state type,
       menu_displaylist_info_t *info,
       settings_t *settings)
 {
@@ -17234,4 +17235,37 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
    }
 
    return true;
+}
+
+/* Over-budget watchdog (debug builds): with Threaded Tasks off,
+ * every displaylist build runs on the thread that drives the UI, so
+ * a build past the frame-scale budget is a user-visible hitch that
+ * the walks above were converted to prevent.  Flag any that slip
+ * through - a newly added blocking walk, a playlist parse on a cold
+ * cache, an archive listing - with the displaylist type so the site
+ * is identifiable.  Threaded queues are exempt: their heavy lifting
+ * is off-thread by construction, and the callback-side cost is
+ * already covered by the same budget the tasks step under. */
+#define MENU_DISPLAYLIST_BUILD_WARN_USEC 16000
+
+bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
+      menu_displaylist_info_t *info,
+      settings_t *settings)
+{
+#ifdef DEBUG
+   retro_time_t t0 = cpu_features_get_time_usec();
+   bool ret        = menu_displaylist_ctl_internal(type, info, settings);
+   retro_time_t dt = cpu_features_get_time_usec() - t0;
+   if (     (dt > MENU_DISPLAYLIST_BUILD_WARN_USEC)
+         && !task_queue_is_threaded())
+      RARCH_WARN(
+            "[Menu] Displaylist %d spent %u.%03u ms on the main thread"
+            " (budget %u ms).\n",
+            (int)type,
+            (unsigned)(dt / 1000), (unsigned)(dt % 1000),
+            (unsigned)(MENU_DISPLAYLIST_BUILD_WARN_USEC / 1000));
+   return ret;
+#else
+   return menu_displaylist_ctl_internal(type, info, settings);
+#endif
 }
