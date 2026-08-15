@@ -89,10 +89,10 @@ struct config_include_list
  * Word loads go through memcpy (alignment-safe) and stay strictly
  * inside [s, s+len), so no over-read at buffer ends; the result is
  * endian-dependent, which is fine for a per-process table. */
-static uint32_t config_file_hash_span(const char *s, size_t _len)
+static uint32_t config_hash_span(const char *s, size_t _len)
 {
-   uint32_t h = 0x811c9dc5u ^ (uint32_t)_len;
    uint32_t k;
+   uint32_t h = 0x811c9dc5u ^ (uint32_t)_len;
    while (_len >= 4)
    {
       memcpy(&k, s, 4);
@@ -120,11 +120,6 @@ static uint32_t config_file_hash_span(const char *s, size_t _len)
    h *= 0xc2b2ae35u;
    h ^= h >> 16;
    return (h ? h : 1);
-}
-
-static uint32_t config_file_hash_key(const char *key)
-{
-   return config_file_hash_span(key, strlen(key));
 }
 
 /* Internal parse option: entries borrow key/value strings from the
@@ -1002,7 +997,7 @@ static bool config_file_parse_line(config_file_t *conf,
       idx = (size_t)(line - key_start);
       if (idx == 0)
          return false;
-      *khash = config_file_hash_span(key_start, idx);
+      *khash = config_hash_span(key_start, idx);
       /* An entry without a value is invalid */
       while (*line == ' ' || *line == '\t' || *line == '\r' || *line == '\n')
          line++;
@@ -1040,7 +1035,7 @@ static bool config_file_parse_line(config_file_t *conf,
    return true;
 }
 
-static int config_file_from_string_internal(
+static int config_from_string_internal(
       struct config_file *conf,
       char *from_string,
       const char *path)
@@ -1218,17 +1213,13 @@ config_file_t *config_file_new_from_string(char *from_string,
 {
    struct config_file *conf      = config_file_new_alloc();
    if (     conf
-         && config_file_from_string_internal(
+         && config_from_string_internal(
             conf, from_string, path) != -1)
       return conf;
    if (conf)
       config_file_free(conf);
    return NULL;
 }
-
-static config_file_t *config_file_new_take_string_internal(
-      char *from_string, size_t s_len, const char *path,
-      const config_file_io_t *io);
 
 config_file_t *config_file_new_with_io(const char *path,
       const config_file_io_t *io)
@@ -1249,15 +1240,7 @@ config_file_t *config_file_new_with_io(const char *path,
    return conf;
 }
 
-config_file_t *config_file_new_take_string_with_io(char *from_string,
-      size_t s_len, const char *path, const config_file_io_t *io)
-{
-   config_file_t *conf = config_file_new_take_string_internal(from_string,
-         s_len, path, io);
-   return conf;
-}
-
-static config_file_t *config_file_new_take_string_internal(
+static config_file_t *config_new_take_string_internal(
       char *from_string, size_t s_len, const char *path,
       const config_file_io_t *io)
 {
@@ -1302,10 +1285,18 @@ static config_file_t *config_file_new_take_string_internal(
    return conf;
 }
 
+config_file_t *config_file_new_take_string_with_io(char *from_string,
+      size_t s_len, const char *path, const config_file_io_t *io)
+{
+   config_file_t *conf = config_new_take_string_internal(from_string,
+         s_len, path, io);
+   return conf;
+}
+
 config_file_t *config_file_new_take_string(char *from_string,
       size_t s_len, const char *path)
 {
-   return config_file_new_take_string_internal(from_string, s_len, path,
+   return config_new_take_string_internal(from_string, s_len, path,
          NULL);
 }
 
@@ -1561,7 +1552,7 @@ static struct config_entry_list *config_get_entry_internal(
       const config_file_t *conf,
       const char *key, struct config_entry_list **prev)
 {
-   struct config_entry_list *entry = RHMAP_GET_FULL(conf->entries_map, config_file_hash_key(key), key);
+   struct config_entry_list *entry = RHMAP_GET_FULL(conf->entries_map, config_hash_span(key, strlen(key)), key);
 
    if (entry)
       return entry;
@@ -1581,7 +1572,7 @@ static struct config_entry_list *config_get_entry_internal(
 struct config_entry_list *config_get_entry(
       const config_file_t *conf, const char *key)
 {
-   return RHMAP_GET_FULL(conf->entries_map, config_file_hash_key(key), key);
+   return RHMAP_GET_FULL(conf->entries_map, config_hash_span(key, strlen(key)), key);
 }
 
 /**
@@ -1960,7 +1951,7 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
    else
       conf->entries = entry;
    conf->last       = entry;
-   RHMAP_SET_FULL(conf->entries_map, config_file_hash_key(entry->key), entry->key, entry);
+   RHMAP_SET_FULL(conf->entries_map, config_hash_span(entry->key, strlen(entry->key)), entry->key, entry);
 }
 
 void config_unset(config_file_t *conf, const char *key)
@@ -1976,7 +1967,7 @@ void config_unset(config_file_t *conf, const char *key)
    if (!(entry = config_get_entry_internal(conf, key, &last)))
       return;
 
-   (void)RHMAP_DEL_FULL(conf->entries_map, config_file_hash_key(entry->key), entry->key);
+   (void)RHMAP_DEL_FULL(conf->entries_map, config_hash_span(entry->key, strlen(entry->key)), entry->key);
 
    if (entry->key && !(entry->flags & CONF_ENTRY_FLG_KEY_BORROWED))
       free(entry->key);
