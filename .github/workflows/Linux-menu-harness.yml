@@ -37,23 +37,37 @@ jobs:
   menu-harness:
     name: Build and run the menu navigation harness
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 25
 
     steps:
       - name: Install dependencies
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y build-essential zlib1g-dev \
-            libgl1-mesa-dev libasound2-dev libudev-dev
+          sudo apt-get install -y build-essential zlib1g-dev
 
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Build RetroArch without Qt
+      - name: Build RetroArch headless
         shell: bash
         run: |
           set -eu
-          ./configure --disable-qt
+          # The harness drives the menu with the null drivers, so
+          # everything that draws or talks to the network is dead
+          # weight here - and building it is the entire cost of this
+          # workflow.  Disabling it takes the build from roughly ten
+          # minutes to about three, and avoids depending on graphics
+          # packages the runner may or may not carry: configure found
+          # X11 and xcb but not libX11-xcb, and the link failed on
+          # -lX11-xcb.
+          #
+          # Qt in particular has to go: with it enabled main() lives
+          # in ui_qt.o, and the harness replaces main().
+          ./configure --disable-qt --disable-x11 \
+                      --disable-opengl --disable-opengl_core \
+                      --disable-opengl1 --disable-vulkan \
+                      --disable-cheevos --disable-networking \
+                      --disable-ffmpeg
           make -j$(nproc)
 
       - name: Build and run menu_playlist_nav_test
