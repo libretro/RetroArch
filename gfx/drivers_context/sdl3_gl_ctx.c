@@ -180,6 +180,14 @@ static bool sdl3_ctx_set_video_mode(void *data,
    /* GL attributes must be set before the window is created. */
    if (!sdl->win)
    {
+#ifdef GL_DEBUG
+      bool debug = true;
+#else
+      struct retro_hw_render_callback *hwr =
+         video_driver_get_hw_context();
+      bool debug = hwr && hwr->debug_context;
+#endif
+
       if (sdl3_gl_api == GFX_CTX_OPENGL_ES_API)
          SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
       else if (sdl3_gl_core_profile(sdl))
@@ -192,6 +200,11 @@ static bool sdl3_ctx_set_video_mode(void *data,
          SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, sdl3_gl_major);
          SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, sdl3_gl_minor);
       }
+
+      /* hw_render.debug_context. The attribute is sticky, so the
+       * shared context from bind_hw_render inherits it too. */
+      if (debug)
+         SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
    }
 
    if (!sdl3_window_set_video_mode(&sdl->win, width, height, fullscreen, SDL_WINDOW_OPENGL))
