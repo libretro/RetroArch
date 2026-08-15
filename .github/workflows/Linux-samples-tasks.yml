@@ -710,6 +710,34 @@ jobs:
             ./nat_task_serialisation_test
           make clean >/dev/null
 
+      - name: Build and run menu_playlist_nav_test (full program)
+        shell: bash
+        run: |
+          set -eu
+          # Unlike every other sample, this links the SHIPPING objects
+          # with only main() replaced - nothing is stubbed - because
+          # three field reports came out of the seam between the
+          # playlist reader and the menu and no oracle that stopped at
+          # the reader could see any of them: a stale playlist's
+          # entries under a new heading, then a blank list the back
+          # button could not leave, then a list that filled only after
+          # the user pressed something.
+          #
+          # It needs a non-Qt build: with Qt on, main() lives in
+          # ui_qt.o and drags the whole Qt UI with it.
+          #
+          # The harness installs a VFS through the seam the frontend
+          # uses, returning short reads with a per-read delay.  Short
+          # reads alone reproduce SAF's syscall count but not its
+          # latency, and on local storage the whole playlist still
+          # fits inside one budget slice - which is exactly why none
+          # of the three reports reproduced on a desktop.
+          ./configure --disable-qt >/dev/null
+          make -j$(nproc) >/dev/null
+          samples/menu/playlist_nav/build.sh
+          ./samples/menu/playlist_nav/menu_playlist_nav_test
+          make -C samples/menu/playlist_nav clean
+
       - name: Guard against unbounded task_queue_wait in network/ and tasks/
         shell: bash
         run: |
