@@ -605,6 +605,39 @@ static void android_input_destroy_surface(video_driver_state_t *state)
    state->current_video_context.destroy_surface(state->context_data);
 }
 
+/* Set once the pause-time flush has been performed, cleared again on
+ * resume. A pause -> resume -> pause cycle therefore flushes twice, but a
+ * duplicate APP_CMD_PAUSE does not rewrite the config a second time. */
+static bool android_state_flushed = false;
+
+/* Android may reclaim the process at any point after onPause() has
+ * returned. onDestroy() is not guaranteed to run at all - in particular,
+ * swiping the task away from Recents never delivers it - so onPause() is
+ * the last callback that can be relied upon.
+ *
+ * Everything that would otherwise only be written by retroarch_main_quit()
+ * is therefore flushed here instead, so that settings survive the process
+ * being killed without the user having to invoke 'Quit RetroArch'. */
+static void android_input_flush_persistent_state(void)
+{
+   settings_t *settings = config_get_ptr();
+
+   if (android_state_flushed)
+      return;
+   android_state_flushed = true;
+
+   /* Config subsystem is not up yet - nothing to persist. */
+   if (!settings)
+      return;
+
+   /* SRAM first: it is the more expensive of the two, and the more
+    * painful to lose. Non-SRAM cores make this a no-op. */
+   command_event(CMD_EVENT_SAVE_FILES, NULL);
+
+   if (settings->bools.config_save_on_exit)
+      command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+}
+
 static void android_input_poll_main_cmd(void)
 {
    int8_t cmd;
@@ -678,6 +711,11 @@ static void android_input_poll_main_cmd(void)
             android_app->reinitRequested = 1;
          scond_broadcast(android_app->cond);
          slock_unlock(android_app->mutex);
+
+         if (cmd == APP_CMD_PAUSE)
+            android_input_flush_persistent_state();
+         else
+            android_state_flushed = false;
          break;
       }
 
