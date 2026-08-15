@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2020 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (m3u_file.h).
+ * The following license statement only applies to this file (rm3u.h).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -20,8 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef __LIBRETRO_SDK_FORMAT_M3U_FILE_H__
-#define __LIBRETRO_SDK_FORMAT_M3U_FILE_H__
+#ifndef __LIBRETRO_SDK_FORMAT_RM3U_H__
+#define __LIBRETRO_SDK_FORMAT_RM3U_H__
 
 #include <retro_common_api.h>
 
@@ -34,10 +34,10 @@ RETRO_BEGIN_DECLS
 /* Trivial handler for M3U playlist files */
 
 /* M3U file extension */
-#define M3U_FILE_EXT "m3u"
+#define RM3U_EXT "m3u"
 
-/* Prevent direct access to m3u_file_t members */
-typedef struct content_m3u_file m3u_file_t;
+/* Prevent direct access to rm3u_t members */
+typedef struct rm3u rm3u_t;
 
 /* Holds all metadata for a single M3U file entry */
 typedef struct
@@ -45,16 +45,16 @@ typedef struct
    char *path;
    char *full_path;
    char *label;
-} m3u_file_entry_t;
+} rm3u_entry_t;
 
 /* Defines entry label formatting when
  * writing M3U files to disk */
-enum m3u_file_label_type
+enum rm3u_label_type
 {
-   M3U_FILE_LABEL_NONE = 0,
-   M3U_FILE_LABEL_NONSTD,
-   M3U_FILE_LABEL_EXTSTD,
-   M3U_FILE_LABEL_RETRO
+   RM3U_LABEL_NONE = 0,
+   RM3U_LABEL_NONSTD,
+   RM3U_LABEL_EXTSTD,
+   RM3U_LABEL_RETRO
 };
 
 /* File Initialisation / De-Initialisation */
@@ -64,27 +64,27 @@ enum m3u_file_label_type
  *   contents is parsed
  * - If path does not exist, an empty M3U file
  *   is created
- * - Returned m3u_file_t object must be free'd using
- *   m3u_file_free()
+ * - Returned rm3u_t object must be free'd using
+ *   rm3u_free()
  * - Returns NULL in the event of an error */
-m3u_file_t *m3u_file_init(const char *path);
+rm3u_t *rm3u_init(const char *path);
 
 /* Frees specified M3U file */
-void m3u_file_free(m3u_file_t *m3u_file);
+void rm3u_free(rm3u_t *m3u);
 
 /* Getters */
 
 /* Returns M3U file path */
-char *m3u_file_get_path(m3u_file_t *m3u_file);
+char *rm3u_get_path(rm3u_t *m3u);
 
 /* Returns number of entries in M3U file */
-size_t m3u_file_get_size(m3u_file_t *m3u_file);
+size_t rm3u_get_size(rm3u_t *m3u);
 
 /* Fetches specified M3U file entry
  * - Returns false if 'idx' is invalid, or internal
  *   entry is NULL */
-bool m3u_file_get_entry(
-      m3u_file_t *m3u_file, size_t idx, m3u_file_entry_t **entry);
+bool rm3u_get_entry(
+      rm3u_t *m3u, size_t idx, rm3u_entry_t **entry);
 
 /* Setters */
 
@@ -92,30 +92,30 @@ bool m3u_file_get_entry(
  * - Returns false if path is invalid, or
  *   memory could not be allocated for the
  *   entry */
-bool m3u_file_add_entry(
-      m3u_file_t *m3u_file, const char *path, const char *label);
+bool rm3u_add_entry(
+      rm3u_t *m3u, const char *path, const char *label);
 
 /* Removes all entries in M3U file */
-void m3u_file_clear(m3u_file_t *m3u_file);
+void rm3u_clear(rm3u_t *m3u);
 
 /* Saving */
 
 /* Saves M3U file to disk
- * - Setting 'label_type' to M3U_FILE_LABEL_NONE
+ * - Setting 'label_type' to RM3U_LABEL_NONE
  *   just outputs entry paths - this the most
  *   common format supported by most cores
  * - Returns false in the event of an error */
-bool m3u_file_save(
-      m3u_file_t *m3u_file, enum m3u_file_label_type label_type);
+bool rm3u_save(
+      rm3u_t *m3u, enum rm3u_label_type label_type);
 
 /* Utilities */
 
 /* Sorts M3U file entries in alphabetical order */
-void m3u_file_qsort(m3u_file_t *m3u_file);
+void rm3u_qsort(rm3u_t *m3u);
 
 /* Returns true if specified path corresponds
  * to an M3U file (simple convenience function) */
-bool m3u_file_is_m3u(const char *path);
+bool rm3u_is_m3u(const char *path);
 
 RETRO_END_DECLS
 

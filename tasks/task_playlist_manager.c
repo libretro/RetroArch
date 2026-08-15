@@ -24,7 +24,7 @@
 #include <string/stdstring.h>
 #include <lists/string_list.h>
 #include <file/file_path.h>
-#include <formats/m3u_file.h>
+#include <formats/rm3u.h>
 
 #include "tasks_internal.h"
 
@@ -584,7 +584,7 @@ static void task_pl_manager_clean_playlist_handler(retro_task_t *task)
             {
                /* If this is an M3U file, add it to the
                 * M3U list for later processing */
-               if (m3u_file_is_m3u(entry->path))
+               if (rm3u_is_m3u(entry->path))
                {
                   union string_list_elem_attr attr;
                   attr.i = 0;
@@ -617,31 +617,31 @@ static void task_pl_manager_clean_playlist_handler(retro_task_t *task)
 
             if (m3u_path && *m3u_path)
             {
-               m3u_file_t *m3u_file = NULL;
+               rm3u_t *m3u = NULL;
 
                /* Update progress display */
                task_set_progress(task, (pl_manager->m3u_index * 100) / pl_manager->m3u_list->size);
 
                /* Load M3U file */
-               m3u_file = m3u_file_init(m3u_path);
+               m3u = rm3u_init(m3u_path);
 
-               if (m3u_file)
+               if (m3u)
                {
                   size_t i;
 
                   /* Loop over M3U entries */
-                  for (i = 0; i < m3u_file_get_size(m3u_file); i++)
+                  for (i = 0; i < rm3u_get_size(m3u); i++)
                   {
-                     m3u_file_entry_t *m3u_entry = NULL;
+                     rm3u_entry_t *m3u_entry = NULL;
 
                      /* Delete any playlist items matching the
                       * content path of the M3U entry */
-                     if (m3u_file_get_entry(m3u_file, i, &m3u_entry))
+                     if (rm3u_get_entry(m3u, i, &m3u_entry))
                         playlist_delete_by_path(
                               pl_manager->playlist, m3u_entry->full_path);
                   }
 
-                  m3u_file_free(m3u_file);
+                  rm3u_free(m3u);
                }
             }
 

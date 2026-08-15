@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2020 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (m3u_file.c).
+ * The following license statement only applies to this file (rm3u.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/* m3u_file -- M3U playlist reader/writer.
+/* m3u -- M3U playlist reader/writer.
  *
  * What it implements: line-based M3U parsing with three label styles -
  * the standard extended '#EXTINF:<runtime>,<label>', the non-standard
@@ -28,7 +28,7 @@
  * relative and absolute entry paths (resolved against the playlist
  * location), Windows line endings (trailing whitespace including the
  * carriage return is trimmed), and saving back out in a chosen label
- * style via m3u_file_save.
+ * style via rm3u_save.
  *
  * What it does not implement: other extended directives (#EXTM3U,
  * #EXTGRP, #PLAYLIST and friends are treated as comments and dropped -
@@ -44,7 +44,7 @@
 #include <streams/file_stream.h>
 #include <array/rbuf.h>
 
-#include <formats/m3u_file.h>
+#include <formats/rm3u.h>
 
 /* We parse the following types of entry label:
  * - '#LABEL:<label>' non-standard, but used by
@@ -54,20 +54,17 @@
  * - '<content path>|<label>' non-standard, but
  *   used by some cores
  * All other comments/directives are ignored */
-#define M3U_FILE_COMMENT            '#'
-#define M3U_FILE_NONSTD_LABEL       "#LABEL:"
-#define M3U_FILE_EXTSTD_LABEL       "#EXTINF:"
-#define M3U_FILE_EXTSTD_LABEL_TOKEN ','
-#define M3U_FILE_RETRO_LABEL_TOKEN  '|'
+#define RM3U_COMMENT            '#'
+#define RM3U_NONSTD_LABEL       "#LABEL:"
+#define RM3U_EXTSTD_LABEL       "#EXTINF:"
+#define RM3U_EXTSTD_LABEL_TOKEN ','
+#define RM3U_RETRO_LABEL_TOKEN  '|'
 
-/* Holds all internal M3U file data
- * > Note the awkward name: 'content_m3u_file'
- *   If we used just 'm3u_file' here, it would
- *   lead to conflicts elsewhere... */
-struct content_m3u_file
+/* Holds all internal M3U file data */
+struct rm3u
 {
    char *path;
-   m3u_file_entry_t *entries;
+   rm3u_entry_t *entries;
 };
 
 /* File Initialisation / De-Initialisation */
@@ -75,7 +72,7 @@ struct content_m3u_file
 /* Reads M3U file contents from disk
  * - Does nothing if file does not exist
  * - Returns false in the event of an error */
-static bool m3u_file_load(m3u_file_t *m3u_file)
+static bool rm3u_load(rm3u_t *m3u)
 {
    size_t i;
    char entry_label[NAME_MAX_LENGTH];
@@ -89,32 +86,32 @@ static bool m3u_file_load(m3u_file_t *m3u_file)
    entry_path[0]  = '\0';
    entry_label[0] = '\0';
 
-   if (!m3u_file)
+   if (!m3u)
       goto end;
 
    /* Check whether file exists
     * > If path is empty, then an error
     *   has occurred... */
-   if (!m3u_file->path || !*m3u_file->path)
+   if (!m3u->path || !*m3u->path)
       goto end;
 
    /* > File must have the correct extension */
-   file_ext = path_get_extension(m3u_file->path);
+   file_ext = path_get_extension(m3u->path);
 
    if (    (!file_ext || !*file_ext)
-       || !string_is_equal_noncase(file_ext, M3U_FILE_EXT))
+       || !string_is_equal_noncase(file_ext, RM3U_EXT))
       goto end;
 
    /* > If file does not exist, no action
     *   is required */
-   if (!path_is_valid(m3u_file->path))
+   if (!path_is_valid(m3u->path))
    {
       success = true;
       goto end;
    }
 
    /* Read file from disk */
-   if (filestream_read_file(m3u_file->path, (void**)&file_buf, &file_len) >= 0)
+   if (filestream_read_file(m3u->path, (void**)&file_buf, &file_len) >= 0)
    {
       /* Split file into lines */
       if (file_len > 0)
@@ -149,31 +146,31 @@ static bool m3u_file_load(m3u_file_t *m3u_file)
       /* Determine line 'type' */
 
       /* > '#LABEL:' */
-      if (string_starts_with_size(line, M3U_FILE_NONSTD_LABEL,
-            STRLEN_CONST(M3U_FILE_NONSTD_LABEL)))
+      if (string_starts_with_size(line, RM3U_NONSTD_LABEL,
+            STRLEN_CONST(RM3U_NONSTD_LABEL)))
       {
          /* Label is the string to the right
           * of '#LABEL:' */
-         const char *label = line + STRLEN_CONST(M3U_FILE_NONSTD_LABEL);
+         const char *label = line + STRLEN_CONST(RM3U_NONSTD_LABEL);
 
          if (label && *label)
          {
             strlcpy(
-                  entry_label, line + STRLEN_CONST(M3U_FILE_NONSTD_LABEL),
+                  entry_label, line + STRLEN_CONST(RM3U_NONSTD_LABEL),
                   sizeof(entry_label));
             string_trim_whitespace_right(entry_label);
             string_trim_whitespace_left(entry_label);
          }
       }
       /* > '#EXTINF:' */
-      else if (string_starts_with_size(line, M3U_FILE_EXTSTD_LABEL,
-            STRLEN_CONST(M3U_FILE_EXTSTD_LABEL)))
+      else if (string_starts_with_size(line, RM3U_EXTSTD_LABEL,
+            STRLEN_CONST(RM3U_EXTSTD_LABEL)))
       {
          /* Label is the string to the right
           * of the first comma */
          const char* label_ptr = strchr(
-               line + STRLEN_CONST(M3U_FILE_EXTSTD_LABEL),
-               M3U_FILE_EXTSTD_LABEL_TOKEN);
+               line + STRLEN_CONST(RM3U_EXTSTD_LABEL),
+               RM3U_EXTSTD_LABEL_TOKEN);
 
          if (label_ptr && *label_ptr)
          {
@@ -187,14 +184,14 @@ static bool m3u_file_load(m3u_file_t *m3u_file)
          }
       }
       /* > Ignore other comments/directives */
-      else if (line[0] == M3U_FILE_COMMENT)
+      else if (line[0] == RM3U_COMMENT)
          continue;
       /* > An actual 'content' line */
       else
       {
          /* This is normally a file name/path, but may
           * have the format <content path>|<label> */
-         const char *token_ptr = strchr(line, M3U_FILE_RETRO_LABEL_TOKEN);
+         const char *token_ptr = strchr(line, RM3U_RETRO_LABEL_TOKEN);
 
          if (token_ptr)
          {
@@ -230,12 +227,12 @@ static bool m3u_file_load(m3u_file_t *m3u_file)
          }
 
          /* Add entry to file
-          * > Note: The only way that m3u_file_add_entry()
+          * > Note: The only way that rm3u_add_entry()
           *   can fail here is if we run out of memory.
-          *   This is a critical error, and m3u_file must
+          *   This is a critical error, and m3u must
           *   be considered invalid in this case */
          if (*entry_path
-             && !m3u_file_add_entry(m3u_file, entry_path, entry_label))
+             && !rm3u_add_entry(m3u, entry_path, entry_label))
             goto end;
 
          /* Reset entry_path/entry_label */
@@ -268,12 +265,12 @@ end:
  *   contents is parsed
  * - If path does not exist, an empty M3U file
  *   is created
- * - Returned m3u_file_t object must be free'd using
- *   m3u_file_free()
+ * - Returned rm3u_t object must be free'd using
+ *   rm3u_free()
  * - Returns NULL in the event of an error */
-m3u_file_t *m3u_file_init(const char *path)
+rm3u_t *rm3u_init(const char *path)
 {
-   m3u_file_t *m3u_file = NULL;
+   rm3u_t *m3u = NULL;
    char m3u_path[PATH_MAX_LENGTH];
 
    /* Sanity check */
@@ -287,30 +284,30 @@ m3u_file_t *m3u_file_init(const char *path)
    if (!*m3u_path)
       return NULL;
 
-   /* Create m3u_file_t object */
-   if (!(m3u_file = (m3u_file_t*)malloc(sizeof(*m3u_file))))
+   /* Create rm3u_t object */
+   if (!(m3u = (rm3u_t*)malloc(sizeof(*m3u))))
       return NULL;
 
    /* Initialise members */
-   m3u_file->path    = NULL;
-   m3u_file->entries = NULL;
+   m3u->path    = NULL;
+   m3u->entries = NULL;
 
    /* Copy file path */
-   m3u_file->path    = strdup(m3u_path);
+   m3u->path    = strdup(m3u_path);
 
    /* Read existing file contents from
     * disk, if required */
-   if (!m3u_file_load(m3u_file))
+   if (!rm3u_load(m3u))
    {
-      m3u_file_free(m3u_file);
+      rm3u_free(m3u);
       return NULL;
    }
 
-   return m3u_file;
+   return m3u;
 }
 
 /* Frees specified M3U file entry */
-static void m3u_file_free_entry(m3u_file_entry_t *entry)
+static void rm3u_free_entry(rm3u_entry_t *entry)
 {
    if (!entry)
       return;
@@ -330,65 +327,65 @@ static void m3u_file_free_entry(m3u_file_entry_t *entry)
 }
 
 /* Frees specified M3U file */
-void m3u_file_free(m3u_file_t *m3u_file)
+void rm3u_free(rm3u_t *m3u)
 {
    size_t i;
 
-   if (!m3u_file)
+   if (!m3u)
       return;
 
-   if (m3u_file->path)
-      free(m3u_file->path);
+   if (m3u->path)
+      free(m3u->path);
 
-   m3u_file->path = NULL;
+   m3u->path = NULL;
 
    /* Free entries */
-   if (m3u_file->entries)
+   if (m3u->entries)
    {
-      for (i = 0; i < RBUF_LEN(m3u_file->entries); i++)
+      for (i = 0; i < RBUF_LEN(m3u->entries); i++)
       {
-         m3u_file_entry_t *entry = &m3u_file->entries[i];
-         m3u_file_free_entry(entry);
+         rm3u_entry_t *entry = &m3u->entries[i];
+         rm3u_free_entry(entry);
       }
 
-      RBUF_FREE(m3u_file->entries);
+      RBUF_FREE(m3u->entries);
    }
 
-   free(m3u_file);
+   free(m3u);
 }
 
 /* Getters */
 
 /* Returns M3U file path */
-char *m3u_file_get_path(m3u_file_t *m3u_file)
+char *rm3u_get_path(rm3u_t *m3u)
 {
-   if (!m3u_file)
+   if (!m3u)
       return NULL;
 
-   return m3u_file->path;
+   return m3u->path;
 }
 
 /* Returns number of entries in M3U file */
-size_t m3u_file_get_size(m3u_file_t *m3u_file)
+size_t rm3u_get_size(rm3u_t *m3u)
 {
-   if (!m3u_file)
+   if (!m3u)
       return 0;
 
-   return RBUF_LEN(m3u_file->entries);
+   return RBUF_LEN(m3u->entries);
 }
 
 /* Fetches specified M3U file entry
  * - Returns false if 'idx' is invalid, or internal
  *   entry is NULL */
-bool m3u_file_get_entry(
-      m3u_file_t *m3u_file, size_t idx, m3u_file_entry_t **entry)
+bool rm3u_get_entry(
+      rm3u_t *m3u, size_t idx, rm3u_entry_t **entry)
 {
-   if (!m3u_file ||
+   if (!m3u ||
        !entry ||
-       (idx >= RBUF_LEN(m3u_file->entries)))
+       (idx >= RBUF_LEN(m3u->entries)))
       return false;
 
-   *entry = &m3u_file->entries[idx];
+   *entry = &m3u->entries[idx];
 
    if (!*entry)
       return false;
@@ -402,31 +399,31 @@ bool m3u_file_get_entry(
  * - Returns false if path is invalid, or
  *   memory could not be allocated for the
  *   entry */
-bool m3u_file_add_entry(
-      m3u_file_t *m3u_file, const char *path, const char *label)
+bool rm3u_add_entry(
+      rm3u_t *m3u, const char *path, const char *label)
 {
-   m3u_file_entry_t *entry = NULL;
+   rm3u_entry_t *entry = NULL;
    size_t num_entries;
    char full_path[PATH_MAX_LENGTH];
 
    full_path[0] = '\0';
 
-   if (!m3u_file || (!path || !*path))
+   if (!m3u || (!path || !*path))
       return false;
 
    /* Get current number of file entries */
-   num_entries = RBUF_LEN(m3u_file->entries);
+   num_entries = RBUF_LEN(m3u->entries);
 
    /* Attempt to allocate memory for new entry */
-   if (!RBUF_TRYFIT(m3u_file->entries, num_entries + 1))
+   if (!RBUF_TRYFIT(m3u->entries, num_entries + 1))
       return false;
 
    /* Allocation successful - increment array size */
-   RBUF_RESIZE(m3u_file->entries, num_entries + 1);
+   RBUF_RESIZE(m3u->entries, num_entries + 1);
 
    /* Fetch entry at end of list, and zero-initialise
     * members */
-   entry = &m3u_file->entries[num_entries];
+   entry = &m3u->entries[num_entries];
    memset(entry, 0, sizeof(*entry));
 
    /* Copy path and label */
@@ -443,13 +440,13 @@ bool m3u_file_add_entry(
    }
    else
       fill_pathname_resolve_relative(
-            full_path, m3u_file->path, path,
+            full_path, m3u->path, path,
             sizeof(full_path));
 
    /* Handle unforeseen errors... */
    if (!*full_path)
    {
-      m3u_file_free_entry(entry);
+      rm3u_free_entry(entry);
       return false;
    }
 
@@ -459,62 +456,62 @@ bool m3u_file_add_entry(
 }
 
 /* Removes all entries in M3U file */
-void m3u_file_clear(m3u_file_t *m3u_file)
+void rm3u_clear(rm3u_t *m3u)
 {
    size_t i;
 
-   if (!m3u_file)
+   if (!m3u)
       return;
 
-   if (m3u_file->entries)
+   if (m3u->entries)
    {
-      for (i = 0; i < RBUF_LEN(m3u_file->entries); i++)
+      for (i = 0; i < RBUF_LEN(m3u->entries); i++)
       {
-         m3u_file_entry_t *entry = &m3u_file->entries[i];
-         m3u_file_free_entry(entry);
+         rm3u_entry_t *entry = &m3u->entries[i];
+         rm3u_free_entry(entry);
       }
 
-      RBUF_FREE(m3u_file->entries);
+      RBUF_FREE(m3u->entries);
    }
 }
 
 /* Saving */
 
 /* Saves M3U file to disk
- * - Setting 'label_type' to M3U_FILE_LABEL_NONE
+ * - Setting 'label_type' to RM3U_LABEL_NONE
  *   just outputs entry paths - this the most
  *   common format supported by most cores
  * - Returns false in the event of an error */
-bool m3u_file_save(
-      m3u_file_t *m3u_file, enum m3u_file_label_type label_type)
+bool rm3u_save(
+      rm3u_t *m3u, enum rm3u_label_type label_type)
 {
    size_t i;
    char base_dir[DIR_MAX_LENGTH];
    RFILE *file      = NULL;
 
-   if (!m3u_file || !m3u_file->entries)
+   if (!m3u || !m3u->entries)
       return false;
 
    /* This should never happen */
-   if (!m3u_file->path || !*m3u_file->path)
+   if (!m3u->path || !*m3u->path)
       return false;
 
    /* Get M3U file base directory */
-   if (find_last_slash(m3u_file->path))
-      fill_pathname_basedir(base_dir, m3u_file->path, sizeof(base_dir));
+   if (find_last_slash(m3u->path))
+      fill_pathname_basedir(base_dir, m3u->path, sizeof(base_dir));
    else
       base_dir[0]   = '\0';
 
    /* Open file for writing */
-   if (!(file = filestream_open(m3u_file->path,
+   if (!(file = filestream_open(m3u->path,
          RETRO_VFS_FILE_ACCESS_WRITE,
          RETRO_VFS_FILE_ACCESS_HINT_NONE)))
       return false;
 
    /* Loop over entries */
-   for (i = 0; i < RBUF_LEN(m3u_file->entries); i++)
+   for (i = 0; i < RBUF_LEN(m3u->entries); i++)
    {
-      m3u_file_entry_t *entry = &m3u_file->entries[i];
+      rm3u_entry_t *entry = &m3u->entries[i];
       char entry_path[PATH_MAX_LENGTH];
 
       entry_path[0] = '\0';
@@ -541,24 +538,24 @@ bool m3u_file_save(
       {
          switch (label_type)
          {
-            case M3U_FILE_LABEL_NONSTD:
+            case RM3U_LABEL_NONSTD:
                filestream_printf(
                      file, "%s%s\n%s\n",
-                     M3U_FILE_NONSTD_LABEL, entry->label,
+                     RM3U_NONSTD_LABEL, entry->label,
                      entry_path);
                break;
-            case M3U_FILE_LABEL_EXTSTD:
+            case RM3U_LABEL_EXTSTD:
                filestream_printf(
                      file, "%s%c%s\n%s\n",
-                     M3U_FILE_EXTSTD_LABEL, M3U_FILE_EXTSTD_LABEL_TOKEN, entry->label,
+                     RM3U_EXTSTD_LABEL, RM3U_EXTSTD_LABEL_TOKEN, entry->label,
                      entry_path);
                break;
-            case M3U_FILE_LABEL_RETRO:
+            case RM3U_LABEL_RETRO:
                filestream_printf(
                      file, "%s%c%s\n",
-                     entry_path, M3U_FILE_RETRO_LABEL_TOKEN, entry->label);
+                     entry_path, RM3U_RETRO_LABEL_TOKEN, entry->label);
                break;
-            case M3U_FILE_LABEL_NONE:
+            case RM3U_LABEL_NONE:
             default:
                filestream_printf(
                      file, "%s\n", entry_path);
@@ -580,8 +577,8 @@ bool m3u_file_save(
 /* Utilities */
 
 /* Internal qsort function */
-static int m3u_file_qsort_func(
-      const m3u_file_entry_t *a, const m3u_file_entry_t *b)
+static int rm3u_qsort_func(
+      const rm3u_entry_t *a, const rm3u_entry_t *b)
 {
    if (!a || !b)
       return 0;
@@ -593,27 +590,27 @@ static int m3u_file_qsort_func(
 }
 
 /* Sorts M3U file entries in alphabetical order */
-void m3u_file_qsort(m3u_file_t *m3u_file)
+void rm3u_qsort(rm3u_t *m3u)
 {
    size_t num_entries;
 
-   if (!m3u_file)
+   if (!m3u)
       return;
 
-   num_entries = RBUF_LEN(m3u_file->entries);
+   num_entries = RBUF_LEN(m3u->entries);
 
    if (num_entries < 2)
       return;
 
    qsort(
-         m3u_file->entries, num_entries,
-         sizeof(m3u_file_entry_t),
-         (int (*)(const void *, const void *))m3u_file_qsort_func);
+         m3u->entries, num_entries,
+         sizeof(rm3u_entry_t),
+         (int (*)(const void *, const void *))rm3u_qsort_func);
 }
 
 /* Returns true if specified path corresponds
  * to an M3U file (simple convenience function) */
-bool m3u_file_is_m3u(const char *path)
+bool rm3u_is_m3u(const char *path)
 {
    const char *file_ext = NULL;
    if (!path || !*path)
@@ -622,7 +619,7 @@ bool m3u_file_is_m3u(const char *path)
    file_ext = path_get_extension(path);
    if (!file_ext || !*file_ext)
       return false;
-   if (!string_is_equal_noncase(file_ext, M3U_FILE_EXT))
+   if (!string_is_equal_noncase(file_ext, RM3U_EXT))
       return false;
    /* Ensure file exists */
    if (!path_is_valid(path))
