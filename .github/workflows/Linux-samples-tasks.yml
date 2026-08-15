@@ -516,6 +516,34 @@ jobs:
           make clean
           echo "[pass] scan_begin_budget_test (TSan)"
 
+      - name: Guard against task_queue_wait on interactive menu paths
+        shell: bash
+        run: |
+          set -eu
+          # task_queue_wait() spins the calling thread until a task
+          # finishes.  Reached from the menu it is a hard UI freeze
+          # for the duration of the work - a database scan on slow
+          # storage is seconds - and on Android it is an ANR.  The
+          # menu teardown waits that used to live here were replaced
+          # by cancellation plus a stale-completion generation guard
+          # (menu_explore_cancel_init_task / menu_dbinfo_cancel_task).
+          #
+          # Scope is deliberately narrow and mechanical: menu/ and the
+          # two task translation units the menu drives directly.  The
+          # remaining wait sites elsewhere (core deinit save/load, NAT
+          # traversal, netplay MITM) are tracked separately and are
+          # NOT covered here - widening this guard is what should
+          # happen as each of those is converted.
+          hits=$(grep -rn 'task_queue_wait' menu/ \
+                   tasks/task_menu_explore.c \
+                   tasks/task_database_info.c || true)
+          if [[ -n "$hits" ]]; then
+            printf '%s\n' "$hits"
+            printf '::error title=Blocking wait on a menu path::task_queue_wait() must not be reachable from the menu. Use cancellation with a stale-completion guard, or a deferred continuation.\n'
+            exit 1
+          fi
+          printf 'No task_queue_wait on the guarded menu paths.\n'
+
       - name: Build and run playlist_parity_test (plain, ASan + UBSan)
         shell: bash
         working-directory: samples/playlist
