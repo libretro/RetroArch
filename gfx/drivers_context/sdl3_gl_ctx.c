@@ -201,8 +201,6 @@ static bool sdl3_ctx_set_video_mode(void *data,
          SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, sdl3_gl_minor);
       }
 
-      /* hw_render.debug_context. The attribute is sticky, so the
-       * shared context from bind_hw_render inherits it too. */
       if (debug)
          SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
    }
