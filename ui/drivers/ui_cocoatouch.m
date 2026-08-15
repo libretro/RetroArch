@@ -1023,6 +1023,18 @@ enum
    rarch_stop_draw_observer();
    command_event(CMD_EVENT_SAVE_FILES, NULL);
 
+   /* -applicationWillTerminate: is not guaranteed: a suspended app that
+    * the system reclaims, or one the user swipes out of the app switcher,
+    * is killed without it ever being delivered. This is therefore the last
+    * callback that can be relied upon, and the only place the config can
+    * be written back - the 'Quit RetroArch' entry, which is what reaches
+    * retroarch_main_quit() elsewhere, is compiled out on Apple targets. */
+   {
+      settings_t *settings = config_get_ptr();
+      if (settings && settings->bools.config_save_on_exit)
+         command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+   }
+
    /* Stop Bonjour services to prevent XPC crashes when connections are
     * invalidated while the app is suspended. Web servers will be restarted
     * when the app becomes active again. Netplay discovery must be
