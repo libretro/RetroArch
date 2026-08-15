@@ -1028,7 +1028,6 @@ bool task_push_image_load(const char *fullpath,
    nbio->type          = NBIO_TYPE_NONE;
    nbio->is_finished   = false;
    nbio->status        = NBIO_STATUS_INIT;
-   nbio->pos_increment = 0;
    nbio->status_flags  = 0;
    nbio->data          = NULL;
    nbio->xfer          = NULL;

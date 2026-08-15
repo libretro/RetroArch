@@ -111,6 +111,45 @@ VLA (Variable Length Array)
 Do not use VLAs (Variable Length Array) in C source files. These are not
 C89-compliant.
 
+Main thread and task handlers
+-----------------------------
+The UI and the main thread must never block. When Threaded Tasks is
+disabled - which it is on several platforms, and which users turn off
+deliberately - task handlers run on the same thread that drives the
+frame loop, so anything a handler does between returns is a frame the
+UI cannot paint.
+
+- Do not call task_queue_wait() from code reachable while the menu is
+  visible or a core is running. Cancel the work and guard against a
+  stale completion, or move what follows the wait into the task's own
+  callback. A last-resort safety net is acceptable only where an
+  invariant genuinely requires it (a worker must not call into a core
+  that is about to be unloaded, for instance), and then it must be
+  bounded and commented.
+
+- Never pass a NULL condition to task_queue_wait(). It does not mean
+  "wait for my task": both queue implementations read it as "until the
+  queue is empty", so the caller ends up waiting out every unrelated
+  task in flight - a content scan, a core download. Pass a condition
+  that describes your own work.
+
+- A handler that processes a collection must consult the shared
+  per-frame I/O window (task_nbio_slice_open /
+  task_nbio_slice_within_budget / task_nbio_slice_close) between
+  items, and must always complete at least one item per invocation so
+  an exhausted window cannot stall it. Do NOT chunk by a count derived
+  from the workload - "half the entries", "a quarter of the files" -
+  because that is not pacing: a bigger job simply produces bigger
+  chunks and the same number of invocations.
+
+- Putting work on a background thread is not a substitute for pacing
+  it. The threaded queue is optional; the budget is what protects the
+  frame loop in the configuration that has no worker.
+
+Debug builds report handlers that overrun a frame - see
+task_queue_set_slow_handler_cb() - which is the cheapest way to find
+out whether a handler you are adding respects any of this.
+
 Miscellaneous
 -------------
 - Brace usage follows "Allman style". The brace associated with a control statement is placed on the following line,
