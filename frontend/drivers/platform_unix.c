@@ -334,29 +334,23 @@ static void onResume(ANativeActivity* activity)
 static void* onSaveInstanceState(
       ANativeActivity* activity, size_t* outLen)
 {
-   void* savedState = NULL;
-   struct android_app* android_app = (struct android_app*)
-      activity->instance;
-
-   slock_lock(android_app->mutex);
-
-   android_app->stateSaved = 0;
-   android_app_write_cmd(android_app, APP_CMD_SAVE_STATE);
-
-   while (!android_app->stateSaved)
-      scond_wait(android_app->cond, android_app->mutex);
-
-   if (android_app->savedState)
-   {
-      savedState                  = android_app->savedState;
-      *outLen                     = android_app->savedStateSize;
-      android_app->savedState     = NULL;
-      android_app->savedStateSize = 0;
-   }
-
-   slock_unlock(android_app->mutex);
-
-   return savedState;
+   /* RetroArch does not use the Android saved-instance-state blob.
+    * android_app->savedState is only ever populated from the blob handed
+    * to ANativeActivity_onCreate; nothing produces a new one, and the
+    * APP_CMD_SAVE_STATE handler on the app thread did nothing but set
+    * the acknowledgement flag.
+    *
+    * The upstream glue rendezvous here - write the command, wake the app
+    * thread, block the UI thread on the condvar until it acknowledges -
+    * therefore synchronised a field with no producer, once per
+    * backgrounding and once per configuration change (so on every screen
+    * rotation). Returning nothing skips the round trip entirely.
+    *
+    * Handing back the create-time blob, as the previous code did on the
+    * first call, would only have re-saved state that was already
+    * restored and is never consulted. */
+   *outLen = 0;
+   return NULL;
 }
 
 static void onPause(ANativeActivity* activity)

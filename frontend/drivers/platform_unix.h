@@ -86,14 +86,10 @@ struct android_app
    /* The current configuration the app is running in. */
    AConfiguration *config;
 
-   /* This is the last instance's saved state, as provided at creation time.
-    * It is NULL if there was no state.  You can use this as you need; the
-    * memory will remain around until you call android_app_exec_cmd() for
-    * APP_CMD_RESUME, at which point it will be freed and savedState set to NULL.
-    * These variables should only be changed when processing a APP_CMD_SAVE_STATE,
-    * at which point they will be initialized to NULL and you can malloc your
-    * state and place the information here.  In that case the memory will be
-    * freed for you later.
+   /* The last instance's saved state, as provided at creation time, or
+    * NULL if there was none. RetroArch never produces a saved state of
+    * its own - onSaveInstanceState() returns nothing - so this is only
+    * ever the create-time blob, held until it is freed on teardown.
     */
    void* savedState;
    size_t savedStateSize;
@@ -131,7 +127,6 @@ struct android_app
    struct android_poll_source inputPollSource;
 
    int running;
-   int stateSaved;
    int destroyed;
    AInputQueue* pendingInputQueue;
    ANativeWindow* pendingWindow;
@@ -292,8 +287,10 @@ enum
    APP_CMD_RESUME,
 
    /**
-    * Command from main thread: the app should generate a new saved state
-    * for itself, to restore from later if needed.
+    * Unused. Upstream glue sends this to ask the app thread to produce a
+    * saved state; RetroArch has no such state, so onSaveInstanceState()
+    * returns without a round trip and nothing writes this command. Kept
+    * so the enumerators below retain their values.
     */
    APP_CMD_SAVE_STATE,
 

@@ -684,13 +684,6 @@ static void android_input_poll_main_cmd(void)
 
          break;
 
-      case APP_CMD_SAVE_STATE:
-         slock_lock(android_app->mutex);
-         android_app->stateSaved = 1;
-         scond_broadcast(android_app->cond);
-         slock_unlock(android_app->mutex);
-         break;
-
       case APP_CMD_RESUME:
       case APP_CMD_START:
       case APP_CMD_PAUSE:
