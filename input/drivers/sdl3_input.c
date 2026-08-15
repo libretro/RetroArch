@@ -751,11 +751,8 @@ static void sdl3_grab_mouse(void *data, bool state)
    if (win)
    {
       SDL_SetWindowMouseGrab(win, state);
-      /* Cores that capture the mouse (DOSBox, FPS cores) expect
-       * unbounded relative motion; a plain grab confines the cursor
-       * but keeps absolute semantics, so deltas die at the window
-       * edges. Relative mouse mode matches the game-focus behaviour
-       * of the other desktop input drivers (winraw/x11/udev). */
+      /* Relative mouse mode matches the game-focus behaviour of
+       * the other desktop input drivers (winraw/x11/udev). */
       SDL_SetWindowRelativeMouseMode(win, state);
    }
 }
