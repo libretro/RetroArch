@@ -4589,6 +4589,8 @@ static unsigned menu_displaylist_parse_cores(menu_handle_t *menu,
    unsigned count               = 0;
    const char *path             = info->path;
    bool ok                      = false;
+   bool walk_pending            = false;
+   bool list_presorted          = false;
 
    if (!path || !*path)
    {
@@ -4599,9 +4601,26 @@ static unsigned menu_displaylist_parse_cores(menu_handle_t *menu,
       return count;
    }
 
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+   /* UWP joins the optional core packages into the same listing:
+    * keep the one-shot construction (a handful of package
+    * directories) and the local sort below. */
    str_list = string_list_new();
    ok       = dir_list_append(str_list, path, info->exts,
          true, show_hidden_files, false, false);
+#else
+   {
+      enum menu_dirwalk_status walk_status;
+      menu_dirwalk_set_refresh_cb(menu_displaylist_dirwalk_refresh);
+      walk_status    = menu_dirwalk_request(path, info->exts,
+            true, show_hidden_files, false,
+            MENU_DIRWALK_SORT_DIR_FIRST,
+            MENU_DIRWALK_TAG_CORES, &str_list);
+      walk_pending   = (walk_status == MENU_DIRWALK_PENDING);
+      list_presorted = (walk_status == MENU_DIRWALK_DONE);
+      ok             = list_presorted;
+   }
+#endif
 
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
    /* UWP: browse the optional packages for additional cores */
@@ -4613,8 +4632,9 @@ static unsigned menu_displaylist_parse_cores(menu_handle_t *menu,
 
    string_list_free(core_packages);
 #else
-   /* Keep the old 'directory not found' behavior */
-   if (!ok)
+   /* A failed walk hands back no listing; the not-found entry
+    * below covers it, as it did for a failed dir_list_append. */
+   if (!ok && str_list)
    {
       string_list_free(str_list);
       str_list = NULL;
@@ -4630,6 +4650,15 @@ static unsigned menu_displaylist_parse_cores(menu_handle_t *menu,
             MENU_ENUM_LABEL_PARENT_DIRECTORY,
             FILE_TYPE_PARENT_DIRECTORY, 0, 0);
 
+   if (walk_pending)
+   {
+      menu_entries_append(info->list,
+            msg_hash_to_str(MSG_LOADING), "",
+            MSG_UNKNOWN, MENU_SETTING_NO_ITEM, 0, 0, NULL);
+      count++;
+      return count;
+   }
+
    if (!str_list)
    {
       const char *str = msg_hash_to_str(
@@ -4643,7 +4672,8 @@ static unsigned menu_displaylist_parse_cores(menu_handle_t *menu,
    if (string_is_equal(info->label, MENU_ENUM_LABEL_CORE_LIST_STR))
       info->flags |= MD_FLAG_DOWNLOAD_CORE;
 
-   dir_list_sort(str_list, true);
+   if (!list_presorted)
+      dir_list_sort(str_list, true);
 
    list_size = str_list->size;
 
