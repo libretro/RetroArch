@@ -54,13 +54,13 @@ static unsigned failures = 0;
 
 static unsigned     reports;
 static retro_time_t last_usec;
-static void        *last_handler;
+static retro_task_handler_t last_handler;
 
 static void slow_cb(retro_task_t *task, retro_time_t usec)
 {
    reports++;
    last_usec    = usec;
-   last_handler = task ? (void*)task->handler : NULL;
+   last_handler = task ? task->handler : NULL;
 }
 
 /* A handler that finishes immediately. */
@@ -160,7 +160,7 @@ static void lane_slow_handler_reports(void)
    drain(256);
 
    CHECK(reports == 1, "expected exactly one report, got %u", reports);
-   CHECK(last_handler == (void*)slow_handler,
+   CHECK(last_handler == slow_handler,
          "report was not attributed to the slow handler");
    CHECK(last_usec > BUDGET_USEC,
          "reported duration %d us is not above the %d us budget",

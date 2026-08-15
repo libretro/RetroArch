@@ -8797,7 +8797,10 @@ error:
 static void runloop_task_slow_handler(retro_task_t *task,
       retro_time_t usec)
 {
-   static void *last_handler;
+   /* Held as the handler's own type: a function pointer is not
+    * convertible to void* in ISO C, and comparing the two is not
+    * valid either. */
+   static retro_task_handler_t last_handler;
    static unsigned suppressed;
 
    if (!task)
@@ -8813,7 +8816,7 @@ static void runloop_task_slow_handler(retro_task_t *task,
       RARCH_WARN("[Task] (%u further over-budget invocations suppressed)\n",
             suppressed);
 
-   last_handler = (void*)task->handler;
+   last_handler = task->handler;
    suppressed   = 0;
 
    RARCH_WARN("[Task] Handler occupied the main thread for %d ms"
