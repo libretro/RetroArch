@@ -2339,7 +2339,7 @@ static void frontend_unix_get_env(int *argc,
    else
    {
       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE], base_path,
-         "cache", sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
+         "temp", sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
    }
 #endif
 
