@@ -443,7 +443,7 @@ static void sdl3_render_ui(sdl3_video_t *vid, const char *msg,
    menu_visible = vid->menu.active && vid->menu.tex;
 
 #ifdef HAVE_OVERLAY
-   overlay_visible = vid->overlays_enabled && vid->overlays && vid->overlays_size;
+   overlay_visible = vid->overlays_enabled && vid->overlays_size;
 #endif
 
    if (   !menu_is_alive && !widgets_active && !show_stats
@@ -1715,7 +1715,7 @@ font_renderer_t sdl3_raster_font = {
  * INPUT OVERLAY
  *
  * Implements video_overlay_interface_t. The overlay subsystem
- * (input/input_overlay.c) hands us BGRA32 images via load(), places
+ * (input/input_driver.c) hands us BGRA32 images via load(), places
  * them in 0..1 normalised space via vertex_geom() / tex_geom(), and
  * they are drawn over the game frame each frame with per-texture
  * alpha modulation.
