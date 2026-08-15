@@ -15,6 +15,7 @@
 #include <features/features_cpu.h>
 #include <file/file_path.h>
 #include <formats/rjson.h>
+#include <formats/rjson_stream.h>
 #include <lists/dir_list.h>
 #include <lists/file_list.h>
 #include <lrc_hash.h>
@@ -233,7 +234,7 @@ static file_list_t *task_cloud_sync_create_manifest(RFILE *file)
    if (!(list = (file_list_t *)calloc(1, sizeof(file_list_t))))
       return NULL;
 
-   if (!(json = rjson_open_rfile(file)))
+   if (!(json = rjson_open_filestream(file)))
    {
       free(list);
       return NULL;
@@ -1297,7 +1298,7 @@ static RFILE *task_cloud_sync_write_updated_manifest(file_list_t *manifest, char
    if (!file)
       return NULL;
 
-   if (!(writer = rjsonwriter_open_rfile(file)))
+   if (!(writer = rjsonwriter_open_filestream(file)))
    {
       filestream_close(file);
       return NULL;

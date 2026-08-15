@@ -29,6 +29,7 @@
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <formats/rjson.h>
+#include <formats/rjson_stream.h>
 
 #ifndef SOCKET_ERROR
 #define SOCKET_ERROR -1
@@ -364,7 +365,7 @@ static bool input_test_file_read(const char* file_path)
    }
 
    /* Initialise JSON parser */
-   if (!(parser = rjson_open_rfile(file)))
+   if (!(parser = rjson_open_filestream(file)))
    {
       NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
             "[Remote RetroPad] Failed to create JSON parser.\n");

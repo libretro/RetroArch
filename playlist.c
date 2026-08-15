@@ -30,6 +30,7 @@
 #include <file/archive_file.h>
 #include <lists/string_list.h>
 #include <formats/rjson.h>
+#include <formats/rjson_stream.h>
 #include <array/rbuf.h>
 
 #include "playlist.h"
@@ -1978,7 +1979,7 @@ void playlist_write_runtime_file(playlist_t *playlist)
       return;
    }
 
-   if (!(writer = rjsonwriter_open_stream(file)))
+   if (!(writer = rjsonwriter_open_intfstream(file)))
    {
       RARCH_ERR("[Playlist] Failed to create JSON writer.\n");
       goto end;
@@ -2287,7 +2288,7 @@ void playlist_write_file(playlist_t *playlist)
    else
 #endif
    {
-      rjsonwriter_t* writer = rjsonwriter_open_stream(file);
+      rjsonwriter_t* writer = rjsonwriter_open_intfstream(file);
       if (!writer)
       {
          RARCH_ERR("[Playlist] Failed to create JSON writer.\n");
@@ -3148,7 +3149,7 @@ static bool playlist_read_file(playlist_t *playlist)
       JSONContext context = {0};
       context.playlist    = playlist;
 
-      if (!(parser = rjson_open_stream(file)))
+      if (!(parser = rjson_open_intfstream(file)))
       {
          RARCH_ERR("[Playlist] Failed to create JSON parser.\n");
          goto end;

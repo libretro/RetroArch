@@ -24,6 +24,7 @@
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <formats/rjson.h>
+#include <formats/rjson_stream.h>
 
 #include "file_path_special.h"
 #include "verbosity.h"
@@ -134,7 +135,7 @@ static bool disk_index_file_read(disk_index_file_t *disk_index_file)
    }
 
    /* Initialise JSON parser */
-   if (!(parser = rjson_open_rfile(file)))
+   if (!(parser = rjson_open_filestream(file)))
    {
       RARCH_ERR("[Disk index file] Failed to create JSON parser.\n");
       goto end;
@@ -354,7 +355,7 @@ bool disk_index_file_save(disk_index_file_t *disk_index_file)
    }
 
    /* Initialise JSON writer */
-   if (!(writer = rjsonwriter_open_rfile(file)))
+   if (!(writer = rjsonwriter_open_filestream(file)))
    {
       RARCH_ERR("[Disk index file] Failed to create JSON writer.\n");
       goto end;

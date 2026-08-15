@@ -24,6 +24,7 @@
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <formats/rjson.h>
+#include <formats/rjson_stream.h>
 
 #include "../input_driver.h"
 #include "../input_keymaps.h"
@@ -212,7 +213,7 @@ static bool input_test_file_read(const char* file_path)
    }
 
    /* Initialise JSON parser */
-   if (!(parser = rjson_open_rfile(file)))
+   if (!(parser = rjson_open_filestream(file)))
    {
       RARCH_ERR("[Test input] Failed to create JSON parser.\n");
       goto end;

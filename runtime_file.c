@@ -30,6 +30,7 @@
 #include <retro_miscellaneous.h>
 #include <streams/file_stream.h>
 #include <formats/rjson.h>
+#include <formats/rjson_stream.h>
 #include <string/stdstring.h>
 #include <encodings/utf.h>
 #include <time/rtime.h>
@@ -137,7 +138,7 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
    }
 
    /* Initialise JSON parser */
-   if (!(parser = rjson_open_rfile(file)))
+   if (!(parser = rjson_open_filestream(file)))
    {
       RARCH_ERR("[Runtime] Failed to create JSON parser.\n");
       goto end;
@@ -1193,7 +1194,7 @@ void runtime_log_save(runtime_log_t *runtime_log)
    }
 
    /* Initialise JSON writer */
-   if (!(writer = rjsonwriter_open_rfile(file)))
+   if (!(writer = rjsonwriter_open_filestream(file)))
    {
       RARCH_ERR("[Runtime] Failed to create JSON writer.\n");
       goto end;
