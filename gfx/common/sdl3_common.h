@@ -42,12 +42,11 @@ typedef struct sdl3_tex
    bool rgb32;
 } sdl3_tex_t;
 
-/* On-screen input overlay entry for SDL3. */
+/* On-screen input overlay entry for SDL3. Texture dimensions are
+ * read from the public SDL_Texture w/h fields. */
 struct sdl3_overlay
 {
    SDL_Texture *tex;
-   unsigned  tex_w;
-   unsigned  tex_h;
    /* Both are normalised 0..1 rects: tex_coords slices the source
     * texture, vert_coords places the quad within its base area. */
    SDL_FRect tex_coords;

@@ -1786,8 +1786,6 @@ static bool sdl3_overlay_load(void *data,
       SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
 
       o->tex            = tex;
-      o->tex_w          = w;
-      o->tex_h          = h;
       o->alpha_mod      = 1.0f;
       /* Whole texture / whole target until tex_geom and vertex_geom
        * provide the real values (calloc zeroed x/y). */
@@ -1863,7 +1861,7 @@ static void sdl3_overlays_render(sdl3_video_t *vid)
       struct sdl3_overlay *o = &vid->overlays[i];
       float base_x, base_y, base_w, base_h;
 
-      if (!o->tex || !o->tex_w || !o->tex_h || o->alpha_mod <= 0.0f)
+      if (!o->tex || o->alpha_mod <= 0.0f)
          continue;
 
       /* fullscreen overlays span the whole window including the
@@ -1894,21 +1892,16 @@ static void sdl3_overlays_render(sdl3_video_t *vid)
 
       /* tex_coords sub-rect into the source texture - touch
        * overlays pack many buttons into one atlas and slice it
-       * via tex_geom. */
-      src.x = o->tex_coords.x * (float)o->tex_w;
-      src.y = o->tex_coords.y * (float)o->tex_h;
-      src.w = o->tex_coords.w * (float)o->tex_w;
-      src.h = o->tex_coords.h * (float)o->tex_h;
-      if (src.w <= 0.0f || src.h <= 0.0f)
-      {
-         src.x = 0.0f;
-         src.y = 0.0f;
-         src.w = (float)o->tex_w;
-         src.h = (float)o->tex_h;
-      }
+       * via tex_geom. A degenerate rect means the whole texture,
+       * which SDL_RenderTexture expresses as a NULL src. */
+      src.x = o->tex_coords.x * (float)o->tex->w;
+      src.y = o->tex_coords.y * (float)o->tex->h;
+      src.w = o->tex_coords.w * (float)o->tex->w;
+      src.h = o->tex_coords.h * (float)o->tex->h;
 
       SDL_SetTextureAlphaModFloat(o->tex, o->alpha_mod);
-      SDL_RenderTexture(vid->renderer, o->tex, &src, &dst);
+      SDL_RenderTexture(vid->renderer, o->tex,
+            (src.w > 0.0f && src.h > 0.0f) ? &src : NULL, &dst);
    }
 }
 
