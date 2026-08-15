@@ -516,6 +516,40 @@ jobs:
           make clean
           echo "[pass] scan_begin_budget_test (TSan)"
 
+      - name: Build and run overlay_budget_test (plain, ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/overlay
+        run: |
+          set -eu
+          # Oracle for the overlay loader's pacing, compiled from the
+          # shipping translation unit against the real task queue and
+          # the real shared per-frame I/O window, with image loading
+          # stubbed and a virtual clock so the assertions are exact.
+          #
+          # The loader used to chunk by a count derived from the
+          # workload - half an overlay's descriptors, a quarter of
+          # the overlays - which is not pacing: a bigger overlay just
+          # meant bigger chunks, so the job always landed in the same
+          # two or four handler invocations however long each took.
+          # The scaling lane is the one that pins the fix: work per
+          # invocation must not grow with the size of the overlay.
+          #
+          # LSan also guards the image list, which used to be
+          # released only when a load was cancelled and therefore
+          # leaked once per successful overlay load.
+          make clean >/dev/null
+          make all -j$(nproc)
+          ./overlay_budget_test
+          make clean >/dev/null
+          make all SANITIZER=address,undefined -j$(nproc)
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+          UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+            ./overlay_budget_test
+          make clean >/dev/null
+          make all SANITIZER=thread -j$(nproc)
+          TSAN_OPTIONS=halt_on_error=1 ./overlay_budget_test
+          make clean >/dev/null
+
       - name: Build and run task_watchdog_test (plain, ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/tasks/watchdog
