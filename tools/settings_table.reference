@@ -388,6 +388,9 @@ bool	netplay_request_device_p13	1	0
 bool	netplay_request_device_p14	1	0
 bool	netplay_request_device_p15	1	0
 bool	netplay_request_device_p16	1	0
+bool	input_stylus_enable	1	1
+bool	input_stylus_require_contact_for_click	1	1
+bool	input_stylus_hover_moves_pointer	1	1
 int	crt_switch_center_adjust	0	0
 int	crt_switch_porch_adjust	0	0
 int	crt_switch_vertical_adjust	0	0
@@ -564,6 +567,7 @@ uint	video_stream_scale_factor	1	1
 uint	video_hdr_mode	1	0
 uint	video_swapchain_bit_depth	1	0
 uint	streaming_mode	1	STREAMING_MODE_TWITCH
+uint	input_stylus_pressure_sensitivity	1	70
 uint	input_sensor_orientation	1	0
 uint	input_overlay_show_inputs	1	OVERLAY_SHOW_INPUT_TOUCHED
 uint	input_overlay_show_inputs_port	1	0
