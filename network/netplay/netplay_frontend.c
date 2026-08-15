@@ -9009,6 +9009,17 @@ static void netplay_announce(netplay_t *netplay)
    free(mitm_custom_addr);
 }
 
+/* Cleared by netplay_mitm_query_cb on every path it can take, so
+ * the wait below ends as soon as THIS query is answered.  The task
+ * queue runs the callback of every task it retires, successful or
+ * not, so there is no completion that leaves this set. */
+static bool netplay_mitm_query_pending = false;
+
+static bool netplay_mitm_query_is_pending(void *data)
+{
+   return netplay_mitm_query_pending;
+}
+
 static void netplay_mitm_query_cb(retro_task_t *task, void *task_data,
       void *user_data, const char *err)
 {
@@ -9017,6 +9028,8 @@ static void netplay_mitm_query_cb(retro_task_t *task, void *task_data,
    http_transfer_data_t *data     = (http_transfer_data_t*)task_data;
    net_driver_state_t  *net_st    = &networking_driver_st;
    struct netplay_room *host_room = &net_st->host_room;
+
+   netplay_mitm_query_pending     = false;
 
    if (err || !data || !data->data || !data->len || data->status != 200)
    {
@@ -9095,11 +9108,31 @@ static bool netplay_mitm_query(const char *handle)
       size_t _len = strlcpy(query, FILE_PATH_LOBBY_LIBRETRO_URL "tunnel?name=",
             sizeof(query));
       strlcpy(query + _len, handle, sizeof(query) - _len);
+      netplay_mitm_query_pending = true;
+
       if (!task_push_http_transfer(query, true, NULL,
             netplay_mitm_query_cb, NULL))
+      {
+         netplay_mitm_query_pending = false;
          return false;
-      /* Make sure we've the tunnel address before continuing. */
-      task_queue_wait(NULL, NULL);
+      }
+
+      /* Make sure we've the tunnel address before continuing.
+       *
+       * Host setup below needs the tunnel address, so this still
+       * blocks - but only on this one query.  It used to wait on a
+       * NULL condition, which means "until the task queue is empty":
+       * every unrelated task in flight had to finish first, so
+       * starting a hosted session behind an in-progress core
+       * download or content scan blocked the UI for the whole of
+       * that download, not for an HTTP round trip.
+       *
+       * Removing the block entirely means deferring the rest of
+       * netplay host initialisation into this query's callback -
+       * sockets, announcement and lobby registration all read the
+       * address decided here - which is a netplay restructuring, not
+       * a change to this wait. */
+      task_queue_wait(netplay_mitm_query_is_pending, NULL);
    }
 
    return *host_room->mitm_address && host_room->mitm_port;

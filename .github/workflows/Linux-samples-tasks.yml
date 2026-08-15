@@ -546,6 +546,32 @@ jobs:
             ./nat_task_serialisation_test
           make clean >/dev/null
 
+      - name: Guard against unbounded task_queue_wait in network/ and tasks/
+        shell: bash
+        run: |
+          set -eu
+          # task_queue_wait(NULL, ...) does not mean "wait for my
+          # task" - a NULL condition makes both queue implementations
+          # loop until the queue is EMPTY.  A caller blocking on one
+          # HTTP round trip therefore also waits out every unrelated
+          # task in flight: a content scan, a core download, a
+          # thumbnail pack.  Where a wait is still necessary it must
+          # name a condition that describes the caller's own work, so
+          # the block is bounded by that work and nothing else.
+          #
+          # This does not sanction waiting - the menu paths are held
+          # to the stricter no-wait guard below.  It stops the
+          # unbounded form from coming back where waits remain.
+          hits=$(grep -rn --include='*.c' --include='*.cpp' \
+                   'task_queue_wait[[:space:]]*([[:space:]]*NULL' \
+                   network/ tasks/ || true)
+          if [[ -n "$hits" ]]; then
+            printf '%s\n' "$hits"
+            printf '::error title=Unbounded task_queue_wait::Pass a condition describing your own work; NULL waits for the entire queue to drain.\n'
+            exit 1
+          fi
+          printf 'No unbounded task_queue_wait in network/ or tasks/.\n'
+
       - name: Guard against task_queue_wait on interactive menu paths
         shell: bash
         run: |
