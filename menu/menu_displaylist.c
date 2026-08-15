@@ -90,6 +90,7 @@
 #include "../msg_hash_lbl_str.h"
 #include "menu_cbs.h"
 #include "menu_driver.h"
+#include "menu_dirwalk.h"
 #include "menu_entries.h"
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "menu_shader.h"
@@ -194,6 +195,23 @@ void filebrowser_set_type(enum filebrowser_enums type)
    p_displist->filebrowser_types = type;
 }
 
+/* Fired on the main thread when a background directory walk
+ * completes (either way): mark the entries for refresh, exactly as
+ * the explore init task does, so the repopulation re-issues the
+ * request and consumes the finished listing. */
+static bool menu_displaylist_playlist_within_budget(void *ud)
+{
+   return task_nbio_slice_within_budget(ud, 0, 0);
+}
+
+static void menu_displaylist_dirwalk_refresh(unsigned tag)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   (void)tag;
+   menu_st->flags            |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                              |  MENU_ST_FLAG_PREVENT_POPULATE;
+}
+
 static int filebrowser_parse(
       file_list_t *info_list,
       const char *path,
@@ -210,6 +228,10 @@ static int filebrowser_parse(
    size_t i, list_size;
    const struct retro_subsystem_info *subsystem = NULL;
    bool ret                                     = false;
+   bool walk_deferred                           = false;
+   bool list_presorted                          = false;
+   struct string_list *walk_list                = NULL;
+   enum menu_dirwalk_status walk_status         = MENU_DIRWALK_FAILED;
    struct string_list str_list                  = {0};
    unsigned count                               = 0;
    enum menu_displaylist_ctl_state type         = (enum menu_displaylist_ctl_state)type_data;
@@ -273,6 +295,8 @@ static int filebrowser_parse(
             || !strcmp(label, "cursor_manager_list"))
          allow_parent_directory = false;
 
+      menu_dirwalk_set_refresh_cb(menu_displaylist_dirwalk_refresh);
+
       if (filebrowser_type == FILEBROWSER_SELECT_FILE_SUBSYSTEM)
       {
          runloop_state_t    *runloop_st = runloop_state_get_ptr();
@@ -282,19 +306,45 @@ static int filebrowser_parse(
          if (     subsystem
                && (runloop_st->subsystem_current_count > 0)
                && (content_get_subsystem_rom_id() < subsystem->num_roms))
-            ret = dir_list_initialize(&str_list,
-                  full_path,
+            walk_status = menu_dirwalk_request(full_path,
                   filter_ext ? subsystem->roms[content_get_subsystem_rom_id()].valid_extensions : NULL,
-                  true, show_hidden_files, true, false);
+                  true, show_hidden_files, true,
+                  MENU_DIRWALK_SORT_DIR_FIRST,
+                  MENU_DIRWALK_TAG_FILEBROWSER, &walk_list);
       }
       else if (   type_default == FILE_TYPE_MANUAL_SCAN_DAT
                || type_default == FILE_TYPE_SIDELOAD_CORE)
-         ret = dir_list_initialize(&str_list, full_path,
-               exts, true, show_hidden_files, false, false);
+         walk_status = menu_dirwalk_request(full_path,
+               exts, true, show_hidden_files, false,
+               MENU_DIRWALK_SORT_DIR_FIRST,
+               MENU_DIRWALK_TAG_FILEBROWSER, &walk_list);
       else
-         ret = dir_list_initialize(&str_list, full_path,
+         walk_status = menu_dirwalk_request(full_path,
                filter_ext ? exts : NULL,
-               true, show_hidden_files, true, false);
+               true, show_hidden_files, true,
+               MENU_DIRWALK_SORT_DIR_FIRST,
+               MENU_DIRWALK_TAG_FILEBROWSER, &walk_list);
+
+      if (walk_status == MENU_DIRWALK_DONE && walk_list)
+      {
+         /* Move the completed heap listing into the local list the
+          * append loop reads; the module sorted it already. */
+         str_list       = *walk_list;
+         free(walk_list);
+         list_presorted = true;
+         ret            = true;
+      }
+      else if (walk_status == MENU_DIRWALK_PENDING)
+      {
+         /* The walk continues in the background (off the main
+          * thread when Threaded Tasks is on); the refresh callback
+          * lands when it finishes and the re-issued request above
+          * consumes the listing.  Show a placeholder meanwhile. */
+         walk_deferred = true;
+         ret           = true;
+      }
+      /* MENU_DIRWALK_FAILED: ret stays false, same directory-not-
+       * found entry as a failed dir_list_initialize() today. */
    }
 
    switch (filebrowser_type)
@@ -343,7 +393,17 @@ static int filebrowser_parse(
       goto end;
    }
 
-   dir_list_sort(&str_list, true);
+   if (walk_deferred)
+   {
+      menu_entries_append(info_list,
+            msg_hash_to_str(MSG_LOADING), "",
+            MSG_UNKNOWN, MENU_SETTING_NO_ITEM, 0, 0, NULL);
+      count++;
+      goto end;   /* the parent-directory entry still applies */
+   }
+
+   if (!list_presorted)
+      dir_list_sort(&str_list, true);
 
    list_size = str_list.size;
 
@@ -2865,6 +2925,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    char path_base[NAME_MAX_LENGTH];
    playlist_config_t playlist_config;
    playlist_t *playlist                = NULL;
+   bool playlist_is_cached             = false;
    database_info_list_t *db_info       = NULL;
    struct menu_state *menu_st          = menu_state_get_ptr();
 
@@ -2918,7 +2979,22 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
 
    playlist_config_set_path(&playlist_config, menu->db_playlist_file);
 
-   playlist = playlist_init(&playlist_config);
+   /* Read-only CRC matching against the database playlist: reuse
+    * the menu's cached playlist when it is the same file - the
+    * common case, since this list is reached from that playlist -
+    * and only parse from disk otherwise. */
+   {
+      playlist_t *cached = playlist_get_cached();
+      if (   cached
+          && string_is_equal(playlist_get_conf_path(cached),
+               menu->db_playlist_file))
+      {
+         playlist           = cached;
+         playlist_is_cached = true;
+      }
+      else
+         playlist = playlist_init(&playlist_config);
+   }
 
    for (i = 0; i < db_info->count; i++)
    {
@@ -3184,13 +3260,15 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    if (db_info->count < 1)
       info->flags |= MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES;
 
-   playlist_free(playlist);
+   if (!playlist_is_cached)
+      playlist_free(playlist);
    /* db_info is owned by the dbinfo cache - do not free */
 
    return 0;
 
 error:
-   playlist_free(playlist);
+   if (!playlist_is_cached)
+      playlist_free(playlist);
 
    return -1;
 }
@@ -3413,7 +3491,31 @@ static void menu_displaylist_set_new_playlist(
          playlist_config.capacity = (unsigned)content_favorites_size;
    }
 
-   if (playlist_init_cached(&playlist_config))
+   /* Budgeted first touch: one pass under the shared per-frame I/O
+    * window.  Small and medium playlists finish inside it and this
+    * behaves exactly as the blocking call did; a large one yields,
+    * and the refresh below re-issues the request, which resumes the
+    * same parse where it stopped.  The list is left empty for that
+    * frame rather than stalling the UI for the whole parse. */
+   {
+      nbio_budget_t b;
+      int pl_r;
+
+      task_nbio_slice_open(&b);
+      pl_r = playlist_init_cached_deferred(&playlist_config,
+            menu_displaylist_playlist_within_budget, &b);
+      task_nbio_slice_close(&b);
+
+      if (pl_r == 0)
+      {
+         /* Still parsing: come back next frame. */
+         menu_displaylist_dirwalk_refresh(0);
+         return;
+      }
+      if (pl_r < 0)
+         return;
+   }
+
    {
       playlist_t *playlist                      = playlist_get_cached();
       enum playlist_sort_mode current_sort_mode = playlist_get_sort_mode(playlist);
@@ -4277,6 +4379,8 @@ static unsigned menu_displaylist_parse_playlists(
 {
    size_t i, list_size;
    struct string_list str_list  = {0};
+   struct string_list *walk_list = NULL;
+   enum menu_dirwalk_status walk_status;
    unsigned count               = 0;
    unsigned content_count       = 0;
    bool show_hidden_files       = settings->bools.show_hidden_files;
@@ -4409,13 +4513,30 @@ static unsigned menu_displaylist_parse_playlists(
 #endif
    }
 
-   if (!dir_list_initialize(&str_list, path, NULL, true,
-         show_hidden_files, true, false))
+   menu_dirwalk_set_refresh_cb(menu_displaylist_dirwalk_refresh);
+   walk_status = menu_dirwalk_request(path, NULL, true,
+         show_hidden_files, true, MENU_DIRWALK_SORT_IGNORE_EXT,
+         MENU_DIRWALK_TAG_PLAYLISTS, &walk_list);
+
+   if (walk_status == MENU_DIRWALK_PENDING)
+   {
+      /* The playlist-directory walk continues in the background;
+       * the refresh callback rebuilds this list on completion. */
+      if (menu_entries_append(info_list,
+            msg_hash_to_str(MSG_LOADING), "",
+            MSG_UNKNOWN, MENU_SETTING_NO_ITEM, 0, 0, NULL))
+         count++;
       return count;
+   }
+   if (walk_status != MENU_DIRWALK_DONE || !walk_list)
+      return count;   /* same early-out as a failed walk before */
+
+   /* Move the completed listing (sorted by the module) into the
+    * local list the loop below reads. */
+   str_list = *walk_list;
+   free(walk_list);
 
    content_count = count;
-
-   dir_list_sort_ignore_ext(&str_list, true);
 
    list_size = str_list.size;
 
@@ -4515,6 +4636,8 @@ static unsigned menu_displaylist_parse_cores(menu_handle_t *menu,
    unsigned count               = 0;
    const char *path             = info->path;
    bool ok                      = false;
+   bool walk_pending            = false;
+   bool list_presorted          = false;
 
    if (!path || !*path)
    {
@@ -4525,9 +4648,26 @@ static unsigned menu_displaylist_parse_cores(menu_handle_t *menu,
       return count;
    }
 
+#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+   /* UWP joins the optional core packages into the same listing:
+    * keep the one-shot construction (a handful of package
+    * directories) and the local sort below. */
    str_list = string_list_new();
    ok       = dir_list_append(str_list, path, info->exts,
          true, show_hidden_files, false, false);
+#else
+   {
+      enum menu_dirwalk_status walk_status;
+      menu_dirwalk_set_refresh_cb(menu_displaylist_dirwalk_refresh);
+      walk_status    = menu_dirwalk_request(path, info->exts,
+            true, show_hidden_files, false,
+            MENU_DIRWALK_SORT_DIR_FIRST,
+            MENU_DIRWALK_TAG_CORES, &str_list);
+      walk_pending   = (walk_status == MENU_DIRWALK_PENDING);
+      list_presorted = (walk_status == MENU_DIRWALK_DONE);
+      ok             = list_presorted;
+   }
+#endif
 
 #if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
    /* UWP: browse the optional packages for additional cores */
@@ -4539,8 +4679,9 @@ static unsigned menu_displaylist_parse_cores(menu_handle_t *menu,
 
    string_list_free(core_packages);
 #else
-   /* Keep the old 'directory not found' behavior */
-   if (!ok)
+   /* A failed walk hands back no listing; the not-found entry
+    * below covers it, as it did for a failed dir_list_append. */
+   if (!ok && str_list)
    {
       string_list_free(str_list);
       str_list = NULL;
@@ -4556,6 +4697,15 @@ static unsigned menu_displaylist_parse_cores(menu_handle_t *menu,
             MENU_ENUM_LABEL_PARENT_DIRECTORY,
             FILE_TYPE_PARENT_DIRECTORY, 0, 0);
 
+   if (walk_pending)
+   {
+      menu_entries_append(info->list,
+            msg_hash_to_str(MSG_LOADING), "",
+            MSG_UNKNOWN, MENU_SETTING_NO_ITEM, 0, 0, NULL);
+      count++;
+      return count;
+   }
+
    if (!str_list)
    {
       const char *str = msg_hash_to_str(
@@ -4569,7 +4719,8 @@ static unsigned menu_displaylist_parse_cores(menu_handle_t *menu,
    if (string_is_equal(info->label, MENU_ENUM_LABEL_CORE_LIST_STR))
       info->flags |= MD_FLAG_DOWNLOAD_CORE;
 
-   dir_list_sort(str_list, true);
+   if (!list_presorted)
+      dir_list_sort(str_list, true);
 
    list_size = str_list->size;
 
@@ -4691,14 +4842,28 @@ static unsigned menu_displaylist_parse_add_to_playlist_list(file_list_t *list,
 {
    char playlist_display_name[NAME_MAX_LENGTH];
    unsigned count               = 0;
-   struct string_list *str_list = dir_list_new_special(
-         dir_playlist, DIR_LIST_COLLECTIONS, NULL, show_hidden_files);
+   struct string_list *str_list = NULL;
+   enum menu_dirwalk_status walk_status;
+
+   /* The playlist-directory listing DIR_LIST_COLLECTIONS produced:
+    * "lpl" extension, no directories, no compressed files. */
+   menu_dirwalk_set_refresh_cb(menu_displaylist_dirwalk_refresh);
+   walk_status = menu_dirwalk_request(dir_playlist, "lpl", false,
+         show_hidden_files, false, MENU_DIRWALK_SORT_DIR_FIRST,
+         MENU_DIRWALK_TAG_ADD_TO_PLAYLIST, &str_list);
+
+   if (walk_status == MENU_DIRWALK_PENDING)
+   {
+      if (menu_entries_append(list,
+            msg_hash_to_str(MSG_LOADING), "",
+            MSG_UNKNOWN, MENU_SETTING_NO_ITEM, 0, 0, NULL))
+         count++;
+      return count;
+   }
 
    if (str_list && str_list->size)
    {
       unsigned i;
-
-      dir_list_sort(str_list, true);
 
       for (i = 0; i < str_list->size; i++)
       {
@@ -4753,14 +4918,26 @@ static unsigned menu_displaylist_parse_playlist_manager_list(
    const char *dir_playlist     = settings->paths.directory_playlist;
    bool show_hidden_files       = settings->bools.show_hidden_files;
    bool history_list_enable     = settings->bools.history_list_enable;
-   struct string_list *str_list = dir_list_new_special(
-         dir_playlist, DIR_LIST_COLLECTIONS, NULL, show_hidden_files);
+   struct string_list *str_list = NULL;
+   enum menu_dirwalk_status walk_status;
+
+   menu_dirwalk_set_refresh_cb(menu_displaylist_dirwalk_refresh);
+   walk_status = menu_dirwalk_request(dir_playlist, "lpl", false,
+         show_hidden_files, false, MENU_DIRWALK_SORT_DIR_FIRST,
+         MENU_DIRWALK_TAG_PLAYLIST_MANAGER, &str_list);
+
+   if (walk_status == MENU_DIRWALK_PENDING)
+   {
+      if (menu_entries_append(list,
+            msg_hash_to_str(MSG_LOADING), "",
+            MSG_UNKNOWN, MENU_SETTING_NO_ITEM, 0, 0, NULL))
+         count++;
+      return count;
+   }
 
    if (str_list && str_list->size)
    {
       unsigned i;
-
-      dir_list_sort(str_list, true);
 
       for (i = 0; i < str_list->size; i++)
       {
@@ -5016,14 +5193,26 @@ static unsigned menu_displaylist_parse_pl_thumbnail_download_list(
       bool show_hidden_files)
 {
    unsigned count               = 0;
-   struct string_list *str_list = dir_list_new_special(
-         dir_playlist, DIR_LIST_COLLECTIONS, NULL, show_hidden_files);
+   struct string_list *str_list = NULL;
+   enum menu_dirwalk_status walk_status;
+
+   menu_dirwalk_set_refresh_cb(menu_displaylist_dirwalk_refresh);
+   walk_status = menu_dirwalk_request(dir_playlist, "lpl", false,
+         show_hidden_files, false, MENU_DIRWALK_SORT_DIR_FIRST,
+         MENU_DIRWALK_TAG_PL_THUMBNAILS, &str_list);
+
+   if (walk_status == MENU_DIRWALK_PENDING)
+   {
+      if (menu_entries_append(list,
+            msg_hash_to_str(MSG_LOADING), "",
+            MSG_UNKNOWN, MENU_SETTING_NO_ITEM, 0, 0, NULL))
+         count++;
+      return count;
+   }
 
    if (str_list && str_list->size)
    {
       unsigned i;
-
-      dir_list_sort(str_list, true);
 
       for (i = 0; i < str_list->size; i++)
       {
@@ -12811,7 +13000,8 @@ bool menu_displaylist_has_subsystems(void)
    return (subsystem && runloop_st->subsystem_current_count > 0);
 }
 
-bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
+static bool menu_displaylist_ctl_internal(
+      enum menu_displaylist_ctl_state type,
       menu_displaylist_info_t *info,
       settings_t *settings)
 {
@@ -17074,4 +17264,37 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
    }
 
    return true;
+}
+
+/* Over-budget watchdog (debug builds): with Threaded Tasks off,
+ * every displaylist build runs on the thread that drives the UI, so
+ * a build past the frame-scale budget is a user-visible hitch that
+ * the walks above were converted to prevent.  Flag any that slip
+ * through - a newly added blocking walk, a playlist parse on a cold
+ * cache, an archive listing - with the displaylist type so the site
+ * is identifiable.  Threaded queues are exempt: their heavy lifting
+ * is off-thread by construction, and the callback-side cost is
+ * already covered by the same budget the tasks step under. */
+#define MENU_DISPLAYLIST_BUILD_WARN_USEC 16000
+
+bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
+      menu_displaylist_info_t *info,
+      settings_t *settings)
+{
+#ifdef DEBUG
+   retro_time_t t0 = cpu_features_get_time_usec();
+   bool ret        = menu_displaylist_ctl_internal(type, info, settings);
+   retro_time_t dt = cpu_features_get_time_usec() - t0;
+   if (     (dt > MENU_DISPLAYLIST_BUILD_WARN_USEC)
+         && !task_queue_is_threaded())
+      RARCH_WARN(
+            "[Menu] Displaylist %d spent %u.%03u ms on the main thread"
+            " (budget %u ms).\n",
+            (int)type,
+            (unsigned)(dt / 1000), (unsigned)(dt % 1000),
+            (unsigned)(MENU_DISPLAYLIST_BUILD_WARN_USEC / 1000));
+   return ret;
+#else
+   return menu_displaylist_ctl_internal(type, info, settings);
+#endif
 }

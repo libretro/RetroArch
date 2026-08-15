@@ -25,7 +25,6 @@
 #include <stdint.h>
 
 #include <retro_inline.h>
-#include <streams/file_stream.h>
 
 #include <formats/rxml.h>
 
@@ -197,6 +196,14 @@ struct rxml_parser
    struct rxml_attrib_node *attr;
    rxml_document_t *doc;
    unsigned opts;
+   /* Incremental mode: parsing pauses when the cursor passes this
+    * (set past the end of input by the one-shot path, where the
+    * check can then never fire - the cursor never moves beyond the
+    * terminating NUL).  'suspended' records that the last return
+    * was a pause at the between-constructs point, so the next call
+    * re-enters there. */
+   const unsigned char *stop;
+   unsigned suspended;
 };
 
 /* Accumulator ------------------------------------------------------- */
@@ -1256,6 +1263,17 @@ static int rxml_parse_document(struct rxml_parser *ps)
 {
    int r;
 
+   /* A suspended parse re-enters at the between-constructs point it
+    * paused at.  The jump lands inside the element loop, past
+    * declarations whose values are indeterminate there; the content
+    * path reads none of them - every live parse datum sits in *ps,
+    * which is what makes this the one legal suspension point. */
+   if (ps->suspended)
+   {
+      ps->suspended = 0;
+      goto content_loop;
+   }
+
    /* Optional UTF-8 byte order mark, only at the very first byte. */
    if (*ps->p == 0xEF)
    {
@@ -1353,6 +1371,16 @@ static int rxml_parse_document(struct rxml_parser *ps)
 
       /* Content of the just-opened element. */
 content_loop:
+      /* Between constructs: an element just opened or a child just
+       * closed, and nothing is held in locals.  In incremental mode
+       * this is where the byte budget is honoured; the bound on one
+       * step is therefore max_bytes plus the length of one
+       * construct. */
+      if (ps->p >= ps->stop)
+      {
+         ps->suspended = 1;
+         return 2;
+      }
       for (;;)
       {
          const unsigned char *q = ps->p;
@@ -1607,6 +1635,7 @@ static rxml_document_t *rxml_parse_owned(char *buf, size_t len,
    memset(&ps, 0, sizeof(ps));
    ps.opts       = opts;
    ps.p          = (const unsigned char*)buf;
+   ps.stop       = (const unsigned char*)buf + len + 1;
    ps.acc_cap    = 4096;
    ps.acc        = (char*)malloc(ps.acc_cap);
    ps.frames_cap = 32;
@@ -1662,6 +1691,127 @@ static rxml_document_t *rxml_parse_owned(char *buf, size_t len,
    return ps.doc;
 }
 
+/* Incremental parse handle: the parser state rxml_parse_owned()
+ * keeps on its stack, lifted to the heap so it survives between
+ * steps, plus the terminal verdict. */
+struct rxml_parse
+{
+   struct rxml_parser ps;
+   char *buf;
+   size_t len;
+   int state;   /* 0 parsing, 1 done (doc valid), -1 failed (doc gone) */
+};
+
+rxml_parse_t *rxml_parse_begin_owned(char *buf, size_t len, unsigned opts)
+{
+   rxml_parse_t *parse;
+
+   if (!buf)
+      return NULL;
+
+   if (!(parse = (rxml_parse_t*)calloc(1, sizeof(*parse))))
+   {
+      free(buf);
+      return NULL;
+   }
+
+   parse->buf           = buf;
+   parse->len           = len;
+   parse->ps.opts       = opts;
+   parse->ps.p          = (const unsigned char*)buf;
+   parse->ps.acc_cap    = 4096;
+   parse->ps.acc        = (char*)malloc(parse->ps.acc_cap);
+   parse->ps.frames_cap = 32;
+   parse->ps.frames     = (struct rxml_frame*)malloc(
+         parse->ps.frames_cap * sizeof(*parse->ps.frames));
+   parse->ps.doc        = (rxml_document_t*)malloc(sizeof(*parse->ps.doc));
+
+   if (!parse->ps.acc || !parse->ps.frames || !parse->ps.doc)
+   {
+      free(parse->ps.acc);
+      free(parse->ps.frames);
+      free(parse->ps.doc);
+      free(buf);
+      free(parse);
+      return NULL;
+   }
+
+   parse->ps.doc->root_node = NULL;
+   parse->ps.doc->blocks    = NULL;
+   /* Same first-block sizing rationale as rxml_parse_owned() */
+   parse->ps.doc->blocksz   = (len > (RXML_ARENA_MIN / 4))
+                            ? (len << 2) : RXML_ARENA_MIN;
+   parse->ps.doc->buf       = buf;
+   return parse;
+}
+
+int rxml_parse_step(rxml_parse_t *parse, size_t max_bytes)
+{
+   int r;
+   const unsigned char *end;
+
+   if (!parse)
+      return -1;
+   if (parse->state != 0)
+      return (parse->state == 1) ? 1 : -1;
+
+   end = (const unsigned char*)parse->buf + parse->len;
+   if (max_bytes == 0 || max_bytes >= (size_t)(end - parse->ps.p))
+      parse->ps.stop = end + 1;         /* run to the verdict */
+   else
+      parse->ps.stop = parse->ps.p + max_bytes;
+
+   r = rxml_parse_document(&parse->ps);
+   if (r == 2)
+      return 0;
+
+   /* Terminal: same verdict rules as rxml_parse_owned(). */
+   if (r < 0 && (parse->ps.opts & RXML_OPT_STRICT_EOF))
+      r = 0;
+   if (r != 0 && (parse->ps.opts & RXML_OPT_LINES)
+         && parse->ps.doc->root_node
+         && !rxml_annotate_lines(parse->ps.doc))
+      r = 0;
+   if (r == 0)
+   {
+      rxml_free_document(parse->ps.doc);   /* releases buf too */
+      parse->ps.doc = NULL;
+      parse->state  = -1;
+      return -1;
+   }
+   parse->state = 1;
+   return 1;
+}
+
+rxml_document_t *rxml_parse_end(rxml_parse_t *parse)
+{
+   rxml_document_t *doc = NULL;
+
+   if (!parse)
+      return NULL;
+
+   if (parse->state == 1)
+      doc = parse->ps.doc;
+   else if (parse->ps.doc)
+      rxml_free_document(parse->ps.doc);   /* unfinished or failed */
+
+   free(parse->ps.acc);
+   free(parse->ps.frames);
+   free(parse);
+   return doc;
+}
+
+void rxml_parse_abort(rxml_parse_t *parse)
+{
+   if (!parse)
+      return;
+   if (parse->ps.doc)
+      rxml_free_document(parse->ps.doc);
+   free(parse->ps.acc);
+   free(parse->ps.frames);
+   free(parse);
+}
+
 rxml_document_t *rxml_load_document_string_opts(const char *str,
       unsigned opts, rxml_parse_error_t *err)
 {
@@ -1688,50 +1838,19 @@ rxml_document_t *rxml_load_document_string_opts(const char *str,
    return rxml_parse_owned(buf, len, opts, err);
 }
 
+rxml_document_t *rxml_load_document_owned(char *buf, size_t len)
+{
+   if (!buf)
+      return NULL;
+   /* The contract mirrors the tail of rxml_load_document: the caller
+    * hands over a NUL-terminated heap buffer and rxml_parse_owned
+    * either gives it to the document or frees it on failure. */
+   return rxml_parse_owned(buf, len, 0, NULL);
+}
+
 rxml_document_t *rxml_load_document_string(const char *str)
 {
    return rxml_load_document_string_opts(str, 0, NULL);
-}
-
-rxml_document_t *rxml_load_document(const char *path)
-{
-   char *memory_buffer     = NULL;
-   int64_t len             = 0;
-   RFILE *file             = filestream_open(path,
-         RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-   if (!file)
-      return NULL;
-
-   len                     = filestream_get_size(file);
-   /* filestream_get_size returns -1 on error.  Pre-patch this
-    * flowed through (size_t)(len + 1) as malloc(0) on 64-bit
-    * (returning a tiny non-NULL block) or as a wrapped value on
-    * 32-bit; either way memory_buffer[len] = '\0' wrote far
-    * out-of-bounds.  Reject negative sizes and any size that
-    * would not fit in size_t on this platform. */
-   if (len < 0 || (uint64_t)len >= (uint64_t)((size_t)-1))
-      goto error;
-   memory_buffer           = (char*)malloc((size_t)(len + 1));
-   if (!memory_buffer)
-      goto error;
-
-   memory_buffer[len]      = '\0';
-   if (filestream_read(file, memory_buffer, len) != len)
-      goto error;
-
-   filestream_close(file);
-   file                    = NULL;
-
-   /* The document takes the buffer: the tree points into it, and
-    * rxml_parse_owned frees it on failure. */
-   return rxml_parse_owned(memory_buffer, (size_t)len, 0, NULL);
-
-error:
-   free(memory_buffer);
-   if (file)
-      filestream_close(file);
-   return NULL;
 }
 
 void rxml_free_document(rxml_document_t *doc)

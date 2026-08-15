@@ -2389,6 +2389,13 @@ static void materialui_refresh_playlist_icon_list(
    if (!dir_playlist || !*dir_playlist)
       goto end;
 
+   /* This walk stays synchronous deliberately (see menu_dirwalk,
+    * which the interactive displaylist walks route through): it
+    * runs only at driver init and on RESET_HORIZONTAL_LIST, over
+    * the playlist directory, and the icon array it feeds has no
+    * refresh channel a deferred completion could use - while a
+    * pending walk here would share (and be superseded out of)
+    * menu_dirwalk's single slot by the first displaylist build. */
    file_list = dir_list_new_special(dir_playlist,
          DIR_LIST_COLLECTIONS, NULL, false);
 

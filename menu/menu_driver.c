@@ -45,6 +45,7 @@
 #include "../audio/audio_driver.h"
 
 #include "menu_driver.h"
+#include "menu_dirwalk.h"
 #include "menu_cbs.h"
 #include "../driver.h"
 #include "../list_special.h"
@@ -6875,7 +6876,14 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          if (menu_st->flags & MENU_ST_FLAG_DATA_OWN)
             return true;
 
+         /* Abandon a pending deferred playlist parse before the
+          * cache it would install goes away. */
+         playlist_init_cached_defer_abort();
          playlist_free_cached();
+
+         /* End any in-flight background directory walk and drop an
+          * unconsumed listing; late completions become no-ops. */
+         menu_dirwalk_cancel();
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          menu_shader_manager_free();
 #endif
@@ -6884,15 +6892,20 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 #endif
 #if defined(HAVE_MENU)
 #if defined(HAVE_LIBRETRODB)
-         /* Before freeing the explore menu, we
-          * must wait for any explore menu initialisation
-          * tasks to complete */
-         menu_explore_wait_for_init_task();
+         /* Abandon any in-flight explore menu initialisation and
+          * database info scan rather than blocking teardown until
+          * they finish - a full-file database scan is seconds of
+          * frozen UI on slow storage, and this path runs while the
+          * user is looking at the menu.  Both tasks build into
+          * their own handles and install only from their main-thread
+          * callbacks, so the state freed just below is not something
+          * a worker can still be writing to; the cancels bump a
+          * generation that makes any completion already in flight
+          * install nothing. */
+         menu_explore_cancel_init_task();
          menu_explore_free();
 
-         /* Likewise for any in-flight database info
-          * scan, then drop its result cache */
-         menu_dbinfo_wait_for_task();
+         menu_dbinfo_cancel_task();
          menu_dbinfo_cache_free();
 #endif
          menu_contentless_cores_free();

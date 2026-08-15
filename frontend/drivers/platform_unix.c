@@ -222,6 +222,20 @@ int system_property_get(const char *command,
    return __len;
 }
 
+bool test_permissions(const char *path)
+{
+   char buf[PATH_MAX_LENGTH];
+   bool ret                  = false;
+
+   fill_pathname_join_special(buf, path, ".retroarch", sizeof(buf));
+   ret = path_mkdir(buf);
+
+   if (ret)
+      rmdir(buf);
+
+   return ret;
+}
+
 #ifdef ANDROID
 /* forward declaration */
 bool android_run_events(void *data);
@@ -670,7 +684,7 @@ static bool device_is_game_console(const char *name)
    return false;
 }
 
-bool test_permissions(const char *path)
+bool test_permissions_android(const char *path)
 {
    char buf[PATH_MAX_LENGTH];
    bool ret                  = false;
@@ -1933,12 +1947,12 @@ static void frontend_unix_get_env(int *argc,
        * to internal_storage_path */
 
       if (*internal_storage_path &&
-         test_permissions(internal_storage_path))
+         test_permissions_android(internal_storage_path))
       {
          storage_permissions = INTERNAL_STORAGE_WRITABLE;
       }
       else if (*internal_storage_app_path &&
-               test_permissions(internal_storage_app_path))
+               test_permissions_android(internal_storage_app_path))
       {
          storage_permissions = INTERNAL_STORAGE_APPDIR_WRITABLE;
       }
@@ -2316,6 +2330,17 @@ static void frontend_unix_get_env(int *argc,
    else
        fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SYSTEM], base_path,
              "system", sizeof(g_defaults.dirs[DEFAULT_DIR_SYSTEM]));
+
+   if (test_permissions("/tmp") && path_mkdir("/tmp/retroarch-tmp"))
+   {
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE], "/tmp",
+         "retroarch-tmp", sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
+   }
+   else
+   {
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE], base_path,
+         "temp", sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
+   }
 #endif
 
 #ifndef IS_SALAMANDER

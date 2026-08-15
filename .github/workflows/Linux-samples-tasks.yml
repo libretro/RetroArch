@@ -434,6 +434,414 @@ jobs:
              ./image_decode_slice_test
           echo "[pass] image_decode_slice_test (ASan)"
 
+      - name: Build and run scan_begin_budget_test (plain, ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/database
+        run: |
+          set -eu
+          # Pacing + throughput oracle for the manual content scanner's
+          # BEGIN/END split in tasks/task_database.c, compiled from the
+          # tree so it exercises the shipping translation units.
+          #
+          # The regression it pins: MANUAL_SCAN_BEGIN used to perform
+          # the entire recursive directory walk, the whole DAT load and
+          # the playlist setup in one handler invocation, and
+          # MANUAL_SCAN_END flushed every accumulated result (each add
+          # a linear playlist_entry_exists probe) plus a sort and a
+          # write in another - 166 ms measured for the 5000-file
+          # fixture, a hard frame freeze whenever Threaded Tasks is
+          # off.  Both are now sequences of sub-states under the shared
+          # per-frame I/O window (tasks/task_nbio_slice.c, the same
+          # window the file-transfer spine uses), with completed
+          # sub-states collapsing into one gather so small libraries
+          # keep single-tick latency.
+          #
+          # Three wall-clock assertions guard the plain build, because
+          # any one alone can be satisfied by a scanner that is worse:
+          # pacing (no gather over the window plus bounded slack),
+          # first feedback within two frames of the push, and total
+          # scan time within a factor of the blocking walk + DAT parse
+          # it replaced - a scanner that no longer freezes but takes
+          # twice as long fails the third lane.  Playlist parity (every
+          # fixture file present exactly once) is asserted in every
+          # mode.
+          #
+          # The sanitizer runs use the 'sanitize' mode, which runs
+          # every lane but skips the wall-clock assertions a sanitized
+          # build cannot honestly meet.  Those lanes are where the
+          # in-flight resources the split introduced - an open
+          # directory iterator, an open DAT stream over a half-filled
+          # buffer, an open flush playlist - are made to die at every
+          # phase: a 14-point cancellation sweep lands a cancel in
+          # setup, mid-walk, mid-DAT-read, content iteration and
+          # mid-flush, and LeakSanitizer decides whether the teardown
+          # released everything (it already found one 16-byte-per-scan
+          # leak that predates the split).  The threaded lane runs the
+          # same scan under the threaded queue and is the TSan target:
+          # the shared window deliberately opts threaded queues out of
+          # its static state, and this is where a mistake in that
+          # opt-out would surface.
+          #
+          # Two dedup lanes guard the playlist path-hash index that
+          # replaced the flush's quadratic existence probes: a
+          # differential lane asserts the index answers exactly like
+          # the linear playlist_entry_exists scan over plain, bare-
+          # archive, inside-archive and case-variant paths with fuzzy
+          # archive matching both off and on, and a no-overwrite
+          # rescan lane re-scans the fixture into the populated
+          # playlist and asserts zero duplicates, driving the index's
+          # budgeted seeding at scale.  The throughput factor is
+          # tightened to reject the pre-index quadratic flush.
+          #
+          # The big-DAT lane scans 50 files against a 300k-game DAT
+          # and asserts the same pacing budget: no gather may grow
+          # with DAT size now that the rxml parse and the search-
+          # index build step under the shared window.  Its label
+          # check samples the end of the list, so an index that
+          # silently covered only a prefix fails correctness, and
+          # three extra cancel points land inside the budgeted read
+          # and parse of the large document.
+          make clean all
+          test -x scan_begin_budget_test
+          timeout 600 ./scan_begin_budget_test
+          echo "[pass] scan_begin_budget_test"
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 900 \
+             ./scan_begin_budget_test sanitize
+          echo "[pass] scan_begin_budget_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 900 \
+             ./scan_begin_budget_test sanitize
+          make clean
+          echo "[pass] scan_begin_budget_test (TSan)"
+
+      - name: Build and run pl_manager_budget_test (plain, ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/playlist_manager
+        run: |
+          set -eu
+          # Oracle for the playlist manager tasks' load phase,
+          # compiled from the shipping translation unit against the
+          # real task queue, the real playlist reader and the real
+          # shared per-frame I/O window, with a virtual clock so the
+          # pacing assertions are exact.
+          #
+          # Both handlers were already per-entry state machines with
+          # one exception: the load read the whole playlist in a
+          # single blocking call, which for a large collection is
+          # tens of milliseconds of JSON on the thread driving the
+          # frame loop whenever Threaded Tasks is off.
+          #
+          # The pacing lane isolates that phase: the per-entry
+          # iteration costs the same number of invocations either
+          # way, so the difference between a paced and an unpaced run
+          # is the load.  The cancel lane, under LSan, covers
+          # abandoning a task while its playlist is still being read.
+          make clean >/dev/null
+          make all -j$(nproc)
+          ./pl_manager_budget_test
+          make clean >/dev/null
+          make all SANITIZER=address,undefined -j$(nproc)
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+          UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+            ./pl_manager_budget_test
+          make clean >/dev/null
+          make all SANITIZER=thread -j$(nproc)
+          TSAN_OPTIONS=halt_on_error=1 ./pl_manager_budget_test
+          make clean >/dev/null
+
+      - name: Build and run overlay_budget_test (plain, ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/overlay
+        run: |
+          set -eu
+          # Oracle for the overlay loader's pacing, compiled from the
+          # shipping translation unit against the real task queue and
+          # the real shared per-frame I/O window, with image loading
+          # stubbed and a virtual clock so the assertions are exact.
+          #
+          # The loader used to chunk by a count derived from the
+          # workload - half an overlay's descriptors, a quarter of
+          # the overlays - which is not pacing: a bigger overlay just
+          # meant bigger chunks, so the job always landed in the same
+          # two or four handler invocations however long each took.
+          # The scaling lane is the one that pins the fix: work per
+          # invocation must not grow with the size of the overlay.
+          #
+          # LSan also guards the image list, which used to be
+          # released only when a load was cancelled and therefore
+          # leaked once per successful overlay load.
+          make clean >/dev/null
+          make all -j$(nproc)
+          ./overlay_budget_test
+          make clean >/dev/null
+          make all SANITIZER=address,undefined -j$(nproc)
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+          UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+            ./overlay_budget_test
+          make clean >/dev/null
+          make all SANITIZER=thread -j$(nproc)
+          TSAN_OPTIONS=halt_on_error=1 ./overlay_budget_test
+          make clean >/dev/null
+
+      - name: Build and run task_ordering_test (plain, ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/ordering
+        run: |
+          set -eu
+          # Pins the task queue's visibility contract, which is what
+          # made a movie-record ordering guard fail.
+          #
+          # retro_task_regular_gather() lifts every running task off
+          # the queue and puts each one BACK as it processes it, so
+          # whether a finder called from inside a handler sees a
+          # sibling depends on where that sibling sits in the pass.
+          # At least one invocation reports "nothing in progress"
+          # while the task is genuinely pending - which an ordering
+          # guard only has to get wrong once.  A main-thread flag is
+          # visible from inside a handler and is what the guards use
+          # now; the ordering lane fails if a task guarded that way
+          # runs before the one it waits on.
+          make clean >/dev/null
+          make all -j$(nproc)
+          ./task_ordering_test
+          make clean >/dev/null
+          make all SANITIZER=address,undefined -j$(nproc)
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+          UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+            ./task_ordering_test
+          make clean >/dev/null
+          make all SANITIZER=thread -j$(nproc)
+          TSAN_OPTIONS=halt_on_error=1 ./task_ordering_test
+          make clean >/dev/null
+
+      - name: Build and run task_watchdog_test (plain, ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/watchdog
+        run: |
+          set -eu
+          # Oracle for the task queue's slow-handler watchdog,
+          # compiled against the shipping queue.  With Threaded Tasks
+          # off, handlers run on the thread that drives the frame
+          # loop, so a handler that does not return promptly is a
+          # visible stall - and the queue is the only place that can
+          # attribute one to a specific task instead of to "something
+          # in the frame".
+          #
+          # The lanes pin: a handler inside its budget is silent; one
+          # that overruns is reported once, attributed to that task,
+          # with a duration above the budget; the threaded queue is
+          # deliberately not measured, because a long handler on a
+          # worker is what the worker is for; and an unregistered
+          # watchdog never fires, which is the default and the state
+          # release builds ship in.
+          make clean >/dev/null
+          make all -j$(nproc)
+          ./task_watchdog_test
+          make clean >/dev/null
+          make all SANITIZER=address,undefined -j$(nproc)
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+          UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+            ./task_watchdog_test
+          make clean >/dev/null
+          make all SANITIZER=thread -j$(nproc)
+          TSAN_OPTIONS=halt_on_error=1 ./task_watchdog_test
+          make clean >/dev/null
+
+      - name: Build and run nat_task_serialisation_test (plain, ASan + UBSan)
+        shell: bash
+        working-directory: samples/tasks/netplay_nat
+        run: |
+          set -eu
+          # Oracle for the NAT traversal task's request serialisation,
+          # compiled from the shipping translation unit against the
+          # real task queue with the natt_* device layer faked.
+          #
+          # Only one NAT task may run at a time - both requests mutate
+          # the single shared request object - and that exclusion used
+          # to be enforced by blocking the calling thread, which is
+          # the one driving the menu, for the duration of UPnP
+          # discovery.  The lanes pin the replacement: a push issued
+          # while a task is in flight returns without running it to
+          # completion, a close followed by an open runs as both in
+          # that order rather than being coalesced (coalescing would
+          # leak the port mapping), queued requests actually start
+          # from the task callbacks, and an overflowing request is
+          # refused rather than dropped.
+          make clean >/dev/null
+          make all -j$(nproc)
+          ./nat_task_serialisation_test
+          make clean >/dev/null
+          make all SANITIZER=address,undefined -j$(nproc)
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+          UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+            ./nat_task_serialisation_test
+          make clean >/dev/null
+
+      - name: Guard against unbounded task_queue_wait in network/ and tasks/
+        shell: bash
+        run: |
+          set -eu
+          # task_queue_wait(NULL, ...) does not mean "wait for my
+          # task" - a NULL condition makes both queue implementations
+          # loop until the queue is EMPTY.  A caller blocking on one
+          # HTTP round trip therefore also waits out every unrelated
+          # task in flight: a content scan, a core download, a
+          # thumbnail pack.  Where a wait is still necessary it must
+          # name a condition that describes the caller's own work, so
+          # the block is bounded by that work and nothing else.
+          #
+          # This does not sanction waiting - the menu paths are held
+          # to the stricter no-wait guard below.  It stops the
+          # unbounded form from coming back where waits remain.
+          hits=$(grep -rn --include='*.c' --include='*.cpp' \
+                   'task_queue_wait[[:space:]]*([[:space:]]*NULL' \
+                   network/ tasks/ || true)
+          if [[ -n "$hits" ]]; then
+            printf '%s\n' "$hits"
+            printf '::error title=Unbounded task_queue_wait::Pass a condition describing your own work; NULL waits for the entire queue to drain.\n'
+            exit 1
+          fi
+          printf 'No unbounded task_queue_wait in network/ or tasks/.\n'
+
+      - name: Guard against task_queue_wait on interactive menu paths
+        shell: bash
+        run: |
+          set -eu
+          # task_queue_wait() spins the calling thread until a task
+          # finishes.  Reached from the menu it is a hard UI freeze
+          # for the duration of the work - a database scan on slow
+          # storage is seconds - and on Android it is an ANR.  The
+          # menu teardown waits that used to live here were replaced
+          # by cancellation plus a stale-completion generation guard
+          # (menu_explore_cancel_init_task / menu_dbinfo_cancel_task).
+          #
+          # Scope is deliberately narrow and mechanical: menu/ and the
+          # two task translation units the menu drives directly.  The
+          # remaining wait sites elsewhere (core deinit save/load, NAT
+          # traversal, netplay MITM) are tracked separately and are
+          # NOT covered here - widening this guard is what should
+          # happen as each of those is converted.
+          hits=$(grep -rn 'task_queue_wait' menu/ \
+                   tasks/task_menu_explore.c \
+                   tasks/task_database_info.c \
+                   tasks/task_netplay_nat_traversal.c || true)
+          if [[ -n "$hits" ]]; then
+            printf '%s\n' "$hits"
+            printf '::error title=Blocking wait on a menu path::task_queue_wait() must not be reachable from the menu. Use cancellation with a stale-completion guard, or a deferred continuation.\n'
+            exit 1
+          fi
+          printf 'No task_queue_wait on the guarded menu paths.\n'
+
+      - name: Build and run playlist_parity_test (plain, ASan + UBSan)
+        shell: bash
+        working-directory: samples/playlist
+        run: |
+          set -eu
+          # Parity oracle for playlist.c's read path (playlist_init /
+          # playlist_read_file), compiled from the shipping
+          # translation unit.  Pins the reader's observable behaviour
+          # ahead of its restructuring into a budgeted resumable
+          # parse: the full JSON schema, the
+          # malformed-JSON-keeps-partial-data contract, the old
+          # six-line format with its trailing metadata block, RZIP
+          # compressed input, missing-file-reads-empty, and capacity
+          # clamping.  The budgeted lanes then assert the resumable
+          # API (playlist_parse_begin/step/end/abort) produces
+          # playlists identical to the blocking path while yielding
+          # repeatedly, for JSON, the old format and the autofix
+          # pass, and that abandoning a parse mid-document leaks
+          # nothing.  The cache-reuse lane guards the size stamp the
+          # cache keys on: it must be the on-disk size for every
+          # format and compression combination, or the cached
+          # playlist is never reused and the menu re-parses on every
+          # navigation.
+          #
+          # The truncated-JSON lane also guards the staged-entry
+          # cleanup in playlist_read_file: an entry interrupted
+          # mid-object is reserved but never committed, and its
+          # already-parsed members must be freed on the error path -
+          # the leak the lane originally flushed out.  LSan gates it
+          # here permanently.  No threads on this path, so no TSan
+          # flavor.
+          make clean >/dev/null
+          make all -j$(nproc)
+          ./playlist_parity_test
+          make clean >/dev/null
+          make all SANITIZER=address,undefined -j$(nproc)
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+          UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+            ./playlist_parity_test
+          make clean >/dev/null
+
+      - name: Build and run dirwalk_budget_test (plain, ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/menu/dirwalk
+        run: |
+          set -eu
+          # Oracle for menu/menu_dirwalk.c, the budgeted, cancellable
+          # directory enumeration behind interactive menu list
+          # building, compiled from the tree so it exercises the
+          # shipping translation unit.
+          #
+          # The regression it pins: filebrowser_parse and the
+          # playlist-directory displaylists walk and sort their
+          # directory synchronously on the thread that drives the UI,
+          # a stall proportional to directory size.  menu_dirwalk
+          # caps it: one budgeted synchronous pass under the shared
+          # per-frame I/O window (small and medium directories
+          # complete on the spot, identical result, single tick),
+          # with oversized walks - and oversized sorts, which for a
+          # 40k-entry directory cost more than the walk - continuing
+          # on a task as a resumable enumeration plus a resumable
+          # bottom-up mergesort, ordered by the exact comparator
+          # dir_list_sort() uses.
+          #
+          # The clock is the test's instrument (the save_state
+          # pattern): the sample provides cpu_features_get_time_usec()
+          # itself.  Step 0 reads the real clock for the pacing and
+          # bench lanes; a fixed virtual step per observation makes
+          # window exhaustion deterministic for the deferral, cancel
+          # and threaded lanes on any machine at any cache
+          # temperature.  The build also shrinks the sort-machinery
+          # constants (run length, merge batch, synchronous-sort
+          # ceiling) so run sorting, the element-granular resumable
+          # merge, and sort-only deferral are all driven across many
+          # invocations by a 200-entry fixture.
+          #
+          # Parity is the contract: a consumed listing equals
+          # dir_list_new() plus the same sort, entry for entry with
+          # attributes, across the flag and sort-mode combinations
+          # the displaylist callers use.  The pacing lane asserts no
+          # single main-thread stall - request, task gather, or
+          # consume - exceeds the window plus bounded slack on a
+          # 40k-file flat fixture (the walk under test is
+          # non-recursive: the menu browses one level, so the files
+          # sit flat, which is also what a large ROM directory looks
+          # like).  The bench lane holds the hard precondition:
+          # wall-clock from first request to consumed result may not
+          # regress past the blocking walk + sort it replaces.  The
+          # cancel lane supersedes and cancels mid-walk and drains
+          # stale completions, with LeakSanitizer judging the
+          # teardown; the threaded lane hands the walk to a worker
+          # and is the TSan target for the handler-to-main-callback
+          # hand-off.
+          make clean all
+          test -x dirwalk_budget_test
+          timeout 600 ./dirwalk_budget_test
+          echo "[pass] dirwalk_budget_test"
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 900 \
+             ./dirwalk_budget_test sanitize
+          echo "[pass] dirwalk_budget_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 900 \
+             ./dirwalk_budget_test sanitize
+          make clean
+          echo "[pass] dirwalk_budget_test (TSan)"
+
       - name: Build and run save_state_io_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/tasks/save_state
@@ -604,7 +1012,13 @@ jobs:
                    tasks/task_pl_thumbnail_download.c \
                    tasks/task_core_backup.c \
                    core_backup.c \
-                   libretro-common/streams/interface_stream.c; do
+                   libretro-common/streams/interface_stream.c \
+                   tasks/task_file_transfer.c \
+                   tasks/task_nbio_slice.c \
+                   libretro-common/lists/dir_list.c \
+                   libretro-common/formats/logiqx_dat/logiqx_dat.c \
+                   libretro-common/formats/xml/rxml.c \
+                   database_info.c; do
             if gcc -fsyntax-only $C89 $INC $DEF "$f"; then
               echo "[pass] C89 $f"
             else

@@ -11,6 +11,7 @@ LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 
 SOURCES := task_file_transfer_test.c \
            $(REPO_ROOT)/tasks/task_file_transfer.c \
+           $(REPO_ROOT)/tasks/task_nbio_slice.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strldup.c \

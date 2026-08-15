@@ -31,7 +31,14 @@ typedef struct menu_explore_init_handle
    explore_state_t *state;
    char *directory_playlist;
    char *directory_database;
+   unsigned generation;             /* stale-completion guard */
 } menu_explore_init_handle_t;
+
+/* Bumped whenever an in-flight initialisation is abandoned (menu
+ * teardown).  A completion carrying an older generation installs
+ * nothing: the menu it was built for is gone. */
+static unsigned menu_explore_init_generation;
+static retro_task_t *menu_explore_init_task;
 
 /*********************/
 /* Utility Functions */
@@ -78,6 +85,21 @@ static void cb_task_menu_explore_init(
       return;
 
    if (!(menu_explore = (menu_explore_init_handle_t*)task->state))
+      return;
+
+   /* Only the task still owning the slot may clear it: a stale
+    * completion arriving after a newer initialisation was pushed
+    * must not drop the newer task's handle. */
+   if (menu_explore_init_task == task)
+      menu_explore_init_task = NULL;
+
+   /* A build that outlived the menu it was for: install nothing.
+    * The state stays on the handle and the task's own cleanup frees
+    * it.  This is what lets teardown abandon the task instead of
+    * blocking the main thread until it finishes - installing here
+    * would load icons through a torn-down video driver and
+    * repopulate a global that has just been freed. */
+   if (menu_explore->generation != menu_explore_init_generation)
       return;
 
    /* Assign global menu explore state object */
@@ -193,6 +215,7 @@ bool task_push_menu_explore_init(const char *directory_playlist,
    menu_explore->state              = NULL;
    menu_explore->directory_playlist = strdup(directory_playlist);
    menu_explore->directory_database = strdup(directory_database);
+   menu_explore->generation         = menu_explore_init_generation;
 
    /* Configure task
     * > Note: This is silent task, with no title
@@ -204,6 +227,8 @@ bool task_push_menu_explore_init(const char *directory_playlist,
    task->callback = cb_task_menu_explore_init;
    task->cleanup  = task_menu_explore_init_free;
    task->flags   |= RETRO_TASK_FLG_MUTE;
+
+   menu_explore_init_task = task;
 
    task_queue_push(task);
 
@@ -236,7 +261,24 @@ bool menu_explore_init_in_progress(void *data)
    return false;
 }
 
-void menu_explore_wait_for_init_task(void)
+/* Abandon any in-flight explore initialisation.
+ *
+ * Replaces waiting for it: the handler builds into the task's own
+ * handle and touches no menu state (menu_explore_build_list neither
+ * reads the global explore state nor loads icons - that happens in
+ * the callback, on the main thread), so nothing needs the worker to
+ * have stopped before the menu is freed.  The generation bump makes
+ * a completion already in flight install nothing. */
+void menu_explore_cancel_init_task(void)
 {
-   task_queue_wait(menu_explore_init_in_progress, NULL);
+   menu_explore_init_generation++;
+
+   if (menu_explore_init_task)
+   {
+      /* Thread-safe under the threaded queue; the handler notices on
+       * its next invocation and finishes, and the task's own cleanup
+       * releases the partially built state. */
+      task_set_flags(menu_explore_init_task, RETRO_TASK_FLG_CANCELLED, true);
+      menu_explore_init_task = NULL;
+   }
 }

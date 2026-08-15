@@ -265,6 +265,7 @@ OBJ += \
        tasks/task_save.o \
        tasks/task_movie.o \
        tasks/task_file_transfer.o \
+       tasks/task_nbio_slice.o \
        tasks/task_content_prefetch.o \
        tasks/task_image.o \
        tasks/task_playlist_manager.o \
@@ -1129,6 +1130,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/cbs/menu_cbs_sublabel.o \
           menu/cbs/menu_cbs_title.o \
           menu/menu_displaylist.o \
+          menu/menu_dirwalk.o \
           menu/menu_contentless_cores.o
 endif
 
@@ -2352,7 +2354,7 @@ OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_encode.o \
        $(LIBRETRO_COMM_DIR)/formats/audio_transfer.o \
        $(LIBRETRO_COMM_DIR)/formats/data_transfer.o \
        $(LIBRETRO_COMM_DIR)/memmap/memmap.o \
-       $(LIBRETRO_COMM_DIR)/formats/m3u/m3u_file.o
+       $(LIBRETRO_COMM_DIR)/formats/m3u/rm3u.o
 
 # Video4Linux 2
 

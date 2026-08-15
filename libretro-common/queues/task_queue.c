@@ -262,6 +262,19 @@ static void retro_task_regular_cancel(void *task)
    t->flags       |= RETRO_TASK_FLG_CANCELLED;
 }
 
+/* Slow-handler watchdog.  Both are read and written on the thread
+ * that drives the untheaded queue - the same thread that registers
+ * them - so they need no locking. */
+static retro_task_slow_handler_t task_slow_handler_cb;
+static retro_time_t              task_slow_handler_budget;
+
+void task_queue_set_slow_handler_cb(retro_task_slow_handler_t cb,
+      retro_time_t budget_usec)
+{
+   task_slow_handler_cb     = cb;
+   task_slow_handler_budget = (budget_usec < 1) ? 1 : budget_usec;
+}
+
 static void retro_task_regular_gather(void)
 {
    retro_task_t *task  = NULL;
@@ -280,7 +293,21 @@ static void retro_task_regular_gather(void)
 
       if (!task->when || task->when < cpu_features_get_time_usec())
       {
-         task->handler(task);
+         /* Time the handler only when someone is listening: with no
+          * callback registered this costs nothing at all. */
+         if (task_slow_handler_cb)
+         {
+            retro_time_t started = cpu_features_get_time_usec();
+            retro_time_t took;
+
+            task->handler(task);
+
+            took = cpu_features_get_time_usec() - started;
+            if (took > task_slow_handler_budget)
+               task_slow_handler_cb(task, took);
+         }
+         else
+            task->handler(task);
 
          task_queue_push_progress(task);
       }

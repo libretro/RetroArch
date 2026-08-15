@@ -320,6 +320,23 @@ static bool bsv_movie_start_playback(input_driver_state_t *input_st, char *path)
    needed due to mixing sync and async during initialization. */
 typedef struct bsv_state moviectl_task_state_t;
 
+/* True from the push of a playback-start task until its main-thread
+ * callback has installed the replay handle.
+ *
+ * A flag rather than a task_queue_find() for the same reason the
+ * state-load equivalent is one: the unthreaded gather lifts every
+ * running task off the queue before invoking any handler, so a
+ * finder can report "nothing in flight" while the task is sitting in
+ * that pass, and the threaded gather has a narrower version of the
+ * same window between a worker finishing and its callback running.
+ * The flag transitions strictly on the main thread. */
+static bool movie_playback_start_pending = false;
+
+bool movie_playback_start_in_progress(void *data)
+{
+   return movie_playback_start_pending;
+}
+
 static void task_moviectl_playback_handler(retro_task_t *task)
 {
    uint8_t flg;
@@ -340,6 +357,7 @@ static void moviectl_start_playback_cb(retro_task_t *task,
 {
   struct bsv_state *state        = (struct bsv_state *)task_data;
   input_driver_state_t *input_st = input_state_get_ptr();
+  movie_playback_start_pending   = false;
   input_st->bsv_movie_state      = *state;
   bsv_movie_start_playback(input_st, state->movie_start_path);
   free(state);
@@ -462,8 +480,13 @@ bool movie_start_playback(input_driver_state_t *input_st, char *path)
      task->callback                = moviectl_start_playback_cb;
      task->title                   = strdup(msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK));
 
+     movie_playback_start_pending  = true;
+
      if (task_queue_push(task))
         return true;
+
+     /* Refused: no callback will run for this task. */
+     movie_playback_start_pending  = false;
   }
 
    if (state)

@@ -19,7 +19,7 @@ jobs:
   samples-gfx:
     name: Build and run samples/gfx
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
 
     steps:
       - name: Install dependencies
@@ -497,3 +497,99 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 120 \
              ./gfx_thumbnail_anim_test
           echo "[pass] gfx_thumbnail_anim_test (TSan)"
+
+      - name: Build and run gfx_thumbnail_preview_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/gfx/gfx_thumbnail_preview
+        run: |
+          set -eu
+          # Regression test for the file-browser video preview in
+          # gfx/gfx_thumbnail.c, covering the windowed open, the
+          # anim-first status/alpha handshake, and the preview-audio
+          # hand-off to libretro-common/audio/audio_mixer.c.
+          #
+          # Every fault this pins was invisible to a decode-level
+          # test, which is why they shipped one after another:
+          #
+          #  - the windowed open produced a texture and reached
+          #    AVAILABLE but nothing raised alpha, so every video
+          #    decoded perfectly and drew at zero opacity;
+          #  - a LEADING moov left the demuxer's avail below the
+          #    media floor, so the first sample was unreachable, and
+          #    since the feeder anchors at tell==0 nothing ever
+          #    raised the bound - a standstill with no way out;
+          #  - a TRAILING moov cannot be reached by a resident head
+          #    at all, so preview audio was silent on every such
+          #    file until the moov island was committed instead;
+          #  - the mixer hand-off copied the whole container out of
+          #    a partially-committed window (SIGSEGV), took an
+          #    int32_t length that truncated a 7 GB container to
+          #    3.5 GB, dropped every feeder raise for want of an
+          #    M4A arm in audio_mixer_voice_set_avail (the same
+          #    second of audio on a loop), and applied the resident
+          #    bound only under HAVE_ROPUS.
+          #
+          # So this links the REAL gfx_thumbnail.c AND the REAL
+          # audio_mixer.c.  The earlier harness stubbed the mixer and
+          # was therefore modelling the two functions three of those
+          # defects lived in.  The stubbed audio thread consumes at a
+          # settable rate and TOUCHES every byte it is told is
+          # resident, so an over-claimed avail faults under ASan
+          # rather than passing quietly, and it counts feeder stalls
+          # (excluding the file end, where hitting the wall is the
+          # loop point rather than a starved feeder).
+          #
+          # The fixtures are container LAYOUTS, not clips - where the
+          # moov sits, whether media starts past 4 GiB, whether the
+          # moov outgrows the head - because layout is what every one
+          # of these faults turned on.  The multi-gigabyte ones are
+          # sparse: two 7.28 GB files cost ~400 KB of disk.
+          #
+          # Frame counts are set from measurement, not taste.  At 300
+          # ASan / 200 TSan frames this step took ~5.6 min on one
+          # core, against a job budget shared with a dozen others;
+          # 120 / 60 brings it to ~1.5 min and still crosses every
+          # window boundary the assertions rest on (the feeder moves
+          # at AUDIO_BYTES_PER_TICK, not per frame).  The job timeout
+          # goes to 20 min to leave headroom for the slowest runner.
+          sudo apt-get install -y ffmpeg
+          make clean all SANITIZER=address,undefined
+          make fixtures
+          test -x gfx_thumbnail_preview_test
+          ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 \
+          UBSAN_OPTIONS=print_stacktrace=1 \
+          AUDIO_BYTES_PER_TICK=65536 FRAMES=120 timeout 300 \
+             ./gfx_thumbnail_preview_test fixtures/*.mp4
+          echo "[pass] gfx_thumbnail_preview_test (ASan)"
+          # The decode test is the missing half of the harness above:
+          # the REAL mixer -> audio_transfer -> rmp4 -> raac chain over
+          # a budget-fed window, at budgets small enough that the
+          # decoder reaches the resident frontier.  The stubbed audio
+          # thread above models exactly the layer these faults lived
+          # in: no wall over the packets on the trailing-moov path
+          # (SIGSEGV inside raac_decode_frame the moment the decoder
+          # outran the feeder), demuxer bounds that refused to lower,
+          # a wall stall taken for end of stream (mid-file rewinds,
+          # then the voice released), and set_avail compiling to a
+          # no-op without HAVE_RWEBM - the _norwebm build exists for
+          # that last one.
+          test -x preview_audio_decode_test
+          test -x preview_audio_decode_test_norwebm
+          ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 \
+          UBSAN_OPTIONS=print_stacktrace=1 timeout 600 bash -c '
+             ./preview_audio_decode_test fixtures/trailing_large.mp4 1024 island
+             ./preview_audio_decode_test fixtures/trailing_large.mp4 262144 island
+             ./preview_audio_decode_test_norwebm fixtures/trailing_large.mp4 1024 island
+             ./preview_audio_decode_test_norwebm fixtures/trailing_large.mp4 262144 island'
+          echo "[pass] preview_audio_decode_test (ASan)"
+          # clean keeps fixtures/ by design; regenerate anyway so the
+          # step cannot silently run against an empty glob.
+          make clean all SANITIZER=thread
+          make fixtures
+          TSAN_OPTIONS=halt_on_error=1 FRAMES=60 timeout 300 \
+             ./gfx_thumbnail_preview_test fixtures/*.mp4
+          echo "[pass] gfx_thumbnail_preview_test (TSan)"
+          TSAN_OPTIONS=halt_on_error=1 timeout 600 bash -c '
+             ./preview_audio_decode_test fixtures/trailing_large.mp4 1024 island
+             ./preview_audio_decode_test fixtures/trailing_large.mp4 262144 island'
+          echo "[pass] preview_audio_decode_test (TSan)"

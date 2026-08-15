@@ -131,6 +131,24 @@ static int qstrcmp_dir_noext(const void *a_, const void *b_)
 }
 
 /**
+ * dir_list_sort_cmp:
+ * @dir_first  : sort directories before files?
+ * @ignore_ext : ignore file extensions when comparing?
+ *
+ * The exact comparator dir_list_sort() / dir_list_sort_ignore_ext()
+ * order a listing with, for callers that need to apply the same
+ * ordering through a different sorting strategy (e.g. an
+ * incremental sort under a time budget).  Operates on
+ * struct string_list_elem.
+ **/
+dir_list_sort_cmp_t dir_list_sort_cmp(bool dir_first, bool ignore_ext)
+{
+   if (ignore_ext)
+      return dir_first ? qstrcmp_dir_noext : qstrcmp_plain_noext;
+   return dir_first ? qstrcmp_dir : qstrcmp_plain;
+}
+
+/**
  * dir_list_sort:
  * @list      : pointer to the directory listing.
  * @dir_first : move the directories in the listing to the top?
@@ -141,7 +159,7 @@ void dir_list_sort(struct string_list *list, bool dir_first)
 {
    if (list)
       qsort(list->elems, list->size, sizeof(struct string_list_elem),
-            dir_first ? qstrcmp_dir : qstrcmp_plain);
+            dir_list_sort_cmp(dir_first, false));
 }
 
 /**
@@ -155,7 +173,7 @@ void dir_list_sort_ignore_ext(struct string_list *list, bool dir_first)
 {
    if (list)
       qsort(list->elems, list->size, sizeof(struct string_list_elem),
-            dir_first ? qstrcmp_dir_noext : qstrcmp_plain_noext);
+            dir_list_sort_cmp(dir_first, true));
 }
 
 /**
@@ -308,6 +326,304 @@ static int dir_list_read_ctx(size_t dir_len, struct dir_list_ctx *ctx)
    retro_closedir(entry);
 
    return 0;
+}
+
+/* Resumable directory walk ------------------------------------------
+ *
+ * dir_list_read_ctx() above is a depth-first recursion over a shared
+ * path-prefix buffer.  The iterator below is the same walk with the
+ * recursion made explicit - a frame per open directory - so it can
+ * stop between any two entries and resume later.  Every filtering
+ * decision is a transliteration of the recursive body, and the
+ * equivalence is pinned by the parity lane of
+ * samples/tasks/database/scan_begin_budget_test.c, which diffs the
+ * iterator's output against dir_list_new() on the same tree.
+ *
+ * Two behaviours of the recursion that read like accidents are
+ * contract here and preserved deliberately:
+ *  - the return value of the recursive call is ignored, so an
+ *    unreadable subdirectory is skipped silently while the walk
+ *    continues, and
+ *  - a directory itself is appended (under include_dirs) after its
+ *    contents, i.e. post-order, because the append sits after the
+ *    recursive call. */
+
+struct dir_list_iter_frame
+{
+   struct RDIR *entry;    /* open directory handle for this level    */
+   size_t       dir_len;  /* prefix length children append at        */
+   size_t       pend_len; /* path length of the dir itself, for the  *
+                           * post-order append on pop (root: unused) */
+   bool         pend_append; /* append this dir on pop?              */
+};
+
+struct dir_list_iter
+{
+   struct string_list *list;             /* borrowed                 */
+   struct string_list  ext_list;         /* owned storage...         */
+   struct string_list *ext_list_ptr;     /* ...NULL when no filter   */
+   char               *path;             /* shared prefix buffer     */
+   struct dir_list_iter_frame *stack;
+   size_t              depth;            /* frames in use            */
+   size_t              cap;              /* frames allocated         */
+   bool                include_dirs;
+   bool                include_hidden;
+   bool                include_compressed;
+   bool                recursive;
+   bool                done;
+   bool                failed;
+};
+
+static bool dir_list_iter_push(dir_list_iter_t *iter,
+      struct RDIR *entry, size_t dir_len, size_t pend_len,
+      bool pend_append)
+{
+   struct dir_list_iter_frame *frame;
+   if (iter->depth == iter->cap)
+   {
+      size_t new_cap = iter->cap ? (iter->cap * 2) : 8;
+      struct dir_list_iter_frame *new_stack =
+            (struct dir_list_iter_frame*)realloc(iter->stack,
+                  new_cap * sizeof(*new_stack));
+      if (!new_stack)
+         return false;
+      iter->stack = new_stack;
+      iter->cap   = new_cap;
+   }
+   frame              = &iter->stack[iter->depth++];
+   frame->entry       = entry;
+   frame->dir_len     = dir_len;
+   frame->pend_len    = pend_len;
+   frame->pend_append = pend_append;
+   return true;
+}
+
+dir_list_iter_t *dir_list_iter_new(const char *dir, const char *ext,
+      bool include_dirs, bool include_hidden, bool include_compressed,
+      bool recursive, struct string_list *list)
+{
+   dir_list_iter_t *iter;
+   struct RDIR *entry;
+   size_t dir_len;
+
+   if (!dir || !list)
+      return NULL;
+
+   if (!(iter = (dir_list_iter_t*)calloc(1, sizeof(*iter))))
+      return NULL;
+
+   if (!(iter->path = (char*)malloc(PATH_MAX_LENGTH)))
+   {
+      free(iter);
+      return NULL;
+   }
+
+   if (ext)
+   {
+      string_list_initialize(&iter->ext_list);
+      string_split_noalloc(&iter->ext_list, ext, "|");
+      iter->ext_list_ptr    = &iter->ext_list;
+   }
+
+   iter->list               = list;
+   iter->include_dirs       = include_dirs;
+   iter->include_hidden     = include_hidden;
+   iter->include_compressed = include_compressed;
+   iter->recursive          = recursive;
+
+   dir_len = strlcpy(iter->path, dir, PATH_MAX_LENGTH);
+
+   /* A root that cannot be opened is the condition under which
+    * dir_list_new() fails outright - unlike a child, which is
+    * skipped. */
+   entry   = retro_opendir_include_hidden(iter->path, include_hidden);
+   if (!entry)
+      goto error;
+   if (retro_dirent_error(entry))
+   {
+      retro_closedir(entry);
+      goto error;
+   }
+   if (!dir_list_iter_push(iter, entry, dir_len, 0, false))
+   {
+      retro_closedir(entry);
+      goto error;
+   }
+   return iter;
+
+error:
+   dir_list_iter_free(iter);
+   return NULL;
+}
+
+int dir_list_iter_step(dir_list_iter_t *iter,
+      bool (*within_budget)(void *userdata), void *userdata)
+{
+   char *path;
+   bool first = true;
+
+   if (!iter || iter->failed)
+      return -1;
+   if (iter->done)
+      return 1;
+
+   path = iter->path;
+
+   while (iter->depth)
+   {
+      struct dir_list_iter_frame *frame = &iter->stack[iter->depth - 1];
+      struct RDIR *entry                = frame->entry;
+      size_t dir_len                    = frame->dir_len;
+      const char *name;
+      size_t _len;
+      union string_list_elem_attr attr;
+
+      /* The floor: one entry per call regardless of the budget, so a
+       * spent window still makes progress.  After it, yield between
+       * any two entries. */
+      if (!first && within_budget && !within_budget(userdata))
+         return 0;
+      first = false;
+
+      if (!retro_readdir(entry))
+      {
+         /* Level exhausted: close, pop, and perform the parent's
+          * pending post-order append of the directory itself (the
+          * code after the recursive call in dir_list_read_ctx). */
+         bool pend_append = frame->pend_append;
+         size_t pend_len  = frame->pend_len;
+
+         retro_closedir(entry);
+         iter->depth--;
+
+         if (pend_append)
+         {
+            path[pend_len] = '\0';
+            attr.i         = RARCH_DIRECTORY;
+            if (!string_list_append(iter->list, path, attr))
+               goto fail;
+         }
+         continue;
+      }
+
+      name = retro_dirent_get_name(entry);
+
+      if (name[0] == '.' || name[0] == '$')
+      {
+         /* Do not include hidden files and directories */
+         if (!iter->include_hidden)
+            continue;
+         /* char-wise comparisons to avoid string comparison */
+         /* Do not include current dir */
+         if (name[1] == '\0')
+            continue;
+         /* Do not include parent dir */
+         if (name[1] == '.' && name[2] == '\0')
+            continue;
+      }
+
+      /* Append @name to the prefix instead of rebuilding the whole
+       * path: the prefix is already in place from the parent level. */
+      _len = dir_len;
+      if (_len && path[_len - 1] != '/' && path[_len - 1] != '\\')
+         path[_len++] = '/';
+      _len += strlcpy(path + _len, name, PATH_MAX_LENGTH - _len);
+
+      if (retro_dirent_is_dir(entry, NULL))
+      {
+         /* Exclude this frequent hidden dir on platforms which can not handle hidden attribute */
+         if (!iter->include_hidden && strcmp(name, "System Volume Information") == 0)
+            continue;
+
+#if defined(IOS) || defined(OSX)
+         {
+            size_t name_len = strlen(name);
+            if (name_len >= 10
+                  && !memcmp(name + name_len - 10, ".framework", 10))
+            {
+               attr.i = RARCH_PLAIN_FILE;
+               if (!string_list_append(iter->list, path, attr))
+                  goto fail;
+               continue;
+            }
+         }
+#endif
+         if (iter->recursive)
+         {
+            /* Descend.  A child that cannot be opened is skipped
+             * silently - the recursion ignored the child call's
+             * return value - but the post-order append it owed
+             * still happens, so perform it here directly. */
+            struct RDIR *child = retro_opendir_include_hidden(path,
+                  iter->include_hidden);
+
+            if (child && retro_dirent_error(child))
+            {
+               retro_closedir(child);
+               child = NULL;
+            }
+
+            if (child)
+            {
+               if (!dir_list_iter_push(iter, child, _len, _len,
+                        iter->include_dirs))
+               {
+                  retro_closedir(child);
+                  goto fail;
+               }
+               continue;
+            }
+
+            path[_len] = '\0';
+         }
+
+         if (!iter->include_dirs)
+            continue;
+         attr.i = RARCH_DIRECTORY;
+      }
+      else
+      {
+         const char *file_ext    = path_get_extension(name);
+
+         attr.i                  = RARCH_FILETYPE_UNSET;
+
+         if (string_list_find_elem_prefix(iter->ext_list_ptr, ".", file_ext))
+            attr.i            = RARCH_PLAIN_FILE;
+         else
+         {
+            bool is_compressed_file;
+            if ((is_compressed_file = path_is_compressed_file(path)))
+               attr.i               = RARCH_COMPRESSED_ARCHIVE;
+
+            if (iter->ext_list_ptr &&
+                  (!is_compressed_file || !iter->include_compressed))
+               continue;
+         }
+      }
+
+      if (!string_list_append(iter->list, path, attr))
+         goto fail;
+   }
+
+   iter->done = true;
+   return 1;
+
+fail:
+   iter->failed = true;
+   return -1;
+}
+
+void dir_list_iter_free(dir_list_iter_t *iter)
+{
+   size_t i;
+   if (!iter)
+      return;
+   for (i = 0; i < iter->depth; i++)
+      retro_closedir(iter->stack[i].entry);
+   free(iter->stack);
+   free(iter->path);
+   string_list_deinitialize(&iter->ext_list);
+   free(iter);
 }
 
 /**

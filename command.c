@@ -901,7 +901,12 @@ bool command_play_replay_slot(command_t *cmd, const char *arg)
       if (ret)
       {
          input_driver_state_t *input_st = input_state_get_ptr();
-         task_queue_wait(NULL, NULL);
+         /* The reply carries the replay handle, which the movie
+          * task's callback installs, so this still waits - but only
+          * for that task.  A NULL condition means "until the queue
+          * is empty", which made a network command block on every
+          * unrelated scan or download in flight. */
+         task_queue_wait(movie_playback_start_in_progress, NULL);
          if (input_st->bsv_movie_state_next_handle)
             snprintf(reply, sizeof(reply) - 1, "PLAY_REPLAY_SLOT %lld", (long long)(input_st->bsv_movie_state_next_handle->identifier));
          else

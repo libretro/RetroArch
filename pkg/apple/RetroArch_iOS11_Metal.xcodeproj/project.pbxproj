@@ -176,7 +176,7 @@
 		92B9EB7F24E0518700E6CFB2 /* net_http.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = net_http.h; sourceTree = "<group>"; };
 		92B9EB8024E0518700E6CFB2 /* net_http_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = net_http_parse.h; sourceTree = "<group>"; };
 		92B9EB8124E0518700E6CFB2 /* retro_timers.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = retro_timers.h; sourceTree = "<group>"; };
-		92B9EB8324E0518700E6CFB2 /* m3u_file.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = m3u_file.h; sourceTree = "<group>"; };
+		92B9EB8324E0518700E6CFB2 /* rm3u.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rm3u.h; sourceTree = "<group>"; };
 		92B9EB8424E0518700E6CFB2 /* rjson.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rjson.h; sourceTree = "<group>"; };
 		92B9EB8524E0518700E6CFB2 /* rxml.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rxml.h; sourceTree = "<group>"; };
 		92B9EB8624E0518700E6CFB2 /* cdfs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = cdfs.h; sourceTree = "<group>"; };
@@ -610,7 +610,7 @@
 		92B9EB8224E0518700E6CFB2 /* formats */ = {
 			isa = PBXGroup;
 			children = (
-				92B9EB8324E0518700E6CFB2 /* m3u_file.h */,
+				92B9EB8324E0518700E6CFB2 /* rm3u.h */,
 				92B9EB8424E0518700E6CFB2 /* rjson.h */,
 				92B9EB8524E0518700E6CFB2 /* rxml.h */,
 				92B9EB8624E0518700E6CFB2 /* cdfs.h */,

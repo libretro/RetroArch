@@ -1904,6 +1904,84 @@ static int rvp9_read_tree8(rvp9_br *r, const int8_t *tree, const uint8_t *p)
    return -i;
 }
 
+/* ==================================================================== */
+/* Segmentation (vp9_seg_common.c + the segment-id half of             */
+/* vp9_decodemv.c).  Pixel-independent, so these live outside          */
+/* rvp9_recon.inc and are shared by the 8-bit and high-bit-depth       */
+/* instantiations rather than being emitted twice.                     */
+/* ==================================================================== */
+
+/* vp9_segment_tree: a balanced 3-level tree over 8 leaves, 7 probs.
+ * Leaf 0 is the literal 0 that terminates rvp9_read_tree8's loop. */
+static const int8_t rvp9_segment_tree[14] =
+   { 2, 4, 6, 8, 10, 12, 0, -1, -2, -3, -4, -5, -6, -7 };
+
+/* SEG_LVL_ALT_Q 0, SEG_LVL_ALT_LF 1, SEG_LVL_REF_FRAME 2, SEG_LVL_SKIP 3 */
+#define RVP9_SEG_LVL_ALT_Q     0
+#define RVP9_SEG_LVL_ALT_LF    1
+#define RVP9_SEG_LVL_REF_FRAME 2
+#define RVP9_SEG_LVL_SKIP      3
+
+static INLINE int rvp9_segfeature_active(const rvp9_hdr *hd, int seg, int f)
+{
+   return hd->seg_enabled && hd->seg_feature_enabled[seg][f];
+}
+
+static INLINE int rvp9_segdata(const rvp9_hdr *hd, int seg, int f)
+{
+   return hd->seg_feature_data[seg][f];
+}
+
+/* vp9_get_qindex: the segment's quantizer, absolute or as a delta on
+ * the frame's base_qindex. */
+static int rvp9_seg_qindex(const rvp9_hdr *hd, int seg)
+{
+   if (rvp9_segfeature_active(hd, seg, RVP9_SEG_LVL_ALT_Q))
+   {
+      int data = rvp9_segdata(hd, seg, RVP9_SEG_LVL_ALT_Q);
+      int q    = hd->seg_abs_delta ? data : hd->base_qindex + data;
+      return q < 0 ? 0 : (q > 255 ? 255 : q);
+   }
+   return hd->base_qindex;
+}
+
+static int rvp9_read_segment_id(rvp9_br *r, const rvp9_hdr *hd)
+{
+   return rvp9_read_tree8(r, rvp9_segment_tree, hd->seg_tree_probs);
+}
+
+/* dec_get_segment_id: the predictor is the MINIMUM id over the block's
+ * mi footprint in the previous frame's map, not the top-left one. */
+static int rvp9_get_segment_id(const rvp9_dec *d, const uint8_t *map,
+      int mi_offset, int x_mis, int y_mis)
+{
+   int x, y, id = 7;
+   for (y = 0; y < y_mis; y++)
+      for (x = 0; x < x_mis; x++)
+      {
+         int v = map[mi_offset + y * d->mi_cols + x];
+         if (v < id) id = v;
+      }
+   return id;
+}
+
+static void rvp9_set_segment_id(rvp9_dec *d, int mi_offset, int x_mis,
+      int y_mis, int id)
+{
+   int y;
+   for (y = 0; y < y_mis; y++)
+      memset(d->seg_map + mi_offset + y * d->mi_cols, id, (size_t)x_mis);
+}
+
+static void rvp9_copy_segment_id(rvp9_dec *d, int mi_offset, int x_mis,
+      int y_mis)
+{
+   int y;
+   for (y = 0; y < y_mis; y++)
+      memcpy(d->seg_map + mi_offset + y * d->mi_cols,
+             d->seg_map_prev + mi_offset + y * d->mi_cols, (size_t)x_mis);
+}
+
 /* --- neighbour contexts --- */
 static int rvp9_intra_inter_ctx(const rvp9_mi *above, const rvp9_mi *left)
 {
@@ -2666,6 +2744,20 @@ static void rvp9_past_independence(rvp9_dec *d)
    d->lf_ref_deltas[3] = -1;
    d->lf_mode_deltas[0] = 0;
    d->lf_mode_deltas[1] = 0;
+   /* vp9_clearall_segfeatures + the two seg_map memsets: a key,
+    * intra-only or error-resilient frame starts from an empty feature
+    * table and an all-zero map history.  This runs before the frame's
+    * own segmentation header is applied (libvpx orders
+    * setup_past_independence ahead of setup_segmentation), so a frame
+    * that enables segmentation without carrying seg_update_data
+    * correctly sees no features at all. */
+   memset(d->seg_feature_enabled, 0, sizeof d->seg_feature_enabled);
+   memset(d->seg_feature_data,    0, sizeof d->seg_feature_data);
+   d->seg_abs_delta = 0;
+   if (d->seg_map)
+      memset(d->seg_map, 0, (size_t)d->mi_cols * d->mi_rows);
+   if (d->seg_map_prev)
+      memset(d->seg_map_prev, 0, (size_t)d->mi_cols * d->mi_rows);
    if (d->hd.frame_type == 0 || d->hd.error_resilient ||
        d->hd.reset_frame_context == 3)
    {
@@ -2674,7 +2766,17 @@ static void rvp9_past_independence(rvp9_dec *d)
       d->frame_ctxs_init = 1;
    }
    else if (d->hd.reset_frame_context == 2)
+   {
+      /* Only the context this frame names is reset.  That context is
+       * the one the frame is about to load, so it is now valid even
+       * though no key frame has been seen - a stream may legitimately
+       * open on an intra-only frame carrying reset_frame_context 2
+       * (the vp90-2-16-intra-only vector does exactly that).  The
+       * remaining three stay as they were, zeroed by the decoder's
+       * calloc, matching libvpx's calloc'd cm->frame_contexts. */
       d->frame_ctxs[d->hd.frame_context_idx] = d->fc;
+      d->frame_ctxs_init = 1;
+   }
 }
 
 /* Probability adaptation (backward), vp9_adapt_*_probs. */
@@ -2891,8 +2993,6 @@ int rvp9_decode_frame(rvp9_dec *d, const uint8_t *data, size_t len,
       *show_fb = fb;
       return 1;
    }
-
-   if (hd->seg_enabled) return -4;
 
    if (hd->bit_depth == 10)
       return rvp9_decode_frame_impl_hbd(d, data, len, show_fb);
@@ -3240,6 +3340,8 @@ void rvp9_free(rvp9_dec *d)
    free(d->prev_mvs);
    free(d->cur_mvs);
    free(d->above_seg);
+   free(d->seg_map);
+   free(d->seg_map_prev);
    for (i = 0; i < 3; i++)
    {
       free(d->above_ctx[i]);
@@ -3248,5 +3350,6 @@ void rvp9_free(rvp9_dec *d)
    d->mi = NULL;
    d->prev_mvs = d->cur_mvs = NULL;
    d->above_seg = NULL;
+   d->seg_map = d->seg_map_prev = NULL;
    d->buf_y = d->buf_u = d->buf_v = NULL;
 }
