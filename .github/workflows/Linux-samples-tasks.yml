@@ -585,6 +585,37 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 ./overlay_budget_test
           make clean >/dev/null
 
+      - name: Build and run content_prefetch_test (plain, ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/content_prefetch
+        run: |
+          set -eu
+          # Oracle for the content prefetch task - the path a menu
+          # content load defers to, streaming the bytes in a budgeted
+          # slice per tick while the frontend keeps running, so the
+          # load takes a finished buffer instead of blocking on a
+          # read.
+          #
+          # Delivery is by ownership transfer from the task callback,
+          # so this is as much a memory-correctness test as a
+          # behavioural one, and it runs under all three flavors.  One
+          # lane drives the THREADED queue deliberately: the other
+          # lanes run the handler on the calling thread, where a TSan
+          # run would prove nothing about the worker-to-callback
+          # hand-off that is the only place a race could live.
+          make clean >/dev/null
+          make all -j$(nproc)
+          ./content_prefetch_test
+          make clean >/dev/null
+          make all SANITIZER=address,undefined -j$(nproc)
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+          UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+            ./content_prefetch_test
+          make clean >/dev/null
+          make all SANITIZER=thread -j$(nproc)
+          TSAN_OPTIONS=halt_on_error=1 ./content_prefetch_test
+          make clean >/dev/null
+
       - name: Build and run task_ordering_test (plain, ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/tasks/ordering
