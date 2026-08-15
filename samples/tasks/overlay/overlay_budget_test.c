@@ -39,6 +39,7 @@
 #include <features/features_cpu.h>
 #include <queues/task_queue.h>
 #include <string/stdstring.h>
+#include <lists/string_list.h>
 
 #include "../../../input/input_overlay.h"
 #include "../../../tasks/tasks_internal.h"
@@ -264,6 +265,13 @@ static void overlay_cb(retro_task_t *task, void *task_data,
       input_overlay_free_overlay(&data->overlays[i]);
    free(data->overlays);
    free(data->overlay_path);
+   /* The real consumer (input_overlay_loaded in
+    * input/input_driver.c) releases the image list here: the
+    * successful hand-off transfers it, like the overlays and the
+    * path above.  The stub used to leave it alone, which is why
+    * this oracle could not see a second release of the same list
+    * in the loader's cleanup. */
+   string_list_free(data->image_list);
    free(data);
 }
 

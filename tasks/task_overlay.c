@@ -1272,31 +1272,40 @@ static void task_overlay_free(retro_task_t *task)
 {
    unsigned i;
    overlay_loader_t *loader  = (overlay_loader_t*)task->state;
-   uint8_t flg               = task_get_flags(task);
 
-   if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
+   /* Release what the loader still owns.
+    *
+    * A successful load hands the overlays, the path and the image
+    * list to the consumer and clears them (see the hand-off at the
+    * end of task_overlay_handler), so a pointer that is still set
+    * here is one nobody else took - because the load was cancelled,
+    * or because it finished but the hand-off never happened.
+    *
+    * Keying this on the pointers rather than on
+    * RETRO_TASK_FLG_CANCELLED is what keeps it from releasing what
+    * the consumer already released, and it also covers the case the
+    * flag missed: a load that completes but cannot allocate its
+    * payload used to leak the lot. */
+   if (loader->image_list)
    {
-      if (loader->overlay_path)
-         free(loader->overlay_path);
-
+      /* The list is a dedup index - its elements point at
+       * texture_images owned by the overlays, and string_list_free()
+       * does not follow .attr.p, so the textures go first. */
       for (i = 0; i < loader->image_list->size; i++)
          image_texture_free((struct texture_image*)loader->image_list->elems[i].attr.p);
 
+      string_list_free(loader->image_list);
+   }
+
+   if (loader->overlays)
+   {
       for (i = 0; i < loader->size; i++)
          input_overlay_free_overlay(&loader->overlays[i]);
 
       free(loader->overlays);
    }
 
-   /* The image list is a dedup index: its elements point at
-    * texture_images owned by the overlays, not at copies, so the
-    * list container has to be released on BOTH paths.  It used to be
-    * freed only when the load was cancelled, which leaked it - once
-    * per successful overlay load, and overlays reload whenever the
-    * user switches one or loads content.  The textures themselves
-    * are freed above only when cancelled; on success they went to
-    * the consumer along with the overlays. */
-   string_list_free(loader->image_list);
+   free(loader->overlay_path);
 
    if (loader->conf)
       config_file_free(loader->conf);
@@ -1364,6 +1373,20 @@ static void task_overlay_handler(retro_task_t *task)
       data->overlay_types               = loader->overlay_types;
       data->overlay_path                = loader->overlay_path;
       data->image_list                  = loader->image_list;
+
+      /* Ownership moves with the pointers, so drop the loader's
+       * references to them.  task_overlay_free() below releases
+       * whatever the loader still holds, and the task queue retires
+       * a task by running its callback and then its cleanup - so by
+       * the time the cleanup looks, the consumer
+       * (input_overlay_loaded in input/input_driver.c) has already
+       * taken the overlays and the path and released the image
+       * list.  Leaving the references set is a second release of
+       * each of them. */
+      loader->overlays                  = NULL;
+      loader->active                    = NULL;
+      loader->overlay_path              = NULL;
+      loader->image_list                = NULL;
 
       task_set_data(task, data);
    }
