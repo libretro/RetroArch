@@ -153,7 +153,11 @@ static bool queue_busy(void)
  * rather than intercepting the setter. */
 static bool sample_progress_finder(retro_task_t *task, void *userdata)
 {
-   int8_t p = task->progress;
+   /* Through the accessor, not the field: task_set_progress() writes
+    * it under property_lock and the worker may be doing exactly that
+    * while this runs.  Reading it raw is a data race - one TSan
+    * catches, as it did here. */
+   int8_t p = task_get_progress(task);
 
    if (p < 0)
       return false;
@@ -205,6 +209,11 @@ static unsigned run_prefetch(const char **paths, size_t count,
    unsigned ticks = 0;
    bool cancelled = false;
 
+   /* The threading mode is a GLOBAL that task_queue_check()
+    * reconciles against on every call, so a lane that leaves it set
+    * silently converts every later lane.  State it here rather than
+    * inheriting whatever ran before. */
+   task_queue_unset_threaded();
    task_queue_init(false, NULL);
    reset_observations();
 
@@ -418,6 +427,7 @@ static void lane_threaded_queue(void)
    CHECK(write_fixture(path, BIG_FILE_SIZE), "fixture write failed");
    paths[0] = path;
 
+   task_queue_set_threaded();
    task_queue_init(true, NULL);
    reset_observations();
 
@@ -443,6 +453,7 @@ static void lane_threaded_queue(void)
    }
 
    task_queue_deinit();
+   task_queue_unset_threaded();
 
    CHECK(done_called && done_all_ok,
          "threaded run did not complete cleanly");
@@ -487,6 +498,7 @@ static void lane_progress_callback(void)
    CHECK(write_fixture(path, BIG_FILE_SIZE), "fixture write failed");
    paths[0] = path;
 
+   task_queue_unset_threaded();
    task_queue_init(false, NULL);
    reset_observations();
    cb_progress_count        = 0;
@@ -570,9 +582,14 @@ int main(void)
    lane_multiple_files();
    lane_unreadable_is_skipped();
    lane_cancel_midstream();
-   lane_threaded_queue();
    lane_progress_callback();
    lane_null_progress_callback();
+   /* Last: it is the only lane that turns threading on, and the mode
+    * is global.  Running it last means a mistake in restoring it
+    * cannot silently convert the lanes above into something other
+    * than what they claim to test - which is precisely what happened
+    * before, and what TSan surfaced. */
+   lane_threaded_queue();
 
    snprintf(cmd, sizeof(cmd), "rm -rf %s", fixture_dir);
    if (system(cmd) != 0) { }
