@@ -633,7 +633,7 @@ static void sdl3_poke_set_filtering(void *data, unsigned index, bool smooth, boo
 }
 
 /* Returns whether or not the screen can switch video modes. This
- * is only the case when in exclusive full screen.
+ * is only the case when in exclusive full screen. */
 static bool sdl3_can_switch_video_mode(sdl3_video_t *vid)
 {
    return vid && vid->window
