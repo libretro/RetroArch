@@ -8407,7 +8407,7 @@ bool retroarch_main_init(int argc, char *argv[])
          char str_output[384];
          const char *cpu_model  = frontend_driver_get_cpu_model_name();
          size_t _len = strlcpy(str_output,
-               "=== Build =======================================\n",
+               "=== Build =================================================\n",
                sizeof(str_output));
 
          if (cpu_model && *cpu_model)
@@ -8455,6 +8455,19 @@ bool retroarch_main_init(int argc, char *argv[])
          int32_t minor = 0;
          int32_t rel   = 0;
 
+         const char *abi =
+#if defined(__aarch64__)
+            "arm64-v8a";
+#elif defined(__arm__)
+            "armeabi-v7a";
+#elif defined(__x86_64__)
+            "x86_64";
+#elif defined(__i386__)
+            "x86";
+#else
+            "unknown";
+#endif
+
          const char *build_type =
             !g_android ? "Unknown" :
             g_android->is_play_store_build ? "Play Store" :
@@ -8465,12 +8478,13 @@ bool retroarch_main_init(int argc, char *argv[])
             manufacturer_model, sizeof(manufacturer_model));
 
          snprintf(str_output, sizeof(str_output),
-            FILE_PATH_LOG_INFO " Running on: Android v%d.%d.%d (%s)\n"
+            FILE_PATH_LOG_INFO " Running on: Android v%d.%d.%d (%s, %s)\n"
             FILE_PATH_LOG_INFO " Device: %s\n",
             major,
             minor,
             rel,
             build_type,
+            abi,
             manufacturer_model);
          RARCH_LOG_OUTPUT("%s", str_output);
       }
@@ -8504,7 +8518,7 @@ bool retroarch_main_init(int argc, char *argv[])
       {
          char str_output[64];
          snprintf(str_output, sizeof(str_output),
-            "=================================================\n");
+            "===========================================================\n");
          RARCH_LOG_OUTPUT("%s", str_output);
       }
    }
