@@ -847,10 +847,10 @@ static void android_input_poll_main_cmd(void)
                input_sensor_start_rest_capture();
             }
          }
-         slock_lock(android_app->mutex);
-         android_app->unfocused = false;
-         scond_broadcast(android_app->cond);
-         slock_unlock(android_app->mutex);
+         /* No waiter: onWindowFocusChanged() posts the command and
+          * returns without blocking, so the lock and broadcast only
+          * guarded this one scalar. The field is atomic now. */
+         retro_atomic_store_release_int(&android_app->unfocused, 0);
          break;
       case APP_CMD_LOST_FOCUS:
          {
@@ -877,10 +877,10 @@ static void android_input_poll_main_cmd(void)
                      RETRO_SENSOR_GYROSCOPE_DISABLE,
                      android_app->gyroscope_event_rate);
          }
-         slock_lock(android_app->mutex);
-         android_app->unfocused = true;
-         scond_broadcast(android_app->cond);
-         slock_unlock(android_app->mutex);
+         /* No waiter: onWindowFocusChanged() posts the command and
+          * returns without blocking, so the lock and broadcast only
+          * guarded this one scalar. The field is atomic now. */
+         retro_atomic_store_release_int(&android_app->unfocused, 1);
          break;
 
       case APP_CMD_DESTROY:

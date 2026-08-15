@@ -41,6 +41,17 @@
 #include <android/sensor.h>
 
 #include <rthreads/rthreads.h>
+#include <retro_atomic.h>
+
+/* struct android_app below embeds retro_atomic_int_t, which is
+ * atomic_int under C and std::atomic<int> under C++. If this header were
+ * ever pulled into a C++ translation unit the struct layout would differ
+ * between that TU and the C ones, silently. Nothing includes it from C++
+ * today (griffin.c pulls platform_unix.c and android_input.c into a C
+ * TU); fail the build rather than let that change go unnoticed. */
+#if defined(__cplusplus)
+#error "platform_unix.h is C-only under ANDROID: struct android_app carries retro_atomic_int_t, whose layout differs between C and C++."
+#endif
 
 #include "../../config.def.h"
 
@@ -132,7 +143,9 @@ struct android_app
    ANativeWindow* pendingWindow;
 
    /*  Below are "private" implementation of RA code. */
-   bool unfocused;
+   /* Written by the app thread on APP_CMD_GAINED_FOCUS/LOST_FOCUS, read
+    * by the video thread in dispserv_android.c without the mutex. */
+   retro_atomic_int_t unfocused;
    unsigned accelerometer_event_rate;
    unsigned gyroscope_event_rate;
    ASensorManager *sensorManager;
@@ -188,10 +201,18 @@ struct android_app
    jmethodID showKeyboard;
    jmethodID hideKeyboard;
 
+   /* Written by the Android UI thread in onContentRectChanged(), read by
+    * the video thread in the context drivers, with no lock on either
+    * side. Publication is ordered: the dimensions are stored first, then
+    * @changed with a release store, and the reader acquires @changed
+    * before consuming them.
+    *
+    * The atomic type makes this struct C-only; see the __cplusplus
+    * guard at the top of the ANDROID block. */
    struct
    {
-      unsigned width, height;
-      bool changed;
+      retro_atomic_int_t width, height;
+      retro_atomic_int_t changed;
    } content_rect;
    uint16_t rumble_last_strength_strong[MAX_USERS];
    uint16_t rumble_last_strength_weak[MAX_USERS];

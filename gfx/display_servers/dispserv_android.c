@@ -115,7 +115,7 @@ bool android_display_has_focus(void *data)
       return true;
 
    slock_lock(android_app->mutex);
-   focused = !android_app->unfocused;
+   focused = !retro_atomic_load_acquire_int(&android_app->unfocused);
    slock_unlock(android_app->mutex);
 
    return focused;

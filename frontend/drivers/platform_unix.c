@@ -410,11 +410,17 @@ static void onContentRectChanged(ANativeActivity *activity,
       const ARect *rect)
 {
    struct android_app *instance = (struct android_app*)activity->instance;
-   unsigned width = rect->right - rect->left;
-   unsigned height = rect->bottom - rect->top;
-   instance->content_rect.changed = true;
-   instance->content_rect.width   = width;
-   instance->content_rect.height  = height;
+   int width                    = rect->right  - rect->left;
+   int height                   = rect->bottom - rect->top;
+
+   /* Store the dimensions before publishing the flag, so a reader that
+    * observes @changed cannot still see the previous size and build a
+    * swapchain at the wrong resolution. The old code set @changed first
+    * and used plain stores, leaving both the ordering and the visibility
+    * to chance. */
+   retro_atomic_store_release_int(&instance->content_rect.width,  width);
+   retro_atomic_store_release_int(&instance->content_rect.height, height);
+   retro_atomic_store_release_int(&instance->content_rect.changed, 1);
 }
 
 JNIEnv *jni_thread_getenv(void)
