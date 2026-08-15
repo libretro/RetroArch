@@ -632,21 +632,17 @@ static void sdl3_poke_set_filtering(void *data, unsigned index, bool smooth, boo
             smooth ? SDL_SCALEMODE_LINEAR : SDL_SCALEMODE_NEAREST);
 }
 
-/* Returns whether or not the screen can switch video modes. This
- * is only the case when in exclusive full screen. */
-static bool sdl3_can_switch_video_mode(sdl3_video_t *vid)
-{
-   return vid && vid->window
-         && (SDL_GetWindowFlags(vid->window) & SDL_WINDOW_FULLSCREEN);
-}
-
-/* Retrieves the display mode of the window. */
+/* Retrieves the exclusive full screen display mode of the window, or
+ * NULL when the window is windowed or in borderless full screen. */
 static const SDL_DisplayMode *sdl3_current_video_mode(sdl3_video_t *vid)
 {
-   const SDL_DisplayMode *mode = SDL_GetWindowFullscreenMode(vid->window);
-   if (!mode)
-      mode = SDL_GetCurrentDisplayMode(SDL_GetDisplayForWindow(vid->window));
-   return mode;
+   if (!vid || !vid->window)
+      return NULL;
+   if (!(SDL_GetWindowFlags(vid->window) & SDL_WINDOW_FULLSCREEN))
+      return NULL;
+   /* SDL_WINDOW_FULLSCREEN covers borderless full screen as well, where
+    * the mode is left at the desktop's and must not be switched. */
+   return SDL_GetWindowFullscreenMode(vid->window);
 }
 
 static void sdl3_get_video_output_size(void *data,
@@ -658,7 +654,7 @@ static void sdl3_get_video_output_size(void *data,
    if (!vid || !vid->window)
       return;
 
-   if (!sdl3_can_switch_video_mode(vid))
+   if (!(mode = sdl3_current_video_mode(vid)))
    {
       int w = 0, h = 0;
       SDL_GetWindowSizeInPixels(vid->window, &w, &h);
@@ -666,9 +662,6 @@ static void sdl3_get_video_output_size(void *data,
       *height = (unsigned)h;
       return;
    }
-
-   if (!(mode = sdl3_current_video_mode(vid)))
-      return;
 
    *width  = (unsigned)mode->w;
    *height = (unsigned)mode->h;
@@ -688,7 +681,7 @@ static void sdl3_cycle_video_mode(sdl3_video_t *vid, int dir)
    SDL_DisplayMode **modes        = NULL;
    SDL_DisplayID display;
 
-   if (!sdl3_can_switch_video_mode(vid))
+   if (!(current = sdl3_current_video_mode(vid)))
       return;
 
    if (!(display = SDL_GetDisplayForWindow(vid->window)))
@@ -701,17 +694,14 @@ static void sdl3_cycle_video_mode(sdl3_video_t *vid, int dir)
       return;
    }
 
-   if ((current = sdl3_current_video_mode(vid)))
+   for (i = 0; i < count; i++)
    {
-      for (i = 0; i < count; i++)
+      if (   modes[i]->w == current->w
+          && modes[i]->h == current->h
+          && modes[i]->refresh_rate == current->refresh_rate)
       {
-         if (   modes[i]->w == current->w
-             && modes[i]->h == current->h
-             && modes[i]->refresh_rate == current->refresh_rate)
-         {
-            index = i;
-            break;
-         }
+         index = i;
+         break;
       }
    }
 
