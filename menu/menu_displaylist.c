@@ -6517,6 +6517,17 @@ static int menu_displaylist_parse_playlist_generic(
          info->flags |= MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES;
       *ret  = 0;
    }
+   else
+      /* Unreadable, or still being read: either way the list must not
+       * be left empty.  generic_menu_entry_action() takes its cbs
+       * from the selected entry and gates the rebuild on
+       * selection_buf_size, so with no entries back is never
+       * dispatched and nothing repopulates - a blank screen the user
+       * cannot leave.  The placeholder keeps both alive.  Only
+       * reachable when a read yields, which is Android/SAF speed,
+       * not local stdio. */
+      info->flags |= MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES;
+
    return count;
 }
 

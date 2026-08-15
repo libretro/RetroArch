@@ -40,6 +40,8 @@
 
 #include <boolean.h>
 #include <streams/interface_stream.h>
+#include <streams/file_stream.h>
+#include <vfs/vfs_implementation.h>
 #include <streams/rzip_stream.h>
 #include <vfs/vfs.h>
 #include <libretro.h>
@@ -853,26 +855,16 @@ static void lane_cache_reuse(void)
 }
 
 
-/* ------------------------------------------------------------------ */
-/* Switching between playlists must never expose the previous one.    */
-/*                                                                    */
-/* Reported from the field, on MaterialUI/Android: open "A"           */
-/* go back, open "B",                                                 */
-/* and the A titles are listed under the B heading.                   */
-/*                                                                    */
-/* The blocking playlist_init_cached() replaces the cache within a    */
-/* single call, so no caller can observe an in-between state.  The    */
-/* deferred variant can yield mid-parse, and the menu reads           */
-/* playlist_get_cached() while building its entry list - so for as    */
-/* long as the cache still held the PREVIOUS playlist, that is what   */
-/* got drawn.  Not merely a wrong label: selecting one of those rows  */
-/* launches content from the wrong system.                            */
-/*                                                                    */
-/* The invariant this pins is absolute: from the moment a different   */
-/* playlist is requested, playlist_get_cached() must never return the */
-/* old one.  NULL while the new one is still parsing is correct and   */
-/* is what callers already handle.                                    */
-/* ------------------------------------------------------------------ */
+/* Switching playlists must never expose the previous one.
+ *
+ * Reported on MaterialUI/Android: open the N64 playlist, go back,
+ * open the NES one, and the N64 titles are listed under the NES
+ * heading - selecting a row launches the wrong system's content.
+ * The blocking init swaps the cache within one call; the deferred
+ * one yields, and the menu reads playlist_get_cached() while
+ * building its list.  Invariant: from the moment a different
+ * playlist is requested the cache must never return the old one.
+ * NULL while the new one parses is correct and callers handle it. */
 
 static void lane_switch_playlist_never_shows_previous(void)
 {
@@ -1058,6 +1050,148 @@ static void lane_switch_supersedes_pending(void)
       fprintf(stderr, "[pass] playlist-supersede lane\n");
 }
 
+
+/* Android/SAF timing.
+ *
+ * Local stdio reads a playlist inside the first budgeted slice, so
+ * the yield path is never taken and its bugs are invisible - both
+ * field reports came from Android and neither reproduced on a PC.
+ * Content outside the app sandbox goes through SAF, which RetroArch
+ * reaches through a VFS, and it is slow enough that the parse really
+ * stops part way.  This installs such a VFS through the seam the
+ * frontend uses and drives the same navigation over it. */
+
+/* Cap on a single read, whatever was asked for. */
+#define SAF_SHORT_READ 512
+
+static unsigned saf_read_calls;
+
+static int64_t saf_read(libretro_vfs_implementation_file *stream,
+      void *s, uint64_t len)
+{
+   saf_read_calls++;
+   if (len > SAF_SHORT_READ)
+      len = SAF_SHORT_READ;
+   return retro_vfs_file_read_impl(stream, s, len);
+}
+
+static struct retro_vfs_interface saf_vfs;
+static struct retro_vfs_interface_info saf_vfs_info;
+
+static void saf_vfs_install(void)
+{
+   saf_vfs.get_path        = retro_vfs_file_get_path_impl;
+   saf_vfs.open            = retro_vfs_file_open_impl;
+   saf_vfs.close           = retro_vfs_file_close_impl;
+   saf_vfs.size            = retro_vfs_file_size_impl;
+   saf_vfs.tell            = retro_vfs_file_tell_impl;
+   saf_vfs.seek            = retro_vfs_file_seek_impl;
+   saf_vfs.read            = saf_read;   /* the slow bit */
+   saf_vfs.write           = retro_vfs_file_write_impl;
+   saf_vfs.flush           = retro_vfs_file_flush_impl;
+   saf_vfs.remove          = retro_vfs_file_remove_impl;
+   saf_vfs.rename          = retro_vfs_file_rename_impl;
+   saf_vfs.truncate        = retro_vfs_file_truncate_impl;
+   saf_vfs.stat            = retro_vfs_stat_impl;
+   saf_vfs.mkdir           = retro_vfs_mkdir_impl;
+   saf_vfs.opendir         = retro_vfs_opendir_impl;
+   saf_vfs.readdir         = retro_vfs_readdir_impl;
+   saf_vfs.dirent_get_name = retro_vfs_dirent_get_name_impl;
+   saf_vfs.dirent_is_dir   = retro_vfs_dirent_is_dir_impl;
+   saf_vfs.closedir        = retro_vfs_closedir_impl;
+
+   saf_vfs_info.required_interface_version = 3;
+   saf_vfs_info.iface                      = &saf_vfs;
+
+   filestream_vfs_init(&saf_vfs_info);
+}
+
+static void saf_vfs_remove(void)
+{
+   struct retro_vfs_interface_info none;
+   none.required_interface_version = 0;
+   none.iface                      = NULL;
+   filestream_vfs_init(&none);
+}
+
+static void lane_saf_slow_reads(void)
+{
+   char path_a[512];
+   char path_b[512];
+   char *doc            = NULL;
+   playlist_config_t cfg_a;
+   playlist_config_t cfg_b;
+   playlist_t *cached   = NULL;
+   unsigned had         = failures;
+   unsigned yields      = 0;
+   int r;
+
+   if (!(doc = big_fixture_doc(600, "/games/saf")))
+   {
+      CHECK(false, "saf lane: fixture alloc");
+      return;
+   }
+   snprintf(path_a, sizeof(path_a), "%s/saf_a.lpl", fixture_dir);
+   snprintf(path_b, sizeof(path_b), "%s/saf_b.lpl", fixture_dir);
+   CHECK(write_whole(path_a, doc), "fixture write");
+   CHECK(write_whole(path_b, doc), "fixture write");
+   free(doc);
+
+   config_defaults(&cfg_a, path_a);
+   cfg_a.capacity = 8192;
+   playlist_config_set_base_content_directory(&cfg_a, "/games/saf");
+   config_defaults(&cfg_b, path_b);
+   cfg_b.capacity = 8192;
+   playlist_config_set_base_content_directory(&cfg_b, "/games/saf");
+
+   playlist_free_cached();
+   saf_vfs_install();
+   saf_read_calls = 0;
+
+   CHECK(playlist_init_cached(&cfg_a), "saf lane: first init");
+   CHECK(saf_read_calls > 1,
+         "the slow VFS was not used - %u reads", saf_read_calls);
+
+   /* Now switch, under the same slow reads. */
+   for (;;)
+   {
+      int k = 2;
+
+      r      = playlist_init_cached_deferred(&cfg_b,
+            budget_countdown, &k);
+      cached = playlist_get_cached();
+
+      if (cached)
+         CHECK(streq(playlist_get_conf_path(cached), path_b),
+               "saf lane: cache returned \"%s\" while loading "
+               "\"%s\"", playlist_get_conf_path(cached), path_b);
+
+      if (r != 0)
+         break;
+      yields++;
+   }
+
+   CHECK(r == 1, "saf lane: deferred init returned %d", r);
+   CHECK(yields > 0,
+         "saf lane: the parse never yielded even over a slow VFS - "
+         "this lane is no longer covering the Android timing it "
+         "exists for");
+
+   cached = playlist_get_cached();
+   CHECK(cached && streq(playlist_get_conf_path(cached), path_b),
+         "saf lane: wrong playlist cached at the end");
+   CHECK(cached && playlist_size(cached) == 600,
+         "saf lane: %u entries, wanted 600",
+         cached ? (unsigned)playlist_size(cached) : 0);
+
+   saf_vfs_remove();
+   playlist_free_cached();
+
+   if (failures == had)
+      fprintf(stderr, "[pass] SAF slow-read lane (%u yields, %u reads)\n",
+            yields, saf_read_calls);
+}
+
 int main(int argc, char *argv[])
 {
    char cmd[600];
@@ -1089,6 +1223,7 @@ int main(int argc, char *argv[])
    lane_cache_reuse();
    lane_switch_playlist_never_shows_previous();
    lane_switch_supersedes_pending();
+   lane_saf_slow_reads();
 
    snprintf(cmd, sizeof(cmd), "rm -rf %s", fixture_dir);
    if (system(cmd) != 0) { }
