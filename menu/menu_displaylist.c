@@ -2920,6 +2920,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    char path_base[NAME_MAX_LENGTH];
    playlist_config_t playlist_config;
    playlist_t *playlist                = NULL;
+   bool playlist_is_cached             = false;
    database_info_list_t *db_info       = NULL;
    struct menu_state *menu_st          = menu_state_get_ptr();
 
@@ -2973,7 +2974,22 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
 
    playlist_config_set_path(&playlist_config, menu->db_playlist_file);
 
-   playlist = playlist_init(&playlist_config);
+   /* Read-only CRC matching against the database playlist: reuse
+    * the menu's cached playlist when it is the same file - the
+    * common case, since this list is reached from that playlist -
+    * and only parse from disk otherwise. */
+   {
+      playlist_t *cached = playlist_get_cached();
+      if (   cached
+          && string_is_equal(playlist_get_conf_path(cached),
+               menu->db_playlist_file))
+      {
+         playlist           = cached;
+         playlist_is_cached = true;
+      }
+      else
+         playlist = playlist_init(&playlist_config);
+   }
 
    for (i = 0; i < db_info->count; i++)
    {
@@ -3239,13 +3255,15 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    if (db_info->count < 1)
       info->flags |= MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES;
 
-   playlist_free(playlist);
+   if (!playlist_is_cached)
+      playlist_free(playlist);
    /* db_info is owned by the dbinfo cache - do not free */
 
    return 0;
 
 error:
-   playlist_free(playlist);
+   if (!playlist_is_cached)
+      playlist_free(playlist);
 
    return -1;
 }
