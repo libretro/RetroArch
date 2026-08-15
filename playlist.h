@@ -220,6 +220,7 @@ void playlist_parse_abort(playlist_parse_t *p);
  * playlist_init_cached_defer_abort() abandons any pending parse. */
 int playlist_init_cached_deferred(const playlist_config_t *config,
       bool (*budget_cb)(void *), void *budget_ud);
+bool playlist_init_cached_pending(void);
 int playlist_init_cached_continue(bool (*budget_cb)(void *), void *budget_ud);
 int playlist_init_cached_finish(void);
 void playlist_init_cached_defer_abort(void);

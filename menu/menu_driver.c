@@ -2472,6 +2472,11 @@ static bool menu_driver_displaylist_push_internal(
    return false;
 }
 
+static bool menu_playlist_within_budget(void *ud)
+{
+   return task_nbio_slice_within_budget(ud, 0, 0);
+}
+
 static bool menu_driver_displaylist_push(
       struct menu_state *menu_st,
       settings_t *settings,
@@ -8202,6 +8207,57 @@ int generic_menu_entry_action(
 }
 
 /* Iterate the menu driver for one frame. */
+/* Advance work a displaylist left unfinished, and rebuild the list
+ * when it completes.
+ *
+ * ENTRIES_NEED_REFRESH is otherwise consumed only in
+ * generic_menu_entry_action(), i.e. when the user presses something.
+ * Anything that yields mid-build therefore sat unfinished until the
+ * next keypress: a playlist read that did not fit its first slice
+ * showed an empty list, and populated only after backing out and
+ * re-entering.  This is the pump that was missing - it runs every
+ * frame, with no input required.
+ *
+ * Only a genuinely pending parse does any work here, so a menu with
+ * nothing outstanding costs one predictable branch. */
+static void menu_driver_pump_pending(struct menu_state *menu_st,
+      settings_t *settings)
+{
+   nbio_budget_t b;
+   menu_list_t *menu_list;
+   file_list_t *selection_buf;
+   file_list_t *menu_stack;
+   int r;
+
+   if (!playlist_init_cached_pending())
+      return;
+
+   /* One slice of the shared per-frame I/O window, the same budget
+    * the directory walks and the scanner draw from. */
+   task_nbio_slice_open(&b);
+   r = playlist_init_cached_continue(menu_playlist_within_budget, &b);
+   task_nbio_slice_close(&b);
+
+   if (r == 0)
+      return;   /* still reading; come back next frame */
+
+   if (r > 0)
+      playlist_init_cached_finish();
+
+   /* Ready (or failed): rebuild the list now rather than waiting for
+    * the user to press something. */
+   if (!(menu_list = menu_st->entries.list))
+      return;
+   selection_buf = MENU_LIST_GET_SELECTION(menu_list, 0);
+   menu_stack    = MENU_LIST_GET(menu_list, 0);
+
+   if (selection_buf && menu_stack)
+      menu_driver_displaylist_push(menu_st, settings,
+            selection_buf, menu_stack);
+
+   menu_st->flags &= ~MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+}
+
 bool menu_driver_iterate(
       struct menu_state *menu_st,
       gfx_display_t *p_disp,
@@ -8210,6 +8266,8 @@ bool menu_driver_iterate(
       enum menu_action action,
       retro_time_t current_time)
 {
+   menu_driver_pump_pending(menu_st, settings);
+
    return ( menu_st->driver_data
          && generic_menu_iterate(
             menu_st,

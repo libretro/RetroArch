@@ -1192,6 +1192,96 @@ static void lane_saf_slow_reads(void)
             yields, saf_read_calls);
 }
 
+
+/* The pump: a yielded parse must finish without user input.
+ *
+ * ENTRIES_NEED_REFRESH is consumed only in
+ * generic_menu_entry_action(), so before menu_driver_iterate() got a
+ * pump, a read that yielded stayed unfinished until the next
+ * keypress - the playlist came up empty and populated only after
+ * backing out and re-entering.  This drives the same
+ * continue/finish pair the pump calls, over the slow VFS, and
+ * asserts that repeated frames alone complete it. */
+static void lane_pump_completes_without_input(void)
+{
+   char path_a[512];
+   char path_b[512];
+   char *doc          = NULL;
+   playlist_config_t cfg_a;
+   playlist_config_t cfg_b;
+   playlist_t *cached = NULL;
+   unsigned had       = failures;
+   unsigned frames    = 0;
+   int r;
+
+   if (!(doc = big_fixture_doc(600, "/games/pump")))
+   {
+      CHECK(false, "pump lane: fixture alloc");
+      return;
+   }
+   snprintf(path_a, sizeof(path_a), "%s/pump_a.lpl", fixture_dir);
+   snprintf(path_b, sizeof(path_b), "%s/pump_b.lpl", fixture_dir);
+   CHECK(write_whole(path_a, doc), "fixture write");
+   CHECK(write_whole(path_b, doc), "fixture write");
+   free(doc);
+
+   config_defaults(&cfg_a, path_a);
+   cfg_a.capacity = 8192;
+   playlist_config_set_base_content_directory(&cfg_a, "/games/pump");
+   config_defaults(&cfg_b, path_b);
+   cfg_b.capacity = 8192;
+   playlist_config_set_base_content_directory(&cfg_b, "/games/pump");
+
+   playlist_free_cached();
+   saf_vfs_install();
+
+   CHECK(playlist_init_cached(&cfg_a), "pump lane: first init");
+
+   /* The first touch, as the displaylist makes it: one budgeted
+    * slice, which over SAF-speed reads does not finish. */
+   {
+      int k = 2;
+      r = playlist_init_cached_deferred(&cfg_b, budget_countdown, &k);
+   }
+   CHECK(r == 0,
+         "pump lane: the first slice finished the read, so this lane "
+         "is not exercising the case it exists for");
+   CHECK(playlist_init_cached_pending(),
+         "pump lane: nothing reported as pending after a yield");
+
+   /* Now only frames - no further requests, no input at all. */
+   while (playlist_init_cached_pending() && frames < 10000)
+   {
+      int k = 2;
+      frames++;
+      r = playlist_init_cached_continue(budget_countdown, &k);
+      if (r > 0)
+         playlist_init_cached_finish();
+      else if (r < 0)
+         break;
+   }
+
+   CHECK(frames > 0, "pump lane: no frames were needed");
+   CHECK(!playlist_init_cached_pending(),
+         "pump lane: still pending after %u frames - a read that "
+         "yields never completes on its own", frames);
+
+   cached = playlist_get_cached();
+   CHECK(cached && streq(playlist_get_conf_path(cached), path_b),
+         "pump lane: the pump did not install the requested "
+         "playlist");
+   CHECK(cached && playlist_size(cached) == 600,
+         "pump lane: %u entries, wanted 600",
+         cached ? (unsigned)playlist_size(cached) : 0);
+
+   saf_vfs_remove();
+   playlist_free_cached();
+
+   if (failures == had)
+      fprintf(stderr, "[pass] pump lane (%u frames, no input)\n",
+            frames);
+}
+
 int main(int argc, char *argv[])
 {
    char cmd[600];
@@ -1224,6 +1314,7 @@ int main(int argc, char *argv[])
    lane_switch_playlist_never_shows_previous();
    lane_switch_supersedes_pending();
    lane_saf_slow_reads();
+   lane_pump_completes_without_input();
 
    snprintf(cmd, sizeof(cmd), "rm -rf %s", fixture_dir);
    if (system(cmd) != 0) { }

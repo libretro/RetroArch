@@ -3996,6 +3996,12 @@ static bool playlist_config_matches(const playlist_config_t *a,
         && (a->autofix_paths       == b->autofix_paths);
 }
 
+/* True while a deferred cached init is part way through a read. */
+bool playlist_init_cached_pending(void)
+{
+   return playlist_cached_pending != NULL;
+}
+
 void playlist_init_cached_defer_abort(void)
 {
    if (playlist_cached_pending)
