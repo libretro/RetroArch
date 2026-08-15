@@ -350,7 +350,7 @@ bool	menu_ignore_missing_assets	1	0
 bool	menu_show_latency	1	1
 bool	menu_show_rewind	1	1
 bool	menu_show_overlays	1	1
-bool	menu_show_quit_retroarch	1	1
+bool	menu_show_quit_retroarch	1	0
 bool	filter_by_current_core	1	0
 bool	rgui_background_filler_thickness_enable	1	1
 bool	rgui_border_filler_thickness_enable	1	1
