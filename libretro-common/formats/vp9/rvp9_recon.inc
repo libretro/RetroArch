@@ -1398,8 +1398,15 @@ static void rvp9_build_intra(rvp9_dec *d, const RVP9_PIXEL *ref, int ref_stride,
    RVP9_PIXEL *above_row = above_data + 16;
    const RVP9_PIXEL *const_above_row = above_row;
    const int bs = 4 << tx_size;
-   int frame_width  = plane ? d->uvw : d->yw;
-   int frame_height = plane ? d->uvh : d->yh;
+   /* libvpx's dec_build_intra_predictors bounds the edge extension by
+    * xd->cur_buf->y_width / y_height, which are the frame dimensions
+    * ALIGNED UP TO 8 - not the crop dimensions.  The rows and columns
+    * between the crop size and the alignment are coded and
+    * reconstructed like any other, so a block in the last mi row of a
+    * frame whose height is not a multiple of 8 must read them rather
+    * than replicating the last visible line. */
+   int frame_width  = plane ? d->mi_cols * 4 : d->mi_cols * 8;
+   int frame_height = plane ? d->mi_rows * 4 : d->mi_rows * 8;
    int x0, y0, i;
    int ss = plane ? 1 : 0;
 
