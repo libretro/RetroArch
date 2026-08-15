@@ -516,6 +516,36 @@ jobs:
           make clean
           echo "[pass] scan_begin_budget_test (TSan)"
 
+      - name: Build and run nat_task_serialisation_test (plain, ASan + UBSan)
+        shell: bash
+        working-directory: samples/tasks/netplay_nat
+        run: |
+          set -eu
+          # Oracle for the NAT traversal task's request serialisation,
+          # compiled from the shipping translation unit against the
+          # real task queue with the natt_* device layer faked.
+          #
+          # Only one NAT task may run at a time - both requests mutate
+          # the single shared request object - and that exclusion used
+          # to be enforced by blocking the calling thread, which is
+          # the one driving the menu, for the duration of UPnP
+          # discovery.  The lanes pin the replacement: a push issued
+          # while a task is in flight returns without running it to
+          # completion, a close followed by an open runs as both in
+          # that order rather than being coalesced (coalescing would
+          # leak the port mapping), queued requests actually start
+          # from the task callbacks, and an overflowing request is
+          # refused rather than dropped.
+          make clean >/dev/null
+          make all -j$(nproc)
+          ./nat_task_serialisation_test
+          make clean >/dev/null
+          make all SANITIZER=address,undefined -j$(nproc)
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+          UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+            ./nat_task_serialisation_test
+          make clean >/dev/null
+
       - name: Guard against task_queue_wait on interactive menu paths
         shell: bash
         run: |
@@ -536,7 +566,8 @@ jobs:
           # happen as each of those is converted.
           hits=$(grep -rn 'task_queue_wait' menu/ \
                    tasks/task_menu_explore.c \
-                   tasks/task_database_info.c || true)
+                   tasks/task_database_info.c \
+                   tasks/task_netplay_nat_traversal.c || true)
           if [[ -n "$hits" ]]; then
             printf '%s\n' "$hits"
             printf '::error title=Blocking wait on a menu path::task_queue_wait() must not be reachable from the menu. Use cancellation with a stale-completion guard, or a deferred continuation.\n'
