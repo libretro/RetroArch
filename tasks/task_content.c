@@ -158,6 +158,16 @@ struct content_information_ctx
    uint16_t flags;
 };
 
+#if defined(HAVE_GFX_WIDGETS)
+/* True while the deferred load path has a launch notification on
+ * screen that it started BEFORE the read, so it could carry the read
+ * percentage.  Only one deferral runs at a time
+ * (CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING), so one flag covers it.
+ * Consumed by content_load(), which must not restart the card the
+ * user has been watching. */
+static bool content_load_animation_showing = false;
+#endif
+
 /*************************************/
 /* Content file info functions START */
 /*************************************/
@@ -1906,16 +1916,29 @@ static bool content_load(content_ctx_info_t *info,
 #ifdef HAVE_GFX_WIDGETS
 #ifdef HAVE_CONFIGFILE
    /* If retroarch_main_init() returned true, we
-    * can safely trigger a load content animation */
+    * can safely trigger a load content animation.
+    *
+    * Unless the deferred path already started one before the read,
+    * so it could carry the read percentage: restarting it here would
+    * replay the card the user has been watching.  Clear the
+    * percentage instead - the read is over - and leave it be. */
    if (gfx_widgets_ready())
    {
-      /* Note: Have to read settings value here
-       * (It will be invalid if we try to read
-       *  it earlier...) */
-      settings_t *settings              = config_get_ptr();
-      bool show_load_content_animation  = settings && settings->bools.menu_show_load_content_animation;
-      if (show_load_content_animation)
-         gfx_widget_start_load_content_animation();
+      if (content_load_animation_showing)
+      {
+         gfx_widget_set_load_content_progress(-1);
+         content_load_animation_showing = false;
+      }
+      else
+      {
+         /* Note: Have to read settings value here
+          * (It will be invalid if we try to read
+          *  it earlier...) */
+         settings_t *settings              = config_get_ptr();
+         bool show_load_content_animation  = settings && settings->bools.menu_show_load_content_animation;
+         if (show_load_content_animation)
+            gfx_widget_start_load_content_animation();
+      }
    }
 #endif
 #endif
@@ -2605,6 +2628,7 @@ struct content_deferred_menu_load
    char *fullpath;
    enum rarch_core_type type;
    content_ctx_info_t info;      /* argv-free by the deferral gate */
+   bool showed_animation;        /* launch card already on screen */
 };
 
 /* The continuation parked by the prefetch's done callback, consumed
@@ -2675,6 +2699,16 @@ void task_content_deferred_load_check(void)
    free(d);
 }
 
+#if defined(HAVE_GFX_WIDGETS)
+/* Feeds the read percentage to the "Load Content" startup
+ * notification while the content streams in.  Runs on the thread
+ * pumping the queue, which is the thread that draws. */
+static void content_file_prefetch_progress(void *ud, int8_t progress)
+{
+   gfx_widget_set_load_content_progress(progress);
+}
+#endif
+
 /* Deposit callback for task_push_content_prefetch.  ud carries the
  * deferred-load continuation for the done callback, not the content
  * state - the state is a singleton and is fetched here, never cast
@@ -2742,9 +2776,38 @@ static bool task_content_defer_menu_load(content_state_t *p_content,
    d->info = *content_info;        /* argv-free: shallow is whole   */
 
    paths[0] = d->fullpath;
-   if (!task_push_content_prefetch(paths, 1,
+
+#if defined(HAVE_GFX_WIDGETS)
+   /* Start the launch notification here rather than after the load,
+    * so it can carry the read percentage while the content streams
+    * in.  Gated on the same setting as before: with the notification
+    * off, nothing is shown and no progress is reported.
+    *
+    * Widgets persist across the driver reinit the load performs
+    * (DISPGFX_WIDGET_FLAG_PERSISTING), so the card started here
+    * survives into the loaded core. */
+   {
+      settings_t *settings = config_get_ptr();
+      if (     settings
+            && settings->bools.menu_show_load_content_animation
+            && gfx_widgets_ready())
+      {
+         gfx_widget_set_load_content_progress(-1);
+         if (gfx_widget_start_load_content_animation())
+            d->showed_animation = true;
+      }
+   }
+#endif
+
+   if (!task_push_content_prefetch_progress(paths, 1,
          content_file_prefetch_deposit,
-         task_content_deferred_menu_load_done, d))
+         task_content_deferred_menu_load_done,
+#if defined(HAVE_GFX_WIDGETS)
+         d->showed_animation ? content_file_prefetch_progress : NULL,
+#else
+         NULL,
+#endif
+         d))
    {
       free(d->fullpath);
       free(d);

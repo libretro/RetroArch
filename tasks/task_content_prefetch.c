@@ -64,6 +64,7 @@ struct content_prefetch_state
    size_t cursor;                      /* one file at a time       */
    content_prefetch_deposit_t deposit;
    content_prefetch_done_t done;
+   content_prefetch_progress_t progress_cb;
    void *ud;
    size_t bytes_total;                 /* across items, once opened  */
    size_t bytes_done;
@@ -99,6 +100,9 @@ static void content_prefetch_update_progress(retro_task_t *task,
 
    st->progress = pct;
    task_set_progress(task, pct);
+
+   if (st->progress_cb)
+      st->progress_cb(st->ud, pct);
 }
 
 static int64_t content_prefetch_file_read(void *ud, uint8_t *dst,
@@ -308,6 +312,15 @@ bool task_push_content_prefetch(const char **paths, size_t count,
       content_prefetch_deposit_t deposit, content_prefetch_done_t done,
       void *ud)
 {
+   return task_push_content_prefetch_progress(paths, count, deposit,
+         done, NULL, ud);
+}
+
+bool task_push_content_prefetch_progress(const char **paths,
+      size_t count, content_prefetch_deposit_t deposit,
+      content_prefetch_done_t done,
+      content_prefetch_progress_t progress, void *ud)
+{
    struct content_prefetch_state *st = NULL;
    retro_task_t *t                   = NULL;
    size_t i;
@@ -327,7 +340,11 @@ bool task_push_content_prefetch(const char **paths, size_t count,
          goto error;
       st->count++;
    }
-   st->deposit = deposit;
+   /* -1 so the first real value - including a 0%% at the start of a
+    * large read - is reported rather than matching the initial. */
+   st->progress    = -1;
+   st->deposit     = deposit;
+   st->progress_cb = progress;
    st->done    = done;
    st->ud      = ud;
    st->all_ok  = 1;

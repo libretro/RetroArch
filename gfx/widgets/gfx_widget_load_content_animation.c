@@ -104,6 +104,11 @@ struct gfx_widget_load_content_animation_state
     * Kept at end to avoid polluting cache lines used by _frame(). */
    char content_name[512];
    char system_name[512];
+   /* Read progress as a percentage, drawn after the content name.
+    * -1 means "no progress to show", which is the state for a load
+    * that did not stream its content in ahead of time, and the state
+    * this widget has always been in. */
+   int8_t progress;
    char icon_directory[DIR_MAX_LENGTH];
    char icon_file[NAME_MAX_LENGTH];
 
@@ -190,6 +195,7 @@ static void gfx_widget_load_content_animation_reset(void)
    state->slide_offset       = 0.0f;
    state->content_name[0]    = '\0';
    state->system_name[0]     = '\0';
+   state->progress           = -1;
    state->icon_file[0]       = '\0';
    state->has_icon           = false;
    state->content_name_width = 0;
@@ -289,6 +295,16 @@ static void gfx_widget_load_content_animation_fade_in_cb(void *userdata)
 }
 
 /* Widget interface */
+
+/* Set the read percentage shown after the content name, or -1 to
+ * show none.  Safe to call whether or not the animation is running:
+ * a value set while idle is simply what the next animation starts
+ * with, and the reset on start clears it. */
+void gfx_widget_set_load_content_progress(int8_t progress)
+{
+   p_w_load_content_animation_st.progress =
+         (progress > 100) ? 100 : progress;
+}
 
 bool gfx_widget_start_load_content_animation(void)
 {
@@ -947,19 +963,40 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
          system_name_color  = COLOR_TEXT_ALPHA(system_name_color,
                text_alpha_int);
 
-         /* > Content name */
+         /* > Content name, with the read percentage after it while
+          *   the content is still streaming in */
          if (state->content_name_len > 0)
          {
-            gfx_widgets_draw_text(
-                  font_bold,
-                  state->content_name,
-                  text_x,
-                  state->content_name_y,
-                  video_width,
-                  video_height,
-                  content_name_color,
-                  TEXT_ALIGN_LEFT,
-                  true);
+            if (state->progress >= 0)
+            {
+               char with_progress[540];
+               size_t _len = strlcpy(with_progress, state->content_name,
+                     sizeof(with_progress));
+               snprintf(with_progress + _len,
+                     sizeof(with_progress) - _len, "  %d%%",
+                     (int)state->progress);
+               gfx_widgets_draw_text(
+                     font_bold,
+                     with_progress,
+                     text_x,
+                     state->content_name_y,
+                     video_width,
+                     video_height,
+                     content_name_color,
+                     TEXT_ALIGN_LEFT,
+                     true);
+            }
+            else
+               gfx_widgets_draw_text(
+                     font_bold,
+                     state->content_name,
+                     text_x,
+                     state->content_name_y,
+                     video_width,
+                     video_height,
+                     content_name_color,
+                     TEXT_ALIGN_LEFT,
+                     true);
             text_drawn = true;
          }
 

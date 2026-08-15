@@ -457,6 +457,101 @@ static void lane_threaded_queue(void)
    release_deposits();
 }
 
+/* The progress CALLBACK - the path the launch notification uses -
+ * is separate from the task's own progress field, so it needs its
+ * own coverage: a caller that never sees a callback shows nothing,
+ * however correct the field is. */
+static unsigned cb_progress_count;
+static int8_t   cb_progress_last;
+static bool     cb_progress_backwards;
+static bool     cb_progress_intermediate;
+
+static void on_progress(void *ud, int8_t progress)
+{
+   if (cb_progress_count && progress < cb_progress_last)
+      cb_progress_backwards = true;
+   if (progress > 0 && progress < 100)
+      cb_progress_intermediate = true;
+   cb_progress_last = progress;
+   cb_progress_count++;
+}
+
+static void lane_progress_callback(void)
+{
+   unsigned had = failures;
+   char path[512];
+   const char *paths[1];
+   unsigned ticks = 0;
+
+   snprintf(path, sizeof(path), "%s/big.bin", fixture_dir);
+   CHECK(write_fixture(path, BIG_FILE_SIZE), "fixture write failed");
+   paths[0] = path;
+
+   task_queue_init(false, NULL);
+   reset_observations();
+   cb_progress_count        = 0;
+   cb_progress_last         = -1;
+   cb_progress_backwards    = false;
+   cb_progress_intermediate = false;
+
+   if (!task_push_content_prefetch_progress(paths, 1, on_deposit,
+         on_done, on_progress, NULL))
+   {
+      CHECK(false, "prefetch push with progress failed");
+      task_queue_deinit();
+      return;
+   }
+
+   while (queue_busy() && ticks < 100000)
+   {
+      task_queue_check();
+      ticks++;
+   }
+   task_queue_deinit();
+
+   CHECK(done_called && done_all_ok, "run did not complete cleanly");
+   CHECK(cb_progress_count > 1,
+         "the progress callback fired %u times - a caller cannot "
+         "show a moving percentage from that", cb_progress_count);
+   CHECK(!cb_progress_backwards, "progress callback went backwards");
+   CHECK(cb_progress_intermediate,
+         "the callback never reported a value between 0 and 100");
+   CHECK(cb_progress_last == 100,
+         "the callback's last value was %d, wanted 100",
+         (int)cb_progress_last);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] progress-callback lane (%u updates)\n",
+            cb_progress_count);
+   release_deposits();
+}
+
+/* A NULL progress callback must be accepted and simply not called -
+ * that is the state for every caller that does not want it, and the
+ * behaviour the plain push keeps. */
+static void lane_null_progress_callback(void)
+{
+   unsigned had = failures;
+   char path[512];
+   const char *paths[1];
+
+   snprintf(path, sizeof(path), "%s/a.bin", fixture_dir);
+   CHECK(write_fixture(path, 2u * 1024u * 1024u), "fixture write");
+   paths[0] = path;
+
+   cb_progress_count = 0;
+   run_prefetch(paths, 1, 0);   /* plain push: no progress callback */
+
+   CHECK(done_called && done_all_ok, "run did not complete cleanly");
+   CHECK(cb_progress_count == 0,
+         "the progress callback fired %u times without being asked "
+         "for", cb_progress_count);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] null-progress-callback lane\n");
+   release_deposits();
+}
+
 int main(void)
 {
    char cmd[600];
@@ -476,6 +571,8 @@ int main(void)
    lane_unreadable_is_skipped();
    lane_cancel_midstream();
    lane_threaded_queue();
+   lane_progress_callback();
+   lane_null_progress_callback();
 
    snprintf(cmd, sizeof(cmd), "rm -rf %s", fixture_dir);
    if (system(cmd) != 0) { }

@@ -466,6 +466,10 @@ void gfx_widget_set_progress_message(
       unsigned priority, int8_t progress);
 bool gfx_widget_start_load_content_animation(void);
 
+/* Percentage shown after the content name while the content is still
+ * being read, or -1 for none. */
+void gfx_widget_set_load_content_progress(int8_t progress);
+
 /* All the functions below should be called in
  * the video driver - once they are all added, set
  * enable_menu_widgets to true for that driver */
