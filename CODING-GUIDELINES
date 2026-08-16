@@ -152,9 +152,9 @@ out whether a handler you are adding respects any of this.
 
 Commit message density
 ----------------------
-Keep commit message short and appropriate for the size of the change. Only explain 
-how the code works moving forward, not how it worked historically. Latter 
-rule should also apply to code comments.
+Keep commit message short and appropriate for the size of the change. One or two
+paragraphs appropriately sized based on the size of the change. Only explain how the 
+code works moving forward, not how it worked historically. Latter rule should also apply to code comments.
 
 Miscellaneous
 -------------
