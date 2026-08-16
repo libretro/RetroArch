@@ -5447,11 +5447,13 @@ void video_driver_frame(const void *data, unsigned width,
           * literal exceeded the 509-byte minimum ISO C90 guarantees
           * (-Werror=overlength-strings in the C89 lane). */
          __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
-               "AUDIO: %s %s%s\n"
+               "AUDIO: %s %s\n"
+               " SampleRate: %u %s\n"
                ,
                audio_st->current_audio->ident,
                (audio_st->stat_frontend_is_float) ? "FLOAT" : "INT16",
-               (audio_st->src_ratio_orig == 1.0) ? "" : " R");
+               settings->uints.audio_output_sample_rate,
+               (audio_st->src_ratio_orig == 1.0) ? "" : "R");
 
          if (audio_st->rate_control_delta)
             __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
