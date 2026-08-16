@@ -739,6 +739,11 @@ typedef struct materialui_handle
    int16_t pointer_start_x;
    int16_t pointer_start_y;
    bool transition_alpha_lock;
+   /* Set when a pending MUI_FLAG_NEED_COMPUTE was raised by something that
+    * did not change the list contents - only entry geometry. The compute
+    * pass then keeps the user's scroll position instead of re-deriving it
+    * from the selection. */
+   bool preserve_scroll_on_compute;
 
    /* Colour theme parameters */
    enum materialui_color_theme color_theme;
@@ -3696,6 +3701,32 @@ static float materialui_get_scroll(materialui_handle_t *mui,
    return selection_centre - view_centre;
 }
 
+/* Sum the heights of all entries before @index, i.e. the scroll_y at
+ * which @index sits flush with the top of the list view. */
+static float materialui_get_entry_top(materialui_handle_t *mui, size_t index)
+{
+   size_t i;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list     = menu_st->entries.list;
+   file_list_t *list          = MENU_LIST_GET_SELECTION(menu_list, 0);
+   float top                  = 0.0f;
+
+   if (!list)
+      return 0.0f;
+
+   if (index > list->size)
+      index = list->size;
+
+   for (i = 0; i < index; i++)
+   {
+      materialui_node_t *node = (materialui_node_t*)list->list[i].userdata;
+      if (node)
+         top += node->entry_height;
+   }
+
+   return top;
+}
+
 static INLINE float materialui_get_scroll_y_max(
       materialui_handle_t *mui, unsigned height,
       unsigned header_height)
@@ -4340,22 +4371,50 @@ static void materialui_render(void *data,
 
    if (mui->flags & MUI_FLAG_NEED_COMPUTE)
    {
+      bool   preserve      = mui->preserve_scroll_on_compute;
+      size_t anchor_idx    = 0;
+      float  anchor_offset = 0.0f;
+
+      /* Remember where the view actually is, in terms of which entry sits
+       * at the top and by how much it is clipped. Entry heights may change
+       * across the recompute below (a newly downloaded thumbnail can flip
+       * the secondary-thumbnail state, which feeds into entry_height), so
+       * the raw pixel offset alone would drift. */
+      if (preserve)
+      {
+         anchor_idx    = mui->first_onscreen_entry;
+         anchor_offset = mui->scroll_y
+               - materialui_get_entry_top(mui, anchor_idx);
+      }
+
       if (mui->font_data.list.font && mui->font_data.hint.font)
          materialui_compute_entries_box(mui, width, height, header_height);
 
-      /* After calling populate_entries(), we need to call
-       * materialui_get_scroll() so the last selected item
-       * is correctly displayed on screen.
-       * But we can't do this until materialui_compute_entries_box()
-       * has been called, so we delay it until here, when
-       * MUI_FLAG_NEED_COMPUTE is acted upon. */
+      if (preserve)
+      {
+         /* Nothing was added, removed or reordered - only geometry
+          * changed - so restore the same view rather than jumping. */
+         mui->scroll_y = materialui_get_entry_top(mui, anchor_idx)
+               + anchor_offset;
+         mui->preserve_scroll_on_compute = false;
+      }
+      else
+      {
+         /* After calling populate_entries(), we need to call
+          * materialui_get_scroll() so the last selected item
+          * is correctly displayed on screen.
+          * But we can't do this until materialui_compute_entries_box()
+          * has been called, so we delay it until here, when
+          * MUI_FLAG_NEED_COMPUTE is acted upon. */
 
-      /* Kill any existing scroll animation
-       * and reset scroll acceleration */
-      materialui_kill_scroll_animation(mui, menu_st);
+         /* Kill any existing scroll animation
+          * and reset scroll acceleration */
+         materialui_kill_scroll_animation(mui, menu_st);
 
-      /* Get new scroll position */
-      mui->scroll_y     =  materialui_get_scroll(mui, p_disp);
+         /* Get new scroll position */
+         mui->scroll_y  =  materialui_get_scroll(mui, p_disp);
+      }
+
       mui->flags       &= ~MUI_FLAG_NEED_COMPUTE;
    }
 
@@ -9491,6 +9550,8 @@ static void materialui_layout(materialui_handle_t *mui,
    materialui_update_list_view(mui, menu_st, settings);
 
    mui->flags       |=  MUI_FLAG_NEED_COMPUTE;
+   /* Layout changed wholesale; scroll must be re-derived. */
+   mui->preserve_scroll_on_compute = false;
 }
 
 static void materialui_init_nav_bar(materialui_handle_t *mui)
@@ -10721,6 +10782,8 @@ static void materialui_switch_list_view(materialui_handle_t *mui,
    materialui_init_transition_animation(mui, settings);
 
    mui->flags |= MUI_FLAG_NEED_COMPUTE;
+   /* The list itself changed; scroll must be re-derived. */
+   mui->preserve_scroll_on_compute = false;
 }
 
 /* Material UI requires special handling of certain
@@ -11755,6 +11818,8 @@ static void materialui_list_insert(void *userdata,
       return;
 
    mui->flags              |= MUI_FLAG_NEED_COMPUTE;
+   /* The list itself changed; scroll must be re-derived. */
+   mui->preserve_scroll_on_compute = false;
    node                     = (materialui_node_t*)list->list[i].userdata;
 
    if (!node)
@@ -12642,6 +12707,14 @@ static void materialui_refresh_thumbnail_image(void *userdata, size_t i)
          return;
 
       materialui_update_list_view(mui, menu_st, config_get_ptr());
+
+      /* A thumbnail arriving changes entry geometry but not the list
+       * itself, so the pending compute must not re-derive scroll from
+       * the selection. Under touch the selection is decoupled from the
+       * scroll position, so doing that snaps the user back to wherever
+       * the selection happens to be - the top of the list, if they have
+       * scrolled without tapping an entry. */
+      mui->preserve_scroll_on_compute = true;
 
       for (; j < j_max; j++)
       {
