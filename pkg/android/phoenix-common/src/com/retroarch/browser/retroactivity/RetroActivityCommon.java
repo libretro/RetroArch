@@ -1011,12 +1011,35 @@ public class RetroActivityCommon extends NativeActivity
           try
           {
             WindowManager.LayoutParams params = getWindow().getAttributes();
+
             params.preferredDisplayModeId     = modeId;
+
+            /* Clearing the rate preference is what makes the mode
+             * request effective.
+             *
+             * preferredRefreshRate is a SEPARATE request, and the two
+             * contradict each other: a rate preference of 60 makes
+             * the framework vote
+             *   APP_REQUEST_REFRESH_RATE_RANGE [60, 60]
+             *                     disableRefreshRateSwitching=true
+             * which pins the display at 60 no matter which mode id
+             * was asked for.  Selecting a 120 Hz mode then changed
+             * nothing, because the app was still asking not to leave
+             * 60.  The mode id names a rate already, so a rate
+             * preference alongside it is redundant as well as
+             * conflicting. */
+            params.preferredRefreshRate       = 0.0f;
+
             getWindow().setAttributes(params);
+
+            /* Remember it, so onResume() does not re-pin the rate and
+             * undo this the next time the app comes forward. */
+            explicitDisplayModeId             = modeId;
+
             Log.i("RetroActivityCommon",
                   "preferredDisplayModeId set to " + modeId
-                  + "; display now reports mode "
-                  + getCurrentDisplayModeId());
+                  + " (rate preference cleared); display now reports"
+                  + " mode " + getCurrentDisplayModeId());
           }
           catch (Exception e)
           {
@@ -1033,6 +1056,22 @@ public class RetroActivityCommon extends NativeActivity
             "setDisplayModeId failed: " + e.getMessage());
       return false;
     }
+  }
+
+  /**
+   * Non-zero once a display mode has been chosen explicitly, which
+   * means the refresh rate preference must not be re-applied: doing
+   * so re-pins the rate and undoes the selection.
+   */
+  protected int explicitDisplayModeId = 0;
+
+  /**
+   * True when a display mode has been chosen explicitly, so a caller
+   * knows not to express a competing rate preference.
+   */
+  public boolean hasExplicitDisplayMode()
+  {
+    return explicitDisplayModeId != 0;
   }
 
   /**

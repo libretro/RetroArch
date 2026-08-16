@@ -109,8 +109,16 @@ public final class RetroActivityFuture extends RetroActivityCamera {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       String refresh = getIntent().getStringExtra("REFRESH");
 
-      // If REFRESH parameter is provided then try to set refreshrate accordingly
-      if (refresh != null) {
+      /* If REFRESH parameter is provided then try to set refreshrate
+       * accordingly - unless a display mode has been chosen
+       * explicitly, in which case that mode names the rate already.
+       *
+       * The two are competing requests: a rate preference makes the
+       * framework vote APP_REQUEST_REFRESH_RATE_RANGE [r, r] with
+       * refresh rate switching disabled, which pins the display
+       * there whatever mode id was asked for.  Re-applying it here
+       * would undo a chosen mode every time the app came forward. */
+      if (refresh != null && !hasExplicitDisplayMode()) {
         WindowManager.LayoutParams params = getWindow().getAttributes();
         params.preferredRefreshRate = Integer.parseInt(refresh);
         getWindow().setAttributes(params);
