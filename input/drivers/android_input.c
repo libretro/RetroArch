@@ -1593,16 +1593,37 @@ static int android_input_recover_port(android_input_t *android, int id)
    char device_name[256] = { 0 };
    int vendorId          = 0;
    int productId         = 0;
+   int ret               = -1;
    settings_t *settings  = config_get_ptr();
 
-   if (!settings->bools.android_input_disconnect_workaround)
-       return -1;
    if (!engine_lookup_name(device_name, &vendorId,
 			   &productId, sizeof(device_name), id))
        return -1;
-   int ret = android_input_get_id_index_from_name(android, device_name);
-   if (ret >= 0)
-       android->pad_states[ret].id = id;
+   ret = android_input_get_id_index_from_name(android, device_name);
+   if (ret < 0)
+       return -1;
+
+   if (!settings->bools.android_input_disconnect_workaround)
+   {
+      char stale_name[256];
+
+      stale_name[0] = '\0';
+      /* Even without the user-facing disconnect workaround enabled,
+       * rebind the device to its old port when the previously mapped
+       * id has verifiably vanished (InputDevice.getDevice() returns
+       * NULL for it). Android re-enumerates input devices with fresh
+       * ids across suspend/resume, which would otherwise burn one pad
+       * slot per wake-up. If the old id still resolves, this is a
+       * second identical controller and must get its own port. */
+      if (engine_lookup_name(stale_name, &vendorId, &productId,
+               sizeof(stale_name), android->pad_states[ret].id))
+          return -1;
+   }
+
+   android->pad_states[ret].id = id;
+   /* Keep the frontend id table in sync so rumble keeps
+    * targeting the right device after the rebind. */
+   g_android->id[ret]          = id;
    return ret;
 }
 
