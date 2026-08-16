@@ -2595,6 +2595,8 @@ static void frontend_unix_init(void *data)
          "onRetroArchExit", "()V");
    GET_METHOD_ID(env, android_app->isAndroidTV, class,
          "isAndroidTV", "()Z");
+   GET_METHOD_ID(env, android_app->getRefreshRate, class,
+         "getRefreshRate", "()F");
    GET_METHOD_ID(env, android_app->getPowerstate, class,
          "getPowerstate", "()I");
    GET_METHOD_ID(env, android_app->getBatteryLevel, class,

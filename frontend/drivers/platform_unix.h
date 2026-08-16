@@ -180,6 +180,7 @@ struct android_app
    jmethodID getPendingIntentDownloadsLocation;
    jmethodID getPendingIntentScreenshotsLocation;
    jmethodID isAndroidTV;
+   jmethodID getRefreshRate;
    jmethodID getPowerstate;
    jmethodID getBatteryLevel;
    jmethodID setSustainedPerformanceMode;
@@ -450,6 +451,12 @@ enum
 #define CALL_INT_METHOD_PARAM(env, var, clazz_obj, methodId, ...) \
    do { \
       var = (*env)->CallIntMethod(env, clazz_obj, methodId, __VA_ARGS__); \
+      JNI_EXCEPTION(env); \
+   } while (0)
+
+#define CALL_FLOAT_METHOD(env, var, clazz_obj, methodId) \
+   do { \
+      var = (*env)->CallFloatMethod(env, clazz_obj, methodId); \
       JNI_EXCEPTION(env); \
    } while (0)
 

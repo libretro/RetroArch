@@ -42,6 +42,32 @@ static void android_display_server_set_screen_orientation(void *data,
             g_android->setScreenOrientation, rotation);
 }
 
+/* The rate the screen is actually running at.
+ *
+ * Reported by the Activity rather than derived from the video driver:
+ * Android switches display mode underneath the app - for refresh rate
+ * switching, battery saver, or an app-requested preferredRefreshRate
+ * such as the one set in RetroActivityFuture - and only the platform
+ * knows the mode currently in effect.  Read live for the same reason:
+ * a cached value would go stale the moment the system switched.
+ *
+ * Returns 0 when it cannot be determined, which is what the caller
+ * already treats as "unknown". */
+static float android_display_server_get_refresh_rate(void *data)
+{
+   jfloat refresh_rate = 0.0f;
+   JNIEnv *env         = jni_thread_getenv();
+
+   if (!env || !g_android)
+      return 0.0f;
+
+   if (g_android->getRefreshRate)
+      CALL_FLOAT_METHOD(env, refresh_rate,
+            g_android->activity->clazz, g_android->getRefreshRate);
+
+   return (float)refresh_rate;
+}
+
 static void android_display_dpi_get_density(char *s, size_t len)
 {
    static bool inited_once             = false;
@@ -132,7 +158,7 @@ const video_display_server_t dispserv_android = {
    NULL, /* get_output_options */
    android_display_server_set_screen_orientation,
    NULL, /* get_screen_orientation */
-   NULL, /* get_refresh_rate */
+   android_display_server_get_refresh_rate,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */

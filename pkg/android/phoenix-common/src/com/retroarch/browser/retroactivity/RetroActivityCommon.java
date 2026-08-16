@@ -42,6 +42,7 @@ import android.view.accessibility.AccessibilityManager;
 import android.view.HapticFeedbackConstants;
 import android.view.InputDevice;
 import android.view.Surface;
+import android.view.Display;
 import android.view.WindowManager;
 import android.view.KeyEvent;
 import android.view.View;
@@ -864,6 +865,61 @@ public class RetroActivityCommon extends NativeActivity
     Log.i("RetroActivity", "battery: level = " + level + ", scale = " + scale + ", percent = " + percent);
 
     return (int)percent;
+  }
+
+  /**
+   * The refresh rate the screen is actually running at, in Hz, or 0
+   * if it cannot be determined.
+   *
+   * Three tiers, because the way to reach the Display changed twice
+   * and this ships back to API 16:
+   *
+   *  - API 30+ : Activity.getDisplay().  getDefaultDisplay() is
+   *              deprecated from here, and on a non-visual context it
+   *              can hand back something that reports nothing useful.
+   *  - API 23+ : the display's current Display.Mode, which is the
+   *              exact rate of the mode in effect rather than a
+   *              rounded nominal figure.
+   *  - below   : Display.getRefreshRate(), present since API 1.
+   *
+   * Read live rather than cached: the rate changes underneath us when
+   * the system switches mode, which is precisely what a user checking
+   * this setting wants to see.
+   */
+  @SuppressWarnings("deprecation")
+  public float getRefreshRate()
+  {
+    try
+    {
+      Display display = null;
+
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+        display = getDisplay();
+
+      if (display == null)
+      {
+        WindowManager wm = (WindowManager)getSystemService(Context.WINDOW_SERVICE);
+        if (wm != null)
+          display = wm.getDefaultDisplay();
+      }
+
+      if (display == null)
+        return 0.0f;
+
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+      {
+        Display.Mode mode = display.getMode();
+        if (mode != null)
+          return mode.getRefreshRate();
+      }
+
+      return display.getRefreshRate();
+    }
+    catch (Exception e)
+    {
+      Log.w("RetroActivityCommon", "getRefreshRate failed: " + e.getMessage());
+      return 0.0f;
+    }
   }
 
   public int getPowerstate()
