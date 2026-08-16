@@ -265,6 +265,7 @@ appstore_cores=(
     quicknes
     race
     reminiscence
+    rustynes
     sameboy
     sameduck
     scummvm
