@@ -150,6 +150,12 @@ Debug builds report handlers that overrun a frame - see
 task_queue_set_slow_handler_cb() - which is the cheapest way to find
 out whether a handler you are adding respects any of this.
 
+Commit message density
+----------------------
+Keep commit message short and appropriate for the size of the change. Only explain 
+how the code works moving forward, not how it worked historically. Latter 
+rule should also apply to code comments.
+
 Miscellaneous
 -------------
 - Brace usage follows "Allman style". The brace associated with a control statement is placed on the following line,
