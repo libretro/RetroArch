@@ -3874,9 +3874,32 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          /* True only when the active video driver presents a 10-bit source
           * surface natively; when false, XRGB2101010 frames are narrowed to
           * 8-bit by video_driver_frame, so a core with an 8-bit path should
-          * prefer it and skip the wasted 10-bit work. */
-         *(bool*)data =
-               video_driver_test_all_flags(GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE);
+          * prefer it and skip the wasted 10-bit work.
+          *
+          * A live instance answers from its flags.  When none exists the
+          * question still has to be answered: cores issue this query from
+          * retro_load_game while choosing their pixel format, i.e. during
+          * CMD_EVENT_CORE_INIT, which on a cold start into content runs
+          * before any video driver exists for the session being started
+          * (and on an in-process core switch the outgoing instance has been
+          * torn down, which clears ctx->get_flags and video_st->poke).  The
+          * flag test alone then reports "no" on every machine, purely
+          * because of when the core happens to ask, and a core that trusts
+          * the answer commits to an 8-bit format before anything better is
+          * known -- refusal is final, since SET_PIXEL_FORMAT follows
+          * immediately.  Fall back to the configured driver ident, exactly
+          * as SET_PIXEL_FORMAT's HDR10_2101010 gate already does (see
+          * video_driver_supports_10bit_source for why the ident is the only
+          * stable answer in that window). */
+         {
+            gfx_ctx_flags_t flags;
+            flags.flags = 0;
+            if (video_context_driver_get_flags(&flags))
+               *(bool*)data = BIT32_GET(flags.flags,
+                     GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE) ? true : false;
+            else
+               *(bool*)data = video_driver_supports_10bit_source();
+         }
          break;
 
       case RETRO_ENVIRONMENT_SET_NETPACKET_INTERFACE:
