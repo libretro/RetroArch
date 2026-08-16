@@ -1923,12 +1923,15 @@ static unsigned menu_displaylist_parse_supported_cores(
        *      selection of this core
        *   3) Hope that the user does not attempt to
        *      load unsupported content... */
-      char exts[16];
       /* Attempt to identify 'broken' platforms by fetching
        * the core file extension - if there is none, then
        * it is impossible for RetroArch to populate a
-       * core_info list */
+       * core_info list. Platforms that cannot switch cores
+       * at runtime define LOAD_WITHOUT_CORE_INFO to skip
+       * this check, since refusing the running core would
+       * leave no options at all. */
 #if !defined(LOAD_WITHOUT_CORE_INFO)
+      char exts[16];
       if (  !frontend_driver_get_core_extension(exts, sizeof(exts))
           || !*exts)
 #endif
