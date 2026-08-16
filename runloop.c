@@ -8780,6 +8780,30 @@ void core_run(void)
       : (enum poll_type)(current_core->poll_type);
    bool early_polling          = (new_poll_type == POLL_TYPE_EARLY);
    bool late_polling           = (new_poll_type == POLL_TYPE_LATE);
+
+   /* The core is being torn down: do not run it.
+    *
+    * retro_run() must not be entered once closing has begun, because
+    * the teardown unloads the library that function lives in.
+    *
+    * Today this cannot be reached - closing is synchronous, so the
+    * main thread sits inside the teardown and no frame runs - and
+    * the guard is placed first, inert, so that the change which does
+    * let frames run during a close is only about where the waiting
+    * happens, not about what the frame loop may touch.
+    *
+    * Poll and present anyway rather than returning bare, so input
+    * keeps being drained and whatever the close has put on screen
+    * keeps being drawn.  Same shape as the netplay-paused case
+    * below, for the same reason: a frame that stops being produced
+    * reads as a hang. */
+   if (runloop_st->content_closing)
+   {
+      input_driver_poll();
+      video_driver_cached_frame();
+      return;
+   }
+
 #ifdef HAVE_NETWORKING
    bool netplay_preframe       = netplay_driver_ctl(
          RARCH_NETPLAY_CTL_PRE_FRAME, NULL);
