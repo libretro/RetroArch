@@ -4619,6 +4619,28 @@ bool command_event(enum event_command cmd, void *data)
              * not - a manually triggered save (menu / hotkey /
              * netplay) already in flight when the user closed
              * content with savestate_auto_save disabled. */
+            /* Say what the pause is for before blocking on it.
+             *
+             * This does not shorten the wait - the invariant above
+             * means it cannot be skipped - but an unexplained frozen
+             * frame and a frame that says "saving state" are very
+             * different experiences, and on slow storage this is
+             * seconds.  The message is pushed and one frame forced
+             * out first, because nothing draws once the wait starts.
+             *
+             * Only when there is actually something to wait for:
+             * content_save_state_in_progress() is the same condition
+             * the wait uses, so a close with no save in flight - the
+             * common case - is untouched and shows nothing. */
+            if (content_save_state_in_progress(NULL))
+            {
+               const char *_msg = msg_hash_to_str(MSG_SAVING_STATE);
+               runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true,
+                     NULL, MESSAGE_QUEUE_ICON_DEFAULT,
+                     MESSAGE_QUEUE_CATEGORY_INFO);
+               video_driver_cached_frame();
+            }
+
             content_wait_for_save_state_task();
             content_wait_for_load_state_task();
 

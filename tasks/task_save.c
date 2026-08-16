@@ -1879,7 +1879,11 @@ static bool task_save_state_finder(retro_task_t *task, void *user_data)
 }
 
 /* Returns true if a save state task is in progress */
-static bool content_save_state_in_progress(void* data)
+/* True while a save state task is in progress.
+ *
+ * Public because closing content needs to know whether the wait
+ * below is going to block before it blocks, so it can say so. */
+bool content_save_state_in_progress(void* data)
 {
    task_finder_data_t find_data;
 
