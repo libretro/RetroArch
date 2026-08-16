@@ -54,10 +54,13 @@
 /* Baseline does not, but the toolchain can build the instructions into
  * one function without raising the ISA for the translation unit, so
  * compile them in and choose at runtime.  This is the common case: of
- * everything in tree only Makefile.libnx passes +crc explicitly, and
- * arm64 macOS gets it from the compiler default, which leaves Android,
- * Linux ARM, iOS and tvOS on the table path despite every one of those
- * CPUs from ARMv8.1 onwards having the instructions.
+ * everything in tree only Makefile.libnx passes +crc explicitly and
+ * arm64 macOS gets it from the compiler default, so without this
+ * branch Android, Linux ARM, iOS and tvOS would take the table path
+ * despite having the instructions.  Whether they get it is a property
+ * of the compiler, not the target: NDK r27c (clang 18) compiles this
+ * branch in for aarch64-linux-android, an older clang fails the
+ * predicate below and falls back.
  *
  * The version predicates are about the ACLE header, not codegen:
  * target("crc") lets the compiler emit the instructions, but __crc32b()
