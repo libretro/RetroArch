@@ -3124,7 +3124,15 @@ static void xmb_set_title(xmb_handle_t *xmb)
             {
                const playlist_config_t *pl_config = playlist_get_config(playlist_get_cached());
 
-               if (string_ends_with(pl_config->path, FILE_PATH_CONTENT_IMAGE_HISTORY))
+               /* playlist_get_cached() is NULL while a deferred
+                * cached init is part way through its parse.  Keep
+                * the default texture for this frame and arm the
+                * retry, like the async sidebar/db icon loads above -
+                * xmb_render() calls back in and the icon resolves
+                * once the parse lands. */
+               if (!pl_config)
+                  xmb->current_menu_icon_retry = prev_retry ? prev_retry - 1 : 60;
+               else if (string_ends_with(pl_config->path, FILE_PATH_CONTENT_IMAGE_HISTORY))
                   texture = xmb->textures.list[XMB_TEXTURE_IMAGE];
                else if (string_ends_with(pl_config->path, FILE_PATH_CONTENT_MUSIC_HISTORY))
                   texture = xmb->textures.list[XMB_TEXTURE_MUSIC];
