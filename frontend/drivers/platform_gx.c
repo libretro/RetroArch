@@ -176,7 +176,19 @@ static void frontend_gx_get_env(int *argc, char *argv[],
 #endif
 
 #ifdef HW_DOL
-   chdir("carda:/retroarch");
+   /* If the loader provided a usable argv[0] (e.g. Swiss),
+    * fatInitDefault() has already chdir()'d to the directory
+    * RetroArch was launched from, and the defaults derived from
+    * getcwd() below must be rooted there. Only fall back to a
+    * fixed location when no launch path is available, preferring
+    * the Serial Port 2 SD adapter mount ("sd": SD2SP2 and
+    * similar devices) over an SD Gecko in slot A, mirroring
+    * libfat's own device priority. */
+   if (*argc < 1 || !argv || !argv[0] || !strstr(argv[0], ":/"))
+   {
+      if (chdir("sd:/retroarch") != 0)
+         chdir("carda:/retroarch");
+   }
 #endif
 
    getcwd(g_defaults.dirs[DEFAULT_DIR_CORE],
@@ -535,6 +547,16 @@ static int frontend_gx_parse_drive_list(void *data, bool load_content)
          FILE_TYPE_DIRECTORY, 0, 0, NULL);
    menu_entries_append(list,
          "usb:/",
+         msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
+#elif defined(EXTERNAL_LIBOGC)
+   /* Modern libfat mounts a Serial Port 2 SD adapter
+    * (SD2SP2 and similar devices) as "sd" on GameCube.
+    * The internal (vendored) libogc has no SP2 driver,
+    * hence the EXTERNAL_LIBOGC guard. */
+   menu_entries_append(list,
+         "sd:/",
          msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
          enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0, NULL);
