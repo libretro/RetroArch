@@ -207,6 +207,26 @@ static bool android_display_server_set_resolution(void *data,
          android_display_server_get_resolution_list(data, &count)))
       return false;
 
+   /* A rate-only change asks for size 0x0.
+    *
+    * video_display_server_set_refresh_rate() - which is how the
+    * frontend changes refresh rate, as opposed to picking an entry
+    * from the resolution list - calls in with width and height both
+    * zero and only the rate filled in.  Matching those literally
+    * matched nothing, so every rate-only switch failed silently.
+    * Zero means "whatever size is current". */
+   if (width == 0 || height == 0)
+   {
+      for (i = 0; i < count; i++)
+      {
+         if (!conf[i].current)
+            continue;
+         width  = conf[i].width;
+         height = conf[i].height;
+         break;
+      }
+   }
+
    for (i = 0; i < count; i++)
    {
       float delta;
@@ -242,6 +262,20 @@ static bool android_display_server_set_resolution(void *data,
    RARCH_LOG("[Android] Display mode %d requested for %ux%u @ %.2f Hz"
          " (accepted: %s).\n",
          best_id, width, height, hz, (ok == JNI_TRUE) ? "yes" : "no");
+
+   /* Whether the panel actually moved is a separate question from
+    * whether the request was accepted: a device policy - Samsung's
+    * Game Optimizing Service pins apps it classifies as games to
+    * 60 fps, for instance - can hold the display where it is
+    * regardless.  Report what the display says afterwards so the two
+    * are distinguishable. */
+   if (ok == JNI_TRUE && g_android->getRefreshRate)
+   {
+      jfloat now = 0.0f;
+      CALL_FLOAT_METHOD(env, now, g_android->activity->clazz,
+            g_android->getRefreshRate);
+      RARCH_LOG("[Android] Display now reports %.2f Hz.\n", (float)now);
+   }
 
    return (ok == JNI_TRUE);
 }
