@@ -1090,7 +1090,7 @@
 
 /* Color of the message.
  * RGB hex value. */
-#define DEFAULT_MESSAGE_COLOR 0xffff00
+#define DEFAULT_MESSAGE_COLOR 0xffffff
 
 #define DEFAULT_MESSAGE_BGCOLOR_ENABLE false
 #define DEFAULT_MESSAGE_BGCOLOR_RED 0
