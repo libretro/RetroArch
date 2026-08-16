@@ -11415,11 +11415,13 @@ unsigned menu_displaylist_build_list(
                      break;
                   case MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_X:
                   case MENU_ENUM_LABEL_VIDEO_MESSAGE_POS_Y:
+                  case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE:
+                     build_list[i].checked = !widgets_active && video_font_enable;
+                     break;
                   case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_RED:
                   case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_GREEN:
                   case MENU_ENUM_LABEL_VIDEO_MESSAGE_COLOR_BLUE:
-                  case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE:
-                     build_list[i].checked = !widgets_active && video_font_enable;
+                     build_list[i].checked = video_font_enable;
                      break;
                   case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_RED:
                   case MENU_ENUM_LABEL_VIDEO_MESSAGE_BGCOLOR_GREEN:
