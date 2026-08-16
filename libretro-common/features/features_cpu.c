@@ -339,8 +339,22 @@ static uint64_t xgetbv_x86(uint32_t idx)
 }
 #endif
 
-#if defined(__ARM_NEON__)
-#if defined(__arm__)
+/* RunFast mode is a 32-bit VFP control, and this writes FPSCR - so it
+ * needs both an ARM32 target and an FPU worth configuring.  NEON
+ * implies VFP, which is why its presence is the proxy used here; a
+ * VFP-less core such as the armv5te arm926ej-s would fault on the
+ * write.
+ *
+ * CPU_ARM_RUNFAST is the single condition for the definition AND
+ * every call.  They were separate conditions and drifted: the calls
+ * ended up reachable where the definition was not, which is a link
+ * error on exactly the targets with no NEON - Miyoo armv5te and
+ * armv7 builds without an FPU selected. */
+#if (defined(__ARM_NEON) || defined(__ARM_NEON__)) && defined(__arm__)
+#define CPU_ARM_RUNFAST 1
+#endif
+
+#ifdef CPU_ARM_RUNFAST
 static void arm_enable_runfast_mode(void)
 {
    /* RunFast mode. Enables flush-to-zero and some
@@ -357,8 +371,7 @@ static void arm_enable_runfast_mode(void)
          : "r"(x), "r"(y)
         );
 }
-#endif
-#endif
+#endif /* CPU_ARM_RUNFAST */
 
 #if defined(__linux__) && !defined(CPU_X86)
 static unsigned char check_arm_cpu_feature(const char* feature)
@@ -868,7 +881,7 @@ static uint64_t cpu_features_probe(void)
    if (check_arm_cpu_feature("neon"))
    {
       cpu |= RETRO_SIMD_NEON;
-#if defined(__ARM_NEON__) && defined(__arm__)
+#ifdef CPU_ARM_RUNFAST
       arm_enable_runfast_mode();
 #endif
    }
@@ -903,13 +916,13 @@ static uint64_t cpu_features_probe(void)
        * has had NEON since it was designed. */
       cpu |= RETRO_SIMD_NEON;
 
-#if defined(__arm__)
+#ifdef CPU_ARM_RUNFAST
       arm_enable_runfast_mode();
 #endif
    }
 #elif defined(__ARM_NEON) || defined(__ARM_NEON__)
    cpu |= RETRO_SIMD_NEON;
-#if defined(__arm__)
+#ifdef CPU_ARM_RUNFAST
    arm_enable_runfast_mode();
 #endif
 #elif defined(__ALTIVEC__)
