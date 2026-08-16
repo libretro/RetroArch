@@ -1013,6 +1013,10 @@ public class RetroActivityCommon extends NativeActivity
             WindowManager.LayoutParams params = getWindow().getAttributes();
             params.preferredDisplayModeId     = modeId;
             getWindow().setAttributes(params);
+            Log.i("RetroActivityCommon",
+                  "preferredDisplayModeId set to " + modeId
+                  + "; display now reports mode "
+                  + getCurrentDisplayModeId());
           }
           catch (Exception e)
           {

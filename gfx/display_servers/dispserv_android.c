@@ -16,7 +16,9 @@
  */
 
 #include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include "../../verbosity.h"
 #include "../video_display_server.h"
 #include "../../frontend/drivers/platform_unix.h"
 
@@ -163,6 +165,17 @@ static void *android_display_server_get_resolution_list(
    if (len)
       *len = count;
 
+   {
+      static bool logged_once = false;
+      if (!logged_once)
+      {
+         logged_once = true;
+         RARCH_LOG("[Android] Display reports %u mode(s); current is"
+               " %ux%u @ %.2f Hz.\n", count,
+               conf[0].width, conf[0].height, conf[0].refreshrate_float);
+      }
+   }
+
    return conf;
 }
 
@@ -220,7 +233,55 @@ static bool android_display_server_set_resolution(void *data,
    CALL_BOOLEAN_METHOD_PARAM(env, ok, g_android->activity->clazz,
          g_android->setDisplayModeId, (jint)best_id);
 
+   /* Android treats a mode change as a REQUEST.  It can decline
+    * silently - most often for a mode whose resolution differs from
+    * the current one, which many devices will not switch for an
+    * ordinary app even though they list it.  Logging what was asked
+    * for, and what the display reports afterwards, is the difference
+    * between "it did not work" and knowing why. */
+   RARCH_LOG("[Android] Display mode %d requested for %ux%u @ %.2f Hz"
+         " (accepted: %s).\n",
+         best_id, width, height, hz, (ok == JNI_TRUE) ? "yes" : "no");
+
    return (ok == JNI_TRUE);
+}
+
+/* The mode currently in effect, for the "Screen Resolution" label.
+ *
+ * This is a separate callback from get_resolution_list, and the label
+ * reads only this one: with it unimplemented the menu shows N/A no
+ * matter how complete the list is, and never changes after a
+ * selection.
+ *
+ * The description carries the refresh rate, because a phone panel
+ * offers the same resolution at several rates and the resolution
+ * alone would not say which one is running. */
+static void android_display_server_get_video_output_size(void *data,
+      unsigned *width, unsigned *height, char *s, size_t len)
+{
+   struct video_display_config *conf = NULL;
+   unsigned count                    = 0;
+   unsigned i;
+
+   if (!(conf = (struct video_display_config*)
+         android_display_server_get_resolution_list(data, &count)))
+      return;
+
+   for (i = 0; i < count; i++)
+   {
+      if (!conf[i].current)
+         continue;
+
+      if (width)
+         *width  = conf[i].width;
+      if (height)
+         *height = conf[i].height;
+      if (s && len)
+         snprintf(s, len, "%.2f Hz", conf[i].refreshrate_float);
+      break;
+   }
+
+   free(conf);
 }
 
 static void android_display_dpi_get_density(char *s, size_t len)
@@ -314,7 +375,7 @@ const video_display_server_t dispserv_android = {
    android_display_server_set_screen_orientation,
    NULL, /* get_screen_orientation */
    android_display_server_get_refresh_rate,
-   NULL, /* get_video_output_size */
+   android_display_server_get_video_output_size,
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
    android_display_get_metrics,
