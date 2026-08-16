@@ -42,6 +42,7 @@ import android.view.accessibility.AccessibilityManager;
 import android.view.HapticFeedbackConstants;
 import android.view.InputDevice;
 import android.view.Surface;
+import android.graphics.Point;
 import android.view.Display;
 import android.view.WindowManager;
 import android.view.KeyEvent;
@@ -886,22 +887,180 @@ public class RetroActivityCommon extends NativeActivity
    * the system switches mode, which is precisely what a user checking
    * this setting wants to see.
    */
+  /**
+   * The display modes the screen supports, packed for JNI as
+   * {id, width, height, millihertz} per mode.
+   *
+   * Mode enumeration is API 23: Display.getSupportedModes() and
+   * Display.Mode both arrived in Marshmallow, and nothing before it
+   * exposes more than the size currently in effect.  So on older
+   * devices - Lollipop, KitKat, and the API 16 floor the jelly-bean
+   * tree still builds against - this reports a single mode
+   * describing the current state, which is all the platform knows.
+   * That keeps the caller's shape identical everywhere: there is
+   * always at least one mode, and exactly one of them is current.
+   *
+   * Refresh rate is carried as millihertz because the caller's
+   * config carries an integer rate alongside the float one, and
+   * 59.94 must not become 59 on the way through.
+   *
+   * Returns null when nothing can be determined.
+   */
+  @SuppressWarnings("deprecation")
+  public int[] getDisplayModes()
+  {
+    try
+    {
+      Display display = getActiveDisplay();
+
+      if (display == null)
+        return null;
+
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+      {
+        Display.Mode[] modes = display.getSupportedModes();
+
+        if (modes != null && modes.length > 0)
+        {
+          int[] packed = new int[modes.length * 4];
+
+          for (int i = 0; i < modes.length; i++)
+          {
+            packed[i * 4]     = modes[i].getModeId();
+            packed[i * 4 + 1] = modes[i].getPhysicalWidth();
+            packed[i * 4 + 2] = modes[i].getPhysicalHeight();
+            packed[i * 4 + 3] = Math.round(modes[i].getRefreshRate() * 1000.0f);
+          }
+
+          return packed;
+        }
+      }
+
+      /* Pre-Marshmallow, or a display that reports no modes: describe
+       * the one state we can see. */
+      {
+        Point size = new Point();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1)
+          display.getRealSize(size);
+        else
+          display.getSize(size);
+
+        if (size.x <= 0 || size.y <= 0)
+          return null;
+
+        return new int[] {
+          0, size.x, size.y,
+          Math.round(display.getRefreshRate() * 1000.0f)
+        };
+      }
+    }
+    catch (Exception e)
+    {
+      Log.w("RetroActivityCommon", "getDisplayModes failed: " + e.getMessage());
+      return null;
+    }
+  }
+
+  /**
+   * The mode id currently in effect, or 0 when it cannot be
+   * determined - which is also the id reported for the synthesised
+   * single mode on pre-Marshmallow devices, so the two agree.
+   */
+  public int getCurrentDisplayModeId()
+  {
+    try
+    {
+      Display display = getActiveDisplay();
+
+      if (display == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.M)
+        return 0;
+
+      Display.Mode mode = display.getMode();
+      return (mode != null) ? mode.getModeId() : 0;
+    }
+    catch (Exception e)
+    {
+      Log.w("RetroActivityCommon",
+            "getCurrentDisplayModeId failed: " + e.getMessage());
+      return 0;
+    }
+  }
+
+  /**
+   * Asks the system for a display mode by id.  Returns false when
+   * the request cannot be made, which on anything before API 23
+   * means always: preferredDisplayModeId arrived with the mode API
+   * itself, and there is no older way to ask.
+   *
+   * A request, not a guarantee - the system may keep the current
+   * mode.  getCurrentDisplayModeId() is what says whether it took.
+   */
+  public boolean setDisplayModeId(final int modeId)
+  {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M)
+      return false;
+
+    try
+    {
+      /* Window attributes are the UI thread's to touch. */
+      runOnUiThread(new Runnable() {
+        @Override
+        public void run()
+        {
+          try
+          {
+            WindowManager.LayoutParams params = getWindow().getAttributes();
+            params.preferredDisplayModeId     = modeId;
+            getWindow().setAttributes(params);
+          }
+          catch (Exception e)
+          {
+            Log.w("RetroActivityCommon",
+                  "setDisplayModeId failed: " + e.getMessage());
+          }
+        }
+      });
+      return true;
+    }
+    catch (Exception e)
+    {
+      Log.w("RetroActivityCommon",
+            "setDisplayModeId failed: " + e.getMessage());
+      return false;
+    }
+  }
+
+  /**
+   * The Display this activity is on.  getDefaultDisplay() is
+   * deprecated from API 30, and on a non-visual context it can hand
+   * back something that reports nothing useful, so prefer the
+   * activity's own display where it exists.
+   */
+  @SuppressWarnings("deprecation")
+  private Display getActiveDisplay()
+  {
+    Display display = null;
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+      display = getDisplay();
+
+    if (display == null)
+    {
+      WindowManager wm = (WindowManager)getSystemService(Context.WINDOW_SERVICE);
+      if (wm != null)
+        display = wm.getDefaultDisplay();
+    }
+
+    return display;
+  }
+
   @SuppressWarnings("deprecation")
   public float getRefreshRate()
   {
     try
     {
-      Display display = null;
-
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
-        display = getDisplay();
-
-      if (display == null)
-      {
-        WindowManager wm = (WindowManager)getSystemService(Context.WINDOW_SERVICE);
-        if (wm != null)
-          display = wm.getDefaultDisplay();
-      }
+      Display display = getActiveDisplay();
 
       if (display == null)
         return 0.0f;

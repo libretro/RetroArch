@@ -2597,6 +2597,12 @@ static void frontend_unix_init(void *data)
          "isAndroidTV", "()Z");
    GET_METHOD_ID(env, android_app->getRefreshRate, class,
          "getRefreshRate", "()F");
+   GET_METHOD_ID(env, android_app->getDisplayModes, class,
+         "getDisplayModes", "()[I");
+   GET_METHOD_ID(env, android_app->getCurrentDisplayModeId, class,
+         "getCurrentDisplayModeId", "()I");
+   GET_METHOD_ID(env, android_app->setDisplayModeId, class,
+         "setDisplayModeId", "(I)Z");
    GET_METHOD_ID(env, android_app->getPowerstate, class,
          "getPowerstate", "()I");
    GET_METHOD_ID(env, android_app->getBatteryLevel, class,

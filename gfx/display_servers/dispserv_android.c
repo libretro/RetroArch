@@ -16,6 +16,7 @@
  */
 
 #include <stddef.h>
+#include <stdlib.h>
 #include "../video_display_server.h"
 #include "../../frontend/drivers/platform_unix.h"
 
@@ -66,6 +67,160 @@ static float android_display_server_get_refresh_rate(void *data)
             g_android->activity->clazz, g_android->getRefreshRate);
 
    return (float)refresh_rate;
+}
+
+/* The modes the display supports.
+ *
+ * Mode enumeration is API 23 on the Java side; older devices report a
+ * single mode describing their current state, so this always yields
+ * at least one entry with exactly one marked current, whatever the
+ * device.  The Java packs {id, width, height, millihertz} per mode -
+ * millihertz because the config carries an integer rate alongside the
+ * float one, and 59.94 must survive the trip as more than 59.
+ *
+ * The caller owns the returned array and frees it. */
+static void *android_display_server_get_resolution_list(
+      void *data, unsigned *len)
+{
+   struct video_display_config *conf = NULL;
+   jintArray packed                  = NULL;
+   jint *modes                       = NULL;
+   jint current_id                   = 0;
+   jsize packed_len                  = 0;
+   unsigned count                    = 0;
+   unsigned i;
+   JNIEnv *env                       = jni_thread_getenv();
+
+   if (len)
+      *len = 0;
+
+   if (!env || !g_android || !g_android->getDisplayModes)
+      return NULL;
+
+   CALL_OBJ_METHOD(env, packed, g_android->activity->clazz,
+         g_android->getDisplayModes);
+
+   if (!packed)
+      return NULL;
+
+   packed_len = (*env)->GetArrayLength(env, packed);
+   count      = (unsigned)(packed_len / 4);
+
+   if (count < 1)
+   {
+      (*env)->DeleteLocalRef(env, packed);
+      return NULL;
+   }
+
+   if (g_android->getCurrentDisplayModeId)
+      CALL_INT_METHOD(env, current_id, g_android->activity->clazz,
+            g_android->getCurrentDisplayModeId);
+
+   if (!(modes = (*env)->GetIntArrayElements(env, packed, NULL)))
+   {
+      (*env)->DeleteLocalRef(env, packed);
+      return NULL;
+   }
+
+   if (!(conf = (struct video_display_config*)
+         calloc(count, sizeof(struct video_display_config))))
+   {
+      (*env)->ReleaseIntArrayElements(env, packed, modes, JNI_ABORT);
+      (*env)->DeleteLocalRef(env, packed);
+      return NULL;
+   }
+
+   for (i = 0; i < count; i++)
+   {
+      jint id       = modes[i * 4];
+      jint width    = modes[i * 4 + 1];
+      jint height   = modes[i * 4 + 2];
+      jint millihz  = modes[i * 4 + 3];
+
+      conf[i].width             = (unsigned)width;
+      conf[i].height            = (unsigned)height;
+      /* Android composites 32-bit regardless of the mode. */
+      conf[i].bpp               = 32;
+      conf[i].refreshrate       = (unsigned)((millihz + 500) / 1000);
+      conf[i].refreshrate_float = (float)millihz / 1000.0f;
+      /* The mode id, not the array position: set_resolution has to
+       * hand this exact value back to the platform. */
+      conf[i].idx               = (unsigned)id;
+      conf[i].current           = (id == current_id);
+      conf[i].interlaced        = false;
+      conf[i].dblscan           = false;
+   }
+
+   /* A display that reported no current mode - pre-Marshmallow, or a
+    * query that failed - would otherwise leave the list with nothing
+    * marked, and the menu with no selection. */
+   if (count == 1)
+      conf[0].current = true;
+
+   (*env)->ReleaseIntArrayElements(env, packed, modes, JNI_ABORT);
+   (*env)->DeleteLocalRef(env, packed);
+
+   if (len)
+      *len = count;
+
+   return conf;
+}
+
+/* Asks the system for a mode.
+ *
+ * Android does not let an app set an arbitrary resolution: it picks
+ * from the modes the display declares, by id.  The width and height
+ * are matched against the list to find that id, and the refresh rate
+ * decides between modes that share a size - which is how a 60Hz and a
+ * 120Hz entry of the same resolution stay distinguishable.
+ *
+ * A request, not a guarantee: the system may stay where it is. */
+static bool android_display_server_set_resolution(void *data,
+      unsigned width, unsigned height, int int_hz, float hz,
+      int center, int monitor_index, int xoffset, int padjust)
+{
+   struct video_display_config *conf = NULL;
+   unsigned count                    = 0;
+   unsigned i;
+   int best_id                       = -1;
+   float best_delta                  = 0.0f;
+   jboolean ok                       = JNI_FALSE;
+   JNIEnv *env                       = jni_thread_getenv();
+
+   if (!env || !g_android || !g_android->setDisplayModeId)
+      return false;
+
+   if (!(conf = (struct video_display_config*)
+         android_display_server_get_resolution_list(data, &count)))
+      return false;
+
+   for (i = 0; i < count; i++)
+   {
+      float delta;
+
+      if (conf[i].width != width || conf[i].height != height)
+         continue;
+
+      delta = conf[i].refreshrate_float - hz;
+      if (delta < 0.0f)
+         delta = -delta;
+
+      if (best_id < 0 || delta < best_delta)
+      {
+         best_id    = (int)conf[i].idx;
+         best_delta = delta;
+      }
+   }
+
+   free(conf);
+
+   if (best_id < 0)
+      return false;
+
+   CALL_BOOLEAN_METHOD_PARAM(env, ok, g_android->activity->clazz,
+         g_android->setDisplayModeId, (jint)best_id);
+
+   return (ok == JNI_TRUE);
 }
 
 static void android_display_dpi_get_density(char *s, size_t len)
@@ -153,8 +308,8 @@ const video_display_server_t dispserv_android = {
    android_display_server_set_window_opacity,
    android_display_server_set_window_progress,
    NULL, /* set_window_decorations */
-   NULL, /* set_resolution */
-   NULL, /* get_resolution_list */
+   android_display_server_set_resolution,
+   android_display_server_get_resolution_list,
    NULL, /* get_output_options */
    android_display_server_set_screen_orientation,
    NULL, /* get_screen_orientation */

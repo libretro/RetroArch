@@ -181,6 +181,9 @@ struct android_app
    jmethodID getPendingIntentScreenshotsLocation;
    jmethodID isAndroidTV;
    jmethodID getRefreshRate;
+   jmethodID getDisplayModes;
+   jmethodID getCurrentDisplayModeId;
+   jmethodID setDisplayModeId;
    jmethodID getPowerstate;
    jmethodID getBatteryLevel;
    jmethodID setSustainedPerformanceMode;
