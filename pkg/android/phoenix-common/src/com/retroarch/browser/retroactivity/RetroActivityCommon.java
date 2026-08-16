@@ -1059,6 +1059,46 @@ public class RetroActivityCommon extends NativeActivity
   }
 
   /**
+   * Re-assert a chosen display mode when the activity comes back to
+   * the foreground.
+   *
+   * The window is torn down when the app goes to the background, and
+   * the mode chosen for it does not survive - which is why a 120 Hz
+   * selection came back as 60 on returning from the Android UI.
+   * Nothing was overriding it; it had simply gone with the window.
+   */
+  protected void reapplyDisplayMode()
+  {
+    if (explicitDisplayModeId == 0)
+      return;
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M)
+      return;
+
+    try
+    {
+      WindowManager.LayoutParams params = getWindow().getAttributes();
+
+      if (params.preferredDisplayModeId == explicitDisplayModeId
+            && params.preferredRefreshRate == 0.0f)
+        return;
+
+      params.preferredDisplayModeId = explicitDisplayModeId;
+      params.preferredRefreshRate   = 0.0f;
+      getWindow().setAttributes(params);
+
+      Log.i("RetroActivityCommon",
+            "Re-applied display mode " + explicitDisplayModeId
+            + " on resume; display reports mode "
+            + getCurrentDisplayModeId());
+    }
+    catch (Exception e)
+    {
+      Log.w("RetroActivityCommon",
+            "reapplyDisplayMode failed: " + e.getMessage());
+    }
+  }
+
+  /**
    * Non-zero once a display mode has been chosen explicitly, which
    * means the refresh rate preference must not be re-applied: doing
    * so re-pins the rate and undoes the selection.

@@ -116,6 +116,10 @@ public final class RetroActivityFuture extends RetroActivityCamera {
       }
     }
 
+    /* The window is new after a trip to the background, and a chosen
+     * display mode does not come back with it. */
+    reapplyDisplayMode();
+
     // Checks if Android versions is above 9.0 (28) and enable the screen to write over notch if the user desires
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
       ConfigFile configFile = new ConfigFile(UserPreferences.getDefaultConfigPath(this));

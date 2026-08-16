@@ -126,6 +126,10 @@ public final class RetroActivityFuture extends RetroActivityCamera {
     }
 
     updateDisplayCutoutMode();
+
+    /* The window is new after a trip to the background, and a chosen
+     * display mode does not come back with it. */
+    reapplyDisplayMode();
   }
 
   private void updateDisplayCutoutMode() {

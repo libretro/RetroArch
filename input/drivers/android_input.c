@@ -689,6 +689,12 @@ static void android_input_poll_main_cmd(void)
          scond_broadcast(android_app->cond);
          slock_unlock(android_app->mutex);
 
+         /* A resume brings a NEW window, and the display mode and
+          * frame rate chosen for the old one do not come with it.
+          * Assert them again, or a mode the user picked reverts
+          * every time they come back from the Android UI. */
+         android_display_server_reapply_mode();
+
          break;
 
       case APP_CMD_RESUME:

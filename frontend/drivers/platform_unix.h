@@ -465,6 +465,12 @@ enum
 
 extern JNIEnv *jni_thread_getenv(void);
 
+/* Re-assert a chosen display mode and window frame rate after a new
+ * ANativeWindow appears.  Both are window state and are lost when the
+ * app goes to the background; without this a mode chosen by the user
+ * silently reverts on the next resume. */
+void android_display_server_reapply_mode(void);
+
 void android_app_write_cmd(struct android_app *android_app, int8_t cmd);
 
 extern struct android_app *g_android;
