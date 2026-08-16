@@ -910,6 +910,9 @@ static void engine_handle_dpad_default(struct android_app *android,
    float x           = AMotionEvent_getX(event, motion_ptr);
    float y           = AMotionEvent_getY(event, motion_ptr);
 
+   if (port < 0 || port >= DEFAULT_MAX_PADS)
+      return;
+
    android->analog_state[port][0] = (int16_t)(x * 32767.0f);
    android->analog_state[port][1] = (int16_t)(y * 32767.0f);
 }
@@ -930,6 +933,9 @@ static void engine_handle_dpad_getaxisvalue(struct android_app *android,
    float rtrig       = AMotionEvent_getAxisValue(event, AXIS_RTRIGGER, motion_ptr);
    float brake       = AMotionEvent_getAxisValue(event, AXIS_BRAKE, motion_ptr);
    float gas         = AMotionEvent_getAxisValue(event, AXIS_GAS, motion_ptr);
+
+   if (port < 0 || port >= DEFAULT_MAX_PADS)
+      return;
 
    android->hat_state[port][0]    = (int)hatx;
    android->hat_state[port][1]    = (int)haty;
@@ -1497,11 +1503,17 @@ static INLINE void android_input_poll_event_type_key(
       AInputEvent *event, int port, int keycode, int source,
       int type_event, int *handled)
 {
-   uint8_t *buf = android_key_state[port];
-   int action   = AKeyEvent_getAction(event);
-   int keysym   = keycode;
-
+   uint8_t *buf;
+   int action    = AKeyEvent_getAction(event);
+   int keysym    = keycode;
    int device_id = AInputEvent_getDeviceId(event);
+
+   /* android_key_state[] has one row per pad slot plus the
+    * dedicated keyboard row at ANDROID_KEYBOARD_PORT. */
+   if (port < 0 || port > ANDROID_KEYBOARD_PORT)
+      return;
+   buf           = android_key_state[port];
+
    RARCH_DBG("android_input_poll_event_type_key: keycode:%d port:%d source:0x%x action:%d device_id:%d is_kbd_id:%d\n",
       keycode, port, source, action, device_id,
       android_is_keyboard_id(device_id));
