@@ -24,7 +24,6 @@
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <formats/rjson.h>
-#include <formats/rjson_stream.h>
 
 #include "file_path_special.h"
 #include "verbosity.h"
@@ -342,10 +341,10 @@ void disk_index_file_set(
 /* Saves specified disk index file to disk */
 bool disk_index_file_save(disk_index_file_t *disk_index_file)
 {
+   int _len;
    const char *file_path;
+   const char *buf;
    rjsonwriter_t* writer;
-   RFILE *file             = NULL;
-   bool success            = false;
 
    /* Sanity check */
    if (!disk_index_file)
@@ -367,23 +366,17 @@ bool disk_index_file_save(disk_index_file_t *disk_index_file)
          "[Disk index file] Saving disk index file: \"%s\".\n",
          file_path);
 
-   /* Attempt to open disk index file */
-   if (!(file = filestream_open(
-         file_path,
-         RETRO_VFS_FILE_ACCESS_WRITE,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE)))
-   {
-      RARCH_ERR(
-            "[Disk index file] Failed to open disk index file: \"%s\".\n",
-            file_path);
-      return false;
-   }
-
-   /* Initialise JSON writer */
-   if (!(writer = rjsonwriter_open_filestream(file)))
+   /* Serialise the whole record in memory and write it with a
+    * single filestream_write_file() call.  Opening the output
+    * before the JSON exists truncates the previous record, and
+    * any failure past that point - writer allocation, a write
+    * error, a crash mid-save - left a zero-length file behind
+    * in place of the record it destroyed.  The record is a few
+    * hundred bytes; nothing here needs to stream. */
+   if (!(writer = rjsonwriter_open_memory()))
    {
       RARCH_ERR("[Disk index file] Failed to create JSON writer.\n");
-      goto end;
+      return false;
    }
 
    /* Write output file */
@@ -420,21 +413,25 @@ bool disk_index_file_save(disk_index_file_t *disk_index_file)
    rjsonwriter_raw(writer, "}", 1);
    rjsonwriter_raw(writer, "\n", 1);
 
-   /* Free JSON writer */
-   if (!rjsonwriter_free(writer))
+   /* NULL means the writer hit an error while serialising */
+   buf = rjsonwriter_get_memory_buffer(writer, &_len);
+
+   if (!buf || !filestream_write_file(file_path, buf, _len))
    {
       RARCH_ERR("[Disk index file] Error writing disk index file: \"%s\".\n", file_path);
+      rjsonwriter_free(writer);
+      /* The record stays 'modified': a later save retries the
+       * write instead of reporting success over a failure (the
+       * previous code cleared the flag and returned true even
+       * when the writer reported an error). */
+      return false;
    }
+
+   rjsonwriter_free(writer);
 
    /* Changes have been written - record
     * is no longer considered to be in a
     * 'modified' state */
    disk_index_file->modified = false;
-   success                   = true;
-
-end:
-   /* Close disk index file */
-   filestream_close(file);
-
-   return success;
+   return true;
 }

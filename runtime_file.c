@@ -30,7 +30,6 @@
 #include <retro_miscellaneous.h>
 #include <streams/file_stream.h>
 #include <formats/rjson.h>
-#include <formats/rjson_stream.h>
 #include <string/stdstring.h>
 #include <encodings/utf.h>
 #include <time/rtime.h>
@@ -1185,7 +1184,8 @@ void runtime_log_save(runtime_log_t *runtime_log)
 {
    char value_string[64]; /* 64 characters should be
                              enough for a very long runtime... :) */
-   RFILE *file            = NULL;
+   int _len;
+   const char *buf;
    rjsonwriter_t* writer;
 
    if (!runtime_log)
@@ -1193,19 +1193,17 @@ void runtime_log_save(runtime_log_t *runtime_log)
 
    RARCH_LOG("[Runtime] Saving runtime log file: \"%s\".\n", runtime_log->path);
 
-   /* Attempt to open log file */
-   if (!(file = filestream_open(runtime_log->path,
-         RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE)))
-   {
-      RARCH_ERR("[Runtime] Failed to open runtime log file: \"%s\".\n", runtime_log->path);
-      return;
-   }
-
-   /* Initialise JSON writer */
-   if (!(writer = rjsonwriter_open_filestream(file)))
+   /* Serialise the whole log in memory and write it with a
+    * single filestream_write_file() call.  Opening the output
+    * before the JSON exists truncates the previous log, and any
+    * failure past that point - writer allocation, a write error,
+    * a crash mid-save - left a zero-length file behind in place
+    * of the log it destroyed.  The log is a few hundred bytes;
+    * nothing here needs to stream. */
+   if (!(writer = rjsonwriter_open_memory()))
    {
       RARCH_ERR("[Runtime] Failed to create JSON writer.\n");
-      goto end;
+      return;
    }
 
    /* Write output file */
@@ -1284,15 +1282,13 @@ void runtime_log_save(runtime_log_t *runtime_log)
    rjsonwriter_raw(writer, "}", 1);
    rjsonwriter_raw(writer, "\n", 1);
 
-   /* Free JSON writer */
-   if (!rjsonwriter_free(writer))
-   {
-      RARCH_ERR("[Runtime] Error writing runtime log file: \"%s\".\n", runtime_log->path);
-   }
+   /* NULL means the writer hit an error while serialising */
+   buf = rjsonwriter_get_memory_buffer(writer, &_len);
 
-end:
-   /* Close log file */
-   filestream_close(file);
+   if (!buf || !filestream_write_file(runtime_log->path, buf, _len))
+      RARCH_ERR("[Runtime] Error writing runtime log file: \"%s\".\n", runtime_log->path);
+
+   rjsonwriter_free(writer);
 }
 
 /* Utility functions */
