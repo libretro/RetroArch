@@ -1965,6 +1965,22 @@ static void handle_hotplug(android_input_t *android,
    else if (strstr(android_app->current_ime, "com.hexad.bluezime"))
       strlcpy(name_buf, android_app->current_ime, sizeof(name_buf));
 
+   /* All pad slots exhausted: refuse to register the device instead
+    * of writing out of bounds. Although pad_states[] holds MAX_USERS
+    * entries, every consumer of the port index on the event path
+    * (analog_state[], hat_state[], android_key_state[]) is sized
+    * DEFAULT_MAX_PADS, so any port at or beyond that limit corrupts
+    * adjacent memory. Slots can realistically run out because Android
+    * re-enumerates input devices with fresh ids on every
+    * suspend/resume cycle. */
+   if (android->pads_connected >= DEFAULT_MAX_PADS)
+   {
+      RARCH_ERR("[Android] Input device \"%s\" ignored: all %d pad slots in use.\n",
+            device_name, DEFAULT_MAX_PADS);
+      *port = -1;
+      return;
+   }
+
    if (*port < 0)
       *port = android->pads_connected;
 
