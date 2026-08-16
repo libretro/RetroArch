@@ -5862,7 +5862,7 @@ compute_sublabel:
                   0);
 
             node->sublabel_lines = ozone_count_lines(wrapped_sublabel_str);
-            node->height        += ozone->dimensions.entry_spacing + 40 * scale_factor;
+            node->height        += ozone->dimensions.entry_spacing + (ozone->fonts.entries_sublabel.line_height * 2);
 
             if (node->sublabel_lines > 1)
             {
