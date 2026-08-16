@@ -616,6 +616,36 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 ./content_prefetch_test
           make clean >/dev/null
 
+      - name: Build and run wait_timeout_test (plain, ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/wait_timeout
+        run: |
+          set -eu
+          # task_queue_wait() waits indefinitely, which is wrong for
+          # anything depending on a machine we do not control - the
+          # netplay MITM query waits on an HTTP round trip to the
+          # lobby server, and a server that never answers used to hang
+          # the frontend outright.
+          #
+          # These lanes pin both directions: a wait that CAN be
+          # satisfied returns as soon as it is, rather than sitting
+          # out its timeout, and one that cannot gives up at roughly
+          # the deadline instead of never.  Both queue implementations
+          # are covered, since the bound is a wrapped condition rather
+          # than per-implementation code.
+          make clean >/dev/null
+          make all -j$(nproc)
+          ./wait_timeout_test
+          make clean >/dev/null
+          make all SANITIZER=address,undefined -j$(nproc)
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+          UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+            ./wait_timeout_test
+          make clean >/dev/null
+          make all SANITIZER=thread -j$(nproc)
+          TSAN_OPTIONS=halt_on_error=1 ./wait_timeout_test
+          make clean >/dev/null
+
       - name: Build and run task_ordering_test (plain, ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/tasks/ordering

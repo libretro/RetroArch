@@ -1090,6 +1090,48 @@ void task_queue_wait(retro_task_condition_fn_t cond, void* data)
    impl_current->wait(cond, data);
 }
 
+struct task_wait_deadline
+{
+   retro_task_condition_fn_t cond;
+   void *data;
+   retro_time_t deadline;
+};
+
+/* Wraps the caller's condition so that it also goes false once the
+ * deadline passes.  Doing it this way rather than adding a wait
+ * variant to the implementation vtable means every implementation -
+ * regular, threaded and GCD - keeps its own waiting behaviour, and
+ * no platform-specific code has to be touched to gain a bound. */
+static bool task_queue_deadline_cond(void *data)
+{
+   struct task_wait_deadline *d = (struct task_wait_deadline*)data;
+
+   if (cpu_features_get_time_usec() >= d->deadline)
+      return false;
+
+   return d->cond ? d->cond(d->data) : true;
+}
+
+bool task_queue_wait_timeout(retro_task_condition_fn_t cond, void *data,
+      retro_time_t timeout_usec)
+{
+   struct task_wait_deadline d;
+
+   d.cond     = cond;
+   d.data     = data;
+   d.deadline = cpu_features_get_time_usec() + timeout_usec;
+
+   task_queue_wait(task_queue_deadline_cond, &d);
+
+   /* The wait also ends when the queue drains, so "did the deadline
+    * pass" is not the same question as "is the caller still waiting
+    * for something".  Ask the caller's own condition. */
+   if (cond && cond(data))
+      return false;
+
+   return true;
+}
+
 void task_queue_reset(void)
 {
    impl_current->reset();
