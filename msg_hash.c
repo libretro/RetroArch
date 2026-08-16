@@ -55,7 +55,6 @@ int msg_hash_get_help_enum(enum msg_hash_enums msg, char *s, size_t len)
    return ret;
 }
 
-
 #if defined(MSG_HASH_HAVE_STRTAB)
 void msg_hash_strtab_index_build(msg_hash_strtab_index_t *idx,
       const msg_hash_strtab_t *tab)
@@ -155,6 +154,11 @@ const char *msg_hash_strtab_lookup(const msg_hash_strtab_t *tab,
    return NULL;
 }
 #endif /* MSG_HASH_HAVE_STRTAB */
+
+int msg_hash_get_error_msg_enum(enum retro_error err, char *s, size_t len)
+{
+   return msg_hash_get_error_msg_us_enum(err, s, len);
+}
 
 const char *get_user_language_iso639_1(bool limit)
 {
