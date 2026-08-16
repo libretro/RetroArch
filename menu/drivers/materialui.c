@@ -12550,8 +12550,6 @@ static void materialui_list_insert(void *userdata,
                   || string_is_equal(label, MENU_ENUM_LABEL_NETPLAY_KICK_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_NETPLAY_BAN_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS_STR)
-                  || string_is_equal(label, MENU_ENUM_LABEL_THUMBNAILS_STR)
-                  || string_is_equal(label, MENU_ENUM_LABEL_LEFT_THUMBNAILS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_PLAYLIST_MANAGER_LIST_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_CORE_MANAGER_LIST_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_SETTINGS_STR)
