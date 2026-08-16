@@ -8780,6 +8780,12 @@ void core_run(void)
       : (enum poll_type)(current_core->poll_type);
    bool early_polling          = (new_poll_type == POLL_TYPE_EARLY);
    bool late_polling           = (new_poll_type == POLL_TYPE_LATE);
+#ifdef HAVE_NETWORKING
+   /* Declared with the other locals and assigned below, so the
+    * closing guard can return before netplay's pre-frame call
+    * without putting a declaration after a statement. */
+   bool netplay_preframe;
+#endif
 
    /* The core is being torn down: do not run it.
     *
@@ -8805,7 +8811,7 @@ void core_run(void)
    }
 
 #ifdef HAVE_NETWORKING
-   bool netplay_preframe       = netplay_driver_ctl(
+   netplay_preframe            = netplay_driver_ctl(
          RARCH_NETPLAY_CTL_PRE_FRAME, NULL);
 
    if (!netplay_preframe)
