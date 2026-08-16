@@ -17080,7 +17080,7 @@ static bool menu_displaylist_ctl_internal(
 
                            if (setting->actions->repr)
                            {
-                              for (i = min; i <= max; i += step)
+                              for (i = min; i <= max + half_step; i += step)
                               {
                                  char val_s[NAME_MAX_LENGTH];
                                  *setting->value.target.fraction = i;
@@ -17106,7 +17106,7 @@ static bool menu_displaylist_ctl_internal(
                            }
                            else
                            {
-                              for (i = min; i <= max; i += step)
+                              for (i = min; i <= max + half_step; i += step)
                               {
                                  char val_s[16];
                                  snprintf(val_s, sizeof(val_s), "%.2f", i);
