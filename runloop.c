@@ -414,6 +414,11 @@ runloop_state_t *runloop_state_get_ptr(void)
    return &runloop_state;
 }
 
+bool runloop_is_content_closing(void)
+{
+   return runloop_state.content_closing;
+}
+
 bool state_manager_frame_is_reversed(void)
 {
 #ifdef HAVE_REWIND

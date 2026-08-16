@@ -323,6 +323,23 @@ struct runloop
 
    bool perfcnt_enable;
    bool paused_hotkey;
+
+   /* True from the moment closing content starts tearing the core
+    * down until the teardown is finished.
+    *
+    * Set and cleared around the existing synchronous teardown, so at
+    * present nothing can observe it as true: the main thread is
+    * inside that teardown for its whole duration and no frame runs.
+    * It is introduced separately, and deliberately inert, because
+    * the work that makes it observable - returning to the frame loop
+    * instead of blocking - is a lifecycle change, and this is the
+    * piece everything else will key off.
+    *
+    * A plain bool rather than a RUNLOOP_FLAG bit: bits 0-30 of that
+    * word are taken and bit 31 was deliberately vacated to avoid a
+    * cross-thread race, so reusing it would undo that reasoning for
+    * no gain. This is main-thread only. */
+   bool content_closing;
 };
 
 typedef struct runloop runloop_state_t;
@@ -488,6 +505,15 @@ bool runloop_init_libretro_symbols(
       void *_lib_handle_p);
 
 runloop_state_t *runloop_state_get_ptr(void);
+
+/**
+ * runloop_is_content_closing:
+ *
+ * True while content is being closed, i.e. while the core is being
+ * torn down.  Currently only ever true inside the synchronous
+ * teardown, where nothing else runs to ask.
+ */
+bool runloop_is_content_closing(void);
 
 RETRO_END_DECLS
 

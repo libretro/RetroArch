@@ -4632,6 +4632,16 @@ bool command_event(enum event_command cmd, void *data)
              * content_save_state_in_progress() is the same condition
              * the wait uses, so a close with no save in flight - the
              * common case - is untouched and shows nothing. */
+            /* Closing content starts here.
+             *
+             * Set around the whole teardown, including the waits
+             * below: they are part of closing, and once the wait
+             * stops blocking they are the part that will still be
+             * running when the frame loop resumes. Nothing observes
+             * this yet - the main thread does not leave this block -
+             * which is the point of introducing it on its own. */
+            runloop_st->content_closing = true;
+
             if (content_save_state_in_progress(NULL))
             {
                const char *_msg = msg_hash_to_str(MSG_SAVING_STATE);
@@ -4703,6 +4713,11 @@ bool command_event(enum event_command cmd, void *data)
 
             if (hwr)
                memset(hwr, 0, sizeof(*hwr));
+
+            /* Closing content is finished.  One clear covers the
+             * whole block: it has a single exit, with no early
+             * return or goto between the set above and here. */
+            runloop_st->content_closing = false;
 
             break;
          }
