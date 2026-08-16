@@ -284,6 +284,80 @@ static void android_display_server_get_video_output_size(void *data,
    free(conf);
 }
 
+/* Step to the adjacent video mode.
+ *
+ * "Adjacent" means the next entry with a DIFFERENT resolution, the
+ * way the win32 server reads it: a phone lists the same size at
+ * several refresh rates, and stepping through those one at a time
+ * would make the control feel broken - several presses that change
+ * nothing visible.  Rates are chosen from the resolution list
+ * instead; this control moves between sizes.
+ *
+ * Wraps at both ends, so holding either direction cycles rather than
+ * sticking.  When only one distinct size exists there is nowhere to
+ * go and this reports failure, which is what lets the caller fall
+ * through to the video driver's own handler.
+ *
+ * @dir is +1 for next, -1 for previous. */
+static bool android_display_server_step_video_output(void *data, int dir)
+{
+   struct video_display_config *conf = NULL;
+   unsigned count                    = 0;
+   unsigned current                  = 0;
+   unsigned curr_width               = 0;
+   unsigned curr_height              = 0;
+   unsigned i;
+   bool found                        = false;
+
+   if (!(conf = (struct video_display_config*)
+         android_display_server_get_resolution_list(data, &count)))
+      return false;
+
+   for (i = 0; i < count; i++)
+   {
+      if (conf[i].current)
+      {
+         current     = i;
+         curr_width  = conf[i].width;
+         curr_height = conf[i].height;
+         break;
+      }
+   }
+
+   /* Walk the whole list once from the current position, so the
+    * search terminates whether or not a different size exists. */
+   for (i = 1; i <= count; i++)
+   {
+      unsigned idx = (dir > 0)
+         ? (current + i) % count
+         : (current + count - (i % count)) % count;
+
+      if (     conf[idx].width  == curr_width
+            && conf[idx].height == curr_height)
+         continue;
+
+      found = android_display_server_set_resolution(data,
+            conf[idx].width, conf[idx].height,
+            (int)conf[idx].refreshrate, conf[idx].refreshrate_float,
+            0, 0, 0, 0);
+      break;
+   }
+
+   free(conf);
+
+   return found;
+}
+
+static void android_display_server_get_video_output_next(void *data)
+{
+   android_display_server_step_video_output(data, 1);
+}
+
+static void android_display_server_get_video_output_prev(void *data)
+{
+   android_display_server_step_video_output(data, -1);
+}
+
 static void android_display_dpi_get_density(char *s, size_t len)
 {
    static bool inited_once             = false;
@@ -376,8 +450,8 @@ const video_display_server_t dispserv_android = {
    NULL, /* get_screen_orientation */
    android_display_server_get_refresh_rate,
    android_display_server_get_video_output_size,
-   NULL, /* get_video_output_prev */
-   NULL, /* get_video_output_next */
+   android_display_server_get_video_output_prev,
+   android_display_server_get_video_output_next,
    android_display_get_metrics,
    android_display_server_get_flags,
    "android"
