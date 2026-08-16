@@ -59,6 +59,14 @@ static unsigned failures = 0;
 static int  ticks_remaining;
 static bool work_pending;
 
+/* Handlers run on the WORKER thread under the threaded queue, so
+ * nothing here touches state the waiting thread reads.  The flag is
+ * cleared in the callback below - which is where the code being
+ * modelled clears it, netplay_mitm_query_cb(), and callbacks run on
+ * the thread pumping the queue.
+ *
+ * Clearing it here was both a data race and a misrepresentation of
+ * the thing under test. */
 static void finite_handler(retro_task_t *task)
 {
    if (ticks_remaining > 0)
@@ -66,7 +74,6 @@ static void finite_handler(retro_task_t *task)
       ticks_remaining--;
       return;
    }
-   work_pending = false;
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
@@ -76,9 +83,12 @@ static void endless_handler(retro_task_t *task)
     * thing the caller is waiting for never arrives. */
 }
 
+/* Runs on the thread pumping the queue - the waiting thread - just
+ * as the netplay query callback does. */
 static void cb(retro_task_t *task, void *task_data, void *user_data,
       const char *error)
 {
+   work_pending = false;
 }
 
 /* The caller's own condition, as a netplay-style "is it still
