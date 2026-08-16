@@ -136,6 +136,19 @@ static bool disk_index_file_read(disk_index_file_t *disk_index_file)
       return false;
    }
 
+   /* A zero-length record is the residue of an interrupted
+    * write, not a JSON document: treat it like an absent file
+    * - the caller marks the record modified and the next save
+    * replaces it - instead of reporting a JSON format error on
+    * every launch for a file that never held any data. */
+   if (file_len == 0)
+   {
+      RARCH_WARN(
+            "[Disk index file] Empty disk index file: \"%s\". Record will be regenerated.\n",
+            file_path);
+      goto end;
+   }
+
    /* Initialise JSON parser */
    if (!(parser = rjson_open_buffer(file_buf, (size_t)file_len)))
    {
@@ -170,6 +183,16 @@ static bool disk_index_file_read(disk_index_file_t *disk_index_file)
             (int)rjson_get_source_line(parser),
             (int)rjson_get_source_column(parser),
             (*rjson_get_error(parser) ? rjson_get_error(parser) : "format error"));
+
+      /* A record that does not parse cannot be trusted - discard
+       * any partially extracted values and report failure, so the
+       * caller marks the record modified and the next save
+       * replaces the broken file.  This restores the pre-rjson
+       * behaviour: the jsonsax reader failed here, but the
+       * migration in ba1ed2da4b fell through to success, leaving
+       * corrupt records in place to fail again on every launch. */
+      rjson_free(parser);
+      goto end;
    }
 
    /* Free parser */
