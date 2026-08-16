@@ -70,6 +70,25 @@ jobs:
                       --disable-ffmpeg
           make -j$(nproc)
 
+      - name: Build and run content_closing_test
+        shell: bash
+        run: |
+          set -eu
+          # The guard that keeps the frame loop out of a core being
+          # torn down (core_run() refusing retro_run() while
+          # content_closing is set) cannot fire in shipped code yet:
+          # closing is still synchronous, so no frame runs during it.
+          # It goes live in the change that first lets frames run
+          # during a close, and if it is wrong the symptom is a call
+          # into an unloaded dylib - so it is driven here directly,
+          # against the real core_run() in a real frontend, rather
+          # than going live untested.
+          #
+          # Shares the non-Qt build made above; adds about a second.
+          samples/runloop/content_closing/build.sh
+          ./samples/runloop/content_closing/content_closing_test
+          make -C samples/runloop/content_closing clean
+
       - name: Build and run menu_playlist_nav_test
         shell: bash
         run: |

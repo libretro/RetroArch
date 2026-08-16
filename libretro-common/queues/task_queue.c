@@ -592,8 +592,19 @@ static void retro_task_threaded_reset(void)
    retro_task_t *task = NULL;
 
    slock_lock(running_lock);
+   /* task->flags is guarded by property_lock, not running_lock: the
+    * worker reads it there to decide whether a task has finished.
+    * Setting it under running_lock alone left the two using
+    * different locks for the same field, which is a data race - one
+    * TSan reports when a reset lands while the worker is mid-task.
+    *
+    * Nesting is safe here: property_lock is never held while any
+    * other lock is taken anywhere in this file, so it can only ever
+    * be an inner lock and no cycle is possible. */
+   slock_lock(property_lock);
    for (task = tasks_running.front; task; task = task->next)
       task->flags |= RETRO_TASK_FLG_CANCELLED;
+   slock_unlock(property_lock);
    slock_unlock(running_lock);
 }
 
@@ -1088,6 +1099,48 @@ bool task_queue_push(retro_task_t *task)
 void task_queue_wait(retro_task_condition_fn_t cond, void* data)
 {
    impl_current->wait(cond, data);
+}
+
+struct task_wait_deadline
+{
+   retro_task_condition_fn_t cond;
+   void *data;
+   retro_time_t deadline;
+};
+
+/* Wraps the caller's condition so that it also goes false once the
+ * deadline passes.  Doing it this way rather than adding a wait
+ * variant to the implementation vtable means every implementation -
+ * regular, threaded and GCD - keeps its own waiting behaviour, and
+ * no platform-specific code has to be touched to gain a bound. */
+static bool task_queue_deadline_cond(void *data)
+{
+   struct task_wait_deadline *d = (struct task_wait_deadline*)data;
+
+   if (cpu_features_get_time_usec() >= d->deadline)
+      return false;
+
+   return d->cond ? d->cond(d->data) : true;
+}
+
+bool task_queue_wait_timeout(retro_task_condition_fn_t cond, void *data,
+      retro_time_t timeout_usec)
+{
+   struct task_wait_deadline d;
+
+   d.cond     = cond;
+   d.data     = data;
+   d.deadline = cpu_features_get_time_usec() + timeout_usec;
+
+   task_queue_wait(task_queue_deadline_cond, &d);
+
+   /* The wait also ends when the queue drains, so "did the deadline
+    * pass" is not the same question as "is the caller still waiting
+    * for something".  Ask the caller's own condition. */
+   if (cond && cond(data))
+      return false;
+
+   return true;
 }
 
 void task_queue_reset(void)

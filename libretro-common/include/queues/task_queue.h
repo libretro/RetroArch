@@ -670,6 +670,26 @@ bool task_queue_push(retro_task_t *task);
 void task_queue_wait(retro_task_condition_fn_t cond, void* data);
 
 /**
+ * task_queue_wait_timeout:
+ * @cond              : Condition to keep waiting on; waiting ends when
+ *                      it returns false, as with task_queue_wait().
+ * @data              : Userdata passed to @cond.
+ * @timeout_usec      : Upper bound on the wait, in microseconds.
+ *
+ * As task_queue_wait(), but gives up after @timeout_usec rather than
+ * waiting indefinitely.  For waits that depend on something outside
+ * the machine - a network round trip, say - where "never" is a
+ * reachable outcome and hanging the frontend is not an acceptable
+ * response to it.
+ *
+ * @return true when @cond is no longer satisfied, i.e. the thing
+ * being waited for finished; false when the timeout was reached with
+ * @cond still true, so the caller must handle not having it.
+ */
+bool task_queue_wait_timeout(retro_task_condition_fn_t cond, void *data,
+      retro_time_t timeout_usec);
+
+/**
  * Marks all tasks in the queue as cancelled.
  *
  * The tasks won't immediately be terminated;
