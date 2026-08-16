@@ -886,11 +886,25 @@ static uint64_t cpu_features_probe(void)
    if (check_arm_cpu_feature("asimd"))
    {
       cpu |= RETRO_SIMD_ASIMD;
-#ifdef __ARM_NEON__
+
+      /* ASIMD *is* NEON: Advanced SIMD is what aarch64 kernels call
+       * it in the Features: line, where 32-bit ARM says "neon".  It
+       * is architecturally mandatory in ARMv8-A, so a CPU reporting
+       * asimd has NEON by definition and callers testing
+       * RETRO_SIMD_NEON must see it.
+       *
+       * This used to be gated on __ARM_NEON__, which is the LEGACY
+       * 32-bit spelling.  aarch64 toolchains define __ARM_NEON (no
+       * trailing underscores) instead - verified against the NDK's
+       * own compiler, which reports __ARM_NEON 1 and no __ARM_NEON__
+       * for aarch64-linux-android - so the guard was false on every
+       * 64-bit build and NEON was never reported there.  That is why
+       * System Information listed ASIMD alone on a device whose CPU
+       * has had NEON since it was designed. */
       cpu |= RETRO_SIMD_NEON;
+
 #if defined(__arm__)
       arm_enable_runfast_mode();
-#endif
 #endif
    }
 #elif defined(__ARM_NEON__)
