@@ -126,8 +126,8 @@ static bool disk_index_file_read(disk_index_file_t *disk_index_file)
     * has no disk index record - that common case is one failed
     * open, and the stat runs only to classify a failure as worth
     * logging. */
-   if (filestream_read_file(file_path,
-         (void**)&file_buf, &file_len) < 0)
+   if (!filestream_read_file(file_path,
+         (void**)&file_buf, &file_len))
    {
       if (path_is_valid(file_path))
          RARCH_ERR(

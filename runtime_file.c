@@ -137,8 +137,8 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
     * fstat).  A missing log - the first-run case - is silent, as
     * it always was; the stat runs only when there is a failure to
     * classify. */
-   if (filestream_read_file(runtime_log->path,
-         (void**)&file_buf, &file_len) < 0)
+   if (!filestream_read_file(runtime_log->path,
+         (void**)&file_buf, &file_len))
    {
       if (path_is_valid(runtime_log->path))
          RARCH_ERR("[Runtime] Failed to open runtime log file: \"%s\".\n", runtime_log->path);

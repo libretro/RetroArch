@@ -354,8 +354,8 @@ static bool input_test_file_read(const char* file_path)
     * pre-open stat plus the chunked callback path (which itself
     * sizes the stream with an extra fstat).  The stat below runs
     * only to classify a failure. */
-   if (filestream_read_file(file_path,
-         (void**)&file_buf, &file_len) < 0)
+   if (!filestream_read_file(file_path,
+         (void**)&file_buf, &file_len))
    {
       if (path_is_valid(file_path))
          NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
