@@ -9028,6 +9028,15 @@ static bool netplay_mitm_query_pending = false;
  * trade a hang for silent corruption. */
 static unsigned netplay_mitm_query_generation = 0;
 
+/* The handle the outstanding query was issued for.
+ *
+ * A query can now be started before host setup runs, so by the time
+ * netplay_mitm_query() is reached the answer may already be in hand
+ * or on its way.  This is what lets it tell "already asked for this"
+ * from "asked for something else", so a user who changes the relay
+ * setting between the two points still gets the server they picked. */
+static char netplay_mitm_query_handle[NAME_MAX_LENGTH] = {0};
+
 static bool netplay_mitm_query_is_pending(void *data)
 {
    return netplay_mitm_query_pending;
@@ -9118,6 +9127,9 @@ static bool netplay_mitm_query_begin(const char *handle)
 
    if (!handle || !*handle)
       return false;
+
+   strlcpy(netplay_mitm_query_handle, handle,
+         sizeof(netplay_mitm_query_handle));
 
    /* We don't need to query,
       if we are using a custom relay server. */
@@ -9217,15 +9229,65 @@ static bool netplay_mitm_query_result(void)
    return *host_room->mitm_address && host_room->mitm_port;
 }
 
+/* Whether an answer for @handle is already in hand or on its way,
+ * so asking again would be a second round trip for the same thing.
+ *
+ * A prefetched query that came back EMPTY is deliberately not
+ * reused: a transient lobby failure at prefetch time would otherwise
+ * doom a hosted session that asking again would have got, which is a
+ * worse trade than one extra request. */
+static bool netplay_mitm_query_have(const char *handle)
+{
+   if (!handle || !*handle)
+      return false;
+   if (!string_is_equal(handle, netplay_mitm_query_handle))
+      return false;
+
+   return !netplay_mitm_query_ready() || netplay_mitm_query_result();
+}
+
 static bool netplay_mitm_query(const char *handle)
 {
-   if (!netplay_mitm_query_begin(handle))
-      return false;
+   if (!netplay_mitm_query_have(handle))
+      if (!netplay_mitm_query_begin(handle))
+         return false;
 
    if (!netplay_mitm_query_await())
       return false;
 
    return netplay_mitm_query_result();
+}
+
+/* Start the tunnel query early.
+ *
+ * Called when the user commits to hosting, which is well before host
+ * setup needs the address - and on the content-reload path, before
+ * the content has even loaded.  The query runs during that time, so
+ * by the time netplay_mitm_query() is reached the answer is usually
+ * already there and its wait costs nothing.
+ *
+ * Best effort in the strictest sense: it changes nothing except when
+ * the round trip happens.  If it fails, is skipped, or the user
+ * changes relay servers afterwards, host setup issues the query
+ * exactly as it did before. */
+void netplay_mitm_query_prefetch(void)
+{
+   settings_t *settings = config_get_ptr();
+   const char *handle;
+
+   if (!settings || !settings->bools.netplay_use_mitm_server)
+      return;
+
+   handle = settings->arrays.netplay_mitm_server;
+
+   if (!handle || !*handle)
+      return;
+
+   /* Already asked, and the answer is here or coming. */
+   if (netplay_mitm_query_have(handle))
+      return;
+
+   netplay_mitm_query_begin(handle);
 }
 
 int16_t input_state_net(unsigned port, unsigned device,
