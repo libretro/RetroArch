@@ -436,7 +436,7 @@ uint	input_bind_hold	1	1
 uint	netplay_chat_color_name	1	0x008000
 uint	netplay_chat_color_msg	1	0xFFFFFF
 uint	playlist_entry_remove_enable	1	PLAYLIST_ENTRY_REMOVE_ENABLE_ALL
-uint	menu_timedate_style	1	MENU_TIMEDATE_STYLE_DDMM_HM
+uint	menu_timedate_style	1	MENU_TIMEDATE_STYLE_YMD_HM
 uint	menu_timedate_date_separator	1	MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN
 uint	rgui_particle_effect	1	RGUI_PARTICLE_EFFECT_NONE
 uint	cloud_sync_sync_mode	1	CLOUD_SYNC_MODE_AUTOMATIC
@@ -1078,7 +1078,7 @@ uint	input_bind_hold	1	0
 uint	netplay_chat_color_name	1	0x008000
 uint	netplay_chat_color_msg	1	0xFFFFFF
 uint	playlist_entry_remove_enable	1	PLAYLIST_ENTRY_REMOVE_ENABLE_ALL
-uint	menu_timedate_style	1	MENU_TIMEDATE_STYLE_DDMM_HM
+uint	menu_timedate_style	1	MENU_TIMEDATE_STYLE_YMD_HM
 uint	menu_timedate_date_separator	1	MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN
 uint	rgui_particle_effect	1	RGUI_PARTICLE_EFFECT_NONE
 uint	cloud_sync_sync_mode	1	CLOUD_SYNC_MODE_AUTOMATIC
@@ -1722,7 +1722,7 @@ uint	input_bind_hold	1	0
 uint	netplay_chat_color_name	1	0x008000
 uint	netplay_chat_color_msg	1	0xFFFFFF
 uint	playlist_entry_remove_enable	1	PLAYLIST_ENTRY_REMOVE_ENABLE_ALL
-uint	menu_timedate_style	1	MENU_TIMEDATE_STYLE_DDMM_HM
+uint	menu_timedate_style	1	MENU_TIMEDATE_STYLE_YMD_HM
 uint	menu_timedate_date_separator	1	MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN
 uint	rgui_particle_effect	1	RGUI_PARTICLE_EFFECT_NONE
 uint	cloud_sync_sync_mode	1	CLOUD_SYNC_MODE_AUTOMATIC
