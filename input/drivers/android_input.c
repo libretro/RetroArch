@@ -2057,6 +2057,13 @@ static void engine_handle_touchpad(
    static struct TOUCHSTATE touchstate[64];
    int pointer_count	= AMotionEvent_getPointerCount(event);
 
+   const int LEFT_CENTER_X   = 180;
+   const int LEFT_CENTER_Y   = 180;
+   const int RIGHT_CENTER_X  = 786;
+   const int RIGHT_CENTER_Y  = 180;
+   const int RADIUS          = 180;
+   const int RADIUS_SQ       = RADIUS * RADIUS;
+
    for(n = 0; n < pointer_count; ++n)
    {
       int pointer_id	=   AMotionEvent_getPointerId(event, n);
@@ -2082,33 +2089,65 @@ static void engine_handle_touchpad(
       {
          int x = touchstate[pointer_id].x  = AMotionEvent_getX(event, n);
          int y = touchstate[pointer_id].y  = AMotionEvent_getY(event, n);
-         if (x < 360)
+
+         int dx_left  = x - LEFT_CENTER_X;
+         int dy_left  = y - LEFT_CENTER_Y;
+         int dist_sq_left = dx_left * dx_left + dy_left * dy_left;
+
+         if (dist_sq_left <= RADIUS_SQ)
          {
-            android->analog_state[port][0] =
-               (int16_t)((x / 180.0 - 1.0f) * 32767.0f);
-            android->analog_state[port][1] =
-               (int16_t)((y / 180.0 - 1.0f) * 32767.0f);
+            float norm_x = (float)dx_left / RADIUS;
+            float norm_y = (float)dy_left / RADIUS;
+            android->analog_state[port][0] = (int16_t)(norm_x * 32767.0f);
+            android->analog_state[port][1] = (int16_t)(norm_y * 32767.0f);
          }
-         else if (x >= 606)
+         else
          {
-            x -= 606;
-            android->analog_state[port][2] =
-               (int16_t)((x / 180.0 - 1.0f) * 32767.0f);
-            android->analog_state[port][3] =
-               (int16_t)((y / 180.0 - 1.0f) * 32767.0f);
+            int dx_right = x - RIGHT_CENTER_X;
+            int dy_right = y - RIGHT_CENTER_Y;
+            int dist_sq_right = dx_right * dx_right + dy_right * dy_right;
+
+            if (dist_sq_right <= RADIUS_SQ)
+            {
+               float norm_x = (float)dx_right / RADIUS;
+               float norm_y = (float)dy_right / RADIUS;
+               android->analog_state[port][2] = (int16_t)(norm_x * 32767.0f);
+               android->analog_state[port][3] = (int16_t)(norm_y * 32767.0f);
+            }
+            else
+            {
+               android->analog_state[port][0] = 0;
+               android->analog_state[port][1] = 0;
+               android->analog_state[port][2] = 0;
+               android->analog_state[port][3] = 0;
+            }
          }
       }
       else
       {
-         if (touchstate[pointer_id].x < 360)
+         int last_x = touchstate[pointer_id].x;
+         int last_y = touchstate[pointer_id].y;
+
+         int dx_left  = last_x - LEFT_CENTER_X;
+         int dy_left  = last_y - LEFT_CENTER_Y;
+         int dist_sq_left = dx_left * dx_left + dy_left * dy_left;
+
+         if (dist_sq_left <= RADIUS_SQ)
          {
-            android->analog_state[port][0] = 0.0f;
-            android->analog_state[port][1] = 0.0f;
+            android->analog_state[port][0] = 0;
+            android->analog_state[port][1] = 0;
          }
-         else if (touchstate[pointer_id].x >= 606)
+         else
          {
-            android->analog_state[port][2] = 0.0f;
-            android->analog_state[port][3] = 0.0f;
+            int dx_right = last_x - RIGHT_CENTER_X;
+            int dy_right = last_y - RIGHT_CENTER_Y;
+            int dist_sq_right = dx_right * dx_right + dy_right * dy_right;
+
+            if (dist_sq_right <= RADIUS_SQ)
+            {
+               android->analog_state[port][2] = 0;
+               android->analog_state[port][3] = 0;
+            }
          }
       }
    }
