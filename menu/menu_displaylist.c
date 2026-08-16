@@ -16646,7 +16646,10 @@ static bool menu_displaylist_ctl_internal(
                            break;
                         case ST_INT:
                            {
-                              float i;
+                              int32_t i;
+                              int32_t i_min;
+                              int32_t i_max;
+                              int32_t i_step;
                               char val_d[16];
                               int32_t orig_value     = *setting->value.target.integer;
                               unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_INT_ITEM;
@@ -16659,12 +16662,22 @@ static bool menu_displaylist_ctl_internal(
 
                               snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
+                              /* Integer settings iterate with an integer counter: a float
+                               * accumulator is exact only while the range and step are
+                               * representable, and would silently drop the final entry or
+                               * emit duplicates once they are not. */
+                              i_min                  = (int32_t)min;
+                              i_max                  = (int32_t)max;
+                              i_step                 = (int32_t)step;
+                              if (i_step < 1)
+                                 i_step              = 1;
+
                               if (setting->actions->repr)
                               {
-                                 for (i = min; i <= max; i += step)
+                                 for (i = i_min; i <= i_max; i += i_step)
                                  {
                                     char val_s[NAME_MAX_LENGTH];
-                                    int val = (int)i;
+                                    int val = i;
                                     *setting->value.target.integer = val;
                                     setting->actions->repr(setting,
                                           val_s, sizeof(val_s));
@@ -16688,10 +16701,10 @@ static bool menu_displaylist_ctl_internal(
                               }
                               else
                               {
-                                 for (i = min; i <= max; i += step)
+                                 for (i = i_min; i <= i_max; i += i_step)
                                  {
                                     char val_s[16];
-                                    int val = (int)i;
+                                    int val = i;
                                     snprintf(val_s, sizeof(val_s), "%d", val);
 
                                     if (menu_entries_append(info->list,
@@ -16797,7 +16810,10 @@ static bool menu_displaylist_ctl_internal(
                            break;
                         case ST_UINT:
                            {
-                              float i;
+                              int32_t i;
+                              int32_t i_min;
+                              int32_t i_max;
+                              int32_t i_step;
                               char val_d[16];
                               unsigned orig_value    = *setting->value.target.unsigned_integer;
                               unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM;
@@ -16810,12 +16826,22 @@ static bool menu_displaylist_ctl_internal(
 
                               snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
+                              /* Integer settings iterate with an integer counter: a float
+                               * accumulator is exact only while the range and step are
+                               * representable, and would silently drop the final entry or
+                               * emit duplicates once they are not. */
+                              i_min                  = (int32_t)min;
+                              i_max                  = (int32_t)max;
+                              i_step                 = (int32_t)step;
+                              if (i_step < 1)
+                                 i_step              = 1;
+
                               if (setting->actions->repr)
                               {
-                                 for (i = min; i <= max; i += step)
+                                 for (i = i_min; i <= i_max; i += i_step)
                                  {
                                     char val_s[NAME_MAX_LENGTH];
-                                    int val = (int)i;
+                                    int val = i;
                                     *setting->value.target.unsigned_integer = val;
                                     setting->actions->repr(setting,
                                           val_s, sizeof(val_s));
@@ -16839,10 +16865,10 @@ static bool menu_displaylist_ctl_internal(
                               }
                               else
                               {
-                                 for (i = min; i <= max; i += step)
+                                 for (i = i_min; i <= i_max; i += i_step)
                                  {
                                     char val_s[16];
-                                    int val = (int)i;
+                                    int val = i;
                                     snprintf(val_s, sizeof(val_s), "%d", val);
                                     if (menu_entries_append(info->list,
                                              val_s,
@@ -16989,7 +17015,10 @@ static bool menu_displaylist_ctl_internal(
                         break;
                      case ST_INT:
                         {
-                           float i;
+                           int32_t i;
+                           int32_t i_min;
+                           int32_t i_max;
+                           int32_t i_step;
                            char val_d[16];
                            int32_t orig_value     = *setting->value.target.integer;
                            unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_INT_ITEM_SPECIAL;
@@ -17002,12 +17031,22 @@ static bool menu_displaylist_ctl_internal(
 
                            snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
+                           /* Integer settings iterate with an integer counter: a float
+                            * accumulator is exact only while the range and step are
+                            * representable, and would silently drop the final entry or
+                            * emit duplicates once they are not. */
+                           i_min                  = (int32_t)min;
+                           i_max                  = (int32_t)max;
+                           i_step                 = (int32_t)step;
+                           if (i_step < 1)
+                              i_step              = 1;
+
                            if (setting->actions->repr)
                            {
-                              for (i = min; i <= max; i += step)
+                              for (i = i_min; i <= i_max; i += i_step)
                               {
                                  char val_s[NAME_MAX_LENGTH];
-                                 int val = (int)i;
+                                 int val = i;
                                  *setting->value.target.integer = val;
                                  setting->actions->repr(setting,
                                        val_s, sizeof(val_s));
@@ -17031,10 +17070,10 @@ static bool menu_displaylist_ctl_internal(
                            }
                            else
                            {
-                              for (i = min; i <= max; i += step)
+                              for (i = i_min; i <= i_max; i += i_step)
                               {
                                  char val_s[16];
-                                 int val = (int)i;
+                                 int val = i;
                                  snprintf(val_s, sizeof(val_s), "%d", val);
                                  if (menu_entries_append(info->list,
                                           val_s,
@@ -17138,7 +17177,10 @@ static bool menu_displaylist_ctl_internal(
                         break;
                      case ST_UINT:
                         {
-                           float i;
+                           int32_t i;
+                           int32_t i_min;
+                           int32_t i_max;
+                           int32_t i_step;
                            char val_d[16];
                            unsigned orig_value    = *setting->value.target.unsigned_integer;
                            unsigned setting_type  = MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM_SPECIAL;
@@ -17151,12 +17193,22 @@ static bool menu_displaylist_ctl_internal(
 
                            snprintf(val_d, sizeof(val_d), "%d", setting->enum_idx);
 
+                           /* Integer settings iterate with an integer counter: a float
+                            * accumulator is exact only while the range and step are
+                            * representable, and would silently drop the final entry or
+                            * emit duplicates once they are not. */
+                           i_min                  = (int32_t)min;
+                           i_max                  = (int32_t)max;
+                           i_step                 = (int32_t)step;
+                           if (i_step < 1)
+                              i_step              = 1;
+
                            if (setting->actions->repr)
                            {
-                              for (i = min; i <= max; i += step)
+                              for (i = i_min; i <= i_max; i += i_step)
                               {
                                  char val_s[NAME_MAX_LENGTH];
-                                 int val = (int)i;
+                                 int val = i;
                                  *setting->value.target.unsigned_integer = val;
                                  setting->actions->repr(setting,
                                        val_s, sizeof(val_s));
@@ -17180,10 +17232,10 @@ static bool menu_displaylist_ctl_internal(
                            }
                            else
                            {
-                              for (i = min; i <= max; i += step)
+                              for (i = i_min; i <= i_max; i += i_step)
                               {
                                  char val_s[16];
-                                 int val = (int)i;
+                                 int val = i;
                                  snprintf(val_s, sizeof(val_s), "%d", val);
                                  if (menu_entries_append(info->list,
                                           val_s,
