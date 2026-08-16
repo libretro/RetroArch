@@ -18,6 +18,8 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <android/native_window.h>
+
 #include "../../verbosity.h"
 #include "../video_display_server.h"
 #include "../../frontend/drivers/platform_unix.h"
@@ -262,6 +264,35 @@ static bool android_display_server_set_resolution(void *data,
    RARCH_LOG("[Android] Display mode %d requested for %ux%u @ %.2f Hz"
          " (accepted: %s).\n",
          best_id, width, height, hz, (ok == JNI_TRUE) ? "yes" : "no");
+
+   /* Tell SurfaceFlinger what this window wants, as well as asking
+    * the framework for the mode.
+    *
+    * They are separate mechanisms and both matter.  The mode request
+    * moves the DISPLAY; the frame rate on the window moves the vote
+    * SurfaceFlinger casts for OUR LAYER.  With no frame rate set the
+    * layer reports "Max (can\'t resolve refresh rate)" and the
+    * compositor picks for us - on this hardware, via Samsung\'s touch
+    * control, that pick is 60 Hz, which then holds the panel there
+    * whatever mode was requested.
+    *
+    * FIXED_SOURCE says the content really is produced at this rate,
+    * which is what a fixed-rate emulated system is, and is the
+    * compatibility value that permits a mode switch rather than
+    * asking the compositor to fit the content to whatever it is
+    * already doing.
+    *
+    * API 30.  Older devices simply do not have the call; the mode
+    * request alone is all there is there. */
+#if __ANDROID_API__ >= 30
+   if (ok == JNI_TRUE && g_android->window)
+   {
+      int fr = ANativeWindow_setFrameRate(g_android->window, hz,
+            ANATIVEWINDOW_FRAME_RATE_COMPATIBILITY_FIXED_SOURCE);
+      RARCH_LOG("[Android] Window frame rate set to %.2f Hz (result:"
+            " %d).\n", hz, fr);
+   }
+#endif
 
    /* Whether the panel actually moved is a separate question from
     * whether the request was accepted: a device policy - Samsung's
