@@ -907,7 +907,7 @@ static uint64_t cpu_features_probe(void)
       arm_enable_runfast_mode();
 #endif
    }
-#elif defined(__ARM_NEON__)
+#elif defined(__ARM_NEON) || defined(__ARM_NEON__)
    cpu |= RETRO_SIMD_NEON;
 #if defined(__arm__)
    arm_enable_runfast_mode();

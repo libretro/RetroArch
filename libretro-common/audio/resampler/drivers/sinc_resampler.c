@@ -120,7 +120,7 @@ typedef struct rarch_sinc_resampler
    } while (0)
 
 
-#if (defined(__ARM_NEON__) || defined(HAVE_NEON))
+#if (defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(HAVE_NEON))
 
 #ifdef HAVE_ARM_NEON_ASM_OPTIMIZATIONS
 void process_sinc_neon_asm(float *out, const float *left,
@@ -947,7 +947,7 @@ static void *resampler_sinc_new(const struct resampler_config *config,
    }
    else if (mask & RESAMPLER_SIMD_NEON)
    {
-#if (defined(__ARM_NEON__) || defined(HAVE_NEON))
+#if (defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(HAVE_NEON))
 #ifdef HAVE_ARM_NEON_ASM_OPTIMIZATIONS
       if (window_type != SINC_WINDOW_KAISER)
          re->process = resampler_sinc_process_neon;

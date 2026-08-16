@@ -25,7 +25,7 @@
 #include <xmmintrin.h>
 #endif
 
-#if (defined(__ARM_NEON__) || defined(HAVE_NEON))
+#if (defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(HAVE_NEON))
 #include <arm_neon.h>
 #include <features/features_cpu.h>
 #endif
@@ -118,7 +118,7 @@
  * conversion happens here, at the boundary. */
 #define GAIN_TO_Q16(g) ((int32_t)((g) * 65536.0f + 0.5f))
 
-#if (defined(__ARM_NEON__) || defined(HAVE_NEON))
+#if (defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(HAVE_NEON))
 static bool clamp_float_neon_enabled = false;
 
 static void audio_driver_clamp_init_simd(void)
@@ -1542,7 +1542,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          unsigned total_samples  = output_frames * 2; /* stereo */
          float *buf              = audio_st->output_samples_buf;
 
-#if (defined(__ARM_NEON__) || defined(HAVE_NEON))
+#if (defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(HAVE_NEON))
          if (clamp_float_neon_enabled)
          {
             float32x4_t vpos1 = vdupq_n_f32( 1.0f);
