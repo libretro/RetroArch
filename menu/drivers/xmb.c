@@ -4697,6 +4697,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case FILE_TYPE_SHADER:
       case FILE_TYPE_SHADER_PRESET:
          return xmb->textures.list[XMB_TEXTURE_SHADER_OPTIONS];
+      case FILE_TYPE_USE_DIRECTORY:
+         return xmb->textures.list[XMB_TEXTURE_CHECKMARK];
       case FILE_TYPE_CARCHIVE:
          return xmb->textures.list[XMB_TEXTURE_ZIP];
       case FILE_TYPE_IMAGE:

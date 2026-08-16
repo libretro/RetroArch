@@ -11932,6 +11932,10 @@ static void materialui_list_insert(void *userdata,
             node->icon_texture_index = MUI_TEXTURE_PARENT_DIRECTORY;
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
+         case FILE_TYPE_USE_DIRECTORY:
+            node->icon_texture_index = MUI_TEXTURE_CHECKMARK;
+            node->icon_type          = MUI_ICON_TYPE_INTERNAL;
+            break;
          case FILE_TYPE_PLAYLIST_COLLECTION:
             /* Set defaults */
             node->icon_texture_index = MUI_TEXTURE_PLAYLIST;
