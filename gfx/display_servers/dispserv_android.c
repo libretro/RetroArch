@@ -83,6 +83,16 @@ static float android_display_server_get_refresh_rate(void *data)
  * float one, and 59.94 must survive the trip as more than 59.
  *
  * The caller owns the returned array and frees it. */
+/* What was last asked for, so it can be asserted again on a new
+ * window.
+ *
+ * Both halves of a mode change are window state and neither survives
+ * the app going to the background: the window is torn down and a new
+ * ANativeWindow arrives on resume, taking the frame rate with it,
+ * and the framework re-evaluates the mode for the new window. */
+static int   android_last_mode_id  = 0;
+static float android_last_mode_hz  = 0.0f;
+
 static void *android_display_server_get_resolution_list(
       void *data, unsigned *len)
 {
@@ -354,18 +364,6 @@ static void android_display_server_get_video_output_size(void *data,
 
    free(conf);
 }
-
-/* What was last asked for, so it can be asserted again on a new
- * window.
- *
- * Both halves of a mode change are window state and neither survives
- * the app going to the background: the window is torn down and a new
- * ANativeWindow arrives on resume, taking the frame rate with it,
- * and the framework re-evaluates the mode for the new window.  That
- * is why a chosen 120 Hz came back as 60 on returning from the
- * Android UI - nothing was overriding it, it was simply gone. */
-static int   android_last_mode_id  = 0;
-static float android_last_mode_hz  = 0.0f;
 
 /* Re-assert the chosen mode and frame rate on a window that has just
  * been created.  Called from the INIT_WINDOW path, which is where a
