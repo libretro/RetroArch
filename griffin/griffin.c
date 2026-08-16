@@ -113,10 +113,6 @@ CONSOLE EXTENSIONS
 ============================================================ */
 #ifdef RARCH_CONSOLE
 
-#ifdef HW_DOL
-#include "../memory/ngc/ssaram.c"
-#endif
-
 #ifdef INTERNAL_LIBOGC
 #include "../wii/libogc/libfat/cache.c"
 #include "../wii/libogc/libfat/directory.c"
