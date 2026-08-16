@@ -408,16 +408,13 @@ runtime_log_t *runtime_log_init(
    if (!*log_file_dir)
       return NULL;
 
-   /* Create directory, if required */
-   if (!path_is_directory(log_file_dir))
-   {
-      if (!path_mkdir(log_file_dir))
-      {
-         RARCH_ERR("[Runtime] Failed to create directory for"
-               " runtime log: \"%s\".\n", log_file_dir);
-         return NULL;
-      }
-   }
+   /* Note: the log directory is not created here - reading an
+    * existing log does not need it to exist, and this function
+    * runs on read-only paths that never write one (playlist
+    * sublabels init a log per entry).  runtime_log_save()
+    * creates it when a log is actually written, so the read
+    * paths no longer pay a stat (plus a possible mkdir) per
+    * call. */
 
    /* Get content name */
    if (!content_path || !*content_path)
@@ -1184,6 +1181,7 @@ void runtime_log_save(runtime_log_t *runtime_log)
 {
    char value_string[64]; /* 64 characters should be
                              enough for a very long runtime... :) */
+   char dir[DIR_MAX_LENGTH];
    int _len;
    const char *buf;
    rjsonwriter_t* writer;
@@ -1192,6 +1190,19 @@ void runtime_log_save(runtime_log_t *runtime_log)
       return;
 
    RARCH_LOG("[Runtime] Saving runtime log file: \"%s\".\n", runtime_log->path);
+
+   /* Create the log directory, if required (deferred from
+    * runtime_log_init(), which also runs on read-only paths
+    * that never write a log) */
+   fill_pathname_basedir(dir, runtime_log->path, sizeof(dir));
+
+   if (     !path_is_directory(dir)
+         && !path_mkdir(dir))
+   {
+      RARCH_ERR("[Runtime] Failed to create directory for"
+            " runtime log: \"%s\".\n", dir);
+      return;
+   }
 
    /* Serialise the whole log in memory and write it with a
     * single filestream_write_file() call.  Opening the output

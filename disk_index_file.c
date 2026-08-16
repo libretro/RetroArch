@@ -255,17 +255,13 @@ bool disk_index_file_init(
       fill_pathname_basedir(disk_index_file_dir, content_path,
             sizeof(disk_index_file_dir));
 
-   /* > Create directory, if required */
-   if (     !path_is_directory(disk_index_file_dir)
-         && !path_mkdir(disk_index_file_dir))
-   {
-      RARCH_ERR(
-            "[Disk index file] Failed to create directory for disk index file: \"%s\".\n",
-            disk_index_file_dir);
-      goto error;
-   }
-
-   /* > Generate final path */
+   /* > Generate final path
+    * Note: the directory is not created here - reading an
+    * existing record does not need it to exist, and most
+    * content never writes one.  disk_index_file_save()
+    * creates it when a record is actually written, so the
+    * common load path no longer pays a stat (plus a possible
+    * mkdir) per content load. */
    _len = fill_pathname_join_special(
          disk_index_file->file_path, disk_index_file_dir,
          content_name, sizeof(disk_index_file->file_path));
@@ -342,6 +338,7 @@ void disk_index_file_set(
 bool disk_index_file_save(disk_index_file_t *disk_index_file)
 {
    int _len;
+   char dir[DIR_MAX_LENGTH];
    const char *file_path;
    const char *buf;
    rjsonwriter_t* writer;
@@ -365,6 +362,20 @@ bool disk_index_file_save(disk_index_file_t *disk_index_file)
    RARCH_LOG(
          "[Disk index file] Saving disk index file: \"%s\".\n",
          file_path);
+
+   /* Create the record directory, if required (deferred from
+    * disk_index_file_init(), which runs on every content load
+    * whether or not a record will ever be written) */
+   fill_pathname_basedir(dir, file_path, sizeof(dir));
+
+   if (     !path_is_directory(dir)
+         && !path_mkdir(dir))
+   {
+      RARCH_ERR(
+            "[Disk index file] Failed to create directory for disk index file: \"%s\".\n",
+            dir);
+      return false;
+   }
 
    /* Serialise the whole record in memory and write it with a
     * single filestream_write_file() call.  Opening the output
