@@ -127,6 +127,9 @@ typedef struct font_data
    char *lang_pkg_dir;
    char *lang_default_path;
    bool is_threaded;
+   /* The threading_hint font_driver_init_first() was called with, so
+    * a rebuild reaches the backend on the same thread as creation. */
+   bool threading_hint;
    /* Line metrics, read from the renderer once when the font is
     * created. Renderers fill these at init and never change them, so
     * callers can use them directly instead of asking again - which
@@ -183,6 +186,19 @@ void font_driver_free(font_data_t *font);
  * down the video driver to do it. Fonts whose path is unchanged are
  * left alone. Returns the number rebuilt. */
 unsigned font_driver_reload_fonts(void);
+
+/* Rebuild the shared OSD font in place against a path and a size. An
+ * empty or NULL font_path means "let the renderer choose", as at
+ * creation.
+ *
+ * Returns false only where there is no shared OSD font to rebuild:
+ * video is not up, or the driver keeps its font privately (sdl, sdl2,
+ * xvideo, vg, omap, oga, exynos) and needs a driver reinit to pick
+ * the change up. That is for the caller to handle, not an error.
+ *
+ * A rebuild that fails returns true and keeps the working font: the
+ * setting does not take, but the text survives. */
+bool font_driver_reinit_osd(const char *font_path, float font_size);
 
 /* The font file the current menu language needs, relative to the
  * assets pkg directory, or NULL when it has no special requirement

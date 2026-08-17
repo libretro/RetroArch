@@ -4,9 +4,12 @@
  * matches SDESC_<kind>_ROW; row order is menu display order;
  * h2json.py parses these rows for the Crowdin source upload. */
 
+/* No cmd_trigger: general_write_handler() rebuilds the OSD font at
+ * the new size, falling back to CMD_EVENT_REINIT only where it
+ * cannot. */
 S_FLOAT_EX(video_font_size, VIDEO_FONT_SIZE,
       "video_font_size",
-      DEFAULT_FONT_SIZE, "%.1f", SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_REINIT, 1.00, 100.00, 1.0, setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0,
+      DEFAULT_FONT_SIZE, "%.1f", SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 1.00, 100.00, 1.0, setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0,
       "Notification Size",
       "Specify the font size in points. When widgets are used, this size has effect only to on-screen statistics display.")
 S_FLOAT_EX(video_msg_pos_x, VIDEO_MESSAGE_POS_X,

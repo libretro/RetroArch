@@ -303,6 +303,11 @@ typedef struct dispgfx_widget
    char ozone_regular_font_path[PATH_MAX_LENGTH]; /* TODO/FIXME - decouple from Ozone */
    char ozone_bold_font_path[PATH_MAX_LENGTH];    /* TODO/FIXME - decouple from Ozone */
 
+   /* The notification font path the widget fonts are built from.
+    * gfx_widgets_iterate() watches it alongside last_scale_factor and
+    * rebuilds them in place when it moves. */
+   char last_font_path[PATH_MAX_LENGTH];
+
    char monochrome_png_path[PATH_MAX_LENGTH];
    char gfx_widgets_path[PATH_MAX_LENGTH];
 } dispgfx_widget_t;

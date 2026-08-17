@@ -9,6 +9,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <boolean.h>
+#include <string/stdstring.h>
 #include "gfx/font_driver.h"
 
 /* --- a fake backend, standing in for gl2_raster_font et al. --- */
@@ -73,6 +74,9 @@ extern unsigned test_language;
 #define TEST_LANG_THAI   36   /* RETRO_LANGUAGE_THAI   */
 #define TEST_LANG_JAPANESE 1  /* RETRO_LANGUAGE_JAPANESE */
 #define TEST_LANG_FRENCH   2  /* RETRO_LANGUAGE_FRENCH   */
+#ifdef HAVE_THREADS
+extern int video_thread_font_init_calls;
+#endif
 static int fails = 0;
 #define CHECK(c, msg) do { if (!(c)) { printf("  FAIL: %s\n", msg); fails++; } } while (0)
 
@@ -266,6 +270,115 @@ int main(void)
       }
       font_driver_free(L);
    }
+
+   /* The OSD font: rebuilt against settings rather than against the
+    * language, so path and size both have to reach it. */
+   {
+      video_driver_state_t *vst = video_state_get_ptr();
+      font_data_t          *osd = mk("/tmp/san/osd.ttf", 12.0f);
+      void                 *r0;
+
+      CHECK(osd != NULL, "osd font created");
+      vst->osd_font = (struct font_data*)osd;
+      r0            = osd->renderer_data;
+
+      /* Same path, same size: no work. A rebuild here would drop the
+       * atlas and the GPU texture to arrive back where it started. */
+      g0 = font_driver_get_generation();
+      CHECK(font_driver_reinit_osd("/tmp/san/osd.ttf", 12.0f),
+            "unchanged settings report handled");
+      CHECK(osd->renderer_data == r0, "unchanged settings rebuild nothing");
+      CHECK(font_driver_get_generation() == g0,
+            "unchanged settings do not bump the generation");
+
+      /* Size alone. This is the case font_driver_reload_fonts() has
+       * no path to at all: it re-resolves the file and passes
+       * font->size straight back in. */
+      CHECK(font_driver_reinit_osd("/tmp/san/osd.ttf", 32.0f),
+            "size change handled");
+      CHECK(osd->renderer_data != r0, "size change rebuilt the font");
+      CHECK(osd->size == 32.0f, "new size remembered");
+      CHECK(font_driver_get_generation() != g0, "size change bumps generation");
+      CHECK(live_renderer_state == 3, "nothing leaked by the size change");
+
+      /* Path alone. */
+      r0 = osd->renderer_data;
+      CHECK(font_driver_reinit_osd("/tmp/san/osd2.ttf", 32.0f),
+            "path change handled");
+      CHECK(osd->renderer_data != r0, "path change rebuilt the font");
+      CHECK(string_is_equal(osd->path, "/tmp/san/osd2.ttf"),
+            "new path remembered");
+      CHECK(live_renderer_state == 3, "nothing leaked by the path change");
+
+      /* Clearing the path hands the choice back to the renderer.
+       * reload_fonts() skips a font with no path; this must not. */
+      CHECK(font_driver_reinit_osd("", 32.0f), "cleared path handled");
+      CHECK(osd->path == NULL, "cleared path forgotten, not kept");
+      CHECK(font_driver_reinit_osd("/tmp/san/osd.ttf", 32.0f),
+            "path set again from empty");
+      CHECK(osd->path != NULL, "path picked up again from empty");
+
+      /* A rebuild that fails keeps the working font: the setting does
+       * not take, but the text does not vanish either. */
+      r0             = osd->renderer_data;
+      fail_next_init = 1;
+      CHECK(font_driver_reinit_osd("/tmp/san/unreadable.ttf", 32.0f),
+            "failed rebuild still counts as handled");
+      fail_next_init = 0;
+      CHECK(osd->renderer_data == r0, "old osd font kept on failure");
+      CHECK(live_renderer_state == 3, "nothing leaked on failed osd rebuild");
+
+      font_driver_free(osd);
+      vst->osd_font = NULL;
+
+      /* No shared OSD font - a driver that keeps its own, or video
+       * not up yet. The caller needs to know, so it can fall back. */
+      CHECK(!font_driver_reinit_osd("/tmp/san/osd.ttf", 12.0f),
+            "absent osd font reports unhandled");
+   }
+
+#ifdef HAVE_THREADS
+   /* A rebuild must take the route its creation took, or the
+    * backend's texture work lands on the wrong thread. Widget and
+    * menu fonts are all created with the hint set. */
+   {
+      font_data_t *hinted;
+      font_data_t *plain;
+      int          n0;
+
+      /* threading_hint set, is_threaded set: must marshal. */
+      hinted = font_driver_init_first(NULL, "/tmp/san/thr.ttf", 16.0f,
+            true, true, &fake_font);
+      CHECK(hinted != NULL, "threaded font created");
+      n0 = video_thread_font_init_calls;
+      CHECK(n0 > 0, "creation marshalled to the video thread");
+
+      font_driver_set_language_font(hinted, "/assets/pkg",
+            "/tmp/san/thr.ttf");
+      test_language = TEST_LANG_KOREAN;
+      font_driver_reload_fonts();
+      CHECK(video_thread_font_init_calls > n0,
+            "rebuild marshalled to the video thread");
+      test_language = 0;
+      font_driver_free(hinted);
+
+      /* No hint - the OSD font's case - must not marshal. Both
+       * callers of font_driver_init_osd() already run on the thread
+       * that owns the context. */
+      plain = font_driver_init_first(NULL, "/tmp/san/plain.ttf", 16.0f,
+            false, true, &fake_font);
+      CHECK(plain != NULL, "unhinted font created");
+      n0 = video_thread_font_init_calls;
+      font_driver_set_language_font(plain, "/assets/pkg",
+            "/tmp/san/plain.ttf");
+      test_language = TEST_LANG_KOREAN;
+      font_driver_reload_fonts();
+      CHECK(video_thread_font_init_calls == n0,
+            "unhinted rebuild stays on the calling thread");
+      test_language = 0;
+      font_driver_free(plain);
+   }
+#endif
 
    font_driver_free(a);
    font_driver_free(c);

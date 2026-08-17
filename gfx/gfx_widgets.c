@@ -1016,6 +1016,11 @@ static void gfx_widgets_layout(
 {
    size_t i;
 
+   /* Recorded here rather than at the call sites, so context reset
+    * and the in-place rebuild cannot disagree on what is loaded. */
+   strlcpy(p_dispwidget->last_font_path, font_path ? font_path : "",
+         sizeof(p_dispwidget->last_font_path));
+
    /* Initialise fonts */
    if (!font_path || !*font_path)
    {
@@ -1121,11 +1126,16 @@ void gfx_widgets_iterate(
             p_disp,
             settings, width, height, fullscreen, true);
 
-   /* Check whether screen dimensions or menu scale
-    * factor have changed */
+   /* Check whether screen dimensions, menu scale factor or the
+    * notification font have changed. The font is watched here rather
+    * than from a settings callback because the rebuild needs the
+    * video driver up and the thread that drives it, which is what
+    * runs once a frame here. */
    if ((scale_factor != p_dispwidget->last_scale_factor) ||
        (width        != p_dispwidget->last_video_width) ||
-       (height       != p_dispwidget->last_video_height))
+       (height       != p_dispwidget->last_video_height) ||
+       !string_is_equal(p_dispwidget->last_font_path,
+             font_path ? font_path : ""))
    {
       p_dispwidget->last_scale_factor = scale_factor;
       p_dispwidget->last_video_width  = width;

@@ -8934,6 +8934,24 @@ static void general_write_handler(rarch_setting_t *setting)
      case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
          core_set_poll_type(*setting->value.target.integer);
          break;
+      case MENU_ENUM_LABEL_VIDEO_FONT_PATH:
+      case MENU_ENUM_LABEL_VIDEO_FONT_SIZE:
+         /* The OSD font is rebuilt where it stands: the font_data_t
+          * keeps its address, so nothing holding one has to be told,
+          * and the generation bump recomputes the derived metrics on
+          * the next frame.
+          *
+          * Widget fonts are left to gfx_widgets_iterate(), which
+          * watches the same path and re-runs its layout with the
+          * driver up. Size does not reach them at all - it applies to
+          * the statistics display once widgets are in use.
+          *
+          * The fallback covers the drivers that keep a private font
+          * and need a reinit for the change to land. */
+         if (!font_driver_reinit_osd(settings->paths.path_font,
+                  settings->floats.video_font_size))
+            command_event(CMD_EVENT_REINIT, NULL);
+         break;
       case MENU_ENUM_LABEL_USER_LANGUAGE:
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && defined(HAVE_MENU)
          /* The native Win32 menubar bakes translated strings at
