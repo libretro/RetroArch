@@ -749,7 +749,12 @@ static void sdl3_grab_mouse(void *data, bool state)
    SDL_Window *win = sdl3_input_window();
 
    if (win)
+   {
       SDL_SetWindowMouseGrab(win, state);
+      /* Relative mouse mode matches the game-focus behaviour of
+       * the other desktop input drivers (winraw/x11/udev). */
+      SDL_SetWindowRelativeMouseMode(win, state);
+   }
 }
 
 static uint64_t sdl3_get_capabilities(void *data)
