@@ -58,19 +58,13 @@
 #define FILESTREAM_RBUF_LEN 16384
 #endif
 
-/* Allocation seam for that buffer.  A refused allocation is one of the
- * only two ways filestream_rbuf_fill() can give up, and no test that
- * cannot make an allocation fail can reach it, so
- * samples/file/vfs/filestream_rbuf_fault_test builds with this defined
- * and installs its own allocator.  Every other build - RetroArch's
- * included - gets plain malloc() and no extra symbol; the indirection
- * is not compiled at all. */
-#ifdef FILESTREAM_RBUF_TEST_HOOKS
-void *(*filestream_rbuf_test_malloc)(size_t len) = NULL;
-#define FILESTREAM_RBUF_MALLOC(len) \
-   (filestream_rbuf_test_malloc ? filestream_rbuf_test_malloc(len) \
-                                : malloc(len))
-#else
+/* Allocation seam for that buffer: a refused allocation is one of the
+ * two ways filestream_rbuf_fill() gives up and nothing else can reach
+ * it, so samples/file/vfs/filestream_rbuf_fault_test overrides this
+ * from its Makefile.  Undefined everywhere else, RetroArch included,
+ * it is malloc() and no symbol or branch is added.  #undef'd after its
+ * only use below so it cannot leak through a unity build. */
+#ifndef FILESTREAM_RBUF_MALLOC
 #define FILESTREAM_RBUF_MALLOC(len) malloc(len)
 #endif
 
@@ -392,6 +386,8 @@ static int filestream_rbuf_fill(RFILE *stream)
    stream->rbuf_len      = (size_t)got;
    return 1;
 }
+
+#undef FILESTREAM_RBUF_MALLOC
 
 RFILE* filestream_open(const char *path, unsigned mode, unsigned hints)
 {

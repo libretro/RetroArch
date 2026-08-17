@@ -22,6 +22,19 @@ OBJS        := vfs_read_overflow_test.o vfs_mapped_ptr_test.o \
 	vfs_large_file_test.o vfs_seek_contract_test.o \
 	vfs_bulk_read_test.o filestream_rbuf_fault_test.o $(COMMON_OBJS)
 
+# filestream_rbuf_fault_test drives the two arms on which
+# filestream_rbuf_fill() gives up and hands the caller back to the
+# byte-at-a-time path.  The tell arm needs nothing from the
+# implementation - filestream_vfs_init() is seam enough - but a refused
+# allocation has no other way in, so that one target links its own
+# file_stream.o with FILESTREAM_RBUF_MALLOC pointed at its fault
+# allocator.  Scoped to this object and no further: every other target
+# here, and every build in the tree, links the unmodified unit with
+# plain malloc() and no added symbol or branch.
+FAULT_FS_OBJ := file_stream_rbuf_fault.o
+FAULT_OBJS   := $(filter-out %/file_stream.o,$(COMMON_OBJS)) \
+	$(FAULT_FS_OBJ)
+
 # -DHAVE_MMAP is required for vfs_read_overflow_test to exercise the
 # patched code path; without it the implementation falls back to
 # buffered fread and that test becomes a smoke test that can't
@@ -57,17 +70,6 @@ DESCRIPTOR_IO ?=
 ifeq ($(DESCRIPTOR_IO),1)
    CFLAGS += -DVFS_HAVE_DESCRIPTOR_IO=1
 endif
-
-# filestream_rbuf_fault_test drives the two arms on which
-# filestream_rbuf_fill() gives up and hands the caller back to the
-# byte-at-a-time path.  The tell arm needs nothing from the
-# implementation - filestream_vfs_init() is seam enough - but a refused
-# allocation has no other way in, so file_stream.c routes that one
-# allocation through FILESTREAM_RBUF_MALLOC() when this is defined.
-# Nothing else in the tree defines it: in every other build, RetroArch
-# included, the macro is malloc() and the indirection does not exist.
-# It is inert for the other targets here, which install no allocator.
-CFLAGS += -DFILESTREAM_RBUF_TEST_HOOKS
 
 CFLAGS += -Wall -pedantic -std=gnu99 -g -I$(LIBRETRO_COMM_DIR)/include
 
@@ -111,15 +113,20 @@ $(TARGET_TEST3): vfs_seek_contract_test.o $(COMMON_OBJS)
 $(TARGET_TEST4): vfs_bulk_read_test.o $(COMMON_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) -lpthread
 
+$(FAULT_FS_OBJ): $(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+		rbuf_fault_hooks.h
+	$(CC) -c -o $@ $< $(CFLAGS) -I. -include rbuf_fault_hooks.h \
+		-DFILESTREAM_RBUF_MALLOC=filestream_rbuf_fault_malloc
+
 # filestream_rbuf_fault_test installs its own VFS, which takes the
 # memory mapping out of play, so it behaves identically with MMAP=1 and
 # MMAP=0 and there is nothing to gain from running it in both lanes.
-$(TARGET_TEST5): filestream_rbuf_fault_test.o $(COMMON_OBJS)
+$(TARGET_TEST5): filestream_rbuf_fault_test.o $(FAULT_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 clean:
 	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) \
-		$(TARGET_TEST4) $(TARGET_TEST5) $(OBJS)
+		$(TARGET_TEST4) $(TARGET_TEST5) $(OBJS) $(FAULT_FS_OBJ)
 	rm -f large_3gib.bin large_5gib.bin seek_small.bin seek_4gib.bin
 	rm -f rbuf_fault.txt
 	rm -f bulk_select.bin bulk_select_w.bin bulk_roundtrip.bin \

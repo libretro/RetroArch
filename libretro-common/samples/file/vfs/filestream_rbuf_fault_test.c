@@ -54,10 +54,9 @@
  * takes the memory-mapped fast path out of filestream_gets() - a
  * caller-supplied VFS has no mapping this side of its callbacks - so
  * every case below goes through the lookahead deterministically.
- * The allocation arm has no such seam, so file_stream.c routes that
- * one allocation through FILESTREAM_RBUF_MALLOC(); with
- * FILESTREAM_RBUF_TEST_HOOKS undefined that macro is malloc() and
- * nothing else exists.
+ * The allocation arm has no such seam, so this target links its own
+ * file_stream.o built with FILESTREAM_RBUF_MALLOC defined to the
+ * allocator below.  Undefined everywhere else the macro is malloc().
  *
  * All fixtures are generated ASCII. Nothing here reads, produces or
  * requires any real data.
@@ -82,6 +81,8 @@
 #include <libretro.h>
 #include <streams/file_stream.h>
 #include <vfs/vfs_implementation.h>
+
+#include "rbuf_fault_hooks.h"
 
 /* Must match file_stream.c.  Not included from anywhere: the constant
  * is an implementation detail there, and a test that redefined it
@@ -119,15 +120,15 @@ static int test_fails;
 
 /* ---- the allocation seam ------------------------------------------ */
 
-extern void *(*filestream_rbuf_test_malloc)(size_t len);
-
+/* Non-static and named in rbuf_fault_hooks.h: this target's private
+ * file_stream.o is built with FILESTREAM_RBUF_MALLOC defined to it. */
 static unsigned long alloc_calls;
 static unsigned long alloc_refusals;
 static size_t        alloc_last_granted;
 static size_t        alloc_refuse_at_least;  /* 0 = refuse nothing */
 static unsigned long alloc_refuse_first_n;   /* transient failure    */
 
-static void *fault_malloc(size_t len)
+void *filestream_rbuf_fault_malloc(size_t len)
 {
    alloc_calls++;
 
@@ -194,8 +195,6 @@ static void install_shim_vfs(void)
    info.required_interface_version = FILESTREAM_REQUIRED_VFS_VERSION;
    info.iface                      = &shim_iface;
    filestream_vfs_init(&info);
-
-   filestream_rbuf_test_malloc = fault_malloc;
 }
 
 static void reset_counters(void)
@@ -633,7 +632,6 @@ int main(void)
    case_alloc_falls_back_to_smaller();
    case_transient_alloc_failure_recovers();
 
-   filestream_rbuf_test_malloc = NULL;
    remove(FIXTURE_PATH);
    free(fixture);
 
