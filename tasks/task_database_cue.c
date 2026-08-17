@@ -49,6 +49,12 @@
 #define MODETEST_VAL    0xffffff00
 #endif
 
+/* Upper bound on how far into a track any serial/system detector
+ * reads: DISC_DATA_SIZE_PS2 (600000) is the largest probe and 0x9320
+ * the deepest magic-number offset.  Keep this in sync when adding
+ * detectors that reach further. */
+#define SERIAL_PROBE_SPAN (600 * 1024)
+
 static struct magic_entry MAGIC_NUMBERS[] = {
    { "Nintendo - GameCube",         "\xc2\x33\x9f\x3d", 0x00001c},
    { "Nintendo - GameCube",         "\xc2\x33\x9f\x3d", 0x000074}, /* RVZ, WIA */
@@ -1694,6 +1700,16 @@ bool intfstream_file_get_serial(const char *name,
 
    if (offset != 0 || size < file_size)
    {
+      /* A bounded span is a data track inside a larger image.  Every
+       * serial/system detector resolves within the first 600000
+       * bytes of the track (DISC_DATA_SIZE_PS2 is the largest probe,
+       * 0x9320 the deepest magic-number offset), so stage at most
+       * that much.  Tracks shorter than the cap stage what exists; a
+       * detector seeking or reading past the window's end sees a
+       * short read, the same as on a short track. */
+      if (size > SERIAL_PROBE_SPAN)
+         size = SERIAL_PROBE_SPAN;
+
       if (intfstream_seek(fd, (int64_t)offset, SEEK_SET) == -1)
          goto error;
 
