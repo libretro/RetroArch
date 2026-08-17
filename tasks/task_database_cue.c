@@ -149,10 +149,79 @@ static void cue_append_multi_disc_suffix(char * str1, size_t len,
    }
 }
 
-static int64_t task_database_cue_get_token(intfstream_t *fd, char *s,
+/* Cue/GDI sheets are tokenized character by character, and each
+ * character used to be obtained with intfstream_read(fd, c, 1): one
+ * VFS round trip per byte, multiplied by every sheet in a library
+ * scan.  The sheets themselves are KB-scale text, so the read cost
+ * was almost entirely call overhead.
+ *
+ * Pull bytes through a small refill window instead.  The window is
+ * deliberately modest (1 KiB) - a typical single-bin cue fits in one
+ * fill and a large multi-track sheet in a handful - and lives on the
+ * caller's stack, so the parse allocates nothing and holds no more
+ * than the window regardless of sheet size.
+ *
+ * Entry points that receive a caller-owned stream (cue_next_file,
+ * gdi_next_file) must leave the stream position exactly where
+ * byte-at-a-time tokenizing would have left it, because callers
+ * re-enter with the same handle and gdi_next_file keys off
+ * intfstream_tell().  cue_tok_detach() rewinds whatever the window
+ * read ahead before control returns to such callers. */
+
+#define CUE_TOK_BUF_LEN 1024
+
+typedef struct
+{
+   intfstream_t *fd;
+   size_t pos;              /* next unconsumed byte in buf         */
+   size_t end;              /* one past the last valid byte in buf */
+   bool fail;               /* underlying stream reported an error */
+   char buf[CUE_TOK_BUF_LEN];
+} cue_tok_stream_t;
+
+static void cue_tok_init(cue_tok_stream_t *t, intfstream_t *fd)
+{
+   t->fd   = fd;
+   t->pos  = 0;
+   t->end  = 0;
+   t->fail = false;
+}
+
+/* Returns 1 when bytes are available, 0 on EOF, -1 on stream error. */
+static int cue_tok_fill(cue_tok_stream_t *t)
+{
+   int64_t got;
+
+   if (t->fail)
+      return -1;
+
+   got = intfstream_read(t->fd, t->buf, CUE_TOK_BUF_LEN);
+   if (got < 0)
+   {
+      t->fail = true;
+      return -1;
+   }
+
+   t->pos = 0;
+   t->end = (size_t)got;
+   return (got == 0) ? 0 : 1;
+}
+
+/* Reposition the underlying stream on the first unconsumed byte so
+ * the caller-visible position matches unbuffered tokenizing.  Must
+ * be called before returning a caller-owned stream. */
+static void cue_tok_detach(cue_tok_stream_t *t)
+{
+   size_t ahead = t->end - t->pos;
+   if (ahead == 0 || t->fail)
+      return;
+   if (intfstream_seek(t->fd, -(int64_t)ahead, SEEK_CUR) >= 0)
+      t->pos = t->end;
+}
+
+static int64_t task_database_cue_get_token(cue_tok_stream_t *t, char *s,
    uint64_t len)
 {
-   char *c       = s;
    int64_t _len  = 0;
    int in_string = 0;
 
@@ -161,43 +230,54 @@ static int64_t task_database_cue_get_token(intfstream_t *fd, char *s,
 
    for (;;)
    {
-      int64_t rv = (int64_t)intfstream_read(fd, c, 1);
-      if (rv == 0)
-         return 0;
-      else if (rv < 0)
-         return -1;
+      char ch;
 
-      switch (*c)
+      if (t->pos == t->end)
+      {
+         int rv = cue_tok_fill(t);
+         if (rv < 0)
+            return -1;
+         /* EOF with a partial token accumulated discards the token,
+          * as the unbuffered tokenizer always has.  A sheet whose
+          * final line lacks a trailing newline loses its last token
+          * either way; changing that is a parsing-behavior decision,
+          * not an I/O one. */
+         if (rv == 0)
+            return 0;
+      }
+
+      ch = t->buf[t->pos++];
+
+      switch (ch)
       {
          case ' ':
          case '\t':
          case '\r':
          case '\n':
-            if (c == s)
+            if (_len == 0)
                continue;
 
             if (!in_string)
             {
-               *c = '\0';
+               s[_len] = '\0';
                return _len;
             }
             break;
          case '\"':
-            if (c == s)
+            if (_len == 0)
             {
                in_string = 1;
                continue;
             }
 
-            *c = '\0';
+            s[_len] = '\0';
             return _len;
       }
 
-      _len++;
-      c++;
+      s[_len++] = ch;
       if (_len == (int64_t)len - 1)
       {
-         *c = '\0';
+         s[_len] = '\0';
          return _len;
       }
    }
@@ -1267,6 +1347,7 @@ int cue_find_track(const char *cue_path, bool first,
 {
    int rv;
    intfstream_info_t info;
+   cue_tok_stream_t tok;
    char tmp_token[MAX_TOKEN_LEN];
    char last_file[PATH_MAX_LENGTH];
    char cue_dir[DIR_MAX_LENGTH];
@@ -1300,11 +1381,13 @@ int cue_find_track(const char *cue_path, bool first,
    RARCH_LOG("[Scanner] Parsing CUE file \"%s\"...\n", cue_path);
 #endif
 
+   cue_tok_init(&tok, fd);
+
    tmp_token[0] = '\0';
 
    rv = -1;
 
-   while (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) > 0)
+   while (task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token)) > 0)
    {
       if (string_is_equal_noncase(tmp_token, "FILE"))
       {
@@ -1322,19 +1405,19 @@ int cue_find_track(const char *cue_path, bool first,
                goto clean;
          }
 
-         task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
+         task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token));
          fill_pathname_join_special(last_file, cue_dir,
                tmp_token, sizeof(last_file));
 
          file_size = intfstream_get_file_size(last_file);
 
-         task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
+         task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token));
 
       }
       else if (string_is_equal_noncase(tmp_token, "TRACK"))
       {
-         task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
-         task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
+         task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token));
+         task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token));
          is_data = !string_is_equal_noncase(tmp_token, "AUDIO");
          ++track;
 
@@ -1373,8 +1456,8 @@ int cue_find_track(const char *cue_path, bool first,
       else if (string_is_equal_noncase(tmp_token, "INDEX"))
       {
          int _m, _s, _f;
-         task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
-         task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
+         task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token));
+         task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token));
 
          {
             const char *ptr = tmp_token;
@@ -1457,27 +1540,35 @@ error:
 bool cue_next_file(intfstream_t *fd,
       const char *cue_path, char *s, uint64_t len)
 {
+   cue_tok_stream_t tok;
    char tmp_token[MAX_TOKEN_LEN];
 
    tmp_token[0] = '\0';
 
-   while (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) > 0)
+   cue_tok_init(&tok, fd);
+
+   while (task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token)) > 0)
    {
       if (string_is_equal_noncase(tmp_token, "FILE"))
       {
          char cue_dir[DIR_MAX_LENGTH];
          fill_pathname_basedir(cue_dir, cue_path, sizeof(cue_dir));
-         task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
+         task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token));
          fill_pathname_join_special(s, cue_dir, tmp_token, (size_t)len);
+         /* The caller re-enters with this stream; put it where the
+          * tokenizer logically stopped, not where the window read to. */
+         cue_tok_detach(&tok);
          return 1;
       }
    }
+   cue_tok_detach(&tok);
    return 0;
 }
 
 int gdi_find_track(const char *gdi_path, bool first, char *s, size_t len)
 {
    intfstream_info_t info;
+   cue_tok_stream_t tok;
    char tmp_token[MAX_TOKEN_LEN];
    intfstream_t *fd  = NULL;
    uint64_t largest  = 0;
@@ -1504,32 +1595,34 @@ int gdi_find_track(const char *gdi_path, bool first, char *s, size_t len)
    RARCH_LOG("[Scanner] Parsing GDI file \"%s\"...\n", gdi_path);
 #endif
 
+   cue_tok_init(&tok, fd);
+
    tmp_token[0] = '\0';
 
    /* Skip track count */
-   task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
+   task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token));
 
    /* Track number */
-   while (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) > 0)
+   while (task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token)) > 0)
    {
       /* Offset */
-      if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
+      if (task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token)) <= 0)
          goto error;
 
       /* Mode */
-      if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
+      if (task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token)) <= 0)
          goto error;
 
       mode = atoi(tmp_token);
 
       /* Sector size */
-      if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
+      if (task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token)) <= 0)
          goto error;
 
       size = atoi(tmp_token);
 
       /* File name */
-      if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
+      if (task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token)) <= 0)
          goto error;
 
       /* Check for data track */
@@ -1558,7 +1651,7 @@ int gdi_find_track(const char *gdi_path, bool first, char *s, size_t len)
       }
 
       /* Disc offset (not used?) */
-      if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
+      if (task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token)) <= 0)
          goto error;
    }
 
@@ -1579,21 +1672,24 @@ error:
 size_t gdi_next_file(intfstream_t *fd, const char *gdi_path,
       char *s, size_t len)
 {
+   cue_tok_stream_t tok;
    char tmp_token[MAX_TOKEN_LEN];
 
    tmp_token[0]    = '\0';
 
+   cue_tok_init(&tok, fd);
+
    /* Skip initial track count */
    if (intfstream_tell(fd) == 0)
-      task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
+      task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token));
 
-   task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)); /* Track number */
-   task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)); /* Offset       */
-   task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)); /* Mode         */
-   task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)); /* Sector size  */
+   task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token)); /* Track number */
+   task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token)); /* Offset       */
+   task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token)); /* Mode         */
+   task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token)); /* Sector size  */
 
    /* File name */
-   if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) > 0)
+   if (task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token)) > 0)
    {
       size_t _len;
       char gdi_dir[DIR_MAX_LENGTH];
@@ -1601,9 +1697,13 @@ size_t gdi_next_file(intfstream_t *fd, const char *gdi_path,
       _len = fill_pathname_join_special(s, gdi_dir, tmp_token, len);
 
       /* Disc offset */
-      task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
+      task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token));
+      /* Caller re-enters with this stream and keys the header skip
+       * off intfstream_tell(); rewind the window's lookahead. */
+      cue_tok_detach(&tok);
       return _len;
    }
+   cue_tok_detach(&tok);
    return 0;
 }
 
