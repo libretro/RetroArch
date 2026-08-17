@@ -58,6 +58,22 @@
 #define FILESTREAM_RBUF_LEN 16384
 #endif
 
+/* Allocation seam for that buffer.  A refused allocation is one of the
+ * only two ways filestream_rbuf_fill() can give up, and no test that
+ * cannot make an allocation fail can reach it, so
+ * samples/file/vfs/filestream_rbuf_fault_test builds with this defined
+ * and installs its own allocator.  Every other build - RetroArch's
+ * included - gets plain malloc() and no extra symbol; the indirection
+ * is not compiled at all. */
+#ifdef FILESTREAM_RBUF_TEST_HOOKS
+void *(*filestream_rbuf_test_malloc)(size_t len) = NULL;
+#define FILESTREAM_RBUF_MALLOC(len) \
+   (filestream_rbuf_test_malloc ? filestream_rbuf_test_malloc(len) \
+                                : malloc(len))
+#else
+#define FILESTREAM_RBUF_MALLOC(len) malloc(len)
+#endif
+
 /* Largest single read filestream_read_file() will ask for.  Every
  * backend it can reach expresses a count in something at least this
  * wide - the narrowest is Windows' _read(), an unsigned int returning
@@ -95,6 +111,45 @@ struct RFILE
 {
    struct retro_vfs_file_handle *hfile;
    bool err_flag;
+   /* Set once filestream_rbuf_fill() has seen this handle's tell()
+    * fail, so it stops asking.  Unlatched, the fallback pays a failed
+    * tell() per byte on top of the one-byte read it already pays,
+    * which is strictly more work than the unbuffered code this
+    * lookahead replaced.
+    *
+    * Deliberately NOT set for the other way fill() gives up, a failed
+    * allocation: that is usually transient, and it is likeliest on
+    * exactly the memory-constrained targets the lookahead exists for.
+    * Latching it would pin such a handle to per-byte reads for the
+    * rest of its life over one bad moment.  fill() retries instead,
+    * at a smaller size if that is what fits.
+    *
+    * Cleared by a successful seek, and that is not the same
+    * concession.  Two different things make tell() fail and only one
+    * of them is a property of the handle.  A backend that does not
+    * implement the operation at all - a pipe, a FIFO, a socket, a
+    * frontend VFS supplying read but not tell - fails every time, and
+    * a handle like that cannot be seeked either, so its latch is
+    * never cleared and it behaves exactly as if it never were.  But
+    * retro_vfs_fp_tell64() falls through to ftell() where none of
+    * RETRO_VFS_HAVE_FSEEKI64 / RETRO_VFS_HAVE_FPOS64 /
+    * HAVE_64BIT_OFFSETS is set, and that returns -1 past LONG_MAX.
+    * There the failure is a property of WHERE the handle is, not of
+    * what it is, and seeking back under 2 GiB makes tell() work
+    * again.  A latch that never cleared would pin an ordinary
+    * seekable file to per-byte reads for the rest of its life because
+    * it once crossed 2 GiB - the same permanence this comment refuses
+    * two paragraphs up for the allocation case, arrived at by a
+    * different route.
+    *
+    * The clear is cheap because the latch re-arms on the first
+    * failure, not on every byte: after a seek, one fill() calls
+    * tell(), and if it fails again every later fill() short-circuits
+    * on the latch without calling anything.  The cost of being wrong
+    * is therefore one failed tell() per successful seek, paid only by
+    * a backend that implements seek but not tell.  The cost of not
+    * clearing is unbounded. */
+   bool rbuf_no_tell;
    /* Sequential read lookahead.  Only filestream_rbuf_fill() ever
     * puts bytes here, and only filestream_gets()/filestream_getc()
     * trigger a fill; every other operation on the handle either
@@ -275,21 +330,50 @@ static void filestream_rbuf_discard(RFILE *stream)
  * could be allocated or the handle cannot report a position - in both
  * of those cases the caller falls back to the unbuffered byte path,
  * which behaves exactly as this function did before the lookahead
- * existed. */
+ * existed.
+ *
+ * The two -1 arms are not interchangeable; see rbuf_no_tell in struct
+ * RFILE for why one of them is remembered and the other is not. */
 static int filestream_rbuf_fill(RFILE *stream)
 {
    int64_t off;
    int64_t got;
 
+   /* Asked once, answered for the life of the handle. */
+   if (stream->rbuf_no_tell)
+      return -1;
+
    if (!stream->rbuf)
    {
-      if (!(stream->rbuf = (uint8_t*)malloc(FILESTREAM_RBUF_LEN)))
+      size_t cap;
+
+      /* Step down rather than give up: 16 KiB, then 4, then 1.  A
+       * handle that gets the smallest of those is still a buffered
+       * handle, and still crosses the VFS a thousand times less often
+       * than the byte-at-a-time fallback would.  The nominal size is
+       * unchanged - this runs only once the allocator has refused
+       * it.  The cap != 0 term matters only for an override small
+       * enough that the floor divides to zero; it keeps the loop off
+       * malloc(0). */
+      for (cap = FILESTREAM_RBUF_LEN;
+            cap != 0 && cap >= FILESTREAM_RBUF_LEN / 16; cap >>= 2)
+      {
+         if ((stream->rbuf = (uint8_t*)FILESTREAM_RBUF_MALLOC(cap)))
+         {
+            stream->rbuf_cap = cap;
+            break;
+         }
+      }
+
+      if (!stream->rbuf)
          return -1;
-      stream->rbuf_cap = FILESTREAM_RBUF_LEN;
    }
 
    if ((off = filestream_raw_tell(stream)) < 0)
+   {
+      stream->rbuf_no_tell = true;
       return -1;
+   }
 
    if ((got = filestream_raw_read(stream, stream->rbuf,
                (int64_t)stream->rbuf_cap)) <= 0)
@@ -323,6 +407,7 @@ RFILE* filestream_open(const char *path, unsigned mode, unsigned hints)
    }
 
    output->err_flag      = false;
+   output->rbuf_no_tell  = false;
    output->hfile         = fp;
    output->rbuf          = NULL;
    output->rbuf_cap      = 0;
@@ -1342,6 +1427,8 @@ static int64_t filestream_raw_seek(RFILE *stream,
 
 int64_t filestream_seek(RFILE *stream, int64_t offset, int seek_position)
 {
+   int64_t plain;
+
    if (stream && stream->rbuf_len != 0)
    {
       int64_t output;
@@ -1369,7 +1456,17 @@ int64_t filestream_seek(RFILE *stream, int64_t offset, int seek_position)
       }
       return output;
    }
-   return filestream_raw_seek(stream, offset, seek_position);
+
+   /* The latch clears here and only here.  It cannot be set while a
+    * span exists: rbuf_len is set only by a fill that succeeded, which
+    * means tell() succeeded, and both gets() and getc() zero rbuf_pos
+    * and rbuf_len when the span drains - so a latched handle always
+    * has rbuf_len == 0 and always takes this path.  A clear in the
+    * branch above would be unreachable. */
+   plain = filestream_raw_seek(stream, offset, seek_position);
+   if (stream && plain != VFS_ERROR_RETURN_VALUE)
+      stream->rbuf_no_tell = false;
+   return plain;
 }
 
 int filestream_eof(RFILE *stream)

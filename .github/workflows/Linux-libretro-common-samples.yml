@@ -80,6 +80,7 @@ jobs:
             vfs_seek_contract_test
             vfs_bulk_read_test
             vfs_hybrid_test
+            filestream_rbuf_fault_test
             cdrom_cuesheet_overflow_test
             cdfs_dir_record_test
             cdfs_pure_api_test
