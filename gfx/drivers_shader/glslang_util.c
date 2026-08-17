@@ -195,21 +195,35 @@ const char *shader_line_buf_get(const struct shader_line_buf *buf, size_t index)
  * Original helper functions (unchanged)
  * ------------------------------------------------------------------- */
 
-static char *slang_get_include_file(char *line, size_t len)
+/* Copy the quoted include filename out of @line into @s.
+ *
+ * The name is handed back as a copy rather than by NUL-splicing the
+ * closing quote in place: the line scanner is moving to spans over a
+ * buffer it does not own, so it cannot write into it.  @s is bounded
+ * and the name is truncated to fit, which is what the caller's
+ * fill_pathname_resolve_relative() did with an over-long name anyway. */
+static bool slang_get_include_file(const char *line, size_t len,
+      char *s, size_t s_len)
 {
-   char *end   = NULL;
-   char *start = (char*)memchr(line, '\"', len);
-   if (!start)
-      return NULL;
+   const char *end;
+   const char *start = (const char*)memchr(line, '\"', len);
+   size_t n;
+
+   if (!start || s_len == 0)
+      return false;
 
    start++;
    len -= (size_t)(start - line);
 
-   if (!(end = (char*)memchr(start, '\"', len)))
-      return NULL;
+   if (!(end = (const char*)memchr(start, '\"', len)))
+      return false;
 
-   *end = '\0';
-   return start;
+   n = (size_t)(end - start);
+   if (n > s_len - 1)
+      n = s_len - 1;
+   memcpy(s, start, n);
+   s[n] = '\0';
+   return true;
 }
 
 bool slang_texture_semantic_is_array(enum slang_texture_semantic sem)
@@ -634,10 +648,14 @@ static bool glslang_read_shader_file_internal(const char *path,
                   || include_optional)
             {
                char include_path[PATH_MAX_LENGTH];
-               char *include_file = slang_get_include_file(
-                     line_start, cur_line_len);
-
-               if (!include_file || include_file[0] == '\0')
+               /* tmp is free here: its only use is the #line directive
+                * built after the recursive call below, so the include
+                * name can borrow it instead of costing this frame a
+                * third PATH_MAX_LENGTH array - this function recurses
+                * once per level of include nesting. */
+               if (   !slang_get_include_file(line_start, cur_line_len,
+                           tmp, sizeof(tmp))
+                   || tmp[0] == '\0')
                {
                   RARCH_ERR("[Slang] Invalid include statement \"%s\".\n",
                         line_start);
@@ -646,7 +664,7 @@ static bool glslang_read_shader_file_internal(const char *path,
 
                include_path[0] = '\0';
                fill_pathname_resolve_relative(
-                     include_path, path, include_file, sizeof(include_path));
+                     include_path, path, tmp, sizeof(include_path));
 
                if (!glslang_read_shader_file_internal(include_path, output,
                      false, include_optional, cache))
