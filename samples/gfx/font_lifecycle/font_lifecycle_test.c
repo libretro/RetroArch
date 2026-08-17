@@ -384,6 +384,78 @@ int main(void)
    font_driver_free(c);
    CHECK(live_renderer_state == 0, "all renderer state released at teardown");
 
+   /* 9. deferred free: the handle survives the frames in which the
+    *    GPU may still be reading its atlas, and goes away after. */
+   {
+      font_data_t *r = mk("/tmp/san/retire.ttf", 16.0f);
+      CHECK(r != NULL, "retire font created");
+      CHECK(live_renderer_state == 1, "one live before retire");
+
+      font_driver_free_deferred(r);
+      CHECK(live_renderer_state == 1, "still live immediately after retire");
+
+      /* The point of the window is that the handle stays usable
+       * throughout it, because the GPU may still be reading its
+       * atlas. Touch the real font_data_t on each frame: a premature
+       * release would be a use-after-free here, which is what ASan is
+       * for. */
+      font_driver_free_pending(false);
+      CHECK(live_renderer_state == 1, "still live one frame after retire");
+      CHECK(r->renderer_data != NULL, "renderer state usable inside window");
+      CHECK(r->path != NULL, "path still owned inside window");
+      CHECK(font_driver_get_message_width(r, "a", 1, 1.0f) > 0,
+            "retired font still answers metrics inside window");
+
+      font_driver_free_pending(false);
+      CHECK(live_renderer_state == 0, "released two frames after retire");
+
+      /* Idempotent: an empty queue must not double-free. */
+      font_driver_free_pending(false);
+      font_driver_free_pending(true);
+      CHECK(live_renderer_state == 0, "draining an empty queue is a no-op");
+   }
+
+   /* 10. a retire per frame, the steady state of dragging a scale
+     *    slider: each handle gets its full two frames and none is
+     *    lost, so the queue neither frees early nor grows without
+     *    bound. */
+   {
+      unsigned f;
+      font_data_t *cur = mk("/tmp/san/drag.ttf", 10.0f);
+      CHECK(cur != NULL, "drag font created");
+
+      for (f = 0; f < 200; f++)
+      {
+         font_data_t *next = mk("/tmp/san/drag.ttf", 10.0f + f);
+         font_driver_free_deferred(cur);
+         cur = next;
+         font_driver_free_pending(false);
+         /* current, plus the handles still inside their window */
+         CHECK(live_renderer_state <= 3, "in-flight handles stay bounded");
+      }
+
+      font_driver_free_pending(true);
+      font_driver_free(cur);
+      CHECK(live_renderer_state == 0, "nothing leaked by a sustained drag");
+   }
+
+   /* 11. flush is what teardown relies on: a handle retired with
+    *     frames still to go must not outlive the context. */
+   {
+      font_data_t *p = mk("/tmp/san/flush.ttf", 14.0f);
+      font_data_t *q = mk("/tmp/san/flush2.ttf", 14.0f);
+      CHECK(live_renderer_state == 2, "two live before flush");
+      font_driver_free_deferred(p);
+      font_driver_free_deferred(q);
+      font_driver_free_pending(true);
+      CHECK(live_renderer_state == 0, "flush releases everything queued");
+   }
+
+   /* 12. retiring NULL is allowed, so callers need no guard. */
+   font_driver_free_deferred(NULL);
+   font_driver_free_pending(false);
+   CHECK(live_renderer_state == 0, "retiring NULL does nothing");
+
    printf("%s (%d failures)\n", fails ? "FAILURES" : "all checks passed", fails);
    return fails ? 1 : 0;
 }

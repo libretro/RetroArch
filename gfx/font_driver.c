@@ -332,6 +332,42 @@ static uint32_t font_driver_generation = 0;
  * should change. Singly linked through font_data_t::next. */
 static font_data_t *font_live = NULL;
 
+/* Fonts whose replacement has already been built, waiting out the
+ * frames in which the GPU may still be reading their atlas.
+ *
+ * A caller that rebuilds a font from the menu render path runs before
+ * the video driver's frame function in the same runloop iteration, so
+ * a handle released there can still be referenced by a command list
+ * that has not been submitted, let alone completed. On a driver with
+ * deferred submission that is a crash: D3D12 hit it for years on an
+ * XMB font scale change. Retiring instead of freeing lets the caller
+ * swap in the new font immediately and hands the release to
+ * font_driver_free_pending(), which runs after frames are submitted.
+ *
+ * Two frames is the interval the old XMB open-coded countdown used and
+ * is what the D3D12 report was tested against: by the time two frames
+ * have gone out, the one that could have referenced the atlas has been
+ * submitted and waited on. The queue is global because only one menu
+ * driver is live at a time and the widget and screensaver fonts share
+ * the same frame clock; sizing is per handle in flight, not per
+ * caller.
+ *
+ * Unlocked, like font_live and unlike the font file cache above: every
+ * caller is on the main thread. The retires come from menu and widget
+ * render paths, and the ageing from video_driver_frame(), which the
+ * runloop calls on the main thread and which the threaded wrapper
+ * forwards from rather than runs on the video thread. That invariant
+ * is not new here — video_driver_frame() already keeps its frame
+ * timing in function statics, which would race far more visibly. */
+#define FONT_FREE_DEFERRED_MAX 16
+#define FONT_FREE_DEFERRED_FRAMES 2
+
+static struct
+{
+   font_data_t *font;
+   unsigned     frames;
+} font_free_deferred[FONT_FREE_DEFERRED_MAX];
+
 static void font_driver_release_renderer_state(
       const font_renderer_t *renderer, void *renderer_data,
       bool is_threaded);
@@ -1307,6 +1343,53 @@ void font_driver_free(font_data_t *font)
       font->renderer_data = NULL;
 
       free(font);
+   }
+}
+
+void font_driver_free_deferred(font_data_t *font)
+{
+   unsigned i;
+
+   if (!font)
+      return;
+
+   for (i = 0; i < FONT_FREE_DEFERRED_MAX; i++)
+   {
+      if (!font_free_deferred[i].font)
+      {
+         font_free_deferred[i].font   = font;
+         font_free_deferred[i].frames = FONT_FREE_DEFERRED_FRAMES;
+         return;
+      }
+   }
+
+   /* Queue full. Only reachable if a caller retires faster than
+    * frames go out, which would mean it is rebuilding more than
+    * FONT_FREE_DEFERRED_MAX/2 fonts between two frames. Freeing here
+    * is the behaviour this function exists to avoid, so say so rather
+    * than leak the handle silently. */
+   RARCH_WARN("[Font] Deferred free queue full; releasing immediately.\n");
+   font_driver_free(font);
+}
+
+void font_driver_free_pending(bool flush)
+{
+   unsigned i;
+
+   for (i = 0; i < FONT_FREE_DEFERRED_MAX; i++)
+   {
+      if (!font_free_deferred[i].font)
+         continue;
+
+      if (flush || --font_free_deferred[i].frames == 0)
+      {
+         font_data_t *font          = font_free_deferred[i].font;
+         /* Cleared before the free: font_driver_free() can marshal to
+          * the video thread, and this slot must not look occupied to
+          * anything that runs in the meantime. */
+         font_free_deferred[i].font = NULL;
+         font_driver_free(font);
+      }
    }
 }
 

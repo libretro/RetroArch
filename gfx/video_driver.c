@@ -2009,6 +2009,11 @@ void video_driver_free_internal(void)
     * already up cannot take the live font with it. Under threaded
     * video the wrapper does this from CMD_FREE, so we don't need to
     * check HAVE_THREADS here. */
+   /* Anything still waiting out its frames has to go now: the context
+    * that owns its atlas is about to, and there will be no further
+    * frame to age it against. */
+   font_driver_free_pending(true);
+
    if (vid && vid->font_backend)
       font_driver_free_osd_for(video_st->data);
 
@@ -5533,6 +5538,14 @@ void video_driver_frame(const void *data, unsigned width,
          video_driver_modify_disp_flags(VIDEO_FLAG_ACTIVE, 0);
       else
          video_driver_modify_disp_flags(0, VIDEO_FLAG_ACTIVE);
+
+      /* A frame has gone out, so fonts retired while it was being
+       * built are one frame closer to being safe to release. Inside
+       * this block rather than after it: render_frame is false when
+       * the frame limiter skips, and a counter aged by a frame that
+       * was never handed to the driver would release an atlas the
+       * GPU could still be reading. */
+      font_driver_free_pending(false);
    }
 
    video_st->frame_count++;

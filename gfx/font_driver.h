@@ -181,6 +181,26 @@ int font_driver_get_message_width(void *font_data, const char *msg, size_t len, 
 
 void font_driver_free(font_data_t *font);
 
+/* Release a font whose replacement has already been built, once the
+ * frames that could still be reading its atlas have gone out.
+ *
+ * For callers that rebuild a font from a render path, which runs
+ * before the video driver's frame function in the same iteration: a
+ * plain font_driver_free() there can release an atlas a command list
+ * still references, which drivers with deferred submission do not
+ * survive. Build the replacement first, retire the old handle with
+ * this, and keep drawing.
+ *
+ * The handle must not be used again after this call. */
+void font_driver_free_deferred(font_data_t *font);
+
+/* Age the deferred queue by one frame, releasing whatever has come
+ * due. Called once per frame from video_driver_frame() after the
+ * frame has been handed to the driver. With flush set, everything is
+ * released immediately, for teardown paths where there is no later
+ * frame to wait for. */
+void font_driver_free_pending(bool flush);
+
 /* Rebuild every live font from its current path, in place. Used when
  * the menu language changes and the fonts must follow, without tearing
  * down the video driver to do it. Fonts whose path is unchanged are
