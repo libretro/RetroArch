@@ -371,6 +371,14 @@ static int filestream_rbuf_fill(RFILE *stream)
 
    if ((off = filestream_raw_tell(stream)) < 0)
    {
+      /* Nothing will pass through the buffer until a seek clears the
+       * latch, so hand it back rather than hold 16 KiB per pipe or
+       * socket for the life of the handle.  rbuf_len is necessarily 0
+       * here - a span only exists after a fill that succeeded - so
+       * there is nothing to discard. */
+      free(stream->rbuf);
+      stream->rbuf         = NULL;
+      stream->rbuf_cap     = 0;
       stream->rbuf_no_tell = true;
       return -1;
    }

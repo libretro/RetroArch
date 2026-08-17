@@ -150,6 +150,8 @@ static void *fault_malloc(size_t len)
 
 /* ---- the pass-through VFS ----------------------------------------- */
 
+static unsigned long gets_calls;
+
 static unsigned long vfs_tell_calls;
 static unsigned long vfs_read_calls;
 static bool          vfs_tell_fails;
@@ -206,6 +208,7 @@ static void reset_counters(void)
    vfs_tell_calls        = 0;
    vfs_read_calls        = 0;
    vfs_tell_fails        = false;
+   gets_calls            = 0;
 }
 
 /* ---- fixture ------------------------------------------------------- */
@@ -275,9 +278,14 @@ static size_t scan_file(bool *err_flag_out)
    if (!fp)
       return (size_t)-1;
 
-   while (filestream_gets(fp, line, sizeof(line)))
+   for (;;)
    {
-      size_t n = strlen(line);
+      size_t n;
+
+      gets_calls++;
+      if (!filestream_gets(fp, line, sizeof(line)))
+         break;
+      n = strlen(line);
 
       if (n == 0 || n > sizeof(line) - 1)
       {
@@ -543,6 +551,66 @@ static void case_transient_alloc_failure_recovers(void)
          alloc_refusals, (unsigned long)alloc_last_granted, vfs_read_calls);
 }
 
+/* The cost bound the seek clear rests on, observed rather than argued.
+ * case_tell_latch_clears_on_seek lets tell() start working before the
+ * seek, so it only shows the clear happening.  This is the case the
+ * clear could be wrong about: a backend that implements seek but not
+ * tell, where clearing buys nothing.  The whole file is scanned after
+ * the seek, and the re-arm must cost ONE tell() for the scan, not one
+ * per byte - two across the run, before and after.  Remove the guard
+ * on the clear in filestream_seek() and this is the case that moves. */
+static void case_latch_rearms_once_after_seek(void)
+{
+   char   line[LINE_BUF];
+   RFILE *fp;
+   size_t off = 0;
+
+   reset_counters();
+   vfs_tell_fails = true;
+
+   fp = filestream_open(FIXTURE_PATH,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   CHECK(fp != NULL, "re-arm: fixture opened");
+   if (!fp)
+      return;
+
+   CHECK(filestream_gets(fp, line, sizeof(line)) != NULL,
+         "re-arm: the degraded first read still returns a line");
+   CHECK(vfs_tell_calls == 1, "re-arm: the first fill latches");
+   CHECK(alloc_calls == 1,
+         "re-arm: the lookahead is allocated once for the first fill");
+
+   /* tell() is still failing.  This is the seek the clear may be
+    * wrong about, and the assertion below is what wrong costs. */
+   CHECK(filestream_seek(fp, 0, RETRO_VFS_SEEK_POSITION_START) != -1,
+         "re-arm: the rewind succeeds even though tell() does not");
+
+   while (filestream_gets(fp, line, sizeof(line)))
+   {
+      size_t n = strlen(line);
+      if (n == 0 || off + n > fixture_len
+            || memcmp(fixture + off, line, n) != 0)
+      {
+         off = (size_t)-1;
+         break;
+      }
+      off += n;
+   }
+
+   CHECK(off == fixture_len,
+         "re-arm: the whole file still comes back byte-exact");
+   CHECK(vfs_tell_calls == 2,
+         "re-arm: the cleared latch costs one tell() for the scan, not one per byte");
+   CHECK(alloc_calls == 2,
+         "re-arm: the buffer is released on the latch and taken again on the clear");
+
+   printf("info: re-arm %lu tell, %lu alloc across a full scan after the seek\n",
+         vfs_tell_calls, alloc_calls);
+
+   filestream_close(fp);
+}
+
 int main(void)
 {
    if (!make_fixture())
@@ -560,6 +628,7 @@ int main(void)
    case_tell_failure_is_latched();
    case_tell_latch_clears_on_seek();
    case_failed_seek_keeps_the_latch();
+   case_latch_rearms_once_after_seek();
    case_alloc_failure_is_not_latched();
    case_alloc_falls_back_to_smaller();
    case_transient_alloc_failure_recovers();
