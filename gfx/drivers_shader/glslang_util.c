@@ -380,15 +380,25 @@ static void slang_include_cache_free(struct slang_include_cache *cache)
    cache->cap     = 0;
 }
 
-/* Look up @path; on a miss read it and record it.  On any allocation
- * failure the read still succeeds, it just is not remembered, so the
- * cache can never turn a working load into a failing one. */
+/* Look up @path; on a miss read it and record it.
+ *
+ * The bytes handed back belong to the cache and are read-only to the
+ * caller, which is what makes a hit free: the line scanner works in
+ * spans and never writes to them.  @owned is set only when the entry
+ * could not be recorded - no cache, an empty file, or an allocation
+ * failure - and then the caller frees the buffer itself.
+ *
+ * On any allocation failure the read still succeeds, it just is not
+ * remembered, so the cache can never turn a working load into a
+ * failing one. */
 static bool slang_include_cache_read(struct slang_include_cache *cache,
-      const char *path, uint8_t **buf, int64_t *len)
+      const char *path, const uint8_t **buf, int64_t *len, bool *owned)
 {
    size_t i;
    uint8_t *data = NULL;
    int64_t  n    = 0;
+
+   *owned = false;
 
    if (cache)
    {
@@ -396,15 +406,8 @@ static bool slang_include_cache_read(struct slang_include_cache *cache,
       {
          if (string_is_equal(cache->entries[i].path, path))
          {
-            /* Hand out a copy: the caller writes into the buffer while
-             * scanning lines and frees it when done. */
-            int64_t have = cache->entries[i].len;
-            if (!(data = (uint8_t*)malloc((size_t)have + 1)))
-               return false;
-            memcpy(data, cache->entries[i].data, (size_t)have);
-            data[have] = '\0';
-            *buf       = data;
-            *len       = have;
+            *buf = cache->entries[i].data;
+            *len = cache->entries[i].len;
             return true;
          }
       }
@@ -429,26 +432,26 @@ static bool slang_include_cache_read(struct slang_include_cache *cache,
       }
       if (cache->num < cache->cap)
       {
-         char    *path_copy = strdup(path);
-         uint8_t *data_copy = (uint8_t*)malloc((size_t)n);
-         if (path_copy && data_copy)
+         char *path_copy = strdup(path);
+         if (path_copy)
          {
-            memcpy(data_copy, data, (size_t)n);
+            /* Retain the buffer that was just read rather than a
+             * duplicate of it; the caller only ever reads from it. */
             cache->entries[cache->num].path = path_copy;
-            cache->entries[cache->num].data = data_copy;
+            cache->entries[cache->num].data = data;
             cache->entries[cache->num].len  = n;
             cache->num++;
-         }
-         else
-         {
-            free(path_copy);
-            free(data_copy);
+            *buf = data;
+            *len = n;
+            return true;
          }
       }
    }
 
-   *buf = data;
-   *len = n;
+   /* Not retained, so these bytes are the caller's to free. */
+   *buf   = data;
+   *len   = n;
+   *owned = true;
    return true;
 }
 
@@ -508,8 +511,9 @@ static bool glslang_read_shader_file_internal(const char *path,
    char line_suffix[PATH_MAX_LENGTH]; /* precomputed: " \"basename\"" */
    size_t line_suffix_len = 0;
    const char *basename      = NULL;
-   uint8_t *buf              = NULL;
+   const uint8_t *buf        = NULL;
    int64_t buf_len           = 0;
+   bool    buf_owned         = false;
    bool    ret               = false;
    /* Scratch for the rare line carrying an interior \r; sized to the
     * longest such line seen, not to the file. */
@@ -534,7 +538,7 @@ static bool glslang_read_shader_file_internal(const char *path,
 
    /* Read file contents (served from this root read's cache when the
     * same file has already been expanded) */
-   if (!slang_include_cache_read(cache, path, &buf, &buf_len))
+   if (!slang_include_cache_read(cache, path, &buf, &buf_len, &buf_owned))
    {
       if (!is_optional)
          RARCH_ERR("[Slang] Failed to open shader file: \"%s\".\n", path);
@@ -744,8 +748,8 @@ static bool glslang_read_shader_file_internal(const char *path,
 
 cleanup:
    free(cr_scratch);
-   if (buf)
-      free(buf);
+   if (buf_owned)
+      free((void*)buf);
    return ret;
 }
 
