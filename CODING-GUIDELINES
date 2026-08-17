@@ -71,13 +71,128 @@ Stack size
 ----------
 
 You have to assume that stack size is going to be limited in
-RetroArch. Some game consoles (and other embedded systems)
-might have a default stack size as low as 128Kb or less.
-Be conservative with stack size but don't try to put very
-small structs on heap either [to avoid memory fragmentation
-among other things]. A balancing act here is necessary.
+RetroArch. These are the thread stacks the tree creates today:
 
-Be mindful that heap allocations are slow compared to stack.
+   * GEKKO (Wii/GC)    8 KiB   STACKSIZE, rthreads/gx_pthread.h
+   * 3DS              32 KiB   STACKSIZE, rthreads/ctr_pthread.h
+   * Vita             64 KiB   rthreads.c, 0x10000
+   * Apple             2 MiB   rthreads.c, raised from a 512 KiB default
+   * Windows           1 MiB   reserved by default, committed lazily
+
+8 KiB on GEKKO is the floor, and it is the number to design
+against. (rthreads/psp_pthread.h names 8 KiB as well but nothing
+includes it - rthreads.c takes gx_pthread.h under GEKKO and
+ctr_pthread.h under _3DS, and PSP falls through to plain pthreads.)
+
+Which thread your code runs on is not something you get to assume.
+Anything reachable from a task handler can end up on one of these:
+retro_task_regular_gather() runs handlers on the main thread, but
+with a threaded task queue the same handler runs on a worker.
+
+*** THE BUDGET ***
+
+- 4 KiB is the ceiling for a single stack frame anywhere in the
+  tree.
+- 2 KiB is the ceiling for anything under libretro-common, and it
+  is enforced. tools/stack_budget.py measures every shipped .c
+  there with -fstack-usage and fails the build over it; it runs in
+  CI as part of Linux-libretro-common-tests.yml. Read the header
+  of that script before adding an entry to its allowlist - an
+  entry there is debt, not an exemption.
+
+Neither number is a per-function allowance to spend. A frame does
+not run alone, it runs on top of everything that called it. Ten
+1.5 KiB frames in a row pass every per-frame check ever written
+and still overflow an 8 KiB stack, which is why the budget sits so
+far below the smallest stack.
+
+*** WHY 4 KIB ***
+
+- Small-stack targets. See the table above. A 16 KiB local buffer
+  is twice the whole GEKKO stack, and nothing warns about it: the
+  code builds everywhere and overflows only on a target most
+  contributors cannot build, at whatever moment it first runs on a
+  worker. config_file_write() carried a 16 KiB stdio buffer as a
+  local on a path reached from input_autoconfigure_connect_handler
+  - a task handler - and nothing noticed for years.
+
+- Stack probes on Windows. 4 KiB is the page size, and Windows
+  commits thread stacks lazily: one guard page sits below the
+  committed region, and touching it is what makes the OS commit
+  another page and move the guard down. A frame that moves the
+  stack pointer past the guard page without touching it faults
+  outside the guard page, which the OS treats as a plain access
+  violation rather than a request to grow the stack - the process
+  dies. Compilers avoid that by emitting a probe: MSVC's default
+  is /Gs4096 on x86, x64, ARM and ARM64, so any function needing
+  more than one page of locals gets a call to __chkstk (or
+  ___chkstk_ms under mingw-w64, which uses the same threshold)
+  that walks the frame page by page in order. So crossing 4 KiB
+  turns a single subtract into an out-of-line loop at every entry
+  to that function, and commits every page it touches for the life
+  of the thread. GCC's -fstack-clash-protection does the same
+  thing on Linux, and the kernel-side reason is the same.
+
+- Recursion and reentrancy. A frame you can afford once is a frame
+  you cannot afford at depth 40. Anything recursive - directory
+  walks, archive nesting, parsers - should carry its state in a
+  heap-allocated context and bound its depth explicitly, not lean
+  on the stack to hold the recursion for it.
+
+*** IN PRACTICE ***
+
+- Measure rather than guess. For one file:
+
+     gcc -O2 -DPSP -fstack-usage -c foo.c -Ilibretro-common/include
+
+  and read foo.su. Or point the script at a file or a directory:
+  tools/stack_budget.py libretro-common/formats/. -DPSP matters,
+  because PATH_MAX_LENGTH is 512 on those targets and 2048
+  elsewhere - a host-shaped measurement overstates every function
+  holding a path buffer. Adding -Wstack-usage=4096 to a local
+  build turns the ceiling into a warning while you work.
+
+  Frame size is a property of an ABI, not of the source; the same
+  function measures 16 to 192 bytes larger under mingw-w64 than
+  under SysV. Do not compare an absolute number against one taken
+  from a different target triple.
+
+- Per-frame is necessary and not sufficient. tools/stack_chain.py
+  sums frames along the call graph from a set of roots (task
+  handlers being the roots that matter) and reports the deepest
+  chain. It is a screening tool rather than a verdict, which is
+  why it is not in CI - read its header for what it cannot see.
+
+- Path buffers are the usual culprit. On desktop PATH_MAX_LENGTH
+  is 2048, so two of them in one frame is already over the
+  ceiling. Use DIR_MAX_LENGTH (1024) and NAME_MAX_LENGTH (128)
+  when that is what the buffer actually holds, and reuse one
+  buffer rather than carrying a second.
+
+- No VLAs and no alloca(). VLAs are not C89 (see below); alloca()
+  additionally makes the frame unbounded at compile time, and
+  -fstack-usage can only report such a frame as dynamic, so it
+  drops out of every check above.
+
+- When a frame is too large, the question is not "can this
+  overflow today" but "does this need to be on the stack at all".
+  The answer is usually no, and the fix is usually one of: move
+  the buffer to the heap, or move it into a state object that is
+  already allocated once per stream/session, or shrink it. Real
+  examples, all done rather than argued about:
+
+     vh_build                    16784 -> 400  scratch to the heap
+     config_file_write           16432 ->  48  stdio buffer to heap
+     chd_read_header_core_file   57504 ->  32  chd_file to the heap
+     rd_gen_lengths              12768 -> 352  scratch into the struct
+     sha1_calculate               4304 -> 224  mapped view, else heap
+
+- None of this means small structs belong on the heap. Heap
+  allocations are slow compared to the stack, and scattering tiny
+  ones fragments memory - which matters most on exactly the
+  platforms with the small stacks. A balancing act is necessary:
+  a few hundred bytes of locals is fine and idiomatic, a kilobyte
+  wants a reason, and 4 KiB is where the decision is made for you.
 
 Functions
 ---------
