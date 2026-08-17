@@ -7296,6 +7296,39 @@ static void xmb_init_scale_mod(float *scale_mod, float scale_value)
    }
 }
 
+/* Resettle the two horizontal offsets that are cached rather than
+ * recomputed per frame.
+ *
+ * Both are derived from values xmb_layout() has just changed —
+ * xmb->x from icon_size, xmb->categories_x_pos from
+ * icon_spacing_horizontal — but they are otherwise only written on a
+ * depth or category change. Left alone across a scale change they keep
+ * the offsets from the old scale, which slides the category icon and
+ * the entry column sideways until the user navigates out and back.
+ *
+ * Any tween in flight on either has a target computed at the old
+ * scale, so it has to be killed rather than allowed to finish; this
+ * mirrors what xmb_context_reset_horizontal_list() already does when
+ * it assigns these directly. */
+static void xmb_refresh_horizontal_offsets(xmb_handle_t *xmb)
+{
+   uintptr_t tag     = (uintptr_t)&xmb->x;
+   uintptr_t cat_tag = (uintptr_t)&xmb->categories_x_pos;
+   int depth         = (xmb->depth > 1) ? 2 : 1;
+
+   gfx_animation_kill_by_tag(&tag);
+   gfx_animation_kill_by_tag(&cat_tag);
+
+   xmb->categories_x_pos = xmb->icon_spacing_horizontal
+         * -(float)xmb->categories_selection_ptr;
+
+   /* Clamped the same way the settled value is elsewhere: the opening
+    * animation is only pushed for depth <= 2, so deeper stacks keep
+    * the depth-2 offset. */
+   xmb->x                = xmb->icon_size
+         * (xmb->use_ps3_layout ? 1.1f : 0.7f) * -(depth * 2 - 2);
+}
+
 static void xmb_layout(xmb_handle_t *xmb)
 {
    unsigned i;
@@ -7337,6 +7370,10 @@ static void xmb_layout(xmb_handle_t *xmb)
       node->zoom        = iz;
       node->y           = xmb_item_y(xmb, i, current);
    }
+
+   /* node->y above is resettled from the new spacing; the horizontal
+    * offsets are cached rather than per-frame and need the same. */
+   xmb_refresh_horizontal_offsets(xmb);
 }
 
 static const char *xmb_texture_path(unsigned id)
