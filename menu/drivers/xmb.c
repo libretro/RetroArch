@@ -94,6 +94,11 @@
 
 #define XMB_TAB_MAX_LENGTH 255
 
+/* Font handles awaiting a deferred free. Two retire per rebuild and a
+ * rebuild happens at most once per frame, so four is the real ceiling;
+ * this leaves room to spare. */
+#define XMB_FONT_RETIRE_MAX 8
+
 #define XMB_DELAY (166.66667f)
 
 #define XMB_EASING_ALPHA EASING_OUT_CIRC
@@ -470,10 +475,14 @@ typedef struct xmb_handle
     * draw path must read this rather than the live setting, so that
     * every scale-derived value on screen comes from one snapshot. */
    float scale_cap;
-   /* New scale latched by xmb_render() when it detects a change and
-    * committed only when the deferred reset below fires. */
-   float pending_scale_factor;
-   unsigned pending_context_reset;
+
+   /* Font handles superseded by a rebuild, held until the GPU can no
+    * longer be referencing them. See xmb_font_retire(). */
+   struct
+   {
+      font_data_t *font;
+      unsigned frames;
+   } font_retire[XMB_FONT_RETIRE_MAX];
 
    float margins_screen_left;
    float margins_screen_top;
@@ -549,8 +558,6 @@ typedef struct xmb_handle
    bool show_horizontal_list;
    bool use_ps3_layout;
    bool last_use_ps3_layout;
-   /* Latched alongside pending_scale_factor; see pending_context_reset. */
-   bool pending_use_ps3_layout;
    bool assets_missing;
 
    /* Favorites, History, Images, Music, Videos, user generated */
@@ -7717,35 +7724,83 @@ static void xmb_context_reset_textures(
 }
 
 
-static void xmb_context_reset_internal(xmb_handle_t *xmb,
-      bool is_threaded, bool reinit_textures, unsigned menu_xmb_theme)
+/* Retire a font handle without freeing it yet.
+ *
+ * xmb_render() runs before the video driver's frame function in the
+ * same runloop_iterate(), so a handle released here can still be
+ * referenced by a command list the GPU has not finished with. That is
+ * the D3D12 crash 45f8bf4a was chasing. Rather than postponing the
+ * whole rebuild, the new font is built first and the superseded handle
+ * parked here for two frames, which is long enough for the frame that
+ * referenced it to have been submitted and completed.
+ *
+ * Two handles retire per rebuild and a rebuild can happen at most once
+ * per xmb_render() call, so at most four entries are ever live at once;
+ * the queue is sized well past that and the overflow path is
+ * unreachable in practice. */
+static void xmb_font_retire(xmb_handle_t *xmb, font_data_t *font)
 {
-   char iconpath[PATH_MAX_LENGTH];
+   unsigned i;
+
+   if (!font)
+      return;
+
+   for (i = 0; i < XMB_FONT_RETIRE_MAX; i++)
+   {
+      if (!xmb->font_retire[i].font)
+      {
+         xmb->font_retire[i].font   = font;
+         xmb->font_retire[i].frames = 2;
+         return;
+      }
+   }
+
+   font_driver_free(font);
+}
+
+/* Age the retire queue by one frame, freeing whatever has come due.
+ * With flush set, everything is released immediately: used on teardown
+ * and on context destroy, where the handles must not outlive us and
+ * there is no later frame to wait for. */
+static void xmb_font_retire_tick(xmb_handle_t *xmb, bool flush)
+{
+   unsigned i;
+
+   for (i = 0; i < XMB_FONT_RETIRE_MAX; i++)
+   {
+      if (!xmb->font_retire[i].font)
+         continue;
+
+      if (flush || --xmb->font_retire[i].frames == 0)
+      {
+         font_driver_free(xmb->font_retire[i].font);
+         xmb->font_retire[i].font = NULL;
+      }
+   }
+}
+
+/* Build xmb->font / xmb->font2 at the sizes xmb_layout() just set.
+ *
+ * With defer_free set the previous handles are retired rather than
+ * freed, so this is safe to call from xmb_render(); the caller gets
+ * correctly sized fonts on the very next draw either way. Path
+ * resolution lives here rather than at the call sites so that a
+ * context reset and an in-place rebuild cannot disagree on what is
+ * loaded. */
+static void xmb_rebuild_fonts(xmb_handle_t *xmb, bool is_threaded,
+      bool defer_free)
+{
    char fontpath[PATH_MAX_LENGTH];
    char default_fontpath[PATH_MAX_LENGTH];
    char pkg_dir[DIR_MAX_LENGTH];
-   gfx_display_t *p_disp               = disp_get_ptr();
-   struct menu_state *menu_st          = menu_state_get_ptr();
-   const char *wideglyph_str           = msg_hash_get_wideglyph_str();
+   gfx_display_t *p_disp  = disp_get_ptr();
+   settings_t *settings   = config_get_ptr();
+   const char *lang_font  = font_driver_language_font_file();
+   const char *menu_font  = settings->paths.path_menu_xmb_font;
+   font_data_t *old_font  = xmb->font;
+   font_data_t *old_font2 = xmb->font2;
 
-   iconpath[0]                         = '\0';
-   fontpath[0]                         = '\0';
-
-   fill_pathname_application_special(iconpath, sizeof(iconpath),
-         APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
-
-   xmb_layout(xmb);
-
-   if (xmb->font)
-   {
-      font_driver_free(xmb->font);
-      xmb->font = NULL;
-   }
-   if (xmb->font2)
-   {
-      font_driver_free(xmb->font2);
-      xmb->font2 = NULL;
-   }
+   fontpath[0]            = '\0';
 
    /* The theme's font, then the language override on top of it. Both
     * are kept: the first is what to fall back to when the language
@@ -7754,38 +7809,104 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
    fill_pathname_application_special(
          default_fontpath, sizeof(default_fontpath),
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_FONT);
+
+   fill_pathname_join_special(pkg_dir,
+         settings->paths.directory_assets, "pkg", sizeof(pkg_dir));
+
+   /* An explicit menu font wins, and there is nothing to
+    * re-resolve in that case. */
+   if (lang_font && !(menu_font && *menu_font))
+      fill_pathname_join_special(fontpath, pkg_dir, lang_font,
+            sizeof(fontpath));
+   else
+      strlcpy(fontpath, default_fontpath, sizeof(fontpath));
+
+   strlcpy(xmb->last_font_path, menu_font ? menu_font : "",
+         sizeof(xmb->last_font_path));
+
+   /* Build before releasing, so the old atlas stays valid for any
+    * frame still in flight and there is no window with no font at
+    * all. */
+   xmb->font  = gfx_display_font_file(p_disp,
+         fontpath, xmb->font_size, is_threaded);
+   xmb->font2 = gfx_display_font_file(p_disp,
+         fontpath, xmb->font2_size, is_threaded);
+
+   if (!(menu_font && *menu_font))
    {
-      settings_t *settings   = config_get_ptr();
-      const char *lang_font  = font_driver_language_font_file();
-      const char *menu_font  = settings->paths.path_menu_xmb_font;
-
-      fill_pathname_join_special(pkg_dir,
-            settings->paths.directory_assets, "pkg", sizeof(pkg_dir));
-
-      /* An explicit menu font wins, and there is nothing to
-       * re-resolve in that case. */
-      if (lang_font && !(menu_font && *menu_font))
-         fill_pathname_join_special(fontpath, pkg_dir, lang_font,
-               sizeof(fontpath));
-      else
-         strlcpy(fontpath, default_fontpath, sizeof(fontpath));
-
-      /* Recorded here rather than at the call sites, so context reset
-       * and the in-place rebuild cannot disagree on what is loaded. */
-      strlcpy(xmb->last_font_path, menu_font ? menu_font : "",
-            sizeof(xmb->last_font_path));
-
-      xmb->font            = gfx_display_font_file(p_disp,
-            fontpath, xmb->font_size, is_threaded);
-      xmb->font2           = gfx_display_font_file(p_disp,
-            fontpath, xmb->font2_size, is_threaded);
-
-      if (!(menu_font && *menu_font))
-      {
-         font_driver_set_language_font(xmb->font, pkg_dir, default_fontpath);
-         font_driver_set_language_font(xmb->font2, pkg_dir, default_fontpath);
-      }
+      font_driver_set_language_font(xmb->font, pkg_dir, default_fontpath);
+      font_driver_set_language_font(xmb->font2, pkg_dir, default_fontpath);
    }
+
+   if (defer_free)
+   {
+      xmb_font_retire(xmb, old_font);
+      xmb_font_retire(xmb, old_font2);
+   }
+   else
+   {
+      if (old_font)
+         font_driver_free(old_font);
+      if (old_font2)
+         font_driver_free(old_font2);
+   }
+}
+
+/* Apply a scale factor / layout change in place.
+ *
+ * This is the XMB counterpart to ozone_set_layout(): a scale change
+ * needs the geometry recomputed and the fonts rebuilt at the new
+ * sizes, and nothing else. The thumbnail, wallpaper, horizontal-list
+ * and screensaver work in xmb_context_reset_internal() exists for an
+ * actual graphics context reset and is scale-independent, so it is not
+ * run here — which also keeps the texture-freeing calls out of
+ * xmb_render(), where they are exactly what is unsafe. */
+static void xmb_set_layout(xmb_handle_t *xmb, bool is_threaded)
+{
+   settings_t *settings   = config_get_ptr();
+   const char *menu_font  = settings->paths.path_menu_xmb_font;
+   float old_font_size    = xmb->font_size;
+   float old_font2_size   = xmb->font2_size;
+   bool font_path_changed = !string_is_equal(xmb->last_font_path,
+         menu_font ? menu_font : "");
+
+   xmb_layout(xmb);
+
+   /* The geometry above is cheap and always applied. Rasterising two
+    * atlases is not, and the setting steps in hundredths, so most
+    * steps of the slider do not move the font size at all — and a
+    * title-margin change never does. Rebuild only when it matters. */
+   if (     font_path_changed
+         || !xmb->font
+         || !xmb->font2
+         || (xmb->font_size  != old_font_size)
+         || (xmb->font2_size != old_font2_size))
+   {
+      xmb_rebuild_fonts(xmb, is_threaded, true);
+
+      xmb->wideglyph_str = msg_hash_get_wideglyph_str();
+      xmb_compute_wideglyph(xmb);
+
+      /* Title metrics are measured against the font that just
+       * changed. */
+      xmb_set_title(xmb);
+   }
+}
+
+static void xmb_context_reset_internal(xmb_handle_t *xmb,
+      bool is_threaded, bool reinit_textures, unsigned menu_xmb_theme)
+{
+   char iconpath[PATH_MAX_LENGTH];
+   struct menu_state *menu_st          = menu_state_get_ptr();
+   const char *wideglyph_str           = msg_hash_get_wideglyph_str();
+
+   iconpath[0]                         = '\0';
+
+   fill_pathname_application_special(iconpath, sizeof(iconpath),
+         APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
+
+   xmb_layout(xmb);
+   xmb_rebuild_fonts(xmb, is_threaded, false);
 
    xmb->wideglyph_str        = wideglyph_str;
    xmb_compute_wideglyph(xmb);
@@ -7890,41 +8011,10 @@ static void xmb_render(void *data,
    gfx_thumbnail_animate(&xmb->thumbnails.left);
    gfx_thumbnail_animate(&xmb->thumbnails.icon);
 
-   /* Handle deferred context reset from a previous scale factor /
-    * layout change. We must wait two xmb_render() calls (not one)
-    * because xmb_render() is called from runloop_check_state()
-    * BEFORE video_driver_cached_frame() in the same iteration.
-    * The sequence per iteration is:
-    *   xmb_render() -> video_driver_cached_frame() -> gfx_frame()
-    * So on the frame that detects the change (N), we set the counter
-    * to 2. On frame N+1 xmb_render runs first (counter becomes 1),
-    * then gfx_frame completes frame N's GPU work. On frame N+2
-    * xmb_render runs (counter becomes 0), and now the GPU has finished
-    * all prior command lists, so it is safe to release textures and
-    * fonts via xmb_context_reset_internal(). */
-   if (xmb->pending_context_reset > 0)
-   {
-      if (--xmb->pending_context_reset == 0)
-      {
-         /* Commit the latched inputs before the reset, not when the
-          * change was detected: xmb_layout(), reached from
-          * xmb_context_reset_internal(), derives icon_size, the
-          * margins, font_size and scale_mod from exactly these two
-          * values, and the draw path reads them side by side with
-          * those derived values. Publishing the new scale early left
-          * the two describing different sizes for the whole deferral
-          * window, which is the mismatch that used to be papered over
-          * by skipping the frame in xmb_frame(). */
-         xmb->use_ps3_layout                       = xmb->pending_use_ps3_layout;
-         xmb->last_use_ps3_layout                  = xmb->pending_use_ps3_layout;
-         xmb->last_scale_factor                    = xmb->pending_scale_factor;
-         xmb->last_margins_title                   = xmb->margins_title;
-         xmb->last_margins_title_horizontal_offset = xmb->margins_title_horizontal_offset;
-
-         xmb_context_reset_internal(xmb, video_driver_is_threaded(), false,
-               settings->uints.menu_xmb_theme);
-      }
-   }
+   /* Release font handles retired by an earlier in-place rebuild,
+    * once the frames that could still be referencing them have been
+    * submitted and completed. See xmb_font_retire(). */
+   xmb_font_retire_tick(xmb, false);
 
    /* Fire deferred dynamic-icon repopulate once input has settled.
     * Set by xmb_populate_entries when it wanted to run the work but
@@ -7971,15 +8061,24 @@ static void xmb_render(void *data,
          || !string_is_equal(xmb->last_font_path,
                settings->paths.path_menu_xmb_font))
    {
-      /* Latch only. The comparison stays against the committed
-       * last_* values, so a scale factor still being dragged keeps
-       * re-arming the counter and the reset fires once, on the value
-       * the user settled on. Until then the driver keeps rendering
-       * consistently at the old scale.
-       * Defer context reset by 2 frames — see comment above */
-      xmb->pending_use_ps3_layout = use_ps3_layout;
-      xmb->pending_scale_factor   = scale_factor;
-      xmb->pending_context_reset  = 2;
+      /* Applied here and now, in full. The next frame drawn is the
+       * first one at the new scale, so moving the setting moves the
+       * menu: geometry and fonts change together and there is no
+       * window in which they disagree.
+       *
+       * Deferring this was what made the two disagree, and the frame
+       * skip that hid the disagreement was the flash. The GPU hazard
+       * that motivated the deferral is narrower than the rebuild:
+       * only releasing the superseded font handles has to wait, and
+       * xmb_rebuild_fonts() handles that by building the replacements
+       * first and retiring the old ones. */
+      xmb->use_ps3_layout                       = use_ps3_layout;
+      xmb->last_use_ps3_layout                  = use_ps3_layout;
+      xmb->last_scale_factor                    = scale_factor;
+      xmb->last_margins_title                   = xmb->margins_title;
+      xmb->last_margins_title_horizontal_offset = xmb->margins_title_horizontal_offset;
+
+      xmb_set_layout(xmb, video_driver_is_threaded());
    }
 
    /* This must be set every frame when using a pointer,
@@ -10529,6 +10628,10 @@ static void xmb_free(void *data)
          free(xmb->bg_file_path);
 
       menu_screensaver_free(xmb->screensaver);
+
+      /* xmb_context_destroy() normally drains this first, but the
+       * driver can be torn down without it. */
+      xmb_font_retire_tick(xmb, true);
    }
 
    gfx_display_deinit_white_texture();
@@ -10845,18 +10948,13 @@ static void xmb_context_destroy(void *data)
     * it wiped and redone by the reset. */
    xmb->pending_dynamic_icons_repopulate = false;
 
-   /* Same reasoning for the deferred scale/layout reset. If its
-    * counter reached zero between destroy and reset, xmb_render
-    * would call xmb_context_reset_internal() with reinit_textures
-    * false, building fonts against a context that has just been torn
-    * down and leaving the textures unloaded. Dropping the latched
-    * scale here loses nothing: the matching xmb_context_reset() does
-    * a full reset, and xmb_render's detection re-arms on the next
-    * frame if the scale factor still differs. */
-   xmb->pending_context_reset            = 0;
-
    xmb_context_destroy_horizontal_list(xmb);
    xmb_context_bg_destroy(xmb);
+
+   /* Retired handles have to go with the rest of the fonts: there is
+    * no later frame to wait for, and leaving them queued would have
+    * xmb_render() free them against a context that no longer exists. */
+   xmb_font_retire_tick(xmb, true);
 
    font_driver_free(xmb->font);
    xmb->font  = NULL;
