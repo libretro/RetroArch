@@ -1373,7 +1373,16 @@ static bool update_cand(int64_t *cand_index, int64_t *last_index,
 {
    if (*cand_index != -1)
    {
-      if ((uint64_t)(*last_index - *cand_index) > *largest)
+      /* A well-formed sheet lists indices in ascending order, so the
+       * track span is last_index - cand_index.  A malformed or
+       * truncated sheet - e.g. one missing its final newline, which
+       * makes the tokenizer drop the last INDEX token - can leave
+       * last_index behind cand_index.  Signed subtraction then yields
+       * a negative span that would wrap to a huge size_t and drive a
+       * multi-exabyte staging malloc downstream, so treat any track
+       * whose index runs backwards as having no span. */
+      if (   *last_index >= *cand_index
+          && (uint64_t)(*last_index - *cand_index) > *largest)
       {
          size_t _len;
          *largest    = *last_index - *cand_index;
