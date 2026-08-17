@@ -165,6 +165,10 @@ vfs-samples:
 	$(MAKE) -C samples/file/vfs clean
 	$(MAKE) -C samples/file/vfs SANITIZER=address,undefined
 	cd samples/file/vfs && ./vfs_seek_contract_test && ./vfs_large_file_test
+	# filestream_rbuf_fault_test drives filestream_rbuf_fill()'s two
+	# failure arms through its own VFS, which leaves it lane-independent
+	# - running it a second time under MMAP=0 would be the same run.
+	cd samples/file/vfs && ./filestream_rbuf_fault_test
 	$(MAKE) -C samples/file/vfs clean
 	$(MAKE) -C samples/file/vfs MMAP=0 SANITIZER=address,undefined
 	cd samples/file/vfs && ./vfs_seek_contract_test
