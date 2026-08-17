@@ -1,19 +1,11 @@
-TARGET := rbmp_test
-TARGET_TEST2 := rbmp_encode_test
+TARGET := screenshot_io_bench
 
 LIBRETRO_COMM_DIR := ../../..
 
 SOURCES := \
-	rbmp_test.c \
-	$(LIBRETRO_COMM_DIR)/formats/bmp/rbmp.c
-
-# The encode round-trip test drives the pure encoder, the memory-stream
-# variant and the path adapter, so it needs the intfstream/file stack.
-TEST2_SOURCES := \
-	rbmp_encode_test.c \
-	$(LIBRETRO_COMM_DIR)/formats/bmp/rbmp.c \
+	screenshot_io_bench.c \
+	$(LIBRETRO_COMM_DIR)/formats/png/rpng_encode.c \
 	$(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_encode.c \
-	$(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_file.c \
 	$(LIBRETRO_COMM_DIR)/streams/interface_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/memory_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
@@ -39,21 +31,16 @@ TEST2_SOURCES := \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c
 
 OBJS := $(SOURCES:.c=.o)
-TEST2_OBJS := $(TEST2_SOURCES:.c=.o)
 
-CFLAGS += -Wall -pedantic -std=gnu99 -g -I$(LIBRETRO_COMM_DIR)/include
+CFLAGS += -Wall -pedantic -std=gnu99 -O2 -I$(LIBRETRO_COMM_DIR)/include
+LDFLAGS += -lz
 
-# The samples workflow passes SANITIZER=address,undefined to every
-# sample dir.  Without this block the variable was accepted and
-# ignored, so these targets built unsanitized while the workflow
-# reported them as checked.
 ifneq ($(SANITIZER),)
-   CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
+   CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer -g $(CFLAGS)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-
-all: $(TARGET) $(TARGET_TEST2)
+all: $(TARGET)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -61,10 +48,7 @@ all: $(TARGET) $(TARGET_TEST2)
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-$(TARGET_TEST2): $(TEST2_OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS) -lz
-
 clean:
-	rm -f $(TARGET) $(TARGET_TEST2) $(OBJS) $(TEST2_OBJS)
+	rm -f $(TARGET) $(OBJS)
 
 .PHONY: clean

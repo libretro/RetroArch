@@ -9,6 +9,22 @@
 #include <streams/chd_stream.h>
 #endif
 
+/* This TU is deliberately kept as a single translation unit but is
+ * organised in two layers:
+ *
+ *  - the pure layer (everything through cdfs_parse_cue): ISO-9660
+ *    sector/directory/file logic plus cue-sheet parsing.  It only ever
+ *    reads through an already-open track->stream or a caller-supplied
+ *    memory buffer, and never opens a path.  Entry points:
+ *    cdfs_track_from_stream(), cdfs_parse_cue(), cdfs_open_file() and
+ *    the read/seek family.
+ *
+ *  - the path adapter layer (cdfs_open_cue_track onward): resolves
+ *    filenames, opens cue/bin/iso/chd files via intfstream, then hands
+ *    the resulting stream to the pure layer.  file_path.h and the VFS
+ *    are only used here.  Callers that already hold a stream (or an
+ *    in-memory image) can skip this layer entirely. */
+
 static void cdfs_determine_sector_size(cdfs_track_t* track)
 {
    uint8_t buffer[32];
@@ -316,6 +332,20 @@ int64_t cdfs_read_file(cdfs_file_t* file, void* buffer, uint64_t len)
    if (len == 0)
       return 0;
 
+   /* A seek that changed sectors leaves the position mid-sector with
+    * no cached data.  Refill the cache for the current sector first so
+    * the consume path below starts at current_sector_offset; without
+    * this the refill at the bottom of this function copies from the
+    * start of the sector regardless of the seek target. */
+   if (     !file->sector_buffer_valid
+         &&  file->current_sector_offset != 0
+         &&  file->current_sector >= file->first_sector)
+   {
+      cdfs_seek_track_sector(file->track, file->current_sector);
+      intfstream_read(file->track->stream, file->sector_buffer, 2048);
+      file->sector_buffer_valid = 1;
+   }
+
    if (file->sector_buffer_valid)
    {
       size_t remaining = 2048 - file->current_sector_offset;
@@ -327,6 +357,11 @@ int64_t cdfs_read_file(cdfs_file_t* file, void* buffer, uint64_t len)
                   &file->sector_buffer[file->current_sector_offset],
                   (size_t)len);
             file->current_sector_offset += len;
+            /* This early return previously skipped the position
+             * accounting at the bottom of the function, leaving
+             * file->pos (and thus cdfs_tell / SEEK_CUR) stale after
+             * any read served entirely from the sector cache. */
+            file->pos                   += (unsigned int)len;
             return len;
          }
 
@@ -434,7 +469,15 @@ int64_t cdfs_seek(cdfs_file_t* file, int64_t offset, int whence)
    file->pos = (unsigned int)new_pos;
    file->current_sector_offset = file->pos % 2048;
 
-   new_sector = file->pos / 2048;
+   /* current_sector holds a disc-absolute sector index (it is handed
+    * straight to cdfs_seek_track_sector by the read path), so the
+    * byte position must be rebased onto the file's first sector.
+    * Using the bare file-relative sector here made any seek on a
+    * named file (first_sector != 0) compare/store mismatched sector
+    * spaces: the subsequent read saw current_sector < first_sector,
+    * clamped back to the start of the file and reset the intra-sector
+    * offset, returning data from offset 0 instead of the seek target. */
+   new_sector = file->first_sector + file->pos / 2048;
    if (new_sector != file->current_sector)
    {
       file->current_sector      = new_sector;
@@ -444,13 +487,34 @@ int64_t cdfs_seek(cdfs_file_t* file, int64_t offset, int whence)
    return 0;
 }
 
-static void cdfs_skip_spaces(const char** ptr)
+/* --- Pure layer: cue-sheet parsing and stream wrapping ---------------- */
+
+static const char *cdfs_skip_spaces(const char *p, const char *end)
 {
-   while (**ptr && (**ptr == ' ' || **ptr == '\t'))
-      ++(*ptr);
+   while (p < end && (*p == ' ' || *p == '\t'))
+      ++p;
+   return p;
 }
 
-static cdfs_track_t* cdfs_wrap_stream(
+/* Bounded base-10 parse; advances *p past the digits consumed.
+ * Returns 0 when no digit is present (mirrors atoi/strtol behaviour
+ * for the inputs this parser sees). */
+static unsigned cdfs_parse_unsigned(const char **p, const char *end)
+{
+   unsigned v    = 0;
+   const char *s = *p;
+
+   while (s < end && *s >= '0' && *s <= '9')
+   {
+      v = v * 10 + (unsigned)(*s - '0');
+      ++s;
+   }
+
+   *p = s;
+   return v;
+}
+
+cdfs_track_t* cdfs_track_from_stream(
       intfstream_t* stream,
       unsigned first_sector_offset,
       unsigned first_sector_index)
@@ -460,8 +524,15 @@ static cdfs_track_t* cdfs_wrap_stream(
    if (!stream)
       return NULL;
 
-   track                      = (cdfs_track_t*)
-      calloc(1, sizeof(*track));
+   if (!(track = (cdfs_track_t*)calloc(1, sizeof(*track))))
+   {
+      /* Ownership of the stream transfers on this call; close it so
+       * the caller never has to distinguish failure modes. */
+      intfstream_close(stream);
+      free(stream);
+      return NULL;
+   }
+
    track->stream              = stream;
    track->first_sector_offset = first_sector_offset;
    track->first_sector_index  = first_sector_index;
@@ -471,130 +542,126 @@ static cdfs_track_t* cdfs_wrap_stream(
    return track;
 }
 
-static cdfs_track_t* cdfs_open_cue_track(
-      const char* path, unsigned int track_index)
+bool cdfs_parse_cue(const char *cue_text, size_t len,
+      unsigned track_index, cdfs_cue_info_t *out)
 {
-   char* cue                                = NULL;
-   const char* line                         = NULL;
-   int found_track                          = 0;
-   char current_track_path[PATH_MAX_LENGTH] = {0};
-   char track_path[PATH_MAX_LENGTH]         = {0};
-   unsigned int sector_size                 = 0;
-   unsigned int previous_sector_size        = 0;
-   unsigned int previous_index_sector_offset= 0;
-   unsigned int track_offset                = 0;
-   intfstream_t *cue_stream                 = intfstream_open_file(path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
-   int64_t stream_size                      = intfstream_get_size(cue_stream);
-   char *cue_contents                       = (char*)malloc((size_t)(stream_size + 1));
-   cdfs_track_t* track                      = NULL;
+   char current_track_path[PATH_MAX_LENGTH];
+   const char *p                             = cue_text;
+   const char *end                           = cue_text + len;
+   unsigned found_track                      = 0;
+   unsigned sector_size                      = 0;
+   unsigned previous_sector_size             = 0;
+   unsigned previous_index_sector_offset     = 0;
+   unsigned track_offset                     = 0;
 
-   if (!cue_contents)
+   if (!cue_text || !out)
+      return false;
+
+   current_track_path[0] = '\0';
+   memset(out, 0, sizeof(*out));
+
+   while (p < end)
    {
-      intfstream_close(cue_stream);
-      free(cue_stream);
-      return NULL;
-   }
+      const char *line;
+      const char *line_end;
 
-   intfstream_read(cue_stream, cue_contents, stream_size);
-   intfstream_close(cue_stream);
-   free(cue_stream);
+      p        = cdfs_skip_spaces(p, end);
+      line     = p;
+      while (p < end && *p != '\n')
+         ++p;
+      line_end = p;
+      if (p < end)
+         ++p; /* consume the newline */
 
-   cue_contents[stream_size] = '\0';
-
-   cue = cue_contents;
-   while (*cue)
-   {
-      cdfs_skip_spaces((const char**)&cue);
-      line = cue;
-
-      while (*cue && *cue != '\n')
-         ++cue;
-      if (*cue)
-         *cue++ = '\0';
-
-      if (!strncasecmp(line, "FILE", 4))
+      if (line_end - line >= 4 && !strncasecmp(line, "FILE", 4))
       {
-         const char *file = line + 4;
-         cdfs_skip_spaces(&file);
+         const char *file = cdfs_skip_spaces(line + 4, line_end);
 
-         if (file[0])
+         if (file < line_end)
          {
-            const char *file_end = cue - 1;
-            while (file_end > file && *file_end != ' ' && *file_end != '\t')
+            /* Walk back from the end of the line to the whitespace
+             * preceding the trailing type token (e.g. BINARY), leaving
+             * [file, file_end) covering the (possibly quoted) name.
+             * When the line has no terminator we start on the last
+             * character instead of the terminator position. */
+            const char *file_end =
+                  (line_end < end) ? line_end : (line_end - 1);
+            while (     file_end > file
+                     && *file_end != ' '
+                     && *file_end != '\t')
                --file_end;
 
-            if (     file[0]      == '"'
+            if (     file_end > file
+                  && file[0]      == '"'
                   && file_end[-1] == '"')
             {
                ++file;
                --file_end;
             }
 
-            if (file_end - file < PATH_MAX_LENGTH)
+            if (file_end >= file)
             {
-               memcpy(current_track_path, file, file_end - file);
-               current_track_path[file_end - file] = '\0';
-            }
-            else
-            {
-               memcpy(current_track_path, file, PATH_MAX_LENGTH - 1);
-               current_track_path[PATH_MAX_LENGTH - 1] = '\0';
+               size_t name_len = (size_t)(file_end - file);
+               if (name_len >= sizeof(current_track_path))
+                  name_len = sizeof(current_track_path) - 1;
+               memcpy(current_track_path, file, name_len);
+               current_track_path[name_len] = '\0';
             }
          }
 
-         previous_sector_size = 0;
+         previous_sector_size         = 0;
          previous_index_sector_offset = 0;
-         track_offset = 0;
+         track_offset                 = 0;
       }
-      else if (!strncasecmp(line, "TRACK", 5))
+      else if (line_end - line >= 5 && !strncasecmp(line, "TRACK", 5))
       {
-         char *ptr             = NULL;
-         unsigned track_number = 0;
-         const char *track     = line + 5;
-         cdfs_skip_spaces(&track);
+         const char *track     = cdfs_skip_spaces(line + 5, line_end);
+         const char *num       = track;
+         unsigned track_number = cdfs_parse_unsigned(&num, line_end);
 
-         track_number = (unsigned)strtol(track, &ptr, 10);
-         while (*track && *track != ' ' && *track != '\n')
+         while (track < line_end && *track != ' ' && *track != '\t')
             ++track;
 
          previous_sector_size = sector_size;
 
-         cdfs_skip_spaces(&track);
+         track = cdfs_skip_spaces(track, line_end);
 
-         if (!strncasecmp(track, "MODE", 4))
+         if (line_end - track >= 4 && !strncasecmp(track, "MODE", 4))
          {
+            const char *size_str = track + 6;
+
             /* track_index = 0 means find the first data track */
             if (!track_index || track_index == track_number)
                found_track = track_number;
 
-            sector_size = atoi(track + 6);
+            if (size_str < line_end)
+               sector_size = cdfs_parse_unsigned(&size_str, line_end);
+            else
+               sector_size = 0;
          }
          else /* assume AUDIO */
             sector_size = 2352;
       }
-      else if (!strncasecmp(line, "INDEX", 5))
+      else if (line_end - line >= 5 && !strncasecmp(line, "INDEX", 5))
       {
          unsigned sector_offset;
-         unsigned min = 0, sec = 0, frame = 0;
-         unsigned index_number = 0;
-         const char *index     = line + 5;
+         unsigned min          = 0, sec = 0, frame = 0;
+         const char *index     = cdfs_skip_spaces(line + 5, line_end);
+         const char *num       = index;
+         unsigned index_number = cdfs_parse_unsigned(&num, line_end);
 
-         cdfs_skip_spaces(&index);
-         index_number = (unsigned)strtol(index, NULL, 10);
-         while (*index && *index != ' ' && *index != '\n')
+         while (index < line_end && *index != ' ' && *index != '\t')
             ++index;
-         cdfs_skip_spaces(&index);
+         index = cdfs_skip_spaces(index, line_end);
 
-         {
-            char *end;
-            min   = (unsigned)strtol(index, &end, 10);
-            if (*end == ':')
-               ++end;
-            sec   = (unsigned)strtol(end, &end, 10);
-            if (*end == ':')
-               ++end;
-            frame = (unsigned)strtol(end, NULL, 10);
-         }
+         min   = cdfs_parse_unsigned(&index, line_end);
+         if (index < line_end && *index == ':')
+            ++index;
+         sec   = cdfs_parse_unsigned(&index, line_end);
+         if (index < line_end && *index == ':')
+            ++index;
+         frame = cdfs_parse_unsigned(&index, line_end);
+
          sector_offset                 = ((min * 60) + sec) * 75 + frame;
          sector_offset                -= previous_index_sector_offset;
          track_offset                 += sector_offset * previous_sector_size;
@@ -603,39 +670,88 @@ static cdfs_track_t* cdfs_open_cue_track(
 
          if (found_track && index_number == 1)
          {
-            if (     strchr(current_track_path, '/')
-                  || strchr(current_track_path, '\\'))
-               strlcpy(track_path, current_track_path, sizeof(track_path));
-            else
-            {
-               fill_pathname_basedir(track_path, path, sizeof(track_path));
-               strlcat(track_path, current_track_path, sizeof(track_path));
-            }
+            if (!current_track_path[0])
+               return false;
 
-            break;
+            strlcpy(out->bin_name, current_track_path,
+                  sizeof(out->bin_name));
+            out->track_index         = found_track;
+            out->sector_size         = sector_size;
+            out->first_sector_offset = track_offset;
+            /* NOTE: only valid if all tracks are in the same BIN file.
+             * Otherwise we would need to know how many sectors each
+             * previous BIN file holds, which a cue sheet does not
+             * store.  This affects cdfs_get_first_sector, which
+             * luckily isn't used much. */
+            out->first_sector_index  = previous_index_sector_offset;
+            return true;
          }
       }
    }
 
-   free(cue_contents);
+   return false;
+}
 
-   if (!*track_path)
+/* --- Path adapter layer ------------------------------------------------ */
+
+static cdfs_track_t* cdfs_open_cue_track(
+      const char* path, unsigned int track_index)
+{
+   cdfs_cue_info_t info;
+   char track_path[PATH_MAX_LENGTH];
+   int64_t _len;
+   bool parsed              = false;
+   char *cue_contents       = NULL;
+   cdfs_track_t *track      = NULL;
+   intfstream_t *cue_stream = intfstream_open_file(path,
+         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   if (!cue_stream)
       return NULL;
 
-   /* NOTE: previous_index_sector_offset will only be valid if all tracks are in the same BIN file.
-    * Otherwise, we need to determine how many tracks are in each previous BIN file, which is not
-    * stored in the CUE file. This will affect cdfs_get_first_sector, which luckily isn't used much. */
-   track = cdfs_wrap_stream(intfstream_open_file(
+   /* A cue sheet is a small text file: read it with one bulk read and
+    * release the handle before the (potentially slow) bin open below,
+    * instead of interleaving parsing with per-line stream reads. */
+   _len = intfstream_get_size(cue_stream);
+   if (_len > 0 && (cue_contents = (char*)malloc((size_t)_len)))
+      parsed = (intfstream_read(cue_stream, cue_contents, _len) == _len);
+
+   intfstream_close(cue_stream);
+   free(cue_stream);
+
+   if (parsed)
+      parsed = cdfs_parse_cue(cue_contents, (size_t)_len,
+            track_index, &info);
+
+   if (cue_contents)
+      free(cue_contents);
+
+   if (!parsed)
+      return NULL;
+
+   /* Resolve the FILE name from the cue against the cue's own
+    * directory unless it already carries a path. */
+   if (     strchr(info.bin_name, '/')
+         || strchr(info.bin_name, '\\'))
+      strlcpy(track_path, info.bin_name, sizeof(track_path));
+   else
+   {
+      fill_pathname_basedir(track_path, path, sizeof(track_path));
+      strlcat(track_path, info.bin_name, sizeof(track_path));
+   }
+
+   track = cdfs_track_from_stream(intfstream_open_file(
             track_path, RETRO_VFS_FILE_ACCESS_READ,
-            RETRO_VFS_FILE_ACCESS_HINT_NONE), track_offset, previous_index_sector_offset);
+            RETRO_VFS_FILE_ACCESS_HINT_NONE),
+         info.first_sector_offset, info.first_sector_index);
 
    if (track && track->stream_sector_size == 0)
    {
-      track->stream_sector_size = sector_size;
+      track->stream_sector_size = info.sector_size;
 
-      if (sector_size == 2352)
+      if (info.sector_size == 2352)
          track->stream_sector_header_size = 16;
-      else if (sector_size == 2336)
+      else if (info.sector_size == 2336)
          track->stream_sector_header_size = 8;
    }
 
@@ -652,7 +768,7 @@ static cdfs_track_t* cdfs_open_chd_track(const char* path, int32_t track_index)
    if (!intf_stream)
       return NULL;
 
-   track = cdfs_wrap_stream(intf_stream,
+   track = cdfs_track_from_stream(intf_stream,
          intfstream_get_offset_to_start(intf_stream),
          intfstream_get_first_sector(intf_stream));
 
@@ -718,7 +834,7 @@ cdfs_track_t* cdfs_open_raw_track(const char* path)
       intfstream_t* file = intfstream_open_file(path,
          RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
-      track = cdfs_wrap_stream(file, 0, 0);
+      track = cdfs_track_from_stream(file, 0, 0);
       if (track && track->stream_sector_size == 0)
       {
          cdfs_determine_sector_size_from_file_size(track);

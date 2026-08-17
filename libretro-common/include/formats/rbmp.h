@@ -23,9 +23,13 @@
 #ifndef __LIBRETRO_SDK_FORMAT_RBMP_H__
 #define __LIBRETRO_SDK_FORMAT_RBMP_H__
 
+#include <stdint.h>
+#include <stddef.h>
+
 #include <retro_common_api.h>
 
 #include <boolean.h>
+#include <streams/interface_stream.h>
 
 RETRO_BEGIN_DECLS
 
@@ -40,6 +44,36 @@ enum rbmp_source_type
 
 typedef struct rbmp rbmp_t;
 
+/* Pure encode: returns a heap buffer holding the complete BMP file and
+ * stores its exact size in *out_len.  BMP output size is fixed
+ * (54 + ((width * bpp + 3) & ~3) * height) so the buffer is allocated
+ * exactly once and never trimmed.  Caller frees.  Returns NULL on
+ * allocation failure or invalid arguments.  No file I/O is performed;
+ * pair with e.g. filestream_write_file() to save to disk with a single
+ * bulk write. */
+uint8_t *rbmp_save_image_string(
+      const void *frame,
+      unsigned width,
+      unsigned height,
+      unsigned pitch,
+      enum rbmp_source_type type,
+      size_t *out_len);
+
+/* Pure encode into an already-open intfstream (file, memory, or
+ * custom).  Writes the 54-byte header followed by one padded row per
+ * line; peak extra memory is one row.  Returns false on short writes. */
+bool rbmp_save_image_stream(
+      intfstream_t *intf_s,
+      const void *frame,
+      unsigned width,
+      unsigned height,
+      unsigned pitch,
+      enum rbmp_source_type type);
+
+/* Deprecated path-based convenience wrapper (open + stream encode +
+ * close), implemented in rbmp_file.c so the pure encoder TU carries no
+ * filesystem dependency.  Prefer rbmp_save_image_string() +
+ * filestream_write_file(), or rbmp_save_image_stream(). */
 bool rbmp_save_image(
       const char *filename,
       const void *frame,

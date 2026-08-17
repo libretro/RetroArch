@@ -19,6 +19,7 @@ SOURCES_C := 	\
 	$(CORE_DIR)/rpng_test.c \
 	$(LIBRETRO_PNG_DIR)/rpng.c \
 	$(LIBRETRO_PNG_DIR)/rpng_encode.c \
+	$(LIBRETRO_PNG_DIR)/rpng_file.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
@@ -70,6 +71,7 @@ TEST2_SOURCES_C := \
 	$(CORE_DIR)/rpng_roundtrip_test.c \
 	$(LIBRETRO_PNG_DIR)/rpng.c \
 	$(LIBRETRO_PNG_DIR)/rpng_encode.c \
+	$(LIBRETRO_PNG_DIR)/rpng_file.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \

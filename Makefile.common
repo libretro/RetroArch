@@ -2277,7 +2277,8 @@ ifeq ($(HAVE_RPNG), 1)
    DEFINES += -DHAVE_RPNG
    OBJ += $(LIBRETRO_COMM_DIR)/formats/png/rpng.o \
           $(LIBRETRO_COMM_DIR)/formats/png/rpng_apng.o \
-          $(LIBRETRO_COMM_DIR)/formats/png/rpng_encode.o
+          $(LIBRETRO_COMM_DIR)/formats/png/rpng_encode.o \
+          $(LIBRETRO_COMM_DIR)/formats/png/rpng_file.o
 endif
 
 ifeq ($(HAVE_RJPEG), 1)
@@ -2349,6 +2350,7 @@ ifeq ($(HAVE_WEBMPLAYER), 1)
 endif
 
 OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_encode.o \
+       $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_file.o \
        $(LIBRETRO_COMM_DIR)/formats/json/rjson.o \
        $(LIBRETRO_COMM_DIR)/formats/image_transfer.o \
        $(LIBRETRO_COMM_DIR)/formats/audio_transfer.o \

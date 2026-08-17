@@ -29,6 +29,8 @@
 #include <file/file_path.h>
 #include <compat/strl.h>
 #include <gfx/video_frame.h>
+#include <streams/file_stream.h>
+#include <streams/interface_stream.h>
 
 #ifdef HAVE_RBMP
 #include <formats/rbmp.h>
@@ -92,6 +94,72 @@ struct screenshot_task_state
    struct rpng_hdr_metadata hdr;
 };
 
+/* The image encoders are pure (bytes in -> bytes out); this task owns
+ * all file I/O at the edge.  The preferred shape is encode-to-memory
+ * followed by one open/bulk-write/close (filestream_write_file): the
+ * compressor is never interleaved with many small VFS writes, the file
+ * handle is held for the shortest possible time, and slow media (SD
+ * cards, console filesystems) see a single large sequential write.
+ * When the in-memory encode cannot allocate (very large frames on
+ * memory-constrained platforms), we fall back to streaming the encode
+ * straight into the file, which needs only a few rows of scratch. */
+
+#if defined(HAVE_RPNG)
+static bool screenshot_save_png(const char *path, const uint8_t *data,
+      unsigned width, unsigned height, signed pitch,
+      enum rpng_pixfmt fmt, const struct rpng_hdr_metadata *hdr)
+{
+   bool ret;
+   intfstream_t *intf_s = intfstream_open_file(path,
+         RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   /* Stream the encode straight into the file.  The VFS gives every
+    * file a 64 KiB stdio buffer, so the encoder's 16 KiB IDAT chunks
+    * already coalesce into large writes; measured at 4K, buffering the
+    * whole compressed image first and writing it in one call is
+    * indistinguishable in wall time (deflate dominates by two orders
+    * of magnitude) while costing a raw-frame-sized allocation that
+    * no-overcommit platforms would have to commit up front.  Peak
+    * scratch this way is a handful of rows plus the deflate window. */
+   if (!intf_s)
+      return false;
+
+   ret = rpng_save_image_stream_fmt(data, intf_s,
+         width, height, pitch, fmt, hdr);
+
+   intfstream_close(intf_s);
+   free(intf_s);
+   return ret;
+}
+#elif defined(HAVE_RBMP)
+static bool screenshot_save_bmp(const char *path, const void *frame,
+      unsigned width, unsigned height, unsigned pitch,
+      enum rbmp_source_type type)
+{
+   bool ret;
+   intfstream_t *intf_s = intfstream_open_file(path,
+         RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   /* BMP has no compression - the file is the raw pixel block - so
+    * buffering the whole image first would only add a full-frame
+    * allocation and an extra copy of every byte.  The stream encoder
+    * writes the pixel block in a single call straight from the source
+    * when the stride matches the padded row size (the common case),
+    * and per-row through the VFS's 64 KiB stdio buffer otherwise. */
+   if (!intf_s)
+      return false;
+
+   ret = rbmp_save_image_stream(intf_s, frame,
+         width, height, pitch, type);
+
+   intfstream_close(intf_s);
+   free(intf_s);
+   return ret;
+}
+#endif
+
 static bool screenshot_dump_direct(screenshot_task_state_t *state)
 {
    struct scaler_ctx *scaler     = (struct scaler_ctx*)&state->scaler;
@@ -109,12 +177,13 @@ static bool screenshot_dump_direct(screenshot_task_state_t *state)
     * trick as the BGR24 fast path. Never resampled. */
    if (state->flags & SS_TASK_FLAG_HDR)
    {
-      ret = rpng_save_image_rgb48_hdr(
+      ret = screenshot_save_png(
             state->filename,
-            (const uint16_t*)input,
+            input,
             state->out_width,
             state->out_height,
-            (unsigned)(-state->pitch),
+            -state->pitch,
+            RPNG_PIXFMT_RGB48,
             &state->hdr);
       if (state->out_buffer)
          free(state->out_buffer);
@@ -136,15 +205,40 @@ static bool screenshot_dump_direct(screenshot_task_state_t *state)
          &&  state->out_width  == state->width
          &&  state->out_height == state->height)
    {
-      ret = rpng_save_image_bgr24(
+      ret = screenshot_save_png(
             state->filename,
             input,
             state->out_width,
             state->out_height,
-            (unsigned)(-state->pitch)
-            );
+            -state->pitch,
+            RPNG_PIXFMT_BGR24,
+            NULL);
       /* state->out_buffer is NULL in this path (see screenshot_dump);
        * nothing to free. */
+      return ret;
+   }
+
+   /* Same idea for the raw-framebuffer formats: when no resampling is
+    * needed, feed the core's XRGB8888/RGB565 rows straight to the
+    * encoder (which converts per row) instead of converting the whole
+    * frame into a BGR24 buffer first - that is a width*height*3
+    * allocation plus a full extra pass over every pixel (~24 MiB at
+    * 4K), for output that is pixel-identical. */
+   if (     !(state->flags & SS_TASK_FLAG_BGR24)
+         &&  state->out_width  == state->width
+         &&  state->out_height == state->height)
+   {
+      ret = screenshot_save_png(
+            state->filename,
+            input,
+            state->out_width,
+            state->out_height,
+            -state->pitch,
+            (state->pixel_format_type == RETRO_PIXEL_FORMAT_XRGB8888)
+                  ? RPNG_PIXFMT_XRGB8888
+                  : RPNG_PIXFMT_RGB565,
+            NULL);
+      /* state->out_buffer is NULL in this path (see screenshot_dump). */
       return ret;
    }
 
@@ -169,13 +263,14 @@ static bool screenshot_dump_direct(screenshot_task_state_t *state)
 
    scaler_ctx_gen_reset(&state->scaler);
 
-   ret = rpng_save_image_bgr24(
+   ret = screenshot_save_png(
          state->filename,
          state->out_buffer,
          state->out_width,
          state->out_height,
-         state->out_width * 3
-         );
+         (signed)(state->out_width * 3),
+         RPNG_PIXFMT_BGR24,
+         NULL);
 
    free(state->out_buffer);
 #elif defined(HAVE_RBMP)
@@ -186,7 +281,7 @@ static bool screenshot_dump_direct(screenshot_task_state_t *state)
       else if (state->pixel_format_type == RETRO_PIXEL_FORMAT_XRGB8888)
          bmp_type = RBMP_SOURCE_TYPE_XRGB888;
 
-      ret = rbmp_save_image(state->filename,
+      ret = screenshot_save_bmp(state->filename,
             state->frame,
             state->width,
             state->height,
@@ -561,14 +656,13 @@ static bool screenshot_dump(
 
 #if defined(HAVE_RPNG)
    /* Only allocate the BGR24 output buffer when screenshot_dump_direct
-    * will actually use the scaler. When the source is already BGR24 at
-    * the output dimensions (typical of the viewport read-back path,
-    * take_screenshot_viewport), the encoder walks the source directly
-    * with negative pitch and no intermediate buffer is needed. The HDR
-    * path likewise encodes the source directly and never uses the scaler. */
+    * will actually use the scaler, i.e. when the output dimensions
+    * differ from the source.  At matching dimensions every source
+    * format (BGR24 viewport read-backs, XRGB8888 and RGB565 core
+    * framebuffers, HDR) is encoded directly with a negative pitch and
+    * no intermediate buffer is needed. */
    if (   !(state->flags & SS_TASK_FLAG_HDR)
-       && (   !(state->flags & SS_TASK_FLAG_BGR24)
-           || state->out_width  != width
+       && (   state->out_width  != width
            || state->out_height != height))
    {
       if (!(buf = (uint8_t*)malloc(state->out_width * state->out_height * 3)))
