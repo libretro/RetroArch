@@ -484,7 +484,6 @@ static const struct
    char s_857c70d0[17];
    char s_7f10fcd2[6];
    char s_7206ddda[6];
-   char s_73674a86[17];
    char s_705eee28[46];
    char s_0f1d488a[7];
    char s_b3cc8a43[13];
@@ -1741,7 +1740,6 @@ static const struct
    "Skrift skalering",
    "Ingen",
    "Ingen",
-   "Overordnet mappe",
    "Sett innholdet p\303\245 pause n\303\245r menyen er aktiv",
    "Ytelse",
    "Spillelister",
@@ -2581,7 +2579,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_no_blob_check[
-      (sizeof(msg_hash_no_blob) == (29001u
+      (sizeof(msg_hash_no_blob) == (28984u
 #ifdef HAVE_LAKKA
        + 178u
 #endif
@@ -3195,7 +3193,6 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,

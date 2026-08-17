@@ -1429,7 +1429,6 @@ static const struct
    char s_012938fb[36];
    char s_a747cdc9[71];
    char s_2f169651[18];
-   char s_73674a86[15];
    char s_705eee28[55];
    char s_62af62ac[49];
    char s_12b25a4b[60];
@@ -5791,7 +5790,6 @@ static const struct
    "Factor d\342\200\231escala de les miniatures",
    "Parteix els noms de la llista de reproducci\303\263 (Es requereix reiniciar)",
    "Usa el mode PAL60",
-   "Directori pare",
    "Posa en pausa el contingut quan el men\303\272 estigui actiu",
    "Posa en pausa el contingut quan no estigui actiu",
    "Posa en pausa el contingut si es desconnecta el comandament",
@@ -9270,7 +9268,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (200354u
+      (sizeof(msg_hash_ca_blob) == (200339u
 #ifdef ANDROID
        + 281u
 #endif
@@ -11100,7 +11098,6 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,

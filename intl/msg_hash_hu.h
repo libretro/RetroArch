@@ -1416,7 +1416,6 @@ static const struct
    char s_012938fb[34];
    char s_a747cdc9[65];
    char s_2f169651[23];
-   char s_73674a86[4];
    char s_705eee28[47];
    char s_62af62ac[39];
    char s_12b25a4b[53];
@@ -5825,7 +5824,6 @@ static const struct
    "J\303\241t\303\251klista nev\303\251nek r\303\266vid\303\255t\303\251se (\303\272jraind\303\255t"
    "\303\241s sz\303\274ks\303\251ges)",
    "PAL60 m\303\263d haszn\303\241lata",
-   "Fel",
    "Tartalom meg\303\241ll\303\255t\303\241sa, amikor a men\303\274 akt\303\255v",
    "Tartalom meg\303\241ll\303\255t\303\241sa, ha nem akt\303\255v",
    "Tartalom meg\303\241ll\303\255t\303\241sa kontroller lev\303\241laszt\303\241sakor",
@@ -9735,7 +9733,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hu_blob_check[
-      (sizeof(msg_hash_hu_blob) == (189374u
+      (sizeof(msg_hash_hu_blob) == (189370u
 #ifdef ANDROID
        + 316u
 #endif
@@ -11543,7 +11541,6 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,

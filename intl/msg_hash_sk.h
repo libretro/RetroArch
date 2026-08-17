@@ -1412,7 +1412,6 @@ static const struct
    char s_012938fb[31];
    char s_a747cdc9[47];
    char s_2f169651[22];
-   char s_73674a86[20];
    char s_705eee28[40];
    char s_62af62ac[39];
    char s_12b25a4b[43];
@@ -5753,7 +5752,6 @@ static const struct
    "Mierka zv\303\244\304\215\305\241enia miniat\303\272ry",
    "Skr\303\241ti\305\245 n\303\241zvy zoznamov (vy\305\276aduje re\305\241tart)",
    "Pou\305\276i\305\245 re\305\276im PAL60",
-   "Nadraden\303\275 adres\303\241r",
    "Pozastavi\305\245 obsah ke\304\217 je menu akt\303\255vne",
    "Pozastavi\305\245 obsah ke\304\217 nie je akt\303\255vne",
    "Pozastavi\305\245 obsah pri odpojen\303\255 kontroleru",
@@ -9432,7 +9430,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (179671u
+      (sizeof(msg_hash_sk_blob) == (179651u
 #ifdef ANDROID
        + 389u
 #endif
@@ -11246,7 +11244,6 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,

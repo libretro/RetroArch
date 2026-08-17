@@ -1234,7 +1234,6 @@ static const struct
    char s_1cdff4ac[19];
    char s_012938fb[32];
    char s_2f169651[20];
-   char s_73674a86[17];
    char s_705eee28[47];
    char s_62af62ac[50];
    char s_12b25a4b[49];
@@ -4719,7 +4718,6 @@ static const struct
    "N\303\244yt\303\244 sivupalkki",
    "Esikatselukuvan skaalauskerroin",
    "K\303\244yt\303\244 PAL60-tilaa",
-   "Yl\303\244tason kansio",
    "Keskeyt\303\244 sis\303\244lt\303\266 kun valikko on aktiivisena",
    "Keskeyt\303\244 sis\303\244lt\303\266, kun ikkuna ei ole aktiivinen",
    "Keskeyt\303\244 sis\303\244lt\303\266 kun yhteys ohjaimeen katkeaa",
@@ -7458,7 +7456,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (124250u
+      (sizeof(msg_hash_fi_blob) == (124233u
 #ifdef HAVE_LAKKA
        + 257u
 #endif
@@ -8983,7 +8981,6 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_SHOW_SIDEBAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,

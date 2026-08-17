@@ -1441,7 +1441,7 @@ static const struct
    char s_012938fb[46];
    char s_a747cdc9[60];
    char s_2f169651[23];
-   char s_73674a86[15];
+   char s_73674a86[17];
    char s_705eee28[53];
    char s_62af62ac[60];
    char s_12b25a4b[58];
@@ -5863,7 +5863,7 @@ static const struct
    "Facteur de mise \303\240 l'\303\251chelle des miniatures ",
    "Tronquer le nom des listes de lecture (Red\303\251marrage requis)",
    "Utiliser le mode PAL60",
-   "Dossier parent",
+   "<Dossier parent>",
    "Mettre en pause le contenu lorsque le menu est actif",
    "Mettre en pause le contenu lors de la mise en arri\303\250re-plan",
    "Mettre en pause le contenu \303\240 la d\303\251connection de manette",
@@ -9494,7 +9494,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (215792u
+      (sizeof(msg_hash_fr_blob) == (215794u
 #ifdef ANDROID
        + 373u
 #endif

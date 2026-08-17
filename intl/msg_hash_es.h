@@ -5846,7 +5846,7 @@ static const struct
    "Factor de escala de miniaturas",
    "Partir nombres de lista de reproducci\303\263n (es necesario reiniciar)",
    "Usar modo PAL60",
-   "Directorio superior",
+   "<Carpeta principal>",
    "Pausar contenido al activar el men\303\272",
    "Pausar contenido cuando no est\303\251 activo",
    "Pausar el contenido cuando se desconecte un mando",

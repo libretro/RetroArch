@@ -142,7 +142,7 @@ static const struct
    char s_f39c636f[376];
    char s_4c991c18[403];
    char s_4b299805[166];
-   char s_1bd35af2[30];
+   char s_1bd35af2[29];
    char s_24e40f00[269];
    char s_1382c258[250];
    char s_4caab10c[253];
@@ -1423,7 +1423,7 @@ static const struct
    char s_012938fb[30];
    char s_a747cdc9[54];
    char s_2f169651[20];
-   char s_73674a86[20];
+   char s_73674a86[17];
    char s_705eee28[31];
    char s_62af62ac[39];
    char s_12b25a4b[41];
@@ -4371,7 +4371,7 @@ static const struct
    "Define se o netplay ser\303\241 iniciado no modo espectador. Se definido como verdadeiro, o netp"
    "lay come\303\247ar\303\241 no modo espectador. Sempre \303\251 poss\303\255vel mudar o modo depo"
    "is.",
-   "Voltar para o diret\303\263rio pai.",
+   "Volta para o diret\303\263rio pai.",
    "Sair do RetroArch. Matar o programa de qualquer maneira dif\303\255cil (SIGKILL, etc.) encerrar"
    "\303\241 o RetroArch sem salvar a configura\303\247\303\243o. Em sistemas baseados em Unix, SIGI"
    "NT/SIGTERM permite uma 'desinicializa\303\247\303\243o' limpa que inclui salvamento de configura"
@@ -5777,7 +5777,7 @@ static const struct
    "Fator de escala de miniaturas",
    "Encurtar Nomes da Playlist (Requer reinicializa\303\247\303\243o)",
    "Utilizar modo PAL60",
-   "Diret\303\263rio superior",
+   "<Diret\303\263rio pai>",
    "Pausar conte\303\272do ao abrir menu",
    "Pausar conte\303\272do ao focar outra janela",
    "Pausar conte\303\272do ao desconectar controle",
@@ -9254,7 +9254,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_br_blob_check[
-      (sizeof(msg_hash_pt_br_blob) == (193713u
+      (sizeof(msg_hash_pt_br_blob) == (193709u
 #ifdef ANDROID
        + 352u
 #endif

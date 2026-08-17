@@ -1382,7 +1382,6 @@ static const struct
    char s_012938fb[30];
    char s_a747cdc9[41];
    char s_2f169651[20];
-   char s_73674a86[21];
    char s_705eee28[53];
    char s_62af62ac[46];
    char s_12b25a4b[61];
@@ -5561,7 +5560,6 @@ static const struct
    "Fattore scala delle copertine",
    "Tronca nomi scaletta (Riavvio richiesto)",
    "Usa modalit\303\240 PAL60",
-   "Directory principale",
    "Metti in pausa il contenuto quando il menu \303\250 attivo",
    "Metti in pausa il contenuto quando non attivo",
    "Metti il contenuto in pausa quando il controller si scollega",
@@ -8705,7 +8703,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_it_blob_check[
-      (sizeof(msg_hash_it_blob) == (183725u
+      (sizeof(msg_hash_it_blob) == (183704u
 #ifdef ANDROID
        + 376u
 #endif
@@ -10480,7 +10478,6 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,

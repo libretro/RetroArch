@@ -1448,7 +1448,6 @@ static const struct
    char s_012938fb[57];
    char s_a747cdc9[93];
    char s_2f169651[48];
-   char s_73674a86[40];
    char s_705eee28[62];
    char s_62af62ac[66];
    char s_12b25a4b[75];
@@ -8440,8 +8439,6 @@ static const struct
    "\265\321\200\320\265\320\267\320\260\320\277\321\203\321\201\320\272)",
    "\320\222\320\270\320\272\320\276\321\200\320\270\321\201\321\202\320\276\320\262\321\203\320\262"
    "\320\260\321\202\320\270 \321\200\320\265\320\266\320\270\320\274 PAL60",
-   "\320\221\320\260\321\202\321\214\320\272\321\226\320\262\321\201\321\214\320\272\320\270\320\271"
-   " \320\272\320\260\321\202\320\260\320\273\320\276\320\263",
    "\320\227\321\203\320\277\320\270\320\275\320\270\321\202\320\270 \320\262\320\274\321\226\321"
    "\201\321\202, \320\272\320\276\320\273\320\270 \320\260\320\272\321\202\320\270\320\262\320\275"
    "\320\265 \320\274\320\265\320\275\321\216",
@@ -19423,7 +19420,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_uk_blob_check[
-      (sizeof(msg_hash_uk_blob) == (316646u
+      (sizeof(msg_hash_uk_blob) == (316606u
 #ifdef ANDROID
        + 610u
 #endif
@@ -21233,7 +21230,6 @@ static const uint32_t msg_hash_uk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,

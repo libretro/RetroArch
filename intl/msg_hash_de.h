@@ -1404,7 +1404,7 @@ static const struct
    char s_012938fb[33];
    char s_a747cdc9[54];
    char s_2f169651[21];
-   char s_73674a86[28];
+   char s_73674a86[29];
    char s_705eee28[43];
    char s_62af62ac[35];
    char s_12b25a4b[46];
@@ -5697,7 +5697,7 @@ static const struct
    "Vorschaubilder-Skalierungsfaktor",
    "Wiedergabelistennamen k\303\274rzen (Neustart erforderlich)",
    "Verwende PAL60-Modus",
-   "\303\234bergeordnetes Verzeichnis",
+   "<\303\234bergeordetes Verzeichnis>",
    "Inhalt pausieren, wenn das Men\303\274 aktiv ist",
    "Inhalt pausieren, wenn nicht aktiv",
    "Inhalt beim Trennen des Controllers pausieren",
@@ -9046,7 +9046,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (192234u
+      (sizeof(msg_hash_de_blob) == (192235u
 #ifdef ANDROID
        + 358u
 #endif

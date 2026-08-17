@@ -1421,7 +1421,6 @@ static const struct
    char s_012938fb[31];
    char s_a747cdc9[67];
    char s_2f169651[17];
-   char s_73674a86[21];
    char s_705eee28[43];
    char s_62af62ac[39];
    char s_12b25a4b[38];
@@ -5739,7 +5738,6 @@ static const struct
    "Factor de escala de miniaturas",
    "Truncar os nomes das listas de reproduci\303\263n (requ\303\255rese reiniciar)",
    "Use o modo PAL60",
-   "Directorio principal",
    "Pausa o contido cando o men\303\272 estea activo",
    "Pausa o contido cando non est\303\241 activo",
    "Pausar contido ao desconectar o mando",
@@ -9105,7 +9103,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_gl_blob_check[
-      (sizeof(msg_hash_gl_blob) == (194252u
+      (sizeof(msg_hash_gl_blob) == (194231u
 #ifdef ANDROID
        + 365u
 #endif
@@ -10907,7 +10905,6 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,

@@ -1316,7 +1316,6 @@ static const struct
    char s_012938fb[25];
    char s_a747cdc9[40];
    char s_2f169651[18];
-   char s_73674a86[16];
    char s_705eee28[31];
    char s_62af62ac[31];
    char s_97379d00[16];
@@ -5710,7 +5709,6 @@ static const struct
    "\346\210\252\346\226\267\345\210\227\350\241\250\345\220\215\347\250\261 (\351\234\200\350\246"
    "\201\351\207\215\346\226\260\345\225\237\345\213\225)",
    "\344\275\277\347\224\250PAL60\346\250\241\345\274\217",
-   "\344\270\212\344\270\200\345\261\244\347\233\256\351\214\204",
    "\347\225\266\351\226\213\345\225\237\351\201\270\345\226\256\346\231\202\346\232\253\345\201\234"
    "\346\240\270\345\277\203",
    "\351\235\236\350\246\226\347\252\227\346\223\215\344\275\234\346\231\202\346\232\253\345\201\234"
@@ -10475,7 +10473,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cht_blob_check[
-      (sizeof(msg_hash_cht_blob) == (121468u
+      (sizeof(msg_hash_cht_blob) == (121452u
 #ifdef ANDROID
        + 157u
 #endif
@@ -12095,7 +12093,6 @@ static const uint32_t msg_hash_cht_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,

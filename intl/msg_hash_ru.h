@@ -1447,7 +1447,6 @@ static const struct
    char s_012938fb[71];
    char s_a747cdc9[51];
    char s_2f169651[42];
-   char s_73674a86[36];
    char s_705eee28[40];
    char s_62af62ac[44];
    char s_12b25a4b[62];
@@ -8230,8 +8229,6 @@ static const struct
    "\320\262",
    "\320\230\321\201\320\277\320\276\320\273\321\214\320\267\320\276\320\262\320\260\321\202\321\214"
    " \321\200\320\265\320\266\320\270\320\274 PAL60",
-   "\320\237\321\200\320\265\320\264\321\213\320\264\321\203\321\211\320\270\320\271 \320\272\320"
-   "\260\321\202\320\260\320\273\320\276\320\263",
    "\320\237\320\260\321\203\320\267\320\260 \320\277\321\200\320\270 \320\262\321\213\320\267\320"
    "\276\320\262\320\265 \320\274\320\265\320\275\321\216",
    "\320\237\320\260\321\203\320\267\320\260 \320\277\321\200\320\270 \320\277\320\276\321\202\320"
@@ -18780,7 +18777,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ru_blob_check[
-      (sizeof(msg_hash_ru_blob) == (300931u
+      (sizeof(msg_hash_ru_blob) == (300895u
 #ifdef ANDROID
        + 547u
 #endif
@@ -20615,7 +20612,6 @@ static const uint32_t msg_hash_ru_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,

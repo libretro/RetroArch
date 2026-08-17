@@ -1465,7 +1465,6 @@ static const struct
    char s_012938fb[20];
    char s_a747cdc9[46];
    char s_2f169651[20];
-   char s_73674a86[14];
    char s_705eee28[41];
    char s_62af62ac[51];
    char s_12b25a4b[54];
@@ -7032,7 +7031,6 @@ static const struct
    "\354\213\244\355\226\211\353\252\251\353\241\235 \354\235\264\353\246\204 \353\213\250\354\266"
    "\225 (\354\236\254\354\213\234\354\236\221 \355\225\204\354\232\224)",
    "PAL60 \353\252\250\353\223\234 \354\202\254\354\232\251",
-   "\354\203\201\354\234\204 \355\217\264\353\215\224",
    "\353\251\224\353\211\264 \355\231\234\354\204\261 \354\213\234 \354\275\230\355\205\220\354\270"
    "\240 \354\235\274\354\213\234\354\240\225\354\247\200",
    "\355\231\234\354\204\261 \354\213\234\352\260\200 \354\225\204\353\213\220 \352\262\275\354\232"
@@ -14399,7 +14397,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ko_blob_check[
-      (sizeof(msg_hash_ko_blob) == (201370u
+      (sizeof(msg_hash_ko_blob) == (201356u
 #ifdef ANDROID
        + 436u
 #endif
@@ -16268,7 +16266,6 @@ static const uint32_t msg_hash_ko_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,

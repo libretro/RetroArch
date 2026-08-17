@@ -516,7 +516,6 @@ static const struct
    char s_7f10fcd2[15];
    char s_7206ddda[15];
    char s_2f169651[16];
-   char s_73674a86[15];
    char s_97379d00[25];
    char s_0f1d488a[11];
    char s_b3cc8a43[23];
@@ -1957,7 +1956,6 @@ static const struct
    "N\303\243o partilhar",
    "N\303\243o partilhar",
    "Usar Modo PAL60",
-   "Diret\303\263rio pai",
    "Contadores de desempenhp",
    "Desempenho",
    "Listas de reprodu\303\247\303\243o",
@@ -2988,7 +2986,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_pt_blob_check[
-      (sizeof(msg_hash_pt_pt_blob) == (55020u
+      (sizeof(msg_hash_pt_pt_blob) == (55005u
 #ifdef HAVE_LAKKA
        + 17u
 #endif
@@ -3589,7 +3587,6 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,

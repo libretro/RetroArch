@@ -1353,7 +1353,6 @@ static const struct
    char s_012938fb[19];
    char s_a747cdc9[48];
    char s_2f169651[21];
-   char s_73674a86[18];
    char s_705eee28[37];
    char s_62af62ac[32];
    char s_12b25a4b[47];
@@ -5440,7 +5439,6 @@ static const struct
    "Miniatyrskalfaktor",
    "Korta ner namn f\303\266r spellistor (omstart kr\303\244vs)",
    "Anv\303\244nd PAL60-l\303\244get",
-   "F\303\266r\303\244ldrakatalog",
    "Pausa inneh\303\245ll n\303\244r menyn \303\244r aktiv",
    "Pausa inneh\303\245ll vid inaktivitet",
    "Pausa inneh\303\245ll vid fr\303\245nkoppling av styrenhet",
@@ -8658,7 +8656,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (165779u
+      (sizeof(msg_hash_sv_blob) == (165761u
 #ifdef ANDROID
        + 361u
 #endif
@@ -10385,7 +10383,6 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
