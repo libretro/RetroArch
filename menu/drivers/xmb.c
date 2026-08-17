@@ -7756,7 +7756,7 @@ static void xmb_context_reset_textures(
  * resolution lives here rather than at the call sites so that a
  * context reset and an in-place rebuild cannot disagree on what is
  * loaded. */
-static void xmb_rebuild_fonts(xmb_handle_t *xmb, bool is_threaded,
+static bool xmb_rebuild_fonts(xmb_handle_t *xmb, bool is_threaded,
       bool defer_free)
 {
    char fontpath[PATH_MAX_LENGTH];
@@ -7790,8 +7790,20 @@ static void xmb_rebuild_fonts(xmb_handle_t *xmb, bool is_threaded,
    else
       strlcpy(fontpath, default_fontpath, sizeof(fontpath));
 
+   /* Recorded before the match test, not after it: the setting can
+    * change to a path that resolves to the file already loaded, and
+    * leaving it stale would have xmb_render() detect a change every
+    * frame and call back in here forever. */
    strlcpy(xmb->last_font_path, menu_font ? menu_font : "",
          sizeof(xmb->last_font_path));
+
+   /* Both already the fonts that were asked for. Most steps of the
+    * scale slider land here, since the setting moves in hundredths
+    * and font_size is an integer, and a title-margin change never
+    * moves either size. */
+   if (     font_driver_matches(xmb->font,  fontpath, xmb->font_size)
+         && font_driver_matches(xmb->font2, fontpath, xmb->font2_size))
+      return false;
 
    /* Build before releasing, so the old atlas stays valid for any
     * frame still in flight and there is no window with no font at
@@ -7819,6 +7831,8 @@ static void xmb_rebuild_fonts(xmb_handle_t *xmb, bool is_threaded,
       if (old_font2)
          font_driver_free(old_font2);
    }
+
+   return true;
 }
 
 /* Apply a scale factor / layout change in place.
@@ -7832,34 +7846,28 @@ static void xmb_rebuild_fonts(xmb_handle_t *xmb, bool is_threaded,
  * xmb_render(), where they are exactly what is unsafe. */
 static void xmb_set_layout(xmb_handle_t *xmb, bool is_threaded)
 {
-   settings_t *settings   = config_get_ptr();
-   const char *menu_font  = settings->paths.path_menu_xmb_font;
-   float old_font_size    = xmb->font_size;
-   float old_font2_size   = xmb->font2_size;
-   bool font_path_changed = !string_is_equal(xmb->last_font_path,
-         menu_font ? menu_font : "");
+   const char *wideglyph_str = msg_hash_get_wideglyph_str();
+   bool wideglyph_changed    = (xmb->wideglyph_str != wideglyph_str);
+   bool rebuilt;
 
+   /* The geometry is cheap and always applied. Rasterising the two
+    * atlases is not, so xmb_rebuild_fonts() decides for itself
+    * whether anything it would build differs from what is loaded. */
    xmb_layout(xmb);
+   rebuilt = xmb_rebuild_fonts(xmb, is_threaded, true);
 
-   /* The geometry above is cheap and always applied. Rasterising two
-    * atlases is not, and the setting steps in hundredths, so most
-    * steps of the slider do not move the font size at all — and a
-    * title-margin change never does. Rebuild only when it matters. */
-   if (     font_path_changed
-         || !xmb->font
-         || !xmb->font2
-         || (xmb->font_size  != old_font_size)
-         || (xmb->font2_size != old_font2_size))
+   /* The wide-glyph sample follows the menu language and can move
+    * without the face doing so, in which case the widths derived from
+    * it still need recomputing against the font already loaded. */
+   if (rebuilt || wideglyph_changed)
    {
-      xmb_rebuild_fonts(xmb, is_threaded, true);
-
-      xmb->wideglyph_str = msg_hash_get_wideglyph_str();
+      xmb->wideglyph_str = wideglyph_str;
       xmb_compute_wideglyph(xmb);
-
-      /* Title metrics are measured against the font that just
-       * changed. */
-      xmb_set_title(xmb);
    }
+
+   /* Title metrics are measured against the font. */
+   if (rebuilt)
+      xmb_set_title(xmb);
 }
 
 static void xmb_context_reset_internal(xmb_handle_t *xmb,

@@ -10002,11 +10002,27 @@ static bool ozone_init_font(
    int glyph_width               = 0;
    gfx_display_t *p_disp         = disp_get_ptr();
    const char *wideglyph_str     = msg_hash_get_wideglyph_str();
-   font_data_t *old_font         = font_data->font;
+   font_data_t *old_font;
 
-   /* Enforce minimum readable font size for small screens */
+   /* Enforce minimum readable font size for small screens.
+    * Before the match test below, so it compares the size that would
+    * actually be built. */
    if (font_size < 9)
       font_size = 9;
+
+   /* Nothing to do if this is already the font that was asked for.
+    * ozone_set_layout() runs on padding and thumbnail-scale changes
+    * too, and each of the six fonts has its own scale factor, so most
+    * calls here are asking for a font that is already loaded.
+    *
+    * The wide-glyph sample follows the menu language and is not
+    * refreshed by font_driver_sync_impl(), so a change there has to
+    * fall through even when the face is unchanged. */
+   if (     font_data->wideglyph_str == wideglyph_str
+         && font_driver_matches(font_data->font, font_path, font_size))
+      return true;
+
+   old_font                      = font_data->font;
 
    /* Cache approximate dimensions */
    font_data->line_height        = (int)(font_size + 0.5f);

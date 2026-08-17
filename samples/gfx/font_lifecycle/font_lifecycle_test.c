@@ -451,6 +451,63 @@ int main(void)
       CHECK(live_renderer_state == 0, "flush releases everything queued");
    }
 
+   /* 11b. font_driver_matches(): the predicate the layout paths use to
+    *      skip a rebuild that would produce the font already loaded.
+    *      A wrong yes keeps a font that should have been replaced, so
+    *      the cases that must answer no matter more than the one that
+    *      must answer yes. */
+   {
+      font_data_t *m = mk("/tmp/san/match.ttf", 16.0f);
+      font_data_t *stale;
+
+      CHECK(m != NULL, "match font created");
+      CHECK(font_driver_matches(m, "/tmp/san/match.ttf", 16.0f),
+            "same path and size matches");
+      CHECK(!font_driver_matches(m, "/tmp/san/match.ttf", 16.5f),
+            "a different size does not match");
+      CHECK(!font_driver_matches(m, "/tmp/san/other.ttf", 16.0f),
+            "a different path does not match");
+      CHECK(!font_driver_matches(m, NULL, 16.0f),
+            "a pathless request does not match a font with a path");
+      CHECK(!font_driver_matches(m, "", 16.0f),
+            "an empty path does not match a font with a path");
+      CHECK(!font_driver_matches(NULL, "/tmp/san/match.ttf", 16.0f),
+            "NULL never matches");
+
+      /* A language switch re-resolves the face in place. The
+       * predicate must follow the font, not the request that built
+       * it, or the caller would skip past a face change. */
+      font_driver_set_language_font(m, "/assets/pkg", "/tmp/san/match.ttf");
+      test_language = TEST_LANG_KOREAN;
+      font_driver_reload_fonts();
+      CHECK(!font_driver_matches(m, "/tmp/san/match.ttf", 16.0f),
+            "a re-resolved face no longer matches the old path");
+      CHECK(font_driver_matches(m, m->path, 16.0f),
+            "and does match the face it now carries");
+      test_language = 0;
+      font_driver_reload_fonts();
+
+      /* The case the liveness walk exists for: a caller that frees a
+       * font and leaves the pointer behind. Reading through it would
+       * be a use-after-free, and the honest answer is no. */
+      stale = mk("/tmp/san/stale.ttf", 16.0f);
+      font_driver_free(stale);
+      CHECK(!font_driver_matches(stale, "/tmp/san/stale.ttf", 16.0f),
+            "a freed handle does not match");
+
+      /* Same again for one released through the deferred queue,
+       * before and after the window closes. */
+      stale = mk("/tmp/san/stale2.ttf", 16.0f);
+      font_driver_free_deferred(stale);
+      CHECK(font_driver_matches(stale, "/tmp/san/stale2.ttf", 16.0f),
+            "a retired handle still matches inside its window");
+      font_driver_free_pending(true);
+      CHECK(!font_driver_matches(stale, "/tmp/san/stale2.ttf", 16.0f),
+            "and stops matching once released");
+
+      font_driver_free(m);
+   }
+
    /* 12. retiring NULL is allowed, so callers need no guard. */
    font_driver_free_deferred(NULL);
    font_driver_free_pending(false);

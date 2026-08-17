@@ -939,9 +939,25 @@ static void gfx_widgets_font_init(
 {
    float scaled_size             = font_size * p_dispwidget->last_scale_factor;
 
-   /* Limit minimum font size to keep it readable */
+   /* Limit minimum font size to keep it readable.
+    * Before the match test below, so it compares the size that would
+    * actually be built. */
    if (scaled_size < 9)
       scaled_size = 9;
+
+   /* Nothing to do if this is already the font that was asked for.
+    * gfx_widgets_layout() runs on any video dimension change, but the
+    * size here derives from last_scale_factor alone, so a resize at
+    * an unchanged scale asks for the six fonts already loaded.
+    *
+    * usage_count is still cleared: it counts draws against the font
+    * since the last layout pass, and the callers below expect a
+    * layout to have reset it whether or not a rebuild happened. */
+   if (font_driver_matches(font_data->font, font_path, scaled_size))
+   {
+      font_data->usage_count     = 0;
+      return;
+   }
 
    /* Get approximate glyph width */
    font_data->glyph_width        = scaled_size * (3.0f / 4.0f);

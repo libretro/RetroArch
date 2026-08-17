@@ -1346,6 +1346,38 @@ void font_driver_free(font_data_t *font)
    }
 }
 
+bool font_driver_matches(const font_data_t *font,
+      const char *path, float size)
+{
+   const font_data_t *live;
+
+   if (!font)
+      return false;
+
+   /* Confirm the handle is still one of ours before reading through
+    * it. A caller that freed a font without clearing its pointer
+    * would otherwise turn this into a use-after-free, and "no" is the
+    * answer it needs in that case anyway. The list holds one entry
+    * per live font, so this is a walk of a handful of pointers. */
+   for (live = font_live; live; live = live->next)
+      if (live == font)
+         break;
+   if (!live)
+      return false;
+
+   if (font->size != size)
+      return false;
+
+   /* A font whose face the renderer chose carries no path, and can
+    * only match a request that likewise names none. */
+   if (!font->path)
+      return (!path || !*path);
+   if (!path || !*path)
+      return false;
+
+   return string_is_equal(font->path, path);
+}
+
 void font_driver_free_deferred(font_data_t *font)
 {
    unsigned i;

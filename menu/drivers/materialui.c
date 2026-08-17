@@ -9454,9 +9454,6 @@ static void materialui_init_font(gfx_display_t *p_disp,
    font_data_t *old_font     = font_data->font;
    fontpath[0]               = '\0';
 
-   /* We assume the average glyph aspect ratio is close to 3:4 */
-   font_data->glyph_width    = (int)((font_size * (3.0f / 4.0f)) + 0.5f);
-
    {
       const char *lang_font = font_driver_language_font_file();
 
@@ -9472,6 +9469,23 @@ static void materialui_init_font(gfx_display_t *p_disp,
       else
          strlcpy(fontpath, default_fontpath, sizeof(fontpath));
    }
+
+   /* Nothing to do if this is already the font that was asked for.
+    * materialui_layout() also runs on a nav bar toggle and a
+    * landscape-optimisation change, neither of which moves a font
+    * size.
+    *
+    * Resolved above rather than below, so the path being compared is
+    * the one that would be built. The wide-glyph sample follows the
+    * menu language and is not refreshed by font_driver_sync_impl(),
+    * so a change there falls through even when the face is
+    * unchanged. */
+   if (     font_data->wideglyph_str == wideglyph_str
+         && font_driver_matches(font_data->font, fontpath, (float)font_size))
+      return;
+
+   /* We assume the average glyph aspect ratio is close to 3:4 */
+   font_data->glyph_width    = (int)((font_size * (3.0f / 4.0f)) + 0.5f);
 
    /* Built before the old one is released, and the old one retired
     * rather than freed: materialui_layout() reaches here from

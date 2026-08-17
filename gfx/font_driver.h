@@ -179,6 +179,22 @@ void font_driver_render_msg(void *data,
 
 int font_driver_get_message_width(void *font_data, const char *msg, size_t len, float scale);
 
+/* Would rebuilding this font at this path and size produce the font
+ * that is already there? Lets a caller skip a rebuild that would
+ * rasterise an identical atlas and re-upload an identical texture,
+ * which is most of what a layout pass asks for: the things that
+ * trigger one — padding, thumbnail scale, a nav bar toggle — mostly
+ * do not move any font size.
+ *
+ * False for a NULL handle, and for one that is no longer live, so a
+ * context reset that cleared or released its fonts always rebuilds.
+ * Conservative in both directions: it answers no whenever it cannot
+ * be sure, and a wrong no only costs the work that would have been
+ * done anyway. Callers must pass the same size they would pass to the
+ * font builder, after any clamping of their own. */
+bool font_driver_matches(const font_data_t *font,
+      const char *path, float size);
+
 void font_driver_free(font_data_t *font);
 
 /* Release a font whose replacement has already been built, once the
