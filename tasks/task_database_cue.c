@@ -156,6 +156,9 @@ static int64_t task_database_cue_get_token(intfstream_t *fd, char *s,
    int64_t _len  = 0;
    int in_string = 0;
 
+   if (len < 2)
+      return -1;
+
    for (;;)
    {
       int64_t rv = (int64_t)intfstream_read(fd, c, 1);
@@ -192,7 +195,7 @@ static int64_t task_database_cue_get_token(intfstream_t *fd, char *s,
 
       _len++;
       c++;
-      if (_len == (int64_t)len)
+      if (_len == (int64_t)len - 1)
       {
          *c = '\0';
          return _len;
