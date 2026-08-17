@@ -943,19 +943,27 @@ static void gfx_widgets_font_init(
    if (scaled_size < 9)
       scaled_size = 9;
 
-   /* Free existing font */
-   if (font_data->font)
-   {
-      font_driver_free(font_data->font);
-      font_data->font = NULL;
-   }
-
    /* Get approximate glyph width */
    font_data->glyph_width        = scaled_size * (3.0f / 4.0f);
 
-   /* Create font */
-   font_data->font               = gfx_display_font_file(p_disp,
-         font_path, scaled_size, is_threaded);
+   /* Create font.
+    *
+    * Built before the old one is released, and the old one retired
+    * rather than freed: gfx_widgets_layout() reaches here from
+    * gfx_widgets_iterate(), which runs before the video driver's
+    * frame function, so freeing the atlas outright can pull it out
+    * from under a command list that still references it. */
+   {
+      font_data_t *old_font         = font_data->font;
+
+      font_data->font               = gfx_display_font_file(p_disp,
+            font_path, scaled_size, is_threaded);
+
+      if (!font_data->font)
+         font_data->font            = old_font;
+      else if (old_font)
+         font_driver_free_deferred(old_font);
+   }
 
    /* Get font metadata. gfx_display_font_file() can fail, and there is
     * no implicit font to fall back on any more, so the approximate
