@@ -10845,6 +10845,16 @@ static void xmb_context_destroy(void *data)
     * it wiped and redone by the reset. */
    xmb->pending_dynamic_icons_repopulate = false;
 
+   /* Same reasoning for the deferred scale/layout reset. If its
+    * counter reached zero between destroy and reset, xmb_render
+    * would call xmb_context_reset_internal() with reinit_textures
+    * false, building fonts against a context that has just been torn
+    * down and leaving the textures unloaded. Dropping the latched
+    * scale here loses nothing: the matching xmb_context_reset() does
+    * a full reset, and xmb_render's detection re-arms on the next
+    * frame if the scale factor still differs. */
+   xmb->pending_context_reset            = 0;
+
    xmb_context_destroy_horizontal_list(xmb);
    xmb_context_bg_destroy(xmb);
 
