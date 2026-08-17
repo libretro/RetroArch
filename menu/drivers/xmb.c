@@ -465,6 +465,14 @@ typedef struct xmb_handle
    float font_size;
    float font2_size;
    float last_scale_factor;
+   /* Snapshot of menu_scale_factor clamped to a floor of 1, taken by
+    * xmb_layout() at the same time as scale_mod and the margins. The
+    * draw path must read this rather than the live setting, so that
+    * every scale-derived value on screen comes from one snapshot. */
+   float scale_cap;
+   /* New scale latched by xmb_render() when it detects a change and
+    * committed only when the deferred reset below fires. */
+   float pending_scale_factor;
    unsigned pending_context_reset;
 
    float margins_screen_left;
@@ -541,6 +549,8 @@ typedef struct xmb_handle
    bool show_horizontal_list;
    bool use_ps3_layout;
    bool last_use_ps3_layout;
+   /* Latched alongside pending_scale_factor; see pending_context_reset. */
+   bool pending_use_ps3_layout;
    bool assets_missing;
 
    /* Favorites, History, Images, Music, Videos, user generated */
@@ -6050,10 +6060,10 @@ XMB_NOINLINE static int xmb_draw_item(
       line_ticker_width += xmb->icon_size / xmb->last_scale_factor / 16;
    }
 
-   if (settings->floats.menu_scale_factor > 1.0f)
+   if (xmb->scale_cap > 1.0f)
    {
-      ticker_limit      /= settings->floats.menu_scale_factor;
-      line_ticker_width /= settings->floats.menu_scale_factor;
+      ticker_limit      /= xmb->scale_cap;
+      line_ticker_width /= xmb->scale_cap;
    }
 
    /* Don't update ticker limit while waiting for thumbnail status */
@@ -7157,7 +7167,7 @@ static void xmb_layout_common(xmb_handle_t *xmb, float scale_factor, unsigned ne
 static void xmb_layout_ps3(xmb_handle_t *xmb, settings_t *settings)
 {
    float scale_factor            = xmb->last_scale_factor;
-   float scale_cap               = (settings->floats.menu_scale_factor > 1) ? settings->floats.menu_scale_factor : 1;
+   float scale_cap               = xmb->scale_cap;
    unsigned new_font_size        = 32 * scale_factor;
 
    xmb->above_subitem_offset     =  1.5f / scale_cap;
@@ -7204,7 +7214,7 @@ static void xmb_layout_ps3(xmb_handle_t *xmb, settings_t *settings)
 static void xmb_layout_psp(xmb_handle_t *xmb, settings_t *settings)
 {
    float scale_factor            = xmb->last_scale_factor;
-   float scale_cap               = (settings->floats.menu_scale_factor > 1) ? settings->floats.menu_scale_factor : 1;
+   float scale_cap               = xmb->scale_cap;
    unsigned new_font_size        = 26 * scale_factor;
 
    xmb->above_subitem_offset     =  1.5f / scale_cap;
@@ -7291,6 +7301,9 @@ static void xmb_layout(xmb_handle_t *xmb)
    unsigned end                 = (unsigned)MENU_LIST_GET_SELECTION(menu_list, 0)->size;
 
    xmb_init_scale_mod(xmb->scale_mod, settings->floats.menu_scale_factor * 100.0f);
+   xmb->scale_cap = (settings->floats.menu_scale_factor > 1.0f)
+         ? settings->floats.menu_scale_factor
+         : 1.0f;
 
    if (xmb->use_ps3_layout)
       xmb_layout_ps3(xmb, settings);
@@ -7851,6 +7864,7 @@ static void xmb_render(void *data,
     * disables optimisations and removes excess precision
     * (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=323#c87) */
    volatile float scale_factor;
+   bool use_ps3_layout;
    xmb_handle_t *xmb              = (xmb_handle_t*)data;
    settings_t *settings           = config_get_ptr();
    struct menu_state *menu_st     = menu_state_get_ptr();
@@ -7891,8 +7905,25 @@ static void xmb_render(void *data,
    if (xmb->pending_context_reset > 0)
    {
       if (--xmb->pending_context_reset == 0)
+      {
+         /* Commit the latched inputs before the reset, not when the
+          * change was detected: xmb_layout(), reached from
+          * xmb_context_reset_internal(), derives icon_size, the
+          * margins, font_size and scale_mod from exactly these two
+          * values, and the draw path reads them side by side with
+          * those derived values. Publishing the new scale early left
+          * the two describing different sizes for the whole deferral
+          * window, which is the mismatch that used to be papered over
+          * by skipping the frame in xmb_frame(). */
+         xmb->use_ps3_layout                       = xmb->pending_use_ps3_layout;
+         xmb->last_use_ps3_layout                  = xmb->pending_use_ps3_layout;
+         xmb->last_scale_factor                    = xmb->pending_scale_factor;
+         xmb->last_margins_title                   = xmb->margins_title;
+         xmb->last_margins_title_horizontal_offset = xmb->margins_title_horizontal_offset;
+
          xmb_context_reset_internal(xmb, video_driver_is_threaded(), false,
                settings->uints.menu_xmb_theme);
+      }
    }
 
    /* Fire deferred dynamic-icon repopulate once input has settled.
@@ -7929,24 +7960,26 @@ static void xmb_render(void *data,
    if (xmb->current_menu_icon_retry > 0)
       xmb_set_title(xmb);
 
-   xmb->use_ps3_layout            = xmb_use_ps3_layout(settings->uints.menu_xmb_layout, width, height);
+   use_ps3_layout                 = xmb_use_ps3_layout(settings->uints.menu_xmb_layout, width, height);
    scale_factor                   = xmb_get_scale_factor(settings->floats.menu_scale_factor,
-         xmb->use_ps3_layout, width);
+         use_ps3_layout, width);
 
-   if (     (xmb->use_ps3_layout                  != xmb->last_use_ps3_layout)
+   if (     (use_ps3_layout                       != xmb->last_use_ps3_layout)
          || (xmb->margins_title                   != xmb->last_margins_title)
          || (xmb->margins_title_horizontal_offset != xmb->last_margins_title_horizontal_offset)
          || (scale_factor                         != xmb->last_scale_factor)
          || !string_is_equal(xmb->last_font_path,
                settings->paths.path_menu_xmb_font))
    {
-      xmb->last_use_ps3_layout                  = xmb->use_ps3_layout;
-      xmb->last_margins_title                   = xmb->margins_title;
-      xmb->last_margins_title_horizontal_offset = xmb->margins_title_horizontal_offset;
-      xmb->last_scale_factor                    = scale_factor;
-
-      /* Defer context reset by 2 frames — see comment above */
-      xmb->pending_context_reset = 2;
+      /* Latch only. The comparison stays against the committed
+       * last_* values, so a scale factor still being dragged keeps
+       * re-arming the counter and the reset fires once, on the value
+       * the user settled on. Until then the driver keeps rendering
+       * consistently at the old scale.
+       * Defer context reset by 2 frames — see comment above */
+      xmb->pending_use_ps3_layout = use_ps3_layout;
+      xmb->pending_scale_factor   = scale_factor;
+      xmb->pending_context_reset  = 2;
    }
 
    /* This must be set every frame when using a pointer,
@@ -9275,19 +9308,6 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             coord_black,
             coord_white);
 
-   /* Visual consistency during deferred context reset:
-    * xmb_render() set pending_context_reset on a scale-factor /
-    * layout change; the actual reset (which rebuilds icon_size,
-    * margins, fonts and textures at the new scale) won't fire
-    * until the counter reaches 0 — see the comment in xmb_render().
-    * In the interim frames, layout values and asset sizes are
-    * mismatched, which produces a visible flash. Skip everything
-    * past the background quad (icons, text, ribbon-overlay items,
-    * cursor, message box) until the reset completes; the gradient
-    * we just drew is the entire frame for those 1-2 frames. */
-   if (xmb->pending_context_reset > 0)
-      goto ctx_destroyed;
-
    selection = menu_st->selection_ptr;
 
    if (!p_disp->dispctx->handles_transform)
@@ -9403,7 +9423,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
       if (current_menu_icon == XMB_CURRENT_MENU_ICON_TITLE)
       {
-         float scale_factor = (settings->floats.menu_scale_factor > 1) ? settings->floats.menu_scale_factor : 1;
+         float scale_factor = xmb->scale_cap;
 
          icon_size /= 3.5f;
 
@@ -9973,7 +9993,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
       if (powerstate.battery_enabled)
       {
-         float scale_factor = (settings->floats.menu_scale_factor > 1) ? settings->floats.menu_scale_factor : 1;
+         float scale_factor = xmb->scale_cap;
          float icon_size    = (!xmb->assets_missing) ? xmb->icon_size * 0.90f : 0;
          size_t x_pos       = (float)(icon_size / 4 * scale_factor);
 
@@ -10034,7 +10054,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       char timedate[256];
       size_t _len        = 0;
       size_t x_pos       = 0;
-      float scale_factor = (settings->floats.menu_scale_factor > 1) ? settings->floats.menu_scale_factor : 1;
+      float scale_factor = xmb->scale_cap;
       float icon_size    = (!xmb->assets_missing) ? xmb->icon_size * 0.90f : 0;
 
       if (percent_width)
@@ -10395,6 +10415,9 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    xmb->last_height = height;
 
    xmb_init_scale_mod(xmb->scale_mod, settings->floats.menu_scale_factor * 100.0f);
+   xmb->scale_cap = (settings->floats.menu_scale_factor > 1.0f)
+         ? settings->floats.menu_scale_factor
+         : 1.0f;
 
    *userdata                          = xmb;
 
