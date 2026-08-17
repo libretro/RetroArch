@@ -94,11 +94,6 @@
 
 #define XMB_TAB_MAX_LENGTH 255
 
-/* Font handles awaiting a deferred free. Two retire per rebuild and a
- * rebuild happens at most once per frame, so four is the real ceiling;
- * this leaves room to spare. */
-#define XMB_FONT_RETIRE_MAX 8
-
 #define XMB_DELAY (166.66667f)
 
 #define XMB_EASING_ALPHA EASING_OUT_CIRC
@@ -475,14 +470,6 @@ typedef struct xmb_handle
     * draw path must read this rather than the live setting, so that
     * every scale-derived value on screen comes from one snapshot. */
    float scale_cap;
-
-   /* Font handles superseded by a rebuild, held until the GPU can no
-    * longer be referencing them. See xmb_font_retire(). */
-   struct
-   {
-      font_data_t *font;
-      unsigned frames;
-   } font_retire[XMB_FONT_RETIRE_MAX];
 
    float margins_screen_left;
    float margins_screen_top;
@@ -7761,61 +7748,6 @@ static void xmb_context_reset_textures(
 }
 
 
-/* Retire a font handle without freeing it yet.
- *
- * xmb_render() runs before the video driver's frame function in the
- * same runloop_iterate(), so a handle released here can still be
- * referenced by a command list the GPU has not finished with. That is
- * the D3D12 crash 45f8bf4a was chasing. Rather than postponing the
- * whole rebuild, the new font is built first and the superseded handle
- * parked here for two frames, which is long enough for the frame that
- * referenced it to have been submitted and completed.
- *
- * Two handles retire per rebuild and a rebuild can happen at most once
- * per xmb_render() call, so at most four entries are ever live at once;
- * the queue is sized well past that and the overflow path is
- * unreachable in practice. */
-static void xmb_font_retire(xmb_handle_t *xmb, font_data_t *font)
-{
-   unsigned i;
-
-   if (!font)
-      return;
-
-   for (i = 0; i < XMB_FONT_RETIRE_MAX; i++)
-   {
-      if (!xmb->font_retire[i].font)
-      {
-         xmb->font_retire[i].font   = font;
-         xmb->font_retire[i].frames = 2;
-         return;
-      }
-   }
-
-   font_driver_free(font);
-}
-
-/* Age the retire queue by one frame, freeing whatever has come due.
- * With flush set, everything is released immediately: used on teardown
- * and on context destroy, where the handles must not outlive us and
- * there is no later frame to wait for. */
-static void xmb_font_retire_tick(xmb_handle_t *xmb, bool flush)
-{
-   unsigned i;
-
-   for (i = 0; i < XMB_FONT_RETIRE_MAX; i++)
-   {
-      if (!xmb->font_retire[i].font)
-         continue;
-
-      if (flush || --xmb->font_retire[i].frames == 0)
-      {
-         font_driver_free(xmb->font_retire[i].font);
-         xmb->font_retire[i].font = NULL;
-      }
-   }
-}
-
 /* Build xmb->font / xmb->font2 at the sizes xmb_layout() just set.
  *
  * With defer_free set the previous handles are retired rather than
@@ -7877,8 +7809,8 @@ static void xmb_rebuild_fonts(xmb_handle_t *xmb, bool is_threaded,
 
    if (defer_free)
    {
-      xmb_font_retire(xmb, old_font);
-      xmb_font_retire(xmb, old_font2);
+      font_driver_free_deferred(old_font);
+      font_driver_free_deferred(old_font2);
    }
    else
    {
@@ -8047,11 +7979,6 @@ static void xmb_render(void *data,
    gfx_thumbnail_animate(&xmb->thumbnails.right);
    gfx_thumbnail_animate(&xmb->thumbnails.left);
    gfx_thumbnail_animate(&xmb->thumbnails.icon);
-
-   /* Release font handles retired by an earlier in-place rebuild,
-    * once the frames that could still be referencing them have been
-    * submitted and completed. See xmb_font_retire(). */
-   xmb_font_retire_tick(xmb, false);
 
    /* Fire deferred dynamic-icon repopulate once input has settled.
     * Set by xmb_populate_entries when it wanted to run the work but
@@ -10665,10 +10592,6 @@ static void xmb_free(void *data)
          free(xmb->bg_file_path);
 
       menu_screensaver_free(xmb->screensaver);
-
-      /* xmb_context_destroy() normally drains this first, but the
-       * driver can be torn down without it. */
-      xmb_font_retire_tick(xmb, true);
    }
 
    gfx_display_deinit_white_texture();
@@ -10987,11 +10910,6 @@ static void xmb_context_destroy(void *data)
 
    xmb_context_destroy_horizontal_list(xmb);
    xmb_context_bg_destroy(xmb);
-
-   /* Retired handles have to go with the rest of the fonts: there is
-    * no later frame to wait for, and leaving them queued would have
-    * xmb_render() free them against a context that no longer exists. */
-   xmb_font_retire_tick(xmb, true);
 
    font_driver_free(xmb->font);
    xmb->font  = NULL;
