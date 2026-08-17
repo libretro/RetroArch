@@ -511,6 +511,10 @@ static bool glslang_read_shader_file_internal(const char *path,
    uint8_t *buf              = NULL;
    int64_t buf_len           = 0;
    bool    ret               = false;
+   /* Scratch for the rare line carrying an interior \r; sized to the
+    * longest such line seen, not to the file. */
+   char   *cr_scratch        = NULL;
+   size_t  cr_scratch_cap    = 0;
 
    tmp[0] = '\0';
 
@@ -540,44 +544,72 @@ static bool glslang_read_shader_file_internal(const char *path,
    if (buf_len <= 0)
       goto cleanup;
 
-   /* Null-terminate the buffer so we can work with it as a C string.
-    * \r removal is folded into the line-scanning loop below to avoid
-    * a separate O(n) pass over the data. */
-   ((char*)buf)[buf_len] = '\0';
-
+   /* The file is scanned as spans over the buffer, which is never
+    * written to: no terminator is planted at buf_len, and no line is
+    * compacted in place.  That keeps this function usable on memory
+    * the include cache owns and lends out read-only, so a cache hit
+    * no longer has to hand over a private copy of the whole file.
+    *
+    * Line ends are found with memchr() and \r is handled without
+    * copying in the two cases that cover real files - no \r at all,
+    * or a single trailing one from CRLF - by simply shortening the
+    * span.  Only a line with an interior \r is compacted, into a
+    * scratch buffer sized to that one line, preserving the previous
+    * behaviour of stripping every \r wherever it sits. */
    {
-      char *cursor     = (char*)buf;
-      size_t line_idx  = 0;
-      size_t line_len  = 0;
-      bool first_line  = true;
+      const char *cursor    = (const char*)buf;
+      const char *buf_end   = (const char*)buf + buf_len;
+      size_t line_idx       = 0;
+      size_t line_len       = 0;
+      bool first_line       = true;
 
       /* If this is the 'parent' shader file and a slang file,
        * ensure that first line is a 'VERSION' string */
       bool check_version = root_file
             && (strcmp(path_get_extension(path), "slang") == 0);
 
-      while (*cursor != '\0')
+      while (cursor < buf_end)
       {
-         char saved;
-         char *line_start;
-         char *newline;
-         /* Strip \r from this line in-place while finding newline/end */
-         char *rd = cursor;
-         char *wr = cursor;
-         while (*rd != '\n' && *rd != '\0')
-         {
-            if (*rd != '\r')
-               *wr++ = *rd;
-            rd++;
-         }
-         line_start = cursor;
-         newline    = wr;    /* points to where the logical line ends */
-         saved      = *rd;   /* save the real delimiter (\n or \0)   */
-         /* Shift the delimiter to the compacted position */
-         *wr        = *rd;
+         const char *line_start;
+         const char *next;
+         const char *raw_end;
+         const char *nl;
+         const char *cr;
+         size_t cur_line_len;
 
-         /* Temporarily terminate the line */
-         *newline = '\0';
+         nl      = (const char*)memchr(cursor, '\n',
+               (size_t)(buf_end - cursor));
+         raw_end = nl ? nl : buf_end;
+         next    = nl ? nl + 1 : buf_end;
+
+         line_start   = cursor;
+         cur_line_len = (size_t)(raw_end - cursor);
+
+         if ((cr = (const char*)memchr(cursor, '\r', cur_line_len)))
+         {
+            if (cr == raw_end - 1)
+               cur_line_len--;       /* trailing CRLF: shorten the span */
+            else
+            {
+               /* Interior \r: compact this one line into scratch. */
+               const char *rd;
+               char *wr;
+               if (cur_line_len > cr_scratch_cap)
+               {
+                  char *grown = (char*)realloc(cr_scratch, cur_line_len);
+                  if (!grown)
+                     goto cleanup;
+                  cr_scratch     = grown;
+                  cr_scratch_cap = cur_line_len;
+               }
+               wr = cr_scratch;
+               for (rd = cursor; rd < raw_end; rd++)
+                  if (*rd != '\r')
+                     *wr++ = *rd;
+               line_start   = cr_scratch;
+               cur_line_len = (size_t)(wr - cr_scratch);
+            }
+         }
 
          if (first_line)
          {
@@ -586,7 +618,9 @@ static bool glslang_read_shader_file_internal(const char *path,
 
             if (check_version)
             {
-               if (strncmp("#version ", line_start, sizeof("#version ")-1))
+               if (     cur_line_len < sizeof("#version ")-1
+                     || memcmp("#version ", line_start,
+                           sizeof("#version ")-1))
                {
                   RARCH_ERR("[Slang] First line of the shader must contain a valid "
                         "#version string.\n");
@@ -594,7 +628,7 @@ static bool glslang_read_shader_file_internal(const char *path,
                }
 
                if (!shader_line_buf_append(output, line_start,
-                        (size_t)(newline - line_start)))
+                        cur_line_len))
                   goto cleanup;
 
                /* Allows us to use #line to make dealing with shader
@@ -612,7 +646,7 @@ static bool glslang_read_shader_file_internal(const char *path,
                   goto cleanup;
 
                /* Advance past this line in the real buffer */
-               cursor = (saved == '\n') ? rd + 1 : rd;
+               cursor = next;
                line_idx++;
                continue;
             }
@@ -631,14 +665,13 @@ static bool glslang_read_shader_file_internal(const char *path,
           * already handled above */
          if (root_file && check_version && line_idx == 0)
          {
-            cursor = (saved == '\n') ? rd + 1 : rd;
+            cursor = next;
             line_idx++;
             continue;
          }
 
          /* Process the line */
          {
-            size_t cur_line_len   = (size_t)(newline - line_start);
             bool include_optional = (cur_line_len >= sizeof("#pragma include_optional ")-1)
                   && !memcmp("#pragma include_optional ", line_start,
                         sizeof("#pragma include_optional ")-1);
@@ -657,8 +690,8 @@ static bool glslang_read_shader_file_internal(const char *path,
                            tmp, sizeof(tmp))
                    || tmp[0] == '\0')
                {
-                  RARCH_ERR("[Slang] Invalid include statement \"%s\".\n",
-                        line_start);
+                  RARCH_ERR("[Slang] Invalid include statement \"%.*s\".\n",
+                        (int)cur_line_len, line_start);
                   goto cleanup;
                }
 
@@ -698,7 +731,7 @@ static bool glslang_read_shader_file_internal(const char *path,
                   goto cleanup;
             }
 
-            cursor = (saved == '\n') ? rd + 1 : rd;
+            cursor = next;
             line_idx++;
             continue;
          }
@@ -710,6 +743,7 @@ static bool glslang_read_shader_file_internal(const char *path,
    ret = true;
 
 cleanup:
+   free(cr_scratch);
    if (buf)
       free(buf);
    return ret;
