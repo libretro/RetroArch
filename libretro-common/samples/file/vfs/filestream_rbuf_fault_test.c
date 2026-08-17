@@ -429,6 +429,53 @@ static void case_tell_latch_clears_on_seek(void)
    filestream_close(fp);
 }
 
+/* The other half of the clear, and without it the suite cannot tell a
+ * correct implementation from one that clears unconditionally.  Only a
+ * SUCCESSFUL seek is evidence the position may have moved; a seek that
+ * fails leaves the handle exactly where it was, so the latch must
+ * survive it.  A pipe is the case that matters - it can neither tell
+ * nor seek - and if a failed seek cleared the latch, every seek attempt
+ * on such a handle would re-arm a tell() the code already knows will
+ * fail.
+ *
+ * Seeking to a negative offset is used rather than a fault hook: it
+ * fails through the real code path with no injection at all, which is
+ * one less thing the test has to be trusted about. */
+static void case_failed_seek_keeps_the_latch(void)
+{
+   char          line[LINE_BUF];
+   RFILE        *fp;
+   unsigned long tell_after_first;
+
+   reset_counters();
+   vfs_tell_fails = true;
+
+   fp = filestream_open(FIXTURE_PATH,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   CHECK(fp != NULL, "failed seek: fixture opened");
+   if (!fp)
+      return;
+
+   CHECK(filestream_gets(fp, line, sizeof(line)) != NULL,
+         "failed seek: the degraded first read still returns a line");
+   tell_after_first = vfs_tell_calls;
+   CHECK(tell_after_first == 1,
+         "failed seek: the first fill asks tell() once and latches");
+
+   CHECK(filestream_seek(fp, -1, RETRO_VFS_SEEK_POSITION_START) == -1,
+         "failed seek: seeking to a negative offset does fail");
+
+   CHECK(filestream_gets(fp, line, sizeof(line)) != NULL,
+         "failed seek: the next read still returns a line");
+   CHECK(vfs_tell_calls == tell_after_first,
+         "failed seek: a failed seek does not re-arm tell()");
+
+   printf("info: failed seek %lu tell, latch held\n", vfs_tell_calls);
+
+   filestream_close(fp);
+}
+
 static void case_alloc_failure_is_not_latched(void)
 {
    size_t got;
@@ -512,6 +559,7 @@ int main(void)
    case_baseline();
    case_tell_failure_is_latched();
    case_tell_latch_clears_on_seek();
+   case_failed_seek_keeps_the_latch();
    case_alloc_failure_is_not_latched();
    case_alloc_falls_back_to_smaller();
    case_transient_alloc_failure_recovers();

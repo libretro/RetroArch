@@ -1451,17 +1451,18 @@ int64_t filestream_seek(RFILE *stream, int64_t offset, int seek_position)
        * the logical position observably does not move. */
       if (output != VFS_ERROR_RETURN_VALUE)
       {
-         stream->rbuf_pos     = 0;
-         stream->rbuf_len     = 0;
-         stream->rbuf_no_tell = false;
+         stream->rbuf_pos = 0;
+         stream->rbuf_len = 0;
       }
       return output;
    }
 
-   /* Same clear on the spanless path, and it is the one that matters:
-    * a latched handle has no span, so it arrives HERE and not above.
-    * Clearing only in the branch guarded by rbuf_len != 0 would be
-    * dead code for exactly the handles the latch is set on. */
+   /* The latch clears here and only here.  It cannot be set while a
+    * span exists: rbuf_len is set only by a fill that succeeded, which
+    * means tell() succeeded, and both gets() and getc() zero rbuf_pos
+    * and rbuf_len when the span drains - so a latched handle always
+    * has rbuf_len == 0 and always takes this path.  A clear in the
+    * branch above would be unreachable. */
    plain = filestream_raw_seek(stream, offset, seek_position);
    if (stream && plain != VFS_ERROR_RETURN_VALUE)
       stream->rbuf_no_tell = false;
