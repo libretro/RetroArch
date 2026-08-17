@@ -327,11 +327,16 @@ static void case_baseline(void)
          (unsigned long)fixture_len);
 }
 
-/* The latch.  tell() fails on this handle from the first call, which
- * is what a pipe, a FIFO, or a frontend VFS without a tell callback
- * looks like.  The scan must still be byte-exact - the fallback path
- * is the pre-lookahead code and has to keep behaving like it - and the
- * implementation must ask exactly once. */
+/* The latch.  tell() fails on this handle from the first call.  Two
+ * unrelated things produce that: a backend with no tell callback at
+ * all - a pipe, a FIFO, a socket - and an ordinary seekable file whose
+ * position has passed what ftell() can return on a build without
+ * 64-bit offsets.  This case covers the first only; the second is
+ * covered by case_tell_latch_clears_on_seek below, and the two must
+ * not be conflated, because the latch is permanent for one and must
+ * not be for the other.  The scan must still be byte-exact - the
+ * fallback path is the pre-lookahead code and has to keep behaving
+ * like it - and the implementation must ask exactly once. */
 static void case_tell_failure_is_latched(void)
 {
    size_t got;
@@ -364,6 +369,66 @@ static void case_tell_failure_is_latched(void)
  * refused, so every fill gives up and every byte goes through the
  * one-byte path.  The implementation is required to keep asking: the
  * handle must not be written off. */
+/* The clear, and it is the reason the latch is not permanent.  A
+ * failed tell() is not always a fact about the handle: retro_vfs_fp_tell64()
+ * falls through to ftell() on a build without 64-bit offsets, and that
+ * returns -1 once the position passes LONG_MAX.  Seeking back makes it
+ * work again.  A latch that never cleared would pin an ordinary
+ * seekable file to per-byte reads for the rest of its life because it
+ * once crossed 2 GiB.
+ *
+ * The failure is simulated rather than reproduced - a 2 GiB fixture is
+ * not something a unit test should write - but the code path is the
+ * real one: the same tell() returning the same -1 through the same
+ * VFS callback.
+ *
+ * What is asserted is the cost bound the struct comment claims. After
+ * the seek the latch is gone, so ONE fill() asks tell() again; if it
+ * failed again the latch would re-arm on that single call rather than
+ * re-arming per byte.  Two tell() calls across two scans is that bound
+ * observed; anything higher would mean the clear re-opened the
+ * per-byte cost the latch exists to close. */
+static void case_tell_latch_clears_on_seek(void)
+{
+   char          line[LINE_BUF];
+   RFILE        *fp;
+   unsigned long tell_after_first;
+
+   reset_counters();
+   vfs_tell_fails = true;
+
+   fp = filestream_open(FIXTURE_PATH,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   CHECK(fp != NULL, "latch clear: fixture opened");
+   if (!fp)
+      return;
+
+   CHECK(filestream_gets(fp, line, sizeof(line)) != NULL,
+         "latch clear: the degraded first read still returns a line");
+   tell_after_first = vfs_tell_calls;
+   CHECK(tell_after_first == 1,
+         "latch clear: the first fill asks tell() once and latches on the failure");
+
+   /* The position was the problem, not the handle. */
+   vfs_tell_fails = false;
+   /* -1 rather than VFS_ERROR_RETURN_VALUE: that macro is private to
+    * file_stream.c and the public header does not export it. */
+   CHECK(filestream_seek(fp, 0, RETRO_VFS_SEEK_POSITION_START) != -1,
+         "latch clear: the rewind succeeds");
+
+   CHECK(filestream_gets(fp, line, sizeof(line)) != NULL,
+         "latch clear: the rewound read returns a line");
+   CHECK(vfs_tell_calls == tell_after_first + 1,
+         "latch clear: the seek re-armed exactly one tell(), not one per byte");
+   CHECK(strlen(line) != 0 && memcmp(fixture, line, strlen(line)) == 0,
+         "latch clear: the rewound read returns the head of the file");
+
+   printf("info: latch clear %lu tell across two scans\n", vfs_tell_calls);
+
+   filestream_close(fp);
+}
+
 static void case_alloc_failure_is_not_latched(void)
 {
    size_t got;
@@ -446,6 +511,7 @@ int main(void)
 
    case_baseline();
    case_tell_failure_is_latched();
+   case_tell_latch_clears_on_seek();
    case_alloc_failure_is_not_latched();
    case_alloc_falls_back_to_smaller();
    case_transient_alloc_failure_recovers();

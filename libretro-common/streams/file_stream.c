@@ -112,14 +112,10 @@ struct RFILE
    struct retro_vfs_file_handle *hfile;
    bool err_flag;
    /* Set once filestream_rbuf_fill() has seen this handle's tell()
-    * fail, so it stops asking.  A handle that cannot report a
-    * position is one whose backend does not implement the operation -
-    * a pipe, a FIFO, a socket, a frontend VFS that supplies read but
-    * not tell - and nothing between two fills changes that, so the
-    * second attempt is bit-for-bit the first.  Unlatched, the
-    * fallback pays a failed tell() per byte on top of the one-byte
-    * read it already pays, which is strictly more work than the
-    * unbuffered code this lookahead replaced.
+    * fail, so it stops asking.  Unlatched, the fallback pays a failed
+    * tell() per byte on top of the one-byte read it already pays,
+    * which is strictly more work than the unbuffered code this
+    * lookahead replaced.
     *
     * Deliberately NOT set for the other way fill() gives up, a failed
     * allocation: that is usually transient, and it is likeliest on
@@ -128,11 +124,31 @@ struct RFILE
     * rest of its life over one bad moment.  fill() retries instead,
     * at a smaller size if that is what fits.
     *
-    * Never cleared.  A successful seek is not evidence to the
-    * contrary - seek and tell are separate VFS callbacks and a
-    * backend may implement either without the other - and clearing
-    * there would re-arm one failed tell() per byte after every
-    * seek. */
+    * Cleared by a successful seek, and that is not the same
+    * concession.  Two different things make tell() fail and only one
+    * of them is a property of the handle.  A backend that does not
+    * implement the operation at all - a pipe, a FIFO, a socket, a
+    * frontend VFS supplying read but not tell - fails every time, and
+    * a handle like that cannot be seeked either, so its latch is
+    * never cleared and it behaves exactly as if it never were.  But
+    * retro_vfs_fp_tell64() falls through to ftell() where none of
+    * RETRO_VFS_HAVE_FSEEKI64 / RETRO_VFS_HAVE_FPOS64 /
+    * HAVE_64BIT_OFFSETS is set, and that returns -1 past LONG_MAX.
+    * There the failure is a property of WHERE the handle is, not of
+    * what it is, and seeking back under 2 GiB makes tell() work
+    * again.  A latch that never cleared would pin an ordinary
+    * seekable file to per-byte reads for the rest of its life because
+    * it once crossed 2 GiB - the same permanence this comment refuses
+    * two paragraphs up for the allocation case, arrived at by a
+    * different route.
+    *
+    * The clear is cheap because the latch re-arms on the first
+    * failure, not on every byte: after a seek, one fill() calls
+    * tell(), and if it fails again every later fill() short-circuits
+    * on the latch without calling anything.  The cost of being wrong
+    * is therefore one failed tell() per successful seek, paid only by
+    * a backend that implements seek but not tell.  The cost of not
+    * clearing is unbounded. */
    bool rbuf_no_tell;
    /* Sequential read lookahead.  Only filestream_rbuf_fill() ever
     * puts bytes here, and only filestream_gets()/filestream_getc()
@@ -1411,6 +1427,8 @@ static int64_t filestream_raw_seek(RFILE *stream,
 
 int64_t filestream_seek(RFILE *stream, int64_t offset, int seek_position)
 {
+   int64_t plain;
+
    if (stream && stream->rbuf_len != 0)
    {
       int64_t output;
@@ -1433,12 +1451,21 @@ int64_t filestream_seek(RFILE *stream, int64_t offset, int seek_position)
        * the logical position observably does not move. */
       if (output != VFS_ERROR_RETURN_VALUE)
       {
-         stream->rbuf_pos = 0;
-         stream->rbuf_len = 0;
+         stream->rbuf_pos     = 0;
+         stream->rbuf_len     = 0;
+         stream->rbuf_no_tell = false;
       }
       return output;
    }
-   return filestream_raw_seek(stream, offset, seek_position);
+
+   /* Same clear on the spanless path, and it is the one that matters:
+    * a latched handle has no span, so it arrives HERE and not above.
+    * Clearing only in the branch guarded by rbuf_len != 0 would be
+    * dead code for exactly the handles the latch is set on. */
+   plain = filestream_raw_seek(stream, offset, seek_position);
+   if (stream && plain != VFS_ERROR_RETURN_VALUE)
+      stream->rbuf_no_tell = false;
+   return plain;
 }
 
 int filestream_eof(RFILE *stream)
