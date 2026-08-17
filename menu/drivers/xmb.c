@@ -508,6 +508,10 @@ typedef struct xmb_handle
    char entry_index_str[32];
    char entry_index_offset;
 
+   /* The menu font path the fonts are built from. xmb_render()
+    * watches it alongside the scale factor and schedules the same
+    * deferred rebuild. */
+   char last_font_path[PATH_MAX_LENGTH];
    char savestate_thumbnail_file_path[PATH_MAX_LENGTH];
    char fullscreen_thumbnail_label[NAME_MAX_LENGTH];
 
@@ -7753,6 +7757,11 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
       else
          strlcpy(fontpath, default_fontpath, sizeof(fontpath));
 
+      /* Recorded here rather than at the call sites, so context reset
+       * and the in-place rebuild cannot disagree on what is loaded. */
+      strlcpy(xmb->last_font_path, menu_font ? menu_font : "",
+            sizeof(xmb->last_font_path));
+
       xmb->font            = gfx_display_font_file(p_disp,
             fontpath, xmb->font_size, is_threaded);
       xmb->font2           = gfx_display_font_file(p_disp,
@@ -7927,7 +7936,9 @@ static void xmb_render(void *data,
    if (     (xmb->use_ps3_layout                  != xmb->last_use_ps3_layout)
          || (xmb->margins_title                   != xmb->last_margins_title)
          || (xmb->margins_title_horizontal_offset != xmb->last_margins_title_horizontal_offset)
-         || (scale_factor                         != xmb->last_scale_factor))
+         || (scale_factor                         != xmb->last_scale_factor)
+         || !string_is_equal(xmb->last_font_path,
+               settings->paths.path_menu_xmb_font))
    {
       xmb->last_use_ps3_layout                  = xmb->use_ps3_layout;
       xmb->last_margins_title                   = xmb->margins_title;

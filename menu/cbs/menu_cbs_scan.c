@@ -265,8 +265,9 @@ static int action_scan_video_xmb_font(const char *path,
 {
    settings_t *settings       = config_get_ptr();
 
+   /* The menu driver watches this path and rebuilds its fonts on
+    * the next frame. */
    strlcpy(settings->paths.path_menu_xmb_font, "null", sizeof(settings->paths.path_menu_xmb_font));
-   command_event(CMD_EVENT_REINIT, NULL);
 
    return 0;
 }
@@ -278,8 +279,9 @@ static int action_scan_video_ozone_font(const char *path,
 {
    settings_t *settings       = config_get_ptr();
 
+   /* The menu driver watches this path and rebuilds its fonts on
+    * the next frame. */
    strlcpy(settings->paths.path_menu_ozone_font, "null", sizeof(settings->paths.path_menu_ozone_font));
-   command_event(CMD_EVENT_REINIT, NULL);
 
    return 0;
 }
