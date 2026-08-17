@@ -342,13 +342,15 @@ static int filestream_rbuf_fill(RFILE *stream)
       size_t cap;
 
       /* Step down rather than give up: 16 KiB, then 4, then 1.  A
-       * handle that gets the smallest of those is still a buffered
-       * handle, and still crosses the VFS a thousand times less often
-       * than the byte-at-a-time fallback would.  The nominal size is
-       * unchanged - this runs only once the allocator has refused
-       * it.  The cap != 0 term matters only for an override small
-       * enough that the floor divides to zero; it keeps the loop off
-       * malloc(0). */
+       * handle that gets the smallest is still a buffered handle.
+       * Runs only after the allocator has refused the nominal size,
+       * which is unchanged.  Whatever is granted is kept for the life
+       * of the handle - there is no path back up to 16 KiB once a
+       * smaller buffer exists, and none is worth the bookkeeping when
+       * the worst case is still a thousandth of the VFS traffic the
+       * byte path would cost.  The cap != 0 term keeps the loop off
+       * malloc(0) for an override small enough that the floor divides
+       * to zero. */
       for (cap = FILESTREAM_RBUF_LEN;
             cap != 0 && cap >= FILESTREAM_RBUF_LEN / 16; cap >>= 2)
       {

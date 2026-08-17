@@ -497,8 +497,11 @@ static void case_alloc_failure_is_not_latched(void)
          "alloc refused: no tell() is attempted when there is no buffer");
    CHECK(vfs_read_calls == EXPECT_BYTE_READS,
          "alloc refused: fallback is one 1-byte read per byte");
-   CHECK(alloc_calls > 1,
-         "alloc refused: the handle is not latched - allocation is retried");
+   /* Pinned rather than bounded: every fill walks the whole ladder,
+    * and a fill happens once per gets() plus once per byte the getc()
+    * fallback consumes.  A latch on this arm would collapse it to 3. */
+   CHECK(alloc_calls == 3 * (gets_calls + EXPECT_BYTE_READS),
+         "alloc refused: the handle is not latched - the full ladder is retried per fill");
    printf("info: alloc refused %lu allocation attempts for %lu bytes\n",
          alloc_calls, (unsigned long)fixture_len);
 }
@@ -610,6 +613,61 @@ static void case_latch_rearms_once_after_seek(void)
    filestream_close(fp);
 }
 
+/* The limitation the ladder comment states, asserted so it stays a
+ * decision rather than drifting into a surprise.  A handle that took a
+ * smaller buffer while the heap was tight keeps it once the pressure
+ * lifts: rbuf != NULL short-circuits the ladder and there is no path
+ * back up.  1 KiB is still a thousandth of the byte path's VFS
+ * traffic, which is why this is left alone. */
+static void case_smaller_buffer_is_kept(void)
+{
+   char   line[LINE_BUF];
+   RFILE *fp;
+   size_t off = 0;
+
+   reset_counters();
+   alloc_refuse_at_least = RBUF_LEN;
+
+   fp = filestream_open(FIXTURE_PATH,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   CHECK(fp != NULL, "kept size: fixture opened");
+   if (!fp)
+      return;
+
+   CHECK(filestream_gets(fp, line, sizeof(line)) != NULL,
+         "kept size: the first read is served from the smaller buffer");
+   CHECK(alloc_last_granted == RBUF_LEN / 4,
+         "kept size: the first fill took the next size down");
+
+   /* The bad moment passes. */
+   alloc_refuse_at_least = 0;
+   off                   = strlen(line);
+
+   while (filestream_gets(fp, line, sizeof(line)))
+   {
+      size_t n = strlen(line);
+      if (n == 0 || off + n > fixture_len
+            || memcmp(fixture + off, line, n) != 0)
+      {
+         off = (size_t)-1;
+         break;
+      }
+      off += n;
+   }
+
+   CHECK(off == fixture_len, "kept size: whole file read back byte-exact");
+   CHECK(alloc_calls == 2,
+         "kept size: nothing is reallocated once a buffer exists");
+   CHECK(vfs_read_calls == EXPECT_FILLS(RBUF_LEN / 4),
+         "kept size: the handle stays on the 4 KiB read count for its life");
+
+   printf("info: kept size %lu bytes held across %lu read calls\n",
+         (unsigned long)alloc_last_granted, vfs_read_calls);
+
+   filestream_close(fp);
+}
+
 int main(void)
 {
    if (!make_fixture())
@@ -630,6 +688,7 @@ int main(void)
    case_latch_rearms_once_after_seek();
    case_alloc_failure_is_not_latched();
    case_alloc_falls_back_to_smaller();
+   case_smaller_buffer_is_kept();
    case_transient_alloc_failure_recovers();
 
    remove(FIXTURE_PATH);
