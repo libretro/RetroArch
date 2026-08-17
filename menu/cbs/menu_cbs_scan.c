@@ -249,7 +249,12 @@ static int action_scan_video_font_path(const char *path,
    settings_t *settings       = config_get_ptr();
 
    strlcpy(settings->paths.path_font, "null", sizeof(settings->paths.path_font));
-   command_event(CMD_EVENT_REINIT, NULL);
+
+   /* Same route as the value-change handler: rebuild the OSD font in
+    * place, and reinitialise only where a driver keeps its own. */
+   if (!font_driver_reinit_osd(settings->paths.path_font,
+            settings->floats.video_font_size))
+      command_event(CMD_EVENT_REINIT, NULL);
 
    return 0;
 }

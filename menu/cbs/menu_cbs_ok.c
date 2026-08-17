@@ -7420,8 +7420,24 @@ static int generic_action_ok_dropdown_setting(const char *path, const char *labe
          break;
       case ST_FLOAT:
          {
-            float val                    = (float)atof(path);
-            *setting->value.target.fraction = (float)val;
+            /* path is the row label. A setting with a representation
+             * prints something other than its value - the OSD colours
+             * show 0-255 for a 0..1 fraction - so the value comes from
+             * the index, stepped off min exactly as the list was
+             * built. Without one the label is the value. */
+            if (setting->actions->repr)
+            {
+               float min = (setting->flags & SD_FLAG_ENFORCE_MINRANGE)
+                  ? setting->min : 0.00f;
+               float val = min + ((float)idx * setting->step);
+
+               if (     (setting->flags & SD_FLAG_ENFORCE_MAXRANGE)
+                     && (val > setting->max))
+                  val    = setting->max;
+               *setting->value.target.fraction = val;
+            }
+            else
+               *setting->value.target.fraction = (float)atof(path);
          }
          break;
       case ST_STRING_OPTIONS:

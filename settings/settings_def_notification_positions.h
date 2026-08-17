@@ -27,7 +27,7 @@ S_FLOAT_EX(video_msg_pos_y, VIDEO_MESSAGE_POS_Y,
 #ifndef SETTINGS_DEF_CONFIG_PASS
 S_FLOAT_EX(video_msg_color_r, VIDEO_MESSAGE_COLOR_RED,
       "video_msg_color_red",
-      ((DEFAULT_MESSAGE_COLOR >> 16) & 0xff) / 255.0f, "%.3f", SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 1, 1.0f/255.0f, NULL, setting_get_string_representation_float_video_msg_color, NULL, NULL, NULL, NULL, 0,
+      ((DEFAULT_MESSAGE_COLOR >> 16) & 0xff) / 255.0f, "%.3f", SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 1, 1.0f/255.0f, setting_action_ok_uint, setting_get_string_representation_float_video_msg_color, NULL, NULL, NULL, NULL, 0,
       "Notification Color (Red)",
       "Sets the red value of the OSD text color. Valid values are between 0 and 255.")
 #endif
@@ -36,7 +36,7 @@ S_FLOAT_EX(video_msg_color_r, VIDEO_MESSAGE_COLOR_RED,
 #ifndef SETTINGS_DEF_CONFIG_PASS
 S_FLOAT_EX(video_msg_color_g, VIDEO_MESSAGE_COLOR_GREEN,
       "video_msg_color_green",
-      ((DEFAULT_MESSAGE_COLOR >> 8) & 0xff) / 255.0f, "%.3f", SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 1, 1.0f/255.0f, NULL, setting_get_string_representation_float_video_msg_color, NULL, NULL, NULL, NULL, 0,
+      ((DEFAULT_MESSAGE_COLOR >> 8) & 0xff) / 255.0f, "%.3f", SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 1, 1.0f/255.0f, setting_action_ok_uint, setting_get_string_representation_float_video_msg_color, NULL, NULL, NULL, NULL, 0,
       "Notification Color (Green)",
       "Sets the green value of the OSD text color. Valid values are between 0 and 255.")
 #endif
@@ -45,7 +45,7 @@ S_FLOAT_EX(video_msg_color_g, VIDEO_MESSAGE_COLOR_GREEN,
 #ifndef SETTINGS_DEF_CONFIG_PASS
 S_FLOAT_EX(video_msg_color_b, VIDEO_MESSAGE_COLOR_BLUE,
       "video_msg_color_blue",
-      ((DEFAULT_MESSAGE_COLOR >> 0) & 0xff) / 255.0f, "%.3f", SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 1, 1.0f/255.0f, NULL, setting_get_string_representation_float_video_msg_color, NULL, NULL, NULL, NULL, 0,
+      ((DEFAULT_MESSAGE_COLOR >> 0) & 0xff) / 255.0f, "%.3f", SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 1, 1.0f/255.0f, setting_action_ok_uint, setting_get_string_representation_float_video_msg_color, NULL, NULL, NULL, NULL, 0,
       "Notification Color (Blue)",
       "Sets the blue value of the OSD text color. Valid values are between 0 and 255.")
 #endif
