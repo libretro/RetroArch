@@ -1,5 +1,5 @@
 /* Regression tests for the pure BMP encoder split
- * (libretro-common/formats/bmp/rbmp_encode.c + rbmp_file.c):
+ * (libretro-common/formats/bmp/rbmp_encode.c + file/rbmp_file.c):
  *
  *   - rbmp_save_image_string(): exact-size buffer encode for every
  *     source type, positive and negative pitch, unaligned widths

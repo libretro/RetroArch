@@ -464,7 +464,7 @@ VIDEO IMAGE
 #include "../libretro-common/formats/png/rpng.c"
 #include "../libretro-common/formats/png/rpng_apng.c"
 #include "../libretro-common/formats/png/rpng_encode.c"
-#include "../libretro-common/formats/png/rpng_file.c"
+#include "../libretro-common/file/rpng_file.c"
 #endif
 #ifdef HAVE_RJPEG
 #include "../libretro-common/formats/jpeg/rjpeg.c"
@@ -511,7 +511,7 @@ VIDEO IMAGE
 #endif
 
 #include "../libretro-common/formats/bmp/rbmp_encode.c"
-#include "../libretro-common/formats/bmp/rbmp_file.c"
+#include "../libretro-common/file/rbmp_file.c"
 
 #ifdef HAVE_RWAV
 #include "../libretro-common/formats/wav/rwav.c"

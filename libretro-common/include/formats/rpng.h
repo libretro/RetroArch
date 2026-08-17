@@ -132,7 +132,7 @@ struct rpng_hdr_metadata;
 /* Pure encode into an already-open intfstream (file, memory, or
  * custom).  This is the core entry point: everything else - the
  * *_string buffer encoders here and the deprecated path wrappers in
- * rpng_file.c - is built on top of it.  `pitch` is the row stride in
+ * file/rpng_file.c - is built on top of it.  `pitch` is the row stride in
  * bytes and may be negative to walk a bottom-up source top-down.
  * Peak scratch memory is a handful of rows regardless of image size;
  * output is produced in ~16 KiB IDAT chunks as compression proceeds. */
@@ -148,7 +148,7 @@ bool rpng_save_image_stream(const uint8_t *data, intfstream_t *intf_s,
       const struct rpng_hdr_metadata *hdr);
 
 /* Deprecated path-based convenience wrappers (open + stream encode +
- * close), implemented in rpng_file.c so the pure encoder TU carries no
+ * close), implemented in file/rpng_file.c so the pure encoder TU carries no
  * filesystem dependency.  Prefer the *_string entry points plus a
  * single filestream_write_file() at the edge, or the stream entry
  * points above. */

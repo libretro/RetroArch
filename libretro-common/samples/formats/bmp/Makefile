@@ -13,7 +13,7 @@ TEST2_SOURCES := \
 	rbmp_encode_test.c \
 	$(LIBRETRO_COMM_DIR)/formats/bmp/rbmp.c \
 	$(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_encode.c \
-	$(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_file.c \
+	$(LIBRETRO_COMM_DIR)/file/rbmp_file.c \
 	$(LIBRETRO_COMM_DIR)/streams/interface_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/memory_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \

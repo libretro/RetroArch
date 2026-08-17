@@ -82,6 +82,7 @@ jobs:
             vfs_hybrid_test
             cdrom_cuesheet_overflow_test
             cdfs_dir_record_test
+            cdfs_pure_api_test
             chd_meta_overflow_test
             strlcpy_append_test
             http_parse_test
@@ -89,9 +90,16 @@ jobs:
             rm3u_test
             rtga_test
             rbmp_test
+            rbmp_encode_test
             rpng_chunk_overflow_test
             rpng_roundtrip_test
             rpng_decode_corpus_test
+            # Benchmark, not a pass/fail test, but it runs its default
+            # 4K comparison and exits 0, so under this job's sanitizer
+            # build it doubles as end-to-end ASan/UBSan smoke coverage
+            # of the old and new screenshot encode/write paths.
+            # Timings in its output are informational only.
+            screenshot_io_bench
             word_wrap_overflow_test
             task_queue_title_error_test
             tpool_wait_test

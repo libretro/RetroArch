@@ -71,7 +71,7 @@ bool rbmp_save_image_stream(
       enum rbmp_source_type type);
 
 /* Deprecated path-based convenience wrapper (open + stream encode +
- * close), implemented in rbmp_file.c so the pure encoder TU carries no
+ * close), implemented in file/rbmp_file.c so the pure encoder TU carries no
  * filesystem dependency.  Prefer rbmp_save_image_string() +
  * filestream_write_file(), or rbmp_save_image_stream(). */
 bool rbmp_save_image(

@@ -212,7 +212,7 @@ static bool png_write_iend_string(intfstream_t* intf_s)
 }
 
 /* enum rpng_pixfmt lives in rpng.h so that the path-based convenience
- * adapters in rpng_file.c (and any external stream caller) can select
+ * adapters in file/rpng_file.c (and any external stream caller) can select
  * the format without this TU exposing anything path-related. */
 
 static unsigned rpng_pixfmt_bpp(enum rpng_pixfmt fmt)
@@ -1012,7 +1012,7 @@ bool rpng_save_image_stream(const uint8_t *data, intfstream_t* intf_s,
 }
 
 /* The path-based convenience wrappers (rpng_save_image_argb / bgr24 /
- * rgba / rgb48_hdr) live in rpng_file.c: this TU is a pure encoder and
+ * rgba / rgb48_hdr) live in file/rpng_file.c: this TU is a pure encoder and
  * never opens a path.  Memory-backed intfstreams (used by the *_string
  * entry points below) are the only streams it creates itself. */
 

@@ -30,7 +30,7 @@
  * path and has no dependency on file_stream.h / the VFS.  The primary
  * entry point is rbmp_save_image_string() (exact-size heap buffer);
  * rbmp_save_image_stream() writes to any already-open intfstream.  The
- * legacy path-based rbmp_save_image() lives in rbmp_file.c as a thin
+ * legacy path-based rbmp_save_image() lives in file/rbmp_file.c as a thin
  * deprecated adapter. */
 
 void form_bmp_header(uint8_t *header,
