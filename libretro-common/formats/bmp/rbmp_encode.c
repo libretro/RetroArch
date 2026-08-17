@@ -23,15 +23,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <streams/interface_stream.h>
 #include <formats/rbmp.h>
 
-/* This TU is a pure encoder: bytes in -> bytes out.  It never opens a
- * path and has no dependency on file_stream.h / the VFS.  The primary
- * entry point is rbmp_save_image_string() (exact-size heap buffer);
- * rbmp_save_image_stream() writes to any already-open intfstream.  The
- * legacy path-based rbmp_save_image() lives in file/rbmp_file.c as a thin
- * deprecated adapter. */
+/* This TU is a pure encoder: bytes in -> bytes out.  It has no stream
+ * or VFS dependency of any kind - the only includes are the C library
+ * and its own header - so it can be vendored as a single file.  The
+ * primary entry point is rbmp_save_image_string() (exact-size heap
+ * buffer); rbmp_row_size() and rbmp_encode_row() expose the row
+ * primitives for callers that stream rows to a sink of their own.
+ * The intfstream writer rbmp_save_image_stream() and the legacy
+ * path-based rbmp_save_image() both live in file/rbmp_file.c, built
+ * on those primitives. */
 
 void form_bmp_header(uint8_t *header,
       unsigned width, unsigned height,
@@ -113,7 +115,7 @@ void form_bmp_header(uint8_t *header,
    header[53] = 0;
 }
 
-static size_t rbmp_line_size(unsigned width, enum rbmp_source_type type)
+size_t rbmp_row_size(unsigned width, enum rbmp_source_type type)
 {
    unsigned bpp = (type == RBMP_SOURCE_TYPE_ARGB8888) ? 4 : 3;
    return ((size_t)width * bpp + 3) & ~(size_t)3;
@@ -199,6 +201,15 @@ static const uint8_t *rbmp_fill_row(uint8_t *line, const uint8_t *src,
    return line;
 }
 
+const uint8_t *rbmp_encode_row(uint8_t *line, const void *row,
+      unsigned width, unsigned pitch, enum rbmp_source_type type)
+{
+   if (!line || !row || !width)
+      return NULL;
+   return rbmp_fill_row(line, (const uint8_t*)row, width,
+         rbmp_row_size(width, type), pitch, type);
+}
+
 uint8_t *rbmp_save_image_string(
       const void *frame,
       unsigned width, unsigned height, unsigned pitch,
@@ -220,7 +231,7 @@ uint8_t *rbmp_save_image_string(
    if (!frame || !out_len || !width || !height)
       return NULL;
 
-   line_size = rbmp_line_size(width, type);
+   line_size = rbmp_row_size(width, type);
 
    /* BMP output size is exact and fixed:
     * 54-byte header + line_size * height rows. */
@@ -244,62 +255,4 @@ uint8_t *rbmp_save_image_string(
 
    *out_len = _len;
    return buf;
-}
-
-bool rbmp_save_image_stream(
-      intfstream_t *intf_s,
-      const void *frame,
-      unsigned width, unsigned height, unsigned pitch,
-      enum rbmp_source_type type)
-{
-   unsigned j;
-   uint8_t header[54];
-   size_t line_size;
-   uint8_t *line      = NULL;
-   bool ret           = true;
-   const uint8_t *src = (const uint8_t*)frame;
-   /* See rbmp_save_image_string regarding the signedness of pitch. */
-   int s_pitch        = (int)pitch;
-
-   if (!intf_s || !frame || !width || !height)
-      return false;
-
-   line_size = rbmp_line_size(width, type);
-
-   form_bmp_header(header, width, height, type == RBMP_SOURCE_TYPE_ARGB8888);
-   if (intfstream_write(intf_s, header, sizeof(header))
-         != (int64_t)sizeof(header))
-      return false;
-
-   /* Whole-block fast path: when the source stride equals the padded
-    * BMP row size and the rows already carry the output byte order
-    * (BGR24 with 4-byte-aligned width, or ARGB whose memory layout is
-    * BMP's 32bpp layout verbatim), the pixel block on disk is the
-    * source buffer byte for byte.  Hand it to the stream in one write:
-    * no line buffer, no per-row calls, zero copies on this side. */
-   if (     s_pitch > 0
-         && (size_t)s_pitch == line_size
-         && (   type == RBMP_SOURCE_TYPE_BGR24
-             || type == RBMP_SOURCE_TYPE_ARGB8888))
-   {
-      int64_t block = (int64_t)line_size * height;
-      return intfstream_write(intf_s, src, block) == block;
-   }
-
-   if (!(line = (uint8_t*)malloc(line_size)))
-      return false;
-
-   for (j = 0; j < height; j++, src += s_pitch)
-   {
-      const uint8_t *row = rbmp_fill_row(line, src, width,
-            line_size, pitch, type);
-      if (intfstream_write(intf_s, row, line_size) != (int64_t)line_size)
-      {
-         ret = false;
-         break;
-      }
-   }
-
-   free(line);
-   return ret;
 }

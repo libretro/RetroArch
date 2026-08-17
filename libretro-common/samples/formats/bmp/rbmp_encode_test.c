@@ -1,6 +1,10 @@
 /* Regression tests for the pure BMP encoder split
  * (libretro-common/formats/bmp/rbmp_encode.c + file/rbmp_file.c):
  *
+ *   - rbmp_row_size() / rbmp_encode_row(): the public row primitives
+ *     the stream writer is built on - sizing, pass-through vs scratch
+ *     conversion, padding, argument validation.
+ *
  *   - rbmp_save_image_string(): exact-size buffer encode for every
  *     source type, positive and negative pitch, unaligned widths
  *     (row padding), header field sanity.
@@ -400,6 +404,57 @@ static void test_path_adapter(void)
    free(frame);
 }
 
+/* The public row primitives back both the string encoder and (via
+ * file/rbmp_file.c) the stream writer; lock their contract directly. */
+static void test_row_primitives(void)
+{
+   uint8_t line[64];
+   uint8_t row24[9];   /* 3px BGR24 payload, no slack */
+   uint32_t row32[3];
+   const uint8_t *out;
+   size_t i;
+
+   CHECK(rbmp_row_size(3, RBMP_SOURCE_TYPE_BGR24) == 12,
+         "row_size: 3px BGR24 pads 9 -> 12");
+   CHECK(rbmp_row_size(4, RBMP_SOURCE_TYPE_BGR24) == 12,
+         "row_size: 4px BGR24 already aligned");
+   CHECK(rbmp_row_size(3, RBMP_SOURCE_TYPE_ARGB8888) == 12,
+         "row_size: 32bpp rows never pad");
+   CHECK(rbmp_row_size(3, RBMP_SOURCE_TYPE_RGB565) == 12,
+         "row_size: RGB565 sized as 24bpp output");
+
+   for (i = 0; i < sizeof(row24); i++)
+      row24[i] = (uint8_t)(i + 1);
+
+   /* Aligned-stride BGR24 and ARGB pass the source row through. */
+   out = rbmp_encode_row(line, row24, 4, 12, RBMP_SOURCE_TYPE_BGR24);
+   CHECK(out != NULL && out != line,
+         "encode_row: aligned BGR24 passes through");
+   row32[0] = 0xFF112233u; row32[1] = 0xFF445566u; row32[2] = 0xFF778899u;
+   out = rbmp_encode_row(line, row32, 3, 12, RBMP_SOURCE_TYPE_ARGB8888);
+   CHECK(out == (const uint8_t*)row32,
+         "encode_row: ARGB passes through");
+
+   /* Unaligned BGR24 converts into the scratch with zeroed padding. */
+   memset(line, 0xAA, sizeof(line));
+   out = rbmp_encode_row(line, row24, 3, 9, RBMP_SOURCE_TYPE_BGR24);
+   CHECK(out == line && !memcmp(line, row24, 9)
+         && line[9] == 0 && line[10] == 0 && line[11] == 0,
+         "encode_row: unaligned BGR24 pads into scratch");
+
+   /* XRGB converts to BGR byte order in the scratch. */
+   memset(line, 0xAA, sizeof(line));
+   out = rbmp_encode_row(line, row32, 3, 12, RBMP_SOURCE_TYPE_XRGB888);
+   CHECK(out == line && line[0] == 0x33 && line[1] == 0x22
+         && line[2] == 0x11 && line[9] == 0,
+         "encode_row: XRGB888 converted and padded");
+
+   CHECK(rbmp_encode_row(NULL, row24, 3, 9, RBMP_SOURCE_TYPE_BGR24) == NULL
+         && rbmp_encode_row(line, NULL, 3, 9, RBMP_SOURCE_TYPE_BGR24) == NULL
+         && rbmp_encode_row(line, row24, 0, 9, RBMP_SOURCE_TYPE_BGR24) == NULL,
+         "encode_row: invalid arguments rejected");
+}
+
 static void test_invalid_args(void)
 {
    size_t _len = 0;
@@ -428,6 +483,7 @@ int main(void)
    test_bgr24_roundtrip();
    test_argb8888_roundtrip();
    test_path_adapter();
+   test_row_primitives();
    test_invalid_args();
 
    if (failures)
