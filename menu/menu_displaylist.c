@@ -6620,6 +6620,34 @@ static bool menu_displaylist_refresh(struct menu_state *menu_st, file_list_t *li
    return true;
 }
 
+#ifdef HAVE_NETWORKING
+/* Put the cursor back on the Content Downloader directory the user
+ * just backed out of.  Called for both the stack push and the rebuild
+ * that follows the download, hence clearing the name on a match only:
+ * the push has nothing to match against yet. */
+static void menu_displaylist_restore_core_content_dir(
+      struct menu_state *menu_st, file_list_t *list)
+{
+   size_t i;
+   menu_handle_t *menu = menu_st->driver_data;
+
+   if (!list || !menu || !menu->core_content_dir[0])
+      return;
+
+   for (i = 0; i < list->size; i++)
+   {
+      if (!string_is_equal(list->list[i].path, menu->core_content_dir))
+         continue;
+
+      menu_st->selection_ptr    = i;
+      if (menu_st->driver_ctx && menu_st->driver_ctx->navigation_set)
+         menu_st->driver_ctx->navigation_set(menu_st->userdata, true);
+      menu->core_content_dir[0] = '\0';
+      break;
+   }
+}
+#endif
+
 bool menu_displaylist_process(menu_displaylist_info_t *info)
 {
 #ifdef HAVE_NETWORKING
@@ -6688,6 +6716,13 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
 
    if (info_flags & MD_FLAG_NEED_CLEAR)
       menu_st->selection_ptr = 0;
+
+#ifdef HAVE_NETWORKING
+   /* When going back from the online updater core content,
+    * make sure we restore the active core content selection. */
+   if (string_is_equal(info->label,  MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST_STR))
+      menu_displaylist_restore_core_content_dir(menu_st, info_list);
+#endif
 
    if (info_flags & MD_FLAG_NEED_PUSH)
    {
@@ -14133,45 +14168,6 @@ static bool menu_displaylist_ctl_internal(
                                | MD_FLAG_NEED_PUSH
                                | MD_FLAG_NEED_CLEAR;
 #endif
-            break;
-         case DISPLAYLIST_CORE_CONTENT_DIRS_SUBDIR:
-            {
-#ifdef HAVE_NETWORKING
-               size_t label_len;
-               char new_label[NAME_MAX_LENGTH];
-               const char *con       = info->path;
-               const char *semi      = strchr(con, ';');
-
-               if (semi)
-               {
-                  label_len = (size_t)(semi - con);
-                  if (label_len >= sizeof(new_label))
-                     label_len = sizeof(new_label) - 1;
-                  memcpy(new_label, con, label_len);
-                  new_label[label_len] = '\0';
-                  strlcpy(menu->core_buf, semi + 1, menu->core_len);
-               }
-               else
-               {
-                  strlcpy(new_label, con, sizeof(new_label));
-                  menu->core_buf[0] = '\0';
-               }
-
-               if ((count = (unsigned)print_buf_lines(
-                           info->list, new_label, menu->core_buf,
-                           menu->core_len, FILE_TYPE_DOWNLOAD_URL,
-                           false)) == 0)
-                  menu_entries_append(info->list,
-                        msg_hash_to_str(
-                           MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                        FILE_TYPE_NONE, 0, 0, NULL);
-               info->flags       |= MD_FLAG_NEED_REFRESH
-                  | MD_FLAG_NEED_PUSH
-                  | MD_FLAG_NEED_CLEAR;
-#endif
-            }
             break;
          case DISPLAYLIST_CORE_CONTENT_DIRS:
             menu_entries_clear(info->list);
