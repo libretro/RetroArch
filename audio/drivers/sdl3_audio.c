@@ -391,8 +391,8 @@ static ssize_t sdl3_audio_write(void *data, const void *s, size_t len)
       SDL_SetAudioStreamGain(sdl->stream, 1.0f);
       sdl->in_spec = sdl->spec;
       sdl->in_cap  = sdl->buffer_size;
-      sdl->ratio   = 1.0f;
-      sdl->gain    = 1.0f;
+      sdl->ratio = 1.0f;
+      sdl->gain = 1.0f;
    }
 
    return sdl3_audio_queue(sdl, s, len, sdl->buffer_size, 1);
@@ -418,9 +418,9 @@ static ssize_t sdl3_audio_write_raw(void *data, const int16_t *samples,
          || sdl->in_spec.freq != (int)input_rate)
    {
       SDL_AudioSpec in_spec;
-      in_spec.format   = SDL_AUDIO_S16;
+      in_spec.format = SDL_AUDIO_S16;
       in_spec.channels = 2;
-      in_spec.freq     = (int)input_rate;
+      in_spec.freq = (int)input_rate;
       if (!SDL_SetAudioStreamFormat(sdl->stream, &in_spec, NULL))
       {
          RARCH_ERR("[SDL3 audio] Failed to set raw input format: %s.\n", SDL_GetError());
