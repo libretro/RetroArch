@@ -1449,6 +1449,7 @@ static const struct
    char s_012938fb[29];
    char s_a747cdc9[53];
    char s_2f169651[19];
+   char s_73674a86[23];
    char s_705eee28[65];
    char s_62af62ac[52];
    char s_12b25a4b[62];
@@ -5960,6 +5961,7 @@ static const struct
    "Facht\303\263ir Sc\303\241la Mionsamhail",
    "Gearr Ainmneacha Seinmliosta\303\255 (Atos\303\272 ag teast\303\241il)",
    "\303\232s\303\241id M\303\263d PAL60",
+   "<Eolaire Tuismitheora>",
    "Cuir an t-\303\241bhar ar sos nuair a bh\303\255onn an roghchl\303\241r gn\303\255omhach",
    "Cuir \303\201bhar ar Sos Nuair nach bhfuil s\303\251 Gn\303\255omhach",
    "Cuir \303\201bhar ar Sos nuair a Dh\303\255cheangla\303\255tear an Rialaitheoir",
@@ -9864,7 +9866,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (204097u
+      (sizeof(msg_hash_ga_blob) == (204120u
 #ifdef ANDROID
        + 390u
 #endif
@@ -11711,6 +11713,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
