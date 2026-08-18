@@ -50,6 +50,9 @@ typedef struct sdl3_audio
    SDL_AudioSpec spec; /**< The format for the given audio sample. */
    SDL_AudioSpec in_spec; /**< The stream's current input-side format; differs from spec while the write_raw fast path is active. */
    size_t buffer_size; /**< Cap in bytes on queued audio: writes block past it, capture backlog is dropped past it. */
+   size_t in_cap; /**< buffer_size converted into input-format bytes; equal to buffer_size outside the write_raw fast path. */
+   float ratio; /**< Frequency ratio currently set on the stream, to skip redundant sets. */
+   float gain; /**< Gain currently set on the stream, to skip redundant sets. */
    bool nonblock; /**< When true, drop samples instead of waiting for the device to clear. */
 } sdl3_audio_t;
 
@@ -253,6 +256,9 @@ static void *sdl3_audio_init(const char *device,
    min_size = (size_t)(2 * device_sample_frames) * frame_size;
    if (sdl->buffer_size < min_size)
       sdl->buffer_size = min_size;
+   sdl->in_cap = sdl->buffer_size;
+   sdl->ratio  = 1.0f;
+   sdl->gain   = 1.0f;
 
    *new_rate = sdl->spec.freq;
 
@@ -307,32 +313,29 @@ static size_t sdl3_audio_write_avail(void *data)
    return sdl->buffer_size - (size_t)queued;
 }
 
-static ssize_t sdl3_audio_write(void *data, const void *s, size_t len)
+/**
+ * Queues up to len bytes into the stream, keeping at most cap bytes
+ * pending. cap and len are in the stream's current input format, and
+ * writes are aligned down to whole frame_size-byte frames. When the
+ * queue is full: drop the rest when nonblocking, otherwise wait for
+ * the device to drain, but give up if it stalls.
+ *
+ * @return The number of bytes queued, or -1 when the first write failed.
+ */
+static ssize_t sdl3_audio_queue(sdl3_audio_t *sdl, const void *s,
+      size_t len, size_t cap, size_t frame_size)
 {
    size_t size = 0;
    Uint64 deadline = 0;
-   sdl3_audio_t *sdl = (sdl3_audio_t*)data;
-
-   if (!sdl)
-      return -1;
-
-   /* If the write_raw fast path was active before, restore the
-    * stream's input side to the device spec this path writes, and
-    * undo the SDL-side rate/gain adjustments (on this path the
-    * frontend applies them in software before handing us data). */
-   if (sdl->in_spec.freq != sdl->spec.freq
-         || sdl->in_spec.format != sdl->spec.format
-         || sdl->in_spec.channels != sdl->spec.channels)
-   {
-      SDL_SetAudioStreamFormat(sdl->stream, &sdl->spec, NULL);
-      SDL_SetAudioStreamFrequencyRatio(sdl->stream, 1.0f);
-      SDL_SetAudioStreamGain(sdl->stream, 1.0f);
-      sdl->in_spec = sdl->spec;
-   }
 
    while (size < len)
    {
-      size_t avail = sdl3_audio_write_avail(sdl);
+      int queued   = SDL_GetAudioStreamQueued(sdl->stream);
+      size_t avail = (queued < 0 || (size_t)queued >= cap)
+            ? 0 : cap - (size_t)queued;
+
+      /* Only queue whole frames. */
+      avail -= avail % frame_size;
 
       if (avail == 0)
       {
@@ -367,7 +370,40 @@ static ssize_t sdl3_audio_write(void *data, const void *s, size_t len)
       }
    }
 
-   return size;
+   return (ssize_t)size;
+}
+
+static ssize_t sdl3_audio_write(void *data, const void *s, size_t len)
+{
+   sdl3_audio_t *sdl = (sdl3_audio_t*)data;
+
+   if (!sdl)
+      return -1;
+
+   /* If the write_raw fast path was active before, restore the
+    * stream's input side to the device spec this path writes, and
+    * undo the SDL-side rate/gain adjustments (on this path the
+    * frontend applies them in software before handing us data). */
+   if (sdl->in_spec.freq != sdl->spec.freq
+         || sdl->in_spec.format != sdl->spec.format
+         || sdl->in_spec.channels != sdl->spec.channels)
+   {
+      if (!SDL_SetAudioStreamFormat(sdl->stream, &sdl->spec, NULL))
+      {
+         /* The stream still expects the fast path's format; writing
+          * device-format data into it would queue garbage. */
+         RARCH_ERR("[SDL3 audio] Failed to restore stream format: %s.\n", SDL_GetError());
+         return -1;
+      }
+      SDL_SetAudioStreamFrequencyRatio(sdl->stream, 1.0f);
+      SDL_SetAudioStreamGain(sdl->stream, 1.0f);
+      sdl->in_spec = sdl->spec;
+      sdl->in_cap  = sdl->buffer_size;
+      sdl->ratio   = 1.0f;
+      sdl->gain    = 1.0f;
+   }
+
+   return sdl3_audio_queue(sdl, s, len, sdl->buffer_size, 1);
 }
 
 /**
@@ -378,9 +414,7 @@ static ssize_t sdl3_audio_write(void *data, const void *s, size_t len)
 static ssize_t sdl3_audio_write_raw(void *data, const int16_t *samples,
       size_t frames, unsigned input_rate, double rate_adjust, float volume)
 {
-   size_t len, cap;
-   size_t size = 0;
-   Uint64 deadline = 0;
+   ssize_t size;
    const size_t frame_size = 2 * sizeof(int16_t);
    sdl3_audio_t *sdl = (sdl3_audio_t*)data;
 
@@ -405,67 +439,41 @@ static ssize_t sdl3_audio_write_raw(void *data, const int16_t *samples,
          return -1;
       }
       sdl->in_spec = in_spec;
+
+      /* SDL reports queued bytes in the stream's input format, so keep
+       * the device-rate buffer_size cap converted into input-rate int16
+       * bytes to compare against them. */
+      sdl->in_cap = (size_t)((uint64_t)(sdl->buffer_size / SDL_AUDIO_FRAMESIZE(sdl->spec))
+            * input_rate / (unsigned)sdl->spec.freq) * frame_size;
    }
 
    /* Fold the A/V sync rate control into SDL's resampler. rate_adjust
     * above 1.0 asks for more output per input frame, which for SDL
-    * means consuming the input more slowly (ratio below 1.0). */
+    * means consuming the input more slowly (ratio below 1.0). Skip the
+    * stream call (and its lock) when the value is unchanged. */
    if (rate_adjust > 0.0)
-      SDL_SetAudioStreamFrequencyRatio(sdl->stream, (float)(1.0 / rate_adjust));
-
-   /* Mute/volume: per the write_raw contract the driver applies the
-    * passed gain (0.0 when muted) to its output. */
-   SDL_SetAudioStreamGain(sdl->stream, volume);
-
-   /* SDL reports queued bytes in the stream's input format, so convert
-    * the device-rate buffer_size cap into input-rate int16 bytes to
-    * compare against them. */
-   cap = (size_t)((uint64_t)(sdl->buffer_size / SDL_AUDIO_FRAMESIZE(sdl->spec))
-         * input_rate / (unsigned)sdl->spec.freq) * frame_size;
-   len = frames * frame_size;
-
-   while (size < len)
    {
-      int queued   = SDL_GetAudioStreamQueued(sdl->stream);
-      size_t avail = (queued < 0 || (size_t)queued >= cap)
-            ? 0 : cap - (size_t)queued;
-
-      /* Only queue whole frames. */
-      avail -= avail % frame_size;
-
-      if (avail == 0)
+      float ratio = (float)(1.0 / rate_adjust);
+      if (ratio != sdl->ratio)
       {
-         Uint64 now;
-
-         /* Same bounded-poll policy as sdl3_audio_write: drop samples
-          * when nonblocking, otherwise wait for the device to drain,
-          * but give up if it stalls. */
-         if (sdl->nonblock)
-            break;
-         now = SDL_GetTicksNS();
-         if (deadline == 0)
-            deadline = now + SDL3_AUDIO_STALL_TIMEOUT_NS;
-         else if (now >= deadline)
-            break;
-         SDL_DelayNS(SDL3_AUDIO_POLL_INTERVAL_NS);
-      }
-      else
-      {
-         size_t write_amt = MIN(len - size, avail);
-         if (!SDL_PutAudioStreamData(sdl->stream,
-               (const char*)samples + size, (int)write_amt))
-         {
-            RARCH_ERR("[SDL3 audio] Failed to write to audio stream: %s.\n", SDL_GetError());
-            if (size == 0)
-               return -1;
-            break;
-         }
-         size += write_amt;
-         deadline = 0; /* Reset the stall clock. */
+         SDL_SetAudioStreamFrequencyRatio(sdl->stream, ratio);
+         sdl->ratio = ratio;
       }
    }
 
-   return (ssize_t)(size / frame_size);
+   /* Mute/volume: per the write_raw contract the driver applies the
+    * passed gain (0.0 when muted) to its output. */
+   if (volume != sdl->gain)
+   {
+      SDL_SetAudioStreamGain(sdl->stream, volume);
+      sdl->gain = volume;
+   }
+
+   size = sdl3_audio_queue(sdl, samples, frames * frame_size,
+         sdl->in_cap, frame_size);
+   if (size < 0)
+      return -1;
+   return size / (ssize_t)frame_size;
 }
 
 static bool sdl3_audio_stop(void *data)
