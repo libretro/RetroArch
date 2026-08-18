@@ -6727,12 +6727,22 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
    if (info_flags & MD_FLAG_NEED_PUSH)
    {
       if (info_flags & MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES)
-         menu_entries_append(info_list,
-               msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE),
-               MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE_STR,
-               MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE,
-               MENU_INFO_MESSAGE, 0, 0, NULL);
+      {
+         /* Empty because a deferred read is still LOADING, not
+          * because the playlist has no entries - say so, with the
+          * entry the deferred dirwalk uses; the pump replaces it. */
+         if (playlist_init_cached_pending())
+            menu_entries_append(info_list,
+                  msg_hash_to_str(MSG_LOADING), "",
+                  MSG_UNKNOWN, MENU_SETTING_NO_ITEM, 0, 0, NULL);
+         else
+            menu_entries_append(info_list,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE),
+                  MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE_STR,
+                  MENU_ENUM_LABEL_NO_PLAYLIST_ENTRIES_AVAILABLE,
+                  MENU_INFO_MESSAGE, 0, 0, NULL);
+      }
 
       if (menu_st->driver_ctx && menu_st->driver_ctx->populate_entries)
          menu_st->driver_ctx->populate_entries(

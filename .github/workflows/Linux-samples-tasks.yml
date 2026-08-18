@@ -815,7 +815,8 @@ jobs:
           # pass, and that abandoning a parse mid-document leaks
           # nothing.  The cache-reuse lane guards the size stamp the
           # cache keys on: it must be the on-disk size for every
-          # format and compression combination, or the cached
+          # format and compression combination - including after the
+          # autofix pass saves the file it fixed - or the cached
           # playlist is never reused and the menu re-parses on every
           # navigation.
           #
@@ -831,6 +832,15 @@ jobs:
           # when a request is superseded before it finishes, and that
           # the parse really yielded - a lane that stops exercising
           # its own window is worse than no lane.
+          #
+          # The pump and rebuild-reuse lanes cover issue #19427
+          # (large playlists flashing the empty-list placeholder):
+          # a yielded read must complete on frames alone, and the
+          # rebuild that follows completion must be served from the
+          # cache just installed - a restart there loops, one flash
+          # per completion.  Pinned: the recorded
+          # base_content_directory under an autofix-off config, and
+          # the size stamp left stale by the autofix pass's save.
           #
           # The truncated-JSON lane also guards the staged-entry
           # cleanup in playlist_read_file: an entry interrupted

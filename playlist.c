@@ -3640,6 +3640,12 @@ static int playlist_parse_step_autofix(playlist_parse_t *p,
    playlist->flags   |=  CNT_PLAYLIST_FLG_MOD;
    playlist_write_file(playlist);
 
+   /* The write changed the file this stamp describes - same hazard
+    * as the format conversion in playlist_init_cached_install, and
+    * playlist_cached_after_write() cannot refresh a playlist not
+    * yet installed.  Left stale, the reuse check never matches. */
+   playlist->file_size = path_get_size(playlist->config.path);
+
    p->phase = PLAYLIST_PARSE_PHASE_DONE;
    return 1;
 }
@@ -3905,7 +3911,14 @@ static bool playlist_cached_is_reusable(const playlist_config_t *config)
          || playlist_cached->config.fuzzy_archive_match != config->fuzzy_archive_match
          || playlist_cached->config.autofix_paths       != config->autofix_paths)
       return false;
-   if (!string_is_equal(playlist_cached->base_content_directory
+   /* Only compare the recorded base when autofix could act on it
+    * (playlist_parse_enter_autofix's own gate).  With autofix off a
+    * fresh parse leaves the record alone, so the cache is exactly
+    * what a re-read would produce - comparing unconditionally
+    * rejected such a playlist forever (issue #19427: every rebuild
+    * freed the playlist just installed and restarted the read). */
+   if (     config->autofix_paths
+         && !string_is_equal(playlist_cached->base_content_directory
             ? playlist_cached->base_content_directory : "",
             config->base_content_directory))
       return false;

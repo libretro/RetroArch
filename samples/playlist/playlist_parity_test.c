@@ -831,6 +831,14 @@ static void lane_cache_reuse(void)
    CHECK(write_whole(path, old_format), "fixture write");
    check_cache_reuse(path, false, "", "cache reuse (old format converted)");
 
+   /* Autofix with a base differing in length: the pass rewrites
+    * the entries and SAVES the file, changing the on-disk size out
+    * from under the stamp taken at open - the format conversion's
+    * hazard on the read path's other write. */
+   snprintf(path, sizeof(path), "%s/fixed.lpl", fixture_dir);
+   CHECK(write_whole(path, json_full), "fixture write");
+   check_cache_reuse(path, false, "/nb", "cache reuse (after autofix save)");
+
 #if defined(HAVE_COMPRESSION)
    /* RZIP compressed: the case where the stream size and the
     * on-disk size differ. */
@@ -1282,6 +1290,104 @@ static void lane_pump_completes_without_input(void)
             frames);
 }
 
+
+/* Issue #19427 (large playlists flashing "No playlist entries
+ * available" on Android): the rebuild after a completed deferred
+ * read must be served from the cache just installed.  A restart
+ * there frees that playlist and begins the read over, one
+ * placeholder flash per completion; small playlists hide the cycle
+ * by finishing inside one slice.  This drives the pump's frame
+ * shape - yielding first touch, frames to completion, re-request -
+ * and asserts no new parse, sentinel still present. */
+static void lane_rebuild_reuses_deferred_install(void)
+{
+   char path[512];
+   char *doc          = NULL;
+   playlist_config_t cfg;
+   playlist_t *cached = NULL;
+   unsigned had       = failures;
+   unsigned frames    = 0;
+   int r;
+
+   /* The file records a base_content_directory; the config has
+    * autofix off and no base - the #19427 shape.  A fresh parse
+    * leaves the record alone, so the cache must be reusable. */
+   if (!(doc = big_fixture_doc(600, "/games/recorded_base")))
+   {
+      CHECK(false, "rebuild-reuse lane: fixture alloc");
+      return;
+   }
+   snprintf(path, sizeof(path), "%s/rebuild.lpl", fixture_dir);
+   CHECK(write_whole(path, doc), "fixture write");
+   free(doc);
+
+   config_defaults(&cfg, path);
+   cfg.capacity = 8192;
+   playlist_config_set_base_content_directory(&cfg, "");
+
+   playlist_free_cached();
+   saf_vfs_install();
+
+   /* First touch, as the displaylist makes it: one budgeted slice,
+    * which over SAF-speed reads does not finish. */
+   {
+      int k = 2;
+      r = playlist_init_cached_deferred(&cfg, budget_countdown, &k);
+   }
+   CHECK(r == 0,
+         "rebuild-reuse lane: the first slice finished the read, so "
+         "this lane is not exercising the case it exists for");
+
+   /* Frames to completion, as menu_driver_pump_pending() drives. */
+   while (playlist_init_cached_pending() && frames < 10000)
+   {
+      int k = 2;
+      frames++;
+      r = playlist_init_cached_continue(budget_countdown, &k);
+      if (r > 0)
+         playlist_init_cached_finish();
+      else if (r < 0)
+         break;
+   }
+   CHECK(!playlist_init_cached_pending(),
+         "rebuild-reuse lane: read never completed");
+
+   if (!(cached = playlist_get_cached()))
+   {
+      CHECK(false, "rebuild-reuse lane: nothing installed");
+      saf_vfs_remove();
+      return;
+   }
+
+   /* In-memory sentinel: cannot survive a re-read from disk. */
+   playlist_set_default_core_name(cached, "REBUILD_REUSE_SENTINEL");
+
+   /* The rebuild: same request, same config. */
+   {
+      int k = 2;
+      r = playlist_init_cached_deferred(&cfg, budget_countdown, &k);
+   }
+   CHECK(r == 1,
+         "rebuild-reuse lane: re-request was not served from the "
+         "cache (r=%d) - the rebuild frees the playlist it just "
+         "installed and starts the read over", r);
+   CHECK(!playlist_init_cached_pending(),
+         "rebuild-reuse lane: re-request left a parse pending");
+   cached = playlist_get_cached();
+   CHECK(cached && streq(playlist_get_default_core_name(cached),
+            "REBUILD_REUSE_SENTINEL"),
+         "rebuild-reuse lane: cache was re-read from disk instead "
+         "of reused");
+
+   saf_vfs_remove();
+   playlist_free_cached();
+
+   if (failures == had)
+      fprintf(stderr,
+            "[pass] rebuild-reuse lane (%u frames to install)\n",
+            frames);
+}
+
 int main(int argc, char *argv[])
 {
    char cmd[600];
@@ -1315,6 +1421,7 @@ int main(int argc, char *argv[])
    lane_switch_supersedes_pending();
    lane_saf_slow_reads();
    lane_pump_completes_without_input();
+   lane_rebuild_reuses_deferred_install();
 
    snprintf(cmd, sizeof(cmd), "rm -rf %s", fixture_dir);
    if (system(cmd) != 0) { }

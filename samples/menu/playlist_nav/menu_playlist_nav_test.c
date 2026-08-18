@@ -71,6 +71,7 @@ static unsigned failures = 0;
 static char fixture_dir[512];
 static char path_n64[640];
 static char path_nes[640];
+static char path_based[640];
 
 /* ------------------------------------------------------------------ */
 /* SAF stand-in: short reads, so a playlist read yields               */
@@ -143,6 +144,30 @@ static bool write_playlist(const char *path, const char *content_dir,
    if (!f)
       return false;
    fprintf(f, "{\n  \"version\": \"1.5\",\n  \"items\": [\n");
+   for (i = 0; i < entries; i++)
+      fprintf(f,
+            "    { \"path\": \"%s/game%05u.bin\", \"label\": \"%s %05u\","
+            " \"core_path\": \"DETECT\", \"core_name\": \"DETECT\","
+            " \"crc32\": \"00000000|crc\", \"db_name\": \"t.lpl\" }%s\n",
+            content_dir, i, content_dir + 7, i,
+            (i + 1 < entries) ? "," : "");
+   fprintf(f, "  ]\n}\n");
+   fclose(f);
+   return true;
+}
+
+/* As write_playlist, but recording a base_content_directory - the
+ * shape of the #19427 attachment. */
+static bool write_playlist_with_base(const char *path,
+      const char *content_dir, unsigned entries)
+{
+   unsigned i;
+   FILE *f = fopen(path, "wb");
+   if (!f)
+      return false;
+   fprintf(f, "{\n  \"version\": \"1.5\",\n"
+              "  \"base_content_directory\": \"%s\",\n"
+              "  \"items\": [\n", content_dir);
    for (i = 0; i < entries; i++)
       fprintf(f,
             "    { \"path\": \"%s/game%05u.bin\", \"label\": \"%s %05u\","
@@ -379,6 +404,60 @@ static void lane_switch_shows_requested(void)
       fprintf(stderr, "[pass] switch-shows-requested lane\n");
 }
 
+/* Issue #19427: a playlist recording a base_content_directory,
+ * opened with portable paths off, must load once and STAY loaded.
+ * The reuse check compared the recorded base unconditionally, so
+ * the rebuild after every completed read freed the playlist just
+ * installed and began the read again - the placeholder flashing
+ * once per completion.  In the broken state the parse is pending
+ * again by the time each completing frame returns, so the read
+ * never observably finishes, which the capped runner turns into a
+ * failure. */
+static void lane_based_playlist_loads_once(void)
+{
+   unsigned had     = failures;
+   unsigned frames  = 0;
+   unsigned repends = 0;
+   unsigned i;
+
+   CHECK(open_playlists_screen() > 0, "the Playlists screen was empty");
+   CHECK(select_and_press_ok("based.lpl"), "no based entry to press OK on");
+
+   CHECK(playlist_init_cached_pending(),
+         "the read completed inside the OK press, so this lane is not "
+         "exercising the pump it exists for");
+
+   while (playlist_init_cached_pending() && frames < 600)
+   {
+      run_frame();
+      frames++;
+   }
+
+   CHECK(!playlist_init_cached_pending(),
+         "still pending after %u frames: the rebuild that follows every "
+         "completed read is starting the read over - the #19427 restart "
+         "cycle", frames);
+
+   /* Stability: in the restart cycle every frame re-begins the read. */
+   for (i = 0; i < 30; i++)
+   {
+      run_frame();
+      if (playlist_init_cached_pending())
+         repends++;
+   }
+   CHECK(repends == 0,
+         "the read came back %u times after completing - one placeholder "
+         "flash each", repends);
+   CHECK(selection_buf() && selection_buf()->size > 1,
+         "after the read completed the list holds %u entries",
+         selection_buf() ? (unsigned)selection_buf()->size : 0);
+
+   if (failures == had)
+      fprintf(stderr,
+            "[pass] based-playlist-loads-once lane (%u frames, 0 repends)\n",
+            frames);
+}
+
 /* ------------------------------------------------------------------ */
 
 int main(int argc, char *argv[])
@@ -397,8 +476,10 @@ int main(int argc, char *argv[])
 
    snprintf(path_n64, sizeof(path_n64), "%s/n64.lpl", fixture_dir);
    snprintf(path_nes, sizeof(path_nes), "%s/nes.lpl", fixture_dir);
+   snprintf(path_based, sizeof(path_based), "%s/based.lpl", fixture_dir);
    if (   !write_playlist(path_n64, "/games/n64", 1500)
-       || !write_playlist(path_nes, "/games/nes", 1500))
+       || !write_playlist(path_nes, "/games/nes", 1500)
+       || !write_playlist_with_base(path_based, "/games/based", 1500))
       return 1;
 
 
@@ -458,6 +539,7 @@ int main(int argc, char *argv[])
    lane_never_empty();
    lane_frames_alone_finish_the_read();
    lane_switch_shows_requested();
+   lane_based_playlist_loads_once();
 
    CHECK(saf_read_calls > 0,
          "the short-read VFS was never used - this run did not "

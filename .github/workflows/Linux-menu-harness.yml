@@ -93,12 +93,13 @@ jobs:
         shell: bash
         run: |
           set -eu
-          # Three field reports came out of the seam between the
+          # Four field reports came out of the seam between the
           # playlist reader and the menu - a stale playlist's entries
           # under a new heading, then a blank list the back button
           # could not leave, then a list that filled only after the
-          # user pressed something - and no oracle that stopped at the
-          # reader could see any of them.
+          # user pressed something, then #19427's placeholder flashing
+          # on every completed read - and no oracle that stopped at
+          # the reader could see any of them.
           #
           # The harness installs a VFS through the seam the frontend
           # uses for SAF, returning short reads WITH a per-read delay.
