@@ -1675,17 +1675,6 @@ int generic_action_ok_displaylist_push(
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_LAKKA_LIST;
          dl_type            = DISPLAYLIST_PENDING_CLEAR;
          break;
-
-      case ACTION_OK_DL_CORE_CONTENT_DIRS_SUBDIR_LIST:
-         fill_pathname_join_delim(tmp, path, label, ';',
-               sizeof(tmp));
-         info.type          = type;
-         info.directory_ptr = idx;
-         info_path          = tmp;
-         info_label         = MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_SUBDIR_LIST_STR;
-         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_SUBDIR_LIST;
-         dl_type            = DISPLAYLIST_GENERIC;
-         break;
       case ACTION_OK_DL_CORE_SYSTEM_FILES_LIST:
          info.type          = type;
          info.directory_ptr = idx;
@@ -5302,13 +5291,6 @@ static int action_ok_core_updater_list(const char *path,
          ACTION_OK_DL_CORE_UPDATER_LIST);
 }
 
-static void cb_net_generic_subdir(retro_task_t *task,
-      void *task_data, void *user_data, const char *err)
-{
-   if (user_data)
-      free(user_data);
-}
-
 static void cb_net_generic(retro_task_t *task,
       void *task_data, void *user_data, const char *err)
 {
@@ -5341,41 +5323,6 @@ static void cb_net_generic(retro_task_t *task,
 
 finish:
    menu_st->flags &= ~MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH;
-
-   if (     !err
-         && !string_ends_with_size(state->path,
-            FILE_PATH_INDEX_DIRS_URL,
-            strlen(state->path),
-            STRLEN_CONST(FILE_PATH_INDEX_DIRS_URL)
-            ))
-   {
-      size_t _len;
-      char parent_dir_encoded[DIR_MAX_LENGTH];
-      file_transfer_t *transf     = (file_transfer_t*)malloc(sizeof(*transf));
-      /* NULL-check transf: the field writes below (->enum_idx,
-       * ->path via strlcpy through fill_pathname_parent_dir)
-       * NULL-deref on OOM.  On failure skip the parent-dir
-       * HTTP transfer entirely - the 'index_dirs' feature
-       * degrades gracefully (no parent-dir nav up from the
-       * current listing) rather than crashing. */
-      if (transf)
-      {
-         parent_dir_encoded[0]       = '\0';
-
-         transf->enum_idx            = MSG_UNKNOWN;
-
-         _len = fill_pathname_parent_dir(transf->path,
-               state->path, sizeof(transf->path));
-         strlcpy(transf->path       + _len,
-               FILE_PATH_INDEX_DIRS_URL,
-               sizeof(transf->path) - _len);
-
-         net_http_urlencode_full(parent_dir_encoded, transf->path,
-               sizeof(parent_dir_encoded));
-         task_push_http_transfer_file(parent_dir_encoded, true,
-               "index_dirs", cb_net_generic_subdir, transf);
-      }
-   }
 
    if (state)
       free(state);
