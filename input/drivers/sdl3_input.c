@@ -79,8 +79,6 @@ typedef struct sdl3_input
    /* Sensors. Used if the SDL3 joypad driver isn't active. */
    SDL_Sensor *accel;
    SDL_Sensor *gyro;
-   float accel_data[3];
-   float gyro_data[3];
    bool sensors_init;
 } sdl3_input_t;
 
@@ -519,21 +517,18 @@ static bool sdl3_set_sensor_state(void *data, unsigned port,
             return (*sensor = sdl3_open_sensor(accelerometer ? SDL_SENSOR_ACCEL : SDL_SENSOR_GYRO)) != NULL;
          }
       case RETRO_SENSOR_ACCELEROMETER_DISABLE:
-         if (sdl->accel)
-         {
-            SDL_CloseSensor(sdl->accel);
-            sdl->accel = NULL;
-            memset(sdl->accel_data, 0, sizeof(sdl->accel_data));
-         }
-         return true;
       case RETRO_SENSOR_GYROSCOPE_DISABLE:
-         if (sdl->gyro)
          {
-            SDL_CloseSensor(sdl->gyro);
-            sdl->gyro = NULL;
-            memset(sdl->gyro_data, 0, sizeof(sdl->gyro_data));
+            SDL_Sensor **sensor = action == RETRO_SENSOR_ACCELEROMETER_DISABLE
+                  ? &sdl->accel : &sdl->gyro;
+
+            if (*sensor)
+            {
+               SDL_CloseSensor(*sensor);
+               *sensor = NULL;
+            }
+            return true;
          }
-         return true;
       case RETRO_SENSOR_ILLUMINANCE_DISABLE:
          /* Disabling an unsupported sensor shouldn't fail. */
          return true;
@@ -547,27 +542,24 @@ static bool sdl3_set_sensor_state(void *data, unsigned port,
 static float sdl3_get_sensor_input(void *data, unsigned port, unsigned id)
 {
    sdl3_input_t *sdl = (sdl3_input_t*)data;
+   float v[3];
 
    /* The host device's sensors only ever map to port 0. */
    if (port != 0)
       return 0.0f;
 
-   switch (id)
+   /* SDL reports acceleration in m/s^2; libretro expects g. Both
+    * sides use radians per second for the gyroscope. Reading fails
+    * once a sensor vanishes, leaving the at-rest 0. */
+   if (id <= RETRO_SENSOR_ACCELEROMETER_Z)
    {
-      /* SDL reports acceleration in m/s^2; libretro expects g. */
-      case RETRO_SENSOR_ACCELEROMETER_X:
-         return sdl->accel_data[0] / SDL_STANDARD_GRAVITY;
-      case RETRO_SENSOR_ACCELEROMETER_Y:
-         return sdl->accel_data[1] / SDL_STANDARD_GRAVITY;
-      case RETRO_SENSOR_ACCELEROMETER_Z:
-         return sdl->accel_data[2] / SDL_STANDARD_GRAVITY;
-      /* Both sides use radians per second. */
-      case RETRO_SENSOR_GYROSCOPE_X:
-         return sdl->gyro_data[0];
-      case RETRO_SENSOR_GYROSCOPE_Y:
-         return sdl->gyro_data[1];
-      case RETRO_SENSOR_GYROSCOPE_Z:
-         return sdl->gyro_data[2];
+      if (sdl->accel && SDL_GetSensorData(sdl->accel, v, 3))
+         return v[id - RETRO_SENSOR_ACCELEROMETER_X] / SDL_STANDARD_GRAVITY;
+   }
+   else if (id >= RETRO_SENSOR_GYROSCOPE_X && id <= RETRO_SENSOR_GYROSCOPE_Z)
+   {
+      if (sdl->gyro && SDL_GetSensorData(sdl->gyro, v, 3))
+         return v[id - RETRO_SENSOR_GYROSCOPE_X];
    }
 
    return 0.0f;
@@ -781,17 +773,9 @@ static void sdl3_input_poll(void *data)
    sdl3_poll_mouse(sdl);
    sdl3_poll_touch(sdl);
 
+   /* SDL_UpdateSensors works without a focused window. */
    if (sdl->accel || sdl->gyro)
-   {
-      /* SDL_UpdateSensors works without a focused window. */
       SDL_UpdateSensors();
-      /* Zero on failure so a vanished sensor reads as at rest
-       * rather than frozen at its last reported values. */
-      if (sdl->accel && !SDL_GetSensorData(sdl->accel, sdl->accel_data, 3))
-         memset(sdl->accel_data, 0, sizeof(sdl->accel_data));
-      if (sdl->gyro && !SDL_GetSensorData(sdl->gyro, sdl->gyro_data, 3))
-         memset(sdl->gyro_data, 0, sizeof(sdl->gyro_data));
-   }
 
    sdl->mouse_wu = false;
    sdl->mouse_wd = false;
