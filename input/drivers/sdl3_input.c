@@ -495,6 +495,10 @@ static bool sdl3_set_sensor_state(void *data, unsigned port,
 {
    sdl3_input_t *sdl = (sdl3_input_t*)data;
 
+   /* The host device's sensors only ever map to port 0. */
+   if (port != 0)
+      return false;
+
    switch (action)
    {
       case RETRO_SENSOR_ACCELEROMETER_ENABLE:
@@ -786,10 +790,12 @@ static void sdl3_input_poll(void *data)
       /* The event pump only refreshes sensor state alongside window
        * events; SDL_UpdateSensors works without a focused window. */
       SDL_UpdateSensors();
-      if (sdl->accel)
-         SDL_GetSensorData(sdl->accel, sdl->accel_data, 3);
-      if (sdl->gyro)
-         SDL_GetSensorData(sdl->gyro, sdl->gyro_data, 3);
+      /* Zero on failure so a vanished sensor reads as at rest
+       * rather than frozen at its last reported values. */
+      if (sdl->accel && !SDL_GetSensorData(sdl->accel, sdl->accel_data, 3))
+         memset(sdl->accel_data, 0, sizeof(sdl->accel_data));
+      if (sdl->gyro && !SDL_GetSensorData(sdl->gyro, sdl->gyro_data, 3))
+         memset(sdl->gyro_data, 0, sizeof(sdl->gyro_data));
    }
 
    sdl->mouse_wu = false;
