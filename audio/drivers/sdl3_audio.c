@@ -246,16 +246,13 @@ static void *sdl3_audio_init(const char *device,
          2, &sdl->spec, &device_sample_frames)))
       goto error;
 
-   /* The stream's input side starts out matching the device spec;
-    * the write_raw fast path changes it on demand. */
-   sdl->in_spec = sdl->spec;
-
    /* Buffer the requested latency's worth of audio. */
    frame_size = SDL_AUDIO_FRAMESIZE(sdl->spec);
    sdl->buffer_size = (size_t)((uint64_t)sdl->spec.freq * latency / 1000) * frame_size;
    min_size = (size_t)(2 * device_sample_frames) * frame_size;
    if (sdl->buffer_size < min_size)
       sdl->buffer_size = min_size;
+   sdl->in_spec = sdl->spec;
    sdl->in_cap = sdl->buffer_size;
    sdl->ratio  = 1.0f;
    sdl->gain   = 1.0f;
