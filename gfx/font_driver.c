@@ -1547,18 +1547,20 @@ bool font_driver_reinit_osd(const char *font_path, float font_size)
    if (!font)
       return false;
 
-   /* Matches what font_driver_init_osd() passes, so the comparison
-    * below is like for like. */
+   /* Normalised the way font_driver_init_osd() passes it, so both the
+    * comparison below and the rebuild see the same thing it would. */
    if (font_path && !*font_path)
       font_path = NULL;
 
-   /* Nothing to do. The size compare is exact on purpose: both sides
-    * come from the same settings float, and excess x87 precision can
-    * only cost a redundant rebuild, never merge two sizes. */
-   if (     font->size == font_size
-         && (   ( !font->path && !font_path)
-             || (  font->path &&  font_path
-                && string_is_equal(font->path, font_path))))
+   /* Nothing to do. Shares the predicate with the menu and widget
+    * layout paths rather than repeating it: the empty-path and exact
+    * size rules are fiddly enough that a second copy would drift, and
+    * this one additionally declines to read through a handle that is
+    * no longer live. The exact size compare is deliberate — both
+    * sides come from the same settings float, and excess x87
+    * precision can only cost a redundant rebuild, never merge two
+    * sizes. */
+   if (font_driver_matches(font, font_path, font_size))
       return true;
 
    if (!font_driver_rebuild(font, font_path, font_size))
