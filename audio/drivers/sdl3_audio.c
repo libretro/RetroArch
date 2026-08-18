@@ -78,6 +78,8 @@ static bool SDLCALL sdl3_audio_device_removed_watch(void *userdata, SDL_Event *e
    if (   event->type == SDL_EVENT_AUDIO_DEVICE_REMOVED
        && event->adevice.which == sdl->devid)
    {
+      RARCH_WARN("[SDL3 audio] Audio %s device was removed.\n",
+            event->adevice.recording ? "input" : "output");
       SDL_LockMutex(sdl->lock);
       sdl->device_removed = true;
       SDL_SignalCondition(sdl->cond);
@@ -385,8 +387,11 @@ static bool sdl3_audio_reopen_default(sdl3_audio_t *sdl)
    int device_sample_frames = 0;
    SDL_AudioStream *stream = NULL;
 
-   RARCH_WARN("[SDL3 audio] Output device was removed, reopening on the default device.\n");
+   RARCH_WARN("[SDL3 audio] Reopening output on the default device.\n");
 
+   /* buffer_size is kept as-is rather than re-clamped to the new
+    * device's period: the audio core caches it at init for rate
+    * control, so it must stay stable across the reopen. */
    stream = sdl3_audio_open_stream(NULL, false, (unsigned)sdl->spec.freq,
          sdl->latency, 2, &spec, &device_sample_frames);
 
