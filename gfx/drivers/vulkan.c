@@ -6506,19 +6506,20 @@ static void vulkan_init_render_target(struct vk_image* image, uint32_t width, ui
    vkCreateFramebuffer(ctx->device, &info, NULL, &image->framebuffer);
 }
 
-/* Pick the HDR composition mode from what the source image actually holds.
+/* Pick the HDR composition mode from what the game content holds.
  *
- * The offscreen buffer contains PQ Rec.2020 when the core supplies
+ * The game frame contains PQ Rec.2020 when the core supplies
  * RETRO_PIXEL_FORMAT_HDR10_2101010, or when a shader preset's final pass
  * emits HDR10; linear FP16 when a preset emits HDR16; and ordinary SDR
  * otherwise.  Getting this wrong is not subtle: treating PQ code values as
  * sRGB applies a spurious 2.4 power to them, which lifts shadows and crushes
  * highlights across the whole image.
  *
- * Both the game pass and the menu/overlay composite need the same answer,
- * so derive it in one place rather than duplicating -- the composite used to
- * assume SDR unconditionally, which was correct only while cores could not
- * produce HDR frames themselves. */
+ * This answers for the *game* pass only.  The menu/overlay composite must
+ * not use it: its source is the offscreen buffer after the UI pass, which
+ * begins sdr_render_pass (loadOp CLEAR) on it, so by composite time it
+ * holds nothing but the SDR UI regardless of what the core or the shader
+ * preset produce. */
 static unsigned vulkan_hdr_source_mode(vk_t *vk,
       const struct video_shader *filter_chain_preset, void *filter_chain)
 {
@@ -7428,15 +7429,26 @@ static bool vulkan_frame(void *data, const void *frame,
                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
          {
-            /* This pass replaces the game pass whenever the OSD, a menu, an
-             * overlay, a message or widgets are up, so it composites the game
-             * frame too -- it cannot assume the source is SDR.  When the core
-             * supplies HDR10 the offscreen buffer holds PQ, and treating that
-             * as sRGB applies a spurious 2.4 power to PQ code values: shadows
-             * lift, highlights crush, and the effect only appears while the
-             * OSD happens to be visible. */
-            unsigned composite_hdr_mode = vulkan_hdr_source_mode(vk, NULL,
-                  filter_chain);
+            /* The source of this pass is the offscreen buffer, and by this
+             * point that holds only the SDR UI: the UI pass above began
+             * sdr_render_pass on it, whose loadOp is CLEAR, so anything the
+             * filter chain wrote there earlier is gone.  The game reached
+             * the swapchain separately -- through the game pass when
+             * use_offscreen_buffer is set, directly from the filter chain
+             * when it is not -- and this pass alpha-blends the UI over it.
+             *
+             * Deriving the mode from the game source here is therefore
+             * wrong: with a core supplying PQ, or a preset whose last pass
+             * emits HDR10, vulkan_hdr_source_mode returns passthrough, the
+             * menu-nits PQ encode never runs, and the UI's SDR code values
+             * land raw in the PQ swapchain -- where code 1.0 means
+             * 10000 nits.  That is the reported symptom: menu brightness
+             * pinned at maximum, and the (HDR) Menu Brightness setting
+             * doing nothing, as soon as an HDR shader preset is loaded.
+             * The buffer is B8G8R8A8_UNORM and cleared every frame; its
+             * content is SDR by construction, so encode it as SDR. */
+            unsigned composite_hdr_mode =
+                  (vk->context->flags & VK_CTX_FLAG_HDR_SCRGB) ? 2 : 1;
             vulkan_hdr_log_mode(vk, composite_hdr_mode, "composite");
             vulkan_run_hdr_pipeline(vk->pipelines.hdr, vk->keep_render_pass, &vk->offscreen_buffer, backbuffer, vk, &vk->hdr.ubo_menu, composite_hdr_mode, true);
          }
