@@ -118,6 +118,19 @@ void font_driver_bind_block(void *font_data, void *block)
 { (void)font_data; (void)block; }
 void font_driver_free(font_data_t *font) { (void)font; }
 
+/* Retiring a font for a deferred release. No frame clock here and
+ * nothing owning a GPU atlas, so this is the same no-op as the free
+ * above. */
+void font_driver_free_deferred(font_data_t *font) { (void)font; }
+
+/* Whether the font already loaded is the one being asked for.
+ * gfx_display_font_file() below never produces one, so the honest
+ * answer is always no, which keeps gfx_widgets_font_init() on the
+ * build path these tests exercise. */
+bool font_driver_matches(const font_data_t *font,
+      const char *path, float size)
+{ (void)font; (void)path; (void)size; return false; }
+
 /* --- display: signatures copied from gfx/gfx_display.h --- */
 void gfx_display_draw_quad(gfx_display_t *p_disp, void *data,
       unsigned video_width, unsigned video_height,
