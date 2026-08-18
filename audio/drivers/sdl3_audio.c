@@ -59,13 +59,7 @@ typedef struct sdl3_audio
 } sdl3_audio_t;
 
 /**
- * Event watch for SDL_EVENT_AUDIO_DEVICE_REMOVED.
- *
- * SDL only emits this for streams bound to an explicitly chosen
- * device; streams opened on the default device are migrated by SDL
- * itself and never see it. The event is delivered whenever the
- * frontend pumps SDL events, and a watch fires as it is pushed, so
- * nothing needs to drain the event queue.
+ * Event callback for SDL_EVENT_AUDIO_DEVICE_REMOVED.
  */
 static bool SDLCALL sdl3_audio_device_removed_watch(void *userdata, SDL_Event *event)
 {
@@ -235,9 +229,8 @@ static SDL_AudioStream *sdl3_audio_open_stream(const char *device,
 }
 
 /**
- * Stream callback fired from the device thread each time the device
- * moves data: the moment queue space opens up for playback, or more
- * samples arrive from a microphone. Wakes a blocked write or read.
+ * Device thread callback which wakes blocked reads/writes when
+ * queue space becomes available.
  */
 static void SDLCALL sdl3_audio_stream_cb(void *userdata,
       SDL_AudioStream *stream, int additional_amount, int total_amount)
@@ -250,16 +243,9 @@ static void SDLCALL sdl3_audio_stream_cb(void *userdata,
 }
 
 /**
- * Blocks a full write / empty read until a stream callback signals
- * that the device moved data.
+ * Blocks until the stream callback signals device data movement.
  *
- * The callbacks signal while SDL holds the stream lock, so the caller
- * must not query the stream under ctx->lock; the cost is that a
- * signal raised between the caller's check and this wait is missed,
- * and the next device period (or the stall timeout) covers it.
- *
- * @return False once the device stops moving data entirely, so the
- * caller reports a short count instead of blocking forever.
+ * @return False if the device stalls/stops moving data (to report short count).
  */
 static bool sdl3_audio_wait_for_device(sdl3_audio_t *ctx)
 {
@@ -282,8 +268,6 @@ static void sdl3_audio_destroy_context(sdl3_audio_t *ctx)
    /* Stop the watch from touching the lock before tearing it down. */
    SDL_RemoveEventWatch(sdl3_audio_device_removed_watch, ctx);
 
-   /* Destroying the stream also closes the device and detaches
-    * the stream callback. */
    if (ctx->stream)
       SDL_DestroyAudioStream(ctx->stream);
    if (ctx->cond)
@@ -305,10 +289,11 @@ static void sdl3_audio_free(void *data)
 }
 
 /**
- * Preps a freshly opened output stream: tracks its device for the
- * removal watch, installs the wake callback, resets the write_raw
- * state to a fresh stream's defaults, prefills the latency cushion
- * with silence, and starts the device (streams open paused).
+ * Prepares a new output stream.
+ *
+ * Registers device event tracking, binds the wake callback,
+ * resets write_raw state, prefills silence for latency
+ * cushioning, and starts playback.
  */
 static void sdl3_audio_prime_stream(sdl3_audio_t *sdl)
 {
@@ -317,8 +302,6 @@ static void sdl3_audio_prime_stream(sdl3_audio_t *sdl)
    sdl->devid = SDL_GetAudioStreamDevice(sdl->stream);
    SDL_SetAudioStreamGetCallback(sdl->stream, sdl3_audio_stream_cb, sdl);
 
-   /* A fresh stream starts with default ratio/gain, and write_raw
-    * reconfigures its input side on the next call. */
    sdl->raw_rate = 0;
    sdl->in_cap = sdl->buffer_size;
    sdl->ratio = 1.0f;
