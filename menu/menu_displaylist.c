@@ -10979,6 +10979,7 @@ unsigned menu_displaylist_build_list(
 #endif
       case DISPLAYLIST_MENU_VIEWS_SETTINGS_LIST:
          {
+            const char *menu_driver = menu_driver_ident();
             static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_QUICK_MENU_VIEWS_SETTINGS,                             PARSE_ACTION, true     },
                {MENU_ENUM_LABEL_SETTINGS_VIEWS_SETTINGS,                               PARSE_ACTION, true     },
@@ -11040,6 +11041,15 @@ unsigned menu_displaylist_build_list(
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         build_list[i].enum_idx,  build_list[i].parse_type,
                         false) == 0)
+                  count++;
+
+               if (     build_list[i].enum_idx == MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS
+                     && settings->bools.menu_show_sublabels
+                     && (  string_is_equal(menu_driver, "ozone")
+                        || string_is_equal(menu_driver, "glui"))
+                     && MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
+                           PARSE_ONLY_BOOL, false) == 0)
                   count++;
             }
          }
