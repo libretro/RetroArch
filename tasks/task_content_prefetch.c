@@ -68,7 +68,9 @@ struct content_prefetch_state
    void *ud;
    size_t bytes_total;                 /* across items, once opened  */
    size_t bytes_done;
-   int8_t progress;                    /* last value reported        */
+   int8_t progress;                    /* last value computed        */
+   int8_t reported;                    /* last delivered; pump-thread
+                                        * only                       */
    uint8_t all_ok;
 };
 
@@ -101,8 +103,32 @@ static void content_prefetch_update_progress(retro_task_t *task,
    st->progress = pct;
    task_set_progress(task, pct);
 
-   if (st->progress_cb)
+   /* On the threaded queue this runs on the worker; delivery there
+    * is content_prefetch_task_progress' job, on the pumping thread.
+    * The regular queue's handler IS the pump, and the queue only
+    * fires progress callbacks at retirement - deliver directly. */
+   if (st->progress_cb && !task_queue_is_threaded())
+   {
+      st->reported = pct;
       st->progress_cb(st->ud, pct);
+   }
+}
+
+/* Fired by task_queue_push_progress() on the thread that pumps the
+ * queue, under the property lock.  With the direct path above, the
+ * consumer's callback always lands on the pumping thread. */
+static void content_prefetch_task_progress(retro_task_t *task)
+{
+   struct content_prefetch_state *st =
+         (struct content_prefetch_state*)task->state;
+   if (     st && st->progress_cb && task->progress >= 0
+         && task->progress != st->reported)
+   {
+      /* The queue pushes every pump; the contract is per change.
+       * 'reported' is only touched on the pumping thread. */
+      st->reported = task->progress;
+      st->progress_cb(st->ud, task->progress);
+   }
 }
 
 static int64_t content_prefetch_file_read(void *ud, uint8_t *dst,
@@ -343,6 +369,7 @@ bool task_push_content_prefetch_progress(const char **paths,
    /* -1 so the first real value - including a 0%% at the start of a
     * large read - is reported rather than matching the initial. */
    st->progress    = -1;
+   st->reported    = -1;
    st->deposit     = deposit;
    st->progress_cb = progress;
    st->done    = done;
@@ -353,7 +380,10 @@ bool task_push_content_prefetch_progress(const char **paths,
    t->handler  = content_prefetch_handler;
    t->callback = content_prefetch_task_callback;
    t->cleanup  = content_prefetch_cleanup;
-   t->flags   |= RETRO_TASK_FLG_MUTE;
+   /* No mute: it would suppress the progress trampoline.  No title
+    * means no OSD messages either way. */
+   if (progress)
+      t->progress_cb = content_prefetch_task_progress;
    task_queue_push(t);
    return true;
 

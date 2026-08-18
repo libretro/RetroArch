@@ -39,6 +39,7 @@
 #include <boolean.h>
 #include <queues/task_queue.h>
 #include <retro_timers.h>
+#include <rthreads/rthreads.h>
 
 #include "../../../tasks/task_content_prefetch.h"
 
@@ -472,13 +473,20 @@ static void lane_threaded_queue(void)
  * is separate from the task's own progress field, so it needs its
  * own coverage: a caller that never sees a callback shows nothing,
  * however correct the field is. */
-static unsigned cb_progress_count;
-static int8_t   cb_progress_last;
-static bool     cb_progress_backwards;
-static bool     cb_progress_intermediate;
+static unsigned  cb_progress_count;
+static int8_t    cb_progress_last;
+static bool      cb_progress_backwards;
+static bool      cb_progress_intermediate;
+/* The callback must arrive on the thread that pumps the queue - the
+ * consumer writes widget state from it.  main() records its own id
+ * as the pump before any lane runs. */
+static uintptr_t pump_thread_id;
+static bool      cb_progress_wrong_thread;
 
 static void on_progress(void *ud, int8_t progress)
 {
+   if (sthread_get_current_thread_id() != pump_thread_id)
+      cb_progress_wrong_thread = true;
    if (cb_progress_count && progress < cb_progress_last)
       cb_progress_backwards = true;
    if (progress > 0 && progress < 100)
@@ -505,6 +513,7 @@ static void lane_progress_callback(void)
    cb_progress_last         = -1;
    cb_progress_backwards    = false;
    cb_progress_intermediate = false;
+   cb_progress_wrong_thread = false;
 
    if (!task_push_content_prefetch_progress(paths, 1, on_deposit,
          on_done, on_progress, NULL))
@@ -522,6 +531,8 @@ static void lane_progress_callback(void)
    task_queue_deinit();
 
    CHECK(done_called && done_all_ok, "run did not complete cleanly");
+   CHECK(!cb_progress_wrong_thread,
+         "the progress callback left the pumping thread");
    CHECK(cb_progress_count > 1,
          "the progress callback fired %u times - a caller cannot "
          "show a moving percentage from that", cb_progress_count);
@@ -535,6 +546,76 @@ static void lane_progress_callback(void)
    if (failures == had)
       fprintf(stderr, "[pass] progress-callback lane (%u updates)\n",
             cb_progress_count);
+   release_deposits();
+}
+
+/* Under the threaded queue the handler runs on a worker, so this is
+ * where the pump-thread delivery contract can actually break.
+ * Everything the unthreaded lane asserts must hold here too, plus
+ * the thread pin - and delivery must stay change-driven, not
+ * per-pump. */
+static void lane_threaded_progress_callback(void)
+{
+   unsigned had = failures;
+   char path[512];
+   const char *paths[1];
+   unsigned ticks = 0;
+
+   snprintf(path, sizeof(path), "%s/big.bin", fixture_dir);
+   CHECK(write_fixture(path, BIG_FILE_SIZE), "fixture write failed");
+   paths[0] = path;
+
+   task_queue_set_threaded();
+   task_queue_init(true, NULL);
+   reset_observations();
+   cb_progress_count        = 0;
+   cb_progress_last         = -1;
+   cb_progress_backwards    = false;
+   cb_progress_intermediate = false;
+   cb_progress_wrong_thread = false;
+
+   if (!task_push_content_prefetch_progress(paths, 1, on_deposit,
+         on_done, on_progress, NULL))
+   {
+      CHECK(false, "threaded prefetch push with progress failed");
+      task_queue_deinit();
+      return;
+   }
+
+   /* Yield between polls; see lane_threaded_queue for why a busy
+    * spin here would starve the worker on a single-core runner. */
+   while (!done_called && ticks < 20000)
+   {
+      task_queue_check();
+      retro_sleep(1);
+      ticks++;
+   }
+
+   task_queue_deinit();
+   task_queue_unset_threaded();
+
+   CHECK(done_called && done_all_ok,
+         "threaded run did not complete cleanly");
+   CHECK(!cb_progress_wrong_thread,
+         "the progress callback was delivered off the pumping "
+         "thread - widget state handed to the task worker");
+   CHECK(cb_progress_count > 1,
+         "the progress callback fired %u times - a caller cannot "
+         "show a moving percentage from that", cb_progress_count);
+   CHECK(cb_progress_count <= 101u,
+         "the progress callback fired %u times for at most 101 "
+         "distinct values - it is firing per pump, not per change",
+         cb_progress_count);
+   CHECK(!cb_progress_backwards, "progress callback went backwards");
+   CHECK(cb_progress_intermediate,
+         "the callback never reported a value between 0 and 100");
+   CHECK(cb_progress_last == 100,
+         "the callback's last value was %d, wanted 100",
+         (int)cb_progress_last);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] threaded progress-callback lane "
+            "(%u updates)\n", cb_progress_count);
    release_deposits();
 }
 
@@ -568,6 +649,8 @@ int main(void)
 {
    char cmd[600];
 
+   pump_thread_id = sthread_get_current_thread_id();
+
    snprintf(fixture_dir, sizeof(fixture_dir),
          "/tmp/prefetch_fixture_%ld", (long)getpid());
    snprintf(cmd, sizeof(cmd), "mkdir -p %s", fixture_dir);
@@ -590,6 +673,7 @@ int main(void)
     * than what they claim to test - which is precisely what happened
     * before, and what TSan surfaced. */
    lane_threaded_queue();
+   lane_threaded_progress_callback();
 
    snprintf(cmd, sizeof(cmd), "rm -rf %s", fixture_dir);
    if (system(cmd) != 0) { }

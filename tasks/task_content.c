@@ -2626,6 +2626,7 @@ end:
 struct content_deferred_menu_load
 {
    char *fullpath;
+   char *core_path;              /* the world this belongs to      */
    enum rarch_core_type type;
    content_ctx_info_t info;      /* argv-free by the deferral gate */
    bool showed_animation;        /* launch card already on screen */
@@ -2683,6 +2684,22 @@ void task_content_deferred_load_check(void)
    p_content                 = content_state_get_ptr();
    p_content->flags         &= ~CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING;
 
+   /* A competing load may have replaced the world this continuation
+    * was parked for; the stamps say which one it belongs to.  On a
+    * mismatch, stand down: drop the cache and the continuation, and
+    * leave the current content alone. */
+   if (   !string_is_equal(path_get(RARCH_PATH_CONTENT), d->fullpath)
+       || !string_is_equal(path_get(RARCH_PATH_CORE),    d->core_path))
+   {
+      RARCH_LOG("[Content] Dropping a deferred load superseded by "
+            "another: \"%s\".\n", d->fullpath);
+      content_file_prefetch_free(p_content);
+      free(d->core_path);
+      free(d->fullpath);
+      free(d);
+      return;
+   }
+
    if (!content_load(&d->info, p_content))
    {
       content_file_prefetch_free(p_content);
@@ -2695,14 +2712,15 @@ void task_content_deferred_load_check(void)
          menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
    }
    content_file_prefetch_free(p_content);   /* leftovers, if any */
+   free(d->core_path);
    free(d->fullpath);
    free(d);
 }
 
 #if defined(HAVE_GFX_WIDGETS)
 /* Feeds the read percentage to the "Load Content" startup
- * notification while the content streams in.  Runs on the thread
- * pumping the queue, which is the thread that draws. */
+ * notification.  Delivered on the thread that pumps the queue -
+ * the thread that drives the frame and owns widget state. */
 static void content_file_prefetch_progress(void *ud, int8_t progress)
 {
    gfx_widget_set_load_content_progress(progress);
@@ -2737,6 +2755,7 @@ static void content_file_prefetch_deposit(void *ud, const char *path,
 
 /* Returns true when the load was taken over by the deferred path. */
 static bool task_content_defer_menu_load(content_state_t *p_content,
+      runloop_state_t *runloop_st,
       const char *fullpath, enum rarch_core_type type,
       content_ctx_info_t *content_info)
 {
@@ -2751,6 +2770,23 @@ static bool task_content_defer_menu_load(content_state_t *p_content,
       return false;                /* only the plain menu shape     */
    if (p_content->flags & CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING)
       return false;                /* one deferral at a time        */
+   /* The cache's only consumer is content_file_load_into_memory(),
+    * reached only for a file the load reads into memory.  A
+    * need_fullpath core is handed the path instead, so a prefetch
+    * would fill an allocation nothing takes.  Mirror the load's own
+    * BLCK_NEED_FULLPATH decision from the live system info and the
+    * per-extension override - both current here, LOAD_CORE has run.
+    * (The caller's content_ctx is built before LOAD_CORE and without
+    * sys info; it cannot answer this.) */
+   {
+      const content_file_override_t *override = NULL;
+      bool need_fullpath = runloop_st->system.info.need_fullpath;
+      if (content_file_override_get_ext(p_content,
+            path_get_extension(fullpath), &override))
+         need_fullpath = override->need_fullpath;
+      if (need_fullpath)
+         return false;             /* the load hands the core a path */
+   }
    /* The prefetch keys on this exact path, but the load rewrites
     * some paths before reading them: a content:// SAF URI becomes a
     * VFS path, and a bare archive ("foo.zip") becomes an explicit
@@ -2769,6 +2805,15 @@ static bool task_content_defer_menu_load(content_state_t *p_content,
       return false;
    if (!(d->fullpath = strdup(fullpath)))
    {
+      free(d);
+      return false;
+   }
+   /* Stamp the world this continuation belongs to: in-flight tasks
+    * survive a competing load's queue reinit, so the continuation
+    * can fire after the user has loaded something else. */
+   if (!(d->core_path = strdup(path_get(RARCH_PATH_CORE))))
+   {
+      free(d->fullpath);
       free(d);
       return false;
    }
@@ -2809,6 +2854,7 @@ static bool task_content_defer_menu_load(content_state_t *p_content,
 #endif
          d))
    {
+      free(d->core_path);
       free(d->fullpath);
       free(d);
       return false;
@@ -2866,8 +2912,8 @@ bool task_push_load_content_with_new_core_from_menu(
     * synchronous path below, and if the prefetch cannot even be
     * pushed, so does everything.  The continuation performs the
     * identical remainder of this function. */
-   if (task_content_defer_menu_load(p_content, fullpath, type,
-         content_info))
+   if (task_content_defer_menu_load(p_content, runloop_st,
+         fullpath, type, content_info))
    {
       content_information_ctx_free(&content_ctx);
       return true;

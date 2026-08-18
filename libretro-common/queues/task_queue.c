@@ -139,10 +139,13 @@ static void task_queue_push_progress(retro_task_t *task)
          else
             task_queue_msg_push(task, 1, 60, false, "%s...", task->title);
       }
-
-      if (task->progress_cb)
-         task->progress_cb(task);
    }
+
+   /* Messages are gated on the title above; the callback is for
+    * code, so it needs only the mute opt-out. */
+   if (     task->progress_cb
+         && (!((task->flags & RETRO_TASK_FLG_MUTE) > 0)))
+      task->progress_cb(task);
 
 #ifdef HAVE_THREADS
    slock_unlock(property_lock);
