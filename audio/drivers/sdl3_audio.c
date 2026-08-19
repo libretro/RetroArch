@@ -58,7 +58,7 @@ typedef struct sdl3_audio
    SDL_AtomicInt device_removed; /**< Becomes true when the stream's device is unplugged. Set under lock so a blocked wait wakes. */
    bool nonblock; /**< When true, drop samples instead of waiting for the device to clear. */
    bool data_moved; /**< Wake token set by the stream callback, consumed by waiters. Guarded by lock; makes the queue-full test race-free. */
-   SDL_AtomicInt defunct; /**< True when the device has completely failed. Saves from retrying each frame; cleared by the watch when a device is added. */
+   SDL_AtomicInt defunct; /**< True when the device has completely failed. Saves from retrying each frame. */
 } sdl3_audio_t;
 
 /**
