@@ -256,6 +256,17 @@ static void mem_stats_proc_meminfo(uint64_t *total, uint64_t *avail)
 
 #endif
 
+#if defined(MEM_STATS_PS2)
+/* What retail hardware has, and the only figure this platform can give
+ * for a total.  The free probe below draws its budget from the same
+ * constant, so that the two answers can never contradict each other. */
+#define MEM_STATS_PS2_RAM_BYTES  (32 * 1024 * 1024)
+/* Three grabs, as before.  Each takes the largest block still inside
+ * the budget, so what a fourth would find is fragmentation rather than
+ * memory. */
+#define MEM_STATS_PS2_PROBES     3
+#endif
+
 uint64_t mem_stats_total(void)
 {
 #if defined(MEM_STATS_CTR)
@@ -316,7 +327,7 @@ uint64_t mem_stats_total(void)
     * "total" that means anything in a wasm process. */
    return (uint64_t)emscripten_get_heap_max();
 #elif defined(MEM_STATS_PS2)
-   return 32 * 1024 * 1024;
+   return (uint64_t)MEM_STATS_PS2_RAM_BYTES;
 #elif defined(MEM_STATS_APPLE)
 #if !TARGET_OS_IPHONE
    {
@@ -454,31 +465,44 @@ uint64_t mem_stats_free(void)
     * poll it. */
    {
       static uint64_t cached = 0;
-      uint64_t free_mem;
-      size_t s0;
-      void *p1 = NULL, *p2 = NULL, *p3 = NULL;
+      static int      probed = 0;
+      uint64_t free_mem      = 0;
+      uint64_t budget        = MEM_STATS_PS2_RAM_BYTES;
+      void    *held[MEM_STATS_PS2_PROBES];
+      size_t   s0;
+      int      i;
 
-      if (cached)
+      if (probed)
          return cached;
-      s0 = 32 * 1024 * 1024;
-      while (s0 && (p1 = malloc(s0)) == NULL)
-         s0 >>= 1;
-      free_mem = s0;
-      s0 = 32 * 1024 * 1024;
-      while (s0 && (p2 = malloc(s0)) == NULL)
-         s0 >>= 1;
-      free_mem += s0;
-      s0 = 32 * 1024 * 1024;
-      while (s0 && (p3 = malloc(s0)) == NULL)
-         s0 >>= 1;
-      free_mem += s0;
-      if (p1)
-         free(p1);
-      if (p2)
-         free(p2);
-      if (p3)
-         free(p3);
+
+      for (i = 0; i < MEM_STATS_PS2_PROBES; i++)
+         held[i] = NULL;
+
+      /* Each grab starts from what is left of the budget rather than
+       * from the full 32MB.  Restarting every grab at the total was
+       * what let three of them add up to 96MB - three times the figure
+       * mem_stats_total() reports - and a caller doing the obvious
+       * total-minus-free then underflowed its unsigned arithmetic into
+       * an enormous number. */
+      for (i = 0; i < MEM_STATS_PS2_PROBES && budget; i++)
+      {
+         s0 = (size_t)budget;
+         while (s0 && (held[i] = malloc(s0)) == NULL)
+            s0 >>= 1;
+         if (!s0)
+            break;
+         free_mem += (uint64_t)s0;
+         budget   -= (uint64_t)s0;
+      }
+
+      for (i = 0; i < MEM_STATS_PS2_PROBES; i++)
+      {
+         if (held[i])
+            free(held[i]);
+      }
+
       cached = free_mem;
+      probed = 1;
       return cached;
    }
 #elif defined(MEM_STATS_APPLE)

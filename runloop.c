@@ -3522,6 +3522,10 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          struct retro_memory_status *memstat = (struct retro_memory_status *)data;
          memstat->free  = mem_stats_free();
          memstat->total = mem_stats_total();
+         /* A core sizing a pool against these will do total - free at
+          * some point; never hand it a pair that makes that negative. */
+         if (memstat->total && memstat->free > memstat->total)
+            memstat->free = memstat->total;
          /* If the active frontend driver cannot report memory, tell the core
           * the call is unsupported so it falls back to its own defaults. */
          if (memstat->free == 0 && memstat->total == 0)

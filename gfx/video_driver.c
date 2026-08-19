@@ -5078,8 +5078,17 @@ void video_driver_frame(const void *data, unsigned width,
 
          if ((video_st->frame_count % memory_update_interval) == 0)
          {
+            /* Both are snapshots of a machine that moves underneath
+             * them, and a platform with no accounting of its own has to
+             * probe for the free figure, so the pair can disagree.
+             * Subtracting unsigned without checking turned any such
+             * disagreement into a number in the trillions of MB. */
+            uint64_t free_memory;
             last_total_memory = mem_stats_total();
-            last_used_memory  = last_total_memory - mem_stats_free();
+            free_memory       = mem_stats_free();
+            last_used_memory  = (last_total_memory > free_memory)
+                              ? (last_total_memory - free_memory)
+                              : 0;
          }
 
          if (_len > 0)
