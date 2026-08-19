@@ -33,7 +33,9 @@
 
 /* SDL3 Audio Driver */
 
-/* Timeout in milliseconds for blocking read/write to detect a stalled audio device. */
+/* Timeout in milliseconds for a blocked read/write to detect a stalled
+ * audio device.  Applied per wait; each wake from the stream callback
+ * re-arms it, so it bounds continuous silence from the device side. */
 #define SDL3_AUDIO_STALL_TIMEOUT_MS 256
 
 /* Context for an audio device. Covered by three different states:
@@ -53,13 +55,20 @@ typedef struct sdl3_audio
    unsigned latency; /**< The amount of requested latency in milliseconds. */
    float ratio; /**< Frequency ratio currently set on the stream, to skip redundant sets. */
    float gain; /**< Gain currently set on the stream, to skip redundant sets. */
-   bool nonblock; /**< When true, drop samples instead of waiting for the device to clear. */
    SDL_AtomicInt device_removed; /**< Becomes true when the stream's device is unplugged. Set under lock so a blocked wait wakes. */
+   bool nonblock; /**< When true, drop samples instead of waiting for the device to clear. */
+   bool data_moved; /**< Wake token set by the stream callback, consumed by waiters. Guarded by lock; makes the queue-full test race-free. */
    bool defunct; /**< True when the device has completely failed. Saves from retrying each frame. */
 } sdl3_audio_t;
 
 /**
  * Event callback for SDL_EVENT_AUDIO_DEVICE_REMOVED.
+ *
+ * Matches on the stream's logical device id, so it only fires for
+ * streams bound to an explicitly selected device: SDL never sends
+ * REMOVED for a logical device opened as the system default - it
+ * parks that on a zombie device and migrates it to new hardware
+ * itself.  The reopen path therefore cannot fight SDL's migration.
  */
 static bool SDLCALL sdl3_audio_device_removed_watch(void *userdata, SDL_Event *event)
 {
@@ -238,6 +247,7 @@ static void SDLCALL sdl3_audio_stream_cb(void *userdata,
    sdl3_audio_t *sdl = (sdl3_audio_t*)userdata;
 
    SDL_LockMutex(sdl->lock);
+   sdl->data_moved = true;
    SDL_SignalCondition(sdl->cond);
    SDL_UnlockMutex(sdl->lock);
 }
@@ -245,16 +255,22 @@ static void SDLCALL sdl3_audio_stream_cb(void *userdata,
 /**
  * Blocks until the stream callback signals device data movement.
  *
+ * Callers test the stream's queue level without holding the lock, so
+ * a callback can fire between that test and this wait.  The data_moved
+ * token covers it: a signal with no waiter leaves the token set and
+ * the wait returns immediately.
+ *
  * @return False if the device stalls/stops moving data (to report short count).
  */
 static bool sdl3_audio_wait_for_device(sdl3_audio_t *ctx)
 {
-   bool signalled;
+   bool signalled = true;
 
    SDL_LockMutex(ctx->lock);
-   signalled = SDL_GetAtomicInt(&ctx->device_removed)
-         || SDL_WaitConditionTimeout(ctx->cond, ctx->lock,
-               SDL3_AUDIO_STALL_TIMEOUT_MS);
+   if (!ctx->data_moved && !SDL_GetAtomicInt(&ctx->device_removed))
+      signalled = SDL_WaitConditionTimeout(ctx->cond, ctx->lock,
+            SDL3_AUDIO_STALL_TIMEOUT_MS);
+   ctx->data_moved = false;
    SDL_UnlockMutex(ctx->lock);
 
    return signalled;
@@ -291,9 +307,11 @@ static void sdl3_audio_free(void *data)
 /**
  * Prepares a new output stream.
  *
- * Registers device event tracking, binds the wake callback,
- * resets write_raw state, prefills silence for latency
- * cushioning, and starts playback.
+ * Publishes the device id for the removal watch, binds the wake
+ * callback, resets write_raw state, prefills silence for latency
+ * cushioning, and starts playback.  Removal/wake flags are owned
+ * by the callers: init starts from the zeroed allocation and the
+ * reopen path re-arms after this returns.
  */
 static void sdl3_audio_prime_stream(sdl3_audio_t *sdl)
 {
@@ -306,10 +324,6 @@ static void sdl3_audio_prime_stream(sdl3_audio_t *sdl)
    sdl->in_cap = sdl->buffer_size;
    sdl->ratio = 1.0f;
    sdl->gain = 1.0f;
-
-   SDL_LockMutex(sdl->lock);
-   SDL_SetAtomicInt(&sdl->device_removed, 0);
-   SDL_UnlockMutex(sdl->lock);
 
    if ((tmp = calloc(1, sdl->buffer_size)))
    {
@@ -365,8 +379,11 @@ static void *sdl3_audio_init(const char *device,
          (int)((sdl->buffer_size / frame_size + device_sample_frames)
             * 1000 / sdl->spec.freq));
 
-   sdl3_audio_prime_stream(sdl);
+   /* Publish the device id and register the watch before priming
+    * so an unplug during setup is caught. */
+   SDL_SetAtomicU32(&sdl->devid, SDL_GetAudioStreamDevice(sdl->stream));
    SDL_AddEventWatch(sdl3_audio_device_removed_watch, sdl);
+   sdl3_audio_prime_stream(sdl);
 
    return sdl;
 
@@ -430,6 +447,15 @@ static bool sdl3_audio_reopen_default(sdl3_audio_t *sdl)
    SDL_DestroyAudioStream(sdl->stream);
    sdl->stream = stream;
    sdl3_audio_prime_stream(sdl);
+
+   /* Re-arm removal tracking now that prime published the new
+    * device id.  The new stream is opened on the default device,
+    * which never receives REMOVED (SDL migrates it instead), so
+    * nothing can race this clear. */
+   SDL_LockMutex(sdl->lock);
+   SDL_SetAtomicInt(&sdl->device_removed, 0);
+   sdl->data_moved = false;
+   SDL_UnlockMutex(sdl->lock);
    return true;
 }
 
