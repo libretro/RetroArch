@@ -621,7 +621,8 @@ static bool android_state_flushed = false;
  * being killed without the user having to invoke 'Quit RetroArch'. */
 static void android_input_flush_persistent_state(void)
 {
-   settings_t *settings = config_get_ptr();
+   settings_t *settings        = config_get_ptr();
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
 
    if (android_state_flushed)
       return;
@@ -632,8 +633,19 @@ static void android_input_flush_persistent_state(void)
       return;
 
    /* SRAM first: it is the more expensive of the two, and the more
-    * painful to lose. Non-SRAM cores make this a no-op. */
-   command_event(CMD_EVENT_SAVE_FILES, NULL);
+    * painful to lose. Non-SRAM cores make this a no-op.
+    *
+    * Only flush while content is actually loaded. APP_CMD_PAUSE can be
+    * delivered while frontend_unix_init() is still pumping events
+    * waiting for the window (activity created, then immediately
+    * backgrounded / screen locked), long before any core exists - and,
+    * worse, while a previous activity instance in the same process may
+    * still be mid-teardown, leaving runloop_state.current_core in a
+    * transient state. There is nothing to save in either case:
+    * CMD_EVENT_SAVE_FILES exists to persist SRAM and game-specific
+    * cheats, both of which require loaded content. */
+   if (runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED)
+      command_event(CMD_EVENT_SAVE_FILES, NULL);
 
    if (settings->bools.config_save_on_exit)
       command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
