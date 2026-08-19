@@ -107,6 +107,9 @@ typedef struct
 #else
 #define sys_memory_get_user_memory_size(x) system_call_1(352, x)
 #endif
+#elif defined(MEM_STATS_PS2)
+/* GetMemorySize is syscall 0x7f: how much RAM the board actually has */
+#include <kernel.h>
 #elif defined(MEM_STATS_EMSCRIPTEN)
 #include <emscripten/heap.h>
 #include <malloc.h>
@@ -257,14 +260,29 @@ static void mem_stats_proc_meminfo(uint64_t *total, uint64_t *avail)
 #endif
 
 #if defined(MEM_STATS_PS2)
-/* What retail hardware has, and the only figure this platform can give
- * for a total.  The free probe below draws its budget from the same
- * constant, so that the two answers can never contradict each other. */
-#define MEM_STATS_PS2_RAM_BYTES  (32 * 1024 * 1024)
+/* Retail has 32MB, a TOOL devkit has 128MB, and a retail unit switched
+ * into 64MiB mode has something in between; the kernel knows which, and
+ * has since the first BIOS, so ask it rather than assume the common
+ * case.  The literal is only a fallback for a kernel that answers with
+ * nothing - assuming retail understates a bigger machine, which is the
+ * safe direction for a caller sizing an allocation against it. */
+#define MEM_STATS_PS2_RAM_FALLBACK  (32 * 1024 * 1024)
 /* Three grabs, as before.  Each takes the largest block still inside
  * the budget, so what a fourth would find is fragmentation rather than
  * memory. */
-#define MEM_STATS_PS2_PROBES     3
+#define MEM_STATS_PS2_PROBES        3
+
+static uint64_t mem_stats_ps2_ram(void)
+{
+   static uint64_t cached = 0;
+   if (!cached)
+   {
+      int size = (int)GetMemorySize();
+      cached   = (size > 0) ? (uint64_t)size
+                            : (uint64_t)MEM_STATS_PS2_RAM_FALLBACK;
+   }
+   return cached;
+}
 #endif
 
 uint64_t mem_stats_total(void)
@@ -327,7 +345,7 @@ uint64_t mem_stats_total(void)
     * "total" that means anything in a wasm process. */
    return (uint64_t)emscripten_get_heap_max();
 #elif defined(MEM_STATS_PS2)
-   return (uint64_t)MEM_STATS_PS2_RAM_BYTES;
+   return mem_stats_ps2_ram();
 #elif defined(MEM_STATS_APPLE)
 #if !TARGET_OS_IPHONE
    {
@@ -467,7 +485,7 @@ uint64_t mem_stats_free(void)
       static uint64_t cached = 0;
       static int      probed = 0;
       uint64_t free_mem      = 0;
-      uint64_t budget        = MEM_STATS_PS2_RAM_BYTES;
+      uint64_t budget        = mem_stats_ps2_ram();
       void    *held[MEM_STATS_PS2_PROBES];
       size_t   s0;
       int      i;
