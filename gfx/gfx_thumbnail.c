@@ -3190,7 +3190,7 @@ void gfx_thumbnail_draw(
       if (dispctx->blend_begin)
          dispctx->blend_begin(userdata);
 
-      if (!p_disp->dispctx->handles_transform)
+      if (!dispctx->handles_transform)
       {
          /* Perform 'rotation' step
           * > Note that rotation does not actually work...

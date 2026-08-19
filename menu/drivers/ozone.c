@@ -12440,7 +12440,7 @@ static void ozone_messagebox_fadeout_cb(void *userdata)
 
 static void ozone_frame(void *data, video_frame_info_t *video_info)
 {
-   math_matrix_4x4 mymat;
+   math_matrix_4x4 mymat                  = {{ 0.0f }};
    gfx_animation_ctx_entry_t entry;
    bool ozone_last_use_preferred_system_color_theme;
    ozone_handle_t* ozone                  = (ozone_handle_t*)data;
@@ -12672,7 +12672,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          background_color,
          NULL);
 
-   if (!p_disp->dispctx->handles_transform)
+   if (dispctx && !dispctx->handles_transform)
    {
       float cosine             = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
       float sine               = 0.0f; /* sine(rad) = sine(0) = 0.0f */

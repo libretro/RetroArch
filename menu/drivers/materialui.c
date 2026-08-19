@@ -4895,7 +4895,7 @@ static void materialui_render_menu_entry_default(
       unsigned header_height,
       int x_offset)
 {
-   math_matrix_4x4 mymat;
+   math_matrix_4x4 mymat    = {{ 0.0f }};
    const char *entry_value                           = NULL;
    const char *entry_label                           = NULL;
    unsigned entry_type                               = 0;
@@ -4921,7 +4921,7 @@ static void materialui_render_menu_entry_default(
       1.0f, 1.0f, 1.0f, 1.0f,
    };
 
-   if (!p_disp->dispctx->handles_transform)
+   if (p_disp->dispctx && !p_disp->dispctx->handles_transform)
    {
       float cosine     = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
       float sine       = 0.0f; /* sine(rad) = sine(0) = 0.0f */
@@ -5339,7 +5339,7 @@ static void materialui_render_menu_entry_playlist_list(
       int x_offset)
 {
    bool draw_divider;
-   math_matrix_4x4 mymat;
+   math_matrix_4x4 mymat    = {{ 0.0f }};
    const char *entry_label    = NULL;
    int entry_x                = x_offset + node->x;
    int entry_y                = header_height - mui->scroll_y + node->y;
@@ -5352,7 +5352,7 @@ static void materialui_render_menu_entry_playlist_list(
    settings_t *settings       = config_get_ptr();
    gfx_display_t *p_disp      = disp_get_ptr();
 
-   if (!p_disp->dispctx->handles_transform)
+   if (p_disp->dispctx && !p_disp->dispctx->handles_transform)
    {
       float cosine     = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
       float sine       = 0.0f; /* sine(rad) = sine(0) = 0.0f */
@@ -5596,7 +5596,7 @@ static void materialui_render_menu_entry_playlist_dual_icon(
       unsigned header_height,
       int x_offset)
 {
-   math_matrix_4x4 mymat;
+   math_matrix_4x4 mymat    = {{ 0.0f }};
    const char *entry_label = NULL;
    float entry_x           = (float)x_offset + node->x;
    float entry_y           = (float)header_height - mui->scroll_y + node->y;
@@ -5618,7 +5618,7 @@ static void materialui_render_menu_entry_playlist_dual_icon(
    gfx_display_t *p_disp   = disp_get_ptr();
    settings_t *settings    = config_get_ptr();
 
-   if (!p_disp->dispctx->handles_transform)
+   if (p_disp->dispctx && !p_disp->dispctx->handles_transform)
    {
       float cosine     = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
       float sine       = 0.0f; /* sine(rad) = sine(0) = 0.0f */
@@ -6213,7 +6213,7 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
       unsigned header_height, int x_offset,
       file_list_t *list, size_t selection)
 {
-   math_matrix_4x4 mymat;
+   math_matrix_4x4 mymat    = {{ 0.0f }};
    materialui_node_t *node = (materialui_node_t*)list->list[selection].userdata;
    float background_x      = (float)(x_offset + (int)mui->landscape_optimization.border_width);
    float background_y      = (float)header_height;
@@ -6236,7 +6236,7 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
        || (background_height <= 0))
       return;
 
-   if (!p_disp->dispctx->handles_transform)
+   if (p_disp->dispctx && !p_disp->dispctx->handles_transform)
    {
       float cosine     = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
       float sine       = 0.0f; /* sine(rad) = sine(0) = 0.0f */
@@ -6496,7 +6496,7 @@ static void materialui_render_selected_entry_aux_savestate_list(
       unsigned header_height, int x_offset,
       file_list_t *list, size_t selection)
 {
-   math_matrix_4x4 mymat;
+   math_matrix_4x4 mymat    = {{ 0.0f }};
    materialui_node_t *node = (materialui_node_t*)list->list[selection].userdata;
    float background_x      = (float)(x_offset + (int)mui->landscape_optimization.border_width) + node->entry_width;
    float background_y      = (float)header_height;
@@ -6531,7 +6531,7 @@ static void materialui_render_selected_entry_aux_savestate_list(
        || (background_height <= 0))
       return;
 
-   if (!p_disp->dispctx->handles_transform)
+   if (p_disp->dispctx && !p_disp->dispctx->handles_transform)
    {
       float cosine     = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
       float sine       = 0.0f; /* sine(rad) = sine(0) = 0.0f */
@@ -8455,7 +8455,7 @@ static void materialui_animation_list_alpha(materialui_handle_t *mui, bool fade_
 static void materialui_frame(void *data, video_frame_info_t *video_info)
 {
    int list_x_offset;
-   math_matrix_4x4 mymat;
+   math_matrix_4x4 mymat    = {{ 0.0f }};
    materialui_handle_t *mui       = (materialui_handle_t*)data;
    settings_t *settings           = config_get_ptr();
    gfx_display_t *p_disp          = disp_get_ptr();
@@ -8511,7 +8511,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       return;
    }
 
-   if (!p_disp->dispctx->handles_transform)
+   if (p_disp->dispctx && !p_disp->dispctx->handles_transform)
    {
       float cosine     = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
       float sine       = 0.0f; /* sine(rad) = sine(0) = 0.0f */

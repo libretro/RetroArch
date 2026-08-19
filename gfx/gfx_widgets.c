@@ -785,10 +785,15 @@ void gfx_widgets_draw_icon(
 
    if (!texture)
       return;
+   /* Every draw below goes through dispctx; without one there is
+    * nothing to render (the context is torn down around a video
+    * driver reinit while widget frames may still be submitted). */
+   if (!dispctx)
+      return;
 
    memset(&mymat, 0, sizeof(mymat));
 
-   if (!p_disp->dispctx->handles_transform)
+   if (!dispctx->handles_transform)
       gfx_display_rotate_z(p_disp, &mymat, cosine, sine, userdata);
 
    coords.vertices      = 4;
