@@ -4175,7 +4175,11 @@ INPUT_NOINLINE static void input_poll_overlay(
       ptr_state->count = 0;
    }
 
-   if (input->input_state)
+   /* input_data is dereferenced by the driver's pointer paths, so a
+    * NULL current_data (mid driver teardown/reinit, e.g. Android
+    * surface recreation) must skip driver input for this frame
+    * instead of faulting inside the input driver. */
+   if (input->input_state && input_data)
    {
       rarch_joypad_info_t joypad_info;
       unsigned device                 = (ol->active->flags & OVERLAY_FULL_SCREEN)
@@ -4195,9 +4199,13 @@ INPUT_NOINLINE static void input_poll_overlay(
       joypad_info.auto_binds          = NULL;
       joypad_info.axis_threshold      = 0.0f;
 
-      /* Get driver input */
+      /* Get driver input.
+       * Bound check first: the PRESSED query must never be issued
+       * with idx == OVERLAY_MAX_TOUCH, since drivers index their
+       * touch arrays by idx and are not required to range-check it. */
       for (i = 0;
-            input->input_state(
+               (i < OVERLAY_MAX_TOUCH)
+            && input->input_state(
                input_data,
                joypad,
                sec_joypad,
@@ -4207,8 +4215,7 @@ INPUT_NOINLINE static void input_poll_overlay(
                0,
                device,
                i,
-               RETRO_DEVICE_ID_POINTER_PRESSED)
-                  && i < OVERLAY_MAX_TOUCH;
+               RETRO_DEVICE_ID_POINTER_PRESSED);
             i++)
       {
          ol_state->touch[i].x = input->input_state(
