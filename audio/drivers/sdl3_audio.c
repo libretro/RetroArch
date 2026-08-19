@@ -64,8 +64,8 @@ typedef struct sdl3_audio
 /**
  * Event callback for SDL_EVENT_AUDIO_DEVICE_REMOVED and _ADDED.
  *
- * Removal matches on the stream's logical device id, so it only fires
- * for streams bound to an explicitly selected device: SDL never sends
+ * Matches on the stream's logical device id, so it only fires for
+ * streams bound to an explicitly selected device: SDL never sends
  * REMOVED for a logical device opened as the system default - it
  * parks that on a zombie device and migrates it to new hardware
  * itself.  The reopen path therefore cannot fight SDL's migration.
