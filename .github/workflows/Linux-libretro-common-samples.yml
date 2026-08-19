@@ -23,9 +23,23 @@ jobs:
 
     steps:
       - name: Install dependencies
+        timeout-minutes: 5
         run: |
-          sudo apt-get update -y
-          sudo apt-get install -y build-essential zlib1g-dev clang
+          # All three packages ship on the stock ubuntu-latest image, so
+          # this step is a no-op there and apt is only contacted if the
+          # image ever drops one of them.
+          if dpkg -s build-essential zlib1g-dev clang >/dev/null 2>&1; then
+            echo "All packages already present on runner image; skipping apt."
+            exit 0
+          fi
+          for i in 1 2 3; do
+            sudo apt-get update -y && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            build-essential zlib1g-dev clang
 
       - name: Checkout
         uses: actions/checkout@v3
@@ -459,9 +473,22 @@ jobs:
 
     steps:
       - name: Install dependencies
+        timeout-minutes: 5
         run: |
-          sudo apt-get update -y
-          sudo apt-get install -y clang
+          # clang ships on the stock ubuntu-latest image; apt is only
+          # contacted if the image ever drops it.
+          if dpkg -s clang >/dev/null 2>&1; then
+            echo "clang already present on runner image; skipping apt."
+            exit 0
+          fi
+          for i in 1 2 3; do
+            sudo apt-get update -y && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            clang
 
       - name: Checkout
         uses: actions/checkout@v3
@@ -529,9 +556,16 @@ jobs:
 
     steps:
       - name: Install dependencies
+        timeout-minutes: 5
         run: |
-          sudo apt-get update -y
-          sudo apt-get install -y build-essential ${{ matrix.apt_pkgs }} qemu-user-static
+          for i in 1 2 3; do
+            sudo apt-get update -y && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            build-essential ${{ matrix.apt_pkgs }} qemu-user-static
 
       - name: Checkout
         uses: actions/checkout@v3
@@ -638,9 +672,16 @@ jobs:
 
     steps:
       - name: Install dependencies
+        timeout-minutes: 5
         run: |
-          sudo apt-get update -y
-          sudo apt-get install -y build-essential ${{ matrix.apt_pkgs }} qemu-user-static
+          for i in 1 2 3; do
+            sudo apt-get update -y && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            build-essential ${{ matrix.apt_pkgs }} qemu-user-static
 
       - name: Checkout
         uses: actions/checkout@v3
