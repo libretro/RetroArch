@@ -1989,6 +1989,49 @@ static void frontend_unix_get_env(int *argc,
       }
    }
 
+   /* Device-optimal audio output parameters, queried from
+    * AudioManager on the Java side.  These become the defaults;
+    * values saved in the config file still win. */
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
+         (*env)->NewStringUTF(env, "AUDIO_RATE"));
+
+   if (android_app->getStringExtra && jstr)
+   {
+      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
+      int rate         = 0;
+
+      if (argv && *argv)
+         rate = atoi(argv);
+      (*env)->ReleaseStringUTFChars(env, jstr, argv);
+
+      if (rate > 0)
+      {
+         g_defaults.settings_out_sample_rate = rate;
+         __android_log_print(ANDROID_LOG_INFO,
+            "RetroArch", "[ENV] Device sample rate: %d Hz.\n", rate);
+      }
+   }
+
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
+         (*env)->NewStringUTF(env, "AUDIO_FRAMES"));
+
+   if (android_app->getStringExtra && jstr)
+   {
+      const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
+      int frames       = 0;
+
+      if (argv && *argv)
+         frames = atoi(argv);
+      (*env)->ReleaseStringUTFChars(env, jstr, argv);
+
+      if (frames > 0)
+      {
+         g_defaults.settings_out_block_frames = frames;
+         __android_log_print(ANDROID_LOG_INFO,
+            "RetroArch", "[ENV] Device audio block frames: %d.\n", frames);
+      }
+   }
+
    /* Content. */
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
          (*env)->NewStringUTF(env, "DATADIR"));
