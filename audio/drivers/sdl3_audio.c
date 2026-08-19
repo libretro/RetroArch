@@ -69,9 +69,6 @@ typedef struct sdl3_audio
  * REMOVED for a logical device opened as the system default - it
  * parks that on a zombie device and migrates it to new hardware
  * itself.  The reopen path therefore cannot fight SDL's migration.
- *
- * A playback device being added lifts defunct, so a reopen that
- * failed with no devices present is retried on the next write.
  */
 static bool SDLCALL sdl3_audio_device_removed_watch(void *userdata, SDL_Event *event)
 {
