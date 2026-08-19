@@ -220,38 +220,69 @@ static void task_decompress_handler_finished(retro_task_t *task,
    if (!task_get_error(task) && ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
       task_set_error(task, strdup("Task canceled"));
 
-   if (task_get_error(task))
-      free(dec->source_file);
-   else
+   if (!task_get_error(task))
    {
       decompress_task_data_t *data =
          (decompress_task_data_t*)calloc(1, sizeof(*data));
 
-      /* NULL-check: the ->source_file write below NULL-derefs on
-       * OOM.  task_set_data accepts NULL, but the consumer
-       * (completion callback) would then see a NULL task_data.
-       * If data alloc fails we instead set a task error and free
-       * source_file ourselves so downstream consumers see a
-       * clean error state rather than partial success. */
+      /* The completion callback owns 'data' and frees both it and
+       * data->source_file, so it is handed a copy of the path
+       * rather than the state's own buffer: dec->source_file must
+       * stay live until the task is fully retired (see the note
+       * below).  On allocation failure a task error is set instead,
+       * so downstream consumers see a clean error state (a NULL
+       * task_data, which they all check) rather than partial
+       * success. */
       if (data)
-      {
-         data->source_file = dec->source_file;
+         data->source_file = strdup(dec->source_file);
+      if (data && data->source_file)
          task_set_data(task, data);
-      }
       else
       {
-         free(dec->source_file);
+         free(data);
          task_set_error(task, strdup("Out of memory"));
       }
    }
 
-   if (dec->subdir)
-      free(dec->subdir);
-   if (dec->valid_ext)
-      free(dec->valid_ext);
-   if (dec->userdata)
-      free(dec->userdata);
+   /* Deliberately NOT freeing 'dec' (task->state) here.
+    *
+    * This runs on the worker thread, inside the task handler, with
+    * no queue lock held: the task is still sitting in the running
+    * queue at this point, and after the handler returns it stays
+    * reachable through the finished and retiring lists until the
+    * main thread fully retires it - many frames later.
+    * task_decompress_finder() dereferences task->state->source_file
+    * on every candidate whose handler matches, so freeing the state
+    * here left it dangling for that entire window, and any
+    * task_push_decompress() racing a finishing extraction - e.g.
+    * cb_generic_download pushing the next archive from within
+    * task_queue gather while the previous one retires - called
+    * strcmp() on freed memory: a hard SIGSEGV.  (Same bug and same
+    * fix as task_http.c's finder; see the note at the end of
+    * task_http_transfer_handler().)
+    *
+    * Teardown now happens in task_decompress_cleanup(), which the
+    * task queue calls during retirement, after the task has been
+    * pruned from every list and is no longer findable. */
+}
+
+static void task_decompress_cleanup(retro_task_t *task)
+{
+   decompress_state_t *dec = (decompress_state_t*)task->state;
+
+   if (!dec)
+      return;
+   /* Cleared first so that a finder which somehow still reaches
+    * this task sees no state rather than a stale pointer. */
+   task->state = NULL;
+
+   free(dec->source_file);
    free(dec->target_dir);
+   free(dec->target_file);
+   free(dec->subdir);
+   free(dec->valid_ext);
+   free(dec->callback_error);
+   free(dec->userdata);
    free(dec);
 }
 
@@ -279,6 +310,10 @@ static void task_decompress_handler(retro_task_t *task)
    if (((flg & RETRO_TASK_FLG_CANCELLED) > 0) || ret != 0)
    {
       task_set_error(task, dec->callback_error);
+      /* Ownership of the buffer moved to task->error (freed at
+       * retirement); cleared so task_decompress_cleanup() does
+       * not free it a second time. */
+      dec->callback_error = NULL;
       file_archive_parse_file_iterate_stop(&dec->archive);
 
       task_decompress_handler_finished(task, dec);
@@ -307,6 +342,10 @@ static void task_decompress_handler_target_file(retro_task_t *task)
    if (((flg & RETRO_TASK_FLG_CANCELLED) > 0) || ret != 0)
    {
       task_set_error(task, dec->callback_error);
+      /* Ownership of the buffer moved to task->error (freed at
+       * retirement); cleared so task_decompress_cleanup() does
+       * not free it a second time. */
+      dec->callback_error = NULL;
       file_archive_parse_file_iterate_stop(&dec->archive);
 
       task_decompress_handler_finished(task, dec);
@@ -337,6 +376,10 @@ static void task_decompress_handler_subdir(retro_task_t *task)
    if (((flg & RETRO_TASK_FLG_CANCELLED) > 0) || ret != 0)
    {
       task_set_error(task, dec->callback_error);
+      /* Ownership of the buffer moved to task->error (freed at
+       * retirement); cleared so task_decompress_cleanup() does
+       * not free it a second time. */
+      dec->callback_error = NULL;
       file_archive_parse_file_iterate_stop(&dec->archive);
 
       task_decompress_handler_finished(task, dec);
@@ -348,6 +391,15 @@ static bool task_decompress_finder(
 {
    decompress_state_t *dec = (decompress_state_t*)task->state;
    if (task->handler != task_decompress_handler)
+      return false;
+   /* The state stays attached until the queue retires the task
+    * (task_decompress_cleanup), so a finished-but-not-yet-retired
+    * extraction still matches here.  That is deliberate: find()
+    * must stay truthful for the whole window or a duplicate
+    * extraction could be pushed against the same destination.  The
+    * NULL checks are belt-and-braces for a task whose cleanup has
+    * already run. */
+   if (!dec || !dec->source_file)
       return false;
    return !strcmp(dec->source_file, (const char*)user_data);
 }
@@ -423,6 +475,9 @@ void *task_push_decompress(
    t->frontend_userdata= frontend_userdata;
    t->state            = s;
    t->handler          = task_decompress_handler;
+   /* Releases t->state; must run at retirement, not at FINISHED
+    * time - see the note in task_decompress_handler_finished(). */
+   t->cleanup          = task_decompress_cleanup;
    if (subdir && *subdir)
    {
       s->subdir        = strdup(subdir);
