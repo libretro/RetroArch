@@ -14,6 +14,10 @@ LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 UUT_SRC := $(REPO_ROOT)/gfx/gfx_thumbnail.c
 UUT_OBJ := gfx_thumbnail_uut.o
 
+# Layout facts (settings_t offsets/size) for the stubs, compiled with
+# UUT_CFLAGS so they match what the UUT's configuration.h produces.
+LAYOUT_OBJ := settings_layout_uut.o
+
 SOURCES := gfx_thumbnail_preview_test.c \
            stubs_retroarch.c \
            $(REPO_ROOT)/libretro-common/audio/audio_mixer.c \
@@ -122,10 +126,13 @@ $(DECODE_TARGET_NORWEBM): $(DECODE_SOURCES) preview_audio_decode_test.c
 $(UUT_OBJ): $(UUT_SRC)
 	$(CC) -c -o $@ $< $(UUT_CFLAGS)
 
+$(LAYOUT_OBJ): settings_layout_uut.c
+	$(CC) -c -o $@ $< $(UUT_CFLAGS)
+
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-$(TARGET): $(OBJS) $(UUT_OBJ)
+$(TARGET): $(OBJS) $(UUT_OBJ) $(LAYOUT_OBJ)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 # The fixtures are container layouts, not clips: see mkfixtures.py.
@@ -145,7 +152,7 @@ check: $(TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) fixtures
 # left the following run globbing nothing.  Use distclean to drop them.
 clean:
 	rm -f $(TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) \
-	      $(OBJS) $(UUT_OBJ)
+	      $(OBJS) $(UUT_OBJ) $(LAYOUT_OBJ)
 
 distclean: clean
 	rm -rf fixtures

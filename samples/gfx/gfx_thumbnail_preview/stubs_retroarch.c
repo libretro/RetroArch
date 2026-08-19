@@ -14,6 +14,8 @@
 #include <stdbool.h>
 #include <sys/stat.h>
 
+#include <formats/image.h>
+
 #include "harness.h"
 
 harness_probe_t hp;
@@ -22,11 +24,11 @@ harness_probe_t hp;
 bool video_driver_texture_load(void *data, unsigned filter_type,
       uintptr_t *id)
 {
-   struct { unsigned w, h; } *img = (void*)data;
+   struct texture_image *img = (struct texture_image*)data;
    hp.texture_uploads++;
    *id = 0x1000 + hp.texture_uploads;
-   hp.last_tex_w = img->w;
-   hp.last_tex_h = img->h;
+   hp.last_tex_w = img->width;
+   hp.last_tex_h = img->height;
    return true;
 }
 bool video_driver_texture_unload(uintptr_t *id)
@@ -77,13 +79,20 @@ void *task_queue_find(void *id) { (void)id; return NULL; }
 void task_set_flags(void *t, uint32_t f, bool s) { (void)t; (void)f; (void)s; }
 
 /* ---- config ---- */
+/* Offset and size come from settings_layout_uut.c, compiled with the
+ * UUT's flags, so the blob poke lands on
+ * settings->bools.menu_thumbnail_preview_audio for whatever layout
+ * configuration.h currently has - nothing else in the blob is
+ * disturbed. */
+extern const size_t settings_layout_sizeof;
+extern const size_t settings_layout_preview_audio_off;
 static char g_settings[1 << 20];
 void *config_get_ptr(void)
 {
-   /* Exact offset of settings->bools.menu_thumbnail_preview_audio,
-    * taken from offsetof against the real configuration.h - nothing
-    * else in the blob is disturbed. */
-   g_settings[7614] = hp.force_preview_audio ? 1 : 0;
+   if (settings_layout_sizeof > sizeof(g_settings))
+      abort();
+   g_settings[settings_layout_preview_audio_off] =
+         hp.force_preview_audio ? 1 : 0;
    return g_settings;
 }
 
@@ -233,7 +242,8 @@ void audio_driver_mixer_remove_stream(unsigned i)
    hp_aowner = NULL; hp_abuf = NULL;
 }
 const char *audio_driver_mixer_get_stream_name(unsigned i) { (void)i; return "__gfx_thumb_preview"; }
-unsigned audio_driver_mixer_get_stream_state(unsigned i) { (void)i; return 0; }
+enum audio_mixer_state audio_driver_mixer_get_stream_state(unsigned i)
+{ (void)i; return AUDIO_STREAM_STATE_NONE; }
 
 bool audio_driver_mixer_stream_stop(unsigned i) { (void)i; return true; }
 
