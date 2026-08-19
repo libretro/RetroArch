@@ -1514,10 +1514,6 @@ static INLINE void android_input_poll_event_type_key(
       return;
    buf           = android_key_state[port];
 
-   RARCH_DBG("android_input_poll_event_type_key: keycode:%d port:%d source:0x%x action:%d device_id:%d is_kbd_id:%d\n",
-      keycode, port, source, action, device_id,
-      android_is_keyboard_id(device_id));
-
    /* Handle 'duplicate' inputs that correspond
     * to the same RETROK_* key */
    switch (keycode)
