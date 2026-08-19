@@ -111,6 +111,41 @@ public final class UserPreferences
 		return new_path;
 	}
 
+	// Cached parse of the config file, refreshed when the file on
+	// disk changes.  Callbacks that fire often - window focus changes,
+	// display mode updates - then pay a stat() instead of a full
+	// re-read and re-parse on the UI thread.
+	private static ConfigFile cachedConfig;
+	private static String cachedConfigPath;
+	private static long cachedConfigMtime;
+	private static long cachedConfigSize;
+
+	/**
+	 * Returns a parse of the current config file, re-reading it only
+	 * when the file on disk has changed since the last call.
+	 *
+	 * @param ctx the current {@link Context}.
+	 *
+	 * @return the parsed {@link ConfigFile}.
+	 */
+	public static synchronized ConfigFile getConfigFile(Context ctx)
+	{
+		String path = getDefaultConfigPath(ctx);
+		File file = new File(path);
+		long mtime = file.lastModified();
+		long size = file.length();
+
+		if (cachedConfig == null || !path.equals(cachedConfigPath)
+				|| mtime != cachedConfigMtime || size != cachedConfigSize)
+		{
+			cachedConfig = new ConfigFile(path);
+			cachedConfigPath = path;
+			cachedConfigMtime = mtime;
+			cachedConfigSize = size;
+		}
+		return cachedConfig;
+	}
+
 	/**
 	 * Adds device-derived parameters to the intent that launches the
 	 * native activity: the app version code that gates bundled asset

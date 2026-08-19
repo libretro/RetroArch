@@ -137,7 +137,7 @@ public final class RetroActivityFuture extends RetroActivityCamera {
       return;
 
     boolean writeOverNotch = false;
-    ConfigFile configFile = new ConfigFile(UserPreferences.getDefaultConfigPath(this));
+    ConfigFile configFile = UserPreferences.getConfigFile(this);
 
     try {
       writeOverNotch = configFile.getBoolean("video_notch_write_over_enable");
@@ -239,7 +239,7 @@ public final class RetroActivityFuture extends RetroActivityCamera {
     mHandlerSendUiMessage(HANDLER_WHAT_TOGGLE_IMMERSIVE, hasFocus);
 
     try {
-      ConfigFile configFile = new ConfigFile(UserPreferences.getDefaultConfigPath(this));
+      ConfigFile configFile = UserPreferences.getConfigFile(this);
       if (configFile.getBoolean("input_auto_mouse_grab")) {
         inputGrabMouse(hasFocus);
       }
