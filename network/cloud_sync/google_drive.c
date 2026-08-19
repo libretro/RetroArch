@@ -155,6 +155,32 @@ typedef struct
 
 static gdrive_state_t gdrive_st = {0};
 
+/* ========== Completion Helpers ========== */
+
+/*
+ * A true return from gdrive_read/update/delete promises
+ * task_cloudsync.c that the completion handler runs exactly once:
+ * it holds an in-flight count that only the handler releases, and
+ * a dropped handler stalls the sync task forever.  Route every
+ * failure exit through these helpers rather than a bare return.
+ */
+
+static void gdrive_cb_state_finish(gdrive_cb_state_t *cb_st, bool success)
+{
+   if (!cb_st)
+      return;
+   cb_st->cb(cb_st->user_data, cb_st->path, success, cb_st->rfile);
+   free(cb_st);
+}
+
+static void gdrive_walk_fail(gdrive_folder_walk_t *walk)
+{
+   if (!walk)
+      return;
+   gdrive_cb_state_finish(walk->cb_st, false);
+   free(walk);
+}
+
 /* ========== Auth Header ========== */
 
 static char *gdrive_get_headers(const char *extra)
@@ -473,9 +499,7 @@ static void gdrive_refresh_cb(retro_task_t *task, void *task_data,
       RARCH_WARN(GDPFX "Token refresh failed\n");
       if (data)
          gdrive_log_http_failure("token refresh", data);
-      ctx->cb_st->cb(ctx->cb_st->user_data,
-            ctx->cb_st->path, false, ctx->cb_st->rfile);
-      free(ctx->cb_st);
+      gdrive_cb_state_finish(ctx->cb_st, false);
    }
    free(ctx);
 }
@@ -487,7 +511,12 @@ static void gdrive_refresh_then_retry(gdrive_op_fn_t retry_fn,
    gdrive_refresh_ctx_t *ctx;
    settings_t *settings = config_get_ptr();
 
-   ctx = (gdrive_refresh_ctx_t *)calloc(1, sizeof(*ctx));
+   if (!(ctx = (gdrive_refresh_ctx_t *)calloc(1, sizeof(*ctx))))
+   {
+      RARCH_WARN(GDPFX "Out of memory refreshing token\n");
+      gdrive_cb_state_finish(cb_st, false);
+      return;
+   }
    ctx->retry_fn = retry_fn;
    ctx->cb_st    = cb_st;
 
@@ -497,9 +526,14 @@ static void gdrive_refresh_then_retry(gdrive_op_fn_t retry_fn,
          gdrive_client_id(), gdrive_client_secret(),
          settings->arrays.google_drive_refresh_token);
 
-   task_push_http_post_transfer_with_headers(
+   if (!task_push_http_post_transfer_with_headers(
          GDRIVE_TOKEN_URL, post_data, true, NULL, NULL,
-         gdrive_refresh_cb, ctx);
+         gdrive_refresh_cb, ctx))
+   {
+      RARCH_WARN(GDPFX "Could not request token refresh\n");
+      gdrive_cb_state_finish(cb_st, false);
+      free(ctx);
+   }
 }
 
 /* ========== Folder Lookup (during begin) ========== */
@@ -544,9 +578,14 @@ static void gdrive_create_folder(gdrive_begin_ctx_t *ctx)
       "\"mimeType\":\"application/vnd.google-apps.folder\"}";
 
    headers = gdrive_get_headers("Content-Type: application/json\r\n");
-   task_push_http_post_transfer_with_headers(
+   if (!task_push_http_post_transfer_with_headers(
          GDRIVE_API_BASE "/files", json, true, NULL,
-         headers, gdrive_create_folder_cb, ctx);
+         headers, gdrive_create_folder_cb, ctx))
+   {
+      RARCH_WARN(GDPFX "Could not request folder creation\n");
+      ctx->cb(ctx->user_data, NULL, false, NULL);
+      free(ctx);
+   }
    free(headers);
 }
 
@@ -583,13 +622,18 @@ static void gdrive_find_folder(gdrive_begin_ctx_t *ctx)
 {
    char *headers;
    headers = gdrive_get_headers(NULL);
-   task_push_http_transfer_with_headers(
+   if (!task_push_http_transfer_with_headers(
          GDRIVE_API_BASE "/files?"
          "q=name='" GDRIVE_FOLDER_NAME "'"
          "+and+mimeType='application/vnd.google-apps.folder'"
          "+and+trashed=false"
          "&fields=files(id,name)",
-         true, NULL, headers, gdrive_find_folder_cb, ctx);
+         true, NULL, headers, gdrive_find_folder_cb, ctx))
+   {
+      RARCH_WARN(GDPFX "Could not search for folder\n");
+      ctx->cb(ctx->user_data, NULL, false, NULL);
+      free(ctx);
+   }
    free(headers);
 }
 
@@ -719,10 +763,7 @@ static void gdrive_folder_create_cb(retro_task_t *task, void *task_data,
    {
       if (data)
          gdrive_log_http_failure("create folder", data);
-      walk->cb_st->cb(walk->cb_st->user_data,
-            walk->cb_st->path, false, walk->cb_st->rfile);
-      free(walk->cb_st);
-      free(walk);
+      gdrive_walk_fail(walk);
       return;
    }
 
@@ -730,10 +771,7 @@ static void gdrive_folder_create_cb(retro_task_t *task, void *task_data,
             "id", folder_id, sizeof(folder_id)))
    {
       RARCH_WARN(GDPFX "Folder create response missing ID\n");
-      walk->cb_st->cb(walk->cb_st->user_data,
-            walk->cb_st->path, false, walk->cb_st->rfile);
-      free(walk->cb_st);
-      free(walk);
+      gdrive_walk_fail(walk);
       return;
    }
 
@@ -752,10 +790,7 @@ static void gdrive_folder_search_cb(retro_task_t *task, void *task_data,
    {
       if (data)
          gdrive_log_http_failure("folder search", data);
-      walk->cb_st->cb(walk->cb_st->user_data,
-            walk->cb_st->path, false, walk->cb_st->rfile);
-      free(walk->cb_st);
-      free(walk);
+      gdrive_walk_fail(walk);
       return;
    }
 
@@ -785,9 +820,14 @@ static void gdrive_folder_search_cb(retro_task_t *task, void *task_data,
             escaped_segment, walk->current_parent);
 
       headers = gdrive_get_headers("Content-Type: application/json\r\n");
-      task_push_http_post_transfer_with_headers(
+      if (!task_push_http_post_transfer_with_headers(
             GDRIVE_API_BASE "/files", json, true, NULL,
-            headers, gdrive_folder_create_cb, walk);
+            headers, gdrive_folder_create_cb, walk))
+      {
+         RARCH_WARN(GDPFX "Could not request creation of folder \"%s\"\n",
+               segment);
+         gdrive_walk_fail(walk);
+      }
       free(headers);
    }
 }
@@ -810,8 +850,12 @@ static void gdrive_folder_walk_next(gdrive_folder_walk_t *walk)
          encoded_segment, walk->current_parent);
 
    headers = gdrive_get_headers(NULL);
-   task_push_http_transfer_with_headers(url, true, NULL,
-         headers, gdrive_folder_search_cb, walk);
+   if (!task_push_http_transfer_with_headers(url, true, NULL,
+         headers, gdrive_folder_search_cb, walk))
+   {
+      RARCH_WARN(GDPFX "Could not search for folder \"%s\"\n", segment);
+      gdrive_walk_fail(walk);
+   }
    free(headers);
 }
 
@@ -851,7 +895,12 @@ static void gdrive_resolve_parent(const char *path,
    }
 
    /* Need to walk and create folders */
-   walk = (gdrive_folder_walk_t *)calloc(1, sizeof(*walk));
+   if (!(walk = (gdrive_folder_walk_t *)calloc(1, sizeof(*walk))))
+   {
+      RARCH_WARN(GDPFX "Out of memory resolving \"%s\"\n", dir_path);
+      gdrive_cb_state_finish(cb_st, false);
+      return;
+   }
    strlcpy(walk->dir_path, dir_path, sizeof(walk->dir_path));
    walk->remaining = walk->dir_path;
    strlcpy(walk->current_parent, gdrive_st.folder_id,
@@ -885,10 +934,11 @@ static void gdrive_resolve_parent(const char *path,
 
 /* ========== Per-File Search ========== */
 
-static void gdrive_search_file(const char *name,
+static bool gdrive_search_file(const char *name,
       const char *parent_id,
       retro_task_callback_t cb, void *user_data)
 {
+   bool pushed;
    char url[PATH_MAX_LENGTH + 512];
    char encoded_name[PATH_MAX_LENGTH];
    char *headers;
@@ -901,9 +951,10 @@ static void gdrive_search_file(const char *name,
          encoded_name, parent_id);
 
    headers = gdrive_get_headers(NULL);
-   task_push_http_transfer_with_headers(url, true, NULL,
-         headers, cb, user_data);
+   pushed  = (task_push_http_transfer_with_headers(url, true, NULL,
+         headers, cb, user_data) != NULL);
    free(headers);
+   return pushed;
 }
 
 /* ========== OAuth Device Flow ========== */
@@ -1021,9 +1072,13 @@ static void gdrive_oauth_task_handler(retro_task_t *task)
          gdrive_client_id(), gdrive_client_secret(),
          ctx->device_code);
 
-   task_push_http_post_transfer_with_headers(
+   if (!task_push_http_post_transfer_with_headers(
          GDRIVE_TOKEN_URL, post_data, true, NULL, NULL,
-         gdrive_poll_cb, ctx);
+         gdrive_poll_cb, ctx))
+   {
+      RARCH_WARN(GDPFX "Could not poll for authorization\n");
+      ctx->poll_pending = false;
+   }
 
    /* Schedule next handler invocation after interval */
    task->when = cpu_features_get_time_usec()
@@ -1154,6 +1209,8 @@ static bool gdrive_sync_begin(cloud_sync_complete_handler_t cb,
       char post_data[4096];
       gdrive_begin_ctx_t *ctx =
          (gdrive_begin_ctx_t *)calloc(1, sizeof(*ctx));
+      if (!ctx)
+         return false;
       ctx->cb        = cb;
       ctx->user_data = user_data;
 
@@ -1163,9 +1220,14 @@ static bool gdrive_sync_begin(cloud_sync_complete_handler_t cb,
             gdrive_client_id(), gdrive_client_secret(),
             settings->arrays.google_drive_refresh_token);
 
-      task_push_http_post_transfer_with_headers(
+      if (!task_push_http_post_transfer_with_headers(
             GDRIVE_TOKEN_URL, post_data, true, NULL, NULL,
-            gdrive_begin_refresh_cb, ctx);
+            gdrive_begin_refresh_cb, ctx))
+      {
+         RARCH_WARN(GDPFX "Could not request access token\n");
+         free(ctx);
+         return false;
+      }
    }
    else
    {
@@ -1173,6 +1235,8 @@ static bool gdrive_sync_begin(cloud_sync_complete_handler_t cb,
       char post_data[1024];
       gdrive_oauth_ctx_t *ctx =
          (gdrive_oauth_ctx_t *)calloc(1, sizeof(*ctx));
+      if (!ctx)
+         return false;
       ctx->cb        = cb;
       ctx->user_data = user_data;
 
@@ -1180,9 +1244,14 @@ static bool gdrive_sync_begin(cloud_sync_complete_handler_t cb,
             "client_id=%s&scope=%s",
             gdrive_client_id(), GDRIVE_SCOPE);
 
-      task_push_http_post_transfer_with_headers(
+      if (!task_push_http_post_transfer_with_headers(
             GDRIVE_DEVICE_URL, post_data, true, NULL, NULL,
-            gdrive_device_code_cb, ctx);
+            gdrive_device_code_cb, ctx))
+      {
+         RARCH_WARN(GDPFX "Could not start device authorization\n");
+         free(ctx);
+         return false;
+      }
    }
 
    return true;
@@ -1260,8 +1329,7 @@ static void gdrive_read_search_cb(retro_task_t *task, void *task_data,
          return;
       }
       gdrive_log_http_failure(cb_st->path, data);
-      cb_st->cb(cb_st->user_data, cb_st->path, false, NULL);
-      free(cb_st);
+      gdrive_cb_state_finish(cb_st, false);
       return;
    }
 
@@ -1271,8 +1339,7 @@ static void gdrive_read_search_cb(retro_task_t *task, void *task_data,
    if (!cb_st->file_id[0])
    {
       /* File doesn't exist on server - that's OK */
-      cb_st->cb(cb_st->user_data, cb_st->path, true, NULL);
-      free(cb_st);
+      gdrive_cb_state_finish(cb_st, true);
       return;
    }
 
@@ -1281,16 +1348,24 @@ static void gdrive_read_search_cb(retro_task_t *task, void *task_data,
 
    RARCH_DBG(GDPFX "GET %s\n", cb_st->path);
    headers = gdrive_get_headers(NULL);
-   task_push_http_transfer_with_headers(url, true, NULL,
-         headers, gdrive_read_download_cb, cb_st);
+   if (!task_push_http_transfer_with_headers(url, true, NULL,
+         headers, gdrive_read_download_cb, cb_st))
+   {
+      RARCH_WARN(GDPFX "Could not download %s\n", cb_st->path);
+      gdrive_cb_state_finish(cb_st, false);
+   }
    free(headers);
 }
 
 static void gdrive_do_read_impl(gdrive_cb_state_t *cb_st)
 {
    cb_st->file_id[0] = '\0';
-   gdrive_search_file(path_basename(cb_st->path),
-         cb_st->parent_id, gdrive_read_search_cb, cb_st);
+   if (!gdrive_search_file(path_basename(cb_st->path),
+         cb_st->parent_id, gdrive_read_search_cb, cb_st))
+   {
+      RARCH_WARN(GDPFX "Could not search for %s\n", cb_st->path);
+      gdrive_cb_state_finish(cb_st, false);
+   }
 }
 
 static void gdrive_do_read(gdrive_cb_state_t *cb_st)
@@ -1303,6 +1378,8 @@ static bool gdrive_read(const char *path, const char *file,
 {
    gdrive_cb_state_t *cb_st =
       (gdrive_cb_state_t *)calloc(1, sizeof(*cb_st));
+   if (!cb_st)
+      return false;
    cb_st->cb        = cb;
    cb_st->user_data = user_data;
    strlcpy(cb_st->path, path, sizeof(cb_st->path));
@@ -1346,40 +1423,53 @@ static void gdrive_upload_cb(retro_task_t *task, void *task_data,
 static void gdrive_do_patch(gdrive_cb_state_t *cb_st)
 {
    char url[2048];
-   char hdr_extra[256];
    char *headers;
-   void *buf;
+   void *buf = NULL;
    int64_t len;
 
    filestream_seek(cb_st->rfile, 0, SEEK_SET);
    len = filestream_get_size(cb_st->rfile);
-   /* filestream_get_size returns negative on error; malloc of
-    * (size_t)(len + 1) would wrap or be zero, and the subsequent
-    * filestream_read(rfile, buf, len) would pass a negative size
-    * down.  Bail early on either error or empty file. */
-   if (len <= 0)
+
+   /* Negative means filestream_get_size() failed; report it (see
+    * gdrive_cb_state_finish()).  Zero is a legitimate empty file:
+    * it is uploaded normally so a non-empty server copy gets
+    * truncated. */
+   if (len < 0)
+   {
+      RARCH_WARN(GDPFX "Could not determine size of %s\n", cb_st->path);
+      gdrive_cb_state_finish(cb_st, false);
       return;
-   /* NULL-check the malloc before filestream_read / the HTTP
-    * transfer below dereference 'buf'.  On OOM there's no
-    * recoverable action for a PATCH upload of the save/state
-    * file - silently skip this call and let the sync retry on
-    * the next poll. */
-   if (!(buf = malloc((size_t)(len + 1))))
-      return;
-   filestream_read(cb_st->rfile, buf, len);
+   }
+
+   if (len > 0)
+   {
+      if (!(buf = malloc((size_t)(len + 1))))
+      {
+         RARCH_WARN(GDPFX "Out of memory uploading %s\n", cb_st->path);
+         gdrive_cb_state_finish(cb_st, false);
+         return;
+      }
+      filestream_read(cb_st->rfile, buf, len);
+   }
 
    snprintf(url, sizeof(url),
          GDRIVE_UPLOAD_BASE "/files/%s?uploadType=media", cb_st->file_id);
 
-   snprintf(hdr_extra, sizeof(hdr_extra),
-         "Content-Length: %" PRId64 "\r\n", len);
-   headers = gdrive_get_headers(hdr_extra);
+   /* net_http_send_request() emits Content-Length itself for PATCH.
+    * A zero-length body skips net_http_connection_set_content(),
+    * hence the explicit content type in that case. */
+   headers = gdrive_get_headers(len > 0
+         ? NULL : "Content-Type: application/octet-stream\r\n");
 
    RARCH_DBG(GDPFX "PATCH upload %s (%lld bytes)\n",
          cb_st->path, (long long)len);
-   task_push_http_transfer_with_content(url, "PATCH",
+   if (!task_push_http_transfer_with_content(url, "PATCH",
          buf, (size_t)len, "application/octet-stream",
-         true, false, headers, gdrive_upload_cb, cb_st);
+         true, false, headers, gdrive_upload_cb, cb_st))
+   {
+      RARCH_WARN(GDPFX "Could not upload %s\n", cb_st->path);
+      gdrive_cb_state_finish(cb_st, false);
+   }
    free(buf);
    free(headers);
 }
@@ -1397,8 +1487,7 @@ static void gdrive_create_cb(retro_task_t *task, void *task_data,
    {
       if (data)
          gdrive_log_http_failure(cb_st->path, data);
-      cb_st->cb(cb_st->user_data, cb_st->path, false, cb_st->rfile);
-      free(cb_st);
+      gdrive_cb_state_finish(cb_st, false);
       return;
    }
 
@@ -1407,8 +1496,7 @@ static void gdrive_create_cb(retro_task_t *task, void *task_data,
    {
       RARCH_WARN(GDPFX "Create response missing file ID for %s\n",
             cb_st->path);
-      cb_st->cb(cb_st->user_data, cb_st->path, false, cb_st->rfile);
-      free(cb_st);
+      gdrive_cb_state_finish(cb_st, false);
       return;
    }
 
@@ -1433,8 +1521,7 @@ static void gdrive_update_search_cb(retro_task_t *task, void *task_data,
          return;
       }
       gdrive_log_http_failure(cb_st->path, data);
-      cb_st->cb(cb_st->user_data, cb_st->path, false, cb_st->rfile);
-      free(cb_st);
+      gdrive_cb_state_finish(cb_st, false);
       return;
    }
 
@@ -1460,9 +1547,13 @@ static void gdrive_update_search_cb(retro_task_t *task, void *task_data,
       headers = gdrive_get_headers("Content-Type: application/json\r\n");
 
       RARCH_DBG(GDPFX "Creating file %s\n", cb_st->path);
-      task_push_http_post_transfer_with_headers(
+      if (!task_push_http_post_transfer_with_headers(
             GDRIVE_API_BASE "/files", json, true, NULL,
-            headers, gdrive_create_cb, cb_st);
+            headers, gdrive_create_cb, cb_st))
+      {
+         RARCH_WARN(GDPFX "Could not create %s\n", cb_st->path);
+         gdrive_cb_state_finish(cb_st, false);
+      }
       free(headers);
    }
 }
@@ -1470,8 +1561,12 @@ static void gdrive_update_search_cb(retro_task_t *task, void *task_data,
 static void gdrive_do_update_impl(gdrive_cb_state_t *cb_st)
 {
    cb_st->file_id[0] = '\0';
-   gdrive_search_file(path_basename(cb_st->path),
-         cb_st->parent_id, gdrive_update_search_cb, cb_st);
+   if (!gdrive_search_file(path_basename(cb_st->path),
+         cb_st->parent_id, gdrive_update_search_cb, cb_st))
+   {
+      RARCH_WARN(GDPFX "Could not search for %s\n", cb_st->path);
+      gdrive_cb_state_finish(cb_st, false);
+   }
 }
 
 static void gdrive_do_update(gdrive_cb_state_t *cb_st)
@@ -1484,6 +1579,8 @@ static bool gdrive_update(const char *path, RFILE *rfile,
 {
    gdrive_cb_state_t *cb_st =
       (gdrive_cb_state_t *)calloc(1, sizeof(*cb_st));
+   if (!cb_st)
+      return false;
    cb_st->cb        = cb;
    cb_st->user_data = user_data;
    cb_st->rfile     = rfile;
@@ -1540,8 +1637,7 @@ static void gdrive_delete_search_cb(retro_task_t *task, void *task_data,
          return;
       }
       gdrive_log_http_failure(cb_st->path, data);
-      cb_st->cb(cb_st->user_data, cb_st->path, false, NULL);
-      free(cb_st);
+      gdrive_cb_state_finish(cb_st, false);
       return;
    }
 
@@ -1550,8 +1646,7 @@ static void gdrive_delete_search_cb(retro_task_t *task, void *task_data,
 
    if (!cb_st->file_id[0])
    {
-      cb_st->cb(cb_st->user_data, cb_st->path, true, NULL);
-      free(cb_st);
+      gdrive_cb_state_finish(cb_st, true);
       return;
    }
 
@@ -1563,8 +1658,12 @@ static void gdrive_delete_search_cb(retro_task_t *task, void *task_data,
       snprintf(url, sizeof(url),
             GDRIVE_API_BASE "/files/%s", cb_st->file_id);
       RARCH_DBG(GDPFX "DELETE %s\n", cb_st->path);
-      task_push_http_transfer_with_headers(url, true, "DELETE",
-            headers, gdrive_delete_action_cb, cb_st);
+      if (!task_push_http_transfer_with_headers(url, true, "DELETE",
+            headers, gdrive_delete_action_cb, cb_st))
+      {
+         RARCH_WARN(GDPFX "Could not delete %s\n", cb_st->path);
+         gdrive_cb_state_finish(cb_st, false);
+      }
    }
    else
    {
@@ -1596,9 +1695,13 @@ static void gdrive_delete_search_cb(retro_task_t *task, void *task_data,
       headers = gdrive_get_headers(hdr_extra);
 
       RARCH_DBG(GDPFX "Rename (backup) %s\n", cb_st->path);
-      task_push_http_post_transfer_with_headers(
+      if (!task_push_http_post_transfer_with_headers(
             url, json, true, "PATCH",
-            headers, gdrive_delete_action_cb, cb_st);
+            headers, gdrive_delete_action_cb, cb_st))
+      {
+         RARCH_WARN(GDPFX "Could not back up %s\n", cb_st->path);
+         gdrive_cb_state_finish(cb_st, false);
+      }
    }
 
    free(headers);
@@ -1607,8 +1710,12 @@ static void gdrive_delete_search_cb(retro_task_t *task, void *task_data,
 static void gdrive_do_delete_impl(gdrive_cb_state_t *cb_st)
 {
    cb_st->file_id[0] = '\0';
-   gdrive_search_file(path_basename(cb_st->path),
-         cb_st->parent_id, gdrive_delete_search_cb, cb_st);
+   if (!gdrive_search_file(path_basename(cb_st->path),
+         cb_st->parent_id, gdrive_delete_search_cb, cb_st))
+   {
+      RARCH_WARN(GDPFX "Could not search for %s\n", cb_st->path);
+      gdrive_cb_state_finish(cb_st, false);
+   }
 }
 
 static void gdrive_do_delete(gdrive_cb_state_t *cb_st)
@@ -1621,6 +1728,8 @@ static bool gdrive_delete(const char *path,
 {
    gdrive_cb_state_t *cb_st =
       (gdrive_cb_state_t *)calloc(1, sizeof(*cb_st));
+   if (!cb_st)
+      return false;
    cb_st->cb        = cb;
    cb_st->user_data = user_data;
    strlcpy(cb_st->path, path, sizeof(cb_st->path));
