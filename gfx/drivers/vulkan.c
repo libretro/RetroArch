@@ -2245,24 +2245,36 @@ static void *vulkan_font_init(void *data,
       const char *font_path, float font_size,
       bool is_threaded)
 {
-   vulkan_raster_t *font          =
-      (vulkan_raster_t*)calloc(1, sizeof(*font));
+   vulkan_raster_t *font;
+   vk_t *vk                       = (vk_t*)data;
 
-   if (!font)
+   /* This initialiser runs from the menu layer on a layout change
+    * (a DPI or dimension change), which on Android can land in the
+    * middle of a surface loss / driver bring-up: the video driver
+    * data or its Vulkan context can be absent, or the device gone.
+    * Creating GPU objects through a dead device faults inside the
+    * ICD (seen in the field as a SIGSEGV in the Adreno driver's
+    * vkCreateBuffer, reached from materialui_layout()), so refuse
+    * here instead. Callers treat a NULL font as "keep the previous
+    * one / draw no text", and the next layout pass rebuilds it.
+    * vulkan_font_free() already guards on exactly this triple. */
+   if (!vk || !vk->context || vk->context->device == VK_NULL_HANDLE)
       return NULL;
 
-   font->vk = (vk_t*)data;
+   if (!(font = (vulkan_raster_t*)calloc(1, sizeof(*font))))
+      return NULL;
+
+   font->vk = vk;
 
    {
       enum font_atlas_format fmt = FONT_ATLAS_FORMAT_A8;
 #ifdef VULKAN_HDR_SWAPCHAIN
       /* When the swapchain is HDR, ask for a higher-precision
        * coverage atlas (same policy as the d3d12 driver). */
-      if (     font->vk && font->vk->context
-            && (  font->vk->context->swapchain_format
-                     == VK_FORMAT_R16G16B16A16_SFLOAT
-               || font->vk->context->swapchain_format
-                     == VK_FORMAT_A2B10G10R10_UNORM_PACK32))
+      if (     font->vk->context->swapchain_format
+                  == VK_FORMAT_R16G16B16A16_SFLOAT
+            || font->vk->context->swapchain_format
+                  == VK_FORMAT_A2B10G10R10_UNORM_PACK32)
          fmt = FONT_ATLAS_FORMAT_A16;
 #endif
       if (!font_renderer_create_default(
@@ -2284,14 +2296,35 @@ static void *vulkan_font_init(void *data,
             font->atlas->width, font->atlas->height, tex_fmt, font->atlas->buffer,
             NULL, VULKAN_TEXTURE_STAGING);
 
-   {
-      struct vk_texture *texture = &font->texture;
-      vkMapMemory(font->vk->context->device, texture->memory, texture->offset, texture->size, 0, &texture->mapped);
-   }
+      /* vulkan_create_texture() fails soft (it returns a zeroed
+       * texture) on creation or allocation failure, which is a real
+       * outcome right after an Android wake: the first allocations
+       * against a recovering device can return errors before
+       * anything else notices. The glyph upload path writes through
+       * texture.mapped unconditionally, so a failure has to be
+       * turned into a failed font init here, not discovered as a
+       * NULL/garbage dereference later. */
+      if (font->texture.memory == VK_NULL_HANDLE)
+         goto error;
+
+      {
+         struct vk_texture *texture = &font->texture;
+         if (vkMapMemory(font->vk->context->device, texture->memory,
+                  texture->offset, texture->size, 0, &texture->mapped)
+               != VK_SUCCESS)
+         {
+            /* pData is only written on success. */
+            texture->mapped = NULL;
+            goto error;
+         }
+      }
 
       font->texture_optimal = vulkan_create_texture(font->vk, NULL,
             font->atlas->width, font->atlas->height, tex_fmt, NULL,
             NULL, VULKAN_TEXTURE_DYNAMIC);
+
+      if (font->texture_optimal.memory == VK_NULL_HANDLE)
+         goto error;
    }
 
    /* Initial upload is full atlas. */
@@ -2302,6 +2335,18 @@ static void *vulkan_font_init(void *data,
    font->needs_update = true;
 
    return font;
+
+error:
+   /* Nothing has been submitted to a queue on behalf of this font
+    * yet, so the partially built objects can be destroyed
+    * immediately; vulkan_destroy_texture() unmaps before freeing and
+    * is a no-op on handles that were never created. */
+   vulkan_destroy_texture(vk->context->device, &font->texture);
+   vulkan_destroy_texture(vk->context->device, &font->texture_optimal);
+   if (font->font_driver && font->font_data)
+      font->font_driver->free(font->font_data);
+   free(font);
+   return NULL;
 }
 
 static int vulkan_font_get_message_width(void *data, const char *msg,
