@@ -675,7 +675,7 @@ audio_driver_t audio_sdl3 = {
 
 /**
  * Stream callback for the microphone to drop stale audio to allow
- * space within the buffer, on top of the usual read wakeup.
+ * space within the buffer.
  */
 static void SDLCALL sdl3_microphone_stream_cb(void *userdata,
       SDL_AudioStream *stream, int additional_amount, int total_amount)
