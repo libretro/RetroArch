@@ -1266,6 +1266,7 @@
 #define MENU_ENUM_LABEL_MENU_SHOW_RESTART_RETROARCH_STR "menu_show_restart_retroarch"
 #define MENU_ENUM_LABEL_MENU_SHOW_SHUTDOWN_STR "menu_show_shutdown"
 #define MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS_STR "menu_show_sublabels"
+#define MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY_STR "menu_show_sublabels_current_selection_only"
 #define MENU_ENUM_LABEL_MENU_SINGLECLICK_PLAYLISTS_STR "menu_singleclick_playlists"
 #define MENU_ENUM_LABEL_MENU_SOUNDS_STR "menu_sounds"
 #define MENU_ENUM_LABEL_MENU_SOUND_BGM_STR "menu_sound_bgm"

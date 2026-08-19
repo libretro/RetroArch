@@ -3314,21 +3314,29 @@ static uint8_t materialui_count_lines(const char *str)
    return lines;
 }
 
-static bool materialui_show_sublabel_for_entry(menu_entry_t *entry)
+static bool materialui_show_sublabel_for_entry(menu_entry_t *entry, bool entry_selected)
 {
-   settings_t *settings = config_get_ptr();
-   return settings->bools.menu_show_sublabels && *entry->sublabel;
+   settings_t *settings  = config_get_ptr();
+   bool show_sublabels   = settings->bools.menu_show_sublabels;
+   bool current_sel_only = settings->bools.menu_show_sublabels_current_selection_only;
+   return show_sublabels && *entry->sublabel && (!current_sel_only || entry_selected);
 }
 
 /* > Returns number of lines required to display
  *   the sublabel of entry 'entry_idx' */
 static uint8_t materialui_count_sublabel_lines(
       materialui_handle_t* mui, int usable_width,
-      size_t entry_idx, bool has_icon)
+      size_t entry_idx, bool has_icon, bool entry_selected)
 {
    menu_entry_t entry;
+   settings_t *settings     = config_get_ptr();
+   bool show_sublabels      = settings->bools.menu_show_sublabels;
+   bool current_sel_only    = settings->bools.menu_show_sublabels_current_selection_only;
    char wrapped_sublabel_str[MENU_LABEL_MAX_LENGTH];
    int sublabel_width_max   = 0;
+
+   if (!show_sublabels || (current_sel_only && !entry_selected))
+      return 0;
 
    wrapped_sublabel_str[0] = '\0';
 
@@ -3339,7 +3347,7 @@ static uint8_t materialui_count_sublabel_lines(
    menu_entry_get(&entry, 0, entry_idx, NULL, true);
 
    /* If sublabel is empty, return immediately */
-   if (!materialui_show_sublabel_for_entry(&entry))
+   if (!*entry.sublabel)
       return 0;
 
    /* Wrap sublabel string to fit available width */
@@ -3406,7 +3414,7 @@ static void materialui_compute_entries_box_default(
       }
 
       num_sublabel_lines = materialui_count_sublabel_lines(
-            mui, usable_width, i, has_icon);
+            mui, usable_width, i, has_icon, i == menu_st->selection_ptr);
 
       node->text_height  = mui->font_data.list.line_height +
             (num_sublabel_lines * mui->font_data.hint.line_height);
@@ -3487,7 +3495,7 @@ static void materialui_compute_entries_box_playlist_list(
          continue;
 
       num_sublabel_lines = materialui_count_sublabel_lines(
-            mui, usable_width, i, false);
+            mui, usable_width, i, false, i == menu_st->selection_ptr);
 
       node->text_height  = mui->font_data.list.line_height +
             (num_sublabel_lines * mui->font_data.hint.line_height);
@@ -3673,7 +3681,7 @@ static void materialui_compute_entries_box_savestate_list(
          continue;
 
       num_sublabel_lines  = materialui_count_sublabel_lines(
-            mui, usable_width, i, true);
+            mui, usable_width, i, true, i == menu_st->selection_ptr);
 
       node->text_height   = mui->font_data.list.line_height +
             (num_sublabel_lines * mui->font_data.hint.line_height);
@@ -4381,6 +4389,8 @@ static void materialui_render(void *data,
       settings->uints.gfx_thumbnail_upscale_threshold;
    bool network_on_demand_thumbnails    =
       settings->bools.network_on_demand_thumbnails;
+   bool show_sublabels        = settings->bools.menu_show_sublabels;
+   bool current_sel_only      = settings->bools.menu_show_sublabels_current_selection_only;
 
    if (!mui || !list)
       return;
@@ -4665,6 +4675,14 @@ static void materialui_render(void *data,
                      {
                         menu_st->selection_ptr = i;
                         selection              = i;
+
+                        /* If sublabels are enabled only for the currently selected entry,
+                         * recalculate geometry values to keep correct spacing and animation. */
+                        if (show_sublabels && current_sel_only)
+                        {
+                           mui->flags                     |= MUI_FLAG_NEED_COMPUTE;
+                           mui->preserve_scroll_on_compute = true;
+                        }
 
                         /* Once an entry has been auto selected, disable
                          * touch feedback selection updates until the next
@@ -5070,7 +5088,7 @@ static void materialui_render_menu_entry_default(
    /* Draw entry sublabel
     * > Must be done before label + value, since it
     *   affects y offset positions */
-   if (materialui_show_sublabel_for_entry(entry))
+   if (materialui_show_sublabel_for_entry(entry, entry_selected))
    {
       /* Note: Due to the way the selection highlight
        * marker is drawn (height is effectively 1px larger
@@ -5439,7 +5457,7 @@ static void materialui_render_menu_entry_playlist_list(
    /* Draw entry sublabel
     * > Must be done before label, since it
     *   affects y offset positions */
-   if (materialui_show_sublabel_for_entry(entry))
+   if (materialui_show_sublabel_for_entry(entry, entry_selected))
    {
       /* Note: Due to the way the selection highlight
        * marker is drawn (height is effectively 1px larger
@@ -5933,7 +5951,7 @@ static void materialui_render_menu_entry_savestate_list(
    /* Draw entry sublabel
     * > Must be done before label + value, since it
     *   affects y offset positions */
-   if (materialui_show_sublabel_for_entry(entry))
+   if (materialui_show_sublabel_for_entry(entry, entry_selected))
    {
       /* Note: Due to the way the selection highlight
        * marker is drawn (height is effectively 1px larger
@@ -10004,10 +10022,13 @@ static void materialui_animate_scroll(materialui_handle_t *mui,
    on the keyboard) */
 static void materialui_navigation_set(void *data, bool scroll)
 {
+   settings_t *settings       = config_get_ptr();
    materialui_handle_t *mui   = (materialui_handle_t*)data;
    gfx_display_t *p_disp      = disp_get_ptr();
    struct menu_state *menu_st = menu_state_get_ptr();
    size_t selection           = menu_st->selection_ptr;
+   bool show_sublabels        = settings->bools.menu_show_sublabels;
+   bool current_sel_only      = settings->bools.menu_show_sublabels_current_selection_only;
 
    if (!mui)
       return;
@@ -10038,6 +10059,9 @@ static void materialui_navigation_set(void *data, bool scroll)
       materialui_update_savestate_thumbnail_path(mui, (unsigned)selection);
       materialui_update_savestate_thumbnail_image(mui);
    }
+
+   if (show_sublabels && current_sel_only)
+      materialui_compute_entries_box(mui, mui->last_width, mui->last_height, p_disp->header_height);
 
    materialui_animate_scroll(
          mui,

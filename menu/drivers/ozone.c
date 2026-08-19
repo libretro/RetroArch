@@ -4384,6 +4384,9 @@ end:
 static void ozone_go_to_sidebar(ozone_handle_t *ozone,
       bool ozone_collapse_sidebar, uintptr_t tag)
 {
+   settings_t *settings           = config_get_ptr();
+   bool menu_show_sublabels       = settings->bools.menu_show_sublabels;
+   bool menu_current_sel_only     = settings->bools.menu_show_sublabels_current_selection_only;
    ozone->selection_old           = ozone->selection;
 
    if (!ozone->show_sidebar)
@@ -4394,6 +4397,11 @@ static void ozone_go_to_sidebar(ozone_handle_t *ozone,
    else
       ozone->flags               &= ~OZONE_FLAG_CURSOR_IN_SIDEBAR_OLD;
    ozone->flags                  |=  OZONE_FLAG_CURSOR_IN_SIDEBAR;
+
+   /* If sublabels are enabled only for the currently selected entry,
+    * recalculate geometry values to keep correct spacing and animation. */
+   if (menu_show_sublabels && menu_current_sel_only)
+      ozone->flags               |= OZONE_FLAG_NEED_COMPUTE;
 
    /* Remember last selection per tab */
    ozone->tab_selection[ozone->categories_selection_ptr] = ozone->selection;
@@ -4655,6 +4663,9 @@ static void ozone_leave_sidebar(ozone_handle_t *ozone,
       bool ozone_collapse_sidebar, uintptr_t tag,
       unsigned remember_selection_type)
 {
+   settings_t *settings             = config_get_ptr();
+   bool menu_show_sublabels         = settings->bools.menu_show_sublabels;
+   bool menu_current_sel_only       = settings->bools.menu_show_sublabels_current_selection_only;
    bool ozone_main_tab_selected     = false;
 
    ozone_update_content_metadata(ozone);
@@ -4669,6 +4680,10 @@ static void ozone_leave_sidebar(ozone_handle_t *ozone,
    else
       ozone->flags                 &= ~OZONE_FLAG_CURSOR_IN_SIDEBAR_OLD;
    ozone->flags                    &= ~OZONE_FLAG_CURSOR_IN_SIDEBAR;
+   /* If sublabels are enabled only for the currently selected entry,
+    * recalculate geometry values to keep correct spacing and animation. */
+   if (menu_show_sublabels && menu_current_sel_only)
+      ozone->flags                 |= OZONE_FLAG_NEED_COMPUTE;
 
    if    ((ozone->tabs[ozone->categories_selection_ptr] == OZONE_SYSTEM_TAB_MAIN)
       || (ozone->tabs[ozone->categories_selection_ptr] == OZONE_SYSTEM_TAB_SETTINGS))
@@ -5770,6 +5785,7 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone,
 {
    size_t i;
    /* Compute entries height and adjust scrolling if needed */
+   settings_t *settings          = config_get_ptr();
    unsigned video_info_width     = ozone->last_width;
    struct menu_state *menu_st    = menu_state_get_ptr();
    menu_list_t *menu_list        = menu_st->entries.list;
@@ -5777,6 +5793,11 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone,
    int entry_padding             = ozone_get_entries_padding(ozone);
    int sublabel_max_width        = 0;
    float scale_factor            = ozone->last_scale_factor;
+   bool menu_current_sel_only    = settings->bools.menu_show_sublabels_current_selection_only;
+   bool cursor_in_sidebar        = (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR);
+   bool draw_old_list            = (ozone->flags & OZONE_FLAG_DRAW_OLD_LIST);
+   bool sidebar_at_target        = (ozone->sidebar_offset == (ozone->depth > 1 ? -ozone->dimensions_sidebar_width : 0.0f));
+   bool animate_scroll           = (menu_show_sublabels && menu_current_sel_only && !draw_old_list && sidebar_at_target);
    bool want_thumbnail_bar       = (ozone->flags & OZONE_FLAG_WANT_THUMBNAIL_BAR) ? true : false;
    bool show_thumbnail_bar       = ozone->show_thumbnail_bar;
 
@@ -5806,6 +5827,7 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone,
       /* Entry */
       menu_entry_t entry;
       ozone_node_t *node       = NULL;
+      bool entry_selected      = (menu_st->selection_ptr == i);
 
       /* Cache node first - if missing, skip without expensive menu_entry_get */
       if (!(node = (ozone_node_t*)selection_buf->list[i].userdata))
@@ -5836,7 +5858,7 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone,
       {
          ozone->flags         &= ~OZONE_FLAG_EMPTY_PLAYLIST;
 
-         if (menu_show_sublabels)
+         if (menu_show_sublabels && (!menu_current_sel_only || (!cursor_in_sidebar && entry_selected)))
          {
             MENU_ENTRY_INITIALIZE(entry);
             entry.flags |= MENU_ENTRY_FLAG_SUBLABEL_ENABLED;
@@ -5851,7 +5873,7 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone,
 
 compute_sublabel:
 
-      if (menu_show_sublabels)
+      if (menu_show_sublabels && (!menu_current_sel_only || (!cursor_in_sidebar && entry_selected)))
       {
          if (*entry.sublabel)
          {
@@ -5892,7 +5914,8 @@ compute_sublabel:
     * (issue #18797). size >= 1 is guaranteed by the early return above. */
    if (ozone->selection >= selection_buf->size)
       ozone->selection       = selection_buf->size - 1;
-   ozone_update_scroll(ozone, false, (ozone_node_t*)selection_buf->list[ozone->selection].userdata);
+   if (!menu_show_sublabels || !menu_current_sel_only || !cursor_in_sidebar)
+      ozone_update_scroll(ozone, animate_scroll, (ozone_node_t*)selection_buf->list[ozone->selection].userdata);
 }
 
 static void ozone_draw_entries(
@@ -5920,6 +5943,8 @@ static void ozone_draw_entries(
    unsigned video_info_width         = ozone->last_width;
    float last_border_alpha           = -1.0f;
    bool menu_show_sublabels          = settings->bools.menu_show_sublabels;
+   bool menu_current_sel_only        = settings->bools.menu_show_sublabels_current_selection_only;
+   bool cursor_in_sidebar            = (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR);
    bool use_smooth_ticker            = settings->bools.menu_ticker_smooth;
    unsigned show_history_icons       = settings->uints.playlist_show_history_icons;
    enum gfx_animation_ticker_type
@@ -5947,6 +5972,7 @@ static void ozone_draw_entries(
          - entry_padding * 2
          - ozone->animations.thumbnail_bar_position;
    unsigned button_height            = ozone->dimensions.entry_height; /* height of the button (entry minus sublabel) */
+   unsigned selection_height         = button_height;
    float invert                      = (ozone->flags & OZONE_FLAG_FADE_DIRECTION) ? -1 : 1;
    float alpha_anim                  = old_list ? alpha : 1.0f - alpha;
 
@@ -5997,6 +6023,9 @@ static void ozone_draw_entries(
 
       if (!node || (ozone->flags & OZONE_FLAG_EMPTY_PLAYLIST))
          goto border_iterate;
+
+      if (entry_selected)
+         selection_height = node->height;
 
       if (y + scroll_y + node->height + 20 * scale_factor < ozone->dimensions.header_height + ozone->dimensions.entry_padding_vertical)
          goto border_iterate;
@@ -6050,6 +6079,9 @@ border_iterate:
       if (node)
          y += node->height;
    }
+
+   if (menu_show_sublabels && menu_current_sel_only && !old_list && (selection < selection_old))
+      old_selection_y -= selection_height - button_height;
 
    /* Cursor(s) layer - current */
    if (!(ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR))
@@ -6206,7 +6238,7 @@ border_iterate:
 
       sublabel_str = e->sublabel;
 
-      if (menu_show_sublabels)
+      if (menu_show_sublabels && (!menu_current_sel_only || (!cursor_in_sidebar && entry_selected)))
       {
          if (node->wrap && (sublabel_str && *sublabel_str))
          {
@@ -6449,7 +6481,7 @@ border_iterate:
             1.0f,
             false);
 
-      if (menu_show_sublabels)
+      if (menu_show_sublabels && (!menu_current_sel_only || (!cursor_in_sidebar && entry_selected)))
       {
          if (sublabel_str && *sublabel_str)
             gfx_display_draw_text(
@@ -12273,11 +12305,14 @@ static void ozone_draw_footer(
 
 static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
 {
+   settings_t *settings       = config_get_ptr();
    struct menu_state *menu_st = menu_state_get_ptr();
    menu_list_t *menu_list     = menu_st->entries.list;
    file_list_t *selection_buf = MENU_LIST_GET_SELECTION(menu_list, 0);
    size_t new_selection       = menu_st->selection_ptr;
    ozone_node_t *node         = (ozone_node_t*)selection_buf->list[new_selection].userdata;
+   bool menu_show_sublabels   = settings->bools.menu_show_sublabels;
+   bool menu_current_sel_only = settings->bools.menu_show_sublabels_current_selection_only;
 
    if (!node)
       return;
@@ -12290,6 +12325,11 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
 
       ozone->selection_old         = ozone->selection;
       ozone->selection             = new_selection;
+
+      /* If only the sublabel for the currently selected entry is shown,
+       * recalculate geometry values to keep correct spacing and animation. */
+      if (menu_show_sublabels && menu_current_sel_only)
+         ozone->flags             |= OZONE_FLAG_NEED_COMPUTE;
 
       if (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR)
          ozone->flags             |=  OZONE_FLAG_CURSOR_IN_SIDEBAR_OLD;
@@ -13601,7 +13641,8 @@ static void ozone_list_insert(void *userdata,
    if (!ozone || !list)
       return;
 
-   ozone->flags         |= OZONE_FLAG_NEED_COMPUTE;
+   if (list != MENU_LIST_GET(menu_state_get_ptr()->entries.list, 0))
+      ozone->flags      |= OZONE_FLAG_NEED_COMPUTE;
 
    if (!(node = (ozone_node_t*)list->list[i].userdata))
    {

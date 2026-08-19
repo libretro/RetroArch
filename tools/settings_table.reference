@@ -82,6 +82,7 @@ bool	menu_timedate_enable	1	1
 bool	menu_battery_level_enable	1	1
 bool	menu_core_enable	1	1
 bool	menu_show_sublabels	1	1
+bool	menu_show_sublabels_current_selection_only	1	0
 bool	menu_show_confirm	1	1
 bool	menu_rgui_shadows	1	0
 bool	rgui_particle_effect_screensaver	1	1
@@ -726,6 +727,7 @@ bool	menu_timedate_enable	1	1
 bool	menu_battery_level_enable	1	1
 bool	menu_core_enable	1	1
 bool	menu_show_sublabels	1	1
+bool	menu_show_sublabels_current_selection_only	1	0
 bool	menu_show_confirm	1	1
 bool	menu_rgui_shadows	1	0
 bool	rgui_particle_effect_screensaver	1	1
@@ -1365,6 +1367,7 @@ bool	menu_timedate_enable	1	1
 bool	menu_battery_level_enable	1	1
 bool	menu_core_enable	1	1
 bool	menu_show_sublabels	1	1
+bool	menu_show_sublabels_current_selection_only	1	0
 bool	menu_show_confirm	1	1
 bool	menu_rgui_shadows	1	0
 bool	rgui_particle_effect_screensaver	1	1
