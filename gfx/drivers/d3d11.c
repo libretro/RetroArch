@@ -5064,17 +5064,16 @@ static bool d3d11_gfx_frame(
             d3d11->hdr.ubo_values.hdr10            = 0.0f;
             d3d11->hdr.ubo_values.hdr_mode         = 2;
          }
-         else if (d3d11->flags & D3D11_ST_FLAG_SOURCE_HDR10)
-         {
-            /* Core supplies PQ frames: the back buffer already holds
-             * PQ-encoded HDR10, so pass it through unchanged. Encoding it a
-             * second time drives the menu background to black. The menu
-             * glyphs are drawn separately as SDR sprites. */
-            d3d11->hdr.ubo_values.inverse_tonemap  = 0.0f;
-            d3d11->hdr.ubo_values.hdr10            = 0.0f;
-            d3d11->hdr.ubo_values.hdr_mode         = 0;
-         }
-         else /* HDR10 */
+         else /* HDR10: the back buffer was cleared to transparent black
+               * before the UI drew into it, so by this pass it holds only
+               * the SDR UI -- regardless of whether the core supplies PQ
+               * frames.  The game reached the swapchain through the
+               * back-buffer pass above and this pass alpha-blends the UI
+               * over it, so encode the UI at menu_nits unconditionally.
+               * Branching to passthrough on D3D11_ST_FLAG_SOURCE_HDR10
+               * here treated the source as game content, which it is not:
+               * that landed the UI's SDR code values raw in the PQ
+               * swapchain, where code 1.0 means 10000 nits. */
          {
             d3d11->hdr.ubo_values.inverse_tonemap  = 1.0f;
             d3d11->hdr.ubo_values.hdr10            = 1.0f;
