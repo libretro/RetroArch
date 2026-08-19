@@ -390,7 +390,13 @@ static bool task_decompress_finder(
       retro_task_t *task, void *user_data)
 {
    decompress_state_t *dec = (decompress_state_t*)task->state;
-   if (task->handler != task_decompress_handler)
+   /* Every handler variant reads its source archive and keeps a
+    * decompress_state_t in task->state, so all of them count as
+    * 'this archive is being extracted' for dedup and for callers
+    * deciding whether the file is safe to overwrite. */
+   if (   task->handler != task_decompress_handler
+       && task->handler != task_decompress_handler_subdir
+       && task->handler != task_decompress_handler_target_file)
       return false;
    /* The state stays attached until the queue retires the task
     * (task_decompress_cleanup), so a finished-but-not-yet-retired
