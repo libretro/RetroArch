@@ -1809,6 +1809,16 @@ void drivers_init(
 #endif
          menu_contentless_cores_context_init();
       }
+      else if (     menu_st->driver_ctx
+                 && menu_st->driver_ctx->context_reset)
+         /* Counterpart of the video-only context_destroy in
+          * driver_uninit(): the menu survived the video swap with
+          * its state intact but its fonts/textures released, so
+          * rebuild them against the new video driver instance. A
+          * no-op when the menu was never initialised (NULL userdata
+          * returns early in every menu driver's context_reset). */
+         menu_st->driver_ctx->context_reset(menu_st->userdata,
+               video_is_threaded);
    }
 
    /* Initialising the menu driver will also initialise
@@ -1902,6 +1912,29 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
 #endif
 
       menu_driver_ctl(RARCH_MENU_CTL_DEINIT, NULL);
+   }
+   else if (flags & DRIVER_VIDEO_MASK)
+   {
+      /* Video-only teardown (VIDEO_REINIT network command, CRT
+       * switch): the video driver instance every menu font's cached
+       * driver pointer refers to is about to be freed, but without
+       * DRIVER_MENU_MASK nothing released those fonts/textures and
+       * nothing rebuilt them on the way back up - the next menu
+       * frame then flushed a font block against the freed instance
+       * (observed as a use-after-free in
+       * gl2_raster_font_setup_viewport on Android).
+       *
+       * Release just the menu's GPU-held resources here; menu state
+       * itself persists exactly as it does across a full reinit
+       * (MENU_ST_FLAG_DATA_OWN). drivers_init() mirrors this with a
+       * bare context_reset once the new video driver is up. Runs
+       * after the video_thread_wait_idle() barrier above, so no
+       * in-flight threaded frame still references the resources
+       * being freed. */
+      struct menu_state *menu_st = menu_state_get_ptr();
+      if (     menu_st->driver_ctx
+            && menu_st->driver_ctx->context_destroy)
+         menu_st->driver_ctx->context_destroy(menu_st->userdata);
    }
 #endif
 
