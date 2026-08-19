@@ -2107,18 +2107,25 @@ static bool menu_content_find_first_core(
     * going to use the current core to load this. */
    if (load_content_with_current_core)
    {
-      core_info_get_current_core((core_info_t**)&info);
-      if (info)
+      core_info_t *current = NULL;
+      core_info_get_current_core(&current);
+      /* Until core_info_load() has matched the loaded core against
+       * the info list, the current-core entry is a zeroed shell
+       * with no path (core_info_init_current_core()); it cannot be
+       * used to load content, so fall back to the scanned list. */
+      if (current && current->path && *current->path)
+      {
+         info      = current;
          supported = 1;
+      }
    }
 
    /* There are multiple deferred cores and a
     * selection needs to be made from a list, return 0. */
-   if (supported != 1)
+   if (supported != 1 || !info || !info->path || !*info->path)
       return false;
 
-    if (info)
-      strlcpy(s, info->path, len);
+   strlcpy(s, info->path, len);
 
    return true;
 }
