@@ -758,25 +758,13 @@ static void net_http_conn_pool_free(struct conn_pool_entry *entry)
 #ifdef HAVE_SSL
    if (entry->ssl && entry->ssl_ctx)
    {
-      /* ssl_socket_close() closes the underlying descriptor itself:
-       * both backends keep the fd handed to ssl_socket_init() --
-       * net_ctx.fd in net_socket_ssl_mbed.c, state->fd in
-       * net_socket_ssl_bear.c -- and socket_close() it on the way
-       * out.  That is the same descriptor as entry->fd, so the
-       * socket_close(entry->fd) below was a second close of an
-       * already-closed fd on every SSL pool-entry teardown path
-       * (net_http_conn_pool_remove, _remove_expired,
-       * net_http_deinit).
-       *
-       * Between the two closes the kernel is free to hand the same
-       * fd number to whoever asks next, and the second close then
-       * hits a descriptor this code does not own.  On Android that
-       * is a guaranteed abort as soon as Binder wins the race:
-       * fdsan trips with "expected to be unowned, actually owned by
-       * Parcel" from net_http_conn_pool_free (seen in Play Console
-       * on 1.22.2).  On platforms without fdsan it silently closes
-       * an unrelated file or socket under another thread.  Mark the
-       * fd consumed so exactly one close happens. */
+      /* ssl_socket_close() closes the underlying descriptor itself
+       * (net_ctx.fd in net_socket_ssl_mbed.c, state->fd in
+       * net_socket_ssl_bear.c -- both hold the descriptor in
+       * entry->fd), so mark the fd consumed: a second close below
+       * would race descriptor reuse and close an fd owned by another
+       * thread -- on Android, fdsan aborts when Binder wins that
+       * race. */
       ssl_socket_close(entry->ssl_ctx);
       ssl_socket_free(entry->ssl_ctx);
       entry->fd = -1;
