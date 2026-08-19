@@ -68,12 +68,26 @@ static uint8_t byte_at(size_t i)
 
 static bool write_fixture(const char *path, size_t size)
 {
-   size_t i;
-   FILE *f = fopen(path, "wb");
+   uint8_t chunk[64 * 1024];
+   size_t i = 0;
+   FILE *f  = fopen(path, "wb");
    if (!f)
       return false;
-   for (i = 0; i < size; i++)
-      fputc(byte_at(i), f);
+   while (i < size)
+   {
+      size_t j;
+      size_t n = size - i;
+      if (n > sizeof(chunk))
+         n = sizeof(chunk);
+      for (j = 0; j < n; j++)
+         chunk[j] = byte_at(i + j);
+      if (fwrite(chunk, 1, n, f) != n)
+      {
+         fclose(f);
+         return false;
+      }
+      i += n;
+   }
    fclose(f);
    return true;
 }
@@ -554,16 +568,26 @@ static void lane_progress_callback(void)
  * Everything the unthreaded lane asserts must hold here too, plus
  * the thread pin - and delivery must stay change-driven, not
  * per-pump. */
-static void lane_threaded_progress_callback(void)
-{
-   unsigned had = failures;
-   char path[512];
-   const char *paths[1];
-   unsigned ticks = 0;
+/* The worker free-runs, so the pump only ever delivers samples of
+ * the progress value as it stands at each check - it cannot replay
+ * values it was never scheduled to see.  Every invariant below is
+ * therefore hard EXCEPT the sighting of an intermediate value, which
+ * additionally needs the pump to win a race: the file must still be
+ * mid-stream on at least one check.  This lane makes that sighting
+ * reliable two ways - a fixture large enough that the worker is
+ * mid-stream for many pump intervals, and a bounded re-run when the
+ * sighting alone is missed.  A delivery-path regression (the
+ * trampoline firing only at retirement) misses on every attempt, so
+ * the re-runs cannot mask it. */
+#define THREADED_PROGRESS_FILE_SIZE (128u * 1024u * 1024u)
+#define THREADED_PROGRESS_ATTEMPTS  5
 
-   snprintf(path, sizeof(path), "%s/big.bin", fixture_dir);
-   CHECK(write_fixture(path, BIG_FILE_SIZE), "fixture write failed");
-   paths[0] = path;
+/* One full run.  Returns whether an intermediate value was seen;
+ * everything unconditionally guaranteed is CHECKed here, every
+ * attempt. */
+static bool threaded_progress_attempt(const char **paths)
+{
+   unsigned ticks = 0;
 
    task_queue_set_threaded();
    task_queue_init(true, NULL);
@@ -579,12 +603,13 @@ static void lane_threaded_progress_callback(void)
    {
       CHECK(false, "threaded prefetch push with progress failed");
       task_queue_deinit();
-      return;
+      task_queue_unset_threaded();
+      return true;
    }
 
    /* Yield between polls; see lane_threaded_queue for why a busy
     * spin here would starve the worker on a single-core runner. */
-   while (!done_called && ticks < 20000)
+   while (!done_called && ticks < 60000)
    {
       task_queue_check();
       retro_sleep(1);
@@ -607,16 +632,45 @@ static void lane_threaded_progress_callback(void)
          "distinct values - it is firing per pump, not per change",
          cb_progress_count);
    CHECK(!cb_progress_backwards, "progress callback went backwards");
-   CHECK(cb_progress_intermediate,
-         "the callback never reported a value between 0 and 100");
    CHECK(cb_progress_last == 100,
          "the callback's last value was %d, wanted 100",
          (int)cb_progress_last);
 
+   release_deposits();
+   return cb_progress_intermediate;
+}
+
+static void lane_threaded_progress_callback(void)
+{
+   unsigned had = failures;
+   char path[512];
+   const char *paths[1];
+   unsigned attempts = 0;
+   bool saw_intermediate = false;
+
+   snprintf(path, sizeof(path), "%s/huge.bin", fixture_dir);
+   CHECK(write_fixture(path, THREADED_PROGRESS_FILE_SIZE),
+         "fixture write failed");
+   paths[0] = path;
+
+   while (attempts < THREADED_PROGRESS_ATTEMPTS && failures == had)
+   {
+      attempts++;
+      saw_intermediate = threaded_progress_attempt(paths);
+      if (saw_intermediate)
+         break;
+   }
+
+   CHECK(saw_intermediate,
+         "the callback never reported a value between 0 and 100 "
+         "in %u runs", attempts);
+
    if (failures == had)
       fprintf(stderr, "[pass] threaded progress-callback lane "
-            "(%u updates)\n", cb_progress_count);
-   release_deposits();
+            "(%u updates, %u run%s)\n", cb_progress_count,
+            attempts, attempts == 1 ? "" : "s");
+
+   remove(path);
 }
 
 /* A NULL progress callback must be accepted and simply not called -
