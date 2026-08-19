@@ -6713,7 +6713,7 @@ static const struct
    "Lokalny",
    "Jako\305\233\304\207 przesy\305\202ania strumieniowego",
    "G\305\202\304\231bia bitowa wyj\305\233cia",
-   "10-bitowe",
+   "10-bitowa",
    "8-bitowa",
    "Automatyczny",
    "Interwa\305\202 wymiany VSync",

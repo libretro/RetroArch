@@ -1070,7 +1070,7 @@ static const struct
    char s_a72ca64c[11];
    char s_8d566802[11];
    char s_25b24689[9];
-   char s_a5a1538d[31];
+   char s_a5a1538d[42];
    char s_501ab585[21];
    char s_e32f71a6[27];
    char s_240166eb[7];
@@ -1426,7 +1426,7 @@ static const struct
    char s_a2bb0576[11];
    char s_fab0ac6c[11];
    char s_a51249d0[14];
-   char s_168661f7[31];
+   char s_168661f7[42];
    char s_b5c8b763[10];
    char s_f1776a70[34];
    char s_20f9b0a6[34];
@@ -1814,6 +1814,7 @@ static const struct
    char s_f500027b[15];
    char s_7f2f8cd6[11];
    char s_65b61fcc[11];
+   char s_4bf93557[42];
    char s_a1558f31[30];
    char s_dda9087d[12];
    char s_4fbdf89c[12];
@@ -6012,7 +6013,7 @@ static const struct
    "X\303\241m t\341\273\221i",
    "X\303\241m s\303\241ng",
    "Xanh L\303\241",
-   "X\303\242m nh\341\272\255p nh\303\242n h\341\273\207 th\341\273\221ng",
+   "Can thi\341\273\207p v\303\240o nh\303\242n h\341\273\207 \304\221i\341\273\201u h\303\240nh",
    "Giao di\341\273\207n Material",
    "Giao di\341\273\207n Material T\341\273\221i",
    "Khi\303\252n",
@@ -6432,7 +6433,7 @@ static const struct
    "X\303\241m t\341\273\221i",
    "X\303\241m s\303\241ng",
    "Gruvbox T\341\273\221i",
-   "X\303\242m nh\341\272\255p nh\303\242n h\341\273\207 th\341\273\221ng",
+   "Can thi\341\273\207p v\303\240o nh\303\242n h\341\273\207 \304\221i\341\273\201u h\303\240nh",
    "M\306\260a t\303\255m",
    "T\341\273\221i n\304\203ng l\306\260\341\273\243ng m\341\272\267t tr\341\273\235i",
    "S\303\241ng n\304\203ng l\306\260\341\273\243ng m\341\272\267t tr\341\273\235i",
@@ -6907,6 +6908,7 @@ static const struct
    "V\303\240ng \303\241nh kim",
    "X\303\241m T\341\273\221i",
    "X\303\241m S\303\241ng",
+   "Can thi\341\273\207p v\303\240o nh\303\242n h\341\273\207 \304\221i\341\273\201u h\303\240nh",
    "\304\220\341\273\217 c\341\273\225 \304\221i\341\273\203n ki\341\273\203u c\305\251",
    "Xanh \304\221\341\272\255m",
    "Tango T\341\273\221i",
@@ -12072,7 +12074,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (227944u
+      (sizeof(msg_hash_vn_blob) == (228008u
 #ifdef ANDROID
        + 373u
 #endif
@@ -14283,6 +14285,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GOLDEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRAY_DARK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRAY_LIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_HACKING_THE_KERNEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_LEGACY_RED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_MIDNIGHT_BLUE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_TANGO_DARK,
