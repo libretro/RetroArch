@@ -5873,7 +5873,7 @@ static void materialui_render_menu_entry_savestate_list(
       unsigned header_height,
       int x_offset)
 {
-   math_matrix_4x4 mymat;
+   math_matrix_4x4 mymat   = {{ 0.0f }};
    const char *entry_value  = NULL;
    const char *entry_label  = NULL;
    unsigned entry_type      = 0;
@@ -5903,6 +5903,13 @@ static void materialui_render_menu_entry_savestate_list(
          && (!(mui->flags & MUI_FLAG_COL_DIVIDER_IS_LIST_BG))
          && ((divider_y + (mui->entry_divider_width * 2)) <
                (video_height - mui->nav_bar_layout_height - mui->status_bar.height));
+
+   if (p_disp->dispctx && !p_disp->dispctx->handles_transform)
+   {
+      float cosine     = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
+      float sine       = 0.0f; /* sine(rad) = sine(0) = 0.0f */
+      gfx_display_rotate_z(p_disp, &mymat, cosine, sine, userdata);
+   }
 
    /* Read entry parameters */
    if (*entry->rich_label)
