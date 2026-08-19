@@ -59,7 +59,18 @@ public final class ConfigFile
 
 		String line;
 		while ((line = br.readLine()) != null)
-			parseLine(line);
+		{
+			try
+			{
+				parseLine(line);
+			}
+			catch (RuntimeException e)
+			{
+				// A malformed line must not abort config loading;
+				// drop the line and keep the remaining entries.
+				Log.e("ConfigFile", "Skipping malformed config line: " + e);
+			}
+		}
 
 		br.close();
 	}
@@ -90,7 +101,12 @@ public final class ConfigFile
 		String value = tokens[1];
 
 		if (value.startsWith("\""))
-			value = value.substring(1, value.lastIndexOf('\"'));
+		{
+			// An unterminated literal takes everything after the
+			// opening quote as the value, matching config_file.c.
+			int end = value.lastIndexOf('\"');
+			value = (end > 0) ? value.substring(1, end) : value.substring(1);
+		}
 		else
 			value = value.split(" ")[0];
 

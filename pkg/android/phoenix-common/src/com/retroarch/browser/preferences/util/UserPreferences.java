@@ -138,8 +138,18 @@ public final class UserPreferences
 		try
 		{
 			int version      = ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0).versionCode;
-			int last_version = config.keyExists("bundle_assets_extract_last_version") ?
-					config.getInt("bundle_assets_extract_last_version") : 0;
+			int last_version = 0;
+
+			// A version value that fails to parse counts as no
+			// recorded version, so assets are re-extracted.
+			try
+			{
+				if (config.keyExists("bundle_assets_extract_last_version"))
+					last_version = config.getInt("bundle_assets_extract_last_version");
+			}
+			catch (NumberFormatException ignored)
+			{
+			}
 
 			if (version == last_version)
 				return;
