@@ -425,6 +425,12 @@ typedef struct vk
 
    } hw;
 
+   /* Textures released through vulkan_unload_texture, kept alive
+    * until enough frames have been submitted that neither the GPU
+    * nor a concurrently recorded or observed reference can still
+    * touch them. See vulkan_deferred_textures_tick(). */
+   struct vk_deferred_texture *deferred_textures;
+
    struct
    {
       uint64_t dirty;
@@ -1081,6 +1087,93 @@ static void vulkan_destroy_texture(
    tex->format                        = VK_FORMAT_UNDEFINED;
    tex->memory_size                   = 0;
    tex->layout                        = VK_IMAGE_LAYOUT_UNDEFINED;
+}
+
+/* Textures released through vulkan_unload_texture are parked here
+ * instead of being destroyed immediately. Immediate destruction is
+ * unsafe on two fronts: vkQueueWaitIdle only covers submitted work,
+ * not command buffers still being recorded, and menu code running on
+ * another thread can observe a texture handle for a short window
+ * after the unload (the handle is zeroed by the caller only after
+ * the unload returns). Keeping the texture alive for a full
+ * swapchain cycle of subsequent submissions closes both windows.
+ *
+ * List discipline: mutations are serialised with queue_lock. The
+ * enqueue normally runs on the thread that records frames (the
+ * threaded wrapper marshals unloads there), but driver-reinit
+ * fallbacks can enqueue from the main thread while a frame ticks the
+ * list, so the lock is not optional. */
+struct vk_deferred_texture
+{
+   struct vk_deferred_texture *next;
+   struct vk_texture *texture;
+   unsigned frames_left;
+};
+
+/* Retire textures whose deferral window has elapsed. Called once per
+ * submitted frame. Nodes are detached under the lock and destroyed
+ * outside it. */
+static void vulkan_deferred_textures_tick(vk_t *vk)
+{
+   struct vk_deferred_texture **cur;
+   struct vk_deferred_texture *expired = NULL;
+
+#ifdef HAVE_THREADS
+   slock_lock(vk->context->queue_lock);
+#endif
+   cur = &vk->deferred_textures;
+   while (*cur)
+   {
+      struct vk_deferred_texture *node = *cur;
+      if (node->frames_left > 1)
+      {
+         node->frames_left--;
+         cur           = &node->next;
+      }
+      else
+      {
+         *cur          = node->next;
+         node->next    = expired;
+         expired       = node;
+      }
+   }
+#ifdef HAVE_THREADS
+   slock_unlock(vk->context->queue_lock);
+#endif
+
+   while (expired)
+   {
+      struct vk_deferred_texture *next = expired->next;
+      vulkan_destroy_texture(vk->context->device, expired->texture);
+      free(expired->texture);
+      free(expired);
+      expired = next;
+   }
+}
+
+/* Destroy every deferred texture immediately. Callers must guarantee
+ * the graphics queue is idle and no other thread is recording. */
+static void vulkan_deferred_textures_flush(vk_t *vk)
+{
+   struct vk_deferred_texture *node;
+
+#ifdef HAVE_THREADS
+   slock_lock(vk->context->queue_lock);
+#endif
+   node                  = vk->deferred_textures;
+   vk->deferred_textures = NULL;
+#ifdef HAVE_THREADS
+   slock_unlock(vk->context->queue_lock);
+#endif
+
+   while (node)
+   {
+      struct vk_deferred_texture *next = node->next;
+      vulkan_destroy_texture(vk->context->device, node->texture);
+      free(node->texture);
+      free(node);
+      node = next;
+   }
 }
 
 static struct vk_texture vulkan_create_texture(vk_t *vk,
@@ -4934,6 +5027,7 @@ static void vulkan_free(void *data)
 #ifdef HAVE_THREADS
       slock_unlock(vk->context->queue_lock);
 #endif
+      vulkan_deferred_textures_flush(vk);
       vulkan_deinit_pipelines(vk);
       vulkan_deinit_framebuffers(vk);
       vulkan_deinit_descriptor_pool(vk);
@@ -5571,6 +5665,9 @@ static void vulkan_check_swapchain(vk_t *vk)
 #ifdef HAVE_THREADS
    slock_unlock(vk->context->queue_lock);
 #endif
+   /* Queue is idle and this thread owns recording: safe point to
+    * destroy everything on the deferred list. */
+   vulkan_deferred_textures_flush(vk);
    vulkan_deinit_pipelines(vk);
    vulkan_deinit_framebuffers(vk);
    vulkan_deinit_descriptor_pool(vk);
@@ -7727,6 +7824,9 @@ static bool vulkan_frame(void *data, const void *frame,
    if (vk->ctx_driver->swap_buffers)
       vk->ctx_driver->swap_buffers(vk->ctx_data);
 
+   /* Retire unloaded textures whose deferral window has elapsed. */
+   vulkan_deferred_textures_tick(vk);
+
    if (!(vk->context->flags & VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK))
    {
       if (vk->ctx_driver->update_window_title)
@@ -8253,18 +8353,40 @@ typedef struct
 } vulkan_texture_cmd_t;
 #endif
 
-/* Inner unload function -- performs the queue wait and texture
- * destruction.  Must run on the same thread that owns the
- * Vulkan queue submissions (the video thread when threaded
- * video is active, otherwise the main thread). */
+/* Inner unload function.  Parks the texture on the deferred list;
+ * actual destruction happens on the frame-recording thread once a
+ * full swapchain cycle of submissions has passed, or at the next
+ * queue-idle flush point (swapchain recreation, driver teardown). */
 static void vulkan_unload_texture_internal(vk_t *vk, uintptr_t handle)
 {
+   struct vk_deferred_texture *node;
    struct vk_texture *texture = (struct vk_texture*)handle;
    if (!texture || !vk || !vk->context)
       return;
 
-   /* TODO: We really want to defer this deletion instead,
-    * but this will do for now. */
+   if (vk->context->device)
+   {
+      node = (struct vk_deferred_texture*)malloc(sizeof(*node));
+      if (node)
+      {
+         node->texture     = texture;
+         node->frames_left = vk->context->num_swapchain_images + 1;
+#ifdef HAVE_THREADS
+         if (vk->context->queue_lock)
+            slock_lock(vk->context->queue_lock);
+#endif
+         node->next            = vk->deferred_textures;
+         vk->deferred_textures = node;
+#ifdef HAVE_THREADS
+         if (vk->context->queue_lock)
+            slock_unlock(vk->context->queue_lock);
+#endif
+         return;
+      }
+   }
+
+   /* Out of memory (or no device): fall back to synchronous
+    * destruction behind a queue drain. */
 #ifdef HAVE_THREADS
    if (vk->context->queue_lock)
       slock_lock(vk->context->queue_lock);
