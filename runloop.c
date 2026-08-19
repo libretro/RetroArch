@@ -8693,7 +8693,7 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
 bool core_get_system_info(struct retro_system_info *sysinfo)
 {
    runloop_state_t *runloop_st  = &runloop_state;
-   if (!sysinfo)
+   if (!sysinfo || !runloop_st->current_core.retro_get_system_info)
       return false;
    runloop_st->current_core.retro_get_system_info(sysinfo);
    return true;
