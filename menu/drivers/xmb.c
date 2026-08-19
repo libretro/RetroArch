@@ -1115,7 +1115,13 @@ static void xmb_draw_icon(
       )
       return;
 
-   if (!p_disp->dispctx->handles_transform)
+   /* Every draw below goes through dispctx; without one there is
+    * nothing to render (the context is torn down around a video
+    * driver reinit while cached frames may still be submitted). */
+   if (!dispctx)
+      return;
+
+   if (!dispctx->handles_transform)
    {
       float radians = rotation;
       float cosine  = cosf(radians);
@@ -9159,7 +9165,7 @@ error:
 
 static void xmb_frame(void *data, video_frame_info_t *video_info)
 {
-   math_matrix_4x4 mymat;
+   math_matrix_4x4 mymat               = {{ 0.0f }};
    unsigned i;
    char title_msg[128];
    char msg[1024];
@@ -9381,7 +9387,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    selection = menu_st->selection_ptr;
 
-   if (!p_disp->dispctx->handles_transform)
+   if (dispctx && !dispctx->handles_transform)
    {
       float cosine             = 1.0f; /* cos(rad)  = cos(0)  = 1.0f */
       float sine               = 0.0f; /* sine(rad) = sine(0) = 0.0f */
