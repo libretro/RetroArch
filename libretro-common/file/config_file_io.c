@@ -192,13 +192,42 @@ bool config_file_write(config_file_t *conf, const char *path, bool sort)
           * Apple, a buffer supplied from outside clears __SMBF and
           * disqualifies fread()'s large-read fast path for the life of
           * the stream. */
-         FILE *file = (FILE*)fopen_utf8(path, "wb");
-         if (!file)
+         FILE *file;
+         bool wr_ok;
+         /* The dump goes to a temporary beside the target and is
+          * renamed over it only once complete and error-checked.
+          * An interrupted or failed save - process kill, power
+          * loss, full disk - then leaves the previous file intact
+          * instead of a truncated one, and a save that hits a
+          * write error reports failure instead of silently
+          * replacing a good config with a partial one. */
+         size_t _len    = strlen(path);
+         char *tmp_path = (char*)malloc(_len + sizeof(".tmp"));
+
+         if (!tmp_path)
             return false;
+         memcpy(tmp_path, path, _len);
+         memcpy(tmp_path + _len, ".tmp", sizeof(".tmp"));
+
+         if (!(file = (FILE*)fopen_utf8(tmp_path, "wb")))
+         {
+            free(tmp_path);
+            return false;
+         }
          setvbuf(file, NULL, _IOFBF, 0x4000);
          config_file_dump(conf, file, sort);
-         if (file != stdout)
-            fclose(file);
+
+         wr_ok = !ferror(file);
+         if (fclose(file) != 0)
+            wr_ok = false;
+
+         if (!wr_ok || filestream_rename(tmp_path, path) != 0)
+         {
+            filestream_delete(tmp_path);
+            free(tmp_path);
+            return false;
+         }
+         free(tmp_path);
          conf->flags &= ~CONF_FILE_FLG_MODIFIED;
       }
    }
