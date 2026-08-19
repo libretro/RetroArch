@@ -4272,12 +4272,26 @@ static void uninit_libretro_symbols(
    camera_driver_state_t *camera_st = camera_state_get_ptr();
    location_driver_state_t *loc_st  = location_state_get_ptr();
 #ifdef HAVE_DYNAMIC
-   if (runloop_st->lib_handle)
-      dylib_close(runloop_st->lib_handle);
-   runloop_st->lib_handle = NULL;
+   dylib_t lib_handle_local         = runloop_st->lib_handle;
+
+   runloop_st->lib_handle           = NULL;
 #endif
 
+   /* Clear the callback pointers BEFORE the core library is unmapped.
+    * With the old order (dylib_close first, memset second) there was a
+    * window in which current_core still held function pointers into an
+    * already-unmapped .so. Anything observing runloop_state concurrently
+    * - e.g. a second rarch_main instance spawned by an overlapping
+    * Android activity lifecycle, whose APP_CMD_PAUSE handler flushes
+    * save files via core_get_system_info() - would pass the non-NULL
+    * pointer check and then jump into unmapped memory. Zeroing first
+    * degrades that race to a benign NULL check instead of a SIGSEGV. */
    memset(current_core, 0, sizeof(struct retro_core_t));
+
+#ifdef HAVE_DYNAMIC
+   if (lib_handle_local)
+      dylib_close(lib_handle_local);
+#endif
 
    runloop_st->flags &= ~RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT;
 
