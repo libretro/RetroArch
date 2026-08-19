@@ -13059,18 +13059,21 @@ static void ozone_set_header(ozone_handle_t *ozone)
             ozone_node_t *node = NULL;
             size_t offset      = 0;
 
-            /* Ignore Explore Views */
+            /* Explore views are not present in the horizontal list
+             * (it is built from .lpl files only), and a playlist
+             * hidden from the sidebar is not present either, so the
+             * scan can legitimately run off the end. */
             for (offset = 0; offset < ozone->horizontal_list.size; offset++)
             {
-               char playlist_file_noext[NAME_MAX_LENGTH];
-               fill_pathname(playlist_file_noext,
-                     ozone->horizontal_list.list[offset].path, "",
-                     sizeof(playlist_file_noext));
                if (string_ends_with(path, ozone->horizontal_list.list[offset].path))
                   break;
             }
 
-            node = (ozone_node_t*)(ozone->horizontal_list.size)
+            /* A missed match must resolve to no node; the accessor
+             * does not bounds-check, so indexing with offset ==
+             * size reads one entry past the end of the list and the
+             * garbage is then dereferenced below. */
+            node = (offset < ozone->horizontal_list.size)
                   ? (ozone_node_t*)file_list_get_userdata_at_offset(
                         &ozone->horizontal_list, offset)
                   : NULL;
