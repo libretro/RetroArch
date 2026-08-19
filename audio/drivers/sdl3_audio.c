@@ -46,7 +46,7 @@ typedef struct sdl3_audio
    SDL_Mutex *lock; /**< Guards condition, the stream callbacks are called through it. */
    SDL_Condition *cond; /**< Signalled each time the device moves data. */
    SDL_AudioSpec spec; /**< The format for the given audio sample. */
-   SDL_AudioDeviceID devid; /**< The device the stream is bound to. */
+   SDL_AtomicU32 devid; /**< The device the stream is bound to. */
    size_t buffer_size; /**< Cap in bytes on queued audio: writes block past it, capture backlog is dropped past it. */
    size_t in_cap; /**< buffer_size converted into input-format bytes; equal to buffer_size outside the write_raw fast path. */
    int raw_rate; /**< Core rate the write_raw fast path set as the stream's input side (int16 stereo); 0 while the input side matches the device spec. */
@@ -54,7 +54,7 @@ typedef struct sdl3_audio
    float ratio; /**< Frequency ratio currently set on the stream, to skip redundant sets. */
    float gain; /**< Gain currently set on the stream, to skip redundant sets. */
    bool nonblock; /**< When true, drop samples instead of waiting for the device to clear. */
-   bool device_removed; /**< Becomes true when the stream's device is unplugged. */
+   SDL_AtomicInt device_removed; /**< Becomes true when the stream's device is unplugged. Set under lock so a blocked wait wakes. */
    bool defunct; /**< True when the device has completely failed. Saves from retrying each frame. */
 } sdl3_audio_t;
 
@@ -66,12 +66,12 @@ static bool SDLCALL sdl3_audio_device_removed_watch(void *userdata, SDL_Event *e
    sdl3_audio_t *sdl = (sdl3_audio_t*)userdata;
 
    if (   event->type == SDL_EVENT_AUDIO_DEVICE_REMOVED
-       && event->adevice.which == sdl->devid)
+       && event->adevice.which == SDL_GetAtomicU32(&sdl->devid))
    {
       RARCH_WARN("[SDL3 audio] Audio %s device was removed.\n",
             event->adevice.recording ? "input" : "output");
       SDL_LockMutex(sdl->lock);
-      sdl->device_removed = true;
+      SDL_SetAtomicInt(&sdl->device_removed, 1);
       SDL_SignalCondition(sdl->cond);
       SDL_UnlockMutex(sdl->lock);
    }
@@ -252,7 +252,7 @@ static bool sdl3_audio_wait_for_device(sdl3_audio_t *ctx)
    bool signalled;
 
    SDL_LockMutex(ctx->lock);
-   signalled = ctx->device_removed
+   signalled = SDL_GetAtomicInt(&ctx->device_removed)
          || SDL_WaitConditionTimeout(ctx->cond, ctx->lock,
                SDL3_AUDIO_STALL_TIMEOUT_MS);
    SDL_UnlockMutex(ctx->lock);
@@ -299,7 +299,7 @@ static void sdl3_audio_prime_stream(sdl3_audio_t *sdl)
 {
    void *tmp;
 
-   sdl->devid = SDL_GetAudioStreamDevice(sdl->stream);
+   SDL_SetAtomicU32(&sdl->devid, SDL_GetAudioStreamDevice(sdl->stream));
    SDL_SetAudioStreamGetCallback(sdl->stream, sdl3_audio_stream_cb, sdl);
 
    sdl->raw_rate = 0;
@@ -308,7 +308,7 @@ static void sdl3_audio_prime_stream(sdl3_audio_t *sdl)
    sdl->gain = 1.0f;
 
    SDL_LockMutex(sdl->lock);
-   sdl->device_removed = false;
+   SDL_SetAtomicInt(&sdl->device_removed, 0);
    SDL_UnlockMutex(sdl->lock);
 
    if ((tmp = calloc(1, sdl->buffer_size)))
@@ -443,7 +443,7 @@ static bool sdl3_audio_stream_ok(sdl3_audio_t *sdl)
 {
    if (sdl->defunct)
       return false;
-   if (sdl->device_removed)
+   if (SDL_GetAtomicInt(&sdl->device_removed))
       return sdl3_audio_reopen_default(sdl);
    return true;
 }
@@ -467,7 +467,7 @@ static ssize_t sdl3_audio_queue(sdl3_audio_t *sdl, const void *s,
 
       /* The device is gone; drop the rest and let the next write
        * reopen on the default device. */
-      if (sdl->device_removed)
+      if (SDL_GetAtomicInt(&sdl->device_removed))
          break;
 
       queued = SDL_GetAudioStreamQueued(sdl->stream);
@@ -771,7 +771,7 @@ static void *sdl3_microphone_open_mic(void *driver_context, const char *device,
          1, &mic->spec, &device_sample_frames)))
       goto error;
 
-   mic->devid = SDL_GetAudioStreamDevice(mic->stream);
+   SDL_SetAtomicU32(&mic->devid, SDL_GetAudioStreamDevice(mic->stream));
    SDL_AddEventWatch(sdl3_audio_device_removed_watch, mic);
 
    /* Buffer up to double the latency budget. */
@@ -850,7 +850,7 @@ static int sdl3_microphone_read(void *driver_context, void *mic_context,
       return -1;
 
    /* Avoid using a recording device that doesn't exist. */
-   if (mic->device_removed)
+   if (SDL_GetAtomicInt(&mic->device_removed))
       return -1;
 
    while (size < len)
@@ -858,7 +858,7 @@ static int sdl3_microphone_read(void *driver_context, void *mic_context,
       int got;
 
       /* Safety check. */
-      if (mic->device_removed)
+      if (SDL_GetAtomicInt(&mic->device_removed))
          break;
 
       got = SDL_GetAudioStreamData(mic->stream, (char*)s + size, (int)(len - size));
