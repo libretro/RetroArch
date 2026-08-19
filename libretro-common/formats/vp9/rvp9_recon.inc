@@ -6443,9 +6443,12 @@ static void rvp9_build_mc_border(const RVP9_PIXEL *src, int src_stride,
       if (right > b_w) right = b_w;
       copy = b_w - left - right;
 
-      if (left) RVP9_PXFILL(dst, ref_row[0], left);
-      if (copy) RVP9_PXCOPY(dst + left, ref_row + x + left, copy);
-      if (right) RVP9_PXFILL(dst + left + copy, ref_row[w - 1], right);
+      if (left > 0)
+         RVP9_PXFILL(dst, ref_row[0], left);
+      if (copy > 0)
+         RVP9_PXCOPY(dst + left, ref_row + x + left, copy);
+      if (right > 0)
+         RVP9_PXFILL(dst + left + copy, ref_row[w - 1], right);
 
       dst += dst_stride;
       ++y;
