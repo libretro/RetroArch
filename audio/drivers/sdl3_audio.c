@@ -58,11 +58,11 @@ typedef struct sdl3_audio
    SDL_AtomicInt device_removed; /**< Becomes true when the stream's device is unplugged. Set under lock so a blocked wait wakes. */
    bool nonblock; /**< When true, drop samples instead of waiting for the device to clear. */
    bool data_moved; /**< Wake token set by the stream callback, consumed by waiters. Guarded by lock; makes the queue-full test race-free. */
-   bool defunct; /**< True when the device has completely failed. Saves from retrying each frame. */
+   SDL_AtomicInt defunct; /**< True when the device has completely failed. Saves from retrying each frame. */
 } sdl3_audio_t;
 
 /**
- * Event callback for SDL_EVENT_AUDIO_DEVICE_REMOVED.
+ * Event callback for SDL_EVENT_AUDIO_DEVICE_REMOVED and _ADDED.
  *
  * Matches on the stream's logical device id, so it only fires for
  * streams bound to an explicitly selected device: SDL never sends
@@ -83,6 +83,13 @@ static bool SDLCALL sdl3_audio_device_removed_watch(void *userdata, SDL_Event *e
       SDL_SetAtomicInt(&sdl->device_removed, 1);
       SDL_SignalCondition(sdl->cond);
       SDL_UnlockMutex(sdl->lock);
+   }
+   else if (event->type == SDL_EVENT_AUDIO_DEVICE_ADDED
+       && !event->adevice.recording
+       && SDL_GetAtomicInt(&sdl->defunct))
+   {
+      RARCH_LOG("[SDL3 audio] A playback device appeared, retrying audio output.\n");
+      SDL_SetAtomicInt(&sdl->defunct, 0);
    }
    return true;
 }
@@ -439,8 +446,8 @@ static bool sdl3_audio_reopen_default(sdl3_audio_t *sdl)
 
    if (!stream)
    {
-      RARCH_ERR("[SDL3 audio] Failed to reopen on the default device, giving up on audio output.\n");
-      sdl->defunct = true;
+      RARCH_ERR("[SDL3 audio] Failed to reopen on the default device, waiting for one to be added.\n");
+      SDL_SetAtomicInt(&sdl->defunct, 1);
       return false;
    }
 
@@ -467,7 +474,7 @@ static bool sdl3_audio_reopen_default(sdl3_audio_t *sdl)
  */
 static bool sdl3_audio_stream_ok(sdl3_audio_t *sdl)
 {
-   if (sdl->defunct)
+   if (SDL_GetAtomicInt(&sdl->defunct))
       return false;
    if (SDL_GetAtomicInt(&sdl->device_removed))
       return sdl3_audio_reopen_default(sdl);
