@@ -107,9 +107,6 @@ typedef struct
 #else
 #define sys_memory_get_user_memory_size(x) system_call_1(352, x)
 #endif
-#elif defined(MEM_STATS_PS2)
-/* GetMemorySize is syscall 0x7f: how much RAM the board actually has */
-#include <kernel.h>
 #elif defined(MEM_STATS_EMSCRIPTEN)
 #include <emscripten/heap.h>
 #include <malloc.h>
@@ -272,12 +269,21 @@ static void mem_stats_proc_meminfo(uint64_t *total, uint64_t *avail)
  * memory. */
 #define MEM_STATS_PS2_PROBES        3
 
+/* ps2sdk's kernel.h declares this, but that header is the whole EE
+ * kernel API and this file wants one prototype out of it - and it is a
+ * header no runner has, so taking it costs the tree the one platform arm
+ * that could be syntax checked anywhere.  The function itself is four
+ * instructions in libkernel, which every EE build already links for
+ * crt0: li $3, __NR_GetMemorySize (0x7f); syscall; jr $ra; nop.  s32 is
+ * int on this target, so this is that declaration and nothing else. */
+extern int GetMemorySize(void);
+
 static uint64_t mem_stats_ps2_ram(void)
 {
    static uint64_t cached = 0;
    if (!cached)
    {
-      int size = (int)GetMemorySize();
+      int size = GetMemorySize();
       cached   = (size > 0) ? (uint64_t)size
                             : (uint64_t)MEM_STATS_PS2_RAM_FALLBACK;
    }
