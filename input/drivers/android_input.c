@@ -2435,6 +2435,13 @@ static int16_t android_input_state(
 {
    android_input_t *android           = (android_input_t*)data;
 
+   /* The MOUSE/LIGHTGUN/POINTER paths below dereference the driver
+    * data unconditionally. current_data can be NULL in the window
+    * around driver teardown/reinit (surface loss on sleep/wake),
+    * so fail closed rather than fault. */
+   if (!android)
+      return 0;
+
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
@@ -2525,13 +2532,15 @@ static int16_t android_input_state(
                case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
                   if (android->mouse_activated)
                      return android->mouse_x_viewport_screen;
-                  else
+                  else if (idx < MAX_TOUCH)
                      return android->pointer[idx].x;
+                  return 0;
                case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
                   if (android->mouse_activated)
                      return android->mouse_y_viewport_screen;
-                  else
+                  else if (idx < MAX_TOUCH)
                      return android->pointer[idx].y;
+                  return 0;
                /* Deprecated relative lightgun. */
                case RETRO_DEVICE_ID_LIGHTGUN_X:
                   val                    = android->mouse_x_delta;
@@ -2554,20 +2563,29 @@ static int16_t android_input_state(
                case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
                   return android->mouse_l || android_check_quick_tap(android) || android->pointer_count == 1;
                case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
+                  if (idx >= MAX_TOUCH)
+                     return 0;
                   return input_driver_pointer_is_offscreen(android->pointer[idx].x, android->pointer[idx].y);
             }
          }
          break;
       case RETRO_DEVICE_POINTER:
       case RARCH_DEVICE_POINTER_SCREEN:
-         /* Same pointer state is reported for all ports. */
+         /* Same pointer state is reported for all ports.
+          * idx is core/frontend-controlled: bounds-check it before
+          * any pointer[] access. PRESSED already range-checks via
+          * pointer_count (<= MAX_TOUCH). */
          switch (id)
          {
             case RETRO_DEVICE_ID_POINTER_X:
+               if (idx >= MAX_TOUCH)
+                  return 0;
                if (device == RARCH_DEVICE_POINTER_SCREEN)
                   return android->pointer[idx].full_x;
                return android->pointer[idx].confined_x;
             case RETRO_DEVICE_ID_POINTER_Y:
+               if (idx >= MAX_TOUCH)
+                  return 0;
                if (device == RARCH_DEVICE_POINTER_SCREEN)
                   return android->pointer[idx].full_y;
                return android->pointer[idx].confined_y;
@@ -2581,6 +2599,8 @@ static int16_t android_input_state(
                   (android->pointer[idx].x != -0x8000) &&
                   (android->pointer[idx].y != -0x8000);
             case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
+               if (idx >= MAX_TOUCH)
+                  return 0;
                return input_driver_pointer_is_offscreen(android->pointer[idx].x, android->pointer[idx].y);
             case RETRO_DEVICE_ID_POINTER_COUNT:
                return android->pointer_count;
