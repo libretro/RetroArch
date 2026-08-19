@@ -5,6 +5,7 @@ import java.io.IOException;
 
 import android.annotation.TargetApi;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.AudioManager;
 import android.media.AudioTrack;
@@ -111,123 +112,39 @@ public final class UserPreferences
 	}
 
 	/**
-	 * Updates the libretro configuration file
-	 * with new values if version has changed.
-	 * 
-	 * @param ctx the current {@link Context}.
+	 * Adds device-derived parameters to the intent that launches the
+	 * native activity: the app version code that gates bundled asset
+	 * extraction, and the device-optimal audio output parameters.
+	 * The native side reads these as the VERSIONCODE, AUDIO_RATE and
+	 * AUDIO_FRAMES extras.
+	 *
+	 * @param ctx   the current {@link Context}.
+	 * @param retro the launch {@link Intent} for the native activity.
 	 */
-	public static void updateConfigFile(Context ctx)
+	public static void putDeviceIntentExtras(Context ctx, Intent retro)
 	{
-		String path = getDefaultConfigPath(ctx);
-		ConfigFile config = new ConfigFile(path);
-
-		final String dataDir = ctx.getApplicationInfo().dataDir;
-		final String coreDir = dataDir + "/cores/";
-		final String dstPath	= dataDir;
-		final String dstPathSubdir = "assets";
-
 		final SharedPreferences prefs = getPreferences(ctx);
-
-		config.setString("libretro_directory", coreDir);
-
-		int samplingRate = getOptimalSamplingRate(ctx);
-		if (samplingRate != -1) {
-			config.setInt("audio_out_rate", samplingRate);
-		}
 
 		try
 		{
-			int version      = ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0).versionCode;
-			int last_version = 0;
-
-			// A version value that fails to parse counts as no
-			// recorded version, so assets are re-extracted.
-			try
-			{
-				if (config.keyExists("bundle_assets_extract_last_version"))
-					last_version = config.getInt("bundle_assets_extract_last_version");
-			}
-			catch (NumberFormatException ignored)
-			{
-			}
-
-			if (version == last_version)
-				return;
-
-			config.setString("bundle_assets_src_path", ctx.getApplicationInfo().sourceDir);
-			config.setString("bundle_assets_dst_path", dstPath);
-			config.setString("bundle_assets_dst_path_subdir", dstPathSubdir);
-			config.setInt("bundle_assets_extract_version_current", version);
+			int version = ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0).versionCode;
+			retro.putExtra("VERSIONCODE", Integer.toString(version));
 		}
 		catch (NameNotFoundException ignored)
 		{
 		}
 
-		// Refactor this entire mess and make this usable for per-core config
+		int samplingRate = getOptimalSamplingRate(ctx);
+		if (samplingRate > 0)
+			retro.putExtra("AUDIO_RATE", Integer.toString(samplingRate));
+
 		if (Build.VERSION.SDK_INT >= 17 && prefs.getBoolean("audio_latency_auto", true))
 		{
 			int bufferSize = getLowLatencyBufferSize(ctx);
-			if (bufferSize != -1) {
-				config.setInt("audio_block_frames", bufferSize);
-			}
-		}
-
-		try
-		{
-			Log.i(TAG, "Writing config to: " + path);
-			Log.i(TAG, "dst dir is: " + dstPath);
-			Log.i(TAG, "dst subdir is: " + dstPathSubdir);
-			config.write(path);
-		}
-		catch (IOException e)
-		{
-			Log.e(TAG, "Failed to save config file to: " + path);
+			if (bufferSize > 0)
+				retro.putExtra("AUDIO_FRAMES", Integer.toString(bufferSize));
 		}
 	}
-
-	private static void readbackString(ConfigFile cfg, SharedPreferences.Editor edit, String key)
-	{
-		if (cfg.keyExists(key))
-			edit.putString(key, cfg.getString(key));
-		else
-			edit.remove(key);
-	}
-
-	private static void readbackBool(ConfigFile cfg, SharedPreferences.Editor edit, String key)
-	{
-		if (cfg.keyExists(key))
-			edit.putBoolean(key, cfg.getBoolean(key));
-		else
-			edit.remove(key);
-	}
-
-	private static void readbackDouble(ConfigFile cfg, SharedPreferences.Editor edit, String key)
-	{
-		if (cfg.keyExists(key))
-			edit.putFloat(key, (float)cfg.getDouble(key));
-		else
-			edit.remove(key);
-	}
-
-	/*
-	private static void readbackFloat(ConfigFile cfg, SharedPreferences.Editor edit, String key)
-	{
-		if (cfg.keyExists(key))
-			edit.putFloat(key, cfg.getFloat(key));
-		else
-			edit.remove(key);
-	}
-	*/
-
-	/**
-	private static void readbackInt(ConfigFile cfg, SharedPreferences.Editor edit, String key)
-	{
-		if (cfg.keyExists(key))
-			edit.putInt(key, cfg.getInt(key));
-		else
-			edit.remove(key);
-	}
-	*/
 
 	/**
 	 * Sanitizes a libretro core path.

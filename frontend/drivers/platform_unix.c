@@ -88,6 +88,7 @@
 #include "../../paths.h"
 #include "../../msg_hash_lbl_str.h"
 #include "../../retroarch.h"
+#include "../../configuration.h"
 #include "../../verbosity.h"
 
 #ifdef HAVE_MENU
@@ -126,6 +127,7 @@ enum platform_android_flags
 static sthread_tls_t thread_key;
 static bool thread_key_inited            = false;
 static char app_dir[DIR_MAX_LENGTH];
+static char apk_dir[DIR_MAX_LENGTH];
 unsigned storage_permissions             = 0;
 struct android_app *g_android            = NULL;
 static uint8_t g_platform_android_flags  = 0;
@@ -1950,7 +1952,6 @@ static void frontend_unix_get_env(int *argc,
 
    if (android_app->getStringExtra && jstr)
    {
-      static char apk_dir[DIR_MAX_LENGTH];
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       *apk_dir = '\0';
@@ -2190,6 +2191,40 @@ static void frontend_unix_get_env(int *argc,
                "RetroArch", "[ENV] Default screenshot folder: \"%s\".",
                g_defaults.dirs[DEFAULT_DIR_SCREENSHOT]);
          }
+      }
+   }
+
+   /* Bundle asset extraction parameters.  The APK is the source
+    * archive, the app data dir the destination, and the version
+    * code gates extraction to app upgrades (see menu_driver.c).
+    * These settings are intentionally not bound to the config
+    * file on Android (see configuration.c). */
+   CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
+         (*env)->NewStringUTF(env, "VERSIONCODE"));
+
+   if (android_app->getStringExtra && jstr)
+   {
+      settings_t *settings = config_get_ptr();
+      unsigned version     = 0;
+      const char *argv     = (*env)->GetStringUTFChars(env, jstr, 0);
+
+      if (argv && *argv)
+         version = (unsigned)strtoul(argv, NULL, 10);
+      (*env)->ReleaseStringUTFChars(env, jstr, argv);
+
+      if (version && settings && *apk_dir && *app_dir)
+      {
+         configuration_set_string(settings,
+               settings->paths.bundle_assets_src, apk_dir);
+         configuration_set_string(settings,
+               settings->paths.bundle_assets_dst, app_dir);
+         configuration_set_string(settings,
+               settings->paths.bundle_assets_dst_subdir, "assets");
+         configuration_set_uint(settings,
+               settings->uints.bundle_assets_extract_version_current,
+               version);
+         __android_log_print(ANDROID_LOG_INFO,
+            "RetroArch", "[ENV] App version code: %u.\n", version);
       }
    }
 

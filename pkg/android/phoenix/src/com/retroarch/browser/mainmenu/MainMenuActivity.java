@@ -267,6 +267,7 @@ public final class MainMenuActivity extends PreferenceActivity
 		retro.putExtra("IME", imePath);
 		retro.putExtra("DATADIR", dataDirPath);
 		retro.putExtra("APK", dataSourcePath);
+		UserPreferences.putDeviceIntentExtras(ctx, retro);
 
 		String external;
 
@@ -311,8 +312,6 @@ public final class MainMenuActivity extends PreferenceActivity
 
 		// Bind audio stream to hardware controls.
 		setVolumeControlStream(AudioManager.STREAM_MUSIC);
-
-		UserPreferences.updateConfigFile(this);
 
 		if (BuildConfig.PLAY_STORE_BUILD)
 			finalStartup();

@@ -4,6 +4,7 @@ import com.retroarch.BuildConfig;
 import com.retroarch.browser.preferences.util.UserPreferences;
 import com.retroarch.browser.retroactivity.RetroActivityFuture;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.AudioManager;
@@ -127,6 +128,7 @@ public final class MainMenuActivity extends PreferenceActivity
 			final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
 
 			startRetroActivity(
+					this,
 					retro,
 					null,
 					prefs.getString("libretro_path", getApplicationInfo().dataDir + "/cores/"),
@@ -168,7 +170,7 @@ public final class MainMenuActivity extends PreferenceActivity
 		finalStartup();
 	}
 
-	public static void startRetroActivity(Intent retro, String contentPath, String corePath,
+	public static void startRetroActivity(Context ctx, Intent retro, String contentPath, String corePath,
 			String configFilePath, String imePath, String dataDirPath, String dataSourcePath)
 	{
 		if (contentPath != null) {
@@ -179,6 +181,7 @@ public final class MainMenuActivity extends PreferenceActivity
 		retro.putExtra("IME", imePath);
 		retro.putExtra("DATADIR", dataDirPath);
 		retro.putExtra("APK", dataSourcePath);
+		UserPreferences.putDeviceIntentExtras(ctx, retro);
 		String external = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Android/data/" + PACKAGE_NAME + "/files";
 		retro.putExtra("SDCARD", BuildConfig.PLAY_STORE_BUILD ? external : Environment.getExternalStorageDirectory().getAbsolutePath());
 		retro.putExtra("EXTERNAL", external);
@@ -193,8 +196,6 @@ public final class MainMenuActivity extends PreferenceActivity
 
 		// Bind audio stream to hardware controls.
 		setVolumeControlStream(AudioManager.STREAM_MUSIC);
-
-		UserPreferences.updateConfigFile(this);
 
 		if (BuildConfig.PLAY_STORE_BUILD)
 			finalStartup();

@@ -1697,9 +1697,13 @@ static struct config_path_setting *populate_settings_path(
       return NULL;
 
    /* Paths */
+#if !defined(ANDROID)
+   /* On Android the bundle asset paths come from the launch intent
+    * (see platform_unix.c) and are not user configuration. */
    SETTING_PATH("bundle_assets_src_path",        settings->paths.bundle_assets_src, false, NULL, true);
    SETTING_PATH("bundle_assets_dst_path",        settings->paths.bundle_assets_dst, false, NULL, true);
    SETTING_PATH("bundle_assets_dst_path_subdir", settings->paths.bundle_assets_dst_subdir, false, NULL, true);
+#endif
    SETTING_PATH("core_updater_buildbot_cores_url",  settings->paths.network_buildbot_url, false, NULL, true);
    SETTING_PATH("core_updater_buildbot_assets_url", settings->paths.network_buildbot_assets_url, false, NULL, true);
    SETTING_PATH("libretro_directory",            settings->paths.directory_libretro, false, NULL, false);
@@ -3938,7 +3942,7 @@ static struct config_uint_setting *populate_settings_uint(
 #ifdef HAVE_LANGEXTRA
    SETTING_UINT("user_language",                 msg_hash_get_uint(MSG_HASH_USER_LANGUAGE), true, frontend_driver_get_user_language(), false);
 #endif
-#ifndef __APPLE__
+#if !defined(__APPLE__) && !defined(ANDROID)
    SETTING_UINT("bundle_assets_extract_version_current", &settings->uints.bundle_assets_extract_version_current, true, 0, false);
 #endif
    SETTING_UINT("bundle_assets_extract_last_version",    &settings->uints.bundle_assets_extract_last_version, true, 0, false);
@@ -5632,7 +5636,7 @@ void config_set_defaults(void *data)
    *settings->paths.path_content_music_history   = '\0';
    *settings->paths.path_content_video_history   = '\0';
    *settings->paths.path_cheat_settings          = '\0';
-#if !defined(__APPLE__)
+#if !defined(__APPLE__) && !defined(ANDROID)
    *settings->paths.bundle_assets_src            = '\0';
    *settings->paths.bundle_assets_dst            = '\0';
    *settings->paths.bundle_assets_dst_subdir     = '\0';
