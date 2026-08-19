@@ -9429,7 +9429,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       if (show_icon_thumbnail)
       {
          size_t selection             = menu_st->selection_ptr;
-         xmb_node_t *node             = (xmb_node_t*)selection_buf->list[selection].userdata;
+         xmb_node_t *node             = NULL;
          float gfx_icon_x_margin      = left_thumbnail_margin_x * (xmb->use_ps3_layout ? 1 : 0);
          float gfx_icon_x             = gfx_icon_x_margin;
          float gfx_icon_y             = xmb->margins_screen_top + (xmb->icon_size / 1.5f);
@@ -9438,6 +9438,13 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          float gfx_icon_width_draw    = 0;
          float gfx_icon_height_draw   = 0;
          float playlist_extra_x       = 0;
+
+         /* The selection can be stale against a list that was just
+          * rebuilt smaller, and freshly inserted entries may not
+          * carry a node yet; without one the thumbnail simply keeps
+          * the margin position. */
+         if (selection_buf && selection < selection_buf->size)
+            node = (xmb_node_t*)selection_buf->list[selection].userdata;
 
          gfx_thumbnail_get_draw_dimensions(
                icon_thumbnail,
@@ -9449,7 +9456,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          if (xmb->is_playlist)
             gfx_icon_x += playlist_extra_x;
 
-         gfx_icon_x += node->x;
+         if (node)
+            gfx_icon_x += node->x;
 
          if (gfx_icon_x < gfx_icon_x_margin)
             gfx_icon_x = gfx_icon_x_margin;
