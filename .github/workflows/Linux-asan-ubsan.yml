@@ -74,7 +74,8 @@ jobs:
             exit 0
           fi
           for i in 1 2 3; do
-            sudo apt-get update -y && break
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
           done
