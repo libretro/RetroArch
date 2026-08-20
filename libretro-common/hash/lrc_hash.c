@@ -78,9 +78,19 @@
 #endif
 #elif (defined(__x86_64__) || defined(__i386__)) && !defined(_MSC_VER)
 #if defined(__has_attribute) && defined(__has_include)
-#if __has_attribute(target) && __has_include(<immintrin.h>)
+#if __has_attribute(target) && __has_include(<immintrin.h>) \
+   && (!defined(__SCE__) \
+      || (defined(__SHA__) && defined(__SSSE3__) && defined(__SSE4_1__)))
 /* SHA-NI enumerates both digests through one CPUID bit, so one runtime
- * question answers for both. */
+ * question answers for both.
+ *
+ * The last clause is about the header rather than codegen, as the ACLE
+ * predicates in encoding_crc32.c are: immintrin.h pulls its per-feature
+ * sub-headers in only when the baseline already has the feature on
+ * targets that define __SCE__, and shaintrin.h refuses to be included
+ * on its own, so a Sony toolchain built for a CPU without the
+ * instructions leaves the intrinsics undeclared however the function
+ * carrying them is attributed. */
 #define SHA_HAVE_X86_PATH 1
 #define SHA_X86_DISPATCH  1
 #endif
