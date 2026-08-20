@@ -33,6 +33,7 @@ import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
 import android.media.AudioAttributes;
+import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.storage.StorageManager;
@@ -180,6 +181,10 @@ public class RetroActivityCommon extends NativeActivity
     }
     ((InputManager) getSystemService(Context.INPUT_SERVICE))
             .registerInputDeviceListener(this, null);
+    /* Bind the hardware volume keys to the game audio stream;
+     * previously done by the Java launcher activity. */
+    setVolumeControlStream(AudioManager.STREAM_MUSIC);
+
     PlayCoreManager.getInstance().onCreate(this);
     super.onCreate(savedInstanceState);
 
