@@ -1829,7 +1829,6 @@ SMB CLIENT
 #include "../deps/libsmb2/lib/krb5-wrapper.c"
 #include "../deps/libsmb2/lib/libsmb2.c"
 #include "../deps/libsmb2/lib/md4c.c"
-#include "../deps/libsmb2/lib/md5.c"
 #include "../deps/libsmb2/lib/ntlmssp.c"
 #include "../deps/libsmb2/lib/pdu.c"
 #include "../deps/libsmb2/lib/sha1.c"

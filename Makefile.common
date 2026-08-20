@@ -2937,7 +2937,6 @@ endif
          deps/libsmb2/lib/krb5-wrapper.o \
          deps/libsmb2/lib/libsmb2.o \
          deps/libsmb2/lib/md4c.o \
-         deps/libsmb2/lib/md5.o \
          deps/libsmb2/lib/ntlmssp.o \
          deps/libsmb2/lib/pdu.o \
          deps/libsmb2/lib/sha1.o \
