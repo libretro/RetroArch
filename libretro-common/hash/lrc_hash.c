@@ -122,6 +122,12 @@ static const uint32_t T_H[8] = {
    0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
 };
 
+/* SHA-224 differs from SHA-256 only in this starting state and in
+ * publishing seven of the eight words. FIPS 180-4, section 5.3.2. */
+static const uint32_t T_H224[8] = {
+   0xc1059ed8, 0x367cd507, 0x3070dd17, 0xf70e5939, 0xffc00b31, 0x68581511, 0x64f98fa7, 0xbefa4fa4,
+};
+
 /* First 32 bits of the fractional parts of the cube roots of the first 64 primes 2..311 */
 static const uint32_t T_K[64] = {
    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -136,25 +142,13 @@ static const uint32_t T_K[64] = {
 
 /* SHA256 implementation from bSNES. Written by valditx. */
 
-struct sha256_ctx
-{
-   union
-   {
-      uint8_t u8[64];
-      uint32_t u32[16];
-   } in;
-   unsigned inlen;
 
-   uint32_t w[64];
-   uint32_t h[8];
-   uint64_t len;
-};
-
-static void sha256_init(struct sha256_ctx *p)
+static void sha256_init(struct sha256_state *p)
 {
-   memset(p, 0, sizeof(struct sha256_ctx));
+   memset(p, 0, sizeof(struct sha256_state));
    memcpy(p->h, T_H, sizeof(T_H));
 }
+
 
 #if defined(SHA_HAVE_ARM_PATH)
 SHA_TARGET_ARM
@@ -248,7 +242,7 @@ static void sha256_block_hw(uint32_t *h, const uint8_t *in)
 }
 #endif
 
-static void sha256_block_scalar(struct sha256_ctx *p)
+static void sha256_block_scalar(struct sha256_state *p)
 {
    unsigned i;
    uint32_t s0, s1;
@@ -292,7 +286,7 @@ static void sha256_block_scalar(struct sha256_ctx *p)
    p->h[4] += e; p->h[5] += f; p->h[6] += g; p->h[7] += h;
 }
 
-static void sha256_block(struct sha256_ctx *p)
+static void sha256_block(struct sha256_state *p)
 {
 #if defined(SHA_ARM_DISPATCH) || defined(SHA_X86_DISPATCH)
    if (cpu_features_get() & RETRO_SIMD_SHA256)
@@ -309,7 +303,7 @@ static void sha256_block(struct sha256_ctx *p)
    p->inlen = 0;
 }
 
-static void sha256_chunk(struct sha256_ctx *p,
+static void sha256_chunk(struct sha256_state *p,
       const uint8_t *s, size_t len)
 {
    p->len += len;
@@ -332,7 +326,7 @@ static void sha256_chunk(struct sha256_ctx *p,
    }
 }
 
-static void sha256_final(struct sha256_ctx *p)
+static void sha256_final(struct sha256_state *p)
 {
    uint64_t len;
    p->in.u8[p->inlen++] = 0x80;
@@ -351,7 +345,7 @@ static void sha256_final(struct sha256_ctx *p)
    sha256_block(p);
 }
 
-static void sha256_subhash(struct sha256_ctx *p, uint32_t *t)
+static void sha256_subhash(struct sha256_state *p, uint32_t *t)
 {
    unsigned i;
    for (i = 0; i < 8; i++)
@@ -366,10 +360,46 @@ static void sha256_subhash(struct sha256_ctx *p, uint32_t *t)
  *
  * Hashes SHA256 and outputs a human readable string.
  **/
+void sha256_stream_init(struct sha256_state *p, unsigned is224)
+{
+   memset(p, 0, sizeof(struct sha256_state));
+   memcpy(p->h, is224 ? T_H224 : T_H, sizeof(T_H));
+   p->is224 = is224 ? 1 : 0;
+}
+
+void sha256_stream_update(struct sha256_state *p,
+      const uint8_t *data, size_t len)
+{
+   sha256_chunk(p, data, len);
+}
+
+void sha256_stream_final(struct sha256_state *p, uint8_t *digest)
+{
+   unsigned i;
+   unsigned words = p->is224 ? 7 : 8;
+
+   sha256_final(p);
+
+   for (i = 0; i < words; i++)
+   {
+      digest[4 * i    ] = (uint8_t)(p->h[i] >> 24);
+      digest[4 * i + 1] = (uint8_t)(p->h[i] >> 16);
+      digest[4 * i + 2] = (uint8_t)(p->h[i] >>  8);
+      digest[4 * i + 3] = (uint8_t) p->h[i];
+   }
+}
+
+void sha256_stream_block(struct sha256_state *p, const uint8_t *data)
+{
+   memcpy(p->in.u8, data, 64);
+   p->inlen = 64;
+   sha256_block(p);
+}
+
 void sha256_hash(char *s, const uint8_t *in, size_t len)
 {
    unsigned i;
-   struct sha256_ctx sha;
+   struct sha256_state sha;
 
    union
    {
@@ -436,38 +466,25 @@ void sha256_hash(char *s, const uint8_t *in, size_t len)
 /* Define the circular shift macro */
 #define SHA1CircularShift(bits,word) ((((word) << (bits)) & 0xFFFFFFFF) | ((word) >> (32-(bits))))
 
-struct sha1_context
-{
-   uint32_t Message_Digest[5]; /* Message Digest (output)          */
-
-   unsigned Length_Low;        /* Message length in bits           */
-   unsigned Length_High;       /* Message length in bits           */
-
-   unsigned char Message_Block[64]; /* 512-bit message blocks      */
-   int Message_Block_Index;    /* Index into message block array   */
-
-   int Computed;               /* Is the digest computed?          */
-   int Corrupted;              /* Is the message digest corruped?  */
-};
 
 
-static void SHA1Reset(struct sha1_context *context)
+static void SHA1Reset(struct sha1_state *context)
 {
    if (!context)
       return;
 
-   context->Length_Low             = 0;
-   context->Length_High            = 0;
-   context->Message_Block_Index    = 0;
+   context->length_low             = 0;
+   context->length_high            = 0;
+   context->block_index    = 0;
 
-   context->Message_Digest[0]      = 0x67452301;
-   context->Message_Digest[1]      = 0xEFCDAB89;
-   context->Message_Digest[2]      = 0x98BADCFE;
-   context->Message_Digest[3]      = 0x10325476;
-   context->Message_Digest[4]      = 0xC3D2E1F0;
+   context->digest[0]      = 0x67452301;
+   context->digest[1]      = 0xEFCDAB89;
+   context->digest[2]      = 0x98BADCFE;
+   context->digest[3]      = 0x10325476;
+   context->digest[4]      = 0xC3D2E1F0;
 
-   context->Computed   = 0;
-   context->Corrupted  = 0;
+   context->computed   = 0;
+   context->corrupted  = 0;
 }
 
 #if defined(SHA_HAVE_ARM_PATH)
@@ -580,7 +597,7 @@ static void sha1_block_hw(uint32_t *state, const uint8_t *in)
 }
 #endif
 
-static void SHA1ProcessMessageBlockScalar(struct sha1_context *context)
+static void SHA1ProcessMessageBlockScalar(struct sha1_state *context)
 {
    const unsigned K[] =            /* Constants defined in SHA-1   */
    {
@@ -597,20 +614,20 @@ static void SHA1ProcessMessageBlockScalar(struct sha1_context *context)
    /* Initialize the first 16 words in the array W */
    for (t = 0; t < 16; t++)
    {
-      W[t] = ((unsigned) context->Message_Block[t * 4]) << 24;
-      W[t] |= ((unsigned) context->Message_Block[t * 4 + 1]) << 16;
-      W[t] |= ((unsigned) context->Message_Block[t * 4 + 2]) << 8;
-      W[t] |= ((unsigned) context->Message_Block[t * 4 + 3]);
+      W[t] = ((unsigned) context->block[t * 4]) << 24;
+      W[t] |= ((unsigned) context->block[t * 4 + 1]) << 16;
+      W[t] |= ((unsigned) context->block[t * 4 + 2]) << 8;
+      W[t] |= ((unsigned) context->block[t * 4 + 3]);
    }
 
    for (t = 16; t < 80; t++)
       W[t] = SHA1CircularShift(1,W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16]);
 
-   A = context->Message_Digest[0];
-   B = context->Message_Digest[1];
-   C = context->Message_Digest[2];
-   D = context->Message_Digest[3];
-   E = context->Message_Digest[4];
+   A = context->digest[0];
+   B = context->digest[1];
+   C = context->digest[2];
+   D = context->digest[3];
+   E = context->digest[4];
 
    for (t = 0; t < 20; t++)
    {
@@ -658,35 +675,35 @@ static void SHA1ProcessMessageBlockScalar(struct sha1_context *context)
       A = temp;
    }
 
-   context->Message_Digest[0] =
-      (context->Message_Digest[0] + A) & 0xFFFFFFFF;
-   context->Message_Digest[1] =
-      (context->Message_Digest[1] + B) & 0xFFFFFFFF;
-   context->Message_Digest[2] =
-      (context->Message_Digest[2] + C) & 0xFFFFFFFF;
-   context->Message_Digest[3] =
-      (context->Message_Digest[3] + D) & 0xFFFFFFFF;
-   context->Message_Digest[4] =
-      (context->Message_Digest[4] + E) & 0xFFFFFFFF;
+   context->digest[0] =
+      (context->digest[0] + A) & 0xFFFFFFFF;
+   context->digest[1] =
+      (context->digest[1] + B) & 0xFFFFFFFF;
+   context->digest[2] =
+      (context->digest[2] + C) & 0xFFFFFFFF;
+   context->digest[3] =
+      (context->digest[3] + D) & 0xFFFFFFFF;
+   context->digest[4] =
+      (context->digest[4] + E) & 0xFFFFFFFF;
 }
 
-static void SHA1ProcessMessageBlock(struct sha1_context *context)
+static void SHA1ProcessMessageBlock(struct sha1_state *context)
 {
 #if defined(SHA_ARM_DISPATCH) || defined(SHA_X86_DISPATCH)
    if (cpu_features_get() & RETRO_SIMD_SHA1)
-      sha1_block_hw(context->Message_Digest, context->Message_Block);
+      sha1_block_hw(context->digest, context->block);
    else
       SHA1ProcessMessageBlockScalar(context);
 #elif defined(SHA_HAVE_ARM_PATH) || defined(SHA_HAVE_X86_PATH)
-   sha1_block_hw(context->Message_Digest, context->Message_Block);
+   sha1_block_hw(context->digest, context->block);
 #else
    SHA1ProcessMessageBlockScalar(context);
 #endif
 
-   context->Message_Block_Index = 0;
+   context->block_index = 0;
 }
 
-static void SHA1PadMessage(struct sha1_context *context)
+static void SHA1PadMessage(struct sha1_state *context)
 {
    if (!context)
       return;
@@ -697,62 +714,62 @@ static void SHA1PadMessage(struct sha1_context *context)
     *  block, process it, and then continue padding into a second
     *  block.
     */
-   context->Message_Block[context->Message_Block_Index++] = 0x80;
+   context->block[context->block_index++] = 0x80;
 
    /* The index has already advanced past the 0x80, so the block is out
     * of room only above 56: at exactly 56 the eight length octets fill
     * 56..63 and no second block is needed. */
-   if (context->Message_Block_Index > 56)
+   if (context->block_index > 56)
    {
-      while (context->Message_Block_Index < 64)
-         context->Message_Block[context->Message_Block_Index++] = 0;
+      while (context->block_index < 64)
+         context->block[context->block_index++] = 0;
 
       SHA1ProcessMessageBlock(context);
    }
 
-   while (context->Message_Block_Index < 56)
-      context->Message_Block[context->Message_Block_Index++] = 0;
+   while (context->block_index < 56)
+      context->block[context->block_index++] = 0;
 
    /*  Store the message length as the last 8 octets */
-   context->Message_Block[56] = (context->Length_High >> 24) & 0xFF;
-   context->Message_Block[57] = (context->Length_High >> 16) & 0xFF;
-   context->Message_Block[58] = (context->Length_High >> 8) & 0xFF;
-   context->Message_Block[59] = (context->Length_High) & 0xFF;
-   context->Message_Block[60] = (context->Length_Low >> 24) & 0xFF;
-   context->Message_Block[61] = (context->Length_Low >> 16) & 0xFF;
-   context->Message_Block[62] = (context->Length_Low >> 8) & 0xFF;
-   context->Message_Block[63] = (context->Length_Low) & 0xFF;
+   context->block[56] = (context->length_high >> 24) & 0xFF;
+   context->block[57] = (context->length_high >> 16) & 0xFF;
+   context->block[58] = (context->length_high >> 8) & 0xFF;
+   context->block[59] = (context->length_high) & 0xFF;
+   context->block[60] = (context->length_low >> 24) & 0xFF;
+   context->block[61] = (context->length_low >> 16) & 0xFF;
+   context->block[62] = (context->length_low >> 8) & 0xFF;
+   context->block[63] = (context->length_low) & 0xFF;
 
    SHA1ProcessMessageBlock(context);
 }
 
-static int SHA1Result(struct sha1_context *context, unsigned char digest[20])
+static int SHA1Result(struct sha1_state *context, unsigned char digest[20])
 {
    unsigned i;
 
-   if (context->Corrupted)
+   if (context->corrupted)
       return 0;
 
-   if (!context->Computed)
+   if (!context->computed)
    {
       SHA1PadMessage(context);
-      context->Computed = 1;
+      context->computed = 1;
    }
 
    if (digest)
    {
-      /* Convert Message_Digest to byte array */
+      /* Convert digest to byte array */
       for (i = 0; i < 20; i++)
       {
          digest[i] = (unsigned char)
-            ((context->Message_Digest[i>>2] >> 8 * (3 - (i & 0x03))) & 0xFF);
+            ((context->digest[i>>2] >> 8 * (3 - (i & 0x03))) & 0xFF);
       }
    }
 
    return 1;
 }
 
-static void SHA1Input(struct sha1_context *context,
+static void SHA1Input(struct sha1_state *context,
       const unsigned char *message_array,
       unsigned len)
 {
@@ -762,49 +779,80 @@ static void SHA1Input(struct sha1_context *context,
    if (!len)
       return;
 
-   if (context->Computed || context->Corrupted)
+   if (context->computed || context->corrupted)
    {
-      context->Corrupted = 1;
+      context->corrupted = 1;
       return;
    }
 
    /* The bit count is carried as two 32-bit halves, so advance it once
     * for the whole call. Wrapping past 2^64 bits is the length limit
     * the algorithm is defined up to. */
-   total = ((uint64_t)context->Length_High << 32) | context->Length_Low;
+   total = ((uint64_t)context->length_high << 32) | context->length_low;
    next  = total + ((uint64_t)len << 3);
 
    if (next < total)
    {
-      context->Corrupted = 1;
+      context->corrupted = 1;
       return;
    }
 
-   context->Length_High = (uint32_t)(next >> 32);
-   context->Length_Low  = (uint32_t)next;
+   context->length_high = (uint32_t)(next >> 32);
+   context->length_low  = (uint32_t)next;
 
    while (len)
    {
-      unsigned l = 64 - (unsigned)context->Message_Block_Index;
+      unsigned l = 64 - (unsigned)context->block_index;
 
       if (len < l)
          l = len;
 
-      memcpy(context->Message_Block + context->Message_Block_Index,
+      memcpy(context->block + context->block_index,
             message_array, l);
 
       message_array                += l;
-      context->Message_Block_Index += (int)l;
+      context->block_index += (int)l;
       len                          -= l;
 
-      if (context->Message_Block_Index == 64)
+      if (context->block_index == 64)
          SHA1ProcessMessageBlock(context);
    }
 }
 
+void sha1_stream_init(struct sha1_state *p)
+{
+   SHA1Reset(p);
+}
+
+void sha1_stream_update(struct sha1_state *p,
+      const uint8_t *data, size_t len)
+{
+   /* SHA1Input() counts in a 32-bit pair, so hand it the data in
+    * pieces small enough that one call cannot overflow the count. */
+   while (len)
+   {
+      unsigned l = (len > 0x20000000u) ? 0x20000000u : (unsigned)len;
+      SHA1Input(p, data, l);
+      data += l;
+      len  -= l;
+   }
+}
+
+bool sha1_stream_final(struct sha1_state *p, uint8_t *digest)
+{
+   return SHA1Result(p, digest) ? true : false;
+}
+
+void sha1_stream_block(struct sha1_state *p, const uint8_t *data)
+{
+   memcpy(p->block, data, 64);
+   p->block_index = 64;
+   SHA1ProcessMessageBlock(p);
+}
+
 void SHA1Digest(const uint8_t* data, size_t len, uint8_t digest[20])
 {
-   struct sha1_context sha;
+   struct sha1_state sha;
 
    SHA1Reset(&sha);
    SHA1Input(&sha, data, len);
@@ -815,7 +863,7 @@ void SHA1Digest(const uint8_t* data, size_t len, uint8_t digest[20])
 
 int sha1_calculate(const char *path, char *result)
 {
-   struct sha1_context sha;
+   struct sha1_state sha;
    const uint8_t *map = NULL;
    int64_t        map_len = 0;
    unsigned char *buff = NULL;
@@ -864,10 +912,10 @@ int sha1_calculate(const char *path, char *result)
       goto error;
 
    sprintf(result, "%08X%08X%08X%08X%08X",
-         sha.Message_Digest[0],
-         sha.Message_Digest[1],
-         sha.Message_Digest[2],
-         sha.Message_Digest[3], sha.Message_Digest[4]);
+         sha.digest[0],
+         sha.digest[1],
+         sha.digest[2],
+         sha.digest[3], sha.digest[4]);
 
    filestream_close(fd);
    return 0;
