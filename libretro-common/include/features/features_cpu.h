@@ -106,6 +106,25 @@ unsigned cpu_features_get_core_amount(void);
 unsigned cpu_features_get_core_amount_physical(void);
 
 /**
+ * Order the processors best-first, for a caller pinning a thread that
+ * wants the strongest processor still free.
+ *
+ * Entries are operating system processor identifiers, the numbering an
+ * affinity mask is built from, ordered by descending core performance
+ * and with an SMT sibling placed after the processor it shares a core
+ * with. Where the platform publishes no topology the order is simply
+ * ascending, which names every processor exactly once and so remains
+ * usable, just unranked.
+ *
+ * @param s   Receives the identifiers.
+ * @param len Number of entries @s has room for.
+ * @return The number of entries written, which is 0 where no
+ * identifiers could be established and the caller should leave
+ * affinity alone.
+ */
+size_t cpu_features_get_processor_order(unsigned *s, size_t len);
+
+/**
  * Returns the name of the CPU model.
  *
  * @param[out] name Pointer to a buffer to store the name.

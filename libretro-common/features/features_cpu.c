@@ -600,6 +600,130 @@ static unsigned linux_core_amount_physical(unsigned logical)
 }
 #endif
 
+#if defined(__linux__)
+/* First unsigned in a one-line sysfs file, or @fallback where the file
+ * is missing or unreadable. */
+static unsigned sysfs_read_uint(const char *path, unsigned fallback)
+{
+   char     line[64];
+   unsigned val;
+   FILE    *fp = fopen(path, "r");
+
+   if (!fp)
+      return fallback;
+
+   line[0] = '\0';
+   if (!fgets(line, sizeof(line), fp))
+   {
+      fclose(fp);
+      return fallback;
+   }
+   fclose(fp);
+
+   if (sscanf(line, "%u", &val) != 1)
+      return fallback;
+   return val;
+}
+#endif
+
+struct cpu_proc_rank
+{
+   unsigned freq; /* kHz, higher is a stronger core */
+   unsigned id;   /* OS processor identifier */
+   unsigned smt;  /* 0 for the first processor on its core, else 1 */
+};
+
+/* Strongest core first, a core ahead of its own SMT siblings, and the
+ * identifier as the tie-break so the result does not depend on the
+ * order the entries were gathered in. */
+static int cpu_proc_rank_cmp(const void *a, const void *b)
+{
+   const struct cpu_proc_rank *l = (const struct cpu_proc_rank *)a;
+   const struct cpu_proc_rank *r = (const struct cpu_proc_rank *)b;
+
+   if (l->freq != r->freq)
+      return (l->freq > r->freq) ? -1 : 1;
+   if (l->smt  != r->smt)
+      return (l->smt  < r->smt)  ? -1 : 1;
+   if (l->id   != r->id)
+      return (l->id   < r->id)   ? -1 : 1;
+   return 0;
+}
+
+size_t cpu_features_get_processor_order(unsigned *s, size_t len)
+{
+   size_t n = 0;
+
+   if (!s || !len)
+      return 0;
+
+#if defined(__linux__)
+   {
+      struct cpu_proc_rank *rank;
+      char     path[96];
+      unsigned i;
+      /* Every processor is ranked before any is handed back: gathering
+       * only the first @len of them would sort a set chosen by
+       * identifier and hand back the weakest cores on a layout that
+       * numbers the little cluster first. */
+      size_t   cap = (size_t)cpu_features_get_core_amount();
+
+      if (cap < 1)
+         cap = 1;
+      if (cap > 1024)
+         cap = 1024;
+
+      if (!(rank = (struct cpu_proc_rank *)
+               malloc(cap * sizeof(struct cpu_proc_rank))))
+         return 0;
+
+      for (i = 0; i < 1024 && n < cap; i++)
+      {
+         unsigned first;
+
+         snprintf(path, sizeof(path),
+               "/sys/devices/system/cpu/cpu%u/topology/thread_siblings_list", i);
+         /* A processor with no sibling list is one the kernel is not
+          * publishing, rather than one that shares no core. */
+         first = sysfs_read_uint(path, (unsigned)-1);
+         if (first == (unsigned)-1)
+            continue;
+
+         snprintf(path, sizeof(path),
+               "/sys/devices/system/cpu/cpu%u/cpufreq/cpuinfo_max_freq", i);
+
+         rank[n].freq = sysfs_read_uint(path, 0);
+         rank[n].id   = i;
+         rank[n].smt  = (i == first) ? 0 : 1;
+         n++;
+      }
+
+      if (n)
+      {
+         qsort(rank, n, sizeof(struct cpu_proc_rank), cpu_proc_rank_cmp);
+         if (n > len)
+            n = len;
+         for (i = 0; i < (unsigned)n; i++)
+            s[i] = rank[i].id;
+      }
+
+      free(rank);
+
+      if (n)
+         return n;
+   }
+#endif
+
+   /* No topology to rank by, so name each processor once in order. */
+   {
+      unsigned amount = cpu_features_get_core_amount();
+      for (n = 0; n < len && n < (size_t)amount; n++)
+         s[n] = (unsigned)n;
+   }
+
+   return n;
+}
+
 unsigned cpu_features_get_core_amount_physical(void)
 {
    unsigned logical = cpu_features_get_core_amount();
