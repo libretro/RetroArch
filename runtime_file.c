@@ -670,6 +670,7 @@ static size_t runtime_last_played_human(runtime_log_t *runtime_log,
       char *s, size_t len)
 {
    size_t _len;
+   int _ret;
    struct tm time_info;
    time_t last_played;
    time_t current;
@@ -704,8 +705,11 @@ static size_t runtime_last_played_human(runtime_log_t *runtime_log,
    for (i = 0; i < ARRAY_SIZE(periods) - 1 && delta >= periods[i]; i++)
       delta /= periods[i];
 
-   /* Generate string */
-   _len  = snprintf(s, len, "%u ", (unsigned)delta);
+   /* Generate string. snprintf() reports the length it would have
+    * written, so take the length that landed. */
+   _ret  = snprintf(s, len, "%u ", (unsigned)delta);
+   _len  = (_ret < 0 || (size_t)_ret >= len) ? (len ? len - 1 : 0)
+                                            : (size_t)_ret;
    _len += strlcpy(s + _len,
          msg_hash_to_str((enum msg_hash_enums)units[i][(delta == 1) ? 0 : 1]),
          len - _len);
@@ -729,8 +733,14 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
       enum playlist_sublabel_last_played_date_separator_type date_separator)
 {
    const char *format_str = "";
+   /* strlcpy() reports the length of its source, so a translation of
+    * the label longer than @s would carry _len past len and leave
+    * every len - _len below wrapping to a very large size_t. */
    size_t _len            = strlcpy(s, msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED), len);
+
+   if (_len >= len)
+      _len = len ? len - 1 : 0;
 
    if (runtime_log)
    {
@@ -1124,6 +1134,10 @@ void runtime_log_get_last_played_str(runtime_log_t *runtime_log,
                   runtime_log->last_played.day, runtime_log->last_played.month);
             return;
          case PLAYLIST_LAST_PLAYED_STYLE_AGO:
+            /* Two octets are held back below, so there has to be room
+             * for the separator and for them. */
+            if (_len + 3 >= len)
+               return;
             s[  _len] = ' ';
             s[++_len] = '\0';
             if ((runtime_last_played_human(runtime_log, s + _len, len - _len - 2)) == 0)
