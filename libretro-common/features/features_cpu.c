@@ -539,6 +539,91 @@ static void cpulist_read_from(CpuList* list, const char* filename)
 
 #endif
 
+#if defined(__linux__)
+/* Number of distinct SMT sibling groups under
+ * /sys/devices/system/cpu, which is one per physical core. The list a
+ * sibling file holds names every processor sharing that core, so the
+ * lowest id in it identifies the group and counting distinct ones
+ * counts cores. */
+static unsigned linux_core_amount_physical(unsigned logical)
+{
+   char     path[64];
+   char     line[64];
+   unsigned seen[128];
+   unsigned n_seen = 0;
+   unsigned found  = 0;
+   unsigned i;
+
+   /* One entry per core, so a machine wider than the table is left to
+    * the logical count rather than answered wrongly. */
+   if (logical > (unsigned)(sizeof(seen) / sizeof(seen[0])))
+      return logical;
+
+   for (i = 0; i < 256 && found < logical; i++)
+   {
+      FILE    *fp;
+      unsigned first;
+      unsigned j;
+
+      snprintf(path, sizeof(path),
+            "/sys/devices/system/cpu/cpu%u/topology/thread_siblings_list", i);
+
+      if (!(fp = fopen(path, "r")))
+         continue;
+
+      line[0] = '\0';
+      if (!fgets(line, sizeof(line), fp))
+      {
+         fclose(fp);
+         continue;
+      }
+      fclose(fp);
+
+      found++;
+
+      if (sscanf(line, "%u", &first) != 1)
+         continue;
+
+      for (j = 0; j < n_seen; j++)
+         if (seen[j] == first)
+            break;
+
+      if (j == n_seen && n_seen < (unsigned)(sizeof(seen) / sizeof(seen[0])))
+         seen[n_seen++] = first;
+   }
+
+   /* Nothing readable, so the kernel is not publishing topology here. */
+   if (n_seen == 0)
+      return logical;
+
+   return n_seen;
+}
+#endif
+
+unsigned cpu_features_get_core_amount_physical(void)
+{
+   unsigned logical = cpu_features_get_core_amount();
+
+#if defined(__APPLE__)
+   {
+      /* Darwin publishes both counts, so the physical one is a read
+       * rather than a derivation. */
+      int    val  = 0;
+      size_t _len = sizeof(val);
+      if (   sysctlbyname("hw.physicalcpu", &val, &_len, NULL, 0) == 0
+          && val > 0)
+         return (unsigned)val;
+   }
+#elif defined(__linux__)
+   return linux_core_amount_physical(logical);
+#endif
+
+   /* Every other target either has no SMT to discount or publishes no
+    * way to tell, and the thread count is the safe answer in both
+    * cases. */
+   return logical;
+}
+
 unsigned cpu_features_get_core_amount(void)
 {
 #if defined(_WIN32) && !defined(_XBOX)

@@ -87,10 +87,23 @@ void x86_cpuid(uint32_t func, int32_t flags[4]);
 #endif
 
 /**
- * @return The number of CPU cores available,
- * or 1 if the number of cores could not be determined.
+ * @return The number of logical processors available -- hardware
+ * threads rather than physical cores, so an SMT part reports both of
+ * each core -- or 1 if it could not be determined.
+ *
+ * @see cpu_features_get_core_amount_physical
  */
 unsigned cpu_features_get_core_amount(void);
+
+/**
+ * The count to size work by where a thread wants a core to itself,
+ * rather than the thread count cpu_features_get_core_amount() returns.
+ *
+ * @return The number of physical cores available, or the value
+ * cpu_features_get_core_amount() gives where the distinction cannot be
+ * drawn, which is never larger and so stays a safe answer.
+ */
+unsigned cpu_features_get_core_amount_physical(void);
 
 /**
  * Returns the name of the CPU model.
