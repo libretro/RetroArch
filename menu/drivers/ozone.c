@@ -4882,7 +4882,13 @@ static void ozone_change_tab(ozone_handle_t *ozone,
    menu_list_t *menu_list     = menu_st->entries.list;
    file_list_t *menu_stack    = MENU_LIST_GET(menu_list, 0);
    file_list_t *selection_buf = MENU_LIST_GET_SELECTION(menu_list, 0);
-   size_t stack_size          = menu_stack->size;
+   size_t stack_size          = menu_stack ? menu_stack->size : 0;
+
+   /* The tab label lives on the entry the stack is currently sitting
+    * on. With no such entry, stack_size - 1 indexes SIZE_MAX and the
+    * free below releases whatever that read returns. */
+   if (stack_size < 1)
+      return;
 
    if (menu_stack->list[stack_size - 1].label)
       free(menu_stack->list[stack_size - 1].label);

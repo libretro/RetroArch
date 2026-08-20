@@ -7027,16 +7027,22 @@ static enum menu_action xmb_parse_menu_entry_action(
             else if (!config_get_ptr()->bools.menu_xmb_show_horizontal_list)
             {
                /* Reset horizontal list to Main Menu */
-               file_list_t *menu_stack    = MENU_LIST_GET(menu_list, 0);
+               file_list_t *menu_stack    = menu_list ? MENU_LIST_GET(menu_list, 0) : NULL;
                file_list_t *selection_buf = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
-               size_t stack_size          = menu_stack->size;
+               size_t stack_size          = menu_stack ? menu_stack->size : 0;
 
-               if (menu_stack->list[stack_size - 1].label)
-                  free(menu_stack->list[stack_size - 1].label);
-               menu_stack->list[stack_size - 1].label = NULL;
+               /* Relabelling needs an entry to relabel: with an empty
+                * stack, stack_size - 1 indexes SIZE_MAX and the free
+                * releases whatever that read returns. */
+               if (stack_size > 0)
+               {
+                  if (menu_stack->list[stack_size - 1].label)
+                     free(menu_stack->list[stack_size - 1].label);
+                  menu_stack->list[stack_size - 1].label = NULL;
 
-               menu_stack->list[stack_size - 1].label = strdup(MENU_ENUM_LABEL_MAIN_MENU_STR);
-               menu_stack->list[stack_size - 1].type  = MENU_SETTINGS;
+                  menu_stack->list[stack_size - 1].label = strdup(MENU_ENUM_LABEL_MAIN_MENU_STR);
+                  menu_stack->list[stack_size - 1].type  = MENU_SETTINGS;
+               }
 
                menu_driver_deferred_push_content_list(selection_buf);
             }
@@ -10829,7 +10835,14 @@ static void xmb_list_cache(void *data, enum menu_list_type type,
                break;
          }
 
-         stack_size = menu_stack->size;
+         stack_size = menu_stack ? menu_stack->size : 0;
+
+         /* Relabelling needs an entry to relabel: with an empty stack,
+          * stack_size - 1 indexes SIZE_MAX and the free below releases
+          * whatever that read returns. Nothing else in this case
+          * depends on the relabel, so leave the switch. */
+         if (stack_size < 1)
+            break;
 
          if (menu_stack->list[stack_size - 1].label)
             free(menu_stack->list[stack_size - 1].label);
