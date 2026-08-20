@@ -882,16 +882,26 @@ static unsigned android_env_derive_version_code(JNIEnv *env, jobject activity)
    activity_class      = (*env)->GetObjectClass(env, activity);
    get_package_manager = (*env)->GetMethodID(env, activity_class,
          "getPackageManager", "()Landroid/content/pm/PackageManager;");
+   if (android_env_exception(env, "getPackageManager lookup"))
+   {
+      (*env)->DeleteLocalRef(env, activity_class);
+      return 0;
+   }
    get_package_name    = (*env)->GetMethodID(env, activity_class,
          "getPackageName", "()Ljava/lang/String;");
    (*env)->DeleteLocalRef(env, activity_class);
-   if (android_env_exception(env, "PackageManager lookup"))
+   if (android_env_exception(env, "getPackageName lookup"))
       return 0;
 
    pm  = (*env)->CallObjectMethod(env, activity, get_package_manager);
-   pkg = (jstring)(*env)->CallObjectMethod(env, activity, get_package_name);
-   if (android_env_exception(env, "getPackageManager") || !pm || !pkg)
+   if (android_env_exception(env, "getPackageManager") || !pm)
       return 0;
+   pkg = (jstring)(*env)->CallObjectMethod(env, activity, get_package_name);
+   if (android_env_exception(env, "getPackageName") || !pkg)
+   {
+      (*env)->DeleteLocalRef(env, pm);
+      return 0;
+   }
 
    pm_class         = (*env)->GetObjectClass(env, pm);
    get_package_info = (*env)->GetMethodID(env, pm_class,
@@ -2509,18 +2519,18 @@ static void frontend_unix_get_env(int *argc,
     * behaves like one through the Java launcher.  Extras always win:
     * every derivation below runs only for a value still unset. */
    if (!*app_dir || !*apk_dir)
-      android_env_derive_application_info(env, obj);
+      android_env_derive_application_info(env, android_app->activity->clazz);
    if (!*internal_storage_path || !*internal_storage_app_path)
-      android_env_derive_storage(env, obj);
+      android_env_derive_storage(env, android_app->activity->clazz);
    if (!*android_app->current_ime)
-      android_env_derive_ime(env, obj,
+      android_env_derive_ime(env, android_app->activity->clazz,
             android_app->current_ime, sizeof(android_app->current_ime));
    if (   g_defaults.settings_out_sample_rate  <= 0
        || g_defaults.settings_out_block_frames <= 0)
-      android_env_derive_audio(env, obj);
+      android_env_derive_audio(env, android_app->activity->clazz);
    if (args && !args->config_path)
    {
-      android_env_derive_config_path(env, obj);
+      android_env_derive_config_path(env, android_app->activity->clazz);
       if (*android_config_path)
       {
          __android_log_print(ANDROID_LOG_INFO,
@@ -2696,7 +2706,8 @@ static void frontend_unix_get_env(int *argc,
          (*env)->ReleaseStringUTFChars(env, jstr, argv);
       }
       if (!version)
-         version = android_env_derive_version_code(env, obj);
+         version = android_env_derive_version_code(env,
+               android_app->activity->clazz);
 
       if (version && settings && *apk_dir && *app_dir)
       {
