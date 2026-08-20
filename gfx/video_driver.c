@@ -3610,10 +3610,23 @@ void video_driver_cached_frame_publish(
 {
    cached_frame_lock_acquire();
    if (data)
-      frame_cache_data = data;
-   frame_cache_width   = width;
-   frame_cache_height  = height;
-   frame_cache_pitch   = pitch;
+      frame_cache_data    = data;
+   else if (   width  != frame_cache_width
+            || height != frame_cache_height
+            || pitch  != frame_cache_pitch)
+      /* A duped frame carries no pixels, so the pointer retained above
+       * still describes the buffer the *previous* frame arrived in.
+       * Publishing new dimensions alongside it would leave a tuple that
+       * describes more pixels than that buffer holds, and a later replay
+       * reads height * pitch bytes straight off the end of it. Drop the
+       * pointer instead: the dimensions stay live for the viewport and
+       * aspect-ratio consumers, and a replay with no data re-presents
+       * the frame the driver already has. */
+      frame_cache_data    = NULL;
+
+   frame_cache_width      = width;
+   frame_cache_height     = height;
+   frame_cache_pitch      = pitch;
    cached_frame_lock_release();
 }
 
