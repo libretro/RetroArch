@@ -388,6 +388,11 @@ void sha256_hash(char *s, const uint8_t *in, size_t len)
 
 /* SHA-1 implementation. */
 
+/* Block size for the copying branch of sha1_calculate(). Heap rather
+ * than stack, so it is bounded by what a read is worth rather than by
+ * the frame budget. */
+#define SHA1_FILE_BLOCK_SIZE (64 * 1024)
+
 /*
  *  sha1.c
  *
@@ -834,13 +839,17 @@ int sha1_calculate(const char *path, char *result)
        * rather than a local: as unsigned char buff[4096] this was a
        * 4304-byte frame, over half of the 8 KiB a GEKKO thread gets
        * (STACKSIZE in rthreads/gx_pthread.h), and hashing a whole
-       * file dwarfs one allocation either way. */
-      if (!(buff = (unsigned char*)malloc(4096)))
+       * file dwarfs one allocation either way.
+       *
+       * A block far larger than a page keeps the number of reads down,
+       * which is what this path costs on a VFS where each one is a
+       * round trip rather than a memcpy out of the page cache. */
+      if (!(buff = (unsigned char*)malloc(SHA1_FILE_BLOCK_SIZE)))
          goto error;
 
       do
       {
-         rv = (int)filestream_read(fd, buff, 4096);
+         rv = (int)filestream_read(fd, buff, SHA1_FILE_BLOCK_SIZE);
          if (rv < 0)
             goto error;
 
