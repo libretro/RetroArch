@@ -23,7 +23,8 @@ import java.lang.reflect.Method;
 
 public final class RetroActivityFuture extends RetroActivityCamera {
 
-  // Tracks activity lifecycle state for MainMenuActivity resume detection
+  // Tracks whether the native activity is already running, so a
+  // relaunch reorders it to the front instead of restarting it.
   public static volatile boolean isRunning = false;
 
   // If set to true then RetroArch will completely exit when it loses focus
