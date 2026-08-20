@@ -81,6 +81,21 @@ sthread_t *sthread_create(void (*thread_func)(void*), void *userdata);
 sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userdata, int thread_priority);
 
 /**
+ * Labels the calling thread for debuggers, crash dumps and system
+ * thread listings.
+ *
+ * Threads that are never labelled inherit the name of whichever thread
+ * created them, which on Android leaves several identically-named
+ * entries in an ANR report and an unnamed thread id in a tombstone.
+ *
+ * @param name Label to apply. Keep it under 16 bytes including the
+ * terminator: that is the kernel's limit on Linux and Android, and
+ * longer names are truncated to fit rather than rejected.
+ * @warn Does nothing on platforms with no thread-naming interface.
+ */
+void sthread_setname(const char *name);
+
+/**
  * Detaches the given thread.
  *
  * When a detached thread terminates,

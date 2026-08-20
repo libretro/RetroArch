@@ -690,6 +690,8 @@ static void retro_task_threaded_retrieve(task_retriever_data_t *data)
 
 static void threaded_worker(void *userdata)
 {
+   sthread_setname("ra-task");
+
    for (;;)
    {
       retro_task_t *task  = NULL;

@@ -63,6 +63,11 @@
 #include <sys/time.h>
 #endif
 
+/* sthread_setname */
+#if defined(__linux__) && !defined(USE_WIN32_THREADS) && !defined(GEKKO) && !defined(_3DS)
+#include <sys/prctl.h>
+#endif
+
 #if defined(PS2)
 #include <ps2sdkapi.h>
 #endif
@@ -279,6 +284,39 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
    free(data);
    free(thread);
    return NULL;
+}
+
+void sthread_setname(const char *name)
+{
+#if defined(__linux__) && !defined(USE_WIN32_THREADS) && !defined(GEKKO) && !defined(_3DS)
+   /* prctl rather than pthread_setname_np: it is available on every
+    * bionic and glibc version we build against, and takes the name as
+    * a plain buffer, so the caller cannot be rejected outright for
+    * overrunning the kernel's 16-byte limit. Copied rather than passed
+    * through so an over-long name truncates instead of failing. */
+   char buf[16];
+   size_t i;
+   if (!name)
+      return;
+   for (i = 0; i < sizeof(buf) - 1 && name[i]; i++)
+      buf[i] = name[i];
+   buf[i] = '\0';
+   prctl(PR_SET_NAME, buf, 0, 0, 0);
+#elif defined(__APPLE__)
+   if (!name)
+      return;
+   pthread_setname_np(name);
+#elif defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
+   if (!name)
+      return;
+   pthread_set_name_np(pthread_self(), name);
+#elif defined(__NetBSD__)
+   if (!name)
+      return;
+   pthread_setname_np(pthread_self(), "%s", (void*)name);
+#else
+   (void)name;
+#endif
 }
 
 int sthread_detach(sthread_t *thread)

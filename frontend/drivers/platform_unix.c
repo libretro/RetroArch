@@ -580,6 +580,8 @@ static void android_app_entry(void *data)
    char      *argv[] = {arguments,   NULL};
    int          argc = 1;
 
+   sthread_setname("ra-main");
+
    rarch_main(argc, argv, data);
 }
 

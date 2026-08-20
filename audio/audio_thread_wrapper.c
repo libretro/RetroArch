@@ -59,6 +59,8 @@ static void audio_thread_loop(void *data)
 {
    audio_thread_t *thr = (audio_thread_t*)data;
 
+   sthread_setname("ra-audio");
+
    if (!thr)
       return;
 

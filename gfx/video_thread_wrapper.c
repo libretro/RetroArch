@@ -530,6 +530,8 @@ static void video_thread_loop(void *data)
    bool updated;
    thread_video_t *thr = (thread_video_t*)data;
 
+   sthread_setname("ra-video");
+
    for (;;)
    {
       slock_lock(thr->lock);
