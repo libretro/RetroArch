@@ -420,8 +420,9 @@ void sha256_hash(char *s, const uint8_t *in, size_t len)
 
 /* Block size for the copying branch of sha1_calculate(). Heap rather
  * than stack, so it is bounded by what a read is worth rather than by
- * the frame budget. */
-#define SHA1_FILE_BLOCK_SIZE (64 * 1024)
+ * the frame budget, and the same 256 KB intfstream_crc_step() reads
+ * for the same reason: both walk a whole scanned file. */
+#define SHA1_FILE_BLOCK_SIZE (256 * 1024)
 
 /*
  *  sha1.c
