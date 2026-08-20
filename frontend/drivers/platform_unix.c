@@ -36,7 +36,10 @@
 /* inotify API was added in 2.6.13 */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,13)
 #define HAS_INOTIFY
-#define INOTIFY_BUF_LEN (1024 * (sizeof(struct inotify_event) + 16))
+/* Large enough for one event with a maximal name; the poll returns on
+ * the first matching event and drains the rest on later polls, so the
+ * buffer only bounds how much one read() consumes. */
+#define INOTIFY_READ_BUF_LEN 4096
 
 #include <sys/inotify.h>
 
@@ -167,6 +170,9 @@ typedef struct inotify_data
 {
    int fd;
    int flags;
+   /* Owned read buffer for the per-frame poll, so polling costs one
+    * non-blocking read() and no stack traffic. */
+   char *buf;
    struct int_vector_list *wd_list;
    struct string_list *path_list;
 } inotify_data_t;
@@ -3758,6 +3764,7 @@ static void frontend_unix_watch_path_for_changes(struct string_list *list,
 
          int_vector_list_free(inotify_data->wd_list);
          string_list_free(inotify_data->path_list);
+         free(inotify_data->buf);
          close(inotify_data->fd);
          free(inotify_data);
          free(*change_data);
@@ -3848,6 +3855,15 @@ static void frontend_unix_watch_path_for_changes(struct string_list *list,
       return;
    }
 
+   if (!(inotify_data->buf = (char*)malloc(INOTIFY_READ_BUF_LEN)))
+   {
+      string_list_free(inotify_data->path_list);
+      int_vector_list_free(inotify_data->wd_list);
+      free(inotify_data);
+      close(fd);
+      return;
+   }
+
    if (flags & PATH_CHANGE_TYPE_MODIFIED)
       inotify_mask |= IN_MODIFY;
    if (flags & PATH_CHANGE_TYPE_WRITE_FILE_CLOSED)
@@ -3894,48 +3910,25 @@ static bool frontend_unix_check_for_path_changes(path_change_data_t *change_data
 {
 #ifdef HAS_INOTIFY
    inotify_data_t *inotify_data = (inotify_data_t*)(change_data->data);
-   char buffer[INOTIFY_BUF_LEN] = {0};
-   int length, i = 0;
+   char *buf                    = inotify_data->buf;
+   int length;
 
-   while ((length = read(inotify_data->fd, buffer, INOTIFY_BUF_LEN)) > 0)
+   /* This runs on the frame loop, once per frame while file watching
+    * is enabled.  The idle cost is a single non-blocking read()
+    * returning EAGAIN.  When an event arrives, the first matching one
+    * answers the poll; a re-read of the changed file sees the new
+    * contents through the page cache without any explicit flush, so
+    * there is nothing to do here beyond the match. */
+   while ((length = read(inotify_data->fd, buf, INOTIFY_READ_BUF_LEN)) > 0)
    {
-      i = 0;
+      int i = 0;
 
-      while (i < length && i < (int)sizeof(buffer))
+      while (i < length)
       {
-         struct inotify_event *event = (struct inotify_event *)&buffer[i];
+         struct inotify_event *event = (struct inotify_event *)&buf[i];
 
          if (event->mask & inotify_data->flags)
-         {
-            int j;
-            /* A successful close does not guarantee that the
-             * data has been successfully saved to disk,
-             * as the kernel defers writes. It is
-             * not common for a file system to flush
-             * the buffers when the stream is closed.
-             *
-             * So we manually fsync() here to flush the data
-             * to disk, to make sure that the new data is
-             * immediately available when the file is re-read.
-             */
-            for (j = 0; j < (int)inotify_data->wd_list->count; j++)
-            {
-               if (inotify_data->wd_list->data[j] == event->wd)
-               {
-                  /* found the right file, now sync it */
-                  const char *path = inotify_data->path_list->elems[j].data;
-                  FILE         *fp = (FILE*)fopen_utf8(path, "rb");
-
-                  if (fp)
-                  {
-                     fsync(fileno(fp));
-                     fclose(fp);
-                  }
-               }
-            }
-
             return true;
-         }
 
          i += sizeof(struct inotify_event) + event->len;
       }
