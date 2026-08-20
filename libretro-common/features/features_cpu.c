@@ -755,6 +755,11 @@ static uint64_t cpu_features_probe(void)
       cpu |= RETRO_SIMD_AES;
    _val = 0;
    _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.arm.FEAT_SHA512", &_val, &_len, NULL, 0) == 0
+         && _val)
+      cpu |= RETRO_SIMD_SHA512;
+   _val = 0;
+   _len = sizeof(_val);
    if (sysctlbyname("hw.optional.neon", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_NEON;
    _val = 0;
@@ -885,6 +890,46 @@ static uint64_t cpu_features_probe(void)
       if ((flags7[1] & (1 << 16))
             && ((xgetbv_x86(0) & 0xe6) == 0xe6))
          cpu |= RETRO_SIMD_AVX512;
+
+      /* Leaf 7 EAX carries the highest sub-leaf the CPU implements, so
+       * consult it before asking for sub-leaf 1: an out of range
+       * sub-leaf returns zeroes on current parts but is not documented
+       * to. */
+      if (flags7[0] >= 1)
+      {
+         int32_t flags71[4];
+#if defined(__GNUC__)
+         __asm__ volatile (
+               "mov %%" REG_b ", %%" REG_S "\n"
+               "cpuid\n"
+               "xchg %%" REG_b ", %%" REG_S "\n"
+               : "=a"(flags71[0]), "=S"(flags71[1]), "=c"(flags71[2]), "=d"(flags71[3])
+               : "a"(7), "c"(1));
+#elif defined(_MSC_VER) && INT_MAX == 2147483647
+#if _MSC_VER >= 1600
+         __cpuidex((int*)flags71, 7, 1);
+#else
+         {
+            int *p = (int*)flags71;
+            __asm {
+               mov eax, 7
+               mov ecx, 1
+               cpuid
+               mov esi, p
+               mov [esi],      eax
+               mov [esi + 4],  ebx
+               mov [esi + 8],  ecx
+               mov [esi + 12], edx
+            }
+         }
+#endif
+#else
+         memset(flags71, 0, sizeof(flags71));
+#endif
+
+         if (flags71[0] & (1 << 0))
+            cpu |= RETRO_SIMD_SHA512;
+      }
    }
 
    x86_cpuid(0x80000000, flags);
@@ -925,6 +970,9 @@ static uint64_t cpu_features_probe(void)
    /* aarch64 lists it as "crc32" in the Features: line. */
    if (check_arm_cpu_feature("crc32"))
       cpu |= RETRO_SIMD_CRC32;
+
+   if (check_arm_cpu_feature("sha512"))
+      cpu |= RETRO_SIMD_SHA512;
 
    if (check_arm_cpu_feature("asimd"))
    {

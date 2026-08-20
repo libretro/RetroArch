@@ -9403,6 +9403,8 @@ size_t retroarch_get_capabilities(enum rarch_capabilities type,
                _len += strlcpy(s + _len, "ASIMD ", len - _len);
             if (cpu & RETRO_SIMD_CRC32)
                _len += strlcpy(s + _len, "CRC32 ", len - _len);
+            if (cpu & RETRO_SIMD_SHA512)
+               _len += strlcpy(s + _len, "SHA512 ", len - _len);
             break;
          }
          break;
