@@ -1390,7 +1390,8 @@ static void gfx_widgets_draw_task_msg(
       disp_widget_msg_t *msg,
       void *userdata,
       unsigned video_width,
-      unsigned video_height)
+      unsigned video_height,
+      unsigned alt_slot)
 {
    float msg_queue_background[16]    = COLOR_HEX_TO_FLOAT(BG_COLOR_DEFAULT, 1.0f);
    float msg_queue_bar[16]           = COLOR_HEX_TO_FLOAT(BG_COLOR_MARGIN, 1.0f);
@@ -1459,7 +1460,7 @@ static void gfx_widgets_draw_task_msg(
    if (msg_alternative)
    {
       rect_x      = 0;
-      rect_y      = video_height - rect_height;
+      rect_y      = video_height - (rect_height * (int)(alt_slot + 1));
       rect_margin = 0;
    }
 
@@ -2146,6 +2147,7 @@ void gfx_widgets_frame(void *data)
    /* Draw all messages */
    if (p_dispwidget->current_msgs_size)
    {
+      unsigned alt_slot = 0;
 #ifdef HAVE_THREADS
       slock_lock(p_dispwidget->current_msgs_lock);
 #endif
@@ -2163,7 +2165,8 @@ void gfx_widgets_frame(void *data)
                p_disp,
                dispctx,
                msg, userdata,
-               video_width, video_height);
+               video_width, video_height,
+               msg->alternative_look ? alt_slot++ : 0);
          else
             gfx_widgets_draw_regular_msg(
                p_dispwidget,
