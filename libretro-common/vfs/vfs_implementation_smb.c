@@ -169,11 +169,13 @@ static struct smb2_context *smb_heal_if_dead(struct smb2_context *ctx)
    return smb_heal_context(ctx);
 }
 
-void reset(unsigned num_contexts)
+static void smb_reset(unsigned num_contexts)
 {
-   for (unsigned i = 0; i < num_contexts; i++)
+   unsigned i;
+
+   for (i = 0; i < num_contexts; i++)
    {
-      if(smb_context_pool[i])
+      if (smb_context_pool[i])
          smb2_destroy_context(smb_context_pool[i]);
    }
 
@@ -200,6 +202,9 @@ static bool smb_init(void)
    char share[256];
    char *username = NULL;
    unsigned i;
+   unsigned max_smb_contexts;
+   unsigned timeout;
+   unsigned auth_mode;
    int error_no = 0;
    struct smb_conn_key key;
 
@@ -227,11 +232,11 @@ static bool smb_init(void)
       return false;
    }
 
-   unsigned max_smb_contexts = smb_cfg->num_contexts;
-   unsigned timeout = smb_cfg->timeout;
-   unsigned auth_mode = smb_cfg->auth_mode;
+   max_smb_contexts = smb_cfg->num_contexts;
+   timeout          = smb_cfg->timeout;
+   auth_mode        = smb_cfg->auth_mode;
 
-   // this should always be a positive number 1 or more
+   /* Always one or more */
    if (max_smb_contexts == 0)
       max_smb_contexts = RETRO_SMB2_DEFAULT_MAX_CLIENTS;
 
@@ -250,7 +255,7 @@ static bool smb_init(void)
       if (!smb_context)
       {
          fprintf(stderr, "smb_init: error - no smb_context for %d\n", i);
-         reset(max_context_configured);
+         smb_reset(max_context_configured);
          return false;
       }
 
@@ -317,7 +322,7 @@ static bool smb_init(void)
                if (!smb_context)
                {
                   fprintf(stderr, "smb_init - error - no context\n");
-                  reset(max_context_configured);
+                  smb_reset(max_context_configured);
                   return false;
                }
 
@@ -346,7 +351,6 @@ static bool smb_init(void)
             smb2_set_security_mode(smb_context, RETRO_SMB2_SEC_NTLMSSP);
             smb2_set_authentication(smb_context, RETRO_SMB2_SEC_NTLMSSP);
 
-            // attempt RETRO_SMB2_SEC_NTLMSSP as RETRO_SMB2_SEC_KRB5 did not work
             resolved_auth_mode = RETRO_SMB2_SEC_NTLMSSP;
             auth_mode = resolved_auth_mode;
       }
@@ -356,7 +360,7 @@ static bool smb_init(void)
       {
          fprintf(stderr, "smb_init: error - failed to connect - error_no: %d\n", error_no);
          smb2_destroy_context(smb_context);
-         reset(max_context_configured);
+         smb_reset(max_context_configured);
          return false;
       }
 
@@ -394,7 +398,7 @@ void smb_shutdown(void)
    for (i = 0; i < max_context_configured; i++)
       smb_close_context(i);
 
-   reset(max_context_configured);
+   smb_reset(max_context_configured);
 }
 
 /* Build full SMB path from settings */
