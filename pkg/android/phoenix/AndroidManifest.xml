@@ -40,6 +40,11 @@
         <activity-alias android:name="com.retroarch.browser.mainmenu.MainMenuActivity"
             android:targetActivity="com.retroarch.browser.retroactivity.RetroActivityFuture"
             android:exported="true">
+                <!-- NativeActivity resolves its library from the launched
+                     component's own meta-data; an alias does not inherit
+                     these from its target, so they are repeated here. -->
+                <meta-data android:name="android.app.lib_name" android:value="retroarch-activity" />
+                <meta-data android:name="android.app.func_name" android:value="ANativeActivity_onCreate" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
