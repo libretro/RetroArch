@@ -741,6 +741,9 @@ static void SHA1Input(struct sha1_context *context,
       const unsigned char *message_array,
       unsigned len)
 {
+   uint64_t total;
+   uint64_t next;
+
    if (!len)
       return;
 
@@ -750,27 +753,37 @@ static void SHA1Input(struct sha1_context *context,
       return;
    }
 
-   while (len-- && !context->Corrupted)
-   {
-      context->Message_Block[context->Message_Block_Index++] =
-         (*message_array & 0xFF);
+   /* The bit count is carried as two 32-bit halves, so advance it once
+    * for the whole call. Wrapping past 2^64 bits is the length limit
+    * the algorithm is defined up to. */
+   total = ((uint64_t)context->Length_High << 32) | context->Length_Low;
+   next  = total + ((uint64_t)len << 3);
 
-      context->Length_Low += 8;
-      /* Force it to 32 bits */
-      context->Length_Low &= 0xFFFFFFFF;
-      if (context->Length_Low == 0)
-      {
-         context->Length_High++;
-         /* Force it to 32 bits */
-         context->Length_High &= 0xFFFFFFFF;
-         if (context->Length_High == 0)
-            context->Corrupted = 1; /* Message is too long */
-      }
+   if (next < total)
+   {
+      context->Corrupted = 1;
+      return;
+   }
+
+   context->Length_High = (uint32_t)(next >> 32);
+   context->Length_Low  = (uint32_t)next;
+
+   while (len)
+   {
+      unsigned l = 64 - (unsigned)context->Message_Block_Index;
+
+      if (len < l)
+         l = len;
+
+      memcpy(context->Message_Block + context->Message_Block_Index,
+            message_array, l);
+
+      message_array                += l;
+      context->Message_Block_Index += (int)l;
+      len                          -= l;
 
       if (context->Message_Block_Index == 64)
          SHA1ProcessMessageBlock(context);
-
-      message_array++;
    }
 }
 
