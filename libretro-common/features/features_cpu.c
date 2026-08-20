@@ -750,6 +750,11 @@ static uint64_t cpu_features_probe(void)
       cpu |= RETRO_SIMD_CRC32;
    _val = 0;
    _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.arm.FEAT_AES", &_val, &_len, NULL, 0) == 0
+         && _val)
+      cpu |= RETRO_SIMD_AES;
+   _val = 0;
+   _len = sizeof(_val);
    if (sysctlbyname("hw.optional.neon", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_NEON;
    _val = 0;
@@ -910,6 +915,12 @@ static uint64_t cpu_features_probe(void)
 
    if (check_arm_cpu_feature("vfpv4"))
       cpu |= RETRO_SIMD_VFPV4;
+
+   /* Part of the optional Cryptographic Extension, which an
+    * implementation may leave out or hold in reset, so a 64-bit ARM
+    * CPU does not imply it. */
+   if (check_arm_cpu_feature("aes"))
+      cpu |= RETRO_SIMD_AES;
 
    /* aarch64 lists it as "crc32" in the Features: line. */
    if (check_arm_cpu_feature("crc32"))
