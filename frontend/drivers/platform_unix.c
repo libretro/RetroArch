@@ -33,22 +33,6 @@
 #include "../../deps/feralgamemode/gamemode_client.h"
 #define FERAL_GAMEMODE
 #endif
-/* inotify API was added in 2.6.13 */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,13)
-#define HAS_INOTIFY
-/* Large enough for one event with a maximal name; the poll returns on
- * the first matching event and drains the rest on later polls, so the
- * buffer only bounds how much one read() consumes. */
-#define INOTIFY_READ_BUF_LEN 4096
-
-#include <sys/inotify.h>
-
-#define VECTOR_LIST_TYPE int
-#define VECTOR_LIST_NAME int
-#include "../../libretro-common/lists/vector_list.c"
-#undef VECTOR_LIST_TYPE
-#undef VECTOR_LIST_NAME
-#endif
 #endif
 
 #include <signal.h>
@@ -163,20 +147,6 @@ static volatile sig_atomic_t unix_sighandler_quit;
 
 #ifndef ANDROID
 static enum frontend_fork unix_fork_mode = FRONTEND_FORK_NONE;
-#endif
-
-#ifdef HAS_INOTIFY
-typedef struct inotify_data
-{
-   int fd;
-   int flags;
-   /* Owned read buffer for the per-frame poll, so polling costs one
-    * non-blocking read() and no stack traffic. */
-   char *buf;
-   struct int_vector_list *wd_list;
-   struct string_list *path_list;
-} inotify_data_t;
-
 #endif
 
 int system_property_get(const char *command,
@@ -3739,204 +3709,6 @@ static void frontend_unix_destroy_signal_handler_state(void)
 
 /* To free change_data, call the function again with a NULL 
  * string_list while providing change_data again */
-static void frontend_unix_watch_path_for_changes(struct string_list *list,
-   int flags, path_change_data_t **change_data)
-{
-#ifdef HAS_INOTIFY
-   int major = 0;
-   int minor = 0;
-   int inotify_mask = 0, fd = 0;
-   unsigned i, krel = 0;
-   struct utsname buffer;
-   inotify_data_t *inotify_data;
-
-   if (!list)
-   {
-      if (change_data && *change_data)
-      {
-         inotify_data = (inotify_data_t*)((*change_data)->data);
-
-         if (inotify_data->wd_list->count > 0)
-         {
-            for (i = 0; i < inotify_data->wd_list->count; i++)
-               inotify_rm_watch(inotify_data->fd, inotify_data->wd_list->data[i]);
-         }
-
-         int_vector_list_free(inotify_data->wd_list);
-         string_list_free(inotify_data->path_list);
-         free(inotify_data->buf);
-         close(inotify_data->fd);
-         free(inotify_data);
-         free(*change_data);
-         return;
-      }
-      else
-         return;
-   }
-   else if (list->size == 0)
-      return;
-   else
-      if (!change_data)
-         return;
-
-   if (uname(&buffer) != 0)
-   {
-      RARCH_WARN("[watch_path_for_changes] Failed to get current kernel version.\n");
-      return;
-   }
-
-   {
-      char *ptr = buffer.release;
-      char *end = NULL;
-
-      major = (int)strtoul(ptr, &end, 10);
-      if (end && *end == '.')
-      {
-         ptr   = end + 1;
-         minor = (int)strtoul(ptr, &end, 10);
-      }
-      if (end && *end == '.')
-      {
-         ptr  = end + 1;
-         krel = (unsigned)strtoul(ptr, &end, 10);
-      }
-   }
-
-   if (major < 2 || (major == 2 && (minor < 6 || (minor == 6 && krel < 13))))
-   {
-      RARCH_WARN("[watch_path_for_changes] inotify unsupported on this kernel version (%d.%d.%u).\n", major, minor, krel);
-      return;
-   }
-
-   fd = inotify_init();
-
-   if (fd < 0)
-   {
-      RARCH_WARN("[watch_path_for_changes] Could not initialize inotify.\n");
-      return;
-   }
-
-   if (fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK))
-   {
-      RARCH_WARN("[watch_path_for_changes] Could not set socket to non-blocking.\n");
-      close(fd);
-      return;
-   }
-
-   /* NULL-check every allocation step.  Previously this function
-    * called calloc + int_vector_list_new + string_list_new + the
-    * second calloc with no guards, then dereferenced each result
-    * immediately - an OOM on any of them segfaulted, and a partial
-    * success (e.g. inotify_data allocated but wd_list alloc failed)
-    * leaked the earlier allocations together with the already-
-    * established inotify_add_watch kernel watches.  On any failure
-    * below, unwind what we did manage to set up and return with
-    * *change_data left untouched (callers treat NULL *change_data
-    * as 'no watcher is set up'). */
-   if (!(inotify_data = (inotify_data_t*)calloc(1, sizeof(*inotify_data))))
-   {
-      close(fd);
-      return;
-   }
-   inotify_data->fd        = fd;
-
-   if (!(inotify_data->wd_list = int_vector_list_new()))
-   {
-      free(inotify_data);
-      close(fd);
-      return;
-   }
-
-   if (!(inotify_data->path_list = string_list_new()))
-   {
-      int_vector_list_free(inotify_data->wd_list);
-      free(inotify_data);
-      close(fd);
-      return;
-   }
-
-   if (!(inotify_data->buf = (char*)malloc(INOTIFY_READ_BUF_LEN)))
-   {
-      string_list_free(inotify_data->path_list);
-      int_vector_list_free(inotify_data->wd_list);
-      free(inotify_data);
-      close(fd);
-      return;
-   }
-
-   if (flags & PATH_CHANGE_TYPE_MODIFIED)
-      inotify_mask |= IN_MODIFY;
-   if (flags & PATH_CHANGE_TYPE_WRITE_FILE_CLOSED)
-      inotify_mask |= IN_CLOSE_WRITE;
-   if (flags & PATH_CHANGE_TYPE_FILE_MOVED)
-      inotify_mask |= IN_MOVE_SELF;
-   if (flags & PATH_CHANGE_TYPE_FILE_DELETED)
-      inotify_mask |= IN_DELETE_SELF;
-
-   inotify_data->flags = inotify_mask;
-
-   for (i = 0; i < list->size; i++)
-   {
-      int wd = inotify_add_watch(fd, list->elems[i].data, inotify_mask);
-      union string_list_elem_attr attr = {0};
-
-      if (wd < 0)
-      {
-         RARCH_WARN("[watch_path_for_changes] Could not add watch for %s.\n", list->elems[i].data);
-         continue;
-      }
-
-      int_vector_list_append(inotify_data->wd_list, wd);
-      string_list_append(inotify_data->path_list, list->elems[i].data, attr);
-   }
-
-   if (!(*change_data = (path_change_data_t*)calloc(1, sizeof(path_change_data_t))))
-   {
-      /* Rip down everything we built up: the fd, the kernel watches
-       * it owns, both lists, and inotify_data itself.  Closing fd
-       * auto-removes all its inotify_add_watch entries, so we do not
-       * need to iterate wd_list and inotify_rm_watch by hand. */
-      string_list_free(inotify_data->path_list);
-      int_vector_list_free(inotify_data->wd_list);
-      close(inotify_data->fd);
-      free(inotify_data);
-      return;
-   }
-   (*change_data)->data = inotify_data;
-#endif
-}
-
-static bool frontend_unix_check_for_path_changes(path_change_data_t *change_data)
-{
-#ifdef HAS_INOTIFY
-   inotify_data_t *inotify_data = (inotify_data_t*)(change_data->data);
-   char *buf                    = inotify_data->buf;
-   int length;
-
-   /* This runs on the frame loop, once per frame while file watching
-    * is enabled.  The idle cost is a single non-blocking read()
-    * returning EAGAIN.  When an event arrives, the first matching one
-    * answers the poll; a re-read of the changed file sees the new
-    * contents through the page cache without any explicit flush, so
-    * there is nothing to do here beyond the match. */
-   while ((length = read(inotify_data->fd, buf, INOTIFY_READ_BUF_LEN)) > 0)
-   {
-      int i = 0;
-
-      while (i < length)
-      {
-         struct inotify_event *event = (struct inotify_event *)&buf[i];
-
-         if (event->mask & inotify_data->flags)
-            return true;
-
-         i += sizeof(struct inotify_event) + event->len;
-      }
-   }
-#endif
-   return false;
-}
-
 void android_app_set_window_settings(bool notch_write_over,
       bool auto_mouse_grab)
 {
@@ -4323,8 +4095,6 @@ frontend_ctx_driver_t frontend_ctx_unix = {
 #else
    NULL,                         /* set_screen_brightness */
 #endif
-   frontend_unix_watch_path_for_changes,
-   frontend_unix_check_for_path_changes,
    frontend_unix_set_sustained_performance_mode,
    frontend_unix_get_cpu_model_name,
    frontend_unix_get_user_language,

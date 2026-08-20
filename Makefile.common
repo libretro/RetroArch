@@ -284,6 +284,7 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/lists/file_list.o \
        $(LIBRETRO_COMM_DIR)/lists/dir_list.o \
        $(LIBRETRO_COMM_DIR)/file/retro_dirent.o \
+       $(LIBRETRO_COMM_DIR)/file/file_watch.o \
        $(LIBRETRO_COMM_DIR)/streams/stdin_stream.o \
        $(LIBRETRO_COMM_DIR)/streams/file_stream.o \
        $(LIBRETRO_COMM_DIR)/streams/file_stream_transforms.o \

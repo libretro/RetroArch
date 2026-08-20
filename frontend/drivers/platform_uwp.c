@@ -346,8 +346,6 @@ frontend_ctx_driver_t frontend_ctx_uwp = {
    NULL,                            /* detach_console */
    NULL,                            /* get_lakka_version */
    NULL,                            /* set_screen_brightness */
-   NULL,                            /* watch_path_for_changes */
-   NULL,                            /* check_for_path_changes */
    NULL,                            /* set_sustained_performance_mode */
    uwp_get_cpu_model_name,          /* get_cpu_model_name  */
    uwp_get_language,                /* get_user_language   */

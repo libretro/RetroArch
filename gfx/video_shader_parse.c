@@ -27,6 +27,7 @@
 #include <compat/msvc.h>
 #include <compat/strl.h>
 #include <file/file_path.h>
+#include <file/file_watch.h>
 #include <lrc_hash.h>
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
@@ -90,7 +91,7 @@ struct wildcard_token
 };
 
 /* TODO/FIXME - global state - perhaps move outside this file */
-static path_change_data_t *file_change_data = NULL;
+static file_watch_t *file_change_data       = NULL;
 
 /**
  * fill_pathname_expanded_and_absolute:
@@ -2080,18 +2081,16 @@ static bool video_shader_load_root_config_into_shader(
    if (video_shader_watch_files)
    {
       union string_list_elem_attr attr;
-      int flags                        =
-           PATH_CHANGE_TYPE_MODIFIED
-         | PATH_CHANGE_TYPE_WRITE_FILE_CLOSED
-         | PATH_CHANGE_TYPE_FILE_MOVED
-         | PATH_CHANGE_TYPE_FILE_DELETED;
+      int event_mask                   =
+           FILE_WATCH_EVENT_MODIFIED
+         | FILE_WATCH_EVENT_WRITE_FILE_CLOSED
+         | FILE_WATCH_EVENT_FILE_MOVED
+         | FILE_WATCH_EVENT_FILE_DELETED;
       struct string_list file_list     = {0};
 
       attr.i         = 0;
 
-      if (file_change_data)
-         frontend_driver_watch_path_for_changes(NULL, 0, &file_change_data);
-
+      file_watch_free(file_change_data);
       file_change_data = NULL;
       string_list_initialize(&file_list);
       string_list_append(&file_list, conf->path, attr);
@@ -2110,8 +2109,7 @@ static bool video_shader_load_root_config_into_shader(
          string_list_append(&file_list, shader->pass[i].source.path, attr);
       }
 
-      frontend_driver_watch_path_for_changes(&file_list, flags,
-            &file_change_data);
+      file_change_data = file_watch_new(&file_list, event_mask);
       string_list_deinitialize(&file_list);
    }
    else
@@ -2616,7 +2614,7 @@ bool video_shader_check_for_changes(void)
    if (!file_change_data)
       return false;
 
-   return frontend_driver_check_for_path_changes(file_change_data);
+   return file_watch_poll(file_change_data);
 }
 
 void video_shader_dir_free_shader(

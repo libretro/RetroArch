@@ -116,6 +116,7 @@
 #include "../runloop.h"
 #include "../core.h"
 #include "../frontend/frontend_driver.h"
+#include <file/file_watch.h>
 #include "../ui/ui_companion_driver.h"
 #include "../gfx/video_display_server.h"
 #ifdef HAVE_GFX_WIDGETS
@@ -8137,7 +8138,7 @@ unsigned menu_displaylist_build_list(
             const char *dir_video_shader  = settings->paths.directory_video_shader;
             const char *dir_menu_config   = settings->paths.directory_menu_config;
 
-            if (frontend_driver_can_watch_for_changes())
+            if (file_watch_supported())
             {
                if (menu_entries_append(list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES),

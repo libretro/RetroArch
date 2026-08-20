@@ -62,8 +62,6 @@ static frontend_ctx_driver_t frontend_ctx_null = {
    NULL,                         /* detach_console */
    NULL,                         /* get_lakka_version */
    NULL,                         /* set_screen_brightness */
-   NULL,                         /* watch_path_for_changes */
-   NULL,                         /* check_for_path_changes */
    NULL,                         /* set_sustained_performance_mode */
    NULL,                         /* get_cpu_model_name */
    NULL,                         /* get_user_language */
@@ -539,32 +537,6 @@ void frontend_driver_destroy_signal_handler_state(void)
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
    if (frontend && frontend->destroy_signal_handler_state)
       frontend->destroy_signal_handler_state();
-}
-
-bool frontend_driver_can_watch_for_changes(void)
-{
-   frontend_state_t *frontend_st   = &frontend_driver_st;
-   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   return frontend && frontend->watch_path_for_changes;
-}
-
-void frontend_driver_watch_path_for_changes(
-      struct string_list *list, int flags,
-      path_change_data_t **change_data)
-{
-   frontend_state_t *frontend_st   = &frontend_driver_st;
-   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   if (frontend && frontend->watch_path_for_changes)
-      frontend->watch_path_for_changes(list, flags, change_data);
-}
-
-bool frontend_driver_check_for_path_changes(path_change_data_t *change_data)
-{
-   frontend_state_t *frontend_st   = &frontend_driver_st;
-   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   if (frontend && frontend->check_for_path_changes)
-      return frontend->check_for_path_changes(change_data);
-   return false;
 }
 
 void frontend_driver_set_sustained_performance_mode(bool on)
