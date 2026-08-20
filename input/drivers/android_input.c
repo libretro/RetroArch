@@ -2434,12 +2434,44 @@ static void android_input_poll(void *data)
    }
 }
 
+/* Dismiss queued input from before the input driver exists. ALooper
+ * reports the queue readable until every event has been finished, so
+ * leaving them in place spins the caller and holds the window
+ * unresponsive until the dispatcher raises an ANR. Events are finished
+ * unhandled: there is nowhere to route them yet, and the framework's
+ * fallback handling is preferable to dropping them silently. */
+static void android_input_discard_events(struct android_app *android_app)
+{
+   AInputEvent *event = NULL;
+
+   if (!android_app->inputQueue)
+      return;
+
+   while (AInputQueue_getEvent(android_app->inputQueue, &event) >= 0)
+   {
+      if (AInputQueue_preDispatchEvent(android_app->inputQueue, event))
+         continue;
+      AInputQueue_finishEvent(android_app->inputQueue, event, 0);
+   }
+}
+
 bool android_run_events(void *data)
 {
    struct android_app *android_app = (struct android_app*)g_android;
 
-   if (ALooper_pollOnce(-1, NULL, NULL, NULL) == LOOPER_ID_MAIN)
-      android_input_poll_main_cmd();
+   /* LOOPER_ID_USER needs no arm here: the sensor queue is attached by
+    * the input driver, which does not exist while this pump runs. */
+   switch (ALooper_pollOnce(-1, NULL, NULL, NULL))
+   {
+      case LOOPER_ID_MAIN:
+         android_input_poll_main_cmd();
+         break;
+      case LOOPER_ID_INPUT:
+         android_input_discard_events(android_app);
+         break;
+      default:
+         break;
+   }
 
    /* Check if we are exiting. */
    if (android_app->destroyRequested != 0)
