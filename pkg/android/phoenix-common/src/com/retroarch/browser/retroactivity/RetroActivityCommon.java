@@ -60,6 +60,7 @@ import android.os.Vibrator;
 import android.os.VibrationEffect;
 import android.os.VibratorManager;
 import android.util.Log;
+import android.util.SparseArray;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.widget.EditText;
@@ -118,6 +119,16 @@ public class RetroActivityCommon extends NativeActivity
   /* Guards against permission request storms — one in-flight request per device. */
   private final Map<Integer, Boolean> mUsbPermissionPending =
           new HashMap<Integer, Boolean>();
+
+  /* Resolution cache for findUsbDeviceForInputDevice, including negative
+   * results.  doVibrateUSB runs for every controller on every rumble
+   * amplitude change, and an uncached miss costs an InputDevice binder
+   * lookup plus a full UsbManager.getDeviceList() marshal each time -
+   * per frame during rumble ramps on non-USB controllers.  Entries are
+   * invalidated from the InputDeviceListener callbacks.  Accessed from
+   * both the JNI rumble thread and the main thread. */
+  private final Map<Integer, UsbDevice> mUsbDeviceCache =
+          new HashMap<Integer, UsbDevice>();
 
   /* Clears the in-flight permission flag when the user responds to the system dialog. */
   private BroadcastReceiver mUsbPermissionReceiver = new BroadcastReceiver() {
@@ -241,6 +252,76 @@ public class RetroActivityCommon extends NativeActivity
     startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE), REQUEST_CODE_OPEN_DOCUMENT_TREE);
   }
 
+  /* Shared attributes for every vibrate() call.  Built lazily from
+   * SDK-guarded paths only: AudioAttributes is API 21 and this class
+   * must stay loadable on older devices.  The unsynchronized lazy init
+   * is a benign race - the object is immutable and the reference write
+   * is atomic. */
+  private static AudioAttributes sVibrateAttrs;
+
+  private static AudioAttributes vibrateAttrs()
+  {
+    if (sVibrateAttrs == null)
+      sVibrateAttrs = new AudioAttributes.Builder()
+          .setUsage(AudioAttributes.USAGE_GAME)
+          .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+          .build();
+    return sVibrateAttrs;
+  }
+
+  /* Per-device VibratorManager cache for the API 31+ dual-motor rumble
+   * path.  Rumble amplitude changes arrive per frame during effect
+   * ramps, and resolving InputDevice.getDevice() plus
+   * getVibratorManager() costs a binder round trip each time; caching
+   * them leaves only the vibrate() call itself on the hot path.
+   * Referenced exclusively from SDK_INT >= S guarded code, so the
+   * class is never loaded - and its API 31 member types never
+   * resolved - on older devices. */
+  @TargetApi(Build.VERSION_CODES.S)
+  private static final class JoypadVibrators
+  {
+    private static final SparseArray<JoypadVibrators> sCache =
+            new SparseArray<JoypadVibrators>();
+
+    final VibratorManager vm;
+    final int[] ids;
+
+    private JoypadVibrators(VibratorManager vm, int[] ids)
+    {
+      this.vm = vm;
+      this.ids = ids;
+    }
+
+    static JoypadVibrators get(int deviceId)
+    {
+      synchronized (sCache)
+      {
+        JoypadVibrators entry = sCache.get(deviceId);
+        if (entry != null)
+          return entry;
+
+        InputDevice dev = InputDevice.getDevice(deviceId);
+        if (dev == null)
+          return null;
+
+        VibratorManager vm = dev.getVibratorManager();
+        entry = new JoypadVibrators(vm, vm.getVibratorIds());
+        sCache.put(deviceId, entry);
+        Log.i("RetroActivity", "doVibrateJoypad id=" + deviceId
+            + ": " + entry.ids.length + " vibrator(s)");
+        return entry;
+      }
+    }
+
+    static void remove(int deviceId)
+    {
+      synchronized (sCache)
+      {
+        sCache.remove(deviceId);
+      }
+    }
+  }
+
   public void doVibrate(int id, int effect, int strength, int oneShot)
   {
     Vibrator vibrator = null;
@@ -274,10 +355,7 @@ public class RetroActivityCommon extends NativeActivity
       pattern[1] = 1000;
 
     if (Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-      if (id >= 0)
-        Log.i("RetroActivity", "Vibrate id " + id + ": strength " + strength);
-
-      vibrator.vibrate(VibrationEffect.createWaveform(pattern, strengths, repeat), new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_GAME).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build());
+      vibrator.vibrate(VibrationEffect.createWaveform(pattern, strengths, repeat), vibrateAttrs());
     }else{
       vibrator.vibrate(pattern, repeat);
     }
@@ -334,15 +412,37 @@ public class RetroActivityCommon extends NativeActivity
   @TargetApi(Build.VERSION_CODES.S)
   private boolean doVibrateJoypadApi31(int id, int strongStrength, int weakStrength)
   {
-    InputDevice dev = InputDevice.getDevice(id);
-    if (dev == null)
+    JoypadVibrators cached = JoypadVibrators.get(id);
+    if (cached == null)
       return false;
 
-    VibratorManager vm  = dev.getVibratorManager();
-    int[]  vibratorIds  = vm.getVibratorIds();
+    VibratorManager vm  = cached.vm;
+    int[]  vibratorIds  = cached.ids;
 
     if (vibratorIds.length == 0)
       return false;
+
+    try
+    {
+      return doVibrateJoypadMotors(id, vm, vibratorIds,
+          strongStrength, weakStrength);
+    }
+    catch (RuntimeException e)
+    {
+      /* Disconnect race: the cached manager can go stale between the
+       * removal callback and a rumble call in flight.  Drop the entry
+       * and let the caller take the single-vibrator fallback. */
+      Log.w("RetroActivity", "doVibrateJoypad id=" + id
+          + ": stale vibrator, invalidating", e);
+      JoypadVibrators.remove(id);
+      return false;
+    }
+  }
+
+  @TargetApi(Build.VERSION_CODES.S)
+  private boolean doVibrateJoypadMotors(int id, VibratorManager vm,
+      int[] vibratorIds, int strongStrength, int weakStrength)
+  {
 
     if (vibratorIds.length == 1)
     {
@@ -360,11 +460,7 @@ public class RetroActivityCommon extends NativeActivity
       long[] timings = {0, 1000};
       int[]  amps    = {0, singleStrength};
       singleVibrator.vibrate(
-          VibrationEffect.createWaveform(timings, amps, 0),
-          new AudioAttributes.Builder()
-              .setUsage(AudioAttributes.USAGE_GAME)
-              .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-              .build());
+          VibrationEffect.createWaveform(timings, amps, 0), vibrateAttrs());
       return true;
     }
 
@@ -388,10 +484,6 @@ public class RetroActivityCommon extends NativeActivity
         .combine();
 
     vm.vibrate(combined);
-
-    Log.i("RetroActivity", "doVibrateJoypad id=" + id
-        + " strong=" + strongStrength + " weak=" + weakStrength
-        + " vibrators=" + vibratorIds.length);
     return true;
   }
 
@@ -434,6 +526,26 @@ public class RetroActivityCommon extends NativeActivity
    * via USB or is not a supported HID target.
    */
   private UsbDevice findUsbDeviceForInputDevice(int deviceId)
+  {
+    Integer key = Integer.valueOf(deviceId);
+
+    synchronized (mUsbDeviceCache)
+    {
+      if (mUsbDeviceCache.containsKey(key))
+        return mUsbDeviceCache.get(key);
+    }
+
+    UsbDevice resolved = resolveUsbDeviceForInputDevice(deviceId);
+
+    synchronized (mUsbDeviceCache)
+    {
+      mUsbDeviceCache.put(key, resolved);
+    }
+    return resolved;
+  }
+
+  /** Uncached resolution behind findUsbDeviceForInputDevice. */
+  private UsbDevice resolveUsbDeviceForInputDevice(int deviceId)
   {
     InputDevice inputDevice = InputDevice.getDevice(deviceId);
     if (inputDevice == null)
@@ -555,6 +667,8 @@ public class RetroActivityCommon extends NativeActivity
   @Override
   public void onInputDeviceAdded(int deviceId)
   {
+    invalidateDeviceCaches(deviceId);
+
     UsbDevice usbDevice = findUsbDeviceForInputDevice(deviceId);
     if (usbDevice == null)
       return;
@@ -602,7 +716,11 @@ public class RetroActivityCommon extends NativeActivity
   }
 
   @Override
-  public void onInputDeviceChanged(int deviceId) { }
+  public void onInputDeviceChanged(int deviceId)
+  {
+    /* The vibrator topology can change with the device. */
+    invalidateDeviceCaches(deviceId);
+  }
 
   @Override
   public void onInputDeviceRemoved(int deviceId)
@@ -610,6 +728,18 @@ public class RetroActivityCommon extends NativeActivity
     /* Close any cached USB connection so we don't hold a stale handle. */
     closeUsbConnection(deviceId);
     mUsbPermissionPending.remove(Integer.valueOf(deviceId));
+    invalidateDeviceCaches(deviceId);
+  }
+
+  /** Drops every cached per-device lookup for an input device id. */
+  private void invalidateDeviceCaches(int deviceId)
+  {
+    synchronized (mUsbDeviceCache)
+    {
+      mUsbDeviceCache.remove(Integer.valueOf(deviceId));
+    }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+      JoypadVibrators.remove(deviceId);
   }
 
   /**
