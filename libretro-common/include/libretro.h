@@ -4608,6 +4608,24 @@ struct retro_log_callback
  */
 #define RETRO_SIMD_SHA512   (1 << 26)
 
+/**
+ * Indicates CPU support for hardware SHA-1 acceleration.
+ *
+ * On AArch64 this is FEAT_SHA1; on x86 it is part of SHA-NI, which
+ * covers SHA-1 and SHA-256 in one CPUID bit and therefore always
+ * reports alongside \c RETRO_SIMD_SHA256 there.
+ */
+#define RETRO_SIMD_SHA1     (1 << 27)
+
+/**
+ * Indicates CPU support for hardware SHA-256 acceleration.
+ *
+ * On AArch64 this is FEAT_SHA256; on x86 it is the other half of
+ * SHA-NI. Separate from \c RETRO_SIMD_SHA1 because AArch64 enumerates
+ * the two independently.
+ */
+#define RETRO_SIMD_SHA256   (1 << 28)
+
 /** @} */
 
 /**

@@ -639,9 +639,9 @@ unsigned cpu_features_get_core_amount(void)
 #define VENDOR_INTEL_d  0x49656e69
 
 #if defined(__MACH__) && defined(CPU_X86)
-/* Whole-token search of machdep.cpu.features, which is a space
- * separated list of CPUID leaf-1 feature names. */
-static bool darwin_cpu_feature_present(const char *want)
+/* Whole-token search of one of the machdep.cpu.*features sysctls, each
+ * of which is a space separated list of CPUID feature names. */
+static bool darwin_cpu_feature_present(const char *key, const char *want)
 {
    char   buf[1024];
    size_t len  = sizeof(buf);
@@ -649,7 +649,7 @@ static bool darwin_cpu_feature_present(const char *want)
    const char *p;
 
    buf[0] = '\0';
-   if (sysctlbyname("machdep.cpu.features", buf, &len, NULL, 0) != 0)
+   if (sysctlbyname(key, buf, &len, NULL, 0) != 0)
       return false;
    buf[sizeof(buf) - 1] = '\0';
 
@@ -736,8 +736,11 @@ static uint64_t cpu_features_probe(void)
     * CPUID leaf-1 feature-name list instead.  Matching is on whole
     * space-separated tokens: a plain strstr() would also fire on a
     * hypothetical future "PCLMULQDQ2". */
-   if (darwin_cpu_feature_present("PCLMULQDQ"))
+   if (darwin_cpu_feature_present("machdep.cpu.features", "PCLMULQDQ"))
       cpu |= RETRO_SIMD_PCLMUL;
+   /* SHA-NI lives in the leaf-7 list rather than the leaf-1 one. */
+   if (darwin_cpu_feature_present("machdep.cpu.leaf7_features", "SHA"))
+      cpu |= RETRO_SIMD_SHA1 | RETRO_SIMD_SHA256;
 #else
    _val = 0;
    _len = sizeof(_val);
@@ -758,6 +761,16 @@ static uint64_t cpu_features_probe(void)
    if (sysctlbyname("hw.optional.arm.FEAT_SHA512", &_val, &_len, NULL, 0) == 0
          && _val)
       cpu |= RETRO_SIMD_SHA512;
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.arm.FEAT_SHA1", &_val, &_len, NULL, 0) == 0
+         && _val)
+      cpu |= RETRO_SIMD_SHA1;
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.arm.FEAT_SHA256", &_val, &_len, NULL, 0) == 0
+         && _val)
+      cpu |= RETRO_SIMD_SHA256;
    _val = 0;
    _len = sizeof(_val);
    if (sysctlbyname("hw.optional.neon", &_val, &_len, NULL, 0) == 0 && _val)
@@ -883,6 +896,10 @@ static uint64_t cpu_features_probe(void)
       if (flags7[1] & (1 << 5))
          cpu |= RETRO_SIMD_AVX2;
 
+      /* SHA-NI is one bit covering both digests. */
+      if (flags7[1] & (1 << 29))
+         cpu |= RETRO_SIMD_SHA1 | RETRO_SIMD_SHA256;
+
       /* AVX-512 Foundation detection.
        * Requires CPUID leaf 7 sub-leaf 0 EBX bit 16 (AVX-512F),
        * and OS support for saving ZMM state:
@@ -973,6 +990,12 @@ static uint64_t cpu_features_probe(void)
 
    if (check_arm_cpu_feature("sha512"))
       cpu |= RETRO_SIMD_SHA512;
+
+   if (check_arm_cpu_feature("sha1"))
+      cpu |= RETRO_SIMD_SHA1;
+
+   if (check_arm_cpu_feature("sha2"))
+      cpu |= RETRO_SIMD_SHA256;
 
    if (check_arm_cpu_feature("asimd"))
    {
