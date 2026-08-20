@@ -2490,7 +2490,9 @@ static bool menu_driver_displaylist_push(
    unsigned type                  = 0;
    bool ret                       = false;
    enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
-   file_list_t *list              = MENU_LIST_GET(menu_st->entries.list, 0);
+   menu_list_t *menu_list         = menu_st->entries.list;
+   file_list_t *list              = menu_list
+      ? MENU_LIST_GET(menu_list, 0) : NULL;
    menu_file_list_cbs_t *cbs      = NULL;
 
    menu_displaylist_info_init(&info);
@@ -2525,6 +2527,16 @@ static bool menu_driver_displaylist_push(
       ret = menu_displaylist_process(&info);
       goto end;
    }
+
+   /* push_internal is free to tear the menu down and build it again:
+    * a driver switch, a language change or a video reinit all reach
+    * RARCH_MENU_CTL_DEINIT, which menu_list_free()s every
+    * menu_stack[i] before menu_list_new() allocates replacements. The
+    * stack captured on entry is dangling in that case, so re-derive it
+    * before reading an entry back out. Matches the re-fetch in
+    * generic_menu_entry_action(). */
+   menu_list = menu_st->entries.list;
+   list      = menu_list ? MENU_LIST_GET(menu_list, 0) : NULL;
 
    cbs = (list && list->size)
       ? (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata
