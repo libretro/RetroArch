@@ -385,11 +385,30 @@ static unsigned char check_arm_cpu_feature(const char* feature)
 
    while (fgets(line, sizeof(line), fp))
    {
+      const char *list;
+      const char *p;
+      size_t flen;
+
       if (strncmp(line, "Features\t: ", 11))
          continue;
 
-      if (strstr(line + 11, feature))
-         status = 1;
+      /* Feature names are space separated and several are prefixes of
+       * others - 'aes' sits inside 'sveaes', 'sha3' inside 'svesha3',
+       * 'asimd' inside 'asimddp' - so compare whole tokens. */
+      flen = strlen(feature);
+      list = line + 11;
+
+      for (p = list; (p = strstr(p, feature)); p += flen)
+      {
+         char after  = p[flen];
+         char before = (p == list) ? ' ' : p[-1];
+         if (     (before == ' ')
+               && (after == ' ' || after == '\n' || after == '\0'))
+         {
+            status = 1;
+            break;
+         }
+      }
 
       break;
    }
