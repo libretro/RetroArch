@@ -56,6 +56,7 @@
 #endif
 
 #ifdef ANDROID
+#include <android/log.h>
 #include <sys/system_properties.h>
 #ifdef HAVE_SAF
 #include <vfs/vfs_implementation_saf.h>
@@ -128,6 +129,7 @@ static sthread_tls_t thread_key;
 static bool thread_key_inited            = false;
 static char app_dir[DIR_MAX_LENGTH];
 static char apk_dir[DIR_MAX_LENGTH];
+static char android_config_path[PATH_MAX_LENGTH];
 unsigned storage_permissions             = 0;
 struct android_app *g_android            = NULL;
 static uint8_t g_platform_android_flags  = 0;
@@ -747,6 +749,423 @@ static bool device_is_game_console(const char *name)
       return true;
 
    return false;
+}
+
+/* ---------------------------------------------------------------------
+ * Derivation of launch parameters from the application context.
+ *
+ * Every device- and installation-derived value the Java launcher passes
+ * as an intent extra can also be read here directly, so a launch of the
+ * native activity without those extras behaves the same as one through
+ * the launcher.  Extras always win; these run only for values still
+ * unset after the intent has been read.
+ * ------------------------------------------------------------------- */
+
+/* Clears and reports a pending Java exception; every JNI call below
+ * can leave one and must be followed by this check. */
+static bool android_env_exception(JNIEnv *env, const char *what)
+{
+   if (!(*env)->ExceptionCheck(env))
+      return false;
+   (*env)->ExceptionClear(env);
+   __android_log_print(ANDROID_LOG_WARN,
+      "RetroArch", "[ENV] Derivation failed: %s.\n", what);
+   return true;
+}
+
+/* Copies a jstring into buf and releases the local reference. */
+static bool android_env_jstring_copy(JNIEnv *env, jstring jstr,
+      char *buf, size_t len)
+{
+   const char *utf;
+
+   if (!jstr)
+      return false;
+   utf = (*env)->GetStringUTFChars(env, jstr, 0);
+   if (utf)
+   {
+      if (*utf)
+         strlcpy(buf, utf, len);
+      (*env)->ReleaseStringUTFChars(env, jstr, utf);
+   }
+   (*env)->DeleteLocalRef(env, jstr);
+   return (*buf != '\0');
+}
+
+/* File.getAbsolutePath() into buf; releases the File reference. */
+static bool android_env_file_path(JNIEnv *env, jobject file,
+      char *buf, size_t len)
+{
+   jclass file_class;
+   jmethodID get_absolute_path;
+   jstring jpath;
+
+   if (!file)
+      return false;
+   file_class        = (*env)->GetObjectClass(env, file);
+   get_absolute_path = (*env)->GetMethodID(env, file_class,
+         "getAbsolutePath", "()Ljava/lang/String;");
+   (*env)->DeleteLocalRef(env, file_class);
+   if (android_env_exception(env, "File.getAbsolutePath lookup"))
+   {
+      (*env)->DeleteLocalRef(env, file);
+      return false;
+   }
+   jpath = (jstring)(*env)->CallObjectMethod(env, file, get_absolute_path);
+   (*env)->DeleteLocalRef(env, file);
+   if (android_env_exception(env, "File.getAbsolutePath"))
+      return false;
+   return android_env_jstring_copy(env, jpath, buf, len);
+}
+
+/* getApplicationInfo().dataDir / .sourceDir for absent DATADIR / APK. */
+static void android_env_derive_application_info(JNIEnv *env, jobject activity)
+{
+   jclass activity_class;
+   jclass appinfo_class;
+   jmethodID get_application_info;
+   jobject appinfo;
+
+   activity_class       = (*env)->GetObjectClass(env, activity);
+   get_application_info = (*env)->GetMethodID(env, activity_class,
+         "getApplicationInfo", "()Landroid/content/pm/ApplicationInfo;");
+   (*env)->DeleteLocalRef(env, activity_class);
+   if (android_env_exception(env, "getApplicationInfo lookup"))
+      return;
+   appinfo = (*env)->CallObjectMethod(env, activity, get_application_info);
+   if (android_env_exception(env, "getApplicationInfo") || !appinfo)
+      return;
+   appinfo_class = (*env)->GetObjectClass(env, appinfo);
+
+   if (!*app_dir)
+   {
+      jfieldID fid = (*env)->GetFieldID(env, appinfo_class,
+            "dataDir", "Ljava/lang/String;");
+      if (!android_env_exception(env, "ApplicationInfo.dataDir"))
+         android_env_jstring_copy(env,
+               (jstring)(*env)->GetObjectField(env, appinfo, fid),
+               app_dir, sizeof(app_dir));
+   }
+   if (!*apk_dir)
+   {
+      jfieldID fid = (*env)->GetFieldID(env, appinfo_class,
+            "sourceDir", "Ljava/lang/String;");
+      if (!android_env_exception(env, "ApplicationInfo.sourceDir"))
+         android_env_jstring_copy(env,
+               (jstring)(*env)->GetObjectField(env, appinfo, fid),
+               apk_dir, sizeof(apk_dir));
+   }
+   (*env)->DeleteLocalRef(env, appinfo_class);
+   (*env)->DeleteLocalRef(env, appinfo);
+}
+
+/* getPackageManager().getPackageInfo(getPackageName(), 0).versionCode. */
+static unsigned android_env_derive_version_code(JNIEnv *env, jobject activity)
+{
+   jclass activity_class;
+   jclass pm_class;
+   jclass pi_class;
+   jmethodID get_package_manager;
+   jmethodID get_package_name;
+   jmethodID get_package_info;
+   jfieldID version_code_field;
+   jobject pm;
+   jstring pkg;
+   jobject pi;
+   jint version                = 0;
+
+   activity_class      = (*env)->GetObjectClass(env, activity);
+   get_package_manager = (*env)->GetMethodID(env, activity_class,
+         "getPackageManager", "()Landroid/content/pm/PackageManager;");
+   get_package_name    = (*env)->GetMethodID(env, activity_class,
+         "getPackageName", "()Ljava/lang/String;");
+   (*env)->DeleteLocalRef(env, activity_class);
+   if (android_env_exception(env, "PackageManager lookup"))
+      return 0;
+
+   pm  = (*env)->CallObjectMethod(env, activity, get_package_manager);
+   pkg = (jstring)(*env)->CallObjectMethod(env, activity, get_package_name);
+   if (android_env_exception(env, "getPackageManager") || !pm || !pkg)
+      return 0;
+
+   pm_class         = (*env)->GetObjectClass(env, pm);
+   get_package_info = (*env)->GetMethodID(env, pm_class,
+         "getPackageInfo",
+         "(Ljava/lang/String;I)Landroid/content/pm/PackageInfo;");
+   (*env)->DeleteLocalRef(env, pm_class);
+   if (!android_env_exception(env, "getPackageInfo lookup"))
+   {
+      pi = (*env)->CallObjectMethod(env, pm, get_package_info, pkg, (jint)0);
+      if (!android_env_exception(env, "getPackageInfo") && pi)
+      {
+         pi_class           = (*env)->GetObjectClass(env, pi);
+         version_code_field = (*env)->GetFieldID(env, pi_class,
+               "versionCode", "I");
+         if (!android_env_exception(env, "PackageInfo.versionCode"))
+            version = (*env)->GetIntField(env, pi, version_code_field);
+         (*env)->DeleteLocalRef(env, pi_class);
+         (*env)->DeleteLocalRef(env, pi);
+      }
+   }
+   (*env)->DeleteLocalRef(env, pm);
+   (*env)->DeleteLocalRef(env, pkg);
+   return (unsigned)version;
+}
+
+/* Settings.Secure.getString(getContentResolver(), "default_input_method")
+ * for an absent IME extra. */
+static void android_env_derive_ime(JNIEnv *env, jobject activity,
+      char *buf, size_t len)
+{
+   jclass activity_class;
+   jclass secure_class;
+   jmethodID get_content_resolver;
+   jmethodID get_string;
+   jobject resolver;
+   jstring jval;
+
+   activity_class       = (*env)->GetObjectClass(env, activity);
+   get_content_resolver = (*env)->GetMethodID(env, activity_class,
+         "getContentResolver", "()Landroid/content/ContentResolver;");
+   (*env)->DeleteLocalRef(env, activity_class);
+   if (android_env_exception(env, "getContentResolver lookup"))
+      return;
+   resolver = (*env)->CallObjectMethod(env, activity, get_content_resolver);
+   if (android_env_exception(env, "getContentResolver") || !resolver)
+      return;
+
+   secure_class = (*env)->FindClass(env, "android/provider/Settings$Secure");
+   if (!android_env_exception(env, "Settings.Secure") && secure_class)
+   {
+      get_string = (*env)->GetStaticMethodID(env, secure_class, "getString",
+            "(Landroid/content/ContentResolver;Ljava/lang/String;)Ljava/lang/String;");
+      if (!android_env_exception(env, "Secure.getString lookup"))
+      {
+         jval = (jstring)(*env)->CallStaticObjectMethod(env, secure_class,
+               get_string, resolver,
+               (*env)->NewStringUTF(env, "default_input_method"));
+         if (!android_env_exception(env, "Secure.getString"))
+            android_env_jstring_copy(env, jval, buf, len);
+      }
+      (*env)->DeleteLocalRef(env, secure_class);
+   }
+   (*env)->DeleteLocalRef(env, resolver);
+}
+
+/* AudioManager.getProperty() for absent AUDIO_RATE / AUDIO_FRAMES. */
+static void android_env_derive_audio(JNIEnv *env, jobject activity)
+{
+   int32_t sdk               = 0;
+   jclass activity_class;
+   jclass am_class;
+   jmethodID get_system_service;
+   jmethodID get_property;
+   jobject am;
+   jstring jval;
+   char value[32];
+
+   frontend_android_get_version_sdk(&sdk);
+   if (sdk < 17)
+      return;
+
+   activity_class     = (*env)->GetObjectClass(env, activity);
+   get_system_service = (*env)->GetMethodID(env, activity_class,
+         "getSystemService", "(Ljava/lang/String;)Ljava/lang/Object;");
+   (*env)->DeleteLocalRef(env, activity_class);
+   if (android_env_exception(env, "getSystemService lookup"))
+      return;
+   am = (*env)->CallObjectMethod(env, activity, get_system_service,
+         (*env)->NewStringUTF(env, "audio"));
+   if (android_env_exception(env, "getSystemService(audio)") || !am)
+      return;
+
+   am_class     = (*env)->GetObjectClass(env, am);
+   get_property = (*env)->GetMethodID(env, am_class,
+         "getProperty", "(Ljava/lang/String;)Ljava/lang/String;");
+   (*env)->DeleteLocalRef(env, am_class);
+   if (!android_env_exception(env, "AudioManager.getProperty lookup"))
+   {
+      if (g_defaults.settings_out_sample_rate <= 0)
+      {
+         *value = '\0';
+         jval   = (jstring)(*env)->CallObjectMethod(env, am, get_property,
+               (*env)->NewStringUTF(env,
+                  "android.media.property.OUTPUT_SAMPLE_RATE"));
+         if (   !android_env_exception(env, "OUTPUT_SAMPLE_RATE")
+             && android_env_jstring_copy(env, jval, value, sizeof(value)))
+            g_defaults.settings_out_sample_rate = atoi(value);
+      }
+      if (g_defaults.settings_out_block_frames <= 0)
+      {
+         *value = '\0';
+         jval   = (jstring)(*env)->CallObjectMethod(env, am, get_property,
+               (*env)->NewStringUTF(env,
+                  "android.media.property.OUTPUT_FRAMES_PER_BUFFER"));
+         if (   !android_env_exception(env, "OUTPUT_FRAMES_PER_BUFFER")
+             && android_env_jstring_copy(env, jval, value, sizeof(value)))
+            g_defaults.settings_out_block_frames = atoi(value);
+      }
+   }
+   (*env)->DeleteLocalRef(env, am);
+}
+
+/* External storage location for absent SDCARD / EXTERNAL extras,
+ * following the Java launcher: scoped-storage devices without all-files
+ * access use the app's external media dir (created on demand) with the
+ * app-external files path as fallback; everything else uses the shared
+ * storage root. */
+static void android_env_derive_storage(JNIEnv *env, jobject activity)
+{
+   int32_t sdk           = 0;
+   bool all_files_access = true;
+   jclass env_class;
+   jmethodID get_ext_storage_dir;
+   jobject dir;
+
+   frontend_android_get_version_sdk(&sdk);
+
+   env_class = (*env)->FindClass(env, "android/os/Environment");
+   if (android_env_exception(env, "Environment") || !env_class)
+      return;
+
+   if (sdk >= 30)
+   {
+      jmethodID is_manager = (*env)->GetStaticMethodID(env, env_class,
+            "isExternalStorageManager", "()Z");
+      if (!android_env_exception(env, "isExternalStorageManager lookup"))
+      {
+         all_files_access = (*env)->CallStaticBooleanMethod(env,
+               env_class, is_manager);
+         if (android_env_exception(env, "isExternalStorageManager"))
+            all_files_access = false;
+      }
+   }
+
+   if (sdk >= 30 && !all_files_access)
+   {
+      /* Scoped storage: app external media dir, created on demand. */
+      jclass activity_class      = (*env)->GetObjectClass(env, activity);
+      jmethodID get_media_dirs   = (*env)->GetMethodID(env, activity_class,
+            "getExternalMediaDirs", "()[Ljava/io/File;");
+      (*env)->DeleteLocalRef(env, activity_class);
+      if (!android_env_exception(env, "getExternalMediaDirs lookup"))
+      {
+         jobjectArray dirs = (jobjectArray)(*env)->CallObjectMethod(env,
+               activity, get_media_dirs);
+         if (   !android_env_exception(env, "getExternalMediaDirs")
+             && dirs
+             && (*env)->GetArrayLength(env, dirs) > 0)
+         {
+            dir = (*env)->GetObjectArrayElement(env, dirs, 0);
+            if (dir)
+            {
+               jclass file_class = (*env)->GetObjectClass(env, dir);
+               jmethodID mkdirs  = (*env)->GetMethodID(env, file_class,
+                     "mkdirs", "()Z");
+               (*env)->DeleteLocalRef(env, file_class);
+               if (!android_env_exception(env, "File.mkdirs lookup"))
+               {
+                  (*env)->CallBooleanMethod(env, dir, mkdirs);
+                  android_env_exception(env, "File.mkdirs");
+               }
+               /* android_env_file_path releases dir. */
+               android_env_file_path(env, dir,
+                     internal_storage_path, sizeof(internal_storage_path));
+            }
+         }
+         if (dirs)
+            (*env)->DeleteLocalRef(env, dirs);
+      }
+   }
+
+   if (!*internal_storage_path)
+   {
+      get_ext_storage_dir = (*env)->GetStaticMethodID(env, env_class,
+            "getExternalStorageDirectory", "()Ljava/io/File;");
+      if (!android_env_exception(env, "getExternalStorageDirectory lookup"))
+      {
+         dir = (*env)->CallStaticObjectMethod(env, env_class,
+               get_ext_storage_dir);
+         if (!android_env_exception(env, "getExternalStorageDirectory"))
+            android_env_file_path(env, dir,
+                  internal_storage_path, sizeof(internal_storage_path));
+      }
+   }
+   (*env)->DeleteLocalRef(env, env_class);
+
+   if (*internal_storage_path && !*internal_storage_app_path)
+      strlcpy(internal_storage_app_path, internal_storage_path,
+            sizeof(internal_storage_app_path));
+}
+
+/* Main config location for an absent CONFIGFILE extra, following the
+ * Java launcher's global-config probe order: an existing retroarch.cfg
+ * in the app-external files dir, then in the internal files dir; if
+ * neither exists yet, the preferred writable location is used and the
+ * file is created on the first save. */
+static void android_env_derive_config_path(JNIEnv *env, jobject activity)
+{
+   /* Static scratch: this runs once, from the environment pass on the
+    * main thread, and these would otherwise dominate the (inlined)
+    * caller's stack frame. */
+   static char external[DIR_MAX_LENGTH];
+   static char internal[DIR_MAX_LENGTH];
+   static char candidate[PATH_MAX_LENGTH];
+   jclass activity_class;
+   jmethodID get_ext_files_dir;
+   jmethodID get_files_dir;
+   jobject dir;
+
+   *external      = '\0';
+   *internal      = '\0';
+   activity_class = (*env)->GetObjectClass(env, activity);
+
+   get_ext_files_dir = (*env)->GetMethodID(env, activity_class,
+         "getExternalFilesDir", "(Ljava/lang/String;)Ljava/io/File;");
+   if (!android_env_exception(env, "getExternalFilesDir lookup"))
+   {
+      dir = (*env)->CallObjectMethod(env, activity, get_ext_files_dir,
+            (jobject)NULL);
+      if (!android_env_exception(env, "getExternalFilesDir"))
+         android_env_file_path(env, dir, external, sizeof(external));
+   }
+
+   get_files_dir = (*env)->GetMethodID(env, activity_class,
+         "getFilesDir", "()Ljava/io/File;");
+   if (!android_env_exception(env, "getFilesDir lookup"))
+   {
+      dir = (*env)->CallObjectMethod(env, activity, get_files_dir);
+      if (!android_env_exception(env, "getFilesDir"))
+         android_env_file_path(env, dir, internal, sizeof(internal));
+   }
+   (*env)->DeleteLocalRef(env, activity_class);
+
+   if (*external)
+   {
+      fill_pathname_join(candidate, external, "retroarch.cfg",
+            sizeof(candidate));
+      if (path_is_valid(candidate))
+      {
+         strlcpy(android_config_path, candidate, sizeof(android_config_path));
+         return;
+      }
+   }
+   if (*internal)
+   {
+      fill_pathname_join(candidate, internal, "retroarch.cfg",
+            sizeof(candidate));
+      if (path_is_valid(candidate))
+      {
+         strlcpy(android_config_path, candidate, sizeof(android_config_path));
+         return;
+      }
+   }
+   if (*external)
+      fill_pathname_join(android_config_path, external, "retroarch.cfg",
+            sizeof(android_config_path));
+   else if (*internal)
+      fill_pathname_join(android_config_path, internal, "retroarch.cfg",
+            sizeof(android_config_path));
 }
 
 bool test_permissions_android(const char *path)
@@ -1836,17 +2255,16 @@ static void frontend_unix_get_env(int *argc,
 
    if (android_app->getStringExtra && jstr)
    {
-      static char config_path[PATH_MAX_LENGTH] = {0};
       const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
 
       if (argv && *argv)
-         strlcpy(config_path, argv, sizeof(config_path));
+         strlcpy(android_config_path, argv, sizeof(android_config_path));
       (*env)->ReleaseStringUTFChars(env, jstr, argv);
 
       __android_log_print(ANDROID_LOG_INFO,
-         "RetroArch", "[ENV] Config file: \"%s\".\n", config_path);
-      if (args && *config_path)
-         args->config_path = config_path;
+         "RetroArch", "[ENV] Config file: \"%s\".\n", android_config_path);
+      if (args && *android_config_path)
+         args->config_path = android_config_path;
    }
 
    /* Current IME. */
@@ -2049,7 +2467,35 @@ static void frontend_unix_get_env(int *argc,
 
       __android_log_print(ANDROID_LOG_INFO,
          "RetroArch", "[ENV] App dir: \"%s\".\n", app_dir);
+   }
 
+   /* Anything the intent did not supply is derived from the
+    * application context, so a direct launch of the native activity
+    * behaves like one through the Java launcher.  Extras always win:
+    * every derivation below runs only for a value still unset. */
+   if (!*app_dir || !*apk_dir)
+      android_env_derive_application_info(env, obj);
+   if (!*internal_storage_path || !*internal_storage_app_path)
+      android_env_derive_storage(env, obj);
+   if (!*android_app->current_ime)
+      android_env_derive_ime(env, obj,
+            android_app->current_ime, sizeof(android_app->current_ime));
+   if (   g_defaults.settings_out_sample_rate  <= 0
+       || g_defaults.settings_out_block_frames <= 0)
+      android_env_derive_audio(env, obj);
+   if (args && !args->config_path)
+   {
+      android_env_derive_config_path(env, obj);
+      if (*android_config_path)
+      {
+         __android_log_print(ANDROID_LOG_INFO,
+            "RetroArch", "[ENV] Derived config file: \"%s\".\n",
+            android_config_path);
+         args->config_path = android_config_path;
+      }
+   }
+
+   {
       /* set paths depending on the ability to write
        * to internal_storage_path */
 
@@ -2202,15 +2648,20 @@ static void frontend_unix_get_env(int *argc,
    CALL_OBJ_METHOD_PARAM(env, jstr, obj, android_app->getStringExtra,
          (*env)->NewStringUTF(env, "VERSIONCODE"));
 
-   if (android_app->getStringExtra && jstr)
    {
       settings_t *settings = config_get_ptr();
       unsigned version     = 0;
-      const char *argv     = (*env)->GetStringUTFChars(env, jstr, 0);
 
-      if (argv && *argv)
-         version = (unsigned)strtoul(argv, NULL, 10);
-      (*env)->ReleaseStringUTFChars(env, jstr, argv);
+      if (android_app->getStringExtra && jstr)
+      {
+         const char *argv = (*env)->GetStringUTFChars(env, jstr, 0);
+
+         if (argv && *argv)
+            version = (unsigned)strtoul(argv, NULL, 10);
+         (*env)->ReleaseStringUTFChars(env, jstr, argv);
+      }
+      if (!version)
+         version = android_env_derive_version_code(env, obj);
 
       if (version && settings && *apk_dir && *app_dir)
       {
