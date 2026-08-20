@@ -40,9 +40,14 @@ struct smbc_dirent {
    int64_t size;  /* file size */
 };
 
+/* 'dir' is NULL and 'shares' is populated when the handle enumerates the
+ * shares exported by the server rather than a directory inside one. */
 typedef struct {
    struct smb2_context *ctx;
    struct smb2dir *dir;
+   char **shares;
+   unsigned share_count;
+   unsigned share_index;
 } smb_dir_handle;
 
 bool smb_init_cfg(const struct smb_settings *new_cfg);

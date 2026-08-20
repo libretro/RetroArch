@@ -21,6 +21,10 @@
 #include <fcntl.h>
 #include <smb2/smb2.h>
 #include <smb2/libsmb2.h>
+#include <smb2/libsmb2-raw.h>
+#include <smb2/libsmb2-dcerpc.h>
+#include <smb2/libsmb2-dcerpc-srvsvc.h>
+#include <net/net_socket.h>
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
@@ -37,6 +41,57 @@ static int max_context_configured = 0;
 static const struct smb_settings *smb_cfg = NULL;
 /* Auth mode that actually worked at init, reused when healing contexts */
 static int resolved_auth_mode = RETRO_SMB2_SEC_NTLMSSP;
+
+/* Extracts the first path component after the server from an smb:// URL.
+ * Returns false when the URL names a server and nothing else. */
+static bool smb_url_share(const char *path, char *s, size_t len)
+{
+   const char *p;
+   const char *end;
+   size_t _len;
+
+   s[0] = '\0';
+
+   if (!path || !string_starts_with(path, SMB_PREFIX))
+      return false;
+
+   p = path + STRLEN_CONST(SMB_PREFIX);
+
+   while (*p && *p != '/')
+      p++;
+   if (*p != '/')
+      return false;
+   p++;
+
+   end = p;
+   while (*end && *end != '/')
+      end++;
+
+   if (end == p)
+      return false;
+
+   _len = (size_t)(end - p);
+   if (_len >= len)
+      return false;
+
+   memcpy(s, p, _len);
+   s[_len] = '\0';
+   return true;
+}
+
+/* The share a path resolves to: a configured share covers every path, and
+ * otherwise the share is the leading component of the URL itself. */
+static void smb_effective_share(const char *path, char *s, size_t len)
+{
+   if (smb_cfg && smb_cfg->share && *smb_cfg->share)
+   {
+      strlcpy(s, smb_cfg->share, len);
+      return;
+   }
+
+   if (!smb_url_share(path, s, len))
+      s[0] = '\0';
+}
 
 /* A context is bound to one share for as long as the tree connect lives,
  * so the pool has to come down and back up for a settings change to be
@@ -59,18 +114,19 @@ static struct smb_conn_key smb_active_key;
  * pool may only be recycled while none of them are outstanding. */
 static int smb_live_handles = 0;
 
-static void smb_conn_key_fill(struct smb_conn_key *key)
+static void smb_conn_key_fill(struct smb_conn_key *key, const char *share)
 {
    memset(key, 0, sizeof(*key));
 
    if (!smb_cfg)
       return;
 
+   if (share)
+      strlcpy(key->share, share, sizeof(key->share));
+
    if (smb_cfg->server_address)
       strlcpy(key->server_address, smb_cfg->server_address,
             sizeof(key->server_address));
-   if (smb_cfg->share)
-      strlcpy(key->share, smb_cfg->share, sizeof(key->share));
    if (smb_cfg->username)
       strlcpy(key->username, smb_cfg->username, sizeof(key->username));
    if (smb_cfg->password)
@@ -196,7 +252,7 @@ bool smb_init_cfg(const struct smb_settings *new_cfg)
 }
 
 /* Initialize SMB context */
-static bool smb_init(void)
+static bool smb_init(const char *want_share)
 {
    char server[256];
    char share[256];
@@ -208,7 +264,7 @@ static bool smb_init(void)
    int error_no = 0;
    struct smb_conn_key key;
 
-   smb_conn_key_fill(&key);
+   smb_conn_key_fill(&key, want_share);
 
    if (smb_initialized)
    {
@@ -274,10 +330,7 @@ static bool smb_init(void)
       if (smb_cfg->workgroup && *smb_cfg->workgroup)
          smb2_set_domain(smb_context, smb_cfg->workgroup);
 
-      if (smb_cfg->share && *smb_cfg->share)
-         strlcpy(share, smb_cfg->share, sizeof(share));
-      else
-         share[0] = '\0';
+      strlcpy(share, key.share, sizeof(share));
 
       /* set timeout */
       smb2_set_timeout(smb_context, timeout);
@@ -339,10 +392,7 @@ static bool smb_init(void)
                if (smb_cfg->workgroup && *smb_cfg->workgroup)
                   smb2_set_domain(smb_context, smb_cfg->workgroup);
 
-               if (smb_cfg->share && *smb_cfg->share)
-                  strlcpy(share, smb_cfg->share, sizeof(share));
-               else
-                  share[0] = '\0';
+               strlcpy(share, key.share, sizeof(share));
 
                smb2_set_timeout(smb_context, timeout);
             }
@@ -371,6 +421,191 @@ static bool smb_init(void)
    smb_active_key  = key;
    smb_initialized = true;
 
+   return true;
+}
+
+/* libsmb2 exposes share enumeration through the async API only, so the reply
+ * is pumped here off a context of its own.  srvsvc requires IPC$, which is a
+ * different tree connect to the one the pool holds. */
+struct smb_enum_state
+{
+   struct srvsvc_NetrShareEnum_rep *rep;
+   int status;
+   bool finished;
+};
+
+static void smb_share_enum_cb(struct smb2_context *ctx, int status,
+      void *command_data, void *private_data)
+{
+   struct smb_enum_state *state = (struct smb_enum_state*)private_data;
+
+   (void)ctx;
+
+   state->status   = status;
+   state->rep      = (struct srvsvc_NetrShareEnum_rep*)command_data;
+   state->finished = true;
+}
+
+static int smb_wait_for_reply(struct smb2_context *ctx,
+      const bool *finished, unsigned timeout)
+{
+   time_t start = time(NULL);
+
+   while (!*finished)
+   {
+      struct pollfd pfd;
+
+      memset(&pfd, 0, sizeof(pfd));
+      pfd.fd     = smb2_get_fd(ctx);
+      pfd.events = (short)smb2_which_events(ctx);
+
+      if (socket_poll(&pfd, 1, 1000) < 0)
+         return -1;
+      if ((unsigned)(time(NULL) - start) > timeout)
+         return -1;
+      if (pfd.revents == 0)
+         continue;
+      if (smb2_service(ctx, pfd.revents) < 0)
+         return -1;
+   }
+
+   return 0;
+}
+
+static void smb_free_share_list(char **shares, unsigned count)
+{
+   unsigned i;
+
+   if (!shares)
+      return;
+
+   for (i = 0; i < count; i++)
+      free(shares[i]);
+   free(shares);
+}
+
+/* Collects the disk shares the server exports.  Hidden and administrative
+ * shares are left out, as are printer, device and IPC entries. */
+static bool smb_enum_shares(char ***out, unsigned *out_count)
+{
+   struct smb_enum_state state;
+   struct smb2_context *ctx;
+   struct srvsvc_SHARE_INFO_1_CONTAINER *level1;
+   char **shares;
+   unsigned count = 0;
+   unsigned i;
+   unsigned timeout;
+
+   *out       = NULL;
+   *out_count = 0;
+
+   if (!smb_cfg || !smb_cfg->server_address || !*smb_cfg->server_address)
+      return false;
+
+   if (!network_init())
+      return false;
+
+   if (!(ctx = smb2_init_context()))
+      return false;
+
+   if (!(timeout = smb_cfg->timeout))
+      timeout = RETRO_SMB2_DEFAULT_CLIENT_TIMEOUT;
+
+   if (smb_cfg->username && *smb_cfg->username)
+      smb2_set_user(ctx, smb_cfg->username);
+   if (smb_cfg->password && *smb_cfg->password)
+      smb2_set_password(ctx, smb_cfg->password);
+   if (smb_cfg->workgroup && *smb_cfg->workgroup)
+      smb2_set_domain(ctx, smb_cfg->workgroup);
+   smb2_set_timeout(ctx, timeout);
+   smb2_set_security_mode(ctx, resolved_auth_mode);
+   smb2_set_authentication(ctx, resolved_auth_mode);
+
+   if (smb2_connect_share(ctx, smb_cfg->server_address, "IPC$",
+            smb_cfg->username) < 0)
+   {
+      smb2_destroy_context(ctx);
+      return false;
+   }
+
+   memset(&state, 0, sizeof(state));
+
+   if (smb2_share_enum_async(ctx, SHARE_INFO_1,
+            smb_share_enum_cb, &state) != 0)
+   {
+      smb2_disconnect_share(ctx);
+      smb2_destroy_context(ctx);
+      return false;
+   }
+
+   if (smb_wait_for_reply(ctx, &state.finished, timeout) < 0
+         || state.status != 0
+         || !state.rep)
+   {
+      if (state.rep)
+         smb2_free_data(ctx, state.rep);
+      smb2_disconnect_share(ctx);
+      smb2_destroy_context(ctx);
+      return false;
+   }
+
+   level1 = &state.rep->ses.ShareInfo.Level1;
+
+   if (     !level1->Buffer
+         || !level1->Buffer->share_info_1
+         || level1->EntriesRead == 0)
+   {
+      smb2_free_data(ctx, state.rep);
+      smb2_disconnect_share(ctx);
+      smb2_destroy_context(ctx);
+      return false;
+   }
+
+   if (!(shares = (char**)calloc(level1->EntriesRead, sizeof(char*))))
+   {
+      smb2_free_data(ctx, state.rep);
+      smb2_disconnect_share(ctx);
+      smb2_destroy_context(ctx);
+      return false;
+   }
+
+   for (i = 0; i < level1->EntriesRead; i++)
+   {
+      const struct srvsvc_SHARE_INFO_1 *info =
+         &level1->Buffer->share_info_1[i];
+      const char *name = info->netname.utf8;
+
+      if (!name || !*name)
+         continue;
+      if ((info->type & 3) != SHARE_TYPE_DISKTREE)
+         continue;
+      if (info->type & (SHARE_TYPE_HIDDEN | SHARE_TYPE_TEMPORARY))
+         continue;
+      if (name[strlen(name) - 1] == '$')
+         continue;
+
+      {
+         size_t _len = strlen(name) + 1;
+
+         if (!(shares[count] = (char*)malloc(_len)))
+            break;
+         memcpy(shares[count], name, _len);
+         count++;
+      }
+   }
+
+   smb2_free_data(ctx, state.rep);
+   smb2_disconnect_share(ctx);
+   smb2_destroy_context(ctx);
+
+   if (count == 0)
+   {
+      smb_free_share_list(shares, count);
+      return false;
+   }
+
+   *out       = shares;
+   *out_count = count;
    return true;
 }
 
@@ -461,6 +696,7 @@ bool retro_vfs_file_open_smb(libretro_vfs_implementation_file *stream,
    const char *path, unsigned mode, unsigned hints)
 {
    char full_path[PATH_MAX_LENGTH];
+   char share[256];
    struct smb2fh *fh;
    int flags = 0;
    struct smb2_context *smb_context;
@@ -472,7 +708,11 @@ bool retro_vfs_file_open_smb(libretro_vfs_implementation_file *stream,
    stream->smb_fh = (intptr_t)0;
    stream->smb_ctx = (intptr_t)0;
 
-   if (!smb_init())
+   smb_effective_share(path, share, sizeof(share));
+   if (!*share)
+      return false;
+
+   if (!smb_init(share))
       return false;
 
    smb_context = get_smb_context();
@@ -711,14 +951,42 @@ int retro_vfs_file_close_smb(libretro_vfs_implementation_file *stream)
 smb_dir_handle* retro_vfs_opendir_smb(const char *path, bool include_hidden)
 {
    char full_path[PATH_MAX_LENGTH];
+   char share[256];
    struct smb2dir *dir;
    struct smb2_context *smb_context;
    smb_dir_handle *handle;
 
    (void)include_hidden;
 
+   smb_effective_share(path, share, sizeof(share));
 
-   if (!smb_init())
+   /* Nothing to resolve a path against: the listing is the set of shares
+    * the server exports. */
+   if (!*share)
+   {
+      char **shares  = NULL;
+      unsigned count = 0;
+
+      if (!smb_enum_shares(&shares, &count))
+         return NULL;
+
+      if (!(handle = (smb_dir_handle*)malloc(sizeof(smb_dir_handle))))
+      {
+         smb_free_share_list(shares, count);
+         return NULL;
+      }
+
+      handle->ctx         = NULL;
+      handle->dir         = NULL;
+      handle->shares      = shares;
+      handle->share_count = count;
+      handle->share_index = 0;
+      smb_live_handles++;
+
+      return handle;
+   }
+
+   if (!smb_init(share))
       return NULL;
 
    if (!smb_build_path(full_path, sizeof(full_path), path))
@@ -751,8 +1019,11 @@ smb_dir_handle* retro_vfs_opendir_smb(const char *path, bool include_hidden)
       return NULL;
    }
 
-   handle->ctx = smb_context;
-   handle->dir = dir;
+   handle->ctx         = smb_context;
+   handle->dir         = dir;
+   handle->shares      = NULL;
+   handle->share_count = 0;
+   handle->share_index = 0;
    smb_live_handles++;
 
    return handle;
@@ -763,7 +1034,24 @@ struct smbc_dirent* retro_vfs_readdir_smb(smb_dir_handle* dh)
    struct smb2dirent *ent;
    static struct smbc_dirent result;
 
-   if (!smb_initialized || !dh)
+   if (!dh)
+      return NULL;
+
+   if (dh->shares)
+   {
+      if (dh->share_index >= dh->share_count)
+         return NULL;
+
+      memset(&result, 0, sizeof(result));
+      strlcpy(result.name, dh->shares[dh->share_index++],
+            sizeof(result.name));
+      result.type = RETRO_SMB_DIRENT_DIR;
+      result.size = 0;
+
+      return &result;
+   }
+
+   if (!smb_initialized)
       return NULL;
 
    if (!dh->ctx || !dh->dir || !smb2_context_active(dh->ctx))
@@ -786,7 +1074,19 @@ struct smbc_dirent* retro_vfs_readdir_smb(smb_dir_handle* dh)
 
 int retro_vfs_closedir_smb(smb_dir_handle* dh)
 {
-   if (!smb_initialized || !dh)
+   if (!dh)
+      return -1;
+
+   if (dh->shares)
+   {
+      smb_free_share_list(dh->shares, dh->share_count);
+      free(dh);
+      if (smb_live_handles > 0)
+         smb_live_handles--;
+      return 0;
+   }
+
+   if (!smb_initialized)
       return -1;
 
    if (!dh->ctx || !dh->dir)
@@ -811,10 +1111,21 @@ int retro_vfs_closedir_smb(smb_dir_handle* dh)
 int retro_vfs_stat_smb(const char *path, int64_t *size)
 {
    char rel_path[PATH_MAX_LENGTH];
+   char share[256];
    struct smb2_stat_64 st;
    struct smb2_context *smb_context;
 
-   if (!smb_init())
+   smb_effective_share(path, share, sizeof(share));
+
+   /* The server root, and every share reached from it, is a directory */
+   if (!*share)
+   {
+      if (size)
+         *size = 0;
+      return RETRO_VFS_STAT_IS_VALID | RETRO_VFS_STAT_IS_DIRECTORY;
+   }
+
+   if (!smb_init(share))
       return 0;
 
    if (!smb_build_path(rel_path, sizeof(rel_path), path))

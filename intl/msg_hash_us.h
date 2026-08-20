@@ -36146,7 +36146,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
-   "Name of the network share to access."
+   "Name of the network share to access. Leave empty to list every share the server exports and pick one while browsing."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,

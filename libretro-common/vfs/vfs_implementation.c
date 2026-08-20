@@ -2099,7 +2099,7 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(
 bool retro_vfs_readdir_impl(libretro_vfs_implementation_dir *rdir)
 {
 #ifdef HAVE_SMBCLIENT
-   if (rdir->smb_handle && rdir->smb_handle->dir)
+   if (rdir->smb_handle)
    {
       struct smbc_dirent *de = retro_vfs_readdir_smb(rdir->smb_handle);
       if (!de)
@@ -2198,7 +2198,7 @@ static const char *vfs_win32_name_utf16(
 const char *retro_vfs_dirent_get_name_impl(libretro_vfs_implementation_dir *rdir)
 {
 #ifdef HAVE_SMBCLIENT
-   if (rdir->smb_handle && rdir->smb_handle->dir)
+   if (rdir->smb_handle)
       return rdir->smb_path;
 #endif
 #if defined(ANDROID) && defined(HAVE_SAF)
@@ -2252,7 +2252,7 @@ static VFS_NOINLINE bool retro_vfs_dirent_is_dir_stat(
 bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir *rdir)
 {
 #ifdef HAVE_SMBCLIENT
-   if (rdir->smb_handle && rdir->smb_handle->dir)
+   if (rdir->smb_handle)
       return rdir->smb_is_dir;
 #endif
 #if defined(ANDROID) && defined(HAVE_SAF)
@@ -2293,7 +2293,7 @@ int retro_vfs_closedir_impl(libretro_vfs_implementation_dir *rdir)
       return -1;
 
 #ifdef HAVE_SMBCLIENT
-   if (rdir->smb_handle && rdir->smb_handle->dir)
+   if (rdir->smb_handle)
    {
       retro_vfs_closedir_smb(rdir->smb_handle);
       rdir->smb_handle = NULL;
