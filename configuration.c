@@ -55,6 +55,13 @@
 #include "tasks/task_content.h"
 #include "tasks/tasks_internal.h"
 #include "accessibility.h"
+#ifdef ANDROID
+/* Defined in frontend/drivers/platform_unix.c; declared here rather
+ * than via platform_unix.h, whose JNI includes host-side tooling
+ * cannot preprocess. */
+void android_app_set_window_settings(bool notch_write_over,
+      bool auto_mouse_grab);
+#endif
 
 #include "list_special.h"
 
@@ -7073,6 +7080,11 @@ static bool config_load_file(global_t *global,
 #endif
 
    frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
+#ifdef ANDROID
+   android_app_set_window_settings(
+         settings->bools.video_notch_write_over_enable,
+         settings->bools.input_auto_mouse_grab);
+#endif
    recording_driver_update_streaming_url();
 
    if (!config_get_entry(conf, "user_language"))

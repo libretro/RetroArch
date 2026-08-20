@@ -187,6 +187,7 @@ struct android_app
    jmethodID getPowerstate;
    jmethodID getBatteryLevel;
    jmethodID setSustainedPerformanceMode;
+   jmethodID setWindowSettings;
    jmethodID setScreenOrientation;
    jmethodID getUserLanguageString;
    jmethodID doVibrate;
@@ -484,6 +485,11 @@ void frontend_android_get_version(int32_t *major, int32_t *minor, int32_t *rel);
 void frontend_android_get_version_sdk(int32_t *sdk);
 
 bool is_screen_reader_enabled(void);
+
+/* Pushes the live values of the window-affecting settings to the
+ * activity, so the Java side never reads them from the config file. */
+void android_app_set_window_settings(bool notch_write_over,
+      bool auto_mouse_grab);
 
 #ifdef HAVE_SAF
 struct retro_vfs_authorized_locations;

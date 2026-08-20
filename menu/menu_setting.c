@@ -100,6 +100,13 @@
 #include "../bluetooth/bluetooth_driver.h"
 #endif
 #include "../midi_driver.h"
+#ifdef ANDROID
+/* Defined in frontend/drivers/platform_unix.c; declared here rather
+ * than via platform_unix.h, whose JNI includes host-side tooling
+ * cannot preprocess. */
+void android_app_set_window_settings(bool notch_write_over,
+      bool auto_mouse_grab);
+#endif
 #include "../location_driver.h"
 #include "../network/cloud_sync_driver.h"
 #include "../record/record_driver.h"
@@ -9543,6 +9550,14 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_SUSTAINED_PERFORMANCE_MODE:
          frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
          break;
+#ifdef ANDROID
+      case MENU_ENUM_LABEL_VIDEO_NOTCH_WRITE_OVER:
+      case MENU_ENUM_LABEL_INPUT_AUTO_MOUSE_GRAB:
+         android_app_set_window_settings(
+               settings->bools.video_notch_write_over_enable,
+               settings->bools.input_auto_mouse_grab);
+         break;
+#endif
       case MENU_ENUM_LABEL_REWIND_BUFFER_SIZE_STEP:
          {
             rarch_setting_t *buffer_size_setting = menu_setting_find_enum(MENU_ENUM_LABEL_REWIND_BUFFER_SIZE);

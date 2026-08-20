@@ -17,7 +17,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import com.retroarch.browser.preferences.util.ConfigFile;
 import com.retroarch.browser.preferences.util.UserPreferences;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -132,18 +131,21 @@ public final class RetroActivityFuture extends RetroActivityCamera {
     reapplyDisplayMode();
   }
 
+  @Override
+  protected void onNotchSettingChanged() {
+    runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        updateDisplayCutoutMode();
+      }
+    });
+  }
+
   private void updateDisplayCutoutMode() {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P)
       return;
 
-    boolean writeOverNotch = false;
-    ConfigFile configFile = UserPreferences.getConfigFile(this);
-
-    try {
-      writeOverNotch = configFile.getBoolean("video_notch_write_over_enable");
-    } catch (Exception e) {
-      Log.w("RetroActivityFuture", "Key doesn't exist yet: " + e.getMessage());
-    }
+    boolean writeOverNotch = notchWriteOver;
 
     WindowManager.LayoutParams params = getWindow().getAttributes();
     params.layoutInDisplayCutoutMode = writeOverNotch
@@ -238,14 +240,8 @@ public final class RetroActivityFuture extends RetroActivityCamera {
 
     mHandlerSendUiMessage(HANDLER_WHAT_TOGGLE_IMMERSIVE, hasFocus);
 
-    try {
-      ConfigFile configFile = UserPreferences.getConfigFile(this);
-      if (configFile.getBoolean("input_auto_mouse_grab")) {
-        inputGrabMouse(hasFocus);
-      }
-    } catch (Exception e) {
-      Log.w("RetroActivityFuture", "[onWindowFocusChanged] exception thrown: " + e.getMessage());
-    }
+    if (autoMouseGrab)
+      inputGrabMouse(hasFocus);
   }
 
   private void mHandlerSendUiMessage(int what, boolean state) {

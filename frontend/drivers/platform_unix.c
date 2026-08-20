@@ -2687,6 +2687,8 @@ static void frontend_unix_init(void *data)
          "getBatteryLevel", "()I");
    GET_METHOD_ID(env, android_app->setSustainedPerformanceMode, class,
          "setSustainedPerformanceMode", "(Z)V");
+   GET_METHOD_ID(env, android_app->setWindowSettings, class,
+         "setWindowSettings", "(ZZ)V");
    GET_METHOD_ID(env, android_app->setScreenOrientation, class,
          "setScreenOrientation", "(I)V");
    GET_METHOD_ID(env, android_app->doVibrate, class,
@@ -3417,6 +3419,22 @@ static bool frontend_unix_check_for_path_changes(path_change_data_t *change_data
    }
 #endif
    return false;
+}
+
+void android_app_set_window_settings(bool notch_write_over,
+      bool auto_mouse_grab)
+{
+#ifdef ANDROID
+   JNIEnv *env = jni_thread_getenv();
+
+   if (!env || !g_android)
+      return;
+
+   if (g_android->setWindowSettings)
+      CALL_VOID_METHOD_PARAM(env, g_android->activity->clazz,
+            g_android->setWindowSettings,
+            (jboolean)notch_write_over, (jboolean)auto_mouse_grab);
+#endif
 }
 
 static void frontend_unix_set_sustained_performance_mode(bool on)

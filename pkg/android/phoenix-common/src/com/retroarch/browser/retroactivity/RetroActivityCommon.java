@@ -806,6 +806,29 @@ public class RetroActivityCommon extends NativeActivity
     return lang + '_' + country;
   }
 
+  /* Live values of native-owned window settings, pushed over JNI on
+   * config load and whenever they change (see
+   * android_app_set_window_settings in platform_unix.c). */
+  protected volatile boolean notchWriteOver = false;
+  protected volatile boolean autoMouseGrab = false;
+
+  public void setWindowSettings(boolean notchWriteOver, boolean autoMouseGrab)
+  {
+    boolean notchChanged = (this.notchWriteOver != notchWriteOver);
+
+    this.notchWriteOver = notchWriteOver;
+    this.autoMouseGrab = autoMouseGrab;
+
+    if (notchChanged)
+      onNotchSettingChanged();
+  }
+
+  /* Overridden where a display cutout mode is applied, so a changed
+   * notch setting takes effect without waiting for the next resume. */
+  protected void onNotchSettingChanged()
+  {
+  }
+
   @TargetApi(24)
   public void setSustainedPerformanceMode(boolean on)
   {
