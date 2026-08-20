@@ -2529,6 +2529,11 @@ void core_info_deinit_list(void)
    core_info_state_t *p_coreinfo          = &core_info_st;
    core_info_list_t  *list                = NULL;
 
+   /* Invariant for callers: the current-core entry's pointer
+    * members borrow from this list, so every call here must be
+    * followed by core_info_free_current_core() (or a fresh
+    * core_info_load() once a new list exists) before the entry can
+    * be read again. */
    /* Detach first, free afterwards. Once the NULL store has been
     * published under the lock no reader can reach 'list' any more
     * (they all re-read curr_list while holding the lock), so the

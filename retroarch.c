@@ -4690,6 +4690,16 @@ bool command_event(enum event_command cmd, void *data)
                   configuration_set_bool(settings,
                         settings->bools.core_info_cache_enable, false);
             }
+
+            /* The rebuild went through CMD_EVENT_CORE_INFO_DEINIT,
+             * which frees the current-core entry alongside the list
+             * it borrows from.  With a core still loaded, resolve
+             * the entry against the fresh list so consumers keep
+             * the running core's identity and the savestate support
+             * gate keeps its info-file answer instead of falling
+             * back to the no-core default. */
+            if (!path_is_empty(RARCH_PATH_CORE))
+               core_info_load(path_get(RARCH_PATH_CORE));
          }
          break;
       case CMD_EVENT_CORE_DEINIT:
