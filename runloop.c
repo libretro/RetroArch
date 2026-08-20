@@ -98,6 +98,7 @@
 
 #if defined(ANDROID)
 #include "play_feature_delivery/play_feature_delivery.h"
+#include "input/drivers/android_input.h"
 #endif
 
 #if defined(ANDROID) && defined(HAVE_SAF)
@@ -6262,6 +6263,28 @@ static enum runloop_state_enum runloop_check_state(
 
          last_controller_connected = controller_connected;
       }
+
+#if defined(ANDROID)
+      /* Auto-hide the on-screen overlay while an S-Pen / stylus is active.
+       * Always fully unload (not soft-hide) — a loaded overlay with
+       * input_overlay_pointer_enable=true intercepts RETRO_DEVICE_POINTER
+       * queries from its own touch tracker and breaks the count-independent
+       * hover contract that stylus-aware cores (e.g. snes9x stylus) rely on. */
+      if (settings->bools.input_stylus_enable)
+      {
+         static bool last_stylus_hidden = false;
+         bool stylus_hidden             = android_input_stylus_recently_active();
+
+         if (stylus_hidden != last_stylus_hidden)
+         {
+            if (stylus_hidden)
+               input_overlay_unload();
+            else
+               input_overlay_init();
+            last_stylus_hidden = stylus_hidden;
+         }
+      }
+#endif
 
       /* Check next overlay hotkey */
       HOTKEY_CHECK(RARCH_OVERLAY_NEXT, CMD_EVENT_OVERLAY_NEXT, true, &check_next_rotation);
