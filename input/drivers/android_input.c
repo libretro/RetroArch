@@ -16,6 +16,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <errno.h>
 #include <unistd.h>
 #include <dlfcn.h>
 
@@ -669,9 +670,18 @@ void android_input_flush_pending_state(void)
 static void android_input_poll_main_cmd(void)
 {
    int8_t cmd;
+   ssize_t ret;
    struct android_app *android_app = (struct android_app*)g_android;
 
-   if (read(android_app->msgread, &cmd, sizeof(cmd)) != sizeof(cmd))
+   /* A command dropped here is never acknowledged, and a lifecycle
+    * callback waiting on it would block the Java UI thread until
+    * ActivityManager gives up. Retry rather than lose the byte. */
+   do
+   {
+      ret = read(android_app->msgread, &cmd, sizeof(cmd));
+   } while (ret < 0 && errno == EINTR);
+
+   if (ret != (ssize_t)sizeof(cmd))
       cmd = -1;
 
    switch (cmd)
@@ -698,6 +708,7 @@ static void android_input_poll_main_cmd(void)
                   android_app->looper, LOOPER_ID_INPUT, NULL,
                   NULL);
 
+         android_app->done_seq++;
          scond_broadcast(android_app->cond);
          slock_unlock(android_app->mutex);
 
@@ -713,6 +724,7 @@ static void android_input_poll_main_cmd(void)
          slock_lock(android_app->mutex);
          android_app->window = android_app->pendingWindow;
          android_app->reinitRequested = 1;
+         android_app->done_seq++;
          scond_broadcast(android_app->cond);
          slock_unlock(android_app->mutex);
 
@@ -796,6 +808,7 @@ static void android_input_poll_main_cmd(void)
          /* The window is being hidden or closed, clean it up. */
          /* terminate display/EGL context here */
          android_app->window = NULL;
+         android_app->done_seq++;
          scond_broadcast(android_app->cond);
          slock_unlock(android_app->mutex);
          break;

@@ -141,6 +141,23 @@ struct android_app
     * dependent startup work runs. */
    unsigned permission_state;
 
+   /* Completion counters for the lifecycle commands a Java callback
+    * blocks on: APP_CMD_INIT_WINDOW, APP_CMD_TERM_WINDOW and
+    * APP_CMD_INPUT_CHANGED.  The UI thread takes a ticket from
+    * 'cmd_seq' for every such command it posts and waits for
+    * 'done_seq' to reach it; the app thread advances 'done_seq' once
+    * it has finished acting on one.  Both are written only under
+    * 'mutex', and both are compared wrap-safely rather than for
+    * equality, so neither needs to be atomic or reset.
+    *
+    * A waiter must key on these rather than on the window or input
+    * queue handle it asked for: the framework reuses those addresses,
+    * so a handle comparison can already hold when the command is still
+    * queued and lets the callback return while the app thread is about
+    * to tear the surface down behind it. */
+   unsigned cmd_seq;
+   unsigned done_seq;
+
    sthread_t *thread;
 
    struct android_poll_source cmdPollSource;
@@ -488,7 +505,7 @@ void android_display_server_reapply_mode(void);
  * retro_run(). No-op when nothing is pending. */
 void android_input_flush_pending_state(void);
 
-void android_app_write_cmd(struct android_app *android_app, int8_t cmd);
+bool android_app_write_cmd(struct android_app *android_app, int8_t cmd);
 
 #ifdef HAVE_ANDROID_LIFECYCLE_HOOKS
 /* Runs a named shell script from the app's private data directory, if one

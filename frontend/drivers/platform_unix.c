@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <errno.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/utsname.h>
@@ -225,44 +226,79 @@ bool test_permissions(const char *path)
 /* forward declaration */
 bool android_run_events(void *data);
 
-void android_app_write_cmd(struct android_app *android_app, int8_t cmd)
+/* Returns false when the command could not be queued. No
+ * acknowledgement for it will ever arrive in that case, so a caller
+ * that blocks on one must not take a ticket for it. */
+bool android_app_write_cmd(struct android_app *android_app, int8_t cmd)
 {
-   if (android_app)
-      write(android_app->msgwrite, &cmd, sizeof(cmd));
+   ssize_t ret;
+
+   if (!android_app)
+      return false;
+
+   /* ART suspends threads with a signal, and the handler is not
+    * guaranteed to carry SA_RESTART, so a one-byte pipe write can come
+    * back short. It cannot come back partial: PIPE_BUF-sized writes are
+    * atomic. */
+   do
+   {
+      ret = write(android_app->msgwrite, &cmd, sizeof(cmd));
+   } while (ret < 0 && errno == EINTR);
+
+   if (ret == (ssize_t)sizeof(cmd))
+      return true;
+
+   RARCH_ERR("[Android] Failed to queue app command %d.\n", (int)cmd);
+   return false;
 }
 
 static void android_app_set_input(struct android_app *android_app,
       AInputQueue* inputQueue)
 {
+   unsigned ticket;
+
    if (!android_app)
       return;
 
    slock_lock(android_app->mutex);
    android_app->pendingInputQueue = inputQueue;
-   android_app_write_cmd(android_app, APP_CMD_INPUT_CHANGED);
+   ticket                         = android_app->cmd_seq;
 
-   while (android_app->inputQueue != android_app->pendingInputQueue)
+   if (android_app_write_cmd(android_app, APP_CMD_INPUT_CHANGED))
+      ticket = ++android_app->cmd_seq;
+
+   while ((int)(android_app->done_seq - ticket) < 0)
       scond_wait(android_app->cond, android_app->mutex);
 
    slock_unlock(android_app->mutex);
 }
 
+/* Replacing a live window posts two commands, so wait on the ticket of
+ * the last one: the surface is only safe to hand back to the framework
+ * once the app thread has worked through both. Posting neither leaves
+ * 'ticket' at the current completion count and the wait falls through. */
 static void android_app_set_window(struct android_app *android_app,
       ANativeWindow* window)
 {
+   unsigned ticket;
+
    if (!android_app)
       return;
 
    slock_lock(android_app->mutex);
-   if (android_app->pendingWindow)
-      android_app_write_cmd(android_app, APP_CMD_TERM_WINDOW);
+   ticket = android_app->cmd_seq;
+
+   if (     android_app->pendingWindow
+         && android_app_write_cmd(android_app, APP_CMD_TERM_WINDOW))
+      ticket = ++android_app->cmd_seq;
 
    android_app->pendingWindow = window;
 
-   if (window)
-      android_app_write_cmd(android_app, APP_CMD_INIT_WINDOW);
+   if (     window
+         && android_app_write_cmd(android_app, APP_CMD_INIT_WINDOW))
+      ticket = ++android_app->cmd_seq;
 
-   while (android_app->window != android_app->pendingWindow)
+   while ((int)(android_app->done_seq - ticket) < 0)
       scond_wait(android_app->cond, android_app->mutex);
 
    slock_unlock(android_app->mutex);
