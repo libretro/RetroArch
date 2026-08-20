@@ -158,6 +158,15 @@ void file_list_pop(file_list_t *list, size_t *directory_ptr)
    if (list->size != 0)
    {
       --list->size;
+
+      /* Every allocation the entry owns goes back here, matching
+       * file_list_deinitialize_internal. The two helpers clear the
+       * slot as they go, so a caller that has already released
+       * userdata or actiondata itself - menu_list_pop_stack does,
+       * through the driver's list_free hook - passes through them. */
+      file_list_free_userdata  (list, list->size);
+      file_list_free_actiondata(list, list->size);
+
       if (list->list[list->size].path)
          free(list->list[list->size].path);
       list->list[list->size].path = NULL;
@@ -165,9 +174,15 @@ void file_list_pop(file_list_t *list, size_t *directory_ptr)
       if (list->list[list->size].label)
          free(list->list[list->size].label);
       list->list[list->size].label = NULL;
+
+      if (list->list[list->size].alt)
+         free(list->list[list->size].alt);
+      list->list[list->size].alt = NULL;
    }
 
-   if (directory_ptr)
+   /* A list that never had an entry has no backing array to read a
+    * directory_ptr out of. */
+   if (directory_ptr && list->list)
       *directory_ptr = list->list[list->size].directory_ptr;
 }
 

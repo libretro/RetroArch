@@ -291,6 +291,66 @@ START_TEST (test_insert_starts_with_null_actiondata)
 }
 END_TEST
 
+/* file_list_pop() has to release everything the entry owns, not just
+ * path and label.  Its one caller in tree, menu_list_pop_stack(), frees
+ * userdata and actiondata itself beforehand, which hid the gap: alt is
+ * set by file_list_set_alt_at_offset() and nothing else was releasing
+ * it, so every menu stack pop of an entry carrying an alt leaked it. */
+START_TEST (test_pop_releases_every_field)
+{
+   file_list_t list;
+   size_t dir = 0xABCD;
+
+   reset_dtor();
+   list_init(&list);
+   list.actiondata_free = test_dtor;
+
+   ck_assert(file_list_append(&list, "path", "label", 7, 42, 0));
+   file_list_set_alt_at_offset(&list, 0, "alt");
+   set_actiondata(&list, 0, 0x5678);
+
+   ck_assert_ptr_nonnull(list.list[0].alt);
+
+   file_list_pop(&list, &dir);
+
+   ck_assert_int_eq((int)list.size, 0);
+   /* The slot is cleared, so a later append cannot inherit a stale
+    * pointer and the sanitizer sees no leak. */
+   ck_assert_ptr_null(list.list[0].path);
+   ck_assert_ptr_null(list.list[0].label);
+   ck_assert_ptr_null(list.list[0].alt);
+   ck_assert_ptr_null(list.list[0].actiondata);
+   /* actiondata went through the hook rather than a plain free(). */
+   ck_assert_int_eq(dtor_calls, 1);
+   ck_assert_uint_eq((unsigned)dir, 42u);
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+/* A list that has never held an entry has no backing array, so the
+ * directory_ptr read at the end of file_list_pop() has nothing to
+ * index. */
+START_TEST (test_pop_empty_list)
+{
+   file_list_t list;
+   size_t dir = 0x1234;
+
+   list_init(&list);
+   ck_assert_ptr_null(list.list);
+
+   file_list_pop(&list, &dir);
+
+   ck_assert_int_eq((int)list.size, 0);
+   /* Left as the caller set it: there was no entry to read from. */
+   ck_assert_uint_eq((unsigned)dir, 0x1234u);
+
+   file_list_pop(&list, NULL);
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
 Suite *create_suite(void)
 {
    Suite *s       = suite_create(SUITE_NAME);
@@ -305,6 +365,8 @@ Suite *create_suite(void)
    tcase_add_test(tc_core, test_file_list_clear_leaves_actiondata);
    tcase_add_test(tc_core, test_hook_survives_growth);
    tcase_add_test(tc_core, test_insert_starts_with_null_actiondata);
+   tcase_add_test(tc_core, test_pop_releases_every_field);
+   tcase_add_test(tc_core, test_pop_empty_list);
 
    suite_add_tcase(s, tc_core);
    return s;
