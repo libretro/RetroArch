@@ -9,5 +9,5 @@ S_BOOL_EX(smb_client_enable, SMB_CLIENT_ENABLE,
       "smb_client_enable",
       false, SD_FLAG_ADVANCED, 0, 0, setting_bool_action_left_with_refresh, NULL, NULL, NULL, setting_bool_action_left_with_refresh, setting_bool_action_right_with_refresh, 0,
       "Enable SMB Client",
-      "Enable SMB network share access. Ethernet is strongly recommended over Wi-Fi for a more reliable connection. Note: changing these settings requires a restart of RetroArch.")
+      "Enable SMB network share access. Ethernet is strongly recommended over Wi-Fi for a more reliable connection. Note: changes take effect the next time a share is browsed, and content already running from a share keeps its current connection.")
 #endif
