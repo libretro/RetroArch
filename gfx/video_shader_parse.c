@@ -1432,9 +1432,18 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
       /* Names of the textures */
       size_t _len = strlcpy(textures, shader->lut[0].id, sizeof(textures));
 
+      /* strlcpy() reports the length of its source, so the running
+       * offset is only usable while every name has fit. */
+      if (_len >= sizeof(textures))
+         _len = sizeof(textures) - 1;
+
       for (i = 1; i < shader->luts; i++)
       {
-         /* O(n^2), but number of textures is very limited. */
+         size_t nlen = strlen(shader->lut[i].id);
+
+         if (_len + 1 + nlen >= sizeof(textures))
+            break;
+
          _len += strlcpy(textures + _len, ";",               sizeof(textures) - _len);
          _len += strlcpy(textures + _len, shader->lut[i].id, sizeof(textures) - _len);
       }

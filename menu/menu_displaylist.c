@@ -7063,13 +7063,22 @@ static int menu_displaylist_parse_disc_info(file_list_t *info_list,
    {
       char drive[2];
       char drive_string[NAME_MAX_LENGTH] = {0};
-      size_t _len = snprintf(drive_string, sizeof(drive_string),
+      /* snprintf() reports the length it would have written, which a
+       * long enough translation of msg_drive_number can carry past the
+       * buffer, so take the length that landed. */
+      int    _ret = snprintf(drive_string, sizeof(drive_string),
             msg_drive_number, i + 1);
+      size_t _len = (_ret < 0 || (size_t)_ret >= sizeof(drive_string))
+            ? sizeof(drive_string) - 1
+            : (size_t)_ret;
+
       _len += strlcpy(drive_string + _len, ": ",
               sizeof(drive_string) - _len);
-      strlcpy(        drive_string + _len,
-            list->elems[i].data,
-              sizeof(drive_string) - _len);
+
+      if (_len < sizeof(drive_string))
+         strlcpy(     drive_string + _len,
+               list->elems[i].data,
+                 sizeof(drive_string) - _len);
 
       drive[0]   = list->elems[i].attr.i;
       drive[1]   = '\0';

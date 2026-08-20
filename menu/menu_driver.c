@@ -4018,7 +4018,24 @@ void menu_entries_search_append_terms_string(char *s, size_t len)
 
       for (i = 0; i < search->size; i++)
       {
+         /* strlcpy() reports the length it was handed rather than the
+          * length it wrote, so an append that truncates would carry
+          * _len past len and leave the next len - _len wrapping to a
+          * very large size_t. Eight terms of MENU_SEARCH_FILTER_MAX_LENGTH
+          * do not fit a title, so this is reached by typing. */
+         size_t tlen = strlen(search->terms[i]);
+
+         if (_len + 3 >= len)
+            break;
+
          _len += strlcpy(s + _len, " > ", len - _len);
+
+         if (_len + tlen >= len)
+         {
+            strlcpy(s + _len, search->terms[i], len - _len);
+            break;
+         }
+
          _len += strlcpy(s + _len, search->terms[i], len - _len);
       }
    }
