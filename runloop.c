@@ -98,6 +98,7 @@
 
 #if defined(ANDROID)
 #include "play_feature_delivery/play_feature_delivery.h"
+#include "frontend/drivers/platform_unix.h"
 #endif
 
 #if defined(ANDROID) && defined(HAVE_SAF)
@@ -7938,6 +7939,13 @@ int runloop_iterate(void)
 
 #ifdef HAVE_BSV_MOVIE
    bsv_movie_dequeue_next(input_st);
+#endif
+
+#ifdef ANDROID
+   /* Outside the core. APP_CMD_PAUSE is read by the input driver's poll,
+    * which a core enters from within retro_run(), so the save it asks for
+    * is performed here instead of where the command arrives. */
+   android_input_flush_pending_state();
 #endif
 
 #if defined(HAVE_DYNAMIC) && defined(HAVE_MENU)

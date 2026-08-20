@@ -611,6 +611,11 @@ static void android_input_destroy_surface(video_driver_state_t *state)
  * duplicate APP_CMD_PAUSE does not rewrite the config a second time. */
 static bool android_state_flushed = false;
 
+/* Set by the APP_CMD_PAUSE handler, consumed by
+ * android_input_flush_pending_state() at the top of the next runloop
+ * iteration. */
+static bool android_state_flush_pending = false;
+
 /* Android may reclaim the process at any point after onPause() has
  * returned. onDestroy() is not guaranteed to run at all - in particular,
  * swiping the task away from Recents never delivers it - so onPause() is
@@ -618,11 +623,21 @@ static bool android_state_flushed = false;
  *
  * Everything that would otherwise only be written by retroarch_main_quit()
  * is therefore flushed here instead, so that settings survive the process
- * being killed without the user having to invoke 'Quit RetroArch'. */
-static void android_input_flush_persistent_state(void)
+ * being killed without the user having to invoke 'Quit RetroArch'.
+ *
+ * Called from the runloop rather than from the command handler: the
+ * command pipe is drained by android_input_poll(), which a core reaches
+ * through the input poll callback, so a flush performed there would read
+ * core memory and rewrite the config from inside retro_run(). One frame
+ * of latency is well inside the window Android allows after onPause(). */
+void android_input_flush_pending_state(void)
 {
    settings_t *settings        = config_get_ptr();
    runloop_state_t *runloop_st = runloop_state_get_ptr();
+
+   if (!android_state_flush_pending)
+      return;
+   android_state_flush_pending = false;
 
    if (android_state_flushed)
       return;
@@ -731,9 +746,12 @@ static void android_input_poll_main_cmd(void)
          slock_unlock(android_app->mutex);
 
          if (cmd == APP_CMD_PAUSE)
-            android_input_flush_persistent_state();
+            android_state_flush_pending = true;
          else
-            android_state_flushed = false;
+         {
+            android_state_flush_pending = false;
+            android_state_flushed       = false;
+         }
 
 #ifdef HAVE_ANDROID_LIFECYCLE_HOOKS
          /* After the acknowledgement above, so a slow hook delays this

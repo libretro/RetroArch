@@ -481,6 +481,13 @@ extern JNIEnv *jni_thread_getenv(void);
  * silently reverts on the next resume. */
 void android_display_server_reapply_mode(void);
 
+/* Performs the pause-time save of SRAM and config requested by
+ * APP_CMD_PAUSE, if one is outstanding. Called from the runloop, which is
+ * the nearest point outside the core: the command that requests it is read
+ * by the input driver's poll, and a core reaches that poll from inside
+ * retro_run(). No-op when nothing is pending. */
+void android_input_flush_pending_state(void);
+
 void android_app_write_cmd(struct android_app *android_app, int8_t cmd);
 
 #ifdef HAVE_ANDROID_LIFECYCLE_HOOKS
