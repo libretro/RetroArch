@@ -74,7 +74,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 import java.util.Locale;
 
 /**
@@ -1088,24 +1087,20 @@ public class RetroActivityCommon extends NativeActivity
 
     if (Build.VERSION.SDK_INT >= 24) {
       if (isSustainedPerformanceModeSupported()) {
-        final CountDownLatch latch = new CountDownLatch(1);
-
+        /* Window attributes are the UI thread's to touch, and this is
+         * called from the native thread (config load, settings change) as
+         * well as from onResume(). Post and return: the native thread must
+         * not wait on the UI thread's looper, which may be occupied by a
+         * lifecycle transition that is itself waiting for the native thread
+         * to acknowledge it. */
         runOnUiThread(new Runnable() {
           @Override
           public void run() {
             Log.i("RetroActivity", "setting sustained performance mode to " + sustainedPerformanceMode);
 
             getWindow().setSustainedPerformanceMode(sustainedPerformanceMode);
-
-            latch.countDown();
           }
         });
-
-        try {
-          latch.await();
-        }catch(InterruptedException e) {
-          e.printStackTrace();
-        }
       }
     }
   }
