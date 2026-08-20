@@ -26,6 +26,7 @@
 #include <psp2/display.h>
 #include "patches.h"
 #include "hooks.h"
+#include "sha1.h"
 #include "debug.h"
 
 static int swap_interval = 1;
