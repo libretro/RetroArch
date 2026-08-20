@@ -577,7 +577,6 @@ uint	netplay_input_latency_frames_range	1	0
 uint	network_cmd_port	1	55355
 uint	network_remote_base_port	1	55400
 uint	user_language	1	frontend_driver_get_user_language()
-uint	bundle_assets_extract_version_current	1	0
 uint	bundle_assets_extract_last_version	1	0
 uint	cheevos_appearance_anchor	1	0
 float	video_aspect_ratio	1	1.3333f
