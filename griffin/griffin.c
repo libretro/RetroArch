@@ -1695,6 +1695,7 @@ SSL
 #include "../deps/mbedtls/ripemd160.c"
 #include "../deps/mbedtls/rsa.c"
 #include "../deps/mbedtls/sha1.c"
+#include "../deps/mbedtls/sha_alt.c"
 #include "../deps/mbedtls/sha256.c"
 #include "../deps/mbedtls/sha512.c"
 #include "../deps/mbedtls/threading.c"

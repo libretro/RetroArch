@@ -1260,6 +1260,9 @@
  * This module is required for SSL/TLS and X.509.
  * PEM_PARSE uses MD5 for decrypting encrypted keys.
  */
+#define MBEDTLS_SHA1_ALT
+#define MBEDTLS_SHA256_ALT
+
 /* #define MBEDTLS_MD5_C */
 
 /**
