@@ -4626,6 +4626,24 @@ struct retro_log_callback
  */
 #define RETRO_SIMD_SHA256   (1 << 28)
 
+/**
+ * Indicates CPU support for the FMA3 fused multiply-add instructions.
+ *
+ * CPUID.(EAX=01H):ECX[12]. They operate on YMM state, so this reports
+ * only where the operating system preserves it, as \c RETRO_SIMD_AVX
+ * does.
+ */
+#define RETRO_SIMD_FMA3     (1 << 29)
+
+/**
+ * Indicates CPU support for the FMA4 fused multiply-add instructions.
+ *
+ * CPUID.(EAX=80000001H):ECX[16], an AMD extension dropped from Zen, and
+ * a different encoding from \c RETRO_SIMD_FMA3 rather than a superset
+ * of it. Gated on the same operating system state.
+ */
+#define RETRO_SIMD_FMA4     (1 << 30)
+
 /** @} */
 
 /**

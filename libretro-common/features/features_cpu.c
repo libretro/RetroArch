@@ -669,6 +669,9 @@ static uint64_t cpu_features_probe(void)
    uint64_t cpu        = 0;
 #if defined(CPU_X86) && !defined(__MACH__)
    int vendor_is_intel = 0;
+   /* Set once the OS is known to preserve YMM state, which AVX, FMA3
+    * and FMA4 all depend on. */
+   int ymm_state       = 0;
    const int avx_flags = (1 << 27) | (1 << 28);
 #endif
 #if defined(__MACH__)
@@ -720,6 +723,10 @@ static uint64_t cpu_features_probe(void)
    _len = sizeof(_val);
    if (sysctlbyname("hw.optional.avx1_0", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_AVX;
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.fma", &_val, &_len, NULL, 0) == 0 && _val)
+      cpu |= RETRO_SIMD_FMA3;
    _val = 0;
    _len = sizeof(_val);
    if (sysctlbyname("hw.optional.avx2_0", &_val, &_len, NULL, 0) == 0 && _val)
@@ -857,7 +864,16 @@ static uint64_t cpu_features_probe(void)
     * AVX CPU support (guaranteed to have at least i686). */
    if (((flags[2] & avx_flags) == avx_flags)
          && ((xgetbv_x86(0) & 0x6) == 0x6))
-      cpu |= RETRO_SIMD_AVX;
+   {
+      ymm_state = 1;
+      cpu      |= RETRO_SIMD_AVX;
+   }
+
+   /* FMA3 accumulates in YMM, so it answers only where the OS keeps
+    * that state. Leaf 1 ECX is still in flags here; the extended leaf
+    * carrying FMA4 is read further down. */
+   if (ymm_state && (flags[2] & (1 << 12)))
+      cpu |= RETRO_SIMD_FMA3;
 
    if (max_flag >= 7)
    {
@@ -962,6 +978,10 @@ static uint64_t cpu_features_probe(void)
        * does not report this bit; consumers there fall back accordingly. */
       if (flags[2] & (1 << 5))
          cpu |= RETRO_SIMD_LZCNT;
+      /* FMA4, an AMD encoding that no Zen part implements, under the
+       * same OS state as FMA3. */
+      if (ymm_state && (flags[2] & (1 << 16)))
+         cpu |= RETRO_SIMD_FMA4;
    }
 #elif defined(__linux__)
    if (check_arm_cpu_feature("neon"))
