@@ -268,17 +268,41 @@ static void android_app_set_window(struct android_app *android_app,
    slock_unlock(android_app->mutex);
 }
 
+/* Upper bound on how long a lifecycle callback will block waiting for the
+ * app thread to pick the command up. The app thread only reads the command
+ * pipe between frames, so anything that keeps it out of the looper - a core
+ * load, a shader build - holds the UI thread here, and five seconds of that
+ * is an ANR. */
+#define ANDROID_ACTIVITY_STATE_TIMEOUT_US (3 * 1000 * 1000)
+
+/* START/RESUME/PAUSE/STOP are notifications: activityState is written by
+ * the app thread and read by nothing else, so giving up on the
+ * acknowledgement costs the caller nothing beyond returning before the app
+ * thread has caught up.
+ *
+ * This does not generalise to android_app_set_window() or
+ * android_app_set_input(), where returning early hands the framework an
+ * ANativeWindow or AInputQueue the app thread still holds a reference to.
+ * Those two must stay synchronous. */
 static void android_app_set_activity_state(
       struct android_app *android_app, int8_t cmd)
 {
+   bool acked = true;
+
    if (!android_app)
       return;
 
    slock_lock(android_app->mutex);
    android_app_write_cmd(android_app, cmd);
-   while (android_app->activityState != cmd)
-      scond_wait(android_app->cond, android_app->mutex);
+   while (android_app->activityState != cmd && acked)
+      acked = scond_wait_timeout(android_app->cond, android_app->mutex,
+            ANDROID_ACTIVITY_STATE_TIMEOUT_US);
+   acked = (android_app->activityState == cmd);
    slock_unlock(android_app->mutex);
+
+   if (!acked)
+      RARCH_ERR("[Android] App thread did not acknowledge activity state"
+            " %d.\n", (int)cmd);
 }
 
 /* Upper bound on how long onDestroy() will block waiting for the app
