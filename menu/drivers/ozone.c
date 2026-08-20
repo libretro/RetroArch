@@ -8869,6 +8869,8 @@ static enum menu_action ozone_parse_menu_entry_action(
    enum menu_action new_action    = action;
    file_list_t *selection_buf     = NULL;
    unsigned horizontal_list_size  = 0;
+   bool menu_show_sublabels       = settings->bools.menu_show_sublabels;
+   bool menu_current_sel_only     = settings->bools.menu_show_sublabels_current_selection_only;
 
    /* We have to override the thumbnail stream
     * delay when opening the thumbnail sidebar;
@@ -9004,6 +9006,8 @@ static enum menu_action ozone_parse_menu_entry_action(
             ozone_hide_fullscreen_thumbnails(ozone, true);
             new_action     = MENU_ACTION_NOOP;
          }
+         if ((new_action == MENU_ACTION_START) && menu_show_sublabels && menu_current_sel_only)
+            ozone->selection_old = ozone->selection;
          break;
       case MENU_ACTION_SCAN:
          if (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR)
@@ -10703,6 +10707,8 @@ static void ozone_render(void *data,
    gfx_animation_t          *p_anim   = anim_get_ptr();
    settings_t             *settings   = config_get_ptr();
    bool ozone_collapse_sidebar        = settings->bools.ozone_collapse_sidebar;
+   bool menu_show_sublabels           = settings->bools.menu_show_sublabels;
+   bool menu_current_sel_only         = settings->bools.menu_show_sublabels_current_selection_only;
    unsigned font_scale                = settings->uints.menu_ozone_font_scale;
 
    if (!ozone)
@@ -10761,6 +10767,13 @@ static void ozone_render(void *data,
             ozone_collapse_sidebar,
             video_driver_is_threaded());
       video_driver_monitor_reset();
+   }
+
+   if (menu_show_sublabels && menu_current_sel_only && (ozone->selection != menu_st->selection_ptr))
+   {
+      ozone->selection_old = ozone->selection;
+      ozone->flags        |= OZONE_FLAG_NEED_COMPUTE;
+      ozone->flags        &= ~OZONE_FLAG_CURSOR_IN_SIDEBAR_OLD;
    }
 
    if (ozone->flags & OZONE_FLAG_NEED_COMPUTE)
@@ -12507,6 +12520,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          ozone->flags          &= ~OZONE_FLAG_LIBRETRO_RUNNING;
 
       ozone->flags             |=  OZONE_FLAG_NEED_COMPUTE;
+      if (!libretro_running)
+         ozone->selection_old   = ozone->selection;
 
       if (ozone->flags2 & OZONE_FLAG2_IS_QUICK_MENU)
       {
