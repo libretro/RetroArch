@@ -192,7 +192,13 @@ bool file_watch_poll(file_watch_t *watch)
       {
          struct inotify_event *event = (struct inotify_event *)&buf[i];
 
-         if (event->mask & watch->mask)
+         /* A kernel queue overflow means events were dropped:
+          * something may have changed without a record of it.
+          * Report a change rather than miss one, matching the
+          * notification-buffer-overflow handling on Windows, so
+          * a consumer can rely on the poll for conservative
+          * cache invalidation. */
+         if (event->mask & (watch->mask | IN_Q_OVERFLOW))
             return true;
 
          i += sizeof(struct inotify_event) + event->len;
