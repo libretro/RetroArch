@@ -593,6 +593,34 @@ bool android_input_can_be_keyboard(void *data, int port)
     return android_input_can_be_keyboard_jni(device->id);
 }
 
+#ifdef HAVE_THREADS
+/* EGL bindings are per-thread. Under threaded video the context is made
+ * current on the video thread, so an eglMakeCurrent() issued from here
+ * releases this thread's (empty) binding and leaves the surface current
+ * on the worker - and a later create_surface() would bind the same
+ * context a second time, on a second thread. Both entry points therefore
+ * run where the context lives. */
+static uintptr_t android_ctx_create_surface_cb(void *data)
+{
+   video_driver_state_t *state = video_state_get_ptr();
+
+   if (!state->current_video_context.create_surface)
+      return 0;
+
+   return state->current_video_context.create_surface(data) ? 1 : 0;
+}
+
+static uintptr_t android_ctx_destroy_surface_cb(void *data)
+{
+   video_driver_state_t *state = video_state_get_ptr();
+
+   if (state->current_video_context.destroy_surface)
+      state->current_video_context.destroy_surface(data);
+
+   return 0;
+}
+#endif
+
 static void android_input_destroy_surface(video_driver_state_t *state)
 {
    if (!state || !state->current_video_context.destroy_surface)
@@ -602,9 +630,14 @@ static void android_input_destroy_surface(video_driver_state_t *state)
    /* The video worker may still be recording a frame that references the
     * surface. Drain it before the context driver frees the surface. */
    video_thread_wait_idle();
-#endif
 
+   /* Dispatches to the video thread, or calls straight through when the
+    * wrapper is inactive or this already is the video thread. */
+   video_thread_texture_handle(state->context_data,
+         android_ctx_destroy_surface_cb);
+#else
    state->current_video_context.destroy_surface(state->context_data);
+#endif
 }
 
 /* Set once the pause-time flush has been performed, cleared again on
@@ -2397,7 +2430,21 @@ static void android_input_reinit(void)
        * Vulkan device. Recreate only the surface when supported before falling
        * back to a full video driver reinitialization. */
       video_driver_state_t *state = video_state_get_ptr();
-      if (state->current_video_context.create_surface == NULL || !state->current_video_context.create_surface(state->context_data))
+      bool recreated              = false;
+
+#ifdef HAVE_THREADS
+      /* The callback null-checks the hook and reports failure, and the
+       * dispatch reports failure when the worker is gone, so either one
+       * falls through to the full reinitialization below. */
+      recreated = (video_thread_texture_handle(state->context_data,
+               android_ctx_create_surface_cb) != 0);
+#else
+      if (state->current_video_context.create_surface)
+         recreated = state->current_video_context.create_surface(
+               state->context_data);
+#endif
+
+      if (!recreated)
          command_event(CMD_EVENT_REINIT, NULL);
    }
 
