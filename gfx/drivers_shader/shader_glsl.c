@@ -669,6 +669,21 @@ static void gl_glsl_set_vbo(GLfloat **buffer, size_t *buffer_elems,
    {
       GLfloat *new_buffer = (GLfloat*)
          realloc(*buffer, elems * sizeof(GLfloat));
+
+      /* The buffer is only a copy of what was last uploaded, so that an
+       * identical set of coords can skip the upload next time. Upload
+       * straight from the caller's data and leave the existing
+       * allocation - realloc keeps it on failure - marked empty, so the
+       * comparison in gl_glsl_set_attribs cannot read it and the next
+       * call retries the grow. */
+      if (!new_buffer)
+      {
+         glBufferData(GL_ARRAY_BUFFER, elems * sizeof(GLfloat),
+               data, GL_STATIC_DRAW);
+         *buffer_elems = 0;
+         return;
+      }
+
       *buffer             = new_buffer;
    }
 
