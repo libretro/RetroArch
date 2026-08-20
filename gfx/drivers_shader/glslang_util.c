@@ -17,6 +17,7 @@
 #include <stdlib.h>
 
 #include <retro_miscellaneous.h>
+#include <compat/intrinsics.h>
 #include <file/file_path.h>
 #include <file/config_file.h>
 #include <streams/file_stream.h>
@@ -900,24 +901,6 @@ unsigned glslang_num_miplevels(unsigned width, unsigned height)
    unsigned size = MAX(width, height);
    if (!size)
       return 0;
-#if defined(__GNUC__) || defined(__clang__)
-   return (unsigned)(8 * sizeof(unsigned)) - (unsigned)__builtin_clz(size);
-#elif defined(_MSC_VER) && _MSC_VER >= 1300
-   {
-      unsigned long idx;
-      _BitScanReverse(&idx, size);
-      return (unsigned)idx + 1u;
-   }
-#else
-   {
-      unsigned levels = 0;
-      if (size >= 0x10000u) { levels += 16; size >>= 16; }
-      if (size >= 0x100u)   { levels +=  8; size >>=  8; }
-      if (size >= 0x10u)    { levels +=  4; size >>=  4; }
-      if (size >= 0x4u)     { levels +=  2; size >>=  2; }
-      if (size >= 0x2u)     { levels +=  1; size >>=  1; }
-      if (size)               levels +=  1;
-      return levels;
-   }
-#endif
+   /* One more level than the index of the highest set bit. */
+   return compat_highbit_u32((uint32_t)size) + 1u;
 }

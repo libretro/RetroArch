@@ -120,6 +120,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include <compat/intrinsics.h>
+
 #include <formats/rh265.h>
 
 #if defined(_MSC_VER)
@@ -137,20 +139,6 @@ static RH265_INLINE int rh265_clip3(int lo, int hi, int v)
 static RH265_INLINE uint8_t rh265_clip8(int v)
 { return (uint8_t)(v < 0 ? 0 : (v > 255 ? 255 : v)); }
 
-static RH265_INLINE uint32_t rh265_clz32(uint32_t x)
-{
-#if defined(__GNUC__)
-   return (uint32_t)__builtin_clz(x);
-#else
-   uint32_t n = 0;
-   if (!(x & 0xffff0000u)) { n += 16; x <<= 16; }
-   if (!(x & 0xff000000u)) { n +=  8; x <<=  8; }
-   if (!(x & 0xf0000000u)) { n +=  4; x <<=  4; }
-   if (!(x & 0xc0000000u)) { n +=  2; x <<=  2; }
-   if (!(x & 0x80000000u)) { n +=  1; }
-   return n;
-#endif
-}
 
 /* ==================== rh265_bits.h ==================== */
 /* Plain (non-arithmetic) bitstream reader for NAL headers, parameter
@@ -1369,7 +1357,7 @@ static int rh265_cabac_decode(rh265_cabac *c, int ctxIdx)
    {
       /* range is 2..255 here, so 1..7 doublings restore it; take them
        * in one step instead of a bit at a time */
-      int n = (int)rh265_clz32(c->range) - 23;
+      int n = (int)compat_clz_u32(c->range) - 23;
       c->range <<= n;
       c->offset  = (c->offset << n) | rh265_cb_bits(c, n);
    }
@@ -1397,7 +1385,7 @@ static int rh265_cabac_terminate(rh265_cabac *c)
    if (c->offset >= c->range) return 1;
    if (c->range < 256)
    {
-      int n = (int)rh265_clz32(c->range) - 23;
+      int n = (int)compat_clz_u32(c->range) - 23;
       c->range <<= n;
       c->offset  = (c->offset << n) | rh265_cb_bits(c, n);
    }

@@ -154,6 +154,7 @@
 #include <string.h>
 
 #include <retro_inline.h>
+#include <compat/intrinsics.h>
 #include <encodings/rzstd.h>
 
 /* The decode loops spend much of their time on variable shifts, which
@@ -500,38 +501,6 @@ static INLINE void rzstd_rbits_fill(rzstd_rbits_t *b)
 /* Positions the reader at the last set bit of the final byte, which the
  * encoder wrote purely to mark where the data ends. A final byte of
  * zero has no such marker and cannot be a valid stream. */
-/* floor(log2(v)) for v >= 1, by halving rather than by counting down.
- * The counting version ran up to accuracy_log times for every one of a
- * table's states, and a table is built three times a block on any frame
- * that transmits its own. */
-#if defined(__GNUC__) && (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 4))
-#define RZSTD_HAVE_CLZ 1
-#endif
-
-static INLINE uint32_t rzstd_highbit(uint32_t v)
-{
-#ifdef RZSTD_HAVE_CLZ
-   /* One instruction where the halving form is four compares and four
-    * branches. This runs once per state of every table built, and a
-    * frame small enough to be a disc hunk spends more time building
-    * tables than decoding through them. */
-   return 31u - (uint32_t)__builtin_clz(v);
-#else
-   uint32_t r = 0;
-
-   /* The 0x10000 step is not optional. Without it this answers 15 for
-    * everything at or above 65536, which the callers here never reach
-    * -- a state index is bounded by its table -- but a reader of this
-    * function has no way to know that, and the two forms must agree. */
-   if (v >= 0x10000) { v >>= 16; r += 16; }
-   if (v >= 0x100)   { v >>= 8;  r += 8;  }
-   if (v >= 0x10)    { v >>= 4;  r += 4;  }
-   if (v >= 0x04)    { v >>= 2;  r += 2;  }
-   if (v >= 0x02)    {           r += 1;  }
-   return r;
-#endif
-}
-
 static int rzstd_rbits_init(rzstd_rbits_t *b, const uint8_t *src, size_t len)
 {
    uint32_t last;
@@ -561,7 +530,7 @@ static int rzstd_rbits_init(rzstd_rbits_t *b, const uint8_t *src, size_t len)
    b->overrun = 0;
    rzstd_rbits_fill(b);
 
-   pad = 8 - rzstd_highbit(last);
+   pad = 8 - compat_highbit_u32(last);
 
    b->bits  <<= pad;
    b->count  -= pad;
@@ -713,7 +682,7 @@ RZSTD_BODY_INLINE int rzstd_fse_read_counts(const uint8_t *src, size_t len,
        * counting up to eleven times per symbol. The caller's loop
        * guarantees remaining is at least two here, so the highbit
        * helper's input is never zero. */
-      bits_needed = rzstd_highbit((uint32_t)remaining);
+      bits_needed = compat_highbit_u32((uint32_t)remaining);
       low_mask = ((uint32_t)1 << bits_needed) - 1;
 
       value = RZ_PEEK(bits_needed + 1);
@@ -855,7 +824,7 @@ RZSTD_BODY_INLINE int rzstd_fse_build(rzstd_fse_t *fse, rzstd_fse_entry_t *table
    {
       uint8_t  sy    = table[i].symbol;
       uint16_t taken = next[sy]++;
-      uint32_t bits  = accuracy_log - rzstd_highbit(taken);
+      uint32_t bits  = accuracy_log - compat_highbit_u32(taken);
 
       table[i].bits       = (uint8_t)bits;
       table[i].next_state = (uint16_t)(((uint32_t)taken << bits) - size);
@@ -1265,22 +1234,6 @@ static uint8_t rzstd_huf_symbol(const rzstd_huf_t *huf, rzstd_rbits_t *b)
  * word.
  */
 
-static uint32_t rzstd_ctz64(uint64_t v)
-{
-#if defined(__GNUC__) && (__GNUC__ >= 4)
-   return (uint32_t)__builtin_ctzll(v);
-#else
-   uint32_t n = 0;
-
-   if (!(v & 0xffffffffu)) { v >>= 32; n += 32; }
-   if (!(v & 0xffff))      { v >>= 16; n += 16; }
-   if (!(v & 0xff))        { v >>= 8;  n += 8;  }
-   if (!(v & 0xf))         { v >>= 4;  n += 4;  }
-   if (!(v & 0x3))         { v >>= 2;  n += 2;  }
-   if (!(v & 0x1))         { n += 1; }
-   return n;
-#endif
-}
 
 /* Eight bytes, least significant first, a byte at a time so neither
  * alignment nor the host's order matters. */
@@ -1316,7 +1269,7 @@ static int rzstd_fast_init(rzstd_fast_t *f, const uint8_t *src, size_t len)
 
    /* Skip the encoder's padding, which counts as consumption like any
     * other: the marker moves with it and the reload accounts for it. */
-   pad = 8 - rzstd_highbit(last);
+   pad = 8 - compat_highbit_u32(last);
    f->bits <<= pad;
    return 1;
 }
@@ -1329,7 +1282,7 @@ static int rzstd_fast_ok(const rzstd_fast_t *f)
 
 static INLINE void rzstd_fast_reload(rzstd_fast_t *f)
 {
-   uint32_t used = rzstd_ctz64(f->bits);
+   uint32_t used = compat_ctz_u64(f->bits);
 
    f->ptr  -= used >> 3;
    f->bits  = rzstd_rd64le(f->ptr) | 1;
@@ -1341,7 +1294,7 @@ static INLINE void rzstd_fast_reload(rzstd_fast_t *f)
 static void rzstd_fast_handoff(const rzstd_fast_t *f, rzstd_rbits_t *b,
       const uint8_t *src, size_t len)
 {
-   uint32_t used  = rzstd_ctz64(f->bits);
+   uint32_t used  = compat_ctz_u64(f->bits);
    size_t   bytes = (size_t)(f->ptr - src) + 8;
 
    memset(b, 0, sizeof(*b));

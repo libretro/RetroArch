@@ -23,8 +23,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <compat/intrinsics.h>
+
 #if defined(_MSC_VER)
-#include <intrin.h>   /* _BitScanReverse, _byteswap_uint64 */
+#include <intrin.h>   /* _byteswap_uint64 */
 #endif
 #if defined(__SSE2__) || defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2)
 #include <emmintrin.h>
@@ -62,22 +65,6 @@ static int rh264_more_rbsp(const rh264_bits *b){
 #else
 #define RH264_BITS_INLINE static
 #endif
-/* Count of leading zeros in a non-zero 32-bit value; 32 for zero. */
-RH264_BITS_INLINE uint32_t rh264_clz32(uint32_t v)
-{
-#if defined(__GNUC__) || defined(__clang__)
-   return v ? (uint32_t)__builtin_clz(v) : 32u;
-#elif defined(_MSC_VER)
-   unsigned long i;
-   if (_BitScanReverse(&i, v)) return 31u - (uint32_t)i;
-   return 32u;
-#else
-   uint32_t n = 0;
-   if (!v) return 32u;
-   while (!(v & 0x80000000u)) { v <<= 1; n++; }
-   return n;
-#endif
-}
 /* Read the next 1..32 bits at bitpos without consuming them.  Bits past
  * the end of the buffer read as zero, exactly as the serial reader did:
  * every consumer either treats trailing zeros as benign padding or fails
@@ -133,7 +120,7 @@ static uint32_t rh264_ue_slow(rh264_bits *b){
 static uint32_t rh264_ue(rh264_bits *b){
    uint32_t v=rh264_peek(b,32),z;
    if(!v) return rh264_ue_slow(b);
-   z=rh264_clz32(v);
+   z=compat_clz_u32(v);
    if(z>15) return rh264_ue_slow(b);
    b->bitpos+=(size_t)(2*z+1);
    return (v>>(31-2*z))-1u;
@@ -1204,7 +1191,7 @@ static int rh264_level_prefix(rh264_bits *b)
    {
       /* the terminating 1 is real data (padding past the end reads as
        * zero), so consume the zeros and the terminator in one step */
-      lz = (int)rh264_clz32(v);
+      lz = (int)compat_clz_u32(v);
       b->bitpos += (size_t)lz + 1;
       return lz;
    }
@@ -6839,7 +6826,7 @@ static int rh264_cabac_decode(rh264_cabac *c, int ctxIdx)
    {
       /* range is 2..255 here, so 1..7 doublings restore it; take them
        * in one step instead of a bit at a time */
-      int n = (int)rh264_clz32(c->range) - 23;
+      int n = (int)compat_clz_u32(c->range) - 23;
       c->range <<= n;
       c->offset  = (c->offset << n) | rh264_cb_bits(c, n);
    }
@@ -6863,7 +6850,7 @@ static int rh264_cabac_terminate(rh264_cabac *c)
    if (c->offset >= c->range) return 1;
    if (c->range < 256)
    {
-      int n = (int)rh264_clz32(c->range) - 23;
+      int n = (int)compat_clz_u32(c->range) - 23;
       c->range <<= n;
       c->offset  = (c->offset << n) | rh264_cb_bits(c, n);
    }
