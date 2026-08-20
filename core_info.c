@@ -2637,6 +2637,10 @@ bool core_info_list_update_missing_firmware(
    return false;
 }
 
+/* Backing storage for the current-core entry's path when the loaded
+ * core has no info-list entry; see core_info_load(). */
+static char core_info_current_path[PATH_MAX_LENGTH];
+
 bool core_info_load(const char *core_path)
 {
    core_info_state_t *p_coreinfo = &core_info_st;
@@ -2647,14 +2651,31 @@ bool core_info_load(const char *core_path)
 
    core_info_get_current_core(&core_info);
 
-   if (!p_coreinfo->curr_list)
-      return false;
+   if (     p_coreinfo->curr_list
+         && core_info_list_get_info(p_coreinfo->curr_list,
+               core_info, core_path))
+      return true;
 
-   if (!core_info_list_get_info(p_coreinfo->curr_list,
-            core_info, core_path))
-      return false;
-
-   return true;
+   /* No list entry for this core.  Reset the current-core entry so
+    * consumers see this core's path rather than a zeroed shell or a
+    * previously loaded core's data, which
+    * core_info_list_get_info() leaves in place on a miss.  Every
+    * pointer member of the entry is borrowed from the info list, so
+    * the reset frees nothing, and the stamped path lives in
+    * state-owned storage with the same lifetime as the entry. */
+   if (core_info)
+   {
+      memset(core_info, 0, sizeof(*core_info));
+      core_info->savestate_support_level =
+            CORE_INFO_SAVESTATE_DETERMINISTIC;
+      if (core_path && *core_path)
+      {
+         strlcpy(core_info_current_path, core_path,
+               sizeof(core_info_current_path));
+         core_info->path = core_info_current_path;
+      }
+   }
+   return false;
 }
 
 bool core_info_find(const char *core_path,
