@@ -393,7 +393,10 @@ static void SHA1PadMessage(struct sha1_context *context)
     */
    context->Message_Block[context->Message_Block_Index++] = 0x80;
 
-   if (context->Message_Block_Index > 55)
+   /* The index has already advanced past the 0x80, so the block is out
+    * of room only above 56: at exactly 56 the eight length octets fill
+    * 56..63 and no second block is needed. */
+   if (context->Message_Block_Index > 56)
    {
       while (context->Message_Block_Index < 64)
          context->Message_Block[context->Message_Block_Index++] = 0;

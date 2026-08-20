@@ -24,6 +24,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include <lrc_hash.h>
 
@@ -55,6 +56,45 @@ START_TEST (test_sha1)
 }
 END_TEST
 
+/* Lengths straddling the point where the padding stops fitting in the
+ * block it started in: 55 leaves exactly enough room for the length
+ * octets, 56 does not, and 119 repeats 55 one block further in. */
+START_TEST (test_sha_padding_boundary)
+{
+   char    output[65];
+   uint8_t buf[119];
+   uint8_t digest[20];
+   unsigned i;
+
+   memset(buf, 'a', sizeof(buf));
+
+   sha256_hash(output, buf, 55);
+   ck_assert(!strcmp(output,
+      "9f4390f8d30c2dd92ec9f095b65e2b9ae9b0a925a5258e241c9f1e910f734318"));
+   sha256_hash(output, buf, 56);
+   ck_assert(!strcmp(output,
+      "b35439a4ac6f0948b6d6f9e3c6af0f5f590ce20f1bde7090ef7970686ec6738a"));
+   sha256_hash(output, buf, 119);
+   ck_assert(!strcmp(output,
+      "31eba51c313a5c08226adf18d4a359cfdfd8d2e816b13f4af952f7ea6584dcfb"));
+
+   SHA1Digest(buf, 55, digest);
+   for (i = 0; i < 20; i++)
+      snprintf(output + 2 * i, 3, "%02X", (unsigned)digest[i]);
+   ck_assert(!strcmp(output, "C1C8BBDC22796E28C0E15163D20899B65621D65A"));
+
+   SHA1Digest(buf, 56, digest);
+   for (i = 0; i < 20; i++)
+      snprintf(output + 2 * i, 3, "%02X", (unsigned)digest[i]);
+   ck_assert(!strcmp(output, "C2DB330F6083854C99D4B5BFB6E8F29F201BE699"));
+
+   SHA1Digest(buf, 119, digest);
+   for (i = 0; i < 20; i++)
+      snprintf(output + 2 * i, 3, "%02X", (unsigned)digest[i]);
+   ck_assert(!strcmp(output, "EE971065AAA017E0632A8CA6C77BB3BF8B1DFC56"));
+}
+END_TEST
+
 START_TEST (test_djb2)
 {
    ck_assert_uint_eq(djb2_calculate("retroarch"), 0xFADF3BCF);
@@ -68,6 +108,7 @@ Suite *create_suite(void)
    TCase *tc_core = tcase_create("Core");
    tcase_add_test(tc_core, test_sha256);
    tcase_add_test(tc_core, test_sha1);
+   tcase_add_test(tc_core, test_sha_padding_boundary);
    tcase_add_test(tc_core, test_djb2);
    suite_add_tcase(s, tc_core);
 
