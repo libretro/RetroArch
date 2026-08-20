@@ -76,6 +76,9 @@ struct android_poll_source
    void (*process)(struct android_app* app, struct android_poll_source* source);
 };
 
+#define PLAT_ANDROID_PERM_RESOLVED (1 << 0)
+#define PLAT_ANDROID_PERM_GRANTED  (1 << 1)
+
 struct android_app
 {
    /* The application can place a pointer to its own state object
@@ -131,6 +134,12 @@ struct android_app
 
    int msgread;
    int msgwrite;
+
+   /* Startup storage-permission gate.  Written from the Java UI
+    * thread via permissionsResolved() under 'mutex'; read by the
+    * native thread in frontend_unix_init before any filesystem-
+    * dependent startup work runs. */
+   unsigned permission_state;
 
    sthread_t *thread;
 

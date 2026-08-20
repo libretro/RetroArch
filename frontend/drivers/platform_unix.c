@@ -130,6 +130,10 @@ static bool thread_key_inited            = false;
 static char app_dir[DIR_MAX_LENGTH];
 static char apk_dir[DIR_MAX_LENGTH];
 static char android_config_path[PATH_MAX_LENGTH];
+/* Set in android_app_create on the UI thread, so the
+ * permissionsResolved upcall can reach the app state before the
+ * native thread has published g_android. */
+static struct android_app *g_android_early = NULL;
 unsigned storage_permissions             = 0;
 struct android_app *g_android            = NULL;
 static uint8_t g_platform_android_flags  = 0;
@@ -540,6 +544,7 @@ static struct android_app* android_app_create(ANativeActivity* activity,
       return NULL;
    }
    android_app->activity = activity;
+   g_android_early       = android_app;
 
    android_app->mutex    = slock_new();
    android_app->cond     = scond_new();
@@ -1371,6 +1376,36 @@ void android_show_saf_tree_picker(void)
  * Method:    safTreeAdded
  * Signature: (Ljava/lang/String;)V
  */
+/* Signals from the Java UI thread that the startup storage-permission
+ * flow has finished, releasing the gate in frontend_unix_init.  The
+ * wake is sticky, so a signal that lands before the native thread has
+ * reached the gate is not lost; a signal before the looper exists is
+ * covered by the gate re-checking the state before every poll. */
+JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCommon_permissionsResolved
+      (JNIEnv *env, jobject this_obj, jboolean granted)
+{
+   struct android_app *android_app = g_android_early;
+   ALooper *looper                 = NULL;
+
+   if (!android_app)
+      return;
+
+   slock_lock(android_app->mutex);
+   android_app->permission_state |= PLAT_ANDROID_PERM_RESOLVED;
+   if (granted)
+      android_app->permission_state |= PLAT_ANDROID_PERM_GRANTED;
+   looper = android_app->looper;
+   scond_broadcast(android_app->cond);
+   slock_unlock(android_app->mutex);
+
+   if (looper)
+      ALooper_wake(looper);
+
+   __android_log_print(ANDROID_LOG_INFO,
+      "RetroArch", "[ENV] Storage permission resolved (granted: %d).\n",
+      granted ? 1 : 0);
+}
+
 JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCommon_safTreeAdded
       (JNIEnv *env, jobject this_obj, jstring tree_obj)
 {
@@ -3094,9 +3129,8 @@ static void frontend_unix_init(void *data)
    looper = (ALooper*)ALooper_prepare(ALOOPER_PREPARE_ALLOW_NON_CALLBACKS);
    ALooper_addFd(looper, android_app->msgread, LOOPER_ID_MAIN,
          ALOOPER_EVENT_INPUT, NULL, NULL);
-   android_app->looper = looper;
-
    slock_lock(android_app->mutex);
+   android_app->looper  = looper;
    android_app->running = 1;
    scond_broadcast(android_app->cond);
    slock_unlock(android_app->mutex);
@@ -3106,6 +3140,33 @@ static void frontend_unix_init(void *data)
 
    while (!android_app->window)
    {
+      if (!android_run_events(android_app))
+      {
+         frontend_unix_deinit(android_app);
+         frontend_android_shutdown(android_app);
+         return;
+      }
+   }
+
+   /* Storage-permission gate: filesystem-dependent startup - config
+    * probing, asset extraction, storage tests - must not run before
+    * the Java side has resolved the runtime permission state.  The
+    * wait pumps lifecycle commands, so a pause or rotation while a
+    * permission dialog is up cannot block the UI thread's
+    * synchronized window teardown (ANR).  A launch with the
+    * permission already settled signals before this loop is reached
+    * and never waits. */
+   for (;;)
+   {
+      bool resolved;
+
+      slock_lock(android_app->mutex);
+      resolved = (android_app->permission_state
+            & PLAT_ANDROID_PERM_RESOLVED) != 0;
+      slock_unlock(android_app->mutex);
+      if (resolved)
+         break;
+
       if (!android_run_events(android_app))
       {
          frontend_unix_deinit(android_app);

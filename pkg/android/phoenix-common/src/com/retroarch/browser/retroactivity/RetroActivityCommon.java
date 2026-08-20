@@ -98,6 +98,10 @@ public class RetroActivityCommon extends NativeActivity
   public static final int RETRO_RUMBLE_STRONG = 0;
   public static final int RETRO_RUMBLE_WEAK = 1;
   public static final int REQUEST_CODE_OPEN_DOCUMENT_TREE = 0;
+  /* Startup permission flow; distinct from the in-session all-files
+   * re-ask loop on requestCode 124, which restarts the app on grant. */
+  private static final int REQUEST_CODE_STARTUP_ALL_FILES = 125;
+  private static final int REQUEST_CODE_STARTUP_PERMISSIONS = 126;
   public boolean sustainedPerformanceMode = true;
   public int screenOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
 
@@ -178,6 +182,11 @@ public class RetroActivityCommon extends NativeActivity
             .registerInputDeviceListener(this, null);
     PlayCoreManager.getInstance().onCreate(this);
     super.onCreate(savedInstanceState);
+
+    /* super.onCreate has loaded the native library and started the
+     * native thread; it now waits on the permission gate until this
+     * resolves. */
+    resolveStartupPermissions();
   }
 
   @Override
@@ -190,9 +199,117 @@ public class RetroActivityCommon extends NativeActivity
     super.onDestroy();
   }
 
+  /** Current storage permission state for this SDK level. */
+  private boolean hasStoragePermission()
+  {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+      return android.os.Environment.isExternalStorageManager();
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+      return checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+              == android.content.pm.PackageManager.PERMISSION_GRANTED
+          && checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE)
+              == android.content.pm.PackageManager.PERMISSION_GRANTED;
+    return true;
+  }
+
+  /**
+   * Resolves the startup storage permission and releases the native
+   * startup gate.  A launch through the Java launcher (recognized by
+   * its CONFIGFILE extra), a Play Store build, or an already-settled
+   * permission resolves immediately; only a direct launch that is
+   * missing the permission asks, and any outcome - grant, denial,
+   * cancel - releases the gate, with denial falling back to
+   * app-private storage.
+   */
+  private void resolveStartupPermissions()
+  {
+    boolean viaLauncher = getIntent() != null && getIntent().hasExtra("CONFIGFILE");
+
+    if (viaLauncher || isPlayStoreBuild() || hasStoragePermission())
+    {
+      permissionsResolved(hasStoragePermission());
+      return;
+    }
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+    {
+      new android.app.AlertDialog.Builder(this)
+        .setMessage("RetroArch requires All Files Access permission to scan and load game ROMs from your storage.")
+        .setPositiveButton(android.R.string.ok, new android.content.DialogInterface.OnClickListener()
+        {
+          @Override
+          public void onClick(android.content.DialogInterface dialog, int which)
+          {
+            try
+            {
+              Intent intent = new Intent(android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+              intent.addCategory("android.intent.category.DEFAULT");
+              intent.setData(Uri.parse(String.format("package:%s", getPackageName())));
+              startActivityForResult(intent, REQUEST_CODE_STARTUP_ALL_FILES);
+            }
+            catch (Exception e)
+            {
+              try
+              {
+                Intent intent = new Intent(android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+                startActivityForResult(intent, REQUEST_CODE_STARTUP_ALL_FILES);
+              }
+              catch (Exception e2)
+              {
+                permissionsResolved(false);
+              }
+            }
+          }
+        })
+        .setNegativeButton(android.R.string.cancel, new android.content.DialogInterface.OnClickListener()
+        {
+          @Override
+          public void onClick(android.content.DialogInterface dialog, int which)
+          {
+            permissionsResolved(false);
+          }
+        })
+        .setOnCancelListener(new android.content.DialogInterface.OnCancelListener()
+        {
+          @Override
+          public void onCancel(android.content.DialogInterface dialog)
+          {
+            permissionsResolved(false);
+          }
+        })
+        .show();
+      return;
+    }
+
+    /* Android 6 through 10: runtime storage permissions. */
+    requestPermissions(new String[] {
+        android.Manifest.permission.READ_EXTERNAL_STORAGE,
+        android.Manifest.permission.WRITE_EXTERNAL_STORAGE },
+        REQUEST_CODE_STARTUP_PERMISSIONS);
+  }
+
+  @Override
+  public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults)
+  {
+    if (requestCode == REQUEST_CODE_STARTUP_PERMISSIONS)
+    {
+      permissionsResolved(hasStoragePermission());
+      return;
+    }
+    super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+  }
+
   @Override
   public void onActivityResult(int requestCode, int resultCode, Intent intent)
   {
+    if (requestCode == REQUEST_CODE_STARTUP_ALL_FILES)
+    {
+      /* The Settings return carries no intent; resolve from the live
+       * state and proceed either way. */
+      permissionsResolved(hasStoragePermission());
+      return;
+    }
+
     if (requestCode == 124)
     {
       if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R)
@@ -1612,6 +1729,14 @@ public class RetroActivityCommon extends NativeActivity
    * Called when the user grants access to a Storage Access Framework tree.
    */
   public native void safTreeAdded(String tree);
+
+  /**
+   * Tells the native side that the startup storage-permission flow has
+   * finished, releasing the startup gate.  granted reflects the current
+   * permission state; startup proceeds either way, falling back to
+   * app-private storage when denied.
+   */
+  public native void permissionsResolved(boolean granted);
 
   /**
    * Forwards system-keyboard text to native menu input.
