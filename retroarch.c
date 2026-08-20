@@ -8547,7 +8547,10 @@ bool retroarch_main_init(int argc, char *argv[])
 
       {
          char str_output[256];
-         char str[128];
+         /* Wide enough for every name the mask can name at once, so
+          * the log does not stop mid-list on a CPU that reports a lot
+          * of them. */
+         char str[192];
          int len;
          retroarch_get_capabilities(RARCH_CAPABILITIES_CPU, str, sizeof(str));
 
@@ -9356,60 +9359,67 @@ size_t retroarch_get_capabilities(enum rarch_capabilities type,
    {
       case RARCH_CAPABILITIES_CPU:
          {
+            /* Each name carries its own separator, so appending one is
+             * a single bounded copy. */
+            static const struct
+            {
+               uint64_t    bit;
+               const char *name;
+            } simd_names[] = {
+               { RETRO_SIMD_MMX,    "MMX " },
+               { RETRO_SIMD_MMXEXT, "MMXEXT " },
+               { RETRO_SIMD_SSE,    "SSE " },
+               { RETRO_SIMD_SSE2,   "SSE2 " },
+               { RETRO_SIMD_SSE3,   "SSE3 " },
+               { RETRO_SIMD_SSSE3,  "SSSE3 " },
+               { RETRO_SIMD_SSE4,   "SSE4 " },
+               { RETRO_SIMD_SSE42,  "SSE42 " },
+               { RETRO_SIMD_AES,    "AES " },
+               { RETRO_SIMD_PCLMUL, "PCLMUL " },
+               { RETRO_SIMD_AVX,    "AVX " },
+               { RETRO_SIMD_AVX2,   "AVX2 " },
+               { RETRO_SIMD_AVX512, "AVX512 " },
+               { RETRO_SIMD_LZCNT,  "LZCNT " },
+               { RETRO_SIMD_NEON,   "NEON " },
+               { RETRO_SIMD_VFPV3,  "VFPV3 " },
+               { RETRO_SIMD_VFPV4,  "VFPV4 " },
+               { RETRO_SIMD_VMX,    "VMX " },
+               { RETRO_SIMD_VMX128, "VMX128 " },
+               { RETRO_SIMD_VFPU,   "VFPU " },
+               { RETRO_SIMD_PS,     "PS " },
+               { RETRO_SIMD_ASIMD,  "ASIMD " },
+               { RETRO_SIMD_CRC32,  "CRC32 " },
+               { RETRO_SIMD_SHA512, "SHA512 " },
+               { RETRO_SIMD_SHA1,   "SHA1 " },
+               { RETRO_SIMD_SHA256, "SHA256 " },
+            };
             uint64_t cpu = cpu_features_get();
-            if (cpu & RETRO_SIMD_MMX)
-               _len += strlcpy(s + _len, "MMX ", len - _len);
-            if (cpu & RETRO_SIMD_MMXEXT)
-               _len += strlcpy(s + _len, "MMXEXT ", len - _len);
-            if (cpu & RETRO_SIMD_SSE)
-               _len += strlcpy(s + _len, "SSE ", len - _len);
-            if (cpu & RETRO_SIMD_SSE2)
-               _len += strlcpy(s + _len, "SSE2 ", len - _len);
-            if (cpu & RETRO_SIMD_SSE3)
-               _len += strlcpy(s + _len, "SSE3 ", len - _len);
-            if (cpu & RETRO_SIMD_SSSE3)
-               _len += strlcpy(s + _len, "SSSE3 ", len - _len);
-            if (cpu & RETRO_SIMD_SSE4)
-               _len += strlcpy(s + _len, "SSE4 ", len - _len);
-            if (cpu & RETRO_SIMD_SSE42)
-               _len += strlcpy(s + _len, "SSE42 ", len - _len);
-            if (cpu & RETRO_SIMD_AES)
-               _len += strlcpy(s + _len, "AES ", len - _len);
-            if (cpu & RETRO_SIMD_PCLMUL)
-               _len += strlcpy(s + _len, "PCLMUL ", len - _len);
-            if (cpu & RETRO_SIMD_AVX)
-               _len += strlcpy(s + _len, "AVX ", len - _len);
-            if (cpu & RETRO_SIMD_AVX2)
-               _len += strlcpy(s + _len, "AVX2 ", len - _len);
-            if (cpu & RETRO_SIMD_AVX512)
-               _len += strlcpy(s + _len, "AVX512 ", len - _len);
-            if (cpu & RETRO_SIMD_LZCNT)
-               _len += strlcpy(s + _len, "LZCNT ", len - _len);
-            if (cpu & RETRO_SIMD_NEON)
-               _len += strlcpy(s + _len, "NEON ", len - _len);
-            if (cpu & RETRO_SIMD_VFPV3)
-               _len += strlcpy(s + _len, "VFPV3 ", len - _len);
-            if (cpu & RETRO_SIMD_VFPV4)
-               _len += strlcpy(s + _len, "VFPV4 ", len - _len);
-            if (cpu & RETRO_SIMD_VMX)
-               _len += strlcpy(s + _len, "VMX ", len - _len);
-            if (cpu & RETRO_SIMD_VMX128)
-               _len += strlcpy(s + _len, "VMX128 ", len - _len);
-            if (cpu & RETRO_SIMD_VFPU)
-               _len += strlcpy(s + _len, "VFPU ", len - _len);
-            if (cpu & RETRO_SIMD_PS)
-               _len += strlcpy(s + _len, "PS ", len - _len);
-            if (cpu & RETRO_SIMD_ASIMD)
-               _len += strlcpy(s + _len, "ASIMD ", len - _len);
-            if (cpu & RETRO_SIMD_CRC32)
-               _len += strlcpy(s + _len, "CRC32 ", len - _len);
-            if (cpu & RETRO_SIMD_SHA512)
-               _len += strlcpy(s + _len, "SHA512 ", len - _len);
-            if (cpu & RETRO_SIMD_SHA1)
-               _len += strlcpy(s + _len, "SHA1 ", len - _len);
-            if (cpu & RETRO_SIMD_SHA256)
-               _len += strlcpy(s + _len, "SHA256 ", len - _len);
-            break;
+            size_t   i;
+
+            /* A mask with nothing in it still has to leave a string
+             * behind: the callers hand this an uninitialised buffer
+             * and print it. */
+            if (len)
+               s[0] = '\0';
+
+            for (i = 0; i < ARRAY_SIZE(simd_names); i++)
+            {
+               size_t nlen;
+
+               if (!(cpu & simd_names[i].bit))
+                  continue;
+
+               /* Stop while the remaining count is still a count.
+                * strlcpy() reports what it would have written, so
+                * adding its return once it has truncated carries _len
+                * past len and turns every later len - _len into a
+                * very large size_t. */
+               nlen = strlen(simd_names[i].name);
+               if (_len + nlen >= len)
+                  break;
+
+               _len += strlcpy(s + _len, simd_names[i].name, len - _len);
+            }
          }
          break;
       case RARCH_CAPABILITIES_COMPILER:
