@@ -228,6 +228,10 @@ int ssl_socket_connect(void *state_data,
       return -1;
 
    mbedtls_ssl_conf_authmode(&state->conf, MBEDTLS_SSL_VERIFY_OPTIONAL);
+   /* The default preset floors the client at TLS 1.0 whichever protocol
+    * versions are compiled in, so name the floor that matches the build. */
+   mbedtls_ssl_conf_min_version(&state->conf,
+         MBEDTLS_SSL_MAJOR_VERSION_3, MBEDTLS_SSL_MINOR_VERSION_3);
    mbedtls_ssl_conf_ca_chain(&state->conf, &state->ca, NULL);
 #if SSL_MBED_LEGACY_RNG
    mbedtls_ssl_conf_rng(&state->conf, mbedtls_ctr_drbg_random, &state->ctr_drbg);
