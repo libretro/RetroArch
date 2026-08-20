@@ -9375,12 +9375,16 @@ size_t retroarch_get_capabilities(enum rarch_capabilities type,
                _len += strlcpy(s + _len, "SSE42 ", len - _len);
             if (cpu & RETRO_SIMD_AES)
                _len += strlcpy(s + _len, "AES ", len - _len);
+            if (cpu & RETRO_SIMD_PCLMUL)
+               _len += strlcpy(s + _len, "PCLMUL ", len - _len);
             if (cpu & RETRO_SIMD_AVX)
                _len += strlcpy(s + _len, "AVX ", len - _len);
             if (cpu & RETRO_SIMD_AVX2)
                _len += strlcpy(s + _len, "AVX2 ", len - _len);
             if (cpu & RETRO_SIMD_AVX512)
                _len += strlcpy(s + _len, "AVX512 ", len - _len);
+            if (cpu & RETRO_SIMD_LZCNT)
+               _len += strlcpy(s + _len, "LZCNT ", len - _len);
             if (cpu & RETRO_SIMD_NEON)
                _len += strlcpy(s + _len, "NEON ", len - _len);
             if (cpu & RETRO_SIMD_VFPV3)
@@ -9397,6 +9401,8 @@ size_t retroarch_get_capabilities(enum rarch_capabilities type,
                _len += strlcpy(s + _len, "PS ", len - _len);
             if (cpu & RETRO_SIMD_ASIMD)
                _len += strlcpy(s + _len, "ASIMD ", len - _len);
+            if (cpu & RETRO_SIMD_CRC32)
+               _len += strlcpy(s + _len, "CRC32 ", len - _len);
             break;
          }
          break;
