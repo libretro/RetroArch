@@ -539,6 +539,51 @@ static void cpulist_read_from(CpuList* list, const char* filename)
 
 #endif
 
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+/* GetLogicalProcessorInformation arrived in XP SP3 and Server 2003, so
+ * it is resolved rather than linked: on Win9x, NT 4 and 2000 the export
+ * is absent, GetProcAddress reports so, and the caller falls back to
+ * the plain processor count. The Ex form carrying EfficiencyClass is
+ * Windows 7 and later and would rank efficiency cores, which this does
+ * not attempt. */
+typedef BOOL (WINAPI *cpu_glpi_t)(
+      PSYSTEM_LOGICAL_PROCESSOR_INFORMATION, PDWORD);
+
+/* Caller frees. Returns NULL, leaving *count untouched, wherever the
+ * export or the query is unavailable. */
+static SYSTEM_LOGICAL_PROCESSOR_INFORMATION *cpu_win32_slpi(DWORD *count)
+{
+   SYSTEM_LOGICAL_PROCESSOR_INFORMATION *buf = NULL;
+   DWORD       _len = 0;
+   HMODULE     k32  = GetModuleHandleA("kernel32.dll");
+   cpu_glpi_t  glpi = k32 ? (cpu_glpi_t)(void (*)(void))
+      GetProcAddress(k32, "GetLogicalProcessorInformation") : NULL;
+
+   if (!glpi)
+      return NULL;
+
+   /* The first call is expected to fail, and reports the size wanted. */
+   if (glpi(NULL, &_len))
+      return NULL;
+   if (GetLastError() != ERROR_INSUFFICIENT_BUFFER || _len == 0)
+      return NULL;
+   if (_len % sizeof(*buf))
+      return NULL;
+
+   if (!(buf = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION *)malloc(_len)))
+      return NULL;
+
+   if (!glpi(buf, &_len))
+   {
+      free(buf);
+      return NULL;
+   }
+
+   *count = _len / (DWORD)sizeof(*buf);
+   return buf;
+}
+#endif
+
 #if defined(__linux__)
 /* Number of distinct SMT sibling groups under
  * /sys/devices/system/cpu, which is one per physical core. The list a
@@ -657,6 +702,67 @@ size_t cpu_features_get_processor_order(unsigned *s, size_t len)
    if (!s || !len)
       return 0;
 
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   {
+      DWORD count = 0;
+      SYSTEM_LOGICAL_PROCESSOR_INFORMATION *buf = cpu_win32_slpi(&count);
+
+      if (buf)
+      {
+         struct cpu_proc_rank *rank;
+         size_t cap = (size_t)cpu_features_get_core_amount();
+
+         if (cap < 1)
+            cap = 1;
+         if (cap > 1024)
+            cap = 1024;
+
+         if ((rank = (struct cpu_proc_rank *)
+                  malloc(cap * sizeof(struct cpu_proc_rank))))
+         {
+            DWORD i;
+            for (i = 0; i < count && n < cap; i++)
+            {
+               unsigned  bit;
+               unsigned  seen = 0;
+               ULONG_PTR mask = buf[i].ProcessorMask;
+
+               if (buf[i].Relationship != RelationProcessorCore)
+                  continue;
+
+               /* One mask bit per processor on this core, the lowest
+                * of them being the one an SMT sibling shares with. */
+               for (bit = 0; bit < sizeof(ULONG_PTR) * 8 && n < cap; bit++)
+               {
+                  if (!(mask & (((ULONG_PTR)1) << bit)))
+                     continue;
+                  rank[n].freq = 0;
+                  rank[n].id   = bit;
+                  rank[n].smt  = seen ? 1 : 0;
+                  seen++;
+                  n++;
+               }
+            }
+
+            if (n)
+            {
+               qsort(rank, n, sizeof(struct cpu_proc_rank),
+                     cpu_proc_rank_cmp);
+               if (n > len)
+                  n = len;
+               for (i = 0; i < (DWORD)n; i++)
+                  s[i] = rank[i].id;
+            }
+            free(rank);
+         }
+         free(buf);
+
+         if (n)
+            return n;
+      }
+   }
+#endif
+
 #if defined(__linux__)
    {
       struct cpu_proc_rank *rank;
@@ -728,7 +834,24 @@ unsigned cpu_features_get_core_amount_physical(void)
 {
    unsigned logical = cpu_features_get_core_amount();
 
-#if defined(__APPLE__)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   {
+      DWORD count = 0;
+      SYSTEM_LOGICAL_PROCESSOR_INFORMATION *buf = cpu_win32_slpi(&count);
+
+      if (buf)
+      {
+         DWORD    i;
+         unsigned cores = 0;
+         for (i = 0; i < count; i++)
+            if (buf[i].Relationship == RelationProcessorCore)
+               cores++;
+         free(buf);
+         if (cores > 0)
+            return cores;
+      }
+   }
+#elif defined(__APPLE__)
    {
       /* Darwin publishes both counts, so the physical one is a read
        * rather than a derivation. */
