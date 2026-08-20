@@ -364,9 +364,61 @@ static void onDestroy(ANativeActivity* activity)
    android_app_free((struct android_app*)activity->instance);
 }
 
+#ifdef HAVE_ANDROID_LIFECYCLE_HOOKS
+/* Developer hooks: a script named 'switch' run when the activity starts,
+ * and one named 'reset' run at teardown, for swapping builds and clearing
+ * state on a development device. Absent scripts are not an error.
+ *
+ * The scripts live in the app's private data directory, which is 0700 and
+ * therefore writable only by this app: a hook in shared storage would let
+ * anything holding all-files access choose what runs here, with this
+ * process's uid and permissions. There is no way to check that after the
+ * fact - the FUSE layer over shared storage synthesises ownership, so a
+ * stat() of a file another app wrote still reports this app as its owner.
+ *
+ * The script is handed to the shell to interpret rather than executed:
+ * the data directory is exec-blocked for targetSdk 29 and above.
+ *
+ * Both call sites run on the app thread, so a script holds up the frame
+ * loop for as long as it takes rather than a lifecycle callback, and the
+ * 'reset' hook spends the teardown budget android_app_free() is waiting
+ * out. Build with -DHAVE_ANDROID_LIFECYCLE_HOOKS; release packages do not
+ * define it. */
+void android_run_lifecycle_hook(struct android_app *android_app,
+      const char *name)
+{
+   /* One buffer holds both the path and the command line: the path is
+    * written past a fixed 'sh ' prefix, so the existence check reads
+    * cmd + 3 and system() reads cmd. Quoting is unnecessary because the
+    * path is the internal data directory, whose only variable component
+    * is the package name - a Java identifier, so no whitespace and no
+    * shell metacharacters. */
+   char cmd[DIR_MAX_LENGTH];
+   const char *base;
+
+   if (!android_app || !android_app->activity)
+      return;
+
+   base = android_app->activity->internalDataPath;
+
+   if (string_is_empty(base))
+      return;
+
+   strlcpy(cmd, "sh ", sizeof(cmd));
+   fill_pathname_join_special(cmd + 3, base, name, sizeof(cmd) - 3);
+
+   if (!path_is_valid(cmd + 3))
+      return;
+
+   RARCH_LOG("[Android] Running lifecycle hook: %s.\n", cmd + 3);
+
+   if (system(cmd) == -1)
+      RARCH_ERR("[Android] Lifecycle hook failed to run: %s.\n", cmd + 3);
+}
+#endif
+
 static void onStart(ANativeActivity* activity)
 {
-   int result = system("sh -c \"sh /sdcard/switch\"");
    android_app_set_activity_state((struct android_app*)
          activity->instance, APP_CMD_START);
 }
@@ -3008,7 +3060,10 @@ static void free_saved_state(struct android_app* android_app)
 static void android_app_destroy(struct android_app *android_app)
 {
    JNIEnv *env = NULL;
-   int result  = system("sh -c \"sh /sdcard/reset\"");
+
+#ifdef HAVE_ANDROID_LIFECYCLE_HOOKS
+   android_run_lifecycle_hook(android_app, "reset");
+#endif
 
    free_saved_state(android_app);
 

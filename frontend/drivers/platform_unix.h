@@ -483,6 +483,14 @@ void android_display_server_reapply_mode(void);
 
 void android_app_write_cmd(struct android_app *android_app, int8_t cmd);
 
+#ifdef HAVE_ANDROID_LIFECYCLE_HOOKS
+/* Runs a named shell script from the app's private data directory, if one
+ * is present. Build with -DHAVE_ANDROID_LIFECYCLE_HOOKS to enable; see
+ * android_run_lifecycle_hook() for what the hooks may and may not do. */
+void android_run_lifecycle_hook(struct android_app *android_app,
+      const char *name);
+#endif
+
 extern struct android_app *g_android;
 
 void frontend_android_get_name(char *s, size_t len);

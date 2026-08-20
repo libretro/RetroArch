@@ -734,6 +734,13 @@ static void android_input_poll_main_cmd(void)
             android_input_flush_persistent_state();
          else
             android_state_flushed = false;
+
+#ifdef HAVE_ANDROID_LIFECYCLE_HOOKS
+         /* After the acknowledgement above, so a slow hook delays this
+          * thread rather than the UI thread waiting in onStart(). */
+         if (cmd == APP_CMD_START)
+            android_run_lifecycle_hook(android_app, "switch");
+#endif
          break;
       }
 
