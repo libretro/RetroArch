@@ -390,6 +390,12 @@ unsigned menu_displaylist_contentless_cores(file_list_t *list,
 
 enum filebrowser_enums filebrowser_get_type(void);
 
+#ifdef HAVE_SMBCLIENT
+/* Writes smb://<server>[/<share>][/<subdir>] into 's', returning false when
+ * the client is disabled or no server is configured. */
+bool menu_displaylist_build_smb_root(char *s, size_t len);
+#endif
+
 void filebrowser_clear_type(void);
 
 void filebrowser_set_type(enum filebrowser_enums type);

@@ -184,6 +184,51 @@ enum filebrowser_enums filebrowser_get_type(void)
    return p_displist->filebrowser_types;
 }
 
+#ifdef HAVE_SMBCLIENT
+bool menu_displaylist_build_smb_root(char *s, size_t len)
+{
+   size_t _len;
+   settings_t *settings = config_get_ptr();
+   const char *server   = settings->arrays.smb_client_server_address;
+   const char *share    = settings->arrays.smb_client_share;
+   const char *subdir   = settings->arrays.smb_client_subdir;
+
+   if (!settings->bools.smb_client_enable || !*server)
+      return false;
+
+   _len = strlcpy(s, "smb://", len);
+   if (_len >= len)
+      return false;
+   _len += strlcpy(s + _len, server, len - _len);
+   if (_len >= len)
+      return false;
+
+   if (*share)
+   {
+      _len += strlcpy(s + _len, "/", len - _len);
+      if (_len >= len)
+         return false;
+      _len += strlcpy(s + _len, share, len - _len);
+      if (_len >= len)
+         return false;
+   }
+
+   if (*subdir)
+   {
+      if (subdir[0] != '/')
+      {
+         _len += strlcpy(s + _len, "/", len - _len);
+         if (_len >= len)
+            return false;
+      }
+      if (strlcpy(s + _len, subdir, len - _len) >= len - _len)
+         return false;
+   }
+
+   return true;
+}
+#endif
+
 void filebrowser_clear_type(void)
 {
    struct menu_displaylist_state *p_displist = &menu_displist_st;
@@ -17319,6 +17364,19 @@ static bool menu_displaylist_ctl_internal(
                         MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY,
                         FILE_TYPE_DIRECTORY, 0, 0, NULL))
                   count++;
+#ifdef HAVE_SMBCLIENT
+            {
+               char smb_root[PATH_MAX_LENGTH];
+
+               if (menu_displaylist_build_smb_root(smb_root, sizeof(smb_root)))
+                  if (menu_entries_append(info->list, smb_root, "",
+                           load_content ?
+                           MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR :
+                           MENU_ENUM_LABEL_FILE_BROWSER_DIRECTORY,
+                           FILE_TYPE_DIRECTORY, 0, 0, NULL))
+                     count++;
+            }
+#endif
          }
          else
          {
