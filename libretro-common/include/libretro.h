@@ -4973,6 +4973,42 @@ enum retro_sensor_action
 #define RETRO_SENSOR_ILLUMINANCE 6
 /** @} */
 
+/** @defgroup RETRO_SENSOR_SUBDEVICE Sensor Sub-Device Index
+ * @{
+ */
+
+/**
+ * The number of bits that a sub-device index is shifted by within a sensor ID
+ * or a \c retro_sensor_action.
+ *
+ * Addresses more than one sensor of the same kind on a single port.
+ * Index 0 denotes the controller itself and encodes to the values already in
+ * use (<tt>RETRO_SENSOR_SUBDEVICE(0, id) == id</tt>). Index 1 and above denote
+ * sub-devices, in whatever order the device type implies.
+ *
+ * @note \c retro_sensor_action is an enum, so an encoded action must be cast at
+ * the call site. \c RETRO_SENSOR_DUMMY pins the underlying type to \c int, so
+ * the encoded value is in range.
+ *
+ * @see RETRO_SENSOR_ID
+ * @see retro_sensor_action
+ */
+#define RETRO_SENSOR_INDEX_SHIFT 8
+
+/** Mask of the bits below the sub-device index. */
+#define RETRO_SENSOR_INDEX_MASK ((1u << RETRO_SENSOR_INDEX_SHIFT) - 1u)
+
+/** Returns the sub-device index encoded in \c id; 0 is the controller itself. */
+#define RETRO_SENSOR_INDEX(id) ((unsigned)(id) >> RETRO_SENSOR_INDEX_SHIFT)
+
+/** Returns the sensor ID or action in \c id, without its sub-device index. */
+#define RETRO_SENSOR_BASE(id) ((unsigned)(id) & RETRO_SENSOR_INDEX_MASK)
+
+/** Addresses sensor \c id on sub-device \c index of a port. */
+#define RETRO_SENSOR_SUBDEVICE(index, id) \
+   ((unsigned)((((unsigned)(index)) << RETRO_SENSOR_INDEX_SHIFT) | ((unsigned)(id))))
+/** @} */
+
 /**
  * Adjusts the state of a sensor.
  *
