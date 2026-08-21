@@ -2199,6 +2199,14 @@ static void android_input_poll_input_gingerbread(
    AInputEvent              *event = NULL;
    struct android_app *android_app = (struct android_app*)g_android;
 
+   /* The queue is swapped out from under this poll: a destroyed input
+    * queue arrives as a NULL through APP_CMD_INPUT_CHANGED, and a
+    * LOOPER_ID_INPUT raised before that command was serviced is still
+    * delivered afterwards in the same pollOnce batch.
+    * android_input_discard_events guards the same pointer. */
+   if (!android_app || !android_app->inputQueue)
+      return;
+
    /* Read all pending events. */
    if (AInputQueue_getEvent(android_app->inputQueue, &event) >= 0)
    {
@@ -2262,6 +2270,14 @@ static void android_input_poll_input_default(android_input_t *android)
 {
    AInputEvent              *event = NULL;
    struct android_app *android_app = (struct android_app*)g_android;
+
+   /* The queue is swapped out from under this poll: a destroyed input
+    * queue arrives as a NULL through APP_CMD_INPUT_CHANGED, and a
+    * LOOPER_ID_INPUT raised before that command was serviced is still
+    * delivered afterwards in the same pollOnce batch.
+    * android_input_discard_events guards the same pointer. */
+   if (!android_app || !android_app->inputQueue)
+      return;
 
    /* Read all pending events. */
    while (AInputQueue_hasEvents(android_app->inputQueue))
