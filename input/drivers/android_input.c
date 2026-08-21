@@ -2132,22 +2132,49 @@ struct TOUCHSTATE
 static void engine_handle_touchpad(
       struct android_app *android, AInputEvent *event, int port)
 {
-   unsigned n;
+   size_t n;
    static struct TOUCHSTATE touchstate[64];
-   int pointer_count	= AMotionEvent_getPointerCount(event);
+   int    raw_action  = AMotionEvent_getAction(event);
+   int    action      = AMOTION_EVENT_ACTION_MASK & raw_action;
+   size_t ptr_count   = AMotionEvent_getPointerCount(event);
+   int    action_id   = -1;
 
-   for(n = 0; n < pointer_count; ++n)
+   /* Every other handler on this path bounds the port it is given.
+    * This one is in range only because android_input_get_id_port maps
+    * a touchpad source to port 0 or to a pad slot below
+    * DEFAULT_MAX_PADS, which is an invariant of a different function. */
+   if (port < 0 || port >= DEFAULT_MAX_PADS)
+      return;
+
+   /* The index of the pointer that went down or up rides in the action
+    * word, and AMotionEvent_getPointerId indexes the event's pointer
+    * array with it without checking it against the count - an index
+    * past the end returns whatever is behind the array, which then
+    * indexes touchstate. Nothing in an event that names a pointer it
+    * does not carry is worth routing. */
+   if (     action == AMOTION_EVENT_ACTION_POINTER_DOWN
+         || action == AMOTION_EVENT_ACTION_POINTER_UP)
    {
-      int pointer_id	=   AMotionEvent_getPointerId(event, n);
-      int action     =   AMOTION_EVENT_ACTION_MASK
-                       & AMotionEvent_getAction(event);
-      int raw_action	=   AMotionEvent_getAction(event);
-      if (     action  == AMOTION_EVENT_ACTION_POINTER_DOWN
-            || action  == AMOTION_EVENT_ACTION_POINTER_UP )
-      {
-         int pointer_index = (AMotionEvent_getAction( event ) & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
-         pointer_id        = AMotionEvent_getPointerId( event, pointer_index);
-      }
+      size_t action_idx = (size_t)
+           ((raw_action & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK)
+         >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT);
+
+      if (action_idx >= ptr_count)
+         return;
+
+      action_id = AMotionEvent_getPointerId(event, action_idx);
+   }
+
+   for (n = 0; n < ptr_count; ++n)
+   {
+      int pointer_id = (action_id >= 0)
+         ? action_id
+         : AMotionEvent_getPointerId(event, n);
+
+      /* Pointer ids run to 31 on every Android release, so this only
+       * fires on an id the framework never produces. */
+      if (pointer_id < 0 || pointer_id >= (int)ARRAY_SIZE(touchstate))
+         continue;
 
       if (     action  == AMOTION_EVENT_ACTION_DOWN
             || action  == AMOTION_EVENT_ACTION_POINTER_DOWN )
