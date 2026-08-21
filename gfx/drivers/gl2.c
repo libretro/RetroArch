@@ -3241,10 +3241,19 @@ static void gl2_update_input_size(gl2_t *gl, unsigned width,
    if ((width != gl->last_width[gl->tex_index] ||
             height != gl->last_height[gl->tex_index]) && gl->empty_buf)
    {
-      /* Resolution change. */
-      bool shrunk                    =
-            (width  < gl->last_width[gl->tex_index])
-         || (height < gl->last_height[gl->tex_index]);
+      /* Resolution change.
+       *
+       * Both rectangles are clamped to the texture before anything is
+       * derived from them: a core is free to hand over a frame wider
+       * or taller than the geometry it declared, nothing above tex_w
+       * or tex_h ever reached the texture, and such a width must not
+       * end up describing a read out of empty_buf. */
+      unsigned old_w                 = MIN(gl->last_width[gl->tex_index],
+            gl->tex_w);
+      unsigned old_h                 = MIN(gl->last_height[gl->tex_index],
+            gl->tex_h);
+      unsigned new_w                 = MIN(width,  gl->tex_w);
+      unsigned new_h                 = MIN(height, gl->tex_h);
 
       gl->last_width[gl->tex_index]  = width;
       gl->last_height[gl->tex_index] = height;
@@ -3254,30 +3263,49 @@ static void gl2_update_input_size(gl2_t *gl, unsigned width,
        * shrink blanks them again - so only a shrink can leave pixels
        * of the old frame close enough for the edge filtering and the
        * clamp to reach them. A larger frame covers the difference in
-       * the copy that follows this call, and the upload is the whole
-       * texture: a megabyte for a core with 384x288 geometry, which
-       * is a lot to spend confirming zeroes. */
-      if (clear && shrunk)
+       * the copy that follows this call. */
+      if (clear && (new_w < old_w || new_h < old_h))
       {
-         /* The rectangle going up here is the texture, not the frame,
-          * so the unpack state has to describe gl->tex_w at
-          * gl->base_size. A wider row - from the frame width, from a
-          * larger alignment than the row really needs, or from a row
-          * length another upload left behind - makes the driver walk
-          * off the end of empty_buf. */
+#if defined(HAVE_PSGL)
          glPixelStorei(GL_UNPACK_ALIGNMENT,
                gl2_get_alignment(gl->tex_w * gl->base_size));
-#if defined(HAVE_PSGL)
          glBufferSubData(GL_TEXTURE_REFERENCE_BUFFER_SCE,
                gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size,
                gl->tex_w * gl->tex_h * gl->base_size,
                gl->empty_buf);
 #else
+         /* Only the part of the old rectangle the new one stops
+          * covering can be holding a stale pixel, so a strip down the
+          * right and a strip along the bottom leave the same texture
+          * behind as blanking all of it, for a fraction of the bytes.
+          * The rows are packed tight and the alignment describes the
+          * strip, so each upload reads exactly as much of empty_buf
+          * as its own width and height ask for and no row of it is
+          * ever wider than tex_w. */
          if (gl->flags & GL2_FLAG_HAVE_UNPACK_ROW_LENGTH)
             glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-         glTexSubImage2D(GL_TEXTURE_2D,
-               0, 0, 0, gl->tex_w, gl->tex_h, gl->texture_type,
-               gl->texture_fmt, gl->empty_buf);
+
+         if (new_w < old_w)
+         {
+            glPixelStorei(GL_UNPACK_ALIGNMENT,
+                  gl2_get_alignment((old_w - new_w) * gl->base_size));
+            glTexSubImage2D(GL_TEXTURE_2D, 0,
+                  new_w, 0, old_w - new_w, old_h,
+                  gl->texture_type, gl->texture_fmt, gl->empty_buf);
+         }
+
+         if (new_h < old_h)
+         {
+            unsigned span = MIN(new_w, old_w);
+            if (span > 0)
+            {
+               glPixelStorei(GL_UNPACK_ALIGNMENT,
+                     gl2_get_alignment(span * gl->base_size));
+               glTexSubImage2D(GL_TEXTURE_2D, 0,
+                     0, new_h, span, old_h - new_h,
+                     gl->texture_type, gl->texture_fmt, gl->empty_buf);
+            }
+         }
 #endif
       }
    }
