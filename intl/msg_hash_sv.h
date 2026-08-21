@@ -3106,11 +3106,9 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    char s_3e1e294b[51];
    char s_69c0e487[53];
-   char s_706ff4dc[205];
    char s_a0d1a85c[63];
    char s_907ef7cc[36];
    char s_b0a46506[54];
-   char s_04624c88[45];
    char s_f6492edc[37];
 #endif
    char s_f3bfa8b9[81];
@@ -7714,13 +7712,9 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    "V\303\244lj den autentisering som anv\303\244nds i din milj\303\266.",
    "Bl\303\244ddra efter filer p\303\245 konfigurerad SMB-utdelning.",
-   "Aktivera n\303\244tverks\303\245tkomst f\303\266r SMB-utdelning. Ethernet rekommenderas starkt "
-   "\303\266ver Wi-Fi f\303\266r en mer tillf\303\266rlitlig anslutning. Observera: \303\244ndring a"
-   "v dessa inst\303\244llningar kr\303\244ver en omstart av RetroArch.",
    "V\303\244lj maximala antalet anslutningar som anv\303\244nds i din milj\303\266.",
    "Serverns IP-adress eller v\303\244rdnamn.",
    "Konfigurera inst\303\244llningar f\303\266r SMB-n\303\244tverksdelning.",
-   "Namn p\303\245 n\303\244tverksutdelningen att komma \303\245t.",
    "V\303\244lj standardtidsgr\303\244ns i sekunder.",
 #endif
    "Sortera sparade filer i mappar med namn efter katalogen som inneh\303\245llet finns i.",
@@ -8957,11 +8951,9 @@ typedef char msg_hash_sv_blob_check[
        + 39u
        + 51u
        + 53u
-       + 205u
        + 63u
        + 36u
        + 54u
-       + 45u
        + 37u
 #endif
 #ifdef HAVE_LAKKA
@@ -12135,11 +12127,9 @@ static const uint32_t msg_hash_sv_ids[] =
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,

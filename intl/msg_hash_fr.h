@@ -1167,6 +1167,7 @@ static const struct
    char s_b4c3612a[33];
    char s_f638f238[21];
    char s_f3358a59[44];
+   char s_f8098721[83];
    char s_0d7d9688[29];
    char s_b00815b8[13];
    char s_1ef8917a[16];
@@ -2985,6 +2986,7 @@ static const struct
    char s_7de5d198[66];
    char s_3b573ee6[31];
    char s_dc1d6cc7[72];
+   char s_28543dcf[95];
    char s_aebcb136[183];
    char s_8b636a26[39];
    char s_8f707459[37];
@@ -3364,12 +3366,12 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    char s_3e1e294b[69];
    char s_69c0e487[54];
-   char s_706ff4dc[204];
+   char s_706ff4dc[334];
    char s_a0d1a85c[81];
    char s_b5966528[229];
    char s_907ef7cc[38];
    char s_b0a46506[54];
-   char s_04624c88[43];
+   char s_04624c88[163];
    char s_91976dbe[50];
    char s_f6492edc[76];
    char s_9bb85635[244];
@@ -5586,6 +5588,7 @@ static const struct
    "Afficher 'Red\303\251marrer RetroArch'",
    "Afficher '\303\211teindre'",
    "Afficher les sous-descriptions dans le menu",
+   "Afficher les sous-descriptions dans le menu uniquement pour la s\303\251lection actuelle",
    "Listes de lecture en un clic",
    "Sons du menu",
    "Musique de fond",
@@ -7791,6 +7794,8 @@ static const struct
    "Afficher l'option 'Red\303\251marrer RetroArch' dans le menu principal.",
    "Afficher l'option '\303\211teindre'.",
    "Afficher des informations suppl\303\251mentaires pour les \303\251l\303\251ments du menu.",
+   "N'afficher une sous-description que pour l'\303\251l\303\251ment de menu actuellement mis en sur"
+   "brillance.",
    "Ignorer le menu 'Lancer' lors de l'activation d'entr\303\251es dans la liste de lecture. Appuyez"
    " sur la croix directionnelle tout en maintenant la touche OK pour acc\303\251der au menu 'Lancer"
    "'.",
@@ -8434,16 +8439,18 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    "S\303\251lectionnez l'authentification utilis\303\251e dans votre environnement.",
    "Parcourir les fichiers sur le partage SMB configur\303\251.",
-   "Activer l'acc\303\250s au partage r\303\251seau SMB. Ethernet est fortement recommand\303\251 pa"
-   "r rapport au Wi-Fi pour une connexion plus fiable. Remarque : modifier ces r\303\251glages n\303"
-   "\251cessite un red\303\251marrage de RetroArch.",
+   "Activer l'acc\303\250s aux partages r\303\251seau SMB. Une connexion Ethernet est vivement recom"
+   "mand\303\251e par rapport au Wi-Fi pour une liaison plus fiable. Remarque : les modifications pr"
+   "ennent effet lors de la prochaine consultation d'un partage, tandis que le contenu d\303\251j"
+   "\303\240 en cours de lecture depuis un partage conserve sa connexion actuelle.",
    "S\303\251lectionnez le nombre de connexions maximal utilis\303\251 dans votre environnement.",
    "Mot de passe d'authentification. Ce champ est facultatif lorsque l'acc\303\250s invit\303\251 es"
    "t activ\303\251 sur le serveur. Windows 10 et versions ult\303\251rieures : l'acc\303\250s invit"
    "\303\251 \303\251tant d\303\251sactiv\303\251 par d\303\251faut, un mot de passe est requis ici.",
    "Adresse IP ou nom d'h\303\264te du serveur.",
    "Configurer les param\303\250tres de partage en r\303\251seau SMB.",
-   "Nom du partage en r\303\251seau auquel acc\303\251der.",
+   "Nom du partage r\303\251seau auquel acc\303\251der. Laissez ce champ vide pour lister tous les p"
+   "artages export\303\251s par le serveur et en s\303\251lectionner un lors de la navigation.",
    "Chemin du sous-dossier sur le partage. Optionnel.",
    "S\303\251lectionnez le d\303\251lai d'attente avant expiration par d\303\251faut en secondes.",
    "Nom d'utilisateur pour l'authentification. Ce champ est facultatif lorsque l'acc\303\250s invit"
@@ -9494,7 +9501,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (215794u
+      (sizeof(msg_hash_fr_blob) == (215972u
 #ifdef ANDROID
        + 373u
 #endif
@@ -9814,12 +9821,12 @@ typedef char msg_hash_fr_blob_check[
        + 42u
        + 69u
        + 54u
-       + 204u
+       + 334u
        + 81u
        + 229u
        + 38u
        + 54u
-       + 43u
+       + 163u
        + 50u
        + 76u
        + 244u
@@ -11056,6 +11063,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
@@ -12870,6 +12878,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,

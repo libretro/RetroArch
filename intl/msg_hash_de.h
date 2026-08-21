@@ -1134,6 +1134,7 @@ static const struct
    char s_b4c3612a[33];
    char s_f638f238[16];
    char s_f3358a59[26];
+   char s_f8098721[67];
    char s_0d7d9688[33];
    char s_b00815b8[12];
    char s_1ef8917a[17];
@@ -2910,6 +2911,7 @@ static const struct
    char s_7de5d198[59];
    char s_3b573ee6[28];
    char s_dc1d6cc7[56];
+   char s_28543dcf[82];
    char s_aebcb136[185];
    char s_8b636a26[31];
    char s_8f707459[29];
@@ -3289,12 +3291,12 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    char s_3e1e294b[59];
    char s_69c0e487[57];
-   char s_706ff4dc[201];
+   char s_706ff4dc[318];
    char s_a0d1a85c[71];
    char s_b5966528[211];
    char s_907ef7cc[33];
    char s_b0a46506[50];
-   char s_04624c88[60];
+   char s_04624c88[167];
    char s_91976dbe[49];
    char s_f6492edc[56];
    char s_9bb85635[219];
@@ -5427,6 +5429,7 @@ static const struct
    "\"RetroArch neu starten\" anzeigen",
    "Zeige 'Beenden'",
    "Zeige Men\303\274beschreibungen",
+   "Unterbezeichnungen im Men\303\274 nur f\303\274r die aktuelle Auswahl anzeigen",
    "Wiedergabelisten mit Einzelklick",
    "Men\303\274-T\303\266ne",
    "'BGM' aktivieren",
@@ -7486,6 +7489,7 @@ static const struct
    "Die Option \"RetroArch neu starten\" im Hauptmen\303\274 anzeigen.",
    "Zeige die Option 'Beenden'.",
    "Zus\303\244tzliche Informationen zu Men\303\274eintr\303\244gen anzeigen.",
+   "Nur eine Unterbezeichnung f\303\274r den aktuell hervorgehobenen Men\303\274eintrag anzeigen.",
    "\342\200\236Ausf\303\274hren\342\200\234-Men\303\274 beim Starten von Wiedergabelisteneintr\303"
    "\244ge \303\274berspringen. Das D-Pad dr\303\274cken, w\303\244hrend die OK-Taste gehalten wird,"
    " um auf das \342\200\236Ausf\303\274hren\342\200\234-Men\303\274 zuzugreifen.",
@@ -8066,16 +8070,18 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    "Auswahl der in der Umgebung verwendeten Authentifizierung.",
    "Dateien auf der konfigurierten SMB-Freigabe durchsuchen.",
-   "SMB-Netzwerkfreigabe aktivieren. F\303\274r eine zuverl\303\244ssigere Verbindung wird Ethernet "
-   "gegen\303\274ber WLAN dringend empfohlen. Hinweis: Um diese Einstellungen zu \303\244ndern, muss"
-   " RetroArch neu gestartet werden.",
+   "Den SMB-Netzwerkfreigabezugriff aktivieren. F\303\274r eine zuverl\303\244ssigere Verbindung wir"
+   "d Ethernet gegen\303\274ber WLAN dringend empfohlen. Hinweis: Die \303\204nderungen werden beim "
+   "n\303\244chsten Aufrufen einer Freigabe wirksam, und Inhalte, die bereits von einer Freigabe aus"
+   " ausgef\303\274hrt werden, behalten ihre aktuelle Verbindung bei.",
    "Die maximale Anzahl der im Umfeld verwendeten Verbindungen ausw\303\244hlen.",
    "Passwort f\303\274r die Authentifizierung. Dies ist optional, wenn Gastzugang auf dem Server akt"
    "iviert ist. Windows 10 und h\303\266her: Gastzugang ist standardm\303\244\303\237ig deaktiviert,"
    " daher ist hier ein Passwort erforderlich.",
    "Server-IP-Adresse oder Hostname.",
    "SMB-Netzwerkfreigabe-Einstellungen konfigurieren.",
-   "Name der Netzwerkfreigabe, auf die zugegriffen werden soll.",
+   "Name der Netzwerkfreigabe, auf die zugegriffen werden soll. Leer lassen, um alle vom Server expo"
+   "rtierten Freigaben aufzulisten und beim Durchsuchen eine auszuw\303\244hlen.",
    "Unterverzeichnispfad auf der Freigabe. Optional.",
    "Die Standardzeit\303\274berschreitung in Sekunden ausw\303\244hlen.",
    "Benutzername f\303\274r die Authentifizierung. Dies ist optional, wenn Gastzugang auf dem Server"
@@ -9046,7 +9052,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (192235u
+      (sizeof(msg_hash_de_blob) == (192384u
 #ifdef ANDROID
        + 358u
 #endif
@@ -9374,12 +9380,12 @@ typedef char msg_hash_de_blob_check[
        + 41u
        + 59u
        + 57u
-       + 201u
+       + 318u
        + 71u
        + 211u
        + 33u
        + 50u
-       + 60u
+       + 167u
        + 49u
        + 56u
        + 219u
@@ -10586,6 +10592,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
@@ -12359,6 +12366,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,

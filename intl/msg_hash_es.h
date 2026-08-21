@@ -1176,6 +1176,7 @@ static const struct
    char s_b4c3612a[28];
    char s_f638f238[15];
    char s_f3358a59[31];
+   char s_f8098721[62];
    char s_0d7d9688[45];
    char s_b00815b8[18];
    char s_1ef8917a[17];
@@ -2993,6 +2994,7 @@ static const struct
    char s_7de5d198[66];
    char s_3b573ee6[31];
    char s_dc1d6cc7[62];
+   char s_28543dcf[74];
    char s_aebcb136[171];
    char s_8b636a26[40];
    char s_8f707459[59];
@@ -3372,12 +3374,12 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    char s_3e1e294b[56];
    char s_69c0e487[75];
-   char s_706ff4dc[243];
+   char s_706ff4dc[343];
    char s_a0d1a85c[70];
    char s_b5966528[236];
    char s_907ef7cc[51];
    char s_b0a46506[48];
-   char s_04624c88[64];
+   char s_04624c88[184];
    char s_91976dbe[60];
    char s_f6492edc[61];
    char s_9bb85635[247];
@@ -5572,6 +5574,7 @@ static const struct
    "Mostrar Reiniciar RetroArch",
    "Mostrar Apagar",
    "Mostrar subetiquetas de men\303\272s",
+   "Mostrar subetiquetas de men\303\272s solo para la selecci\303\263n actual",
    "Ejecutar listas de reproducci\303\263n con un clic",
    "Sonidos del men\303\272",
    "M\303\272sica de fondo",
@@ -7734,6 +7737,7 @@ static const struct
    "Muestra la opci\303\263n \302\253Reiniciar RetroArch\302\273 en el men\303\272 principal.",
    "Muestra la opci\303\263n \302\253Apagar\302\273.",
    "Muestra informaci\303\263n adicional sobre los elementos del men\303\272.",
+   "Muestra una subetiqueta solo en el elemento de men\303\272 que est\303\251 resaltado.",
    "Omite el men\303\272 Iniciar al ejecutar un elemento de una lista de reproducci\303\263n. Pulsa "
    "la cruceta mientras mantienes pulsado el bot\303\263n Aceptar para acceder al men\303\272 Inicia"
    "r.",
@@ -8341,15 +8345,18 @@ static const struct
    "Selecciona el modo de autenticaci\303\263n de tu entorno SMB.",
    "Accede a los archivos del recurso compartido de SMB que hayas configurado.",
    "Activa el acceso a la red compartida SMB. Se recomienda encarecidamente utilizar un cable Ethern"
-   "et en vez de una se\303\261al wifi para tener una conexi\303\263n m\303\241s fiable. Nota: si ca"
-   "mbias cualquiera de estos ajustes, es necesario reiniciar RetroArch.",
+   "et en vez de una se\303\261al wifi para tener una conexi\303\263n m\303\241s fiable. Nota: los c"
+   "ambios se aplicar\303\241n la pr\303\263xima vez que navegues por un recurso compartido, el cont"
+   "enido que ya est\303\251 siendo ejecutado desde un recurso compartido no se desconectar\303\241.",
    "Selecciona el n\303\272mero m\303\241ximo de conexiones permitidas en tu entorno.",
    "La contrase\303\261a para la autenticaci\303\263n. Opcional si el acceso de invitado est\303\241"
    " activado en el servidor. Para Windows 10 en adelante: el acceso de invitado est\303\241 desacti"
    "vado por defecto, as\303\255 que es necesario introducir una contrase\303\261a.",
    "La direcci\303\263n IP o el nombre de host del servidor.",
    "Configura los ajustes de la red compartida SMB.",
-   "El nombre del recurso compartido de red al que quieres acceder.",
+   "El nombre del recurso compartido de red al que quieres acceder. Deja esta opci\303\263n en blanc"
+   "o para mostrar todos los recursos que exporte el servidor y as\303\255 poder elegir uno al naveg"
+   "ar.",
    "La ruta del subdirectorio del recurso compartido. Opcional.",
    "Selecciona el tiempo de espera predeterminado (en segundos).",
    "El nombre de usuario para la autenticaci\303\263n. Opcional si el acceso de invitado est\303\241"
@@ -9367,7 +9374,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (208252u
+      (sizeof(msg_hash_es_blob) == (208388u
 #ifdef ANDROID
        + 329u
 #endif
@@ -9693,12 +9700,12 @@ typedef char msg_hash_es_blob_check[
        + 37u
        + 56u
        + 75u
-       + 243u
+       + 343u
        + 70u
        + 236u
        + 51u
        + 48u
-       + 64u
+       + 184u
        + 60u
        + 61u
        + 247u
@@ -10945,6 +10952,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
@@ -12759,6 +12767,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,

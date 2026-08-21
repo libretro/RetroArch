@@ -1181,6 +1181,7 @@ static const struct
    char s_b4c3612a[46];
    char s_f638f238[26];
    char s_f3358a59[36];
+   char s_f8098721[59];
    char s_0d7d9688[36];
    char s_b00815b8[15];
    char s_1ef8917a[22];
@@ -3025,6 +3026,7 @@ static const struct
    char s_7de5d198[77];
    char s_3b573ee6[39];
    char s_dc1d6cc7[61];
+   char s_28543dcf[79];
    char s_aebcb136[135];
    char s_8b636a26[40];
    char s_8f707459[42];
@@ -3405,12 +3407,12 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    char s_3e1e294b[87];
    char s_69c0e487[68];
-   char s_706ff4dc[228];
+   char s_706ff4dc[361];
    char s_a0d1a85c[98];
    char s_b5966528[261];
    char s_907ef7cc[40];
    char s_b0a46506[53];
-   char s_04624c88[47];
+   char s_04624c88[205];
    char s_91976dbe[80];
    char s_f6492edc[61];
    char s_9bb85635[275];
@@ -6136,6 +6138,8 @@ static const struct
    "Hi\341\273\203n th\341\273\213 'Kh\341\273\237i \304\221\341\273\231ng l\341\272\241i RetroArch'",
    "Hi\341\273\203n th\341\273\213 'T\341\272\257t m\303\241y'",
    "Hi\341\273\203n th\341\273\213 nh\303\243n ph\341\273\245 trong menu",
+   "Ch\341\273\211 hi\341\273\203n th\341\273\213 m\303\264 t\341\272\243 ph\341\273\245 c\341\273"
+   "\247a m\341\273\245c \304\221ang ch\341\273\215n",
    "Danh s\303\241ch ch\306\241i m\341\273\231t l\341\272\247n nh\341\272\245p",
    "Menu \303\242m thanh",
    "B\341\272\255t \303\242m thanh 'BGM'",
@@ -9313,6 +9317,8 @@ static const struct
    "Hi\341\273\203n th\341\273\213 t\303\271y ch\341\273\215n 'T\341\272\257t m\303\241y'.",
    "Hi\341\273\203n th\341\273\213 th\303\264ng tin b\341\273\225 sung cho c\303\241c m\341\273\245c"
    " trong menu.",
+   "Ch\341\273\211 hi\341\273\203n th\341\273\213 m\303\264 t\341\272\243 ph\341\273\245 cho m\341"
+   "\273\245c menu hi\341\273\207n \304\221ang \304\221\306\260\341\273\243c ch\341\273\215n.",
    "B\341\273\217 qua menu 'Ch\341\272\241y' khi kh\341\273\237i ch\341\272\241y m\341\273\245c danh"
    " s\303\241ch ch\306\241i. Nh\341\272\245n ph\303\255m D-Pad trong khi gi\341\273\257 OK \304\221"
    "\341\273\203 truy c\341\272\255p menu 'Ch\341\272\241y'.",
@@ -10421,11 +10427,15 @@ static const struct
    "\341\272\241n.",
    "Duy\341\273\207t c\303\241c t\341\273\207p trong th\306\260 m\341\273\245c chia s\341\272\273 SM"
    "B \304\221\303\243 c\341\272\245u h\303\254nh.",
-   "Cho ph\303\251p truy c\341\272\255p chia s\341\272\273 m\341\272\241ng SMB. Khuy\341\272\277n kh"
-   "\303\255ch s\341\273\255 d\341\273\245ng Ethernet qua Wi-Fi \304\221\341\273\203 c\303\263 k\341"
-   "\272\277t n\341\273\221i \304\221\303\241ng tin c\341\272\255y h\306\241n. L\306\260u \303\275: "
-   "vi\341\273\207c thay \304\221\341\273\225i c\303\241c c\303\240i \304\221\341\272\267t n\303\240"
-   "y y\303\252u c\341\272\247u kh\341\273\237i \304\221\341\273\231ng l\341\272\241i RetroArch.",
+   "B\341\272\255t quy\341\273\201n truy c\341\272\255p th\306\260 m\341\273\245c chia s\341\272\273"
+   " m\341\272\241ng SMB. Khuy\341\272\277n ngh\341\273\213 s\341\273\255 d\341\273\245ng k\341\272"
+   "\277t n\341\273\221i Ethernet thay v\303\254 Wi-Fi \304\221\341\273\203 c\303\263 k\341\272\277t"
+   " n\341\273\221i \341\273\225n \304\221\341\273\213nh h\306\241n. L\306\260u \303\275: thay \304"
+   "\221\341\273\225i s\341\272\275 c\303\263 hi\341\273\207u l\341\273\261c v\303\240o l\341\272"
+   "\247n ti\341\272\277p theo b\341\272\241n duy\341\273\207t th\306\260 m\341\273\245c chia s\341"
+   "\272\273; n\341\273\231i dung \304\221ang ch\341\272\241y t\341\273\253 th\306\260 m\341\273\245"
+   "c chia s\341\272\273 v\341\272\253n gi\341\273\257 nguy\303\252n k\341\272\277t n\341\273\221i h"
+   "i\341\273\207n t\341\272\241i.",
    "Ch\341\273\215n s\341\273\221 l\306\260\341\273\243ng k\341\272\277t n\341\273\221i t\341\273"
    "\221i \304\221a \304\221\306\260\341\273\243c s\341\273\255 d\341\273\245ng trong m\303\264i tr"
    "\306\260\341\273\235ng c\341\273\247a b\341\272\241n.",
@@ -10438,8 +10448,11 @@ static const struct
    "\304\220\341\273\213a ch\341\273\211 IP ho\341\272\267c t\303\252n m\303\241y ch\341\273\247.",
    "C\341\272\245u h\303\254nh c\303\241c thi\341\272\277t l\341\272\255p chia s\341\272\273 m\341"
    "\272\241ng SMB.",
-   "T\303\252n th\306\260 m\341\273\245c m\341\272\241ng d\303\271ng \304\221\341\273\203 truy c\341"
-   "\272\255p.",
+   "T\303\252n c\341\273\247a th\306\260 m\341\273\245c chia s\341\272\273 m\341\272\241ng c\341\272"
+   "\247n truy c\341\272\255p. \304\220\341\273\203 tr\341\273\221ng n\341\272\277u mu\341\273\221n "
+   "li\341\273\207t k\303\252 t\341\272\245t c\341\272\243 c\303\241c th\306\260 m\341\273\245c chia"
+   " s\341\272\273 m\303\240 m\303\241y ch\341\273\247 cung c\341\272\245p v\303\240 ch\341\273\215n"
+   " m\341\273\231t th\306\260 m\341\273\245c trong khi duy\341\273\207t.",
    "\304\220\306\260\341\273\235ng d\341\272\253n th\306\260 m\341\273\245c con tr\303\252n th\306"
    "\260 m\341\273\245c chia s\341\272\273. Kh\303\264ng b\341\272\257t bu\341\273\231c.",
    "Ch\341\273\215n th\341\273\235i gian ch\341\273\235 m\341\272\267c \304\221\341\273\213nh (t\303"
@@ -12074,7 +12087,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (228008u
+      (sizeof(msg_hash_vn_blob) == (228146u
 #ifdef ANDROID
        + 373u
 #endif
@@ -12401,12 +12414,12 @@ typedef char msg_hash_vn_blob_check[
        + 54u
        + 87u
        + 68u
-       + 228u
+       + 361u
        + 98u
        + 261u
        + 40u
        + 53u
-       + 47u
+       + 205u
        + 80u
        + 61u
        + 275u
@@ -13653,6 +13666,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
@@ -15492,6 +15506,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,

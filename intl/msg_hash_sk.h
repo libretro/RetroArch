@@ -3278,12 +3278,10 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    char s_3e1e294b[49];
    char s_69c0e487[59];
-   char s_706ff4dc[190];
    char s_a0d1a85c[71];
    char s_b5966528[183];
    char s_907ef7cc[43];
    char s_b0a46506[53];
-   char s_04624c88[57];
    char s_91976dbe[49];
    char s_f6492edc[49];
    char s_9bb85635[211];
@@ -8348,9 +8346,6 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    "Vyberte overenie pou\305\276it\303\251 vo va\305\241om prostred\303\255.",
    "Preh\304\276ad\303\241va\305\245 s\303\272bory na nakonfigurovanom SMB zdie\304\276an\303\255.",
-   "Povoli\305\245 pr\303\255stup k sie\305\245ov\303\251mu zdie\304\276aniu SMB. Ethernet sa d\303"
-   "\264razne odpor\303\272\304\215a pred Wi-Fi pre spo\304\276ahlivej\305\241ie pripojenie. Pozn"
-   "\303\241mka: zmena t\303\275chto nastaven\303\255 vy\305\276aduje re\305\241tart RetroArch.",
    "Vyberte maxim\303\241lny po\304\215et pripojen\303\255 pou\305\276it\303\275ch vo va\305\241om p"
    "rostred\303\255.",
    "Heslo na overenie. Je volite\304\276n\303\251, ak je na serveri povolen\303\275 hos\305\245ovsk"
@@ -8358,7 +8353,6 @@ static const struct
    "p je predvolene zak\303\241zan\303\275, tak\305\276e heslo je tu potrebn\303\251.",
    "IP adresa alebo n\303\241zov hostite\304\276a servera.",
    "Konfigurova\305\245 nastavenia sie\305\245ov\303\251ho zdie\304\276ania SMB.",
-   "N\303\241zov sie\305\245ov\303\251ho zdie\304\276ania, ku ktor\303\251mu sa pripoji\305\245.",
    "Cesta k podadres\303\241ru na zdie\304\276an\303\255. Volite\304\276n\303\251.",
    "Vyberte predvolen\303\275 \304\215asov\303\275 limit v sekund\303\241ch.",
    "Meno pou\305\276\303\255vate\304\276a na overenie. Je volite\304\276n\303\251, ak je na serveri "
@@ -9753,12 +9747,10 @@ typedef char msg_hash_sk_blob_check[
        + 39u
        + 49u
        + 59u
-       + 190u
        + 71u
        + 183u
        + 43u
        + 53u
-       + 57u
        + 49u
        + 49u
        + 211u
@@ -13107,12 +13099,10 @@ static const uint32_t msg_hash_sk_ids[] =
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,

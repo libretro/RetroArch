@@ -1153,6 +1153,7 @@ static const struct
    char s_b4c3612a[32];
    char s_f638f238[19];
    char s_f3358a59[29];
+   char s_f8098721[49];
    char s_0d7d9688[41];
    char s_b00815b8[13];
    char s_1ef8917a[26];
@@ -1922,7 +1923,7 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    char s_3839f91d[32];
    char s_86b07599[36];
-   char s_8d5f85ee[19];
+   char s_8d5f85ee[21];
    char s_9b023eee[27];
    char s_ccae82ba[13];
    char s_ad6e88de[13];
@@ -2956,6 +2957,7 @@ static const struct
    char s_7de5d198[60];
    char s_3b573ee6[29];
    char s_dc1d6cc7[58];
+   char s_28543dcf[60];
    char s_aebcb136[144];
    char s_8b636a26[42];
    char s_8f707459[44];
@@ -3335,12 +3337,12 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    char s_3e1e294b[49];
    char s_69c0e487[59];
-   char s_706ff4dc[226];
+   char s_706ff4dc[309];
    char s_a0d1a85c[62];
    char s_b5966528[194];
    char s_907ef7cc[53];
    char s_b0a46506[62];
-   char s_04624c88[47];
+   char s_04624c88[147];
    char s_91976dbe[58];
    char s_f6492edc[43];
    char s_9bb85635[215];
@@ -5504,6 +5506,7 @@ static const struct
    "Mostrar \"Reiniciar o RetroArch\"",
    "Mostrar \"Desligar\"",
    "Mostrar Sub-r\303\263tulos do Menu",
+   "Apenas mostrar sub-etiquetas no item selecionado",
    "Listas de Reprodu\303\247\303\243o com Clique \303\232nico",
    "Sons do menu",
    "Ativar \"M\303\272sica de fundo\"",
@@ -6285,12 +6288,12 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    "Modo de autentifica\303\247\303\243o do SMB",
    "Navegador pelo Compartilhamento SMB",
-   "Ativar Cliente SMB",
+   "Permitir cliente SMB",
    "Limite de conex\303\265es do SMB",
    "Senha do SMB",
    "Servidor SMB",
    "Configura\303\247\303\265es de rede do SMB",
-   "Nome do Compartilhamento SMB",
+   "Nome do compartilhamento SMB",
    "Compartilhamento SMB",
    "Subdiret\303\263rio do SMB",
    "Tempo limite do SMB",
@@ -7634,6 +7637,7 @@ static const struct
    "Mostre a op\303\247\303\243o \"Reiniciar o RetroArch\" no menu principal.",
    "Mostra a op\303\247\303\243o \"Desligar\".",
    "Mostre as informa\303\247\303\265es adicionais para os itens do menu.",
+   "Exibe apenas a sub-etiqueta do item atualmente selecionado.",
    "Pular o menu 'Executar' ao iniciar entradas da lista de reprodu\303\247\303\243o. Pressione o Di"
    "recional enquanto segura OK para acessar o menu 'Executar'.",
    "Altera as configura\303\247\303\265es de som do menu.",
@@ -8234,16 +8238,18 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    "Define a autentifica\303\247\303\243o usada no seu ambiente.",
    "Navega pelos arquivos no compartilhamento SMB configurado.",
-   "Ativa o acesso a compartilhamento de rede via SMB. Recomenda-se fortemente o uso de Ethernet em "
-   "vez de Wi-Fi para uma conex\303\243o mais est\303\241vel. Nota: a altera\303\247\303\243o destas"
-   " configura\303\247\303\265es requer a reinicializa\303\247\303\243o do RetroArch.",
+   "Permite o acesso ao compartilhamento de rede SMB. A Ethernet \303\251 extremamente recomendada e"
+   "m vez do Wi-Fi para uma conex\303\243o mais confi\303\241vel. Observa\303\247\303\243o: as mudan"
+   "\303\247as ser\303\243o aplicadas na pr\303\263xima pesquisa de compartilhamento, e o conte\303"
+   "\272do em execu\303\247\303\243o de um compartilhamento continua em sua conex\303\243o atual.",
    "Define o n\303\272mero m\303\241ximo de conex\303\265es usadas no seu ambiente.",
    "Senha para autentifica\303\247\303\243o. Opcional ao habilitar o acesso de convidade no servidor"
    ". Windows 10 e posterior: o acesso de convidade \303\251 desabilitado por padr\303\243o, ent\303"
    "\243o uma senha \303\251 necess\303\241ria.",
    "Endere\303\247o IP do Servidor ou nome do host (hostname).",
    "Define as configura\303\247\303\265es do compartilhamento de rede do SMB.",
-   "Nome do compartilhamento de rede para acessar.",
+   "Nome do compartilhamento de rede. Ao deixar em branco, lista todos os compartilhamentos que o se"
+   "rvidor exporta e permite escolher enquanto navega.",
    "Endere\303\247o do subdiret\303\263rio no compartilhamento. Opcional.",
    "Define o tempo limite padr\303\243o em segundos.",
    "Nome de usu\303\241rio para autentifica\303\247\303\243o. Opcional ao habilitar o acesso de conv"
@@ -9254,7 +9260,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_br_blob_check[
-      (sizeof(msg_hash_pt_br_blob) == (193709u
+      (sizeof(msg_hash_pt_br_blob) == (193818u
 #ifdef ANDROID
        + 352u
 #endif
@@ -9388,7 +9394,7 @@ typedef char msg_hash_pt_br_blob_check[
        + 22u
        + 32u
        + 36u
-       + 19u
+       + 21u
        + 27u
        + 13u
        + 13u
@@ -9583,12 +9589,12 @@ typedef char msg_hash_pt_br_blob_check[
        + 44u
        + 49u
        + 59u
-       + 226u
+       + 309u
        + 62u
        + 194u
        + 53u
        + 62u
-       + 47u
+       + 147u
        + 58u
        + 43u
        + 215u
@@ -10813,6 +10819,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
@@ -12614,6 +12621,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,

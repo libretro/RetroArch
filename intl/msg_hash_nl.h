@@ -3201,11 +3201,9 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    char s_3e1e294b[52];
    char s_69c0e487[55];
-   char s_706ff4dc[202];
    char s_a0d1a85c[78];
    char s_907ef7cc[29];
    char s_b0a46506[52];
-   char s_04624c88[64];
    char s_f6492edc[41];
 #endif
    char s_f3bfa8b9[90];
@@ -7688,13 +7686,9 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    "Selecteer de authenticatie gebruikt in je omgeving.",
    "Blader door bestanden op de geconfigureerde SMB share.",
-   "Schakel toegang tot SMB-netwerkshares in. Ethernet wordt sterk aanbevolen boven Wi-Fi voor een b"
-   "etrouwbaardere verbinding. Let op: het wijzigen van deze instellingen vereist een herstart van R"
-   "etroArch.",
    "Selecteer het maximale aantal verbindingen dat in he omgeving wordt gebruikt.",
    "Server IP-adres of hostnaam.",
    "Configureer de instellingen voor SMB-netwerkshares.",
-   "Naam van de netwerkshare waartoe toegang moet worden verkregen.",
    "Selecteer standaard timeout in seconden.",
 #endif
    "Sorteer de slaag-bestanden in folders vernoemd naar de map waarin de inhoud zich bevindt.",
@@ -8903,11 +8897,9 @@ typedef char msg_hash_nl_blob_check[
        + 32u
        + 52u
        + 55u
-       + 202u
        + 78u
        + 29u
        + 52u
-       + 64u
        + 41u
 #endif
 #ifdef HAVE_LAKKA
@@ -12178,11 +12170,9 @@ static const uint32_t msg_hash_nl_ids[] =
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,

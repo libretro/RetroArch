@@ -1157,6 +1157,7 @@ static const struct
    char s_b4c3612a[33];
    char s_f638f238[16];
    char s_f3358a59[29];
+   char s_f8098721[62];
    char s_0d7d9688[39];
    char s_b00815b8[15];
    char s_1ef8917a[22];
@@ -2966,6 +2967,7 @@ static const struct
    char s_7de5d198[64];
    char s_3b573ee6[26];
    char s_dc1d6cc7[55];
+   char s_28543dcf[70];
    char s_aebcb136[170];
    char s_8b636a26[40];
    char s_8f707459[38];
@@ -3345,12 +3347,10 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    char s_3e1e294b[45];
    char s_69c0e487[42];
-   char s_706ff4dc[198];
    char s_a0d1a85c[53];
    char s_b5966528[200];
    char s_907ef7cc[37];
    char s_b0a46506[54];
-   char s_04624c88[38];
    char s_91976dbe[48];
    char s_f6492edc[50];
    char s_9bb85635[201];
@@ -5516,6 +5516,7 @@ static const struct
    "Mostra \302\253Reinicia el RetroArch\302\273",
    "Mostra 'Apagar'",
    "Mostra subetiquetes al men\303\272",
+   "Mostra les etiquetes del men\303\272 nom\303\251s per la selecci\303\263 actual",
    "Llistes de reproducci\303\263 en un sol clic",
    "Sons del men\303\272",
    "Activa el so de 'BGM'",
@@ -7652,6 +7653,7 @@ static const struct
    "Mostra l\342\200\231opci\303\263 \302\253Reinicia el RetroArch\302\273 al men\303\272 principal.",
    "Mostra l'opci\303\263 'Apagar'.",
    "Mostra informaci\303\263 addicional pels elements del men\303\272.",
+   "Mostra nom\303\251s les etiquetes per les entrades del men\303\272 seleccionades.",
    "Omet 'Executar' del men\303\272 quan s'executen les entrades de la llista de reproducci\303\263."
    " Clica la creueta digital mentre es clica el bot\303\263 OK per accedir al men\303\272 'Executa'"
    ".",
@@ -8252,16 +8254,12 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    "Selecciona l'autenticaci\303\263 que es fa servir.",
    "Cerca fitxers a la xarxa SMB configurada.",
-   "Activa l'acc\303\251s a la xarxa compartida SMB. Es recomana una connexi\303\263 Ethernet per so"
-   "bre de Wifi per una connexi\303\263 m\303\251s fiable. Nota: Si fas canvis en aquesta configurac"
-   "i\303\263, cal reiniciar RetroArch.",
    "Selecciona el nombre m\303\240xim de connexions possibles.",
    "Contrasenya per l'autentificaci\303\263. \303\211s opcional si est\303\240 activat l'acc\303\251"
    "s com a convidat en el servidor. Windows 10 o superior: l'acc\303\251s de convidat est\303\240 d"
    "esactivat per defecte, cal una contrasenya.",
    "Adre\303\247a IP del servidor o amfitri\303\263.",
    "Modifica la configuraci\303\263 de la xarxa compartida SMB.",
-   "Nom de la xarxa compartida a accedir.",
    "Adre\303\247a del subdirectori a compartir. Opcional.",
    "Selecciona el temps l\303\255mit per defecte en segons.",
    "Nom d'usuari per l'autentificaci\303\263. \303\211s opcional si est\303\240 activat l'acc\303"
@@ -9268,7 +9266,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (200339u
+      (sizeof(msg_hash_ca_blob) == (200471u
 #ifdef ANDROID
        + 281u
 #endif
@@ -9591,12 +9589,10 @@ typedef char msg_hash_ca_blob_check[
        + 42u
        + 45u
        + 42u
-       + 198u
        + 53u
        + 200u
        + 37u
        + 54u
-       + 38u
        + 48u
        + 50u
        + 201u
@@ -10826,6 +10822,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
@@ -12632,6 +12629,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
@@ -13011,12 +13009,10 @@ static const uint32_t msg_hash_ca_ids[] =
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
