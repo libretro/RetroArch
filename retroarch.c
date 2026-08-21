@@ -8760,6 +8760,17 @@ bool retroarch_main_init(int argc, char *argv[])
             && (menu_st->driver_ctx != menu_ctx_new))
       {
          uint16_t menu_data_own = (menu_st->flags & MENU_ST_FLAG_DATA_OWN);
+#ifdef HAVE_THREADS
+         /* Same barrier as driver_uninit(): RARCH_MENU_CTL_DEINIT runs
+          * the old driver's context_destroy(), which frees the textures
+          * and fonts an in-flight threaded frame is still drawing with.
+          *
+          * No-op when threaded video is not active. */
+         video_driver_state_t *video_st = video_state_get_ptr();
+         if (     VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
+               && (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE))
+            video_thread_wait_idle();
+#endif
          menu_st->flags        &= ~MENU_ST_FLAG_DATA_OWN;
          menu_driver_ctl(RARCH_MENU_CTL_DEINIT, NULL);
          menu_st->flags        |= menu_data_own;
