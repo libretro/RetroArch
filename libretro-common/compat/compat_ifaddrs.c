@@ -78,6 +78,22 @@ static int netlink_socket(void)
    return l_socket;
 }
 
+static pid_t netlink_portid(int p_socket)
+{
+   struct sockaddr_nl l_addr;
+   socklen_t l_len = sizeof(l_addr);
+
+   memset(&l_addr, 0, sizeof(l_addr));
+
+   /* The kernel stamps its replies with the port ID it assigned to
+    * this socket, which is only the process ID when nothing else in
+    * the process claimed that number first. */
+   if (getsockname(p_socket, (struct sockaddr*)&l_addr, &l_len) < 0)
+      return (pid_t)getpid();
+
+   return (pid_t)l_addr.nl_pid;
+}
+
 static int netlink_send(int p_socket, int p_request)
 {
    struct
@@ -161,7 +177,7 @@ static struct nlmsghdr *ifaddrs_get_netlink_response(int p_socket,
 
       if (l_read >= 0)
       {
-         pid_t l_pid = getpid();
+         pid_t l_pid = netlink_portid(p_socket);
          struct nlmsghdr *l_hdr;
 
          for (l_hdr = (struct nlmsghdr *)l_buffer;
@@ -572,7 +588,7 @@ static int ifaddrs_interpret_links(int p_socket,
       NetlinkList *p_netlinkList, struct ifaddrs **p_resultList)
 {
    int l_numLinks = 0;
-   pid_t l_pid    = getpid();
+   pid_t l_pid    = netlink_portid(p_socket);
 
    for (; p_netlinkList; p_netlinkList = p_netlinkList->m_next)
    {
@@ -604,7 +620,7 @@ static int ifaddrs_interpret_addrs(int p_socket,
       NetlinkList *p_netlinkList,
       struct ifaddrs **p_resultList, int p_numLinks)
 {
-   pid_t l_pid = getpid();
+   pid_t l_pid = netlink_portid(p_socket);
    for (; p_netlinkList; p_netlinkList = p_netlinkList->m_next)
    {
       struct nlmsghdr *l_hdr = NULL;
