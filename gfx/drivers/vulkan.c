@@ -8280,11 +8280,10 @@ static void vulkan_set_texture_enable(void *data, bool state, bool fullscreen)
 #define VK_T0 0xff000000u
 #define VK_T1 0xffffffffu
 
-static uintptr_t vulkan_load_texture(void *video_data, void *data,
-      bool threaded, enum texture_filter_type filter_type)
+static uintptr_t vulkan_load_texture_internal(vk_t *vk, void *data,
+      enum texture_filter_type filter_type)
 {
    struct vk_texture *texture  = NULL;
-   vk_t *vk                    = (vk_t*)video_data;
    struct texture_image *image = (struct texture_image*)data;
    if (!image)
       return 0;
@@ -8348,8 +8347,11 @@ static uintptr_t vulkan_load_texture(void *video_data, void *data,
 #ifdef HAVE_THREADS
 typedef struct
 {
-   vk_t       *vk;
-   uintptr_t   handle;
+   vk_t                            *vk;
+   void                            *image;
+   const struct texture_compressed *tc;
+   uintptr_t                        handle;
+   enum texture_filter_type         filter_type;
 } vulkan_texture_cmd_t;
 #endif
 
@@ -8520,11 +8522,10 @@ static bool vulkan_supports_texture_format(void *data,
          & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) != 0;
 }
 
-static uintptr_t vulkan_load_texture_compressed(void *video_data,
-      const struct texture_compressed *tc, bool threaded,
+static uintptr_t vulkan_load_texture_compressed_internal(vk_t *vk,
+      const struct texture_compressed *tc,
       enum texture_filter_type filter_type)
 {
-   vk_t                       *vk = (vk_t*)video_data;
    struct vk_texture     *texture = NULL;
    VkDevice                device;
    VkFormat                vkfmt;
@@ -8546,7 +8547,6 @@ static uintptr_t vulkan_load_texture_compressed(void *video_data,
    uint8_t                *dst;
    unsigned                i;
 
-   (void)threaded;
    if (!vk || !vk->context || !tc || tc->num_mips == 0)
       return 0;
    if (!vulkan_gpu_format_to_vk(tc->format, &vkfmt))
@@ -8708,6 +8708,80 @@ static uintptr_t vulkan_load_texture_compressed(void *video_data,
    if (filter_type == TEXTURE_FILTER_MIPMAP_LINEAR)
       texture->flags |= VK_TEX_FLAG_MIPMAP;
    return (uintptr_t)texture;
+}
+
+#ifdef HAVE_THREADS
+/* Both load wraps stash their result in cmd->handle;
+ * video_thread_texture_handle() is synchronous, so the caller reads it
+ * back once the video thread has run this. */
+static uintptr_t vulkan_texture_load_wrap(void *data)
+{
+   vulkan_texture_cmd_t *cmd = (vulkan_texture_cmd_t*)data;
+   cmd->handle               = vulkan_load_texture_internal(
+         cmd->vk, cmd->image, cmd->filter_type);
+   return 0;
+}
+
+static uintptr_t vulkan_texture_load_compressed_wrap(void *data)
+{
+   vulkan_texture_cmd_t *cmd = (vulkan_texture_cmd_t*)data;
+   cmd->handle               = vulkan_load_texture_compressed_internal(
+         cmd->vk, cmd->tc, cmd->filter_type);
+   return 0;
+}
+#endif
+
+/* Uploading a texture allocates, records and frees a command buffer on
+ * vk->staging_pool.  VkCommandPool is externally synchronised, and the
+ * video thread uses the same pool from vulkan_font_render_msg() for its
+ * glyph atlas uploads -- the queue_lock around the submit does not cover
+ * either end of that.  Dispatch to the video thread so all use of the
+ * pool stays on one thread, as the other drivers do. */
+static uintptr_t vulkan_load_texture(void *video_data, void *data,
+      bool threaded, enum texture_filter_type filter_type)
+{
+   vk_t *vk = (vk_t*)video_data;
+
+#ifdef HAVE_THREADS
+   if (threaded)
+   {
+      vulkan_texture_cmd_t cmd;
+      cmd.vk          = vk;
+      cmd.image       = data;
+      cmd.tc          = NULL;
+      cmd.handle      = 0;
+      cmd.filter_type = filter_type;
+      video_thread_texture_handle(&cmd, vulkan_texture_load_wrap);
+      return cmd.handle;
+   }
+#endif
+
+   return vulkan_load_texture_internal(vk, data, filter_type);
+}
+
+static uintptr_t vulkan_load_texture_compressed(void *video_data,
+      const struct texture_compressed *tc, bool threaded,
+      enum texture_filter_type filter_type)
+{
+   vk_t *vk = (vk_t*)video_data;
+
+#ifdef HAVE_THREADS
+   /* Same reasoning as vulkan_load_texture(). */
+   if (threaded)
+   {
+      vulkan_texture_cmd_t cmd;
+      cmd.vk          = vk;
+      cmd.image       = NULL;
+      cmd.tc          = tc;
+      cmd.handle      = 0;
+      cmd.filter_type = filter_type;
+      video_thread_texture_handle(&cmd,
+            vulkan_texture_load_compressed_wrap);
+      return cmd.handle;
+   }
+#endif
+
+   return vulkan_load_texture_compressed_internal(vk, tc, filter_type);
 }
 
 static const video_poke_interface_t vulkan_poke_interface = {
