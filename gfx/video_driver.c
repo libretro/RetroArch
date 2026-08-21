@@ -1796,8 +1796,7 @@ const char *video_driver_get_ident(void)
    if (!vid)
       return NULL;
 #ifdef HAVE_THREADS
-   if (  VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
-       && (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE))
+   if (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE)
    {
       const thread_video_t *thr   = (const thread_video_t*)video_st->data;
       if (!thr || !thr->driver)
@@ -3409,11 +3408,12 @@ bool video_driver_texture_load(void *data,
    if (!id || !poke || !poke->load_texture)
       return false;
    /* Only use the threaded path when the thread wrapper is
-    * fully active. During reinit, video_st->threaded may
-    * already reflect the new setting while video_st->data
-    * still points to the real driver, not thread_video_t. */
-   threaded = VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
-         && (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE);
+    * installed. Whether the session should be running threaded
+    * video is a different question, and answers false from
+    * SET_HW_RENDER until the video driver is reinitialised - a
+    * window in which video_st->data is still thread_video_t* and
+    * the wrapper's thread still owns the render context. */
+   threaded = video_driver_thread_wrapper_active();
 
    /* GPU-native fast path: upload BCn blocks directly when the driver can
     * sample the format. This works under threading too -- the threaded flag
@@ -3458,8 +3458,7 @@ bool video_driver_texture_unload(uintptr_t *id)
    if (!poke || !poke->unload_texture)
       return false;
    poke->unload_texture(video_st->data,
-         VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
-         && (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE),
+         video_driver_thread_wrapper_active(),
          *id);
    *id = 0;
    return true;
@@ -3911,12 +3910,15 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->disp_userdata                 = disp_get_ptr();
 
 #ifdef HAVE_THREADS
-   if (  VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
-       && (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE))
-      video_info->userdata                   = video_thread_get_ptr(video_st);
-   else
+   /* Keyed off the wrapper alone: this hands the menu and widget frame
+    * callbacks the pointer they cast to the concrete driver type, and
+    * video_st->data is a thread_video_t* for as long as the wrapper is
+    * installed - including after SET_HW_RENDER has already turned the
+    * session's threading mode false. */
+   video_info->userdata                      = video_thread_get_ptr(video_st);
+#else
+   video_info->userdata                      = video_st->data;
 #endif
-      video_info->userdata                   = video_st->data;
 
 #ifdef HAVE_THREADS
    if (is_threaded && video_st->display_lock)
