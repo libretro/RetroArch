@@ -2200,7 +2200,7 @@ void video_driver_get_output_size(unsigned *width, unsigned *height)
 {
    video_driver_state_t *video_st = &video_driver_st;
 #ifdef HAVE_THREADS
-   bool is_threaded = VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);
+   bool is_threaded = video_driver_thread_wrapper_active();
    if (is_threaded && video_st->display_lock)
    {
       slock_lock(video_st->display_lock);
@@ -2222,7 +2222,7 @@ void video_driver_set_output_size(unsigned width, unsigned height)
 {
    video_driver_state_t *video_st = &video_driver_st;
 #ifdef HAVE_THREADS
-   bool is_threaded = VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);
+   bool is_threaded = video_driver_thread_wrapper_active();
    if (is_threaded && video_st->display_lock)
    {
       slock_lock(video_st->display_lock);
@@ -3748,8 +3748,11 @@ void video_driver_build_info(video_frame_info_t *video_info)
    dispgfx_widget_t *p_dispwidget          = dispwidget_get_ptr();
 #endif
 #ifdef HAVE_THREADS
+   /* Cached so the unlock at the end of this function pairs with the
+    * lock taken here whatever happens in between. Keyed on the wrapper,
+    * which is what makes video_st->width/height shared state. */
    bool is_threaded                        =
-         VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);
+         video_driver_thread_wrapper_active();
    if (is_threaded && video_st->display_lock)
       slock_lock(video_st->display_lock);
 #endif
@@ -3826,8 +3829,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->width                       = video_st->width;
    video_info->height                      = video_st->height;
 #ifdef HAVE_THREADS
-   if (  VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
-       && (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE))
+   if (is_threaded)
       video_thread_get_scale(video_st,
             &video_info->scale_width, &video_info->scale_height);
    else
