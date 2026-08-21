@@ -3248,14 +3248,22 @@ static void gl2_update_input_size(gl2_t *gl, unsigned width,
 
       if (clear)
       {
+         /* The rectangle going up here is the texture, not the frame,
+          * so the unpack state has to describe gl->tex_w at
+          * gl->base_size. A wider row - from the frame width, from a
+          * larger alignment than the row really needs, or from a row
+          * length another upload left behind - makes the driver walk
+          * off the end of empty_buf. */
          glPixelStorei(GL_UNPACK_ALIGNMENT,
-               gl2_get_alignment(width * sizeof(uint32_t)));
+               gl2_get_alignment(gl->tex_w * gl->base_size));
 #if defined(HAVE_PSGL)
          glBufferSubData(GL_TEXTURE_REFERENCE_BUFFER_SCE,
                gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size,
                gl->tex_w * gl->tex_h * gl->base_size,
                gl->empty_buf);
 #else
+         if (gl->flags & GL2_FLAG_HAVE_UNPACK_ROW_LENGTH)
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
          glTexSubImage2D(GL_TEXTURE_2D,
                0, 0, 0, gl->tex_w, gl->tex_h, gl->texture_type,
                gl->texture_fmt, gl->empty_buf);
@@ -5303,8 +5311,15 @@ static void *gl2_init(const video_info_t *video,
    gl->coords.vertices       = 4;
 
    /* Empty buffer that we use to clear out
-    * the texture with on res change. */
-   gl->empty_buf             = calloc(gl->tex_w * gl->tex_h, sizeof(uint32_t));
+    * the texture with on res change.
+    *
+    * That clear reads the full tex_w * tex_h rectangle, which at 32bpp
+    * is every byte of the allocation, so a driver copying the source
+    * in blocks has nothing to spare past the final row. Large mappings
+    * are guarded on modern allocators, so those few bytes are a fault
+    * rather than a harmless read. Carry an extra row. */
+   gl->empty_buf             = calloc(gl->tex_w * (gl->tex_h + 1),
+         sizeof(uint32_t));
 
    gl->conv_buffer           = calloc(gl->tex_w * gl->tex_h, sizeof(uint32_t));
 
