@@ -2284,13 +2284,21 @@ static void android_input_poll_input_default(android_input_t *android)
    {
       while (AInputQueue_getEvent(android_app->inputQueue, &event) >= 0)
       {
-         int32_t   handled = 1;
-         int predispatched = AInputQueue_preDispatchEvent(
-               android_app->inputQueue, event);
-         int        source = AInputEvent_getSource(event);
-         int    type_event = AInputEvent_getType(event);
-         int            id = android_input_get_id(event);
-         int          port = android_input_get_id_port(android, id, source);
+         int32_t handled;
+         int source, type_event, id, port;
+
+         /* A pre-dispatched event belongs to the IME from here on and
+          * reappears in the queue if it goes unconsumed, so it can be
+          * neither read from, routed nor finished once this returns
+          * non-zero. */
+         if (AInputQueue_preDispatchEvent(android_app->inputQueue, event))
+            continue;
+
+         handled    = 1;
+         source     = AInputEvent_getSource(event);
+         type_event = AInputEvent_getType(event);
+         id         = android_input_get_id(event);
+         port       = android_input_get_id_port(android, id, source);
 
          if (port < 0 && !android_is_keyboard_id(id))
             port = android_input_recover_port(android, id);
@@ -2322,14 +2330,11 @@ static void android_input_poll_input_default(android_input_t *android)
 
                   if (android_is_keyboard_id(id))
                   {
-                     if (!predispatched)
-                     {
-                        android_input_poll_event_type_keyboard(
-                              event, keycode, &handled);
-                        android_input_poll_event_type_key(
-                              android_app, event, ANDROID_KEYBOARD_PORT,
-                              keycode, source, type_event, &handled);
-                     }
+                     android_input_poll_event_type_keyboard(
+                           event, keycode, &handled);
+                     android_input_poll_event_type_key(
+                           android_app, event, ANDROID_KEYBOARD_PORT,
+                           keycode, source, type_event, &handled);
                   }
                   else
                      android_input_poll_event_type_key(android_app,
@@ -2338,9 +2343,7 @@ static void android_input_poll_input_default(android_input_t *android)
                break;
          }
 
-         if (!predispatched)
-            AInputQueue_finishEvent(android_app->inputQueue, event,
-                  handled);
+         AInputQueue_finishEvent(android_app->inputQueue, event, handled);
       }
    }
 }
