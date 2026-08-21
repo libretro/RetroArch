@@ -1769,6 +1769,12 @@ bool video_driver_is_threaded(void)
    video_driver_state_t *video_st                 = &video_driver_st;
    return VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);
 }
+
+bool video_driver_thread_wrapper_active(void)
+{
+   video_driver_state_t *video_st                 = &video_driver_st;
+   return (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE) != 0;
+}
 #endif
 
 bool *video_driver_get_threaded(void)

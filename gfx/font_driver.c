@@ -479,8 +479,7 @@ static bool font_driver_rebuild(font_data_t *font,
     * this is the call that made the font, against a different file. */
 #ifdef HAVE_THREADS
    if (     font->threading_hint
-         && font->is_threaded
-         && !video_driver_is_hw_context())
+         && video_driver_thread_wrapper_active())
       ok = video_thread_font_init(&drv, &handle, font->video_data,
             path, size, font->renderer, font_init_first,
             font->is_threaded);
@@ -1288,7 +1287,10 @@ static void font_driver_release_renderer_state(
       return;
 
 #ifdef HAVE_THREADS
-   if (is_threaded)
+   /* Same reasoning as the init side: the free has to reach whichever
+    * thread owns the context, and the font's recorded is_threaded can
+    * be stale by the time it is released. */
+   if (is_threaded || video_driver_thread_wrapper_active())
    {
       font_free_cmd_t cmd;
       cmd.renderer      = renderer;
@@ -1434,9 +1436,14 @@ font_data_t *font_driver_init_first(
    void *font_handle       = NULL;
    bool ok                 = false;
 #ifdef HAVE_THREADS
+   /* Dispatch on the wrapper's presence, not on is_threaded: font
+    * resources belong to whichever thread drives the driver, and
+    * between SET_HW_RENDER and the video reinit that follows,
+    * is_threaded already reads false while the wrapper still owns
+    * the context. video_thread_font_init() re-checks and refuses if
+    * the wrapper is gone. */
    if (     threading_hint
-         && is_threaded
-         && !video_driver_is_hw_context())
+         && video_driver_thread_wrapper_active())
       ok = video_thread_font_init(&font_driver, &font_handle,
             video_data, font_path, font_size, backend, font_init_first,
             is_threaded);
