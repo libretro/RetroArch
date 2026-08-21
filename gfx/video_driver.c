@@ -750,11 +750,22 @@ void *video_driver_get_ptr(void)
 {
    video_driver_state_t *video_st         = &video_driver_st;
 #ifdef HAVE_THREADS
-   if (  VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
-       && (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE))
-      return video_thread_get_ptr(video_st);
-#endif
+   /* Gate the unwrap on the wrapper's presence alone.
+    *
+    * VIDEO_DRIVER_IS_THREADED_INTERNAL() answers whether this session
+    * should be using threaded video, which is not the same question as
+    * whether the wrapper is installed right now: a core setting
+    * SET_HW_RENDER turns it false while the previous session's wrapper
+    * is still up, and video_st->data is the thread_video_t* for as long
+    * as that is the case. Returning it raw hands callers a wrapper
+    * handle to cast to the concrete driver type.
+    *
+    * video_thread_get_ptr() already falls back to video_st->data when
+    * the wrapper is absent, so this is a no-op in every other state. */
+   return video_thread_get_ptr(video_st);
+#else
    return video_st->data;
+#endif
 }
 
 
