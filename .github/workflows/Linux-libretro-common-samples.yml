@@ -505,6 +505,7 @@ jobs:
             -fno-sanitize-recover=all \
             -I$LC/include -o config_file_fuzz config_file_fuzz.c \
             $LC/file/config_file.c \
+            $LC/string/rstrtod.c \
             $LC/file/file_path.c \
             $LC/compat/compat_strl.c \
             $LC/compat/compat_strcasestr.c \
