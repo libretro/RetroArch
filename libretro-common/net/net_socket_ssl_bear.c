@@ -166,24 +166,26 @@ static bool append_cert_x509(void* x509, size_t len)
    return true;
 }
 
+/* Compacts a PEM body in place, dropping every CR and LF, and
+ * NUL-terminates the compacted run so strlen() yields the exact
+ * number of base64 characters.  The input is not needed by the
+ * caller afterwards, so in-place rewriting is fine. */
 static char* delete_linebreaks(char* in)
 {
    char* iter_in;
    char* iter_out;
-   while (*in == '\n')
+   while (*in == '\n' || *in == '\r')
       in++;
 
-   iter_in = in;
-
-   while (*iter_in != '\n' && *iter_in != '\0')
-      iter_in++;
-   iter_out = iter_in;
+   iter_in  = in;
+   iter_out = in;
    while (*iter_in != '\0')
    {
-      while (*iter_in == '\n')
-         iter_in++;
-      *iter_out++ = *iter_in++;
+      if (*iter_in != '\n' && *iter_in != '\r')
+         *iter_out++ = *iter_in;
+      iter_in++;
    }
+   *iter_out = '\0';
 
    return in;
 }
@@ -204,13 +206,22 @@ static void append_certs_pem_x509(char * certs_pem)
          break;
       cert     += STRLEN_CONST("-----BEGIN CERTIFICATE-----");
       cert_end  = strstr(cert, "-----END CERTIFICATE-----");
+      if (!cert_end)
+         break;
 
       *cert_end = '\0';
       cert      = delete_linebreaks(cert);
 
-      cert_bin  = unbase64(cert, cert_end-cert, &cert_bin_len);
-      append_cert_x509(cert_bin, cert_bin_len);
-      free(cert_bin);
+      /* unbase64() requires an exact, 4-aligned length.  The compacted
+       * run is shorter than (cert_end - cert) by the number of line
+       * breaks removed, so measure it rather than reusing the span of
+       * the original wrapped body. */
+      cert_bin  = unbase64(cert, (int)strlen(cert), &cert_bin_len);
+      if (cert_bin)
+      {
+         append_cert_x509(cert_bin, cert_bin_len);
+         free(cert_bin);
+      }
 
       cert_end++; /* skip the NUL we just added */
    }
