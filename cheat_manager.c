@@ -1370,6 +1370,7 @@ static int cheat_manager_search_input_start(
    line.label_setting = value_buf;
    line.type          = label;
    line.idx           = (unsigned)idx;
+   line.text_type     = MENU_INPUT_DIALOG_KB_TYPE_NUMBER;
    line.cb            = cb;
 
    if (menu_input_dialog_start(&line))

@@ -275,7 +275,8 @@ static SDL_Window *sdl3_window_create(unsigned width, unsigned height,
    /* SDL_EVENT_TEXT_INPUT is emitted for windows that opted in for
     * it. The SDL3 input driver handles those events for menu
     * text entry and core keyboard callbacks. */
-   SDL_StartTextInput(win);
+   if (!SDL_HasScreenKeyboardSupport())
+      SDL_StartTextInput(win);
 
    return win;
 }
@@ -540,4 +541,30 @@ void sdl3_show_mouse(void *data, bool state)
       SDL_ShowCursor();
    else
       SDL_HideCursor();
+}
+
+SDL_Window *sdl3_get_window(void)
+{
+   gfx_ctx_ident_t ident_info;
+
+   if (string_is_equal(video_driver_get_ident(), "sdl3"))
+   {
+      sdl3_video_t *video_ptr = (sdl3_video_t*)video_driver_get_ptr();
+      return video_ptr != NULL ? video_ptr->window : NULL;
+   }
+
+   /* gl/gl1/glcore/vulkan running on the SDL3 context drivers. They
+    * register their SDL_Window as the display userdata via sdl3_set_handles. */
+   ident_info.ident = NULL;
+   video_context_driver_get_ident(&ident_info);
+   if (string_is_equal(ident_info.ident, "gl_sdl3") || string_is_equal(ident_info.ident, "vk_sdl3"))
+      return (SDL_Window*)video_driver_display_userdata_get();
+
+   return NULL;
+}
+
+bool sdl3_screen_keyboard_shown(void)
+{
+   SDL_Window *win = sdl3_get_window();
+   return win && SDL_ScreenKeyboardShown(win);
 }
