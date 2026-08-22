@@ -62,6 +62,7 @@
                             * through the stream headers before the
                             * I/O adapters moved out */
 #include <formats/rjson.h>
+#include <string/rstrtod.h>
 #include <compat/posix_string.h>
 
 struct _rjson_stack { enum rjson_type type; size_t count; };
@@ -89,7 +90,6 @@ struct rjson
    int input_len;
 
    char option_flags;
-   char decimal_sep;
    char error_text[80];
    char inline_string[512];
 
@@ -957,7 +957,6 @@ void _rjson_setup(rjson_t *json, rjson_io_t io, void *user_data, int input_len)
    json->source_line         = 1;
    json->source_column_p     = json->input_p;
    json->option_flags        = 0;
-   json->decimal_sep         = 0;
 }
 
 rjson_t *rjson_open_user(rjson_io_t io, void *user_data, int io_block_size)
@@ -1025,26 +1024,9 @@ double rjson_get_double(rjson_t *json)
 {
    char* str = (json->string_pass_through ? json->string_pass_through : json->string);
    str[json->string_len] = '\0';
-   if (json->decimal_sep != '.')
-   {
-      /* handle locale that uses a non-standard decimal separator */
-      char *p;
-      if (json->decimal_sep == 0)
-      {
-         char test[4];
-         snprintf(test, sizeof(test), "%.1f", 0.0f);
-         json->decimal_sep = test[1];
-      }
-      if (json->decimal_sep != '.' && (p = (char*)memchr(str, '.', strlen(str) + 1)) != NULL)
-      {
-         double res;
-         *p  = json->decimal_sep;
-         res = atof(str);
-         *p  = '.';
-         return res;
-      }
-   }
-   return atof(str);
+   /* rstrtod reads the '.' the JSON grammar requires in any locale, so
+    * the old sniff-the-separator-and-rewrite-the-buffer dance is gone. */
+   return rstrtod(str, NULL);
 }
 
 int rjson_get_int(rjson_t *json)

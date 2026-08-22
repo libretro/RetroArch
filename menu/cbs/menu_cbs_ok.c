@@ -7392,7 +7392,7 @@ static int generic_action_ok_dropdown_setting(const char *path, const char *labe
                *setting->value.target.fraction = val;
             }
             else
-               *setting->value.target.fraction = (float)atof(path);
+               *setting->value.target.fraction = rstrtof(path, NULL);
          }
          break;
       case ST_STRING_OPTIONS:
@@ -7534,7 +7534,7 @@ static int action_ok_push_dropdown_item_video_shader_param_generic(const char *p
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    video_shader_ctx_t shader_info;
    unsigned offset                           = (unsigned)setting_offset;
-   float val                                 = atof(path);
+   float val                                 = rstrtof(path, NULL);
    struct video_shader *shader               = menu_shader_get();
    struct video_shader_parameter *param_menu = NULL;
    struct video_shader_parameter *param_prev = NULL;

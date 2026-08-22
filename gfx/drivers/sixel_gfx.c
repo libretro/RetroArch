@@ -19,6 +19,7 @@
 
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
+#include <string/rstrtod.h>
 
 #include <sixel.h>
 
@@ -277,7 +278,7 @@ static void *sixel_gfx_init(const video_info_t *video,
 
    if (scale_str)
    {
-      sixel_video_scale = atof(scale_str);
+      sixel_video_scale = rstrtod(scale_str, NULL);
 
       /* just in case the conversion fails, pick something sane */
       if (!sixel_video_scale)
