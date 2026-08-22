@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <string/rstrtod.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -57,7 +58,6 @@
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
 #include "drivers_shader/glslang_util.h"
 #include "drivers_shader/slang_process.h"
-#include <string/rstrtod.h>
 #endif
 
 /* Maximum depth of chain of referenced shader presets.

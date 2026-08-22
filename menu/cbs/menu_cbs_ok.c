@@ -20,6 +20,7 @@
 #include <array/rbuf.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
+#include <string/rstrtod.h>
 #include <streams/file_stream.h>
 #include <lists/string_list.h>
 
@@ -113,7 +114,6 @@
 
 #ifdef HAVE_MIST
 #include "../../steam/steam.h"
-#include <string/rstrtod.h>
 #endif
 
 enum

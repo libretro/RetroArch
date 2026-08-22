@@ -28,6 +28,7 @@
 #include <lists/file_list.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
+#include <string/rstrtod.h>
 #include <lists/string_list.h>
 #include <streams/file_stream.h>
 #include <audio/audio_resampler.h>
@@ -12871,7 +12872,6 @@ static const setting_desc_t smbclient_desc_1[] = {
 /* GENERATED: rows come from settings_def_smb_client_auth.h in order. */
 #include "../settings/settings_def_smb_client_auth.h"
 #include "../settings/settings_def_rows_end.h"
-#include <string/rstrtod.h>
 };
 #endif
 
