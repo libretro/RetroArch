@@ -153,7 +153,7 @@ static void *switch_thread_audio_init(const char *device, unsigned rate, unsigne
       return NULL;
 
    swa->running     = true;
-   swa->nonblock    = true;
+   swa->nonblock    = false;
    swa->is_paused   = true;
    swa->latency     = MAX(latency, 8);
 
