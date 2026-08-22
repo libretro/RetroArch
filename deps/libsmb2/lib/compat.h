@@ -67,23 +67,7 @@ typedef int t_socket;
 #define WIN32_LEAN_AND_MEAN
 #endif /* !WIN32_LEAN_AND_MEAN */
 
-#ifdef XBOX_PLATFORM /* Xbox XDK Doesn´t have stdint.h header */
-typedef char int8_t;
-typedef short int16_t;
-typedef short int_least16_t;
-typedef int int32_t;
-typedef long long int64_t;
-typedef int intptr_t;
-
-typedef unsigned char uint8_t;
-typedef unsigned short uint16_t;
-typedef unsigned int uint32_t;
-typedef unsigned long long uint64_t;
-typedef unsigned int uint_t;
-typedef unsigned int uintptr_t;
-#else
 #include <stdint.h>	
-#endif
 
 #ifndef ENETRESET
 #define ENETRESET WSAENETRESET
