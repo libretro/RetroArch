@@ -345,7 +345,7 @@ static int smb2_read_data(struct smb2_context *smb2, read_func func,
         int i, niov, is_chained;
         size_t num_done;
         size_t iov_offset = 0;
-        static char smb3tfrm[4] = {0xFD, 'S', 'M', 'B'};
+        static uint8_t smb3tfrm[4] = {0xFD, 'S', 'M', 'B'};
         struct smb2_pdu *pdu = smb2->pdu;
         ssize_t count;
         int len;

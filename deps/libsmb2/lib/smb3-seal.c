@@ -65,7 +65,7 @@
 #include "libsmb2-private.h"
 #include "smb3-seal.h"
 
-static const char xfer[4] = {0xFD, 'S', 'M', 'B'};
+static const uint8_t xfer[4] = {0xFD, 'S', 'M', 'B'};
 
 int
 smb3_encrypt_pdu(struct smb2_context *smb2,

@@ -88,7 +88,7 @@ smb2_allocate_pdu(struct smb2_context *smb2, enum smb2_command command,
 {
 	struct smb2_pdu *pdu;
         struct smb2_header *hdr;
-        char magic[4] = {0xFE, 'S', 'M', 'B'};
+        uint8_t magic[4] = {0xFE, 'S', 'M', 'B'};
 
         pdu = calloc(1, sizeof(struct smb2_pdu));
         if (pdu == NULL) {
@@ -497,8 +497,8 @@ int
 smb2_decode_header(struct smb2_context *smb2, struct smb2_iovec *iov,
                    struct smb2_header *hdr)
 {
-        static char smb1sign[4] = {0xFF, 'S', 'M', 'B'};
-        static char smb2sign[4] = {0xFE, 'S', 'M', 'B'};
+        static uint8_t smb1sign[4] = {0xFF, 'S', 'M', 'B'};
+        static uint8_t smb2sign[4] = {0xFE, 'S', 'M', 'B'};
 
         if (iov->len < SMB2_HEADER_SIZE) {
                 smb2_set_error(smb2, "io vector for header is too small");
