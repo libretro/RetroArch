@@ -1,7 +1,9 @@
 package com.retroarch.browser.retroactivity;
 
+import android.content.res.Configuration;
 import android.graphics.Rect;
 import android.util.Log;
+import android.view.Display;
 import android.view.DisplayCutout;
 import android.view.Gravity;
 import android.view.PointerIcon;
@@ -163,35 +165,32 @@ public final class RetroActivityFuture extends RetroActivityCamera {
       updateDisplayCutoutSafeWindow(!writeOverNotch);
   }
 
+  @SuppressWarnings("deprecation")
   private void updateDisplayCutoutSafeWindow(boolean avoidDisplayCutout) {
     if (!avoidDisplayCutout) {
-      mDecorView.setOnApplyWindowInsetsListener(null);
       setDisplayCutoutSafeWindow(0, 0, 0, 0);
       return;
     }
 
-    mDecorView.setOnApplyWindowInsetsListener(
-        new View.OnApplyWindowInsetsListener() {
-          @Override
-          public WindowInsets onApplyWindowInsets(View view, WindowInsets insets) {
-            DisplayCutout cutout = insets.getDisplayCutout();
+    Display display = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+        ? getDisplay()
+        : getWindowManager().getDefaultDisplay();
 
-            if (cutout != null)
-              setDisplayCutoutSafeWindow(
-                  cutout.getSafeInsetLeft(),
-                  cutout.getSafeInsetTop(),
-                  cutout.getSafeInsetRight(),
-                  cutout.getSafeInsetBottom());
+    DisplayCutout cutout = (display != null) ? display.getCutout() : null;
 
-            return insets;
-          }
-        });
-    mDecorView.requestApplyInsets();
+    if (cutout != null)
+      setDisplayCutoutSafeWindow(
+          cutout.getSafeInsetLeft(),
+          cutout.getSafeInsetTop(),
+          cutout.getSafeInsetRight(),
+          cutout.getSafeInsetBottom());
+    else
+      setDisplayCutoutSafeWindow(0, 0, 0, 0);
   }
 
   private void setDisplayCutoutSafeWindow(
       int left, int top, int right, int bottom) {
-    WindowMetrics metrics = getWindowManager().getMaximumWindowMetrics();
+    WindowMetrics metrics = getWindowManager().getCurrentWindowMetrics();
     Rect bounds = metrics.getBounds();
     boolean fullDisplay =
         left == 0 && top == 0 && right == 0 && bottom == 0;
@@ -219,6 +218,17 @@ public final class RetroActivityFuture extends RetroActivityCamera {
     params.layoutInDisplayCutoutMode =
         WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
     getWindow().setAttributes(params);
+  }
+
+  @Override
+  public void onConfigurationChanged(Configuration newConfig) {
+    super.onConfigurationChanged(newConfig);
+    runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        updateDisplayCutoutMode();
+      }
+    });
   }
 
   @Override
