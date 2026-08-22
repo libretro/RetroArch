@@ -278,16 +278,28 @@ enum
 {
     /* This gets called twice with the same timestamp
      * for each keypress, that's fine for polling
-     * but is bad for business with events. */
+     * but is bad for business with events. The de-dup has
+     * to be per key: two keys going down or up in the same
+     * frame share a timestamp, and dropping the second
+     * event leaves its key stuck. */
     static double last_time_stamp;
-
-    if (last_time_stamp == event.timestamp)
-       return [super handleKeyUIEvent:event];
-
-    last_time_stamp        = event.timestamp;
+    static long long last_key_code;
+    static _Bool last_key_down;
 
     /* If the _hidEvent is NULL, [event _keyCode] will crash.
      * (This happens with the on screen keyboard). */
+    if (!event._hidEvent)
+       return [super handleKeyUIEvent:event];
+
+    if (   last_time_stamp == event.timestamp
+        && last_key_code   == event._keyCode
+        && last_key_down   == event._isKeyDown)
+       return [super handleKeyUIEvent:event];
+
+    last_time_stamp        = event.timestamp;
+    last_key_code          = event._keyCode;
+    last_key_down          = event._isKeyDown;
+
     if (event._hidEvent)
     {
         NSString       *ch = (NSString*)event._privateInput;
@@ -336,15 +348,28 @@ enum
 {
    /* This gets called twice with the same timestamp
     * for each keypress, that's fine for polling
-    * but is bad for business with events. */
+    * but is bad for business with events. The de-dup has
+    * to be per key: two keys going down or up in the same
+    * frame share a timestamp, and dropping the second
+    * event leaves its key stuck. */
    static double last_time_stamp;
-
-   if (last_time_stamp == event.timestamp)
-      return [super _keyCommandForEvent:event];
-   last_time_stamp = event.timestamp;
+   static long long last_key_code;
+   static _Bool last_key_down;
 
    /* If the _hidEvent is null, [event _keyCode] will crash.
     * (This happens with the on screen keyboard). */
+   if (!event._hidEvent)
+      return [super _keyCommandForEvent:event];
+
+   if (   last_time_stamp == event.timestamp
+       && last_key_code   == event._keyCode
+       && last_key_down   == event._isKeyDown)
+      return [super _keyCommandForEvent:event];
+
+   last_time_stamp = event.timestamp;
+   last_key_code   = event._keyCode;
+   last_key_down   = event._isKeyDown;
+
    if (event._hidEvent)
    {
       NSString       *ch = (NSString*)event._privateInput;
@@ -456,6 +481,20 @@ enum
    for (UIPress *press in presses)
       [self handleUIPress:press withEvent:event down:NO];
    [super pressesEnded:presses withEvent:event];
+}
+
+- (void)pressesCancelled:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
+{
+   /* UIKit delivers pressesCancelled instead of pressesEnded when the
+    * system interrupts a press (incoming call, app switcher, keyboard
+    * shortcut HUD, ...). Without treating it as a release the key stays
+    * latched in apple_key_state until it is pressed again. */
+   if (ios_keyboard_active())
+      return [super pressesCancelled:presses withEvent:event];
+
+   for (UIPress *press in presses)
+      [self handleUIPress:press withEvent:event down:NO];
+   [super pressesCancelled:presses withEvent:event];
 }
 #endif
 
@@ -1080,6 +1119,10 @@ enum
       apple->touch_count = 0;
       memset(apple->touches, 0, sizeof(apple->touches));
    }
+
+   /* Hardware keyboard keys held while losing focus never get their
+    * release event; drop them like the macOS port does (ui_cocoa.m). */
+   apple_input_keyboard_reset();
 }
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
