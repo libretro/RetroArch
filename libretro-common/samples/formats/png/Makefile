@@ -37,6 +37,7 @@ SOURCES_C := 	\
 	$(LIBRETRO_COMM_DIR)/file/file_path.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path_io.c \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+	$(LIBRETRO_COMM_DIR)/string/rstrtod.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
 	$(LIBRETRO_COMM_DIR)/streams/interface_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/memory_stream.c \
@@ -89,6 +90,7 @@ TEST2_SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/file/file_path.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path_io.c \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+	$(LIBRETRO_COMM_DIR)/string/rstrtod.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
 	$(LIBRETRO_COMM_DIR)/streams/interface_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/memory_stream.c \

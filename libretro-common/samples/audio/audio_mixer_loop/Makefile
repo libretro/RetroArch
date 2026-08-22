@@ -35,6 +35,7 @@ COMMON_SOURCES := \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c \
 	$(LIBRETRO_COMM_DIR)/memmap/memalign.c \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+	$(LIBRETRO_COMM_DIR)/string/rstrtod.c \
 	$(LIBRETRO_COMM_DIR)/string/stdstring.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c

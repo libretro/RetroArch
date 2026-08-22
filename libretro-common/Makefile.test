@@ -28,12 +28,14 @@ TEST_UTILS = test/utils/test_utils
 TEST_UTILS_SRC = test/utils/test_utils.c utils/md5.c encodings/encoding_crc32.c \
 		features/features_cpu.c \
 		streams/file_stream.c vfs/vfs_implementation.c file/file_path.c \
+		string/rstrtod.c vfs/vfs_implementation.c file/file_path.c \
 		file/file_path_io.c \
 		compat/compat_strl.c time/rtime.c string/stdstring.c encodings/encoding_utf.c
 
 TEST_HASH = test/hash/test_hash
 TEST_HASH_SRC = test/hash/test_hash.c hash/lrc_hash.c \
 		streams/file_stream.c vfs/vfs_implementation.c file/file_path.c \
+		string/rstrtod.c vfs/vfs_implementation.c file/file_path.c \
 		file/file_path_io.c \
 		compat/compat_strl.c time/rtime.c string/stdstring.c encodings/encoding_utf.c
 
@@ -43,6 +45,7 @@ TEST_RWAV_SRC = test/formats/test_rwav.c formats/wav/rwav.c
 TEST_RJPEG = test/formats/test_rjpeg
 TEST_RJPEG_SRC = test/formats/test_rjpeg.c formats/jpeg/rjpeg.c \
 		streams/file_stream.c vfs/vfs_implementation.c file/file_path.c \
+		string/rstrtod.c vfs/vfs_implementation.c file/file_path.c \
 		file/file_path_io.c features/features_cpu.c \
 		compat/compat_strl.c time/rtime.c string/stdstring.c encodings/encoding_utf.c
 
@@ -94,6 +97,7 @@ WIN32_AW_TEST     = samples/file/vfs/vfs_seek_contract_test.c
 WIN32_AW_TEST_SRC = compat/fopen_utf8.c compat/compat_strl.c \
 		    encodings/encoding_utf.c file/file_path.c \
 		    file/file_path_io.c streams/file_stream.c \
+		    file/file_path_io.c string/rstrtod.c \
 		    time/rtime.c vfs/vfs_implementation.c
 
 win32-configs:
