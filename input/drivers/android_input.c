@@ -1587,12 +1587,11 @@ static INLINE void android_input_poll_event_type_key(
       int type_event, int *handled)
 {
    uint8_t *buf;
-   int action    = AKeyEvent_getAction(event);
-   int keysym    = keycode;
-   int device_id = AInputEvent_getDeviceId(event);
+   int action           = AKeyEvent_getAction(event);
+   int keysym           = keycode;
    bool alias_back_as_x =
-         (source & AINPUT_SOURCE_GAMEPAD) != AINPUT_SOURCE_GAMEPAD &&
-         (source & AINPUT_SOURCE_JOYSTICK) != AINPUT_SOURCE_JOYSTICK;
+         (source & AINPUT_SOURCE_GAMEPAD)  != AINPUT_SOURCE_GAMEPAD
+      && (source & AINPUT_SOURCE_JOYSTICK) != AINPUT_SOURCE_JOYSTICK;
 
    /* android_key_state[] has one row per pad slot plus the
     * dedicated keyboard row at ANDROID_KEYBOARD_PORT. */
@@ -1619,7 +1618,10 @@ static INLINE void android_input_poll_event_type_key(
       case AKEY_EVENT_ACTION_UP:
          BIT_CLEAR(buf, keysym);
          if (keysym == AKEYCODE_BACK && alias_back_as_x)
+         {
             BIT_CLEAR(buf, AKEYCODE_X); /* alias BACK on remote */
+            BIT_CLEAR(android_key_state[ANDROID_KEYBOARD_PORT], AKEYCODE_X);
+         }
          break;
       case AKEY_EVENT_ACTION_DOWN:
          BIT_SET(buf, keysym);
