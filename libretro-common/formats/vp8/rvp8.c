@@ -202,27 +202,27 @@ static void vp8_yuv2rgb_row(const uint8_t *y, const uint8_t *u,
       for (; i + 8 <= len; i += 8)
       {
          /* load into the UPPER byte of each lane: value << 8 */
-         __m128i Y0 = _mm_unpacklo_epi8(zero, _mm_loadl_epi64((const __m128i*)(y + i)));
-         __m128i U0 = _mm_unpacklo_epi8(zero, _mm_loadl_epi64((const __m128i*)(u + i)));
-         __m128i V0 = _mm_unpacklo_epi8(zero, _mm_loadl_epi64((const __m128i*)(v + i)));
-         __m128i Y1 = _mm_mulhi_epu16(Y0, k19077);
-         __m128i R2 = _mm_add_epi16(_mm_sub_epi16(Y1, k14234),
-                                    _mm_mulhi_epu16(V0, k26149));
-         __m128i G4 = _mm_sub_epi16(_mm_add_epi16(Y1, k8708),
-                                    _mm_add_epi16(_mm_mulhi_epu16(U0, k6419),
-                                                  _mm_mulhi_epu16(V0, k13320)));
-         /* B path saturates in unsigned 16-bit, then logical shift */
-         __m128i B2 = _mm_subs_epu16(_mm_adds_epu16(_mm_mulhi_epu16(U0, k33050), Y1),
+         __m128i y0 = _mm_unpacklo_epi8(zero, _mm_loadl_epi64((const __m128i*)(y + i)));
+         __m128i u0 = _mm_unpacklo_epi8(zero, _mm_loadl_epi64((const __m128i*)(u + i)));
+         __m128i v0 = _mm_unpacklo_epi8(zero, _mm_loadl_epi64((const __m128i*)(v + i)));
+         __m128i y1 = _mm_mulhi_epu16(y0, k19077);
+         __m128i r2 = _mm_add_epi16(_mm_sub_epi16(y1, k14234),
+                                    _mm_mulhi_epu16(v0, k26149));
+         __m128i g4 = _mm_sub_epi16(_mm_add_epi16(y1, k8708),
+                                    _mm_add_epi16(_mm_mulhi_epu16(u0, k6419),
+                                                  _mm_mulhi_epu16(v0, k13320)));
+         /* blue path saturates in unsigned 16-bit, then logical shift */
+         __m128i b2 = _mm_subs_epu16(_mm_adds_epu16(_mm_mulhi_epu16(u0, k33050), y1),
                                      k17685);
-         __m128i R  = _mm_srai_epi16(R2, 6);
-         __m128i G  = _mm_srai_epi16(G4, 6);
-         __m128i B  = _mm_srli_epi16(B2, 6);
+         __m128i rr = _mm_srai_epi16(r2, 6);
+         __m128i gg = _mm_srai_epi16(g4, 6);
+         __m128i bb = _mm_srli_epi16(b2, 6);
          /* pack to words 0xFFrrggbb (memory order b,g,r,FF), or with
-          * R and B lanes exchanged (memory order r,g,b,FF) when
+          * red and blue lanes exchanged (memory order r,g,b,FF) when
           * swap_rb - channel order costs nothing at store time */
-         __m128i r8 = _mm_packus_epi16(R, R);
-         __m128i g8 = _mm_packus_epi16(G, G);
-         __m128i b8 = _mm_packus_epi16(B, B);
+         __m128i r8 = _mm_packus_epi16(rr, rr);
+         __m128i g8 = _mm_packus_epi16(gg, gg);
+         __m128i b8 = _mm_packus_epi16(bb, bb);
          __m128i a8 = _mm_packus_epi16(alpha, alpha);
          __m128i bg = _mm_unpacklo_epi8(swap_rb ? r8 : b8, g8);
          __m128i ra = _mm_unpacklo_epi8(swap_rb ? b8 : r8, a8);
@@ -240,31 +240,31 @@ static void vp8_yuv2rgb_row(const uint8_t *y, const uint8_t *u,
 
       for (; i + 8 <= len; i += 8)
       {
-         uint16x8_t Y0, U0, V0, Y1, R0, G0, G1, B0, B2;
-         int16x8_t  R2, G4;
+         uint16x8_t y0, u0, v0, y1, r0, g0, g1, b0, b2;
+         int16x8_t  r2, g4;
          uint8x8_t  r8, b8;
          uint8x8x4_t px;
-         Y0 = vshll_n_u8(vld1_u8(y + i), 8);
-         U0 = vshll_n_u8(vld1_u8(u + i), 8);
-         V0 = vshll_n_u8(vld1_u8(v + i), 8);
+         y0 = vshll_n_u8(vld1_u8(y + i), 8);
+         u0 = vshll_n_u8(vld1_u8(u + i), 8);
+         v0 = vshll_n_u8(vld1_u8(v + i), 8);
 #define RWEBP_MH8(A, C) \
          vcombine_u16(vshrn_n_u32(vmull_u16(vget_low_u16(A),  (C)), 16), \
                       vshrn_n_u32(vmull_u16(vget_high_u16(A), (C)), 16))
-         Y1 = RWEBP_MH8(Y0, c19077);
-         R0 = RWEBP_MH8(V0, c26149);
-         G0 = RWEBP_MH8(U0, c6419);
-         G1 = RWEBP_MH8(V0, c13320);
-         B0 = RWEBP_MH8(U0, c33050);
+         y1 = RWEBP_MH8(y0, c19077);
+         r0 = RWEBP_MH8(v0, c26149);
+         g0 = RWEBP_MH8(u0, c6419);
+         g1 = RWEBP_MH8(v0, c13320);
+         b0 = RWEBP_MH8(u0, c33050);
 #undef RWEBP_MH8
-         R2 = vaddq_s16(vsubq_s16(vreinterpretq_s16_u16(Y1), vdupq_n_s16(14234)),
-                        vreinterpretq_s16_u16(R0));
-         G4 = vsubq_s16(vaddq_s16(vreinterpretq_s16_u16(Y1), vdupq_n_s16(8708)),
-                        vreinterpretq_s16_u16(vaddq_u16(G0, G1)));
-         B2 = vqsubq_u16(vqaddq_u16(B0, Y1), vdupq_n_u16(17685));
-         b8 = vqmovn_u16(vshrq_n_u16(B2, 6));
-         r8 = vqshrun_n_s16(R2, 6);
+         r2 = vaddq_s16(vsubq_s16(vreinterpretq_s16_u16(y1), vdupq_n_s16(14234)),
+                        vreinterpretq_s16_u16(r0));
+         g4 = vsubq_s16(vaddq_s16(vreinterpretq_s16_u16(y1), vdupq_n_s16(8708)),
+                        vreinterpretq_s16_u16(vaddq_u16(g0, g1)));
+         b2 = vqsubq_u16(vqaddq_u16(b0, y1), vdupq_n_u16(17685));
+         b8 = vqmovn_u16(vshrq_n_u16(b2, 6));
+         r8 = vqshrun_n_s16(r2, 6);
          px.val[0] = swap_rb ? r8 : b8;                /* b (or r) */
-         px.val[1] = vqshrun_n_s16(G4, 6);             /* g        */
+         px.val[1] = vqshrun_n_s16(g4, 6);             /* g        */
          px.val[2] = swap_rb ? b8 : r8;                /* r (or b) */
          px.val[3] = vdup_n_u8(255);                   /* a        */
          vst4_u8((uint8_t*)(dst + i), px);
