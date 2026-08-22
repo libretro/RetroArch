@@ -180,7 +180,7 @@ static int (funcname)(const char *path, const char *label, unsigned type, size_t
    return generic_action_ok(path, label, type, idx, entry_idx, _id, _flush); \
 }
 
-#define DEFAULT_ACTION_DIALOG_START(funcname, _label, _idx, _cb) \
+#define DEFAULT_ACTION_DIALOG_START_TYPE(funcname, _label, _idx, _cb, _text_type) \
 static int (funcname)(const char *path, const char *label_setting, unsigned type, size_t idx, size_t entry_idx) \
 { \
    menu_input_ctx_line_t line; \
@@ -188,11 +188,15 @@ static int (funcname)(const char *path, const char *label_setting, unsigned type
    line.label_setting = label_setting; \
    line.type          = type; \
    line.idx           = (_idx); \
+   line.text_type     = (_text_type); \
    line.cb            = _cb; \
    if (!menu_input_dialog_start(&line)) \
       return -1; \
    return 0; \
 }
+
+#define DEFAULT_ACTION_DIALOG_START(funcname, _label, _idx, _cb) \
+   DEFAULT_ACTION_DIALOG_START_TYPE(funcname, _label, _idx, _cb, MENU_INPUT_DIALOG_KB_TYPE_TEXT)
 
 
 #define DEFAULT_ACTION_OK_START_BUILTIN_CORE(funcname, _id) \
@@ -3491,6 +3495,7 @@ static int action_ok_wifi(const char *path, const char *label_setting,
       line.label_setting = label_setting;
       line.type          = type;
       line.idx           = (unsigned)idx;
+      line.text_type     = MENU_INPUT_DIALOG_KB_TYPE_PASSWORD;
       line.cb            = menu_input_wifi_cb;
       if (!menu_input_dialog_start(&line))
          return -1;
@@ -3930,20 +3935,22 @@ static void menu_input_st_string_cb_cheat_file_save_as(
 }
 #endif
 
-DEFAULT_ACTION_DIALOG_START(action_ok_enable_settings,
+DEFAULT_ACTION_DIALOG_START_TYPE(action_ok_enable_settings,
    msg_hash_to_str(MSG_INPUT_ENABLE_SETTINGS_PASSWORD),
    (unsigned)entry_idx,
-   menu_input_st_string_cb_enable_settings)
+   menu_input_st_string_cb_enable_settings,
+   MENU_INPUT_DIALOG_KB_TYPE_PASSWORD)
 #ifdef HAVE_CHEATS
 DEFAULT_ACTION_DIALOG_START(action_ok_cheat_file_save_as,
    msg_hash_to_str(MSG_INPUT_CHEAT_FILENAME),
    (unsigned)idx,
    menu_input_st_string_cb_cheat_file_save_as)
 #endif
-DEFAULT_ACTION_DIALOG_START(action_ok_disable_kiosk_mode,
+DEFAULT_ACTION_DIALOG_START_TYPE(action_ok_disable_kiosk_mode,
    msg_hash_to_str(MSG_INPUT_KIOSK_MODE_PASSWORD),
    (unsigned)entry_idx,
-   menu_input_st_string_cb_disable_kiosk_mode)
+   menu_input_st_string_cb_disable_kiosk_mode,
+   MENU_INPUT_DIALOG_KB_TYPE_PASSWORD)
 static int action_ok_rename_entry(const char *path,
       const char *label_setting, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -3955,6 +3962,7 @@ static int action_ok_rename_entry(const char *path,
    line.label_setting                 = label_setting;
    line.type                          = type;
    line.idx                           = (unsigned)entry_idx;
+   line.text_type                     = MENU_INPUT_DIALOG_KB_TYPE_TEXT;
    line.cb                            = menu_input_st_string_cb_rename_entry;
 
    if (!menu_input_dialog_start(&line))
@@ -6577,6 +6585,7 @@ static int action_ok_add_entry_to_new_playlist(const char *path,
    line.label_setting         = NULL;
    line.type                  = 0;
    line.idx                   = 0;
+   line.text_type             = MENU_INPUT_DIALOG_KB_TYPE_TEXT;
    line.cb                    = (string_is_equal(label, (char*)MENU_ENUM_LABEL_CREATE_NEW_PLAYLIST_STR) ?
                                       action_input_add_entry_to_new_playlist :
                                       action_input_add_entry_to_new_playlist_quickmenu);
