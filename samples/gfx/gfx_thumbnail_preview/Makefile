@@ -49,6 +49,7 @@ SOURCES := gfx_thumbnail_preview_test.c \
            $(LIBRETRO_COMM_DIR)/memmap/memalign.c \
            $(LIBRETRO_COMM_DIR)/memory/mem_stats.c \
            $(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+           $(LIBRETRO_COMM_DIR)/string/rstrtod.c \
            $(LIBRETRO_COMM_DIR)/string/stdstring.c \
            $(LIBRETRO_COMM_DIR)/time/rtime.c \
            $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
@@ -99,6 +100,7 @@ DECODE_SOURCES := preview_audio_decode_test.c \
            $(LIBRETRO_COMM_DIR)/memmap/memmap.c \
            $(LIBRETRO_COMM_DIR)/memmap/memalign.c \
            $(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+           $(LIBRETRO_COMM_DIR)/string/rstrtod.c \
            $(LIBRETRO_COMM_DIR)/string/stdstring.c \
            $(LIBRETRO_COMM_DIR)/time/rtime.c \
            $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c

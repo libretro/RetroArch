@@ -127,6 +127,7 @@ OBJECTS :=  ../../libretro-common/net/net_compat.o \
 				../../libretro-common/file/file_path_io.o \
 				../../libretro-common/formats/json/rjson.o \
 				../../libretro-common/streams/file_stream.o \
+				../../libretro-common/string/rstrtod.o \
 				../../libretro-common/streams/interface_stream.o \
 				../../libretro-common/streams/memory_stream.o \
 				../../libretro-common/string/stdstring.o \

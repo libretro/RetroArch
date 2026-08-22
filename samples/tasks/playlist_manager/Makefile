@@ -27,6 +27,7 @@ SOURCES := pl_manager_budget_test.c \
            $(LIBRETRO_COMM_DIR)/file/archive_file_zlib.c \
            $(LIBRETRO_COMM_DIR)/lists/string_list.c \
            $(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+           $(LIBRETRO_COMM_DIR)/string/rstrtod.c \
            $(LIBRETRO_COMM_DIR)/streams/interface_stream.c \
            $(LIBRETRO_COMM_DIR)/streams/memory_stream.c \
            $(LIBRETRO_COMM_DIR)/streams/rzip_stream.c \

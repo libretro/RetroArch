@@ -43,6 +43,7 @@ SOURCES := image_decode_slice_test.c \
            $(LIBRETRO_COMM_DIR)/memmap/memmap.c \
            $(LIBRETRO_COMM_DIR)/queues/task_queue.c \
            $(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+           $(LIBRETRO_COMM_DIR)/string/rstrtod.c \
            $(LIBRETRO_COMM_DIR)/streams/trans_stream.c \
            $(LIBRETRO_COMM_DIR)/streams/trans_stream_deflate.c \
            $(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c \

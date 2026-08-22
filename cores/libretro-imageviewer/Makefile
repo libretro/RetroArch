@@ -19,6 +19,7 @@ SOURCES := \
 	../../libretro-common/lists/dir_list.c \
 	../../libretro-common/lists/string_list.c \
 	../../libretro-common/streams/file_stream.c \
+	../../libretro-common/string/rstrtod.c \
 	../../libretro-common/time/rtime.c \
 	../../libretro-common/vfs/vfs_implementation.c
 

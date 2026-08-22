@@ -154,6 +154,7 @@ GL_SOURCE += $(LIBRETRO_COMM_DIR)/glsym/rglgen.c
 # Required for libretro-common/features_cpu.c
 ifeq ($(platform), unix)
 	SOURCES_C += $(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+	SOURCES_C += $(LIBRETRO_COMM_DIR)/string/rstrtod.c \
                  $(LIBRETRO_COMM_DIR)/string/stdstring.c \
                  $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
                  $(LIBRETRO_COMM_DIR)/file/file_path.c \
