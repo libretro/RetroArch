@@ -549,7 +549,12 @@ static bool smb_enum_shares(char ***out, unsigned *out_count)
       return false;
    }
 
+#ifdef SMB2_SHARE_ENUM_UNION_NAMED_U
    level1 = &state.rep->ses.ShareInfo.u.Level1;
+#else
+   /* prebuilt libsmb2 (retroarch-apple-deps): anonymous union */
+   level1 = &state.rep->ses.ShareInfo.Level1;
+#endif
 
    if (     !level1->Buffer
          || !level1->Buffer->share_info_1
