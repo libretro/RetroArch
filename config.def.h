@@ -731,8 +731,7 @@
 #endif
 
 #ifdef HAVE_OZONE
-/* Ozone colour theme: 1 == Basic Black */
-#define DEFAULT_OZONE_COLOR_THEME 1
+#define DEFAULT_OZONE_COLOR_THEME "basic_black"
 #define DEFAULT_OZONE_PADDING_FACTOR 1.0f
 #define DEFAULT_OZONE_HEADER_ICON 1
 #define DEFAULT_OZONE_HEADER_SEPARATOR 1
