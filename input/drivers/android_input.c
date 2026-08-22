@@ -96,7 +96,9 @@ enum {
 #define MAX_KEYS ((LAST_KEYCODE + 7) / 8)
 
 /* First ports are used to keep track of gamepad states.
- * Last port is used for keyboard state */
+ * Last port is used for keyboard state.
+ * Every bit index used against a row must be < LAST_KEYCODE;
+ * writers bound incoming keycodes, readers bound bind keysyms. */
 static uint8_t android_key_state[DEFAULT_MAX_PADS + 1][MAX_KEYS];
 
 #define ANDROID_KEYBOARD_PORT_INPUT_PRESSED(binds, id) (BIT_GET(android_key_state[ANDROID_KEYBOARD_PORT], rarch_keysym_lut[(binds)[(id)].key]))
@@ -1608,29 +1610,41 @@ static INLINE void android_input_poll_event_type_key(
       default:
          break;
    }
-   /* some controllers send both the up and down events at once
-    * when the button is released for "special" buttons, like menu buttons
-    * work around that by only using down events for meta keys (which get
-    * cleared every poll anyway)
-    */
-   switch (action)
+   /* Rows are MAX_KEYS bytes wide and readers bound their lookups at
+    * LAST_KEYCODE (android_joypad_button_state). Keycodes arrive
+    * straight from the platform and are not confined to that range:
+    * public codes run well past AKEYCODE_ASSIST (AKEYCODE_WAKEUP is
+    * 224, AKEYCODE_PROFILE_SWITCH 288) and vendor codes are
+    * unbounded, so an unguarded BIT_SET writes past the row - and
+    * past the array itself for ANDROID_KEYBOARD_PORT, which is the
+    * last one - corrupting whatever the linker placed next to it.
+    * Nothing above LAST_KEYCODE is bindable, so drop it. */
+   if (keysym >= 0 && keysym < LAST_KEYCODE)
    {
-      case AKEY_EVENT_ACTION_UP:
-         BIT_CLEAR(buf, keysym);
-         if (keysym == AKEYCODE_BACK && alias_back_as_x)
-         {
-            BIT_CLEAR(buf, AKEYCODE_X); /* alias BACK on remote */
-            BIT_CLEAR(android_key_state[ANDROID_KEYBOARD_PORT], AKEYCODE_X);
-         }
-         break;
-      case AKEY_EVENT_ACTION_DOWN:
-         BIT_SET(buf, keysym);
-         if (keysym == AKEYCODE_BACK && alias_back_as_x)
-         {
-            BIT_SET(buf, AKEYCODE_X);
-            BIT_SET(android_key_state[ANDROID_KEYBOARD_PORT], AKEYCODE_X);
-         }
-         break;
+      /* some controllers send both the up and down events at once
+       * when the button is released for "special" buttons, like menu buttons
+       * work around that by only using down events for meta keys (which get
+       * cleared every poll anyway)
+       */
+      switch (action)
+      {
+         case AKEY_EVENT_ACTION_UP:
+            BIT_CLEAR(buf, keysym);
+            if (keysym == AKEYCODE_BACK && alias_back_as_x)
+            {
+               BIT_CLEAR(buf, AKEYCODE_X); /* alias BACK on remote */
+               BIT_CLEAR(android_key_state[ANDROID_KEYBOARD_PORT], AKEYCODE_X);
+            }
+            break;
+         case AKEY_EVENT_ACTION_DOWN:
+            BIT_SET(buf, keysym);
+            if (keysym == AKEYCODE_BACK && alias_back_as_x)
+            {
+               BIT_SET(buf, AKEYCODE_X);
+               BIT_SET(android_key_state[ANDROID_KEYBOARD_PORT], AKEYCODE_X);
+            }
+            break;
+      }
    }
 
    if ((keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN))
