@@ -34,6 +34,7 @@
 #include <file/file_path.h>
 #include <string/stdstring.h>
 #include <array/rhmap.h>
+#include <string/rstrtod.h>
 
 #define MAX_INCLUDE_DEPTH 16
 
@@ -1589,7 +1590,7 @@ bool config_get_double(config_file_t *conf, const char *key, double *in)
    if (!entry)
       return false;
 
-   *in = strtod(entry->value, NULL);
+   *in = rstrtod(entry->value, NULL);
    return true;
 }
 
@@ -1607,8 +1608,7 @@ bool config_get_float(config_file_t *conf, const char *key, float *in)
    if (!entry)
       return false;
 
-   /* strtof() is C99/POSIX. Just use the more portable kind. */
-   *in = (float)strtod(entry->value, NULL);
+   *in = rstrtof(entry->value, NULL);
    return true;
 }
 

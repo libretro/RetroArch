@@ -520,8 +520,7 @@ static int setting_set_with_string_representation(rarch_setting_t* setting,
          {
             char *ptr;
             uint32_t flags = setting->flags;
-            /* strtof() is C99/POSIX. Just use the more portable kind. */
-            *setting->value.target.fraction = (float)strtod(value, &ptr);
+            *setting->value.target.fraction = rstrtof(value, &ptr);
             if (flags & SD_FLAG_HAS_RANGE)
             {
                float min   = setting->min;
@@ -628,7 +627,7 @@ static void menu_input_st_float_cb(void *userdata, const char *str)
    if (str && *str)
    {
       char *end = NULL;
-      (void)strtod(str, &end);
+      (void)rstrtod(str, &end);
       if (end != str && *end == '\0')
       {
          struct menu_state *menu_st  = menu_state_get_ptr();
@@ -12872,6 +12871,7 @@ static const setting_desc_t smbclient_desc_1[] = {
 /* GENERATED: rows come from settings_def_smb_client_auth.h in order. */
 #include "../settings/settings_def_smb_client_auth.h"
 #include "../settings/settings_def_rows_end.h"
+#include <string/rstrtod.h>
 };
 #endif
 

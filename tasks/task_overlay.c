@@ -35,6 +35,7 @@
 #include "../input/input_overlay.h"
 #include "../input/input_remapping.h"
 #include "../verbosity.h"
+#include <string/rstrtod.h>
 
 typedef struct overlay_loader overlay_loader_t;
 
@@ -673,8 +674,8 @@ static bool task_overlay_load_desc(
       height_mod /= height;
    }
 
-   desc->x       = (float)strtod(elems[1], NULL) * width_mod;
-   desc->y       = (float)strtod(elems[2], NULL) * height_mod;
+   desc->x       = (float)rstrtod(elems[1], NULL) * width_mod;
+   desc->y       = (float)rstrtod(elems[2], NULL) * height_mod;
    desc->x_shift = desc->x;
    desc->y_shift = desc->y;
 
@@ -715,8 +716,8 @@ static bool task_overlay_load_desc(
          break;
    }
 
-   desc->range_x = (float)strtod(elems[4], NULL) * width_mod;
-   desc->range_y = (float)strtod(elems[5], NULL) * height_mod;
+   desc->range_x = (float)rstrtod(elems[4], NULL) * width_mod;
+   desc->range_y = (float)rstrtod(elems[5], NULL) * height_mod;
 
    _len = strlcpy(conf_key, overlay_desc_key, sizeof(conf_key));
 
@@ -1149,10 +1150,10 @@ static void task_overlay_deferred_load(retro_task_t *task, void *budget)
             goto error;
          }
 
-         overlay->x = (float)strtod(elems[0], NULL);
-         overlay->y = (float)strtod(elems[1], NULL);
-         overlay->w = (float)strtod(elems[2], NULL);
-         overlay->h = (float)strtod(elems[3], NULL);
+         overlay->x = (float)rstrtod(elems[0], NULL);
+         overlay->y = (float)rstrtod(elems[1], NULL);
+         overlay->w = (float)rstrtod(elems[2], NULL);
+         overlay->h = (float)rstrtod(elems[3], NULL);
       }
 
       /* Assume for now that scaling center is in the middle.
@@ -1191,10 +1192,10 @@ static void task_overlay_deferred_load(retro_task_t *task, void *budget)
 
          if (list_size >= 4)
          {
-            overlay->viewport.x  = (float)strtod(elems[0], NULL);
-            overlay->viewport.y  = (float)strtod(elems[1], NULL);
-            overlay->viewport.w  = (float)strtod(elems[2], NULL);
-            overlay->viewport.h  = (float)strtod(elems[3], NULL);
+            overlay->viewport.x  = (float)rstrtod(elems[0], NULL);
+            overlay->viewport.y  = (float)rstrtod(elems[1], NULL);
+            overlay->viewport.w  = (float)rstrtod(elems[2], NULL);
+            overlay->viewport.h  = (float)rstrtod(elems[3], NULL);
             overlay->flags      |= OVERLAY_HAS_VIEWPORT;
             RARCH_DBG("[Overlay] Parsed viewport: x=%.3f y=%.3f w=%.3f h=%.3f\n",
                   overlay->viewport.x, overlay->viewport.y,

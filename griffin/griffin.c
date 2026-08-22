@@ -1205,6 +1205,7 @@ FILE
 #include "../libretro-common/vfs/vfs_implementation_saf.c"
 #endif
 
+#include "../libretro-common/string/rstrtod.c"
 #include "../libretro-common/string/stdstring.c"
 #if defined(__linux__)
 #endif

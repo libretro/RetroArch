@@ -43,6 +43,7 @@
 #include <streams/file_stream.h>
 #define VFS_FRONTEND
 #include <vfs/vfs_implementation.h>
+#include <string/rstrtod.h>
 
 #define VFS_ERROR_RETURN_VALUE -1
 
@@ -998,7 +999,7 @@ static bool fs_native_handles(char specifier, int length_mod)
 }
 
 /* Scan a floating-point conversion.  Handles %f / %e / %g / %a and
- * their capitalized siblings.  Uses strtod() — which is C89 and,
+ * their capitalized siblings.  Uses rstrtod() — which is C89 and,
  * unlike sscanf, does not run strlen() across the rest of the
  * buffer or allocate any per-call FILE-stream state.  Width is
  * honored by copying at most `width` non-whitespace bytes into a
@@ -1033,14 +1034,14 @@ static int fs_scan_float(const char **pp, const fs_scan_spec_t *sp,
       for (i = 0; i < w && p[i] && !isspace((unsigned char)p[i]); i++)
          tmp[i] = p[i];
       tmp[i] = '\0';
-      val = strtod(tmp, &endp);
+      val = rstrtod(tmp, &endp);
       if (endp == tmp)
          return -1;
       advance = endp - tmp;
    }
    else
    {
-      val = strtod(p, &endp);
+      val = rstrtod(p, &endp);
       if (endp == p)
          return -1;
       advance = endp - p;

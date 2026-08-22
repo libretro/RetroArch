@@ -67,6 +67,7 @@
 #endif
 
 #include <string/stdstring.h>
+#include <string/rstrtod.h>
 
 struct v4l2_capbuf
 {
@@ -1124,7 +1125,7 @@ static bool rate_to_timeperframe(const char *s, uint32_t *num, uint32_t *den)
       *den = 24000;
       return true;
    }
-   fps = strtod(s, &end);
+   fps = rstrtod(s, &end);
    if (end == s || fps <= 0.0)
       return false;
    *num = 1000;

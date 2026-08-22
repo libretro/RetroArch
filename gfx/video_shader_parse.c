@@ -57,6 +57,7 @@
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
 #include "drivers_shader/glslang_util.h"
 #include "drivers_shader/slang_process.h"
+#include <string/rstrtod.h>
 #endif
 
 /* Maximum depth of chain of referenced shader presets.
@@ -1161,28 +1162,28 @@ void video_shader_resolve_parameters(struct video_shader *shader)
                p = end + 1; /* skip closing quote */
 
                /* Parse initial value */
-               param->initial = (float)strtod(p, &endptr);
+               param->initial = (float)rstrtod(p, &endptr);
                if (endptr == p)
                   continue;
                p = endptr;
                n_parsed = 1;
 
                /* Parse minimum */
-               param->minimum = (float)strtod(p, &endptr);
+               param->minimum = (float)rstrtod(p, &endptr);
                if (endptr == p)
                   continue;
                p = endptr;
                n_parsed = 2;
 
                /* Parse maximum */
-               param->maximum = (float)strtod(p, &endptr);
+               param->maximum = (float)rstrtod(p, &endptr);
                if (endptr == p)
                   continue;
                p = endptr;
                n_parsed = 3;
 
                /* Parse optional step */
-               param->step = (float)strtod(p, &endptr);
+               param->step = (float)rstrtod(p, &endptr);
                if (endptr != p)
                   n_parsed = 4;
 

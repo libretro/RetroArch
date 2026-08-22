@@ -113,6 +113,7 @@
 
 #ifdef HAVE_MIST
 #include "../../steam/steam.h"
+#include <string/rstrtod.h>
 #endif
 
 enum
@@ -7462,7 +7463,7 @@ int action_cb_push_dropdown_item_resolution(const char *path,
    while (*end == ' ' || *end == '(')
       ++end;
 
-   refreshrate = (float)strtod(end, NULL);
+   refreshrate = (float)rstrtod(end, NULL);
 
 
    if (video_display_server_set_resolution(width, height,

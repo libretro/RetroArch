@@ -300,6 +300,7 @@ endif
 
 OBJ += \
        $(LIBRETRO_COMM_DIR)/lists/string_list.o \
+       $(LIBRETRO_COMM_DIR)/string/rstrtod.o \
        $(LIBRETRO_COMM_DIR)/string/stdstring.o \
        $(LIBRETRO_COMM_DIR)/memmap/memalign.o \
        $(LIBRETRO_COMM_DIR)/memmap/memcpy_nt.o

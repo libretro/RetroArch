@@ -33,6 +33,7 @@
 #include <retro_dirent.h>
 #include <streams/file_stream.h>
 #include <string.h>
+#include <string/rstrtod.h>
 
 #define IIO_DEVICES_DIR "/sys/bus/iio/devices"
 #define IIO_ILLUMINANCE_SENSOR "in_illuminance_input"
@@ -334,7 +335,7 @@ static double linux_read_illuminance_sensor(const linux_illuminance_sensor_t *se
    errno = 0;
 
    /* TODO: This may be locale-sensitive */
-   illuminance = strtod(buffer, NULL);
+   illuminance = rstrtod(buffer, NULL);
    err = errno;
    if (err != 0)
    {
