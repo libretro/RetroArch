@@ -616,7 +616,7 @@ struct ozone_handle
    unsigned selection_core_name_lines;
    unsigned old_list_offset_y;
    unsigned draw_entry_delay;
-   unsigned last_color_theme;
+   char last_color_theme[32];
 
    uint32_t flags;
 
@@ -1783,60 +1783,38 @@ static void ozone_restart_cursor_animation(ozone_handle_t *ozone)
 }
 
 static void ozone_set_color_theme(ozone_handle_t *ozone,
-      unsigned color_theme)
+      const char *color_theme)
 {
+   static const struct
+   {
+      const char *ident;
+      ozone_theme_t *theme;
+   } ozone_color_themes[] = {
+      { "basic_white",        &ozone_theme_light },
+      { "basic_black",        &ozone_theme_dark },
+      { "nord",               &ozone_theme_nord },
+      { "gruvbox_dark",       &ozone_theme_gruvbox_dark },
+      { "boysenberry",        &ozone_theme_boysenberry },
+      { "hacking_the_kernel", &ozone_theme_hacking_the_kernel },
+      { "twilight_zone",      &ozone_theme_twilight_zone },
+      { "dracula",            &ozone_theme_dracula },
+      { "solarized_dark",     &ozone_theme_solarized_dark },
+      { "solarized_light",    &ozone_theme_solarized_light },
+      { "gray_dark",          &ozone_theme_gray_dark },
+      { "gray_light",         &ozone_theme_gray_light },
+      { "purple_rain",        &ozone_theme_purple_rain },
+      { "selenium",           &ozone_theme_selenium },
+      { "evergarden",         &ozone_theme_evergarden }
+   };
+   unsigned i;
    ozone_theme_t *theme = ozone->default_theme;
 
-   switch (color_theme)
-   {
-      case OZONE_COLOR_THEME_BASIC_WHITE:
-         theme = &ozone_theme_light;
+   for (i = 0; i < ARRAY_SIZE(ozone_color_themes); i++)
+      if (string_is_equal(color_theme, ozone_color_themes[i].ident))
+      {
+         theme = ozone_color_themes[i].theme;
          break;
-      case OZONE_COLOR_THEME_BASIC_BLACK:
-         theme = &ozone_theme_dark;
-         break;
-      case OZONE_COLOR_THEME_NORD:
-         theme = &ozone_theme_nord;
-         break;
-      case OZONE_COLOR_THEME_GRUVBOX_DARK:
-         theme = &ozone_theme_gruvbox_dark;
-         break;
-      case OZONE_COLOR_THEME_BOYSENBERRY:
-         theme = &ozone_theme_boysenberry;
-         break;
-      case OZONE_COLOR_THEME_HACKING_THE_KERNEL:
-         theme = &ozone_theme_hacking_the_kernel;
-         break;
-      case OZONE_COLOR_THEME_TWILIGHT_ZONE:
-         theme = &ozone_theme_twilight_zone;
-         break;
-      case OZONE_COLOR_THEME_DRACULA:
-         theme = &ozone_theme_dracula;
-         break;
-      case OZONE_COLOR_THEME_SELENIUM:
-         theme = &ozone_theme_selenium;
-         break;
-      case OZONE_COLOR_THEME_SOLARIZED_DARK:
-         theme = &ozone_theme_solarized_dark;
-         break;
-      case OZONE_COLOR_THEME_SOLARIZED_LIGHT:
-         theme = &ozone_theme_solarized_light;
-         break;
-      case OZONE_COLOR_THEME_GRAY_DARK:
-         theme = &ozone_theme_gray_dark;
-         break;
-      case OZONE_COLOR_THEME_GRAY_LIGHT:
-         theme = &ozone_theme_gray_light;
-         break;
-      case OZONE_COLOR_THEME_PURPLE_RAIN:
-         theme = &ozone_theme_purple_rain;
-         break;
-      case OZONE_COLOR_THEME_EVERGARDEN:
-         theme = &ozone_theme_evergarden;
-         break;
-      default:
-         break;
-   }
+      }
 
    ozone->theme = theme;
 
@@ -1882,23 +1860,20 @@ static void ozone_set_color_theme(ozone_handle_t *ozone,
    if (ozone->flags & OZONE_FLAG_HAS_ALL_ASSETS || ozone->flags2 & OZONE_FLAG2_IGNORE_MISSING_ASSETS)
       ozone_restart_cursor_animation(ozone);
 
-   ozone->last_color_theme = color_theme;
+   strlcpy(ozone->last_color_theme, color_theme, sizeof(ozone->last_color_theme));
 }
 
-static unsigned ozone_get_system_theme(void)
+static const char *ozone_get_system_theme(void)
 {
 #ifdef HAVE_LIBNX
    if (R_SUCCEEDED(setsysInitialize()))
    {
       ColorSetId theme;
-      unsigned ret = 0;
       setsysGetColorSetId(&theme);
-      if (theme == ColorSetId_Dark)
-         ret = 1;
       setsysExit();
-      return ret;
+      return (theme == ColorSetId_Dark) ? "basic_black" : "basic_white";
    }
-   return 0;
+   return "basic_white";
 #else
    return DEFAULT_OZONE_COLOR_THEME;
 #endif
@@ -3028,7 +3003,7 @@ static void ozone_reset_theme_textures(ozone_handle_t *ozone)
    {
       ozone_theme_t *theme = ozone_themes[j];
 
-      if (!theme->name || j != ozone->last_color_theme)
+      if (!theme->name || theme != ozone->theme)
          continue;
 
       fill_pathname_join_special(
@@ -9730,13 +9705,14 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
 {
    unsigned i;
    bool fallback_color_theme           = false;
-   unsigned width, height, color_theme = 0;
+   unsigned width, height;
    ozone_handle_t *ozone               = NULL;
    settings_t *settings                = config_get_ptr();
    gfx_animation_t *p_anim             = anim_get_ptr();
    gfx_display_t *p_disp               = disp_get_ptr();
    struct menu_state *menu_st          = menu_state_get_ptr();
    menu_handle_t *menu                 = (menu_handle_t*)calloc(1, sizeof(*menu));
+   const char *color_theme             = settings->arrays.menu_ozone_color_theme;
    const char *directory_assets        = settings->paths.directory_assets;
 
    if (!menu)
@@ -9825,10 +9801,10 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
       {
          ColorSetId theme;
          setsysGetColorSetId(&theme);
-         color_theme = (theme == ColorSetId_Dark) ? 1 : 0;
+         color_theme = (theme == ColorSetId_Dark) ? "basic_black" : "basic_white";
          ozone_set_color_theme(ozone, color_theme);
-         configuration_set_uint(settings,
-               settings->uints.menu_ozone_color_theme, color_theme);
+         configuration_set_string(settings,
+               settings->arrays.menu_ozone_color_theme, color_theme);
          configuration_set_bool(settings,
                settings->bools.menu_preferred_system_color_theme_set, true);
          setsysExit();
@@ -9841,10 +9817,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
       fallback_color_theme                      = true;
 
    if (fallback_color_theme)
-   {
-      color_theme                               = settings->uints.menu_ozone_color_theme;
       ozone_set_color_theme(ozone, color_theme);
-   }
 
    ozone->flags                                &= ~OZONE_FLAG_NEED_COMPUTE;
    ozone->animations.scroll_y                   = 0.0f;
@@ -12464,7 +12437,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    bool ozone_last_use_preferred_system_color_theme;
    ozone_handle_t* ozone                  = (ozone_handle_t*)data;
    settings_t  *settings                  = config_get_ptr();
-   unsigned color_theme                   = settings->uints.menu_ozone_color_theme;
+   const char *color_theme                = settings->arrays.menu_ozone_color_theme;
    bool use_preferred_system_color_theme  = settings->bools.menu_use_preferred_system_color_theme;
    uintptr_t messagebox_tag               = (uintptr_t)ozone->pending_message;
    bool draw_osk                          = menu_input_dialog_get_display_kb();
@@ -12578,14 +12551,14 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    ozone_last_use_preferred_system_color_theme =
          ozone->flags2 & OZONE_FLAG2_LAST_USE_PREFERRED_SYSTEM_COLOR_THEME;
 
-   if (   (color_theme != ozone->last_color_theme)
+   if (   string_is_not_equal(color_theme, ozone->last_color_theme)
        || (ozone_last_use_preferred_system_color_theme != use_preferred_system_color_theme))
    {
       if (use_preferred_system_color_theme)
       {
          color_theme                           = ozone_get_system_theme();
-         configuration_set_uint(settings,
-               settings->uints.menu_ozone_color_theme, color_theme);
+         configuration_set_string(settings,
+               settings->arrays.menu_ozone_color_theme, color_theme);
       }
 
       ozone_set_color_theme(ozone, color_theme);

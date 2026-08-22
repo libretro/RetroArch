@@ -516,7 +516,6 @@ uint	menu_remember_selection	1	MENU_REMEMBER_SELECTION_ALWAYS
 uint	menu_startup_page	1	MENU_STARTUP_PAGE_MAIN_MENU
 uint	netplay_share_digital	1	RARCH_NETPLAY_SHARE_DIGITAL_NO_SHARING
 uint	netplay_share_analog	1	RARCH_NETPLAY_SHARE_ANALOG_NO_SHARING
-uint	ozone_menu_color_theme	1	1
 uint	keyboard_gamepad_mapping_type	1	1
 uint	video_hdr_subpixel_layout	1	0
 uint	rewind_granularity	1	1
@@ -1158,7 +1157,6 @@ uint	menu_remember_selection	1	MENU_REMEMBER_SELECTION_ALWAYS
 uint	menu_startup_page	1	MENU_STARTUP_PAGE_MAIN_MENU
 uint	netplay_share_digital	1	RARCH_NETPLAY_SHARE_DIGITAL_NO_SHARING
 uint	netplay_share_analog	1	RARCH_NETPLAY_SHARE_ANALOG_NO_SHARING
-uint	ozone_menu_color_theme	1	1
 uint	keyboard_gamepad_mapping_type	1	1
 uint	video_hdr_subpixel_layout	1	0
 uint	rewind_granularity	1	1
@@ -1803,7 +1801,6 @@ uint	menu_remember_selection	1	MENU_REMEMBER_SELECTION_ALWAYS
 uint	menu_startup_page	1	MENU_STARTUP_PAGE_MAIN_MENU
 uint	netplay_share_digital	1	RARCH_NETPLAY_SHARE_DIGITAL_NO_SHARING
 uint	netplay_share_analog	1	RARCH_NETPLAY_SHARE_ANALOG_NO_SHARING
-uint	ozone_menu_color_theme	1	1
 uint	keyboard_gamepad_mapping_type	1	1
 uint	video_hdr_subpixel_layout	1	0
 uint	rewind_granularity	1	1
