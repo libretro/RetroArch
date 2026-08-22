@@ -37,10 +37,6 @@
 
 #include <boolean.h>
 
-#ifdef __APPLE__
-#include <CommonCrypto/CommonDigest.h>
-#endif
-
 RETRO_BEGIN_DECLS
 
 /**
@@ -148,13 +144,11 @@ int sha1_calculate(const char *path, char *result);
 
 uint32_t djb2_calculate(const char *str);
 
-#ifdef __APPLE__
-typedef CC_MD5_CTX MD5_CTX;
-#define MD5_Init CC_MD5_Init
-#define MD5_Update CC_MD5_Update
-#define MD5_Final CC_MD5_Final
-#else
-
+/* One portable MD5 for every platform. This used to alias the CC_MD5_*
+ * family from CommonCrypto on Apple, but those have been deprecated
+ * since macOS 10.15, and the first code to actually call the aliases
+ * (libsmb2's hmac-md5) promptly failed the Apple builds on it. The
+ * implementation in utils/md5.c has no platform dependencies at all. */
 typedef struct {
 	uint32_t lo, hi;
 	uint32_t a, b, c, d;
@@ -190,8 +184,6 @@ typedef struct {
 void MD5_Init(MD5_CTX *ctx);
 void MD5_Update(MD5_CTX *ctx, const void *data, unsigned long size);
 void MD5_Final(unsigned char *result, MD5_CTX *ctx);
-
-#endif
 
 RETRO_END_DECLS
 

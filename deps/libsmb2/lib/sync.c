@@ -40,9 +40,9 @@
 
 #include "compat.h"
 
-#ifdef HAVE_TIME_H
+/* time() below needs this on every platform; the declaration used
+ * to arrive transitively through the old md5.h pulling netinet/in.h. */
 #include <time.h>
-#endif
 
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
