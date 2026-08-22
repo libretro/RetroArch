@@ -11,13 +11,7 @@
 #include <string.h>
 #include <sys/types.h>
 
-#ifdef HAVE_STDINT_H
 #include <stdint.h>
-#endif
-
-#if (__BYTE_ORDER == __BIG_ENDIAN) || defined(XBOX_360_PLATFORM)
-#  define WORDS_BIGENDIAN 1
-#endif
 
 #if !defined(__PS2__) && !defined(PICO_PLATFORM)
 #ifndef UWORD32_DEFINED

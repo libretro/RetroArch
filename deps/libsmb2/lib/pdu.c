@@ -23,21 +23,10 @@
 #define _GNU_SOURCE
 #endif
 
-#ifdef HAVE_STDINT_H
 #include <stdint.h>
-#endif
-
-#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#endif
-
-#ifdef HAVE_STDIO_H
 #include <stdio.h>
-#endif
-
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif
 
 #ifdef HAVE_TIME_H
 #include <time.h>
@@ -64,23 +53,18 @@ smb2_pad_to_64bit(struct smb2_context *smb2, struct smb2_io_vectors *v)
         static uint8_t zero_bytes[7];
         int i, len = 0;
 
-        for (i = 0; i < v->niov; i++) {
+        for (i = 0; i < v->niov; i++)
                 len += (int)v->iov[i].len;
-        }
-        if ((len & 0x07) == 0) {
+        if ((len & 0x07) == 0)
                 return 0;
-        }
         if (smb2_add_iovector(smb2, v, 
                         &zero_bytes[0], 
                         8 - (len & 0x07), NULL)
-                        == NULL) {
+                        == NULL)
                 return -1;
-        }
-
         return 0;
 }
 
-#include <stdio.h>
 
 struct smb2_pdu *
 smb2_allocate_pdu(struct smb2_context *smb2, enum smb2_command command,

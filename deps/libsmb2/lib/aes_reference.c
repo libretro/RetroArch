@@ -32,9 +32,7 @@ NOTE:   String length must be evenly divisible by 16byte (str_len % 16 == 0)
 #include "config.h"
 #endif
 
-#ifdef HAVE_STDINT_H
 #include <stdint.h>
-#endif
 
 #include "compat.h"
 

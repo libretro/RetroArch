@@ -23,28 +23,14 @@
 #define _GNU_SOURCE
 #endif
 
-#ifdef HAVE_STDINT_H
 #include <stdint.h>
-#endif
-
-#ifdef HAVE_STDLIB_H
+#include <stddef.h>
 #include <stdlib.h>
-#endif
-
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif
-
-#ifdef HAVE_TIME_H
 #include <time.h>
-#endif
 
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
-#endif
-
-#ifdef STDC_HEADERS
-#include <stddef.h>
 #endif
 
 #include "compat.h"
@@ -56,8 +42,7 @@
 #include "libsmb2-private.h"
 
 /* Count number of leading 1 bits in the char */
-static int
-l1(char c)
+static int l1(char c)
 {
         int i = 0;
         while (c & 0x80) {

@@ -9,9 +9,7 @@
 #include "config.h"
 #endif
  
-#ifdef HAVE_STDINT_H
 #include <stdint.h>
-#endif
 
 /* #define the macros below to 1/0 to enable/disable the mode of operation. */
 /* */
@@ -20,11 +18,11 @@
 
 /* The #ifndef-guard allows it to be configured before #include'ing or at compile time. */
 #ifndef CBC
-  #define CBC 0
+#define CBC 0
 #endif
 
 #ifndef ECB
-  #define ECB 1
+#define ECB 1
 #endif
 
 
