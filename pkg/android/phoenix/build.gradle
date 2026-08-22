@@ -32,6 +32,7 @@ android {
 
   buildFeatures {
     buildConfig true
+    resValues true
   }
 
   ndkVersion "29.0.14206865"
