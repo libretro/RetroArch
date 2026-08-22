@@ -32,6 +32,7 @@
 
 #if defined(HAVE_BUILTINMBEDTLS)
 #include "../../deps/mbedtls/mbedtls/config.h"
+#include "../../deps/mbedtls/mbedtls/version.h"
 #include "../../deps/mbedtls/mbedtls/certs.h"
 #include "../../deps/mbedtls/mbedtls/debug.h"
 #include "../../deps/mbedtls/mbedtls/platform.h"
@@ -228,10 +229,15 @@ int ssl_socket_connect(void *state_data,
       return -1;
 
    mbedtls_ssl_conf_authmode(&state->conf, MBEDTLS_SSL_VERIFY_OPTIONAL);
-   /* The default preset floors the client at TLS 1.0 whichever protocol
-    * versions are compiled in, so name the floor that matches the build. */
+#if MBEDTLS_VERSION_MAJOR < 3
+   /* The 2.x default preset floors the client at TLS 1.0 whichever
+    * protocol versions are compiled in, so name the floor that matches
+    * the build.  3.0 dropped TLS 1.0 and 1.1 outright and floors its own
+    * default preset at 1.2, and 4.0 removed this call along with the
+    * rest of the deprecated surface, so neither needs the override. */
    mbedtls_ssl_conf_min_version(&state->conf,
          MBEDTLS_SSL_MAJOR_VERSION_3, MBEDTLS_SSL_MINOR_VERSION_3);
+#endif
    mbedtls_ssl_conf_ca_chain(&state->conf, &state->ca, NULL);
 #if SSL_MBED_LEGACY_RNG
    mbedtls_ssl_conf_rng(&state->conf, mbedtls_ctr_drbg_random, &state->ctr_drbg);
