@@ -232,30 +232,8 @@ ssize_t readv(t_socket fd, const struct iovec* vector, int count);
 
 #else
 
-static int writev(t_socket sock, struct iovec *iov, int nvecs)
-{
-  DWORD ret;
-
-  int res = WSASend(sock, (LPWSABUF)iov, nvecs, &ret, 0, NULL, NULL);
-
-  if (res == 0) {
-    return (int)ret;
-  }
-  return -1;
-}
-
-static int readv(t_socket sock, struct iovec *iov, int nvecs)
-{
-  DWORD ret;
-  DWORD flags = 0;
-
-  int res = WSARecv(sock, (LPWSABUF)iov, nvecs, &ret, &flags, NULL, NULL);
-
-  if (res == 0) {
-    return (int)ret;
-  }
-  return -1;
-}
+int writev(t_socket sock, struct iovec *iov, int nvecs);
+int readv(t_socket sock, struct iovec *iov, int nvecs);
 #endif
 
 #ifdef __USE_WINSOCK__
@@ -271,7 +249,9 @@ int getlogin_r(char *buf, size_t size);
 
 int getpid();
 
-#pragma warning( disable : 4090 ) 
+#ifdef _MSC_VER
+#pragma warning( disable : 4090 )
+#endif
 
 #define strdup _strdup
 

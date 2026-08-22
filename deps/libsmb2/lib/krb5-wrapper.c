@@ -890,7 +890,7 @@ krb5_init_server_credentials(struct smb2_server *server, const char *keytab_path
                 return 0;
         }
 
-        do { // try
+        do { /* try */
                 auth_data = calloc(1, sizeof(struct private_auth_data));
                 if (auth_data == NULL) {
                         snprintf(server->error, sizeof(server->error), "Can't alloc auth_data");
