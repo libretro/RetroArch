@@ -536,7 +536,7 @@ read_more_data:
                         */
                         pdu->header.message_id = smb2->hdr.message_id;
                         if (!(smb2->hdr.flags & SMB2_FLAGS_ASYNC_COMMAND)) {
-                                pdu->header.sync.tree_id = smb2->hdr.sync.tree_id;
+                                pdu->header.u.sync.tree_id = smb2->hdr.u.sync.tree_id;
                         }
                         /* if the session is properly opened then we could get
                          * any request from the client, so use the header's command
@@ -744,16 +744,18 @@ read_more_data:
                 if (len > 0) {
                         /* Add padding before the next PDU */
                         smb2->recv_state = SMB2_RECV_PAD;
-                        uint8_t * tmp = malloc(len);
-                        if (tmp == NULL) {
-                            smb2_set_error(smb2, "malloc failed while adding PAD");
-                            return -1;
-                        }
-                        if (smb2_add_iovector(smb2, &smb2->in,
-                                              tmp,
-                                              len, free) == NULL) {
-                                smb2_set_error(smb2, "Failed to add iovector for PAD");
-                                return -1;
+                        {
+                                uint8_t *tmp = malloc(len);
+                                if (tmp == NULL) {
+                                        smb2_set_error(smb2, "malloc failed while adding PAD");
+                                        return -1;
+                                }
+                                if (smb2_add_iovector(smb2, &smb2->in,
+                                                      tmp,
+                                                      len, free) == NULL) {
+                                        smb2_set_error(smb2, "Failed to add iovector for PAD");
+                                        return -1;
+                                }
                         }
                         goto read_more_data;
                 }

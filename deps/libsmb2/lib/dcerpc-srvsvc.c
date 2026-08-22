@@ -251,14 +251,14 @@ srvsvc_SHARE_ENUM_UNION_coder(struct dcerpc_context *ctx, struct dcerpc_pdu *pdu
 
         switch (ctr->Level) {
         case 0:
-                if (dcerpc_ptr_coder(ctx, pdu, iov, offset, &ctr->Level0,
+                if (dcerpc_ptr_coder(ctx, pdu, iov, offset, &ctr->u.Level0,
                                      PTR_UNIQUE,
                                      srvsvc_SHARE_INFO_0_CONTAINER_coder)) {
                         return -1;
                 }
                 break;
         case 1:
-                if (dcerpc_ptr_coder(ctx, pdu, iov, offset, &ctr->Level1,
+                if (dcerpc_ptr_coder(ctx, pdu, iov, offset, &ctr->u.Level1,
                                      PTR_UNIQUE,
                                      srvsvc_SHARE_INFO_1_CONTAINER_coder)) {
                         return -1;

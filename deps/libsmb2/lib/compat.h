@@ -36,7 +36,10 @@ extern "C" {
 #include <xtl.h>
 #include <winsockx.h>
 #endif
+#ifndef T_SOCKET_DEFINED
+#define T_SOCKET_DEFINED
 typedef SOCKET t_socket;
+#endif
 #ifndef INVALID_SOCKET
 #define INVALID_SOCKET  (t_socket)(~0)
 #endif
@@ -245,7 +248,7 @@ ssize_t readv(t_socket fd, const struct iovec* vector, int count);
 
 #else
 
-inline int writev(t_socket sock, struct iovec *iov, int nvecs)
+static int writev(t_socket sock, struct iovec *iov, int nvecs)
 {
   DWORD ret;
 
@@ -257,7 +260,7 @@ inline int writev(t_socket sock, struct iovec *iov, int nvecs)
   return -1;
 }
 
-inline int readv(t_socket sock, struct iovec *iov, int nvecs)
+static int readv(t_socket sock, struct iovec *iov, int nvecs)
 {
   DWORD ret;
   DWORD flags = 0;

@@ -43,7 +43,7 @@ struct dcerpc_pdu;
 
 enum SHARE_INFO_enum {
         SHARE_INFO_0 = 0,
-        SHARE_INFO_1 = 1,
+        SHARE_INFO_1 = 1
 };
 
 struct srvsvc_SHARE_INFO_0 {
@@ -94,7 +94,7 @@ struct srvsvc_SHARE_ENUM_UNION {
         union {
                 struct srvsvc_SHARE_INFO_0_CONTAINER Level0;
                 struct srvsvc_SHARE_INFO_1_CONTAINER Level1;
-        };
+        } u;
 };
 
 struct srvsvc_SHARE_ENUM_STRUCT {
@@ -119,9 +119,7 @@ struct srvsvc_NetrShareEnum_rep {
 
 struct srvsvc_SHARE_INFO {
         uint32_t level;
-        union {
-                struct srvsvc_SHARE_INFO_1 ShareInfo1;
-        };
+        struct srvsvc_SHARE_INFO_1 ShareInfo1;
 };
 
 struct srvsvc_NetrShareGetInfo_req {

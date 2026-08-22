@@ -549,7 +549,7 @@ static bool smb_enum_shares(char ***out, unsigned *out_count)
       return false;
    }
 
-   level1 = &state.rep->ses.ShareInfo.Level1;
+   level1 = &state.rep->ses.ShareInfo.u.Level1;
 
    if (     !level1->Buffer
          || !level1->Buffer->share_info_1

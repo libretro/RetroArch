@@ -1070,3 +1070,8 @@ krb5_can_do_ntlmssp(void)
 }
 
 #endif /* HAVE_LIBKRB5 */
+
+/* ISO C forbids an empty translation unit, and everything above is
+ * compiled out when Kerberos support is not enabled.
+ */
+typedef int smb2_krb5_wrapper_c89_dummy;

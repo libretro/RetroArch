@@ -66,21 +66,24 @@
 #include <libsmb2.h>
 #include "libsmb2-private.h"
 
-#define container_of(ptr, type, member) ({                      \
-        const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
-        (type *)(void *)( (char *)__mptr - offsetof(type,member) );})
+/* Statement expressions and typeof are GNU extensions; the plain
+ * pointer arithmetic below is what the _MSC_VER path already did
+ * by hand and is valid C89 everywhere.
+ */
+#define container_of(ptr, type, member) \
+        ((type *)(void *)((char *)(ptr) - offsetof(type, member)))
 
 struct smb2_alloc_entry {
         struct smb2_alloc_entry *next;
 #if 0 /* UNUSED. */
         size_t len;
 #endif
-        char buf[0];
+        char buf[1];
 };
 
 struct smb2_alloc_header {
         struct smb2_alloc_entry *mem;
-        char buf[0];
+        char buf[1];
 };
 
 void *
@@ -112,14 +115,7 @@ smb2_alloc_data(struct smb2_context *smb2, void *memctx, size_t size)
                 return NULL;
         }
 
-#ifndef _MSC_VER
-        hdr = (struct smb2_alloc_header *)(void *)container_of(memctx, struct smb2_alloc_header, buf);
-#else
-        {
-          const char* __mptr = memctx;
-          hdr = (struct smb2_alloc_header*)((char *)__mptr - offsetof(struct smb2_alloc_header, buf));
-        }
-#endif /* !_MSC_VER */
+        hdr = container_of(memctx, struct smb2_alloc_header, buf);
 
         ptr->next = hdr->mem;
         hdr->mem = ptr;
@@ -137,14 +133,7 @@ smb2_free_data(struct smb2_context *smb2, void *ptr)
                 return;
         }
 
-#ifndef _MSC_VER
-        hdr = (struct smb2_alloc_header *)(void *)container_of(ptr, struct smb2_alloc_header, buf);
-#else
-        {
-          const char* __mptr = ptr;
-          hdr = (struct smb2_alloc_header*)((char *)__mptr - offsetof(struct smb2_alloc_header, buf));
-        }
-#endif /* !_MSC_VER */
+        hdr = container_of(ptr, struct smb2_alloc_header, buf);
 
         while ((ent = hdr->mem)) {
                 hdr->mem = ent->next;

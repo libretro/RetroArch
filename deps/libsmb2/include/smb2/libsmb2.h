@@ -122,7 +122,10 @@ struct smb2dirent {
 #endif
 
 #if defined(_WINDOWS) || defined(_XBOX)
+#ifndef T_SOCKET_DEFINED
+#define T_SOCKET_DEFINED
 typedef SOCKET t_socket;
+#endif
 #else
 #ifndef T_SOCKET_DEFINED
 #define T_SOCKET_DEFINED
@@ -305,7 +308,7 @@ enum smb2_negotiate_version {
         SMB2_VERSION_0210 = 0x0210,
         SMB2_VERSION_0300 = 0x0300,
         SMB2_VERSION_0302 = 0x0302,
-        SMB2_VERSION_0311 = 0x0311,
+        SMB2_VERSION_0311 = 0x0311
 };
 
 #define SMB2_VERSION_WILDCARD 0x02FF
@@ -364,7 +367,7 @@ void smb2_set_sign(struct smb2_context *smb2, int val);
 enum smb2_sec {
         SMB2_SEC_UNDEFINED = 0,
         SMB2_SEC_NTLMSSP,
-        SMB2_SEC_KRB5,
+        SMB2_SEC_KRB5
 };
 
 /*

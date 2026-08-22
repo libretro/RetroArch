@@ -2891,13 +2891,13 @@ free_smb2_file_notify_change_information(struct smb2_context *smb2, struct smb2_
 struct notify_change_cb_data {
         smb2_command_cb cb;
         void *cb_data;
-        // smb2fh file handle of the directory to get notified
+        /* smb2fh file handle of the directory to get notified */
         struct smb2fh *fh;
-        // filter of SMB2_CHANGE_NOTIFY_FILE_NOTIFY_CHANGE_* flags
+        /* filter of SMB2_CHANGE_NOTIFY_FILE_NOTIFY_CHANGE_* flags */
         uint16_t filter;
-        // flags such as SMB2_CHANGE_NOTIFY_WATCH_TREE
+        /* flags such as SMB2_CHANGE_NOTIFY_WATCH_TREE */
         uint32_t flags;
-        // do a new notify_change request after each response if 1
+        /* do a new notify_change request after each response if 1 */
         uint32_t loop;
         uint32_t status;
 };
@@ -2966,8 +2966,7 @@ int smb2_notify_change_filehandle_async(struct smb2_context *smb2, struct smb2fh
         memset(&ch_req, 0, sizeof(struct smb2_change_notify_request));
         ch_req.flags = flags;
         ch_req.output_buffer_length = DEFAULT_OUTPUT_BUFFER_LENGTH;
-        const smb2_file_id *file_id = smb2_get_file_id(smb2_dir_fh);
-        memcpy(ch_req.file_id, file_id, SMB2_FD_SIZE);
+        memcpy(ch_req.file_id, smb2_get_file_id(smb2_dir_fh), SMB2_FD_SIZE);
         ch_req.completion_filter = filter;
 
         pdu = smb2_cmd_change_notify_async(smb2, &ch_req,
@@ -3056,7 +3055,7 @@ smb2_tree_disconnect_request_cb(struct smb2_server *server, struct smb2_context 
 {
         struct smb2_pdu *pdu = NULL;
         struct smb2_error_reply err;
-        uint32_t tree_id = smb2->hdr.sync.tree_id;
+        uint32_t tree_id = smb2->hdr.u.sync.tree_id;
         int ret = -1;
 
         if (server->handlers && server->handlers->tree_disconnect_cmd) {
