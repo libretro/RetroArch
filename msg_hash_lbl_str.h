@@ -677,6 +677,7 @@
 #define MENU_ENUM_LABEL_VIDEO_FRAME_TIME_SAMPLE_GATED_STR "video_frame_time_sample_gated"
 #define MENU_ENUM_LABEL_VIDEO_GAMMA_STR "video_gamma"
 #define MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED_STR "video_refresh_rate_polled"
+#define MENU_ENUM_LABEL_VIDEO_REFRESH_RATE_POLLED_AUTO_STR "video_refresh_rate_polled_auto"
 #define MENU_ENUM_LABEL_VIDEO_USE_METAL_ARG_BUFFERS_STR "video_use_metal_arg_buffers"
 #define MENU_ENUM_LABEL_SHADER_APPLY_CHANGES_STR "shader_apply_changes"
 #define MENU_ENUM_LABEL_SHADER_OPTIONS_STR "shader_options"
