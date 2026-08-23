@@ -19,7 +19,13 @@ DEFINES     :=
 LIBRETRO_COMM_DIR := $(RARCH_DIR)/libretro-common
 DEPS_DIR          := $(RARCH_DIR)/deps
 
-GIT_VERSION := $(shell git rev-parse --short HEAD 2>/dev/null)
+RA_ROOT      := $(abspath $(LOCAL_PATH)/$(RARCH_DIR))
+GIT_TOPLEVEL := $(shell git -C $(RA_ROOT) rev-parse --show-toplevel 2>/dev/null)
+
+ifeq ($(realpath $(GIT_TOPLEVEL)),$(realpath $(RA_ROOT)))
+   GIT_VERSION ?= $(shell git -C $(RA_ROOT) rev-parse --short HEAD 2>/dev/null)
+endif
+
 ifneq ($(GIT_VERSION),)
    DEFINES += -DHAVE_GIT_VERSION -DGIT_VERSION=$(GIT_VERSION)
 endif
