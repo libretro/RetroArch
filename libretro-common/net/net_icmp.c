@@ -232,7 +232,12 @@ int net_icmp_echo_send(net_icmp_echo_t *e, uint16_t seq,
 
 int net_icmp_echo_poll(net_icmp_echo_t *e, uint16_t *seq, int *ttl)
 {
-   uint8_t buf[65536];
+   /* Large enough for any reply this handle can match: send caps the
+    * payload at 1400, so a raw-socket echo reply tops out at a 60 byte
+    * IP header plus 8 byte ICMP header plus payload.  Oversized foreign
+    * packets are truncated by recv() and rejected on their leading
+    * bytes, which truncation leaves intact. */
+   uint8_t buf[1500];
    ssize_t n;
    size_t  off = 0;
    int     got_ttl = -1;
