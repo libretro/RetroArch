@@ -461,7 +461,7 @@ static void sdl3_input_free(void *data)
    free(sdl);
 }
 
-/* Opens the first host sensor of the given type, if any. */
+/* Opens the first sensor of the given type. */
 static SDL_Sensor *sdl3_open_sensor(SDL_SensorType type)
 {
    int i;
