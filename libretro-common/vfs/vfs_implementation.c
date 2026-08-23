@@ -44,6 +44,9 @@
 #    include <fcntl.h>
 #    include <direct.h>
 #    include <windows.h>
+/* FILE_ZERO_DATA_INFORMATION and the FSCTL_* codes used by
+ * retro_vfs_file_punch_hole_impl are declared here, not in windows.h. */
+#    include <winioctl.h>
 #  endif
 #    include <io.h>
 #else
