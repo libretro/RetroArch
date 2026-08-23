@@ -672,6 +672,25 @@ const char *retro_vfs_file_get_path_impl(libretro_vfs_implementation_file *strea
    return stream->orig_path;
 }
 
+int retro_vfs_file_punch_hole_impl(libretro_vfs_implementation_file *stream,
+      int64_t offset, int64_t len)
+{
+   /* UWP cannot punch holes. FSCTL_SET_ZERO_DATA is issued through
+    * DeviceIoControl, which is not in the app container's API surface,
+    * and this backend's handle comes from a StorageFile rather than
+    * being one a filesystem control code can be sent to.
+    *
+    * -1 is the documented "not available" answer: filestream_punch_hole
+    * is a capability, so callers write zeroes instead and lose the space
+    * saving and nothing else. Defined here rather than omitted because
+    * this backend REPLACES vfs_implementation.c on UWP, so a missing
+    * definition is a link error at the end of a long MSVC build. */
+   (void)stream;
+   (void)offset;
+   (void)len;
+   return -1;
+}
+
 const uint8_t *retro_vfs_file_get_mapped_ptr_impl(
       libretro_vfs_implementation_file *stream, int64_t *len)
 {
