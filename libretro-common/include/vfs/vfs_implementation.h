@@ -33,6 +33,11 @@ RETRO_BEGIN_DECLS
 
 libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, unsigned mode, unsigned hints);
 
+/* Deallocate a range of a file without changing its length; see
+ * filestream_punch_hole. Returns 0 on success, -1 when the platform or
+ * filesystem cannot do it. */
+int retro_vfs_file_punch_hole_impl(libretro_vfs_implementation_file *stream, int64_t offset, int64_t len);
+
 int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream);
 
 int retro_vfs_file_error_impl(libretro_vfs_implementation_file *stream);

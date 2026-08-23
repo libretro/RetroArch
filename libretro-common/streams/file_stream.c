@@ -258,6 +258,22 @@ int64_t filestream_get_size(RFILE *stream)
    return output;
 }
 
+int filestream_punch_hole(RFILE *stream, int64_t offset, int64_t len)
+{
+   if (!stream)
+      return -1;
+
+   /* Only the built-in implementation can do this: a frontend-supplied
+    * VFS handle need not be a file, and the interface exposes no
+    * descriptor to punch through. Reporting -1 lets the caller fall back
+    * to writing zeroes. */
+   if (filestream_open_cb != NULL)
+      return -1;
+
+   return retro_vfs_file_punch_hole_impl(
+         (libretro_vfs_implementation_file*)stream->hfile, offset, len);
+}
+
 int64_t filestream_truncate(RFILE *stream, int64_t length)
 {
    int64_t output;

@@ -508,6 +508,34 @@ char* filestream_getline(RFILE *stream);
  */
 libretro_vfs_implementation_file* filestream_get_vfs_handle(RFILE *stream);
 
+/**
+ * filestream_punch_hole:
+ * @stream: file handle.
+ * @offset: byte offset to start deallocating at.
+ * @len   : number of bytes to deallocate.
+ *
+ * Deallocate a range within a file, leaving the file's length unchanged
+ * and subsequent reads of the range returning zeroes. This is what makes a
+ * sparse image sparse: a disk image that is mostly untouched occupies only
+ * the blocks that were actually written.
+ *
+ * Not every backend can do this, and that is the normal case rather than
+ * an error. It works when the stream came from libretro-common's own
+ * implementation on a filesystem that supports it -- fallocate() with
+ * FALLOC_FL_PUNCH_HOLE on Linux, FSCTL_SET_ZERO_DATA on Windows. It does
+ * not work when the frontend supplied its own VFS, because a frontend
+ * handle need not be a file at all and the interface exposes no
+ * descriptor. Rather than extend the frontend ABI for one operation that
+ * most backends cannot implement, this is a capability: callers ask, and
+ * fall back to writing zeroes when the answer is no.
+ *
+ * Returns: 0 if the range was deallocated, -1 if the backend cannot do it
+ * or the call failed. A caller that must guarantee zeroes still has to
+ * write them when this returns -1; the only thing lost is the space
+ * saving.
+ */
+int filestream_punch_hole(RFILE *stream, int64_t offset, int64_t len);
+
 RETRO_END_DECLS
 
 /** @} */

@@ -62,6 +62,9 @@
 #endif
 
 #include <fcntl.h>
+#if defined(__linux__)
+#include <linux/falloc.h>
+#endif
 
 /* TODO: Some things are duplicated but I'm really afraid of breaking other platforms by touching this */
 #if defined(VITA)
@@ -1112,6 +1115,73 @@ int64_t retro_vfs_file_size_impl(libretro_vfs_implementation_file *stream)
    if (stream)
       return stream->size;
    return 0;
+}
+
+/* Deallocate a range without changing the file's length. See
+ * filestream_punch_hole for why this is a capability rather than a
+ * guarantee: most backends cannot do it, and callers fall back to writing
+ * zeroes. Returns 0 on success, -1 otherwise. */
+int retro_vfs_file_punch_hole_impl(libretro_vfs_implementation_file *stream,
+      int64_t offset, int64_t len)
+{
+   if (!stream || offset < 0 || len <= 0)
+      return -1;
+
+#if defined(_WIN32) && !defined(_XBOX)
+   {
+      FILE_ZERO_DATA_INFORMATION zero_info;
+      DWORD                      returned = 0;
+      HANDLE                     handle   = stream->fh;
+
+      if (!handle || handle == INVALID_HANDLE_VALUE)
+      {
+         if (!stream->fp)
+            return -1;
+         handle = (HANDLE)_get_osfhandle(_fileno(stream->fp));
+         if (handle == INVALID_HANDLE_VALUE)
+            return -1;
+      }
+
+      /* The file has to be marked sparse before a zero-data range does
+       * anything; on a non-sparse file the call succeeds and writes real
+       * zeroes, which is correct but saves nothing. Marking is idempotent. */
+      {
+         DWORD tmp = 0;
+         DeviceIoControl(handle, FSCTL_SET_SPARSE, NULL, 0, NULL, 0, &tmp, NULL);
+      }
+
+      zero_info.FileOffset.QuadPart      = offset;
+      zero_info.BeyondFinalZero.QuadPart = offset + len;
+
+      if (!DeviceIoControl(handle, FSCTL_SET_ZERO_DATA, &zero_info,
+               sizeof(zero_info), NULL, 0, &returned, NULL))
+         return -1;
+      return 0;
+   }
+#elif defined(__linux__) && defined(FALLOC_FL_PUNCH_HOLE)
+   {
+      int fd = stream->fd;
+
+      if (fd < 0)
+      {
+         if (!stream->fp)
+            return -1;
+         fd = fileno(stream->fp);
+         if (fd < 0)
+            return -1;
+      }
+
+      if (fallocate(fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE,
+               (off_t)offset, (off_t)len) != 0)
+         return -1;
+      return 0;
+   }
+#else
+   /* No hole punching on this platform. */
+   (void)offset;
+   (void)len;
+   return -1;
+#endif
 }
 
 int64_t retro_vfs_file_truncate_impl(libretro_vfs_implementation_file *stream, int64_t len)
