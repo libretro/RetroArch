@@ -1173,6 +1173,26 @@ int64_t retro_vfs_file_get_sparse_granularity_impl(
 
 #if defined(_WIN32) && !defined(_XBOX)
    {
+      /* GetFinalPathNameByHandleW and GetVolumeInformationByHandleW are
+       * Vista and later. Importing them statically costs more than the
+       * feature is worth: the loader resolves imports before main, so a
+       * binary that names them will not start at all on 9x or XP, and
+       * mingw does not even declare them below _WIN32_WINNT 0x0600, which
+       * is what the i686 MXE build targets. Resolved by name instead, so
+       * older systems simply report "unknown" and skip sparse handling. */
+      typedef DWORD (WINAPI *final_path_t)(HANDLE, LPWSTR, DWORD, DWORD);
+      typedef BOOL  (WINAPI *vol_info_t)(HANDLE, LPWSTR, DWORD, LPDWORD,
+            LPDWORD, LPDWORD, LPWSTR, DWORD);
+      typedef BOOL  (WINAPI *vol_path_t)(LPCWSTR, LPWSTR, DWORD);
+      typedef BOOL  (WINAPI *disk_free_t)(LPCWSTR, LPDWORD, LPDWORD,
+            LPDWORD, LPDWORD);
+
+      static final_path_t p_final_path = NULL;
+      static vol_info_t   p_vol_info   = NULL;
+      static vol_path_t   p_vol_path   = NULL;
+      static disk_free_t  p_disk_free  = NULL;
+      static int          resolved     = 0;
+
       DWORD    sectors_per_cluster = 0;
       DWORD    bytes_per_sector    = 0;
       DWORD    tmp1                = 0;
@@ -1183,6 +1203,30 @@ int64_t retro_vfs_file_get_sparse_granularity_impl(
       wchar_t  root[MAX_PATH + 1];
       wchar_t  fs_name[MAX_PATH + 1];
       int64_t  cluster;
+
+      if (!resolved)
+      {
+         HMODULE k32 = GetModuleHandle("kernel32.dll");
+
+         resolved = 1;
+         if (k32)
+         {
+            p_final_path = (final_path_t)GetProcAddress(k32,
+                  "GetFinalPathNameByHandleW");
+            p_vol_info   = (vol_info_t)GetProcAddress(k32,
+                  "GetVolumeInformationByHandleW");
+            /* Wide GetVolumePathName is 2000 and later, and 9x does not
+             * export it at all -- a static import would stop the binary
+             * loading there, so every one of these is resolved by name. */
+            p_vol_path   = (vol_path_t)GetProcAddress(k32,
+                  "GetVolumePathNameW");
+            p_disk_free  = (disk_free_t)GetProcAddress(k32,
+                  "GetDiskFreeSpaceW");
+         }
+      }
+
+      if (!p_final_path || !p_vol_path || !p_disk_free)
+         return 0;
 
       if (!handle || handle == INVALID_HANDLE_VALUE)
       {
@@ -1195,7 +1239,7 @@ int64_t retro_vfs_file_get_sparse_granularity_impl(
 
       /* The volume that matters is the one the file really lives on, so
        * the path has to be resolved through any junctions first. */
-      len = GetFinalPathNameByHandleW(handle, NULL, 0, FILE_NAME_NORMALIZED);
+      len = p_final_path(handle, NULL, 0, FILE_NAME_NORMALIZED);
       if (len == 0)
          return 0;
 
@@ -1203,8 +1247,7 @@ int64_t retro_vfs_file_get_sparse_granularity_impl(
       if (!final_path)
          return 0;
 
-      if (GetFinalPathNameByHandleW(handle, final_path, len,
-               FILE_NAME_NORMALIZED) == 0)
+      if (p_final_path(handle, final_path, len, FILE_NAME_NORMALIZED) == 0)
       {
          free(final_path);
          return 0;
@@ -1213,14 +1256,14 @@ int64_t retro_vfs_file_get_sparse_granularity_impl(
       /* GetVolumePathNameW gives the mount point, which is what
        * GetDiskFreeSpaceW wants, and unlike splitting the string by hand
        * it copes with a path mounted on a folder rather than a letter. */
-      if (!GetVolumePathNameW(final_path, root, MAX_PATH))
+      if (!p_vol_path(final_path, root, MAX_PATH))
       {
          free(final_path);
          return 0;
       }
       free(final_path);
 
-      if (!GetDiskFreeSpaceW(root, &sectors_per_cluster, &bytes_per_sector,
+      if (!p_disk_free(root, &sectors_per_cluster, &bytes_per_sector,
                &tmp1, &tmp2))
          return 0;
 
@@ -1231,9 +1274,12 @@ int64_t retro_vfs_file_get_sparse_granularity_impl(
        * at 64K -- so a 4K-cluster volume, the common case, frees in 64K
        * chunks and punching a single 4K cluster frees nothing at all.
        * Other filesystems deallocate by cluster, so the cluster size
-       * stands. */
-      if (GetVolumeInformationByHandleW(handle, NULL, 0, NULL, NULL, NULL,
-               fs_name, MAX_PATH) && !wcscmp(fs_name, L"NTFS"))
+       * stands. Without the volume query, assume the conservative case. */
+      if (!p_vol_info)
+         return cluster;
+
+      if (p_vol_info(handle, NULL, 0, NULL, NULL, NULL, fs_name, MAX_PATH)
+            && !wcscmp(fs_name, L"NTFS"))
       {
          const int64_t unit = cluster * 16;
          return (unit > 65536) ? 65536 : unit;
