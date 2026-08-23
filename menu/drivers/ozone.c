@@ -13267,6 +13267,8 @@ static void ozone_populate_entries(
    struct menu_state *menu_st           = menu_state_get_ptr();
    menu_list_t *menu_list               = menu_st->entries.list;
    bool ozone_collapse_sidebar          = settings->bools.ozone_collapse_sidebar;
+   bool menu_show_sublabels             = settings->bools.menu_show_sublabels;
+   bool menu_current_sel_only           = settings->bools.menu_show_sublabels_current_selection_only;
    ozone_handle_t *ozone                = (ozone_handle_t*) data;
 
    if (!ozone)
@@ -13347,6 +13349,8 @@ static void ozone_populate_entries(
                                  && new_depth > ozone->depth;
 
    animate                     = new_depth != ozone->depth;
+   if (!animate && menu_show_sublabels && menu_current_sel_only)
+      ozone->selection_old     = ozone->selection;
 
    if (new_depth <= ozone->depth)
       ozone->flags            |=  OZONE_FLAG_FADE_DIRECTION;
