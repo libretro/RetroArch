@@ -1482,6 +1482,9 @@ int mbedtls_x509_crt_info( char *buf, size_t size, const char *prefix,
     return( (int) ( size - n ) );
 }
 
+#undef BEFORE_COLON
+#undef BC
+
 struct x509_crt_verify_string {
     int code;
     const char *string;

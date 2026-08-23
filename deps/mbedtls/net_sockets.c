@@ -615,4 +615,19 @@ void mbedtls_net_free( mbedtls_net_context *ctx )
     ctx->fd = -1;
 }
 
+#undef MSVC_INT_CAST
+
+/*
+ * read(), write() and close() above stand in for the POSIX calls for the
+ * length of this file only. The griffin unity build pulls the rest of the
+ * tree in behind it, so leaving them defined would quietly rewrite every
+ * later call to those names into a winsock one.
+ */
+#if ( defined(_WIN32) || defined(_WIN32_WCE) ) && !defined(EFIX64) && \
+    !defined(EFI32)
+#undef read
+#undef write
+#undef close
+#endif
+
 #endif /* MBEDTLS_NET_C */
