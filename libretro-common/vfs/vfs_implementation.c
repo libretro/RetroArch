@@ -44,9 +44,6 @@
 #    include <fcntl.h>
 #    include <direct.h>
 #    include <windows.h>
-/* FILE_ZERO_DATA_INFORMATION and the FSCTL_* codes used by
- * retro_vfs_file_punch_hole_impl are declared here, not in windows.h. */
-#    include <winioctl.h>
 #  endif
 #    include <io.h>
 #else
@@ -1124,6 +1121,37 @@ int64_t retro_vfs_file_size_impl(libretro_vfs_implementation_file *stream)
  * filestream_punch_hole for why this is a capability rather than a
  * guarantee: most backends cannot do it, and callers fall back to writing
  * zeroes. Returns 0 on success, -1 otherwise. */
+#if defined(_WIN32) && !defined(_XBOX)
+/* The pieces of winioctl.h that retro_vfs_file_punch_hole_impl needs,
+ * declared here rather than by including that header.
+ *
+ * winioctl.h defines the storage class GUIDs, and in a unity build --
+ * griffin.c, where this file is compiled alongside the D3D headers that
+ * set INITGUID -- those definitions collide with the ones already emitted
+ * in the same translation unit, which is twenty-odd C2374 "redefinition;
+ * multiple initialization" errors on MSVC. Nothing here needs a GUID.
+ *
+ * The two control codes are the documented CTL_CODE expansions:
+ *   FSCTL_SET_SPARSE    = CTL_CODE(FILE_DEVICE_FILE_SYSTEM, 49, METHOD_BUFFERED, FILE_SPECIAL_ACCESS)
+ *   FSCTL_SET_ZERO_DATA = CTL_CODE(FILE_DEVICE_FILE_SYSTEM, 50, METHOD_BUFFERED, FILE_WRITE_DATA)
+ * Each is guarded, so a translation unit that has already seen
+ * winioctl.h through some other path keeps that header's definitions. */
+#ifndef FSCTL_SET_SPARSE
+#define FSCTL_SET_SPARSE 0x000900c4
+#endif
+#ifndef FSCTL_SET_ZERO_DATA
+#define FSCTL_SET_ZERO_DATA 0x000980c8
+#endif
+#ifndef FILE_ZERO_DATA_INFORMATION_DEFINED
+#define FILE_ZERO_DATA_INFORMATION_DEFINED
+typedef struct _RETRO_FILE_ZERO_DATA_INFORMATION
+{
+   LARGE_INTEGER FileOffset;
+   LARGE_INTEGER BeyondFinalZero;
+} RETRO_FILE_ZERO_DATA_INFORMATION;
+#endif
+#endif
+
 int retro_vfs_file_punch_hole_impl(libretro_vfs_implementation_file *stream,
       int64_t offset, int64_t len)
 {
@@ -1132,7 +1160,7 @@ int retro_vfs_file_punch_hole_impl(libretro_vfs_implementation_file *stream,
 
 #if defined(_WIN32) && !defined(_XBOX)
    {
-      FILE_ZERO_DATA_INFORMATION zero_info;
+      RETRO_FILE_ZERO_DATA_INFORMATION zero_info;
       DWORD                      returned = 0;
       HANDLE                     handle   = stream->fh;
 
