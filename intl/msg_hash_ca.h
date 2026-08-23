@@ -3347,10 +3347,12 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    char s_3e1e294b[45];
    char s_69c0e487[42];
+   char s_706ff4dc[285];
    char s_a0d1a85c[53];
    char s_b5966528[200];
    char s_907ef7cc[37];
    char s_b0a46506[54];
+   char s_04624c88[123];
    char s_91976dbe[48];
    char s_f6492edc[50];
    char s_9bb85635[201];
@@ -8254,12 +8256,18 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    "Selecciona l'autenticaci\303\263 que es fa servir.",
    "Cerca fitxers a la xarxa SMB configurada.",
+   "Activa l'acc\303\251s a la xarxa SMB. Ethernet \303\251s l'opci\303\263 recomanada per sobre de "
+   "Wi-Fi per una connexi\303\263 m\303\251s robusta. Nota: els canvis s'aplicaran el pr\303\262xim "
+   "cop que naveguis en un recurs compartit, el contingut que ja s'estigui executant des d'un recurs"
+   " compartit no es desconnectar\303\240.",
    "Selecciona el nombre m\303\240xim de connexions possibles.",
    "Contrasenya per l'autentificaci\303\263. \303\211s opcional si est\303\240 activat l'acc\303\251"
    "s com a convidat en el servidor. Windows 10 o superior: l'acc\303\251s de convidat est\303\240 d"
    "esactivat per defecte, cal una contrasenya.",
    "Adre\303\247a IP del servidor o amfitri\303\263.",
    "Modifica la configuraci\303\263 de la xarxa compartida SMB.",
+   "Nom de la xarxa a la qual vols accedir. Deixa-ho buit per llistar tots els recursos que mostra e"
+   "l servidor i escull-ne un.",
    "Adre\303\247a del subdirectori a compartir. Opcional.",
    "Selecciona el temps l\303\255mit per defecte en segons.",
    "Nom d'usuari per l'autentificaci\303\263. \303\211s opcional si est\303\240 activat l'acc\303"
@@ -9589,10 +9597,12 @@ typedef char msg_hash_ca_blob_check[
        + 42u
        + 45u
        + 42u
+       + 285u
        + 53u
        + 200u
        + 37u
        + 54u
+       + 123u
        + 48u
        + 50u
        + 201u
@@ -13009,10 +13019,12 @@ static const uint32_t msg_hash_ca_ids[] =
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
