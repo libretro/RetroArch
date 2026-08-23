@@ -1077,23 +1077,64 @@ static INLINE int retro_atomic_cas_64_impl_(retro_atomic_64_t *p, int64_t expect
 
 #elif defined(RETRO_ATOMIC_BACKEND_MSVC)
 
+#if defined(_M_IX86) && (_MSC_VER < 1400)
+
+/* VS2003 and the OG Xbox XDK have neither the CMPXCHG8B intrinsic nor a
+ * kernel32 export behind the 64-bit Interlocked names, so there is no
+ * primitive to build on.  RETRO_ATOMIC_HAS_64 stays unset and callers
+ * take their gated fallback, as on old 32-bit __sync targets. */
+
+#else
+
+#if defined(_M_IX86) && !defined(NTDDI_VERSION) && \
+      (!defined(_WIN32_WINNT) || (_WIN32_WINNT < 0x0502))
+/* Pre-Vista SDKs (no NTDDI_VERSION) declare the 64-bit Interlocked forms
+ * only when _WIN32_WINNT >= 0x0502, and on 32-bit x86 there is no
+ * kernel32 export behind them in any case: the operation is the
+ * CMPXCHG8B intrinsic or nothing.  Reach for the intrinsic directly so
+ * the header's target-version macro plays no part in whether this
+ * compiles. */
+__int64 _InterlockedCompareExchange64(__int64 volatile*, __int64, __int64);
+#pragma intrinsic(_InterlockedCompareExchange64)
+#define RETRO_ATOMIC_MSVC_CMPX64_(p, d, e) \
+   _InterlockedCompareExchange64((__int64 volatile*)(p), (d), (e))
+static INLINE LONGLONG retro_atomic_msvc_xchg_64_(LONGLONG volatile *p,
+      LONGLONG v)
+{
+   LONGLONG old;
+   do
+   {
+      old = *p;
+   } while (RETRO_ATOMIC_MSVC_CMPX64_(p, v, old) != old);
+   return old;
+}
+#define RETRO_ATOMIC_MSVC_XCHG64_(p, v) \
+   retro_atomic_msvc_xchg_64_((p), (v))
+#else
+/* Interlocked 64-bit CAS exists on 32-bit x86 too (cmpxchg8b). */
+#define RETRO_ATOMIC_MSVC_CMPX64_(p, d, e) \
+   InterlockedCompareExchange64((volatile LONGLONG*)(p), (d), (e))
+#define RETRO_ATOMIC_MSVC_XCHG64_(p, v) \
+   InterlockedExchange64((volatile LONGLONG*)(p), (v))
+#endif
+
 typedef LONGLONG volatile retro_atomic_64_t;
 #define retro_atomic_64_init(p, v)     (*(p) = (v))
-/* Interlocked 64-bit CAS exists on 32-bit x86 too (cmpxchg8b). */
 #define retro_atomic_load_acquire_64(p) \
-   InterlockedCompareExchange64((volatile LONGLONG*)(p), 0, 0)
+   RETRO_ATOMIC_MSVC_CMPX64_((p), 0, 0)
 #define retro_atomic_store_release_64(p, v) \
-   ((void)InterlockedExchange64((volatile LONGLONG*)(p), (LONGLONG)(v)))
+   ((void)RETRO_ATOMIC_MSVC_XCHG64_((p), (LONGLONG)(v)))
 #define retro_atomic_exchange_64(p, v) \
-   InterlockedExchange64((volatile LONGLONG*)(p), (LONGLONG)(v))
+   RETRO_ATOMIC_MSVC_XCHG64_((p), (LONGLONG)(v))
 static INLINE int retro_atomic_cas_64_impl_(retro_atomic_64_t *p, LONGLONG expected, LONGLONG desired)
 {
-   return InterlockedCompareExchange64((volatile LONGLONG*)p, desired,
-         expected) == expected;
+   return RETRO_ATOMIC_MSVC_CMPX64_(p, desired, expected) == expected;
 }
 #define retro_atomic_cas_64(p, expected, desired) \
    retro_atomic_cas_64_impl_((p), (expected), (desired))
 #define RETRO_ATOMIC_HAS_64 1
+
+#endif /* !(_M_IX86 && _MSC_VER < 1400) */
 
 #elif defined(RETRO_ATOMIC_BACKEND_APPLE)
 
