@@ -672,6 +672,20 @@ const char *retro_vfs_file_get_path_impl(libretro_vfs_implementation_file *strea
    return stream->orig_path;
 }
 
+int64_t retro_vfs_file_get_sparse_granularity_impl(
+      libretro_vfs_implementation_file *stream)
+{
+   /* No sparse support here, so no granularity to report; see
+    * retro_vfs_file_punch_hole_impl below. 0 is the documented "unknown"
+    * answer and callers must not read it as "no alignment needed".
+    *
+    * Defined rather than omitted because this backend REPLACES
+    * vfs_implementation.c on UWP: a missing definition is a link error at
+    * the end of a long MSVC build, not a fallback. */
+   (void)stream;
+   return 0;
+}
+
 int retro_vfs_file_punch_hole_impl(libretro_vfs_implementation_file *stream,
       int64_t offset, int64_t len)
 {

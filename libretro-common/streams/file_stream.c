@@ -258,6 +258,20 @@ int64_t filestream_get_size(RFILE *stream)
    return output;
 }
 
+int64_t filestream_get_sparse_granularity(RFILE *stream)
+{
+   if (!stream)
+      return 0;
+
+   /* Same reasoning as filestream_punch_hole: only the built-in
+    * implementation has a descriptor to ask about. */
+   if (filestream_open_cb != NULL)
+      return 0;
+
+   return retro_vfs_file_get_sparse_granularity_impl(
+         (libretro_vfs_implementation_file*)stream->hfile);
+}
+
 int filestream_punch_hole(RFILE *stream, int64_t offset, int64_t len)
 {
    if (!stream)

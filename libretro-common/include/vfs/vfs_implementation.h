@@ -38,6 +38,10 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(const char *path, uns
  * filesystem cannot do it. */
 int retro_vfs_file_punch_hole_impl(libretro_vfs_implementation_file *stream, int64_t offset, int64_t len);
 
+/* Allocation unit of the filesystem holding this file; see
+ * filestream_get_sparse_granularity. 0 when unknown. */
+int64_t retro_vfs_file_get_sparse_granularity_impl(libretro_vfs_implementation_file *stream);
+
 int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream);
 
 int retro_vfs_file_error_impl(libretro_vfs_implementation_file *stream);

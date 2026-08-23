@@ -1152,6 +1152,100 @@ typedef struct _RETRO_FILE_ZERO_DATA_INFORMATION
 #endif
 #endif
 
+/* Allocation unit of the filesystem holding this file: the smallest span
+ * retro_vfs_file_punch_hole_impl can actually free. 0 when unknown.
+ *
+ * This exists so a caller never has to reach for the descriptor itself.
+ * PCSX2's ATA backend derived the cluster size by calling
+ * GetFinalPathNameByHandle on a HANDLE it pulled out of a FILE*, which is
+ * the one thing that kept it off the VFS -- the question is about the
+ * filesystem, not the file, and the backend that owns the handle is the
+ * right place to answer it. */
+int64_t retro_vfs_file_get_sparse_granularity_impl(
+      libretro_vfs_implementation_file *stream)
+{
+   if (!stream)
+      return 0;
+
+#if defined(_WIN32) && !defined(_XBOX)
+   {
+      DWORD    sectors_per_cluster = 0;
+      DWORD    bytes_per_sector    = 0;
+      DWORD    tmp1                = 0;
+      DWORD    tmp2                = 0;
+      DWORD    len;
+      HANDLE   handle              = stream->fh;
+      wchar_t *final_path;
+      wchar_t  root[MAX_PATH + 1];
+
+      if (!handle || handle == INVALID_HANDLE_VALUE)
+      {
+         if (!stream->fp)
+            return 0;
+         handle = (HANDLE)_get_osfhandle(_fileno(stream->fp));
+         if (handle == INVALID_HANDLE_VALUE)
+            return 0;
+      }
+
+      /* The volume that matters is the one the file really lives on, so
+       * the path has to be resolved through any junctions first. */
+      len = GetFinalPathNameByHandleW(handle, NULL, 0, FILE_NAME_NORMALIZED);
+      if (len == 0)
+         return 0;
+
+      final_path = (wchar_t*)calloc(len + 1, sizeof(wchar_t));
+      if (!final_path)
+         return 0;
+
+      if (GetFinalPathNameByHandleW(handle, final_path, len,
+               FILE_NAME_NORMALIZED) == 0)
+      {
+         free(final_path);
+         return 0;
+      }
+
+      /* GetVolumePathNameW gives the mount point, which is what
+       * GetDiskFreeSpaceW wants, and unlike splitting the string by hand
+       * it copes with a path mounted on a folder rather than a letter. */
+      if (!GetVolumePathNameW(final_path, root, MAX_PATH))
+      {
+         free(final_path);
+         return 0;
+      }
+      free(final_path);
+
+      if (!GetDiskFreeSpaceW(root, &sectors_per_cluster, &bytes_per_sector,
+               &tmp1, &tmp2))
+         return 0;
+
+      return (int64_t)sectors_per_cluster * (int64_t)bytes_per_sector;
+   }
+#elif !defined(VITA) && !defined(PSP) && !defined(PS2) && !defined(ORBIS) && !defined(GEKKO) && !defined(_3DS)
+   {
+      struct stat st;
+      int         fd = stream->fd;
+
+      if (fd < 0)
+      {
+         if (!stream->fp)
+            return 0;
+         fd = fileno(stream->fp);
+         if (fd < 0)
+            return 0;
+      }
+
+      if (fstat(fd, &st) != 0)
+         return 0;
+      if (st.st_blksize <= 0)
+         return 0;
+
+      return (int64_t)st.st_blksize;
+   }
+#else
+   return 0;
+#endif
+}
+
 int retro_vfs_file_punch_hole_impl(libretro_vfs_implementation_file *stream,
       int64_t offset, int64_t len)
 {

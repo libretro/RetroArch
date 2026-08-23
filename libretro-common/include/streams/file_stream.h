@@ -536,6 +536,29 @@ libretro_vfs_implementation_file* filestream_get_vfs_handle(RFILE *stream);
  */
 int filestream_punch_hole(RFILE *stream, int64_t offset, int64_t len);
 
+/**
+ * filestream_get_sparse_granularity:
+ * @stream: file handle.
+ *
+ * The allocation unit of the filesystem holding this file: the smallest
+ * span that filestream_punch_hole can actually deallocate. Punching a
+ * range shorter than this, or one not aligned to it, is accepted and
+ * frees nothing, so a caller that wants sparse files has to work in
+ * multiples of this value rather than assuming 4096.
+ *
+ * On Windows that is the cluster size, which is 4K on a typical NTFS
+ * volume but 8K, 16K or 64K on plenty of real ones -- assuming 4K there
+ * silently produces a file that is not sparse at all. On POSIX it is the
+ * block size the filesystem reports for the file.
+ *
+ * Returns: the granularity in bytes, or 0 when it cannot be determined --
+ * from a frontend-supplied VFS, for instance, which has no descriptor to
+ * ask about. A caller that gets 0 should either skip hole punching or
+ * pick a conservative unit; it must not treat 0 as "no alignment
+ * needed".
+ */
+int64_t filestream_get_sparse_granularity(RFILE *stream);
+
 RETRO_END_DECLS
 
 /** @} */
