@@ -48,12 +48,17 @@
 
 RETRO_BEGIN_DECLS
 
-/* Read @path whole through filestream and parse it, handing the
- * buffer to the document.  Returns NULL when the file cannot be
- * opened or read, its size does not fit this platform, allocation
- * fails, or the document is malformed. */
-static INLINE rxml_document_t *rxml_load_document_filestream(
-      const char *path)
+/* Read @path whole through filestream and parse it with @opts,
+ * handing the buffer to the document.  Returns NULL when the file
+ * cannot be opened or read, its size does not fit this platform,
+ * allocation fails, or the document is malformed; on a parse failure
+ * *@err (when non-NULL) receives the position the parser stopped at.
+ *
+ * Pass RXML_OPT_STRICT_EOF here to reject a truncated file outright
+ * rather than take the partial tree - what a caller loading an asset
+ * off a user-writable filesystem generally wants. */
+static INLINE rxml_document_t *rxml_load_document_filestream_opts(
+      const char *path, unsigned opts, rxml_parse_error_t *err)
 {
    char *memory_buffer     = NULL;
    int64_t len             = 0;
@@ -85,13 +90,21 @@ static INLINE rxml_document_t *rxml_load_document_filestream(
 
    /* The document takes the buffer: the tree points into it, and
     * the parse frees it on failure. */
-   return rxml_load_document_owned(memory_buffer, (size_t)len);
+   return rxml_load_document_owned_opts(memory_buffer, (size_t)len,
+         opts, err);
 
 error:
    free(memory_buffer);
    if (file)
       filestream_close(file);
    return NULL;
+}
+
+/* rxml_load_document_filestream_opts() with no options. */
+static INLINE rxml_document_t *rxml_load_document_filestream(
+      const char *path)
+{
+   return rxml_load_document_filestream_opts(path, 0, NULL);
 }
 
 RETRO_END_DECLS
