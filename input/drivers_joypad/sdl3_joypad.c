@@ -252,6 +252,17 @@ static void sdl3_joypad_connect(SDL_JoystickID jid)
       pad->num_buttons = (num_buttons > 0) ? (unsigned)num_buttons : 0;
       pad->num_hats    = (num_hats    > 0) ? (unsigned)num_hats    : 0;
    }
+
+   if (gamepad)
+   {
+      bool has_accel = SDL_GamepadHasSensor(gamepad, SDL_SENSOR_ACCEL);
+      bool has_gyro  = SDL_GamepadHasSensor(gamepad, SDL_SENSOR_GYRO);
+      if (has_accel || has_gyro)
+         RARCH_LOG("[SDL3] Pad #%d: found sensors (accel=%s, gyro=%s).\n",
+               slot,
+               has_accel ? "yes" : "no",
+               has_gyro  ? "yes" : "no");
+   }
 }
 
 static void sdl3_joypad_disconnect(SDL_JoystickID jid)
