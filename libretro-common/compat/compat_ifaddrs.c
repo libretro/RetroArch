@@ -63,11 +63,13 @@ static int netlink_socket(void)
    memset(&l_addr, 0, sizeof(l_addr));
    l_addr.nl_family = AF_NETLINK;
 
-   if (bind(l_socket, (struct sockaddr *)&l_addr, sizeof(l_addr)) < 0)
-   {
-      close(l_socket);
-      return -1;
-   }
+   /* Binding is a privileged operation under the SELinux policy Android
+    * applies to applications, and it is not one this socket needs: the
+    * kernel assigns a port ID of its own when the first request goes
+    * out, and netlink_portid() reads back whichever one it picked. Ask
+    * for the binding where it is permitted and carry on where it is
+    * not. */
+   (void)bind(l_socket, (struct sockaddr *)&l_addr, sizeof(l_addr));
 
    return l_socket;
 }
