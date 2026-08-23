@@ -109,6 +109,7 @@ void mbedtls_md5_process( mbedtls_md5_context *ctx, const unsigned char data[64]
     C = ctx->state[2];
     D = ctx->state[3];
 
+#undef F
 #define F(x,y,z) (z ^ (x & (y ^ z)))
 
     P( A, B, C, D,  0,  7, 0xD76AA478 );
@@ -198,6 +199,10 @@ void mbedtls_md5_process( mbedtls_md5_context *ctx, const unsigned char data[64]
     ctx->state[2] += C;
     ctx->state[3] += D;
 }
+
+#undef S
+#undef P
+
 #endif /* !MBEDTLS_MD5_PROCESS_ALT */
 
 /*

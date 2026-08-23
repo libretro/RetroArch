@@ -105,146 +105,157 @@ void mbedtls_ripemd160_process( mbedtls_ripemd160_context *ctx, const unsigned c
     C = Cp = ctx->state[2];
     D = Dp = ctx->state[3];
     E = Ep = ctx->state[4];
-#define RIPEMD160_F1( x, y, z )   ( x ^ y ^ z )
-#define RIPEMD160_F2( x, y, z )   ( ( x & y ) | ( ~x & z ) )
-#define RIPEMD160_F3( x, y, z )   ( ( x | ~y ) ^ z )
-#define RIPEMD160_F4( x, y, z )   ( ( x & z ) | ( y & ~z ) )
-#define RIPEMD160_F5( x, y, z )   ( x ^ ( y | ~z ) )
-#define RIPEMD160_S( x, n ) ( ( x << n ) | ( x >> (32 - n) ) )
-#define RIPEMD160_P( a, b, c, d, e, r, s, f, k )                    \
-    a += f( b, c, d ) + X[r] + k;                                   \
-    a = RIPEMD160_S( a, s ) + e;                                    \
-    c = RIPEMD160_S( c, 10 );
+#undef F1
+#define F1( x, y, z )   ( x ^ y ^ z )
+#undef F2
+#define F2( x, y, z )   ( ( x & y ) | ( ~x & z ) )
+#undef F3
+#define F3( x, y, z )   ( ( x | ~y ) ^ z )
+#undef F4
+#define F4( x, y, z )   ( ( x & z ) | ( y & ~z ) )
+#undef F5
+#define F5( x, y, z )   ( x ^ ( y | ~z ) )
+#undef S
+#define S( x, n ) ( ( x << n ) | ( x >> (32 - n) ) )
+#undef P
+#define P( a, b, c, d, e, r, s, f, k )      \
+    a += f( b, c, d ) + X[r] + k;           \
+    a = S( a, s ) + e;                      \
+    c = S( c, 10 );
 
-#define RIPEMD160_P2( a, b, c, d, e, r, s, rp, sp )                 \
-    RIPEMD160_P( a, b, c, d, e, r, s, RIPEMD160_F, RIPEMD160_K );   \
-    RIPEMD160_P( a ## p, b ## p, c ## p, d ## p, e ## p, rp, sp,    \
-                 RIPEMD160_FP, RIPEMD160_KP );
+#undef P2
+#define P2( a, b, c, d, e, r, s, rp, sp )   \
+    P( a, b, c, d, e, r, s, F, K );         \
+    P( a ## p, b ## p, c ## p, d ## p, e ## p, rp, sp, Fp, Kp );
 
-#define RIPEMD160_F   RIPEMD160_F1
-#define RIPEMD160_K   0x00000000
-#define RIPEMD160_FP  RIPEMD160_F5
-#define RIPEMD160_KP  0x50A28BE6
-    RIPEMD160_P2( A, B, C, D, E,  0, 11,  5,  8 );
-    RIPEMD160_P2( E, A, B, C, D,  1, 14, 14,  9 );
-    RIPEMD160_P2( D, E, A, B, C,  2, 15,  7,  9 );
-    RIPEMD160_P2( C, D, E, A, B,  3, 12,  0, 11 );
-    RIPEMD160_P2( B, C, D, E, A,  4,  5,  9, 13 );
-    RIPEMD160_P2( A, B, C, D, E,  5,  8,  2, 15 );
-    RIPEMD160_P2( E, A, B, C, D,  6,  7, 11, 15 );
-    RIPEMD160_P2( D, E, A, B, C,  7,  9,  4,  5 );
-    RIPEMD160_P2( C, D, E, A, B,  8, 11, 13,  7 );
-    RIPEMD160_P2( B, C, D, E, A,  9, 13,  6,  7 );
-    RIPEMD160_P2( A, B, C, D, E, 10, 14, 15,  8 );
-    RIPEMD160_P2( E, A, B, C, D, 11, 15,  8, 11 );
-    RIPEMD160_P2( D, E, A, B, C, 12,  6,  1, 14 );
-    RIPEMD160_P2( C, D, E, A, B, 13,  7, 10, 14 );
-    RIPEMD160_P2( B, C, D, E, A, 14,  9,  3, 12 );
-    RIPEMD160_P2( A, B, C, D, E, 15,  8, 12,  6 );
-#undef RIPEMD160_F
-#undef RIPEMD160_K
-#undef RIPEMD160_FP
-#undef RIPEMD160_KP
+#undef F
+#define F   F1
+#undef K
+#define K   0x00000000
+#undef Fp
+#define Fp  F5
+#undef Kp
+#define Kp  0x50A28BE6
+    P2( A, B, C, D, E,  0, 11,  5,  8 );
+    P2( E, A, B, C, D,  1, 14, 14,  9 );
+    P2( D, E, A, B, C,  2, 15,  7,  9 );
+    P2( C, D, E, A, B,  3, 12,  0, 11 );
+    P2( B, C, D, E, A,  4,  5,  9, 13 );
+    P2( A, B, C, D, E,  5,  8,  2, 15 );
+    P2( E, A, B, C, D,  6,  7, 11, 15 );
+    P2( D, E, A, B, C,  7,  9,  4,  5 );
+    P2( C, D, E, A, B,  8, 11, 13,  7 );
+    P2( B, C, D, E, A,  9, 13,  6,  7 );
+    P2( A, B, C, D, E, 10, 14, 15,  8 );
+    P2( E, A, B, C, D, 11, 15,  8, 11 );
+    P2( D, E, A, B, C, 12,  6,  1, 14 );
+    P2( C, D, E, A, B, 13,  7, 10, 14 );
+    P2( B, C, D, E, A, 14,  9,  3, 12 );
+    P2( A, B, C, D, E, 15,  8, 12,  6 );
+#undef F
+#undef K
+#undef Fp
+#undef Kp
 
-#define RIPEMD160_F   RIPEMD160_F2
-#define RIPEMD160_K   0x5A827999
-#define RIPEMD160_FP  RIPEMD160_F4
-#define RIPEMD160_KP  0x5C4DD124
-    RIPEMD160_P2( E, A, B, C, D,  7,  7,  6,  9 );
-    RIPEMD160_P2( D, E, A, B, C,  4,  6, 11, 13 );
-    RIPEMD160_P2( C, D, E, A, B, 13,  8,  3, 15 );
-    RIPEMD160_P2( B, C, D, E, A,  1, 13,  7,  7 );
-    RIPEMD160_P2( A, B, C, D, E, 10, 11,  0, 12 );
-    RIPEMD160_P2( E, A, B, C, D,  6,  9, 13,  8 );
-    RIPEMD160_P2( D, E, A, B, C, 15,  7,  5,  9 );
-    RIPEMD160_P2( C, D, E, A, B,  3, 15, 10, 11 );
-    RIPEMD160_P2( B, C, D, E, A, 12,  7, 14,  7 );
-    RIPEMD160_P2( A, B, C, D, E,  0, 12, 15,  7 );
-    RIPEMD160_P2( E, A, B, C, D,  9, 15,  8, 12 );
-    RIPEMD160_P2( D, E, A, B, C,  5,  9, 12,  7 );
-    RIPEMD160_P2( C, D, E, A, B,  2, 11,  4,  6 );
-    RIPEMD160_P2( B, C, D, E, A, 14,  7,  9, 15 );
-    RIPEMD160_P2( A, B, C, D, E, 11, 13,  1, 13 );
-    RIPEMD160_P2( E, A, B, C, D,  8, 12,  2, 11 );
-#undef RIPEMD160_F
-#undef RIPEMD160_K
-#undef RIPEMD160_FP
-#undef RIPEMD160_KP
+#define F   F2
+#define K   0x5A827999
+#define Fp  F4
+#define Kp  0x5C4DD124
+    P2( E, A, B, C, D,  7,  7,  6,  9 );
+    P2( D, E, A, B, C,  4,  6, 11, 13 );
+    P2( C, D, E, A, B, 13,  8,  3, 15 );
+    P2( B, C, D, E, A,  1, 13,  7,  7 );
+    P2( A, B, C, D, E, 10, 11,  0, 12 );
+    P2( E, A, B, C, D,  6,  9, 13,  8 );
+    P2( D, E, A, B, C, 15,  7,  5,  9 );
+    P2( C, D, E, A, B,  3, 15, 10, 11 );
+    P2( B, C, D, E, A, 12,  7, 14,  7 );
+    P2( A, B, C, D, E,  0, 12, 15,  7 );
+    P2( E, A, B, C, D,  9, 15,  8, 12 );
+    P2( D, E, A, B, C,  5,  9, 12,  7 );
+    P2( C, D, E, A, B,  2, 11,  4,  6 );
+    P2( B, C, D, E, A, 14,  7,  9, 15 );
+    P2( A, B, C, D, E, 11, 13,  1, 13 );
+    P2( E, A, B, C, D,  8, 12,  2, 11 );
+#undef F
+#undef K
+#undef Fp
+#undef Kp
 
-#define RIPEMD160_F   RIPEMD160_F3
-#define RIPEMD160_K   0x6ED9EBA1
-#define RIPEMD160_FP  RIPEMD160_F3
-#define RIPEMD160_KP  0x6D703EF3
-    RIPEMD160_P2( D, E, A, B, C,  3, 11, 15,  9 );
-    RIPEMD160_P2( C, D, E, A, B, 10, 13,  5,  7 );
-    RIPEMD160_P2( B, C, D, E, A, 14,  6,  1, 15 );
-    RIPEMD160_P2( A, B, C, D, E,  4,  7,  3, 11 );
-    RIPEMD160_P2( E, A, B, C, D,  9, 14,  7,  8 );
-    RIPEMD160_P2( D, E, A, B, C, 15,  9, 14,  6 );
-    RIPEMD160_P2( C, D, E, A, B,  8, 13,  6,  6 );
-    RIPEMD160_P2( B, C, D, E, A,  1, 15,  9, 14 );
-    RIPEMD160_P2( A, B, C, D, E,  2, 14, 11, 12 );
-    RIPEMD160_P2( E, A, B, C, D,  7,  8,  8, 13 );
-    RIPEMD160_P2( D, E, A, B, C,  0, 13, 12,  5 );
-    RIPEMD160_P2( C, D, E, A, B,  6,  6,  2, 14 );
-    RIPEMD160_P2( B, C, D, E, A, 13,  5, 10, 13 );
-    RIPEMD160_P2( A, B, C, D, E, 11, 12,  0, 13 );
-    RIPEMD160_P2( E, A, B, C, D,  5,  7,  4,  7 );
-    RIPEMD160_P2( D, E, A, B, C, 12,  5, 13,  5 );
-#undef RIPEMD160_F
-#undef RIPEMD160_K
-#undef RIPEMD160_FP
-#undef RIPEMD160_KP
+#define F   F3
+#define K   0x6ED9EBA1
+#define Fp  F3
+#define Kp  0x6D703EF3
+    P2( D, E, A, B, C,  3, 11, 15,  9 );
+    P2( C, D, E, A, B, 10, 13,  5,  7 );
+    P2( B, C, D, E, A, 14,  6,  1, 15 );
+    P2( A, B, C, D, E,  4,  7,  3, 11 );
+    P2( E, A, B, C, D,  9, 14,  7,  8 );
+    P2( D, E, A, B, C, 15,  9, 14,  6 );
+    P2( C, D, E, A, B,  8, 13,  6,  6 );
+    P2( B, C, D, E, A,  1, 15,  9, 14 );
+    P2( A, B, C, D, E,  2, 14, 11, 12 );
+    P2( E, A, B, C, D,  7,  8,  8, 13 );
+    P2( D, E, A, B, C,  0, 13, 12,  5 );
+    P2( C, D, E, A, B,  6,  6,  2, 14 );
+    P2( B, C, D, E, A, 13,  5, 10, 13 );
+    P2( A, B, C, D, E, 11, 12,  0, 13 );
+    P2( E, A, B, C, D,  5,  7,  4,  7 );
+    P2( D, E, A, B, C, 12,  5, 13,  5 );
+#undef F
+#undef K
+#undef Fp
+#undef Kp
 
-#define RIPEMD160_F   RIPEMD160_F4
-#define RIPEMD160_K   0x8F1BBCDC
-#define RIPEMD160_FP  RIPEMD160_F2
-#define RIPEMD160_KP  0x7A6D76E9
-    RIPEMD160_P2( C, D, E, A, B,  1, 11,  8, 15 );
-    RIPEMD160_P2( B, C, D, E, A,  9, 12,  6,  5 );
-    RIPEMD160_P2( A, B, C, D, E, 11, 14,  4,  8 );
-    RIPEMD160_P2( E, A, B, C, D, 10, 15,  1, 11 );
-    RIPEMD160_P2( D, E, A, B, C,  0, 14,  3, 14 );
-    RIPEMD160_P2( C, D, E, A, B,  8, 15, 11, 14 );
-    RIPEMD160_P2( B, C, D, E, A, 12,  9, 15,  6 );
-    RIPEMD160_P2( A, B, C, D, E,  4,  8,  0, 14 );
-    RIPEMD160_P2( E, A, B, C, D, 13,  9,  5,  6 );
-    RIPEMD160_P2( D, E, A, B, C,  3, 14, 12,  9 );
-    RIPEMD160_P2( C, D, E, A, B,  7,  5,  2, 12 );
-    RIPEMD160_P2( B, C, D, E, A, 15,  6, 13,  9 );
-    RIPEMD160_P2( A, B, C, D, E, 14,  8,  9, 12 );
-    RIPEMD160_P2( E, A, B, C, D,  5,  6,  7,  5 );
-    RIPEMD160_P2( D, E, A, B, C,  6,  5, 10, 15 );
-    RIPEMD160_P2( C, D, E, A, B,  2, 12, 14,  8 );
-#undef RIPEMD160_F
-#undef RIPEMD160_K
-#undef RIPEMD160_FP
-#undef RIPEMD160_KP
+#define F   F4
+#define K   0x8F1BBCDC
+#define Fp  F2
+#define Kp  0x7A6D76E9
+    P2( C, D, E, A, B,  1, 11,  8, 15 );
+    P2( B, C, D, E, A,  9, 12,  6,  5 );
+    P2( A, B, C, D, E, 11, 14,  4,  8 );
+    P2( E, A, B, C, D, 10, 15,  1, 11 );
+    P2( D, E, A, B, C,  0, 14,  3, 14 );
+    P2( C, D, E, A, B,  8, 15, 11, 14 );
+    P2( B, C, D, E, A, 12,  9, 15,  6 );
+    P2( A, B, C, D, E,  4,  8,  0, 14 );
+    P2( E, A, B, C, D, 13,  9,  5,  6 );
+    P2( D, E, A, B, C,  3, 14, 12,  9 );
+    P2( C, D, E, A, B,  7,  5,  2, 12 );
+    P2( B, C, D, E, A, 15,  6, 13,  9 );
+    P2( A, B, C, D, E, 14,  8,  9, 12 );
+    P2( E, A, B, C, D,  5,  6,  7,  5 );
+    P2( D, E, A, B, C,  6,  5, 10, 15 );
+    P2( C, D, E, A, B,  2, 12, 14,  8 );
+#undef F
+#undef K
+#undef Fp
+#undef Kp
 
-#define RIPEMD160_F   RIPEMD160_F5
-#define RIPEMD160_K   0xA953FD4E
-#define RIPEMD160_FP  RIPEMD160_F1
-#define RIPEMD160_KP  0x00000000
-    RIPEMD160_P2( B, C, D, E, A,  4,  9, 12,  8 );
-    RIPEMD160_P2( A, B, C, D, E,  0, 15, 15,  5 );
-    RIPEMD160_P2( E, A, B, C, D,  5,  5, 10, 12 );
-    RIPEMD160_P2( D, E, A, B, C,  9, 11,  4,  9 );
-    RIPEMD160_P2( C, D, E, A, B,  7,  6,  1, 12 );
-    RIPEMD160_P2( B, C, D, E, A, 12,  8,  5,  5 );
-    RIPEMD160_P2( A, B, C, D, E,  2, 13,  8, 14 );
-    RIPEMD160_P2( E, A, B, C, D, 10, 12,  7,  6 );
-    RIPEMD160_P2( D, E, A, B, C, 14,  5,  6,  8 );
-    RIPEMD160_P2( C, D, E, A, B,  1, 12,  2, 13 );
-    RIPEMD160_P2( B, C, D, E, A,  3, 13, 13,  6 );
-    RIPEMD160_P2( A, B, C, D, E,  8, 14, 14,  5 );
-    RIPEMD160_P2( E, A, B, C, D, 11, 11,  0, 15 );
-    RIPEMD160_P2( D, E, A, B, C,  6,  8,  3, 13 );
-    RIPEMD160_P2( C, D, E, A, B, 15,  5,  9, 11 );
-    RIPEMD160_P2( B, C, D, E, A, 13,  6, 11, 11 );
-#undef RIPEMD160_F
-#undef RIPEMD160_K
-#undef RIPEMD160_FP
-#undef RIPEMD160_KP
+#define F   F5
+#define K   0xA953FD4E
+#define Fp  F1
+#define Kp  0x00000000
+    P2( B, C, D, E, A,  4,  9, 12,  8 );
+    P2( A, B, C, D, E,  0, 15, 15,  5 );
+    P2( E, A, B, C, D,  5,  5, 10, 12 );
+    P2( D, E, A, B, C,  9, 11,  4,  9 );
+    P2( C, D, E, A, B,  7,  6,  1, 12 );
+    P2( B, C, D, E, A, 12,  8,  5,  5 );
+    P2( A, B, C, D, E,  2, 13,  8, 14 );
+    P2( E, A, B, C, D, 10, 12,  7,  6 );
+    P2( D, E, A, B, C, 14,  5,  6,  8 );
+    P2( C, D, E, A, B,  1, 12,  2, 13 );
+    P2( B, C, D, E, A,  3, 13, 13,  6 );
+    P2( A, B, C, D, E,  8, 14, 14,  5 );
+    P2( E, A, B, C, D, 11, 11,  0, 15 );
+    P2( D, E, A, B, C,  6,  8,  3, 13 );
+    P2( C, D, E, A, B, 15,  5,  9, 11 );
+    P2( B, C, D, E, A, 13,  6, 11, 11 );
+#undef F
+#undef K
+#undef Fp
+#undef Kp
 
     C             = ctx->state[1] + C + Dp;
     ctx->state[1] = ctx->state[2] + D + Ep;
@@ -253,6 +264,16 @@ void mbedtls_ripemd160_process( mbedtls_ripemd160_context *ctx, const unsigned c
     ctx->state[4] = ctx->state[0] + B + Cp;
     ctx->state[0] = C;
 }
+
+#undef F1
+#undef F2
+#undef F3
+#undef F4
+#undef F5
+#undef S
+#undef P
+#undef P2
+
 #endif /* !MBEDTLS_RIPEMD160_PROCESS_ALT */
 
 /*

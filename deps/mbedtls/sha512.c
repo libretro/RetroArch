@@ -157,21 +157,30 @@ void mbedtls_sha512_process( mbedtls_sha512_context *ctx, const unsigned char *d
     int i;
     uint64_t temp1, temp2, W[80];
     uint64_t A, B, C, D, E, F, G, H;
-#define  SHA512_SHR(x,n) (x >> n)
-#define SHA512_ROTR(x,n) (SHA512_SHR(x,n) | (x << (64 - n)))
-#define SHA512_S0(x) (SHA512_ROTR(x, 1) ^ SHA512_ROTR(x, 8) ^  SHA512_SHR(x, 7))
-#define SHA512_S1(x) (SHA512_ROTR(x,19) ^ SHA512_ROTR(x,61) ^  SHA512_SHR(x, 6))
-#define SHA512_S2(x) (SHA512_ROTR(x,28) ^ SHA512_ROTR(x,34) ^ SHA512_ROTR(x,39))
-#define SHA512_S3(x) (SHA512_ROTR(x,14) ^ SHA512_ROTR(x,18) ^ SHA512_ROTR(x,41))
+#undef SHR
+#define  SHR(x,n) (x >> n)
+#undef ROTR
+#define ROTR(x,n) (SHR(x,n) | (x << (64 - n)))
+#undef S0
+#define S0(x) (ROTR(x, 1) ^ ROTR(x, 8) ^  SHR(x, 7))
+#undef S1
+#define S1(x) (ROTR(x,19) ^ ROTR(x,61) ^  SHR(x, 6))
+#undef S2
+#define S2(x) (ROTR(x,28) ^ ROTR(x,34) ^ ROTR(x,39))
+#undef S3
+#define S3(x) (ROTR(x,14) ^ ROTR(x,18) ^ ROTR(x,41))
 
-#define SHA512_F0(x,y,z) ((x & y) | (z & (x | y)))
-#define SHA512_F1(x,y,z) (z ^ (x & (y ^ z)))
+#undef F0
+#define F0(x,y,z) ((x & y) | (z & (x | y)))
+#undef F1
+#define F1(x,y,z) (z ^ (x & (y ^ z)))
 
-#define SHA512_P(a,b,c,d,e,f,g,h,x,K)                    \
-{                                                        \
-    temp1 = h + SHA512_S3(e) + SHA512_F1(e,f,g) + K + x; \
-    temp2 = SHA512_S2(a) + SHA512_F0(a,b,c);             \
-    d += temp1; h = temp1 + temp2;                       \
+#undef P
+#define P(a,b,c,d,e,f,g,h,x,K)                  \
+{                                               \
+    temp1 = h + S3(e) + F1(e,f,g) + K + x;      \
+    temp2 = S2(a) + F0(a,b,c);                  \
+    d += temp1; h = temp1 + temp2;              \
 }
 
     for( i = 0; i < 16; i++ )
@@ -181,8 +190,8 @@ void mbedtls_sha512_process( mbedtls_sha512_context *ctx, const unsigned char *d
 
     for( ; i < 80; i++ )
     {
-        W[i] = SHA512_S1(W[i -  2]) + W[i -  7] +
-               SHA512_S0(W[i - 15]) + W[i - 16];
+        W[i] = S1(W[i -  2]) + W[i -  7] +
+               S0(W[i - 15]) + W[i - 16];
     }
 
     A = ctx->state[0];
@@ -197,14 +206,14 @@ void mbedtls_sha512_process( mbedtls_sha512_context *ctx, const unsigned char *d
 
     do
     {
-        SHA512_P( A, B, C, D, E, F, G, H, W[i], K[i] ); i++;
-        SHA512_P( H, A, B, C, D, E, F, G, W[i], K[i] ); i++;
-        SHA512_P( G, H, A, B, C, D, E, F, W[i], K[i] ); i++;
-        SHA512_P( F, G, H, A, B, C, D, E, W[i], K[i] ); i++;
-        SHA512_P( E, F, G, H, A, B, C, D, W[i], K[i] ); i++;
-        SHA512_P( D, E, F, G, H, A, B, C, W[i], K[i] ); i++;
-        SHA512_P( C, D, E, F, G, H, A, B, W[i], K[i] ); i++;
-        SHA512_P( B, C, D, E, F, G, H, A, W[i], K[i] ); i++;
+        P( A, B, C, D, E, F, G, H, W[i], K[i] ); i++;
+        P( H, A, B, C, D, E, F, G, W[i], K[i] ); i++;
+        P( G, H, A, B, C, D, E, F, W[i], K[i] ); i++;
+        P( F, G, H, A, B, C, D, E, W[i], K[i] ); i++;
+        P( E, F, G, H, A, B, C, D, W[i], K[i] ); i++;
+        P( D, E, F, G, H, A, B, C, W[i], K[i] ); i++;
+        P( C, D, E, F, G, H, A, B, W[i], K[i] ); i++;
+        P( B, C, D, E, F, G, H, A, W[i], K[i] ); i++;
     }
     while( i < 80 );
 
@@ -217,6 +226,17 @@ void mbedtls_sha512_process( mbedtls_sha512_context *ctx, const unsigned char *d
     ctx->state[6] += G;
     ctx->state[7] += H;
 }
+
+#undef SHR
+#undef ROTR
+#undef S0
+#undef S1
+#undef S2
+#undef S3
+#undef F0
+#undef F1
+#undef P
+
 #endif /* !MBEDTLS_SHA512_PROCESS_ALT */
 
 /*

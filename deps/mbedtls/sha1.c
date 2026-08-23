@@ -118,7 +118,9 @@ void mbedtls_sha1_process( mbedtls_sha1_context *ctx, const unsigned char data[6
     D = ctx->state[3];
     E = ctx->state[4];
 
+#undef F
 #define F(x,y,z) (z ^ (x & (y ^ z)))
+#undef K
 #define K 0x5A827999
 
     P( A, B, C, D, E, W[0]  );
@@ -232,6 +234,11 @@ void mbedtls_sha1_process( mbedtls_sha1_context *ctx, const unsigned char data[6
     ctx->state[3] += D;
     ctx->state[4] += E;
 }
+
+#undef S
+#undef R
+#undef P
+
 #endif /* !MBEDTLS_SHA1_PROCESS_ALT */
 
 /*

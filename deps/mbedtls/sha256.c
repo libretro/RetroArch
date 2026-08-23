@@ -118,6 +118,7 @@ static const uint32_t SHA256_K[] =
     0x90BEFFFA, 0xA4506CEB, 0xBEF9A3F7, 0xC67178F2,
 };
 #undef SHRs
+#undef SHR
 #define  SHR(x,n) ((x & 0xFFFFFFFF) >> n)
 #undef ROTR
 #define ROTR(x,n) (SHR(x,n) | (x << (32 - n)))
@@ -130,6 +131,7 @@ static const uint32_t SHA256_K[] =
 #undef S3
 #define S3(x) (ROTR(x, 6) ^ ROTR(x,11) ^ ROTR(x,25))
 
+#undef F0
 #define F0(x,y,z) ((x & y) | (z & (x | y)))
 #undef F1
 #define F1(x,y,z) (z ^ (x & (y ^ z)))
@@ -201,6 +203,18 @@ void mbedtls_sha256_process( mbedtls_sha256_context *ctx, const unsigned char da
     for( i = 0; i < 8; i++ )
         ctx->state[i] += A[i];
 }
+
+#undef SHR
+#undef ROTR
+#undef S0
+#undef S1
+#undef S2
+#undef S3
+#undef F0
+#undef F1
+#undef R
+#undef P
+
 #endif /* !MBEDTLS_SHA256_PROCESS_ALT */
 
 /*
