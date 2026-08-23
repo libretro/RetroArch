@@ -1152,6 +1152,17 @@ typedef struct _RETRO_FILE_ZERO_DATA_INFORMATION
 #endif
 #endif
 
+#if defined(_WIN32) && !defined(_XBOX)
+/* FILE_NAME_NORMALIZED came in with the Vista SDK, the same generation as
+ * GetFinalPathNameByHandleW itself.  The function is resolved by name at
+ * run time below precisely so that older toolchains still build this
+ * file; the flag has to clear the same bar, so supply the documented
+ * value when the SDK does not. */
+#ifndef FILE_NAME_NORMALIZED
+#define FILE_NAME_NORMALIZED 0x0
+#endif
+#endif
+
 /* Allocation unit of the filesystem holding this file: the smallest span
  * retro_vfs_file_punch_hole_impl can actually free. 0 when unknown.
  *
