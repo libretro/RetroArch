@@ -229,36 +229,53 @@ failure:
    struct net_ifinfo_entry *entry;
    size_t         interfaces = 0;
    struct ifaddrs *addresses = NULL;
+   bool           require_up = true;
 
    list->entries             = NULL;
 
    if (getifaddrs(&addresses) || !addresses)
       goto failure;
 
-   /* Count the number of valid interfaces first. */
-   addr                      = addresses;
-
-   do
+   /* Count the number of valid interfaces first.
+    *
+    * Reading the interface flags is a privileged operation on some
+    * platforms. Where it is refused every entry reports no flags at
+    * all, which is indistinguishable from every interface being down;
+    * take a second look without the flag test rather than report that
+    * the machine has no network at all. An address only reaches us
+    * here because it is configured on an interface. */
+   for (;;)
    {
-      if (!addr->ifa_addr)
-         continue;
+      addr       = addresses;
+      interfaces = 0;
+
+      do
+      {
+         if (!addr->ifa_addr)
+            continue;
 #ifndef WIIU
-      if (!(addr->ifa_flags & IFF_UP))
-         continue;
+         if (require_up && !(addr->ifa_flags & IFF_UP))
+            continue;
 #endif
 
-      switch (addr->ifa_addr->sa_family)
-      {
-         case AF_INET:
+         switch (addr->ifa_addr->sa_family)
+         {
+            case AF_INET:
 #ifdef HAVE_INET6
-         case AF_INET6:
+            case AF_INET6:
 #endif
-            interfaces++;
-            break;
-         default:
-            break;
-      }
-   } while ((addr = addr->ifa_next));
+               interfaces++;
+               break;
+            default:
+               break;
+         }
+      } while ((addr = addr->ifa_next));
+
+      if (interfaces || !require_up)
+         break;
+
+      require_up = false;
+   }
 
    if (!interfaces)
       goto failure;
@@ -280,7 +297,7 @@ failure:
       if (!addr->ifa_addr)
          continue;
 #ifndef WIIU
-      if (!(addr->ifa_flags & IFF_UP))
+      if (require_up && !(addr->ifa_flags & IFF_UP))
          continue;
 #endif
 
