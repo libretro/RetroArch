@@ -1156,7 +1156,11 @@ typedef struct _RETRO_FILE_ZERO_DATA_INFORMATION
  * retro_vfs_file_punch_hole_impl can actually free. 0 when unknown.
  *
  * This exists so a caller never has to reach for the descriptor itself.
- * PCSX2's ATA backend derived the cluster size by calling
+ * On NTFS this is the compression unit rather than the cluster, because
+ * that is what the filesystem actually deallocates in.
+ *
+ * PCSX2's ATA backend derived both the cluster size and the filesystem
+ * name by calling
  * GetFinalPathNameByHandle on a HANDLE it pulled out of a FILE*, which is
  * the one thing that kept it off the VFS -- the question is about the
  * filesystem, not the file, and the backend that owns the handle is the
@@ -1177,6 +1181,8 @@ int64_t retro_vfs_file_get_sparse_granularity_impl(
       HANDLE   handle              = stream->fh;
       wchar_t *final_path;
       wchar_t  root[MAX_PATH + 1];
+      wchar_t  fs_name[MAX_PATH + 1];
+      int64_t  cluster;
 
       if (!handle || handle == INVALID_HANDLE_VALUE)
       {
@@ -1218,7 +1224,22 @@ int64_t retro_vfs_file_get_sparse_granularity_impl(
                &tmp1, &tmp2))
          return 0;
 
-      return (int64_t)sectors_per_cluster * (int64_t)bytes_per_sector;
+      cluster = (int64_t)sectors_per_cluster * (int64_t)bytes_per_sector;
+
+      /* On NTFS the cluster size is not the answer. A sparse file is
+       * deallocated in compression units, which are 16 clusters, capped
+       * at 64K -- so a 4K-cluster volume, the common case, frees in 64K
+       * chunks and punching a single 4K cluster frees nothing at all.
+       * Other filesystems deallocate by cluster, so the cluster size
+       * stands. */
+      if (GetVolumeInformationByHandleW(handle, NULL, 0, NULL, NULL, NULL,
+               fs_name, MAX_PATH) && !wcscmp(fs_name, L"NTFS"))
+      {
+         const int64_t unit = cluster * 16;
+         return (unit > 65536) ? 65536 : unit;
+      }
+
+      return cluster;
    }
 #elif !defined(VITA) && !defined(PSP) && !defined(PS2) && !defined(ORBIS) && !defined(GEKKO) && !defined(_3DS)
    {

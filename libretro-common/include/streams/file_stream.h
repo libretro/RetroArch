@@ -546,10 +546,12 @@ int filestream_punch_hole(RFILE *stream, int64_t offset, int64_t len);
  * frees nothing, so a caller that wants sparse files has to work in
  * multiples of this value rather than assuming 4096.
  *
- * On Windows that is the cluster size, which is 4K on a typical NTFS
- * volume but 8K, 16K or 64K on plenty of real ones -- assuming 4K there
- * silently produces a file that is not sparse at all. On POSIX it is the
- * block size the filesystem reports for the file.
+ * On Windows this is the cluster size on most filesystems, but on NTFS
+ * it is the compression unit -- 16 clusters, capped at 64K -- because
+ * that is the span NTFS actually deallocates. A 4K-cluster NTFS volume,
+ * the common case, frees in 64K chunks, so punching a single cluster
+ * frees nothing. On POSIX it is the block size the filesystem reports
+ * for the file.
  *
  * Returns: the granularity in bytes, or 0 when it cannot be determined --
  * from a frontend-supplied VFS, for instance, which has no descriptor to
