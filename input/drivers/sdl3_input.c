@@ -548,9 +548,8 @@ static float sdl3_get_sensor_input(void *data, unsigned port, unsigned id)
    if (port != 0)
       return 0.0f;
 
-   /* SDL reports acceleration in m/s^2; libretro expects g. Both
-    * sides use radians per second for the gyroscope. Reading fails
-    * once a sensor vanishes, leaving the at-rest 0. */
+   /* Acceleration is m/s^2, though libretro expects gravity. The
+    * gyroscope uses radians per second. */
    if (id <= RETRO_SENSOR_ACCELEROMETER_Z)
    {
       if (sdl->accel && SDL_GetSensorData(sdl->accel, v, 3))
