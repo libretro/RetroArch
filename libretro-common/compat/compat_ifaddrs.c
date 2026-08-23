@@ -26,12 +26,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <net/if.h>
 #include <linux/if.h>
 
-/* <net/if.h> may carry a 'struct ifaddr' of its own whose accessor
- * macros collide with the member names below, so retire them before
- * declaring 'struct ifaddrs'. */
-#undef ifa_broadaddr
-#undef ifa_dstaddr
-
 #include <compat/strl.h>
 #include <compat/ifaddrs.h>
 

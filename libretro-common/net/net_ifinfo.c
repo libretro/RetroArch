@@ -35,6 +35,7 @@
 
 #elif !defined(VITA) && !defined(GEKKO)
 #if defined(WANT_IFADDRS)
+#include <net/if.h>
 #include <compat/ifaddrs.h>
 #elif !defined(HAVE_LIBNX) && !defined(_3DS)
 #include <ifaddrs.h>
