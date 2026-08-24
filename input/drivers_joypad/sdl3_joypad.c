@@ -41,7 +41,7 @@ typedef struct _sdl3_joypad
    unsigned        num_hats;
    uint16_t        rumble_gain; /* 0-100 */
    uint16_t        rumble[2];   /* raw magnitude per retro_rumble_effect (strong/weak) */
-   bool            sensor_accel; /* Requested sensor state; survives reconnects */
+   bool            sensor_accel; /* Whether or not the sensor has been connected. */
    bool            sensor_gyro;
 } sdl3_joypad_t;
 
