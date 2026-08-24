@@ -1760,6 +1760,7 @@ static const struct
    char s_519cd5f8[22];
    char s_43ac80a0[11];
    char s_6959ce80[13];
+   char s_886631ec[18];
    char s_ebe994b4[12];
    char s_1c62c301[14];
    char s_a8bb35b6[9];
@@ -2082,6 +2083,7 @@ static const struct
    char s_f9dd6e61[12];
    char s_25e89959[7];
    char s_a7468d68[27];
+   char s_b1d6fea6[9];
    char s_aa0659db[22];
    char s_49757b91[22];
    char s_660eb9c4[22];
@@ -5252,6 +5254,7 @@ static const struct
    "K\303\244ytt\303\266j\303\244rjestelm\303\244",
    "Git-versio",
    "Lakka-versio",
+   "MoltenVK:n versio",
    "Virtal\303\244hde",
    "Akku t\303\244ynn\303\244",
    "Latautuu",
@@ -5576,6 +5579,7 @@ static const struct
    "Kuvaketeema",
    "Kyll\303\244",
    "YouTube-suoratoiston avain",
+   "HDR-tila",
    "Varjostimen esiasetus",
    "Varjostimen esiasetus",
    "Varjostimen esiasetus",
@@ -7456,7 +7460,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (124233u
+      (sizeof(msg_hash_fi_blob) == (124260u
 #ifdef HAVE_LAKKA
        + 257u
 #endif
@@ -9506,6 +9510,7 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MOLTENVK_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,
@@ -9828,6 +9833,7 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_THEME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_YES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_YOUTUBE_STREAM_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_HDR_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
