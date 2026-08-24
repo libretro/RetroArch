@@ -41,6 +41,8 @@ typedef struct _sdl3_joypad
    unsigned        num_hats;
    uint16_t        rumble_gain; /* 0-100 */
    uint16_t        rumble[2];   /* raw magnitude per retro_rumble_effect (strong/weak) */
+   bool            sensor_accel; /* Requested sensor state; survives reconnects */
+   bool            sensor_gyro;
 } sdl3_joypad_t;
 
 /**
@@ -49,16 +51,6 @@ typedef struct _sdl3_joypad
  * @todo Move away from static globals.
  */
 static sdl3_joypad_t sdl3_joypads[MAX_USERS];
-
-/**
- * The sensor state requested for each pad. Kept outside of sdl3_joypads
- * so it survives a disconnect and can be restored when the pad reconnects.
- */
-static struct
-{
-   bool accel;
-   bool gyro;
-} sdl3_sensors_wanted[MAX_USERS];
 
 static const char *sdl3_joypad_name(unsigned pad)
 {
@@ -287,9 +279,9 @@ static void sdl3_joypad_connect(SDL_JoystickID jid)
 
       /* Restore any sensor state that was requested before connecting,
        * e.g. when the pad is unplugged and plugged back in. */
-      if (has_accel && sdl3_sensors_wanted[slot].accel)
+      if (has_accel && pad->sensor_accel)
          SDL_SetGamepadSensorEnabled(gamepad, SDL_SENSOR_ACCEL, true);
-      if (has_gyro && sdl3_sensors_wanted[slot].gyro)
+      if (has_gyro && pad->sensor_gyro)
          SDL_SetGamepadSensorEnabled(gamepad, SDL_SENSOR_GYRO, true);
    }
 }
@@ -310,7 +302,14 @@ static void sdl3_joypad_disconnect(SDL_JoystickID jid)
 
       input_autoconfigure_disconnect(i, sdl3_joypad.ident);
 
-      memset(&sdl3_joypads[i], 0, sizeof(sdl3_joypads[i]));
+      /* Keep the requested sensor state so it can be restored on reconnect. */
+      {
+         bool sensor_accel = sdl3_joypads[i].sensor_accel;
+         bool sensor_gyro  = sdl3_joypads[i].sensor_gyro;
+         memset(&sdl3_joypads[i], 0, sizeof(sdl3_joypads[i]));
+         sdl3_joypads[i].sensor_accel = sensor_accel;
+         sdl3_joypads[i].sensor_gyro  = sensor_gyro;
+      }
       return;
    }
 }
@@ -327,7 +326,6 @@ static void sdl3_joypad_destroy(void)
    }
 
    memset(sdl3_joypads, 0, sizeof(sdl3_joypads));
-   memset(sdl3_sensors_wanted, 0, sizeof(sdl3_sensors_wanted));
    SDL_QuitSubSystem(SDL_INIT_GAMEPAD);
 }
 
@@ -612,7 +610,7 @@ static bool sdl3_joypad_set_sensor_state(unsigned pad,
       case RETRO_SENSOR_GYROSCOPE_DISABLE:
       {
          bool enable = action == RETRO_SENSOR_GYROSCOPE_ENABLE;
-         sdl3_sensors_wanted[pad].gyro = enable;
+         sdl3_joypads[pad].sensor_gyro = enable;
          if (gamepad && SDL_GamepadHasSensor(gamepad, SDL_SENSOR_GYRO))
             return SDL_SetGamepadSensorEnabled(gamepad, SDL_SENSOR_GYRO, enable);
          /* Disabling a missing sensor shouldn't fail. */
@@ -623,7 +621,7 @@ static bool sdl3_joypad_set_sensor_state(unsigned pad,
       case RETRO_SENSOR_ACCELEROMETER_DISABLE:
       {
          bool enable = action == RETRO_SENSOR_ACCELEROMETER_ENABLE;
-         sdl3_sensors_wanted[pad].accel = enable;
+         sdl3_joypads[pad].sensor_accel = enable;
          if (gamepad && SDL_GamepadHasSensor(gamepad, SDL_SENSOR_ACCEL))
             return SDL_SetGamepadSensorEnabled(gamepad, SDL_SENSOR_ACCEL, enable);
          /* Disabling a missing sensor shouldn't fail. */
