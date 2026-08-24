@@ -725,7 +725,6 @@ static float sdl3_get_sensor_input(void *data, unsigned port, unsigned id)
    return 0.0f;
 }
 
-
 static void sdl3_poll_mouse(sdl3_input_t *sdl)
 {
    SDL_Window *win;
