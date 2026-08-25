@@ -1114,11 +1114,37 @@ static void android_env_derive_audio(JNIEnv *env, jobject activity)
    (*env)->DeleteLocalRef(env, am);
 }
 
-/* External storage location for absent SDCARD / EXTERNAL extras,
+/* getExternalFilesDir(null) for an absent EXTERNAL extra: the
+ * app-external files directory the Java launcher used to pass,
+ * /storage/emulated/0/Android/data/<package>/files.  The framework
+ * creates the directory on this call if it does not exist yet. */
+static void android_env_derive_app_storage(JNIEnv *env, jobject activity)
+{
+   jclass activity_class;
+   jmethodID get_external_files_dir;
+   jobject dir;
+
+   activity_class         = (*env)->GetObjectClass(env, activity);
+   get_external_files_dir = (*env)->GetMethodID(env, activity_class,
+         "getExternalFilesDir", "(Ljava/lang/String;)Ljava/io/File;");
+   (*env)->DeleteLocalRef(env, activity_class);
+   if (android_env_exception(env, "getExternalFilesDir lookup"))
+      return;
+   dir = (*env)->CallObjectMethod(env, activity,
+         get_external_files_dir, (jobject)NULL);
+   if (android_env_exception(env, "getExternalFilesDir") || !dir)
+      return;
+   /* android_env_file_path releases dir. */
+   android_env_file_path(env, dir,
+         internal_storage_app_path, sizeof(internal_storage_app_path));
+}
+
+/* External storage locations for absent SDCARD / EXTERNAL extras,
  * following the Java launcher: scoped-storage devices without all-files
- * access use the app's external media dir (created on demand) with the
- * app-external files path as fallback; everything else uses the shared
- * storage root. */
+ * access use the app's external media dir (created on demand) for the
+ * shared location; everything else uses the shared storage root.  The
+ * app-external location comes from getExternalFilesDir, with the
+ * shared location as a last resort. */
 static void android_env_derive_storage(JNIEnv *env, jobject activity)
 {
    int32_t sdk           = 0;
@@ -1146,7 +1172,7 @@ static void android_env_derive_storage(JNIEnv *env, jobject activity)
       }
    }
 
-   if (sdk >= 30 && !all_files_access)
+   if (sdk >= 30 && !all_files_access && !*internal_storage_path)
    {
       /* Scoped storage: app external media dir, created on demand. */
       jclass activity_class      = (*env)->GetObjectClass(env, activity);
@@ -1198,6 +1224,8 @@ static void android_env_derive_storage(JNIEnv *env, jobject activity)
    }
    (*env)->DeleteLocalRef(env, env_class);
 
+   if (!*internal_storage_app_path)
+      android_env_derive_app_storage(env, activity);
    if (*internal_storage_path && !*internal_storage_app_path)
       strlcpy(internal_storage_app_path, internal_storage_path,
             sizeof(internal_storage_app_path));
