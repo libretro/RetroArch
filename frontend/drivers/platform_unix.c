@@ -3429,6 +3429,9 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
    jstring jstr          = NULL;
 
    int volume_count = 0;
+   /* The shared-storage path already appended below, so the volume
+    * loop does not list the primary volume a second time. */
+   const char *listed_storage_path = "";
 
    if (!env || !g_android)
       return 0;
@@ -3463,13 +3466,17 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
                msg_hash_to_str(MSG_INTERNAL_STORAGE),
                enum_idx,
                FILE_TYPE_DIRECTORY, 0, 0, NULL);
+         listed_storage_path = internal_storage_path;
       }
       else
+      {
          menu_entries_append(list,
                "/storage/emulated/0",
                msg_hash_to_str(MSG_REMOVABLE_STORAGE),
                enum_idx,
                FILE_TYPE_DIRECTORY, 0, 0, NULL);
+         listed_storage_path = "/storage/emulated/0";
+      }
    }
 
    if (!g_android->is_play_store_build)
@@ -3528,7 +3535,9 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
                   sizeof(aux_path));
 
          (*env)->ReleaseStringUTFChars(env, jstr, str);
-         if (*aux_path)
+         /* The primary volume is the shared-storage entry appended
+          * above; listing it again only duplicates the path. */
+         if (*aux_path && !string_is_equal(aux_path, listed_storage_path))
             menu_entries_append(list,
                   aux_path,
                   msg_hash_to_str(MSG_APPLICATION_DIR),
