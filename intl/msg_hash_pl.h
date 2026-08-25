@@ -1168,6 +1168,7 @@ static const struct
    char s_b4c3612a[36];
    char s_f638f238[17];
    char s_f3358a59[32];
+   char s_f8098721[53];
    char s_0d7d9688[41];
    char s_b00815b8[15];
    char s_1ef8917a[23];
@@ -2984,6 +2985,7 @@ static const struct
    char s_7de5d198[61];
    char s_3b573ee6[29];
    char s_dc1d6cc7[49];
+   char s_28543dcf[76];
    char s_aebcb136[141];
    char s_8b636a26[34];
    char s_8f707459[41];
@@ -3363,10 +3365,12 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    char s_3e1e294b[55];
    char s_69c0e487[50];
+   char s_706ff4dc[270];
    char s_a0d1a85c[72];
    char s_b5966528[209];
    char s_907ef7cc[34];
    char s_b0a46506[45];
+   char s_04624c88[156];
    char s_91976dbe[46];
    char s_f6492edc[43];
    char s_9bb85635[227];
@@ -5579,6 +5583,7 @@ static const struct
    "Poka\305\274 'Uruchom ponownie RetroArch'",
    "Poka\305\274 'Zamknij'",
    "Poka\305\274 etykiety podrz\304\231dne menu",
+   "Poka\305\274 podedtykiety menu tylko dla aktualnego wyboru",
    "Playlisty odtwarzane jednym klikni\304\231ciem",
    "D\305\272wi\304\231ki menu",
    "W\305\202\304\205cz d\305\272wi\304\231k 'BGM'",
@@ -7786,6 +7791,7 @@ static const struct
    "Poka\305\274 opcj\304\231 'Uruchom ponownie RetroArch' w menu g\305\202\303\263wnym.",
    "Poka\305\274 opcj\304\231 \"Zamkni\304\231cie\".",
    "Poka\305\274 dodatkowe informacje dla element\303\263w menu.",
+   "Wy\305\233wietlaj podetykiet\304\231 tylko dla aktualnego pod\305\233wietlonego wpisu w menu.",
    "Pomi\305\204 menu 'Uruchom' przy uruchamianiu wpis\303\263w na playli\305\233cie. Wci\305\233nij"
    " D-Pad podczas trzymania OK, aby uzyska\304\207 dost\304\231p do menu 'Uruchom'.",
    "Zmie\305\204 ustawienia d\305\272wi\304\231ku menu.",
@@ -8420,6 +8426,10 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    "Wybierz uwierzytelnianie u\305\274ywane w twoim \305\233rodowisku.",
    "Przegl\304\205daj pliki na skonfigurowanym zasobie SMB.",
+   "W\305\202\304\205cz dost\304\231p do zasob\303\263w sieciowych SMB. Ethernet jest bardzo zalecan"
+   "y zamiast Wi-Fi, aby uzyska\304\207 niezawodne po\305\202\304\205czenie. Uwaga: przynosi efekt p"
+   "rzy nast\304\231pnym przegl\304\205daniu zasobu, i tre\305\233\304\207, kt\303\263ra ju\305\274 "
+   "dzia\305\202a z zasobu zostaje przy swoim aktualnym po\305\202\304\205czeniu.",
    "Wybierz maksymaln\304\205 liczb\304\231 po\305\202\304\205cze\305\204 u\305\274ywanych w twoim "
    "\305\233rodowisku.",
    "Nazwa u\305\274ytkownika do uwierzytelniania. Jest to opcjonalne, gdy dost\304\231p dla go\305"
@@ -8427,6 +8437,9 @@ static const struct
    "\233ci jest domy\305\233lnie wy\305\202\304\205czony, wi\304\231c has\305\202o jest wymagane.",
    "Adres IP serwera lub nazwa hosta.",
    "Konfiguruj ustawienia sieciowego zasobu SMB.",
+   "Nazwa zasobu sieciowego, do kt\303\263rego chcesz uzyska\304\207 dost\304\231p. Pozostaw pusty, "
+   "aby pokaza\304\207 ka\305\274dy zas\303\263b na serwerze i wybra\304\207 jeden podczas przegl"
+   "\304\205dania.",
    "\305\232cie\305\274ka podkatalogu na zasobie. Opcjonalna.",
    "Wybierz domy\305\233lny limit czasu w sekundach.",
    "Nazwa u\305\274ytkownika do uwierzytelniania. Jest to opcjonalne, gdy dost\304\231p dla go\305"
@@ -9482,7 +9495,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (188451u
+      (sizeof(msg_hash_pl_blob) == (188580u
 #ifdef ANDROID
        + 385u
 #endif
@@ -9814,10 +9827,12 @@ typedef char msg_hash_pl_blob_check[
        + 33u
        + 55u
        + 50u
+       + 270u
        + 72u
        + 209u
        + 34u
        + 45u
+       + 156u
        + 46u
        + 43u
        + 227u
@@ -11056,6 +11071,7 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
@@ -12869,6 +12885,7 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
@@ -13248,10 +13265,12 @@ static const uint32_t msg_hash_pl_ids[] =
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
