@@ -43,7 +43,10 @@
 #include <string.h>
 
 #include <compat/fopen_utf8.h>
+#include <compat/strl.h>
 #include <file/config_file.h>
+#include <file/file_path.h>
+#include <retro_miscellaneous.h>
 #include <streams/file_stream.h>
 
 static char *config_file_io_fs_read_file(const char *path,
@@ -194,6 +197,25 @@ bool config_file_write(config_file_t *conf, const char *path, bool sort)
           * the stream. */
          FILE *file;
          bool wr_ok;
+         char *tmp_path;
+         size_t _len;
+         /* The atomic replace below swaps the directory entry
+          * itself, so a save through a symbolic link would
+          * overwrite the link with a regular file.  Resolving the
+          * path first keeps the link in place and replaces the
+          * file it points to.  When resolution is unavailable or
+          * fails - dangling link, over-long path, platform without
+          * realpath - the path is used as given. */
+         char *resolved = NULL;
+
+         if (     strlen(path) < PATH_MAX_LENGTH
+               && (resolved = (char*)malloc(PATH_MAX_LENGTH)))
+         {
+            strlcpy(resolved, path, PATH_MAX_LENGTH);
+            path_resolve_realpath(resolved, PATH_MAX_LENGTH, true);
+            path = resolved;
+         }
+
          /* The dump goes to a temporary beside the target and is
           * renamed over it only once complete and error-checked.
           * An interrupted or failed save - process kill, power
@@ -201,17 +223,21 @@ bool config_file_write(config_file_t *conf, const char *path, bool sort)
           * instead of a truncated one, and a save that hits a
           * write error reports failure instead of silently
           * replacing a good config with a partial one. */
-         size_t _len    = strlen(path);
-         char *tmp_path = (char*)malloc(_len + sizeof(".tmp"));
+         _len     = strlen(path);
+         tmp_path = (char*)malloc(_len + sizeof(".tmp"));
 
          if (!tmp_path)
+         {
+            free(resolved);
             return false;
+         }
          memcpy(tmp_path, path, _len);
          memcpy(tmp_path + _len, ".tmp", sizeof(".tmp"));
 
          if (!(file = (FILE*)fopen_utf8(tmp_path, "wb")))
          {
             free(tmp_path);
+            free(resolved);
             return false;
          }
          setvbuf(file, NULL, _IOFBF, 0x4000);
@@ -225,9 +251,11 @@ bool config_file_write(config_file_t *conf, const char *path, bool sort)
          {
             filestream_delete(tmp_path);
             free(tmp_path);
+            free(resolved);
             return false;
          }
          free(tmp_path);
+         free(resolved);
          conf->flags &= ~CONF_FILE_FLG_MODIFIED;
       }
    }
