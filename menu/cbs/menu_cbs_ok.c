@@ -3060,6 +3060,52 @@ static int action_ok_playlist_entry_collection(const char *path,
             strlcpy(core_path, entry->core_path, sizeof(core_path));
             playlist_resolve_path(PLAYLIST_LOAD, true, core_path, sizeof(core_path));
          }
+
+         /* The entry names a core that is no longer installed, so
+          * the association it carries cannot load anything. The
+          * playlist's own default core takes over where one is set
+          * and present, and the entry is rebound to it the same way
+          * an entry that never had a core is - otherwise the whole
+          * playlist stays unloadable behind an association pointing
+          * at a core the user has removed. */
+         if (!path_is_valid(core_path))
+         {
+            core_info_t *default_core_info =
+               playlist_get_default_core_info(playlist);
+
+            if (     default_core_info
+                  && default_core_info->path
+                  && *default_core_info->path
+                  && path_is_valid(default_core_info->path))
+            {
+               size_t _len;
+               struct playlist_entry update_entry = {0};
+               char msg[NAME_MAX_LENGTH];
+
+               strlcpy(core_path, default_core_info->path, sizeof(core_path));
+               playlist_resolve_path(PLAYLIST_SAVE, true,
+                     core_path, sizeof(core_path));
+               update_entry.core_path = core_path;
+               update_entry.core_name = default_core_info->display_name;
+
+               command_playlist_update_write(
+                     playlist, selection_ptr, &update_entry);
+
+               /* Cache core path */
+               strlcpy(core_path, default_core_info->path, sizeof(core_path));
+
+               /* The core actually used differs from the one the
+                * entry asked for, and which core ran the content
+                * decides which save data and options it sees, so
+                * say so rather than switching silently. */
+               _len  = strlcpy(msg,
+                     msg_hash_to_str(MSG_SET_CORE_ASSOCIATION), sizeof(msg));
+               _len += strlcpy(msg + _len,
+                     default_core_info->display_name, sizeof(msg) - _len);
+               runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            }
+         }
       }
    }
 
