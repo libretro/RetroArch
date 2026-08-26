@@ -73,7 +73,6 @@ void android_app_set_window_settings(bool notch_write_over,
 
 #ifdef HAVE_LAKKA_SWITCH
 #include "lakka-switch.h"
-   }
 #endif
 
 #if defined(HAVE_LIBNX)
@@ -7076,6 +7075,7 @@ static bool config_load_file(global_t *global,
       FILE* f = fopen(BLUETOOTH_ERTM_TOGGLE_PATH, "w");
       fprintf(f, "0\n");
       fclose(f);
+   }
    }
 #endif
 
