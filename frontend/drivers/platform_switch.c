@@ -298,6 +298,8 @@ static void frontend_switch_get_env(
 
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_LOGS], g_defaults.dirs[DEFAULT_DIR_PORT],
                       "logs", sizeof(g_defaults.dirs[DEFAULT_DIR_LOGS]));
+   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE], g_defaults.dirs[DEFAULT_DIR_PORT],
+                      "temp", sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
 
    for (i = 0; i < DEFAULT_DIR_LAST; i++)
    {
