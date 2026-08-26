@@ -7767,6 +7767,19 @@ static void netplay_frontend_paused(netplay_t *netplay, bool paused)
    if (netplay->modus == NETPLAY_MODUS_CORE_PACKET_INTERFACE)
       return;
 
+   /* A server that disables pausing answers NETPLAY_CMD_PAUSE from a
+    * client with a NAK and hangs the connection up, so a client whose
+    * server disallows it must not announce a pause at all. The
+    * frontend reaches here for transient states as well as for a
+    * deliberate pause - pushing the Quick Menu parks the runloop for
+    * a single frame, which is how opening the menu or the chat prompt
+    * arrives - and announcing those cost the connection over
+    * something the user never asked for. Leaving local_paused unset
+    * keeps the pair symmetric: the resume that netplay_pre_frame
+    * sends off the back of it is suppressed with it. */
+   if (paused && !netplay->is_server && !netplay->allow_pausing)
+      return;
+
    netplay->local_paused = paused;
 
    /* Communicating this is a bit odd: If exactly one other connection is
