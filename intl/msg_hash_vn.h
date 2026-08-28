@@ -2460,6 +2460,7 @@ static const struct
    char s_f7cc6630[42];
    char s_310ec7bd[91];
    char s_5832a2c2[123];
+   char s_f47e544f[364];
    char s_20cc6597[152];
    char s_21b0bad3[80];
    char s_66e9521c[92];
@@ -7703,6 +7704,15 @@ static const struct
    "\273\203 c\341\272\245u h\303\254nh \304\221\341\273\213nh tuy\341\272\277n thi\341\272\277t b"
    "\341\273\213 v\303\240 c\303\241c thi\341\272\277t l\341\272\255p b\341\273\231 \304\221\341\273"
    "\207m.",
+   "S\341\273\221 khung h\303\254nh \303\242m thanh m\303\240 tr\303\254nh \304\221i\341\273\201u kh"
+   "i\341\273\203n \303\242m thanh x\341\273\255 l\303\275 trong m\341\273\227i kh\341\273\221i. 0 y"
+   "\303\252u c\341\272\247u tr\303\254nh \304\221i\341\273\201u khi\341\273\203n s\341\273\255 d"
+   "\341\273\245ng gi\303\241 tr\341\273\213 ri\303\252ng c\341\273\247a thi\341\272\277t b\341\273"
+   "\213, \304\221\303\242y l\303\240 l\341\273\261a ch\341\273\215n ph\303\271 h\341\273\243p v\341"
+   "\273\233i h\341\272\247u h\341\272\277t c\303\241c thi\341\272\277t l\341\272\255p; gi\303\241 t"
+   "r\341\273\213 kh\341\273\221i l\341\273\233n h\306\241n s\341\272\275 t\304\203ng \304\221\341"
+   "\273\231 \341\273\225n \304\221\341\273\213nh nh\306\260ng \304\221\341\273\225i l\341\272\241i "
+   "l\303\240m t\304\203ng \304\221\341\273\231 tr\341\273\205 \303\242m thanh.",
    "Ghi \304\221\303\250 thi\341\272\277t b\341\273\213 \303\242m thanh m\341\272\267c \304\221\341"
    "\273\213nh m\303\240 tr\303\254nh \304\221i\341\273\201u khi\341\273\203n \303\242m thanh s\341"
    "\273\255 d\341\273\245ng. \304\220i\341\273\201u n\303\240y ph\341\273\245 thu\341\273\231c v"
@@ -12087,7 +12097,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (228146u
+      (sizeof(msg_hash_vn_blob) == (228510u
 #ifdef ANDROID
        + 373u
 #endif
@@ -14944,6 +14954,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,

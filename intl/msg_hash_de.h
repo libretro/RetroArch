@@ -2347,6 +2347,7 @@ static const struct
    char s_f7cc6630[19];
    char s_310ec7bd[80];
    char s_5832a2c2[108];
+   char s_f47e544f[294];
    char s_20cc6597[110];
    char s_21b0bad3[54];
    char s_66e9521c[96];
@@ -6668,6 +6669,10 @@ static const struct
    "Von RetroArch verwendete Men\303\274-Assets werden in diesem Verzeichnis gespeichert.",
    "Die ASIO-Treiber-Systemsteuerung \303\266ffnen, um die Ger\303\244te-Routing- und Puffereinstell"
    "ungen zu konfigurieren.",
+   "Anzahl der Frames, die der Audiotreiber pro Block verschiebt. Bei 0 wird der Treiber nach dem ge"
+   "r\303\244tespezifischen Wert gefragt, was in den meisten Konfigurationen gew\303\274nscht ist; e"
+   "in gr\303\266\303\237erer Block geht zu Lasten der Latenz, bietet daf\303\274r aber eine h\303"
+   "\266here Ausfallsicherheit gegen Aussetzer.",
    "Das Standard-Audioger\303\244t, welches vom Audiotreiber verwendet wird, \303\274berschreiben. D"
    "ies ist treiberabh\303\244ngig.",
    "Zu verwendender Audiotreiber. (Neustart erforderlich)",
@@ -9052,7 +9057,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (192384u
+      (sizeof(msg_hash_de_blob) == (192678u
 #ifdef ANDROID
        + 358u
 #endif
@@ -11804,6 +11809,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,

@@ -2444,6 +2444,7 @@ static const struct
    char s_f7cc6630[28];
    char s_310ec7bd[83];
    char s_5832a2c2[103];
+   char s_f47e544f[266];
    char s_20cc6597[116];
    char s_21b0bad3[53];
    char s_66e9521c[81];
@@ -7008,6 +7009,10 @@ static const struct
    "etroArch sa chomhadlann seo.",
    "Oscail pain\303\251al rialaithe tiom\303\241na\303\255 ASIO chun socruithe r\303\263daithe agus "
    "maol\303\241in gl\303\251asanna a chumr\303\272.",
+   "L\303\255on na bhfr\303\241ma\303\255 a bhogann an tiom\303\241na\303\255 fuaime in aghaidh an b"
+   "hloic. Iarrann 0 luach an fheiste f\303\251in ar an tiom\303\241na\303\255, agus is \303\251 sin"
+   " at\303\241 uathu i bhformh\303\263r na socruithe; d\303\251anann bloc n\303\255os m\303\263 moi"
+   "ll a thr\303\241d\303\241il ar son athl\303\251imneachta i gcoinne titim amach.",
    "S\303\241raigh an gl\303\251as fuaime r\303\251amhshocraithe a \303\272s\303\241ideann an tiom"
    "\303\241na\303\255 fuaime. Braitheann s\303\251 seo ar an tiom\303\241na\303\255.",
    "Tiom\303\241na\303\255 fuaime le h\303\272s\303\241id. (Atos\303\272 ag teast\303\241il)",
@@ -9874,7 +9879,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (204261u
+      (sizeof(msg_hash_ga_blob) == (204527u
 #ifdef ANDROID
        + 390u
 #endif
@@ -12715,6 +12720,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,

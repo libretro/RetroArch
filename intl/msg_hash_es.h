@@ -2430,6 +2430,7 @@ static const struct
    char s_f7cc6630[35];
    char s_310ec7bd[74];
    char s_5832a2c2[106];
+   char s_f47e544f[283];
    char s_20cc6597[99];
    char s_21b0bad3[79];
    char s_66e9521c[75];
@@ -6858,6 +6859,10 @@ static const struct
    "En este directorio se guardar\303\241n los recursos de los men\303\272s de RetroArch.",
    "Abre el panel de control del controlador ASIO para configurar el enrutado de dispositivos y los "
    "b\303\272feres.",
+   "Indica la cantidad de fotogramas que mover\303\241 el controlador de audio por bloque. Un valor "
+   "de 0 pedir\303\241 al controlador el valor del dispositivo, que es lo que esperan la mayor\303"
+   "\255a de configuraciones; un valor m\303\241s grande compensa la resistencia contra p\303\251rdi"
+   "das de audio con latencia.",
    "Fuerza el dispositivo que utilizar\303\241 el controlador de audio. Este ajuste depende del cont"
    "rolador.",
    "Selecciona el controlador de audio que se utilizar\303\241 (es necesario reiniciar).",
@@ -9374,7 +9379,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (208388u
+      (sizeof(msg_hash_es_blob) == (208671u
 #ifdef ANDROID
        + 329u
 #endif
@@ -12205,6 +12210,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
