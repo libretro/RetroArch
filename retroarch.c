@@ -1571,10 +1571,6 @@ void driver_set_nonblock_state(void)
       audio_st->current_audio->set_nonblock_state(
             audio_st->context_audio_data,
             audio_sync ? enable : true);
-
-   audio_st->chunk_size = enable
-      ? audio_st->chunk_nonblock_size
-      : audio_st->chunk_block_size;
 }
 
 void drivers_init(

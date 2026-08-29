@@ -1435,6 +1435,7 @@ static void runahead_core_run_use_last_input(runloop_state_t *runloop_st)
    runloop_st->current_core.retro_set_input_state(cbs->state_cb);
 
    runloop_st->current_core.retro_run();
+   audio_driver_frame_end();
 
    cbs->poll_cb                           = old_poll_function;
    cbs->state_cb                          = old_input_function;
@@ -1801,7 +1802,10 @@ bool preempt_init(void *data)
    /* Run at least one frame before attempting
     * retro_serialize_size or retro_serialize */
    if (video_state_get_ptr()->frame_count == 0)
+   {
       runloop_st->current_core.retro_run();
+      audio_driver_frame_end();
+   }
 
    /* Allocate - same 'frames' setting as runahead */
    if ((_msg = preempt_allocate(runloop_st, run_ahead_frames)))
@@ -2016,6 +2020,7 @@ void preempt_run(preempt_t *preempt, void *data)
 
    /* Run normal frame */
    current_core->retro_run();
+   audio_driver_frame_end();
    preempt->frame_count++;
    return;
 

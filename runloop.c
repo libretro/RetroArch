@@ -8221,8 +8221,6 @@ end:
                  && (audio_st->context_audio_data))
                audio_st->current_audio->set_nonblock_state(
                      audio_st->context_audio_data, true);
-            audio_st->chunk_size =
-               audio_st->chunk_nonblock_size;
          }
 
          runloop_st->fastforward_after_frames++;
@@ -8236,7 +8234,6 @@ end:
                      audio_st->context_audio_data,
                      audio_sync ? false : true);
 
-            audio_st->chunk_size = audio_st->chunk_block_size;
             runloop_st->fastforward_after_frames = 0;
          }
       }
@@ -8882,7 +8879,10 @@ void core_run(void)
     * (e.g. archive member opened with no core).  Never call through
     * a NULL retro_run — that is an immediate SIGSEGV. */
    if (current_core->retro_run)
+   {
       current_core->retro_run();
+      audio_driver_frame_end();
+   }
 
 #ifdef HAVE_GAME_AI
    {

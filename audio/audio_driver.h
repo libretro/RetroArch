@@ -257,12 +257,20 @@ typedef struct
     * The driver's int16 output staging buffer. Holds the final 16-bit samples
     * that are sent to the audio driver and to recording, from whichever source
     * produced them: the float->s16 conversion of the float resampler's output,
-    * the integer s16 resampler writing here directly, or the single-sample
-    * callback. Only the float path performs an int16 conversion into it; the
-    * other producers write s16 directly.
+    * or the integer s16 resampler writing here directly.
     */
    int16_t *output_samples_int16;
    size_t output_samples_int16_length;
+   /**
+    * Accumulator for the single-sample core callback
+    * (audio_driver_sample). Holds AUDIO_SAMPLE_ACCUM_INT16S int16 samples;
+    * data_ptr is the write index. Emptied by audio_driver_frame_end() once
+    * the core has returned from retro_run(), or by the overflow guard in
+    * audio_driver_sample() when a single frame delivers more than it holds.
+    * Separate from output_samples_int16 so a flush never resamples in place
+    * over its own input.
+    */
+   int16_t *sample_accum;
 #ifdef HAVE_DSP_FILTER
    retro_dsp_filter_t *dsp;
 #endif
@@ -302,10 +310,6 @@ typedef struct
 #endif
    struct retro_audio_callback callback;                 /* ptr alignment */
                                                          /* ptr alignment */
-   size_t chunk_size;
-   size_t chunk_nonblock_size;
-   size_t chunk_block_size;
-
 #ifdef HAVE_REWIND
    size_t rewind_ptr;
    size_t rewind_size;
@@ -365,6 +369,12 @@ typedef struct
    double   cached_rate_adjust;        /* last computed factor; default 1.0 */
    size_t   samples_since_drc;         /* int16 samples submitted since last update */
    size_t   drc_threshold_int16s;      /* one frame's worth of stereo int16 at the current rate */
+   /* Set by audio_driver_frame_end() so the next flush recomputes the
+    * DRC factor regardless of samples_since_drc. Pins the write_avail()
+    * measurement to the same point of every frame - the first flush the
+    * core makes after retro_run() returns - instead of wherever the
+    * sample-count gate happens to trip. */
+   bool     drc_pending;
 
    /* Last-flush sample-format diagnostics for the on-screen statistics
     * overlay. stat_core_is_float records whether the core delivered float
@@ -398,6 +408,19 @@ void audio_driver_set_buffer_size(size_t bufsize);
 bool audio_driver_get_devices_list(void **ptr);
 
 void audio_driver_setup_rewind(void);
+
+/**
+ * audio_driver_frame_end:
+ *
+ * Marks the end of one emulated frame on the thread that produced it.
+ * Flushes whatever the single-sample callback accumulated during
+ * retro_run() and arms a DRC recompute for the next flush. Must be
+ * called after every retro_run() of the running core, on the same
+ * thread. No-op when a core audio callback is registered, since that
+ * core delivers audio on the audio thread and audio_driver_callback()
+ * flushes it there.
+ **/
+void audio_driver_frame_end(void);
 
 bool audio_driver_callback(void);
 

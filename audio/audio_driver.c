@@ -86,10 +86,17 @@
 #include "../midi_driver.h"
 #include "../verbosity.h"
 
-#define AUDIO_CHUNK_SIZE_BLOCKING      512
-
-/* So we don't get complete line-noise when fast-forwarding audio. */
+/* Largest number of int16 samples handed to audio_driver_flush() in one
+ * call. The batch callback slices anything bigger into pieces of this
+ * many samples, and the single-sample accumulator is the same size, so
+ * both core callback styles reach the resampler in the same unit. */
 #define AUDIO_CHUNK_SIZE_NONBLOCKING   2048
+
+/* Capacity of the single-sample accumulator (audio_driver_state_t::
+ * sample_accum) in int16 samples. Equal to the batch slice size: a core
+ * emitting more than this per retro_run() gets its audio flushed in
+ * slices exactly as a batch core delivering the same count would. */
+#define AUDIO_SAMPLE_ACCUM_INT16S      AUDIO_CHUNK_SIZE_NONBLOCKING
 
 #define AUDIO_MAX_RATIO                16
 #define AUDIO_MIN_RATIO                0.0625
@@ -415,6 +422,10 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    if (audio_st->output_samples_int16)
       memalign_free(audio_st->output_samples_int16);
    audio_st->output_samples_int16     = NULL;
+
+   if (audio_st->sample_accum)
+      memalign_free(audio_st->sample_accum);
+   audio_st->sample_accum             = NULL;
 
    if (audio_st->input_data)
       memalign_free(audio_st->input_data);
@@ -948,8 +959,12 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       if (audio_st->flags & AUDIO_FLAG_CONTROL)
       {
          audio_st->samples_since_drc += samples;
-         if (audio_st->samples_since_drc >= audio_st->drc_threshold_int16s)
-            rate_adjust = audio_driver_compute_rate_adjust(audio_st);
+         if (     audio_st->drc_pending
+               || audio_st->samples_since_drc >= audio_st->drc_threshold_int16s)
+         {
+            rate_adjust           = audio_driver_compute_rate_adjust(audio_st);
+            audio_st->drc_pending = false;
+         }
          else
             rate_adjust = audio_st->cached_rate_adjust;
       }
@@ -1072,9 +1087,13 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          if (audio_st->flags & AUDIO_FLAG_CONTROL)
          {
             audio_st->samples_since_drc += samples;
-            if (audio_st->samples_since_drc >= audio_st->drc_threshold_int16s)
+            if (     audio_st->drc_pending
+                  || audio_st->samples_since_drc >= audio_st->drc_threshold_int16s)
+            {
                audio_st->src_ratio_curr = audio_st->src_ratio_orig *
                      audio_driver_compute_rate_adjust(audio_st);
+               audio_st->drc_pending    = false;
+            }
          }
          i16_ratio = audio_st->src_ratio_curr;
          if (is_slowmotion)
@@ -1349,18 +1368,21 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
 
    /* Now the resampler will write to the driver state's scratch buffer */
 
-   /* Readjust the audio input rate. Gated on a sample-count threshold
-    * so multi-batch cores update the resampler ratio approximately
-    * once per frame rather than once per batch_cb call. When the
-    * threshold isn't reached, src_ratio_curr retains its previous
-    * value and the resampler runs with the existing ratio. */
+   /* Readjust the audio input rate. Recomputed on the first flush after
+    * audio_driver_frame_end() armed drc_pending, so the measurement lands
+    * at the same point of every frame; the sample-count gate covers
+    * producers that never mark a frame end (menu audio) and frames that
+    * deliver more than one threshold's worth. Otherwise src_ratio_curr
+    * retains its previous value and the resampler runs with it. */
    if (audio_st->flags & AUDIO_FLAG_CONTROL)
    {
       audio_st->samples_since_drc += samples;
-      if (audio_st->samples_since_drc >= audio_st->drc_threshold_int16s)
+      if (     audio_st->drc_pending
+            || audio_st->samples_since_drc >= audio_st->drc_threshold_int16s)
       {
          double adjust            = audio_driver_compute_rate_adjust(audio_st);
          audio_st->src_ratio_curr = audio_st->src_ratio_orig * adjust;
+         audio_st->drc_pending    = false;
 
 #if 0
          if (verbosity_is_enabled())
@@ -1678,6 +1700,8 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    /* Accommodate rewind since at some point we might have two full buffers. */
    size_t outsamples_max          = max_buffer_samples * AUDIO_MAX_RATIO * slowmotion_ratio;
    int16_t *out_conv_buf          = (int16_t*)memalign_alloc(64, outsamples_max * sizeof(int16_t));
+   int16_t *sample_accum          = (int16_t*)memalign_alloc(64,
+         AUDIO_SAMPLE_ACCUM_INT16S * sizeof(int16_t));
    size_t audio_buf_length        = max_buffer_samples * sizeof(float);
    float *audio_buf               = (float*)memalign_alloc(64, audio_buf_length);
    float *synth_buf               = (float*)memalign_alloc(64, audio_buf_length);
@@ -1697,10 +1721,16 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    convert_float_to_s16_init_simd();
    audio_driver_clamp_init_simd();
 
-   if (!out_conv_buf || !audio_buf)
+   if (!out_conv_buf || !sample_accum || !audio_buf)
    {
       if (synth_buf)
          memalign_free(synth_buf);
+      if (out_conv_buf)
+         memalign_free(out_conv_buf);
+      if (sample_accum)
+         memalign_free(sample_accum);
+      if (audio_buf)
+         memalign_free(audio_buf);
       goto error;
    }
 
@@ -1714,9 +1744,8 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    audio_driver_st.input_data_int16               = NULL;
    audio_driver_st.output_samples_int16        = out_conv_buf;
    audio_driver_st.output_samples_int16_length = outsamples_max * sizeof(int16_t);
-   audio_driver_st.chunk_block_size               = AUDIO_CHUNK_SIZE_BLOCKING;
-   audio_driver_st.chunk_nonblock_size            = AUDIO_CHUNK_SIZE_NONBLOCKING;
-   audio_driver_st.chunk_size                     = AUDIO_CHUNK_SIZE_BLOCKING;
+   audio_driver_st.sample_accum                = sample_accum;
+   audio_driver_st.data_ptr                    = 0;
 
    if (!audio_enable)
    {
@@ -1794,9 +1823,6 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
             && audio_driver_st.context_audio_data)
          audio_driver_st.current_audio->set_nonblock_state(
                audio_driver_st.context_audio_data, true);
-
-      audio_driver_st.chunk_size =
-         audio_driver_st.chunk_nonblock_size;
    }
 
    if (audio_driver_st.input <= 0.0f)
@@ -1923,8 +1949,6 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
       }
    }
 
-   audio_driver_st.data_ptr = 0;
-
    out_samples_buf = (float*)memalign_alloc(64, outsamples_max * sizeof(float));
 
    if (!out_samples_buf)
@@ -1983,6 +2007,9 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
     * or fps changes flow through this same path. */
    audio_driver_st.cached_rate_adjust = 1.0;
    audio_driver_st.samples_since_drc  = 0;
+   /* Armed so the first flush measures rather than running on the
+    * default factor until the sample-count gate trips. */
+   audio_driver_st.drc_pending        = true;
    audio_driver_update_drc_threshold(&audio_driver_st);
 
 #ifdef HAVE_AUDIOMIXER
@@ -2000,23 +2027,21 @@ error:
    return audio_driver_deinit();
 }
 
-void audio_driver_sample(int16_t left, int16_t right)
+/**
+ * audio_driver_sample_accum_flush:
+ *
+ * Hands everything the single-sample callback has accumulated to
+ * recording and to audio_driver_flush(), then empties the accumulator.
+ * Shared by the overflow guard in audio_driver_sample(), the frame-end
+ * flush on the main thread and the post-callback flush on the audio
+ * thread, so the three sites cannot drift apart in what they check.
+ * The caller guarantees data_ptr > 0 and that it runs on the thread
+ * that filled the accumulator.
+ **/
+static void audio_driver_sample_accum_flush(audio_driver_state_t *audio_st)
 {
-   uint32_t runloop_flags;
-   audio_driver_state_t *audio_st  = &audio_driver_st;
-   recording_state_t *recording_st = NULL;
-   if (!audio_st || !audio_st->output_samples_int16)
-      return;
-   if (audio_st->flags & AUDIO_FLAG_SUSPENDED)
-      return;
-   audio_st->output_samples_int16[audio_st->data_ptr++] = left;
-   audio_st->output_samples_int16[audio_st->data_ptr++] = right;
-
-   if (audio_st->data_ptr < audio_st->chunk_size)
-      return;
-
-   runloop_flags                   = runloop_get_flags();
-   recording_st                    = recording_state_get_ptr();
+   uint32_t runloop_flags          = runloop_get_flags();
+   recording_state_t *recording_st = recording_state_get_ptr();
 
    if (     recording_st->data
          && recording_st->driver
@@ -2024,7 +2049,7 @@ void audio_driver_sample(int16_t left, int16_t right)
    {
       struct record_audio_data ffemu_data;
 
-      ffemu_data.data               = audio_st->output_samples_int16;
+      ffemu_data.data               = audio_st->sample_accum;
       ffemu_data.frames             = audio_st->data_ptr / 2;
 
       recording_st->driver->push_audio(recording_st->data, &ffemu_data);
@@ -2035,12 +2060,54 @@ void audio_driver_sample(int16_t left, int16_t right)
          || !(audio_st->output_samples_buf)))
       audio_driver_flush(audio_st,
             config_get_ptr()->floats.slowmotion_ratio,
-            audio_st->output_samples_int16,
+            audio_st->sample_accum,
             audio_st->data_ptr, false,
             (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
             (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false);
 
    audio_st->data_ptr = 0;
+}
+
+void audio_driver_sample(int16_t left, int16_t right)
+{
+   audio_driver_state_t *audio_st  = &audio_driver_st;
+   if (!audio_st->sample_accum)
+      return;
+   if (audio_st->flags & AUDIO_FLAG_SUSPENDED)
+      return;
+   audio_st->sample_accum[audio_st->data_ptr++] = left;
+   audio_st->sample_accum[audio_st->data_ptr++] = right;
+
+   /* Overflow guard only: the frame's audio is normally flushed as one
+    * unit by audio_driver_frame_end() once retro_run() returns. */
+   if (audio_st->data_ptr < AUDIO_SAMPLE_ACCUM_INT16S)
+      return;
+
+   audio_driver_sample_accum_flush(audio_st);
+}
+
+void audio_driver_frame_end(void)
+{
+   audio_driver_state_t *audio_st  = &audio_driver_st;
+
+   /* A core audio callback fills the accumulator on the audio thread and
+    * audio_driver_callback() flushes it there; touching it here would
+    * race that thread. */
+   if (audio_st->callback.callback)
+      return;
+
+   /* A suspended frame (run-ahead, preemptive frames) produced nothing
+    * and flushes nothing, so arming here would leave the flag to be
+    * consumed by a mid-frame guard flush of the next audible frame and
+    * that frame's own flush would then recompute a second time. */
+   if (audio_st->flags & AUDIO_FLAG_SUSPENDED)
+      return;
+
+   if (audio_st->flags & AUDIO_FLAG_CONTROL)
+      audio_st->drc_pending = true;
+
+   if (audio_st->data_ptr)
+      audio_driver_sample_accum_flush(audio_st);
 }
 
 size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
@@ -2164,9 +2231,8 @@ size_t audio_driver_sample_batch_float(const float *data, size_t frames)
                   : frames_remaining;
 
       /* The recorder consumes int16. Convert just this chunk into the
-       * int16 scratch buffer (sized for >= a full chunk) and hand that
-       * over; push_audio copies synchronously, matching how the int16
-       * single-sample path reuses output_samples_int16. */
+       * int16 staging buffer (sized for >= a full chunk) and hand that
+       * over; push_audio copies synchronously. */
       if (recording_push_audio && audio_st->output_samples_int16)
       {
          struct record_audio_data ffemu_data;
@@ -2278,24 +2344,17 @@ void audio_driver_set_buffer_size(size_t bufsize)
 #ifdef HAVE_REWIND
 void audio_driver_setup_rewind(void)
 {
-   unsigned i;
    audio_driver_state_t *audio_st  = &audio_driver_st;
 
-   /* Push audio ready to be played. */
+   /* Every retro_run() is followed by audio_driver_frame_end(), so the
+    * single-sample accumulator is empty at every frame boundary, and
+    * this runs at one. Anything still pending means a frame ran without
+    * that call; play it forward rather than lose it. */
+   retro_assert(audio_st->data_ptr == 0);
+   if (audio_st->data_ptr)
+      audio_driver_sample_accum_flush(audio_st);
+
    audio_st->rewind_ptr = audio_st->rewind_size;
-
-   for (i = 0; i < audio_st->data_ptr; i += 2)
-   {
-      if (audio_st->rewind_ptr > 0)
-         audio_st->rewind_buf[--audio_st->rewind_ptr] =
-            audio_st->output_samples_int16[i + 1];
-
-      if (audio_st->rewind_ptr > 0)
-         audio_st->rewind_buf[--audio_st->rewind_ptr] =
-            audio_st->output_samples_int16[i + 0];
-   }
-
-   audio_st->data_ptr = 0;
 }
 #endif
 
@@ -3089,7 +3148,13 @@ bool audio_driver_callback(void)
       return false;
 
    if (!core_paused && audio_driver_st.callback.callback)
+   {
       audio_driver_st.callback.callback();
+      /* The core rendered on this (audio) thread; deliver it now rather
+       * than holding a partial chunk across callbacks. */
+      if (audio_driver_st.data_ptr)
+         audio_driver_sample_accum_flush(&audio_driver_st);
+   }
 
    return true;
 }
