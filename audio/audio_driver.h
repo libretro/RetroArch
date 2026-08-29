@@ -309,7 +309,16 @@ typedef struct
    struct audio_mixer_stream mixer_streams[AUDIO_MIXER_MAX_SYSTEM_STREAMS];
 #endif
    struct retro_audio_callback callback;                 /* ptr alignment */
-                                                         /* ptr alignment */
+   /**
+    * Backing storage for every int16 and every float scratch buffer the
+    * driver owns. The named buffer pointers below (output_samples_int16,
+    * sample_accum, rewind_buf, input_data_int16; input_data, synth_buf,
+    * output_samples_buf) all point into one of these two blocks and are
+    * never freed individually. See audio_driver_init_internal() for the
+    * layout.
+    */
+   int16_t *arena_int16;                                 /* ptr alignment */
+   float   *arena_float;                                 /* ptr alignment */
 #ifdef HAVE_REWIND
    size_t rewind_ptr;
    size_t rewind_size;

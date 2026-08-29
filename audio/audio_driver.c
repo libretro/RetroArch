@@ -98,6 +98,22 @@
  * slices exactly as a batch core delivering the same count would. */
 #define AUDIO_SAMPLE_ACCUM_INT16S      AUDIO_CHUNK_SIZE_NONBLOCKING
 
+/* Region spacing inside the two scratch arenas, in elements: 64 bytes
+ * for either type. Every region starts on a 64-byte boundary for the
+ * SIMD conversion and resampler paths, and one extra 64-byte pad sits
+ * between regions so consecutive regions are never a multiple of 4 KiB
+ * apart. The buffer sizes are all 4096 * n, so without the pad the
+ * resampler's input and output, or the s16 path's source and scratch,
+ * would share their low 12 address bits and stall on load/store
+ * aliasing. */
+#define AUDIO_ARENA_ALIGN_INT16        32
+#define AUDIO_ARENA_ALIGN_FLOAT        16
+
+/* Advance an arena cursor past a region of n elements: round up to the
+ * alignment, then leave one alignment unit of padding. */
+#define AUDIO_ARENA_NEXT(cur, n, align) \
+   ((((cur) + (n) + (align) - 1) / (align)) * (align) + (align))
+
 #define AUDIO_MAX_RATIO                16
 #define AUDIO_MIN_RATIO                0.0625
 
@@ -419,34 +435,26 @@ static bool audio_driver_deinit_internal(bool audio_enable)
       audio_st->context_audio_data = NULL;
    }
 
-   if (audio_st->output_samples_int16)
-      memalign_free(audio_st->output_samples_int16);
+   /* All scratch buffers live in the two arenas; the named pointers are
+    * views into them. */
+   if (audio_st->arena_int16)
+      memalign_free(audio_st->arena_int16);
+   audio_st->arena_int16              = NULL;
    audio_st->output_samples_int16     = NULL;
-
-   if (audio_st->sample_accum)
-      memalign_free(audio_st->sample_accum);
    audio_st->sample_accum             = NULL;
-
-   if (audio_st->input_data)
-      memalign_free(audio_st->input_data);
-
-   audio_st->input_data = NULL;
-
-   if (audio_st->synth_buf)
-      memalign_free(audio_st->synth_buf);
-
-   audio_st->synth_buf  = NULL;
-   if (audio_st->input_data_int16)
-      memalign_free(audio_st->input_data_int16);
-   audio_st->input_data_int16 = NULL;
-   audio_st->data_ptr   = 0;
-
+   audio_st->input_data_int16         = NULL;
+   audio_st->data_ptr                 = 0;
 #ifdef HAVE_REWIND
-   if (audio_st->rewind_buf)
-      memalign_free(audio_st->rewind_buf);
-   audio_st->rewind_buf  = NULL;
-   audio_st->rewind_size = 0;
+   audio_st->rewind_buf               = NULL;
+   audio_st->rewind_size              = 0;
 #endif
+
+   if (audio_st->arena_float)
+      memalign_free(audio_st->arena_float);
+   audio_st->arena_float              = NULL;
+   audio_st->input_data               = NULL;
+   audio_st->synth_buf                = NULL;
+   audio_st->output_samples_buf       = NULL;
 
    if (!audio_enable)
    {
@@ -455,10 +463,6 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    }
 
    audio_driver_deinit_resampler();
-
-   if (audio_st->output_samples_buf)
-      memalign_free(audio_st->output_samples_buf);
-   audio_st->output_samples_buf = NULL;
 
 #ifdef HAVE_DSP_FILTER
    audio_driver_dsp_filter_free();
@@ -1686,7 +1690,6 @@ unsigned audio_driver_mixer_get_streams_playing(void)
 bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
 {
    unsigned new_rate              = 0;
-   float  *out_samples_buf        = NULL;
    settings_t *settings           = (settings_t*)settings_data;
    bool audio_enable              = settings->bools.audio_enable;
    bool audio_sync                = settings->bools.audio_sync;
@@ -1699,53 +1702,71 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    size_t max_buffer_samples      = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
    /* Accommodate rewind since at some point we might have two full buffers. */
    size_t outsamples_max          = max_buffer_samples * AUDIO_MAX_RATIO * slowmotion_ratio;
-   int16_t *out_conv_buf          = (int16_t*)memalign_alloc(64, outsamples_max * sizeof(int16_t));
-   int16_t *sample_accum          = (int16_t*)memalign_alloc(64,
-         AUDIO_SAMPLE_ACCUM_INT16S * sizeof(int16_t));
    size_t audio_buf_length        = max_buffer_samples * sizeof(float);
-   float *audio_buf               = (float*)memalign_alloc(64, audio_buf_length);
-   float *synth_buf               = (float*)memalign_alloc(64, audio_buf_length);
    bool verbosity_enabled         = verbosity_is_enabled();
+   /* One block per element type, carved into regions with a 64-byte
+    * pad between them (see AUDIO_ARENA_NEXT). Cursors are in elements. */
+   size_t i16_out_conv            = 0;
+   size_t i16_accum               = AUDIO_ARENA_NEXT(i16_out_conv,
+         outsamples_max, AUDIO_ARENA_ALIGN_INT16);
+   size_t i16_in_scratch          = AUDIO_ARENA_NEXT(i16_accum,
+         AUDIO_SAMPLE_ACCUM_INT16S, AUDIO_ARENA_ALIGN_INT16);
 #ifdef HAVE_REWIND
-   int16_t *rewind_buf            = NULL;
    /* Needs to be able to hold full content of a full max_buffer_samples
     * in addition to its own. */
-   if (!(rewind_buf = (int16_t*)memalign_alloc(64, max_buffer_samples * sizeof(int16_t))))
-      goto error;
-
-   audio_driver_st.rewind_buf    = rewind_buf;
-   audio_driver_st.rewind_size   = max_buffer_samples;
+   size_t i16_rewind              = AUDIO_ARENA_NEXT(i16_in_scratch,
+         max_buffer_samples, AUDIO_ARENA_ALIGN_INT16);
+   size_t i16_total               = i16_rewind + max_buffer_samples;
+#else
+   size_t i16_total               = i16_in_scratch + max_buffer_samples;
 #endif
+   size_t f32_input               = 0;
+   size_t f32_synth               = AUDIO_ARENA_NEXT(f32_input,
+         max_buffer_samples, AUDIO_ARENA_ALIGN_FLOAT);
+   size_t f32_out                 = AUDIO_ARENA_NEXT(f32_synth,
+         max_buffer_samples, AUDIO_ARENA_ALIGN_FLOAT);
+   size_t f32_total               = f32_out + outsamples_max;
+   int16_t *arena_int16           = (int16_t*)memalign_alloc(64,
+         i16_total * sizeof(int16_t));
+   float *arena_float             = (float*)memalign_alloc(64,
+         f32_total * sizeof(float));
 
    convert_s16_to_float_init_simd();
    convert_float_to_s16_init_simd();
    audio_driver_clamp_init_simd();
 
-   if (!out_conv_buf || !sample_accum || !audio_buf)
+   if (!arena_int16 || !arena_float)
    {
-      if (synth_buf)
-         memalign_free(synth_buf);
-      if (out_conv_buf)
-         memalign_free(out_conv_buf);
-      if (sample_accum)
-         memalign_free(sample_accum);
-      if (audio_buf)
-         memalign_free(audio_buf);
+      if (arena_int16)
+         memalign_free(arena_int16);
+      if (arena_float)
+         memalign_free(arena_float);
       goto error;
    }
 
-   memset(audio_buf, 0, audio_buf_length);
+   memset(arena_float + f32_input, 0, audio_buf_length);
 
-   audio_driver_st.input_data                     = audio_buf;
-   audio_driver_st.synth_buf                      = synth_buf;
-   audio_driver_st.input_data_length              = audio_buf_length;
-   /* Allocated further down, once it is known whether an int16 resampler
-    * exists; the s16 path that uses it cannot run without one. */
-   audio_driver_st.input_data_int16               = NULL;
-   audio_driver_st.output_samples_int16        = out_conv_buf;
+   audio_driver_st.arena_int16                 = arena_int16;
+   audio_driver_st.arena_float                 = arena_float;
+   audio_driver_st.input_data                  = arena_float + f32_input;
+   audio_driver_st.synth_buf                   = arena_float + f32_synth;
+   audio_driver_st.input_data_length           = audio_buf_length;
+   /* Pointed at its region further down, once it is known whether an
+    * int16 resampler exists; the s16 path that uses it cannot run
+    * without one. */
+   audio_driver_st.input_data_int16            = NULL;
+   audio_driver_st.output_samples_int16        = arena_int16 + i16_out_conv;
    audio_driver_st.output_samples_int16_length = outsamples_max * sizeof(int16_t);
-   audio_driver_st.sample_accum                = sample_accum;
+   audio_driver_st.sample_accum                = arena_int16 + i16_accum;
    audio_driver_st.data_ptr                    = 0;
+#ifdef HAVE_REWIND
+   audio_driver_st.rewind_buf                  = arena_int16 + i16_rewind;
+   audio_driver_st.rewind_size                 = max_buffer_samples;
+#endif
+   /* Set now so a return before the driver starts (audio disabled)
+    * leaves the float output region reachable through its pointer. */
+   audio_driver_st.output_samples_buf          = arena_float + f32_out;
+   audio_driver_st.output_samples_buf_length   = outsamples_max * sizeof(float);
 
    if (!audio_enable)
    {
@@ -1915,12 +1936,9 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    }
 
    /* int16 scratch for the s16 path.  Same frame capacity as
-    * input_data, in int16.  Only reachable when resampler_data_int16 is
-    * non-NULL (audio_driver_mixer_use_s16 gates on it), so allocating it
-    * unconditionally at the top of this function burned a full
-    * max_buffer_samples * sizeof(int16_t) block on every configuration
-    * whose resampler has no integer implementation, or whose int16 init
-    * failed.
+    * input_data, in int16.  Its region is part of arena_int16 either way
+    * (8 KiB at the default chunk size); what is gated is the pointer,
+    * because flush uses it to decide whether the s16 path is live.
     *
     * The gate is deliberately the resampler and nothing else.  The scratch
     * is only *touched* when a synth is sounding or a DSP filter is loaded,
@@ -1929,33 +1947,8 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
     * hint does not reinit either.  Narrowing the gate to any of them would
     * leave the s16 path live against a NULL scratch. */
    if (audio_driver_st.resampler_data_int16)
-   {
-      audio_driver_st.input_data_int16 = (int16_t*)memalign_alloc(64,
-            max_buffer_samples * sizeof(int16_t));
+      audio_driver_st.input_data_int16 = arena_int16 + i16_in_scratch;
 
-      if (!audio_driver_st.input_data_int16)
-      {
-         /* Drop the int16 resampler so flush falls back to the float path,
-          * which needs no scratch.  Leaving the s16 path enabled against a
-          * NULL scratch would not crash - the synth and DSP branches are
-          * both guarded - but the DSP branch would then be silently skipped
-          * and a loaded filter would stop being applied. */
-         if (audio_driver_st.resampler_int16_free)
-            audio_driver_st.resampler_int16_free(
-                  audio_driver_st.resampler_data_int16);
-         audio_driver_st.resampler_data_int16    = NULL;
-         audio_driver_st.resampler_int16_process = NULL;
-         audio_driver_st.resampler_int16_free    = NULL;
-      }
-   }
-
-   out_samples_buf = (float*)memalign_alloc(64, outsamples_max * sizeof(float));
-
-   if (!out_samples_buf)
-      goto error;
-
-   audio_driver_st.output_samples_buf        = (float*)out_samples_buf;
-   audio_driver_st.output_samples_buf_length = outsamples_max * sizeof(float);
    audio_driver_st.flags                    &= ~AUDIO_FLAG_CONTROL;
 
    if (
