@@ -439,6 +439,16 @@ typedef struct microphone_driver
 typedef struct microphone_driver_state
 {
    /**
+    * Backing storage for every int16 and every float staging buffer the
+    * mic pipeline uses. The named buffer pointers below are views into
+    * one of these two blocks and are never freed individually; see
+    * mic_driver_allocate_frames() for the layout. Allocated on first
+    * microphone open, freed by microphone_driver_deinit().
+    */
+   int16_t *arena_int16;
+   float   *arena_float;
+
+   /**
     * The buffer that receives samples from the microphone backend,
     * before they're processed.
     */

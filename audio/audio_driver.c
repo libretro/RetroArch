@@ -3648,57 +3648,75 @@ static void mic_driver_microphone_handle_free(retro_microphone_t *microphone, bo
  * allocated once a core actually opens a microphone: with mic
  * support enabled by default, allocating them at driver init cost
  * every session over 800KB that all but a handful ever used.
- * Freed and nulled by deinit, so a later open reallocates. */
+ * Freed and nulled by deinit, so a later open reallocates.
+ *
+ * Two blocks, one per element type, carved into regions with the same
+ * AUDIO_ARENA_NEXT() spacing as the playback arenas: 64-byte aligned
+ * starts, one 64-byte pad between regions so no pair sits a multiple
+ * of 4 KiB apart. Allocation is all-or-nothing, so a failure never
+ * leaves the pipeline with some buffers present and others NULL. */
 static bool mic_driver_allocate_frames(microphone_driver_state_t *mic_st)
 {
-   size_t max_frames = AUDIO_CHUNK_SIZE_NONBLOCKING * AUDIO_MAX_RATIO;
+   size_t max_frames    = AUDIO_CHUNK_SIZE_NONBLOCKING * AUDIO_MAX_RATIO;
+   /* Cursors are in elements. */
+   size_t i16_dual_mono = 0;
+   size_t i16_resampled = AUDIO_ARENA_NEXT(i16_dual_mono,
+         max_frames * 2, AUDIO_ARENA_ALIGN_INT16);
+   size_t i16_final     = AUDIO_ARENA_NEXT(i16_resampled,
+         max_frames * 2, AUDIO_ARENA_ALIGN_INT16);
+   size_t i16_total     = i16_final + max_frames;
+   /* input_frames holds whatever sample format the driver delivers;
+    * its region is sized in floats, the widest format. */
+   size_t f32_input     = 0;
+   size_t f32_converted = AUDIO_ARENA_NEXT(f32_input,
+         max_frames, AUDIO_ARENA_ALIGN_FLOAT);
+   size_t f32_dual_mono = AUDIO_ARENA_NEXT(f32_converted,
+         max_frames, AUDIO_ARENA_ALIGN_FLOAT);
+   size_t f32_resampled = AUDIO_ARENA_NEXT(f32_dual_mono,
+         max_frames * 2, AUDIO_ARENA_ALIGN_FLOAT);
+   size_t f32_mono      = AUDIO_ARENA_NEXT(f32_resampled,
+         max_frames * 2, AUDIO_ARENA_ALIGN_FLOAT);
+   size_t f32_total     = f32_mono + max_frames;
+   int16_t *arena_int16;
+   float *arena_float;
 
-   if (mic_st->input_frames)
+   if (mic_st->arena_int16)
       return true;
 
-   mic_st->input_frames_length = max_frames * sizeof(float);
-   mic_st->input_frames = (float*)memalign_alloc(64, mic_st->input_frames_length);
-   if (!mic_st->input_frames)
-      return false;
+   arena_int16 = (int16_t*)memalign_alloc(64, i16_total * sizeof(int16_t));
+   arena_float = (float*)memalign_alloc(64, f32_total * sizeof(float));
 
+   if (!arena_int16 || !arena_float)
+   {
+      if (arena_int16)
+         memalign_free(arena_int16);
+      if (arena_float)
+         memalign_free(arena_float);
+      return false;
+   }
+
+   mic_st->arena_int16                   = arena_int16;
+   mic_st->arena_float                   = arena_float;
+
+   mic_st->input_frames                  = arena_float + f32_input;
+   mic_st->input_frames_length           = max_frames * sizeof(float);
+   mic_st->converted_input_frames        = arena_float + f32_converted;
    mic_st->converted_input_frames_length = max_frames * sizeof(float);
-   mic_st->converted_input_frames = (float*)memalign_alloc(64, mic_st->converted_input_frames_length);
-   if (!mic_st->converted_input_frames)
-      return false;
-
    /* Need room for dual-mono frames */
-   mic_st->dual_mono_frames_length = max_frames * sizeof(float) * 2;
-   mic_st->dual_mono_frames = (float*)memalign_alloc(64, mic_st->dual_mono_frames_length);
-   if (!mic_st->dual_mono_frames)
-      return false;
+   mic_st->dual_mono_frames              = arena_float + f32_dual_mono;
+   mic_st->dual_mono_frames_length       = max_frames * sizeof(float) * 2;
+   mic_st->resampled_frames              = arena_float + f32_resampled;
+   mic_st->resampled_frames_length       = max_frames * sizeof(float) * 2;
+   mic_st->resampled_mono_frames         = arena_float + f32_mono;
+   mic_st->resampled_mono_frames_length  = max_frames * sizeof(float);
 
    /* Interleaved stereo, for the integer flush path. */
+   mic_st->dual_mono_frames_int16        = arena_int16 + i16_dual_mono;
    mic_st->dual_mono_frames_int16_length = max_frames * sizeof(int16_t) * 2;
-   mic_st->dual_mono_frames_int16 = (int16_t*)memalign_alloc(64,
-         mic_st->dual_mono_frames_int16_length);
-   if (!mic_st->dual_mono_frames_int16)
-      return false;
-
+   mic_st->resampled_frames_int16        = arena_int16 + i16_resampled;
    mic_st->resampled_frames_int16_length = max_frames * sizeof(int16_t) * 2;
-   mic_st->resampled_frames_int16 = (int16_t*)memalign_alloc(64,
-         mic_st->resampled_frames_int16_length);
-   if (!mic_st->resampled_frames_int16)
-      return false;
-
-   mic_st->resampled_frames_length = max_frames * sizeof(float) * 2;
-   mic_st->resampled_frames = (float*) memalign_alloc(64, mic_st->resampled_frames_length);
-   if (!mic_st->resampled_frames)
-      return false;
-
-   mic_st->resampled_mono_frames_length = max_frames * sizeof(float);
-   mic_st->resampled_mono_frames = (float*) memalign_alloc(64, mic_st->resampled_mono_frames_length);
-   if (!mic_st->resampled_mono_frames)
-      return false;
-
-   mic_st->final_frames_length = max_frames * sizeof(int16_t);
-   mic_st->final_frames = (int16_t*) memalign_alloc(64, mic_st->final_frames_length);
-   if (!mic_st->final_frames)
-      return false;
+   mic_st->final_frames                  = arena_int16 + i16_final;
+   mic_st->final_frames_length           = max_frames * sizeof(int16_t);
 
    return true;
 }
@@ -4341,45 +4359,30 @@ bool microphone_driver_deinit(bool is_reset)
       mic_st->driver_context = NULL;
    }
 
-   if (mic_st->input_frames)
-      memalign_free(mic_st->input_frames);
-   mic_st->input_frames        = NULL;
-   mic_st->input_frames_length = 0;
-
-   if (mic_st->converted_input_frames)
-      memalign_free(mic_st->converted_input_frames);
-   mic_st->converted_input_frames        = NULL;
-   mic_st->converted_input_frames_length = 0;
-
-   if (mic_st->dual_mono_frames)
-      memalign_free(mic_st->dual_mono_frames);
-   mic_st->dual_mono_frames        = NULL;
-   mic_st->dual_mono_frames_length = 0;
-
-   if (mic_st->dual_mono_frames_int16)
-      memalign_free(mic_st->dual_mono_frames_int16);
+   /* All staging buffers are views into the two arenas. */
+   if (mic_st->arena_int16)
+      memalign_free(mic_st->arena_int16);
+   mic_st->arena_int16                   = NULL;
    mic_st->dual_mono_frames_int16        = NULL;
    mic_st->dual_mono_frames_int16_length = 0;
-
-   if (mic_st->resampled_frames_int16)
-      memalign_free(mic_st->resampled_frames_int16);
    mic_st->resampled_frames_int16        = NULL;
    mic_st->resampled_frames_int16_length = 0;
+   mic_st->final_frames                  = NULL;
+   mic_st->final_frames_length           = 0;
 
-   if (mic_st->resampled_frames)
-      memalign_free(mic_st->resampled_frames);
-   mic_st->resampled_frames        = NULL;
-   mic_st->resampled_frames_length = 0;
-
-   if (mic_st->resampled_mono_frames)
-      memalign_free(mic_st->resampled_mono_frames);
-   mic_st->resampled_mono_frames        = NULL;
-   mic_st->resampled_mono_frames_length = 0;
-
-   if (mic_st->final_frames)
-      memalign_free(mic_st->final_frames);
-   mic_st->final_frames        = NULL;
-   mic_st->final_frames_length = 0;
+   if (mic_st->arena_float)
+      memalign_free(mic_st->arena_float);
+   mic_st->arena_float                   = NULL;
+   mic_st->input_frames                  = NULL;
+   mic_st->input_frames_length           = 0;
+   mic_st->converted_input_frames        = NULL;
+   mic_st->converted_input_frames_length = 0;
+   mic_st->dual_mono_frames              = NULL;
+   mic_st->dual_mono_frames_length       = 0;
+   mic_st->resampled_frames              = NULL;
+   mic_st->resampled_frames_length       = 0;
+   mic_st->resampled_mono_frames         = NULL;
+   mic_st->resampled_mono_frames_length  = 0;
 
    mic_st->resampler_quality  = RESAMPLER_QUALITY_DONTCARE;
    mic_st->flags             &= ~MICROPHONE_DRIVER_FLAG_ACTIVE;
