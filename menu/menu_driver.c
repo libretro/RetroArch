@@ -29,6 +29,7 @@
 #include <encodings/utf.h>
 #include <streams/file_stream.h>
 #include <time/rtime.h>
+#include <memory/mempool.h>
 
 #ifdef WIIU
 #include <wiiu/os/energy.h>
@@ -364,6 +365,41 @@ const menu_ctx_driver_t *menu_ctx_drivers[] = {
 
 static struct menu_state menu_driver_state = { 0 };
 
+/* menu_file_list_cbs_t is fixed-size and allocated once per appended
+ * entry, so a playlist of any size used to cost one malloc() and one
+ * free() per row on top of the two strdup()s file_list_append() already
+ * does.  A pool turns that into a free-list pop, and turns a rebuild of
+ * a list of the same size into no calls into libc at all.
+ *
+ * One pool serves every menu list.  It is lazily grown, so a build
+ * without HAVE_MENU reaching this file costs nothing, and it is torn
+ * down in RARCH_MENU_CTL_DEINIT after menu_list_free() has released
+ * every entry back to it. */
+static mempool_t menu_cbs_pool;
+static bool      menu_cbs_pool_ready = false;
+
+static menu_file_list_cbs_t *menu_cbs_alloc(void)
+{
+   if (!menu_cbs_pool_ready)
+   {
+      /* 256 blocks is ~34 KiB for the first chunk, which covers an
+       * ordinary settings page outright; chunks double from there, so
+       * a 100k-row playlist still reaches libc a couple of dozen
+       * times rather than 100k. */
+      mempool_init(&menu_cbs_pool, sizeof(menu_file_list_cbs_t), 256);
+      menu_cbs_pool_ready = true;
+   }
+   return (menu_file_list_cbs_t*)mempool_alloc(&menu_cbs_pool);
+}
+
+static void menu_cbs_pool_deinit(void)
+{
+   if (!menu_cbs_pool_ready)
+      return;
+   mempool_deinit(&menu_cbs_pool);
+   menu_cbs_pool_ready = false;
+}
+
 struct menu_state *menu_state_get_ptr(void)
 {
    return &menu_driver_state;
@@ -587,7 +623,7 @@ void menu_entries_cbs_free(void *actiondata)
       free(cbs->search);
    cbs->search = NULL;
 
-   free(cbs);
+   mempool_free(&menu_cbs_pool, cbs);
 }
 
 /* Searches current menu list for specified 'needle'
@@ -4291,8 +4327,16 @@ bool menu_entries_append(
 
    file_list_free_actiondata(list, idx);
 
-   if (!(cbs = (menu_file_list_cbs_t*)
-      malloc(sizeof(menu_file_list_cbs_t))))
+   /* The cbs comes from a pool, so it cannot be released with the bare
+    * free() that file_list_free_actiondata() falls back to.  Installing
+    * the destructor here rather than at each list's construction is
+    * what makes that impossible to get wrong: any list that receives a
+    * cbs learns how to release one in the same statement, including a
+    * stack-local file_list_t that menu_displaylist_build_list() is
+    * handed directly. */
+   list->actiondata_free           = menu_entries_cbs_free;
+
+   if (!(cbs = menu_cbs_alloc()))
       return false;
 
    cbs->enum_idx                   = enum_idx;
@@ -4375,8 +4419,10 @@ void menu_entries_prepend(file_list_t *list,
             list_info.entry_type);
 
    file_list_free_actiondata(list, idx);
-   cbs                             = (menu_file_list_cbs_t*)
-      malloc(sizeof(menu_file_list_cbs_t));
+
+   /* See the matching comment in menu_entries_append(). */
+   list->actiondata_free           = menu_entries_cbs_free;
+   cbs                             = menu_cbs_alloc();
 
    if (!cbs)
       return;
@@ -6998,6 +7044,10 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             if (menu_st->entries.list)
                menu_list_free(menu_st->driver_ctx, menu_st->entries.list);
             menu_st->entries.list           = NULL;
+
+            /* Every list is gone, so every cbs has come back to the
+             * pool; the chunks behind them go back to libc here. */
+            menu_cbs_pool_deinit();
 
             if (menu_st->thumbnail_path_data)
                free(menu_st->thumbnail_path_data);
