@@ -980,20 +980,39 @@ void fill_pathname_resolve_relative(char *s,
 size_t fill_pathname_join(char *s, const char *dir,
       const char *path, size_t len)
 {
-   size_t _len = 0;
-   if (s != dir)
-      _len = strlcpy(s, dir, len);
-   if (*s)
-      _len = fill_pathname_slash(s, len);
-   _len   += strlcpy(s + _len, path, len - _len);
-   return _len;
+   size_t _len = strlen(dir);
+
+   /* memmove() lands @dir in @s whether or not the two are the
+    * same buffer, so the copy needs no aliasing test of its own.
+    * Losing that test is what keeps @s written before it is read:
+    * a "@s might already be @dir" branch leaves a path on which
+    * the separator test below inspects a caller buffer that
+    * nothing has written yet, which is what the copy is for.
+    * It also covers a partial overlap, which the pointer compare
+    * never did.
+    *
+    * strlcpy() reports the length of its source, so the clamp is
+    * what a truncated copy leaves behind rather than what was
+    * asked for - @s + @_len stays inside the buffer. */
+   if (len)
+   {
+      if (_len > len - 1)
+         _len  = len - 1;
+      memmove(s, dir, _len);
+      s[_len]  = '\0';
+   }
+   else
+      _len     = 0;
+
+   if (_len)
+      _len     = fill_pathname_slash(s, len);
+   return _len + strlcpy(s + _len, path, len - _len);
 }
 
 /* fill_pathname_join_special() is a macro alias of
  * fill_pathname_join() - see file_path.h. Historically it was a
- * separate function that skipped the @s != @dir alias guard (one
- * pointer compare ahead of two strlcpy calls - never a measurable
- * saving), which made any aliased call undefined: strlcpy aborts
+ * separate function whose copy could not take an overlapping @s
+ * and @dir, which made any aliased call undefined: strlcpy aborts
  * via __chk_fail_overlap under fortified libc on macOS while the
  * portable fallback hides the defect on other platforms.
  * libretro-common is vendored into cores that never see RetroArch's
