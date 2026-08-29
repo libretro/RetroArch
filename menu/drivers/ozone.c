@@ -4720,6 +4720,13 @@ static void ozone_free_node(ozone_node_t *node)
    free(node);
 }
 
+/* file_list_t::userdata_free hook; see the matching comment on
+ * xmb_free_node_cb(). */
+static void ozone_free_node_cb(void *userdata)
+{
+   ozone_free_node((ozone_node_t*)userdata);
+}
+
 static void ozone_free_list_nodes(file_list_t *list, bool actiondata)
 {
    unsigned i, size = list ? (unsigned)list->size : 0;
@@ -13687,6 +13694,7 @@ static void ozone_list_insert(void *userdata,
       node->fullpath      = strdup(fullpath);
    }
 
+   list->userdata_free    = ozone_free_node_cb;
    list->list[i].userdata = node;
 }
 

@@ -325,7 +325,12 @@ void file_list_free_userdata(const file_list_t *list, size_t idx)
    if (!list)
       return;
    if (list->list[idx].userdata)
-       free(list->list[idx].userdata);
+   {
+      if (list->userdata_free)
+         list->userdata_free(list->list[idx].userdata);
+      else
+         free(list->list[idx].userdata);
+   }
    list->list[idx].userdata = NULL;
 }
 

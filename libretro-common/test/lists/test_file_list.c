@@ -351,6 +351,205 @@ START_TEST (test_pop_empty_list)
 }
 END_TEST
 
+
+/* The userdata hook, mirroring the actiondata one above.  It exists
+ * because the menu drivers' userdata -- an xmb_node_t or an
+ * ozone_node_t -- owns further allocations, so a plain free() on it
+ * releases the node and leaks the strings inside.  A separate counter
+ * keeps the two hooks distinguishable in the test that installs both. */
+static int   udtor_calls;
+static void *udtor_seen[8];
+
+static void test_udtor(void *userdata)
+{
+   ck_assert_ptr_nonnull(userdata);
+   if (udtor_calls < (int)(sizeof(udtor_seen) / sizeof(udtor_seen[0])))
+      udtor_seen[udtor_calls] = userdata;
+   udtor_calls++;
+   free(userdata);
+}
+
+static void reset_udtor(void)
+{
+   udtor_calls = 0;
+   memset(udtor_seen, 0, sizeof(udtor_seen));
+}
+
+static void *set_userdata(file_list_t *list, size_t idx, int tag)
+{
+   int *p = (int*)malloc(sizeof(int));
+   *p     = tag;
+   list->list[idx].userdata = p;
+   return p;
+}
+
+START_TEST (test_userdata_free_uses_hook)
+{
+   file_list_t list;
+   void *p;
+
+   reset_udtor();
+   list_init(&list);
+   list.userdata_free = test_udtor;
+
+   ck_assert(file_list_append(&list, "path", "label", 0, 0, 0));
+   p = set_userdata(&list, 0, 0x5678);
+
+   file_list_free_userdata(&list, 0);
+
+   ck_assert_int_eq(udtor_calls, 1);
+   ck_assert_ptr_eq(udtor_seen[0], p);
+   ck_assert_ptr_null(list.list[0].userdata);
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+START_TEST (test_userdata_free_without_hook)
+{
+   file_list_t list;
+
+   reset_udtor();
+   list_init(&list);
+   /* No hook: the plain free() path every file_list_t outside the menu
+    * relies on, and which they get by being zeroed rather than by
+    * saying so.  Under ASan this also proves the block is released. */
+   ck_assert(file_list_append(&list, "path", "label", 0, 0, 0));
+   set_userdata(&list, 0, 0x5678);
+
+   file_list_free_userdata(&list, 0);
+
+   ck_assert_int_eq(udtor_calls, 0);
+   ck_assert_ptr_null(list.list[0].userdata);
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+START_TEST (test_userdata_free_skips_null)
+{
+   file_list_t list;
+
+   reset_udtor();
+   list_init(&list);
+   list.userdata_free = test_udtor;
+
+   ck_assert(file_list_append(&list, "path", "label", 0, 0, 0));
+   ck_assert_ptr_null(list.list[0].userdata);
+
+   /* A destructor written for a real node is under no obligation to
+    * tolerate NULL, so it must not be handed one. */
+   file_list_free_userdata(&list, 0);
+   ck_assert_int_eq(udtor_calls, 0);
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+START_TEST (test_userdata_free_null_list)
+{
+   reset_udtor();
+   file_list_free_userdata(NULL, 0);
+   ck_assert_int_eq(udtor_calls, 0);
+}
+END_TEST
+
+START_TEST (test_deinitialize_uses_userdata_hook)
+{
+   file_list_t list;
+   void *a, *b;
+
+   reset_udtor();
+   list_init(&list);
+   list.userdata_free = test_udtor;
+
+   ck_assert(file_list_append(&list, "a", "la", 0, 0, 0));
+   ck_assert(file_list_append(&list, "b", "lb", 0, 0, 0));
+   a = set_userdata(&list, 0, 1);
+   b = set_userdata(&list, 1, 2);
+
+   file_list_deinitialize(&list);
+
+   ck_assert_int_eq(udtor_calls, 2);
+   ck_assert_ptr_eq(udtor_seen[0], a);
+   ck_assert_ptr_eq(udtor_seen[1], b);
+}
+END_TEST
+
+START_TEST (test_pop_uses_userdata_hook)
+{
+   file_list_t list;
+   void *p;
+   size_t dir_ptr = 0;
+
+   reset_udtor();
+   list_init(&list);
+   list.userdata_free = test_udtor;
+
+   ck_assert(file_list_append(&list, "a", "la", 0, 0, 0));
+   ck_assert(file_list_append(&list, "b", "lb", 0, 0, 0));
+   p = set_userdata(&list, 1, 7);
+
+   /* file_list_pop() is the path that reached free() directly on the
+    * menu stack, releasing the node and leaking what it owned. */
+   file_list_pop(&list, &dir_ptr);
+
+   ck_assert_int_eq(udtor_calls, 1);
+   ck_assert_ptr_eq(udtor_seen[0], p);
+   ck_assert_uint_eq(list.size, 1);
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+START_TEST (test_both_hooks_are_independent)
+{
+   file_list_t list;
+   void *ud, *ad;
+
+   reset_dtor();
+   reset_udtor();
+   list_init(&list);
+   list.userdata_free   = test_udtor;
+   list.actiondata_free = test_dtor;
+
+   ck_assert(file_list_append(&list, "a", "la", 0, 0, 0));
+   ud = set_userdata(&list, 0, 1);
+   ad = set_actiondata(&list, 0, 2);
+
+   file_list_deinitialize(&list);
+
+   /* Each block goes to its own destructor; neither hook sees the
+    * other's pointer. */
+   ck_assert_int_eq(udtor_calls, 1);
+   ck_assert_int_eq(dtor_calls, 1);
+   ck_assert_ptr_eq(udtor_seen[0], ud);
+   ck_assert_ptr_eq(dtor_seen[0], ad);
+}
+END_TEST
+
+START_TEST (test_userdata_hook_survives_growth)
+{
+   file_list_t list;
+   size_t i;
+
+   reset_udtor();
+   list_init(&list);
+   list.userdata_free = test_udtor;
+
+   /* The hook lives on the list, not on an entry, so the realloc in
+    * file_list_reserve() must not disturb it. */
+   for (i = 0; i < 64; i++)
+   {
+      ck_assert(file_list_append(&list, "p", "l", 0, 0, 0));
+      set_userdata(&list, i, (int)i);
+   }
+
+   file_list_deinitialize(&list);
+   ck_assert_int_eq(udtor_calls, 64);
+}
+END_TEST
+
 Suite *create_suite(void)
 {
    Suite *s       = suite_create(SUITE_NAME);
@@ -367,6 +566,14 @@ Suite *create_suite(void)
    tcase_add_test(tc_core, test_insert_starts_with_null_actiondata);
    tcase_add_test(tc_core, test_pop_releases_every_field);
    tcase_add_test(tc_core, test_pop_empty_list);
+   tcase_add_test(tc_core, test_userdata_free_uses_hook);
+   tcase_add_test(tc_core, test_userdata_free_without_hook);
+   tcase_add_test(tc_core, test_userdata_free_skips_null);
+   tcase_add_test(tc_core, test_userdata_free_null_list);
+   tcase_add_test(tc_core, test_deinitialize_uses_userdata_hook);
+   tcase_add_test(tc_core, test_pop_uses_userdata_hook);
+   tcase_add_test(tc_core, test_both_hooks_are_independent);
+   tcase_add_test(tc_core, test_userdata_hook_survives_growth);
 
    suite_add_tcase(s, tc_core);
    return s;

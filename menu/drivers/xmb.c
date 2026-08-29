@@ -804,6 +804,16 @@ static void xmb_free_node(xmb_node_t *node)
    free(node);
 }
 
+/* file_list_t::userdata_free hook.  Installed wherever a node is put
+ * into a list, so that a list holding one knows how to take it apart
+ * however it is destroyed -- including file_list_pop() and the bare
+ * file_list_deinitialize() paths, which reached free() directly and
+ * leaked whatever the node owned. */
+static void xmb_free_node_cb(void *userdata)
+{
+   xmb_free_node((xmb_node_t*)userdata);
+}
+
 /**
  * @brief frees all xmb_node_t in a file_list_t
  *
@@ -2762,6 +2772,7 @@ static xmb_node_t *xmb_node_allocate_userdata(
    }
    xmb_free_node(tmp);
 
+   xmb->horizontal_list.userdata_free    = xmb_free_node_cb;
    xmb->horizontal_list.list[i].userdata = node;
 
    return node;
@@ -10753,6 +10764,7 @@ static void xmb_list_insert(void *userdata,
       node->zoom        = xmb->items_active_alpha;
    }
 
+   list->userdata_free    = xmb_free_node_cb;
    list->list[i].userdata = node;
 }
 
