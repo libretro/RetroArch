@@ -19,10 +19,14 @@
 #include <SLES/OpenSLES_Android.h>
 #endif
 
+#include <string.h>
+
 #include <retro_atomic.h>
+#include <retro_math.h>
 #include <rthreads/rthreads.h>
 
 #include "../audio_driver.h"
+#include "../../verbosity.h"
 
 /* Upper bound on how long a blocking write will wait for the buffer
  * queue callback before giving up and reporting a short write.  Never
@@ -61,6 +65,10 @@ typedef struct sl
    unsigned buf_count;
    unsigned buffer_index;
    unsigned buffer_ptr;
+   /* The player was created with a float PCM_EX format (Android, API
+    * level 21+); blocks then hold 32-bit float frames and the frontend
+    * skips its float-to-int16 pass. */
+   bool use_float;
    /* Blocks currently enqueued on the device.  Decremented by
     * opensl_callback on the OpenSL engine thread, incremented and
     * read by the writer thread.  Android is always weakly-ordered
@@ -116,7 +124,12 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency,
       unsigned *new_rate)
 {
    unsigned i;
+   unsigned frames_per_block;
+   unsigned frame_size                             = 2 * sizeof(int16_t);
    SLDataFormat_PCM fmt_pcm                        = {0};
+#if defined(ANDROID) && defined(__ANDROID_API__) && (__ANDROID_API__ >= 21)
+   SLAndroidDataFormat_PCM_EX fmt_pcm_ex           = {0};
+#endif
    SLDataSource audio_src                          = {0};
    SLDataSink audio_sink                           = {0};
    SLDataLocator_AndroidSimpleBufferQueue loc_bufq = {0};
@@ -143,16 +156,79 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency,
    GOTO_IF_FAIL(SLEngineItf_CreateOutputMix(sl->engine, &sl->output_mix, 0, NULL, NULL));
    GOTO_IF_FAIL(SLObjectItf_Realize(sl->output_mix, SL_BOOLEAN_FALSE));
 
+   /* Sizes in frames first; the byte size follows the format chosen. */
    if (block_frames)
-      sl->buf_size  = block_frames * 4;
+      frames_per_block = block_frames;
    else
-      sl->buf_size  = next_pow2(32 * latency);
+      frames_per_block = next_pow2(32 * latency) / 4;
+   if (frames_per_block < 2)
+      frames_per_block = 2;
 
-   sl->buf_count    = (latency * 4 * rate + 500) / 1000;
-   sl->buf_count    = (sl->buf_count + sl->buf_size / 2) / sl->buf_size;
+   sl->buf_count    = (latency * rate + 500) / 1000;
+   sl->buf_count    = (sl->buf_count + frames_per_block / 2) / frames_per_block;
 
    if (sl->buf_count < 2)
       sl->buf_count = 2;
+
+   loc_bufq.locatorType   = SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE;
+   loc_bufq.numBuffers    = sl->buf_count;
+
+   loc_outmix.locatorType = SL_DATALOCATOR_OUTPUTMIX;
+   loc_outmix.outputMix   = sl->output_mix;
+
+   audio_src.pLocator     = &loc_bufq;
+   audio_sink.pLocator    = &loc_outmix;
+
+#if defined(ANDROID) && defined(__ANDROID_API__) && (__ANDROID_API__ >= 21)
+   /* Float first. API level 21 added SLAndroidDataFormat_PCM_EX; a
+    * runtime that refuses it (older device, or a libOpenSLES built
+    * without it) fails player creation, and the 16-bit format below is
+    * tried in that case. */
+   fmt_pcm_ex.formatType     = SL_ANDROID_DATAFORMAT_PCM_EX;
+   fmt_pcm_ex.numChannels    = 2;
+   fmt_pcm_ex.sampleRate     = rate * 1000; /* milli-Hz */
+   fmt_pcm_ex.bitsPerSample  = 32;
+   fmt_pcm_ex.containerSize  = 32;
+   fmt_pcm_ex.channelMask    = SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT;
+   fmt_pcm_ex.endianness     = SL_BYTEORDER_LITTLEENDIAN;
+   fmt_pcm_ex.representation = SL_ANDROID_PCM_REPRESENTATION_FLOAT;
+   audio_src.pFormat         = &fmt_pcm_ex;
+
+   res = SLEngineItf_CreateAudioPlayer(sl->engine, &sl->buffer_queue_object,
+         &audio_src, &audio_sink, 1, &id, &req);
+   if (res == SL_RESULT_SUCCESS)
+   {
+      sl->use_float = true;
+      frame_size    = 2 * sizeof(float);
+      RARCH_LOG("[OpenSL] Float output.\n");
+   }
+   else
+   {
+      sl->buffer_queue_object = NULL;
+      RARCH_LOG("[OpenSL] Float output refused (0x%x), using 16-bit.\n",
+            (unsigned)res);
+   }
+#endif
+
+   if (!sl->use_float)
+   {
+      fmt_pcm.formatType     = SL_DATAFORMAT_PCM;
+      fmt_pcm.numChannels    = 2;
+      fmt_pcm.samplesPerSec  = rate * 1000; /* Samplerate is in milli-Hz. */
+      fmt_pcm.bitsPerSample  = 16;
+      fmt_pcm.containerSize  = 16;
+      fmt_pcm.channelMask    = SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT;
+      fmt_pcm.endianness     = SL_BYTEORDER_LITTLEENDIAN; /* Android only. */
+      audio_src.pFormat      = &fmt_pcm;
+
+      GOTO_IF_FAIL(SLEngineItf_CreateAudioPlayer(sl->engine, &sl->buffer_queue_object,
+               &audio_src, &audio_sink,
+               1, &id, &req));
+      frame_size             = 2 * sizeof(int16_t);
+   }
+   GOTO_IF_FAIL(SLObjectItf_Realize(sl->buffer_queue_object, SL_BOOLEAN_FALSE));
+
+   sl->buf_size     = frames_per_block * frame_size;
 
    sl->buffer       = (uint8_t**)calloc(sizeof(uint8_t*), sl->buf_count);
    if (!sl->buffer)
@@ -167,30 +243,6 @@ static void *sl_init(const char *device, unsigned rate, unsigned latency,
 
    RARCH_LOG("[OpenSL] Setting audio latency: Block size = %u, Blocks = %u, Total = %u...\n",
          sl->buf_size, sl->buf_count, sl->buf_size * sl->buf_count);
-
-   fmt_pcm.formatType     = SL_DATAFORMAT_PCM;
-   fmt_pcm.numChannels    = 2;
-   fmt_pcm.samplesPerSec  = rate * 1000; /* Samplerate is in milli-Hz. */
-   fmt_pcm.bitsPerSample  = 16;
-   fmt_pcm.containerSize  = 16;
-   fmt_pcm.channelMask    = SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT;
-   fmt_pcm.endianness     = SL_BYTEORDER_LITTLEENDIAN; /* Android only. */
-
-   audio_src.pLocator     = &loc_bufq;
-   audio_src.pFormat      = &fmt_pcm;
-
-   loc_bufq.locatorType   = SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE;
-   loc_bufq.numBuffers    = sl->buf_count;
-
-   loc_outmix.locatorType = SL_DATALOCATOR_OUTPUTMIX;
-   loc_outmix.outputMix   = sl->output_mix;
-
-   audio_sink.pLocator    = &loc_outmix;
-
-   GOTO_IF_FAIL(SLEngineItf_CreateAudioPlayer(sl->engine, &sl->buffer_queue_object,
-            &audio_src, &audio_sink,
-            1, &id, &req));
-   GOTO_IF_FAIL(SLObjectItf_Realize(sl->buffer_queue_object, SL_BOOLEAN_FALSE));
 
    GOTO_IF_FAIL(SLObjectItf_GetInterface(sl->buffer_queue_object, SL_IID_ANDROIDSIMPLEBUFFERQUEUE,
             &sl->buffer_queue));
@@ -371,13 +423,14 @@ static size_t sl_buffer_size(void *data)
    return sl->buf_size * sl->buf_count;
 }
 
-/* The stream is set up with SLDataFormat_PCM, which is integer only.
- * OpenSL ES on API level 21 and later accepts float through
- * SLAndroidDataFormat_PCM_EX with SL_ANDROID_PCM_REPRESENTATION_FLOAT;
- * taking it would mean negotiating that at open and keeping this PCM16
- * path for older levels. Not done, and not attempted without an NDK
- * to build against. */
-static bool sl_use_float(void *data) { return false; }
+/* True when init managed to create the player with a float format
+ * (Android API level 21+); false on the 16-bit path every other build
+ * and runtime takes. */
+static bool sl_use_float(void *data)
+{
+   sl_t *sl = (sl_t*)data;
+   return sl->use_float;
+}
 
 audio_driver_t audio_opensl = {
    sl_init,
