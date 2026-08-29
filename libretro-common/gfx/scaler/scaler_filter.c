@@ -21,6 +21,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <gfx/scaler/filter.h>
@@ -260,14 +261,33 @@ bool scaler_gen_filter(struct scaler_ctx *ctx)
          return false;
    }
 
-   ctx->horiz.filter     = (int16_t*)calloc(ctx->horiz.filter_stride * ctx->out_width, sizeof(int16_t));
-   ctx->horiz.filter_pos = (int*)calloc(ctx->out_width, sizeof(int));
+   /* All four tables in one block: horiz filter | horiz positions |
+    * vert filter | vert positions. */
+   {
+      size_t hf_bytes  = (size_t)ctx->horiz.filter_stride * ctx->out_width  * sizeof(int16_t);
+      size_t hp_bytes  = (size_t)ctx->out_width  * sizeof(int);
+      size_t vf_bytes  = (size_t)ctx->vert.filter_stride  * ctx->out_height * sizeof(int16_t);
+      size_t vp_bytes  = (size_t)ctx->out_height * sizeof(int);
+      size_t off_hf    = 0;
+      size_t off_hp    = SCALER_ARENA_NEXT(off_hf, hf_bytes);
+      size_t off_vf    = SCALER_ARENA_NEXT(off_hp, hp_bytes);
+      size_t off_vp    = SCALER_ARENA_NEXT(off_vf, vf_bytes);
+      size_t total     = off_vp + vp_bytes;
+      uint8_t *base;
+      void *raw;
 
-   ctx->vert.filter      = (int16_t*)calloc(ctx->vert.filter_stride * ctx->out_height, sizeof(int16_t));
-   ctx->vert.filter_pos  = (int*)calloc(ctx->out_height, sizeof(int));
+      if (!(raw = malloc(total + SCALER_ARENA_SLACK)))
+         return false;
 
-   if (!ctx->horiz.filter || !ctx->vert.filter)
-      return false;
+      base                  = SCALER_ARENA_BASE(raw);
+      memset(base, 0, total);
+
+      ctx->filter_arena     = raw;
+      ctx->horiz.filter     = (int16_t*)(base + off_hf);
+      ctx->horiz.filter_pos = (int*)(base + off_hp);
+      ctx->vert.filter      = (int16_t*)(base + off_vf);
+      ctx->vert.filter_pos  = (int*)(base + off_vp);
+   }
 
    x_step = (1 << 16) * ctx->in_width  / ctx->out_width;
    y_step = (1 << 16) * ctx->in_height / ctx->out_height;

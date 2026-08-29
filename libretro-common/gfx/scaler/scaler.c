@@ -68,71 +68,66 @@ static size_t frame_bytes(size_t stride, size_t rows)
 
 static bool allocate_frames(struct scaler_ctx *ctx)
 {
-   uint64_t *scaled_frame = NULL;
    size_t stride;
-   size_t bytes;
+   size_t scaled_bytes, input_bytes = 0, output_bytes = 0;
+   size_t off_scaled, off_input, off_output, total;
+   uint8_t *base;
+   void *raw;
 
-   /* Nothing below is meaningful for a degenerate rectangle, and the
-    * size arithmetic assumes these are positive. */
    if (     (ctx->in_width  <= 0) || (ctx->in_height  <= 0)
          || (ctx->out_width <= 0) || (ctx->out_height <= 0))
       return false;
 
+   /* Sizes and strides first; nothing is touched until all are known. */
    stride                 = (((size_t)ctx->out_width + 7) & ~(size_t)7)
                           * sizeof(uint64_t);
-
-   if (!(bytes = frame_bytes(stride, (size_t)ctx->in_height)))
+   if (!(scaled_bytes = frame_bytes(stride, (size_t)ctx->in_height)))
       return false;
-
    ctx->scaled.stride     = (int)stride;
    ctx->scaled.width      = ctx->out_width;
    ctx->scaled.height     = ctx->in_height;
-   scaled_frame           = (uint64_t*)calloc(bytes >> 3, sizeof(uint64_t));
-
-   if (!scaled_frame)
-      return false;
-
-   ctx->scaled.frame      = scaled_frame;
 
    if (       ctx->in_fmt != SCALER_FMT_ARGB8888
            && ctx->in_fmt != SCALER_FMT_XRGB2101010)
    {
-      uint32_t *input_frame = NULL;
-
-      stride                = (((size_t)ctx->in_width + 7) & ~(size_t)7)
-                            * sizeof(uint32_t);
-
-      if (!(bytes = frame_bytes(stride, (size_t)ctx->in_height)))
+      stride              = (((size_t)ctx->in_width + 7) & ~(size_t)7)
+                          * sizeof(uint32_t);
+      if (!(input_bytes = frame_bytes(stride, (size_t)ctx->in_height)))
          return false;
-
-      ctx->input.stride     = (int)stride;
-      input_frame           = (uint32_t*)calloc(bytes >> 2, sizeof(uint32_t));
-
-      if (!input_frame)
-         return false;
-
-      ctx->input.frame      = input_frame;
+      ctx->input.stride   = (int)stride;
    }
 
    if (       ctx->out_fmt != SCALER_FMT_ARGB8888
            && ctx->out_fmt != SCALER_FMT_XRGB2101010)
    {
-      uint32_t *output_frame = NULL;
-
-      stride                 = (((size_t)ctx->out_width + 7) & ~(size_t)7)
-                             * sizeof(uint32_t);
-
-      if (!(bytes = frame_bytes(stride, (size_t)ctx->out_height)))
+      stride              = (((size_t)ctx->out_width + 7) & ~(size_t)7)
+                          * sizeof(uint32_t);
+      if (!(output_bytes = frame_bytes(stride, (size_t)ctx->out_height)))
          return false;
-
-      ctx->output.stride     = (int)stride;
-      output_frame           = (uint32_t*)calloc(bytes >> 2, sizeof(uint32_t));
-
-      if (!output_frame)
-         return false;
-
-      ctx->output.frame      = output_frame;
+      ctx->output.stride  = (int)stride;
    }
+
+   /* One block for all three, laid out scaled | input | output with the
+    * regions that are not needed given zero size. Each frame_bytes()
+    * result is at most INT_MAX, so the running total cannot wrap a
+    * size_t on any target with a 32-bit or wider size_t. */
+   off_scaled             = 0;
+   off_input              = SCALER_ARENA_NEXT(off_scaled, scaled_bytes);
+   off_output             = SCALER_ARENA_NEXT(off_input,  input_bytes);
+   total                  = off_output + output_bytes;
+
+   if (!(raw = malloc(total + SCALER_ARENA_SLACK)))
+      return false;
+
+   base                   = SCALER_ARENA_BASE(raw);
+   memset(base, 0, total);
+
+   ctx->frame_arena       = raw;
+   ctx->scaled.frame      = (uint64_t*)(base + off_scaled);
+   if (input_bytes)
+      ctx->input.frame    = (uint32_t*)(base + off_input);
+   if (output_bytes)
+      ctx->output.frame   = (uint32_t*)(base + off_output);
 
    return true;
 }
@@ -403,20 +398,13 @@ bool scaler_ctx_gen_filter(struct scaler_ctx *ctx)
 
 void scaler_ctx_gen_reset(struct scaler_ctx *ctx)
 {
-   if (ctx->horiz.filter)
-      free(ctx->horiz.filter);
-   if (ctx->horiz.filter_pos)
-      free(ctx->horiz.filter_pos);
-   if (ctx->vert.filter)
-      free(ctx->vert.filter);
-   if (ctx->vert.filter_pos)
-      free(ctx->vert.filter_pos);
-   if (ctx->scaled.frame)
-      free(ctx->scaled.frame);
-   if (ctx->input.frame)
-      free(ctx->input.frame);
-   if (ctx->output.frame)
-      free(ctx->output.frame);
+   /* The typed buffer pointers are views into the two arenas. */
+   if (ctx->filter_arena)
+      free(ctx->filter_arena);
+   if (ctx->frame_arena)
+      free(ctx->frame_arena);
+   ctx->filter_arena        = NULL;
+   ctx->frame_arena         = NULL;
 
    ctx->horiz.filter        = NULL;
    ctx->horiz.filter_len    = 0;

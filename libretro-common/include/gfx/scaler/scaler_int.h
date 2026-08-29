@@ -29,6 +29,23 @@
 
 RETRO_BEGIN_DECLS
 
+/* Layout helpers for the two arenas in struct scaler_ctx. Regions start
+ * on a 64-byte boundary and are separated by one 64-byte pad, so two
+ * regions the scaler reads and writes in the same pass (a frame and the
+ * next, a filter table and its positions) are never a multiple of 4 KiB
+ * apart. The arena itself comes from malloc(), which only promises
+ * 8- or 16-byte alignment, so SCALER_ARENA_SLACK extra bytes are
+ * allocated and the first region begins at the first 64-byte boundary
+ * inside the block. Cursors and sizes are in bytes. */
+#define SCALER_ARENA_ALIGN 64
+#define SCALER_ARENA_SLACK (SCALER_ARENA_ALIGN - 1)
+#define SCALER_ARENA_NEXT(cur, bytes) \
+   ((((cur) + (bytes) + SCALER_ARENA_ALIGN - 1) / SCALER_ARENA_ALIGN) \
+    * SCALER_ARENA_ALIGN + SCALER_ARENA_ALIGN)
+#define SCALER_ARENA_BASE(raw) \
+   ((uint8_t*)(((uintptr_t)(raw) + SCALER_ARENA_SLACK) \
+    & ~(uintptr_t)SCALER_ARENA_SLACK))
+
 void scaler_argb8888_vert(const struct scaler_ctx *ctx,
       void *output, int stride);
 
