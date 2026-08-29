@@ -189,56 +189,7 @@ static int32_t rh265_se(rh265_bits *b)
 static int rh265_bits_overrun(const rh265_bits *b)
 { return b->bitpos > b->size * 8; }
 
-/* Strip emulation-prevention bytes (00 00 03 -> 00 00).  When esc_pos
- * is non-NULL it receives a malloc'd array of the removed bytes'
- * positions in the escaped input (caller frees), for translating
- * WPP entry-point offsets, which count escaped bytes. */
-static uint8_t *rh265_unescape_ex(const uint8_t *nal, size_t len,
-      size_t *out_size, uint32_t **esc_pos, int *esc_count)
-{
-   uint8_t *rbsp = (uint8_t*)malloc(len ? len : 1);
-   uint32_t *ep  = NULL;
-   int       ec  = 0;
-   size_t i, j = 0;
-   int zeros = 0;
-   if (!rbsp) return NULL;
-   if (esc_pos)
-   {
-      *esc_pos = NULL;
-      *esc_count = 0;
-      ep = (uint32_t*)malloc((len / 3 + 1) * sizeof(uint32_t));
-      if (!ep)
-      {
-         free(rbsp);
-         return NULL;
-      }
-   }
-   for (i = 0; i < len; i++)
-   {
-      if (zeros >= 2 && nal[i] == 3)
-      {
-         if (ep)
-            ep[ec++] = (uint32_t)i;
-         zeros = 0;
-         continue;      /* emulation prevention byte */
-      }
-      if (nal[i] == 0) zeros++; else zeros = 0;
-      rbsp[j++] = nal[i];
-   }
-   *out_size = j;
-   if (esc_pos)
-   {
-      *esc_pos   = ep;
-      *esc_count = ec;
-   }
-   return rbsp;
-}
 
-static uint8_t *rh265_unescape(const uint8_t *nal, size_t len,
-      size_t *out_size)
-{
-   return rh265_unescape_ex(nal, len, out_size, NULL, NULL);
-}
 
 /* ==================== rh265_nal.h ==================== */
 
@@ -3750,6 +3701,10 @@ static void rh265_sao_param(rh265_dec *d, int rx, int ry)
 
 struct rh265_video
 {
+   /* NAL scratch, grown on demand and kept for the decoder's lifetime:
+    * the unescaped RBSP followed by the escape-position list. */
+   uint8_t  *nal_scratch;
+   size_t    nal_scratch_cap;
    rh265_sps sps[RH265_MAX_SPS];
    rh265_pps pps[RH265_MAX_PPS];
    rh265_dec d;
@@ -3779,6 +3734,51 @@ struct rh265_video
    rh265_pps  pps_tmp;
    rh265_shdr sh_tmp;
 };
+
+/* Unescape into the decoder's scratch block instead of a fresh
+ * allocation: len bytes of RBSP, then (want_esc) room for one escape
+ * position per three input bytes, the list starting on a 64-byte
+ * boundary. The block only ever grows. */
+static uint8_t *rh265_unescape_scratch(struct rh265_video *v,
+      const uint8_t *nal, size_t len, size_t *out_size,
+      uint32_t **esc_pos, int *esc_count, int want_esc)
+{
+   /* escape list first, RBSP behind it on a 64-byte boundary */
+   size_t   o_rbsp = want_esc ? (((len / 3 + 1) * sizeof(uint32_t) + 63) & ~(size_t)63) : 0;
+   size_t   need   = o_rbsp + len;
+   uint8_t *rbsp;
+   uint32_t *ep = NULL;
+   int      ec  = 0;
+   size_t   i, j = 0;
+   int      zeros = 0;
+   if (need > v->nal_scratch_cap)
+   {
+      uint8_t *grown = (uint8_t*)realloc(v->nal_scratch, need);
+      if (!grown)
+         return NULL;
+      v->nal_scratch     = grown;
+      v->nal_scratch_cap = need;
+   }
+   rbsp = v->nal_scratch + o_rbsp;
+   if (want_esc)
+      ep = (uint32_t*)v->nal_scratch;
+   for (i = 0; i < len; i++)
+   {
+      if (zeros >= 2 && nal[i] == 3)
+      {
+         if (ep)
+            ep[ec++] = (uint32_t)i;
+         zeros = 0;
+         continue;      /* emulation prevention byte */
+      }
+      if (nal[i] == 0) zeros++; else zeros = 0;
+      rbsp[j++] = nal[i];
+   }
+   *out_size  = j;
+   *esc_pos   = ep;
+   *esc_count = ec;
+   return rbsp;
+}
 
 static void rh265_free_frame(rh265_video *v)
 {
@@ -4256,11 +4256,8 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
    {
       /* slices need the escape positions to translate WPP entry-point
        * offsets; parameter sets never do */
-      if (RH265_IS_SLICE(nal_type))
-         rbsp = rh265_unescape_ex(nal + 2, len - 2, &rbsp_size,
-               &esc_pos, &esc_count);
-      else
-         rbsp = rh265_unescape(nal + 2, len - 2, &rbsp_size);
+      rbsp = rh265_unescape_scratch(v, nal + 2, len - 2, &rbsp_size,
+            &esc_pos, &esc_count, RH265_IS_SLICE(nal_type));
    }
    if (!rbsp)
       return -1;
@@ -4406,11 +4403,7 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
                      v->d.fns->deblock_frame(&v->d);
                      if (sps->sao_enabled)
                         if (v->d.fns->sao_frame(&v->d) < 0)
-                        {
-                           free(esc_pos);
-                           free(rbsp);
                            return -1;
-                        }
                      v->cur_slot = -1;
                      rh265_dpb_bump(v, sps->max_num_reorder_pics);
                   }
@@ -4420,8 +4413,6 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
          }
       }
    }
-   free(esc_pos);
-   free(rbsp);
    return ret;
 }
 
@@ -4443,6 +4434,7 @@ void rh265_video_close(rh265_video *v)
    if (!v)
       return;
    rh265_free_frame(v);
+   free(v->nal_scratch);
    free(v);
 }
 

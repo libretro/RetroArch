@@ -134,6 +134,9 @@ static uint8_t *rh264_unescape(const uint8_t *nal,size_t len,size_t *out_size){
    }
    *out_size=o; return r;
 }
+/* Same, into the decoder's scratch block, which only ever grows. */
+static uint8_t *rh264_unescape_scratch(struct rh264_video *v,
+      const uint8_t *nal, size_t len, size_t *out_size);
 
 
 /* ==================== rh264_ps.h ==================== */
@@ -6154,6 +6157,10 @@ typedef struct {
 
 struct rh264_video
 {
+   /* unescaped-RBSP scratch for slice NALs, grown on demand and kept
+    * for the decoder's lifetime */
+   uint8_t  *rbsp_scratch;
+   size_t    rbsp_scratch_cap;
    rh264_sps sps;
    rh264_pps pps;
    int       have_sps, have_pps;
@@ -6452,6 +6459,27 @@ static int rh264_frame_alloc_if_needed(rh264_video *v)
 
 /* ---- public API ---- */
 
+static uint8_t *rh264_unescape_scratch(struct rh264_video *v,
+      const uint8_t *nal, size_t len, size_t *out_size)
+{
+   uint8_t *r; size_t i, o = 0;
+   size_t need = len ? len : 1;
+   if (need > v->rbsp_scratch_cap)
+   {
+      if (!(r = (uint8_t*)realloc(v->rbsp_scratch, need))) return NULL;
+      v->rbsp_scratch     = r;
+      v->rbsp_scratch_cap = need;
+   }
+   r = v->rbsp_scratch;
+   for (i = 0; i < len; i++)
+   {
+      if (i >= 2 && nal[i] == 0x03 && nal[i-1] == 0x00 && nal[i-2] == 0x00
+            && i + 1 < len && nal[i+1] <= 0x03) continue;
+      r[o++] = nal[i];
+   }
+   *out_size = o; return r;
+}
+
 rh264_video *rh264_video_open(void)
 {
    rh264_video *v = (rh264_video*)calloc(1, sizeof(*v));
@@ -6475,6 +6503,7 @@ void rh264_video_close(rh264_video *v)
       for (i = 0; i < RH264_MAX_REFS; i++) rh264_frame_free(&v->dpb[i]);
       for (i = 0; i < RH264_OUT_SLOTS; i++) rh264_frame_free(&v->out[i]);
    }
+   free(v->rbsp_scratch);
    free(v->mvg);
    free(v->pic_mvg);
    rh264_vlc_free(&v->vlc);
@@ -9254,13 +9283,12 @@ static int rh264_video_decode_idr(rh264_video *v, const uint8_t *nal, size_t len
    if (len < 1) return -1;
    nut = nal[0] & 0x1f;
    nri = (nal[0] >> 5) & 3;
-   rbsp = rh264_unescape(nal + 1, len - 1, &rl);
+   rbsp = rh264_unescape_scratch(v, nal + 1, len - 1, &rl);
    if (!rbsp) return -1;
    rh264_bits_init(&b, rbsp, rl);
    if (v->vlc_ready) b.vlc = &v->vlc;
    if (!rh264_parse_slice_header_adv(&b, nut, nri, &v->sps, &v->pps, &sh))
-   { if (sh.switching) v->saw_switching = 1;
-     free(rbsp); return -1; }
+   { if (sh.switching) v->saw_switching = 1; return -1; }
    if (sh.first_mb_in_slice == 0)
    {
       /* first slice: a new picture begins (a picture left unfinished by a
@@ -9287,9 +9315,9 @@ static int rh264_video_decode_idr(rh264_video *v, const uint8_t *nal, size_t len
    }
    else if (!v->pic_open || v->pic_kind != 1
          || sh.first_mb_in_slice != v->pic_end)
-   { free(rbsp); return -1; }   /* continuation without its picture */
+   { return -1; }   /* continuation without its picture */
    if (rh264_video_note_slice(v, &sh) != 0)
-   { v->pic_open = 0; free(rbsp); return -1; }
+   { v->pic_open = 0; return -1; }
    /* Main/High-profile streams use CABAC entropy coding; baseline uses CAVLC.
     * Dispatch on the PPS entropy_coding_mode_flag. Both paths are intra-only. */
    if (v->pps.entropy_coding_mode_flag)
@@ -9301,7 +9329,6 @@ static int rh264_video_decode_idr(rh264_video *v, const uint8_t *nal, size_t len
       v->pic_end = end;
    else
       v->pic_open = 0;
-   free(rbsp);
    return rc;
 }
 
@@ -9558,17 +9585,16 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
    if (!v->have_ref) return -1;   /* need a decoded reference first */
    nut = nal[0] & 0x1f;
    nri = (nal[0] >> 5) & 3;
-   rbsp = rh264_unescape(nal + 1, len - 1, &rl);
+   rbsp = rh264_unescape_scratch(v, nal + 1, len - 1, &rl);
    if (!rbsp) return -1;
    rh264_bits_init(&b, rbsp, rl);
    if (v->vlc_ready) b.vlc = &v->vlc;
    if (!rh264_parse_slice_header_adv(&b, nut, nri, &v->sps, &v->pps, sh))
-   { if (sh->switching) v->saw_switching = 1;
-     free(rbsp); return -1; }   /* unsupported slice type (e.g. B) */
+   { if (sh->switching) v->saw_switching = 1; return -1; }   /* unsupported slice type (e.g. B) */
    if (sh->slice_type != RH264_SLICE_P && sh->slice_type != RH264_SLICE_SP
          && sh->slice_type != RH264_SLICE_B
          && sh->slice_type != RH264_SLICE_I)
-   { free(rbsp); return -1; }
+   { return -1; }
    kind = (sh->slice_type == RH264_SLICE_I) ? 2
         : (sh->slice_type == RH264_SLICE_B) ? 4 : 3;
    if (sh->first_mb_in_slice == 0)
@@ -9592,10 +9618,10 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
    }
    else if (!v->pic_open || v->pic_kind != kind
          || sh->first_mb_in_slice != v->pic_end)
-   { free(rbsp); return -1; }   /* continuation without its picture, or a
+   { return -1; }   /* continuation without its picture, or a
                                  * mixed-type picture (unsupported) */
    if (rh264_video_note_slice(v, sh) != 0)
-   { v->pic_open = 0; free(rbsp); return -1; }
+   { v->pic_open = 0; return -1; }
    if (sh->slice_type == RH264_SLICE_I)
    {
       /* A non-IDR I picture, e.g. a recovery point: decoded like an IDR but
@@ -9613,11 +9639,10 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
       memcpy(v->pend_mmco_op, sh->mmco_op, sizeof(v->pend_mmco_op));
       memcpy(v->pend_mmco_a, sh->mmco_a, sizeof(v->pend_mmco_a));
       memcpy(v->pend_mmco_b, sh->mmco_b, sizeof(v->pend_mmco_b));
-      free(rbsp);
       return rc;
    }
    if (v->dpb_len < 1)
-   { free(rbsp); return -1; }
+   { return -1; }
    if (sh->slice_type == RH264_SLICE_B)
    {
       /* B slice: both lists ordered by POC around the current picture
@@ -9704,7 +9729,7 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
          for (i = 0; i < f1; i++) bc->l1poc[i] = bc->l1[i]->poc;
          bc->n0 = f0; bc->n1 = f1;
       }
-      if (bc->n0 < 1 || bc->n1 < 1) { free(rbsp); return -1; }
+      if (bc->n0 < 1 || bc->n1 < 1) { return -1; }
       if (bc->n0 == bc->n1 && bc->n1 > 1)
       {
          for (i = 0; i < bc->n0; i++) if (bc->l0[i] != bc->l1[i]) break;
@@ -9756,7 +9781,7 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
       bc->d8x8 = v->sps.direct_8x8_inference_flag;
       bc->wbidc = v->pps.weighted_bipred_idc;
       bc->colg = bc->l1[0]->mvg;
-      if (!bc->colg) { free(rbsp); return -1; }
+      if (!bc->colg) { return -1; }
       rh264_b_setup_scales(bc);
       if (v->pps.entropy_coding_mode_flag)
          rc = rh264_cabac_decode_bslice(&b, &v->sps, &v->pps, sh, &v->f,
@@ -9775,7 +9800,6 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
       memcpy(v->pend_mmco_op, sh->mmco_op, sizeof(v->pend_mmco_op));
       memcpy(v->pend_mmco_a, sh->mmco_a, sizeof(v->pend_mmco_a));
       memcpy(v->pend_mmco_b, sh->mmco_b, sizeof(v->pend_mmco_b));
-      free(rbsp);
       return rc;
    }
    {
@@ -9813,7 +9837,7 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
               { l0[n] = &v->dpb[s]; lpn[n] = 0x10000 + idx; n++; }
            }
       }
-      if (n == 0) { free(rbsp); return -1; }
+      if (n == 0) { return -1; }
       while (n < nref) { l0[n] = l0[n-1]; lpn[n] = lpn[n-1]; n++; }
       rh264_apply_list_mods(v, l0, lpn, nref, currpn, maxpn,
             sh->mod_op, sh->mod_val, sh->nmod);
@@ -9856,7 +9880,6 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
    memcpy(v->pend_mmco_op, sh->mmco_op, sizeof(v->pend_mmco_op));
    memcpy(v->pend_mmco_a, sh->mmco_a, sizeof(v->pend_mmco_a));
    memcpy(v->pend_mmco_b, sh->mmco_b, sizeof(v->pend_mmco_b));
-   free(rbsp);
    return rc;
 }
 
