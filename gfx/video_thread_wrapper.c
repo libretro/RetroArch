@@ -1024,6 +1024,14 @@ static void video_thread_free(void *data)
          "Threaded video stats: Frames pushed: %u, Frames dropped: %u.\n",
          thr->hit_count, thr->miss_count);
 
+      /* video_init_thread() pointed the video state at the vtable
+       * embedded in this struct. Point it back at the wrapped driver's
+       * static vtable before the struct goes away, so a later
+       * video_driver_free_internal() reading current_video sees a live
+       * driver, as it does without threading. */
+      if (video_state_get_ptr()->current_video == &thr->video_thread)
+         video_state_get_ptr()->current_video = thr->driver;
+
       free(thr);
    }
 }
