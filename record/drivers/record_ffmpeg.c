@@ -103,9 +103,6 @@ struct ff_video_info
    uint8_t *conv_frame_buf;
    int64_t frame_cnt;
 
-   uint8_t *outbuf;
-   size_t outbuf_size;
-
    /* Output pixel format. */
    enum AVPixelFormat pix_fmt;
    /* Input pixel format. Only used by sws. */
@@ -134,8 +131,11 @@ struct ff_audio_info
 
    int64_t frame_cnt;
 
-   uint8_t *outbuf;
-   size_t outbuf_size;
+   /* The AVFrame handed to the encoder for every audio block. It only
+    * ever wraps buffer or planar_buf, which the handle owns, so it is
+    * allocated once here rather than with a sample buffer of its own
+    * on every block. */
+   AVFrame *frame;
 
    /* Most lossy audio codecs only support certain sampling rates.
     * Could use libswresample, but it doesn't support floating point ratios.
@@ -458,11 +458,14 @@ static bool ffmpeg_init_audio(ffmpeg_t *handle, const char *audio_resampler)
    if (!audio->buffer)
       return false;
 
-   audio->outbuf_size = AV_INPUT_BUFFER_MIN_SIZE;
-   audio->outbuf      = (uint8_t*)av_malloc(audio->outbuf_size);
-
-   if (!audio->outbuf)
+   if (!(audio->frame = av_frame_alloc()))
       return false;
+   audio->frame->format = audio->codec->sample_fmt;
+#if HAVE_CH_LAYOUT
+   av_channel_layout_copy(&audio->frame->ch_layout, &audio->codec->ch_layout);
+#else
+   audio->frame->channel_layout = audio->codec->channel_layout;
+#endif
 
    return true;
 }
@@ -592,16 +595,6 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
 
    if (avcodec_open2(video->codec, codec, params->video_opts ?
             &params->video_opts : NULL) != 0)
-      return false;
-
-   /* Allocate a big buffer. ffmpeg API doesn't seem to give us some
-    * clues how big this buffer should be. */
-   video->outbuf_size      = 1 << 23;
-   video->outbuf           = (uint8_t*)av_malloc(video->outbuf_size);
-   /* NULL-check outbuf: caller (ffmpeg_new) returns false via goto
-    * error on our false return, and ffmpeg_free handles partial
-    * init state via av_freep guards. */
-   if (!video->outbuf)
       return false;
 
    video->frame_drop_ratio = params->frame_drop_ratio;
@@ -1079,6 +1072,7 @@ static void ffmpeg_free(void *data)
    }
 
    av_free(handle->audio.buffer);
+   av_frame_free(&handle->audio.frame);
 
    if (handle->video.codec)
    {
@@ -1313,9 +1307,9 @@ static bool ffmpeg_push_audio(void *data,
 static bool encode_video(ffmpeg_t *handle, AVFrame *frame)
 {
    int ret;
+   /* avcodec_receive_packet() supplies the packet's own buffer; nothing
+    * of ours is preset on it. */
    AVPacket *pkt = handle->pkt;
-   pkt->data     = handle->video.outbuf;
-   pkt->size     = (int)handle->video.outbuf_size;
 
    ret = avcodec_send_frame(handle->video.codec, frame);
    if (ret < 0)
@@ -1481,56 +1475,44 @@ static void planarize_audio(ffmpeg_t *handle)
 static bool encode_audio(ffmpeg_t *handle, bool dry)
 {
    int ret;
-   AVFrame *frame;
+   AVFrame *frame = handle->audio.frame;
    int samples_size;
    AVPacket *pkt = handle->pkt;
 
-   pkt->data     = handle->audio.outbuf;
-   pkt->size     = (int)handle->audio.outbuf_size;
-
-   frame         = av_frame_alloc();
-
-   if (!frame)
-      return false;
-
-   frame->nb_samples     = (int)handle->audio.frames_in_buffer;
-   frame->format         = handle->audio.codec->sample_fmt;
+   if (!dry)
+   {
 #if HAVE_CH_LAYOUT
-   av_channel_layout_copy(&frame->ch_layout, &handle->audio.codec->ch_layout);
+      int nb_channels = handle->audio.codec->ch_layout.nb_channels;
 #else
-   frame->channel_layout = handle->audio.codec->channel_layout;
+      int nb_channels = handle->audio.codec->channels;
 #endif
-   frame->pts            = handle->audio.frame_cnt;
+      frame->nb_samples     = (int)handle->audio.frames_in_buffer;
+      frame->pts            = handle->audio.frame_cnt;
 
-   planarize_audio(handle);
+      planarize_audio(handle);
 
-#if HAVE_CH_LAYOUT
-   int nb_channels = handle->audio.codec->ch_layout.nb_channels;
-#else
-   int nb_channels = handle->audio.codec->channels;
-#endif
+      samples_size          = av_samples_get_buffer_size(
+            NULL,
+            nb_channels,
+            (int)handle->audio.frames_in_buffer,
+            handle->audio.codec->sample_fmt, 0);
 
-   samples_size          = av_samples_get_buffer_size(
-         NULL,
-         nb_channels,
-         (int)handle->audio.frames_in_buffer,
-         handle->audio.codec->sample_fmt, 0);
-
-   av_frame_get_buffer(frame, 0);
-   avcodec_fill_audio_frame(frame,
-         nb_channels,
-         handle->audio.codec->sample_fmt,
-         handle->audio.is_planar
-         ? (uint8_t*)handle->audio.planar_buf :
-         handle->audio.buffer,
-         samples_size, 0);
+      /* The frame wraps the handle's own sample buffer; the encoder
+       * copies out of a frame that does not own its data. */
+      avcodec_fill_audio_frame(frame,
+            nb_channels,
+            handle->audio.codec->sample_fmt,
+            handle->audio.is_planar
+            ? (uint8_t*)handle->audio.planar_buf :
+            handle->audio.buffer,
+            samples_size, 0);
+   }
 
    ret = avcodec_send_frame(handle->audio.codec, dry ? NULL : frame);
    if (ret < 0)
    {
       char msg[AV_ERROR_MAX_STRING_SIZE];
 
-      av_frame_free(&frame);
       av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
       RARCH_ERR("[FFmpeg] Cannot send audio frame. Return code: %s.\n", msg);
       return false;
@@ -1544,8 +1526,6 @@ static bool encode_audio(ffmpeg_t *handle, bool dry)
       else if (ret < 0)
       {
          char msg[AV_ERROR_MAX_STRING_SIZE];
-
-         av_frame_free(&frame);
 
          av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
          RARCH_ERR("[FFmpeg] Cannot receive audio packet. Return code: %s.\n", msg);
@@ -1567,7 +1547,6 @@ static bool encode_audio(ffmpeg_t *handle, bool dry)
       {
          char msg[AV_ERROR_MAX_STRING_SIZE];
 
-         av_frame_free(&frame);
          av_make_error_string(msg, AV_ERROR_MAX_STRING_SIZE, ret);
          RARCH_ERR("[FFmpeg] Cannot write video packet to output file. Error code: %s.\n", msg);
          return false;
@@ -1576,7 +1555,6 @@ static bool encode_audio(ffmpeg_t *handle, bool dry)
       av_packet_unref(pkt);
    }
 
-   av_frame_free(&frame);
    return true;
 }
 
