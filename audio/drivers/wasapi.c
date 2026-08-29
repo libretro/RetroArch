@@ -1529,6 +1529,67 @@ static size_t wasapi_buffer_size(void *wh)
    return w->buffer->size + w->engine_buffer_size;
 }
 
+/* Sleep on the engine's event until the fifo in front of it has room.
+ * The fifo only frees when a period is moved into the engine, and that
+ * move is the same one wasapi_write() makes when it finds the fifo
+ * full: in exclusive mode the engine takes the whole fifo, in shared
+ * mode as much as its padding allows. Returns the free space
+ * write_avail() would report, or 0 when the stream is not running or
+ * the event never came. len is a lower bound the caller would like;
+ * what is returned may be less than that when the fifo is only partly
+ * free, and the write's own loop then blocks at most one period for the
+ * remainder, after the fill rate control needs has been read. */
+static size_t wasapi_wait_writable(void *wh, size_t len)
+{
+   wasapi_t *w = (wasapi_t*)wh;
+
+   if (!(w->flags & WASAPI_FLG_RUNNING))
+      return 0;
+
+   while (FIFO_WRITE_AVAIL(w->buffer) == 0)
+   {
+      BYTE *dest         = NULL;
+      UINT32 frame_count = 0;
+
+      if (WaitForSingleObject(w->write_event, WASAPI_TIMEOUT) != WAIT_OBJECT_0)
+         return 0;
+
+      if (w->flags & WASAPI_FLG_EXCLUSIVE)
+      {
+         frame_count = w->engine_buffer_size >> w->frame_shift;
+         if (FAILED(_IAudioRenderClient_GetBuffer(
+                     w->renderer, frame_count, &dest)))
+            return 0;
+         fifo_read(w->buffer, dest, w->engine_buffer_size);
+      }
+      else
+      {
+         UINT32 padding     = 0;
+         size_t read_avail;
+         size_t engine_free;
+         size_t ir;
+         if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
+            return 0;
+         read_avail  = FIFO_READ_AVAIL(w->buffer);
+         engine_free = w->engine_buffer_size - padding * w->frame_size;
+         ir          = read_avail < engine_free ? read_avail : engine_free;
+         if (!ir)
+            continue;
+         frame_count = ir >> w->frame_shift;
+         if (FAILED(_IAudioRenderClient_GetBuffer(
+                     w->renderer, frame_count, &dest)))
+            return 0;
+         fifo_read(w->buffer, dest, ir);
+      }
+      if (FAILED(_IAudioRenderClient_ReleaseBuffer(
+                  w->renderer, frame_count, 0)))
+         return 0;
+   }
+
+   (void)len;
+   return wasapi_write_avail(w);
+}
+
 audio_driver_t audio_wasapi = {
    wasapi_init,
    wasapi_write,
@@ -1543,5 +1604,6 @@ audio_driver_t audio_wasapi = {
    wasapi_device_list_free,
    wasapi_write_avail,
    wasapi_buffer_size,
-   NULL /* write_raw */
+   NULL, /* write_raw */
+   wasapi_wait_writable
 };

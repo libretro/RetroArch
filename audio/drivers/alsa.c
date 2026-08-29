@@ -508,6 +508,49 @@ static size_t alsa_buffer_size(void *data)
    return alsa->stream_info.buffer_size;
 }
 
+/* Sleep in snd_pcm_wait() until at least len bytes fit, capped at one
+ * period: the wait wakes at period granularity (avail_min), and the
+ * write's own loop takes care of the rest as it frees. Returns the
+ * space then available, or 0 once the device is gone. A prepared but
+ * not yet running stream reports its whole buffer free and returns at
+ * once, which is what lets the first writes reach the start
+ * threshold. */
+static size_t alsa_wait_writable(void *data, size_t len)
+{
+   alsa_t *alsa            = (alsa_t*)data;
+   snd_pcm_sframes_t want  = BYTES_TO_FRAMES(len, alsa->stream_info.frame_bits);
+
+   if (want > (snd_pcm_sframes_t)alsa->stream_info.period_frames)
+      want = (snd_pcm_sframes_t)alsa->stream_info.period_frames;
+
+   for (;;)
+   {
+      int rc;
+      snd_pcm_sframes_t avail = snd_pcm_avail(alsa->pcm);
+
+      if (avail == -EPIPE || avail == -ESTRPIPE || avail == -EINTR)
+      {
+         if (snd_pcm_recover(alsa->pcm, (int)avail, 1) < 0)
+            return 0;
+         continue;
+      }
+      if (avail < 0)
+         return 0;
+      if (avail >= want)
+         return FRAMES_TO_BYTES(avail, alsa->stream_info.frame_bits);
+
+      rc = snd_pcm_wait(alsa->pcm, -1);
+      if (rc == -EPIPE || rc == -ESTRPIPE || rc == -EINTR)
+      {
+         if (snd_pcm_recover(alsa->pcm, rc, 1) < 0)
+            return 0;
+         continue;
+      }
+      if (rc < 0)
+         return 0;
+   }
+}
+
 void *alsa_device_list_new(void *data)
 {
    return alsa_device_list_type_new("Output");
@@ -535,7 +578,8 @@ audio_driver_t audio_alsa = {
    alsa_device_list_free,
    alsa_write_avail,
    alsa_buffer_size,
-   NULL /* write_raw */
+   NULL, /* write_raw */
+   alsa_wait_writable
 };
 
 /* ===========================================================================

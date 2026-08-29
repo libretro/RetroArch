@@ -434,6 +434,42 @@ static size_t coreaudio_buffer_size(void *data)
    return dev->buffer_size;
 }
 
+/* Sleep on the condition the render callback signals after every pull
+ * until at least len bytes fit in the fifo, capped at half of it so the
+ * wait always ends. Returns the free space then, or 0 while paused. */
+static size_t coreaudio_wait_writable(void *data, size_t len)
+{
+   coreaudio_t *dev = (coreaudio_t*)data;
+   size_t write_avail;
+
+   if (len > dev->buffer_size / 2)
+      len = dev->buffer_size / 2;
+
+   slock_lock(dev->lock);
+   for (;;)
+   {
+      if (dev->is_paused)
+      {
+         write_avail = 0;
+         break;
+      }
+      write_avail = FIFO_WRITE_AVAIL(dev->buffer);
+      if (write_avail >= len)
+         break;
+#if TARGET_OS_IOS
+      if (!scond_wait_timeout(dev->cond, dev->lock, 300000))
+      {
+         write_avail = 0;
+         break;
+      }
+#else
+      scond_wait(dev->cond, dev->lock);
+#endif
+   }
+   slock_unlock(dev->lock);
+   return write_avail;
+}
+
 /* TODO/FIXME - implement */
 static void *coreaudio_device_list_new(void *data) { return NULL; }
 static void coreaudio_device_list_free(void *data, void *array_list_data) { }
@@ -452,7 +488,8 @@ audio_driver_t audio_coreaudio = {
    coreaudio_device_list_free,
    coreaudio_write_avail,
    coreaudio_buffer_size,
-   NULL /* write_raw — legacy path uses the frontend's software resampler */
+   NULL, /* write_raw — legacy path uses the frontend's software resampler */
+   coreaudio_wait_writable
 };
 
 #else
@@ -1215,6 +1252,41 @@ static size_t coreaudio_buffer_size(void *data)
    return dev->capacity * sizeof(float);
 }
 
+/* Sleep on the semaphore the render callback signals after every pull
+ * until at least len bytes fit in the ring, capped at half of it so the
+ * wait always ends. Returns the free space then, or 0 once the unit has
+ * stopped (paused, or interrupted, which the running check catches as
+ * coreaudio_write() does). */
+static size_t coreaudio_wait_writable(void *data, size_t len)
+{
+   coreaudio_t *dev = (coreaudio_t*)data;
+   size_t want      = len / sizeof(float);
+   size_t half      = dev->capacity / 2;
+
+   if (want > half)
+      want = half;
+
+   for (;;)
+   {
+      size_t avail;
+      UInt32 running = 0;
+      UInt32 size    = sizeof(running);
+
+      if (dev->is_paused)
+         return 0;
+      avail = rb_write_avail(dev);
+      if (avail >= want)
+         return avail * sizeof(float);
+      if (AudioUnitGetProperty(dev->dev,
+               kAudioOutputUnitProperty_IsRunning,
+               kAudioUnitScope_Global, 0,
+               &running, &size) == noErr && !running)
+         return 0;
+      dispatch_semaphore_wait(dev->sema,
+            dispatch_time(DISPATCH_TIME_NOW, 100 * NSEC_PER_MSEC));
+   }
+}
+
 /* TODO/FIXME - implement */
 static void *coreaudio_device_list_new(void *data) { return NULL; }
 static void coreaudio_device_list_free(void *data, void *array_list_data) { }
@@ -1233,7 +1305,8 @@ audio_driver_t audio_coreaudio = {
    coreaudio_device_list_free,
    coreaudio_write_avail,
    coreaudio_buffer_size,
-   coreaudio_write_raw
+   coreaudio_write_raw,
+   coreaudio_wait_writable
 };
 
 #endif /* RARCH_COREAUDIO_LEGACY */
