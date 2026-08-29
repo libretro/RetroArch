@@ -371,6 +371,21 @@ typedef struct vk
       unsigned num_quads;            /* max quads this IBO can index */
    } quad_ibo;
 
+   /* Static vertex buffer for the menu ribbon pipelines. Their vertex
+    * array (dispca) is a fixed 64x64 grid that never changes after
+    * the menu driver builds it, yet it was re-interleaved into the
+    * per-frame VBO chain on every frame: 8064 vertices, 258 KiB of
+    * write-combined traffic a frame. Baked once here and rebuilt
+    * only when the source array or its size changes. */
+   struct
+   {
+      VkBuffer buffer;               /* ptr alignment */
+      VkDeviceMemory memory;         /* ptr alignment */
+      const float *src;              /* dispca vertex array it was baked from */
+      unsigned vertices;
+      float head[4], tail[4];        /* first/last floats, to catch a rebuilt array at the same address */
+   } ribbon_vbo;
+
 #ifdef VULKAN_HDR_SWAPCHAIN
    struct
    {
@@ -2078,17 +2093,167 @@ static void gfx_display_vk_draw_pipeline(
 }
 #endif
 
+/* Interleave one draw's streams into the vk_vertex layout. The static
+ * fallback arrays vk_tex_coords and vk_colors only hold data for four
+ * vertices, so past those the affected pipelines (which never read the
+ * attributes) get constant defaults. */
+static void gfx_display_vk_bake_vertices(struct vk_vertex *pv,
+      const float *vertex, const float *tex_coord, const float *color,
+      unsigned vertices, int use_default_tc, int use_default_color)
+{
+   unsigned i;
+   for (i = 0; i < vertices; i++, pv++)
+   {
+      pv->x       = *vertex++;
+      /* Y-flip. Vulkan is top-left clip space */
+      pv->y       = 1.0f - (*vertex++);
+
+      if (use_default_tc && i >= 4)
+      {
+         pv->tex_x = 0.0f;
+         pv->tex_y = 0.0f;
+      }
+      else
+      {
+         pv->tex_x = *tex_coord++;
+         pv->tex_y = *tex_coord++;
+      }
+
+      if (use_default_color && i >= 4)
+      {
+         pv->color.r = 1.0f;
+         pv->color.g = 1.0f;
+         pv->color.b = 1.0f;
+         pv->color.a = 1.0f;
+      }
+      else
+      {
+         pv->color.r = *color++;
+         pv->color.g = *color++;
+         pv->color.b = *color++;
+         pv->color.a = *color++;
+      }
+   }
+}
+
+static void vulkan_deinit_ribbon_vbo(vk_t *vk)
+{
+   VkDevice device = vk->context->device;
+   if (vk->ribbon_vbo.buffer != VK_NULL_HANDLE)
+      vkDestroyBuffer(device, vk->ribbon_vbo.buffer, NULL);
+   if (vk->ribbon_vbo.memory != VK_NULL_HANDLE)
+      vkFreeMemory(device, vk->ribbon_vbo.memory, NULL);
+   vk->ribbon_vbo.buffer   = VK_NULL_HANDLE;
+   vk->ribbon_vbo.memory   = VK_NULL_HANDLE;
+   vk->ribbon_vbo.src      = NULL;
+   vk->ribbon_vbo.vertices = 0;
+}
+
+/* True when the static ribbon VBO holds this exact vertex array. */
+static bool vulkan_ribbon_vbo_matches(const vk_t *vk,
+      const float *vertex, unsigned vertices)
+{
+   if (vk->ribbon_vbo.buffer == VK_NULL_HANDLE
+         || vk->ribbon_vbo.src != vertex
+         || vk->ribbon_vbo.vertices != vertices
+         || vertices < 4)
+      return false;
+   return    !memcmp(vk->ribbon_vbo.head, vertex, sizeof(vk->ribbon_vbo.head))
+          && !memcmp(vk->ribbon_vbo.tail, vertex + 2 * vertices - 4,
+                sizeof(vk->ribbon_vbo.tail));
+}
+
+/* Bake the ribbon's interleaved vertices into a buffer of their own,
+ * host-visible like the quad IBO, so the per-frame draw only binds it.
+ * On any failure the buffer is left absent and the draw falls back to
+ * the per-frame chain bake. */
+static void vulkan_init_ribbon_vbo(vk_t *vk,
+      const float *vertex, const float *tex_coord, const float *color,
+      unsigned vertices, int use_default_tc, int use_default_color)
+{
+   VkResult res;
+   void *mapped                            = NULL;
+   VkDevice device                         = vk->context->device;
+   VkDeviceSize vbo_size                   = (VkDeviceSize)vertices * sizeof(struct vk_vertex);
+   VkBufferCreateInfo buffer_info;
+   VkMemoryRequirements mem_reqs;
+   VkMemoryAllocateInfo alloc;
+
+   /* A submitted frame may still read the old buffer; retiring it is
+    * only safe once the device has drained, which a rebuild forces. */
+   if (vk->ribbon_vbo.buffer != VK_NULL_HANDLE)
+   {
+      vkDeviceWaitIdle(device);
+      vulkan_deinit_ribbon_vbo(vk);
+   }
+   if (vertices < 4)
+      return;
+
+   buffer_info.sType                       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+   buffer_info.pNext                       = NULL;
+   buffer_info.flags                       = 0;
+   buffer_info.size                        = vbo_size;
+   buffer_info.usage                       = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+   buffer_info.sharingMode                 = VK_SHARING_MODE_EXCLUSIVE;
+   buffer_info.queueFamilyIndexCount       = 0;
+   buffer_info.pQueueFamilyIndices         = NULL;
+
+   res = vkCreateBuffer(device, &buffer_info, NULL, &vk->ribbon_vbo.buffer);
+   if (res != VK_SUCCESS)
+   {
+      vk->ribbon_vbo.buffer = VK_NULL_HANDLE;
+      return;
+   }
+   vkGetBufferMemoryRequirements(device, vk->ribbon_vbo.buffer, &mem_reqs);
+
+   alloc.sType                             = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+   alloc.pNext                             = NULL;
+   alloc.allocationSize                    = mem_reqs.size;
+   alloc.memoryTypeIndex                   = vulkan_find_memory_type_fallback(
+         &vk->context->memory_properties,
+         mem_reqs.memoryTypeBits,
+           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+         | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+
+   res = vkAllocateMemory(device, &alloc, NULL, &vk->ribbon_vbo.memory);
+   if (res != VK_SUCCESS)
+   {
+      vkDestroyBuffer(device, vk->ribbon_vbo.buffer, NULL);
+      vk->ribbon_vbo.buffer = VK_NULL_HANDLE;
+      vk->ribbon_vbo.memory = VK_NULL_HANDLE;
+      return;
+   }
+   vkBindBufferMemory(device, vk->ribbon_vbo.buffer, vk->ribbon_vbo.memory, 0);
+
+   res = vkMapMemory(device, vk->ribbon_vbo.memory, 0, vbo_size, 0, &mapped);
+   if (res != VK_SUCCESS || !mapped)
+   {
+      vulkan_deinit_ribbon_vbo(vk);
+      return;
+   }
+   gfx_display_vk_bake_vertices((struct vk_vertex*)mapped,
+         vertex, tex_coord, color, vertices,
+         use_default_tc, use_default_color);
+   vkUnmapMemory(device, vk->ribbon_vbo.memory);
+
+   vk->ribbon_vbo.src      = vertex;
+   vk->ribbon_vbo.vertices = vertices;
+   memcpy(vk->ribbon_vbo.head, vertex, sizeof(vk->ribbon_vbo.head));
+   memcpy(vk->ribbon_vbo.tail, vertex + 2 * vertices - 4,
+         sizeof(vk->ribbon_vbo.tail));
+}
+
 static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_width, unsigned video_height)
 {
-   unsigned i;
    int use_default_tc, use_default_color;
+   bool is_ribbon;
    struct vk_buffer_range range;
    struct vk_texture *texture    = NULL;
    const float *vertex           = NULL;
    const float *tex_coord        = NULL;
    const float *color            = NULL;
-   struct vk_vertex *pv          = NULL;
    vk_t *vk                      = (vk_t*)data;
 
    if (!vk || !draw)
@@ -2126,44 +2291,51 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
 
    vk->tracker.dirty             |= VULKAN_DIRTY_DYNAMIC_BIT;
 
-   /* Bake interleaved VBO. Kinda ugly, we should probably try to move to
-    * an interleaved model to begin with ... */
-   if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo,
-            draw->coords->vertices * sizeof(struct vk_vertex), &range))
-      return;
-
-   pv = (struct vk_vertex*)range.data;
-   for (i = 0; i < draw->coords->vertices; i++, pv++)
+   /* The ribbon pipelines draw one immutable vertex array every
+    * frame; that one lives in a static buffer baked on first sight
+    * (see ribbon_vbo). Everything else is interleaved into this
+    * frame's chain. */
+   is_ribbon = false;
+#ifdef HAVE_SHADERPIPELINE
+   switch (draw->pipeline_id)
    {
-      pv->x       = *vertex++;
-      /* Y-flip. Vulkan is top-left clip space */
-      pv->y       = 1.0f - (*vertex++);
-
-      if (use_default_tc && i >= 4)
+      case VIDEO_SHADER_MENU:
+      case VIDEO_SHADER_MENU_2:
+      case VIDEO_SHADER_MENU_3:
+      case VIDEO_SHADER_MENU_4:
+      case VIDEO_SHADER_MENU_5:
+      case VIDEO_SHADER_MENU_6:
+         is_ribbon = true;
+         break;
+      default:
+         break;
+   }
+#endif
+   if (is_ribbon)
+   {
+      if (!vulkan_ribbon_vbo_matches(vk, vertex, draw->coords->vertices))
+         vulkan_init_ribbon_vbo(vk, vertex, tex_coord, color,
+               draw->coords->vertices, use_default_tc, use_default_color);
+      if (vk->ribbon_vbo.buffer != VK_NULL_HANDLE)
       {
-         pv->tex_x = 0.0f;
-         pv->tex_y = 0.0f;
+         range.buffer = vk->ribbon_vbo.buffer;
+         range.offset = 0;
+         range.data   = NULL;
+         is_ribbon    = true;
       }
       else
-      {
-         pv->tex_x = *tex_coord++;
-         pv->tex_y = *tex_coord++;
-      }
-
-      if (use_default_color && i >= 4)
-      {
-         pv->color.r = 1.0f;
-         pv->color.g = 1.0f;
-         pv->color.b = 1.0f;
-         pv->color.a = 1.0f;
-      }
-      else
-      {
-         pv->color.r = *color++;
-         pv->color.g = *color++;
-         pv->color.b = *color++;
-         pv->color.a = *color++;
-      }
+         is_ribbon    = false;
+   }
+   if (!is_ribbon)
+   {
+      /* Bake interleaved VBO. Kinda ugly, we should probably try to move to
+       * an interleaved model to begin with ... */
+      if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo,
+               draw->coords->vertices * sizeof(struct vk_vertex), &range))
+         return;
+      gfx_display_vk_bake_vertices((struct vk_vertex*)range.data,
+            vertex, tex_coord, color, draw->coords->vertices,
+            use_default_tc, use_default_color);
    }
 
    switch (draw->pipeline_id)
@@ -4941,6 +5113,7 @@ static void vulkan_deinit_static_resources(vk_t *vk)
 
    /* Destroy shared quad index buffer. */
    vulkan_deinit_quad_ibo(vk);
+   vulkan_deinit_ribbon_vbo(vk);
 
    vkDestroyCommandPool(vk->context->device,
          vk->staging_pool, NULL);
