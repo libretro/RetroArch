@@ -371,7 +371,12 @@ static size_t sl_buffer_size(void *data)
    return sl->buf_size * sl->buf_count;
 }
 
-/* TODO/FIXME - implement */
+/* The stream is set up with SLDataFormat_PCM, which is integer only.
+ * OpenSL ES on API level 21 and later accepts float through
+ * SLAndroidDataFormat_PCM_EX with SL_ANDROID_PCM_REPRESENTATION_FLOAT;
+ * taking it would mean negotiating that at open and keeping this PCM16
+ * path for older levels. Not done, and not attempted without an NDK
+ * to build against. */
 static bool sl_use_float(void *data) { return false; }
 
 audio_driver_t audio_opensl = {

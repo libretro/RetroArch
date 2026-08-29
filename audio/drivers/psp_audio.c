@@ -343,7 +343,8 @@ static size_t psp_wait_writable(void *data, size_t len)
    return avail;
 }
 
-/* TODO/FIXME - implement? */
+/* sceAudio takes 16-bit PCM only; there is no float output on the
+ * PSP hardware or in the kernel API. */
 static bool psp_audio_use_float(void *data) { return false; }
 static size_t psp_buffer_size(void *data)
 {

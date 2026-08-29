@@ -126,7 +126,9 @@ static void ra_free(void *data)
    free(data);
 }
 
-/* TODO/FIXME - implement? */
+/* The stream is opened as ROAR_CODEC_PCM_S at 16 bits. libroar has no
+ * float PCM codec in the versions this driver has been built against;
+ * revisit only if one appears. */
 static bool ra_use_float(void *data) { return false; }
 static size_t ra_write_avail(void *data) { return 0; }
 

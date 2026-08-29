@@ -131,7 +131,8 @@ static void xenon360_audio_free(void *data)
       free(data);
 }
 
-/* TODO/FIXME - implement? */
+/* libxenon's sound API submits 16-bit big-endian PCM to the hardware;
+ * the driver byteswaps for it. There is no float path. */
 static bool xenon360_use_float(void *data) { return false; }
 static size_t xenon360_write_avail(void *data) { return 0; }
 

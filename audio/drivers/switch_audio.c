@@ -239,8 +239,9 @@ static void switch_audio_free(void *data)
    free(swa);
 }
 
-/* TODO/FIXME - implement float too? */
-static bool switch_audio_use_float(void *data) { return false; /* force INT16 */ }
+/* audout is PCM_INT16 only; init checks for exactly that format and
+ * refuses anything else. Float is not something this service offers. */
+static bool switch_audio_use_float(void *data) { return false; }
 
 static size_t switch_audio_write_avail(void *data)
 {
