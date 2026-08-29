@@ -1594,8 +1594,14 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state,
    size_t superblock_size      = movie->superblocks->object_size;
    size_t superblock_byte_size = superblock_size*block_byte_size;
    size_t superblock_count     = state_size / superblock_byte_size + (state_size % superblock_byte_size != 0);
-   uint32_t *superblock_buf    = (uint32_t*)calloc(superblock_size, sizeof(uint32_t));
-   uint8_t *padded_block       = NULL;
+   /* The superblock index list and the zero-padded tail block share one
+    * zeroed allocation per call; the padded block sits behind the list
+    * on a 64-byte boundary and is only touched by the final partial
+    * superblock, if there is one. */
+   size_t superblock_buf_bytes = ((superblock_size * sizeof(uint32_t)) + 63) & ~(size_t)63;
+   uint32_t *superblock_buf    = (uint32_t*)calloc(1, superblock_buf_bytes + block_byte_size);
+   uint8_t *padded_block       = (uint8_t*)superblock_buf + superblock_buf_bytes;
+   bool padded_block_used      = false;
    intfstream_t *out_stream    = intfstream_open_memory(output,
          RETRO_VFS_FILE_ACCESS_READ_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE,
          output_capacity);
@@ -1642,11 +1648,10 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state,
          }
          else if (block_start + block_byte_size > state_size)
          {
-            if (!padded_block)
-               padded_block = (uint8_t*)calloc(block_byte_size, sizeof(uint8_t));
-            else
+            if (padded_block_used)
                memset(padded_block + (state_size-block_start),
                      0, block_byte_size-(state_size-block_start));
+            padded_block_used = true;
             memcpy(padded_block, state+block_start, state_size - block_start);
             found_block = uint32s_index_insert(movie->blocks,
                   (uint32_t*)padded_block,
@@ -1699,8 +1704,6 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state,
    for (i = 0; i < superblock_count; i++)
        rmsgpack_write_int(out_stream, movie->superblock_seq[i]);
    free(superblock_buf);
-   if (padded_block)
-     free(padded_block);
    movie->cur_save_valid = true;
    total_checkpoints++;
    total_encode_micros += cpu_features_get_time_usec() - start;
