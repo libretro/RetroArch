@@ -4698,11 +4698,6 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_CORE_DEINIT:
          {
-            struct retro_hw_render_callback *hwr = NULL;
-            video_driver_state_t
-               *video_st                         = video_state_get_ptr();
-            rarch_system_info_t *sys_info        = &runloop_st->system;
-            
             /* Restore unpaused state. The recursive command_event call
              * here re-enters this dispatcher; the UNPAUSE branch is
              * deliberately small (clears flags, resumes audio) and

@@ -671,6 +671,7 @@ static unsigned sysfs_read_uint(const char *path, unsigned fallback)
 }
 #endif
 
+#if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) || defined(__linux__)
 struct cpu_proc_rank
 {
    unsigned freq; /* kHz, higher is a stronger core */
@@ -694,6 +695,7 @@ static int cpu_proc_rank_cmp(const void *a, const void *b)
       return (l->id   < r->id)   ? -1 : 1;
    return 0;
 }
+#endif
 
 size_t cpu_features_get_processor_order(unsigned *s, size_t len)
 {

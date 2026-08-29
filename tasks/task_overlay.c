@@ -871,7 +871,6 @@ static void task_overlay_resolve_iterate(retro_task_t *task)
 
 static void task_overlay_deferred_loading(retro_task_t *task, void *budget)
 {
-   size_t i                  = 0;
    overlay_loader_t *loader  = (overlay_loader_t*)task->state;
    struct overlay *overlay   = &loader->overlays[loader->pos];
    bool not_done             = loader->pos < loader->size;

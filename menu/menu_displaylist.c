@@ -1444,8 +1444,11 @@ static unsigned menu_displaylist_parse_core_manager_list(file_list_t *list,
          count++;
 #endif
 
+#if defined(HAVE_IMAGEVIEWER) || defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_AUDIOMIXER)
    {
-      /* MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM requires 'settings' */
+      /* MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM requires 'settings',
+       * so the scope only exists where one of the entries below
+       * is built in. */
       settings_t *settings = config_get_ptr();
 #ifdef HAVE_IMAGEVIEWER
       if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
@@ -1460,6 +1463,7 @@ static unsigned menu_displaylist_parse_core_manager_list(file_list_t *list,
          count++;
 #endif
    }
+#endif
 
    return count;
 }

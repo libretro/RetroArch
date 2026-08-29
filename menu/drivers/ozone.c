@@ -5798,7 +5798,6 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone,
    file_list_t *selection_buf    = NULL;
    int entry_padding             = ozone_get_entries_padding(ozone);
    int sublabel_max_width        = 0;
-   float scale_factor            = ozone->last_scale_factor;
    bool menu_current_sel_only    = settings->bools.menu_show_sublabels_current_selection_only;
    bool cursor_in_sidebar        = (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR);
    bool draw_old_list            = (ozone->flags & OZONE_FLAG_DRAW_OLD_LIST);

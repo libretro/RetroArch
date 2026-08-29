@@ -872,33 +872,36 @@ const char *hw_render_context_name(
 
 static enum retro_hw_context_type hw_render_context_type(const char *s)
 {
-   size_t _len = strlen(s) + 1;
+   /* Every test here is an exact match against a fixed name, so
+    * string_is_equal() says what is meant and carries no length of
+    * its own - the driver set is decided at build time, and on a
+    * build with none of them a cached length has no reader. */
 #ifdef HAVE_OPENGL_CORE
-   if (_len >= 7 && memcmp(s, "glcore", 7) == 0)
+   if (string_is_equal(s, "glcore"))
       return RETRO_HW_CONTEXT_OPENGL_CORE;
 #endif
 #ifdef HAVE_OPENGL
-   if (_len >= 3 && memcmp(s, "gl", 3) == 0)
+   if (string_is_equal(s, "gl"))
       return RETRO_HW_CONTEXT_OPENGL;
 #endif
 #ifdef HAVE_VULKAN
-   if (_len >= 7 && memcmp(s, "vulkan", 7) == 0)
+   if (string_is_equal(s, "vulkan"))
       return RETRO_HW_CONTEXT_VULKAN;
 #endif
 #if defined(HAVE_D3D9) && defined(HAVE_HLSL)
-   if (_len >= 10 && memcmp(s, "d3d9_hlsl", 10) == 0)
+   if (string_is_equal(s, "d3d9_hlsl"))
       return RETRO_HW_CONTEXT_D3D9;
 #endif
 #ifdef HAVE_D3D10
-   if (_len >= 6 && memcmp(s, "d3d10", 6) == 0)
+   if (string_is_equal(s, "d3d10"))
       return RETRO_HW_CONTEXT_D3D10;
 #endif
 #ifdef HAVE_D3D11
-   if (_len >= 6 && memcmp(s, "d3d11", 6) == 0)
+   if (string_is_equal(s, "d3d11"))
       return RETRO_HW_CONTEXT_D3D11;
 #endif
 #ifdef HAVE_D3D12
-   if (_len >= 6 && memcmp(s, "d3d12", 6) == 0)
+   if (string_is_equal(s, "d3d12"))
       return RETRO_HW_CONTEXT_D3D12;
 #endif
    return RETRO_HW_CONTEXT_NONE;

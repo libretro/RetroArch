@@ -173,6 +173,7 @@ enum db_state_flags_enum
    DB_STATE_FLAG_SIZE_CHECKED             = (1 << 4)
 };
 
+#ifdef HAVE_LIBRETRODB
 /* Ceiling on the crc and serial indexes a single scan may hold.
  *
  * Taken as a share of what is actually free rather than from a
@@ -217,6 +218,7 @@ static size_t task_database_index_budget(void)
 
    return (size_t)share;
 }
+#endif
 
 typedef struct database_state_handle
 {
