@@ -22,6 +22,7 @@
 #include <retro_inline.h>
 #include <string/stdstring.h>
 #include <retro_math.h>
+#include <memalign.h>
 #include <retro_timers.h>
 #include <time/rtime.h>
 
@@ -1856,7 +1857,7 @@ void video_driver_filter_free(void)
 #ifdef _3DS
       linearFree(video_st->state_buffer);
 #else
-      free(video_st->state_buffer);
+      memalign_free(video_st->state_buffer);
 #endif
    }
    video_st->state_buffer    = NULL;
@@ -1926,12 +1927,14 @@ void video_driver_init_filter(enum retro_pixel_format colfmt_int,
    video_st->state_out_bpp   = (video_st->flags & VIDEO_FLAG_STATE_OUT_RGB32)
       ? sizeof(uint32_t) : sizeof(uint16_t);
 
-   /* TODO: Aligned output. */
+   /* Every softfilter writes this with vector stores and the video
+    * driver reads it back for upload, so start it on a cache line:
+    * with the usual pitches every row then begins on one too. */
 #ifdef _3DS
    buf = linearMemAlign(
          width * height * video_st->state_out_bpp, 0x80);
 #else
-   buf = malloc(
+   buf = memalign_alloc(64,
          width * height * video_st->state_out_bpp);
 #endif
    if (!buf)
