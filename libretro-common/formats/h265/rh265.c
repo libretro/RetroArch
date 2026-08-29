@@ -133,11 +133,8 @@
 #endif
 
 static RH265_INLINE int rh265_min(int a, int b) { return a < b ? a : b; }
-static RH265_INLINE int rh265_max(int a, int b) { return a > b ? a : b; }
 static RH265_INLINE int rh265_clip3(int lo, int hi, int v)
 { return v < lo ? lo : (v > hi ? hi : v); }
-static RH265_INLINE uint8_t rh265_clip8(int v)
-{ return (uint8_t)(v < 0 ? 0 : (v > 255 ? 255 : v)); }
 
 
 /* ==================== rh265_bits.h ==================== */

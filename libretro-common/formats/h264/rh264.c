@@ -1454,7 +1454,9 @@ static void rh264_intra_chroma_h(uint8_t *dst,int stride,int mode,
          if(use_left){for(i=0;i<4;i++)sum+=dst[(uy+i)*stride-1];cnt+=4;}
          dc=(cnt==8)?(sum+4)>>3:(cnt==4)?(sum+2)>>2:128;
          for(y=0;y<4;y++)for(x=0;x<4;x++)dst[(uy+y)*stride+ux+x]=(uint8_t)dc;
-      } break;}
+      }
+      break;
+   }
    }
 }
 /* Intra_4x4 (8.3.1.2). p[] samples: p[-1,-1]=C, p[x,-1]=T[0..7] (top+topright),
