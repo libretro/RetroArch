@@ -1514,6 +1514,11 @@ static void rh264_intra4x4(uint8_t *dst,int stride,int mode,int have_up,int have
 typedef struct {
    int w,h,mbw,mbh,ystride,cstride;
    uint8_t *Y,*U,*V;
+   /* Yb/Ub/Vb are views into planes; the per-block maps below and, for
+    * a DPB picture, mvg/mvg2 are views into meta. Both blocks are sized
+    * from the SPS geometry. The plane block travels with the plane
+    * pointers when a frame swaps its planes into an output slot. */
+   uint8_t *planes, *meta;
    uint8_t *Yb,*Ub,*Vb;
    int ysb,csb,mbh_frame,field;
    int mbaff;             /* macroblock pairs, scanned two rows at a time */
@@ -6234,23 +6239,31 @@ struct rh264_video
 
 static void rh264_frame_free(rh264_frame *f)
 {
-   free(f->Yb);   free(f->Ub);     free(f->Vb);
-   free(f->i4mode); free(f->nzL);
-   free(f->nzC[0]); free(f->nzC[1]);
-   free(f->mbqp);
-   free(f->mbt8);
-   free(f->mbslice);
-   free(f->mvg);
-   free(f->mvg2);
+   free(f->planes);
+   free(f->meta);
    memset(f, 0, sizeof(*f));
 }
 
+/* Region spacing inside a frame's plane and meta blocks, in bytes:
+ * every plane and map starts on a 64-byte boundary. */
+#define RH264_ARENA_ALIGN 64
+#define RH264_ARENA_NEXT(cur, bytes) \
+   ((((cur) + (bytes) + RH264_ARENA_ALIGN - 1) / RH264_ARENA_ALIGN) \
+    * RH264_ARENA_ALIGN)
 
-static int rh264_frame_alloc(rh264_frame *f, const rh264_sps *sps)
+/* Allocate a frame's planes and per-block maps from the SPS geometry:
+ * one zeroed block for the three planes and one for the maps, with the
+ * motion grids of a reference picture (with_mv) carved into the latter
+ * as well. */
+static int rh264_frame_alloc(rh264_frame *f, const rh264_sps *sps,
+      int with_mv)
 {
    int mbw = sps->pic_width_in_mbs;
    int mbh = sps->frame_mbs > 0 ? sps->frame_mbs
            : (sps->frame_height + 15) / 16;
+   size_t ylen, clen, o_ub, o_vb, plane_len;
+   size_t grid, mbs, mvlen, o_nzl, o_nzc0, o_nzc1, o_mbqp, o_mbt8,
+          o_mbslice, o_mvg, o_mvg2, meta_len;
    rh264_frame_free(f);
    f->w = sps->frame_width;  f->h = sps->frame_height;
    f->cropx = sps->crop_x;   f->cropy = sps->crop_y;
@@ -6259,22 +6272,48 @@ static int rh264_frame_alloc(rh264_frame *f, const rh264_sps *sps)
    f->mbh_frame = mbh; f->field = 0;
    f->cmbh = (sps->chroma_format_idc == 2) ? 16 : 8;
    f->ysb = f->ystride; f->csb = f->cstride;
-   f->Yb = (uint8_t*)calloc((size_t)f->ysb * mbh * 16, 1);
-   f->Ub = (uint8_t*)calloc((size_t)f->csb * mbh * f->cmbh, 1);
-   f->Vb = (uint8_t*)calloc((size_t)f->csb * mbh * f->cmbh, 1);
-   f->Y = f->Yb; f->U = f->Ub; f->V = f->Vb;
-   f->i4mode = (uint8_t*)calloc((size_t)mbw * 4 * mbh * 4, 1);
-   f->nzL    = (uint8_t*)calloc((size_t)mbw * 4 * mbh * 4, 1);
-   f->nzC[0] = (uint8_t*)calloc((size_t)mbw*2 * mbh*(f->cmbh/4), 1);
-   f->nzC[1] = (uint8_t*)calloc((size_t)mbw*2 * mbh*(f->cmbh/4), 1);
-   f->mbqp   = (uint8_t*)calloc((size_t)mbw * mbh, 1);
-   f->mbt8   = (uint8_t*)calloc((size_t)mbw * mbh, 1);
-   f->mbslice= (uint8_t*)calloc((size_t)mbw * mbh, 1);
-   if (!f->Yb || !f->Ub || !f->Vb || !f->i4mode || !f->nzL
-         || !f->nzC[0] || !f->nzC[1] || !f->mbqp || !f->mbt8 || !f->mbslice)
+
+   ylen      = (size_t)f->ysb * mbh * 16;
+   clen      = (size_t)f->csb * mbh * f->cmbh;
+   o_ub      = RH264_ARENA_NEXT(0,    ylen);
+   o_vb      = RH264_ARENA_NEXT(o_ub, clen);
+   plane_len = RH264_ARENA_NEXT(o_vb, clen);
+
+   grid      = (size_t)mbw * 4 * mbh * 4;
+   mbs       = (size_t)mbw * mbh;
+   mvlen     = with_mv ? grid * sizeof(rh264_mv) : 0;
+   o_nzl     = RH264_ARENA_NEXT(0,         grid);
+   o_nzc0    = RH264_ARENA_NEXT(o_nzl,     grid);
+   o_nzc1    = RH264_ARENA_NEXT(o_nzc0,    (size_t)mbw*2 * mbh*(f->cmbh/4));
+   o_mbqp    = RH264_ARENA_NEXT(o_nzc1,    (size_t)mbw*2 * mbh*(f->cmbh/4));
+   o_mbt8    = RH264_ARENA_NEXT(o_mbqp,    mbs);
+   o_mbslice = RH264_ARENA_NEXT(o_mbt8,    mbs);
+   o_mvg     = RH264_ARENA_NEXT(o_mbslice, mbs);
+   o_mvg2    = RH264_ARENA_NEXT(o_mvg,     mvlen);
+   meta_len  = RH264_ARENA_NEXT(o_mvg2,    mvlen);
+
+   f->planes = (uint8_t*)calloc(plane_len, 1);
+   f->meta   = (uint8_t*)calloc(meta_len, 1);
+   if (!f->planes || !f->meta)
    {
       rh264_frame_free(f);
       return -1;
+   }
+   f->Yb     = f->planes;
+   f->Ub     = f->planes + o_ub;
+   f->Vb     = f->planes + o_vb;
+   f->Y = f->Yb; f->U = f->Ub; f->V = f->Vb;
+   f->i4mode = f->meta;
+   f->nzL    = f->meta + o_nzl;
+   f->nzC[0] = f->meta + o_nzc0;
+   f->nzC[1] = f->meta + o_nzc1;
+   f->mbqp   = f->meta + o_mbqp;
+   f->mbt8   = f->meta + o_mbt8;
+   f->mbslice= f->meta + o_mbslice;
+   if (with_mv)
+   {
+      f->mvg  = (rh264_mv*)(f->meta + o_mvg);
+      f->mvg2 = (rh264_mv*)(f->meta + o_mvg2);
    }
    return 0;
 }
@@ -6314,23 +6353,14 @@ static int rh264_frame_alloc_if_needed(rh264_video *v)
    if (v->f.Yb && v->alloc_w == v->sps.frame_width
               && v->alloc_h == v->sps.frame_height)
       return 0;
-   if (rh264_frame_alloc(&v->f, &v->sps) != 0) return -1;
+   if (rh264_frame_alloc(&v->f, &v->sps, 0) != 0) return -1;
    {
       int n = v->sps.max_num_ref_frames, i;
       if (n < 1) n = 1;
       if (n > RH264_MAX_REFS) n = RH264_MAX_REFS;
       for (i = 0; i < v->dpb_size; i++) rh264_frame_free(&v->dpb[i]);
       for (i = 0; i < n; i++)
-      {
-         if (rh264_frame_alloc(&v->dpb[i], &v->sps) != 0) return -1;
-         v->dpb[i].mvg = (rh264_mv*)calloc(
-               (size_t)(v->dpb[i].mbw * 4) * (v->dpb[i].mbh * 4),
-               sizeof(rh264_mv));
-         v->dpb[i].mvg2 = (rh264_mv*)calloc(
-               (size_t)(v->dpb[i].mbw * 4) * (v->dpb[i].mbh * 4),
-               sizeof(rh264_mv));
-         if (!v->dpb[i].mvg || !v->dpb[i].mvg2) return -1;
-      }
+         if (rh264_frame_alloc(&v->dpb[i], &v->sps, 1) != 0) return -1;
       v->dpb_size = n;
       v->dpb_len  = 0;
       for (i = 0; i < RH264_OUT_SLOTS; i++)
@@ -9095,7 +9125,7 @@ static int rh264_out_push(rh264_video *v, int poc, int is_idr)
       if (!v->out_used[i] && i != v->out_show) { slot = i; break; }
    if (slot < 0) return -1;            /* cannot happen: delay < slot count */
    if (!v->out[slot].Yb)
-      if (rh264_frame_alloc(&v->out[slot], &v->sps) != 0) return -1;
+      if (rh264_frame_alloc(&v->out[slot], &v->sps, 0) != 0) return -1;
    if (!v->cur_field)
    {
       /* Frame pictures swap their planes into the output slot instead
@@ -9106,10 +9136,10 @@ static int rh264_out_push(rh264_video *v, int poc, int is_idr)
        * the copy - their two pictures fill the working planes
        * incrementally, which a swapped-in stale buffer would break. */
       uint8_t *ty = v->out[slot].Yb, *tu = v->out[slot].Ub,
-              *tv = v->out[slot].Vb;
+              *tv = v->out[slot].Vb, *tp = v->out[slot].planes;
       v->out[slot].Yb = v->f.Yb; v->out[slot].Ub = v->f.Ub;
-      v->out[slot].Vb = v->f.Vb;
-      v->f.Yb = ty; v->f.Ub = tu; v->f.Vb = tv;
+      v->out[slot].Vb = v->f.Vb; v->out[slot].planes = v->f.planes;
+      v->f.Yb = ty; v->f.Ub = tu; v->f.Vb = tv; v->f.planes = tp;
       v->f.Y = v->f.Yb; v->f.U = v->f.Ub; v->f.V = v->f.Vb;
       v->out[slot].Y = v->out[slot].Yb;
       v->out[slot].U = v->out[slot].Ub;
