@@ -205,6 +205,19 @@ typedef struct gl3
    unsigned menu_texture_width;
    unsigned menu_texture_height;
    GLuint scratch_vbos[GL_CORE_NUM_VBOS];
+   /* Static vertex buffer for the menu ribbon pipelines: their 64x64
+    * grid never changes after the menu driver builds it, yet it went
+    * through the streaming scratch VBOs on every frame, along with two
+    * attribute streams the ribbon shaders do not declare. Keyed on the
+    * source array's address and length plus its first and last floats
+    * so a rebuilt array at the same address is re-uploaded. */
+   struct
+   {
+      GLuint vbo;
+      const float *src;
+      unsigned vertices;
+      float head[4], tail[4];
+   } ribbon;
    GLuint hw_render_texture;
    GLuint hw_render_fbo;
    GLuint hw_render_rb_ds;
@@ -623,6 +636,34 @@ uint32_t gl3_get_cross_compiler_target_version(void)
    return 100 * major + 10 * minor;
 }
 
+/* Bind the ribbon's static VBO, uploading it first if this vertex
+ * array has not been seen. Returns false if it cannot be had, in which
+ * case the caller streams through the scratch VBOs as before. */
+static bool gl3_bind_ribbon_vbo(gl3_t *gl, const float *vertex,
+      unsigned vertices)
+{
+   size_t len = 2 * sizeof(float) * (size_t)vertices;
+   if (vertices < 4)
+      return false;
+   if (!gl->ribbon.vbo)
+      glGenBuffers(1, &gl->ribbon.vbo);
+   if (!gl->ribbon.vbo)
+      return false;
+   glBindBuffer(GL_ARRAY_BUFFER, gl->ribbon.vbo);
+   if (   gl->ribbon.src == vertex
+       && gl->ribbon.vertices == vertices
+       && !memcmp(gl->ribbon.head, vertex, sizeof(gl->ribbon.head))
+       && !memcmp(gl->ribbon.tail, vertex + 2 * vertices - 4,
+             sizeof(gl->ribbon.tail)))
+      return true;
+   glBufferData(GL_ARRAY_BUFFER, len, vertex, GL_STATIC_DRAW);
+   gl->ribbon.src      = vertex;
+   gl->ribbon.vertices = vertices;
+   memcpy(gl->ribbon.head, vertex, sizeof(gl->ribbon.head));
+   memcpy(gl->ribbon.tail, vertex + 2 * vertices - 4, sizeof(gl->ribbon.tail));
+   return true;
+}
+
 static void gl3_bind_scratch_vbo(gl3_t *gl, const void *data, size_t len)
 {
    if (!gl->scratch_vbos[gl->scratch_vbo_index])
@@ -924,30 +965,51 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
                          4, mat->data);
       }
 
-      glEnableVertexAttribArray(0);
-      glEnableVertexAttribArray(1);
-      glEnableVertexAttribArray(2);
+#ifdef HAVE_SHADERPIPELINE
+      /* The two ribbon shaders declare only the position attribute, and
+       * the menu driver hands them thousands of vertices with no
+       * texture or colour streams of their own: streaming the
+       * four-vertex default arrays for them read far past their end
+       * every frame. Bind the position from the static ribbon VBO
+       * and leave the other attributes disabled. */
+      if (     (   draw->pipeline_id == VIDEO_SHADER_MENU
+                || draw->pipeline_id == VIDEO_SHADER_MENU_2)
+            && gl3_bind_ribbon_vbo(gl, coords.vertex, coords.vertices))
+      {
+         glEnableVertexAttribArray(0);
+         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE,
+               2 * sizeof(float), (void *)(uintptr_t)0);
+         glDrawArrays(GL_TRIANGLE_STRIP, 0, coords.vertices);
+         glDisableVertexAttribArray(0);
+      }
+      else
+#endif
+      {
+         glEnableVertexAttribArray(0);
+         glEnableVertexAttribArray(1);
+         glEnableVertexAttribArray(2);
 
-      gl3_bind_scratch_vbo(gl, coords.vertex,
-            2 * sizeof(float) * coords.vertices);
-      glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE,
-            2 * sizeof(float), (void *)(uintptr_t)0);
-      gl3_bind_scratch_vbo(gl, coords.tex_coord,
-            2 * sizeof(float) * coords.vertices);
-      glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE,
-            2 * sizeof(float), (void *)(uintptr_t)0);
-      gl3_bind_scratch_vbo(gl, coords.color,
-            4 * sizeof(float) * coords.vertices);
-      glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE,
-            4 * sizeof(float), (void *)(uintptr_t)0);
+         gl3_bind_scratch_vbo(gl, coords.vertex,
+               2 * sizeof(float) * coords.vertices);
+         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE,
+               2 * sizeof(float), (void *)(uintptr_t)0);
+         gl3_bind_scratch_vbo(gl, coords.tex_coord,
+               2 * sizeof(float) * coords.vertices);
+         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE,
+               2 * sizeof(float), (void *)(uintptr_t)0);
+         gl3_bind_scratch_vbo(gl, coords.color,
+               4 * sizeof(float) * coords.vertices);
+         glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE,
+               4 * sizeof(float), (void *)(uintptr_t)0);
 
-      /* See the matching comment in the chain.active branch above:
-       * every caller passes TRIANGLESTRIP. */
-      glDrawArrays(GL_TRIANGLE_STRIP, 0, coords.vertices);
+         /* See the matching comment in the chain.active branch above:
+          * every caller passes TRIANGLESTRIP. */
+         glDrawArrays(GL_TRIANGLE_STRIP, 0, coords.vertices);
 
-      glDisableVertexAttribArray(0);
-      glDisableVertexAttribArray(1);
-      glDisableVertexAttribArray(2);
+         glDisableVertexAttribArray(0);
+         glDisableVertexAttribArray(1);
+         glDisableVertexAttribArray(2);
+      }
    }
 #endif /* HAVE_SLANG */
 
@@ -1697,6 +1759,11 @@ static void gl3_free_scratch_vbos(gl3_t *gl)
    for (i = 0; i < GL_CORE_NUM_VBOS; i++)
       if (gl->scratch_vbos[i])
          glDeleteBuffers(1, &gl->scratch_vbos[i]);
+   if (gl->ribbon.vbo)
+      glDeleteBuffers(1, &gl->ribbon.vbo);
+   gl->ribbon.vbo      = 0;
+   gl->ribbon.src      = NULL;
+   gl->ribbon.vertices = 0;
 }
 
 static void gl3_overlay_vertex_geom(void *data,
