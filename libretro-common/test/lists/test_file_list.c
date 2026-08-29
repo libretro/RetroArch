@@ -550,6 +550,162 @@ START_TEST (test_userdata_hook_survives_growth)
 }
 END_TEST
 
+
+/* The shared empty string.  file_list_append() is handed "" constantly
+ * -- a directory listing labels every entry that way -- and each one
+ * used to cost a malloc() for a lone NUL byte.
+ *
+ * What has to hold is that the entry still reads back as a valid empty
+ * string rather than NULL, because storing NULL would change what
+ * file_list_get_label_at_offset() returns and every strlen() of an
+ * entry field in the menu drivers would need auditing.  And the shared
+ * buffer must survive being "freed" by any number of entries and lists;
+ * under ASan a double free of it fails these outright. */
+
+START_TEST (test_empty_label_is_empty_not_null)
+{
+   file_list_t list;
+
+   list_init(&list);
+   ck_assert(file_list_append(&list, "path", "", 0, 0, 0));
+
+   ck_assert_ptr_nonnull(list.list[0].label);
+   ck_assert_str_eq(list.list[0].label, "");
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+START_TEST (test_empty_strings_are_shared)
+{
+   file_list_t list;
+
+   list_init(&list);
+   ck_assert(file_list_append(&list, "", "", 0, 0, 0));
+   ck_assert(file_list_append(&list, "", "", 0, 0, 0));
+
+   /* One buffer for every empty field of every entry: this is the
+    * allocation the change removes. */
+   ck_assert_ptr_eq(list.list[0].label, list.list[1].label);
+   ck_assert_ptr_eq(list.list[0].path,  list.list[0].label);
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+START_TEST (test_null_stays_null)
+{
+   file_list_t list;
+
+   list_init(&list);
+   /* NULL and "" are different inputs and stay different. */
+   ck_assert(file_list_append(&list, NULL, NULL, 0, 0, 0));
+   ck_assert_ptr_null(list.list[0].path);
+   ck_assert_ptr_null(list.list[0].label);
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+START_TEST (test_shared_empty_survives_two_lists)
+{
+   file_list_t a, b;
+
+   list_init(&a);
+   list_init(&b);
+   ck_assert(file_list_append(&a, "", "", 0, 0, 0));
+   ck_assert(file_list_append(&b, "", "", 0, 0, 0));
+
+   /* Tearing down one list must not release a buffer the other is
+    * still pointing at, nor free a static a second time. */
+   file_list_deinitialize(&a);
+   ck_assert_str_eq(b.list[0].label, "");
+   file_list_deinitialize(&b);
+}
+END_TEST
+
+START_TEST (test_shared_empty_survives_clear_and_pop)
+{
+   file_list_t list;
+   size_t dir_ptr = 0;
+
+   list_init(&list);
+   ck_assert(file_list_append(&list, "", "", 0, 0, 0));
+   ck_assert(file_list_append(&list, "", "", 0, 0, 0));
+
+   file_list_pop(&list, &dir_ptr);
+   ck_assert_uint_eq(list.size, 1);
+   ck_assert_str_eq(list.list[0].label, "");
+
+   file_list_clear(&list);
+   ck_assert_uint_eq(list.size, 0);
+
+   /* Still usable afterwards: the static was not released by either. */
+   ck_assert(file_list_append(&list, "", "", 0, 0, 0));
+   ck_assert_str_eq(list.list[0].label, "");
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+START_TEST (test_set_label_across_empty_and_nonempty)
+{
+   file_list_t list;
+
+   list_init(&list);
+   ck_assert(file_list_append(&list, "p", "", 0, 0, 0));
+
+   /* Empty -> non-empty: the setter must not free() the static. */
+   file_list_set_label_at_offset(&list, 0, "real");
+   ck_assert_str_eq(list.list[0].label, "real");
+
+   /* Non-empty -> empty: the heap block must be released and the
+    * static installed. */
+   file_list_set_label_at_offset(&list, 0, "");
+   ck_assert_str_eq(list.list[0].label, "");
+
+   file_list_set_label_at_offset(&list, 0, "again");
+   ck_assert_str_eq(list.list[0].label, "again");
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+START_TEST (test_set_alt_across_empty_and_nonempty)
+{
+   file_list_t list;
+
+   list_init(&list);
+   ck_assert(file_list_append(&list, "p", "l", 0, 0, 0));
+
+   file_list_set_alt_at_offset(&list, 0, "");
+   ck_assert_str_eq(list.list[0].alt, "");
+   file_list_set_alt_at_offset(&list, 0, "alt");
+   ck_assert_str_eq(list.list[0].alt, "alt");
+   file_list_set_alt_at_offset(&list, 0, "");
+   ck_assert_str_eq(list.list[0].alt, "");
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+START_TEST (test_insert_shares_empty_too)
+{
+   file_list_t list;
+
+   list_init(&list);
+   /* file_list_insert() goes through init_item_file() rather than the
+    * append path, so it needs its own check. */
+   ck_assert(file_list_insert(&list, "", "", 0, 0, 0, 0));
+   ck_assert(file_list_insert(&list, "", "", 0, 0, 0, 0));
+
+   ck_assert_ptr_eq(list.list[0].label, list.list[1].label);
+   ck_assert_str_eq(list.list[0].label, "");
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
 Suite *create_suite(void)
 {
    Suite *s       = suite_create(SUITE_NAME);
@@ -574,6 +730,14 @@ Suite *create_suite(void)
    tcase_add_test(tc_core, test_pop_uses_userdata_hook);
    tcase_add_test(tc_core, test_both_hooks_are_independent);
    tcase_add_test(tc_core, test_userdata_hook_survives_growth);
+   tcase_add_test(tc_core, test_empty_label_is_empty_not_null);
+   tcase_add_test(tc_core, test_empty_strings_are_shared);
+   tcase_add_test(tc_core, test_null_stays_null);
+   tcase_add_test(tc_core, test_shared_empty_survives_two_lists);
+   tcase_add_test(tc_core, test_shared_empty_survives_clear_and_pop);
+   tcase_add_test(tc_core, test_set_label_across_empty_and_nonempty);
+   tcase_add_test(tc_core, test_set_alt_across_empty_and_nonempty);
+   tcase_add_test(tc_core, test_insert_shares_empty_too);
 
    suite_add_tcase(s, tc_core);
    return s;

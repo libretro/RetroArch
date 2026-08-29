@@ -29,6 +29,37 @@
 #include <lists/file_list.h>
 #include <compat/strcasestr.h>
 
+/* Empty strings are handed to file_list_append() constantly -- a
+ * directory listing labels every one of its entries "" -- and each one
+ * used to cost a malloc() for a single NUL byte, which the allocator
+ * rounds up to a whole chunk anyway.  They all share this instead.
+ *
+ * The entry still holds a valid empty string rather than NULL, so every
+ * reader is unaffected: the alternative, storing NULL, changes what
+ * file_list_get_label_at_offset() returns and would have to be audited
+ * against every strlen() of an entry field in the menu drivers.
+ *
+ * Nothing writes to an entry's path, label or alt in place -- they are
+ * replaced wholesale by file_list_set_label_at_offset() and
+ * file_list_set_alt_at_offset() -- so one shared buffer is safe to hand
+ * to every entry of every list. */
+static char file_list_empty_str[1] = "";
+
+static char *file_list_strdup(const char *s)
+{
+   if (!s)
+      return NULL;
+   if (!*s)
+      return file_list_empty_str;
+   return strdup(s);
+}
+
+static void file_list_strfree(char *s)
+{
+   if (s && s != file_list_empty_str)
+      free(s);
+}
+
 static bool file_list_deinitialize_internal(file_list_t *list)
 {
    size_t i;
@@ -37,17 +68,14 @@ static bool file_list_deinitialize_internal(file_list_t *list)
       file_list_free_userdata(list, i);
       file_list_free_actiondata(list, i);
 
-      if (list->list[i].path)
-         free(list->list[i].path);
-      list->list[i].path = NULL;
+      file_list_strfree(list->list[i].path);
+      list->list[i].path  = NULL;
 
-      if (list->list[i].label)
-         free(list->list[i].label);
+      file_list_strfree(list->list[i].label);
       list->list[i].label = NULL;
 
-      if (list->list[i].alt)
-         free(list->list[i].alt);
-      list->list[i].alt = NULL;
+      file_list_strfree(list->list[i].alt);
+      list->list[i].alt   = NULL;
    }
    if (list->list)
       free(list->list);
@@ -85,8 +113,8 @@ static INLINE void init_item_file(struct item_file *item,
      * pass NULL path here via menu_entries_prepend when
      * msg_hash_to_str returns NULL for an enum that no active
      * language handler recognises. */
-    item->path          = path  ? strdup(path)  : NULL;
-    item->label         = label ? strdup(label) : NULL;
+    item->path          = file_list_strdup(path);
+    item->label         = file_list_strdup(label);
     item->alt           = NULL;
     item->type          = type;
     item->directory_ptr = directory_ptr;
@@ -140,10 +168,8 @@ bool file_list_append(file_list_t *list,
    list->list[idx].userdata      = NULL;
    list->list[idx].actiondata    = NULL;
 
-   if (label)
-      list->list[idx].label      = strdup(label);
-   if (path)
-      list->list[idx].path       = strdup(path);
+   list->list[idx].label         = file_list_strdup(label);
+   list->list[idx].path          = file_list_strdup(path);
 
    list->size++;
 
@@ -167,17 +193,14 @@ void file_list_pop(file_list_t *list, size_t *directory_ptr)
       file_list_free_userdata  (list, list->size);
       file_list_free_actiondata(list, list->size);
 
-      if (list->list[list->size].path)
-         free(list->list[list->size].path);
-      list->list[list->size].path = NULL;
+      file_list_strfree(list->list[list->size].path);
+      list->list[list->size].path  = NULL;
 
-      if (list->list[list->size].label)
-         free(list->list[list->size].label);
+      file_list_strfree(list->list[list->size].label);
       list->list[list->size].label = NULL;
 
-      if (list->list[list->size].alt)
-         free(list->list[list->size].alt);
-      list->list[list->size].alt = NULL;
+      file_list_strfree(list->list[list->size].alt);
+      list->list[list->size].alt   = NULL;
    }
 
    /* A list that never had an entry has no backing array to read a
@@ -214,17 +237,14 @@ void file_list_clear(file_list_t *list)
 
    for (i = 0; i < list->size; i++)
    {
-      if (list->list[i].path)
-         free(list->list[i].path);
-      list->list[i].path = NULL;
+      file_list_strfree(list->list[i].path);
+      list->list[i].path  = NULL;
 
-      if (list->list[i].label)
-         free(list->list[i].label);
+      file_list_strfree(list->list[i].label);
       list->list[i].label = NULL;
 
-      if (list->list[i].alt)
-         free(list->list[i].alt);
-      list->list[i].alt = NULL;
+      file_list_strfree(list->list[i].alt);
+      list->list[i].alt   = NULL;
    }
 
    list->size = 0;
@@ -246,9 +266,8 @@ void file_list_set_label_at_offset(file_list_t *list, size_t idx,
 {
    if (!list || !label)
       return;
-   if (list->list[idx].label)
-      free(list->list[idx].label);
-   list->list[idx].label = strdup(label);
+   file_list_strfree(list->list[idx].label);
+   list->list[idx].label = file_list_strdup(label);
 }
 
 void file_list_set_alt_at_offset(file_list_t *list, size_t idx,
@@ -256,9 +275,8 @@ void file_list_set_alt_at_offset(file_list_t *list, size_t idx,
 {
    if (!list || !alt)
       return;
-   if (list->list[idx].alt)
-      free(list->list[idx].alt);
-   list->list[idx].alt   = strdup(alt);
+   file_list_strfree(list->list[idx].alt);
+   list->list[idx].alt   = file_list_strdup(alt);
 }
 
 static int file_list_alt_cmp(const void *a_, const void *b_)
