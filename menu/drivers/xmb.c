@@ -589,6 +589,11 @@ typedef struct xmb_handle
     * locking video_st via video_driver_get_output_size. */
    unsigned last_width;
    unsigned last_height;
+   /* Word-wrap scratch for the sublabel line ticker, grown on demand
+    * and kept for the menu's lifetime; it was malloc'd and freed on
+    * every frame the ticker ran. */
+   char  *wrap_scratch;
+   size_t wrap_scratch_cap;
 } xmb_handle_t;
 
 /* Constant color templates — safe to share across threads.
@@ -5032,7 +5037,8 @@ static size_t xmb_animation_line_ticker_generic(uint64_t idx,
    return (excess_lines * 2) - phase;
 }
 
-XMB_NOINLINE static bool xmb_animation_line_ticker(gfx_animation_t *p_anim, gfx_animation_ctx_line_ticker_t *line_ticker)
+XMB_NOINLINE static bool xmb_animation_line_ticker(xmb_handle_t *xmb,
+      gfx_animation_t *p_anim, gfx_animation_ctx_line_ticker_t *line_ticker)
 {
    char *wrapped_str            = NULL;
    size_t wrapped_str_len       = 0;
@@ -5054,8 +5060,15 @@ XMB_NOINLINE static bool xmb_animation_line_ticker(gfx_animation_t *p_anim, gfx_
    /* Line wrap input string */
    line_ticker_str_len = strlen(line_ticker->str);
    wrapped_str_len     = line_ticker_str_len + 1 + 10; /* 10 bytes use for inserting '\n' */
-   if (!(wrapped_str   = (char*)malloc(wrapped_str_len)))
-      goto end;
+   if (wrapped_str_len > xmb->wrap_scratch_cap)
+   {
+      char *grown = (char*)realloc(xmb->wrap_scratch, wrapped_str_len);
+      if (!grown)
+         goto end;
+      xmb->wrap_scratch     = grown;
+      xmb->wrap_scratch_cap = wrapped_str_len;
+   }
+   wrapped_str         = xmb->wrap_scratch;
 
    wrapped_str[0] = '\0';
 
@@ -5177,12 +5190,6 @@ XMB_NOINLINE static bool xmb_animation_line_ticker(gfx_animation_t *p_anim, gfx_
    p_anim->flags           |= GFX_ANIM_FLAG_TICKER_IS_ACTIVE;
 
 end:
-   if (wrapped_str)
-   {
-      free(wrapped_str);
-      wrapped_str = NULL;
-   }
-
    if (!ret)
       if (line_ticker->len > 0)
          line_ticker->s[0] = '\0';
@@ -5796,7 +5803,7 @@ XMB_NOINLINE static void xmb_draw_item_sublabel(
       line_ticker.len       = sizeof(entry_sublabel);
       line_ticker.str       = sublabel;
 
-      xmb_animation_line_ticker(ctx->p_anim, &line_ticker);
+      xmb_animation_line_ticker(xmb, ctx->p_anim, &line_ticker);
    }
 
    /* Draw sublabel */
@@ -10618,6 +10625,7 @@ static void xmb_free(void *data)
          free(xmb->box_message);
       if (xmb->bg_file_path)
          free(xmb->bg_file_path);
+      free(xmb->wrap_scratch);
 
       menu_screensaver_free(xmb->screensaver);
    }
