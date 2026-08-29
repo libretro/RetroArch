@@ -1919,6 +1919,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
       if (!audio_driver_st.pipe_data_cond)
          audio_driver_st.pipe_data_cond   = scond_new();
       audio_driver_st.pipe_data_gen       = 0;
+      audio_driver_st.pipe_wake           = false;
       if (     !audio_driver_st.pipe_lock || !audio_driver_st.pipe_cond
             || !audio_driver_st.pipe_data_cond)
       {
@@ -2171,6 +2172,22 @@ void audio_driver_pipeline_consumer_exit(void)
    audio_driver_st.pipe_consumer_gone = true;
 }
 
+void audio_driver_pipeline_wake(void)
+{
+#ifdef HAVE_THREADS
+   audio_driver_state_t *audio_st = &audio_driver_st;
+   if (!audio_st->pipe_lock)
+      return;
+   slock_lock(audio_st->pipe_lock);
+   audio_st->pipe_wake = true;
+   audio_st->pipe_data_gen++;
+   audio_st->pipe_gen++;
+   scond_signal(audio_st->pipe_data_cond);
+   scond_signal(audio_st->pipe_cond);
+   slock_unlock(audio_st->pipe_lock);
+#endif
+}
+
 void audio_driver_set_nonblock_state(bool nonblock)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;
@@ -2288,7 +2305,17 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
    slock_lock(audio_st->pipe_lock);
    while (retro_spsc_read_avail(&audio_st->pipe_ring) < 2 * sizeof(int16_t))
    {
-      unsigned gen = audio_st->pipe_data_gen;
+      unsigned gen;
+      /* A wake means the wrapper wants this thread back at its loop -
+       * stop, free, or a reinit - not that there is data. Return so it
+       * can see why. */
+      if (audio_st->pipe_wake)
+      {
+         audio_st->pipe_wake = false;
+         slock_unlock(audio_st->pipe_lock);
+         return;
+      }
+      gen = audio_st->pipe_data_gen;
       if (!scond_wait_timeout(audio_st->pipe_data_cond, audio_st->pipe_lock,
                AUDIO_PIPE_WAIT_MAX_US))
       {

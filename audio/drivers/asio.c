@@ -1608,6 +1608,44 @@ static void ra_asio_free(void *data)
 
 static bool ra_asio_use_float(void *data) { return true; }
 
+/* Sleep on the condition the ASIO buffer-switch callback signals until
+ * at least len bytes fit in the ring, capped at half of it so the wait
+ * always ends; timed at one hardware buffer, as ra_asio_write() waits.
+ * Returns the free space then, or 0 once the driver has shut down. */
+static size_t ra_asio_wait_writable(void *data, size_t len)
+{
+   ra_asio_t *ad   = (ra_asio_t *)data;
+   int64_t wait_us = 1000;
+   size_t avail;
+
+   if (!ad || !ad->ring_initialized)
+      return 0;
+   if (ad->sample_rate)
+   {
+      wait_us = (int64_t)ad->buffer_frames * 1000000 / ad->sample_rate;
+      if (wait_us < 1000)
+         wait_us = 1000;
+   }
+   if (len > ad->ring_size / 2)
+      len = ad->ring_size / 2;
+
+   for (;;)
+   {
+      if (ad->shutdown)
+         return 0;
+      avail = retro_spsc_write_avail(&ad->ring);
+      if (avail >= len)
+         return avail;
+#ifdef HAVE_THREADS
+      slock_lock(ad->cond_lock);
+      scond_wait_timeout(ad->cond, ad->cond_lock, wait_us);
+      slock_unlock(ad->cond_lock);
+#else
+      Sleep(1);
+#endif
+   }
+}
+
 static size_t ra_asio_write_avail(void *data)
 {
    ra_asio_t *ad = (ra_asio_t *)data;
@@ -1671,8 +1709,9 @@ audio_driver_t audio_asio = {
    ra_asio_device_list_free,
    ra_asio_write_avail,
    ra_asio_buffer_size,
-   NULL /* write_raw — ASIO cannot dynamically adjust sample rate
+   NULL, /* write_raw — ASIO cannot dynamically adjust sample rate
          * for A/V sync rate control.  Software resampler handles it. */
+   ra_asio_wait_writable
 };
 
 /* Called from the menu to open the ASIO driver's control panel.

@@ -57,6 +57,7 @@ typedef struct audio_thread
  */
 static void audio_thread_loop(void *data)
 {
+   bool is_shutdown;
    audio_thread_t *thr = (audio_thread_t*)data;
 
    sthread_setname("ra-audio");
@@ -82,7 +83,13 @@ static void audio_thread_loop(void *data)
    slock_lock(thr->lock);
    while (thr->stopped)
       scond_wait(thr->cond, thr->lock);
+   is_shutdown = thr->is_shutdown;
    slock_unlock(thr->lock);
+
+   /* The loop below only calls the driver's start() when it comes out
+    * of a stop; the initial start has to be made here, on this thread,
+    * for drivers whose init() leaves the device paused (SDL). */
+   thr->driver->start(thr->driver_data, is_shutdown);
 
    for (;;)
    {
@@ -136,6 +143,10 @@ static void audio_thread_block(audio_thread_t *thr)
    thr->stopped_ack = false;
    thr->stopped = true;
    scond_signal(thr->cond);
+   /* The thread may be asleep in the pipeline waiting for data; wake it
+    * so it comes back to the loop and acknowledges now rather than
+    * after its timeout. */
+   audio_driver_pipeline_wake();
 
    /* Wait until audio driver actually goes to sleep. */
    while (!thr->stopped_ack)
@@ -174,6 +185,9 @@ static void audio_thread_free(void *data)
       scond_signal(thr->cond); /* Let the thread know it's okay to continue */
       slock_unlock(thr->lock); /* At this point, it will exit its loop. */
 
+      /* It may be asleep in the pipeline waiting for data; wake it so
+       * it sees alive == false now rather than after its timeout. */
+      audio_driver_pipeline_wake();
       sthread_join(thr->thread);
       /* Wait for the audio thread to exit, ensure that it's really dead.
        * (It will call the wrapped driver's free() function.) */
@@ -229,8 +243,10 @@ static bool audio_thread_start(void *data, bool is_shutdown)
 
    audio_driver_enable_callback();
 
+   slock_lock(thr->lock);
    thr->is_paused   = false;
    thr->is_shutdown = is_shutdown;
+   slock_unlock(thr->lock);
    audio_thread_unblock(thr);
 
    return true;

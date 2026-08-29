@@ -893,6 +893,38 @@ static size_t pwire_buffer_size(void *data)
    return audio->highwater_mark;
 }
 
+/* Sleep on the thread loop, which the process callback signals after
+ * every cycle, until at least len bytes fit below the high-water mark,
+ * capped at half of it so the wait always ends. Returns the free space
+ * then, or 0 once the stream has left the streaming state. */
+static size_t pwire_wait_writable(void *data, size_t len)
+{
+   uint32_t idx;
+   int32_t  filled, avail;
+   pipewire_audio_t *audio = (pipewire_audio_t*)data;
+   const char       *error = NULL;
+
+   if (len > audio->highwater_mark / 2)
+      len = audio->highwater_mark / 2;
+
+   pw_thread_loop_lock(audio->pw->thread_loop);
+   for (;;)
+   {
+      if (pw_stream_get_state(audio->stream, &error) != PW_STREAM_STATE_STREAMING)
+      {
+         pw_thread_loop_unlock(audio->pw->thread_loop);
+         return 0;
+      }
+      filled = spa_ringbuffer_get_write_index(&audio->ring, &idx);
+      avail  = audio->highwater_mark - filled;
+      if (avail >= (int32_t)len)
+         break;
+      pw_thread_loop_wait(audio->pw->thread_loop);
+   }
+   pw_thread_loop_unlock(audio->pw->thread_loop);
+   return (size_t)avail;
+}
+
 audio_driver_t audio_pipewire = {
       pwire_init,
       pwire_write,
@@ -907,5 +939,6 @@ audio_driver_t audio_pipewire = {
       pwire_device_list_free,
       pwire_write_avail,
       pwire_buffer_size,
-      NULL /* write_raw */
+      NULL, /* write_raw */
+      pwire_wait_writable
 };

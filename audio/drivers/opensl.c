@@ -328,6 +328,36 @@ static ssize_t sl_write(void *data, const void *s, size_t len)
    return _len;
 }
 
+/* Sleep on the condition the buffer-done callback signals until at
+ * least len bytes fit, capped at half the queue so the wait always
+ * ends. Returns the free space then, or 0 after the stall timeout. */
+static size_t sl_wait_writable(void *data, size_t len)
+{
+   sl_t *sl     = (sl_t*)data;
+   size_t total = (size_t)sl->buf_size * sl->buf_count;
+   size_t avail;
+
+   if (len > total / 2)
+      len = total / 2;
+
+   for (;;)
+   {
+      int buffered = retro_atomic_load_acquire_int(&sl->buffered_blocks);
+      avail = ((sl->buf_count - buffered - 1) * sl->buf_size
+            + (sl->buf_size - (int)sl->buffer_ptr));
+      if (avail >= len)
+         return avail;
+      slock_lock(sl->lock);
+      if (retro_atomic_load_acquire_int(&sl->buffered_blocks) == buffered
+            && !scond_wait_timeout(sl->cond, sl->lock, OPENSL_STALL_TIMEOUT_US))
+      {
+         slock_unlock(sl->lock);
+         return 0;
+      }
+      slock_unlock(sl->lock);
+   }
+}
+
 static size_t sl_write_avail(void *data)
 {
    sl_t *sl     = (sl_t*)data;
@@ -358,5 +388,6 @@ audio_driver_t audio_opensl = {
    NULL,
    sl_write_avail,
    sl_buffer_size,
-   NULL /* write_raw */
+   NULL, /* write_raw */
+   sl_wait_writable
 };

@@ -243,6 +243,34 @@ static size_t rs_write_avail(void *data)
 
 /* TODO/FIXME - implement? */
 static size_t rs_buffer_size(void *data) { return 1024 * 4; }
+
+/* Sleep on the condition librsound's audio callback signals after every
+ * pull until at least len bytes fit in the fifo, capped at half the
+ * reported buffer so the wait always ends. Timed, for the same reason
+ * rs_write()'s wait is: the error callback's signal can be lost. Returns
+ * the free space then, or 0 once librsound has reported an error. */
+static size_t rs_wait_writable(void *data, size_t len)
+{
+   rsd_t *rsd = (rsd_t*)data;
+   size_t avail;
+
+   if (len > rs_buffer_size(data) / 2)
+      len = rs_buffer_size(data) / 2;
+
+   for (;;)
+   {
+      if (rsd->has_error)
+         return 0;
+      rsd_callback_lock(rsd->rd);
+      avail = FIFO_WRITE_AVAIL(rsd->buffer);
+      rsd_callback_unlock(rsd->rd);
+      if (avail >= len)
+         return avail;
+      slock_lock(rsd->cond_lock);
+      scond_wait_timeout(rsd->cond, rsd->cond_lock, rsd->wait_us);
+      slock_unlock(rsd->cond_lock);
+   }
+}
 static bool rs_use_float(void *data) { return false; }
 
 audio_driver_t audio_rsound = {
@@ -259,5 +287,6 @@ audio_driver_t audio_rsound = {
    NULL,
    rs_write_avail,
    rs_buffer_size,
-   NULL /* write_raw */
+   NULL, /* write_raw */
+   rs_wait_writable
 };

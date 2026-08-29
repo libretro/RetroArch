@@ -20,6 +20,7 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <errno.h>
+#include <sys/select.h>
 
 #ifdef HAVE_OSS_BSD
 #include <soundcard.h>
@@ -116,6 +117,38 @@ static ssize_t oss_write(void *data, const void *s, size_t len)
       return -1;
    }
    return _len;
+}
+
+/* Sleep in select() on the device until it is writable, which OSS
+ * reports at fragment granularity, then ask SNDCTL_DSP_GETOSPACE how
+ * much fits; repeat until at least len bytes do, len capped at one
+ * fragment. Returns the free space then, or 0 on error. */
+static size_t oss_wait_writable(void *data, size_t len)
+{
+   oss_audio_t *ossaudio  = (oss_audio_t*)data;
+   audio_buf_info info;
+
+   for (;;)
+   {
+      fd_set wfds;
+      size_t want = len;
+
+      if (ioctl(ossaudio->fd, SNDCTL_DSP_GETOSPACE, &info) < 0)
+         return 0;
+      if (info.fragsize > 0 && want > (size_t)info.fragsize)
+         want = (size_t)info.fragsize;
+      if (info.bytes >= (int)want)
+         return (size_t)info.bytes;
+
+      FD_ZERO(&wfds);
+      FD_SET(ossaudio->fd, &wfds);
+      if (select(ossaudio->fd + 1, NULL, &wfds, NULL, NULL) < 0)
+      {
+         if (errno == EINTR)
+            continue;
+         return 0;
+      }
+   }
 }
 
 static bool oss_stop(void *data)
@@ -222,5 +255,6 @@ audio_driver_t audio_oss = {
    NULL,
    oss_write_avail,
    oss_buffer_size,
-   NULL /* write_raw */
+   NULL, /* write_raw */
+   oss_wait_writable
 };

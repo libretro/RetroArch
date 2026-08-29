@@ -689,6 +689,30 @@ static void xa_free(void *data)
    free(xa);
 }
 
+/* Sleep on the event the voice's OnBufferEnd callback sets until at
+ * least len bytes fit across the queued buffers, capped at half the
+ * total so the wait always ends. Returns the free space then, or 0 when
+ * the event stays silent past the timeout. */
+static size_t xa_wait_writable(void *data, size_t len)
+{
+   xa_t *xa          = (xa_t*)data;
+   xaudio2_t *handle = xa->xa;
+   size_t total      = handle->bufsize * (size_t)(MAX_BUFFERS - 1);
+   size_t avail;
+
+   if (len > total / 2)
+      len = total / 2;
+
+   for (;;)
+   {
+      avail = xaudio2_write_available(handle);
+      if (avail >= len)
+         return avail;
+      if (WaitForSingleObject(handle->hEvent, XAUDIO_TIMEOUT) != WAIT_OBJECT_0)
+         return 0;
+   }
+}
+
 static size_t xa_write_avail(void *data)
 {
    xa_t *xa = (xa_t*)data;
@@ -725,5 +749,6 @@ audio_driver_t audio_xa = {
    xa_device_list_free,
    xa_write_avail,
    xa_buffer_size,
-   NULL /* write_raw */
+   NULL, /* write_raw */
+   xa_wait_writable
 };

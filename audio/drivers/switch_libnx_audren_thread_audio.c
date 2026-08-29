@@ -271,6 +271,35 @@ fail:
    return NULL;
 }
 
+/* Sleep on the condition the mixer thread wakes after every buffer it
+ * consumes until at least len bytes fit in the fifo, capped at half of
+ * it so the wait always ends. Returns the free space then, or 0 when
+ * the thread is not running or the driver is paused. */
+static size_t libnx_audren_thread_audio_wait_writable(void *data, size_t len)
+{
+   size_t available;
+   libnx_audren_thread_t *aud = (libnx_audren_thread_t*)data;
+
+   if (!aud)
+      return 0;
+   if (len > aud->buffer_size / 2)
+      len = aud->buffer_size / 2;
+
+   for (;;)
+   {
+      if (!aud->running || aud->paused)
+         return 0;
+      mutexLock(&aud->fifo_lock);
+      available = FIFO_WRITE_AVAIL(aud->fifo);
+      mutexUnlock(&aud->fifo_lock);
+      if (available >= len)
+         return available;
+      mutexLock(&aud->fifo_condlock);
+      condvarWait(&aud->fifo_condvar, &aud->fifo_condlock);
+      mutexUnlock(&aud->fifo_condlock);
+   }
+}
+
 static size_t libnx_audren_thread_audio_buffer_size(void *data)
 {
    libnx_audren_thread_t *aud = (libnx_audren_thread_t*)data;
@@ -438,5 +467,6 @@ audio_driver_t audio_switch_libnx_audren_thread = {
    NULL, /* device_list_free */
    libnx_audren_thread_audio_write_avail,
    libnx_audren_thread_audio_buffer_size,
-   NULL  /* write_raw */
+   NULL, /* write_raw */
+   libnx_audren_thread_audio_wait_writable
 };

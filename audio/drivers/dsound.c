@@ -722,6 +722,31 @@ static ssize_t dsound_write(void *data, const void *buf_, size_t len)
    return _len;
 }
 
+/* Sleep on the event the notify thread sets after every block it moves
+ * into the DirectSound buffer until at least len bytes fit in the ring,
+ * capped at half of it so the wait always ends. Returns the free space
+ * then, or 0 once the thread has died or the event stays silent past
+ * the timeout. */
+static size_t dsound_wait_writable(void *data, size_t len)
+{
+   dsound_t *ds = (dsound_t*)data;
+   size_t avail;
+
+   if (len > ds->fifo_bufsize / 2)
+      len = ds->fifo_bufsize / 2;
+
+   for (;;)
+   {
+      if (!ds->thread_alive)
+         return 0;
+      avail = retro_spsc_write_avail(&ds->ring);
+      if (avail >= len)
+         return avail;
+      if (WaitForSingleObject(ds->event, DSOUND_TIMEOUT) != WAIT_OBJECT_0)
+         return 0;
+   }
+}
+
 static size_t dsound_write_avail(void *data)
 {
    size_t avail;
@@ -765,5 +790,6 @@ audio_driver_t audio_dsound = {
    dsound_device_list_free,
    dsound_write_avail,
    dsound_buffer_size,
-   NULL /* write_raw */
+   NULL, /* write_raw */
+   dsound_wait_writable
 };

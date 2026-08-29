@@ -2429,6 +2429,30 @@ static void tinyalsa_free(void *data)
    }
 }
 
+/* Sleep in pcm_wait() (poll on the pcm fd) until at least len bytes
+ * fit, capped at half the buffer so the wait always ends. Returns the
+ * free space then, or 0 on a device error. */
+static size_t tinyalsa_wait_writable(void *data, size_t len)
+{
+   tinyalsa_t *alsa       = (tinyalsa_t*)data;
+   snd_pcm_sframes_t want = BYTES_TO_FRAMES(len, alsa->frame_bits);
+   snd_pcm_sframes_t half = BYTES_TO_FRAMES(alsa->buffer_size / 2, alsa->frame_bits);
+
+   if (want > half)
+      want = half;
+
+   for (;;)
+   {
+      snd_pcm_sframes_t avail = pcm_avail_update(alsa->pcm);
+      if (avail < 0)
+         return 0;
+      if (avail >= want)
+         return FRAMES_TO_BYTES(avail, alsa->frame_bits);
+      if (pcm_wait(alsa->pcm, -1) < 0)
+         return 0;
+   }
+}
+
 static size_t tinyalsa_write_avail(void *data)
 {
    tinyalsa_t *alsa        = (tinyalsa_t*)data;
@@ -2461,5 +2485,6 @@ audio_driver_t audio_tinyalsa = {
 	NULL,                        /* AUDIO_device_list_free  */ /*TODO*/
 	tinyalsa_write_avail,        /* AUDIO_write_avail       */ /*TODO*/
 	tinyalsa_buffer_size,        /* AUDIO_buffer_size       */ /*TODO*/
-	NULL                         /* write_raw               */
+	NULL,                        /* write_raw               */
+	tinyalsa_wait_writable
 };

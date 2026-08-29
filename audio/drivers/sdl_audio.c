@@ -816,7 +816,57 @@ static bool sdl_audio_use_float(void *data)
 }
 
 /* TODO/FIXME - implement */
-static size_t sdl_audio_write_avail(void *data) { return 0; }
+static size_t sdl_audio_write_avail(void *data)
+{
+   size_t avail;
+   sdl_audio_t *sdl = (sdl_audio_t*)data;
+   SDL_LockAudioDevice(sdl->speaker_device);
+   avail = FIFO_WRITE_AVAIL(sdl->speaker_buffer);
+   SDL_UnlockAudioDevice(sdl->speaker_device);
+   return avail;
+}
+
+static size_t sdl_audio_buffer_size(void *data)
+{
+   sdl_audio_t *sdl = (sdl_audio_t*)data;
+   return sdl->speaker_buffer->size;
+}
+
+/* Sleep on the condition the speaker thread signals after every pull
+ * until at least len bytes fit in the outgoing queue, capped at half
+ * of it so the wait always ends. Returns the free space then, or 0
+ * when the thread has gone quiet for the stall timeout (device lost)
+ * or there is no thread to wait on. */
+static size_t sdl_audio_wait_writable(void *data, size_t len)
+{
+   sdl_audio_t *sdl = (sdl_audio_t*)data;
+   size_t avail;
+
+   if (len > sdl->speaker_buffer->size / 2)
+      len = sdl->speaker_buffer->size / 2;
+
+   for (;;)
+   {
+#ifdef HAVE_THREADS
+      bool signalled;
+#endif
+      SDL_LockAudioDevice(sdl->speaker_device);
+      avail = FIFO_WRITE_AVAIL(sdl->speaker_buffer);
+      SDL_UnlockAudioDevice(sdl->speaker_device);
+      if (avail >= len)
+         return avail;
+#ifdef HAVE_THREADS
+      slock_lock(sdl->lock);
+      signalled = scond_wait_timeout(sdl->cond, sdl->lock,
+            SDL_AUDIO_STALL_TIMEOUT_US);
+      slock_unlock(sdl->lock);
+      if (!signalled)
+         return 0;
+#else
+      return 0;
+#endif
+   }
+}
 
 static void sdl_audio_list_free(void *u, void *slp)
 {
@@ -843,6 +893,7 @@ audio_driver_t audio_sdl = {
    sdl_audio_list_new,
    sdl_audio_list_free,
    sdl_audio_write_avail,
-   NULL, /* buffer_size */
-   NULL  /* write_raw */
+   sdl_audio_buffer_size,
+   NULL, /* write_raw */
+   sdl_audio_wait_writable
 };

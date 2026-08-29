@@ -396,6 +396,35 @@ static size_t ja_buffer_size(void *data)
    return jd->buffer_size;
 }
 
+/* Sleep on the condition the process callback signals after every
+ * cycle until at least len bytes fit in the ring, capped at half of it
+ * so the wait always ends. Returns the free space then, or 0 once the
+ * server has shut the client down. */
+static size_t ja_wait_writable(void *data, size_t len)
+{
+   jack_t *jd = (jack_t*)data;
+   size_t avail;
+
+   if (len > jd->buffer_size / 2)
+      len = jd->buffer_size / 2;
+
+   for (;;)
+   {
+      if (jd->shutdown)
+         return 0;
+      avail = jack_ringbuffer_write_space(jd->buffer);
+      if (avail >= len)
+         return avail;
+#ifdef HAVE_THREADS
+      slock_lock(jd->cond_lock);
+      scond_wait_timeout(jd->cond, jd->cond_lock, jd->wait_us);
+      slock_unlock(jd->cond_lock);
+#else
+      return 0;
+#endif
+   }
+}
+
 audio_driver_t audio_jack = {
    ja_init,
    ja_write,
@@ -410,5 +439,6 @@ audio_driver_t audio_jack = {
    NULL,
    ja_write_avail,
    ja_buffer_size,
-   NULL /* write_raw */
+   NULL, /* write_raw */
+   ja_wait_writable
 };

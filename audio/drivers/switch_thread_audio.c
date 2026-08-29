@@ -406,6 +406,36 @@ static bool switch_thread_audio_use_float(void *data)
    return false;
 }
 
+/* Sleep on the condition the output thread signals after every buffer
+ * it consumes until at least len bytes fit in the fifo, capped at half
+ * of it so the wait always ends. Returns the free space then, or 0 when
+ * the thread is not running. */
+static size_t switch_thread_audio_wait_writable(void *data, size_t len)
+{
+   size_t avail;
+   switch_thread_audio_t *swa = (switch_thread_audio_t *)data;
+
+   if (!swa)
+      return 0;
+   if (len > swa->fifoSize / 2)
+      len = swa->fifoSize / 2;
+
+   for (;;)
+   {
+      if (!swa->running)
+         return 0;
+      compat_mutex_lock(&swa->fifoLock);
+      avail = FIFO_WRITE_AVAIL(swa->fifo);
+      compat_mutex_unlock(&swa->fifoLock);
+      if (avail >= len)
+         return avail;
+      compat_mutex_lock(&swa->condLock);
+      if (swa->running)
+         compat_condvar_wait(&swa->cond, &swa->condLock);
+      compat_mutex_unlock(&swa->condLock);
+   }
+}
+
 static size_t switch_thread_audio_write_avail(void *data)
 {
    size_t val;
@@ -442,7 +472,8 @@ audio_driver_t audio_switch_thread = {
       NULL, /* device_list_free */
       switch_thread_audio_write_avail,
       switch_thread_audio_buffer_size,
-      NULL  /* write_raw */
+      NULL, /* write_raw */
+      switch_thread_audio_wait_writable
 };
 
 /* vim: set ts=3 sw=3 */

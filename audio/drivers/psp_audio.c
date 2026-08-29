@@ -312,6 +312,37 @@ static size_t psp_write_avail(void *data)
    return _len;
 }
 
+/* Sleep on the condition the output thread signals after every block
+ * until the fifo has room for len, in the same units psp_audio_write()
+ * compares against, capped at half the fifo so the wait always ends.
+ * Returns the free space as psp_write_avail() reports it, or 0 when
+ * the output thread is not running. */
+static size_t psp_wait_writable(void *data, size_t len)
+{
+   psp_audio_t* psp = (psp_audio_t*)data;
+   size_t avail;
+
+   if (len > AUDIO_BUFFER_SIZE / 2)
+      len = AUDIO_BUFFER_SIZE / 2;
+
+   slock_lock(psp->cond_lock);
+   for (;;)
+   {
+      if (!psp->running)
+      {
+         slock_unlock(psp->cond_lock);
+         return 0;
+      }
+      avail = AUDIO_BUFFER_SIZE - ((uint16_t)
+            (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK);
+      if (avail >= len)
+         break;
+      scond_wait(psp->cond, psp->cond_lock);
+   }
+   slock_unlock(psp->cond_lock);
+   return avail;
+}
+
 /* TODO/FIXME - implement? */
 static bool psp_audio_use_float(void *data) { return false; }
 static size_t psp_buffer_size(void *data)
@@ -339,5 +370,6 @@ audio_driver_t audio_psp = {
    NULL,
    psp_write_avail,
    psp_buffer_size,
-   NULL /* write_raw */
+   NULL, /* write_raw */
+   psp_wait_writable
 };

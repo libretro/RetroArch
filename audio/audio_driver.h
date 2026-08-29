@@ -371,6 +371,10 @@ typedef struct
     * it while the ring is empty. */
    scond_t *pipe_data_cond;
    unsigned pipe_data_gen;
+   /* Set by audio_driver_pipeline_wake() under pipe_lock and cleared by
+    * the consumer when it acts on it. Sticky, unlike the signal, so a
+    * wake raised before the consumer reaches its wait is not lost. */
+   bool     pipe_wake;
    /* Upper bound on input samples per consumer pass (one video frame's
     * worth, capped to a slice), and underrun accounting: passes that
     * had to be padded with silence after the ring first filled. */
@@ -509,6 +513,17 @@ void audio_driver_set_nonblock_state(bool nonblock);
  * will never run again.
  **/
 void audio_driver_pipeline_consumer_exit(void);
+
+/**
+ * audio_driver_pipeline_wake:
+ *
+ * Wakes a consumer sleeping for data and a producer sleeping for room,
+ * without giving either. The audio thread wrapper calls it before it
+ * joins its thread, so a consumer parked on an empty ring returns to
+ * the loop and sees that it is being shut down instead of sleeping
+ * out its timeout.
+ **/
+void audio_driver_pipeline_wake(void);
 
 /**
  * audio_sink_t:
