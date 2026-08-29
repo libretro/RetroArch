@@ -273,8 +273,12 @@ static size_t gx_audio_wait_writable(void *data, size_t len)
       OSSleepThread(wa->dma_cond);
    }
 }
-/* Stub: keep returning false, but the audio_driver_t dispatcher
- * unconditionally derefs ->use_float, so this slot cannot be NULL. */
+/* Not a stub: the Audio Interface takes signed 16-bit big-endian
+ * stereo PCM by DMA and nothing else - AI_CONTROL selects only the
+ * rate, and libogc's aesnd/asnd voices are 8- and 16-bit too - so the
+ * frontend's float-to-int16 conversion before write() is the only
+ * place float can go. The dispatcher derefs ->use_float unconditionally,
+ * so the slot cannot be NULL either. */
 static bool gx_audio_use_float(void *data) { return false; }
 
 audio_driver_t audio_gx = {
