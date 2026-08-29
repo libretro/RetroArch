@@ -1484,6 +1484,8 @@ typedef struct
 
 typedef struct
 {
+   /* The three planes and the motion field are views into arena. */
+   uint8_t *arena;
    uint8_t *pl[3];            /* Y, U, V planes */
    rh265_mvfield *mvf;        /* per 4x4, kept for TMVP */
    int      poc;
@@ -1513,6 +1515,9 @@ typedef struct
    rh265_mvfield *mvf;        /* alias of cur->mvf */
 
    /* per-4x4 (luma coords >> 2) metadata */
+   /* The per-block and per-CTB maps from ipm through ctb_lf_across are
+    * views into this one block, sized from the SPS geometry. */
+   uint8_t *meta;
    uint8_t *ipm;              /* luma intra prediction mode */
    uint8_t *ctd;              /* coding-tree depth */
    uint8_t *vedge, *hedge;    /* deblocking boundary strength (0..2) */
@@ -3781,12 +3786,10 @@ static void rh265_free_frame(rh265_video *v)
    int i, p;
    for (p = 0; p < RH265_MAX_DPB; p++)
    {
+      free(v->dpb[p].arena);
+      v->dpb[p].arena = NULL;
       for (i = 0; i < 3; i++)
-      {
-         free(v->dpb[p].pl[i]);
          v->dpb[p].pl[i] = NULL;
-      }
-      free(v->dpb[p].mvf);
       v->dpb[p].mvf = NULL;
       v->dpb[p].in_use = 0;
    }
@@ -3797,21 +3800,27 @@ static void rh265_free_frame(rh265_video *v)
    d->col_ref = NULL;
    v->out_pic = -1;
    v->out_count = 0;
-   free(d->ipm);   d->ipm = NULL;
-   free(d->ctd);   d->ctd = NULL;
-   free(d->vedge); d->vedge = NULL;
-   free(d->hedge); d->hedge = NULL;
-   free(d->nzc);   d->nzc = NULL;
-   free(d->skipm); d->skipm = NULL;
-   free(d->qpy);   d->qpy = NULL;
-   free(d->sao);   d->sao = NULL;
-   free(d->ctb_slice);     d->ctb_slice = NULL;
-   free(d->ctb_lf_across); d->ctb_lf_across = NULL;
+   free(d->meta);
+   d->meta  = NULL;
+   d->ipm   = d->ctd = d->vedge = d->hedge = d->nzc = d->skipm = NULL;
+   d->qpy   = NULL;
+   d->sao   = NULL;
+   d->ctb_slice     = NULL;
+   d->ctb_lf_across = NULL;
 }
+
+/* Region spacing inside the meta and picture arenas, in bytes: every
+ * map and plane starts on a 64-byte boundary. */
+#define RH265_ARENA_ALIGN 64
+#define RH265_ARENA_NEXT(cur, bytes) \
+   ((((cur) + (bytes) + RH265_ARENA_ALIGN - 1) / RH265_ARENA_ALIGN) \
+    * RH265_ARENA_ALIGN)
 
 static int rh265_alloc_frame(rh265_video *v, const rh265_sps *s)
 {
    rh265_dec *d = &v->d;
+   size_t n4, o_ctd, o_vedge, o_hedge, o_nzc, o_skipm, o_qpy, o_sao,
+          o_slice, o_lfa, len;
    d->bd        = s->bit_depth_luma;
    d->pel_bytes = 1 + (d->bd > 8);
    d->fns       = rh265_get_fns(d->bd);
@@ -3830,22 +3839,33 @@ static int rh265_alloc_frame(rh265_video *v, const rh265_sps *s)
    d->h4 = (s->height + 3) >> 2;
    d->w8 = (s->width + 7) >> 3;
    d->h8 = (s->height + 7) >> 3;
-   d->ipm   = (uint8_t*)malloc((size_t)d->w4 * d->h4);
-   d->ctd   = (uint8_t*)malloc((size_t)d->w4 * d->h4);
-   d->vedge = (uint8_t*)malloc((size_t)d->w4 * d->h4);
-   d->hedge = (uint8_t*)malloc((size_t)d->w4 * d->h4);
-   d->nzc   = (uint8_t*)malloc((size_t)d->w4 * d->h4);
-   d->skipm = (uint8_t*)malloc((size_t)d->w4 * d->h4);
-   d->qpy   = (int8_t*)malloc((size_t)d->w8 * d->h8);
-   d->sao   = (rh265_sao_params*)malloc(
+   /* Six 4x4-granular maps, the 8x8 QP map and three per-CTB tables out
+    * of one block. */
+   n4      = (size_t)d->w4 * d->h4;
+   o_ctd   = RH265_ARENA_NEXT(0,       n4);
+   o_vedge = RH265_ARENA_NEXT(o_ctd,   n4);
+   o_hedge = RH265_ARENA_NEXT(o_vedge, n4);
+   o_nzc   = RH265_ARENA_NEXT(o_hedge, n4);
+   o_skipm = RH265_ARENA_NEXT(o_nzc,   n4);
+   o_qpy   = RH265_ARENA_NEXT(o_skipm, n4);
+   o_sao   = RH265_ARENA_NEXT(o_qpy,   (size_t)d->w8 * d->h8);
+   o_slice = RH265_ARENA_NEXT(o_sao,
          (size_t)s->pic_size_ctbs * sizeof(rh265_sao_params));
-   d->ctb_slice     = (uint16_t*)malloc(
+   o_lfa   = RH265_ARENA_NEXT(o_slice,
          (size_t)s->pic_size_ctbs * sizeof(uint16_t));
-   d->ctb_lf_across = (uint8_t*)malloc((size_t)s->pic_size_ctbs);
-   if (!d->ipm || !d->ctd || !d->vedge || !d->hedge || !d->nzc ||
-       !d->skipm || !d->qpy || !d->sao || !d->ctb_slice ||
-       !d->ctb_lf_across)
+   len     = RH265_ARENA_NEXT(o_lfa,   (size_t)s->pic_size_ctbs);
+   if (!(d->meta = (uint8_t*)malloc(len)))
       goto fail;
+   d->ipm   = d->meta;
+   d->ctd   = d->meta + o_ctd;
+   d->vedge = d->meta + o_vedge;
+   d->hedge = d->meta + o_hedge;
+   d->nzc   = d->meta + o_nzc;
+   d->skipm = d->meta + o_skipm;
+   d->qpy   = (int8_t*)(d->meta + o_qpy);
+   d->sao   = (rh265_sao_params*)(d->meta + o_sao);
+   d->ctb_slice     = (uint16_t*)(d->meta + o_slice);
+   d->ctb_lf_across = d->meta + o_lfa;
    v->alloc_w = s->width;
    v->alloc_h = s->height;
    v->out_pic = -1;
@@ -3855,38 +3875,43 @@ fail:
    return -1;
 }
 
-/* Allocate (or reuse) planes and the motion field of one DPB slot. */
+/* Allocate (or reuse) planes and the motion field of one DPB slot: one
+ * block per slot, the three planes followed by the motion field, each
+ * starting on a 64-byte boundary. */
 static int rh265_pic_alloc(rh265_video *v, int slot)
 {
    rh265_dec *d = &v->d;
    rh265_pic *p = &v->dpb[slot];
+   size_t off[3], cur = 0;
    int i;
+   if (p->arena)
+      return 0;
    for (i = 0; i < 3; i++)
-      if (!p->pl[i])
-      {
-         size_t n = (size_t)d->strd[i] * d->ph[i];
-         p->pl[i] = (uint8_t*)malloc(n * d->pel_bytes);
-         if (!p->pl[i])
-            return -1;
-         if (!i)
-            memset(p->pl[i], 0, n * d->pel_bytes);
-         else if (d->bd == 8)
-            memset(p->pl[i], 128, n);
-         else
-         {
-            uint16_t *q = (uint16_t*)p->pl[i];
-            size_t k;
-            for (k = 0; k < n; k++)
-               q[k] = (uint16_t)(1 << (d->bd - 1));
-         }
-      }
-   if (!p->mvf)
    {
-      p->mvf = (rh265_mvfield*)malloc(
-            (size_t)d->w4 * d->h4 * sizeof(rh265_mvfield));
-      if (!p->mvf)
-         return -1;
+      off[i] = cur;
+      cur    = RH265_ARENA_NEXT(cur,
+            (size_t)d->strd[i] * d->ph[i] * d->pel_bytes);
    }
+   if (!(p->arena = (uint8_t*)malloc(RH265_ARENA_NEXT(cur,
+               (size_t)d->w4 * d->h4 * sizeof(rh265_mvfield)))))
+      return -1;
+   for (i = 0; i < 3; i++)
+   {
+      size_t n = (size_t)d->strd[i] * d->ph[i];
+      p->pl[i] = p->arena + off[i];
+      if (!i)
+         memset(p->pl[i], 0, n * d->pel_bytes);
+      else if (d->bd == 8)
+         memset(p->pl[i], 128, n);
+      else
+      {
+         uint16_t *q = (uint16_t*)p->pl[i];
+         size_t k;
+         for (k = 0; k < n; k++)
+            q[k] = (uint16_t)(1 << (d->bd - 1));
+      }
+   }
+   p->mvf = (rh265_mvfield*)(p->arena + cur);
    return 0;
 }
 
