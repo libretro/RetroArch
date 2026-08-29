@@ -22,6 +22,7 @@
 
 #include <math.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 
 #include <retro_miscellaneous.h>
@@ -95,40 +96,63 @@ struct vibrato_core
 struct vibrato
 {
    struct vibrato_core left, right;
+   /* Both channels' delay lines, int16 mirrors and delay LUTs are views
+    * into this one block. */
+   uint8_t *arena;
 };
 
 static void vibrato_free(void *data)
 {
    struct vibrato *vib = (struct vibrato*)data;
-   free(vib->left.buffer);
-   free(vib->right.buffer);
-   free(vib->left.buffer_i);
-   free(vib->right.buffer_i);
-   free(vib->left.delay_lut);
-   free(vib->right.delay_lut);
-   free(data);
+   if (!vib)
+      return;
+   free(vib->arena);
+   free(vib);
+}
+
+/* Region spacing inside the arena, in bytes. */
+#define VIBRATO_ARENA_NEXT(cur, bytes) \
+   ((((cur) + (bytes) + 63) / 64) * 64)
+
+/* Lay one channel's three buffers out at byte offset cur inside base
+ * (measure only when base is NULL); returns the cursor after them. */
+static size_t vibratocore_carve(struct vibrato_core *core, int samplerate,
+      float freq, uint8_t *base, size_t cur)
+{
+   size_t line;
+   core->size     = VIBRATO_BASE_DELAY_SEC * samplerate * 2;
+   core->maxphase = samplerate / freq;
+   if (core->maxphase < 1)
+      core->maxphase = 1;
+   line           = (size_t)core->size + VIBRATO_ADD_DELAY;
+   core->buffer   = base ? (float*)(base + cur) : NULL;
+   cur            = VIBRATO_ARENA_NEXT(cur, line * sizeof(float));
+   core->buffer_i = base ? (int16_t*)(base + cur) : NULL;
+   cur            = VIBRATO_ARENA_NEXT(cur, line * sizeof(int16_t));
+   return cur;
+}
+
+/* Lay one channel's delay LUT out at cur; the LUTs follow both channels'
+ * delay lines so the lines can be zeroed with one memset. */
+static size_t vibratocore_carve_lut(struct vibrato_core *core,
+      uint8_t *base, size_t cur)
+{
+   core->delay_lut = base ? (int32_t*)(base + cur) : NULL;
+   cur            = VIBRATO_ARENA_NEXT(cur, (size_t)core->maxphase * sizeof(int32_t));
+   return cur;
 }
 
 static void vibratocore_init(struct vibrato_core *core,float depth,int samplerate,float freq)
 {
-	core->size       = VIBRATO_BASE_DELAY_SEC * samplerate * 2;
-	core->buffer     = (float*)malloc((core->size + VIBRATO_ADD_DELAY) * sizeof(float));
-	memset(core->buffer, 0, (core->size   + VIBRATO_ADD_DELAY) * sizeof(float));
 	core->samplerate = samplerate;
 	core->freq       = freq;
 	core->depth      = depth;
 	core->phase      = 0;
 	core->writeindex = 0;
 
-	/* int16 mirror of the delay line, and a precomputed Q16 per-phase delay
-	 * LUT built from the same double-precision sine the float path uses, so
-	 * the int16 path needs no FPU at run time. */
-	core->buffer_i   = (int16_t*)calloc(core->size + VIBRATO_ADD_DELAY, sizeof(int16_t));
-	core->maxphase   = samplerate / freq;
-	if (core->maxphase < 1)
-		core->maxphase = 1;
-	core->delay_lut  = (int32_t*)malloc(core->maxphase * sizeof(int32_t));
-	if (core->buffer_i && core->delay_lut)
+	/* Precomputed Q16 per-phase delay LUT built from the same
+	 * double-precision sine the float path uses, so the int16 path needs
+	 * no FPU at run time. The delay lines start zeroed from the arena. */
 	{
 		float    M        = freq / samplerate;
 		int      maxdelay = VIBRATO_BASE_DELAY_SEC * samplerate;
@@ -246,12 +270,29 @@ static void *vibrato_init(const struct dspfilter_info *info,
       const struct dspfilter_config *config, void *userdata)
 {
    float freq, depth;
+   size_t len, lines;
    struct vibrato *vib = (struct vibrato*)calloc(1, sizeof(*vib));
    if (!vib)
       return NULL;
 
    config->get_float(userdata, "freq", &freq,5.0f);
    config->get_float(userdata, "depth", &depth, 0.5f);
+   len   = vibratocore_carve(&vib->left,  info->input_rate, freq, NULL, 0);
+   lines = vibratocore_carve(&vib->right, info->input_rate, freq, NULL, len);
+   len   = vibratocore_carve_lut(&vib->left,  NULL, lines);
+   len   = vibratocore_carve_lut(&vib->right, NULL, len);
+   if (!(vib->arena = (uint8_t*)malloc(len)))
+   {
+      free(vib);
+      return NULL;
+   }
+   len   = vibratocore_carve(&vib->left,  info->input_rate, freq, vib->arena, 0);
+   lines = vibratocore_carve(&vib->right, info->input_rate, freq, vib->arena, len);
+   len   = vibratocore_carve_lut(&vib->left,  vib->arena, lines);
+   vibratocore_carve_lut(&vib->right, vib->arena, len);
+   /* Only the delay lines need to start silent; the LUTs are filled in
+    * full by init and zeroing them first would touch them twice. */
+   memset(vib->arena, 0, lines);
    vibratocore_init(&vib->left,depth,info->input_rate,freq);
    vibratocore_init(&vib->right,depth,info->input_rate,freq);
    return vib;
