@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 
 #include <retro_inline.h>
@@ -34,6 +35,8 @@
 struct eq_data
 {
    fft_t *fft;
+   /* save, block, filter and fftblock are views into this one block. */
+   uint8_t *arena;
    float *save;
    float *block;
    fft_complex_t *filter;
@@ -60,10 +63,7 @@ static void eq_free(void *data)
       return;
 
    fft_free(eq->fft);
-   free(eq->save);
-   free(eq->block);
-   free(eq->fftblock);
-   free(eq->filter);
+   free(eq->arena);
    free(eq);
 }
 
@@ -324,10 +324,16 @@ end:
    free(time_filter);
 }
 
+/* Region spacing inside the arena, in bytes. */
+#define EQ_ARENA_ALIGN 64
+#define EQ_ARENA_NEXT(cur, bytes) \
+   ((((cur) + (bytes) + EQ_ARENA_ALIGN - 1) / EQ_ARENA_ALIGN) * EQ_ARENA_ALIGN)
+
 static void *eq_init(const struct dspfilter_info *info,
       const struct dspfilter_config *config, void *userdata)
 {
    int size_log2;
+   size_t save_len, block_len, fftblock_len, filter_len;
    float beta;
    float *frequencies, *gain;
    unsigned num_freq, num_gain, i, size;
@@ -368,17 +374,27 @@ static void *eq_init(const struct dspfilter_info *info,
 
    eq->block_size = size;
 
-   eq->save       = (float*)calloc(    size, 2 * sizeof(*eq->save));
-   eq->block      = (float*)calloc(2 * size, 2 * sizeof(*eq->block));
-   eq->fftblock   = (fft_complex_t*)calloc(2 * size, sizeof(*eq->fftblock));
-   eq->filter     = (fft_complex_t*)calloc(2 * size, sizeof(*eq->filter));
+   /* The overlap-save state, the input block and the two FFT-domain
+    * blocks come out of one zeroed arena, each region starting on a
+    * 64-byte boundary. */
+   save_len       = EQ_ARENA_NEXT(0,        size * 2 * sizeof(*eq->save));
+   block_len      = EQ_ARENA_NEXT(save_len, 2 * size * 2 * sizeof(*eq->block));
+   fftblock_len   = EQ_ARENA_NEXT(block_len, 2 * size * sizeof(*eq->fftblock));
+   filter_len     = EQ_ARENA_NEXT(fftblock_len, 2 * size * sizeof(*eq->filter));
+   if ((eq->arena = (uint8_t*)calloc(1, filter_len)))
+   {
+      eq->save     = (float*)(eq->arena);
+      eq->block    = (float*)(eq->arena + save_len);
+      eq->fftblock = (fft_complex_t*)(eq->arena + block_len);
+      eq->filter   = (fft_complex_t*)(eq->arena + fftblock_len);
+   }
 
    /* Use an FFT which is twice the block size with zero-padding
     * to make circular convolution => proper convolution.
     */
    eq->fft        = fft_new(size_log2 + 1);
 
-   if (!eq->fft || !eq->fftblock || !eq->save || !eq->block || !eq->filter)
+   if (!eq->fft || !eq->arena)
       goto error;
 
    create_filter(eq, size_log2, gains, num_gain, beta, filter_path);

@@ -23,17 +23,25 @@
 #include <math.h>
 #include <stdlib.h>
 
+#include <stdint.h>
 #include "fft.h"
 
 #include <retro_miscellaneous.h>
 
 struct fft
 {
+   /* The three tables below are views into this one block. */
+   uint8_t *arena;
    fft_complex_t *interleave_buffer;
    fft_complex_t *phase_lut;
    unsigned *bitinverse_buffer;
    unsigned size;
 };
+
+/* Region spacing inside the arena, in bytes. */
+#define FFT_ARENA_ALIGN 64
+#define FFT_ARENA_NEXT(cur, bytes) \
+   ((((cur) + (bytes) + FFT_ARENA_ALIGN - 1) / FFT_ARENA_ALIGN) * FFT_ARENA_ALIGN)
 
 static unsigned bitswap(unsigned x, unsigned size_log2)
 {
@@ -99,17 +107,22 @@ static void resolve_float(float *out, const fft_complex_t *in, unsigned samples,
 fft_t *fft_new(unsigned block_size_log2)
 {
    unsigned size;
+   size_t interleave_len, bitinverse_len, phase_len;
    fft_t *fft = (fft_t*)calloc(1, sizeof(*fft));
    if (!fft)
       return NULL;
 
    size                   = 1 << block_size_log2;
-   fft->interleave_buffer = (fft_complex_t*)calloc(size, sizeof(*fft->interleave_buffer));
-   fft->bitinverse_buffer = (unsigned*)calloc(size, sizeof(*fft->bitinverse_buffer));
-   fft->phase_lut         = (fft_complex_t*)calloc(2 * size + 1, sizeof(*fft->phase_lut));
-
-   if (!fft->interleave_buffer || !fft->bitinverse_buffer || !fft->phase_lut)
+   /* Interleave scratch, bit-reversal table and twiddle table share one
+    * zeroed block, each starting on a 64-byte boundary. */
+   interleave_len         = FFT_ARENA_NEXT(0, size * sizeof(*fft->interleave_buffer));
+   bitinverse_len         = FFT_ARENA_NEXT(interleave_len, size * sizeof(*fft->bitinverse_buffer));
+   phase_len              = FFT_ARENA_NEXT(bitinverse_len, (2 * size + 1) * sizeof(*fft->phase_lut));
+   if (!(fft->arena = (uint8_t*)calloc(1, phase_len)))
       goto error;
+   fft->interleave_buffer = (fft_complex_t*)(fft->arena);
+   fft->bitinverse_buffer = (unsigned*)(fft->arena + interleave_len);
+   fft->phase_lut         = (fft_complex_t*)(fft->arena + bitinverse_len);
 
    fft->size = size;
 
@@ -127,9 +140,7 @@ void fft_free(fft_t *fft)
    if (!fft)
       return;
 
-   free(fft->interleave_buffer);
-   free(fft->bitinverse_buffer);
-   free(fft->phase_lut);
+   free(fft->arena);
    free(fft);
 }
 
