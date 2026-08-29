@@ -469,6 +469,7 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    retro_spsc_free(&audio_st->pipe_ring);
    AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_PIPELINE_THREADED
                              | AUDIO_FLAG_STARTED);
+#ifdef HAVE_THREADS
    if (audio_st->pipe_cond)
       scond_free(audio_st->pipe_cond);
    if (audio_st->pipe_data_cond)
@@ -478,6 +479,7 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    audio_st->pipe_cond                = NULL;
    audio_st->pipe_data_cond           = NULL;
    audio_st->pipe_lock                = NULL;
+#endif
    audio_st->pipe_threaded            = false;
    audio_st->input_data_int16         = NULL;
    audio_st->data_ptr                 = 0;
