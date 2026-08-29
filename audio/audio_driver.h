@@ -25,6 +25,7 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 #include <retro_spsc.h>
+#include <retro_atomic.h>
 #include <retro_inline.h>
 #include <libretro.h>
 #include <retro_miscellaneous.h>
@@ -362,7 +363,17 @@ typedef struct
 
    enum resampler_quality resampler_quality;
 
-   uint16_t flags;
+   /**
+    * AUDIO_FLAG_* word. Read-modify-written by the main thread and
+    * read by the audio thread (core audio callbacks, the threaded
+    * pipeline), so it is an atomic int accessed only through
+    * AUDIO_FLAGS_GET / AUDIO_FLAGS_SET / AUDIO_FLAGS_CLEAR: the RMWs
+    * cannot lose bits against each other and a reader always sees a
+    * whole word. Individual bits are still only meaningful together
+    * with the ordering their setters already establish (driver start
+    * before the thread runs, init before start, and so on).
+    */
+   retro_atomic_int_t flags;
 
    char resampler_ident[64];
 
@@ -475,6 +486,13 @@ void audio_driver_pipeline_consumer_exit(void);
  * driver would have received: float when AUDIO_FLAG_USE_FLOAT is set,
  * int16 otherwise.
  **/
+/* Accessors for audio_driver_state_t::flags; see the field. GET is an
+ * acquire load, SET/CLEAR are acq_rel RMWs, all returning the whole
+ * word so a caller can test bits on the result. */
+#define AUDIO_FLAGS_GET(st)         retro_atomic_load_acquire_int(&(st)->flags)
+#define AUDIO_FLAGS_SET(st, bits)   retro_atomic_fetch_or_int(&(st)->flags, (bits))
+#define AUDIO_FLAGS_CLEAR(st, bits) retro_atomic_fetch_and_int(&(st)->flags, ~(bits))
+
 typedef struct audio_sink
 {
    void   *data;

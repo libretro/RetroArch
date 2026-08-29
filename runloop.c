@@ -3235,8 +3235,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          video_driver_state_t *video_st    = video_state_get_ptr();
          audio_driver_state_t *audio_st    = audio_state_get_ptr();
 
-         if (    !(audio_st->flags & AUDIO_FLAG_SUSPENDED)
-               && (audio_st->flags & AUDIO_FLAG_ACTIVE))
+         if (    !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_SUSPENDED)
+               && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE))
             result |= RETRO_AV_ENABLE_AUDIO;
 
          if (      (video_st->flags & VIDEO_FLAG_ACTIVE)
@@ -3244,7 +3244,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             result |= RETRO_AV_ENABLE_VIDEO;
 
 #ifdef HAVE_RUNAHEAD
-         if (audio_st->flags & AUDIO_FLAG_HARD_DISABLE)
+         if (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_HARD_DISABLE)
             result |= RETRO_AV_ENABLE_HARD_DISABLE_AUDIO;
 #endif
 
@@ -3368,8 +3368,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
          bool menu_opened = false;
          bool core_paused = !!(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
-         bool no_audio    = !!(audio_st->flags & AUDIO_FLAG_SUSPENDED)
-                         || !(audio_st->flags & AUDIO_FLAG_ACTIVE);
+         bool no_audio    = !!(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_SUSPENDED)
+                         || !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE);
          float core_fps   = (float)video_st->av_info.timing.fps;
 
 #ifdef HAVE_REWIND
@@ -3729,9 +3729,9 @@ bool runloop_environment_cb(unsigned cmd, void *data)
           * yet initialised (queried before drivers_init, e.g. a direct CLI
           * load) we cannot read its real format, so fall back to the
           * format-negotiation hint, which is what it will request. */
-         if (audio_state_get_ptr()->flags & AUDIO_FLAG_ACTIVE)
+         if (AUDIO_FLAGS_GET(audio_state_get_ptr()) & AUDIO_FLAG_ACTIVE)
          {
-            if (!(audio_state_get_ptr()->flags & AUDIO_FLAG_USE_FLOAT))
+            if (!(AUDIO_FLAGS_GET(audio_state_get_ptr()) & AUDIO_FLAG_USE_FLOAT))
                return false;
          }
          else if (config_get_ptr()->uints.audio_format_negotiation
@@ -4420,9 +4420,9 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st,
          runloop_st->flags &= ~RUNLOOP_FLAG_FASTMOTION;
 
       if (audio_fastforward_mute && (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
-         audio_st->flags |=  AUDIO_FLAG_MUTED;
+         AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_MUTED);
       else
-         audio_st->flags &= ~AUDIO_FLAG_MUTED;
+         AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_MUTED);
 
       if (input_st)
       {
@@ -7164,9 +7164,9 @@ static enum runloop_state_enum runloop_check_state(
          if (rewind_pressed != old_rewind_pressed)
          {
             if (settings->bools.audio_rewind_mute && rewind_pressed)
-               audio_st->flags |=  AUDIO_FLAG_MUTED;
+               AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_MUTED);
             else
-               audio_st->flags &= ~AUDIO_FLAG_MUTED;
+               AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_MUTED);
          }
 
          old_rewind_pressed = rewind_pressed;
@@ -7466,9 +7466,9 @@ static enum runloop_state_enum runloop_check_state(
          }
 
          if (audio_fastforward_mute && (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
-            audio_st->flags |=  AUDIO_FLAG_MUTED;
+            AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_MUTED);
          else
-            audio_st->flags &= ~AUDIO_FLAG_MUTED;
+            AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_MUTED);
 
          driver_set_nonblock_state();
 
@@ -7996,7 +7996,7 @@ int runloop_iterate(void)
       bool audio_buf_underrun      = false;
 
       if (!(    (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
-            || !(audio_st->flags & AUDIO_FLAG_ACTIVE)
+            || !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
             || !(audio_st->output_samples_buf))
             && audio_st->current_audio->write_avail
             && audio_st->context_audio_data
@@ -8217,7 +8217,7 @@ end:
          if (runloop_st->fastforward_after_frames == 1)
          {
             /* Nonblocking audio */
-            if (    (audio_st->flags & AUDIO_FLAG_ACTIVE)
+            if (    (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
                  && (audio_st->context_audio_data))
                audio_driver_set_nonblock_state(true);
          }
@@ -8227,7 +8227,7 @@ end:
          if (runloop_st->fastforward_after_frames == 6)
          {
             /* Blocking audio */
-            if (     (audio_st->flags & AUDIO_FLAG_ACTIVE)
+            if (     (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
                   && (audio_st->context_audio_data))
                audio_driver_set_nonblock_state(audio_sync ? false : true);
 

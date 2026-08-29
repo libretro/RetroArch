@@ -1555,7 +1555,7 @@ void runahead_run(void *data,
 
          if (suspended_frame)
          {
-            audio_st->flags     |=  AUDIO_FLAG_SUSPENDED;
+            AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_SUSPENDED);
             video_driver_modify_disp_flags(0, VIDEO_FLAG_ACTIVE);
          }
 
@@ -1571,7 +1571,7 @@ void runahead_run(void *data,
             else
                video_driver_modify_disp_flags(0, VIDEO_FLAG_ACTIVE);
 
-            audio_st->flags    &= ~AUDIO_FLAG_SUSPENDED;
+            AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_SUSPENDED);
          }
 
          if (frame_number == 0)
@@ -1639,28 +1639,24 @@ void runahead_run(void *data,
          for (frame_number = 0; frame_number < runahead_count - 1; frame_number++)
          {
             video_driver_modify_disp_flags(0, VIDEO_FLAG_ACTIVE);
-            audio_st->flags             |= AUDIO_FLAG_SUSPENDED
-                                         | AUDIO_FLAG_HARD_DISABLE;
+            AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_SUSPENDED | AUDIO_FLAG_HARD_DISABLE);
             if (secondary_core_run_use_last_input(runloop_st))
                runloop_st->flags        |=  RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE;
             else
                runloop_st->flags        &= ~RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE;
-            audio_st->flags             &= ~(AUDIO_FLAG_SUSPENDED
-                                         | AUDIO_FLAG_HARD_DISABLE);
+            AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_SUSPENDED | AUDIO_FLAG_HARD_DISABLE);
             if (video_st->flags & VIDEO_FLAG_RUNAHEAD_IS_ACTIVE)
                video_driver_modify_disp_flags(VIDEO_FLAG_ACTIVE, 0);
             else
                video_driver_modify_disp_flags(0, VIDEO_FLAG_ACTIVE);
          }
       }
-      audio_st->flags                   |= AUDIO_FLAG_SUSPENDED
-                                         | AUDIO_FLAG_HARD_DISABLE;
+      AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_SUSPENDED | AUDIO_FLAG_HARD_DISABLE);
       if (secondary_core_run_use_last_input(runloop_st))
          runloop_st->flags              |=  RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE;
       else
          runloop_st->flags              &= ~RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE;
-      audio_st->flags                   &= ~(AUDIO_FLAG_SUSPENDED
-                                         | AUDIO_FLAG_HARD_DISABLE);
+      AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_SUSPENDED | AUDIO_FLAG_HARD_DISABLE);
 #endif
    }
    runloop_st->flags &= ~RUNLOOP_FLAG_RUNAHEAD_FORCE_INPUT_DIRTY;
@@ -1976,7 +1972,7 @@ void preempt_run(preempt_t *preempt, void *data)
          && preempt->frame_count >= preempt->frames)
    {
       /* Suspend A/V and run preemptive frames */
-      audio_st->flags |=  AUDIO_FLAG_SUSPENDED;
+      AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_SUSPENDED);
       video_driver_modify_disp_flags(0, VIDEO_FLAG_ACTIVE);
 
       if (!current_core->retro_unserialize(
@@ -2002,7 +1998,7 @@ void preempt_run(preempt_t *preempt, void *data)
          preempt->replay_ptr = PREEMPT_NEXT_PTR(preempt->replay_ptr);
       }
 
-      audio_st->flags &= ~AUDIO_FLAG_SUSPENDED;
+      AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_SUSPENDED);
       video_driver_modify_disp_flags(VIDEO_FLAG_ACTIVE, 0);
    }
 
@@ -2027,7 +2023,7 @@ void preempt_run(preempt_t *preempt, void *data)
 error:
    runloop_st->flags &= ~(RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE
          | RUNLOOP_FLAG_INPUT_IS_DIRTY);
-   audio_st->flags   &= ~AUDIO_FLAG_SUSPENDED;
+   AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_SUSPENDED);
    video_driver_modify_disp_flags(VIDEO_FLAG_ACTIVE, 0);
    preempt_deinit(runloop_st);
 
