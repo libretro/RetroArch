@@ -1034,7 +1034,7 @@ static void video_thread_free(void *data)
        * video_driver_free_internal() reading current_video sees a live
        * driver, as it does without threading. */
       if (video_state_get_ptr()->current_video == &thr->video_thread)
-         video_state_get_ptr()->current_video = thr->driver;
+         video_state_get_ptr()->current_video = (video_driver_t*)thr->driver;
 
       free(thr);
    }
