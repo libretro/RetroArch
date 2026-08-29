@@ -26,6 +26,12 @@
 #include <retro_common_api.h>
 #include <retro_spsc.h>
 #include <retro_atomic.h>
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#else
+typedef struct slock slock_t;
+typedef struct scond scond_t;
+#endif
 #include <retro_inline.h>
 #include <libretro.h>
 #include <retro_miscellaneous.h>
@@ -233,6 +239,19 @@ typedef struct audio_driver
     */
    ssize_t (*write_raw)(void *data, const int16_t *samples, size_t frames,
          unsigned input_rate, double rate_adjust, float volume);
+
+   /**
+    * Optional. Blocks until the device can accept at least len bytes
+    * without blocking, then returns how many it will take, as
+    * write_avail() would. Returns 0 only when the device is gone or the
+    * stream has failed; a paused or corked stream keeps waiting. The
+    * threaded pipeline calls it with the size of the chunk it is about
+    * to write, so the write itself never blocks and the device fill it
+    * measures for rate control beforehand is the real one. Drivers
+    * without it cannot host the threaded pipeline and keep the inline
+    * path.
+    */
+   size_t (*wait_writable)(void *data, size_t len);
 } audio_driver_t;
 
 typedef struct
@@ -339,6 +358,25 @@ typedef struct
     * thread read-modify-writes flags and a second writer would lose
     * bits. */
    volatile bool pipe_consumer_gone;
+   /* Throttle channel for audio_sync without vsync: the consumer bumps
+    * pipe_gen under pipe_lock after every pass and signals pipe_cond;
+    * a producer that found the ring full waits for the generation to
+    * change. The ring itself is never touched under this lock; the lock
+    * only orders the two generation counters against their waits. */
+   slock_t *pipe_lock;
+   scond_t *pipe_cond;
+   unsigned pipe_gen;
+   /* Data channel the other way: the producer bumps pipe_data_gen and
+    * signals pipe_data_cond after every publish; the consumer sleeps on
+    * it while the ring is empty. */
+   scond_t *pipe_data_cond;
+   unsigned pipe_data_gen;
+   /* Upper bound on input samples per consumer pass (one video frame's
+    * worth, capped to a slice), and underrun accounting: passes that
+    * had to be padded with silence after the ring first filled. */
+   size_t   pipe_pass_int16s;
+   unsigned pipe_underruns;
+   bool     pipe_primed;
    /* The audio thread's own copy of AUDIO_FLAG_PIPELINE_THREADED. Set
     * before the wrapper thread is released and cleared after it is
     * joined, so the thread never reads the flags word - which the main

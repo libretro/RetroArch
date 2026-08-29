@@ -273,6 +273,26 @@ static size_t audio_thread_buffer_size(void *data)
    return thr->driver->buffer_size(thr->driver_data);
 }
 
+/* Only ever called from the audio thread. A wrapped driver that
+ * reports the device gone ends this thread the way a failed write
+ * does. */
+static size_t audio_thread_wait_writable(void *data, size_t len)
+{
+   size_t _len;
+   audio_thread_t *thr = (audio_thread_t*)data;
+   if (!thr || !thr->driver->wait_writable || !thr->driver_data)
+      return 0;
+   _len = thr->driver->wait_writable(thr->driver_data, len);
+   if (!_len)
+   {
+      slock_lock(thr->lock);
+      thr->alive = false;
+      scond_signal(thr->cond);
+      slock_unlock(thr->lock);
+   }
+   return _len;
+}
+
 static ssize_t audio_thread_write(void *data, const void *s, size_t len)
 {
    ssize_t _len;
@@ -303,7 +323,9 @@ static const audio_driver_t audio_thread = {
    NULL,
    NULL,
    audio_thread_write_avail,
-   audio_thread_buffer_size
+   audio_thread_buffer_size,
+   NULL, /* write_raw */
+   audio_thread_wait_writable
 };
 
 /**

@@ -34,6 +34,10 @@ typedef struct
    pa_context *context;
    pa_stream *stream;
    size_t buffer_size;
+   /* The server's request granularity; wait_writable() only needs
+    * this much room to make progress, since the write itself fills in
+    * the rest as it frees. */
+   size_t minreq;
    bool nonblock;
    bool success;
    bool is_paused;
@@ -173,6 +177,7 @@ static void pulse_buffer_attr_cb(pa_stream *s, void *data)
    const pa_buffer_attr *server_attr = pa_stream_get_buffer_attr(s);
    if (server_attr)
       pa->buffer_size = server_attr->tlength;
+      pa->minreq      = server_attr->minreq;
 
 #if 0
    RARCH_LOG("[PulseAudio] Got new buffer size %u.\n", (unsigned)pa->buffer_size);
@@ -257,12 +262,14 @@ static void *pulse_init(const char *device, unsigned rate,
    if (server_attr)
    {
       pa->buffer_size = server_attr->tlength;
+      pa->minreq      = server_attr->minreq;
       RARCH_LOG("[PulseAudio] Requested %u bytes buffer, got %u.\n",
             (unsigned)buffer_attr.tlength,
             (unsigned)pa->buffer_size);
    }
    else
       pa->buffer_size = buffer_attr.tlength;
+      pa->minreq      = buffer_attr.tlength / 4;
 
    pa_threaded_mainloop_unlock(pa->mainloop);
    pa->is_ready = true;
@@ -393,6 +400,41 @@ static size_t pulse_buffer_size(void *data)
    return pa->buffer_size;
 }
 
+/* Sleep on the mainloop until at least len bytes are writable. The
+ * stream's write callback signals the mainloop as the server drains,
+ * so this wakes when room exists and never on a timer. */
+static size_t pulse_wait_writable(void *data, size_t len)
+{
+   size_t _len = 0;
+   pa_t *pa    = (pa_t*)data;
+
+   if (!pa->is_ready)
+      return 0;
+
+   /* Enough for the server's next request is enough: the write loops
+    * on writable space as the server frees it, and before the stream
+    * has started playing (prebuf) that partial write is the only way
+    * to get it full. */
+   if (pa->minreq && len > pa->minreq)
+      len = pa->minreq;
+
+   pa_threaded_mainloop_lock(pa->mainloop);
+   while (pa->is_ready)
+   {
+      _len = pa_stream_writable_size(pa->stream);
+      if (_len >= len)
+         break;
+      /* Wakes on the next write callback, i.e. when the server has
+       * consumed enough for more room to exist. */
+      pa_threaded_mainloop_wait(pa->mainloop);
+   }
+   if (!pa->is_ready)
+      _len = 0;
+   audio_driver_set_buffer_size(pa->buffer_size);
+   pa_threaded_mainloop_unlock(pa->mainloop);
+   return _len;
+}
+
 static void *pulse_device_list_new(void *data)
 {
    pa_t *pa = (pa_t*)data;
@@ -427,5 +469,6 @@ audio_driver_t audio_pulse = {
    pulse_device_list_free,
    pulse_write_avail,
    pulse_buffer_size,
-   NULL /* write_raw */
+   NULL, /* write_raw */
+   pulse_wait_writable
 };

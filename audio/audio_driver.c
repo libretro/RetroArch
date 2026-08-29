@@ -33,7 +33,6 @@
 #include "audio_driver.h"
 
 #include <retro_assert.h>
-#include <retro_timers.h>
 #include <string/stdstring.h>
 #include <encodings/utf.h>
 #include <retro_miscellaneous.h>
@@ -104,16 +103,20 @@
  * at most this many when it has to convert a float batch first. */
 #define AUDIO_PIPE_SLICE_INT16S        AUDIO_CHUNK_SIZE_NONBLOCKING
 
-/* pipe_ring capacity in video frames of core audio. The consumer drains
- * the ring every pass, so it only ever holds the frames published since
- * the last one; four is headroom for a stalled device, not latency. */
-#define AUDIO_PIPE_RING_FRAMES         4
+/* pipe_ring capacity in video frames of core audio. The ring is only
+ * the hand-off between the frame-end publish and the device-paced
+ * consumer: the consumer takes what each device period needs and no
+ * more, so the ring holds about one frame in steady state and rate
+ * control steers the device, exactly as the inline path does. Three
+ * frames is slack for the producer's burst and the consumer's period
+ * to slip past each other, not latency. */
+#define AUDIO_PIPE_RING_FRAMES         3
 
-/* Longest the producer waits for ring space, in ms, before dropping.
- * With audio_sync on this wait is the frontend's audio throttle, the
- * same thing a blocking driver write was; the cap only exists so a
- * device that stops draining cannot hang the frontend for good. */
-#define AUDIO_PIPE_WAIT_MAX_MS         1000
+/* Longest the producer waits for ring space before dropping, in
+ * microseconds. With audio_sync on this wait is the frontend's audio
+ * throttle, the same thing a blocking driver write was; the cap only
+ * exists so a device that stops draining cannot hang the frontend. */
+#define AUDIO_PIPE_WAIT_MAX_US         1000000
 
 /* Region spacing inside the two scratch arenas, in elements: 64 bytes
  * for either type. Every region starts on a 64-byte boundary for the
@@ -464,7 +467,18 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    /* The wrapper thread was joined by audio->free() above, so nothing
     * reads the ring any more. */
    retro_spsc_free(&audio_st->pipe_ring);
-   AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_PIPELINE_THREADED);
+   AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_PIPELINE_THREADED
+                             | AUDIO_FLAG_STARTED);
+   if (audio_st->pipe_cond)
+      scond_free(audio_st->pipe_cond);
+   if (audio_st->pipe_data_cond)
+      scond_free(audio_st->pipe_data_cond);
+   if (audio_st->pipe_lock)
+      slock_free(audio_st->pipe_lock);
+   audio_st->pipe_cond                = NULL;
+   audio_st->pipe_data_cond           = NULL;
+   audio_st->pipe_lock                = NULL;
+   audio_st->pipe_threaded            = false;
    audio_st->input_data_int16         = NULL;
    audio_st->data_ptr                 = 0;
 #ifdef HAVE_REWIND
@@ -1857,8 +1871,20 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
 #ifdef HAVE_THREADS
    /* A core with its own audio callback already renders on the audio
     * thread and would be a second producer for the ring; it keeps the
-    * inline pipeline. */
-   if (settings->bools.audio_threaded_pipeline && !audio_cb_inited)
+    * inline pipeline. So does a driver without wait_writable(): the
+    * consumer paces on that, and without it the only pacer would be a
+    * blocking write, which pins the device full and adds its whole
+    * buffer to the latency. */
+   if (     settings->bools.audio_threaded_pipeline
+         && !audio_cb_inited
+         && !audio_driver_st.current_audio->wait_writable)
+      RARCH_LOG("[Audio] Threaded pipeline requested, but driver \"%s\" "
+            "has no wait_writable(); using the inline pipeline.\n",
+            audio_driver_st.current_audio->ident);
+
+   if (     settings->bools.audio_threaded_pipeline
+         && !audio_cb_inited
+         && audio_driver_st.current_audio->wait_writable)
    {
       /* Capacity in bytes of int16 stereo frames at the core's rate.
        * audio_driver_st.input is already set by the caller
@@ -1868,11 +1894,34 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
             ? (size_t)(audio_driver_st.input / fps) : 1024;
       size_t bytes     = per_frame * AUDIO_PIPE_RING_FRAMES
             * 2 * sizeof(int16_t);
-      if (bytes < 16384)
-         bytes         = 16384;
+      if (bytes < 4096)
+         bytes         = 4096;
       if (!retro_spsc_init(&audio_driver_st.pipe_ring, bytes))
       {
          RARCH_ERR("[Audio] Cannot allocate the pipeline ring. Exiting...\n");
+         return false;
+      }
+      audio_driver_st.pipe_pass_int16s    = per_frame * 2;
+      if (audio_driver_st.pipe_pass_int16s > AUDIO_PIPE_SLICE_INT16S)
+         audio_driver_st.pipe_pass_int16s = AUDIO_PIPE_SLICE_INT16S;
+      if (audio_driver_st.pipe_pass_int16s < 128)
+         audio_driver_st.pipe_pass_int16s = 128;
+      audio_driver_st.pipe_pass_int16s   &= ~(size_t)1;
+      audio_driver_st.pipe_underruns      = 0;
+      audio_driver_st.pipe_primed         = false;
+      audio_driver_st.pipe_gen            = 0;
+      if (!audio_driver_st.pipe_lock)
+         audio_driver_st.pipe_lock        = slock_new();
+      if (!audio_driver_st.pipe_cond)
+         audio_driver_st.pipe_cond        = scond_new();
+      if (!audio_driver_st.pipe_data_cond)
+         audio_driver_st.pipe_data_cond   = scond_new();
+      audio_driver_st.pipe_data_gen       = 0;
+      if (     !audio_driver_st.pipe_lock || !audio_driver_st.pipe_cond
+            || !audio_driver_st.pipe_data_cond)
+      {
+         RARCH_ERR("[Audio] Cannot create the pipeline throttle. Exiting...\n");
+         retro_spsc_free(&audio_driver_st.pipe_ring);
          return false;
       }
       AUDIO_FLAGS_SET(&audio_driver_st, AUDIO_FLAG_PIPELINE_THREADED);
@@ -2043,7 +2092,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
 
    if (
             (   !audio_cb_inited
-             || (AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_PIPELINE_THREADED))
+             || audio_driver_st.pipe_threaded)
          && (AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_ACTIVE)
          && (audio_rate_control)
          )
@@ -2156,9 +2205,9 @@ static void audio_driver_submit(audio_driver_state_t *audio_st,
    {
       const uint8_t *p = (const uint8_t*)data;
       size_t len       = samples * sizeof(int16_t);
-      unsigned waited  = 0;
       while (len)
       {
+         unsigned gen;
          size_t n = retro_spsc_write(&audio_st->pipe_ring, p, len);
          p       += n;
          len     -= n;
@@ -2176,12 +2225,34 @@ static void audio_driver_submit(audio_driver_state_t *audio_st,
          if (     is_fastforward
                || (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK)
                || !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_STARTED)
-               || audio_st->pipe_consumer_gone
-               || waited >= AUDIO_PIPE_WAIT_MAX_MS)
+               || audio_st->pipe_consumer_gone)
             break;
-         retro_sleep(1);
-         waited++;
+         /* Sleep until the consumer has completed a pass. The
+          * generation is read under the lock before re-checking the
+          * ring, so a pass that finished between the failed write and
+          * the wait cannot be missed; the timed wait bounds the stall
+          * if the device stops draining. */
+         slock_lock(audio_st->pipe_lock);
+         gen = audio_st->pipe_gen;
+         if (retro_spsc_write_avail(&audio_st->pipe_ring) == 0)
+         {
+            while (audio_st->pipe_gen == gen)
+               if (!scond_wait_timeout(audio_st->pipe_cond,
+                        audio_st->pipe_lock, AUDIO_PIPE_WAIT_MAX_US))
+                  break;
+            if (audio_st->pipe_gen == gen)
+            {
+               slock_unlock(audio_st->pipe_lock);
+               break;
+            }
+         }
+         slock_unlock(audio_st->pipe_lock);
       }
+      /* Wake a consumer sleeping on an empty ring. */
+      slock_lock(audio_st->pipe_lock);
+      audio_st->pipe_data_gen++;
+      scond_signal(audio_st->pipe_data_cond);
+      slock_unlock(audio_st->pipe_lock);
       return;
    }
 #endif
@@ -2203,57 +2274,58 @@ static void audio_driver_submit(audio_driver_state_t *audio_st,
 static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
 {
    uint32_t runloop_flags;
-   size_t   samples = retro_spsc_read_avail(&audio_st->pipe_ring)
-         / sizeof(int16_t);
+   size_t   frame_bytes, out_bytes, have;
+   const audio_driver_t *audio = audio_st->current_audio;
 
-   samples &= ~(size_t)1;
-   if (!samples)
+   /* First wait: something to write. The producer signals after every
+    * publish; the generation is read under the lock before the ring is
+    * re-checked so a publish between the check and the wait cannot be
+    * missed. A timed wait is only a guard against a stopped producer:
+    * the wrapper parks this thread when the driver is stopped, so in
+    * normal operation nothing here ever times out. */
+   slock_lock(audio_st->pipe_lock);
+   while (retro_spsc_read_avail(&audio_st->pipe_ring) < 2 * sizeof(int16_t))
    {
-      retro_sleep(1);
-      return;
+      unsigned gen = audio_st->pipe_data_gen;
+      if (!scond_wait_timeout(audio_st->pipe_data_cond, audio_st->pipe_lock,
+               AUDIO_PIPE_WAIT_MAX_US))
+      {
+         if (audio_st->pipe_data_gen == gen)
+         {
+            slock_unlock(audio_st->pipe_lock);
+            return;
+         }
+      }
    }
-   if (samples > AUDIO_PIPE_SLICE_INT16S)
-      samples = AUDIO_PIPE_SLICE_INT16S;
+   slock_unlock(audio_st->pipe_lock);
 
-   /* Pace on the device without blocking in it: only run a pass when
-    * the device can take the whole slice. A write that blocks until the
-    * slice fits leaves the buffer reading full on the next fill query
-    * whatever its true state, and rate control would be steering on a
-    * pinned number. Waiting here instead lets the fill drain to where it
-    * really is, and the ring holds the slack meanwhile. Drivers without
-    * write_avail have no rate control and keep the blocking write. */
-   if (     (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_CONTROL)
-         && audio_st->current_audio->write_avail)
+   have  = retro_spsc_read_avail(&audio_st->pipe_ring) / sizeof(int16_t);
+   have &= ~(size_t)1;
+   if (have > audio_st->pipe_pass_int16s)
+      have = audio_st->pipe_pass_int16s;
+
+   /* Never write more than half the device buffer in one pass, so the
+    * room waited for below exists at any fill and a small buffer never
+    * has to drain to empty before it can take a chunk. Whatever is left
+    * stays in the ring and goes on the next pass without waiting. */
+   frame_bytes = 2 * ((AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
+         ? sizeof(float) : sizeof(int16_t));
+   if (audio_st->buffer_size)
    {
-      double ratio        = audio_st->src_ratio_curr;
-      size_t frame_bytes  = 2 * ((AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
-            ? sizeof(float) : sizeof(int16_t));
-      size_t avail_frames = audio_st->current_audio->write_avail(
-            audio_st->context_audio_data) / frame_bytes;
-      size_t in_frames;
-
-      /* Size this pass to what the device can take right now, with a
-       * few frames of margin for resampler rounding, so the write never
-       * blocks. Sizing to the device rather than to a whole slice also
-       * lets a backend that holds playback until its buffer is full
-       * (PulseAudio prebuf) get there. */
-      if (avail_frames <= 16)
-      {
-         retro_sleep(1);
-         return;
-      }
-      in_frames = (size_t)((double)(avail_frames - 16) / ratio);
-      if (in_frames < 32)
-      {
-         retro_sleep(1);
-         return;
-      }
-      if (samples > in_frames * 2)
-         samples = in_frames * 2;
+      size_t cap = (size_t)((double)(audio_st->buffer_size / 2 / frame_bytes)
+            / audio_st->src_ratio_curr) * 2;
+      cap &= ~(size_t)1;
+      if (cap >= 64 && have > cap)
+         have = cap;
    }
-
    retro_spsc_read(&audio_st->pipe_ring, audio_st->pipe_scratch,
-         samples * sizeof(int16_t));
+         have * sizeof(int16_t));
+
+   /* Let a throttled producer know ring space has opened. */
+   slock_lock(audio_st->pipe_lock);
+   audio_st->pipe_gen++;
+   scond_signal(audio_st->pipe_cond);
+   slock_unlock(audio_st->pipe_lock);
 
    runloop_flags = runloop_get_flags();
    if (    (runloop_flags & RUNLOOP_FLAG_PAUSED)
@@ -2261,9 +2333,19 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
         || !audio_st->output_samples_buf)
       return;
 
+   /* Second wait: room for this chunk, so the write inside flush()
+    * returns at once and the fill rate control reads before it is the
+    * device's real fill, as it is for the inline path. The chunk is
+    * one publish's worth resampled, so a little more than have*ratio;
+    * wait for that with a small margin. */
+   out_bytes   = (size_t)((double)(have >> 1) * audio_st->src_ratio_curr + 16.0)
+         * frame_bytes;
+   if (!audio->wait_writable(audio_st->context_audio_data, out_bytes))
+      return;
+
    audio_driver_flush(audio_st,
          config_get_ptr()->floats.slowmotion_ratio,
-         audio_st->pipe_scratch, samples, false,
+         audio_st->pipe_scratch, have, false,
          (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
          (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false,
          NULL);
