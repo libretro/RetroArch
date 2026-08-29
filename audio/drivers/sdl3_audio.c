@@ -423,6 +423,30 @@ static size_t sdl3_audio_write_avail(void *data)
    return sdl->buffer_size - (size_t)queued;
 }
 
+/* Sleep until the stream callback reports the device moved data, until
+ * at least len bytes fit below the queue cap, len capped at half the
+ * cap so the wait always ends. Returns the free space then, or 0 when
+ * the device has been removed or has stopped moving data. */
+static size_t sdl3_audio_wait_writable(void *data, size_t len)
+{
+   sdl3_audio_t *sdl = (sdl3_audio_t*)data;
+   size_t avail;
+
+   if (len > sdl->buffer_size / 2)
+      len = sdl->buffer_size / 2;
+
+   for (;;)
+   {
+      if (SDL_GetAtomicInt(&sdl->device_removed))
+         return 0;
+      avail = sdl3_audio_write_avail(sdl);
+      if (avail >= len)
+         return avail;
+      if (!sdl3_audio_wait_for_device(sdl))
+         return 0;
+   }
+}
+
 /**
  * Attempts to reopen a lost audio device.
  *
@@ -700,7 +724,8 @@ audio_driver_t audio_sdl3 = {
    sdl3_audio_list_free,
    sdl3_audio_write_avail,
    sdl3_audio_buffer_size,
-   sdl3_audio_write_raw
+   sdl3_audio_write_raw,
+   sdl3_audio_wait_writable
 };
 
 #ifdef HAVE_MICROPHONE

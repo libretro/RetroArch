@@ -32,6 +32,9 @@ typedef struct
    uint16_t* buffer_l;
    uint16_t* buffer_r;
    OSSpinLock spinlock;
+   /* Signalled by the AX frame callback every 3 ms, so a waiter sleeps
+    * a frame at a time instead of yielding in a loop. */
+   OSEvent frame_event;
    uint32_t pos;
    uint32_t written;
    bool nonblock;
@@ -73,6 +76,7 @@ void wiiu_ax_callback(void)
          OSUninterruptibleSpinLock_Release(&ax->spinlock);
       }
    }
+   OSSignalEvent(&ax->frame_event);
 }
 
 extern void AXRegisterFrameCallback(void *cb);
@@ -136,6 +140,7 @@ static void* ax_audio_init(const char* device, unsigned rate, unsigned latency,
    *new_rate                 = AX_AUDIO_RATE;
 
    OSInitSpinLock(&ax->spinlock);
+   OSInitEvent(&ax->frame_event, FALSE, OS_EVENT_MODE_AUTO);
 
    wiiu_cb_ax                = ax;
    AXRegisterFrameCallback(wiiu_ax_callback);
@@ -312,6 +317,30 @@ static size_t ax_audio_write_avail(void* data)
    return (ret < AX_AUDIO_SAMPLE_COUNT ? 0 : ret);
 }
 
+/* Sleep on the frame event until at least len samples are free below
+ * the load limit, in the units write_avail() reports, len capped at
+ * half the ring so the wait always ends. Returns the free space then,
+ * or 0 once the voice is no longer running. */
+static size_t ax_audio_wait_writable(void* data, size_t len)
+{
+   ax_audio_t* ax = (ax_audio_t*)data;
+   size_t avail;
+
+   if (len > AX_AUDIO_MAX_FREE / 2)
+      len = AX_AUDIO_MAX_FREE / 2;
+
+   for (;;)
+   {
+      if (!AXIsMultiVoiceRunning(ax->mvoice))
+         return 0;
+      avail = (ax->written > AX_AUDIO_MAX_FREE)
+            ? 0 : (AX_AUDIO_MAX_FREE - ax->written);
+      if (avail >= len)
+         return avail;
+      OSWaitEvent(&ax->frame_event);
+   }
+}
+
 static size_t ax_audio_buffer_size(void* data)
 {
    return AX_AUDIO_COUNT;
@@ -332,5 +361,6 @@ audio_driver_t audio_ax =
    NULL, /* device_list_free */
    ax_audio_write_avail,
    ax_audio_buffer_size,
-   NULL  /* write_raw */
+   NULL, /* write_raw */
+   ax_audio_wait_writable
 };

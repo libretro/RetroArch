@@ -27,9 +27,18 @@ typedef struct
    ndspWaveBuf dsp_buf; /* TODO/FIXME - find out alignment */
    int channel;
    uint32_t pos;
+   /* Signalled from the DSP frame callback so a waiter wakes once per
+    * DSP frame instead of sleeping and polling the sample position. */
+   LightEvent frame_event;
    bool nonblock;
    bool playing;
 } ctr_dsp_audio_t;
+
+static void ctr_dsp_audio_frame_cb(void *data)
+{
+   ctr_dsp_audio_t *ctr = (ctr_dsp_audio_t*)data;
+   LightEvent_Signal(&ctr->frame_event);
+}
 
 #define CTR_DSP_AUDIO_COUNT       (1u << 11u)
 #define CTR_DSP_AUDIO_COUNT_MASK  (CTR_DSP_AUDIO_COUNT - 1u)
@@ -50,6 +59,13 @@ static void *ctr_dsp_audio_init(const char *device, unsigned rate, unsigned late
       return NULL;
 
    ctr = (ctr_dsp_audio_t*)calloc(1, sizeof(ctr_dsp_audio_t));
+   if (!ctr)
+   {
+      ndspExit();
+      return NULL;
+   }
+   LightEvent_Init(&ctr->frame_event, RESET_ONESHOT);
+   ndspSetCallback(ctr_dsp_audio_frame_cb, ctr);
 
    if (!ctr)
       return NULL;
@@ -87,6 +103,7 @@ static void *ctr_dsp_audio_init(const char *device, unsigned rate, unsigned late
 static void ctr_dsp_audio_free(void *data)
 {
    ctr_dsp_audio_t* ctr = (ctr_dsp_audio_t*)data;
+   ndspSetCallback(NULL, NULL);
    ndspChnWaveBufClear(ctr->channel);
    linearFree(ctr->dsp_buf.data_pcm16);
    free(ctr);
@@ -196,6 +213,32 @@ static size_t ctr_dsp_audio_write_avail(void *data)
    return (ndspChnGetSamplePos(ctr->channel) - ctr->pos) & CTR_DSP_AUDIO_COUNT_MASK;
 }
 
+/* Sleep on the DSP frame event until the ring has room for len bytes
+ * ahead of the play position, in the same frame units write_avail()
+ * reports, capped at half the ring so the wait always ends. Runs on the
+ * audio thread, so unlike the write's own wait it does not pump the
+ * applet main loop. Returns the free space then, or 0 when not playing. */
+static size_t ctr_dsp_audio_wait_writable(void *data, size_t len)
+{
+   ctr_dsp_audio_t *ctr = (ctr_dsp_audio_t*)data;
+   uint32_t want        = (uint32_t)(len >> 2);
+
+   if (want > (CTR_DSP_AUDIO_COUNT >> 1))
+      want = CTR_DSP_AUDIO_COUNT >> 1;
+
+   for (;;)
+   {
+      uint32_t avail;
+      if (!ctr->playing)
+         return 0;
+      avail = (ndspChnGetSamplePos(ctr->channel) - ctr->pos)
+            & CTR_DSP_AUDIO_COUNT_MASK;
+      if (avail >= want)
+         return avail;
+      LightEvent_Wait(&ctr->frame_event);
+   }
+}
+
 static size_t ctr_dsp_audio_buffer_size(void *data)
 {
    return CTR_DSP_AUDIO_COUNT;
@@ -215,5 +258,6 @@ audio_driver_t audio_ctr_dsp = {
    NULL,
    ctr_dsp_audio_write_avail,
    ctr_dsp_audio_buffer_size,
-   NULL  /* write_raw */
+   NULL, /* write_raw */
+   ctr_dsp_audio_wait_writable
 };

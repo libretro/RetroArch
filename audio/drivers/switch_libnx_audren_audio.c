@@ -328,6 +328,32 @@ static bool libnx_audren_audio_use_float(void *data)
    return false; /* force S16 */
 }
 
+/* Waits, a renderer frame at a time, until the wave buffer being
+ * filled has room or a free wave buffer exists for the next append to
+ * take. Returns the room then, or 0 on error. A whole wave buffer is
+ * at least a frame of audio, so progress does not depend on len. */
+static size_t libnx_audren_audio_wait_writable(void *data, size_t len)
+{
+   libnx_audren_t *aud = (libnx_audren_t*)data;
+
+   (void)len;
+   if (!aud)
+      return 0;
+
+   for (;;)
+   {
+      if (aud->current_wavebuf)
+         return aud->buffer_size - aud->current_size;
+      if (libnx_audren_audio_get_free_wavebuf_idx(aud) != -1)
+         return aud->buffer_size;
+
+      mutexLock(&aud->update_lock);
+      audrvUpdate(&aud->drv);
+      mutexUnlock(&aud->update_lock);
+      audrenWaitFrame();
+   }
+}
+
 static size_t libnx_audren_audio_write_avail(void *data)
 {
    libnx_audren_t *aud = (libnx_audren_t*)data;
@@ -365,5 +391,6 @@ audio_driver_t audio_switch_libnx_audren = {
    NULL, /* device_list_free */
    libnx_audren_audio_write_avail,
    libnx_audren_audio_buffer_size,
-   NULL  /* write_raw */
+   NULL, /* write_raw */
+   libnx_audren_audio_wait_writable
 };
