@@ -1511,6 +1511,20 @@ static void rh264_intra4x4(uint8_t *dst,int stride,int mode,int have_up,int have
 /* ==================== rh264_mb.h ==================== */
 /* rh264 -- macroblock layer + reconstruction (I slices, baseline). */
 
+/* per-MB coded_block_flag state (for neighbour ctx of the NEXT block/MB) */
+typedef struct rh264_cbf_s {
+   int avail;      /* MB decoded                                  */
+   int is_i16;     /* I_16x16 (vs I_4x4)                          */
+   int chroma_nz;  /* chroma_pred_mode != 0 (for chroma-mode ctx) */
+   int cbpLuma;    /* coded_block_pattern luma (4 bits)           */
+   int cbpChroma;  /* coded_block_pattern chroma (0/1/2)          */
+   int lumaDC;     /* I16 luma-DC cbf                             */
+   int luma[16];   /* per-4x4 luma cbf (raster in-MB)             */
+   int cDC[2];     /* chroma DC cbf [cb,cr]                       */
+   int cAC[2][8];  /* chroma AC cbf [cb,cr][blk]; 8 for 4:2:2     */
+   int t8;         /* luma_transform_size_8x8_flag                */
+} rh264_cbf;
+
 typedef struct {
    int w,h,mbw,mbh,ystride,cstride;
    uint8_t *Y,*U,*V;
@@ -1519,6 +1533,14 @@ typedef struct {
     * from the SPS geometry. The plane block travels with the plane
     * pointers when a frame swaps its planes into an output slot. */
    uint8_t *planes, *meta;
+   /* Slice-reader scratch for the working frame only (carved into meta
+    * by rh264_frame_alloc when requested): the coded-block-flag rows,
+    * the skip and type rows for the current and, under macroblock
+    * pairs, the top row, and the two motion-vector-difference grids.
+    * Each reader zeroes what it uses at slice start. */
+   struct rh264_cbf_s *scr_row, *scr_toprow;
+   uint8_t *scr_skiprow, *scr_topskip, *scr_typerow, *scr_toptype;
+   int16_t *scr_am0, *scr_am1;
    uint8_t *Yb,*Ub,*Vb;
    int ysb,csb,mbh_frame,field;
    int mbaff;             /* macroblock pairs, scanned two rows at a time */
@@ -6253,17 +6275,25 @@ static void rh264_frame_free(rh264_frame *f)
 
 /* Allocate a frame's planes and per-block maps from the SPS geometry:
  * one zeroed block for the three planes and one for the maps, with the
- * motion grids of a reference picture (with_mv) carved into the latter
+ * motion grids of a reference picture (with_mv) or the slice-reader
+ * scratch of the working frame (with_scratch) carved into the latter
  * as well. */
+#define RH264_FRAME_ALLOC_PLAIN   0
+#define RH264_FRAME_ALLOC_REF     1
+#define RH264_FRAME_ALLOC_WORKING 2
 static int rh264_frame_alloc(rh264_frame *f, const rh264_sps *sps,
-      int with_mv)
+      int mode)
 {
+   int with_mv      = (mode == RH264_FRAME_ALLOC_REF);
+   int with_scratch = (mode == RH264_FRAME_ALLOC_WORKING);
    int mbw = sps->pic_width_in_mbs;
    int mbh = sps->frame_mbs > 0 ? sps->frame_mbs
            : (sps->frame_height + 15) / 16;
    size_t ylen, clen, o_ub, o_vb, plane_len;
    size_t grid, mbs, mvlen, o_nzl, o_nzc0, o_nzc1, o_mbqp, o_mbt8,
           o_mbslice, o_mvg, o_mvg2, meta_len;
+   size_t rowlen, amlen, o_row, o_toprow, o_skiprow, o_topskip,
+          o_typerow, o_toptype, o_am0, o_am1;
    rh264_frame_free(f);
    f->w = sps->frame_width;  f->h = sps->frame_height;
    f->cropx = sps->crop_x;   f->cropy = sps->crop_y;
@@ -6290,7 +6320,17 @@ static int rh264_frame_alloc(rh264_frame *f, const rh264_sps *sps,
    o_mbslice = RH264_ARENA_NEXT(o_mbt8,    mbs);
    o_mvg     = RH264_ARENA_NEXT(o_mbslice, mbs);
    o_mvg2    = RH264_ARENA_NEXT(o_mvg,     mvlen);
-   meta_len  = RH264_ARENA_NEXT(o_mvg2,    mvlen);
+   o_row     = RH264_ARENA_NEXT(o_mvg2,    mvlen);
+   rowlen    = with_scratch ? ((size_t)mbw + 2) * sizeof(struct rh264_cbf_s) : 0;
+   amlen     = with_scratch ? grid * 2 * sizeof(int16_t) : 0;
+   o_toprow  = RH264_ARENA_NEXT(o_row,     rowlen);
+   o_skiprow = RH264_ARENA_NEXT(o_toprow,  rowlen);
+   o_topskip = RH264_ARENA_NEXT(o_skiprow, with_scratch ? (size_t)mbw + 2 : 0);
+   o_typerow = RH264_ARENA_NEXT(o_topskip, with_scratch ? (size_t)mbw + 2 : 0);
+   o_toptype = RH264_ARENA_NEXT(o_typerow, with_scratch ? (size_t)mbw + 2 : 0);
+   o_am0     = RH264_ARENA_NEXT(o_toptype, with_scratch ? (size_t)mbw + 2 : 0);
+   o_am1     = RH264_ARENA_NEXT(o_am0,     amlen);
+   meta_len  = RH264_ARENA_NEXT(o_am1,     amlen);
 
    f->planes = (uint8_t*)calloc(plane_len, 1);
    f->meta   = (uint8_t*)calloc(meta_len, 1);
@@ -6314,6 +6354,17 @@ static int rh264_frame_alloc(rh264_frame *f, const rh264_sps *sps,
    {
       f->mvg  = (rh264_mv*)(f->meta + o_mvg);
       f->mvg2 = (rh264_mv*)(f->meta + o_mvg2);
+   }
+   if (with_scratch)
+   {
+      f->scr_row     = (struct rh264_cbf_s*)(f->meta + o_row);
+      f->scr_toprow  = (struct rh264_cbf_s*)(f->meta + o_toprow);
+      f->scr_skiprow = f->meta + o_skiprow;
+      f->scr_topskip = f->meta + o_topskip;
+      f->scr_typerow = f->meta + o_typerow;
+      f->scr_toptype = f->meta + o_toptype;
+      f->scr_am0     = (int16_t*)(f->meta + o_am0);
+      f->scr_am1     = (int16_t*)(f->meta + o_am1);
    }
    return 0;
 }
@@ -6353,14 +6404,14 @@ static int rh264_frame_alloc_if_needed(rh264_video *v)
    if (v->f.Yb && v->alloc_w == v->sps.frame_width
               && v->alloc_h == v->sps.frame_height)
       return 0;
-   if (rh264_frame_alloc(&v->f, &v->sps, 0) != 0) return -1;
+   if (rh264_frame_alloc(&v->f, &v->sps, RH264_FRAME_ALLOC_WORKING) != 0) return -1;
    {
       int n = v->sps.max_num_ref_frames, i;
       if (n < 1) n = 1;
       if (n > RH264_MAX_REFS) n = RH264_MAX_REFS;
       for (i = 0; i < v->dpb_size; i++) rh264_frame_free(&v->dpb[i]);
       for (i = 0; i < n; i++)
-         if (rh264_frame_alloc(&v->dpb[i], &v->sps, 1) != 0) return -1;
+         if (rh264_frame_alloc(&v->dpb[i], &v->sps, RH264_FRAME_ALLOC_REF) != 0) return -1;
       v->dpb_size = n;
       v->dpb_len  = 0;
       for (i = 0; i < RH264_OUT_SLOTS; i++)
@@ -7085,19 +7136,6 @@ static int rh264_cabac_residual(rh264_cabac *c, int cat, int cbf_ctxinc,
  * macroblocks + residual via CABAC and reconstructs with the shared intra /
  * transform / dequant path. 4:2:0, 4x4 transform (Main profile). */
 
-/* per-MB coded_block_flag state (for neighbour ctx of the NEXT block/MB) */
-typedef struct {
-   int avail;      /* MB decoded                                  */
-   int is_i16;     /* I_16x16 (vs I_4x4)                          */
-   int chroma_nz;  /* chroma_pred_mode != 0 (for chroma-mode ctx) */
-   int cbpLuma;    /* coded_block_pattern luma (4 bits)           */
-   int cbpChroma;  /* coded_block_pattern chroma (0/1/2)          */
-   int lumaDC;     /* I16 luma-DC cbf                             */
-   int luma[16];   /* per-4x4 luma cbf (raster in-MB)             */
-   int cDC[2];     /* chroma DC cbf [cb,cr]                       */
-   int cAC[2][8];  /* chroma AC cbf [cb,cr][blk]; 8 for 4:2:2     */
-   int t8;         /* luma_transform_size_8x8_flag                */
-} rh264_cbf;
 
 /* chroma AC 4x4 block idx 0..3 (2x2), comp 0/1 */
 /* nblk is 4 for 4:2:0 (a 2x2 arrangement) or 8 for 4:2:2 (2x4), so the
@@ -7580,8 +7618,10 @@ static int rh264_cabac_decode_islice(rh264_bits *b, const rh264_sps *sps,
    f->chroma_qp_offset2 = pps->chroma_qp_index_offset2;
 
    /* per-MB cbf caches: a full row for 'up', plus 'left' tracking */
-   row = (rh264_cbf*)calloc((size_t)mbw+2, sizeof(rh264_cbf));
+   /* Scratch lives on the working frame; zero what this slice uses. */
+   row = f->scr_row;
    if (!row) return -1;
+   memset(row, 0, ((size_t)mbw+2) * sizeof(rh264_cbf));
    memset(&dummy,0,sizeof(dummy));
 
    slice_end = mbw * mbh;
@@ -7596,8 +7636,8 @@ static int rh264_cabac_decode_islice(rh264_bits *b, const rh264_sps *sps,
       int mba, bot;
       if (f->mbaff)
       {
-         toprow = (rh264_cbf*)calloc((size_t)mbw+2, sizeof(rh264_cbf));
-         if (!toprow) { free(row); return -1; }
+         toprow = f->scr_toprow;
+         memset(toprow, 0, ((size_t)mbw+2) * sizeof(rh264_cbf));
       }
       memset(&leftT,0,sizeof(leftT));
       memset(&leftB,0,sizeof(leftB));
@@ -7613,7 +7653,7 @@ static int rh264_cabac_decode_islice(rh264_bits *b, const rh264_sps *sps,
           * neighbouring pairs are always frame coded and the context
           * increment is zero. */
          if (f->mbaff && !bot && rh264_cabac_decode(cb, 70))
-         { free(toprow); free(row); return -1; }
+         { return -1; }
          la = rh264_mb_addr(mbx-1, mby, mbw, f->mbaff);
          cur = &tmp;
          L = (mbx>0 && la >= sh->first_mb_in_slice)
@@ -7621,7 +7661,7 @@ static int rh264_cabac_decode_islice(rh264_bits *b, const rh264_sps *sps,
          U = bot ? &toprow[mbx] : &row[mbx];
          rc = rh264_cabac_decode_mb(cb, sps, pps, f, mbx, mby,
                &prevQpNZ, cur, L, U, sh->first_mb_in_slice);
-         if (rc < 0) { free(toprow); free(row); return rc; }
+         if (rc < 0) { return rc; }
          if (bot)      { leftB = tmp; row[mbx] = tmp; }
          else if (f->mbaff) { leftT = tmp; toprow[mbx] = tmp; }
          else          { leftT = tmp; row[mbx] = tmp; }
@@ -7633,9 +7673,7 @@ static int rh264_cabac_decode_islice(rh264_bits *b, const rh264_sps *sps,
          if (!(f->mbaff && !bot) && rh264_cabac_terminate(cb))
          { slice_end = mba+1; break; }
       }
-      free(toprow);
-   }
-   free(row);
+      }
    if (end_mb) *end_mb = slice_end;
    return 0;
 }
@@ -7991,11 +8029,14 @@ static int rh264_cabac_decode_pslice(rh264_bits *b, const rh264_sps *sps,
       memset(f->mbt8, 0, (size_t)mbw * mbh);
    }
 
-   row     = (rh264_cbf*)calloc((size_t)mbw+2, sizeof(rh264_cbf));
-   skiprow = (uint8_t*)calloc((size_t)mbw+2, 1);
-   absmvd  = (int16_t*)calloc((size_t)gwmax*ghmax*2, sizeof(int16_t));
-   if (!row || !skiprow || !absmvd)
-   { free(row); free(skiprow); free(absmvd); return -1; }
+   /* Scratch lives on the working frame; zero what this slice uses. */
+   row     = f->scr_row;
+   skiprow = f->scr_skiprow;
+   absmvd  = f->scr_am0;
+   if (!row) return -1;
+   memset(row,     0, ((size_t)mbw+2) * sizeof(rh264_cbf));
+   memset(skiprow, 0, (size_t)mbw+2);
+   memset(absmvd,  0, (size_t)gwmax*ghmax*2 * sizeof(int16_t));
    memset(&dummy, 0, sizeof(dummy));
 
    slice_end = mbw * mbh;
@@ -8007,11 +8048,10 @@ static int rh264_cabac_decode_pslice(rh264_bits *b, const rh264_sps *sps,
       int leftskipT = 0, leftskipB = 0, mba, bot, prev_skipped = 0;
       if (f->mbaff)
       {
-         toprow  = (rh264_cbf*)calloc((size_t)mbw+2, sizeof(rh264_cbf));
-         topskip = (uint8_t*)calloc((size_t)mbw+2, 1);
-         if (!toprow || !topskip)
-         { free(toprow); free(topskip); free(row); free(skiprow);
-           free(absmvd); return -1; }
+         toprow  = f->scr_toprow;
+         topskip = f->scr_topskip;
+         memset(toprow,  0, ((size_t)mbw+2) * sizeof(rh264_cbf));
+         memset(topskip, 0, (size_t)mbw+2);
       }
       memset(&leftT, 0, sizeof(leftT));
       memset(&leftB, 0, sizeof(leftB));
@@ -8047,8 +8087,7 @@ static int rh264_cabac_decode_pslice(rh264_bits *b, const rh264_sps *sps,
           * (7.3.4).  Only frame pairs are handled. */
          if (f->mbaff && !skip && (!bot || prev_skipped)
                && rh264_cabac_decode(cb, 70))
-         { free(toprow); free(topskip); free(row); free(skiprow);
-           free(absmvd); return -1; }
+         { return -1; }
          prev_skipped = skip;
 
          if (skip)
@@ -8099,8 +8138,7 @@ static int rh264_cabac_decode_pslice(rh264_bits *b, const rh264_sps *sps,
                int r2 = rh264_cabac_decode_mb_ctx(cb, sps, pps, f, mbx, mby,
                      &prevQpNZ, &tmp, L, U, mbt_p, -1, sh->first_mb_in_slice);
                if (r2 < 0)
-               { free(toprow); free(topskip);
-                 free(row); free(skiprow); free(absmvd); return r2; }
+               { return r2; }
                /* mark the macroblock intra in the MV grid and clear its mvd */
                for (cy = 0; cy < 4; cy++) for (cx = 0; cx < 4; cx++)
                {
@@ -8289,8 +8327,7 @@ static int rh264_cabac_decode_pslice(rh264_bits *b, const rh264_sps *sps,
                }
                else prevQpNZ = 0;
                if (rh264_qp_apply_delta(f, dqp))
-               { free(toprow); free(topskip);
-                 free(row); free(skiprow); free(absmvd); return -1; }
+               { return -1; }
             }
 
             rh264_cabac_p_residual(cb, f, mbx, mby, cbp_luma, cbp_chroma,
@@ -8309,9 +8346,7 @@ static int rh264_cabac_decode_pslice(rh264_bits *b, const rh264_sps *sps,
          if (!(f->mbaff && !bot) && rh264_cabac_terminate(cb))
                { slice_end = mba+1; break; }
       }
-      free(toprow); free(topskip);
-   }
-   free(row); free(skiprow); free(absmvd);
+      }
    if (end_mb) *end_mb = slice_end;
    return 0;
 }
@@ -8451,14 +8486,18 @@ static int rh264_cabac_decode_bslice(rh264_bits *b, const rh264_sps *sps,
       memset(f->mbt8, 0, (size_t)mbw * mbh);
    }
 
-   row     = (rh264_cbf*)calloc((size_t)mbw+2, sizeof(rh264_cbf));
-   skiprow = (uint8_t*)calloc((size_t)mbw+2, 1);
-   typerow = (uint8_t*)calloc((size_t)mbw+2, 1);
-   am0     = (int16_t*)calloc((size_t)gwmax*ghmax*2, sizeof(int16_t));
-   am1     = (int16_t*)calloc((size_t)gwmax*ghmax*2, sizeof(int16_t));
-   if (!row || !skiprow || !typerow || !am0 || !am1)
-   { free(row); free(skiprow); free(typerow); free(am0); free(am1);
-     return -1; }
+   /* Scratch lives on the working frame; zero what this slice uses. */
+   row     = f->scr_row;
+   skiprow = f->scr_skiprow;
+   typerow = f->scr_typerow;
+   am0     = f->scr_am0;
+   am1     = f->scr_am1;
+   if (!row) return -1;
+   memset(row,     0, ((size_t)mbw+2) * sizeof(rh264_cbf));
+   memset(skiprow, 0, (size_t)mbw+2);
+   memset(typerow, 0, (size_t)mbw+2);
+   memset(am0,     0, (size_t)gwmax*ghmax*2 * sizeof(int16_t));
+   memset(am1,     0, (size_t)gwmax*ghmax*2 * sizeof(int16_t));
    memset(&dummy, 0, sizeof(dummy));
 
    slice_end = mbw * mbh;
@@ -8470,13 +8509,12 @@ static int rh264_cabac_decode_bslice(rh264_bits *b, const rh264_sps *sps,
       int mba, bot, prev_skipped = 0;
       if (f->mbaff)
       {
-         toprow  = (rh264_cbf*)calloc((size_t)mbw+2, sizeof(rh264_cbf));
-         topskip = (uint8_t*)calloc((size_t)mbw+2, 1);
-         toptype = (uint8_t*)calloc((size_t)mbw+2, 1);
-         if (!toprow || !topskip || !toptype)
-         { free(toprow); free(topskip); free(toptype);
-           free(row); free(skiprow); free(typerow); free(am0); free(am1);
-           return -1; }
+         toprow  = f->scr_toprow;
+         topskip = f->scr_topskip;
+         toptype = f->scr_toptype;
+         memset(toprow,  0, ((size_t)mbw+2) * sizeof(rh264_cbf));
+         memset(topskip, 0, (size_t)mbw+2);
+         memset(toptype, 0, (size_t)mbw+2);
       }
       memset(&leftT, 0, sizeof(leftT));
       memset(&leftB, 0, sizeof(leftB));
@@ -8513,18 +8551,14 @@ static int rh264_cabac_decode_bslice(rh264_bits *b, const rh264_sps *sps,
          /* mb_field_decoding_flag follows mb_skip_flag (7.3.4) */
          if (f->mbaff && !skip && (!bot || prev_skipped)
                && rh264_cabac_decode(cb, 70))
-         { free(toprow); free(topskip); free(toptype);
-           free(row); free(skiprow); free(typerow); free(am0); free(am1);
-           return -1; }
+         { return -1; }
          prev_skipped = skip;
 
          if (skip)
          {
             if (rh264_b_direct_mb(f, bc, sh, mvg, gwmax, ghmax, mbx, mby)
                   != 0)
-            { free(toprow); free(topskip); free(toptype);
-              free(row); free(skiprow); free(typerow); free(am0); free(am1);
-              return -1; }
+            { return -1; }
             for (cy = 0; cy < 4; cy++) for (cx = 0; cx < 4; cx++)
                f->nzL[(mby*4+cy)*gw + mbx*4+cx] = 0;
             for (cy = 0; cy < f->cmbh/4; cy++) for (cx = 0; cx < 2; cx++)
@@ -8562,9 +8596,7 @@ static int rh264_cabac_decode_bslice(rh264_bits *b, const rh264_sps *sps,
                      &prevQpNZ, &tmp, L, U, mbt_p, mb_type > 23,
                      sh->first_mb_in_slice);
                if (r2 < 0)
-               { free(toprow); free(topskip); free(toptype);
-                 free(row); free(skiprow); free(typerow); free(am0);
-                 free(am1); return r2; }
+               { return r2; }
                for (cy = 0; cy < 4; cy++) for (cx = 0; cx < 4; cx++)
                {
                   int o = ((mby*4+cy)*gwmax + mbx*4+cx);
@@ -8593,9 +8625,7 @@ static int rh264_cabac_decode_bslice(rh264_bits *b, const rh264_sps *sps,
             {
                if (rh264_b_direct_mb(f, bc, sh, mvg, gwmax, ghmax, mbx, mby)
                      != 0)
-               { free(toprow); free(topskip); free(toptype);
-                 free(row); free(skiprow); free(typerow); free(am0);
-                 free(am1); return -1; }
+               { return -1; }
             }
             else if (mb_type <= 3)
             {
@@ -8735,8 +8765,7 @@ static int rh264_cabac_decode_bslice(rh264_bits *b, const rh264_sps *sps,
                                     mby, (p & 1) * 2 + sx, (p >> 1) * 2 + sy,
                                     step, l0r, l1r, pm0x, pm0y, pm1x, pm1y)
                                     != 0)
-                              { free(row); free(skiprow); free(typerow);
-                                free(am0); free(am1); return -1; }
+                              { return -1; }
                         for (sy = 0; sy < 2; sy++) for (sx = 0; sx < 2; sx++)
                         {
                            curref0[((p>>1)*2+sy)*4 + (p&1)*2+sx] = -3;
@@ -8907,9 +8936,7 @@ static int rh264_cabac_decode_bslice(rh264_bits *b, const rh264_sps *sps,
                }
                else prevQpNZ = 0;
                if (rh264_qp_apply_delta(f, dqp))
-               { free(toprow); free(topskip); free(toptype);
-                 free(row); free(skiprow); free(typerow); free(am0);
-                 free(am1); return -1; }
+               { return -1; }
             }
 
             rh264_cabac_p_residual(cb, f, mbx, mby, cbp_luma, cbp_chroma,
@@ -8933,9 +8960,7 @@ static int rh264_cabac_decode_bslice(rh264_bits *b, const rh264_sps *sps,
          if (!(f->mbaff && !bot) && rh264_cabac_terminate(cb))
                { slice_end = mba+1; break; }
       }
-      free(toprow); free(topskip); free(toptype);
-   }
-   free(row); free(skiprow); free(typerow); free(am0); free(am1);
+      }
    if (end_mb) *end_mb = slice_end;
    return 0;
 }
@@ -9125,7 +9150,7 @@ static int rh264_out_push(rh264_video *v, int poc, int is_idr)
       if (!v->out_used[i] && i != v->out_show) { slot = i; break; }
    if (slot < 0) return -1;            /* cannot happen: delay < slot count */
    if (!v->out[slot].Yb)
-      if (rh264_frame_alloc(&v->out[slot], &v->sps, 0) != 0) return -1;
+      if (rh264_frame_alloc(&v->out[slot], &v->sps, RH264_FRAME_ALLOC_PLAIN) != 0) return -1;
    if (!v->cur_field)
    {
       /* Frame pictures swap their planes into the output slot instead
