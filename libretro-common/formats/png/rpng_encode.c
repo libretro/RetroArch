@@ -645,6 +645,11 @@ static unsigned filter_paeth(uint8_t *target,
  * overhead (12 bytes per IDAT). */
 #define IDAT_CHUNK_SIZE 16384
 
+/* Region spacing inside the row arena: round a cursor past a region of
+ * the given size up to the next 64-byte boundary. */
+#define ROW_ARENA_NEXT(cur, bytes) \
+   ((((cur) + (bytes) + 63) / 64) * 64)
+
 /* Emit one IDAT chunk.  `chunk_buf` is laid out as:
  *     bytes [0..4): length field (filled in here, big-endian)
  *     bytes [4..8): literal "IDAT"
@@ -671,6 +676,8 @@ bool rpng_save_image_stream_fmt(const uint8_t *data,
    bool ret = true;
    const struct trans_stream_backend *stream_backend = NULL;
    uint8_t *rgba_line        = NULL;
+   uint8_t *row_arena        = NULL;
+   size_t   row_stride       = 0;
    uint8_t *prev_base        = NULL;
    uint8_t *rgba_base        = NULL;
    uint8_t *up_base          = NULL;
@@ -723,16 +730,23 @@ bool rpng_save_image_stream_fmt(const uint8_t *data,
     * whole thing handed to deflate as one span.  The old shape copied
     * the winning row into a separate tag+data buffer, a full extra pass
     * over the row for nothing. */
-   prev_base      = (uint8_t*)calloc(1, line_len + 1);
-   rgba_base      = (uint8_t*)malloc(line_len + 1);
-   up_base        = (uint8_t*)malloc(line_len + 1);
-   sub_base       = (uint8_t*)malloc(line_len + 1);
-   avg_base       = (uint8_t*)malloc(line_len + 1);
-   paeth_base     = (uint8_t*)malloc(line_len + 1);
-   chunk_buf      = (uint8_t*)malloc(IDAT_CHUNK_SIZE + 8);
-   if (!prev_base || !rgba_base || !up_base || !sub_base
-         || !avg_base || !paeth_base || !chunk_buf)
+   /* The six row buffers and the IDAT staging buffer come out of one
+    * block. Each row's data (the byte after its tag slot) starts on a
+    * 64-byte boundary, so the filter passes that read the current and
+    * previous rows together stream from aligned lines. The previous-row
+    * buffer is the only one read before it is written and is zeroed. */
+   row_stride     = ROW_ARENA_NEXT(64, line_len + 1);
+   row_arena      = (uint8_t*)malloc(6 * row_stride + IDAT_CHUNK_SIZE + 8);
+   if (!row_arena)
       GOTO_END_ERROR();
+   prev_base      = row_arena + 0 * row_stride + 63;
+   rgba_base      = row_arena + 1 * row_stride + 63;
+   up_base        = row_arena + 2 * row_stride + 63;
+   sub_base       = row_arena + 3 * row_stride + 63;
+   avg_base       = row_arena + 4 * row_stride + 63;
+   paeth_base     = row_arena + 5 * row_stride + 63;
+   chunk_buf      = row_arena + 6 * row_stride;
+   memset(prev_base, 0, line_len + 1);
 
    prev_encoded   = prev_base  + 1;
    rgba_line      = rgba_base  + 1;
@@ -963,13 +977,7 @@ bool rpng_save_image_stream_fmt(const uint8_t *data,
       GOTO_END_ERROR();
 
 end:
-   free(rgba_base);
-   free(prev_base);
-   free(up_base);
-   free(sub_base);
-   free(avg_base);
-   free(paeth_base);
-   free(chunk_buf);
+   free(row_arena);
 
    if (stream_backend)
    {
