@@ -286,6 +286,7 @@ error:
 static bool pulse_start(void *data, bool is_shutdown)
 {
    bool ret;
+   pa_operation *op;
    pa_t *pa = (pa_t*)data;
 
    if (!pa->is_ready)
@@ -295,8 +296,13 @@ static bool pulse_start(void *data, bool is_shutdown)
 
    pa->success = true; /* In case of spurious wakeup. Not critical. */
    pa_threaded_mainloop_lock(pa->mainloop);
-   pa_stream_cork(pa->stream, false, pulse_stream_success_cb, pa);
-   pa_threaded_mainloop_wait(pa->mainloop);
+   /* The operation object is ours to release once the callback has
+    * reported; it was never being released, one per start or stop. */
+   if ((op = pa_stream_cork(pa->stream, false, pulse_stream_success_cb, pa)))
+   {
+      pa_threaded_mainloop_wait(pa->mainloop);
+      pa_operation_unref(op);
+   }
    ret = pa->success;
    pa_threaded_mainloop_unlock(pa->mainloop);
    pa->is_paused = false;
@@ -343,6 +349,7 @@ static ssize_t pulse_write(void *data, const void *s, size_t len)
 static bool pulse_stop(void *data)
 {
    bool ret;
+   pa_operation *op;
    pa_t *pa = (pa_t*)data;
 
    if (!pa->is_ready)
@@ -352,8 +359,13 @@ static bool pulse_stop(void *data)
 
    pa->success = true; /* In case of spurious wakeup. Not critical. */
    pa_threaded_mainloop_lock(pa->mainloop);
-   pa_stream_cork(pa->stream, true, pulse_stream_success_cb, pa);
-   pa_threaded_mainloop_wait(pa->mainloop);
+   /* The operation object is ours to release once the callback has
+    * reported; it was never being released, one per start or stop. */
+   if ((op = pa_stream_cork(pa->stream, true, pulse_stream_success_cb, pa)))
+   {
+      pa_threaded_mainloop_wait(pa->mainloop);
+      pa_operation_unref(op);
+   }
    ret = pa->success;
    pa_threaded_mainloop_unlock(pa->mainloop);
    pa->is_paused = true;

@@ -2172,6 +2172,31 @@ void audio_driver_pipeline_consumer_exit(void)
    audio_driver_st.pipe_consumer_gone = true;
 }
 
+void audio_driver_publish_runloop(void)
+{
+   uint32_t rf = runloop_get_flags();
+   int      v  = 0;
+   if (rf & RUNLOOP_FLAG_PAUSED)
+      v |= AUDIO_SNAP_PAUSED;
+   if (rf & RUNLOOP_FLAG_SLOWMOTION)
+      v |= AUDIO_SNAP_SLOWMOTION;
+   if (rf & RUNLOOP_FLAG_FASTMOTION)
+      v |= AUDIO_SNAP_FASTMOTION;
+#ifdef HAVE_MENU
+   if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
+      v |= AUDIO_SNAP_MENU_ALIVE;
+   if (config_get_ptr()->bools.menu_pause_libretro)
+      v |= AUDIO_SNAP_MENU_PAUSES;
+#ifdef HAVE_NETWORKING
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL))
+      v |= AUDIO_SNAP_ALLOW_PAUSE;
+#else
+   v |= AUDIO_SNAP_ALLOW_PAUSE;
+#endif
+#endif
+   retro_atomic_store_release_int(&audio_driver_st.runloop_snapshot, v);
+}
+
 void audio_driver_pipeline_wake(void)
 {
 #ifdef HAVE_THREADS
@@ -2292,7 +2317,7 @@ static void audio_driver_submit(audio_driver_state_t *audio_st,
  **/
 static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
 {
-   uint32_t runloop_flags;
+   int      snap;
    size_t   frame_bytes, out_bytes, have;
    const audio_driver_t *audio = audio_st->current_audio;
 
@@ -2356,8 +2381,8 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
    scond_signal(audio_st->pipe_cond);
    slock_unlock(audio_st->pipe_lock);
 
-   runloop_flags = runloop_get_flags();
-   if (    (runloop_flags & RUNLOOP_FLAG_PAUSED)
+   snap = retro_atomic_load_acquire_int(&audio_st->runloop_snapshot);
+   if (    (snap & AUDIO_SNAP_PAUSED)
         || !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
         || !audio_st->output_samples_buf)
       return;
@@ -2375,8 +2400,8 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
    audio_driver_flush(audio_st,
          config_get_ptr()->floats.slowmotion_ratio,
          audio_st->pipe_scratch, have, false,
-         (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
-         (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false,
+         (snap & AUDIO_SNAP_SLOWMOTION) ? true : false,
+         (snap & AUDIO_SNAP_FASTMOTION) ? true : false,
          NULL);
 }
 #endif
@@ -2394,7 +2419,11 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
  **/
 static void audio_driver_sample_accum_flush(audio_driver_state_t *audio_st)
 {
-   uint32_t runloop_flags          = runloop_get_flags();
+   /* Runs on the main thread from the frame end, or on the audio thread
+    * for a core with its own audio callback; the snapshot is right for
+    * both, the runloop's own flag word only for the first. */
+   int snap                        = retro_atomic_load_acquire_int(
+         &audio_st->runloop_snapshot);
    recording_state_t *recording_st = recording_state_get_ptr();
 
    if (     recording_st->data
@@ -2409,15 +2438,15 @@ static void audio_driver_sample_accum_flush(audio_driver_state_t *audio_st)
       recording_st->driver->push_audio(recording_st->data, &ffemu_data);
    }
 
-   if (!(    (runloop_flags   & RUNLOOP_FLAG_PAUSED)
+   if (!(    (snap & AUDIO_SNAP_PAUSED)
          || !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
          || !(audio_st->output_samples_buf)))
       audio_driver_submit(audio_st,
             config_get_ptr()->floats.slowmotion_ratio,
             audio_st->sample_accum,
             audio_st->data_ptr,
-            (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
-            (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false);
+            (snap & AUDIO_SNAP_SLOWMOTION) ? true : false,
+            (snap & AUDIO_SNAP_FASTMOTION) ? true : false);
 
    audio_st->data_ptr = 0;
 }
@@ -2443,6 +2472,8 @@ void audio_driver_sample(int16_t left, int16_t right)
 void audio_driver_frame_end(void)
 {
    audio_driver_state_t *audio_st  = &audio_driver_st;
+
+   audio_driver_publish_runloop();
 
    /* A core audio callback fills the accumulator on the audio thread and
     * audio_driver_callback() flushes it there; touching it here would
@@ -3509,23 +3540,14 @@ bool audio_driver_disable_callback(void)
 
 bool audio_driver_callback(void)
 {
-   bool menu_pause_libretro    = config_get_ptr()->bools.menu_pause_libretro;
-   uint32_t runloop_flags      = runloop_get_flags();
-   bool runloop_paused         = (runloop_flags & RUNLOOP_FLAG_PAUSED) ? true : false;
-#ifdef HAVE_MENU
-#ifdef HAVE_NETWORKING
-   bool core_paused            = runloop_paused
-       || (menu_pause_libretro
-       && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
-       &&  netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL));
-#else
-   bool core_paused            = runloop_paused
-      || (menu_pause_libretro
-      && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE));
-#endif
-#else
-   bool core_paused            = runloop_paused;
-#endif
+   /* Runs on the audio thread: read the main thread's published
+    * snapshot, not the runloop, menu or settings themselves. */
+   int  snap        = retro_atomic_load_acquire_int(
+         &audio_driver_st.runloop_snapshot);
+   bool core_paused = (snap & AUDIO_SNAP_PAUSED)
+      || (   (snap & AUDIO_SNAP_MENU_PAUSES)
+          && (snap & AUDIO_SNAP_MENU_ALIVE)
+          && (snap & AUDIO_SNAP_ALLOW_PAUSE));
 
 #ifdef HAVE_THREADS
    if (audio_driver_st.pipe_threaded)
@@ -3577,6 +3599,7 @@ bool audio_driver_start(bool is_shutdown)
    /* Set before the driver's start(): the wrapper's start releases its
     * thread, which reads flags from then on, so the write has to be
     * ordered before that release by the wrapper's own lock. */
+   audio_driver_publish_runloop();
    AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_STARTED);
    if (!audio->start(audio_st->context_audio_data, is_shutdown))
    {
@@ -3616,6 +3639,7 @@ bool audio_driver_stop(void)
          || !audio_driver_alive()
       )
       return false;
+   audio_driver_publish_runloop();
    stopped = audio->stop(audio_driver_st.context_audio_data);
 
    if (stopped)

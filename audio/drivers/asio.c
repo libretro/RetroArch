@@ -1641,7 +1641,10 @@ static size_t ra_asio_wait_writable(void *data, size_t len)
       scond_wait_timeout(ad->cond, ad->cond_lock, wait_us);
       slock_unlock(ad->cond_lock);
 #else
-      Sleep(1);
+      /* Nothing to wait on without threads, and nothing calls this
+       * without them either: the threaded pipeline is the only caller.
+       * Report that no wait is possible rather than spin. */
+      return 0;
 #endif
    }
 }

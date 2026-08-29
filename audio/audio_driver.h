@@ -375,6 +375,16 @@ typedef struct
     * the consumer when it acts on it. Sticky, unlike the signal, so a
     * wake raised before the consumer reaches its wait is not lost. */
    bool     pipe_wake;
+   /**
+    * What the audio thread needs to know about the runloop and the
+    * menu, published by the main thread with
+    * audio_driver_publish_runloop() at every frame end and on every
+    * start and stop, so the audio thread never reads
+    * runloop_state.flags, menu state or settings directly. A frame of
+    * staleness in "paused" or "fast-forward" is harmless; a torn or
+    * racing read of the runloop's flag word is not.
+    */
+   retro_atomic_int_t runloop_snapshot;
    /* Upper bound on input samples per consumer pass (one video frame's
     * worth, capped to a slice), and underrun accounting: passes that
     * had to be padded with silence after the ring first filled. */
@@ -524,6 +534,27 @@ void audio_driver_pipeline_consumer_exit(void);
  * out its timeout.
  **/
 void audio_driver_pipeline_wake(void);
+
+/* Bits of audio_driver_state_t::runloop_snapshot. */
+enum audio_runloop_snapshot_bits
+{
+   AUDIO_SNAP_PAUSED      = (1 << 0),
+   AUDIO_SNAP_SLOWMOTION  = (1 << 1),
+   AUDIO_SNAP_FASTMOTION  = (1 << 2),
+   AUDIO_SNAP_MENU_ALIVE  = (1 << 3),
+   AUDIO_SNAP_MENU_PAUSES = (1 << 4),
+   AUDIO_SNAP_ALLOW_PAUSE = (1 << 5)
+};
+
+/**
+ * audio_driver_publish_runloop:
+ *
+ * Main thread only. Captures the runloop, menu and setting bits the
+ * audio thread consults into runloop_snapshot. Called from the frame
+ * end and from audio_driver_start()/stop(); cheap enough to call
+ * anywhere else those bits change.
+ **/
+void audio_driver_publish_runloop(void);
 
 /**
  * audio_sink_t:
