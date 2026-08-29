@@ -1112,10 +1112,10 @@ static void ffmpeg_free(void *data)
    av_free(handle->audio.resample_out);
    av_free(handle->audio.fixed_conv);
    av_free(handle->audio.planar_buf);
-#if !FFMPEG3
-   av_free(handle->muxer.ctx->url);
-#endif
-   av_free(handle->muxer.ctx);
+   /* The muxer context owns its streams, their codec parameters, its
+    * metadata and its url; releasing just the struct left the rest
+    * behind on every session. */
+   avformat_free_context(handle->muxer.ctx);
    av_packet_free(&handle->pkt);
 
    free(handle);
