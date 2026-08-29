@@ -8219,8 +8219,7 @@ end:
             /* Nonblocking audio */
             if (    (audio_st->flags & AUDIO_FLAG_ACTIVE)
                  && (audio_st->context_audio_data))
-               audio_st->current_audio->set_nonblock_state(
-                     audio_st->context_audio_data, true);
+               audio_driver_set_nonblock_state(true);
          }
 
          runloop_st->fastforward_after_frames++;
@@ -8230,9 +8229,7 @@ end:
             /* Blocking audio */
             if (     (audio_st->flags & AUDIO_FLAG_ACTIVE)
                   && (audio_st->context_audio_data))
-               audio_st->current_audio->set_nonblock_state(
-                     audio_st->context_audio_data,
-                     audio_sync ? false : true);
+               audio_driver_set_nonblock_state(audio_sync ? false : true);
 
             runloop_st->fastforward_after_frames = 0;
          }

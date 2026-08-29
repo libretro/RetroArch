@@ -24,6 +24,7 @@
 
 #include <boolean.h>
 #include <retro_common_api.h>
+#include <retro_spsc.h>
 #include <retro_inline.h>
 #include <libretro.h>
 #include <retro_miscellaneous.h>
@@ -319,6 +320,29 @@ typedef struct
     */
    int16_t *arena_int16;                                 /* ptr alignment */
    float   *arena_float;                                 /* ptr alignment */
+   /**
+    * Threaded pipeline (AUDIO_FLAG_PIPELINE_THREADED). pipe_ring carries
+    * raw int16 stereo frames at the core's rate from the main thread to
+    * the audio thread; lock-free, one producer (frame end / rewind /
+    * menu audio, all main thread) and one consumer (the wrapper thread).
+    * pipe_scratch is the consumer's bounce buffer for one slice pulled
+    * out of the ring; pipe_conv is the producer's staging area for the
+    * float batch callback, which must be int16 before it is published.
+    * Both are regions of arena_int16.
+    */
+   retro_spsc_t pipe_ring;
+   int16_t *pipe_scratch;
+   int16_t *pipe_conv;
+   /* Written once by the wrapper thread as it leaves its loop, read by
+    * the producer's wait. Its own field, not a bit in flags: the main
+    * thread read-modify-writes flags and a second writer would lose
+    * bits. */
+   volatile bool pipe_consumer_gone;
+   /* The audio thread's own copy of AUDIO_FLAG_PIPELINE_THREADED. Set
+    * before the wrapper thread is released and cleared after it is
+    * joined, so the thread never reads the flags word - which the main
+    * thread read-modify-writes at will - just to know it is running. */
+   bool pipe_threaded;
 #ifdef HAVE_REWIND
    size_t rewind_ptr;
    size_t rewind_size;
@@ -338,7 +362,7 @@ typedef struct
 
    enum resampler_quality resampler_quality;
 
-   uint8_t flags;
+   uint16_t flags;
 
    char resampler_ident[64];
 
@@ -417,6 +441,46 @@ void audio_driver_set_buffer_size(size_t bufsize);
 bool audio_driver_get_devices_list(void **ptr);
 
 void audio_driver_setup_rewind(void);
+
+/**
+ * audio_driver_set_nonblock_state:
+ *
+ * Hands the blocking state to the driver and records it in
+ * AUDIO_FLAG_NONBLOCK so the threaded pipeline's producer can see it.
+ * Every caller that used to reach current_audio->set_nonblock_state()
+ * directly goes through here.
+ **/
+void audio_driver_set_nonblock_state(bool nonblock);
+
+/**
+ * audio_driver_pipeline_consumer_exit:
+ *
+ * Called by the audio thread wrapper as its thread leaves the loop, so
+ * a producer waiting for ring space stops waiting for a consumer that
+ * will never run again.
+ **/
+void audio_driver_pipeline_consumer_exit(void);
+
+/**
+ * audio_sink_t:
+ *
+ * Where a pipeline pass delivers its finished samples. With data NULL
+ * the pass hands them to the audio driver's write(), which is the
+ * frontend's normal output. With data set it copies them into that
+ * buffer instead, up to cap bytes, and accumulates the byte count in
+ * written; anything beyond cap is dropped. This is how a consumer that
+ * asks for a bounded amount of output (a pull-model backend, a test)
+ * runs the same convert/DSP/resample/volume pass without the driver in
+ * the loop. The sample format of what lands in data matches what the
+ * driver would have received: float when AUDIO_FLAG_USE_FLOAT is set,
+ * int16 otherwise.
+ **/
+typedef struct audio_sink
+{
+   void   *data;
+   size_t  cap;
+   size_t  written;
+} audio_sink_t;
 
 /**
  * audio_driver_frame_end:

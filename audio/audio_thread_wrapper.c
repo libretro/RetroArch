@@ -116,6 +116,7 @@ static void audio_thread_loop(void *data)
       audio_driver_callback();
    }
 
+   audio_driver_pipeline_consumer_exit();
    thr->driver->free(thr->driver_data);
 }
 
@@ -251,6 +252,27 @@ static bool audio_thread_use_float(void *data)
    return thr->use_float;
 }
 
+/* Rate control runs on this thread when the pipeline is threaded, so
+ * the wrapped driver's fill queries are forwarded. They are only ever
+ * called from the audio thread, the same thread that writes. Drivers
+ * without them return 0 and audio_driver_init_internal() leaves rate
+ * control off, as it does without the wrapper. */
+static size_t audio_thread_write_avail(void *data)
+{
+   audio_thread_t *thr = (audio_thread_t*)data;
+   if (!thr || !thr->driver->write_avail || !thr->driver_data)
+      return 0;
+   return thr->driver->write_avail(thr->driver_data);
+}
+
+static size_t audio_thread_buffer_size(void *data)
+{
+   audio_thread_t *thr = (audio_thread_t*)data;
+   if (!thr || !thr->driver->buffer_size || !thr->driver_data)
+      return 0;
+   return thr->driver->buffer_size(thr->driver_data);
+}
+
 static ssize_t audio_thread_write(void *data, const void *s, size_t len)
 {
    ssize_t _len;
@@ -278,10 +300,10 @@ static const audio_driver_t audio_thread = {
    audio_thread_free,
    audio_thread_use_float,
    "audio-thread",
-   NULL, /* No point in using rate control with threaded audio. */
    NULL,
    NULL,
-   NULL
+   audio_thread_write_avail,
+   audio_thread_buffer_size
 };
 
 /**

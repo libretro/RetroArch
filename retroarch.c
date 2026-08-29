@@ -1568,9 +1568,7 @@ void driver_set_nonblock_state(void)
    }
 
    if (audio_driver_active && audio_st->context_audio_data)
-      audio_st->current_audio->set_nonblock_state(
-            audio_st->context_audio_data,
-            audio_sync ? enable : true);
+      audio_driver_set_nonblock_state(audio_sync ? enable : true);
 }
 
 void drivers_init(

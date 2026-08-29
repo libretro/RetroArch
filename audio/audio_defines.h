@@ -155,7 +155,27 @@ enum audio_driver_state_flags
     * Indicates that the audio driver is forcing gain to 0.
     * Used for temporary rewind and fast-forward muting.
     */
-   AUDIO_FLAG_MUTED        = (1 << 6)
+   AUDIO_FLAG_MUTED        = (1 << 6),
+   /**
+    * Mirrors the non-blocking state last handed to the driver
+    * (fast-forward, or audio_sync off). Read by the producer side of
+    * the threaded pipeline to decide whether a full ring drops or waits.
+    */
+   AUDIO_FLAG_NONBLOCK     = (1 << 7),
+   /**
+    * The convert/DSP/resample/volume pass runs on the audio thread:
+    * core audio is published into pipe_ring by the frame-end flush and
+    * consumed by audio_driver_pipeline_consume() from the wrapper
+    * thread's loop. Set from the audio_threaded_pipeline setting at
+    * driver init; constant for the driver's lifetime.
+    */
+   AUDIO_FLAG_PIPELINE_THREADED = (1 << 8),
+   /**
+    * The driver is between audio_driver_start() and audio_driver_stop().
+    * The threaded pipeline's producer only waits for ring space while
+    * this is set: with the consumer parked, waiting could never end.
+    */
+   AUDIO_FLAG_STARTED      = (1 << 9)
 };
 
 typedef struct audio_statistics

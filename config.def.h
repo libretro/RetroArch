@@ -1294,6 +1294,10 @@
 /* Will sync audio. (recommended) */
 #define DEFAULT_AUDIO_SYNC true
 
+/* Run the audio pipeline (convert, DSP, resample, volume) on the audio
+ * thread instead of inside the frame. Off by default. */
+#define DEFAULT_AUDIO_THREADED_PIPELINE false
+
 /* Audio rate control. */
 #if !defined(RARCH_CONSOLE)
 #define DEFAULT_RATE_CONTROL true
