@@ -412,6 +412,13 @@ enum gfx_thumb_anim_job_status
                                   keeps its meaning. */
 };
 
+/* The two jobs of an animation and their frame buffers come out of one
+ * block: job A at its start, job B one cache line in (the worker and
+ * the main thread hand the two back and forth, so they must not share
+ * a line), then the two frames, each on a 64-byte boundary. Job A's
+ * address is the block's; job B and both frame pointers are views. */
+#define GFX_THUMB_ANIM_JOB_STRIDE 64
+
 typedef struct gfx_thumb_anim_job
 {
    struct gfx_thumb_anim_job *next;  /* FIFO link (owned by the queue) */
@@ -729,22 +736,19 @@ static void gfx_thumbnail_preview_audio_start_owned(
 static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
 {
 #ifdef HAVE_THREADS
+   /* Both jobs and their frames live in the block that anim_job
+    * addresses; pull each off the queue, then free once. */
+   if (thumbnail->anim_job2)
+      gfx_thumbnail_anim_job_release(
+            (gfx_thumb_anim_job_t*)thumbnail->anim_job2);
    if (thumbnail->anim_job)
    {
-      gfx_thumb_anim_job_t *job = (gfx_thumb_anim_job_t*)thumbnail->anim_job;
-      gfx_thumbnail_anim_job_release(job);
-      free(job->frame);
-      free(job);
-      thumbnail->anim_job = NULL;
+      gfx_thumbnail_anim_job_release(
+            (gfx_thumb_anim_job_t*)thumbnail->anim_job);
+      free(thumbnail->anim_job);
    }
-   if (thumbnail->anim_job2)
-   {
-      gfx_thumb_anim_job_t *job = (gfx_thumb_anim_job_t*)thumbnail->anim_job2;
-      gfx_thumbnail_anim_job_release(job);
-      free(job->frame);
-      free(job);
-      thumbnail->anim_job2 = NULL;
-   }
+   thumbnail->anim_job  = NULL;
+   thumbnail->anim_job2 = NULL;
    thumbnail->anim_job_upload = 0;
 #endif
 #if defined(GFX_THUMB_PREVIEW_AUDIO)
@@ -1882,24 +1886,21 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
 
          image_transfer_anim_stream_get_info(thumbnail->anim, type,
                &anim_w, &anim_h, &num_frames, &loop_count);
-         j0 = (gfx_thumb_anim_job_t*)calloc(1, sizeof(*j0));
-         j1 = (gfx_thumb_anim_job_t*)calloc(1, sizeof(*j1));
-         if (j0)
-            j0->frame = (uint32_t*)malloc(
-                  (size_t)anim_w * anim_h * sizeof(uint32_t));
-         if (j1)
-            j1->frame = (uint32_t*)malloc(
-                  (size_t)anim_w * anim_h * sizeof(uint32_t));
-         if (!j0 || !j1 || !j0->frame || !j1->frame)
          {
+            size_t frame_len = (((size_t)anim_w * anim_h * sizeof(uint32_t))
+                  + 63) & ~(size_t)63;
+            uint8_t *block   = (uint8_t*)calloc(1,
+                  2 * GFX_THUMB_ANIM_JOB_STRIDE + 2 * frame_len);
             /* Retry on a later vsync; the pair is all or nothing. */
-            if (j0)
-               free(j0->frame);
-            if (j1)
-               free(j1->frame);
-            free(j0);
-            free(j1);
-            return;
+            if (!block || sizeof(*j0) > GFX_THUMB_ANIM_JOB_STRIDE)
+            {
+               free(block);
+               return;
+            }
+            j0        = (gfx_thumb_anim_job_t*)block;
+            j1        = (gfx_thumb_anim_job_t*)(block + GFX_THUMB_ANIM_JOB_STRIDE);
+            j0->frame = (uint32_t*)(block + 2 * GFX_THUMB_ANIM_JOB_STRIDE);
+            j1->frame = (uint32_t*)(block + 2 * GFX_THUMB_ANIM_JOB_STRIDE + frame_len);
          }
          j0->stream     = thumbnail->anim;
          j1->stream     = thumbnail->anim;
