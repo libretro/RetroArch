@@ -1037,6 +1037,13 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          unsigned out_frames;
          bool     synth_on    = midi_driver_synth_active()
                && audio_st->synth_buf && audio_st->input_data_int16;
+         /* Writable view of the input for the synth sum and the DSP
+          * chain. The single-sample accumulator is this driver's own
+          * buffer and is discarded when the flush returns, so it can be
+          * modified in place; any other source is a core's const buffer
+          * and is copied into the scratch on first use. */
+         int16_t *work        = (rs_in == audio_st->sample_accum)
+               ? audio_st->sample_accum : NULL;
 
          audio_st->stat_frontend_is_float = false;
 
@@ -1049,35 +1056,43 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
           * ordering. */
          if (synth_on)
          {
-            memcpy(audio_st->input_data_int16, data, samples * sizeof(int16_t));
+            if (!work)
+            {
+               memcpy(audio_st->input_data_int16, data,
+                     samples * sizeof(int16_t));
+               work = audio_st->input_data_int16;
+            }
             if (midi_driver_render_audio(audio_st->synth_buf, rs_frames,
                      (unsigned)audio_st->input))
             {
                size_t s;
                for (s = 0; s < samples; s++)
                {
-                  int32_t v  = (int32_t)audio_st->input_data_int16[s]
+                  int32_t v  = (int32_t)work[s]
                             + audio_float_to_s16_sat(
                                  audio_st->synth_buf[s]);
                   if      (v >  32767) v =  32767;
                   else if (v < -32768) v = -32768;
-                  audio_st->input_data_int16[s] = (int16_t)v;
+                  work[s] = (int16_t)v;
                }
             }
-            rs_in = audio_st->input_data_int16;
+            rs_in = work;
          }
 
 #ifdef HAVE_DSP_FILTER
-         /* Run an int16-capable DSP chain in place on an int16 scratch copy
-          * (the core's buffer is const), then resample its output.  When a
-          * synth was summed above the copy already holds game+synth. */
+         /* Run an int16-capable DSP chain in place on the writable view,
+          * then resample its output.  When a synth was summed above the
+          * view already holds game+synth. */
          if (audio_st->dsp && audio_st->input_data_int16)
          {
             struct retro_dsp_data_int16 dsp_data;
-            if (!synth_on)
+            if (!work)
+            {
                memcpy(audio_st->input_data_int16, data,
                      samples * sizeof(int16_t));
-            dsp_data.input        = audio_st->input_data_int16;
+               work = audio_st->input_data_int16;
+            }
+            dsp_data.input        = work;
             dsp_data.input_frames = rs_frames;
             dsp_data.output       = NULL;
             dsp_data.output_frames = 0;
