@@ -31,6 +31,8 @@
 #include <time/rtime.h>
 #include <memory/mempool.h>
 
+#include "menu_str.h"
+
 #ifdef WIIU
 #include <wiiu/os/energy.h>
 #endif
@@ -7048,6 +7050,9 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             /* Every list is gone, so every cbs has come back to the
              * pool; the chunks behind them go back to libc here. */
             menu_cbs_pool_deinit();
+            /* Same point in teardown: every node has been released, so
+             * nothing is still sharing a fullpath. */
+            menu_str_cache_flush();
 
             if (menu_st->thumbnail_path_data)
                free(menu_st->thumbnail_path_data);

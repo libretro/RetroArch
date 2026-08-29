@@ -36,6 +36,7 @@
 
 #include "../menu_cbs.h"
 #include "../menu_driver.h"
+#include "../menu_str.h"
 #include "../menu_screensaver.h"
 
 #include "../../msg_hash_lbl_str.h"
@@ -4712,8 +4713,10 @@ static void ozone_free_node(ozone_node_t *node)
 
    node->console_name = NULL;
 
+   /* Shared with every other node of the same list; released by
+    * reference, never with free(). */
    if (node->fullpath)
-      free(node->fullpath);
+      menu_str_unref(node->fullpath);
 
    node->fullpath = NULL;
 
@@ -13689,9 +13692,9 @@ static void ozone_list_insert(void *userdata,
    if (fullpath && *fullpath)
    {
       if (node->fullpath)
-         free(node->fullpath);
+         menu_str_unref(node->fullpath);
 
-      node->fullpath      = strdup(fullpath);
+      node->fullpath      = menu_str_ref(fullpath);
    }
 
    list->userdata_free    = ozone_free_node_cb;

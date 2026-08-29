@@ -41,6 +41,7 @@
 #include "../../frontend/frontend_driver.h"
 
 #include "../menu_driver.h"
+#include "../menu_str.h"
 #include "../menu_entries.h"
 #include "../menu_screensaver.h"
 
@@ -795,8 +796,10 @@ static void xmb_free_node(xmb_node_t *node)
    if (!node)
       return;
 
+   /* Shared with every other node of the same list; released by
+    * reference, never with free(). */
    if (node->fullpath)
-      free(node->fullpath);
+      menu_str_unref(node->fullpath);
 
    node->fullpath = NULL;
    xmb_node_icons_free(node);
@@ -10746,9 +10749,9 @@ static void xmb_list_insert(void *userdata,
    if (fullpath && *fullpath)
    {
       if (node->fullpath)
-         free(node->fullpath);
+         menu_str_unref(node->fullpath);
 
-      node->fullpath = strdup(fullpath);
+      node->fullpath = menu_str_ref(fullpath);
    }
 
    node->alpha       = xmb->items_passive_alpha;

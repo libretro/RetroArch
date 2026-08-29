@@ -16,6 +16,10 @@ TEST_GENERIC_QUEUE_SRC = test/queues/test_generic_queue.c queues/generic_queue.c
 TEST_LINKED_LIST = test/lists/test_linked_list
 TEST_LINKED_LIST_SRC = test/lists/test_linked_list.c lists/linked_list.c
 
+TEST_MENU_STR = test/menu/test_menu_str
+TEST_MENU_STR_SRC = test/menu/test_menu_str.c ../menu/menu_str.c \
+		    string/stdstring.c encodings/encoding_utf.c compat/compat_strl.c
+
 TEST_MEMPOOL = test/memory/test_mempool
 TEST_MEMPOOL_SRC = test/memory/test_mempool.c memory/mempool.c
 
@@ -205,6 +209,10 @@ all:
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_FILE_LIST_SRC) $(LIBCHECK_LIBS) -o $(TEST_FILE_LIST)
 	$(TEST_FILE_LIST)
 	lcov -c -d . -o `dirname $(TEST_FILE_LIST)`/file_list_coverage.info
+	# menu_str
+	$(CC) $(TEST_UNIT_CFLAGS) -I.. $(TEST_MENU_STR_SRC) $(LIBCHECK_LIBS) -o $(TEST_MENU_STR)
+	$(TEST_MENU_STR)
+	lcov -c -d . -o `dirname $(TEST_MENU_STR)`/coverage.info
 	# mempool
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_MEMPOOL_SRC) $(LIBCHECK_LIBS) -o $(TEST_MEMPOOL)
 	$(TEST_MEMPOOL)
@@ -237,6 +245,7 @@ all:
 	     -a test/lists/coverage.info \
 	     -a test/lists/file_list_coverage.info \
 	     -a test/memory/coverage.info \
+	     -a test/menu/coverage.info \
 	     -a test/queues/coverage.info \
 	     -a test/formats/coverage.info
 	genhtml -o test/coverage/ test/coverage.info
@@ -245,6 +254,7 @@ clean:
 	rm -f *.gcda *.gcno
 	rm -f $(TEST_STDSTRING) $(TEST_UTILS) $(TEST_HASH) \
 	      $(TEST_LINKED_LIST) $(TEST_FILE_LIST) $(TEST_MEMPOOL) \
+	      $(TEST_MENU_STR) \
 	      $(TEST_GENERIC_QUEUE) \
 	      $(TEST_RPNG) $(TEST_RWAV) $(TEST_RJPEG) $(TEST_RWEBM_AUDIO)
 	rm -f test/*/*.gcda test/*/*.gcno test/*/coverage.info \
