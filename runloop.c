@@ -6995,19 +6995,14 @@ static enum runloop_state_enum runloop_check_state(
             menu->state               = 0;
          }
 
-         /* Pump the menu audio path when menu sounds are enabled, or when a
-          * mixer stream is active (e.g. animated thumbnail preview audio) --
-          * the mixer is only advanced by audio_driver_flush(), which in the
-          * menu is driven from here.  Without this, thumbnail audio would be
-          * silent whenever menu sounds are disabled. */
-         if (      !libretro_running
-#ifdef HAVE_AUDIOMIXER
-               && (   settings->bools.audio_enable_menu
-                   || audio_driver_mixer_get_streams_playing() > 0)
-#else
-               && settings->bools.audio_enable_menu
-#endif
-            )
+         /* Feed the audio device one frame of silence while the core is
+          * not running behind the menu, so the stream never starves or
+          * stops: the device stays in the same state it is in during
+          * play, rate control keeps its footing, and menu sounds, the
+          * mixer and thumbnail video playback mix into this stream
+          * through audio_driver_flush(), which in the menu is driven only
+          * from here. */
+         if (!libretro_running)
             audio_driver_menu_sample();
       }
 

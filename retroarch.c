@@ -4332,53 +4332,17 @@ bool command_event(enum event_command cmd, void *data)
          }
 #endif
          break;
+      /* Plain stop and start. These used to be gated on the menu's
+       * pause and menu-sound settings because the menu toggle issued
+       * them; it no longer does, and the gate also disabled them for
+       * the callers that mean it, such as the 3DS sleep and wake hooks. */
       case CMD_EVENT_AUDIO_STOP:
-         {
-            bool menu_pause_libretro = false;
-            bool audio_enable_menu   = false;
-
-#if defined(HAVE_AUDIOMIXER) && defined(HAVE_MENU)
-            audio_enable_menu        = settings->bools.audio_enable_menu
-                  && menu_st->flags & MENU_ST_FLAG_ALIVE;
-#endif
-#ifdef HAVE_NETWORKING
-            menu_pause_libretro      = settings->bools.menu_pause_libretro
-                  && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL)
-                  && !netplay_driver_ctl(RARCH_NETPLAY_CTL_USE_CORE_PACKET_INTERFACE, NULL);
-#else
-            menu_pause_libretro      = settings->bools.menu_pause_libretro;
-#endif
-
-            if (audio_enable_menu || !menu_pause_libretro)
-               return false;
-
-            if (!audio_driver_stop())
-               return false;
-         }
+         if (!audio_driver_stop())
+            return false;
          break;
       case CMD_EVENT_AUDIO_START:
-         {
-            bool menu_pause_libretro = false;
-            bool audio_enable_menu   = false;
-
-#if defined(HAVE_AUDIOMIXER) && defined(HAVE_MENU)
-            audio_enable_menu        = settings->bools.audio_enable_menu
-                  && menu_st->flags & MENU_ST_FLAG_ALIVE;
-#endif
-#ifdef HAVE_NETWORKING
-            menu_pause_libretro      = settings->bools.menu_pause_libretro
-                  && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL)
-                  && !netplay_driver_ctl(RARCH_NETPLAY_CTL_USE_CORE_PACKET_INTERFACE, NULL);
-#else
-            menu_pause_libretro      = settings->bools.menu_pause_libretro;
-#endif
-
-            if (audio_enable_menu && !menu_pause_libretro)
-               return false;
-
-            if (!audio_driver_start(runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
-               return false;
-         }
+         if (!audio_driver_start(runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
+            return false;
          break;
 #ifdef HAVE_MICROPHONE
       case CMD_EVENT_MICROPHONE_STOP:
@@ -5305,20 +5269,14 @@ bool command_event(enum event_command cmd, void *data)
             bool menu_pause_libretro = settings->bools.menu_pause_libretro;
 #endif
 
+            /* Audio is not stopped or started around the menu any more;
+             * see the menu toggle. */
+#ifdef HAVE_MICROPHONE
             if (menu_pause_libretro)
-            {
-               command_event(CMD_EVENT_AUDIO_STOP, NULL);
-#ifdef HAVE_MICROPHONE
                command_event(CMD_EVENT_MICROPHONE_STOP, NULL);
-#endif
-            }
             else
-            {
-               command_event(CMD_EVENT_AUDIO_START, NULL);
-#ifdef HAVE_MICROPHONE
                command_event(CMD_EVENT_MICROPHONE_START, NULL);
 #endif
-            }
          }
 #endif
          break;

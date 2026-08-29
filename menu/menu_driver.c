@@ -6575,8 +6575,9 @@ void menu_driver_toggle(
     * struct is NULL
     */
    video_driver_t *current_video      = (video_driver_t*)curr_video_data;
+#ifdef HAVE_MICROPHONE
    bool menu_pause_libretro           = false;
-   bool audio_enable_menu             = false;
+#endif
    runloop_state_t *runloop_st        = runloop_state_get_ptr();
    struct menu_state *menu_st         = &menu_driver_state;
    bool runloop_shutdown_initiated    = (runloop_st->flags &
@@ -6592,14 +6593,13 @@ void menu_driver_toggle(
 
    if (settings)
    {
+#ifdef HAVE_MICROPHONE
 #ifdef HAVE_NETWORKING
       menu_pause_libretro             = settings->bools.menu_pause_libretro
             && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
 #else
       menu_pause_libretro             = settings->bools.menu_pause_libretro;
 #endif
-#ifdef HAVE_AUDIOMIXER
-      audio_enable_menu               = settings->bools.audio_enable_menu;
 #endif
 #ifdef HAVE_OVERLAY
       input_overlay_hide_in_menu      = settings->bools.input_overlay_hide_in_menu;
@@ -6670,14 +6670,14 @@ void menu_driver_toggle(
       /* Stop all rumbling before entering the menu. */
       command_event(CMD_EVENT_RUMBLE_STOP, NULL);
 
-      if (menu_pause_libretro)
-      {
-         if (!audio_enable_menu)
-            command_event(CMD_EVENT_AUDIO_STOP, NULL);
+      /* Audio keeps running behind the menu: the runloop feeds the
+       * device silence while the core is paused, and menu sounds, the
+       * mixer and thumbnail video playback all mix into that stream.
+       * Only the microphone is stopped. */
 #ifdef HAVE_MICROPHONE
+      if (menu_pause_libretro)
          command_event(CMD_EVENT_MICROPHONE_STOP, NULL);
 #endif
-      }
 
       /* Override keyboard callback to redirect to menu instead.
        * We'll use this later for something ... */
@@ -6702,14 +6702,10 @@ void menu_driver_toggle(
       if (!runloop_shutdown_initiated)
          driver_set_nonblock_state();
 
-      if (menu_pause_libretro)
-      {
-         if (!audio_enable_menu)
-            command_event(CMD_EVENT_AUDIO_START, NULL);
 #ifdef HAVE_MICROPHONE
+      if (menu_pause_libretro)
          command_event(CMD_EVENT_MICROPHONE_START, NULL);
 #endif
-      }
 
       /* Restore libretro keyboard callback. */
       if (key_event && frontend_key_event)
