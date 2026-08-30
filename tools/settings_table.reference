@@ -249,7 +249,6 @@ bool	run_ahead_hide_warnings	1	0
 bool	input_auto_mouse_grab	1	1
 bool	microphone_enable	1	1
 bool	audio_sync	1	1
-bool	audio_threaded_pipeline	1	0
 bool	audio_thread_priority	1	0
 bool	audio_enable	1	1
 bool	ui_menubar_enable	1	1
@@ -557,6 +556,7 @@ uint	input_block_timeout	1	1
 uint	ai_service_mode	1	1
 uint	audio_format_negotiation	1	AUDIO_FORMAT_NEGOTIATION_FLOAT
 uint	microphone_block_frames	1	0
+uint	audio_threaded_pipeline	1	AUDIO_THREADED_PIPELINE_AUTO
 uint	video_scale	1	3
 uint	video_window_auto_width_max	1	1920
 uint	video_window_auto_height_max	1	1080
@@ -895,7 +895,6 @@ bool	run_ahead_hide_warnings	1	0
 bool	input_auto_mouse_grab	1	0
 bool	microphone_enable	1	1
 bool	audio_sync	1	1
-bool	audio_threaded_pipeline	1	0
 bool	audio_thread_priority	1	0
 bool	audio_enable	1	1
 bool	ui_menubar_enable	1	1
@@ -1199,6 +1198,7 @@ uint	rewind_buffer_size_step	1	10
 uint	ai_service_mode	1	1
 uint	audio_format_negotiation	1	AUDIO_FORMAT_NEGOTIATION_FLOAT
 uint	microphone_block_frames	1	0
+uint	audio_threaded_pipeline	1	AUDIO_THREADED_PIPELINE_AUTO
 uint	video_scale	1	3
 uint	video_window_auto_width_max	1	1920
 uint	video_window_auto_height_max	1	1080
@@ -1541,7 +1541,6 @@ bool	run_ahead_hide_warnings	1	0
 bool	input_auto_mouse_grab	1	0
 bool	microphone_enable	1	1
 bool	audio_sync	1	1
-bool	audio_threaded_pipeline	1	0
 bool	audio_thread_priority	1	0
 bool	audio_enable	1	1
 bool	ui_menubar_enable	1	1
@@ -1847,6 +1846,7 @@ uint	rewind_buffer_size_step	1	10
 uint	ai_service_mode	1	1
 uint	audio_format_negotiation	1	AUDIO_FORMAT_NEGOTIATION_FLOAT
 uint	microphone_block_frames	1	0
+uint	audio_threaded_pipeline	1	AUDIO_THREADED_PIPELINE_AUTO
 uint	video_scale	1	3
 uint	video_window_auto_width_max	1	1920
 uint	video_window_auto_height_max	1	1080

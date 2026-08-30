@@ -1296,7 +1296,7 @@
 
 /* Run the audio pipeline (convert, DSP, resample, volume) on the audio
  * thread instead of inside the frame. Off by default. */
-#define DEFAULT_AUDIO_THREADED_PIPELINE false
+#define DEFAULT_AUDIO_THREADED_PIPELINE AUDIO_THREADED_PIPELINE_AUTO
 
 /* Ask the OS to schedule the audio thread ahead of the rest of the
  * frontend. Best effort. Off by default. */

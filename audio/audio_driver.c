@@ -1760,6 +1760,44 @@ unsigned audio_driver_mixer_get_streams_playing(void)
 
 #endif
 
+/* Audio drivers whose wait_writable() has been exercised against a
+ * real device, which is what the AUTO setting turns the threaded
+ * pipeline on for. The rest have one written against their own wake
+ * mechanism but no report from hardware yet; ON runs those too, and
+ * is how they get one. Grow this list as they come in. */
+static const char *audio_pipeline_verified[] = {
+   "pulse",
+   "sdl2",
+   "wasapi"
+};
+
+static bool audio_driver_pipeline_wanted(settings_t *settings)
+{
+   size_t i;
+   const char *ident = audio_driver_st.current_audio
+      ? audio_driver_st.current_audio->ident : NULL;
+
+   switch (settings->uints.audio_threaded_pipeline)
+   {
+      case AUDIO_THREADED_PIPELINE_ON:
+         return true;
+      case AUDIO_THREADED_PIPELINE_AUTO:
+         if (!ident)
+            return false;
+         for (i = 0; i < ARRAY_SIZE(audio_pipeline_verified); i++)
+            if (string_is_equal(ident, audio_pipeline_verified[i]))
+               return true;
+         if (audio_driver_st.current_audio->wait_writable)
+            RARCH_LOG("[Audio] Threaded pipeline is automatic and driver \"%s\" "
+                  "can run it, but has not been measured; set it to ON to try.\n",
+                  ident);
+         return false;
+      default:
+         break;
+   }
+   return false;
+}
+
 bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
 {
    unsigned new_rate              = 0;
@@ -1877,14 +1915,14 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
     * consumer paces on that, and without it the only pacer would be a
     * blocking write, which pins the device full and adds its whole
     * buffer to the latency. */
-   if (     settings->bools.audio_threaded_pipeline
+   if (     audio_driver_pipeline_wanted(settings)
          && !audio_cb_inited
          && !audio_driver_st.current_audio->wait_writable)
       RARCH_LOG("[Audio] Threaded pipeline requested, but driver \"%s\" "
             "has no wait_writable(); using the inline pipeline.\n",
             audio_driver_st.current_audio->ident);
 
-   if (     settings->bools.audio_threaded_pipeline
+   if (     audio_driver_pipeline_wanted(settings)
          && !audio_cb_inited
          && audio_driver_st.current_audio->wait_writable)
    {

@@ -38,6 +38,18 @@ enum audio_mixer_system_slot
    AUDIO_MIXER_SYSTEM_SLOT_DOWN
 };
 
+/* audio_threaded_pipeline values. AUTO enables the threaded pipeline
+ * on the drivers whose wait_writable() has been exercised against a
+ * real device; ON enables it wherever one exists at all, which is how
+ * the rest get their reports. */
+enum audio_threaded_pipeline_mode
+{
+   AUDIO_THREADED_PIPELINE_OFF = 0,
+   AUDIO_THREADED_PIPELINE_AUTO,
+   AUDIO_THREADED_PIPELINE_ON,
+   AUDIO_THREADED_PIPELINE_LAST
+};
+
 enum audio_action
 {
    AUDIO_ACTION_NONE = 0,
