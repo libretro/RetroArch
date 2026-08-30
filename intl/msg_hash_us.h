@@ -32833,6 +32833,10 @@ MSG_HASH(
    "RetroAchievements login expired. Please re-enter your password and reload the game."
    )
 MSG_HASH(
+   MSG_AUDIO_THREADED_PIPELINE_AUTO,
+   "Automatic"
+   )
+MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
    "Lowest"
    )
