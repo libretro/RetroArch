@@ -4580,6 +4580,14 @@ unsigned input_config_translate_str_to_bind_id(const char *str)
    return RARCH_BIND_LIST_END;
 }
 
+/* Every helper below returns the untruncated (would-be) length of what
+ * it formatted, so one bind label longer than the destination pushes
+ * _len past len, and each later "len - _len" size underflows to a huge
+ * size_t: bionic's FORTIFY aborts on it, and the next copy's "s + _len"
+ * writes out of bounds everywhere else. Saturate the offset at the last
+ * writable byte after every segment. */
+#define BIND_STR_CLAMP(_l, _cap) (((_l) < (_cap)) ? (_l) : ((_cap) - 1))
+
 size_t input_config_get_bind_string(
       void *settings_data,
       char *s,
@@ -4595,6 +4603,8 @@ size_t input_config_get_bind_string(
    bool  input_descriptor_label_show    =
       settings->bools.input_descriptor_label_show;
 
+   if (len == 0)
+      return 0;
    *s                                 = '\0';
 
    if      (bind      && bind->joykey  != NO_BTN)
@@ -4613,6 +4623,7 @@ size_t input_config_get_bind_string(
       _len = input_config_get_bind_string_joyaxis(
             input_descriptor_label_show,
             s, "(Auto)", auto_bind, auto_label, len);
+   _len = BIND_STR_CLAMP(_len, len);
 
    if (*s)
       delim = 1;
@@ -4633,9 +4644,12 @@ size_t input_config_get_bind_string(
       else if (*key != '\0')
       {
          if (delim)
-            _len += strlcpy_lit(s + _len, ", ", len - _len);
-         _len += snprintf(s + _len, len - _len,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_KEY), key);
+            _len  = BIND_STR_CLAMP(
+                  _len + strlcpy_lit(s + _len, ", ", len - _len), len);
+         _len     = BIND_STR_CLAMP(
+               _len + snprintf(s + _len, len - _len,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_KEY), key),
+               len);
          delim = 1;
       }
    }
@@ -4678,14 +4692,19 @@ size_t input_config_get_bind_string(
       if (tag != 0)
       {
          if (delim)
-            _len += strlcpy_lit(s + _len, ", ", len - _len);
-         _len += strlcpy(s + _len, msg_hash_to_str((enum msg_hash_enums)tag), len - _len);
+            _len  = BIND_STR_CLAMP(
+                  _len + strlcpy_lit(s + _len, ", ", len - _len), len);
+         _len     = BIND_STR_CLAMP(
+               _len + strlcpy(s + _len,
+                     msg_hash_to_str((enum msg_hash_enums)tag), len - _len),
+               len);
       }
    }
 
    /*completely empty?*/
    if (*s == '\0')
-      _len += strlcpy(s + _len, RARCH_NO_BIND, len - _len);
+      _len = BIND_STR_CLAMP(
+            _len + strlcpy(s + _len, RARCH_NO_BIND, len - _len), len);
    return _len;
 }
 
@@ -4697,32 +4716,39 @@ size_t input_config_get_bind_string_joykey(
 {
    const char *joykey_label = label ? label->joykey : NULL;
    size_t _len = 0;
+   if (len == 0)
+      return 0;
    if (GET_HAT_DIR(bind->joykey))
    {
       if (      joykey_label
             && (joykey_label && *joykey_label)
             && input_descriptor_label_show)
-         return fill_pathname_join_delim(s,
-               joykey_label, suffix, ' ', len);
+         return BIND_STR_CLAMP(fill_pathname_join_delim(s,
+               joykey_label, suffix, ' ', len), len);
       /* TODO/FIXME - localize */
-      _len  = snprintf(s, len,
-            "Hat #%u ", (unsigned)GET_HAT(bind->joykey));
+      _len  = BIND_STR_CLAMP((size_t)snprintf(s, len,
+            "Hat #%u ", (unsigned)GET_HAT(bind->joykey)), len);
       switch (GET_HAT_DIR(bind->joykey))
       {
          case HAT_UP_MASK:
-            _len += strlcpy_lit(s + _len, "Up",    len - _len);
+            _len  = BIND_STR_CLAMP(
+                  _len + strlcpy_lit(s + _len, "Up",    len - _len), len);
             break;
          case HAT_DOWN_MASK:
-            _len += strlcpy_lit(s + _len, "Down",  len - _len);
+            _len  = BIND_STR_CLAMP(
+                  _len + strlcpy_lit(s + _len, "Down",  len - _len), len);
             break;
          case HAT_LEFT_MASK:
-            _len += strlcpy_lit(s + _len, "Left",  len - _len);
+            _len  = BIND_STR_CLAMP(
+                  _len + strlcpy_lit(s + _len, "Left",  len - _len), len);
             break;
          case HAT_RIGHT_MASK:
-            _len += strlcpy_lit(s + _len, "Right", len - _len);
+            _len  = BIND_STR_CLAMP(
+                  _len + strlcpy_lit(s + _len, "Right", len - _len), len);
             break;
          default:
-            _len += strlcpy_lit(s + _len, "?",     len - _len);
+            _len  = BIND_STR_CLAMP(
+                  _len + strlcpy_lit(s + _len, "?",     len - _len), len);
             break;
       }
    }
@@ -4731,17 +4757,19 @@ size_t input_config_get_bind_string_joykey(
       if (      joykey_label
             && (joykey_label && *joykey_label)
             && input_descriptor_label_show)
-         return fill_pathname_join_delim(s,
-               joykey_label, suffix, ' ', len);
+         return BIND_STR_CLAMP(fill_pathname_join_delim(s,
+               joykey_label, suffix, ' ', len), len);
 
       /* TODO/FIXME - localize */
-      _len  = strlcpy_lit(s, "Button ", len);
-      _len += snprintf(s + _len, len - _len, "%u",
-            (unsigned)bind->joykey);
+      _len  = BIND_STR_CLAMP(strlcpy_lit(s, "Button ", len), len);
+      _len  = BIND_STR_CLAMP(
+            _len + snprintf(s + _len, len - _len, "%u",
+                  (unsigned)bind->joykey), len);
    }
 
    if (suffix && *suffix)
-      _len += snprintf(s + _len, len - _len, " %s", suffix);
+      _len  = BIND_STR_CLAMP(
+            _len + snprintf(s + _len, len - _len, " %s", suffix), len);
 
    return _len;
 }
@@ -4754,24 +4782,29 @@ size_t input_config_get_bind_string_joyaxis(
 {
    const char *joyaxis_label = label ? label->joyaxis : NULL;
    size_t _len = 0;
+   if (len == 0)
+      return 0;
    if (      joyaxis_label
          && (joyaxis_label && *joyaxis_label)
          && input_descriptor_label_show)
-      return fill_pathname_join_delim(s,
-            joyaxis_label, suffix, ' ', len);
+      return BIND_STR_CLAMP(fill_pathname_join_delim(s,
+            joyaxis_label, suffix, ' ', len), len);
 
    /* TODO/FIXME - localize */
-   _len = strlcpy_lit(s, "Axis ", len);
+   _len = BIND_STR_CLAMP(strlcpy_lit(s, "Axis ", len), len);
 
    if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
-      _len += snprintf(s + _len, len - _len, "-%u",
-            (unsigned)AXIS_NEG_GET(bind->joyaxis));
+      _len  = BIND_STR_CLAMP(
+            _len + snprintf(s + _len, len - _len, "-%u",
+                  (unsigned)AXIS_NEG_GET(bind->joyaxis)), len);
    else if (AXIS_POS_GET(bind->joyaxis) != AXIS_DIR_NONE)
-      _len += snprintf(s + _len, len - _len, "+%u",
-            (unsigned)AXIS_POS_GET(bind->joyaxis));
+      _len  = BIND_STR_CLAMP(
+            _len + snprintf(s + _len, len - _len, "+%u",
+                  (unsigned)AXIS_POS_GET(bind->joyaxis)), len);
 
    if (suffix && *suffix)
-      _len += snprintf(s + _len, len - _len, " %s", suffix);
+      _len  = BIND_STR_CLAMP(
+            _len + snprintf(s + _len, len - _len, " %s", suffix), len);
 
    return _len;
 }
