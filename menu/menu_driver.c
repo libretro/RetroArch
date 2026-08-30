@@ -1527,9 +1527,15 @@ static menu_list_t *menu_list_new(const menu_ctx_driver_t *menu_driver_ctx)
        * unallocated slots past 'i' are already NULL. */
       if (!list->menu_stack[i])
          goto error;
-      list->menu_stack[i]->list     = NULL;
-      list->menu_stack[i]->capacity = 0;
-      list->menu_stack[i]->size     = 0;
+      /* Every field, named.  file_list_t gains one now and again --
+       * userdata_free was the last -- and anything left out here holds
+       * whatever malloc() returned, which for a destructor hook is an
+       * uninitialised function pointer called on the first teardown
+       * that reaches it.  Add new fields to both loops. */
+      list->menu_stack[i]->list           = NULL;
+      list->menu_stack[i]->capacity       = 0;
+      list->menu_stack[i]->size           = 0;
+      list->menu_stack[i]->userdata_free  = NULL;
       list->menu_stack[i]->actiondata_free = menu_entries_cbs_free;
    }
 
@@ -1540,9 +1546,15 @@ static menu_list_t *menu_list_new(const menu_ctx_driver_t *menu_driver_ctx)
       /* Same pattern as the menu_stack loop above. */
       if (!list->selection_buf[i])
          goto error;
-      list->selection_buf[i]->list     = NULL;
-      list->selection_buf[i]->capacity = 0;
-      list->selection_buf[i]->size     = 0;
+      /* Every field, named.  file_list_t gains one now and again --
+       * userdata_free was the last -- and anything left out here holds
+       * whatever malloc() returned, which for a destructor hook is an
+       * uninitialised function pointer called on the first teardown
+       * that reaches it.  Add new fields to both loops. */
+      list->selection_buf[i]->list           = NULL;
+      list->selection_buf[i]->capacity       = 0;
+      list->selection_buf[i]->size           = 0;
+      list->selection_buf[i]->userdata_free  = NULL;
       list->selection_buf[i]->actiondata_free = menu_entries_cbs_free;
    }
 
@@ -8232,7 +8244,8 @@ int generic_menu_entry_action(
             break;
          case MENU_ACTION_START:
             /* if equal to '..' we break, else we fall-through */
-            if (memcmp(current_value, "...", 3) == 0)
+            if (string_starts_with_size(current_value, "...",
+                     STRLEN_CONST("...")))
                break;
             /* fall-through */
          case MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE_LABEL:
@@ -8266,7 +8279,7 @@ int generic_menu_entry_action(
                menu_st,
                speak_string + _len,
                sizeof(speak_string) - _len);
-         if (memcmp(current_value, "...", 4) != 0)
+         if (!string_is_equal(current_value, "..."))
          {
             speak_string[  _len] = ' ';
             speak_string[++_len] = '\0';
@@ -8281,7 +8294,7 @@ int generic_menu_entry_action(
                menu_st,
                speak_string,
                sizeof(speak_string));
-         if (memcmp(current_value, "...", 4) != 0)
+         if (!string_is_equal(current_value, "..."))
          {
             speak_string[  _len] = ' ';
             speak_string[++_len] = '\0';
@@ -8591,8 +8604,10 @@ bool menu_is_running_quick_menu(void)
    entry.flags |= MENU_ENTRY_FLAG_LABEL_ENABLED
                 | MENU_ENTRY_FLAG_RICH_LABEL_ENABLED;
    menu_entry_get(&entry, 0, 0, NULL, true);
-   return    memcmp(entry.label, "resume_content", sizeof("resume_content")) == 0
-          || memcmp(entry.label, "state_slot", sizeof("state_slot")) == 0;
+   /* memcmp() reads its full count whatever the label's length is, so
+    * a label shorter than the literal is read past its end. */
+   return    string_is_equal(entry.label, "resume_content")
+          || string_is_equal(entry.label, "state_slot");
 }
 
 #ifdef HAVE_RUNAHEAD
