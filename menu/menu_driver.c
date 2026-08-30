@@ -7816,6 +7816,18 @@ static int generic_menu_iterate(
                   selection, (enum menu_action)action)))
                return -1;
 
+            /* menu_entry_action() can tear down and recreate the menu
+             * (a menu driver change, or any CMD_EVENT_REINIT dispatched
+             * from an entry's action handler): the handle and the
+             * entries list cached above are stale once it returns.
+             * Re-fetch both before writing through them - on 64-bit
+             * heaps the stale menu->state write lands in freed memory
+             * silently instead of faulting, so this corrupts quietly
+             * everywhere the fault does not reproduce. */
+            if (!(menu = menu_st->driver_data))
+               return 0;
+            menu_list = menu_st->entries.list;
+
             BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
 
             /* Have to defer it so we let settings refresh. */
