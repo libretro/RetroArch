@@ -6947,6 +6947,16 @@ static enum runloop_state_enum runloop_check_state(
                menu_pause_libretro);
 #endif
 
+         /* menu_driver_iterate() above dispatches entry actions, which
+          * can tear down and recreate the menu handle (menu driver
+          * change, any CMD_EVENT_REINIT from an action) - the pointer
+          * cached at the top of this function is stale from here on.
+          * Re-fetch before the render block below reads and writes
+          * through it; the second re-fetch further down covers
+          * core_run() inside display_menu_libretro() invalidating it
+          * again. */
+         menu = menu_st->driver_data;
+
          if (menu)
          {
             if (BIT64_GET(menu->state, MENU_STATE_RENDER_FRAMEBUFFER)
