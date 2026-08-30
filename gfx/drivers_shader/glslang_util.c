@@ -78,6 +78,15 @@ void shader_line_buf_free(struct shader_line_buf *buf)
    buf->_single_alloc = false;
 }
 
+/* Callers probe stored lines with fixed-width prefix compares such as
+ * memcmp(line, "#pragma parameter ", 18); memcmp may read all n bytes
+ * even when an earlier byte already differs, so a short line stored at
+ * the very end of the data block would be read past the allocation.
+ * Keep PROBE_SLACK zeroed, addressable bytes beyond buf->len at all
+ * times so every such probe stays inside the block and reads defined
+ * bytes.  32 covers the longest probe literal with margin. */
+#define SHADER_LINE_BUF_PROBE_SLACK 32
+
 static bool shader_line_buf_append_batch(struct shader_line_buf *buf,
       const char *const *lines, const size_t *lens, size_t count)
 {
@@ -90,7 +99,7 @@ static bool shader_line_buf_append_batch(struct shader_line_buf *buf,
 
    /* Single data-capacity check */
    {
-      size_t needed = buf->len + total_data;
+      size_t needed = buf->len + total_data + SHADER_LINE_BUF_PROBE_SLACK;
       if (needed > buf->cap)
       {
          size_t new_cap = buf->cap;
@@ -178,6 +187,10 @@ static bool shader_line_buf_append_batch(struct shader_line_buf *buf,
       buf->len              += lens[i];
       buf->data[buf->len++]  = '\0';
    }
+   /* Zero the probe slack past the live data (reserved by the
+    * capacity check above) so prefix probes on the final line read
+    * defined, in-bounds bytes. */
+   memset(buf->data + buf->len, 0, SHADER_LINE_BUF_PROBE_SLACK);
    return true;
 }
 
