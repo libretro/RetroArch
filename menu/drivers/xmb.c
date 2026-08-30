@@ -6300,7 +6300,11 @@ XMB_NOINLINE static int xmb_draw_item(
                   break;
             }
 
-            sidebar_node = (xmb_node_t*)file_list_get_userdata_at_offset(&xmb->horizontal_list, offset);
+            /* Search loop misses leave offset == horizontal_list.size;
+             * indexing the list with it reads out of bounds */
+            sidebar_node = (offset < xmb->horizontal_list.size)
+                  ? (xmb_node_t*)file_list_get_userdata_at_offset(&xmb->horizontal_list, offset)
+                  : NULL;
             if (sidebar_node && sidebar_node->icon)
                texture = sidebar_node->icon;
          }
@@ -6325,10 +6329,14 @@ XMB_NOINLINE static int xmb_draw_item(
             }
          }
 
-         sidebar_node = (xmb_node_t*)
-               (xmb->horizontal_list.size)
-                  ? (xmb_node_t*)file_list_get_userdata_at_offset(&xmb->horizontal_list, offset)
-                  : NULL;
+         /* offset is either the entry's untrusted entry_idx or a
+          * search-loop result that equals horizontal_list.size on a
+          * miss - both can point past the end of the list, so it must
+          * be bounds-checked, not merely the list checked as
+          * non-empty */
+         sidebar_node = (offset < xmb->horizontal_list.size)
+               ? (xmb_node_t*)file_list_get_userdata_at_offset(&xmb->horizontal_list, offset)
+               : NULL;
 
          if (sidebar_node && sidebar_node->icon)
             texture = sidebar_node->icon;
