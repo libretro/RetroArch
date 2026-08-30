@@ -363,6 +363,17 @@ typedef struct
     * a producer that found the ring full waits for the generation to
     * change. The ring itself is never touched under this lock; the lock
     * only orders the two generation counters against their waits. */
+   /**
+    * Held across a pipeline pass, and by the main thread whenever it
+    * changes something a pass reads: the DSP filter pointer and the
+    * mixer's voices. With the threaded pipeline a pass runs on the
+    * audio thread, so a menu action that swaps the DSP filter or
+    * starts a sound would otherwise race it - the filter free is a
+    * use-after-free window, the mixer a torn voice. Uncontended on
+    * the frame-synchronous path, where both are the same thread.
+    * Never held across a device write.
+    */
+   slock_t *state_lock;
    slock_t *pipe_lock;
    scond_t *pipe_cond;
    unsigned pipe_gen;
@@ -531,6 +542,18 @@ void audio_driver_pipeline_consumer_exit(void);
  * out its timeout.
  **/
 void audio_driver_pipeline_wake(void);
+
+/**
+ * audio_driver_state_lock:
+ * audio_driver_state_unlock:
+ *
+ * Guards the DSP filter and the mixer against a pipeline pass on the
+ * audio thread. Cheap and safe to call before the audio driver is up:
+ * the lock exists for the driver's lifetime and both are no-ops
+ * without it.
+ **/
+void audio_driver_state_lock(void);
+void audio_driver_state_unlock(void);
 
 /* Bits of audio_driver_state_t::runloop_snapshot. */
 enum audio_runloop_snapshot_bits
