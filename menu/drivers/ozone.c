@@ -6279,9 +6279,15 @@ border_iterate:
          if (     e->type == FILE_TYPE_RPL_ENTRY
                && ozone->categories_selection_ptr > ozone->system_tab_end)
          {
-            ozone_node_t *sidebar_node = (ozone_node_t*)
-                  file_list_get_userdata_at_offset(&ozone->horizontal_list,
-                        ozone->categories_selection_ptr - ozone->system_tab_end - 1);
+            /* The horizontal list is a snapshot; the selection can
+             * outrun it while it is being rebuilt. */
+            ozone_node_t *sidebar_node =
+                  (ozone->categories_selection_ptr - ozone->system_tab_end - 1
+                        < ozone->horizontal_list.size)
+                  ? (ozone_node_t*)
+                        file_list_get_userdata_at_offset(&ozone->horizontal_list,
+                              ozone->categories_selection_ptr - ozone->system_tab_end - 1)
+                  : NULL;
 
             if (sidebar_node && sidebar_node->content_icon)
                texture = sidebar_node->content_icon;
@@ -6319,7 +6325,11 @@ border_iterate:
                      break;
                }
 
-               sidebar_node = (ozone_node_t*)file_list_get_userdata_at_offset(&ozone->horizontal_list, offset);
+               /* A missed match leaves offset == size, one entry
+                * past the end of the list. */
+               sidebar_node = (offset < ozone->horizontal_list.size)
+                     ? (ozone_node_t*)file_list_get_userdata_at_offset(&ozone->horizontal_list, offset)
+                     : NULL;
                if (sidebar_node && sidebar_node->icon)
                   texture = sidebar_node->icon;
             }
@@ -6377,10 +6387,17 @@ border_iterate:
                   }
                }
 
-               sidebar_node = (ozone_node_t*)
-                     (ozone->horizontal_list.size)
-                        ? (ozone_node_t*)file_list_get_userdata_at_offset(&ozone->horizontal_list, offset)
-                        : NULL;
+               /* entry_idx is an ordinal assigned when the Playlists
+                * view was pushed; the horizontal list is a snapshot
+                * from init or the last refresh. When playlists appear
+                * or disappear in between (a scan finishing, a playlist
+                * removed) the ordinals of the tail entries run past
+                * the snapshot, and the name-match loop above leaves
+                * offset == size when nothing matches. Either way an
+                * unbounded lookup reads past the end of the list. */
+               sidebar_node = (offset < ozone->horizontal_list.size)
+                     ? (ozone_node_t*)file_list_get_userdata_at_offset(&ozone->horizontal_list, offset)
+                     : NULL;
 
                if (sidebar_node && sidebar_node->icon)
                   texture = sidebar_node->icon;
