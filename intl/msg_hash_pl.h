@@ -2421,6 +2421,7 @@ static const struct
    char s_f7cc6630[25];
    char s_310ec7bd[71];
    char s_5832a2c2[103];
+   char s_f47e544f[242];
    char s_20cc6597[86];
    char s_21b0bad3[47];
    char s_66e9521c[82];
@@ -6878,6 +6879,10 @@ static const struct
    "Zasoby menu u\305\274ywane przez RetroArch s\304\205 przechowywane w tym katalogu.",
    "Otw\303\263rz panel sterowania sterownika ASIO, aby skonfigurowa\304\207 ustawienia routingu i b"
    "uforu urz\304\205dzenia.",
+   "Liczba klatek, kt\303\263r\304\205 przesuwa sterownik audio na blok. 0 pyta sterownik o w\305"
+   "\202asn\304\205 warto\305\233\304\207 urz\304\205dzenia, co jest chciane w wi\304\231kszo\305"
+   "\233ci konfiguracji; wi\304\231kszy blok ma wi\304\231ksze op\303\263\305\272nienie, ale ma wi"
+   "\304\231ksz\304\205 odporno\305\233\304\207 na braki d\305\272wi\304\231ku.",
    "Zast\304\205p domy\305\233lne urz\304\205dzenie audio u\305\274ywane przez sterownik. Zale\305"
    "\274ne od sterownika.",
    "Sterownik audio do u\305\274ycia. (Wymagany restart)",
@@ -9495,7 +9500,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (188580u
+      (sizeof(msg_hash_pl_blob) == (188822u
 #ifdef ANDROID
        + 385u
 #endif
@@ -12323,6 +12328,7 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
