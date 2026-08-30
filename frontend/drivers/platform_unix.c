@@ -347,6 +347,11 @@ static void android_app_set_activity_state(
  * that: overrunning it buys nothing and turns a slow exit into an ANR. */
 #define ANDROID_DESTROY_TIMEOUT_US (5 * 1000 * 1000)
 
+/* App thread that onDestroy() gave up waiting for. It is still running
+ * rarch_main() against the process-wide statics (task queue, drivers,
+ * runloop), so a second app thread must not start until it has left. */
+static sthread_t *android_app_orphan_thread = NULL;
+
 static void android_app_free(struct android_app* android_app)
 {
    bool acked;
@@ -382,6 +387,7 @@ static void android_app_free(struct android_app* android_app)
    {
       RARCH_ERR("[Android] App thread did not acknowledge destroy; "
             "skipping teardown.\n");
+      android_app_orphan_thread = android_app->thread;
       return;
    }
 
@@ -625,8 +631,26 @@ static struct android_app* android_app_create(ANativeActivity* activity,
         void* savedState, size_t savedStateSize)
 {
    int msgpipe[2];
-   struct android_app *android_app =
-      (struct android_app*)calloc(1, sizeof(*android_app));
+   struct android_app *android_app;
+
+   /* The activity can be recreated in the same process while the app
+    * thread of the previous one is still unwinding. Two rarch_main()
+    * instances share every static in the process, and the second one
+    * to run task_queue_deinit() joins a worker the first has already
+    * joined and freed, which bionic reports as an invalid pthread_t
+    * and aborts on. Nothing on the app thread ever waits for the UI
+    * thread, so the orphan always finishes on its own; waiting for it
+    * here is the only ordering under which the new instance starts
+    * from quiescent statics. */
+   if (android_app_orphan_thread)
+   {
+      RARCH_WARN("[Android] Waiting for the previous app thread "
+            "to exit before starting a new one.\n");
+      sthread_join(android_app_orphan_thread);
+      android_app_orphan_thread = NULL;
+   }
+
+   android_app = (struct android_app*)calloc(1, sizeof(*android_app));
 
    if (!android_app)
    {
