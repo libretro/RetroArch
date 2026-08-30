@@ -7052,9 +7052,6 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                memset(&sys_info->info, 0, sizeof(struct retro_system_info));
             }
 
-            gfx_animation_deinit();
-            gfx_display_free();
-
             menu_entries_settings_deinit(menu_st);
             if (menu_st->entries.list)
                menu_list_free(menu_st->driver_ctx, menu_st->entries.list);
@@ -7066,6 +7063,21 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             /* Same point in teardown: every node has been released, so
              * nothing is still sharing a fullpath. */
             menu_str_cache_flush();
+
+            /* After the lists, not before them.  menu_list_free()
+             * dispatches each driver's list_free hook, and those reach
+             * gfx_animation_kill_by_tag() -- directly in
+             * xmb_list_clear(), and again through gfx_thumbnail_reset()
+             * when a node owns an icon.  Freeing the animation state
+             * first left those calls reading a list that had already
+             * gone; they did no damage only because RBUF_FREE() leaves
+             * the pointer NULL and RBUF_LEN() reads NULL as zero, so
+             * the scan found nothing to kill.  That is the tween
+             * surviving by accident rather than by having been
+             * cancelled.  The same ordering puts gfx_display_free()
+             * after the texture unloads those hooks perform. */
+            gfx_animation_deinit();
+            gfx_display_free();
 
             if (menu_st->thumbnail_path_data)
                free(menu_st->thumbnail_path_data);
