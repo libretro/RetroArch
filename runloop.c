@@ -6989,10 +6989,18 @@ static enum runloop_state_enum runloop_check_state(
                         libretro_running, current_time))
                   video_driver_cached_frame();
 
-            if (menu->driver_ctx->set_texture)
-               menu->driver_ctx->set_texture(menu->userdata);
+            /* Core execution inside display_menu_libretro() can trigger
+             * a driver reinit (e.g. RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO
+             * -> CMD_EVENT_REINIT), which frees and recreates the menu
+             * handle - the cached pointer must be re-fetched before it
+             * is dereferenced again */
+            if ((menu = menu_st->driver_data))
+            {
+               if (menu->driver_ctx && menu->driver_ctx->set_texture)
+                  menu->driver_ctx->set_texture(menu->userdata);
 
-            menu->state               = 0;
+               menu->state            = 0;
+            }
          }
 
          /* Feed the audio device one frame of silence while the core is
