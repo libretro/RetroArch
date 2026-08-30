@@ -13115,10 +13115,8 @@ static void ozone_set_header(ozone_handle_t *ozone)
                   break;
             }
 
-            /* A missed match must resolve to no node; the accessor
-             * does not bounds-check, so indexing with offset ==
-             * size reads one entry past the end of the list and the
-             * garbage is then dereferenced below. */
+            /* A missed match leaves offset == size and must resolve
+             * to no node. */
             node = (offset < ozone->horizontal_list.size)
                   ? (ozone_node_t*)file_list_get_userdata_at_offset(
                         &ozone->horizontal_list, offset)

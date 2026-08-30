@@ -328,14 +328,14 @@ void file_list_sort_on_type(file_list_t *list)
 
 void *file_list_get_userdata_at_offset(const file_list_t *list, size_t idx)
 {
-   if (!list)
+   if (!list || idx >= list->size)
       return NULL;
    return list->list[idx].userdata;
 }
 
 void *file_list_get_actiondata_at_offset(const file_list_t *list, size_t idx)
 {
-   if (!list)
+   if (!list || idx >= list->size)
       return NULL;
    return list->list[idx].actiondata;
 }
