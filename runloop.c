@@ -2803,12 +2803,19 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                   video_st->frame_delay_target = 0;
             }
 
+            /* CRT switchres derives its mode from the base resolution
+             * and field rate; while those hold, the shortcut below
+             * keeps the switched mode and only the remaining drivers
+             * (audio among them) pick up the new av_info. */
             no_video_reinit                       = (
-                     (crt_switch_resolution     == 0)
-                  && (video_switch_refresh_rate == false)
+                     (video_switch_refresh_rate == false)
                   && data
                   && ((*info)->geometry.max_width  == av_info->geometry.max_width)
-                  && ((*info)->geometry.max_height == av_info->geometry.max_height));
+                  && ((*info)->geometry.max_height == av_info->geometry.max_height)
+                  && (   (crt_switch_resolution == 0)
+                      || (   ((*info)->timing.fps           == av_info->timing.fps)
+                          && ((*info)->geometry.base_width  == av_info->geometry.base_width)
+                          && ((*info)->geometry.base_height == av_info->geometry.base_height))));
 
             /* First set new refresh rate and display rate, then after REINIT do
              * another display rate change to make sure the change stays */
