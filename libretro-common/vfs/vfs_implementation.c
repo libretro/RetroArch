@@ -1467,6 +1467,15 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream,
    if (!stream || !s)
       return -1;
 
+   /* A length with the top bit set is a negative int64 that arrived
+    * through the unsigned parameter - no legitimate caller reads 8EiB.
+    * The stdio path below hands len to fread() unclamped, where bionic
+    * FORTIFY turns it into a process abort (observed in the field);
+    * fail the read instead, like the mapped path's clamp below already
+    * does for its overflow case. */
+   if (len > (uint64_t)INT64_MAX)
+      return -1;
+
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
 #ifdef HAVE_CDROM
