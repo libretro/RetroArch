@@ -535,11 +535,11 @@ static bool input_autoconfigure_hidraw_vid_pid_match(
    if (!hidraw_name || !*hidraw_name)
       return false;
 
-   _len  = strlcpy(uevent_path, "/sys/class/hidraw/", sizeof(uevent_path));
+   _len  = strlcpy_lit(uevent_path, "/sys/class/hidraw/", sizeof(uevent_path));
    _len += strlcpy(uevent_path + _len, hidraw_name, sizeof(uevent_path) - _len);
    if (_len >= sizeof(uevent_path) - 1)
       return false;
-   strlcpy(uevent_path + _len, "/device/uevent", sizeof(uevent_path) - _len);
+   strlcpy_lit(uevent_path + _len, "/device/uevent", sizeof(uevent_path) - _len);
 
    if (!(file = filestream_open(uevent_path,
                RETRO_VFS_FILE_ACCESS_READ,
@@ -627,7 +627,7 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_hidr
                vid, pid, &reported_vid, &reported_pid))
          continue;
 
-      _len = strlcpy(device_path, "/dev/", sizeof(device_path));
+      _len = strlcpy_lit(device_path, "/dev/", sizeof(device_path));
       strlcpy(device_path + _len, dir_entry->d_name, sizeof(device_path) - _len);
 
       RARCH_DBG("[Autoconf] [Blissbox] Probing hidraw candidate %s (sysfs=%04x:%04x).\n",
@@ -818,7 +818,7 @@ void input_autoconfigure_blissbox_override_handler(int vid, int pid,
          /* override name given to autoconfig so it knows what kind of pad this is */
          if (len > 0)
          {
-            size_t _len = strlcpy(s, "Bliss-Box 4-Play ", len);
+            size_t _len = strlcpy_lit(s, "Bliss-Box 4-Play ", len);
             strlcpy(s + _len, pad->name, len - _len);
          }
 

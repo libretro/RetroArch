@@ -2256,27 +2256,27 @@ struct string_list *dir_list_new_special(const char *input_dir,
 
             if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
             {
-               _len    += strlcpy(ext_shaders + _len, "cgp", sizeof(ext_shaders) - _len);
-               _len    += strlcpy(ext_shaders + _len, "|",   sizeof(ext_shaders) - _len);
-               _len    += strlcpy(ext_shaders + _len, "cg",  sizeof(ext_shaders) - _len);
+               _len    += strlcpy_lit(ext_shaders + _len, "cgp", sizeof(ext_shaders) - _len);
+               _len    += strlcpy_lit(ext_shaders + _len, "|",   sizeof(ext_shaders) - _len);
+               _len    += strlcpy_lit(ext_shaders + _len, "cg",  sizeof(ext_shaders) - _len);
             }
 
             if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
             {
                if (_len > 0)
-                  _len += strlcpy(ext_shaders + _len, "|",     sizeof(ext_shaders) - _len);
-               _len    += strlcpy(ext_shaders + _len, "glslp", sizeof(ext_shaders) - _len);
-               _len    += strlcpy(ext_shaders + _len, "|",     sizeof(ext_shaders) - _len);
-               _len    += strlcpy(ext_shaders + _len, "glsl",  sizeof(ext_shaders) - _len);
+                  _len += strlcpy_lit(ext_shaders + _len, "|",     sizeof(ext_shaders) - _len);
+               _len    += strlcpy_lit(ext_shaders + _len, "glslp", sizeof(ext_shaders) - _len);
+               _len    += strlcpy_lit(ext_shaders + _len, "|",     sizeof(ext_shaders) - _len);
+               _len    += strlcpy_lit(ext_shaders + _len, "glsl",  sizeof(ext_shaders) - _len);
             }
 
             if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG))
             {
                if (_len > 0)
-                  _len += strlcpy(ext_shaders + _len, "|",      sizeof(ext_shaders) - _len);
-               _len    += strlcpy(ext_shaders + _len, "slangp", sizeof(ext_shaders) - _len);
-               _len    += strlcpy(ext_shaders + _len, "|",      sizeof(ext_shaders) - _len);
-               strlcpy(ext_shaders + _len, "slang",  sizeof(ext_shaders) - _len);
+                  _len += strlcpy_lit(ext_shaders + _len, "|",      sizeof(ext_shaders) - _len);
+               _len    += strlcpy_lit(ext_shaders + _len, "slangp", sizeof(ext_shaders) - _len);
+               _len    += strlcpy_lit(ext_shaders + _len, "|",      sizeof(ext_shaders) - _len);
+               strlcpy_lit(ext_shaders + _len, "slang",  sizeof(ext_shaders) - _len);
             }
 
             exts = ext_shaders;
@@ -6840,7 +6840,7 @@ static void retroarch_print_features(void)
 
    frontend_driver_attach_console();
 
-   _len  = strlcpy(buf, "Features:\n", sizeof(buf));
+   _len  = strlcpy_lit(buf, "Features:\n", sizeof(buf));
 #ifdef HAVE_DYLIB
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_DYLIB,           "Dylib",           "External filter and plugin support");
 #endif
@@ -7473,7 +7473,7 @@ static void retroarch_parse_input_libretro_path(
       _len = strlcpy(tmp_path, path, sizeof(tmp_path));
       if (!string_ends_with_size(tmp_path, "_libretro",
                _len, STRLEN_CONST("_libretro")))
-         strlcpy(tmp_path       + _len,
+         strlcpy_lit(tmp_path       + _len,
                "_libretro",
                sizeof(tmp_path) - _len);
       if (  !core_info_find(tmp_path, &core_info)
@@ -7614,7 +7614,7 @@ static bool retroarch_parse_input_and_config(
       {
          _len += strlcpy(p_rarch->launch_arguments        + _len,
                argv[i], sizeof(p_rarch->launch_arguments) - _len);
-         _len += strlcpy(p_rarch->launch_arguments        + _len,
+         _len += strlcpy_lit(p_rarch->launch_arguments        + _len,
                " ",     sizeof(p_rarch->launch_arguments) - _len);
       }
       string_trim_whitespace_left(p_rarch->launch_arguments);
@@ -8469,7 +8469,7 @@ bool retroarch_main_init(int argc, char *argv[])
       {
          char str_output[384];
          const char *cpu_model  = frontend_driver_get_cpu_model_name();
-         size_t _len = strlcpy(str_output,
+         size_t _len = strlcpy_lit(str_output,
                "=== Build =================================================\n",
                sizeof(str_output));
 
@@ -9394,9 +9394,9 @@ size_t retroarch_get_capabilities(enum rarch_capabilities type,
                __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
 #elif defined(__clang__)
          _len += strlcpy(s + _len, msg_hash_to_str(MSG_COMPILER), len - _len);
-         _len += strlcpy(s + _len, ": Clang/LLVM (", len - _len);
+         _len += strlcpy_lit(s + _len, ": Clang/LLVM (", len - _len);
          _len += strlcpy(s + _len, __clang_version__, len - _len);
-         _len += strlcpy(s + _len, ")", len - _len);
+         _len += strlcpy_lit(s + _len, ")", len - _len);
 #elif defined(__GNUC__)
          _len += strlcpy (s + _len, msg_hash_to_str(MSG_COMPILER), len - _len);
          _len += snprintf(s + _len, len - _len, ": GCC (%d.%d.%d)",

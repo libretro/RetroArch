@@ -780,7 +780,7 @@ size_t detect_gc_game(intfstream_t *fd, char *s, size_t len,
    will not match redump.**/
 
    /** insert prefix **/
-   _len = strlcpy(pre_game_id, "DL-DOL-", sizeof(pre_game_id));
+   _len = strlcpy_lit(pre_game_id, "DL-DOL-", sizeof(pre_game_id));
    /** add raw serial **/
    strlcpy(pre_game_id + _len, raw_game_id, sizeof(pre_game_id) - _len);
 
@@ -794,32 +794,32 @@ size_t detect_gc_game(intfstream_t *fd, char *s, size_t len,
    switch (region_id)
    {
       case 'E':
-         _len += strlcpy(s + _len, "-USA", len - _len);
+         _len += strlcpy_lit(s + _len, "-USA", len - _len);
          break;
       case 'J':
-         _len += strlcpy(s + _len, "-JPN", len - _len);
+         _len += strlcpy_lit(s + _len, "-JPN", len - _len);
          break;
       case 'P': /** NYI: P can also be P-UKV, P-AUS **/
       case 'X': /** NYI: X can also be X-UKV, X-EUU **/
-         _len += strlcpy(s + _len, "-EUR", len - _len);
+         _len += strlcpy_lit(s + _len, "-EUR", len - _len);
          break;
       case 'Y':
-         _len += strlcpy(s + _len, "-FAH", len - _len);
+         _len += strlcpy_lit(s + _len, "-FAH", len - _len);
          break;
       case 'D':
-         _len += strlcpy(s + _len, "-NOE", len - _len);
+         _len += strlcpy_lit(s + _len, "-NOE", len - _len);
          break;
       case 'S':
-         _len += strlcpy(s + _len, "-ESP", len - _len);
+         _len += strlcpy_lit(s + _len, "-ESP", len - _len);
          break;
       case 'F':
-         _len += strlcpy(s + _len, "-FRA", len - _len);
+         _len += strlcpy_lit(s + _len, "-FRA", len - _len);
          break;
       case 'I':
-         _len += strlcpy(s + _len, "-ITA", len - _len);
+         _len += strlcpy_lit(s + _len, "-ITA", len - _len);
          break;
       case 'H':
-         _len += strlcpy(s + _len, "-HOL", len - _len);
+         _len += strlcpy_lit(s + _len, "-HOL", len - _len);
          break;
       default:
          return 0;

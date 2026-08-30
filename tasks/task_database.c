@@ -408,9 +408,9 @@ static void task_database_scan_console_output(const char *label, const char *db_
       unsigned green  = FOREGROUND_GREEN;
       unsigned yellow = FOREGROUND_RED | FOREGROUND_GREEN;
       unsigned reset  = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
-      size_t _len     = strlcpy(string, " ", sizeof(string));
+      size_t _len     = strlcpy_lit(string, " ", sizeof(string));
       _len += strlcpy(string + _len, prefix, sizeof(string) - _len);
-      _len += strlcpy(string + _len, " ",    sizeof(string) - _len);
+      _len += strlcpy_lit(string + _len, " ",    sizeof(string) - _len);
       SetConsoleTextAttribute(con, (add) ? green : (db_name) ? yellow : red);
       WriteConsole(con, string, _len, NULL, NULL);
       SetConsoleTextAttribute(con, reset);
@@ -427,18 +427,18 @@ static void task_database_scan_console_output(const char *label, const char *db_
          _len += strlcpy(string + _len, green, sizeof(string) - _len);
       else
          _len += strlcpy(string + _len, (db_name) ? yellow : red, sizeof(string) - _len);
-      _len    += strlcpy(string + _len, " ",    sizeof(string) - _len);
+      _len    += strlcpy_lit(string + _len, " ",    sizeof(string) - _len);
       _len    += strlcpy(string + _len, prefix, sizeof(string) - _len);
-      _len    += strlcpy(string + _len, " ",    sizeof(string) - _len);
+      _len    += strlcpy_lit(string + _len, " ",    sizeof(string) - _len);
       strlcpy(string + _len, reset,  sizeof(string) - _len);
       fputs(string, stdout);
    }
 #endif
    else
    {
-      size_t _len     = strlcpy(string, " ", sizeof(string));
+      size_t _len     = strlcpy_lit(string, " ", sizeof(string));
       _len += strlcpy(string + _len, prefix, sizeof(string) - _len);
-      strlcpy(string + _len, " ", sizeof(string) - _len);
+      strlcpy_lit(string + _len, " ", sizeof(string) - _len);
       fputs(string, stdout);
    }
 
@@ -1144,7 +1144,7 @@ static enum scan_verdict database_info_list_iterate_found_match(
    if (*db_state->serial)
    {
       size_t _len = strlcpy(db_crc, db_state->serial, db_crc_len);
-      strlcpy(db_crc  + _len,
+      strlcpy_lit(db_crc  + _len,
             "|serial",
             db_crc_len - _len);
    }

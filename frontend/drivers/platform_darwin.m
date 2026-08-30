@@ -297,9 +297,9 @@ static size_t frontend_darwin_get_os(char *s, size_t len, int *major, int *minor
 #if defined(IOS)
    get_ios_version(major, minor);
 #if TARGET_OS_TV
-   _len = strlcpy(s, "tvOS", len);
+   _len = strlcpy_lit(s, "tvOS", len);
 #else
-   _len = strlcpy(s, "iOS", len);
+   _len = strlcpy_lit(s, "iOS", len);
 #endif
 #elif defined(OSX)
 #if MAC_OS_X_VERSION_MIN_REQUIRED >= 101300 /* MAC_OS_X_VERSION_10_13 */
@@ -332,7 +332,7 @@ static size_t frontend_darwin_get_os(char *s, size_t len, int *major, int *minor
       Gestalt(gestaltSystemVersionMajor, (SInt32*)major);
    }
 #endif
-   _len = strlcpy(s, "OSX", len);
+   _len = strlcpy_lit(s, "OSX", len);
 #endif
    return _len;
 }

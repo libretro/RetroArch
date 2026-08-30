@@ -5414,7 +5414,7 @@ void runloop_path_fill_names(void)
       size_t _len = strlcpy(runloop_st->name.ups,
             runloop_st->runtime_content_path_basename,
             sizeof(runloop_st->name.ups));
-      strlcpy(runloop_st->name.ups       + _len,
+      strlcpy_lit(runloop_st->name.ups       + _len,
             ".ups",
             sizeof(runloop_st->name.ups) - _len);
    }
@@ -5424,7 +5424,7 @@ void runloop_path_fill_names(void)
       size_t _len = strlcpy(runloop_st->name.bps,
             runloop_st->runtime_content_path_basename,
             sizeof(runloop_st->name.bps));
-      strlcpy(runloop_st->name.bps       + _len,
+      strlcpy_lit(runloop_st->name.bps       + _len,
             ".bps",
             sizeof(runloop_st->name.bps) - _len);
    }
@@ -5434,7 +5434,7 @@ void runloop_path_fill_names(void)
       size_t _len = strlcpy(runloop_st->name.ips,
             runloop_st->runtime_content_path_basename,
             sizeof(runloop_st->name.ips));
-      strlcpy(runloop_st->name.ips       + _len,
+      strlcpy_lit(runloop_st->name.ips       + _len,
             ".ips",
             sizeof(runloop_st->name.ips) - _len);
    }
@@ -5444,7 +5444,7 @@ void runloop_path_fill_names(void)
       size_t _len = strlcpy(runloop_st->name.xdelta,
             runloop_st->runtime_content_path_basename,
             sizeof(runloop_st->name.xdelta));
-      strlcpy(runloop_st->name.xdelta       + _len,
+      strlcpy_lit(runloop_st->name.xdelta       + _len,
             ".xdelta",
             sizeof(runloop_st->name.xdelta) - _len);
    }
@@ -7715,7 +7715,7 @@ static enum runloop_state_enum runloop_check_state(
                   ": %d", settings->ints.replay_slot);
 
          if (cur_replay_slot < 0)
-            _len += strlcpy(msg + _len, " (Auto)", sizeof(msg) - _len);
+            _len += strlcpy_lit(msg + _len, " (Auto)", sizeof(msg) - _len);
 
 #ifdef HAVE_GFX_WIDGETS
          if (dispwidget_get_ptr()->active)

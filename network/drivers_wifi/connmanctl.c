@@ -402,7 +402,7 @@ static bool connmanctl_connect_ssid(
       connmanctl_tether_toggle(connman, false, "", "");
    }
 
-   strlcpy(connman->command, "connmanctl connect ", sizeof(connman->command));
+   strlcpy_lit(connman->command, "connmanctl connect ", sizeof(connman->command));
    strlcat(connman->command, netinfo->netid,        sizeof(connman->command));
 
    pclose(popen(connman->command, "r"));
@@ -642,8 +642,8 @@ static void connmanctl_tether_start_stop(void *data, bool start, char* configfil
          RARCH_LOG("[CONNMANCTL] Tether start stop: creating new config \"%s\"\n",
                configfile);
 
-         strlcpy(ap_name, "LakkaAccessPoint", sizeof(ap_name));
-         strlcpy(pass_key, "RetroArch",       sizeof(pass_key));
+         strlcpy_lit(ap_name, "LakkaAccessPoint", sizeof(ap_name));
+         strlcpy_lit(pass_key, "RetroArch",       sizeof(pass_key));
 
          fprintf(command_file, "APNAME=%s\nPASSWORD=%s", ap_name, pass_key);
 

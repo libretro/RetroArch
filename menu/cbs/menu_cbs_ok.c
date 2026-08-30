@@ -2530,7 +2530,7 @@ static int generic_action_ok(const char *path,
                if (input_remapping_load_file(conf, action_path))
                {
                   unsigned port;
-                  size_t _len = strlcpy(conf_key, "input_libretro_device_p", sizeof(conf_key));
+                  size_t _len = strlcpy_lit(conf_key, "input_libretro_device_p", sizeof(conf_key));
                   for (port = 0; port < MAX_USERS; port++)
                   {
                      unsigned current_device;
@@ -4567,7 +4567,7 @@ static int action_ok_set_switch_cpu_profile(const char *path,
       clkrstCloseSession(&session);
    }
    /* TODO/FIXME - localize */
-   _len  = strlcpy(command, "Current clock set to", sizeof(command));
+   _len  = strlcpy_lit(command, "Current clock set to", sizeof(command));
    _len += snprintf(command + _len, sizeof(command) - _len, "%i", profile_clock);
 
    runloop_msg_queue_push(command, _len, 1, 90, true, NULL,
@@ -4718,7 +4718,7 @@ int action_ok_core_option_dropdown_list(const char *path,
 push_dropdown_list:
    /* If this option is not a boolean toggle,
     * push drop-down list */
-   _len = strlcpy(option_path_str, "core_option_",
+   _len = strlcpy_lit(option_path_str, "core_option_",
          sizeof(option_path_str));
    snprintf(option_path_str      + _len,
          sizeof(option_path_str) - _len,
@@ -5555,7 +5555,7 @@ void cb_generic_download(retro_task_t *task,
             if (subdir_options && *subdir_options)
             {
                size_t __len = strlcpy(buf, subdir_options, sizeof(buf));
-               strlcpy(buf + __len, "|", sizeof(buf) - __len);
+               strlcpy_lit(buf + __len, "|", sizeof(buf) - __len);
                subdir = buf;
             }
          }
@@ -6594,7 +6594,7 @@ static void action_input_add_entry_to_new_playlist(void *userdata, const char *l
 
    /* Create path for new file */
    _len = fill_pathname_join_special(path, settings->paths.directory_playlist, line, sizeof(path));
-   strlcpy(path + _len, ".lpl",  sizeof(path) - _len);
+   strlcpy_lit(path + _len, ".lpl",  sizeof(path) - _len);
    action_ok_add_entry_to_playlist(NULL, path, 0, 0, 0);
 }
 
@@ -6611,7 +6611,7 @@ static void action_input_add_entry_to_new_playlist_quickmenu(void *userdata, con
 
    /* Create path for new file */
    _len = fill_pathname_join_special(path, settings->paths.directory_playlist, line, sizeof(path));
-   strlcpy(path + _len, ".lpl",  sizeof(path) - _len);
+   strlcpy_lit(path + _len, ".lpl",  sizeof(path) - _len);
    action_ok_add_entry_to_playlist_quickmenu(NULL, path, 0, 0, 0);
 }
 

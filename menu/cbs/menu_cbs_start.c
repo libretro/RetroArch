@@ -646,7 +646,7 @@ static int action_start_video_resolution(
       video_driver_set_video_mode(width, height, true);
 #ifdef GEKKO
       if (width == 0 || height == 0)
-         _len = strlcpy(msg, "Resetting to: DEFAULT", sizeof(msg));
+         _len = strlcpy_lit(msg, "Resetting to: DEFAULT", sizeof(msg));
       else
 #endif
       {

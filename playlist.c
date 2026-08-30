@@ -1970,7 +1970,7 @@ void playlist_write_runtime_file(playlist_t *playlist)
             playlist->config.path);
       return;
    }
-   strlcpy(write_path + _len, ".tmp", sizeof(write_path) - _len);
+   strlcpy_lit(write_path + _len, ".tmp", sizeof(write_path) - _len);
 
    if (!(file = intfstream_open_file(write_path,
          RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE)))
@@ -2168,7 +2168,7 @@ static bool playlist_replace_file(const char *from, const char *to)
    _len = strlcpy(saved, to, sizeof(saved));
    if (_len + STRLEN_CONST(".old") >= sizeof(saved))
       return false;
-   strlcpy(saved + _len, ".old", sizeof(saved) - _len);
+   strlcpy_lit(saved + _len, ".old", sizeof(saved) - _len);
 
    filestream_delete(saved);          /* a leftover from a previous run */
    if (filestream_rename(to, saved) != 0)
@@ -2227,7 +2227,7 @@ void playlist_write_file(playlist_t *playlist)
             playlist->config.path);
       return;
    }
-   strlcpy(write_path + _len, ".tmp", sizeof(write_path) - _len);
+   strlcpy_lit(write_path + _len, ".tmp", sizeof(write_path) - _len);
 
 #if defined(HAVE_COMPRESSION)
    if (playlist->config.compress)

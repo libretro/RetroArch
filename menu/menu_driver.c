@@ -3114,7 +3114,7 @@ static bool menu_shader_manager_save_preset_internal(
    if (basename && *basename)
       _len = strlcpy(fullname, basename, sizeof(fullname));
    else
-      _len = strlcpy(fullname, "retroarch", sizeof(fullname));
+      _len = strlcpy_lit(fullname, "retroarch", sizeof(fullname));
    strlcpy(fullname + _len,
          video_shader_get_preset_extension(type),
          sizeof(fullname) - _len);
@@ -3272,7 +3272,7 @@ static bool menu_shader_manager_operate_auto_preset(
    switch (type)
    {
       case SHADER_PRESET_GLOBAL:
-         strlcpy(file, "global", sizeof(file));
+         strlcpy_lit(file, "global", sizeof(file));
          break;
       case SHADER_PRESET_CORE:
          fill_pathname_join_special(file, core_name, core_name, sizeof(file));
@@ -4078,7 +4078,7 @@ void menu_entries_search_append_terms_string(char *s, size_t len)
          if (_len + 3 >= len)
             break;
 
-         _len += strlcpy(s + _len, " > ", len - _len);
+         _len += strlcpy_lit(s + _len, " > ", len - _len);
 
          if (_len + tlen >= len)
          {
@@ -4674,13 +4674,13 @@ void menu_entries_get_core_title(char *s, size_t len)
 #if defined(_MSC_VER)
    _len += strlcpy(s + _len, msvc_vercode_to_str(_MSC_VER), len - _len);
 #endif
-   _len += strlcpy(s + _len, " - ",     len - _len);
+   _len += strlcpy_lit(s + _len, " - ",     len - _len);
    _len += strlcpy(s + _len, core_name, len - _len);
    if (core_version && *core_version)
    {
-      _len += strlcpy(s + _len, " (", len - _len);
+      _len += strlcpy_lit(s + _len, " (", len - _len);
       _len += strlcpy(s + _len, core_version, len - _len);
-      strlcpy(s + _len, ")", len - _len);
+      strlcpy_lit(s + _len, ")", len - _len);
    }
 }
 

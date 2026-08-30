@@ -514,7 +514,7 @@ bool command_get_config_param(command_t *cmd, const char* arg)
                   (long long)(movie->frame_counter));
       }
       else
-         strlcpy(value_dynamic, "0 0 0", sizeof(value_dynamic));
+         strlcpy_lit(value_dynamic, "0 0 0", sizeof(value_dynamic));
    }
    #endif
 #ifdef HAVE_MENU
@@ -537,7 +537,7 @@ bool command_get_config_param(command_t *cmd, const char* arg)
    }
 #endif
    /* TODO: query any string */
-   _len  = strlcpy(reply, "GET_CONFIG_PARAM ", sizeof(reply));
+   _len  = strlcpy_lit(reply, "GET_CONFIG_PARAM ", sizeof(reply));
    _len += strlcpy(reply + _len, arg, sizeof(reply)  - _len);
    reply[  _len] = ' ';
    reply[++_len] = '\0';
@@ -651,7 +651,7 @@ command_t* command_uds_new(void)
    /* use an abstract socket for simplicity */
    memset(&addr, 0, sizeof(addr));
    addr.sun_family = AF_UNIX;
-   strlcpy(&addr.sun_path[1], "retroarch/cmd", sizeof(addr.sun_path) - 1);
+   strlcpy_lit(&addr.sun_path[1], "retroarch/cmd", sizeof(addr.sun_path) - 1);
    if (   bind(fd, (struct sockaddr*)&addr, addrsz) < 0
        || listen(fd, MAX_USER_CONNECTIONS) < 0
        || !socket_nonblock(fd))
@@ -829,7 +829,7 @@ bool command_load_state_slot(command_t *cmd, const char *arg)
    unsigned int slot            = (unsigned int)strtoul(arg, NULL, 10);
    bool savestates_enabled      = core_info_current_supports_savestate();
    bool ret                     = false;
-   _len  = strlcpy(reply, "LOAD_STATE_SLOT ", sizeof(reply));
+   _len  = strlcpy_lit(reply, "LOAD_STATE_SLOT ", sizeof(reply));
    _len += snprintf(reply + _len, sizeof(reply) - _len, "%d", slot);
    runloop_get_savestate_path(state_path, sizeof(state_path), slot);
    /* For LOADING, an existing state file outranks metadata and
@@ -859,7 +859,7 @@ bool command_save_state_slot(command_t* cmd, const char* arg)
    unsigned int slot            = (unsigned int)strtoul(arg, NULL, 10);
    bool savestates_enabled      = core_info_current_supports_savestate();
    bool ret = false;
-   _len = strlcpy(reply, "SAVE_STATE_SLOT ", sizeof(reply));
+   _len = strlcpy_lit(reply, "SAVE_STATE_SLOT ", sizeof(reply));
    _len += snprintf(reply + _len, sizeof(reply) - _len, "%d", slot);
    if (savestates_enabled)
    {
@@ -944,12 +944,12 @@ bool command_seek_replay(command_t *cmd, const char *arg)
       ret = movie_seek_to_frame(input_st, frame);
    if (ret)
    {
-      _len = strlcpy(reply, "OK ", sizeof(reply));
+      _len = strlcpy_lit(reply, "OK ", sizeof(reply));
       _len += snprintf(reply+_len, sizeof(reply)-_len,
             "%" PRId64, input_st->bsv_movie_state.seek_target_frame);
    }
    else
-      _len = strlcpy(reply, "NO", sizeof(reply));
+      _len = strlcpy_lit(reply, "NO", sizeof(reply));
    reply[_len] = '\n';
    reply[++_len] = '\0';
    cmd->replier(cmd, reply, _len);
@@ -964,14 +964,14 @@ bool command_save_savefiles(command_t *cmd, const char* arg)
 {
    char reply[4];
    bool ret;
-   size_t  _len  = strlcpy(reply, "OK", sizeof(reply));
+   size_t  _len  = strlcpy_lit(reply, "OK", sizeof(reply));
    reply[  _len] = '\n';
    reply[++_len] = '\0';
    /* In the future, this should probably send each saved file path
       to the replier. */
    ret = command_event(CMD_EVENT_SAVE_FILES, NULL);
    if (!ret)
-     strlcpy(reply, "NO", sizeof(reply));
+     strlcpy_lit(reply, "NO", sizeof(reply));
    cmd->replier(cmd, reply, _len);
    return ret;
 }
@@ -980,12 +980,12 @@ bool command_load_savefiles(command_t *cmd, const char* arg)
 {
    char reply[4];
    bool ret;
-   size_t  _len  = strlcpy(reply, "OK", sizeof(reply));
+   size_t  _len  = strlcpy_lit(reply, "OK", sizeof(reply));
    reply[  _len] = '\n';
    reply[++_len] = '\0';
    ret = command_event(CMD_EVENT_LOAD_FILES, NULL);
    if (!ret)
-     strlcpy(reply, "NO", sizeof(reply));
+     strlcpy_lit(reply, "NO", sizeof(reply));
    cmd->replier(cmd, reply, _len);
    return ret;
 }
@@ -1030,7 +1030,7 @@ bool command_read_ram(command_t *cmd, const char *arg)
       }
       else
       {
-         strlcpy(reply_at, " -1\n", sizeof(reply) - strlen(reply));
+         strlcpy_lit(reply_at, " -1\n", sizeof(reply) - strlen(reply));
          _len = reply_at + STRLEN_CONST(" -1\n") - reply;
       }
       cmd->replier(cmd, reply, _len);
@@ -1300,17 +1300,17 @@ static uint8_t *command_memory_get_pointer(
       int for_write, char *s, size_t len)
 {
    if (!sys_info || sys_info->mmaps.num_descriptors == 0)
-      strlcpy(s, " -1 no memory map defined\n", len);
+      strlcpy_lit(s, " -1 no memory map defined\n", len);
    else
    {
       size_t offset;
       const rarch_memory_descriptor_t* desc = command_memory_get_descriptor(&sys_info->mmaps, address, &offset);
       if (!desc)
-         strlcpy(s, " -1 no descriptor for address\n", len);
+         strlcpy_lit(s, " -1 no descriptor for address\n", len);
       else if (!desc->core.ptr)
-         strlcpy(s, " -1 no data for descriptor\n", len);
+         strlcpy_lit(s, " -1 no data for descriptor\n", len);
       else if (for_write && (desc->core.flags & RETRO_MEMDESC_CONST))
-         strlcpy(s, " -1 descriptor data is readonly\n", len);
+         strlcpy_lit(s, " -1 descriptor data is readonly\n", len);
       else
       {
          *max_bytes = (unsigned int)(desc->core.len - offset);
@@ -1345,7 +1345,7 @@ bool command_get_status(command_t *cmd, const char* arg)
 
       if (!runloop_st)
       {
-         _len = strlcpy(reply, "GET_STATUS ERROR", sizeof(reply));
+         _len = strlcpy_lit(reply, "GET_STATUS ERROR", sizeof(reply));
          cmd->replier(cmd, reply, _len);
          return false;
       }
@@ -1387,7 +1387,7 @@ bool command_get_status(command_t *cmd, const char* arg)
       strlcpy_append(reply, sizeof(reply), &_len, "\n");
    }
    else
-      _len = strlcpy(reply, "GET_STATUS CONTENTLESS", sizeof(reply));
+      _len = strlcpy_lit(reply, "GET_STATUS CONTENTLESS", sizeof(reply));
 
    cmd->replier(cmd, reply, _len);
    return true;
@@ -1503,10 +1503,10 @@ void command_event_set_volume(
    configuration_set_float(settings, settings->floats.audio_volume, new_volume);
    _len             = strlcpy(msg, msg_hash_to_str(MSG_AUDIO_VOLUME),
          sizeof(msg));
-   _len            += strlcpy(msg + _len, ": ", sizeof(msg) - _len);
+   _len            += strlcpy_lit(msg + _len, ": ", sizeof(msg) - _len);
    _len            += snprintf(msg + _len, sizeof(msg) - _len, "%.1f",
          new_volume);
-   _len            += strlcpy(msg + _len, " dB", sizeof(msg) - _len);
+   _len            += strlcpy_lit(msg + _len, " dB", sizeof(msg) - _len);
 
 #if defined(HAVE_GFX_WIDGETS)
    if (widgets_active)
@@ -1541,10 +1541,10 @@ void command_event_set_mixer_volume(
    configuration_set_float(settings, settings->floats.audio_mixer_volume, new_volume);
    _len             = strlcpy(msg, msg_hash_to_str(MSG_AUDIO_VOLUME),
          sizeof(msg));
-   _len            += strlcpy(msg + _len, ": ", sizeof(msg) - _len);
+   _len            += strlcpy_lit(msg + _len, ": ", sizeof(msg) - _len);
    _len            += snprintf(msg + _len, sizeof(msg) - _len, "%.1f",
          new_volume);
-   _len            += strlcpy(msg + _len, " dB", sizeof(msg) - _len);
+   _len            += strlcpy_lit(msg + _len, " dB", sizeof(msg) - _len);
    runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
@@ -1722,7 +1722,7 @@ size_t command_event_save_auto_state(void)
       return 0;
    _len = strlcpy(savestate_name_auto, name_savestate,
          sizeof(savestate_name_auto));
-   _len += strlcpy(savestate_name_auto + _len, ".auto",
+   _len += strlcpy_lit(savestate_name_auto + _len, ".auto",
            sizeof(savestate_name_auto) - _len);
    if (content_auto_save_state((const char*)savestate_name_auto))
 	   RARCH_LOG("[State] %s \"%s\" %s.\n",
@@ -1832,7 +1832,7 @@ bool command_event_load_auto_state(void)
 
    _len = strlcpy(savestate_name_auto, name_savestate,
          sizeof(savestate_name_auto));
-   strlcpy(savestate_name_auto + _len, ".auto",
+   strlcpy_lit(savestate_name_auto + _len, ".auto",
          sizeof(savestate_name_auto) - _len);
 
    if (!path_is_valid(savestate_name_auto))
@@ -2125,7 +2125,7 @@ static void command_event_set_savestate_garbage_collect(settings_t *settings)
       /* Construct the save state thumbnail name
        * and delete that one as well. */
       i = strlen(state_to_delete);
-      strlcpy(state_to_delete + i,".png",STRLEN_CONST(".png")+1);
+      strlcpy_lit(state_to_delete + i,".png",STRLEN_CONST(".png")+1);
       filestream_delete(state_to_delete);
       RARCH_DBG("[State] Garbage collect, deleting \"%s\".\n",state_to_delete);
    }
@@ -2355,7 +2355,7 @@ bool command_event_save_core_config(
 
          if (i)
             __len += snprintf(tmp + __len, sizeof(tmp) - __len, "-%u", i);
-         strlcpy(tmp + __len, ".cfg", sizeof(tmp) - __len);
+         strlcpy_lit(tmp + __len, ".cfg", sizeof(tmp) - __len);
 
          if (!path_is_valid(tmp))
          {
@@ -2419,7 +2419,7 @@ void command_event_save_current_config(enum override_type type)
             if (path_is_empty(RARCH_PATH_CONFIG))
             {
                msg_cat = MESSAGE_QUEUE_CATEGORY_ERROR;
-               _len    = strlcpy(msg, "Config directory not set, cannot save configuration.", sizeof(msg));
+               _len    = strlcpy_lit(msg, "Config directory not set, cannot save configuration.", sizeof(msg));
             }
             else
             {

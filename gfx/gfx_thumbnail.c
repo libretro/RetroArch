@@ -3422,7 +3422,7 @@ void gfx_thumbnail_fill_content_img(char *s,
    while ((scrub_char_ptr = strpbrk(s, "&*/:`\"<>?\\|")))
       *scrub_char_ptr = '_';
    /* Add PNG extension */
-   strlcpy(s + _len, ".png", len - _len);
+   strlcpy_lit(s + _len, ".png", len - _len);
 }
 
 /* Resets thumbnail path data
@@ -3554,7 +3554,7 @@ bool gfx_thumbnail_set_system(gfx_thumbnail_path_data_t *path_data,
    /* Hack: There is only one MAME thumbnail repo,
     * so filter any input starting with 'MAME...' */
    if (strncmp(system, "MAME", 4) == 0)
-      path_data->system_len = strlcpy(path_data->system, "MAME", sizeof(path_data->system));
+      path_data->system_len = strlcpy_lit(path_data->system, "MAME", sizeof(path_data->system));
    else
       path_data->system_len = strlcpy(path_data->system, system, sizeof(path_data->system));
 
@@ -3714,14 +3714,14 @@ bool gfx_thumbnail_set_content_image(
       img_dir, img_name, sizeof(path_data->content_path));
 
    /* Set core name to "imageviewer" */
-   strlcpy(path_data->content_core_name,
+   strlcpy_lit(path_data->content_core_name,
          "imageviewer",
          sizeof(path_data->content_core_name));
 
    /* Set database name (arbitrarily) to "_images_"
     * (required for compatibility with gfx_thumbnail_update_path(),
     * but not actually used...) */
-   strlcpy(path_data->content_db_name,
+   strlcpy_lit(path_data->content_db_name,
          "_images_", sizeof(path_data->content_db_name));
 
    /* Redundant error check */
@@ -4202,7 +4202,7 @@ void gfx_savestate_thumbnail_get_path(
          path_remove_extension(new_path);
 
          _len = strlcpy(entry_basename, path_basename(new_path), PATH_MAX_LENGTH);
-         _len = strlcpy(entry_basename + _len, ".state", PATH_MAX_LENGTH - _len);
+         _len = strlcpy_lit(entry_basename + _len, ".state", PATH_MAX_LENGTH - _len);
 
          /* Set temporary save redirection paths */
          runloop_path_set_redirect(config_get_ptr(), old_savefile_dir, old_savestate_dir);

@@ -12710,7 +12710,7 @@ static void materialui_list_insert(void *userdata,
                   char val[NAME_MAX_LENGTH];
                   unsigned user_value = i + 1;
                   size_t _len = snprintf(val, sizeof(val), "%d", user_value);
-                  strlcpy(val       + _len,
+                  strlcpy_lit(val       + _len,
                         "_input_binds_list",
                         sizeof(val) - _len);
 

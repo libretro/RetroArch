@@ -168,13 +168,13 @@ failure:
       return false;
    }
 
-   strlcpy(list->entries[0].name, "lo",        sizeof(list->entries[0].name));
-   strlcpy(list->entries[0].host, "127.0.0.1", sizeof(list->entries[0].host));
+   strlcpy_lit(list->entries[0].name, "lo",        sizeof(list->entries[0].name));
+   strlcpy_lit(list->entries[0].host, "127.0.0.1", sizeof(list->entries[0].host));
    list->size = 1;
 
    if (!sceNetCtlInetGetInfo(SCE_NETCTL_INFO_GET_IP_ADDRESS, &info))
    {
-      strlcpy(list->entries[1].name, "wlan", sizeof(list->entries[1].name));
+      strlcpy_lit(list->entries[1].name, "wlan", sizeof(list->entries[1].name));
       strlcpy(list->entries[1].host, info.ip_address,
          sizeof(list->entries[1].host));
       list->size++;
@@ -189,8 +189,8 @@ failure:
       return false;
    }
 
-   strlcpy(list->entries[0].name, "lo", sizeof(list->entries[0].name));
-   strlcpy(list->entries[0].host, "127.0.0.1", sizeof(list->entries[0].host));
+   strlcpy_lit(list->entries[0].name, "lo", sizeof(list->entries[0].name));
+   strlcpy_lit(list->entries[0].host, "127.0.0.1", sizeof(list->entries[0].host));
    list->size = 1;
 
 #if defined(HAVE_LIBNX)

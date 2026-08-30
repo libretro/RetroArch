@@ -778,7 +778,7 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
          }
       }
       else
-         strlcpy(ad_packet_buffer.frontend, "N/A",
+         strlcpy_lit(ad_packet_buffer.frontend, "N/A",
             sizeof(ad_packet_buffer.frontend));
 
       strlcpy(ad_packet_buffer.core, sysinfo->library_name,
@@ -827,7 +827,7 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
          strlcpy(ad_packet_buffer.content,
             (basename && *basename) ? basename : "N/A",
             sizeof(ad_packet_buffer.content));
-         strlcpy(ad_packet_buffer.subsystem_name, "N/A",
+         strlcpy_lit(ad_packet_buffer.subsystem_name, "N/A",
             sizeof(ad_packet_buffer.subsystem_name));
 
          ad_packet_buffer.content_crc = (int32_t)htonl(netplay_content_crc());
@@ -1408,9 +1408,9 @@ static bool netplay_handshake_info(netplay_t *netplay,
    }
    else
    {
-      strlcpy(info_buf.core_name,
+      strlcpy_lit(info_buf.core_name,
             "UNKNOWN", sizeof(info_buf.core_name));
-      strlcpy(info_buf.core_version,
+      strlcpy_lit(info_buf.core_version,
             "UNKNOWN", sizeof(info_buf.core_version));
    }
 

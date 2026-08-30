@@ -230,7 +230,7 @@ static void winraw_mouse_names_handler(retro_task_t *task)
          }
 
          if (!name[0])
-            strlcpy(name, "<name not found>",
+            strlcpy_lit(name, "<name not found>",
                   sizeof(h->entries[i].name));
       }
    }

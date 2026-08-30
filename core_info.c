@@ -942,7 +942,7 @@ static bool core_info_replace_file(const char *from, const char *to)
    _len = strlcpy(saved, to, sizeof(saved));
    if (_len + STRLEN_CONST(".old") >= sizeof(saved))
       return false;
-   strlcpy(saved + _len, ".old", sizeof(saved) - _len);
+   strlcpy_lit(saved + _len, ".old", sizeof(saved) - _len);
 
    filestream_delete(saved);          /* a leftover from a previous run */
    if (filestream_rename(to, saved) != 0)
@@ -994,7 +994,7 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
                file_path);
          return false;
       }
-      strlcpy(write_path + _len, ".tmp", sizeof(write_path) - _len);
+      strlcpy_lit(write_path + _len, ".tmp", sizeof(write_path) - _len);
    }
 
 #if defined(CORE_INFO_CACHE_COMPRESS)
@@ -1508,9 +1508,9 @@ static core_path_list_t *core_info_path_list_new(const char *core_dir,
    _len = strlcpy(exts, core_exts, sizeof(exts));
 #if defined(HAVE_DYNAMIC)
    /* > 'standalone exempt' */
-   strlcpy(exts + _len, "|lck|lsae", sizeof(exts) - _len);
+   strlcpy_lit(exts + _len, "|lck|lsae", sizeof(exts) - _len);
 #else
-   strlcpy(exts + _len, "|lck",      sizeof(exts) - _len);
+   strlcpy_lit(exts + _len, "|lck",      sizeof(exts) - _len);
 #endif
 
    /* Fetch core directory listing */
@@ -1735,7 +1735,7 @@ static void core_info_resolve_firmware(
    if (!firmware)
       return;
 
-   _len = strlcpy(prefix, "firmware", sizeof(prefix));
+   _len = strlcpy_lit(prefix, "firmware", sizeof(prefix));
 
    for (i = 0; i < firmware_count; i++)
    {
@@ -1745,16 +1745,16 @@ static void core_info_resolve_firmware(
 
       snprintf(prefix + _len, sizeof(prefix) - _len, "%u_", i);
       _len2 = strlcpy(key, prefix, sizeof(key));
-      strlcpy(key + _len2, "opt", sizeof(key) - _len2);
+      strlcpy_lit(key + _len2, "opt", sizeof(key) - _len2);
 
       if (config_get_bool(conf, key, &tmp_bool))
          firmware[i].optional = tmp_bool;
 
-      strlcpy(key + _len2, "path", sizeof(key) - _len2);
+      strlcpy_lit(key + _len2, "path", sizeof(key) - _len2);
 
       firmware[i].path = config_take_string(conf, key);
 
-      strlcpy(key + _len2, "desc", sizeof(key) - _len2);
+      strlcpy_lit(key + _len2, "desc", sizeof(key) - _len2);
 
       firmware[i].desc = config_take_string(conf, key);
    }

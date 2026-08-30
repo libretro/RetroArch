@@ -241,7 +241,7 @@ static void gl_cg_set_uniform_parameter(
 
       if (param->lookup.add_prefix)
       {
-         size_t _len = strlcpy(ident, "IN.", sizeof(ident));
+         size_t _len = strlcpy_lit(ident, "IN.", sizeof(ident));
          strlcpy(ident + _len, param->lookup.ident, sizeof(ident) - _len);
       }
       location = cgGetNamedParameter(prog, param->lookup.add_prefix ? ident : param->lookup.ident);
@@ -921,7 +921,7 @@ static void gl_cg_set_program_attributes(void *data, unsigned i)
    if (i > 1)
    {
       char pass_str[64];
-      size_t _len = strlcpy(pass_str, "PASSPREV", sizeof(pass_str));
+      size_t _len = strlcpy_lit(pass_str, "PASSPREV", sizeof(pass_str));
       snprintf(pass_str + _len, sizeof(pass_str) - _len, "%u", i);
       gl_cg_set_pass_attrib(&cg->prg[i], &cg->prg[i].orig, pass_str);
    }

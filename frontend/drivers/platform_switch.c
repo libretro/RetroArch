@@ -207,7 +207,7 @@ static void get_first_valid_core(char *path_return, size_t len)
              && !strcmp(ent->d_name + name_len - ext_len, extension))
          {
             size_t _len = strlcpy(path_return, SD_PREFIX "/retroarch/cores", len);
-            _len += strlcpy(path_return + _len,
+            _len += strlcpy_lit(path_return + _len,
                   "/",
                   len           - _len);
             strlcpy(path_return + _len, ent->d_name, len - _len);
@@ -703,7 +703,7 @@ static size_t frontend_switch_get_os(
    ipc_request_t rq;
 #endif
 
-   _len       = strlcpy(s, "Horizon OS", len);
+   _len       = strlcpy_lit(s, "Horizon OS", len);
 
 #ifdef HAVE_LIBNX
    *major     = 0;
@@ -772,7 +772,7 @@ fail:
 static void frontend_switch_get_name(char *s, size_t len)
 {
    /* TODO/FIXME: Add Mariko at some point */
-   strlcpy(s, "Nintendo Switch", len);
+   strlcpy_lit(s, "Nintendo Switch", len);
 }
 
 void frontend_switch_process_args(int *argc, char *argv[])

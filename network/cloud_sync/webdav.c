@@ -85,7 +85,7 @@ static char *webdav_create_basic_auth(void)
       _len += strlcpy(userpass + _len, settings->arrays.webdav_password, sizeof(userpass) - _len);
    userpass[_len]   = '\0';
    base64auth = base64(userpass, (int)_len, &flen);
-   _len  = strlcpy(userpass, "Authorization: Basic ", sizeof(userpass));
+   _len  = strlcpy_lit(userpass, "Authorization: Basic ", sizeof(userpass));
    _len += strlcpy(userpass + _len, base64auth, sizeof(userpass) - _len);
    free(base64auth);
    userpass[_len++] = '\r';
@@ -397,28 +397,28 @@ static char *webdav_create_digest_auth_header(const char *method, const char *ur
    total  = _len;
    _len   = 0;
    header = (char*)malloc(total);
-   _len   = strlcpy(header, "Authorization: Digest username=\"", total - _len);
+   _len   = strlcpy_lit(header, "Authorization: Digest username=\"", total - _len);
    _len  += strlcpy(header + _len, webdav_st->username, total - _len);
-   _len  += strlcpy(header + _len, "\", realm=\"", total - _len);
+   _len  += strlcpy_lit(header + _len, "\", realm=\"", total - _len);
    _len  += strlcpy(header + _len, webdav_st->realm, total - _len);
-   _len  += strlcpy(header + _len, "\", nonce=\"", total - _len);
+   _len  += strlcpy_lit(header + _len, "\", nonce=\"", total - _len);
    _len  += strlcpy(header + _len, webdav_st->nonce, total - _len);
-   _len  += strlcpy(header + _len, "\", uri=\"", total - _len);
+   _len  += strlcpy_lit(header + _len, "\", uri=\"", total - _len);
    _len  += strlcpy(header + _len, path, total - _len);
-   _len  += strlcpy(header + _len, "\", nc=\"", total - _len);
+   _len  += strlcpy_lit(header + _len, "\", nc=\"", total - _len);
    _len  += strlcpy(header + _len, nonceCount, total - _len);
-   _len  += strlcpy(header + _len, "\", cnonce=\"", total - _len);
+   _len  += strlcpy_lit(header + _len, "\", cnonce=\"", total - _len);
    _len  += strlcpy(header + _len, webdav_st->cnonce, total - _len);
    if (webdav_st->qop_auth)
-      _len += strlcpy(header + _len, "\", qop=\"auth", total - _len);
+      _len += strlcpy_lit(header + _len, "\", qop=\"auth", total - _len);
    if (webdav_st->opaque)
    {
-      _len += strlcpy(header + _len, "\", opaque=\"", total - _len);
+      _len += strlcpy_lit(header + _len, "\", opaque=\"", total - _len);
       _len += strlcpy(header + _len, webdav_st->opaque, total - _len);
    }
-   _len += strlcpy(header + _len, "\", response=\"", total - _len);
+   _len += strlcpy_lit(header + _len, "\", response=\"", total - _len);
    _len += strlcpy(header + _len, response, total - _len);
-   strlcpy(header + _len, "\"\r\n", total - _len);
+   strlcpy_lit(header + _len, "\"\r\n", total - _len);
    free(response);
    return header;
 }
@@ -533,7 +533,7 @@ static bool webdav_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
 #endif
    /* TODO/FIXME: LOCK? */
    if (!strstr(url, "://"))
-       _len += strlcpy(webdav_st->url, "http://", (sizeof("http://")-1));
+       _len += strlcpy_lit(webdav_st->url, "http://", (sizeof("http://")-1));
    strlcpy(webdav_st->url + _len, url, sizeof(webdav_st->url) - _len);
    fill_pathname_slash(webdav_st->url, sizeof(webdav_st->url));
 
@@ -945,7 +945,7 @@ static bool webdav_delete(const char *path, cloud_sync_complete_handler_t cb, vo
    else
    {
       char dir[DIR_MAX_LENGTH];
-      size_t _len = strlcpy(dir, "deleted/", sizeof(dir));
+      size_t _len = strlcpy_lit(dir, "deleted/", sizeof(dir));
       fill_pathname_basedir(dir + _len, path, sizeof(dir) - _len);
       webdav_ensure_dir(dir, webdav_do_backup, webdav_cb_st);
    }

@@ -505,7 +505,7 @@ static std::string build_stage_source(
             if (stage && *stage)
             {
                char expected[128];
-               size_t _len = strlcpy(expected, "#pragma stage ", sizeof(expected));
+               size_t _len = strlcpy_lit(expected, "#pragma stage ", sizeof(expected));
                strlcpy(expected + _len, stage, sizeof(expected) - _len);
                active = !strcmp(expected, line);
             }

@@ -248,7 +248,7 @@ static int action_scan_video_font_path(const char *path,
 {
    settings_t *settings       = config_get_ptr();
 
-   strlcpy(settings->paths.path_font, "null", sizeof(settings->paths.path_font));
+   strlcpy_lit(settings->paths.path_font, "null", sizeof(settings->paths.path_font));
 
    /* Same route as the value-change handler: rebuild the OSD font in
     * place, and reinitialise only where a driver keeps its own. */
@@ -267,7 +267,7 @@ static int action_scan_video_xmb_font(const char *path,
 
    /* The menu driver watches this path and rebuilds its fonts on
     * the next frame. */
-   strlcpy(settings->paths.path_menu_xmb_font, "null", sizeof(settings->paths.path_menu_xmb_font));
+   strlcpy_lit(settings->paths.path_menu_xmb_font, "null", sizeof(settings->paths.path_menu_xmb_font));
 
    return 0;
 }
@@ -281,7 +281,7 @@ static int action_scan_video_ozone_font(const char *path,
 
    /* The menu driver watches this path and rebuilds its fonts on
     * the next frame. */
-   strlcpy(settings->paths.path_menu_ozone_font, "null", sizeof(settings->paths.path_menu_ozone_font));
+   strlcpy_lit(settings->paths.path_menu_ozone_font, "null", sizeof(settings->paths.path_menu_ozone_font));
 
    return 0;
 }

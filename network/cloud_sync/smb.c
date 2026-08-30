@@ -199,10 +199,10 @@ static bool smb_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
       {
          _len  = strlcpy(smb_st.subdir, subdir, sz);
          if (_len < sz)
-            _len += strlcpy(smb_st.subdir + _len, "/", sz - _len);
+            _len += strlcpy_lit(smb_st.subdir + _len, "/", sz - _len);
       }
       if (_len < sz)
-         strlcpy(smb_st.subdir + _len, "cloud_sync", sz - _len);
+         strlcpy_lit(smb_st.subdir + _len, "cloud_sync", sz - _len);
    }
 
    /* Ensure subdir exists */

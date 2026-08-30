@@ -551,11 +551,11 @@ static int rate_cmp(const void *a, const void *b)
 static void rate_to_string(double fps, char *out, size_t len)
 {
    if (fabs(fps - 60000.0 / 1001.0) < 0.01)
-      strlcpy(out, "59.94", len);
+      strlcpy_lit(out, "59.94", len);
    else if (fabs(fps - 30000.0 / 1001.0) < 0.01)
-      strlcpy(out, "29.97", len);
+      strlcpy_lit(out, "29.97", len);
    else if (fabs(fps - 24000.0 / 1001.0) < 0.01)
-      strlcpy(out, "23.976", len);
+      strlcpy_lit(out, "23.976", len);
    else
       snprintf(out, len, "%g", fps);
 }
@@ -1952,13 +1952,13 @@ static bool load_game_internal(bool allow_fallback)
    if(capture_resolution.value != NULL)
       strlcpy(video_capture_resolution, capture_resolution.value, sizeof(video_capture_resolution));
    else
-      strlcpy(video_capture_resolution, "auto", sizeof(video_capture_resolution));
+      strlcpy_lit(video_capture_resolution, "auto", sizeof(video_capture_resolution));
 
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &capture_rate);
    if(capture_rate.value != NULL)
       strlcpy(video_capture_rate, capture_rate.value, sizeof(video_capture_rate));
    else
-      strlcpy(video_capture_rate, "auto", sizeof(video_capture_rate));
+      strlcpy_lit(video_capture_rate, "auto", sizeof(video_capture_rate));
 
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &capture_mode);
    VIDEOPROC_CORE_PREFIX(environment_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &output_mode);
@@ -2328,7 +2328,7 @@ device_fallback:
     * brings audio back up. */
    unregister_audio_callback();
    close_audio_device();
-   strlcpy(video_device, "dummy", sizeof(video_device));
+   strlcpy_lit(video_device, "dummy", sizeof(video_device));
    setup_dummy_source();
    {
       /* Reflect the fallback in the core option so the menu shows what is

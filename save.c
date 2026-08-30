@@ -564,7 +564,7 @@ static bool dump_to_file_desperate(const void *data,
 
       time(&time_);
       rtime_localtime(&time_, &tm_);
-      _len += strlcpy(path  + _len, "/RetroArch-recovery-", sizeof(path) - _len);
+      _len += strlcpy_lit(path  + _len, "/RetroArch-recovery-", sizeof(path) - _len);
       _len += snprintf(path + _len, sizeof(path) - _len, "%u-", type);
       strftime(path + _len, sizeof(path) - _len,
             "%Y-%m-%d-%H-%M-%S", &tm_);

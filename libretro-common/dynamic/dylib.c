@@ -138,7 +138,7 @@ dylib_t dylib_load(const char *path)
         char fw_path[PATH_MAX_LENGTH];
         const char *fw_name = path_basename(path);
         size_t _len         = strlcpy(fw_path, path, sizeof(fw_path));
-        _len += strlcpy(fw_path + _len, "/", sizeof(fw_path) - _len);
+        _len += strlcpy_lit(fw_path + _len, "/", sizeof(fw_path) - _len);
         /* Assume every framework binary is named for the framework. Not always
          * a great assumption but correct enough for our uses. */
         strlcpy(fw_path + _len, fw_name, strlen(fw_name) - STRLEN_CONST(fw_suffix) + 1);

@@ -196,7 +196,7 @@ bool menu_displaylist_build_smb_root(char *s, size_t len)
    if (!settings->bools.smb_client_enable || !*server)
       return false;
 
-   _len = strlcpy(s, "smb://", len);
+   _len = strlcpy_lit(s, "smb://", len);
    if (_len >= len)
       return false;
    _len += strlcpy(s + _len, server, len - _len);
@@ -205,7 +205,7 @@ bool menu_displaylist_build_smb_root(char *s, size_t len)
 
    if (*share)
    {
-      _len += strlcpy(s + _len, "/", len - _len);
+      _len += strlcpy_lit(s + _len, "/", len - _len);
       if (_len >= len)
          return false;
       _len += strlcpy(s + _len, share, len - _len);
@@ -217,7 +217,7 @@ bool menu_displaylist_build_smb_root(char *s, size_t len)
    {
       if (subdir[0] != '/')
       {
-         _len += strlcpy(s + _len, "/", len - _len);
+         _len += strlcpy_lit(s + _len, "/", len - _len);
          if (_len >= len)
             return false;
       }
@@ -606,14 +606,14 @@ static int filebrowser_parse(
          char dir[DIR_MAX_LENGTH];
          size_t _len = fill_pathname_application_dir(dir, sizeof(dir));
          if (string_ends_with(full_path, "/") && !string_ends_with(dir, "/"))
-            strlcpy(dir + _len, "/", sizeof(dir) - _len);
+            strlcpy_lit(dir + _len, "/", sizeof(dir) - _len);
          if (string_is_equal(dir, full_path))
             allow_parent_directory = false;
          else
          {
             _len = fill_pathname_home_dir(dir, sizeof(dir));
             if (string_ends_with(full_path, "/") && !string_ends_with(dir, "/"))
-               strlcpy(dir + _len, "/", sizeof(dir) - _len);
+               strlcpy_lit(dir + _len, "/", sizeof(dir) - _len);
             if (string_is_equal(dir, full_path))
                allow_parent_directory = false;
          }
@@ -794,7 +794,7 @@ static int menu_displaylist_parse_core_info(
          _len        = strlcpy(tmp,
                msg_hash_to_str(info_list[i].msg),
                sizeof(tmp));
-         _len       += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
+         _len       += strlcpy_lit(tmp + _len, ": ", sizeof(tmp) - _len);
          strlcpy(tmp + _len, info_list[i].name, sizeof(tmp) - _len);
          if (menu_entries_append(list, tmp, "",
                MENU_ENUM_LABEL_CORE_INFO_ENTRY,
@@ -808,7 +808,7 @@ static int menu_displaylist_parse_core_info(
       size_t _len = strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES),
             sizeof(tmp));
-      _len       += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
+      _len       += strlcpy_lit(tmp + _len, ": ", sizeof(tmp) - _len);
       string_list_join_concat_special(tmp + _len, sizeof(tmp) - _len,
             core_info->categories_list, ", ");
       if (menu_entries_append(list, tmp, "",
@@ -821,7 +821,7 @@ static int menu_displaylist_parse_core_info(
       size_t _len = strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS),
             sizeof(tmp));
-      _len       += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
+      _len       += strlcpy_lit(tmp + _len, ": ", sizeof(tmp) - _len);
       string_list_join_concat_special(tmp + _len, sizeof(tmp) - _len,
             core_info->authors_list, ", ");
       if (menu_entries_append(list, tmp, "",
@@ -834,7 +834,7 @@ static int menu_displaylist_parse_core_info(
       size_t _len = strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS),
             sizeof(tmp));
-      _len       += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
+      _len       += strlcpy_lit(tmp + _len, ": ", sizeof(tmp) - _len);
       string_list_join_concat_special(tmp + _len, sizeof(tmp) - _len,
             core_info->permissions_list, ", ");
       if (menu_entries_append(list, tmp, "",
@@ -847,7 +847,7 @@ static int menu_displaylist_parse_core_info(
       size_t _len = strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES),
             sizeof(tmp));
-      _len       += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
+      _len       += strlcpy_lit(tmp + _len, ": ", sizeof(tmp) - _len);
       string_list_join_concat_special(tmp + _len, sizeof(tmp) - _len,
             core_info->licenses_list, ", ");
       if (menu_entries_append(list, tmp, "",
@@ -861,7 +861,7 @@ static int menu_displaylist_parse_core_info(
             msg_hash_to_str(
                MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS),
             sizeof(tmp));
-      _len       += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
+      _len       += strlcpy_lit(tmp + _len, ": ", sizeof(tmp) - _len);
       string_list_join_concat_special(tmp + _len, sizeof(tmp) - _len,
             core_info->supported_extensions_list, ", ");
       if (menu_entries_append(list, tmp, "",
@@ -874,7 +874,7 @@ static int menu_displaylist_parse_core_info(
       size_t _len = strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API),
             sizeof(tmp));
-      _len       += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
+      _len       += strlcpy_lit(tmp + _len, ": ", sizeof(tmp) - _len);
       string_list_join_concat_special(tmp + _len, sizeof(tmp) - _len,
             core_info->required_hw_api_list, ", ");
       if (menu_entries_append(list, tmp, "",
@@ -910,7 +910,7 @@ static int menu_displaylist_parse_core_info(
       size_t _len = strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL),
             sizeof(tmp));
-      _len       += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
+      _len       += strlcpy_lit(tmp + _len, ": ", sizeof(tmp) - _len);
       strlcpy(tmp + _len, savestate_support, sizeof(tmp) - _len);
    }
 
@@ -925,7 +925,7 @@ static int menu_displaylist_parse_core_info(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH),
             sizeof(tmp));
 
-      _len += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
+      _len += strlcpy_lit(tmp + _len, ": ", sizeof(tmp) - _len);
 
 #if IOS
       shortened_path[0] = '\0';
@@ -1030,7 +1030,7 @@ static int menu_displaylist_parse_core_info(
                      MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
                   count++;
 
-               __len = strlcpy(tmp, "- ", sizeof(tmp));
+               __len = strlcpy_lit(tmp, "- ", sizeof(tmp));
                strlcpy(tmp + __len, tmp_desc, sizeof(tmp) - __len);
                tmp_desc[0]  = '\0';
                tmp_desc_len = 0;
@@ -1052,7 +1052,7 @@ static int menu_displaylist_parse_core_info(
                }
                else
                {
-                  tmp_desc_len += strlcpy(tmp_desc + tmp_desc_len, "\n", sizeof(tmp_desc) - tmp_desc_len);
+                  tmp_desc_len += strlcpy_lit(tmp_desc + tmp_desc_len, "\n", sizeof(tmp_desc) - tmp_desc_len);
                   strlcpy(tmp_desc    + tmp_desc_len,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY),
                      sizeof(tmp_desc) - tmp_desc_len);
@@ -1108,7 +1108,7 @@ static int menu_displaylist_parse_core_info(
                if (pos)
                {
                   core_info_list_hide[j] = true;
-                  __len = strlcpy(tmp, "- ", sizeof(tmp));
+                  __len = strlcpy_lit(tmp, "- ", sizeof(tmp));
                   strlcpy(      tmp + __len,
                         core_info->note_list->elems[j].data + pos,
                         sizeof(tmp) - __len);
@@ -1329,7 +1329,7 @@ static unsigned menu_displaylist_parse_core_backup_list(
             /* Append 'auto backup' tag to timestamp, if required */
             if (entry->backup_mode == CORE_BACKUP_MODE_AUTO)
             {
-               _len += strlcpy(timestamp + _len, " ", sizeof(timestamp) - _len);
+               _len += strlcpy_lit(timestamp + _len, " ", sizeof(timestamp) - _len);
                strlcpy(timestamp + _len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_BACKUP_MODE_AUTO),
                      sizeof(timestamp) - _len);
             }
@@ -1939,11 +1939,11 @@ static unsigned menu_displaylist_parse_supported_cores(
          char entry_alt_text[NAME_MAX_LENGTH];
          size_t _len = strlcpy(entry_alt_text, detect_core_str,
                sizeof(entry_alt_text));
-         _len       += strlcpy(entry_alt_text + _len, " (", sizeof(entry_alt_text) - _len);
+         _len       += strlcpy_lit(entry_alt_text + _len, " (", sizeof(entry_alt_text) - _len);
          _len       += strlcpy(entry_alt_text + _len,
                pending_core_name,
                sizeof(entry_alt_text)         - _len);
-         strlcpy(entry_alt_text + _len, ")", sizeof(entry_alt_text) - _len);
+         strlcpy_lit(entry_alt_text + _len, ")", sizeof(entry_alt_text) - _len);
 
          menu_entries_prepend(info->list, pending_core_path,
                msg_hash_to_str(current_core_enum_label),
@@ -2054,7 +2054,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    size_t _len = strlcpy(entry,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION),
          sizeof(entry));
-   _len       += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+   _len       += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
    strlcpy(entry + _len, PACKAGE_VERSION, sizeof(entry) - _len);
    if (menu_entries_append(list, entry, "",
          MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
@@ -2066,7 +2066,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    _len        = strlcpy(entry,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION),
          sizeof(entry));
-   _len       += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+   _len       += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
    strlcpy(entry + _len, retroarch_git_version, sizeof(entry) - _len);
    if (menu_entries_append(list, entry, "",
          MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
@@ -2081,7 +2081,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
       _len        = strlcpy(entry,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MOLTENVK_VERSION),
             sizeof(entry));
-      _len       += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+      _len       += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
       if (!moltenvk_version || !*moltenvk_version)
          strlcpy(entry + _len,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
@@ -2099,10 +2099,10 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    _len        = strlcpy(entry,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE),
          sizeof(entry));
-   _len       += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+   _len       += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
    _len       += strlcpy(entry + _len, __DATE__, sizeof(entry) - _len);
 #ifdef DEBUG
-   _len       += strlcpy(entry + _len, " (DEBUG)", sizeof(entry) - _len);
+   _len       += strlcpy_lit(entry + _len, " (DEBUG)", sizeof(entry) - _len);
 #endif
    if (menu_entries_append(list, entry, "",
          MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
@@ -2139,7 +2139,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
       _len            = strlcpy(entry,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL),
             sizeof(entry));
-      _len           += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+      _len           += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
       if (!cpu_model || !*cpu_model)
          strlcpy(entry + _len,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
@@ -2156,7 +2156,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    _len            = strlcpy(entry,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES),
          sizeof(entry));
-   _len           += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+   _len           += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
    retroarch_get_capabilities(RARCH_CAPABILITIES_CPU, entry + _len, sizeof(entry) - _len);
    if (menu_entries_append(list, entry, "",
          MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
@@ -2167,7 +2167,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
    _len            = strlcpy(entry,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE),
          sizeof(entry));
-   _len           += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+   _len           += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
    frontend_driver_get_cpu_architecture_str(entry + _len, sizeof(entry) - _len);
    if (menu_entries_append(list, entry, "",
          MENU_ENUM_LABEL_CPU_ARCHITECTURE, MENU_SETTINGS_CORE_INFO_NONE,
@@ -2196,7 +2196,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
       size_t _len     = strlcpy(entry,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE),
             sizeof(entry));
-      _len           += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+      _len           += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
       if (jit_available())
          strlcpy(entry + _len, val_yes_str, sizeof(entry) - _len);
       else
@@ -2218,7 +2218,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
             size_t _len    = strlcpy(entry,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BUNDLE_IDENTIFIER),
                   sizeof(entry));
-            _len          += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+            _len          += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
             Boolean result = CFStringGetCString(bundleIdentifier, entry + _len, sizeof(entry) - _len, kCFStringEncodingUTF8);
             if (result) {
                if (menu_entries_append(list, entry, "",
@@ -2297,7 +2297,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
          _len            = strlcpy(entry,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER),
                sizeof(entry));
-         _len           += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+         _len           += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
          strlcpy(entry + _len, frontend->ident, sizeof(entry) - _len);
          if (menu_entries_append(list, entry, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
@@ -2310,7 +2310,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
             _len            = strlcpy(entry,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION),
                   sizeof(entry));
-            _len           += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+            _len           += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
             frontend->get_lakka_version(entry + _len, sizeof(entry) - _len);
             if (menu_entries_append(list, entry, "",
                   MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
@@ -2324,7 +2324,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
             _len            = strlcpy(entry,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME),
                   sizeof(entry));
-            _len           += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+            _len           += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
             frontend->get_name(entry + _len, sizeof(entry) - _len);
             if (menu_entries_append(list, entry, "",
                   MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
@@ -2340,7 +2340,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
             _len            = strlcpy(entry,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS),
                   sizeof(entry));
-            _len           += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+            _len           += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
             _len           += frontend->get_os(entry + _len,
                   sizeof(entry) - _len, &major, &minor);
             snprintf(entry + _len,
@@ -2381,7 +2381,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
             size_t _len  = strlcpy(entry,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE),
                   sizeof(entry));
-            _len        += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+            _len        += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
             /* N/A */
             if (state == FRONTEND_POWERSTATE_NONE)
                strlcpy(entry + _len,
@@ -2421,7 +2421,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
       _len  = strlcpy(entry,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER),
             sizeof(entry));
-      _len +=  strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+      _len +=  strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
       strlcpy(entry + _len,
             (ident_info.ident && *ident_info.ident)
             ? ident_info.ident
@@ -2704,7 +2704,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
          size_t _len = strlcpy(entry,
                info_list[info_idx].msg,
                sizeof(entry));
-         _len += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+         _len += strlcpy_lit(entry + _len, ": ", sizeof(entry) - _len);
          _len += strlcpy(entry + _len,
                (info_list[info_idx].enabled) ? val_yes_str : val_no_str, sizeof(entry) - _len);
 
@@ -3024,7 +3024,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    gfx_thumbnail_set_system(menu_st->thumbnail_path_data,
          path_base, playlist_get_cached());
 
-   strlcpy(path_base + _len, ".lpl", sizeof(path_base) - _len);
+   strlcpy_lit(path_base + _len, ".lpl", sizeof(path_base) - _len);
 
    fill_pathname_join_special(menu->db_playlist_file,
          dir_playlist, path_base,
@@ -3125,7 +3125,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
          tmp_len  = strlcpy(tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME),
                sizeof(tmp));
-         tmp_len += strlcpy(tmp + tmp_len, ": ", sizeof(tmp) - tmp_len);
+         tmp_len += strlcpy_lit(tmp + tmp_len, ": ", sizeof(tmp) - tmp_len);
          strlcpy(tmp + tmp_len, db_info_entry->name, sizeof(tmp) - tmp_len);
          menu_entries_append(info->list, tmp,
                MENU_ENUM_LABEL_RDB_ENTRY_NAME_STR,
@@ -3138,7 +3138,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
          tmp_len  = strlcpy(tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION),
                sizeof(tmp));
-         tmp_len += strlcpy(tmp + tmp_len, ": ", sizeof(tmp) - tmp_len);
+         tmp_len += strlcpy_lit(tmp + tmp_len, ": ", sizeof(tmp) - tmp_len);
          strlcpy(tmp + tmp_len, db_info_entry->description,
                sizeof(tmp) - tmp_len);
          menu_entries_append(info->list, tmp,
@@ -5430,7 +5430,7 @@ static unsigned menu_displaylist_parse_content_information(
       size_t _len = strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME),
             sizeof(tmp));
-      _len       += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
+      _len       += strlcpy_lit(tmp + _len, ": ", sizeof(tmp) - _len);
       strlcpy(tmp + _len, core_name, sizeof(tmp) - _len);
 
       if (menu_entries_append(info_list, tmp,
@@ -5477,7 +5477,7 @@ static unsigned menu_displaylist_parse_content_information(
       size_t _len = strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE),
             sizeof(tmp));
-      _len          += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
+      _len          += strlcpy_lit(tmp + _len, ": ", sizeof(tmp) - _len);
       fill_pathname(tmp + _len, db_name, "", sizeof(tmp) - _len);
       if (menu_entries_append(info_list, tmp,
                MENU_ENUM_LABEL_CONTENT_INFO_DATABASE_STR,
@@ -5495,7 +5495,7 @@ static unsigned menu_displaylist_parse_content_information(
       size_t _len = strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL),
             sizeof(tmp));
-      _len          += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
+      _len          += strlcpy_lit(tmp + _len, ": ", sizeof(tmp) - _len);
       strlcpy(tmp + _len, *content_label
                   ? content_label
                   : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
@@ -5510,7 +5510,7 @@ static unsigned menu_displaylist_parse_content_information(
       _len        = strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH),
             sizeof(tmp));
-      _len       += strlcpy(tmp + _len, ": ", sizeof(tmp) - _len);
+      _len       += strlcpy_lit(tmp + _len, ": ", sizeof(tmp) - _len);
       strlcpy(tmp + _len, *content_path
                   ? content_path
                   : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
@@ -6518,7 +6518,7 @@ static int menu_displaylist_parse_input_description_kbd_list(
       else
       {
          /* TODO/FIXME: Localize 'Keyboard' */
-         size_t _len = strlcpy(input_description, "Keyboard ", sizeof(input_description));
+         size_t _len = strlcpy_lit(input_description, "Keyboard ", sizeof(input_description));
          strlcpy(input_description + _len, key_label, sizeof(input_description) - _len);
       }
 
@@ -7121,7 +7121,7 @@ static int menu_displaylist_parse_disc_info(file_list_t *info_list,
             ? sizeof(drive_string) - 1
             : (size_t)_ret;
 
-      _len += strlcpy(drive_string + _len, ": ",
+      _len += strlcpy_lit(drive_string + _len, ": ",
               sizeof(drive_string) - _len);
 
       if (_len < sizeof(drive_string))
@@ -7472,20 +7472,20 @@ static unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
       {
          if (!show_passworded)
             continue;
-         _len += strlcpy(s, "[", sizeof(s) - _len);
+         _len += strlcpy_lit(s, "[", sizeof(s) - _len);
          _len += strlcpy(s + _len, msg_room_pwd, sizeof(s) - _len);
-         _len += strlcpy(s + _len, "] ", sizeof(s) - _len);
+         _len += strlcpy_lit(s + _len, "] ", sizeof(s) - _len);
       }
 
       _len += strlcpy(s + _len, room_type, sizeof(s) - _len);
-      _len += strlcpy(s + _len, ": ", sizeof(s) - _len);
+      _len += strlcpy_lit(s + _len, ": ", sizeof(s) - _len);
       _len += strlcpy(s + _len, room->nickname, sizeof(s) - _len);
 
       if (!room->lan && *room->country)
       {
-         _len += strlcpy(s + _len, " (", sizeof(s) - _len);
+         _len += strlcpy_lit(s + _len, " (", sizeof(s) - _len);
          _len += strlcpy(s + _len, room->country, sizeof(s) - _len);
-         strlcpy(s + _len, ")", sizeof(s) - _len);
+         strlcpy_lit(s + _len, ")", sizeof(s) - _len);
       }
 
       if (menu_entries_append(list, s, cnc_netplay_room,
@@ -8346,7 +8346,7 @@ unsigned menu_displaylist_build_list(
          {
 #ifdef HAVE_AUDIOMIXER
             char msg_lbl[128];
-            size_t _len = strlcpy(msg_lbl, "audio_mixer_stream_", sizeof(msg_lbl));
+            size_t _len = strlcpy_lit(msg_lbl, "audio_mixer_stream_", sizeof(msg_lbl));
 #if 1
             /* TODO - for developers -
              * turn this into #if 0 if you want to be able to see
@@ -9822,7 +9822,7 @@ unsigned menu_displaylist_build_list(
                 *   not '0' */
                if (*image_label)
                {
-                  _len += strlcpy(current_image_str + _len,
+                  _len += strlcpy_lit(current_image_str + _len,
                         ": ",
                         sizeof(current_image_str)   - _len);
                   strlcpy(current_image_str         + _len,
@@ -13347,7 +13347,7 @@ static bool menu_displaylist_ctl_internal(
                            _len         = strlcpy(desc_lbl,
                                  msg_hash_to_str(keyptr->enum_idx),
                                  sizeof(desc_lbl));
-                           _len        += strlcpy(desc_lbl + _len, ", ", sizeof(desc_lbl) - _len);
+                           _len        += strlcpy_lit(desc_lbl + _len, ", ", sizeof(desc_lbl) - _len);
                            strlcpy(desc_lbl + _len, descriptor, sizeof(desc_lbl) - _len);
                            desc_len = strlcpy(descriptor, desc_lbl, sizeof(descriptor));
                         }
@@ -13359,7 +13359,7 @@ static bool menu_displaylist_ctl_internal(
                               && max_users > 1
                               && !settings->bools.menu_show_sublabels)
                         {
-                           desc_len += strlcpy(descriptor + desc_len, " [", sizeof(descriptor) - desc_len);
+                           desc_len += strlcpy_lit(descriptor + desc_len, " [", sizeof(descriptor) - desc_len);
                            snprintf(descriptor + desc_len, sizeof(descriptor) - desc_len," %s %u]",
                                  val_port, port + 1);
                         }
@@ -13443,7 +13443,7 @@ static bool menu_displaylist_ctl_internal(
                         {
                            /* TODO/FIXME - localize */
                            char title[NAME_MAX_LENGTH];
-                           size_t _len = strlcpy(title, "Title: ", sizeof(title));
+                           size_t _len = strlcpy_lit(title, "Title: ", sizeof(title));
                            strlcpy(title + _len, cd_info.title, sizeof(title) - _len);
 
                            if (menu_entries_append(info->list,
@@ -13458,7 +13458,7 @@ static bool menu_displaylist_ctl_internal(
                         {
                            char system[NAME_MAX_LENGTH];
                            /* TODO/FIXME - Localize */
-                           size_t _len = strlcpy(system, "System: ", sizeof(system));
+                           size_t _len = strlcpy_lit(system, "System: ", sizeof(system));
                            strlcpy(system + _len, cd_info.system, sizeof(system) - _len);
 
                            if (menu_entries_append(info->list,
@@ -13475,7 +13475,7 @@ static bool menu_displaylist_ctl_internal(
                            size_t _len = strlcpy(serial,
                                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL),
                                  sizeof(serial));
-                           _len += strlcpy(serial + _len, "#: ",          sizeof(serial) - _len);
+                           _len += strlcpy_lit(serial + _len, "#: ",          sizeof(serial) - _len);
                            strlcpy(serial + _len, cd_info.serial, sizeof(serial) - _len);
 
                            if (menu_entries_append(info->list,
@@ -13490,7 +13490,7 @@ static bool menu_displaylist_ctl_internal(
                         {
                            char version[NAME_MAX_LENGTH];
                            /* TODO/FIXME - localize */
-                           size_t _len = strlcpy(version, "Version: ", sizeof(version));
+                           size_t _len = strlcpy_lit(version, "Version: ", sizeof(version));
                            strlcpy(version + _len, cd_info.version, sizeof(version) - _len);
 
                            if (menu_entries_append(info->list,
@@ -13505,7 +13505,7 @@ static bool menu_displaylist_ctl_internal(
                         {
                            char release_date[NAME_MAX_LENGTH];
                            /* TODO/FIXME - Localize */
-                           size_t _len = strlcpy(release_date, "Release Date: ",
+                           size_t _len = strlcpy_lit(release_date, "Release Date: ",
                                  sizeof(release_date));
                            strlcpy(release_date + _len, cd_info.release_date,
                                  sizeof(release_date) - _len);
@@ -13796,7 +13796,7 @@ static bool menu_displaylist_ctl_internal(
                      clkrstCloseSession(&session);
                   }
                   /* TODO/FIXME - localize */
-                  _len = strlcpy(text, "Current clock: ", sizeof(text));
+                  _len = strlcpy_lit(text, "Current clock: ", sizeof(text));
                   snprintf(text + _len, sizeof(text) - _len, "%i", currentClock);
                }
                if (menu_entries_append(info->list,
@@ -13809,10 +13809,10 @@ static bool menu_displaylist_ctl_internal(
                   char title[NAME_MAX_LENGTH];
                   size_t _len = strlcpy(title, SWITCH_CPU_PROFILES[i],
                         sizeof(title));
-                  _len += strlcpy(title + _len, " (",  sizeof(title) - _len);
+                  _len += strlcpy_lit(title + _len, " (",  sizeof(title) - _len);
                   _len += strlcpy(title + _len, SWITCH_CPU_SPEEDS[i],
                         sizeof(title) - _len);
-                  _len += strlcpy(title + _len,  ")",  sizeof(title) - _len);
+                  _len += strlcpy_lit(title + _len,  ")",  sizeof(title) - _len);
                   if (menu_entries_append(info->list, title, "", 0,
                            MENU_SET_SWITCH_CPU_PROFILE, 0, i, NULL))
                      count++;
@@ -13899,10 +13899,10 @@ static bool menu_displaylist_ctl_internal(
             {
                char lbl[128];
                unsigned id                 = info->type - MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_BEGIN;
-               size_t _len                 = strlcpy(lbl, "mixer_stream_", sizeof(lbl));
+               size_t _len                 = strlcpy_lit(lbl, "mixer_stream_", sizeof(lbl));
                _len += snprintf(lbl + _len, sizeof(lbl) - _len, "%d", id);
 
-               strlcpy(lbl + _len, "_action_play", sizeof(lbl) - _len);
+               strlcpy_lit(lbl + _len, "_action_play", sizeof(lbl) - _len);
                if (menu_entries_append(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY),
                         lbl,
@@ -13910,7 +13910,7 @@ static bool menu_displaylist_ctl_internal(
                         (MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_BEGIN  +  id),
                         0, 0, NULL))
                   count++;
-               strlcpy(lbl + _len, "_action_play_looped", sizeof(lbl) - _len);
+               strlcpy_lit(lbl + _len, "_action_play_looped", sizeof(lbl) - _len);
                if (menu_entries_append(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED),
                         lbl,
@@ -13918,7 +13918,7 @@ static bool menu_displaylist_ctl_internal(
                         (MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_LOOPED_BEGIN  +  id),
                         0, 0, NULL))
                   count++;
-               strlcpy(lbl + _len, "_action_play_sequential",sizeof(lbl) - _len);
+               strlcpy_lit(lbl + _len, "_action_play_sequential",sizeof(lbl) - _len);
                if (menu_entries_append(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_SEQUENTIAL),
                         lbl,
@@ -13926,7 +13926,7 @@ static bool menu_displaylist_ctl_internal(
                         (MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_PLAY_SEQUENTIAL_BEGIN  +  id),
                         0, 0, NULL))
                   count++;
-               strlcpy(lbl + _len, "_action_stop", sizeof(lbl) - _len);
+               strlcpy_lit(lbl + _len, "_action_stop", sizeof(lbl) - _len);
                if (menu_entries_append(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP),
                         lbl,
@@ -13934,7 +13934,7 @@ static bool menu_displaylist_ctl_internal(
                         (MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_STOP_BEGIN  +  id),
                         0, 0, NULL))
                   count++;
-               strlcpy(lbl + _len, "_action_remove", sizeof(lbl) - _len);
+               strlcpy_lit(lbl + _len, "_action_remove", sizeof(lbl) - _len);
                if (menu_entries_append(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE),
                         lbl,
@@ -13942,7 +13942,7 @@ static bool menu_displaylist_ctl_internal(
                         (MENU_SETTINGS_AUDIO_MIXER_STREAM_ACTIONS_REMOVE_BEGIN  +  id),
                         0, 0, NULL))
                   count++;
-               strlcpy(lbl + _len, "_action_volume", sizeof(lbl) - _len);
+               strlcpy_lit(lbl + _len, "_action_volume", sizeof(lbl) - _len);
                if (menu_entries_append(info->list,
                         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME),
                         lbl,
@@ -14985,7 +14985,7 @@ static bool menu_displaylist_ctl_internal(
                      char val[8];
 
                      if (i < 0)
-                        strlcpy(val, "Auto", sizeof(val));
+                        strlcpy_lit(val, "Auto", sizeof(val));
                      else
                         snprintf(val, sizeof(val), "%u", i);
 
@@ -16252,18 +16252,18 @@ static bool menu_displaylist_ctl_internal(
                      {
                         info->type_default   = FILE_TYPE_SHADER_PRESET;
                         if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
-                           _len    += strlcpy(new_exts + _len, "cgp", sizeof(new_exts) - _len);
+                           _len    += strlcpy_lit(new_exts + _len, "cgp", sizeof(new_exts) - _len);
                         if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
                         {
                            if (_len > 0)
-                              _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-                           _len    += strlcpy(new_exts + _len, "glslp", sizeof(new_exts) - _len);
+                              _len += strlcpy_lit(new_exts + _len, "|",   sizeof(new_exts) - _len);
+                           _len    += strlcpy_lit(new_exts + _len, "glslp", sizeof(new_exts) - _len);
                         }
                         if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG))
                         {
                            if (_len > 0)
-                              _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-                           strlcpy(new_exts + _len, "slangp", sizeof(new_exts) - _len);
+                              _len += strlcpy_lit(new_exts + _len, "|",   sizeof(new_exts) - _len);
+                           strlcpy_lit(new_exts + _len, "slangp", sizeof(new_exts) - _len);
                         }
                      }
                      break;
@@ -16272,18 +16272,18 @@ static bool menu_displaylist_ctl_internal(
                      {
                         info->type_default   = FILE_TYPE_SHADER;
                         if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
-                           _len    += strlcpy(new_exts + _len, "cg", sizeof(new_exts) - _len);
+                           _len    += strlcpy_lit(new_exts + _len, "cg", sizeof(new_exts) - _len);
                         if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
                         {
                            if (_len > 0)
-                              _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-                           _len    += strlcpy(new_exts + _len, "glsl", sizeof(new_exts) - _len);
+                              _len += strlcpy_lit(new_exts + _len, "|",   sizeof(new_exts) - _len);
+                           _len    += strlcpy_lit(new_exts + _len, "glsl", sizeof(new_exts) - _len);
                         }
                         if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG))
                         {
                            if (_len > 0)
-                              _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-                           strlcpy(new_exts + _len, "slang", sizeof(new_exts) - _len);
+                              _len += strlcpy_lit(new_exts + _len, "|",   sizeof(new_exts) - _len);
+                           strlcpy_lit(new_exts + _len, "slang", sizeof(new_exts) - _len);
                         }
                      }
                      break;
@@ -16316,18 +16316,18 @@ static bool menu_displaylist_ctl_internal(
                info->type_default = FILE_TYPE_SHADER_PRESET;
 
                if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
-                  _len    += strlcpy(new_exts + _len, "cgp", sizeof(new_exts) - _len);
+                  _len    += strlcpy_lit(new_exts + _len, "cgp", sizeof(new_exts) - _len);
                if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
                {
                   if (_len > 0)
-                     _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-                  _len    += strlcpy(new_exts + _len, "glslp", sizeof(new_exts) - _len);
+                     _len += strlcpy_lit(new_exts + _len, "|",   sizeof(new_exts) - _len);
+                  _len    += strlcpy_lit(new_exts + _len, "glslp", sizeof(new_exts) - _len);
                }
                if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG))
                {
                   if (_len > 0)
-                     _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-                  strlcpy(new_exts + _len, "slangp", sizeof(new_exts) - _len);
+                     _len += strlcpy_lit(new_exts + _len, "|",   sizeof(new_exts) - _len);
+                  strlcpy_lit(new_exts + _len, "slangp", sizeof(new_exts) - _len);
                }
                if (info->exts && *info->exts)
                   free(info->exts);
@@ -16347,35 +16347,35 @@ static bool menu_displaylist_ctl_internal(
                size_t _len          = 0;
                new_exts[0]          = '\0';
 #ifdef HAVE_RBMP
-               _len    += strlcpy(new_exts + _len, "bmp", sizeof(new_exts) - _len);
+               _len    += strlcpy_lit(new_exts + _len, "bmp", sizeof(new_exts) - _len);
 #endif
 #ifdef HAVE_RPNG
                if (_len > 0)
-                  _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-               _len    += strlcpy(new_exts + _len, "png", sizeof(new_exts) - _len);
+                  _len += strlcpy_lit(new_exts + _len, "|",   sizeof(new_exts) - _len);
+               _len    += strlcpy_lit(new_exts + _len, "png", sizeof(new_exts) - _len);
 #endif
 #ifdef HAVE_RJPEG
                if (_len > 0)
-                  _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-               _len    += strlcpy(new_exts + _len, "jpeg", sizeof(new_exts) - _len);
+                  _len += strlcpy_lit(new_exts + _len, "|",   sizeof(new_exts) - _len);
+               _len    += strlcpy_lit(new_exts + _len, "jpeg", sizeof(new_exts) - _len);
                if (_len > 0)
-                  _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-               _len    += strlcpy(new_exts + _len, "jpg", sizeof(new_exts) - _len);
+                  _len += strlcpy_lit(new_exts + _len, "|",   sizeof(new_exts) - _len);
+               _len    += strlcpy_lit(new_exts + _len, "jpg", sizeof(new_exts) - _len);
 #endif
 #ifdef HAVE_RTGA
                if (_len > 0)
-                  _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-               strlcpy(new_exts + _len, "tga", sizeof(new_exts) - _len);
+                  _len += strlcpy_lit(new_exts + _len, "|",   sizeof(new_exts) - _len);
+               strlcpy_lit(new_exts + _len, "tga", sizeof(new_exts) - _len);
 #endif
 #ifdef HAVE_RWEBP
                if (_len > 0)
-                  _len += strlcpy(new_exts + _len, "|",    sizeof(new_exts) - _len);
-               _len    += strlcpy(new_exts + _len, "webp", sizeof(new_exts) - _len);
+                  _len += strlcpy_lit(new_exts + _len, "|",    sizeof(new_exts) - _len);
+               _len    += strlcpy_lit(new_exts + _len, "webp", sizeof(new_exts) - _len);
 #endif
 #ifdef HAVE_RDDS
                if (_len > 0)
-                  _len += strlcpy(new_exts + _len, "|",   sizeof(new_exts) - _len);
-               _len    += strlcpy(new_exts + _len, "dds", sizeof(new_exts) - _len);
+                  _len += strlcpy_lit(new_exts + _len, "|",   sizeof(new_exts) - _len);
+               _len    += strlcpy_lit(new_exts + _len, "dds", sizeof(new_exts) - _len);
 #endif
                if (info->exts && *info->exts)
                   free(info->exts);
@@ -16531,7 +16531,7 @@ static bool menu_displaylist_ctl_internal(
                      _len = frontend_driver_get_core_extension(ext_names, sizeof(ext_names));
                      if (_len > 0)
                      {
-                        _len += strlcpy(ext_names + _len, "|", sizeof(ext_names) - _len);
+                        _len += strlcpy_lit(ext_names + _len, "|", sizeof(ext_names) - _len);
                         strlcpy(ext_names + _len, FILE_PATH_CORE_BACKUP_EXTENSION_NO_DOT, sizeof(ext_names) - _len);
                      }
                      else

@@ -123,7 +123,7 @@ static bool x11_display_server_set_resolution(void *data,
    dispserv->monitor_index  = monitor_index;
    dispserv->flags         |= DISPSERV_X11_FLAG_CRT_EN;
    dispserv->crt_name_id   += 1;
-   _len  = strlcpy(dispserv->crt_name, "CRT", sizeof(dispserv->crt_name));
+   _len  = strlcpy_lit(dispserv->crt_name, "CRT", sizeof(dispserv->crt_name));
    _len += snprintf(dispserv->crt_name + _len,
          sizeof(dispserv->crt_name) - _len,
          "%d", dispserv->crt_name_id);
@@ -580,7 +580,7 @@ static void x11_display_server_destroy(void *data)
       Window window            = RootWindow(dpy, screen);
       bool crt_exists          = false;
 
-      strlcpy(dmode, "d_mo", sizeof(dmode));
+      strlcpy_lit(dmode, "d_mo", sizeof(dmode));
 
       dispserv->crt_rrmode.name          = dmode;
       dispserv->crt_rrmode.nameLength    = strlen(dispserv->crt_name);

@@ -244,21 +244,21 @@ static unsigned input_autoconfigure_get_config_file_affinity(
                   "_alt%d",i);
 
       /* Parse config file */
-      _len  = strlcpy(config_key, "input_vendor_id",
+      _len  = strlcpy_lit(config_key, "input_vendor_id",
                sizeof(config_key));
       strlcpy(config_key  + _len, config_key_postfix,
             sizeof(config_key) - _len);
       if (config_get_int(config, config_key, &tmp_int))
          config_vid = (uint16_t)tmp_int;
 
-      _len  = strlcpy(config_key, "input_product_id",
+      _len  = strlcpy_lit(config_key, "input_product_id",
                sizeof(config_key));
       strlcpy(config_key  + _len, config_key_postfix,
                sizeof(config_key) - _len);
       if (config_get_int(config, config_key, &tmp_int))
          config_pid = (uint16_t)tmp_int;
 
-      _len  = strlcpy(config_key, "input_device",
+      _len  = strlcpy_lit(config_key, "input_device",
                sizeof(config_key));
       strlcpy(config_key  + _len, config_key_postfix,
             sizeof(config_key) - _len);
@@ -266,7 +266,7 @@ static unsigned input_autoconfigure_get_config_file_affinity(
             && (entry->value))
          config_device = entry->value;
 
-      _len  = strlcpy(config_key, "input_phys",
+      _len  = strlcpy_lit(config_key, "input_phys",
                sizeof(config_key));
       _len += strlcpy(config_key + _len, config_key_postfix,
                sizeof(config_key) - _len);
@@ -309,7 +309,7 @@ static void input_autoconfigure_set_config_file(
    }
 
    /* Parse config file */
-   _len  = strlcpy(config_key, "input_device_display_name",
+   _len  = strlcpy_lit(config_key, "input_device_display_name",
             sizeof(config_key));
    /* Read device display name */
    if (alternative > 0)
@@ -452,21 +452,21 @@ static void input_autoconfigure_index_collect(
          snprintf(config_key_postfix, sizeof(config_key_postfix),
                   "_alt%d", i);
 
-      _len  = strlcpy(config_key, "input_vendor_id",
+      _len  = strlcpy_lit(config_key, "input_vendor_id",
                sizeof(config_key));
       strlcpy(config_key + _len, config_key_postfix,
             sizeof(config_key) - _len);
       if (config_get_int(config, config_key, &tmp_int))
          config_vid = (uint16_t)tmp_int;
 
-      _len  = strlcpy(config_key, "input_product_id",
+      _len  = strlcpy_lit(config_key, "input_product_id",
                sizeof(config_key));
       strlcpy(config_key + _len, config_key_postfix,
             sizeof(config_key) - _len);
       if (config_get_int(config, config_key, &tmp_int))
          config_pid = (uint16_t)tmp_int;
 
-      _len  = strlcpy(config_key, "input_device",
+      _len  = strlcpy_lit(config_key, "input_device",
                sizeof(config_key));
       strlcpy(config_key + _len, config_key_postfix,
             sizeof(config_key) - _len);
@@ -474,7 +474,7 @@ static void input_autoconfigure_index_collect(
             && (entry->value))
          config_device = entry->value;
 
-      _len  = strlcpy(config_key, "input_phys",
+      _len  = strlcpy_lit(config_key, "input_phys",
                sizeof(config_key));
       strlcpy(config_key + _len, config_key_postfix,
             sizeof(config_key) - _len);

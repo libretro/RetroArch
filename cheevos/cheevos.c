@@ -276,7 +276,7 @@ static void rcheevos_show_completion_placard(const char* title, const char* badg
                runtime_log_add_runtime_usec(runtime_log,
                   runloop_state->core_runtime_usec);
 
-               __len += strlcpy(msg + __len, " | ", sizeof(msg) - __len);
+               __len += strlcpy_lit(msg + __len, " | ", sizeof(msg) - __len);
                runtime_log_get_runtime_str(runtime_log, msg + __len, sizeof(msg) - __len);
                msg[sizeof(msg) - 1] = '\0';
 
@@ -445,7 +445,7 @@ static void rcheevos_award_achievement(const rc_client_achievement_t* cheevo)
          char buffer[256];
          size_t _len = strlcpy(buffer, msg_hash_to_str(MSG_ACHIEVEMENT_UNLOCKED),
                sizeof(buffer));
-         _len += strlcpy(buffer + _len, ": ", sizeof(buffer) - _len);
+         _len += strlcpy_lit(buffer + _len, ": ", sizeof(buffer) - _len);
          _len += strlcpy(buffer + _len, cheevo->title, sizeof(buffer) - _len);
          runloop_msg_queue_push(buffer, _len, 0, 2 * 60, false, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -509,14 +509,14 @@ static void rcheevos_lboard_submitted(const rc_client_leaderboard_t* lboard,
       {
          _len = snprintf(buffer, sizeof(buffer), msg_hash_to_str(MSG_LEADERBOARD_SUBMISSION),
             scoreboard->submitted_score, lboard->title);
-         _len += strlcpy(buffer + _len, " (", sizeof(buffer) - _len);
+         _len += strlcpy_lit(buffer + _len, " (", sizeof(buffer) - _len);
          if (strcmp(scoreboard->best_score, scoreboard->submitted_score) == 0)
             _len += snprintf(buffer + _len, sizeof(buffer) - _len,
                   msg_hash_to_str(MSG_LEADERBOARD_RANK), scoreboard->new_rank);
          else
             _len += snprintf(buffer + _len, sizeof(buffer) - _len,
                   msg_hash_to_str(MSG_LEADERBOARD_BEST), scoreboard->best_score);
-         _len += strlcpy(buffer + _len, ")", sizeof(buffer) - _len);
+         _len += strlcpy_lit(buffer + _len, ")", sizeof(buffer) - _len);
       }
       else
          _len = snprintf(buffer, sizeof(buffer), msg_hash_to_str(MSG_LEADERBOARD_SUBMISSION),
@@ -534,7 +534,7 @@ static void rcheevos_lboard_canceled(const rc_client_leaderboard_t* lboard)
    {
       char buffer[256];
       size_t _len = strlcpy(buffer, msg_hash_to_str(MSG_LEADERBOARD_FAILED), sizeof(buffer));
-      _len += strlcpy(buffer + _len, ": ", sizeof(buffer) - _len);
+      _len += strlcpy_lit(buffer + _len, ": ", sizeof(buffer) - _len);
       _len += strlcpy(buffer + _len, lboard->title, sizeof(buffer) - _len);
       runloop_msg_queue_push(buffer, _len, 0, 2 * 60, false, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
@@ -550,7 +550,7 @@ static void rcheevos_lboard_started(const rc_client_leaderboard_t* lboard)
       char buffer[256];
       size_t _len = strlcpy(buffer, msg_hash_to_str(MSG_LEADERBOARD_STARTED),
             sizeof(buffer));
-      _len += strlcpy(buffer + _len, ": ", sizeof(buffer) - _len);
+      _len += strlcpy_lit(buffer + _len, ": ", sizeof(buffer) - _len);
       _len += strlcpy(buffer + _len, lboard->title, sizeof(buffer) - _len);
       if (lboard->description && *lboard->description)
          _len += snprintf(buffer + _len, sizeof(buffer) - _len, "- %s",
@@ -617,7 +617,7 @@ static void rcheevos_server_error(const char* api_name, const char* message)
 {
    char buffer[256];
    size_t _len = strlcpy(buffer, api_name, sizeof(buffer));
-   _len += strlcpy(buffer + _len, " failed: ", sizeof(buffer) - _len);
+   _len += strlcpy_lit(buffer + _len, " failed: ", sizeof(buffer) - _len);
    _len += strlcpy(buffer + _len, message, sizeof(buffer) - _len);
    runloop_msg_queue_push(buffer, _len, 0, 4 * 60, false, NULL,
       MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
@@ -1504,7 +1504,7 @@ static void rcheevos_client_login_callback(int result,
    {
       settings_t* settings = config_get_ptr();
       char msg[256];
-      size_t _len = strlcpy(msg, "RetroAchievements login failed: ",
+      size_t _len = strlcpy_lit(msg, "RetroAchievements login failed: ",
             sizeof(msg));
       _len += strlcpy(msg + _len, error_message, sizeof(msg) - _len);
       CHEEVOS_LOG(RCHEEVOS_TAG "%s\n", msg);

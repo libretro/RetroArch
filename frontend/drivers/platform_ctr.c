@@ -88,7 +88,7 @@ static void get_first_valid_core(char* path_return, size_t len)
          if (   name_len > ext_len
              && !strcmp(ent->d_name + name_len - ext_len, extension))
          {
-            size_t _len = strlcpy(path_return, "sdmc:/retroarch/cores/", len);
+            size_t _len = strlcpy_lit(path_return, "sdmc:/retroarch/cores/", len);
             strlcpy(path_return + _len, ent->d_name, len - _len);
             break;
          }
@@ -256,7 +256,7 @@ static void frontend_ctr_exec(const char *path, bool should_load_game)
          is corrupt so we have to quit */
       {
          char err[PATH_MAX + 32];
-         size_t _len = strlcpy(err, "Can't launch core: ", sizeof(err));
+         size_t _len = strlcpy_lit(err, "Can't launch core: ", sizeof(err));
          strlcpy(err + _len, path, sizeof(err) - _len);
          error_and_quit(err);
       }
@@ -543,7 +543,7 @@ static size_t frontend_ctr_get_os(char* s, size_t len, int* major, int* minor)
 {
    OS_VersionBin cver;
    OS_VersionBin nver;
-   size_t _len = strlcpy(s, "3DS OS", len);
+   size_t _len = strlcpy_lit(s, "3DS OS", len);
    Result data_invalid = osGetSystemVersionData(&nver, &cver);
    if (data_invalid == 0)
    {
@@ -568,26 +568,26 @@ static void frontend_ctr_get_name(char* s, size_t len)
    switch (device_model)
    {
       case 0:
-         strlcpy(s, "Old 3DS", len);
+         strlcpy_lit(s, "Old 3DS", len);
          break;
       case 1:
-         strlcpy(s, "Old 3DS XL", len);
+         strlcpy_lit(s, "Old 3DS XL", len);
          break;
       case 2:
-         strlcpy(s, "New 3DS", len);
+         strlcpy_lit(s, "New 3DS", len);
          break;
       case 3:
-         strlcpy(s, "Old 2DS", len);
+         strlcpy_lit(s, "Old 2DS", len);
          break;
       case 4:
-         strlcpy(s, "New 3DS XL", len);
+         strlcpy_lit(s, "New 3DS XL", len);
          break;
       case 5:
-         strlcpy(s, "New 2DS XL", len);
+         strlcpy_lit(s, "New 2DS XL", len);
          break;
 
       default:
-         strlcpy(s, "Unknown Device", len);
+         strlcpy_lit(s, "Unknown Device", len);
          break;
    }
 }

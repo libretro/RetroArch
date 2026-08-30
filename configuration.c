@@ -1624,9 +1624,9 @@ static struct config_array_setting *populate_settings_array(
       static char reserved_keys[MAX_USERS][32];
       for (i = 0; i < MAX_USERS; i++)
       {
-         size_t _len  = strlcpy(reserved_keys[i], "input_player", sizeof(reserved_keys[i]));
+         size_t _len  = strlcpy_lit(reserved_keys[i], "input_player", sizeof(reserved_keys[i]));
          _len += snprintf(reserved_keys[i] + _len, sizeof(reserved_keys[i]) - _len, "%u", i + 1);
-         strlcpy(reserved_keys[i] + _len, "_reserved_device", sizeof(reserved_keys[i]) - _len);
+         strlcpy_lit(reserved_keys[i] + _len, "_reserved_device", sizeof(reserved_keys[i]) - _len);
          SETTING_ARRAY(reserved_keys[i], settings->arrays.input_reserved_devices[i], false, NULL, true);
       }
    }
@@ -5853,7 +5853,7 @@ void config_set_defaults(void *data)
          path_mkdir(new_path);
 
       if (!*settings->paths.path_content_favorites)
-         strlcpy(settings->paths.directory_content_favorites, "default",
+         strlcpy_lit(settings->paths.directory_content_favorites, "default",
                sizeof(settings->paths.directory_content_favorites));
 
       if (     !*settings->paths.directory_content_favorites
@@ -5871,7 +5871,7 @@ void config_set_defaults(void *data)
                sizeof(settings->paths.path_content_favorites));
 
       if (!*settings->paths.path_content_history)
-         strlcpy(settings->paths.directory_content_history, "default",
+         strlcpy_lit(settings->paths.directory_content_history, "default",
                sizeof(settings->paths.directory_content_history));
 
       if (     !*settings->paths.directory_content_history
@@ -5889,7 +5889,7 @@ void config_set_defaults(void *data)
                sizeof(settings->paths.path_content_history));
 
       if (!*settings->paths.path_content_image_history)
-         strlcpy(settings->paths.directory_content_image_history, "default",
+         strlcpy_lit(settings->paths.directory_content_image_history, "default",
                sizeof(settings->paths.directory_content_image_history));
 
       if (     !*settings->paths.directory_content_image_history
@@ -5907,7 +5907,7 @@ void config_set_defaults(void *data)
                sizeof(settings->paths.path_content_image_history));
 
       if (!*settings->paths.path_content_music_history)
-         strlcpy(settings->paths.directory_content_music_history, "default",
+         strlcpy_lit(settings->paths.directory_content_music_history, "default",
                sizeof(settings->paths.directory_content_music_history));
 
       if (     !*settings->paths.directory_content_music_history
@@ -5925,7 +5925,7 @@ void config_set_defaults(void *data)
                sizeof(settings->paths.path_content_music_history));
 
       if (!*settings->paths.path_content_video_history)
-         strlcpy(settings->paths.directory_content_video_history, "default",
+         strlcpy_lit(settings->paths.directory_content_video_history, "default",
                sizeof(settings->paths.directory_content_video_history));
 
       if (     !*settings->paths.directory_content_video_history
@@ -6483,7 +6483,7 @@ static bool config_load_file(global_t *global,
 #ifdef HAVE_NETWORKGAMEPAD
    {
       char tmp[64];
-      size_t _len = strlcpy(tmp, "network_remote_enable_user_p", sizeof(tmp));
+      size_t _len = strlcpy_lit(tmp, "network_remote_enable_user_p", sizeof(tmp));
       for (i = 0; i < MAX_USERS; i++)
       {
          bool tmp_bool = false;
@@ -6531,23 +6531,23 @@ static bool config_load_file(global_t *global,
 
    {
       char prefix[64];
-      size_t _len    = strlcpy(prefix, "input_player", sizeof(prefix));
+      size_t _len    = strlcpy_lit(prefix, "input_player", sizeof(prefix));
       size_t old_len = _len;
       for (i = 0; i < MAX_USERS; i++)
       {
          _len  = old_len;
          _len += snprintf(prefix + _len, sizeof(prefix) - _len, "%u", i + 1);
 
-         strlcpy(prefix + _len, "_mouse_index", sizeof(prefix) - _len);
+         strlcpy_lit(prefix + _len, "_mouse_index", sizeof(prefix) - _len);
          CONFIG_GET_INT_BASE(conf, settings, uints.input_mouse_index[i], prefix);
 
-         strlcpy(prefix + _len, "_joypad_index", sizeof(prefix) - _len);
+         strlcpy_lit(prefix + _len, "_joypad_index", sizeof(prefix) - _len);
          CONFIG_GET_INT_BASE(conf, settings, uints.input_joypad_index[i], prefix);
 
-         strlcpy(prefix + _len, "_analog_dpad_mode", sizeof(prefix) - _len);
+         strlcpy_lit(prefix + _len, "_analog_dpad_mode", sizeof(prefix) - _len);
          CONFIG_GET_INT_BASE(conf, settings, uints.input_analog_dpad_mode[i], prefix);
 
-         strlcpy(prefix + _len, "_device_reservation_type", sizeof(prefix) - _len);
+         strlcpy_lit(prefix + _len, "_device_reservation_type", sizeof(prefix) - _len);
          CONFIG_GET_INT_BASE(conf, settings, uints.input_device_reservation_type[i], prefix);
       }
 
@@ -6716,7 +6716,7 @@ static bool config_load_file(global_t *global,
          path_mkdir(new_path);
 
       if (!*settings->paths.path_content_favorites)
-         strlcpy(settings->paths.directory_content_favorites, "default",
+         strlcpy_lit(settings->paths.directory_content_favorites, "default",
                sizeof(settings->paths.directory_content_favorites));
 
       if (     !*settings->paths.directory_content_favorites
@@ -6733,7 +6733,7 @@ static bool config_load_file(global_t *global,
                sizeof(settings->paths.path_content_favorites));
 
       if (!*settings->paths.path_content_history)
-         strlcpy(settings->paths.directory_content_history, "default",
+         strlcpy_lit(settings->paths.directory_content_history, "default",
                sizeof(settings->paths.directory_content_history));
 
       if (     !*settings->paths.directory_content_history
@@ -6750,7 +6750,7 @@ static bool config_load_file(global_t *global,
                sizeof(settings->paths.path_content_history));
 
       if (!*settings->paths.path_content_image_history)
-         strlcpy(settings->paths.directory_content_image_history, "default",
+         strlcpy_lit(settings->paths.directory_content_image_history, "default",
                sizeof(settings->paths.directory_content_image_history));
 
       if (     !*settings->paths.directory_content_image_history
@@ -6767,7 +6767,7 @@ static bool config_load_file(global_t *global,
                sizeof(settings->paths.path_content_image_history));
 
       if (*settings->paths.path_content_music_history)
-         strlcpy(settings->paths.directory_content_music_history, "default",
+         strlcpy_lit(settings->paths.directory_content_music_history, "default",
                sizeof(settings->paths.directory_content_music_history));
 
       if (     !*settings->paths.directory_content_music_history
@@ -6784,7 +6784,7 @@ static bool config_load_file(global_t *global,
                sizeof(settings->paths.path_content_music_history));
 
       if (!*settings->paths.path_content_video_history)
-         strlcpy(settings->paths.directory_content_video_history, "default",
+         strlcpy_lit(settings->paths.directory_content_video_history, "default",
                sizeof(settings->paths.directory_content_video_history));
 
       if (     !*settings->paths.directory_content_video_history
@@ -7795,16 +7795,16 @@ static void save_keybind_hat(config_file_t *conf, const char *key,
    switch (GET_HAT_DIR(bind->joykey))
    {
       case HAT_UP_MASK:
-         strlcpy(s + _len, "up", sizeof(s) - _len);
+         strlcpy_lit(s + _len, "up", sizeof(s) - _len);
          break;
       case HAT_DOWN_MASK:
-         strlcpy(s + _len, "down", sizeof(s) - _len);
+         strlcpy_lit(s + _len, "down", sizeof(s) - _len);
          break;
       case HAT_LEFT_MASK:
-         strlcpy(s + _len, "left", sizeof(s) - _len);
+         strlcpy_lit(s + _len, "left", sizeof(s) - _len);
          break;
       case HAT_RIGHT_MASK:
-         strlcpy(s + _len, "right", sizeof(s) - _len);
+         strlcpy_lit(s + _len, "right", sizeof(s) - _len);
          break;
       default:
          break;
@@ -7822,7 +7822,7 @@ static void save_keybind_joykey(config_file_t *conf,
    char key[64];
    size_t _len = fill_pathname_join_delim(key, prefix,
          base, '_', sizeof(key));
-   strlcpy(key + _len, "_btn", sizeof(key) - _len);
+   strlcpy_lit(key + _len, "_btn", sizeof(key) - _len);
 
    if (bind->joykey == NO_BTN)
    {
@@ -7843,10 +7843,10 @@ static void save_keybind_joykey_label(config_file_t *conf,
    char key[64];
    size_t _len = fill_pathname_join_delim(key, prefix,
          base, '_', sizeof(key));
-   _len += strlcpy(key + _len, "_btn", sizeof(key) - _len);
+   _len += strlcpy_lit(key + _len, "_btn", sizeof(key) - _len);
    if (label->joykey && *label->joykey)
    {
-      strlcpy(key + _len, "_label", sizeof(key) - _len);
+      strlcpy_lit(key + _len, "_label", sizeof(key) - _len);
       config_set_string(conf, key, label->joykey);
    }
 }
@@ -7860,7 +7860,7 @@ static void save_keybind_axis(config_file_t *conf,
    char key[64];
    char config[16];
    size_t _len = fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
-   strlcpy(key + _len, "_axis", sizeof(key) - _len);
+   strlcpy_lit(key + _len, "_axis", sizeof(key) - _len);
 
    if (bind->joyaxis == AXIS_NONE)
    {
@@ -7889,10 +7889,10 @@ static void save_keybind_axis_label(config_file_t *conf,
 {
    char key[64];
    size_t _len = fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
-   _len += strlcpy(key + _len, "_axis", sizeof(key) - _len);
+   _len += strlcpy_lit(key + _len, "_axis", sizeof(key) - _len);
    if (label->joyaxis && *label->joyaxis)
    {
-      strlcpy(key + _len, "_label", sizeof(key) - _len);
+      strlcpy_lit(key + _len, "_label", sizeof(key) - _len);
       config_set_string(conf, key, label->joyaxis);
    }
 }
@@ -7905,7 +7905,7 @@ static void save_keybind_mbutton(config_file_t *conf,
    char key[64];
    size_t _len = fill_pathname_join_delim(key, prefix,
       base, '_', sizeof(key));
-   strlcpy(key + _len, "_mbtn", sizeof(key) - _len);
+   strlcpy_lit(key + _len, "_mbtn", sizeof(key) - _len);
 
    switch (bind->mbutton)
    {
@@ -7949,7 +7949,7 @@ void input_config_get_prefix(char *s, char len, char user, bool meta)
    {
       /* Meta binds are only for the first user. */
       if (user == 0)
-         strlcpy(s, "input", len);
+         strlcpy_lit(s, "input", len);
    }
    else
       snprintf(s, len, "input_player%u", user + 1);
@@ -8152,7 +8152,7 @@ void config_get_autoconf_profile_filename(
    }
    /* Generate autoconfig file path */
    _len = strlcpy(s, sanitised_name, len);
-   strlcpy(s + _len, ".cfg", len - _len);
+   strlcpy_lit(s + _len, ".cfg", len - _len);
 }
 
 /**
@@ -8783,7 +8783,7 @@ bool config_save_file(const char *path)
 
       snprintf(formatted_number, sizeof(formatted_number), "%u", i + 1);
 
-      _len = strlcpy(cfg, "input_device_p",     sizeof(cfg));
+      _len = strlcpy_lit(cfg, "input_device_p",     sizeof(cfg));
       strlcpy(cfg + _len, formatted_number,     sizeof(cfg) - _len);
       if (   !minimal
           || settings->uints.input_device[i] != defaults->uints.input_device[i])
@@ -8791,31 +8791,31 @@ bool config_save_file(const char *path)
       else
          config_unset(conf, cfg);
 
-      _len  = strlcpy(cfg, "input_player",          sizeof(cfg));
+      _len  = strlcpy_lit(cfg, "input_player",          sizeof(cfg));
       _len += strlcpy(cfg + _len, formatted_number, sizeof(cfg) - _len);
 
-      strlcpy(cfg + _len, "_mouse_index",       sizeof(cfg) - _len);
+      strlcpy_lit(cfg + _len, "_mouse_index",       sizeof(cfg) - _len);
       if (   !minimal
           || settings->uints.input_mouse_index[i] != defaults->uints.input_mouse_index[i])
          config_set_int(conf, cfg, settings->uints.input_mouse_index[i]);
       else
          config_unset(conf, cfg);
 
-      strlcpy(cfg + _len, "_joypad_index",      sizeof(cfg) - _len);
+      strlcpy_lit(cfg + _len, "_joypad_index",      sizeof(cfg) - _len);
       if (   !minimal
           || settings->uints.input_joypad_index[i] != defaults->uints.input_joypad_index[i])
          config_set_int(conf, cfg, settings->uints.input_joypad_index[i]);
       else
          config_unset(conf, cfg);
 
-      strlcpy(cfg + _len, "_analog_dpad_mode",  sizeof(cfg) - _len);
+      strlcpy_lit(cfg + _len, "_analog_dpad_mode",  sizeof(cfg) - _len);
       if (   !minimal
           || settings->uints.input_analog_dpad_mode[i] != defaults->uints.input_analog_dpad_mode[i])
          config_set_int(conf, cfg, settings->uints.input_analog_dpad_mode[i]);
       else
          config_unset(conf, cfg);
 
-      strlcpy(cfg + _len, "_device_reservation_type",  sizeof(cfg) - _len);
+      strlcpy_lit(cfg + _len, "_device_reservation_type",  sizeof(cfg) - _len);
       if (   !minimal
           || settings->uints.input_device_reservation_type[i] != defaults->uints.input_device_reservation_type[i])
          config_set_int(conf, cfg, settings->uints.input_device_reservation_type[i]);
@@ -8851,7 +8851,7 @@ bool config_save_file(const char *path)
 #ifdef HAVE_NETWORKGAMEPAD
    {
       char tmp[64];
-      size_t _len = strlcpy(tmp, "network_remote_enable_user_p", sizeof(tmp));
+      size_t _len = strlcpy_lit(tmp, "network_remote_enable_user_p", sizeof(tmp));
       for (i = 0; i < MAX_USERS; i++)
       {
          snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
@@ -9372,19 +9372,19 @@ int8_t config_save_overrides(enum override_type type,
          if (settings->uints.input_device[i]
                != overrides->uints.input_device[i])
          {
-            size_t _len = strlcpy(cfg, "input_device_p", sizeof(cfg));
+            size_t _len = strlcpy_lit(cfg, "input_device_p", sizeof(cfg));
             strlcpy(cfg + _len, formatted_number, sizeof(cfg) - _len);
             config_set_int(conf, cfg, overrides->uints.input_device[i]);
             RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_device[i]);
          }
 
-         _len  = strlcpy(cfg, "input_player",          sizeof(cfg));
+         _len  = strlcpy_lit(cfg, "input_player",          sizeof(cfg));
          _len += strlcpy(cfg + _len, formatted_number, sizeof(cfg) - _len);
 
          if (settings->uints.input_mouse_index[i]
                != overrides->uints.input_mouse_index[i])
          {
-            strlcpy(cfg + _len, "_mouse_index",   sizeof(cfg) - _len);
+            strlcpy_lit(cfg + _len, "_mouse_index",   sizeof(cfg) - _len);
             config_set_int(conf, cfg, overrides->uints.input_mouse_index[i]);
             RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_mouse_index[i]);
          }
@@ -9392,7 +9392,7 @@ int8_t config_save_overrides(enum override_type type,
          if (settings->uints.input_joypad_index[i]
                != overrides->uints.input_joypad_index[i])
          {
-            strlcpy(cfg + _len, "_joypad_index",  sizeof(cfg) - _len);
+            strlcpy_lit(cfg + _len, "_joypad_index",  sizeof(cfg) - _len);
             config_set_int(conf, cfg, overrides->uints.input_joypad_index[i]);
             RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_joypad_index[i]);
          }
@@ -9400,7 +9400,7 @@ int8_t config_save_overrides(enum override_type type,
          if (settings->uints.input_device_reservation_type[i]
                != overrides->uints.input_device_reservation_type[i])
          {
-            strlcpy(cfg + _len, "_device_reservation_type", sizeof(cfg) - _len);
+            strlcpy_lit(cfg + _len, "_device_reservation_type", sizeof(cfg) - _len);
             config_set_int(conf, cfg, overrides->uints.input_device_reservation_type[i]);
             RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_device_reservation_type[i]);
          }
@@ -9608,14 +9608,14 @@ bool input_remapping_load_file(void *data, const char *path)
       char formatted_number[4];
       formatted_number[0] = '\0';
       snprintf(formatted_number, sizeof(formatted_number), "%u", i + 1);
-      _len       = strlcpy(prefix, "input_player",   sizeof(prefix));
+      _len       = strlcpy_lit(prefix, "input_player",   sizeof(prefix));
       strlcpy(prefix + _len, formatted_number, sizeof(prefix) - _len);
       _len       = strlcpy(s1, prefix, sizeof(s1));
-      strlcpy(s1 + _len, "_btn", sizeof(s1) - _len);
+      strlcpy_lit(s1 + _len, "_btn", sizeof(s1) - _len);
       _len       = strlcpy(s2, prefix, sizeof(s2));
-      strlcpy(s2 + _len, "_key", sizeof(s2) - _len);
+      strlcpy_lit(s2 + _len, "_key", sizeof(s2) - _len);
       _len       = strlcpy(s3, prefix, sizeof(s3));
-      strlcpy(s3 + _len, "_stk", sizeof(s3) - _len);
+      strlcpy_lit(s3 + _len, "_stk", sizeof(s3) - _len);
 
       for (j = 0; j < RARCH_ANALOG_BIND_LIST_END; j++)
       {
@@ -9700,15 +9700,15 @@ bool input_remapping_load_file(void *data, const char *path)
          }
       }
 
-      _len = strlcpy(s1, "input_libretro_device_p", sizeof(s1));
+      _len = strlcpy_lit(s1, "input_libretro_device_p", sizeof(s1));
       strlcpy(s1 + _len, formatted_number, sizeof(s1) - _len);
       CONFIG_GET_INT_BASE(conf, settings, uints.input_libretro_device[i], s1);
 
       _len = strlcpy(s1, prefix, sizeof(s1));
-      strlcpy(s1 + _len, "_analog_dpad_mode", sizeof(s1) - _len);
+      strlcpy_lit(s1 + _len, "_analog_dpad_mode", sizeof(s1) - _len);
       CONFIG_GET_INT_BASE(conf, settings, uints.input_analog_dpad_mode[i], s1);
 
-      _len = strlcpy(s1, "input_remap_port_p", sizeof(s1));
+      _len = strlcpy_lit(s1, "input_remap_port_p", sizeof(s1));
       strlcpy(s1 + _len, formatted_number, sizeof(s1) - _len);
       CONFIG_GET_INT_BASE(conf, settings, uints.input_remap_ports[i], s1);
    }
@@ -9814,14 +9814,14 @@ bool input_remapping_save_file(const char *path)
          RARCH_ERR("[Config] Unexpectedly high number of users.");
          break;
       }
-      _len       = strlcpy(prefix, "input_player",   sizeof(prefix));
+      _len       = strlcpy_lit(prefix, "input_player",   sizeof(prefix));
       strlcpy(prefix + _len, formatted_number, sizeof(prefix) - _len);
       _len       = strlcpy(s1, prefix, sizeof(s1));
-      strlcpy(s1 + _len, "_btn", sizeof(s1) - _len);
+      strlcpy_lit(s1 + _len, "_btn", sizeof(s1) - _len);
       _len       = strlcpy(s2, prefix, sizeof(s2));
-      strlcpy(s2 + _len, "_key", sizeof(s2) - _len);
+      strlcpy_lit(s2 + _len, "_key", sizeof(s2) - _len);
       _len       = strlcpy(s3, prefix, sizeof(s3));
-      strlcpy(s3 + _len, "_stk", sizeof(s3) - _len);
+      strlcpy_lit(s3 + _len, "_stk", sizeof(s3) - _len);
 
       for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
       {
@@ -9901,15 +9901,15 @@ bool input_remapping_save_file(const char *path)
                   settings->uints.input_keymapper_ids[i][j]);
       }
 
-      _len = strlcpy(s1, "input_libretro_device_p", sizeof(s1));
+      _len = strlcpy_lit(s1, "input_libretro_device_p", sizeof(s1));
       strlcpy(s1 + _len, formatted_number, sizeof(s1) - _len);
       config_set_int(conf, s1, input_config_get_device(i));
 
       _len = strlcpy(s1, prefix, sizeof(s1));
-      strlcpy(s1 + _len, "_analog_dpad_mode", sizeof(s1) - _len);
+      strlcpy_lit(s1 + _len, "_analog_dpad_mode", sizeof(s1) - _len);
       config_set_int(conf, s1, settings->uints.input_analog_dpad_mode[i]);
 
-      _len = strlcpy(s1, "input_remap_port_p", sizeof(s1));
+      _len = strlcpy_lit(s1, "input_remap_port_p", sizeof(s1));
       strlcpy(s1 + _len, formatted_number, sizeof(s1) - _len);
       config_set_int(conf, s1, settings->uints.input_remap_ports[i]);
    }

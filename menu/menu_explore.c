@@ -463,7 +463,7 @@ static void explore_load_icons(explore_state_t *state)
       __len       += strlcpy(path + _len,
                  state->by[EXPLORE_BY_SYSTEM][i]->str,
                  sizeof(path)     - _len);
-      strlcpy(path + __len, ".png", sizeof(path) - __len);
+      strlcpy_lit(path + __len, ".png", sizeof(path) - __len);
       if (!path_is_valid(path))
          continue;
 
@@ -1104,7 +1104,7 @@ static void explore_action_saveview_complete(void *userdata, const char *name)
    settings               = config_get_ptr();
    _len                   = fill_pathname_join_special(lvwpath,
          settings->paths.directory_playlist, name, sizeof(lvwpath));
-   strlcpy(lvwpath + _len, ".lvw", sizeof(lvwpath) - _len);
+   strlcpy_lit(lvwpath + _len, ".lvw", sizeof(lvwpath) - _len);
 
    if (filestream_exists(lvwpath))
    {

@@ -867,7 +867,7 @@ static int action_bind_sublabel_subsystem_load(
       {
          if (_len + 1 >= sizeof(buf))
             break;
-         _len += strlcpy(buf + _len, "\n", sizeof(buf) - _len);
+         _len += strlcpy_lit(buf + _len, "\n", sizeof(buf) - _len);
       }
    }
    if (*buf)
@@ -1061,9 +1061,9 @@ static int action_bind_sublabel_netplay_room(file_list_t *list,
             (unsigned long)(unsigned)room->gamecrc);
    else
    {
-      _len += strlcpy(s + _len, "(", len - _len);
+      _len += strlcpy_lit(s + _len, "(", len - _len);
       _len += strlcpy(s + _len, room->subsystem_name, len - _len);
-      _len += strlcpy(s + _len, ")\n", len - _len);
+      _len += strlcpy_lit(s + _len, ")\n", len - _len);
    }
 
    if (room->spectator_count > 0)
@@ -1391,7 +1391,7 @@ static int action_bind_sublabel_core_updater_entry(
       {
          _len += strlcpy(s + _len, entry->licenses_list->elems[i].data, len - _len);
          if ((i + 1) < entry->licenses_list->size)
-            _len += strlcpy(s + _len, ", ", len - _len);
+            _len += strlcpy_lit(s + _len, ", ", len - _len);
       }
    }
    else /* No license found - set to N/A */

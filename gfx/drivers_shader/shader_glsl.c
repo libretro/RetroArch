@@ -748,25 +748,25 @@ static void gl_glsl_find_uniforms_frame(glsl_shader_data_t *glsl,
 
    if (frame->texture < 0)
    {
-      strlcpy(uni + _len, "Texture", sizeof(uni) - _len);
+      strlcpy_lit(uni + _len, "Texture", sizeof(uni) - _len);
       frame->texture = gl_glsl_get_uniform(glsl, prog, uni);
    }
 
    if (frame->tex_coord < 0)
    {
-      strlcpy(uni + _len, "TexCoord", sizeof(uni) - _len);
+      strlcpy_lit(uni + _len, "TexCoord", sizeof(uni) - _len);
       frame->tex_coord = gl_glsl_get_attrib(glsl, prog, uni);
    }
 
    if (frame->input_size < 0)
    {
-      strlcpy(uni + _len, "InputSize",   sizeof(uni) - _len);
+      strlcpy_lit(uni + _len, "InputSize",   sizeof(uni) - _len);
       frame->input_size = gl_glsl_get_uniform(glsl, prog, uni);
    }
 
    if (frame->texture_size < 0)
    {
-      strlcpy(uni + _len, "TextureSize", sizeof(uni) - _len);
+      strlcpy_lit(uni + _len, "TextureSize", sizeof(uni) - _len);
       frame->texture_size = gl_glsl_get_uniform(glsl, prog, uni);
    }
 

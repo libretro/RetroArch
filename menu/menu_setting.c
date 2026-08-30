@@ -1130,7 +1130,7 @@ static size_t setting_get_string_representation_int_gpu_index(
             && list->elems[*setting->value.target.integer].data
             && *list->elems[*setting->value.target.integer].data)
       {
-         _len += strlcpy(s + _len, " - ", len - _len);
+         _len += strlcpy_lit(s + _len, " - ", len - _len);
          _len += strlcpy(s + _len, list->elems[*setting->value.target.integer].data, len - _len);
       }
    }
@@ -3090,7 +3090,7 @@ static int setting_string_action_start_audio_device(rarch_setting_t *setting)
    if (!setting)
       return -1;
 
-   strlcpy(setting->value.target.string, "", setting->size);
+   strlcpy_lit(setting->value.target.string, "", setting->size);
 
    command_event(CMD_EVENT_AUDIO_REINIT, NULL);
    return 0;
@@ -3129,7 +3129,7 @@ static int setting_string_action_start_microphone_device(rarch_setting_t *settin
    if (!setting)
       return -1;
 
-   strlcpy(setting->value.target.string, "", setting->size);
+   strlcpy_lit(setting->value.target.string, "", setting->size);
 
    command_event(CMD_EVENT_MICROPHONE_REINIT, NULL);
    return 0;
@@ -3359,7 +3359,7 @@ static size_t setting_get_string_representation_state_slot(
    if (!setting)
       return 0;
    if (*setting->value.target.integer == -1)
-      return strlcpy(s, "Auto", len);
+      return strlcpy_lit(s, "Auto", len);
    return snprintf(s, len, "%d", *setting->value.target.integer);
 }
 
@@ -3395,9 +3395,9 @@ static size_t setting_get_string_representation_password(
    {
       if (   setting->value.target.string
           && setting->value.target.string[0] != '\0')
-         return strlcpy(s, "********", len);
+         return strlcpy_lit(s, "********", len);
       if (config_get_ptr()->arrays.cheevos_token[0])
-         return strlcpy(s, "********", len);
+         return strlcpy_lit(s, "********", len);
       *setting->value.target.string = '\0';
    }
    return 0;
@@ -3415,11 +3415,11 @@ static size_t setting_get_string_representation_uint_keyboard_gamepad_mapping_ty
          case 0:
             return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
          case 1:
-            return strlcpy(s, "iPega PG-9017", len);
+            return strlcpy_lit(s, "iPega PG-9017", len);
          case 2:
-            return strlcpy(s, "8-bitty", len);
+            return strlcpy_lit(s, "8-bitty", len);
          case 3:
-            return strlcpy(s, "SNES30 8bitdo", len);
+            return strlcpy_lit(s, "SNES30 8bitdo", len);
       }
    }
    return 0;
@@ -3890,11 +3890,11 @@ static size_t setting_get_string_representation_uint_menu_timedate_date_separato
       switch (*setting->value.target.unsigned_integer)
       {
          case MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN:
-            return strlcpy(s, "'-'", len);
+            return strlcpy_lit(s, "'-'", len);
          case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
-            return strlcpy(s, "'/'", len);
+            return strlcpy_lit(s, "'/'", len);
          case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
-            return strlcpy(s, "'.'", len);
+            return strlcpy_lit(s, "'.'", len);
       }
    }
    return 0;
@@ -4460,9 +4460,9 @@ static size_t setting_get_string_representation_uint_menu_xmb_animation_move_up_
       switch (*setting->value.target.unsigned_integer)
       {
          case 0:
-            return strlcpy(s, "Easing Out Quad", len);
+            return strlcpy_lit(s, "Easing Out Quad", len);
          case 1:
-            return strlcpy(s, "Easing Out Expo", len);
+            return strlcpy_lit(s, "Easing Out Expo", len);
          case 2:
             return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
       }
@@ -4478,13 +4478,13 @@ static size_t setting_get_string_representation_uint_menu_xmb_animation_opening_
       switch (*setting->value.target.unsigned_integer)
       {
          case 0:
-            return strlcpy(s, "Easing Out Quad", len);
+            return strlcpy_lit(s, "Easing Out Quad", len);
          case 1:
-            return strlcpy(s, "Easing Out Circ", len);
+            return strlcpy_lit(s, "Easing Out Circ", len);
          case 2:
-            return strlcpy(s, "Easing Out Expo", len);
+            return strlcpy_lit(s, "Easing Out Expo", len);
          case 3:
-            return strlcpy(s, "Easing Out Bounce", len);
+            return strlcpy_lit(s, "Easing Out Bounce", len);
       }
    }
    return 0;
@@ -4498,11 +4498,11 @@ static size_t setting_get_string_representation_uint_menu_xmb_animation_horizont
       switch (*setting->value.target.unsigned_integer)
       {
          case 0:
-            return strlcpy(s, "Easing Out Quad", len);
+            return strlcpy_lit(s, "Easing Out Quad", len);
          case 1:
-            return strlcpy(s, "Easing In Sine", len);
+            return strlcpy_lit(s, "Easing In Sine", len);
          case 2:
-            return strlcpy(s, "Easing Out Bounce", len);
+            return strlcpy_lit(s, "Easing Out Bounce", len);
       }
    }
    return 0;
@@ -4566,11 +4566,11 @@ static size_t setting_get_string_representation_uint_xmb_layout(
       switch (*setting->value.target.unsigned_integer)
       {
          case 0:
-            return strlcpy(s, "Auto", len);
+            return strlcpy_lit(s, "Auto", len);
          case 1:
-            return strlcpy(s, "Console", len);
+            return strlcpy_lit(s, "Console", len);
          case 2:
-            return strlcpy(s, "Handheld", len);
+            return strlcpy_lit(s, "Handheld", len);
       }
    }
    return 0;
@@ -5225,7 +5225,7 @@ static size_t setting_get_string_representation_uint_video_monitor_index(
    if (setting && *setting->value.target.unsigned_integer)
       return snprintf(s, len, "%u",
             *setting->value.target.unsigned_integer);
-   return strlcpy(s, "0 (Auto)", len);
+   return strlcpy_lit(s, "0 (Auto)", len);
 }
 
 static size_t setting_get_string_representation_uint_custom_vp_width(
@@ -5296,22 +5296,22 @@ static size_t setting_get_string_representation_uint_audio_wasapi_sh_buffer_leng
    {
       case WASAPI_SH_BUFFER_AUDIO_LATENCY:
          /* TODO/FIXME - localize */
-         _len += strlcpy(s + _len, "Audio Latency", len - _len);
+         _len += strlcpy_lit(s + _len, "Audio Latency", len - _len);
          break;
       case WASAPI_SH_BUFFER_DEVICE_PERIOD:
          /* TODO/FIXME - localize */
-         _len += strlcpy(s + _len, "Device Period", len - _len);
+         _len += strlcpy_lit(s + _len, "Device Period", len - _len);
          break;
       case WASAPI_SH_BUFFER_CLIENT_BUFFER:
          /* TODO/FIXME - localize */
-         _len += strlcpy(s + _len, "Client Buffer", len - _len);
+         _len += strlcpy_lit(s + _len, "Client Buffer", len - _len);
          break;
       default:
          _len += snprintf(s + _len, len - _len, "%.1f ms",
                (float)*setting->value.target.integer * 1000 / settings->uints.audio_output_sample_rate);
          break;
    }
-   _len += strlcpy(s + _len, ")", len - _len);
+   _len += strlcpy_lit(s + _len, ")", len - _len);
    return _len;
 }
 
@@ -5326,7 +5326,7 @@ static size_t setting_get_string_representation_uint_microphone_wasapi_sh_buffer
       return snprintf(s, len, "%u (%.1f ms)",
             *setting->value.target.integer,
             (float)*setting->value.target.integer * 1000 / settings->uints.audio_output_sample_rate);
-   return strlcpy(s, "Auto", len);
+   return strlcpy_lit(s, "Auto", len);
 }
 #endif
 #endif
@@ -5349,9 +5349,9 @@ static size_t setting_get_string_representation_crt_switch_resolution_super(
    if (!setting)
       return 0;
    if (*setting->value.target.unsigned_integer == 0)
-      return strlcpy(s, "NATIVE", len);
+      return strlcpy_lit(s, "NATIVE", len);
    else if (*setting->value.target.unsigned_integer == 1)
-      return strlcpy(s, "DYNAMIC", len);
+      return strlcpy_lit(s, "DYNAMIC", len);
    return snprintf(s, len, "%d", *setting->value.target.unsigned_integer);
 }
 
@@ -6257,7 +6257,7 @@ static int setting_string_action_left_audio_device(
       audio_device_index = (int)(ptr->size - 1);
 
    if (audio_device_index < 0)
-      strlcpy(setting->value.target.string,
+      strlcpy_lit(setting->value.target.string,
             "", setting->size);
    else
       strlcpy(setting->value.target.string,
@@ -6290,7 +6290,7 @@ static int setting_string_action_left_microphone_device(
       mic_device_index = (int)(ptr->size - 1);
 
    if (mic_device_index < 0)
-      strlcpy(setting->value.target.string,
+      strlcpy_lit(setting->value.target.string,
             "", setting->size);
    else
       strlcpy(setting->value.target.string,
@@ -6575,7 +6575,7 @@ static int setting_string_action_right_audio_device(
       audio_device_index = -1;
 
    if (audio_device_index < 0)
-      strlcpy(setting->value.target.string,
+      strlcpy_lit(setting->value.target.string,
             "", setting->size);
    else
       strlcpy(setting->value.target.string,
@@ -6607,7 +6607,7 @@ static int setting_string_action_right_microphone_device(
       mic_device_index = -1;
 
    if (mic_device_index < 0)
-      strlcpy(setting->value.target.string,
+      strlcpy_lit(setting->value.target.string,
             "", setting->size);
    else
       strlcpy(setting->value.target.string,
@@ -7047,13 +7047,13 @@ static size_t setting_get_string_representation_uint_crt_switch_resolutions(
          case CRT_SWITCH_NONE:
             return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
          case CRT_SWITCH_15KHZ:
-            return strlcpy(s, "15 KHz", len);
+            return strlcpy_lit(s, "15 KHz", len);
          case CRT_SWITCH_31KHZ:
-            return strlcpy(s, "31 KHz, Standard", len);
+            return strlcpy_lit(s, "31 KHz, Standard", len);
          case CRT_SWITCH_32_120:
-            return strlcpy(s, "31 KHz, 120Hz", len);
+            return strlcpy_lit(s, "31 KHz, 120Hz", len);
          case CRT_SWITCH_INI:
-            return strlcpy(s, "INI", len);
+            return strlcpy_lit(s, "INI", len);
       }
    }
    return 0;
@@ -7593,7 +7593,7 @@ static size_t setting_get_string_representation_uint_quit_on_close_content(
          case QUIT_ON_CLOSE_CONTENT_ENABLED:
             return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
          case QUIT_ON_CLOSE_CONTENT_CLI:
-            return strlcpy(s, "CLI", len);
+            return strlcpy_lit(s, "CLI", len);
       }
    }
    return 0;
@@ -7607,18 +7607,18 @@ static size_t setting_get_string_representation_uint_video_scale_integer_axis(
       switch (*setting->value.target.unsigned_integer)
       {
          case VIDEO_SCALE_INTEGER_AXIS_Y_X:
-            return strlcpy(s, "Y + X", len);
+            return strlcpy_lit(s, "Y + X", len);
          case VIDEO_SCALE_INTEGER_AXIS_Y_XHALF:
-            return strlcpy(s, "Y + X.5", len);
+            return strlcpy_lit(s, "Y + X.5", len);
          case VIDEO_SCALE_INTEGER_AXIS_YHALF_XHALF:
-            return strlcpy(s, "Y.5 + X.5", len);
+            return strlcpy_lit(s, "Y.5 + X.5", len);
          case VIDEO_SCALE_INTEGER_AXIS_X:
-            return strlcpy(s, "X", len);
+            return strlcpy_lit(s, "X", len);
          case VIDEO_SCALE_INTEGER_AXIS_XHALF:
-            return strlcpy(s, "X.5", len);
+            return strlcpy_lit(s, "X.5", len);
          case VIDEO_SCALE_INTEGER_AXIS_Y:
          default:
-            return strlcpy(s, "Y", len);
+            return strlcpy_lit(s, "Y", len);
       }
    }
    return 0;
@@ -8624,11 +8624,11 @@ static size_t setting_get_string_representation_smb_auth(
    switch (val)
    {
       case RETRO_SMB2_SEC_NTLMSSP: /* SMB2_SEC_NTLMSSP */
-         return strlcpy(s, "NTLMSSP", len);
+         return strlcpy_lit(s, "NTLMSSP", len);
       case RETRO_SMB2_SEC_KRB5: /* SMB2_SEC_KRB5 */
-         return strlcpy(s, "Kerberos", len);
+         return strlcpy_lit(s, "Kerberos", len);
       default:
-         return strlcpy(s, "KRB if available, NTLM if not", len);
+         return strlcpy_lit(s, "KRB if available, NTLM if not", len);
    }
 }
 

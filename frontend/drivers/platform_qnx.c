@@ -73,10 +73,10 @@ static void frontend_qnx_get_env_settings(int *argc, char *argv[],
    }
    else
    {
-      strlcpy(assets_path, "app/native/assets", sizeof(assets_path));
-      strlcpy(data_path, "data", sizeof(data_path));
-      strlcpy(user_path, "shared/misc/retroarch", sizeof(user_path));
-      strlcpy(tmp_path, "tmp", sizeof(user_path));
+      strlcpy_lit(assets_path, "app/native/assets", sizeof(assets_path));
+      strlcpy_lit(data_path, "data", sizeof(data_path));
+      strlcpy_lit(user_path, "shared/misc/retroarch", sizeof(user_path));
+      strlcpy_lit(tmp_path, "tmp", sizeof(user_path));
    }
 
    /* app data */
@@ -151,7 +151,7 @@ static void frontend_qnx_get_env_settings(int *argc, char *argv[],
    }
 
    /* set GLUI as default menu */
-   strlcpy(g_defaults.settings_menu, "glui", sizeof(g_defaults.settings_menu));
+   strlcpy_lit(g_defaults.settings_menu, "glui", sizeof(g_defaults.settings_menu));
 
 #ifndef IS_SALAMANDER
    dir_check_defaults("custom.ini");

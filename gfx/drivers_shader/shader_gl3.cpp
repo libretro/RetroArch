@@ -1204,8 +1204,8 @@ void Pass::reflect_parameter_array(const char *name, std::vector<slang_texture_s
          int vert, frag;
          char vert_n[256];
          char frag_n[256];
-         size_t _len  = strlcpy(vert_n, "RARCH_UBO_VERTEX_INSTANCE.",   sizeof(vert_n));
-         size_t _len2 = strlcpy(frag_n, "RARCH_UBO_FRAGMENT_INSTANCE.", sizeof(frag_n));
+         size_t _len  = strlcpy_lit(vert_n, "RARCH_UBO_VERTEX_INSTANCE.",   sizeof(vert_n));
+         size_t _len2 = strlcpy_lit(frag_n, "RARCH_UBO_FRAGMENT_INSTANCE.", sizeof(frag_n));
          strlcpy(vert_n + _len,  n, sizeof(vert_n) - _len);
          strlcpy(frag_n + _len2, n, sizeof(frag_n) - _len2);
          vert = glGetUniformLocation(pipeline, vert_n);
@@ -1222,8 +1222,8 @@ void Pass::reflect_parameter_array(const char *name, std::vector<slang_texture_s
          int vert, frag;
          char vert_n[256];
          char frag_n[256];
-         size_t _len  = strlcpy(vert_n, "RARCH_PUSH_VERTEX_INSTANCE.",   sizeof(vert_n));
-         size_t _len2 = strlcpy(frag_n, "RARCH_PUSH_FRAGMENT_INSTANCE.", sizeof(frag_n));
+         size_t _len  = strlcpy_lit(vert_n, "RARCH_PUSH_VERTEX_INSTANCE.",   sizeof(vert_n));
+         size_t _len2 = strlcpy_lit(frag_n, "RARCH_PUSH_FRAGMENT_INSTANCE.", sizeof(frag_n));
          strlcpy(vert_n + _len,  n, sizeof(vert_n) - _len);
          strlcpy(frag_n + _len2, n, sizeof(frag_n) - _len2);
          vert = glGetUniformLocation(pipeline, vert_n);

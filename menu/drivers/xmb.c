@@ -1800,7 +1800,7 @@ static void xmb_path_dynamic_wallpaper(xmb_handle_t *xmb, char *s, size_t len)
                dir_dynamic_wallpapers,
                xmb->title_name,
                len);
-      strlcpy(s + _len, ".png", len - _len);
+      strlcpy_lit(s + _len, ".png", len - _len);
    }
 
    if (s && *s && path_is_valid(s))
@@ -3690,20 +3690,20 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
                sizeof(sysname));
          __len   = fill_pathname_join_special(texturepath, iconpath, sysname,
                sizeof(texturepath));
-         strlcpy(texturepath + __len, ".png", sizeof(texturepath) - __len);
+         strlcpy_lit(texturepath + __len, ".png", sizeof(texturepath) - __len);
 
          if (!path_is_valid(texturepath))
          {
             __len  = fill_pathname_join_special(texturepath, iconpath, "default",
                   sizeof(texturepath));
-            strlcpy(texturepath + __len, ".png", sizeof(texturepath) - __len);
+            strlcpy_lit(texturepath + __len, ".png", sizeof(texturepath) - __len);
          }
 
          gfx_display_load_icon(texturepath, supports_rgba,
                &node->icon, xmb_icon_load_gen,
                &xmb_icon_load_gen);
 
-         strlcpy(sysname + syslen, "-content.png", sizeof(sysname) - syslen);
+         strlcpy_lit(sysname + syslen, "-content.png", sizeof(sysname) - syslen);
          fill_pathname_join_special(texturepath, iconpath, sysname,
                sizeof(texturepath));
 

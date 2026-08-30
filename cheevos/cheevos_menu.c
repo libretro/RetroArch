@@ -65,7 +65,7 @@ size_t rcheevos_menu_get_state(unsigned menu_offset, char *s, size_t len)
             _len += strlcpy(s + _len, msg_hash_to_str(menuitem->state_label_idx), len - _len);
             if (cheevo->measured_progress[0])
             {
-               _len += strlcpy(s + _len, " - ", len - _len);
+               _len += strlcpy_lit(s + _len, " - ", len - _len);
                _len += strlcpy(s + _len, cheevo->measured_progress, len - _len);
             }
          }
@@ -619,7 +619,7 @@ static void rcheevos_get_local_badge_filename(char badge_file[], size_t badge_fi
 {
    size_t _len = strlcpy(badge_file, badge, badge_file_size);
    if (locked)
-      _len += strlcpy(badge_file + _len, "_lock", badge_file_size - _len);
+      _len += strlcpy_lit(badge_file + _len, "_lock", badge_file_size - _len);
    strlcpy(badge_file + _len, FILE_PATH_PNG_EXTENSION, badge_file_size - _len);
 }
 

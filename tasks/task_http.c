@@ -546,7 +546,7 @@ void* task_push_webdav_put(const char *url,
    if (!(conn = net_http_connection_new(url, "PUT", NULL)))
       return NULL;
 
-   _len = strlcpy(expect, "Expect: 100-continue\r\n", sizeof(expect));
+   _len = strlcpy_lit(expect, "Expect: 100-continue\r\n", sizeof(expect));
    if (headers)
    {
       strlcpy(expect + _len, headers, sizeof(expect) - _len);
@@ -591,9 +591,9 @@ void *task_push_webdav_move(const char *url,
    if (!(conn = net_http_connection_new(url, "MOVE", NULL)))
       return NULL;
 
-   _len  = strlcpy(dest_header, "Destination: ", sizeof(dest_header));
+   _len  = strlcpy_lit(dest_header, "Destination: ", sizeof(dest_header));
    _len += strlcpy(dest_header + _len, dest,   sizeof(dest_header) - _len);
-   _len += strlcpy(dest_header + _len, "\r\n", sizeof(dest_header) - _len);
+   _len += strlcpy_lit(dest_header + _len, "\r\n", sizeof(dest_header) - _len);
 
    if (headers)
       strlcpy(dest_header + _len, headers, sizeof(dest_header) - _len);

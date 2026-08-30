@@ -1384,7 +1384,7 @@ static bool http_translate(
          {
             new_ai_service_url[  _len] = separator;
             new_ai_service_url[++_len] = '\0';
-            _len += strlcpy(new_ai_service_url + _len,
+            _len += strlcpy_lit(new_ai_service_url + _len,
                   "source_lang=",
                   sizeof(new_ai_service_url)   - _len);
             _len += strlcpy(new_ai_service_url + _len,
@@ -1398,7 +1398,7 @@ static bool http_translate(
          {
             new_ai_service_url[  _len] = separator;
             new_ai_service_url[++_len] = '\0';
-            _len += strlcpy(new_ai_service_url + _len,
+            _len += strlcpy_lit(new_ai_service_url + _len,
                   "target_lang=",
                   sizeof(new_ai_service_url)   - _len);
             _len += strlcpy(new_ai_service_url + _len,
@@ -1414,34 +1414,34 @@ static bool http_translate(
 
             new_ai_service_url[  _len] = separator;
             new_ai_service_url[++_len] = '\0';
-            _len += strlcpy(new_ai_service_url          + _len,
+            _len += strlcpy_lit(new_ai_service_url          + _len,
                   "output=",
                   sizeof(new_ai_service_url)            - _len);
 
             switch (mode)
             {
                case 2:
-                  strlcpy(new_ai_service_url       + _len,
+                  strlcpy_lit(new_ai_service_url       + _len,
                         "text",
                         sizeof(new_ai_service_url) - _len);
                   break;
                case 1:
                case 3:
-                  _len += strlcpy(new_ai_service_url    + _len,
+                  _len += strlcpy_lit(new_ai_service_url    + _len,
                         "sound,wav",
                         sizeof(new_ai_service_url)      - _len);
                   if (mode == 1)
                      break;
                   /* fall-through intentional for mode == 3 */
                case 0:
-                  _len += strlcpy(new_ai_service_url    + _len,
+                  _len += strlcpy_lit(new_ai_service_url    + _len,
                         "image,png",
                         sizeof(new_ai_service_url)      - _len);
 #ifdef HAVE_GFX_WIDGETS
                   if (     video_st->poke
                         && video_st->poke->load_texture
                         && video_st->poke->unload_texture)
-                     strlcpy(new_ai_service_url       + _len,
+                     strlcpy_lit(new_ai_service_url       + _len,
                            ",png-a",
                            sizeof(new_ai_service_url) - _len);
 #endif

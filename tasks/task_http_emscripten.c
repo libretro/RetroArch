@@ -621,9 +621,9 @@ void *task_push_webdav_move(const char *url,
    size_t _len;
    char dest_header[PATH_MAX_LENGTH + 512];
 
-   _len  = strlcpy(dest_header, "Destination: ", sizeof(dest_header));
+   _len  = strlcpy_lit(dest_header, "Destination: ", sizeof(dest_header));
    _len += strlcpy(dest_header + _len, dest,   sizeof(dest_header) - _len);
-   _len += strlcpy(dest_header + _len, "\r\n", sizeof(dest_header) - _len);
+   _len += strlcpy_lit(dest_header + _len, "\r\n", sizeof(dest_header) - _len);
 
    if (headers)
       strlcpy(dest_header + _len, headers, sizeof(dest_header) - _len);
@@ -724,9 +724,9 @@ void *task_push_http_transfer_with_content(const char *url,
    hdr[0] = '\0';
    if (content_type && *content_type)
    {
-      _len += strlcpy(hdr + _len, "Content-Type: ", sizeof(hdr) - _len);
+      _len += strlcpy_lit(hdr + _len, "Content-Type: ", sizeof(hdr) - _len);
       _len += strlcpy(hdr + _len, content_type,     sizeof(hdr) - _len);
-      _len += strlcpy(hdr + _len, "\r\n",           sizeof(hdr) - _len);
+      _len += strlcpy_lit(hdr + _len, "\r\n",           sizeof(hdr) - _len);
    }
    if (headers)
       strlcpy(hdr + _len, headers, sizeof(hdr) - _len);

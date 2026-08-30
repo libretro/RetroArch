@@ -460,7 +460,7 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
        * so use build number to insert version label */
       if (!server && vi.dwMajorVersion == 10 && vi.dwBuildNumber == 10240
             && !*display_version && !*release_id)
-         strlcpy(release_id, "1507", sizeof(release_id));
+         strlcpy_lit(release_id, "1507", sizeof(release_id));
    }
 
    /* Detect Windows version from build number, NT version, or platform ID.
@@ -475,15 +475,15 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
          if (server)
          {
             if (vi.dwBuildNumber >= 26040)
-               _len = strlcpy(s, "Windows Server 2025", len);
+               _len = strlcpy_lit(s, "Windows Server 2025", len);
             else if (vi.dwBuildNumber >= 20201)
-               _len = strlcpy(s, "Windows Server 2022", len);
+               _len = strlcpy_lit(s, "Windows Server 2022", len);
             else if (vi.dwBuildNumber >= 17623)
-               _len = strlcpy(s, "Windows Server 2019", len);
+               _len = strlcpy_lit(s, "Windows Server 2019", len);
             /* Early Server 2016 preview builds shared build numbers with
              * Windows 10 previews, so 10074 is used as a safe cutoff here */
             else if (vi.dwBuildNumber >= 10074)
-               _len = strlcpy(s, "Windows Server 2016", len);
+               _len = strlcpy_lit(s, "Windows Server 2016", len);
             else
                _len = snprintf(s, len, "Windows Server NT kernel %lu.%lu",
                      (unsigned long)vi.dwMajorVersion, (unsigned long)vi.dwMinorVersion);
@@ -492,10 +492,10 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
          {
             /* Detect Windows 11 starting from an early leaked preview build */
             if (vi.dwBuildNumber >= 21996)
-               _len = strlcpy(s, "Windows 11", len);
+               _len = strlcpy_lit(s, "Windows 11", len);
             /* Detect Windows 10 from the first NT 10.0-based preview build */
             else if (vi.dwBuildNumber >= 9888)
-               _len = strlcpy(s, "Windows 10", len);
+               _len = strlcpy_lit(s, "Windows 10", len);
             else
                _len = snprintf(s, len, "Windows NT kernel %lu.%lu",
                      (unsigned long)vi.dwMajorVersion, (unsigned long)vi.dwMinorVersion);
@@ -540,22 +540,22 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
             case 2:
                if (server || win32_is_server_from_registry())
                {
-                  _len = strlcpy(s, "Windows Server 2003", len);
+                  _len = strlcpy_lit(s, "Windows Server 2003", len);
                   if (GetSystemMetrics(SM_SERVERR2))
-                     _len += strlcpy(s + _len, " R2", len - _len);
+                     _len += strlcpy_lit(s + _len, " R2", len - _len);
                }
                else
                {
                   /* XP "x64 Edition" is NT 5.2 (XP is 5.1) and only ever had one
                    * edition, making it safe to use the full product name here */
-                  _len = strlcpy(s, "Windows XP Professional x64 Edition", len);
+                  _len = strlcpy_lit(s, "Windows XP Professional x64 Edition", len);
                }
                break;
             case 1:
-               _len = strlcpy(s, "Windows XP", len);
+               _len = strlcpy_lit(s, "Windows XP", len);
                break;
             case 0:
-               _len = strlcpy(s, "Windows 2000", len);
+               _len = strlcpy_lit(s, "Windows 2000", len);
                break;
             default:
                _len = snprintf(s, len, "Windows NT kernel %lu.%lu",
@@ -569,24 +569,24 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
          {
             case 0:
                if (vi.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS)
-                  _len = strlcpy(s, "Windows 95", len);
+                  _len = strlcpy_lit(s, "Windows 95", len);
                else if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT)
-                  _len = strlcpy(s, "Windows NT 4.0", len);
+                  _len = strlcpy_lit(s, "Windows NT 4.0", len);
                else
-                  _len = strlcpy(s, "Unknown", len);
+                  _len = strlcpy_lit(s, "Unknown", len);
                break;
             case 90:
                /* Apparently it's not "ME". Official naming always uses "Me" */
-               _len = strlcpy(s, "Windows Me", len);
+               _len = strlcpy_lit(s, "Windows Me", len);
                break;
             case 10:
             {
                DWORD win98_build;
                win98_build = (DWORD)(LOWORD(vi.dwBuildNumber));
-               _len = strlcpy(s, "Windows 98", len);
+               _len = strlcpy_lit(s, "Windows 98", len);
                /* 98/98 SE are both Win9x 4.10, so detect SE by build number */
                if (win98_build >= 2222)
-                  _len += strlcpy(s + _len, " Second Edition", len - _len);
+                  _len += strlcpy_lit(s + _len, " Second Edition", len - _len);
                break;
             }
             default:
@@ -612,15 +612,15 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
    {
       if (*display_version)
       {
-         _len += strlcpy(s + _len, " (", len - _len);
+         _len += strlcpy_lit(s + _len, " (", len - _len);
          _len += strlcpy(s + _len, display_version, len - _len);
-         _len += strlcpy(s + _len, ")", len - _len);
+         _len += strlcpy_lit(s + _len, ")", len - _len);
       }
       else if (*release_id)
       {
-         _len += strlcpy(s + _len, " (", len - _len);
+         _len += strlcpy_lit(s + _len, " (", len - _len);
          _len += strlcpy(s + _len, release_id, len - _len);
-         _len += strlcpy(s + _len, ")", len - _len);
+         _len += strlcpy_lit(s + _len, ")", len - _len);
       }
    }
    /* Hide x86/x64 for XP x64 ("x64" is already shown in the OS name) 
@@ -630,16 +630,16 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
              (vi.dwMajorVersion == 5 && vi.dwMinorVersion >= 1))
          && !(vi.dwMajorVersion == 5 && vi.dwMinorVersion == 2))
    {
-      _len += strlcpy(s + _len, " ",  len - _len);
+      _len += strlcpy_lit(s + _len, " ",  len - _len);
       _len += strlcpy(s + _len, arch, len - _len);
    }
 
-   _len += strlcpy(s + _len, " - Build ", len - _len);
+   _len += strlcpy_lit(s + _len, " - Build ", len - _len);
    _len += strlcpy(s + _len, build_str, len - _len);
 
    if (*vi.szCSDVersion)
    {
-      _len += strlcpy(s + _len, " ", len - _len);
+      _len += strlcpy_lit(s + _len, " ", len - _len);
       strlcpy(s + _len, vi.szCSDVersion, len - _len);
    }
 

@@ -241,7 +241,7 @@ static bool s3_parse_url(const char *url, char *bucket,  char *region,
       }
 
       /* Cloudflare R2 uses region "auto" for AWS SigV4. */
-      strlcpy(region, "auto", NAME_MAX_LENGTH);
+      strlcpy_lit(region, "auto", NAME_MAX_LENGTH);
    }
    else if (strstr(host, ".amazonaws.com"))
    {
@@ -262,7 +262,7 @@ static bool s3_parse_url(const char *url, char *bucket,  char *region,
 
          /* Transfer acceleration endpoints do not encode bucket region in hostname.
           * Keep fallback-compatible behavior by using us-east-1 here. */
-         strlcpy(region, "us-east-1", NAME_MAX_LENGTH);
+         strlcpy_lit(region, "us-east-1", NAME_MAX_LENGTH);
       }
       else if (s3pos)
       {
@@ -371,7 +371,7 @@ static bool s3_parse_url(const char *url, char *bucket,  char *region,
    }
 
    if (!region || !*region)
-      strlcpy(region, "us-east-1", NAME_MAX_LENGTH);
+      strlcpy_lit(region, "us-east-1", NAME_MAX_LENGTH);
 
    if (!*bucket)
       RARCH_WARN(S3_PFX "Could not extract bucket from URL: %s\n", url);
@@ -1010,7 +1010,7 @@ static bool s3_build_canonical_uri_from_url(const char *url, char *canonical_uri
    path_start = strchr(authority, '/');
    if (!path_start)
    {
-      strlcpy(canonical_uri, "/", canonical_uri_size);
+      strlcpy_lit(canonical_uri, "/", canonical_uri_size);
       return true;
    }
 
@@ -1019,7 +1019,7 @@ static bool s3_build_canonical_uri_from_url(const char *url, char *canonical_uri
 
    if (path_len == 0)
    {
-      strlcpy(canonical_uri, "/", canonical_uri_size);
+      strlcpy_lit(canonical_uri, "/", canonical_uri_size);
       return true;
    }
 

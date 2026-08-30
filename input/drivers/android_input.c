@@ -1857,9 +1857,9 @@ static void handle_hotplug(android_input_t *android,
          /* if the actual controller has not been mapped yet,
           * then configure Virtual device for now */
          if (strstr(device_name, "Virtual") && android->pads_connected==0)
-            strlcpy (name_buf, "SHIELD Virtual Controller", sizeof(name_buf));
+            strlcpy_lit(name_buf, "SHIELD Virtual Controller", sizeof(name_buf));
          else
-            strlcpy (name_buf, "NVIDIA SHIELD Controller", sizeof(name_buf));
+            strlcpy_lit(name_buf, "NVIDIA SHIELD Controller", sizeof(name_buf));
 
          /* apply the hack only for the first controller
           * store the id for later use
@@ -1890,7 +1890,7 @@ static void handle_hotplug(android_input_t *android,
 
          if ( pad_id2 > 0)
             return;
-         strlcpy (name_buf, "NVIDIA SHIELD Portable", sizeof(name_buf));
+         strlcpy_lit(name_buf, "NVIDIA SHIELD Portable", sizeof(name_buf));
       }
    }
 
@@ -1909,7 +1909,7 @@ static void handle_hotplug(android_input_t *android,
             id = pad_id1;
             return;
          }
-         strlcpy (name_buf, "NVIDIA SHIELD Gamepad", sizeof(name_buf));
+         strlcpy_lit(name_buf, "NVIDIA SHIELD Gamepad", sizeof(name_buf));
       }
    }
 
@@ -1919,7 +1919,7 @@ static void handle_hotplug(android_input_t *android,
     */
     /* to-do: add DS4 on Bravia ATV */
    else if (strstr(device_name, "NVIDIA"))
-      strlcpy (name_buf, "Android Gamepad", sizeof(name_buf));
+      strlcpy_lit(name_buf, "Android Gamepad", sizeof(name_buf));
 
    /* GPD XD
     * This is a simple hack, basically groups the "back"
@@ -1940,7 +1940,7 @@ static void handle_hotplug(android_input_t *android,
          if ( pad_id2 > 0)
             return;
 
-         strlcpy (name_buf, "GPD XD", sizeof(name_buf));
+         strlcpy_lit(name_buf, "GPD XD", sizeof(name_buf));
          *port = 0;
       }
    }
@@ -1973,7 +1973,7 @@ static void handle_hotplug(android_input_t *android,
          if ( pad_id2 > 0)
             return;
 
-         strlcpy (name_buf, "XPERIA Play", sizeof(name_buf));
+         strlcpy_lit(name_buf, "XPERIA Play", sizeof(name_buf));
          *port = 0;
       }
    }
@@ -1996,7 +1996,7 @@ static void handle_hotplug(android_input_t *android,
          if ( pad_id2 > 0)
             return;
 
-         strlcpy (name_buf, "ARCHOS GamePad", sizeof(name_buf));
+         strlcpy_lit(name_buf, "ARCHOS GamePad", sizeof(name_buf));
          *port = 0;
       }
    }
@@ -2048,17 +2048,17 @@ static void handle_hotplug(android_input_t *android,
    }
 
    else if (strstr(device_name, "iControlPad-"))
-      strlcpy(name_buf, "iControlPad HID Joystick profile", sizeof(name_buf));
+      strlcpy_lit(name_buf, "iControlPad HID Joystick profile", sizeof(name_buf));
 
    else if (strstr(device_name, "TTT THT Arcade console 2P USB Play"))
    {
       if (*port == 0)
-         strlcpy(name_buf, "TTT THT Arcade (User 1)", sizeof(name_buf));
+         strlcpy_lit(name_buf, "TTT THT Arcade (User 1)", sizeof(name_buf));
       else if (*port == 1)
-         strlcpy(name_buf, "TTT THT Arcade (User 2)", sizeof(name_buf));
+         strlcpy_lit(name_buf, "TTT THT Arcade (User 2)", sizeof(name_buf));
    }
    else if (strstr(device_name, "MOGA"))
-      strlcpy(name_buf, "Moga IME", sizeof(name_buf));
+      strlcpy_lit(name_buf, "Moga IME", sizeof(name_buf));
 
    /* If device is keyboard only and didn't match any of the devices above
     * then assume it is a keyboard, register the id, and return unless the

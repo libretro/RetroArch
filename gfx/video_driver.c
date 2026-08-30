@@ -5523,7 +5523,7 @@ void video_driver_frame(const void *data, unsigned width,
                   audio_stats.close_to_blocking,
                   audio_stats.samples);
 
-         __len += strlcpy(video_info.stat_text + __len, "LATENCY\n",
+         __len += strlcpy_lit(video_info.stat_text + __len, "LATENCY\n",
                sizeof(video_info.stat_text) - __len);
 
          __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,

@@ -4562,7 +4562,7 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
       _len  = strlcpy(ozone->selection_core_name,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE),
             sizeof(ozone->selection_core_name));
-      _len += strlcpy(ozone->selection_core_name + _len, " ",
+      _len += strlcpy_lit(ozone->selection_core_name + _len, " ",
             sizeof(ozone->selection_core_name)   - _len);
       strlcpy(ozone->selection_core_name + _len, core_label,
             sizeof(ozone->selection_core_name) - _len);
@@ -4605,14 +4605,14 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
          size_t _len  = strlcpy(ozone->selection_playtime,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME),
                sizeof(ozone->selection_playtime));
-         _len        += strlcpy(ozone->selection_playtime  + _len, " ",
+         _len        += strlcpy_lit(ozone->selection_playtime  + _len, " ",
                   sizeof(ozone->selection_playtime) - _len);
          strlcpy(ozone->selection_playtime + _len, disabled_str, sizeof(ozone->selection_playtime) - _len);
 
          _len  = strlcpy(ozone->selection_lastplayed,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED),
                sizeof(ozone->selection_lastplayed));
-         _len += strlcpy(ozone->selection_lastplayed  + _len, " ",
+         _len += strlcpy_lit(ozone->selection_lastplayed  + _len, " ",
                   sizeof(ozone->selection_lastplayed) - _len);
          strlcpy(ozone->selection_lastplayed + _len, disabled_str, sizeof(ozone->selection_lastplayed) - _len);
       }
@@ -5320,7 +5320,7 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          __len    = fill_pathname_join_special(texturepath,
                ozone->icons_path, sysname,
                sizeof(texturepath));
-         strlcpy(texturepath + __len, ".png", sizeof(texturepath) - __len);
+         strlcpy_lit(texturepath + __len, ".png", sizeof(texturepath) - __len);
 
          /* If the playlist icon doesn't exist, return default */
          if (!path_is_valid(texturepath))
@@ -5333,7 +5333,7 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
                texturepath, &node->icon,
                gfx_display_texture_filter(), NULL, NULL);
 
-         strlcpy(sysname + syslen, "-content.png", sizeof(sysname) - syslen);
+         strlcpy_lit(sysname + syslen, "-content.png", sizeof(sysname) - syslen);
          fill_pathname_join_special(
                texturepath, ozone->icons_path, sysname,
                sizeof(texturepath));

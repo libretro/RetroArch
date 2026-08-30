@@ -151,7 +151,7 @@ static int file_decompressed_subdir(const char *name,
     * NULL-safe. */
    if (userdata->dec->callback_error)
    {
-      _len  = strlcpy(userdata->dec->callback_error,
+      _len  = strlcpy_lit(userdata->dec->callback_error,
             "Failed to deflate ",
             CALLBACK_ERROR_SIZE);
       _len += strlcpy(
@@ -198,7 +198,7 @@ static int file_decompressed(const char *name, const char *valid_exts,
    /* NULL-check: see twin in file_archived for reasoning. */
    if (dec->callback_error)
    {
-      _len  = strlcpy(dec->callback_error, "Failed to deflate ",
+      _len  = strlcpy_lit(dec->callback_error, "Failed to deflate ",
               CALLBACK_ERROR_SIZE);
       _len += strlcpy(dec->callback_error + _len,
               path, CALLBACK_ERROR_SIZE     - _len);

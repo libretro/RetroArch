@@ -1224,7 +1224,7 @@ void win32_localize_menu(HMENU menu)
          {
             size_t _len = strlcpy(ellipsis_buf, new_label,
                   sizeof(ellipsis_buf));
-            strlcpy(ellipsis_buf + _len, "...",
+            strlcpy_lit(ellipsis_buf + _len, "...",
                   sizeof(ellipsis_buf) - _len);
             new_label  = ellipsis_buf;
             new_label2 = ellipsis_buf;

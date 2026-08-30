@@ -4149,7 +4149,7 @@ static void *udev_input_init(const char *joypad_driver)
           * video context driver), and on next boot user would be stuck with a
           * possibly nonworking configuration.
           */
-         strlcpy(settings->arrays.input_driver, "linuxraw",
+         strlcpy_lit(settings->arrays.input_driver, "linuxraw",
                  sizeof(settings->arrays.input_driver));
          RARCH_WARN("[udev] First boot and without input devices, forcing fallback to linuxraw.\n");
          goto error;

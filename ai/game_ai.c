@@ -188,7 +188,7 @@ void game_ai_think(bool override_p1, bool override_p2, bool show_debug,
           * strlen scan-from-start cost on each append. */
          _len  = strlcpy(data_path, game_ai_lib_path, sz);
          if (_len < sz)
-            _len += strlcpy(data_path + _len, "/data/",       sz - _len);
+            _len += strlcpy_lit(data_path + _len, "/data/",       sz - _len);
          if (_len < sz)
             _len += strlcpy(data_path + _len, g_game_name,    sz - _len);
          if (_len >= sz - 1)

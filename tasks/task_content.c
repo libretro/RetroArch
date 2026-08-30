@@ -1557,7 +1557,7 @@ static bool content_file_load(
                         "but cache directory was not set or found. "
                         "Setting cache directory to root of writable app directory...\n");
                      _len = strlcpy(new_basedir, uwp_dir_data, sizeof(new_basedir));
-                     strlcpy(new_basedir + _len,
+                     strlcpy_lit(new_basedir + _len,
                            "VFSCACHE\\",
                            sizeof(new_basedir) - _len);
                      basedir_attribs = GetFileAttributes(new_basedir);

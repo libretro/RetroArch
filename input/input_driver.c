@@ -4632,7 +4632,7 @@ size_t input_config_get_bind_string(
       else if (*key != '\0')
       {
          if (delim)
-            _len += strlcpy(s + _len, ", ", len - _len);
+            _len += strlcpy_lit(s + _len, ", ", len - _len);
          _len += snprintf(s + _len, len - _len,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_KEY), key);
          delim = 1;
@@ -4677,7 +4677,7 @@ size_t input_config_get_bind_string(
       if (tag != 0)
       {
          if (delim)
-            _len += strlcpy(s + _len, ", ", len - _len);
+            _len += strlcpy_lit(s + _len, ", ", len - _len);
          _len += strlcpy(s + _len, msg_hash_to_str((enum msg_hash_enums)tag), len - _len);
       }
    }
@@ -4709,19 +4709,19 @@ size_t input_config_get_bind_string_joykey(
       switch (GET_HAT_DIR(bind->joykey))
       {
          case HAT_UP_MASK:
-            _len += strlcpy(s + _len, "Up",    len - _len);
+            _len += strlcpy_lit(s + _len, "Up",    len - _len);
             break;
          case HAT_DOWN_MASK:
-            _len += strlcpy(s + _len, "Down",  len - _len);
+            _len += strlcpy_lit(s + _len, "Down",  len - _len);
             break;
          case HAT_LEFT_MASK:
-            _len += strlcpy(s + _len, "Left",  len - _len);
+            _len += strlcpy_lit(s + _len, "Left",  len - _len);
             break;
          case HAT_RIGHT_MASK:
-            _len += strlcpy(s + _len, "Right", len - _len);
+            _len += strlcpy_lit(s + _len, "Right", len - _len);
             break;
          default:
-            _len += strlcpy(s + _len, "?",     len - _len);
+            _len += strlcpy_lit(s + _len, "?",     len - _len);
             break;
       }
    }
@@ -4734,7 +4734,7 @@ size_t input_config_get_bind_string_joykey(
                joykey_label, suffix, ' ', len);
 
       /* TODO/FIXME - localize */
-      _len  = strlcpy(s, "Button ", len);
+      _len  = strlcpy_lit(s, "Button ", len);
       _len += snprintf(s + _len, len - _len, "%u",
             (unsigned)bind->joykey);
    }
@@ -4760,7 +4760,7 @@ size_t input_config_get_bind_string_joyaxis(
             joyaxis_label, suffix, ' ', len);
 
    /* TODO/FIXME - localize */
-   _len = strlcpy(s, "Axis ", len);
+   _len = strlcpy_lit(s, "Axis ", len);
 
    if (AXIS_NEG_GET(bind->joyaxis) != AXIS_DIR_NONE)
       _len += snprintf(s + _len, len - _len, "-%u",
@@ -6565,7 +6565,7 @@ static const char *input_overlay_path(bool want_osk)
             char *ext = path_get_extension_mutable(system_overlay_path);
             if (!ext)
                ext = system_overlay_path + _len;
-            strlcpy(ext, ".cfg", 5);
+            strlcpy_lit(ext, ".cfg", 5);
             if (path_is_valid(system_overlay_path))
                return system_overlay_path;
          }

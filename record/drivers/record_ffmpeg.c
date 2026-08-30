@@ -642,8 +642,8 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params,
          params->audio_global_quality = 75;
          params->out_pix_fmt          = AV_PIX_FMT_YUV420P;
 
-         strlcpy(params->vcodec, "libx264", sizeof(params->vcodec));
-         strlcpy(params->acodec, "aac", sizeof(params->acodec));
+         strlcpy_lit(params->vcodec, "libx264", sizeof(params->vcodec));
+         strlcpy_lit(params->acodec, "aac", sizeof(params->acodec));
 
          av_dict_set(&params->video_opts, "preset", "ultrafast", 0);
          av_dict_set(&params->video_opts, "tune", "film", 0);
@@ -658,8 +658,8 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params,
          params->audio_global_quality = 75;
          params->out_pix_fmt          = AV_PIX_FMT_YUV420P;
 
-         strlcpy(params->vcodec, "libx264", sizeof(params->vcodec));
-         strlcpy(params->acodec, "aac", sizeof(params->acodec));
+         strlcpy_lit(params->vcodec, "libx264", sizeof(params->vcodec));
+         strlcpy_lit(params->acodec, "aac", sizeof(params->acodec));
 
          av_dict_set(&params->video_opts, "preset", "superfast", 0);
          av_dict_set(&params->video_opts, "tune", "film", 0);
@@ -674,8 +674,8 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params,
          params->audio_global_quality = 100;
          params->out_pix_fmt          = AV_PIX_FMT_YUV420P;
 
-         strlcpy(params->vcodec, "libx264", sizeof(params->vcodec));
-         strlcpy(params->acodec, "aac", sizeof(params->acodec));
+         strlcpy_lit(params->vcodec, "libx264", sizeof(params->vcodec));
+         strlcpy_lit(params->acodec, "aac", sizeof(params->acodec));
 
          av_dict_set(&params->video_opts, "preset", "superfast", 0);
          av_dict_set(&params->video_opts, "tune", "film", 0);
@@ -689,8 +689,8 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params,
          params->audio_global_quality = 80;
          params->out_pix_fmt          = AV_PIX_FMT_BGR24;
 
-         strlcpy(params->vcodec, "libx264rgb", sizeof(params->vcodec));
-         strlcpy(params->acodec, "flac", sizeof(params->acodec));
+         strlcpy_lit(params->vcodec, "libx264rgb", sizeof(params->vcodec));
+         strlcpy_lit(params->acodec, "flac", sizeof(params->acodec));
 
          av_dict_set(&params->video_opts, "qp", "0", 0);
          av_dict_set(&params->audio_opts, "audio_global_quality", "100", 0);
@@ -702,8 +702,8 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params,
          params->audio_global_quality = 50;
          params->out_pix_fmt          = AV_PIX_FMT_YUV420P;
 
-         strlcpy(params->vcodec, "libvpx", sizeof(params->vcodec));
-         strlcpy(params->acodec, "libopus", sizeof(params->acodec));
+         strlcpy_lit(params->vcodec, "libvpx", sizeof(params->vcodec));
+         strlcpy_lit(params->acodec, "libopus", sizeof(params->acodec));
 
          av_dict_set(&params->video_opts, "deadline", "realtime", 0);
          av_dict_set(&params->video_opts, "crf", "14", 0);
@@ -716,8 +716,8 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params,
          params->audio_global_quality = 75;
          params->out_pix_fmt          = AV_PIX_FMT_YUV420P;
 
-         strlcpy(params->vcodec, "libvpx", sizeof(params->vcodec));
-         strlcpy(params->acodec, "libopus", sizeof(params->acodec));
+         strlcpy_lit(params->vcodec, "libvpx", sizeof(params->vcodec));
+         strlcpy_lit(params->acodec, "libopus", sizeof(params->acodec));
 
          av_dict_set(&params->video_opts, "deadline", "realtime", 0);
          av_dict_set(&params->video_opts, "crf", "4", 0);
@@ -730,8 +730,8 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params,
          params->audio_global_quality = 0;
          params->out_pix_fmt          = AV_PIX_FMT_RGB8;
 
-         strlcpy(params->vcodec, "gif", sizeof(params->vcodec));
-         strlcpy(params->acodec, "", sizeof(params->acodec));
+         strlcpy_lit(params->vcodec, "gif", sizeof(params->vcodec));
+         strlcpy_lit(params->acodec, "", sizeof(params->acodec));
 
          av_dict_set(&params->video_opts, "framerate", "30", 0);
          av_dict_set(&params->audio_opts, "audio_global_quality", "0", 0);
@@ -743,8 +743,8 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params,
          params->audio_global_quality = 0;
          params->out_pix_fmt          = AV_PIX_FMT_RGB24;
 
-         strlcpy(params->vcodec, "apng", sizeof(params->vcodec));
-         strlcpy(params->acodec, "", sizeof(params->acodec));
+         strlcpy_lit(params->vcodec, "apng", sizeof(params->vcodec));
+         strlcpy_lit(params->acodec, "", sizeof(params->acodec));
 
          av_dict_set(&params->video_opts, "pred", "avg", 0);
          av_dict_set(&params->audio_opts, "audio_global_quality", "0", 0);
@@ -756,8 +756,8 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params,
          params->audio_global_quality = 50;
          params->out_pix_fmt          = AV_PIX_FMT_YUV420P;
 
-         strlcpy(params->vcodec, "libx264", sizeof(params->vcodec));
-         strlcpy(params->acodec, "aac", sizeof(params->acodec));
+         strlcpy_lit(params->vcodec, "libx264", sizeof(params->vcodec));
+         strlcpy_lit(params->acodec, "aac", sizeof(params->acodec));
 
          av_dict_set(&params->video_opts, "preset", "ultrafast", 0);
          av_dict_set(&params->video_opts, "tune", "zerolatency", 0);
@@ -765,8 +765,8 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params,
          av_dict_set(&params->audio_opts, "audio_global_quality", "50", 0);
 
          /* TO-DO: detect if hwaccel is available and use it instead of the preset above
-            strlcpy(params->vcodec, "h264_nvenc", sizeof(params->vcodec));
-            strlcpy(params->acodec, "aac", sizeof(params->acodec));
+            strlcpy_lit(params->vcodec, "h264_nvenc", sizeof(params->vcodec));
+            strlcpy_lit(params->acodec, "aac", sizeof(params->acodec));
 
             av_dict_set(&params->video_opts, "preset", "llhp", 0);
             av_dict_set(&params->video_opts, "tune", "zerolatency", 0);
@@ -788,7 +788,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params,
             video_record_scale_factor : 1;
       else
          params->scale_factor = 1;
-      strlcpy(params->format, "matroska", sizeof(params->format));
+      strlcpy_lit(params->format, "matroska", sizeof(params->format));
    }
    else if (preset >= RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST && preset < RECORD_CONFIG_TYPE_RECORDING_GIF)
    {
@@ -797,7 +797,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params,
             video_record_scale_factor : 1;
       else
          params->scale_factor = 1;
-      strlcpy(params->format, "webm", sizeof(params->format));
+      strlcpy_lit(params->format, "webm", sizeof(params->format));
    }
    else if (preset >= RECORD_CONFIG_TYPE_RECORDING_GIF && preset < RECORD_CONFIG_TYPE_RECORDING_APNG)
    {
@@ -806,12 +806,12 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params,
             video_record_scale_factor : 1;
       else
          params->scale_factor = 1;
-      strlcpy(params->format, "gif", sizeof(params->format));
+      strlcpy_lit(params->format, "gif", sizeof(params->format));
    }
    else if (preset < RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY)
    {
       params->scale_factor = 1;
-      strlcpy(params->format, "apng", sizeof(params->format));
+      strlcpy_lit(params->format, "apng", sizeof(params->format));
    }
    else if (preset <= RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY)
    {
@@ -824,14 +824,14 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params,
             || streaming_mode == STREAMING_MODE_TWITCH
             || streaming_mode == STREAMING_MODE_FACEBOOK
             || streaming_mode == STREAMING_MODE_KICK)
-         strlcpy(params->format, "flv", sizeof(params->format));
+         strlcpy_lit(params->format, "flv", sizeof(params->format));
       else
-         strlcpy(params->format, "mpegts", sizeof(params->format));
+         strlcpy_lit(params->format, "mpegts", sizeof(params->format));
    }
    else if (preset == RECORD_CONFIG_TYPE_STREAMING_NETPLAY)
    {
       params->scale_factor = 1;
-      strlcpy(params->format, "mpegts", sizeof(params->format));
+      strlcpy_lit(params->format, "mpegts", sizeof(params->format));
    }
 
    return true;

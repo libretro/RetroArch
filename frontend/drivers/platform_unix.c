@@ -440,7 +440,7 @@ void android_run_lifecycle_hook(struct android_app *android_app,
    if (string_is_empty(base))
       return;
 
-   strlcpy(cmd, "sh ", sizeof(cmd));
+   strlcpy_lit(cmd, "sh ", sizeof(cmd));
    fill_pathname_join_special(cmd + 3, base, name, sizeof(cmd) - 3);
 
    if (!path_is_valid(cmd + 3))
@@ -2197,7 +2197,7 @@ const char *retroarch_get_webos_version(char *s, size_t len,
       /* fallback to nyx os_info.json */
       f = fopen("/var/run/nyx/os_info.json", "r");
       if (!f)
-         return strlcpy(s, "webOS (unknown)", len), "webOS (unknown)";
+         return strlcpy_lit(s, "webOS (unknown)", len), "webOS (unknown)";
 
       /* read whole file into buffer */
       char buf[4096];
@@ -2282,7 +2282,7 @@ const char *retroarch_get_webos_version(char *s, size_t len,
    fclose(f);
 
    if (pretty[0] == '\0')
-      strlcpy(pretty, "webOS (unknown)", sizeof(pretty));
+      strlcpy_lit(pretty, "webOS (unknown)", sizeof(pretty));
 
    return strlcpy(s, pretty, len), pretty;
 }
@@ -2295,7 +2295,7 @@ static size_t frontend_unix_get_os(char *s,
 #ifdef ANDROID
    int rel;
    frontend_android_get_version(major, minor, &rel);
-   _len = strlcpy(s, "Android", len);
+   _len = strlcpy_lit(s, "Android", len);
 #else
    char *ptr;
    struct utsname buffer;
@@ -2304,21 +2304,21 @@ static size_t frontend_unix_get_os(char *s,
    *major = (int)strtol(buffer.release, &ptr, 10);
    *minor = (int)strtol(++ptr, NULL, 10);
 #if defined(__FreeBSD__)
-   _len = strlcpy(s, "FreeBSD", len);
+   _len = strlcpy_lit(s, "FreeBSD", len);
 #elif defined(__NetBSD__)
-   _len = strlcpy(s, "NetBSD", len);
+   _len = strlcpy_lit(s, "NetBSD", len);
 #elif defined(__OpenBSD__)
-   _len = strlcpy(s, "OpenBSD", len);
+   _len = strlcpy_lit(s, "OpenBSD", len);
 #elif defined(__DragonFly__)
-   _len = strlcpy(s, "DragonFly BSD", len);
+   _len = strlcpy_lit(s, "DragonFly BSD", len);
 #elif defined(BSD)
-   _len = strlcpy(s, "BSD", len);
+   _len = strlcpy_lit(s, "BSD", len);
 #elif defined(__HAIKU__)
-   _len = strlcpy(s, "Haiku", len);
+   _len = strlcpy_lit(s, "Haiku", len);
 #elif defined(WEBOS)
    _len = strlcpy(s, retroarch_get_webos_version(s, len, major, minor), len);
 #else
-   _len = strlcpy(s, "Linux", len);
+   _len = strlcpy_lit(s, "Linux", len);
 #endif
 #endif
    return _len;
@@ -2875,7 +2875,7 @@ static void frontend_unix_get_env(int *argc,
    {
       g_defaults.overlay_set    = true;
       g_defaults.overlay_enable = false;
-      strlcpy(g_defaults.settings_menu, "ozone", sizeof(g_defaults.settings_menu));
+      strlcpy_lit(g_defaults.settings_menu, "ozone", sizeof(g_defaults.settings_menu));
    }
 #else
    char base_path[PATH_MAX] = {0};
@@ -2891,15 +2891,15 @@ static void frontend_unix_get_env(int *argc,
    if (xdg)
    {
       size_t _len = strlcpy(base_path, xdg, sizeof(base_path));
-      strlcpy(base_path + _len, "/retroarch", sizeof(base_path) - _len);
+      strlcpy_lit(base_path + _len, "/retroarch", sizeof(base_path) - _len);
    }
    else if (home)
    {
       size_t _len = strlcpy(base_path, home, sizeof(base_path));
-      strlcpy(base_path + _len, "/.config/retroarch", sizeof(base_path) - _len);
+      strlcpy_lit(base_path + _len, "/.config/retroarch", sizeof(base_path) - _len);
    }
    else
-      strlcpy(base_path, "retroarch", sizeof(base_path));
+      strlcpy_lit(base_path, "retroarch", sizeof(base_path));
 #endif
 
    if (libretro_directory && *libretro_directory)
@@ -3578,20 +3578,20 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
    if (xdg)
    {
       size_t _len = strlcpy(base_path, xdg, sizeof(base_path));
-      strlcpy(base_path + _len, "/retroarch", sizeof(base_path) - _len);
+      strlcpy_lit(base_path + _len, "/retroarch", sizeof(base_path) - _len);
    }
    else if (home)
    {
       size_t _len = strlcpy(base_path, home, sizeof(base_path));
-      strlcpy(base_path + _len, "/.config/retroarch", sizeof(base_path) - _len);
+      strlcpy_lit(base_path + _len, "/.config/retroarch", sizeof(base_path) - _len);
    }
 #endif
 
    {
-      size_t _len = strlcpy(udisks_media_path, "/run/media", sizeof(udisks_media_path));
+      size_t _len = strlcpy_lit(udisks_media_path, "/run/media", sizeof(udisks_media_path));
       if (user)
       {
-         _len += strlcpy(udisks_media_path + _len, "/", sizeof(udisks_media_path) - _len);
+         _len += strlcpy_lit(udisks_media_path + _len, "/", sizeof(udisks_media_path) - _len);
          strlcpy(udisks_media_path + _len, user, sizeof(udisks_media_path) - _len);
       }
    }
