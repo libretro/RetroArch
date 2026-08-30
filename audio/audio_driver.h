@@ -385,12 +385,9 @@ typedef struct
     * racing read of the runloop's flag word is not.
     */
    retro_atomic_int_t runloop_snapshot;
-   /* Upper bound on input samples per consumer pass (one video frame's
-    * worth, capped to a slice), and underrun accounting: passes that
-    * had to be padded with silence after the ring first filled. */
+   /* Upper bound on input samples per consumer pass: one video frame's
+    * worth, capped to a slice. */
    size_t   pipe_pass_int16s;
-   unsigned pipe_underruns;
-   bool     pipe_primed;
    /* The audio thread's own copy of AUDIO_FLAG_PIPELINE_THREADED. Set
     * before the wrapper thread is released and cleared after it is
     * joined, so the thread never reads the flags word - which the main

@@ -1947,8 +1947,6 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
       if (audio_driver_st.pipe_pass_int16s < 128)
          audio_driver_st.pipe_pass_int16s = 128;
       audio_driver_st.pipe_pass_int16s   &= ~(size_t)1;
-      audio_driver_st.pipe_underruns      = 0;
-      audio_driver_st.pipe_primed         = false;
       audio_driver_st.pipe_gen            = 0;
       if (!audio_driver_st.pipe_lock)
          audio_driver_st.pipe_lock        = slock_new();
