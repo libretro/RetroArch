@@ -1339,7 +1339,7 @@ static void recording_dump_frame(
       vp.full_width               = 0;
       vp.full_height              = 0;
 
-      if (vid && vid->viewport_info)
+      if (vid && vid->viewport_info && video_st->data)
          vid->viewport_info(video_st->data, &vp);
 
       if (!vp.width || !vp.height)
@@ -1975,6 +1975,7 @@ void video_driver_free_internal(void)
    input_driver_state_t *input_st = input_state_get_ptr();
    video_driver_state_t *video_st = &video_driver_st;
    const video_driver_t *vid      = video_st->current_video;
+   bool had_data                  = (video_st->data != NULL);
 #ifdef HAVE_THREADS
    bool is_threaded               = VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);
 #endif
@@ -2043,6 +2044,16 @@ void video_driver_free_internal(void)
    if (video_st->data && vid && vid->free)
       vid->free(video_st->data);
 
+   /* The handle dies with the instance that owns it, but
+    * current_video keeps pointing at a live vtable, so anything that
+    * still reaches the driver through video_st->data between here and
+    * the next init reads freed memory. Input drivers do exactly that:
+    * a pointer or mouse event arriving while the window is being torn
+    * down runs video_driver_get_viewport_info(), which calls
+    * viewport_info(video_st->data, ...), and every GL, Vulkan and D3D
+    * implementation dereferences that argument on entry. */
+   video_st->data = NULL;
+
    /* The poke interface is a pointer into the driver's static vtable, so
     * unlike video_st->data it survives free "working" - and
     * video_context_driver_get_flags() consults poke->get_flags, so a
@@ -2075,7 +2086,7 @@ void video_driver_free_internal(void)
       return;
 #endif
 
-   if (video_st->data)
+   if (had_data)
       video_monitor_compute_fps_statistics(video_st->frame_time_count);
 }
 
@@ -2149,7 +2160,7 @@ bool video_driver_set_rotation(unsigned rotation)
 {
    video_driver_state_t *video_st   = &video_driver_st;
    const video_driver_t *vid        = video_st->current_video;
-   if (!vid || !vid->set_rotation)
+   if (!vid || !vid->set_rotation || !video_st->data)
       return false;
    vid->set_rotation(video_st->data, rotation);
    return true;
@@ -2187,7 +2198,7 @@ void *video_driver_read_frame_raw(unsigned *width,
 {
    video_driver_state_t *video_st = &video_driver_st;
    const video_driver_t *vid      = video_st->current_video;
-   if (vid && vid->read_frame_raw)
+   if (vid && vid->read_frame_raw && video_st->data)
       return vid->read_frame_raw(video_st->data, width,
             height, pitch);
    return NULL;
@@ -3332,7 +3343,7 @@ bool video_driver_get_viewport_info(struct video_viewport *viewport)
    const video_driver_t *vid       = video_st->current_video;
    if (!viewport)
       return false;
-   if (!vid || !vid->viewport_info)
+   if (!vid || !vid->viewport_info || !video_st->data)
    {
       /* Some video drivers don't implement viewport_info (gdi,
        * caca, sixel, network, fpga, vg, ps2, xenon360, xshm at
