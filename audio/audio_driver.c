@@ -448,6 +448,13 @@ static bool audio_driver_deinit_internal(bool audio_enable)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;
    const audio_driver_t *audio    = audio_st->current_audio;
+
+   /* Drop the flags that observers gate on before the context and the
+    * scratch buffers go away, so a flush that races this teardown bails
+    * at its gate instead of dereferencing a half-torn state. Init
+    * re-establishes both flags. */
+   AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_ACTIVE | AUDIO_FLAG_CONTROL);
+
    if (audio && audio->free)
    {
       if (audio_st->context_audio_data)
@@ -615,15 +622,30 @@ bool audio_driver_find_driver(const char *audio_drv,
  **/
 static double audio_driver_compute_rate_adjust(audio_driver_state_t *audio_st)
 {
-   unsigned write_idx     =
-         audio_st->free_samples_count++ & (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
-   int avail              = (int)audio_st->current_audio->write_avail(
-         audio_st->context_audio_data);
-   int half_size          = (int)(audio_st->buffer_size / 2);
+   unsigned write_idx;
+   int avail;
+   int half_size;
    int delta_mid;
    double direction;
    double effective_delta;
    double rate_adjust;
+
+   /* The device context can go away under us mid-frame (deinit nulls it
+    * before the observer gates clear) - degrade to no rate control for
+    * this batch instead of calling write_avail(NULL). The writability
+    * helper above already guards its write_avail() call the same way. */
+   if (!audio_st->context_audio_data)
+   {
+      audio_st->cached_rate_adjust = 1.0;
+      audio_st->samples_since_drc  = 0;
+      return 1.0;
+   }
+
+   write_idx              =
+         audio_st->free_samples_count++ & (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
+   avail                  = (int)audio_st->current_audio->write_avail(
+         audio_st->context_audio_data);
+   half_size              = (int)(audio_st->buffer_size / 2);
    /* half_size is the setpoint's denominator. A driver may report a zero
     * buffer size at runtime as well as at init - pulse pushes its size
     * through audio_driver_set_buffer_size() from write_avail() on every
