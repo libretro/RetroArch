@@ -548,9 +548,9 @@ static int setting_set_with_string_representation(rarch_setting_t* setting,
             strlcpy(setting->value.target.string, value, setting->size);
          break;
       case ST_BOOL:
-         if (memcmp(value, "true", 5) == 0)
+         if (string_is_equal(value, "true"))
             *setting->value.target.boolean = true;
-         else if (memcmp(value, "false", 6) == 0)
+         else if (string_is_equal(value, "false"))
             *setting->value.target.boolean = false;
          break;
       default:

@@ -6825,9 +6825,21 @@ void libretro_free_system_info(struct retro_system_info *sysinfo)
    if (!sysinfo)
       return;
 
-   free((void*)sysinfo->library_name);
-   free((void*)sysinfo->library_version);
-   free((void*)sysinfo->valid_extensions);
+   /* The three strings are not owned here and never were.  Both paths
+    * that fill this struct leave pointers that cannot be free()d:
+    * libretro_get_system_info() copies into the fixed buffers inside
+    * runloop_state and assigns their addresses, and the core's own
+    * retro_get_system_info() returns its static literals, as do the
+    * MSG_UNKNOWN and "v0" fallbacks applied after it.  free()ing them
+    * is a free() of something malloc() never returned:
+    *
+    *   AddressSanitizer: SEGV in __asan::Allocator::Deallocate
+    *     #5 libretro_free_system_info retroarch.c
+    *     #6 menu_driver_ctl menu/menu_driver.c
+    *
+    * Clearing the struct is the whole of what this has to do.  Both
+    * callers already memset() it straight afterwards, which is what
+    * kept the missing ownership from being obvious. */
    memset(sysinfo, 0, sizeof(*sysinfo));
 }
 

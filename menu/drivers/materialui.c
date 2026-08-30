@@ -12204,7 +12204,8 @@ static void materialui_list_insert(void *userdata,
              * switch */
             break;
          default:
-            if (memcmp(label, "null", 4) == 0)
+            if (string_starts_with_size(label, "null",
+                     STRLEN_CONST("null")))
                break;
 #ifdef HAVE_CHEEVOS
             if (type >= MENU_SETTINGS_CHEEVOS_START &&
