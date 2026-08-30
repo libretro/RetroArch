@@ -15,3 +15,9 @@ S_BOOL(audio_threaded_pipeline, AUDIO_THREADED_PIPELINE,
       DEFAULT_AUDIO_THREADED_PIPELINE, SD_FLAG_NONE, 0, CMD_EVENT_AUDIO_REINIT,
       "Threaded Pipeline",
       "Resample, filter and mix audio on the audio thread instead of inside each frame. Same latency as the frame-synchronous path at any Audio Latency setting, with rate control measured at the device's own pace and the resampler out of the frame budget. Has no effect on drivers that cannot wake on the device; those keep the frame-synchronous path.")
+
+S_BOOL(audio_thread_priority, AUDIO_THREAD_PRIORITY,
+      "audio_thread_priority",
+      DEFAULT_AUDIO_THREAD_PRIORITY, SD_FLAG_NONE, 0, CMD_EVENT_AUDIO_REINIT,
+      "Elevate Audio Thread Priority",
+      "Ask the operating system to schedule the audio thread ahead of the rest of the frontend, so a busy frame is less likely to starve the audio device. Lets Audio Latency go lower on systems that grant it; a system that refuses keeps the default priority and nothing else changes. Applies to the audio thread the Threaded Pipeline and core audio callbacks run on.")

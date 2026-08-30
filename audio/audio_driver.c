@@ -1945,6 +1945,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
                settings->uints.audio_output_sample_rate, &new_rate,
                audio_latency,
                settings->uints.audio_block_frames,
+               settings->bools.audio_thread_priority,
                audio_driver_st.current_audio))
       {
          RARCH_ERR("[Audio] Cannot open threaded audio driver. Exiting...\n");
@@ -2197,6 +2198,27 @@ void audio_driver_publish_runloop(void)
    retro_atomic_store_release_int(&audio_driver_st.runloop_snapshot, v);
 }
 
+/**
+ * audio_driver_pipeline_signal:
+ *
+ * Main thread. Wakes the consumer once for everything published since
+ * its last wake. Called at the frame end and from the per-frame
+ * producers that run without one (menu audio, rewind reversal).
+ **/
+static void audio_driver_pipeline_signal(audio_driver_state_t *audio_st)
+{
+#ifdef HAVE_THREADS
+   if (!audio_st->pipe_threaded)
+      return;
+   slock_lock(audio_st->pipe_lock);
+   audio_st->pipe_data_gen++;
+   scond_signal(audio_st->pipe_data_cond);
+   slock_unlock(audio_st->pipe_lock);
+#else
+   (void)audio_st;
+#endif
+}
+
 void audio_driver_pipeline_wake(void)
 {
 #ifdef HAVE_THREADS
@@ -2249,12 +2271,14 @@ static void audio_driver_submit(audio_driver_state_t *audio_st,
    {
       const uint8_t *p = (const uint8_t*)data;
       size_t len       = samples * sizeof(int16_t);
+      size_t written   = 0;
       while (len)
       {
          unsigned gen;
          size_t n = retro_spsc_write(&audio_st->pipe_ring, p, len);
          p       += n;
          len     -= n;
+         written += n;
          if (!len)
             break;
          /* Only wait on a consumer that can make progress: the driver
@@ -2292,11 +2316,12 @@ static void audio_driver_submit(audio_driver_state_t *audio_st,
          }
          slock_unlock(audio_st->pipe_lock);
       }
-      /* Wake a consumer sleeping on an empty ring. */
-      slock_lock(audio_st->pipe_lock);
-      audio_st->pipe_data_gen++;
-      scond_signal(audio_st->pipe_data_cond);
-      slock_unlock(audio_st->pipe_lock);
+      /* No wake here: the consumer is woken once per frame by
+       * audio_driver_pipeline_signal(), from the frame end and from the
+       * other per-frame producers. Waking per publish would have a core
+       * that batches per scanline wake it hundreds of times a frame,
+       * and a consumer that outranks the main thread would then run a
+       * scanline-sized pass each time. */
       return;
    }
 #endif
@@ -2497,6 +2522,8 @@ void audio_driver_frame_end(void)
 
    if (audio_st->data_ptr)
       audio_driver_sample_accum_flush(audio_st);
+
+   audio_driver_pipeline_signal(audio_st);
 }
 
 size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
@@ -3686,6 +3713,9 @@ void audio_driver_frame_is_reverse(void)
                audio_st->rewind_size - audio_st->rewind_ptr,
                (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
                (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false);
+
+   /* A reversed frame is published here, before the frame end that
+    * follows it, which will wake the consumer for it. */
 }
 #endif
 
@@ -3874,6 +3904,9 @@ void audio_driver_menu_sample(void)
       audio_driver_submit(audio_st, slowmotion_ratio, samples_buf, sample_count,
             (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
             (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false);
+
+   /* This is the menu's frame; no frame end follows it. */
+   audio_driver_pipeline_signal(audio_st);
 }
 #endif
 

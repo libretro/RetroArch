@@ -48,7 +48,8 @@ typedef struct audio_thread
    bool is_paused;
    bool is_shutdown;
    bool use_float;
-
+   /* Ask the OS for a higher scheduling class from inside the thread. */
+   bool raise_priority;
 } audio_thread_t;
 
 /**
@@ -61,6 +62,15 @@ static void audio_thread_loop(void *data)
    audio_thread_t *thr = (audio_thread_t*)data;
 
    sthread_setname("ra-audio");
+
+   /* Best effort and never fatal: a refusal leaves the default. */
+   if (thr->raise_priority)
+   {
+      if (sthread_raise_current_priority())
+         RARCH_LOG("[Audio] Audio thread priority raised.\n");
+      else
+         RARCH_LOG("[Audio] Audio thread priority not raised; the system refused or has no such class.\n");
+   }
 
    if (!thr)
       return;
@@ -363,13 +373,15 @@ static const audio_driver_t audio_thread = {
 bool audio_init_thread(const audio_driver_t **out_driver,
       void **out_data, const char *device, unsigned audio_out_rate,
       unsigned *new_rate, unsigned latency,
-      unsigned block_frames, const audio_driver_t *drv)
+      unsigned block_frames, bool raise_priority,
+      const audio_driver_t *drv)
 {
    audio_thread_t *thr = (audio_thread_t*)calloc(1, sizeof(*thr));
    if (!thr)
       return false;
 
    thr->driver         = (const audio_driver_t*)drv;
+   thr->raise_priority = raise_priority;
    thr->device         = device;
    thr->out_rate       = audio_out_rate;
    thr->new_rate       = new_rate;

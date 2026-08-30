@@ -1298,6 +1298,10 @@
  * thread instead of inside the frame. Off by default. */
 #define DEFAULT_AUDIO_THREADED_PIPELINE false
 
+/* Ask the OS to schedule the audio thread ahead of the rest of the
+ * frontend. Best effort. Off by default. */
+#define DEFAULT_AUDIO_THREAD_PRIORITY false
+
 /* Audio rate control. */
 #if !defined(RARCH_CONSOLE)
 #define DEFAULT_RATE_CONTROL true

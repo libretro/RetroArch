@@ -39,7 +39,7 @@
  **/
 bool audio_init_thread(const audio_driver_t **out_driver, void **out_data,
       const char *device, unsigned out_rate, unsigned *new_rate, unsigned latency,
-      unsigned block_frames,
+      unsigned block_frames, bool raise_priority,
       const audio_driver_t *driver);
 
 #endif
