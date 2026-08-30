@@ -38,7 +38,7 @@
 
 #ifdef VITA
 /* The Vita has no /dev/urandom and no BSD socket layer of its own:
- * randomness is provided by ctr_entropy_func() in
+ * randomness is provided by platform_entropy_func() in
  * net_socket_ssl_mbed.c, and net_sockets.c talks to sceNet through
  * the mappings in libretro-common's net_compat.h. */
 #define MBEDTLS_NO_PLATFORM_ENTROPY
