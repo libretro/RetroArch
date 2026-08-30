@@ -6718,9 +6718,13 @@ void menu_driver_toggle(
 
       menu_st->flags               |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
 
-      /* Menu should always run with swap interval 1 if vsync is on. */
+      /* Menu should always run with swap interval 1 if vsync is on.
+       * current_video can be NULL when the toggle runs while video is
+       * torn down or failed to initialize (shutdown paths - see the
+       * settings workaround above - and display loss on TV boxes). */
       if (     video_vsync
             && !video_scanline_sync
+            && current_video
             && current_video->set_nonblock_state)
          current_video->set_nonblock_state(
                video_driver_data,
