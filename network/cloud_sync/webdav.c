@@ -14,6 +14,7 @@
 
 #include <compat/strl.h>
 #include <encodings/base64.h>
+#include <lists/string_list.h>
 #include <lrc_hash.h>
 #include <net/net_http.h>
 #include <time/rtime.h>
@@ -49,6 +50,9 @@ typedef struct
 typedef struct
 {
    char url[PATH_MAX_LENGTH];
+
+   /* Collections this sync has already created on the server. */
+   struct string_list *dirs;
 
    bool basic;
    char *basic_auth_header;
@@ -624,6 +628,12 @@ static bool webdav_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
    strlcpy(webdav_st->url + _len, url, sizeof(webdav_st->url) - _len);
    fill_pathname_slash(webdav_st->url, sizeof(webdav_st->url));
 
+   /* A new sync knows nothing about the server's collections yet. */
+   if (webdav_st->dirs)
+      string_list_free(webdav_st->dirs);
+   webdav_st->dirs         = NULL;
+   webdav_st->dav_verified = false;
+
    /* URL/username/password may have changed, redo auth check */
    webdav_st->basic = true;
    auth_header      = webdav_get_auth_header(NULL, NULL);
@@ -653,6 +663,10 @@ static bool webdav_sync_end(cloud_sync_complete_handler_t cb, void *user_data)
    if (webdav_st->basic_auth_header)
       free(webdav_st->basic_auth_header);
    webdav_st->basic_auth_header = NULL;
+
+   if (webdav_st->dirs)
+      string_list_free(webdav_st->dirs);
+   webdav_st->dirs = NULL;
 
    webdav_cleanup_digest();
 
@@ -736,6 +750,66 @@ static bool webdav_read(const char *path, const char *file,
    return (t != NULL);
 }
 
+/* WebDAV paths are case-sensitive, so this cannot use
+ * string_list_find_elem(), which folds case. */
+static bool webdav_dir_is_known(const char *url)
+{
+   webdav_state_t *webdav_st = webdav_state_get_ptr();
+   size_t i;
+
+   if (!webdav_st->dirs)
+      return false;
+
+   for (i = 0; i < webdav_st->dirs->size; i++)
+      if (string_is_equal(webdav_st->dirs->elems[i].data, url))
+         return true;
+
+   return false;
+}
+
+static void webdav_dir_remember(const char *url)
+{
+   union string_list_elem_attr attr;
+   webdav_state_t *webdav_st = webdav_state_get_ptr();
+
+   if (!webdav_st->dirs)
+      if (!(webdav_st->dirs = string_list_new()))
+         return;
+
+   if (webdav_dir_is_known(url))
+      return;
+
+   attr.i = 0;
+   string_list_append(webdav_st->dirs, url, attr);
+}
+
+static void webdav_mkdir_cb(retro_task_t *task, void *task_data,
+      void *user_data, const char *err);
+
+/* Each upload walks the same directory prefixes and several uploads run
+ * at once, so ask the server only for the collections this sync has not
+ * created yet.  Task callbacks are retired on the main thread, so the
+ * list needs no lock. */
+static void webdav_mkdir_push(webdav_mkdir_state_t *webdav_mkdir_st)
+{
+   char *auth_header;
+
+   if (webdav_dir_is_known(webdav_mkdir_st->url))
+   {
+      http_transfer_data_t data;
+      memset(&data, 0, sizeof(data));
+      data.status = 200;
+      webdav_mkdir_cb(NULL, &data, webdav_mkdir_st, NULL);
+      return;
+   }
+
+   RARCH_DBG("[webdav] MKCOL %s\n", webdav_mkdir_st->url);
+   auth_header = webdav_get_auth_header("MKCOL", webdav_mkdir_st->url);
+   task_push_webdav_mkdir(webdav_mkdir_st->url, true, auth_header,
+         webdav_mkdir_cb, webdav_mkdir_st);
+   free(auth_header);
+}
+
 static void webdav_mkdir_cb(retro_task_t *task, void *task_data,
       void *user_data, const char *err)
 {
@@ -775,16 +849,19 @@ static void webdav_mkdir_cb(retro_task_t *task, void *task_data,
       return;
    }
 
+   /* url is truncated to the prefix that just came back, except on the
+    * synthetic call webdav_ensure_dir() starts the walk with, where the
+    * full path is still intact. */
+   if (webdav_mkdir_st->last_slash && !webdav_mkdir_st->last_slash[1])
+      webdav_dir_remember(webdav_mkdir_st->url);
+
    webdav_mkdir_st->last_slash[1] = webdav_mkdir_st->post_slash;
    webdav_mkdir_st->last_slash = strchr(webdav_mkdir_st->last_slash + 1, '/');
    if (webdav_mkdir_st->last_slash)
    {
       webdav_mkdir_st->post_slash    = webdav_mkdir_st->last_slash[1];
       webdav_mkdir_st->last_slash[1] = '\0';
-      RARCH_DBG("[webdav] MKCOL %s\n", webdav_mkdir_st->url);
-      auth_header = webdav_get_auth_header("MKCOL", webdav_mkdir_st->url);
-      task_push_webdav_mkdir(webdav_mkdir_st->url, true, auth_header, webdav_mkdir_cb, webdav_mkdir_st);
-      free(auth_header);
+      webdav_mkdir_push(webdav_mkdir_st);
    }
    else
    {
