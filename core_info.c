@@ -1722,7 +1722,7 @@ static void core_info_resolve_firmware(
 {
    unsigned i;
    size_t _len;
-   char prefix[12];
+   char prefix[24];
    unsigned firmware_count        = 0;
    core_info_firmware_t *firmware = NULL;
 

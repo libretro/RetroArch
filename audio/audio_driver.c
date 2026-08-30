@@ -2296,14 +2296,12 @@ static void audio_driver_submit(audio_driver_state_t *audio_st,
    {
       const uint8_t *p = (const uint8_t*)data;
       size_t len       = samples * sizeof(int16_t);
-      size_t written   = 0;
       while (len)
       {
          unsigned gen;
          size_t n = retro_spsc_write(&audio_st->pipe_ring, p, len);
          p       += n;
          len     -= n;
-         written += n;
          if (!len)
             break;
          /* Only wait on a consumer that can make progress: the driver
@@ -2716,12 +2714,14 @@ size_t audio_driver_sample_batch_float(const float *data, size_t frames)
       }
 
       if (flush_audio)
+      {
          audio_driver_state_lock();
          audio_driver_flush(audio_st, slowmotion_ratio, data,
                frames_to_write << 1, true,
                (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
                (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false);
          audio_driver_state_unlock();
+      }
 
       frames_remaining -= frames_to_write;
       data             += frames_to_write << 1;
@@ -3095,8 +3095,10 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
    else
    {
       if (!(buf = malloc(params->bufsize)))
+      {
          audio_driver_state_unlock();
          return false;
+      }
       memcpy(buf, params->buf, params->bufsize);
    }
 
