@@ -659,8 +659,8 @@ struct CommonResources
    std::vector<Texture> pass_outputs;
    std::vector<std::unique_ptr<StaticTexture>> luts;
 
-   std::unordered_map<std::string, slang_texture_semantic_map> texture_semantic_map;
-   std::unordered_map<std::string, slang_texture_semantic_map> texture_semantic_uniform_map;
+   slang_texture_semantic_name_map texture_semantic_map        = {};
+   slang_texture_semantic_name_map texture_semantic_uniform_map = {};
    std::unique_ptr<video_shader> shader_preset;
 
    GLuint quad_program = 0;
@@ -689,6 +689,8 @@ CommonResources::CommonResources()
 
 CommonResources::~CommonResources()
 {
+   slang_texture_semantic_name_map_free(&texture_semantic_map);
+   slang_texture_semantic_name_map_free(&texture_semantic_uniform_map);
    if (quad_program != 0)
       glDeleteProgram(quad_program);
    if (quad_vbo != 0)
@@ -1080,12 +1082,12 @@ private:
 
    void reflect_parameter(const std::string &name, slang_semantic_meta &meta);
    void reflect_parameter(const std::string &name, slang_texture_semantic_meta &meta);
-   void reflect_parameter_array(const char *name, std::vector<slang_texture_semantic_meta> &meta);
+   void reflect_parameter_array(const char *name, slang_texture_semantic_array &meta);
 };
 
 bool Pass::build()
 {
-   std::unordered_map<std::string, slang_semantic_map> semantic_map;
+   slang_semantic_name_map semantic_map = {};
    unsigned i;
    unsigned j = 0;
 
@@ -1098,25 +1100,44 @@ bool Pass::build()
 
    for (i = 0; i < parameters.size(); i++)
    {
-      if (!slang_set_unique_map(semantic_map, parameters[i].id,
-               slang_semantic_map{ SLANG_SEMANTIC_FLOAT_PARAMETER, j }))
+      if (!slang_semantic_name_map_set_unique(
+               &semantic_map, parameters[i].id.c_str(), NULL,
+               SLANG_SEMANTIC_FLOAT_PARAMETER, j))
+      {
+         slang_semantic_name_map_free(&semantic_map);
          return false;
+      }
       j++;
    }
 
-   reflection                              = slang_reflection{};
+   slang_reflection_free(&reflection);
+   if (!slang_reflection_init(&reflection))
+   {
+      slang_semantic_name_map_free(&semantic_map);
+      return false;
+   }
    reflection.pass_number                  = pass_number;
    reflection.texture_semantic_map         = &common->texture_semantic_map;
    reflection.texture_semantic_uniform_map = &common->texture_semantic_uniform_map;
    reflection.semantic_map                 = &semantic_map;
 
-   if (!slang_reflect_spirv(vertex_shader, fragment_shader, &reflection))
-      return false;
+   {
+      bool refl_ok = slang_reflect_spirv(
+            vertex_shader.data(), vertex_shader.size(),
+            fragment_shader.data(), fragment_shader.size(),
+            &reflection);
+      /* The parameter map is only needed during reflection; the
+       * reflection keeps a dangling pointer otherwise. */
+      slang_semantic_name_map_free(&semantic_map);
+      reflection.semantic_map = NULL;
+      if (!refl_ok)
+         return false;
+   }
 
    /* Filter out parameters which we will never use anyways. */
    filtered_parameters.clear();
 
-   for (i = 0; i < reflection.semantic_float_parameters.size(); i++)
+   for (i = 0; i < reflection.num_float_parameters; i++)
    {
       if (reflection.semantic_float_parameters[i].uniform ||
           reflection.semantic_float_parameters[i].push_constant)
@@ -1185,19 +1206,19 @@ void Pass::reflect_parameter(const std::string &name, slang_texture_semantic_met
    }
 }
 
-void Pass::reflect_parameter_array(const char *name, std::vector<slang_texture_semantic_meta> &meta)
+void Pass::reflect_parameter_array(const char *name, slang_texture_semantic_array &meta)
 {
    size_t i;
 
    if (spirv_binary)
       return;
 
-   for (i = 0; i < meta.size(); i++)
+   for (i = 0; i < meta.size; i++)
    {
       char n[128];
       size_t _len = strlcpy(n, name, sizeof(n));
       snprintf(n + _len, sizeof(n) - _len, "%u", (unsigned)i);
-      slang_texture_semantic_meta *m = (slang_texture_semantic_meta*)&meta[i];
+      slang_texture_semantic_meta *m = &meta.data[i];
 
       if (m->uniform)
       {
@@ -1352,21 +1373,24 @@ bool Pass::init_pipeline()
          input_state_get_ptr()->shader_uses_sensors = true;
    }
 
-   reflect_parameter("OriginalSize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_ORIGINAL][0]);
-   reflect_parameter("SourceSize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_SOURCE][0]);
+   reflect_parameter("OriginalSize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_ORIGINAL].data[0]);
+   reflect_parameter("SourceSize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_SOURCE].data[0]);
    reflect_parameter_array("OriginalHistorySize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY]);
    reflect_parameter_array("PassOutputSize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT]);
    reflect_parameter_array("PassFeedbackSize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK]);
    reflect_parameter_array("UserSize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_USER]);
-   for (std::pair<const std::string, slang_texture_semantic_map> &m : common->texture_semantic_uniform_map)
+   for (size_t mi = 0; mi < common->texture_semantic_uniform_map.count; mi++)
    {
-      std::vector<slang_texture_semantic_meta> &array = reflection.semantic_textures[m.second.semantic];
-      if (m.second.index < array.size())
-         reflect_parameter(m.first, array[m.second.index]);
+      const slang_texture_semantic_map_entry *ent =
+         &common->texture_semantic_uniform_map.entries[mi];
+      slang_texture_semantic_array &array =
+         reflection.semantic_textures[ent->semantic];
+      if (ent->index < array.size)
+         reflect_parameter(ent->name, array.data[ent->index]);
    }
 
    for (Parameter &m : filtered_parameters)
-      if (m.semantic_index < reflection.semantic_float_parameters.size())
+      if (m.semantic_index < reflection.num_float_parameters)
          reflect_parameter(m.id, reflection.semantic_float_parameters[m.semantic_index]);
 
    return true;
@@ -1663,27 +1687,30 @@ void Pass::build_semantic_texture(uint8_t *buffer,
 void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semantic semantic,
       unsigned index, unsigned width, unsigned height)
 {
-   std::vector<slang_texture_semantic_meta> &refl = reflection.semantic_textures[semantic];
-   if (index >= refl.size())
+   const slang_texture_semantic_array &arr =
+      reflection.semantic_textures[semantic];
+   const slang_texture_semantic_meta *refl;
+   if (index >= arr.size)
       return;
+   refl = &arr.data[index];
 
-   if (data && refl[index].uniform)
+   if (data && refl->uniform)
    {
-      if (refl[index].location.ubo_vertex >= 0 || refl[index].location.ubo_fragment >= 0)
+      if (refl->location.ubo_vertex >= 0 || refl->location.ubo_fragment >= 0)
       {
          float v4[4];
          v4[0] = (float)(width);
          v4[1] = (float)(height);
          v4[2] = 1.0f / (float)(width);
          v4[3] = 1.0f / (float)(height);
-         if (refl[index].location.ubo_vertex >= 0)
-            glUniform4fv(refl[index].location.ubo_vertex, 1, v4);
-         if (refl[index].location.ubo_fragment >= 0)
-            glUniform4fv(refl[index].location.ubo_fragment, 1, v4);
+         if (refl->location.ubo_vertex >= 0)
+            glUniform4fv(refl->location.ubo_vertex, 1, v4);
+         if (refl->location.ubo_fragment >= 0)
+            glUniform4fv(refl->location.ubo_fragment, 1, v4);
       }
       else
       {
-         float *_data = reinterpret_cast<float *>(data + refl[index].ubo_offset);
+         float *_data = reinterpret_cast<float *>(data + refl->ubo_offset);
          _data[0]     = (float)(width);
          _data[1]     = (float)(height);
          _data[2]     = 1.0f / (float)(width);
@@ -1691,23 +1718,23 @@ void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semant
       }
    }
 
-   if (refl[index].push_constant)
+   if (refl->push_constant)
    {
-      if (refl[index].location.push_vertex >= 0 || refl[index].location.push_fragment >= 0)
+      if (refl->location.push_vertex >= 0 || refl->location.push_fragment >= 0)
       {
          float v4[4];
          v4[0] = (float)(width);
          v4[1] = (float)(height);
          v4[2] = 1.0f / (float)(width);
          v4[3] = 1.0f / (float)(height);
-         if (refl[index].location.push_vertex >= 0)
-            glUniform4fv(refl[index].location.push_vertex, 1, v4);
-         if (refl[index].location.push_fragment >= 0)
-            glUniform4fv(refl[index].location.push_fragment, 1, v4);
+         if (refl->location.push_vertex >= 0)
+            glUniform4fv(refl->location.push_vertex, 1, v4);
+         if (refl->location.push_fragment >= 0)
+            glUniform4fv(refl->location.push_fragment, 1, v4);
       }
       else
       {
-         float *_data = reinterpret_cast<float *>(push_constant_buffer.data() + refl[index].push_constant_offset);
+         float *_data = reinterpret_cast<float *>(push_constant_buffer.data() + refl->push_constant_offset);
          _data[0]     = (float)(width);
          _data[1]     = (float)(height);
          _data[2]     = 1.0f / (float)(width);
@@ -1736,6 +1763,7 @@ Pass::~Pass()
 {
    if (pipeline != 0)
       glDeleteProgram(pipeline);
+   slang_reflection_free(&reflection);
 }
 
 void Pass::set_shader(GLenum stage,
@@ -1767,9 +1795,9 @@ void Pass::add_parameter(unsigned index, const std::string &id)
 void Pass::set_semantic_texture(slang_texture_semantic semantic,
       const Texture &texture)
 {
-   if (reflection.semantic_textures[semantic][0].texture)
+   if (reflection.semantic_textures[semantic].data[0].texture)
    {
-      unsigned binding = reflection.semantic_textures[semantic][0].binding;
+      unsigned binding = reflection.semantic_textures[semantic].data[0].binding;
       glActiveTexture(GL_TEXTURE0 + binding);
       glBindTexture(GL_TEXTURE_2D, texture.texture.image);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, convert_filter_to_mag_gl(texture.filter));
@@ -1785,10 +1813,10 @@ void Pass::build_semantic_texture_array(uint8_t *buffer,
    build_semantic_texture_array_vec4(buffer, semantic, index,
          texture.texture.width, texture.texture.height);
 
-   if (index < reflection.semantic_textures[semantic].size() &&
-         reflection.semantic_textures[semantic][index].texture)
+   if (index < reflection.semantic_textures[semantic].size &&
+         reflection.semantic_textures[semantic].data[index].texture)
    {
-      unsigned binding = reflection.semantic_textures[semantic][index].binding;
+      unsigned binding = reflection.semantic_textures[semantic].data[index].binding;
       glActiveTexture(GL_TEXTURE0 + binding);
       glBindTexture(GL_TEXTURE_2D, texture.texture.image);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, convert_filter_to_mag_gl(texture.filter));
@@ -2372,7 +2400,7 @@ bool gl3_filter_chain::init_history()
    for (i = 0; i < passes.size(); i++)
    {
       size_t _y = passes[i]->get_reflection().semantic_textures[
-                SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size();
+                SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size;
       required_images = MAX(required_images, _y);
    }
 
@@ -2415,9 +2443,10 @@ bool gl3_filter_chain::init_feedback()
       for (std::unique_ptr<gl3_shader::Pass> &pass : passes)
       {
          const slang_reflection &r          = pass->get_reflection();
-         const std::vector<slang_texture_semantic_meta> &feedbacks  = r.semantic_textures[SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK];
+         const slang_texture_semantic_array &feedbacks =
+            r.semantic_textures[SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK];
 
-         if (i < feedbacks.size() && feedbacks[i].texture)
+         if (i < feedbacks.size && feedbacks.data[i].texture)
          {
             use_feedback  = true;
             use_feedbacks = true;
@@ -2447,8 +2476,8 @@ bool gl3_filter_chain::init_alias()
 {
    int i;
 
-   common.texture_semantic_map.clear();
-   common.texture_semantic_uniform_map.clear();
+   slang_texture_semantic_name_map_free(&common.texture_semantic_map);
+   slang_texture_semantic_name_map_free(&common.texture_semantic_uniform_map);
 
    for (i = 0; i < (int)passes.size(); i++)
    {
@@ -2459,37 +2488,41 @@ bool gl3_filter_chain::init_alias()
 
       j = (unsigned)(&passes[i] - passes.data());
 
-      if (!slang_set_unique_map(common.texture_semantic_map, name,
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, j }))
+      if (!slang_texture_semantic_name_map_set_unique(
+               &common.texture_semantic_map, name.c_str(), NULL,
+               SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, j))
          return false;
 
-      if (!slang_set_unique_map(common.texture_semantic_uniform_map,
-               name + "Size",
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, j }))
+      if (!slang_texture_semantic_name_map_set_unique(
+               &common.texture_semantic_uniform_map, name.c_str(), "Size",
+               SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, j))
          return false;
 
-      if (!slang_set_unique_map(common.texture_semantic_map,
-               name + "Feedback",
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, j }))
+      if (!slang_texture_semantic_name_map_set_unique(
+               &common.texture_semantic_map, name.c_str(), "Feedback",
+               SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, j))
          return false;
 
-      if (!slang_set_unique_map(common.texture_semantic_uniform_map,
-               name + "FeedbackSize",
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, j }))
+      if (!slang_texture_semantic_name_map_set_unique(
+               &common.texture_semantic_uniform_map, name.c_str(),
+               "FeedbackSize",
+               SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, j))
          return false;
    }
 
    for (i = 0; i < (int)common.luts.size(); i++)
    {
       unsigned j = (unsigned)(&common.luts[i] - common.luts.data());
-      if (!slang_set_unique_map(common.texture_semantic_map,
-               common.luts[i]->get_id(),
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, j }))
+      if (!slang_texture_semantic_name_map_set_unique(
+               &common.texture_semantic_map,
+               common.luts[i]->get_id().c_str(), NULL,
+               SLANG_TEXTURE_SEMANTIC_USER, j))
          return false;
 
-      if (!slang_set_unique_map(common.texture_semantic_uniform_map,
-               common.luts[i]->get_id() + "Size",
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, j }))
+      if (!slang_texture_semantic_name_map_set_unique(
+               &common.texture_semantic_uniform_map,
+               common.luts[i]->get_id().c_str(), "Size",
+               SLANG_TEXTURE_SEMANTIC_USER, j))
          return false;
    }
 

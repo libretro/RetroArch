@@ -662,8 +662,8 @@ struct CommonResources
    std::vector<Texture> pass_outputs;
    std::vector<std::unique_ptr<StaticTexture>> luts;
 
-   std::unordered_map<std::string, slang_texture_semantic_map> texture_semantic_map;
-   std::unordered_map<std::string, slang_texture_semantic_map> texture_semantic_uniform_map;
+   slang_texture_semantic_name_map texture_semantic_map        = {};
+   slang_texture_semantic_name_map texture_semantic_uniform_map = {};
    std::unique_ptr<video_shader> shader_preset;
 
    VkDevice device;
@@ -1690,7 +1690,7 @@ bool vulkan_filter_chain::init_history()
    for (i = 0; i < passes.size(); i++)
    {
       size_t _y = passes[i]->get_reflection().semantic_textures[
-               SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size();
+               SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size;
       required_images = MAX(required_images, _y);
    }
 
@@ -1744,10 +1744,10 @@ bool vulkan_filter_chain::init_feedback()
       for (auto &pass : passes)
       {
          const slang_reflection &r = pass->get_reflection();
-         auto          &feedbacks  = r.semantic_textures[
-            SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK];
+         const slang_texture_semantic_array &feedbacks =
+            r.semantic_textures[SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK];
 
-         if (i < feedbacks.size() && feedbacks[i].texture)
+         if (i < feedbacks.size && feedbacks.data[i].texture)
          {
             use_feedback  = true;
             use_feedbacks = true;
@@ -1780,8 +1780,8 @@ bool vulkan_filter_chain::init_alias()
 {
    unsigned i;
 
-   common.texture_semantic_map.clear();
-   common.texture_semantic_uniform_map.clear();
+   slang_texture_semantic_name_map_free(&common.texture_semantic_map);
+   slang_texture_semantic_name_map_free(&common.texture_semantic_uniform_map);
 
    for (i = 0; i < (unsigned)passes.size(); i++)
    {
@@ -1789,39 +1789,39 @@ bool vulkan_filter_chain::init_alias()
       if (name.empty())
          continue;
 
-      if (!slang_set_unique_map(
-               common.texture_semantic_map, name,
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i }))
+      if (!slang_texture_semantic_name_map_set_unique(
+               &common.texture_semantic_map, name.c_str(), NULL,
+               SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i))
          return false;
 
-      if (!slang_set_unique_map(
-               common.texture_semantic_uniform_map, name + "Size",
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i }))
+      if (!slang_texture_semantic_name_map_set_unique(
+               &common.texture_semantic_uniform_map, name.c_str(), "Size",
+               SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i))
          return false;
 
-      if (!slang_set_unique_map(
-               common.texture_semantic_map, name + "Feedback",
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i }))
+      if (!slang_texture_semantic_name_map_set_unique(
+               &common.texture_semantic_map, name.c_str(), "Feedback",
+               SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i))
          return false;
 
-      if (!slang_set_unique_map(
-               common.texture_semantic_uniform_map, name + "FeedbackSize",
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i }))
+      if (!slang_texture_semantic_name_map_set_unique(
+               &common.texture_semantic_uniform_map, name.c_str(), "FeedbackSize",
+               SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i))
          return false;
    }
 
    for (i = 0; i < (unsigned)common.luts.size(); i++)
    {
-      if (!slang_set_unique_map(
-               common.texture_semantic_map,
-               common.luts[i]->get_id(),
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, i }))
+      if (!slang_texture_semantic_name_map_set_unique(
+               &common.texture_semantic_map,
+               common.luts[i]->get_id().c_str(), NULL,
+               SLANG_TEXTURE_SEMANTIC_USER, i))
          return false;
 
-      if (!slang_set_unique_map(
-               common.texture_semantic_uniform_map,
-               common.luts[i]->get_id() + "Size",
-               slang_texture_semantic_map{ SLANG_TEXTURE_SEMANTIC_USER, i }))
+      if (!slang_texture_semantic_name_map_set_unique(
+               &common.texture_semantic_uniform_map,
+               common.luts[i]->get_id().c_str(), "Size",
+               SLANG_TEXTURE_SEMANTIC_USER, i))
          return false;
    }
 
@@ -2506,6 +2506,7 @@ Buffer::~Buffer()
 Pass::~Pass()
 {
    clear_vk();
+   slang_reflection_free(&reflection);
 }
 
 void Pass::add_parameter(unsigned index, const std::string &id)
@@ -2652,8 +2653,9 @@ bool Pass::init_pipeline_layout()
    /* Semantic textures. */
    for (auto &semantic : reflection.semantic_textures)
    {
-      for (auto &texture : semantic)
+      for (size_t ti = 0; ti < semantic.size; ti++)
       {
+         const slang_texture_semantic_meta &texture = semantic.data[ti];
          VkShaderStageFlags stages = 0;
 
          if (!texture.texture)
@@ -3047,6 +3049,8 @@ CommonResources::CommonResources(VkDevice device,
 
 CommonResources::~CommonResources()
 {
+   slang_texture_semantic_name_map_free(&texture_semantic_map);
+   slang_texture_semantic_name_map_free(&texture_semantic_uniform_map);
    for (auto &i : samplers)
       for (auto &j : i)
          for (auto &k : j)
@@ -3092,7 +3096,7 @@ bool Pass::build()
 {
    unsigned i;
    unsigned j = 0;
-   std::unordered_map<std::string, slang_semantic_map> semantic_map;
+   slang_semantic_name_map semantic_map = {};
 
    framebuffer.reset();
    fb_feedback.reset();
@@ -3110,21 +3114,39 @@ bool Pass::build()
 
    for (i = 0; i < parameters.size(); i++)
    {
-      if (!slang_set_unique_map(
-               semantic_map, parameters[i].id,
-               slang_semantic_map{ SLANG_SEMANTIC_FLOAT_PARAMETER, j }))
+      if (!slang_semantic_name_map_set_unique(
+               &semantic_map, parameters[i].id.c_str(), NULL,
+               SLANG_SEMANTIC_FLOAT_PARAMETER, j))
+      {
+         slang_semantic_name_map_free(&semantic_map);
          return false;
+      }
       j++;
    }
 
-   reflection                              = slang_reflection{};
+   slang_reflection_free(&reflection);
+   if (!slang_reflection_init(&reflection))
+   {
+      slang_semantic_name_map_free(&semantic_map);
+      return false;
+   }
    reflection.pass_number                  = pass_number;
    reflection.texture_semantic_map         = &common->texture_semantic_map;
    reflection.texture_semantic_uniform_map = &common->texture_semantic_uniform_map;
    reflection.semantic_map                 = &semantic_map;
 
-   if (!slang_reflect_spirv(vertex_shader, fragment_shader, &reflection))
-      return false;
+   {
+      bool refl_ok = slang_reflect_spirv(
+            vertex_shader.data(), vertex_shader.size(),
+            fragment_shader.data(), fragment_shader.size(),
+            &reflection);
+      /* The parameter map is only needed during reflection; the
+       * reflection keeps a dangling pointer otherwise. */
+      slang_semantic_name_map_free(&semantic_map);
+      reflection.semantic_map = NULL;
+      if (!refl_ok)
+         return false;
+   }
 
    {
       auto &g = reflection.semantics[SLANG_SEMANTIC_GYROSCOPE];
@@ -3139,7 +3161,7 @@ bool Pass::build()
    /* Filter out parameters which we will never use anyways. */
    filtered_parameters.clear();
 
-   for (i = 0; i < reflection.semantic_float_parameters.size(); i++)
+   for (i = 0; i < reflection.num_float_parameters; i++)
    {
       if (reflection.semantic_float_parameters[i].uniform ||
           reflection.semantic_float_parameters[i].push_constant)
@@ -3154,12 +3176,12 @@ void Pass::set_semantic_texture(VkDescriptorSet set,
       VkDescriptorImageInfo *image_infos, VkWriteDescriptorSet *writes,
       unsigned &write_count)
 {
-   if (reflection.semantic_textures[semantic][0].texture
+   if (reflection.semantic_textures[semantic].data[0].texture
          && texture.texture.view != VK_NULL_HANDLE)
    {
       if (write_count >= VULKAN_MAX_DESCRIPTOR_WRITES)
          vulkan_flush_descriptor_writes(device, writes, &write_count);
-      VULKAN_PASS_SET_TEXTURE_BATCHED(set, common->samplers[texture.filter][texture.mip_filter][texture.address], reflection.semantic_textures[semantic][0].binding, texture.texture.view, texture.texture.layout, image_infos, writes, write_count);
+      VULKAN_PASS_SET_TEXTURE_BATCHED(set, common->samplers[texture.filter][texture.mip_filter][texture.address], reflection.semantic_textures[semantic].data[0].binding, texture.texture.view, texture.texture.layout, image_infos, writes, write_count);
    }
 }
 
@@ -3169,36 +3191,39 @@ void Pass::set_semantic_texture_array(VkDescriptorSet set,
       VkDescriptorImageInfo *image_infos, VkWriteDescriptorSet *writes,
       unsigned &write_count)
 {
-   if (index < reflection.semantic_textures[semantic].size() &&
-         reflection.semantic_textures[semantic][index].texture &&
+   if (index < reflection.semantic_textures[semantic].size &&
+         reflection.semantic_textures[semantic].data[index].texture &&
          texture.texture.view != VK_NULL_HANDLE)
    {
       if (write_count >= VULKAN_MAX_DESCRIPTOR_WRITES)
          vulkan_flush_descriptor_writes(device, writes, &write_count);
-      VULKAN_PASS_SET_TEXTURE_BATCHED(set, common->samplers[texture.filter][texture.mip_filter][texture.address],  reflection.semantic_textures[semantic][index].binding, texture.texture.view, texture.texture.layout, image_infos, writes, write_count);
+      VULKAN_PASS_SET_TEXTURE_BATCHED(set, common->samplers[texture.filter][texture.mip_filter][texture.address],  reflection.semantic_textures[semantic].data[index].binding, texture.texture.view, texture.texture.layout, image_infos, writes, write_count);
    }
 }
 
 void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semantic semantic,
       unsigned index, unsigned width, unsigned height)
 {
-   auto &refl = reflection.semantic_textures[semantic];
+   const slang_texture_semantic_array &arr =
+      reflection.semantic_textures[semantic];
+   const slang_texture_semantic_meta *refl;
 
-   if (index >= refl.size())
+   if (index >= arr.size)
       return;
+   refl = &arr.data[index];
 
-   if (data && refl[index].uniform)
+   if (data && refl->uniform)
    {
-      float *_data = reinterpret_cast<float *>(data + refl[index].ubo_offset);
+      float *_data = reinterpret_cast<float *>(data + refl->ubo_offset);
       _data[0]     = (float)(width);
       _data[1]     = (float)(height);
       _data[2]     = 1.0f / (float)(width);
       _data[3]     = 1.0f / (float)(height);
    }
 
-   if (refl[index].push_constant)
+   if (refl->push_constant)
    {
-      float *_data = reinterpret_cast<float *>(push.buffer.data() + (refl[index].push_constant_offset >> 2));
+      float *_data = reinterpret_cast<float *>(push.buffer.data() + (refl->push_constant_offset >> 2));
       _data[0]     = (float)(width);
       _data[1]     = (float)(height);
       _data[2]     = 1.0f / (float)(width);

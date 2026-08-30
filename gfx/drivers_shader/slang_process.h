@@ -156,17 +156,107 @@ typedef struct
    bool                explicit_format;
 } pass_semantics_t;
 
-struct slang_texture_semantic_map
+
+/* ---- C reflection data model ------------------------------------- */
+
+/* Longest stored name: a pass alias (63 chars) plus the
+ * "FeedbackSize" suffix (12), or a LUT id (63) plus "Size". */
+#define SLANG_NAME_MAP_NAME_MAX 80
+
+typedef struct slang_texture_semantic_map_entry
 {
+   char name[SLANG_NAME_MAP_NAME_MAX];
+   unsigned char name_len;
    enum slang_texture_semantic semantic;
    unsigned index;
-};
+} slang_texture_semantic_map_entry;
 
-struct slang_semantic_map
+typedef struct slang_texture_semantic_name_map
 {
+   slang_texture_semantic_map_entry *entries; /* malloc'd, grows */
+   size_t count;
+   size_t cap;
+} slang_texture_semantic_name_map;
+
+typedef struct slang_semantic_map_entry
+{
+   char name[SLANG_NAME_MAP_NAME_MAX];
+   unsigned char name_len;
    enum slang_semantic semantic;
    unsigned index;
-};
+} slang_semantic_map_entry;
+
+typedef struct slang_semantic_name_map
+{
+   slang_semantic_map_entry *entries;         /* malloc'd, grows */
+   size_t count;
+   size_t cap;
+} slang_semantic_name_map;
+
+typedef struct slang_semantic_location
+{
+   int ubo_vertex;
+   int push_vertex;
+   int ubo_fragment;
+   int push_fragment;
+} slang_semantic_location;
+
+typedef struct slang_texture_semantic_meta
+{
+   size_t   ubo_offset;
+   size_t   push_constant_offset;
+   unsigned binding;
+   uint32_t stage_mask;
+
+   bool texture;
+   bool uniform;
+   bool push_constant;
+
+   /* For APIs which need location information ala legacy GL.
+    * API user fills this struct in; initialized to -1. */
+   slang_semantic_location location;
+} slang_texture_semantic_meta;
+
+typedef struct slang_semantic_meta
+{
+   size_t   ubo_offset;
+   size_t   push_constant_offset;
+   unsigned num_components;
+   bool     uniform;
+   bool     push_constant;
+
+   /* For APIs which need location information ala legacy GL. */
+   slang_semantic_location location;
+} slang_semantic_meta;
+
+typedef struct slang_texture_semantic_array
+{
+   slang_texture_semantic_meta *data;         /* malloc'd, grows */
+   size_t size;
+   size_t cap;
+} slang_texture_semantic_array;
+
+typedef struct slang_reflection
+{
+   size_t   ubo_size;
+   size_t   push_constant_size;
+
+   unsigned ubo_binding;
+   uint32_t ubo_stage_mask;
+   uint32_t push_constant_stage_mask;
+
+   slang_texture_semantic_array
+      semantic_textures[SLANG_NUM_TEXTURE_SEMANTICS];
+   slang_semantic_meta semantics[SLANG_NUM_SEMANTICS];
+   slang_semantic_meta *semantic_float_parameters; /* malloc'd, grows */
+   size_t num_float_parameters;
+   size_t cap_float_parameters;
+
+   const slang_texture_semantic_name_map *texture_semantic_map;
+   const slang_texture_semantic_name_map *texture_semantic_uniform_map;
+   const slang_semantic_name_map         *semantic_map;
+   unsigned pass_number;
+} slang_reflection;
 
 RETRO_BEGIN_DECLS
 
@@ -252,6 +342,39 @@ bool slang_preprocess_parse_parameters(const char *shader_path,
 bool slang_preprocess_parse_parameters_cached(const char *shader_path,
       struct video_shader *shader, void *include_cache);
 
+/* Name-map lifecycle.  set_unique appends name -> (semantic, index);
+ * it fails on a duplicate name, an over-long name, or allocation
+ * failure.  The optional @suffix is concatenated after @name (used
+ * for the "Size"/"FeedbackSize" derived entries); pass NULL or ""
+ * for none.  free() releases the entries and re-initializes, so
+ * calling it on a zeroed map or twice is safe. */
+bool slang_texture_semantic_name_map_set_unique(
+      slang_texture_semantic_name_map *map,
+      const char *name, const char *suffix,
+      enum slang_texture_semantic semantic, unsigned index);
+void slang_texture_semantic_name_map_free(
+      slang_texture_semantic_name_map *map);
+bool slang_semantic_name_map_set_unique(
+      slang_semantic_name_map *map,
+      const char *name, const char *suffix,
+      enum slang_semantic semantic, unsigned index);
+void slang_semantic_name_map_free(slang_semantic_name_map *map);
+
+/* Reflection lifecycle: init() zeroes the structure, sizes the
+ * non-arrayed texture semantics (Original, Source) to one element
+ * and presets every GL location to -1; free() releases the arrays
+ * and re-initializes, so double-free is safe.  A reflection must be
+ * init()ed before slang_reflect_spirv() and free()d afterwards. */
+bool slang_reflection_init(slang_reflection *reflection);
+void slang_reflection_free(slang_reflection *reflection);
+
+/* Reflect the two SPIR-V stages into @reflection.  The name-map
+ * pointers and pass_number must be set by the caller after init(). */
+bool slang_reflect_spirv(
+      const uint32_t *vertex,   size_t vertex_len,
+      const uint32_t *fragment, size_t fragment_len,
+      slang_reflection *reflection);
+
 bool slang_process(
       struct video_shader*   shader_info,
       unsigned               pass_number,
@@ -290,9 +413,6 @@ RETRO_END_DECLS
 #undef __out_bcount_part
 #undef __deref_out_ecount
 
-#include <vector>
-#include <string>
-#include <unordered_map>
 #include <spirv_cross.hpp>
 
 /* Owns an include cache for a scope, so a filter chain's pass loop can
@@ -308,94 +428,6 @@ struct glslang_include_cache_guard
    glslang_include_cache_guard(const glslang_include_cache_guard&) = delete;
    glslang_include_cache_guard& operator=(const glslang_include_cache_guard&) = delete;
 };
-
-struct slang_semantic_location
-{
-   int ubo_vertex;
-   int push_vertex;
-   int ubo_fragment;
-   int push_fragment;
-
-   slang_semantic_location()
-      : ubo_vertex(-1), push_vertex(-1),
-        ubo_fragment(-1), push_fragment(-1) {}
-};
-
-struct slang_texture_semantic_meta
-{
-   size_t   ubo_offset;
-   size_t   push_constant_offset;
-   unsigned binding;
-   uint32_t stage_mask;
-
-   bool texture;
-   bool uniform;
-   bool push_constant;
-
-   /* For APIs which need location information ala legacy GL.
-    * API user fills this struct in. */
-   slang_semantic_location location;
-
-   slang_texture_semantic_meta()
-      : ubo_offset(0), push_constant_offset(0),
-        binding(0), stage_mask(0),
-        texture(false), uniform(false), push_constant(false) {}
-};
-
-struct slang_semantic_meta
-{
-   size_t   ubo_offset;
-   size_t   push_constant_offset;
-   unsigned num_components;
-   bool     uniform;
-   bool     push_constant;
-
-   /* For APIs which need location information ala legacy GL. */
-   slang_semantic_location location;
-
-   slang_semantic_meta()
-      : ubo_offset(0), push_constant_offset(0),
-        num_components(0), uniform(false), push_constant(false) {}
-};
-
-struct slang_reflection
-{
-   slang_reflection();
-
-   size_t   ubo_size;
-   size_t   push_constant_size;
-
-   unsigned ubo_binding;
-   uint32_t ubo_stage_mask;
-   uint32_t push_constant_stage_mask;
-
-   std::vector<slang_texture_semantic_meta>
-      semantic_textures[SLANG_NUM_TEXTURE_SEMANTICS];
-   slang_semantic_meta semantics[SLANG_NUM_SEMANTICS];
-   std::vector<slang_semantic_meta> semantic_float_parameters;
-
-   const std::unordered_map<std::string, slang_texture_semantic_map> *texture_semantic_map;
-   const std::unordered_map<std::string, slang_texture_semantic_map> *texture_semantic_uniform_map;
-   const std::unordered_map<std::string, slang_semantic_map>         *semantic_map;
-   unsigned pass_number;
-};
-
-template <typename P>
-static bool slang_set_unique_map(std::unordered_map<std::string, P> &m,
-      const std::string &name, const P &p)
-{
-   typename std::unordered_map<std::string, P>::iterator itr = m.find(name);
-   /* Alias already exists? */
-   if (itr != m.end())
-      return false;
-   m[name] = p;
-   return true;
-}
-
-bool slang_reflect_spirv(
-      const std::vector<uint32_t> &vertex,
-      const std::vector<uint32_t> &fragment,
-      slang_reflection *reflection);
 
 bool slang_reflect(
       const spirv_cross::Compiler &vertex_compiler,
