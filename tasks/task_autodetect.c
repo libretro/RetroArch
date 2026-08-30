@@ -1643,6 +1643,43 @@ bool input_autoconfigure_connect_ex(
    return true;
 }
 
+/**
+ * Re-runs autoconfiguration for a port that already holds a device,
+ * using the identity retained for it by the last connect.
+ *
+ * Profiles are consumed at connect time, so this is what makes a
+ * changed profile directory take effect on devices that are already
+ * present, without disturbing any driver.
+ *
+ * The display name is deliberately not carried over: the retained one
+ * may have come from the profile that is being replaced, and the
+ * hotplug path does not supply one either, so the newly matched
+ * profile gets to name the device. The physical location is not
+ * retained per port at all, so a profile discriminating on
+ * 'input_phys' loses that part of its affinity here.
+ *
+ * @param port Input port to reconfigure (0 .. MAX_INPUT_DEVICES-1).
+ *
+ * @return true if an autoconfigure task was queued, false otherwise.
+ * @see input_autoconfigure_connect()
+ */
+bool input_autoconfigure_reconnect(unsigned port)
+{
+   const char *name = input_config_get_device_name(port);
+
+   if (!name || !*name)
+      return false;
+
+   return input_autoconfigure_connect(
+         name,
+         NULL,
+         NULL,
+         input_config_get_device_joypad_driver(port),
+         port,
+         input_config_get_device_vid(port),
+         input_config_get_device_pid(port));
+}
+
 /****************************/
 /* Autoconfigure Disconnect */
 /****************************/

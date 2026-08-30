@@ -389,6 +389,7 @@ bool input_autoconfigure_connect_ex(
       uint8_t flags);
 bool input_autoconfigure_disconnect(
       unsigned port, const char *name);
+bool input_autoconfigure_reconnect(unsigned port);
 
 void set_save_state_in_background(bool state);
 void set_save_state_disable_undo(bool disable);

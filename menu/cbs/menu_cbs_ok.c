@@ -5244,8 +5244,18 @@ static void cb_decompressed(retro_task_t *task,
       switch (enum_idx)
       {
          case MENU_ENUM_LABEL_CB_UPDATE_ASSETS:
-         case MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES:
             generic_action_ok_command(CMD_EVENT_REINIT);
+            break;
+         case MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES:
+            {
+               /* Controller profiles are read when a device connects,
+                * so the freshly extracted ones only have to be applied
+                * to the devices that are already connected. Ports with
+                * no device retained are skipped by the reconnect. */
+               unsigned i;
+               for (i = 0; i < MAX_INPUT_DEVICES; i++)
+                  input_autoconfigure_reconnect(i);
+            }
             break;
          case MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES:
             {
