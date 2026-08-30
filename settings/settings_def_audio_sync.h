@@ -10,11 +10,11 @@ S_BOOL(audio_sync, AUDIO_SYNC,
       "Synchronization",
       "Synchronize audio. Recommended.")
 
-S_UINT_EX(audio_threaded_pipeline, AUDIO_THREADED_PIPELINE,
+S_BOOL(audio_threaded_pipeline, AUDIO_THREADED_PIPELINE,
       "audio_threaded_pipeline",
-      DEFAULT_AUDIO_THREADED_PIPELINE, SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_AUDIO_REINIT, AUDIO_THREADED_PIPELINE_OFF, AUDIO_THREADED_PIPELINE_LAST - 1, 1.0, 0, setting_action_ok_uint, setting_get_string_representation_uint_audio_threaded_pipeline, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
+      DEFAULT_AUDIO_THREADED_PIPELINE, SD_FLAG_NONE, 0, CMD_EVENT_AUDIO_REINIT,
       "Threaded Pipeline",
-      "Resample, filter and mix audio on the audio thread instead of inside each frame. Same latency as the frame-synchronous path at any Audio Latency setting, with rate control measured at the device's own pace and the resampler out of the frame budget. 'Automatic' enables it on the audio drivers it has been measured on; 'ON' enables it on every driver that can wake on the device. Drivers that cannot keep the frame-synchronous path either way.")
+      "Resample, filter and mix audio on the audio thread instead of inside each frame. Same latency as the frame-synchronous path at any Audio Latency setting, with rate control measured at the device's own pace and the resampler out of the frame budget. Audio drivers that cannot wake on the device keep the frame-synchronous path.")
 
 S_BOOL(audio_thread_priority, AUDIO_THREAD_PRIORITY,
       "audio_thread_priority",

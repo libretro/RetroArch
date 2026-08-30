@@ -9500,9 +9500,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
 MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
 MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
-#define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
-MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
 #include "../settings/settings_def_audio_sync.h"
 #undef S_BOOL
 #undef S_BOOL_NS
@@ -9513,7 +9510,6 @@ MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
 #undef S_FLOAT
 #undef S_FLOAT_NS
 #undef SETTINGS_DEF_STRINGS_PASS
-#undef S_UINT_EX
 /* GENERATED REGION: audio skew group (see settings_def_audio_skew.h). */
 #define SETTINGS_DEF_STRINGS_PASS
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
@@ -32831,10 +32827,6 @@ MSG_HASH(
 MSG_HASH(
    MSG_CHEEVOS_LOGIN_TOKEN_EXPIRED,
    "RetroAchievements login expired. Please re-enter your password and reload the game."
-   )
-MSG_HASH(
-   MSG_AUDIO_THREADED_PIPELINE_AUTO,
-   "Automatic"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,

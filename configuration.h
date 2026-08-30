@@ -152,7 +152,6 @@ typedef struct settings
 
       unsigned audio_output_sample_rate;
       unsigned audio_block_frames;
-      unsigned audio_threaded_pipeline;
       unsigned audio_latency;
       unsigned audio_format_negotiation;
 
@@ -598,6 +597,7 @@ typedef struct settings
       bool audio_enable_menu_bgm;
       bool audio_enable_menu_scroll;
       bool audio_sync;
+      bool audio_threaded_pipeline;
       bool audio_thread_priority;
       bool audio_rate_control;
       bool audio_fastforward_mute;

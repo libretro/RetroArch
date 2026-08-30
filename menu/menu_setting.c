@@ -7059,24 +7059,6 @@ static size_t setting_get_string_representation_uint_crt_switch_resolutions(
    return 0;
 }
 
-static size_t setting_get_string_representation_uint_audio_threaded_pipeline(
-      rarch_setting_t *setting, char *s, size_t len)
-{
-   if (setting)
-   {
-      switch (*setting->value.target.unsigned_integer)
-      {
-         case AUDIO_THREADED_PIPELINE_OFF:
-            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
-         case AUDIO_THREADED_PIPELINE_AUTO:
-            return strlcpy(s, msg_hash_to_str(MSG_AUDIO_THREADED_PIPELINE_AUTO), len);
-         case AUDIO_THREADED_PIPELINE_ON:
-            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
-      }
-   }
-   return 0;
-}
-
 static size_t setting_get_string_representation_uint_audio_resampler_quality(
       rarch_setting_t *setting, char *s, size_t len)
 {
