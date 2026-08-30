@@ -553,33 +553,12 @@ enum audio_runloop_snapshot_bits
  **/
 void audio_driver_publish_runloop(void);
 
-/**
- * audio_sink_t:
- *
- * Where a pipeline pass delivers its finished samples. With data NULL
- * the pass hands them to the audio driver's write(), which is the
- * frontend's normal output. With data set it copies them into that
- * buffer instead, up to cap bytes, and accumulates the byte count in
- * written; anything beyond cap is dropped. This is how a consumer that
- * asks for a bounded amount of output (a pull-model backend, a test)
- * runs the same convert/DSP/resample/volume pass without the driver in
- * the loop. The sample format of what lands in data matches what the
- * driver would have received: float when AUDIO_FLAG_USE_FLOAT is set,
- * int16 otherwise.
- **/
 /* Accessors for audio_driver_state_t::flags; see the field. GET is an
  * acquire load, SET/CLEAR are acq_rel RMWs, all returning the whole
  * word so a caller can test bits on the result. */
 #define AUDIO_FLAGS_GET(st)         retro_atomic_load_acquire_int(&(st)->flags)
 #define AUDIO_FLAGS_SET(st, bits)   retro_atomic_fetch_or_int(&(st)->flags, (bits))
 #define AUDIO_FLAGS_CLEAR(st, bits) retro_atomic_fetch_and_int(&(st)->flags, ~(bits))
-
-typedef struct audio_sink
-{
-   void   *data;
-   size_t  cap;
-   size_t  written;
-} audio_sink_t;
 
 /**
  * audio_driver_frame_end:

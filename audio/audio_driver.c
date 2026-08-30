@@ -945,29 +945,10 @@ static void audio_mixer_fold_float_voices_into_s16(int16_t *dst,
 }
 #endif
 
-/* Terminal write of one pipeline pass. sink NULL is the driver. */
-static void audio_driver_sink_write(audio_driver_state_t *audio_st,
-      audio_sink_t *sink, const void *buf, size_t len)
-{
-   if (!sink)
-   {
-      audio_st->current_audio->write(audio_st->context_audio_data,
-            buf, len);
-      return;
-   }
-   if (!sink->data || sink->written >= sink->cap)
-      return;
-   if (len > sink->cap - sink->written)
-      len = sink->cap - sink->written;
-   memcpy((uint8_t*)sink->data + sink->written, buf, len);
-   sink->written += len;
-}
-
 static void audio_driver_flush(audio_driver_state_t *audio_st,
       float slowmotion_ratio,
       const void *data, size_t samples, bool is_float,
-      bool is_slowmotion, bool is_fastforward,
-      audio_sink_t *sink)
+      bool is_slowmotion, bool is_fastforward)
 {
    struct resampler_data src_data;
    const audio_driver_t *audio    = audio_st->current_audio;
@@ -1241,7 +1222,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                      out_frames, mixer_gain, override);
             }
 #endif
-            audio_driver_sink_write(audio_st, sink,
+            audio->write(audio_st->context_audio_data,
                   audio_st->output_samples_buf,
                   out_frames * 2 * sizeof(float));
          }
@@ -1314,7 +1295,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                         mixer_gain, override);
             }
 #endif
-            audio_driver_sink_write(audio_st, sink,
+            audio->write(audio_st->context_audio_data,
                   audio_st->output_samples_int16,
                   out_frames * 2 * sizeof(int16_t));
          }
@@ -1731,7 +1712,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          output_frames       *= sizeof(int16_t);  /* Unit: bytes */
       }
 
-      audio_driver_sink_write(audio_st, sink,
+      audio->write(audio_st->context_audio_data,
             output_data, output_frames * 2);
    }
 }
@@ -2362,7 +2343,7 @@ static void audio_driver_submit(audio_driver_state_t *audio_st,
    }
 #endif
    audio_driver_flush(audio_st, slowmotion_ratio, data, samples, false,
-         is_slowmotion, is_fastforward, NULL);
+         is_slowmotion, is_fastforward);
 }
 
 #ifdef HAVE_THREADS
@@ -2462,8 +2443,7 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
          config_get_ptr()->floats.slowmotion_ratio,
          audio_st->pipe_scratch, have, false,
          (snap & AUDIO_SNAP_SLOWMOTION) ? true : false,
-         (snap & AUDIO_SNAP_FASTMOTION) ? true : false,
-         NULL);
+         (snap & AUDIO_SNAP_FASTMOTION) ? true : false);
 }
 #endif
 
@@ -2727,7 +2707,7 @@ size_t audio_driver_sample_batch_float(const float *data, size_t frames)
          audio_driver_flush(audio_st, slowmotion_ratio, data,
                frames_to_write << 1, true,
                (runloop_flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false,
-               (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false, NULL);
+               (runloop_flags & RUNLOOP_FLAG_FASTMOTION) ? true : false);
 
       frames_remaining -= frames_to_write;
       data             += frames_to_write << 1;
