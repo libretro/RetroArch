@@ -156,6 +156,22 @@ struct shader_line_buf
 
 RETRO_BEGIN_DECLS
 
+enum glslang_compile_stage
+{
+   GLSLANG_COMPILE_STAGE_VERTEX = 0,
+   GLSLANG_COMPILE_STAGE_FRAGMENT
+};
+
+/* Compile a single GLSL stage to SPIR-V via the bundled glslang.
+ * On success *spirv points at a malloc'd array of *spirv_len words
+ * which the caller must free().  On failure *spirv is NULL and
+ * *spirv_len is 0.  Implemented in glslang.cpp - the one translation
+ * unit in the slang stack that must remain C++, since the vendored
+ * glslang only exposes a C++ API. */
+bool glslang_compile_spirv(const char *source,
+      enum glslang_compile_stage stage,
+      uint32_t **spirv, size_t *spirv_len);
+
 static INLINE enum glslang_filter_chain_address rarch_wrap_to_address(
       enum gfx_wrap_type type)
 {

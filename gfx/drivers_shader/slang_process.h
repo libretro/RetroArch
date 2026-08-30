@@ -170,6 +170,74 @@ struct slang_semantic_map
 
 RETRO_BEGIN_DECLS
 
+/* Compiled slang shader output.  Plain C data model: SPIR-V words are
+ * malloc'd arrays with explicit word counts, parameters are a malloc'd
+ * grow-array, and strings are fixed buffers sized to match the
+ * video_shader_parameter fields they are ultimately copied into
+ * (id[64]/desc[64] in video_shader_parse.h) and the pass alias[64]
+ * they name.  Lifecycle: glslang_output_init() before first use,
+ * glslang_output_free() when done.  glslang_output_free() releases the
+ * arrays and re-initializes the structure to the empty state, so
+ * calling it twice - or calling it after a failed compile - is safe. */
+typedef struct glslang_parameter
+{
+   char  id[64];
+   char  desc[64];
+   float initial;
+   float minimum;
+   float maximum;
+   float step;
+} glslang_parameter;
+
+typedef struct glslang_meta
+{
+   glslang_parameter *parameters;      /* malloc'd, grows on demand */
+   size_t num_parameters;
+   size_t cap_parameters;
+   enum glslang_format rt_format;
+   char name[64];                      /* '\0' terminated, empty if unset */
+} glslang_meta;
+
+typedef struct glslang_output
+{
+   uint32_t *vertex;                   /* malloc'd SPIR-V words */
+   uint32_t *fragment;                 /* malloc'd SPIR-V words */
+   size_t vertex_len;                  /* in words */
+   size_t fragment_len;                /* in words */
+   glslang_meta meta;
+} glslang_output;
+
+void glslang_output_init(glslang_output *output);
+void glslang_output_free(glslang_output *output);
+
+/* Append a parameter to @meta, growing the array as needed.
+ * Returns false on allocation failure ONLY; duplicate checking
+ * is the caller's responsibility. */
+bool glslang_meta_add_parameter(glslang_meta *meta,
+      const glslang_parameter *param);
+
+/* Compile the .slang file at @shader_path into @output.
+ * @output is zero-initialized by these functions at entry and fully
+ * (re)populated; it must not hold live allocations when passed in.
+ * On failure the output is left in the freed/empty state.  On success
+ * the caller owns the result and must call glslang_output_free(). */
+bool glslang_compile_shader(const char *shader_path,
+      glslang_output *output);
+
+/* As glslang_compile_shader(), but expands '#include' directives
+ * through @include_cache (see glslang_include_cache_new).  A preset's
+ * passes share helper files, so one cache across a filter chain's pass
+ * loop reads each file once instead of once per pass.  A NULL cache
+ * behaves exactly like the uncached call. */
+bool glslang_compile_shader_cached(const char *shader_path,
+      glslang_output *output, void *include_cache);
+
+/* Merge parameters harvested into @meta into @shader, enforcing the
+ * duplicate-must-match rule.  (Formerly a C++ overload of
+ * slang_preprocess_parse_parameters.) */
+bool slang_preprocess_parse_parameters_meta(const glslang_meta *meta,
+      struct video_shader *shader);
+
 /* Utility function to implement the same parameter reflection
  * which happens in the slang backend.
  * This does preprocess over the input file to handle #includes and so on. */
@@ -227,45 +295,6 @@ RETRO_END_DECLS
 #include <unordered_map>
 #include <spirv_cross.hpp>
 
-struct glslang_parameter
-{
-   std::string id;
-   std::string desc;
-   float initial;
-   float minimum;
-   float maximum;
-   float step;
-};
-
-struct glslang_meta
-{
-   std::vector<glslang_parameter> parameters;
-   std::string name;
-   glslang_format rt_format;
-
-   glslang_meta()
-   {
-	   rt_format = SLANG_FORMAT_UNKNOWN;
-   }
-};
-
-struct glslang_output
-{
-   std::vector<uint32_t> vertex;
-   std::vector<uint32_t> fragment;
-   glslang_meta meta;
-};
-
-bool glslang_compile_shader(const char *shader_path, glslang_output *output);
-
-/* As glslang_compile_shader(), but expands '#include' directives
- * through @include_cache (see glslang_include_cache_new).  A preset's
- * passes share helper files, so one cache across a filter chain's pass
- * loop reads each file once instead of once per pass.  A NULL cache
- * behaves exactly like the uncached call. */
-bool glslang_compile_shader_cached(const char *shader_path,
-      glslang_output *output, void *include_cache);
-
 /* Owns an include cache for a scope, so a filter chain's pass loop can
  * share one across every pass without having to free it on each error
  * exit.  Defined here rather than in each chain's translation unit
@@ -279,9 +308,6 @@ struct glslang_include_cache_guard
    glslang_include_cache_guard(const glslang_include_cache_guard&) = delete;
    glslang_include_cache_guard& operator=(const glslang_include_cache_guard&) = delete;
 };
-
-bool slang_preprocess_parse_parameters(glslang_meta& meta,
-      struct video_shader *shader);
 
 struct slang_semantic_location
 {

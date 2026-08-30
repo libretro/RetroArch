@@ -2008,23 +2008,29 @@ bool vulkan_filter_chain::compile_full_pass(unsigned pass_idx,
    }
 
    /* ---- Extract parameters ---- */
-   for (unsigned j = 0; j < output.meta.parameters.size(); j++)
+   for (size_t j = 0; j < output.meta.num_parameters; j++)
    {
-      auto &meta_param = output.meta.parameters[j];
+      const glslang_parameter *meta_param = &output.meta.parameters[j];
 
       if (shader->num_parameters >= GFX_MAX_PARAMETERS)
       {
          RARCH_ERR("[Vulkan] Exceeded maximum number of parameters (%u).\n",
                GFX_MAX_PARAMETERS);
+         glslang_output_free(&output);
          return false;
       }
 
       video_shader_parameter *itr = NULL;
       {
          unsigned k;
+         size_t mid_len = strlen(meta_param->id);
          for (k = 0; k < shader->num_parameters; k++)
          {
-            if (meta_param.id == shader->parameters[k].id)
+            /* Gate the memcmp behind two byte loads; the scan is
+             * O(n^2) across Mega Bezel-scale parameter counts. */
+            const char *sid = shader->parameters[k].id;
+            if (sid[0] == meta_param->id[0] && sid[mid_len] == '\0'
+                  && !memcmp(sid, meta_param->id, mid_len))
             {
                itr = &shader->parameters[k];
                break;
@@ -2034,45 +2040,46 @@ bool vulkan_filter_chain::compile_full_pass(unsigned pass_idx,
 
       if (itr)
       {
-         if (   meta_param.desc    != itr->desc
-             || meta_param.initial != itr->initial
-             || meta_param.minimum != itr->minimum
-             || meta_param.maximum != itr->maximum
-             || meta_param.step    != itr->step)
+         if (   strcmp(meta_param->desc, itr->desc)
+             || meta_param->initial != itr->initial
+             || meta_param->minimum != itr->minimum
+             || meta_param->maximum != itr->maximum
+             || meta_param->step    != itr->step)
          {
             RARCH_ERR("[Vulkan] Duplicate parameters found for \"%s\","
                   " but arguments do not match.\n", itr->id);
+            glslang_output_free(&output);
             return false;
          }
          add_parameter(pass_idx,
-               (unsigned)(itr - shader->parameters), meta_param.id);
+               (unsigned)(itr - shader->parameters), meta_param->id);
       }
       else
       {
          video_shader_parameter *param =
             &shader->parameters[shader->num_parameters];
-         strlcpy(param->id, meta_param.id.c_str(), sizeof(param->id));
-         strlcpy(param->desc, meta_param.desc.c_str(), sizeof(param->desc));
-         param->initial = meta_param.initial;
-         param->minimum = meta_param.minimum;
-         param->maximum = meta_param.maximum;
-         param->step    = meta_param.step;
-         add_parameter(pass_idx, shader->num_parameters, meta_param.id);
+         strlcpy(param->id, meta_param->id, sizeof(param->id));
+         strlcpy(param->desc, meta_param->desc, sizeof(param->desc));
+         param->initial = meta_param->initial;
+         param->minimum = meta_param->minimum;
+         param->maximum = meta_param->maximum;
+         param->step    = meta_param->step;
+         add_parameter(pass_idx, shader->num_parameters, meta_param->id);
          shader->num_parameters++;
       }
    }
 
    /* ---- Set SPIRV on the pass ---- */
    set_shader(pass_idx, VK_SHADER_STAGE_VERTEX_BIT,
-         output.vertex.data(), output.vertex.size());
+         output.vertex, output.vertex_len);
    set_shader(pass_idx, VK_SHADER_STAGE_FRAGMENT_BIT,
-         output.fragment.data(), output.fragment.size());
+         output.fragment, output.fragment_len);
 
    set_frame_count_period(pass_idx, pass->frame_count_mod);
 
    /* ---- Pass name ---- */
-   if (!output.meta.name.empty())
-      set_pass_name(pass_idx, output.meta.name.c_str());
+   if (output.meta.name[0])
+      set_pass_name(pass_idx, output.meta.name);
    if (*pass->alias)
       set_pass_name(pass_idx, pass->alias);
 
@@ -2081,7 +2088,10 @@ bool vulkan_filter_chain::compile_full_pass(unsigned pass_idx,
    {
       alias_initialized = false;
       if (!init_alias_early())
+      {
+         glslang_output_free(&output);
          return false;
+      }
    }
 
    /* ---- Pass info (scale, filter, format) ---- */
@@ -2213,6 +2223,7 @@ bool vulkan_filter_chain::compile_full_pass(unsigned pass_idx,
    }
 
    set_pass_info(pass_idx, p_info);
+   glslang_output_free(&output);
 
    /* ---- Vulkan pipeline creation ---- */
    return init_single_pass(pass_idx);
@@ -4000,7 +4011,10 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       const char *path, glslang_filter_chain_filter filter)
 {
    unsigned i;
+   glslang_output output;
    std::unique_ptr<video_shader> shader{ new video_shader() };
+
+   glslang_output_init(&output);
 
    if (!shader)
       return nullptr;
@@ -4033,7 +4047,6 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
 
    for (i = 0; i < shader->passes; i++)
    {
-      glslang_output output;
       struct vulkan_filter_chain_pass_info pass_info;
       const video_shader_pass *pass      = &shader->pass[i];
       const video_shader_pass *next_pass =
@@ -4057,10 +4070,10 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
          goto error;
       }
 
-      for (unsigned j = 0; j < output.meta.parameters.size(); j++)
+      for (size_t j = 0; j < output.meta.num_parameters; j++)
       {
          unsigned k;
-         auto &meta_param = output.meta.parameters[j];
+         const glslang_parameter *meta_param = &output.meta.parameters[j];
          video_shader_parameter *itr = NULL;
 
          if (shader->num_parameters >= GFX_MAX_PARAMETERS)
@@ -4069,13 +4082,19 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             goto error;
          }
 
-         /* Find existing parameter with matching id. */
-         for (k = 0; k < shader->num_parameters; k++)
+         /* Find existing parameter with matching id.  Gated memcmp:
+          * O(n^2) across Mega Bezel-scale parameter counts. */
          {
-            if (meta_param.id == shader->parameters[k].id)
+            size_t mid_len = strlen(meta_param->id);
+            for (k = 0; k < shader->num_parameters; k++)
             {
-               itr = &shader->parameters[k];
-               break;
+               const char *sid = shader->parameters[k].id;
+               if (sid[0] == meta_param->id[0] && sid[mid_len] == '\0'
+                     && !memcmp(sid, meta_param->id, mid_len))
+               {
+                  itr = &shader->parameters[k];
+                  break;
+               }
             }
          }
 
@@ -4083,46 +4102,46 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
          {
             /* Allow duplicate #pragma parameter, but
              * only if they are exactly the same. */
-            if (   meta_param.desc    != itr->desc
-                || meta_param.initial != itr->initial
-                || meta_param.minimum != itr->minimum
-                || meta_param.maximum != itr->maximum
-                || meta_param.step    != itr->step)
+            if (   strcmp(meta_param->desc, itr->desc)
+                || meta_param->initial != itr->initial
+                || meta_param->minimum != itr->minimum
+                || meta_param->maximum != itr->maximum
+                || meta_param->step    != itr->step)
             {
                RARCH_ERR("[Vulkan] Duplicate parameters found for \"%s\", but arguments do not match.\n",
                      itr->id);
                goto error;
             }
-            chain->add_parameter(i, (unsigned)(itr - shader->parameters), meta_param.id);
+            chain->add_parameter(i, (unsigned)(itr - shader->parameters), meta_param->id);
          }
          else
          {
             video_shader_parameter *param = &shader->parameters[shader->num_parameters];
-            strlcpy(param->id, meta_param.id.c_str(), sizeof(param->id));
-            strlcpy(param->desc, meta_param.desc.c_str(), sizeof(param->desc));
-            param->initial = meta_param.initial;
-            param->minimum = meta_param.minimum;
-            param->maximum = meta_param.maximum;
-            param->step    = meta_param.step;
-            chain->add_parameter(i, shader->num_parameters, meta_param.id);
+            strlcpy(param->id, meta_param->id, sizeof(param->id));
+            strlcpy(param->desc, meta_param->desc, sizeof(param->desc));
+            param->initial = meta_param->initial;
+            param->minimum = meta_param->minimum;
+            param->maximum = meta_param->maximum;
+            param->step    = meta_param->step;
+            chain->add_parameter(i, shader->num_parameters, meta_param->id);
             shader->num_parameters++;
          }
       }
 
       chain->set_shader(i,
             VK_SHADER_STAGE_VERTEX_BIT,
-            output.vertex.data(),
-            output.vertex.size());
+            output.vertex,
+            output.vertex_len);
 
       chain->set_shader(i,
             VK_SHADER_STAGE_FRAGMENT_BIT,
-            output.fragment.data(),
-            output.fragment.size());
+            output.fragment,
+            output.fragment_len);
 
       chain->set_frame_count_period(i, pass->frame_count_mod);
 
-      if (!output.meta.name.empty())
-         chain->set_pass_name(i, output.meta.name.c_str());
+      if (output.meta.name[0])
+         chain->set_pass_name(i, output.meta.name);
 
       /* Preset overrides. */
       if (*pass->alias)
@@ -4273,6 +4292,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       }
 
       chain->set_pass_info(i, pass_info);
+      glslang_output_free(&output);
    }
    }   /* include cache scope: freed here, and on any error exit above */
 
@@ -4316,6 +4336,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
    return chain.release();
 
 error:
+   glslang_output_free(&output);
    return nullptr;
 }
 

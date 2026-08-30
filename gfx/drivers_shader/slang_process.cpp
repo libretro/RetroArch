@@ -25,7 +25,6 @@
 
 #include "glslang_util.h"
 #if defined(HAVE_GLSLANG)
-#include "glslang.hpp"
 #include "slang_cache.h"
 #endif
 #include "spirv_cross.hpp"
@@ -483,18 +482,81 @@ static bool slang_process_reflection(
    return true;
 }
 
-static std::string build_stage_source(
+/* Grow-buffer used to assemble stage source in C.  Returns false on
+ * allocation failure; the buffer is always left in a freeable state. */
+struct stage_source_buf
+{
+   char *data;
+   size_t len;
+   size_t cap;
+};
+
+static bool stage_source_append(struct stage_source_buf *buf,
+      const char *s, size_t s_len)
+{
+   if (buf->len + s_len + 1 > buf->cap)
+   {
+      char *grown;
+      size_t new_cap = buf->cap ? buf->cap : 4096;
+      while (buf->len + s_len + 1 > new_cap)
+         new_cap *= 2;
+      grown = (char*)realloc(buf->data, new_cap);
+      if (!grown)
+         return false;
+      buf->data = grown;
+      buf->cap  = new_cap;
+   }
+   memcpy(buf->data + buf->len, s, s_len);
+   buf->len            += s_len;
+   buf->data[buf->len]  = '\0';
+   return true;
+}
+
+static bool stage_source_append_line(struct stage_source_buf *buf,
+      const char *line)
+{
+   if (!stage_source_append(buf, line, strlen(line)))
+      return false;
+   return stage_source_append(buf, "\n", 1);
+}
+
+/* Assemble the source for one stage from the preprocessed line buffer.
+ * Returns a malloc'd '\0'-terminated string the caller must free(),
+ * or NULL on allocation failure.  An empty line buffer yields an
+ * empty (but non-NULL) string, matching the previous behavior of
+ * returning "". */
+static char *build_stage_source(
       const struct shader_line_buf *lines, const char *stage)
 {
    size_t i;
-   std::string str;
+   struct stage_source_buf buf;
    bool active = true;
+
+   buf.data = NULL;
+   buf.len  = 0;
+   buf.cap  = 0;
+
    if (!lines || lines->num_lines < 1)
-      return "";
-   str.reserve(lines->len);
+   {
+      if (!stage_source_append(&buf, "", 0))
+         return NULL;
+      return buf.data;
+   }
+
+   /* Reserve the full preprocessed length up front (lines->len counts
+    * every line plus separators), so assembly never reallocates - the
+    * same exact-fit reservation the std::string implementation made
+    * via str.reserve(lines->len). */
+   buf.data = (char*)malloc(lines->len + 2);
+   if (!buf.data)
+      return NULL;
+   buf.cap     = lines->len + 2;
+   buf.data[0] = '\0';
+
    /* Version header (line 0). */
-   str.append(shader_line_buf_get(lines, 0));
-   str.append("\n");
+   if (!stage_source_append_line(&buf, shader_line_buf_get(lines, 0)))
+      goto error;
+
    for (i = 1; i < lines->num_lines; i++)
    {
       const char *line = shader_line_buf_get(lines, i);
@@ -518,17 +580,55 @@ static std::string build_stage_source(
          }
          else if (active)
          {
-            str.append(line);
-            str.append("\n");
+            if (!stage_source_append_line(&buf, line))
+               goto error;
          }
       }
       else if (active)
       {
-         str.append(line);
-         str.append("\n");
+         if (!stage_source_append_line(&buf, line))
+            goto error;
       }
    }
-   return str;
+   return buf.data;
+
+error:
+   free(buf.data);
+   return NULL;
+}
+
+void glslang_output_init(glslang_output *output)
+{
+   memset(output, 0, sizeof(*output));
+   output->meta.rt_format = SLANG_FORMAT_UNKNOWN;
+}
+
+void glslang_output_free(glslang_output *output)
+{
+   if (!output)
+      return;
+   free(output->vertex);
+   free(output->fragment);
+   free(output->meta.parameters);
+   glslang_output_init(output);
+}
+
+bool glslang_meta_add_parameter(glslang_meta *meta,
+      const glslang_parameter *param)
+{
+   if (meta->num_parameters == meta->cap_parameters)
+   {
+      glslang_parameter *grown;
+      size_t new_cap = meta->cap_parameters ? meta->cap_parameters * 2 : 16;
+      grown = (glslang_parameter*)realloc(meta->parameters,
+            new_cap * sizeof(*grown));
+      if (!grown)
+         return false;
+      meta->parameters     = grown;
+      meta->cap_parameters = new_cap;
+   }
+   meta->parameters[meta->num_parameters++] = *param;
+   return true;
 }
 
 static bool glslang_parse_meta(const struct shader_line_buf *lines,
@@ -541,7 +641,7 @@ static bool glslang_parse_meta(const struct shader_line_buf *lines,
    id[0]   = '\0';
    desc[0] = '\0';
 
-   /* Pre-count parameters to avoid vector reallocation */
+   /* Pre-count parameters to size the array in one allocation */
    {
       size_t param_count = 0;
       for (i = 0; i < lines->num_lines; i++)
@@ -551,8 +651,15 @@ static bool glslang_parse_meta(const struct shader_line_buf *lines,
                   sizeof("#pragma parameter ") - 1))
             param_count++;
       }
-      if (param_count > 0)
-         meta->parameters.reserve(param_count);
+      if (param_count > meta->cap_parameters)
+      {
+         glslang_parameter *grown = (glslang_parameter*)realloc(
+               meta->parameters, param_count * sizeof(*grown));
+         if (!grown)
+            return false;
+         meta->parameters     = grown;
+         meta->cap_parameters = param_count;
+      }
    }
 
    for (i = 0; i < lines->num_lines; i++)
@@ -571,12 +678,12 @@ static bool glslang_parse_meta(const struct shader_line_buf *lines,
          const char *str = line + (sizeof("#pragma name ") - 1);
          while (*str == ' ' || *str == '\t')
             str++;
-         if (!meta->name.empty())
+         if (meta->name[0])
          {
             RARCH_ERR("[Slang] Trying to declare multiple names for file.\n");
             return false;
          }
-         meta->name = str;
+         strlcpy(meta->name, str, sizeof(meta->name));
       }
       /* Check for shader parameters */
       else if (!memcmp(line, "#pragma parameter ",
@@ -682,11 +789,18 @@ static bool glslang_parse_meta(const struct shader_line_buf *lines,
             size_t parameter_index = 0;
             size_t j;
 
-            for (j = 0; j < meta->parameters.size(); j++)
+            for (j = 0; j < meta->num_parameters; j++)
             {
-               const std::string &pid = meta->parameters[j].id;
-               if (pid.size() == id_len
-                     && !memcmp(pid.data(), id, id_len))
+               /* Cheap inline gate before the memcmp call: first byte
+                * plus the terminator at id_len (which doubles as a
+                * length check) reject almost every candidate without a
+                * libc call.  Mega Bezel-class shaders carry 600+
+                * parameters, making this scan O(n^2)-hot; the previous
+                * std::string version got the same effect from its
+                * stored size. */
+               const char *pid = meta->parameters[j].id;
+               if (pid[0] == id[0] && pid[id_len] == '\0'
+                     && !memcmp(pid, id, id_len))
                {
                   parameter_found = true;
                   parameter_index = j;
@@ -700,8 +814,7 @@ static bool glslang_parse_meta(const struct shader_line_buf *lines,
             {
                const glslang_parameter *parameter =
                   &meta->parameters[parameter_index];
-               if (     parameter->desc.size() != desc_len
-                     || memcmp(parameter->desc.data(), desc, desc_len)
+               if (     memcmp(parameter->desc, desc, desc_len + 1)
                      || (parameter->initial != initial)
                      || (parameter->minimum != minimum)
                      || (parameter->maximum != maximum)
@@ -714,16 +827,31 @@ static bool glslang_parse_meta(const struct shader_line_buf *lines,
                   return false;
                }
             }
+            else if (meta->num_parameters < meta->cap_parameters)
+            {
+               /* The pre-count above reserved one slot per #pragma
+                * parameter line, so a fresh (non-duplicate) parameter
+                * always fits; write it in place with the lengths the
+                * parse just measured. */
+               glslang_parameter *p = &meta->parameters[meta->num_parameters++];
+               memcpy(p->id, id, id_len + 1);
+               memcpy(p->desc, desc, desc_len + 1);
+               p->initial = initial;
+               p->minimum = minimum;
+               p->maximum = maximum;
+               p->step    = step;
+            }
             else
             {
                glslang_parameter p;
-               p.id.assign(id, id_len);
-               p.desc.assign(desc, desc_len);
+               strlcpy(p.id, id, sizeof(p.id));
+               strlcpy(p.desc, desc, sizeof(p.desc));
                p.initial = initial;
                p.minimum = minimum;
                p.maximum = maximum;
                p.step    = step;
-               meta->parameters.push_back(p);
+               if (!glslang_meta_add_parameter(meta, &p))
+                  return false;
             }
          }
       }
@@ -763,62 +891,83 @@ bool glslang_compile_shader(const char *shader_path, glslang_output *output)
 bool glslang_compile_shader_cached(const char *shader_path,
       glslang_output *output, void *include_cache)
 {
+   glslang_output_init(output);
+
 #if defined(HAVE_GLSLANG)
-   struct shader_line_buf lines;
-   char cache_filename[PATH_MAX_LENGTH];
-
-   if (!shader_line_buf_init(&lines))
-      return false;
-
-   RARCH_LOG("[Slang] Compiling shader: \"%s\".\n", shader_path);
-
-   if (!glslang_read_shader_file_cached(shader_path, &lines, true, false,
-            include_cache))
-      goto error;
-
-   /* Compute cache key from preprocessed source (vertex + fragment stages) */
    {
-      std::string vertex_source = build_stage_source(&lines, "vertex");
-      std::string fragment_source = build_stage_source(&lines, "fragment");
-      spirv_cache_compute_hash(vertex_source.c_str(), fragment_source.c_str(),
-                              cache_filename);
-   }
+      struct shader_line_buf lines;
+      char cache_filename[PATH_MAX_LENGTH];
+      char *vertex_source   = NULL;
+      char *fragment_source = NULL;
 
-   /* Try to load from cache */
-   if (spirv_cache_load(cache_filename, output))
-   {
-      RARCH_LOG("[Slang] Loaded shader from cache: \"%s\".\n", shader_path);
+      if (!shader_line_buf_init(&lines))
+         return false;
+
+      RARCH_LOG("[Slang] Compiling shader: \"%s\".\n", shader_path);
+
+      if (!glslang_read_shader_file_cached(shader_path, &lines, true, false,
+               include_cache))
+         goto error;
+
+      /* Assemble both stage sources once; used for the cache key and,
+       * on a cache miss, for compilation. */
+      vertex_source   = build_stage_source(&lines, "vertex");
+      fragment_source = build_stage_source(&lines, "fragment");
+      if (!vertex_source || !fragment_source)
+         goto error;
+
+      spirv_cache_compute_hash(vertex_source, fragment_source,
+            cache_filename);
+
+      /* Try to load from cache */
+      if (spirv_cache_load(cache_filename, output))
+      {
+         RARCH_LOG("[Slang] Loaded shader from cache: \"%s\".\n", shader_path);
+         free(vertex_source);
+         free(fragment_source);
+         shader_line_buf_free(&lines);
+         return true;
+      }
+
+      if (!glslang_parse_meta(&lines, &output->meta))
+         goto error;
+
+      if (!glslang_compile_spirv(vertex_source,
+               GLSLANG_COMPILE_STAGE_VERTEX,
+               &output->vertex, &output->vertex_len))
+      {
+         RARCH_ERR("[Slang] Failed to compile vertex shader stage.\n");
+         goto error;
+      }
+
+      /* The vertex source is dead now; release it before the fragment
+       * compile so only one stage source is resident at a time. */
+      free(vertex_source);
+      vertex_source = NULL;
+
+      if (!glslang_compile_spirv(fragment_source,
+               GLSLANG_COMPILE_STAGE_FRAGMENT,
+               &output->fragment, &output->fragment_len))
+      {
+         RARCH_ERR("[Slang] Failed to compile fragment shader stage.\n");
+         goto error;
+      }
+
+      /* Save to cache */
+      spirv_cache_save(cache_filename, output);
+
+      free(vertex_source);
+      free(fragment_source);
       shader_line_buf_free(&lines);
+
       return true;
-   }
-
-   output->meta = glslang_meta{};
-   if (!glslang_parse_meta(&lines, &output->meta))
-      goto error;
-
-   if (!glslang::compile_spirv(build_stage_source(&lines, "vertex"),
-            glslang::StageVertex, &output->vertex))
-   {
-      RARCH_ERR("[Slang] Failed to compile vertex shader stage.\n");
-      goto error;
-   }
-
-   if (!glslang::compile_spirv(build_stage_source(&lines, "fragment"),
-            glslang::StageFragment, &output->fragment))
-   {
-      RARCH_ERR("[Slang] Failed to compile fragment shader stage.\n");
-      goto error;
-   }
-
-   /* Save to cache */
-   spirv_cache_save(cache_filename, output);
-
-   shader_line_buf_free(&lines);
-
-   return true;
 
 error:
-   shader_line_buf_free(&lines);
+      free(vertex_source);
+      free(fragment_source);
+      shader_line_buf_free(&lines);
+      glslang_output_free(output);
+   }
 #endif
 
    {
@@ -835,7 +984,7 @@ error:
    return false;
 }
 
-bool slang_preprocess_parse_parameters(glslang_meta& meta,
+bool slang_preprocess_parse_parameters_meta(const glslang_meta *meta,
       struct video_shader *shader)
 {
    unsigned i;
@@ -843,14 +992,22 @@ bool slang_preprocess_parse_parameters(glslang_meta& meta,
 
    /* Assumes num_parameters is
     * initialized to something sane. */
-   for (i = 0; i < meta.parameters.size(); i++)
+   for (i = 0; i < meta->num_parameters; i++)
    {
       unsigned k;
       struct video_shader_parameter *p = NULL;
       bool mismatch_dup                = false;
+      const char *mid                  = meta->parameters[i].id;
+      size_t mid_len                   = strlen(mid);
       for (k = 0; k < shader->num_parameters; k++)
       {
-         if (meta.parameters[i].id == shader->parameters[k].id)
+         /* This scan is O(meta x shader) and Mega Bezel-class presets
+          * accumulate 1000+ parameters with long shared prefixes, so
+          * gate the memcmp behind two byte loads (first char + the
+          * terminator at mid_len, which doubles as a length check). */
+         const char *sid = shader->parameters[k].id;
+         if (sid[0] == mid[0] && sid[mid_len] == '\0'
+               && !memcmp(sid, mid, mid_len))
          {
             p = &shader->parameters[k];
             break;
@@ -861,11 +1018,11 @@ bool slang_preprocess_parse_parameters(glslang_meta& meta,
       {
          /* Allow duplicate #pragma parameter, but only
           * if they are exactly the same. */
-         if (     meta.parameters[i].desc    != p->desc
-               || meta.parameters[i].initial != p->initial
-               || meta.parameters[i].minimum != p->minimum
-               || meta.parameters[i].maximum != p->maximum
-               || meta.parameters[i].step    != p->step)
+         if (     strcmp(meta->parameters[i].desc, p->desc)
+               || meta->parameters[i].initial != p->initial
+               || meta->parameters[i].minimum != p->minimum
+               || meta->parameters[i].maximum != p->maximum
+               || meta->parameters[i].step    != p->step)
          {
             RARCH_ERR("[Slang] Duplicate parameters"
                   " found for \"%s\", but arguments do not match.\n",
@@ -886,13 +1043,13 @@ bool slang_preprocess_parse_parameters(glslang_meta& meta,
          &shader->parameters[shader->num_parameters++]))
          continue;
 
-      strlcpy(p->id,   meta.parameters[i].id.c_str(),   sizeof(p->id));
-      strlcpy(p->desc, meta.parameters[i].desc.c_str(), sizeof(p->desc));
-      p->initial = meta.parameters[i].initial;
-      p->minimum = meta.parameters[i].minimum;
-      p->maximum = meta.parameters[i].maximum;
-      p->step    = meta.parameters[i].step;
-      p->current = meta.parameters[i].initial;
+      strlcpy(p->id,   meta->parameters[i].id,   sizeof(p->id));
+      strlcpy(p->desc, meta->parameters[i].desc, sizeof(p->desc));
+      p->initial = meta->parameters[i].initial;
+      p->minimum = meta->parameters[i].minimum;
+      p->maximum = meta->parameters[i].maximum;
+      p->step    = meta->parameters[i].step;
+      p->current = meta->parameters[i].initial;
    }
 
    return true;
@@ -920,12 +1077,17 @@ bool slang_preprocess_parse_parameters_cached(const char *shader_path,
       if (glslang_read_shader_file_cached(shader_path, &lines, true, false,
                include_cache))
       {
-         glslang_meta meta = glslang_meta{};
+         glslang_meta meta;
+         memset(&meta, 0, sizeof(meta));
+         meta.rt_format = SLANG_FORMAT_UNKNOWN;
          if (glslang_parse_meta(&lines, &meta))
          {
+            bool ret = slang_preprocess_parse_parameters_meta(&meta, shader);
+            free(meta.parameters);
             shader_line_buf_free(&lines);
-            return slang_preprocess_parse_parameters(meta, shader);
+            return ret;
          }
+         free(meta.parameters);
       }
    }
 
@@ -949,11 +1111,14 @@ bool slang_process(
    if (!glslang_compile_shader(pass.source.path, &output))
       return false;
 
-   if (!slang_preprocess_parse_parameters(output.meta, shader_info))
+   if (!slang_preprocess_parse_parameters_meta(&output.meta, shader_info))
+   {
+      glslang_output_free(&output);
       return false;
+   }
 
-   if (!*pass.alias && !output.meta.name.empty())
-      strlcpy(pass.alias, output.meta.name.c_str(), sizeof(pass.alias) - 1);
+   if (!*pass.alias && output.meta.name[0])
+      strlcpy(pass.alias, output.meta.name, sizeof(pass.alias) - 1);
 
    out->format          = output.meta.rt_format;
    out->explicit_format = (output.meta.rt_format != SLANG_FORMAT_UNKNOWN);
@@ -985,19 +1150,25 @@ bool slang_process(
          case RARCH_SHADER_HLSL:
          case RARCH_SHADER_CG:
 #ifdef HAVE_HLSL
-            vs_compiler = new spirv_cross::CompilerHLSL(output.vertex);
-            ps_compiler = new spirv_cross::CompilerHLSL(output.fragment);
+            vs_compiler = new spirv_cross::CompilerHLSL(
+                  output.vertex, output.vertex_len);
+            ps_compiler = new spirv_cross::CompilerHLSL(
+                  output.fragment, output.fragment_len);
 #endif
             break;
 
          case RARCH_SHADER_METAL:
-            vs_compiler = new spirv_cross::CompilerMSL(output.vertex);
-            ps_compiler = new spirv_cross::CompilerMSL(output.fragment);
+            vs_compiler = new spirv_cross::CompilerMSL(
+                  output.vertex, output.vertex_len);
+            ps_compiler = new spirv_cross::CompilerMSL(
+                  output.fragment, output.fragment_len);
             break;
 
          default:
-            vs_compiler = new spirv_cross::CompilerGLSL(output.vertex);
-            ps_compiler = new spirv_cross::CompilerGLSL(output.fragment);
+            vs_compiler = new spirv_cross::CompilerGLSL(
+                  output.vertex, output.vertex_len);
+            ps_compiler = new spirv_cross::CompilerGLSL(
+                  output.fragment, output.fragment_len);
             break;
       }
 
@@ -1134,6 +1305,7 @@ bool slang_process(
 
    delete vs_compiler;
    delete ps_compiler;
+   glslang_output_free(&output);
 
    return true;
 
@@ -1146,6 +1318,7 @@ error:
 
    delete vs_compiler;
    delete ps_compiler;
+   glslang_output_free(&output);
 
    return false;
 }

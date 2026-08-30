@@ -76,7 +76,7 @@
 /* Mirror the production semantic enum.  Order matters because
  * the production texture_semantic_names[] array is indexed by
  * enum value and the message uses it.  If
- * gfx/drivers_shader/glslang.hpp amends the enum, this mirror
+ * gfx/drivers_shader/glslang_util.h amends the enum, this mirror
  * must follow. */
 enum slang_texture_semantic
 {
