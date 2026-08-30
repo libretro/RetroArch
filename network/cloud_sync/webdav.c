@@ -60,8 +60,9 @@ typedef struct
    char *algo;
    char *opaque;
    const char *cnonce;
-   bool qop_auth;
    unsigned nc;
+   bool qop_auth;
+   bool dav_verified;
 } webdav_state_t;
 
 static webdav_state_t webdav_driver_st = {0};
@@ -445,9 +446,24 @@ static char *webdav_get_auth_header(const char *method, const char *url)
 static void webdav_log_http_failure(const char *path, http_transfer_data_t *data)
 {
     size_t i;
-    RARCH_WARN("[webdav] Failed: %s: HTTP %d\n", path, data->status);
+    size_t _len = 0;
+    /* Cloud sync runs several transfers at once, so one RARCH_WARN per
+     * header interleaves with the other tasks' output and produces logs
+     * with lines spliced into each other.  Build the whole report first
+     * and emit it in a single write. */
+    char report[2048];
+
+    _len  = snprintf(report, sizeof(report), "[webdav] Failed: %s: HTTP %d",
+          path, data->status);
     for (i = 0; data->headers && i < data->headers->size; i++)
-        RARCH_WARN("%s\n", data->headers->elems[i].data);
+    {
+       if (_len >= sizeof(report) - 1)
+          break;
+       report[_len++] = '\n';
+       _len += strlcpy(report + _len, data->headers->elems[i].data,
+             sizeof(report) - _len);
+    }
+    RARCH_WARN("%s\n", report);
     /* The buffer returned by net_http_data() is sized exactly to
      * data->len -- net_http.c shrinks response->data with
      * realloc(p, response->len) on transition to P_DONE.  Writing a
@@ -488,6 +504,54 @@ static bool webdav_needs_reauth(http_transfer_data_t *data)
    return false;
 }
 
+/* RFC 9110 5.6.1.2: the Allow header is a comma-separated list of
+ * method tokens.  Match whole tokens so that a method merely
+ * containing "PUT" cannot be mistaken for PUT itself. */
+static bool webdav_allow_lists_put(const char *allow)
+{
+   const char *p = allow;
+
+   while (*p)
+   {
+      const char *tok;
+
+      while (*p == ' ' || *p == '\t' || *p == ',')
+         p++;
+      tok = p;
+      while (*p && *p != ',' && *p != ' ' && *p != '\t')
+         p++;
+      if (p - tok == 3 && string_starts_with_case_insensitive(tok, "PUT"))
+         return true;
+   }
+
+   return false;
+}
+
+/* Inspects the response to the OPTIONS request cloud sync opens with.
+ * A WebDAV server announces itself with a DAV header (RFC 4918 10.1);
+ * a plain HTTP server answers OPTIONS quite happily and only refuses
+ * once the first PUT arrives, which is far too late to tell the user
+ * anything useful. */
+static void webdav_check_options(http_transfer_data_t *data,
+      bool *dav, bool *allow_seen, bool *allow_put)
+{
+   size_t i;
+
+   for (i = 0; data->headers && i < data->headers->size; i++)
+   {
+      const char *hdr = data->headers->elems[i].data;
+
+      if (string_starts_with_case_insensitive(hdr, "DAV:"))
+         *dav = true;
+      else if (string_starts_with_case_insensitive(hdr, "Allow:"))
+      {
+         *allow_seen = true;
+         if (webdav_allow_lists_put(hdr + STRLEN_CONST("Allow:")))
+            *allow_put = true;
+      }
+   }
+}
+
 static void webdav_stat_cb(retro_task_t *task, void *task_data, void *user_data, const char *err)
 {
    webdav_state_t       *webdav_st    = webdav_state_get_ptr();
@@ -512,6 +576,26 @@ static void webdav_stat_cb(retro_task_t *task, void *task_data, void *user_data,
    if (!success && data)
        webdav_log_http_failure(webdav_st->url, data);
 
+   if (success && data)
+   {
+      bool dav        = false;
+      bool allow_seen = false;
+      bool allow_put  = false;
+
+      webdav_check_options(data, &dav, &allow_seen, &allow_put);
+      webdav_st->dav_verified = dav;
+
+      if (allow_seen && !allow_put)
+      {
+         RARCH_ERR("[webdav] %s answers OPTIONS but does not accept PUT, so it is not a WebDAV endpoint. Check the URL: providers commonly serve WebDAV over https only, on a dedicated host.\n",
+               webdav_st->url);
+         success = false;
+      }
+      else if (!dav)
+         RARCH_WARN("[webdav] %s did not return a DAV header, so it may not be a WebDAV endpoint. Continuing anyway.\n",
+               webdav_st->url);
+   }
+
    webdav_cb_st->cb(webdav_cb_st->user_data, NULL, success, NULL);
    free(webdav_cb_st);
 }
@@ -529,7 +613,10 @@ static bool webdav_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
 
 #ifndef HAVE_SSL
    if (strncmp(url, "https", 5) == 0)
+   {
+      RARCH_ERR("[webdav] This build has no TLS support, so the https URL %s cannot be used.\n", url);
       return false;
+   }
 #endif
    /* TODO/FIXME: LOCK? */
    if (!strstr(url, "://"))
@@ -655,6 +742,7 @@ static void webdav_mkdir_cb(retro_task_t *task, void *task_data,
    char *auth_header;
    webdav_mkdir_state_t *webdav_mkdir_st = (webdav_mkdir_state_t *)user_data;
    http_transfer_data_t *data            = (http_transfer_data_t*)task_data;
+   webdav_state_t       *webdav_st       = webdav_state_get_ptr();
 
    if (!webdav_mkdir_st)
       return;
@@ -668,8 +756,15 @@ static void webdav_mkdir_cb(retro_task_t *task, void *task_data,
       return;
    }
 
-   /* HTTP 405 on MKCOL means it's already there */
-   if (!data || data->status < 200 || (data->status >= 400 && data->status != 405))
+   /* HTTP 405 on MKCOL means it's already there (RFC 4918 9.3.1) -- but
+    * only on a server that implements MKCOL at all.  A plain HTTP server
+    * answers 405 because it has never heard of the method, and treating
+    * that as success walks the whole sync through to a pile of failed
+    * PUTs. */
+   if (   !data
+       || data->status < 200
+       || (   data->status >= 400
+           && !(data->status == 405 && webdav_st->dav_verified)))
    {
       if (data)
          webdav_log_http_failure(webdav_mkdir_st->url, data);
