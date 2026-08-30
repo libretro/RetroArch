@@ -264,10 +264,12 @@ static void android_app_set_input(struct android_app *android_app,
    android_app->pendingInputQueue = inputQueue;
    ticket                         = android_app->cmd_seq;
 
-   if (android_app_write_cmd(android_app, APP_CMD_INPUT_CHANGED))
+   if (     !android_app->app_thread_exited
+         && android_app_write_cmd(android_app, APP_CMD_INPUT_CHANGED))
       ticket = ++android_app->cmd_seq;
 
-   while ((int)(android_app->done_seq - ticket) < 0)
+   while (   !android_app->app_thread_exited
+          && (int)(android_app->done_seq - ticket) < 0)
       scond_wait(android_app->cond, android_app->mutex);
 
    slock_unlock(android_app->mutex);
@@ -288,17 +290,20 @@ static void android_app_set_window(struct android_app *android_app,
    slock_lock(android_app->mutex);
    ticket = android_app->cmd_seq;
 
-   if (     android_app->pendingWindow
+   if (     !android_app->app_thread_exited
+         && android_app->pendingWindow
          && android_app_write_cmd(android_app, APP_CMD_TERM_WINDOW))
       ticket = ++android_app->cmd_seq;
 
    android_app->pendingWindow = window;
 
-   if (     window
+   if (     !android_app->app_thread_exited
+         && window
          && android_app_write_cmd(android_app, APP_CMD_INIT_WINDOW))
       ticket = ++android_app->cmd_seq;
 
-   while ((int)(android_app->done_seq - ticket) < 0)
+   while (   !android_app->app_thread_exited
+          && (int)(android_app->done_seq - ticket) < 0)
       scond_wait(android_app->cond, android_app->mutex);
 
    slock_unlock(android_app->mutex);
@@ -330,7 +335,8 @@ static void android_app_set_activity_state(
 
    slock_lock(android_app->mutex);
    android_app_write_cmd(android_app, cmd);
-   while (android_app->activityState != cmd && acked)
+   while (   !android_app->app_thread_exited
+          && android_app->activityState != cmd && acked)
       acked = scond_wait_timeout(android_app->cond, android_app->mutex,
             ANDROID_ACTIVITY_STATE_TIMEOUT_US);
    acked = (android_app->activityState == cmd);
@@ -618,6 +624,7 @@ static void jni_thread_destruct(void *value)
 
 static void android_app_entry(void *data)
 {
+   struct android_app *android_app = (struct android_app*)data;
    char arguments[]  = "retroarch";
    char      *argv[] = {arguments,   NULL};
    int          argc = 1;
@@ -625,6 +632,25 @@ static void android_app_entry(void *data)
    sthread_setname("ra-main");
 
    rarch_main(argc, argv, data);
+
+   /* Only two paths return here rather than exiting the process: an
+    * init failure inside rarch_main() before its own shutdown
+    * machinery runs, and the framework-destroy unwind (which
+    * android_app_free() is already waiting out). This thread is the
+    * sole consumer of the command pipe, so from here on no posted
+    * command can ever be acknowledged: retire every outstanding
+    * ticket and mark the consumer gone, or the next synchronous
+    * lifecycle callback - surfaceDestroyed() into
+    * android_app_set_window(NULL) - parks the Java UI thread on the
+    * condvar until ActivityManager declares an ANR. The struct
+    * outlives this thread on every path: android_app_free() joins
+    * before freeing and deliberately leaks it when it orphans the
+    * thread instead. */
+   slock_lock(android_app->mutex);
+   android_app->app_thread_exited = 1;
+   android_app->done_seq          = android_app->cmd_seq;
+   scond_broadcast(android_app->cond);
+   slock_unlock(android_app->mutex);
 }
 
 static struct android_app* android_app_create(ANativeActivity* activity,
