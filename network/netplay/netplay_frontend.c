@@ -151,6 +151,7 @@
 /* Activate this to enable assertions on code sections
  * that should be exclusive to one modus */
 #include <assert.h>
+#include <compat/strl.h>
 #define NETPLAY_ASSERT_MODUS(m) assert(networking_driver_st.data->modus==(m));
 #else
 #define NETPLAY_ASSERT_MODUS(m)

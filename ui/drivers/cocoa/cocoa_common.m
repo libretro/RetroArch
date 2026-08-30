@@ -68,6 +68,7 @@
 
 #ifdef HAVE_MIST
 #include "../../steam/steam.h"
+#include <compat/strl.h>
 #endif
 
 #if IOS

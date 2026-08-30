@@ -51,6 +51,7 @@
 
 #ifdef HAVE_THREADS
 #include "../../gfx/video_thread_wrapper.h"
+#include <compat/strl.h>
 #endif
 
 #define MAX_TOUCH 16

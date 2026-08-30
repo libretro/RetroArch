@@ -63,6 +63,7 @@
 
 #include "../../audio/audio_driver.h"
 #include "../../menu/menu_entries.h"
+#include <compat/strl.h>
 
 static enum frontend_fork ctr_fork_mode = FRONTEND_FORK_NONE;
 static const char* elf_path_cst         = "sdmc:/retroarch/retroarch.3dsx";

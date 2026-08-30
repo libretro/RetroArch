@@ -31,6 +31,7 @@
 #include "../../dynamic.h"
 #include "../../paths.h"
 #include "../../verbosity.h"
+#include <compat/strl.h>
 
 static void frontend_qnx_init(void *data)
 {

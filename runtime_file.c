@@ -46,6 +46,7 @@
 #endif
 
 #include "runtime_file.h"
+#include <compat/strl.h>
 
 /* JSON Stuff... */
 

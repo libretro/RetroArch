@@ -29,6 +29,7 @@
 #include "../cloud_sync_driver.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
+#include <compat/strl.h>
 
 #define SMBPFX "[SMB] "
 

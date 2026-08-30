@@ -28,6 +28,7 @@
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
+#include <compat/strl.h>
 #endif
 
 #define LOAD_CONTENT_ANIMATION_FADE_IN_DURATION   466.0f

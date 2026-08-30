@@ -56,6 +56,7 @@
 /* ------------------------------------------------------------------ */
 
 #include "../../core_info.h"
+#include <compat/strl.h>
 
 bool core_info_find(const char *core_path, core_info_t **core_info)
 {

@@ -68,6 +68,7 @@
 #include "version.h"
 #include "version_git.h"
 #include "tasks/task_content.h"
+#include <compat/strl.h>
 
 #define CMD_BUF_SIZE 4096
 

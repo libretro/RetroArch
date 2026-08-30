@@ -16,6 +16,7 @@
 #include "../../../libretro-common/include/lists/dir_list.h"
 #include "../../../libretro-common/include/file/file_path.h"
 #include "../../../libretro-common/include/string/stdstring.h"
+#include <compat/strl.h>
 
 NS_ASSUME_NONNULL_BEGIN
 

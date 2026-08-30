@@ -66,6 +66,7 @@
 #endif
 #ifdef HAVE_THREADS
 #include "../video_thread_wrapper.h"
+#include <compat/strl.h>
 #endif
 
 #ifdef __WINRT__

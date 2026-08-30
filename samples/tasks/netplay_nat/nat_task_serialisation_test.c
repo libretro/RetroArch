@@ -47,6 +47,7 @@
 
 #include "../../../network/natt.h"
 #include "../../../network/netplay/netplay.h"
+#include <compat/strl.h>
 
 static unsigned failures = 0;
 

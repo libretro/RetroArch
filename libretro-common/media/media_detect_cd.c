@@ -25,6 +25,7 @@
 #include <string/stdstring.h>
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
+#include <compat/strl.h>
 
 /*#define MEDIA_CUE_PARSE_DEBUG*/
 

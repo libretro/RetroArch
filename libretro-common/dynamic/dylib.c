@@ -40,6 +40,7 @@
 #else
 #if !defined(ORBIS)
 #include <dlfcn.h>
+#include <compat/strl.h>
 #endif
 #endif
 

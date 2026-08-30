@@ -29,6 +29,7 @@
 #include "../tasks/tasks_internal.h"
 
 #include "natt.h"
+#include <compat/strl.h>
 
 bool natt_init(struct natt_discovery *discovery)
 {

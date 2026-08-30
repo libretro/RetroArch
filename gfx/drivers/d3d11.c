@@ -194,6 +194,7 @@ typedef ID3D11InfoQueue*                D3D11InfoQueue;
 
 #if defined(HAVE_DYLIB) && !defined(__WINRT__)
 #include <dynamic/dylib.h>
+#include <compat/strl.h>
 
 HRESULT WINAPI D3D11CreateDevice(
       IDXGIAdapter*   pAdapter,

@@ -90,6 +90,7 @@ extern "C" {
 
 #ifdef HAVE_WAYLAND
 #include "../../gfx/common/wayland_common.h"
+#include <compat/strl.h>
 #endif
 
 #ifndef CXX_BUILD

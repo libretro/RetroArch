@@ -29,6 +29,7 @@
 #include "../frontend/drivers/platform_unix.h"
 
 #include "play_feature_delivery.h"
+#include <compat/strl.h>
 
 /***************************/
 /* Globals (do not fix...) */

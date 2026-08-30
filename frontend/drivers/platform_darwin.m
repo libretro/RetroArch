@@ -81,6 +81,7 @@
 #include "../../msg_hash.h"
 #include "../../ui/ui_companion_driver.h"
 #include "../../paths.h"
+#include <compat/strl.h>
 
 typedef enum
 {

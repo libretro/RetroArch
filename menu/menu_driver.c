@@ -89,6 +89,7 @@
 
 #ifdef HAVE_COCOATOUCH
 #include "../ui/drivers/cocoa/apple_platform.h"
+#include <compat/strl.h>
 #endif
 
 typedef struct menu_input_ctx_bind

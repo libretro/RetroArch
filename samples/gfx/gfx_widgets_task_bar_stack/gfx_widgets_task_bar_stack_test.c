@@ -29,6 +29,7 @@
 #include "../../../gfx/gfx_widgets.h"
 #include "../../../gfx/gfx_display.h"
 #include "../../../gfx/gfx_animation.h"
+#include <compat/strl.h>
 
 static int failures;
 static int pushes;

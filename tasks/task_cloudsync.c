@@ -34,6 +34,7 @@
 #include "../paths.h"
 #include "../tasks/tasks_internal.h"
 #include "../verbosity.h"
+#include <compat/strl.h>
 
 #define CSPFX "[CloudSync] "
 

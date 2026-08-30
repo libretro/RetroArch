@@ -34,6 +34,7 @@
 #include "../../tasks/tasks_internal.h"
 
 #include "../../command.h"
+#include <compat/strl.h>
 
 #ifdef HAVE_BB10
 #define MAX_TOUCH 16

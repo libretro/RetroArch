@@ -72,6 +72,7 @@
 #endif
 
 #include "platform_emscripten.h"
+#include <compat/strl.h>
 
 void emscripten_mainloop(void);
 

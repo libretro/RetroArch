@@ -48,6 +48,7 @@
 #include "../../../playlist.h"
 #include "../../../configuration.h"
 #include "../../../verbosity.h"
+#include <compat/strl.h>
 
 #define SCAN_TIMEOUT_SECONDS 300
 

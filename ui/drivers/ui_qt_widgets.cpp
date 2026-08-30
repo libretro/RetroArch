@@ -75,6 +75,7 @@ extern "C" {
 #include <file/file_path.h>
 #include <file/archive_file.h>
 #include <lists/string_list.h>
+#include <compat/strl.h>
 
 #ifndef CXX_BUILD
 }

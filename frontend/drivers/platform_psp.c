@@ -70,6 +70,7 @@
 
 #if defined(HAVE_VITAGLES)
 #include "../../gfx/drivers_context/vita_pib/include/pib.h"
+#include <compat/strl.h>
 #endif
 
 #ifndef VITA

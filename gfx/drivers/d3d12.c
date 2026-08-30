@@ -81,6 +81,7 @@
 
 #ifdef __WINRT__
 #include "../../uwp/uwp_func.h"
+#include <compat/strl.h>
 #endif
 
 #define D3D12_MAX_GPU_COUNT 16

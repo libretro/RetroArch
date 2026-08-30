@@ -41,6 +41,7 @@
 #include "verbosity.h"
 #ifdef HAVE_CHEATS
 #include "cheat_manager.h"
+#include <compat/strl.h>
 #endif
 
 struct ram_type

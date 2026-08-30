@@ -46,6 +46,7 @@
 #endif
 
 #include <net/net_ifinfo.h>
+#include <compat/strl.h>
 
 bool net_ifinfo_new(net_ifinfo_t *list)
 {

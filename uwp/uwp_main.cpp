@@ -52,6 +52,7 @@
 #include "../verbosity.h"
 #include "uwp_func.h"
 #include "uwp_async.h"
+#include <compat/strl.h>
 
 using namespace RetroArchUWP;
 

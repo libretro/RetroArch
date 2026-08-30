@@ -40,6 +40,7 @@
 
 #if defined(ANDROID)
 #include "play_feature_delivery/play_feature_delivery.h"
+#include <compat/strl.h>
 #endif
 
 #ifndef PLAYLIST_ENTRIES

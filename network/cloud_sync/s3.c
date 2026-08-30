@@ -23,6 +23,7 @@
 #include "../../retroarch.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../verbosity.h"
+#include <compat/strl.h>
 
 #define S3_PFX "[S3] "
 

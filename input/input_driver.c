@@ -78,6 +78,7 @@
 #endif
 
 #include "../ai/game_ai.h"
+#include <compat/strl.h>
 
 /* Force a helper out of line even though it has a single call site.
  * Follows the RXML_NOINLINE precedent in

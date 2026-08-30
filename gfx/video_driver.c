@@ -73,6 +73,7 @@
 #include "../command.h"
 #include "../configuration.h"
 #include "video_shader_parse.h"
+#include <compat/strl.h>
 
 #define TIME_TO_FPS(last_time, new_time, frames) ((1000000.0f * (frames)) / ((new_time) - (last_time)))
 

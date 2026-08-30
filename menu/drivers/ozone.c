@@ -59,6 +59,7 @@
 
 #ifdef HAVE_CHEEVOS
 #include "../../cheevos/cheevos_menu.h"
+#include <compat/strl.h>
 #endif
 
 /* Force a render phase out of line even though it has a single call
