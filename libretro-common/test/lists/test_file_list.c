@@ -706,6 +706,82 @@ START_TEST (test_insert_shares_empty_too)
 }
 END_TEST
 
+/* An empty label is not an allocation of its own -- file_list.c hands
+ * every one of them the same shared buffer, because a directory listing
+ * labels every entry "" and each used to cost a malloc() for one NUL.
+ * Anything that releases a label therefore has to go through
+ * file_list_free_label() or file_list_set_label_at_offset(); a bare
+ * free() on the shared buffer is a free() of a static, which ASan
+ * reports as a free of memory that was never malloc()ed.
+ *
+ * The menu drivers relabel the menu stack top, which is why this is
+ * exported at all. */
+START_TEST (test_free_label_handles_shared_empty)
+{
+   file_list_t list;
+
+   list_init(&list);
+   ck_assert(file_list_append(&list, "path", "", 0, 0, 0));
+   /* Shared, not a private copy. */
+   ck_assert_ptr_nonnull(list.list[0].label);
+   ck_assert_str_eq(list.list[0].label, "");
+
+   file_list_free_label(&list, 0);
+   ck_assert_ptr_null(list.list[0].label);
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+START_TEST (test_free_label_handles_owned_string)
+{
+   file_list_t list;
+
+   list_init(&list);
+   ck_assert(file_list_append(&list, "path", "a_real_label", 0, 0, 0));
+   file_list_free_label(&list, 0);
+   ck_assert_ptr_null(list.list[0].label);
+
+   /* Releasing twice must not double-free the owned case. */
+   file_list_free_label(&list, 0);
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+START_TEST (test_free_label_out_of_range)
+{
+   file_list_t list;
+
+   list_init(&list);
+   ck_assert(file_list_append(&list, "path", "label", 0, 0, 0));
+   /* Past the end, and a NULL list: the menu computes the index as
+    * stack_size - 1, which is SIZE_MAX on an empty stack. */
+   file_list_free_label(&list, 1);
+   file_list_free_label(&list, (size_t)-1);
+   file_list_free_label(NULL, 0);
+   ck_assert_ptr_nonnull(list.list[0].label);
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+START_TEST (test_set_label_replaces_shared_empty)
+{
+   file_list_t list;
+
+   list_init(&list);
+   ck_assert(file_list_append(&list, "path", "", 0, 0, 0));
+   /* Relabelling away from the shared empty string, then back to it. */
+   file_list_set_label_at_offset(&list, 0, "now_a_real_label");
+   ck_assert_str_eq(list.list[0].label, "now_a_real_label");
+   file_list_set_label_at_offset(&list, 0, "");
+   ck_assert_str_eq(list.list[0].label, "");
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
 Suite *create_suite(void)
 {
    Suite *s       = suite_create(SUITE_NAME);
@@ -730,6 +806,10 @@ Suite *create_suite(void)
    tcase_add_test(tc_core, test_pop_uses_userdata_hook);
    tcase_add_test(tc_core, test_both_hooks_are_independent);
    tcase_add_test(tc_core, test_userdata_hook_survives_growth);
+   tcase_add_test(tc_core, test_free_label_handles_shared_empty);
+   tcase_add_test(tc_core, test_free_label_handles_owned_string);
+   tcase_add_test(tc_core, test_free_label_out_of_range);
+   tcase_add_test(tc_core, test_set_label_replaces_shared_empty);
    tcase_add_test(tc_core, test_empty_label_is_empty_not_null);
    tcase_add_test(tc_core, test_empty_strings_are_shared);
    tcase_add_test(tc_core, test_null_stays_null);

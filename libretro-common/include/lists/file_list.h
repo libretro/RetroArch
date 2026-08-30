@@ -142,6 +142,16 @@ void file_list_set_alt_at_offset(file_list_t *list, size_t index,
  * @param index Offset of the entry whose label should be set
  * @param label Label to copy into the entry
  */
+/**
+ * Releases entry @index's label and clears the slot.
+ *
+ * The label may be a shared empty string rather than an allocation of
+ * its own, so free()ing it directly is not safe; relabelling from
+ * outside file_list.c goes through here or through
+ * file_list_set_label_at_offset().
+ */
+void file_list_free_label(file_list_t *list, size_t index);
+
 void file_list_set_label_at_offset(file_list_t *list, size_t index,
       const char *label);
 

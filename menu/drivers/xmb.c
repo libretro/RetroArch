@@ -7057,11 +7057,8 @@ static enum menu_action xmb_parse_menu_entry_action(
                 * releases whatever that read returns. */
                if (stack_size > 0)
                {
-                  if (menu_stack->list[stack_size - 1].label)
-                     free(menu_stack->list[stack_size - 1].label);
-                  menu_stack->list[stack_size - 1].label = NULL;
-
-                  menu_stack->list[stack_size - 1].label = strdup(MENU_ENUM_LABEL_MAIN_MENU_STR);
+                  file_list_set_label_at_offset(menu_stack,
+                        stack_size - 1, MENU_ENUM_LABEL_MAIN_MENU_STR);
                   menu_stack->list[stack_size - 1].type  = MENU_SETTINGS;
                }
 
@@ -10867,9 +10864,7 @@ static void xmb_list_cache(void *data, enum menu_list_type type,
          if (stack_size < 1)
             break;
 
-         if (menu_stack->list[stack_size - 1].label)
-            free(menu_stack->list[stack_size - 1].label);
-         menu_stack->list[stack_size - 1].label = NULL;
+         file_list_free_label(menu_stack, stack_size - 1);
 
          switch (xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr))
          {

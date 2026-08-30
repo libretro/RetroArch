@@ -4900,11 +4900,8 @@ static void ozone_change_tab(ozone_handle_t *ozone,
    if (stack_size < 1)
       return;
 
-   if (menu_stack->list[stack_size - 1].label)
-      free(menu_stack->list[stack_size - 1].label);
-   menu_stack->list[stack_size - 1].label = NULL;
-
-   menu_stack->list[stack_size - 1].label = strdup(msg_hash_to_str(tab));
+   file_list_set_label_at_offset(menu_stack, stack_size - 1,
+         msg_hash_to_str(tab));
    menu_stack->list[stack_size - 1].type  = type;
 
    ozone_list_cache(ozone, MENU_LIST_HORIZONTAL, MENU_ACTION_LEFT);

@@ -10707,9 +10707,7 @@ static bool materialui_preswitch_tabs(materialui_handle_t *mui,
       return false;
 
    /* Delete existing label */
-   if (menu_stack->list[stack_size - 1].label)
-      free(menu_stack->list[stack_size - 1].label);
-   menu_stack->list[stack_size - 1].label = NULL;
+   file_list_free_label(menu_stack, stack_size - 1);
 
    /* Assign new label/type */
    switch (target_tab->type)

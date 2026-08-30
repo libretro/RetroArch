@@ -261,6 +261,22 @@ static void file_list_get_label_at_offset(const file_list_t *list, size_t idx,
       *label = list->list[idx].label;
 }
 
+/* Releases an entry's label and clears the slot.
+ *
+ * The label may be the shared empty string rather than an allocation of
+ * its own, so it cannot be handed to free(). Callers outside this file
+ * that want to relabel an entry -- the menu drivers do, on the stack
+ * top -- have to come through here or through
+ * file_list_set_label_at_offset() rather than free()ing the pointer
+ * themselves. */
+void file_list_free_label(file_list_t *list, size_t idx)
+{
+   if (!list || idx >= list->size)
+      return;
+   file_list_strfree(list->list[idx].label);
+   list->list[idx].label = NULL;
+}
+
 void file_list_set_label_at_offset(file_list_t *list, size_t idx,
       const char *label)
 {
