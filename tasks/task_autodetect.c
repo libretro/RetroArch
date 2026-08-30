@@ -1233,6 +1233,12 @@ static void cb_input_autoconfigure_connect(
    else
       input_config_clear_device_joypad_driver(port);
 
+   /* > Physical location
+    * Retained so that a later reconnect can offer it to the profile
+    * scan again; drivers that report none clear it. */
+   input_config_set_device_phys(port,
+         autoconfig_handle->device_info.phys);
+
    /* > VID/PID */
    input_config_set_device_vid(port, autoconfig_handle->device_info.vid);
    input_config_set_device_pid(port, autoconfig_handle->device_info.pid);
@@ -1654,9 +1660,7 @@ bool input_autoconfigure_connect_ex(
  * The display name is deliberately not carried over: the retained one
  * may have come from the profile that is being replaced, and the
  * hotplug path does not supply one either, so the newly matched
- * profile gets to name the device. The physical location is not
- * retained per port at all, so a profile discriminating on
- * 'input_phys' loses that part of its affinity here.
+ * profile gets to name the device.
  *
  * @param port Input port to reconfigure (0 .. MAX_INPUT_DEVICES-1).
  *
@@ -1673,7 +1677,7 @@ bool input_autoconfigure_reconnect(unsigned port)
    return input_autoconfigure_connect(
          name,
          NULL,
-         NULL,
+         input_config_get_device_phys(port),
          input_config_get_device_joypad_driver(port),
          port,
          input_config_get_device_vid(port),
@@ -1706,6 +1710,7 @@ static void cb_input_autoconfigure_disconnect(
    input_config_clear_device_display_name(port);
    input_config_clear_device_config_name(port);
    input_config_clear_device_joypad_driver(port);
+   input_config_set_device_phys(port, NULL);
    input_config_set_device_vid(port, 0);
    input_config_set_device_pid(port, 0);
    input_config_set_device_autoconfigured(port, false);

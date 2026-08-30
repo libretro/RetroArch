@@ -5876,6 +5876,14 @@ const char *input_config_get_device_joypad_driver(unsigned port)
    return input_st->input_device_info[port].joypad_driver;
 }
 
+const char *input_config_get_device_phys(unsigned port)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   if (!*input_st->input_device_info[port].phys)
+      return NULL;
+   return input_st->input_device_info[port].phys;
+}
+
 uint16_t input_config_get_device_vid(unsigned port)
 {
    input_driver_state_t *input_st = &input_driver_st;
@@ -5950,6 +5958,16 @@ void input_config_set_device_joypad_driver(unsigned port, const char *driver)
    if (driver && *driver)
       strlcpy(input_st->input_device_info[port].joypad_driver, driver,
             sizeof(input_st->input_device_info[port].joypad_driver));
+}
+
+void input_config_set_device_phys(unsigned port, const char *phys)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   if (phys && *phys)
+      strlcpy(input_st->input_device_info[port].phys, phys,
+            sizeof(input_st->input_device_info[port].phys));
+   else
+      input_st->input_device_info[port].phys[0] = '\0';
 }
 
 void input_config_set_device_vid(unsigned port, uint16_t vid)
