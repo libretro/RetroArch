@@ -19,9 +19,13 @@
  *
  * The test mmaps a small file, then directly invokes
  * retro_vfs_file_read_impl with a len value engineered to trigger
- * the wrap (mappos=10, len=UINT64_MAX-10, sum wraps to 0).  Post-
- * patch the function returns at most 0 (no bytes left after mappos
- * advanced to mapsize) and does not corrupt memory.
+ * the wrap (mappos=10, len=UINT64_MAX-9, sum wraps to 0).
+ *
+ * The function now also rejects any len above INT64_MAX at entry,
+ * which covers every length capable of wrapping, so that call fails
+ * outright.  The clamp is therefore exercised separately with the
+ * largest admitted length, keeping both the guard and the clamp
+ * under test.
  *
  * ASan gives the strongest signal: pre-patch runs it fires
  * "heap-buffer-overflow"; post-patch runs complete cleanly.
@@ -99,35 +103,50 @@ static void test_mmap_read_overflow(void)
    }
 
    /* Crafted len chosen so that (mappos + len) wraps uint64_t past 0
-    * and lands at or below mapsize (=16), bypassing the pre-patch
-    * bound check and causing an unclamped memcpy off the end.
+    * and lands at or below mapsize (=16), which is what a naive
+    * "mappos + len > mapsize" bound check misses.
     *
     * With mappos=10, mapsize=16:
-    *   naive check: mappos + len > mapsize
-    *     We need (mappos + len) to wrap past zero in uint64_t.
     *     Wrap happens when sum >= 2^64, i.e. len >= 2^64 - mappos.
     *     With mappos=10, pick len = UINT64_MAX - 9 so that sum =
     *     UINT64_MAX + 1 wraps to 0.  Check "0 > 16" is FALSE; the
-    *     clamp is SKIPPED.  Memcpy then reads UINT64_MAX - 9 bytes
-    *     starting at mapped[10].  Crash / OOB.
+    *     clamp would be SKIPPED and the memcpy would run off the end
+    *     of the mapped region.
     *
-    * Post-patch: remaining = mapsize - mappos = 6.  len (very
-    * large) > remaining, so len clamps to 6.  memcpy reads 6 bytes
-    * from mapped[10..15].  Safe. */
+    * Such a length no longer reaches the mapped path: the entry
+    * guard rejects anything above INT64_MAX, which is every length
+    * that can wrap, so the read fails and the wrap is unreachable
+    * from any backend. */
    {
       uint64_t evil_len = (uint64_t)-1 - 9;    /* UINT64_MAX - 9 */
       rc = retro_vfs_file_read_impl(stream, buf, evil_len);
 
-      /* Post-patch contract: rc is at most mapsize - mappos = 6.
-       * Pre-patch would either return a huge number or crash. */
-      if (rc < 0 || rc > 6)
+      if (rc != -1)
       {
-         printf("[ERROR] overflow read returned rc=%lld (want 0..6)\n",
+         printf("[ERROR] wrapping read returned rc=%lld (want -1)\n",
                (long long)rc);
          failures++;
       }
       else
-         printf("[SUCCESS] overflow read clamped to rc=%lld\n",
+         printf("[SUCCESS] wrapping read rejected\n");
+   }
+
+   /* The clamp behind that guard is still what keeps an oversized but
+    * acceptable length inside the mapping, so exercise it with the
+    * largest length the guard admits.  mappos is still 10 because the
+    * rejected read above never advanced it: remaining = 6, so the read
+    * returns mapped[10..15] and ASan validates the memcpy bound. */
+   {
+      rc = retro_vfs_file_read_impl(stream, buf, (uint64_t)INT64_MAX);
+
+      if (rc != 6 || memcmp(buf, payload + 10, 6) != 0)
+      {
+         printf("[ERROR] oversized read: rc=%lld, want 6\n",
+               (long long)rc);
+         failures++;
+      }
+      else
+         printf("[SUCCESS] oversized read clamped to rc=%lld\n",
                (long long)rc);
    }
 
