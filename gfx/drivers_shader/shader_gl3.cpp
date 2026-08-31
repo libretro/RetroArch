@@ -839,17 +839,23 @@ static void gl3_framebuffer_delete(struct gl3_framebuffer *fb)
    free(fb);
 }
 
-class UBORing
+/* The ring has always been sixteen buffers deep; a fixed array removes the
+ * allocation the vector was doing for a compile-time constant. */
+#define GL3_UBO_RING_SIZE 16
+
+struct gl3_ubo_ring
 {
-public:
-   ~UBORing();
-   std::vector<GLuint> buffers;
+   GLuint buffers[GL3_UBO_RING_SIZE];
+   unsigned num_buffers  = 0;
    unsigned buffer_index = 0;
 };
 
-UBORing::~UBORing()
+static void gl3_ubo_ring_free(struct gl3_ubo_ring *ring)
 {
-   glDeleteBuffers((GLsizei)buffers.size(), buffers.data());
+   if (ring->num_buffers)
+      glDeleteBuffers((GLsizei)ring->num_buffers, ring->buffers);
+   ring->num_buffers  = 0;
+   ring->buffer_index = 0;
 }
 
 class Pass
@@ -1077,10 +1083,10 @@ private:
    std::vector<Parameter> filtered_parameters;
    std::vector<uint8_t> push_constant_buffer;
    gl3_buffer_locations locations = {};
-   UBORing ubo_ring;
+   struct gl3_ubo_ring ubo_ring;
    /* Only allocated on the GL_ARB_gl_spirv path, where the push constant
     * block becomes a second uniform buffer. */
-   UBORing push_ring;
+   struct gl3_ubo_ring push_ring;
    /* SPIR-V modules carry no name reflection, so glGetUniformLocation()
     * cannot be used to find individual block members. */
    bool spirv_binary = false;
@@ -1265,17 +1271,19 @@ void Pass::reflect_parameter_array(const char *name, slang_texture_semantic_arra
    }
 }
 
-static void gl3_ubo_ring_init(UBORing &ring, size_t size)
+static void gl3_ubo_ring_init(struct gl3_ubo_ring *ring, size_t size)
 {
    unsigned i;
-   unsigned count = 16;
 
-   ring.buffers.resize(count);
-   glGenBuffers(count, ring.buffers.data());
+   /* Re-init would strand the previous generation of buffers. */
+   gl3_ubo_ring_free(ring);
 
-   for (i = 0; i < ring.buffers.size(); i++)
+   ring->num_buffers = GL3_UBO_RING_SIZE;
+   glGenBuffers((GLsizei)ring->num_buffers, ring->buffers);
+
+   for (i = 0; i < ring->num_buffers; i++)
    {
-      glBindBuffer(GL_UNIFORM_BUFFER, ring.buffers[i]);
+      glBindBuffer(GL_UNIFORM_BUFFER, ring->buffers[i]);
       glBufferData(GL_UNIFORM_BUFFER, size, NULL, GL_STREAM_DRAW);
    }
 
@@ -1340,7 +1348,7 @@ bool Pass::init_pipeline()
 
    uniforms.resize(reflection.ubo_size);
    if (reflection.ubo_size)
-      gl3_ubo_ring_init(ubo_ring, reflection.ubo_size);
+      gl3_ubo_ring_init(&ubo_ring, reflection.ubo_size);
 
    push_constant_buffer.resize(reflection.push_constant_size);
    if (     locations.buffer_index_push_vertex   != GL_INVALID_INDEX
@@ -1350,7 +1358,7 @@ bool Pass::init_pipeline()
        * not be a multiple of 16 the way a std140 block's is. Round up so
        * the buffer can never come up short of the block size the driver
        * derives from the SPIR-V offsets. */
-      gl3_ubo_ring_init(push_ring,
+      gl3_ubo_ring_init(&push_ring,
             (reflection.push_constant_size + 15) & ~((size_t)15));
    }
 
@@ -1776,6 +1784,9 @@ Pass::~Pass()
    /* the unique_ptrs these replaced were released by ~Pass itself */
    gl3_framebuffer_delete(framebuffer);
    gl3_framebuffer_delete(framebuffer_feedback);
+   /* likewise ~UBORing, which ran as a member destructor */
+   gl3_ubo_ring_free(&ubo_ring);
+   gl3_ubo_ring_free(&push_ring);
    slang_reflection_free(&reflection);
 }
 
@@ -2020,7 +2031,7 @@ void Pass::build_commands(
          glBindBufferBase(GL_UNIFORM_BUFFER, fragment_binding, id);
 
       ubo_ring.buffer_index++;
-      if (ubo_ring.buffer_index >= ubo_ring.buffers.size())
+      if (ubo_ring.buffer_index >= ubo_ring.num_buffers)
          ubo_ring.buffer_index = 0;
    }
 
@@ -2045,7 +2056,7 @@ void Pass::build_commands(
          glBindBufferBase(GL_UNIFORM_BUFFER, fragment_binding, id);
 
       push_ring.buffer_index++;
-      if (push_ring.buffer_index >= push_ring.buffers.size())
+      if (push_ring.buffer_index >= push_ring.num_buffers)
          push_ring.buffer_index = 0;
    }
 
