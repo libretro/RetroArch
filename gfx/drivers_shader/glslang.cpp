@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "glslang_util.h"
+#include "glslang_compile.h"
 
 #ifdef HAVE_BUILTINGLSLANG
 #include "../../deps/glslang/glslang/glslang/Public/ShaderLang.h"
