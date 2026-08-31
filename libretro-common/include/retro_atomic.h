@@ -57,6 +57,7 @@
  *   retro_atomic_inc / dec      - acq_rel RMW, return void
  *   retro_atomic_exchange_int   - acq_rel swap, returns old value
  *   retro_atomic_cas_int        - strong CAS, non-zero on success
+ *   retro_atomic_cas_ptr        - strong CAS on a pointer, non-zero on success
  *   retro_atomic_*_ptr          - pointer-width load/store/exchange
  *   retro_atomic_thread_fence_* - acquire / release fences
  *   (extended ops absent on the volatile fallback; gate with
@@ -811,6 +812,14 @@ static INLINE int retro_atomic_cas_int_impl_(retro_atomic_int_t *p, int expected
    atomic_store_explicit((p), (v), memory_order_release)
 #define retro_atomic_exchange_ptr(p, v) \
    atomic_exchange_explicit((p), (v), memory_order_acq_rel)
+static INLINE int retro_atomic_cas_ptr_impl_(retro_atomic_ptr_t *p, void *expected, void *desired)
+{
+   void *e = expected;
+   return atomic_compare_exchange_strong_explicit(p, &e, desired,
+         memory_order_acq_rel, memory_order_acquire);
+}
+#define retro_atomic_cas_ptr(p, expected, desired) \
+   retro_atomic_cas_ptr_impl_((p), (expected), (desired))
 #define retro_atomic_thread_fence_acquire() \
    atomic_thread_fence(memory_order_acquire)
 #define retro_atomic_thread_fence_release() \
@@ -838,6 +847,14 @@ static INLINE int retro_atomic_cas_int_impl_(retro_atomic_int_t *p, int expected
    ((p)->store((v), std::memory_order_release))
 #define retro_atomic_exchange_ptr(p, v) \
    ((p)->exchange((v), std::memory_order_acq_rel))
+static INLINE int retro_atomic_cas_ptr_impl_(retro_atomic_ptr_t *p, void *expected, void *desired)
+{
+   void *e = expected;
+   return (int)p->compare_exchange_strong(e, desired,
+         std::memory_order_acq_rel, std::memory_order_acquire);
+}
+#define retro_atomic_cas_ptr(p, expected, desired) \
+   retro_atomic_cas_ptr_impl_((p), (expected), (desired))
 #define retro_atomic_thread_fence_acquire() \
    std::atomic_thread_fence(std::memory_order_acquire)
 #define retro_atomic_thread_fence_release() \
@@ -865,6 +882,14 @@ static INLINE int retro_atomic_cas_int_impl_(retro_atomic_int_t *p, int expected
    __atomic_store_n((p), (v), __ATOMIC_RELEASE)
 #define retro_atomic_exchange_ptr(p, v) \
    __atomic_exchange_n((p), (v), __ATOMIC_ACQ_REL)
+static INLINE int retro_atomic_cas_ptr_impl_(retro_atomic_ptr_t *p, void *expected, void *desired)
+{
+   void *e = expected;
+   return __atomic_compare_exchange_n(p, &e, desired, 0,
+         __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
+}
+#define retro_atomic_cas_ptr(p, expected, desired) \
+   retro_atomic_cas_ptr_impl_((p), (expected), (desired))
 #define retro_atomic_thread_fence_acquire() \
    __atomic_thread_fence(__ATOMIC_ACQUIRE)
 #define retro_atomic_thread_fence_release() \
@@ -892,6 +917,9 @@ static INLINE int retro_atomic_cas_int_impl_(retro_atomic_int_t *p, int expected
    ((void)InterlockedExchangePointer((void* volatile*)(p), (void*)(v)))
 #define retro_atomic_exchange_ptr(p, v) \
    InterlockedExchangePointer((void* volatile*)(p), (void*)(v))
+#define retro_atomic_cas_ptr(p, expected, desired) \
+   (InterlockedCompareExchangePointer((void* volatile*)(p), (void*)(desired), \
+         (void*)(expected)) == (void*)(expected))
 #define retro_atomic_thread_fence_acquire() MemoryBarrier()
 #define retro_atomic_thread_fence_release() MemoryBarrier()
 #define RETRO_ATOMIC_HAS_CAS 1
@@ -934,6 +962,8 @@ static INLINE void* retro_atomic_exchange_ptr_impl_(retro_atomic_ptr_t *p, void*
 }
 #define retro_atomic_exchange_ptr(p, v) \
    retro_atomic_exchange_ptr_impl_((p), (void*)(v))
+#define retro_atomic_cas_ptr(p, expected, desired) \
+   OSAtomicCompareAndSwapPtrBarrier((void*)(expected), (void*)(desired), (void* volatile*)(p))
 #define retro_atomic_thread_fence_acquire() OSMemoryBarrier()
 #define retro_atomic_thread_fence_release() OSMemoryBarrier()
 #define RETRO_ATOMIC_HAS_CAS 1
@@ -971,6 +1001,8 @@ static INLINE void* retro_atomic_exchange_ptr_impl_(retro_atomic_ptr_t *p, void*
 }
 #define retro_atomic_exchange_ptr(p, v) \
    retro_atomic_exchange_ptr_impl_((p), (void*)(v))
+#define retro_atomic_cas_ptr(p, expected, desired) \
+   __sync_bool_compare_and_swap((void* volatile*)(p), (void*)(expected), (void*)(desired))
 #define retro_atomic_thread_fence_acquire() __sync_synchronize()
 #define retro_atomic_thread_fence_release() __sync_synchronize()
 #define RETRO_ATOMIC_HAS_CAS 1
