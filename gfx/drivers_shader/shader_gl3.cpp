@@ -699,100 +699,96 @@ CommonResources::~CommonResources()
       glDeleteBuffers(1, &quad_vbo);
 }
 
-class Framebuffer
+struct gl3_framebuffer
 {
-public:
-   Framebuffer(GLenum format, unsigned max_levels);
-
-   ~Framebuffer();
-   Framebuffer(Framebuffer&&) = delete;
-   void operator=(Framebuffer&&) = delete;
-
-   void set_size(const Size2D &size, GLenum format = 0);
-
-   const Size2D &get_size() const { return size; }
-   GLenum get_format() const { return format; }
-   GLuint get_image() const { return image; }
-   GLuint get_framebuffer() const { return framebuffer; }
-
-   bool is_complete() const { return complete; }
-
-   unsigned get_levels() const { return levels; }
-
-private:
-   GLuint image = 0;
+   GLuint image;
    Size2D size;
    GLenum format;
    unsigned max_levels;
-   unsigned levels = 0;
-
-   GLuint framebuffer = 0;
-
-   void init();
-   bool complete = false;
+   unsigned levels;
+   GLuint framebuffer;
+   bool complete;
 };
 
-Framebuffer::Framebuffer(GLenum format_, unsigned max_levels_)
-   : size({1, 1}), format(format_), max_levels(max_levels_)
+static void gl3_framebuffer_build(struct gl3_framebuffer *fb);
+
+/* Returns NULL rather than a half-built object; the caller owns the
+ * result and releases it with gl3_framebuffer_delete. */
+static struct gl3_framebuffer *gl3_framebuffer_new(GLenum format_,
+      unsigned max_levels_)
 {
-   glGenFramebuffers(1, &framebuffer);
+   struct gl3_framebuffer *fb = (struct gl3_framebuffer*)
+      calloc(1, sizeof(*fb));
+
+   if (!fb)
+      return NULL;
+
+   fb->size.width  = 1;
+   fb->size.height = 1;
+   fb->format      = format_;
+   fb->max_levels  = max_levels_;
+
+   glGenFramebuffers(1, &fb->framebuffer);
 
    /* Need to bind to create */
-   glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+   glBindFramebuffer(GL_FRAMEBUFFER, fb->framebuffer);
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-   if (format == 0)
-      format = GL_RGBA8;
+   if (fb->format == 0)
+      fb->format = GL_RGBA8;
+
+   return fb;
 }
 
-void Framebuffer::set_size(const Size2D &size_, GLenum format_)
+static void gl3_framebuffer_set_size(struct gl3_framebuffer *fb,
+      const Size2D *size_, GLenum format_)
 {
-   size = size_;
+   fb->size = *size_;
    if (format_ != 0)
-      format = format_;
+      fb->format = format_;
 
-   init();
+   gl3_framebuffer_build(fb);
 }
 
-void Framebuffer::init()
+static void gl3_framebuffer_build(struct gl3_framebuffer *fb)
 {
    GLenum status;
 
-   glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-   if (image != 0)
+   glBindFramebuffer(GL_FRAMEBUFFER, fb->framebuffer);
+   if (fb->image != 0)
    {
       glFramebufferTexture2D(GL_FRAMEBUFFER,
             GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
-      glDeleteTextures(1, &image);
+      glDeleteTextures(1, &fb->image);
    }
 
-   glGenTextures(1, &image);
-   glBindTexture(GL_TEXTURE_2D, image);
+   glGenTextures(1, &fb->image);
+   glBindTexture(GL_TEXTURE_2D, fb->image);
 
-   if (size.width == 0)
-      size.width = 1;
-   if (size.height == 0)
-      size.height = 1;
+   if (fb->size.width == 0)
+      fb->size.width = 1;
+   if (fb->size.height == 0)
+      fb->size.height = 1;
 
-   levels = glslang_num_miplevels(size.width, size.height);
-   if (max_levels < levels)
-      levels = max_levels;
-   if (levels == 0)
-      levels = 1;
+   fb->levels = glslang_num_miplevels(fb->size.width, fb->size.height);
+   if (fb->max_levels < fb->levels)
+      fb->levels = fb->max_levels;
+   if (fb->levels == 0)
+      fb->levels = 1;
 
-   glTexStorage2D(GL_TEXTURE_2D, levels,
-                  format,
-                  size.width, size.height);
+   glTexStorage2D(GL_TEXTURE_2D, fb->levels,
+                  fb->format,
+                  fb->size.width, fb->size.height);
 
    glFramebufferTexture2D(GL_FRAMEBUFFER,
-         GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, image, 0);
+         GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fb->image, 0);
 
    status   = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-   complete = true;
+   fb->complete = true;
 
    if (status != GL_FRAMEBUFFER_COMPLETE)
    {
-      complete = false;
+      fb->complete = false;
 
       switch (status)
       {
@@ -811,18 +807,18 @@ void Framebuffer::init()
                RARCH_ERR("[GLCore] Unsupported FBO, falling back to RGBA8.\n");
 
                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
-               glDeleteTextures(1, &image);
-               glGenTextures(1, &image);
-               glBindTexture(GL_TEXTURE_2D, image);
+               glDeleteTextures(1, &fb->image);
+               glGenTextures(1, &fb->image);
+               glBindTexture(GL_TEXTURE_2D, fb->image);
 
-               levels = glslang_num_miplevels(size.width, size.height);
-               if (max_levels < levels)
-                  levels = max_levels;
+               levels = glslang_num_miplevels(fb->size.width, fb->size.height);
+               if (fb->max_levels < levels)
+                  levels = fb->max_levels;
                glTexStorage2D(GL_TEXTURE_2D, levels,
                      GL_RGBA8,
-                     size.width, size.height);
-               glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, image, 0);
-               complete = glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
+                     fb->size.width, fb->size.height);
+               glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fb->image, 0);
+               fb->complete = glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
             }
             break;
       }
@@ -832,12 +828,15 @@ void Framebuffer::init()
    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-Framebuffer::~Framebuffer()
+static void gl3_framebuffer_delete(struct gl3_framebuffer *fb)
 {
-   if (framebuffer != 0)
-      glDeleteFramebuffers(1, &framebuffer);
-   if (image != 0)
-      glDeleteTextures(1, &image);
+   if (!fb)
+      return;
+   if (fb->framebuffer != 0)
+      glDeleteFramebuffers(1, &fb->framebuffer);
+   if (fb->image != 0)
+      glDeleteTextures(1, &fb->image);
+   free(fb);
 }
 
 class UBORing
@@ -865,14 +864,14 @@ public:
    Pass(Pass&&) = delete;
    void operator=(Pass&&) = delete;
 
-   const Framebuffer &get_framebuffer() const
+   const struct gl3_framebuffer *get_framebuffer() const
    {
-      return *framebuffer;
+      return framebuffer;
    }
 
-   Framebuffer *get_feedback_framebuffer()
+   struct gl3_framebuffer *get_feedback_framebuffer()
    {
-      return framebuffer_feedback.get();
+      return framebuffer_feedback;
    }
 
    void set_pass_info(const gl3_filter_chain_pass_info &info);
@@ -1007,8 +1006,8 @@ private:
 
    std::vector<uint32_t> vertex_shader;
    std::vector<uint32_t> fragment_shader;
-   std::unique_ptr<Framebuffer> framebuffer;
-   std::unique_ptr<Framebuffer> framebuffer_feedback;
+   struct gl3_framebuffer *framebuffer          = NULL;
+   struct gl3_framebuffer *framebuffer_feedback = NULL;
 
    bool init_pipeline();
 
@@ -1097,12 +1096,14 @@ bool Pass::build()
    unsigned i;
    unsigned j = 0;
 
-   framebuffer.reset();
-   framebuffer_feedback.reset();
+   gl3_framebuffer_delete(framebuffer);
+   framebuffer          = NULL;
+   gl3_framebuffer_delete(framebuffer_feedback);
+   framebuffer_feedback = NULL;
 
    if (!final_pass)
-      framebuffer = std::unique_ptr<Framebuffer>(
-            new Framebuffer(pass_info.rt_format, pass_info.max_levels));
+      framebuffer = gl3_framebuffer_new(pass_info.rt_format,
+            pass_info.max_levels);
 
    for (i = 0; i < parameters.size(); i++)
    {
@@ -1461,7 +1462,9 @@ Size2D Pass::get_output_size(const Size2D &original,
 
 void Pass::end_frame()
 {
-   swap(framebuffer, framebuffer_feedback);
+   struct gl3_framebuffer *tmp = framebuffer;
+   framebuffer                 = framebuffer_feedback;
+   framebuffer_feedback        = tmp;
 }
 
 void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
@@ -1760,8 +1763,9 @@ bool Pass::init_feedback()
    if (final_pass)
       return false;
 
-   framebuffer_feedback = std::unique_ptr<Framebuffer>(
-         new Framebuffer(pass_info.rt_format, pass_info.max_levels));
+   gl3_framebuffer_delete(framebuffer_feedback);
+   framebuffer_feedback = gl3_framebuffer_new(pass_info.rt_format,
+         pass_info.max_levels);
    return true;
 }
 
@@ -1769,6 +1773,9 @@ Pass::~Pass()
 {
    if (pipeline != 0)
       glDeleteProgram(pipeline);
+   /* the unique_ptrs these replaced were released by ~Pass itself */
+   gl3_framebuffer_delete(framebuffer);
+   gl3_framebuffer_delete(framebuffer_feedback);
    slang_reflection_free(&reflection);
 }
 
@@ -1963,9 +1970,9 @@ void Pass::build_commands(
          { source.texture.width, source.texture.height });
 
    if (framebuffer &&
-       (size.width  != framebuffer->get_size().width ||
-        size.height != framebuffer->get_size().height))
-      framebuffer->set_size(size);
+       (size.width  != framebuffer->size.width ||
+        size.height != framebuffer->size.height))
+      gl3_framebuffer_set_size(framebuffer, &size, 0);
 
    current_framebuffer_size = size;
 
@@ -2046,9 +2053,9 @@ void Pass::build_commands(
     * another render pass since the frontend will
     * want to overlay various things on top for
     * the passes that end up on-screen. */
-   if (!final_pass && framebuffer->is_complete())
+   if (!final_pass && framebuffer->complete)
    {
-      glBindFramebuffer(GL_FRAMEBUFFER, framebuffer->get_framebuffer());
+      glBindFramebuffer(GL_FRAMEBUFFER, framebuffer->framebuffer);
       glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
       glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
       glClear(GL_COLOR_BUFFER_BIT);
@@ -2104,7 +2111,7 @@ void Pass::build_commands(
    }
 
 #if !defined(HAVE_OPENGLES)
-   if (framebuffer && framebuffer->get_format() == GL_SRGB8_ALPHA8)
+   if (framebuffer && framebuffer->format == GL_SRGB8_ALPHA8)
       glEnable(GL_FRAMEBUFFER_SRGB);
    else
       glDisable(GL_FRAMEBUFFER_SRGB);
@@ -2139,10 +2146,10 @@ void Pass::build_commands(
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
    if (!final_pass)
-      if (framebuffer->get_levels() > 1)
+      if (framebuffer->levels > 1)
       {
          glBindFramebuffer(GL_FRAMEBUFFER, 0);
-         glBindTexture(GL_TEXTURE_2D, framebuffer->get_image());
+         glBindTexture(GL_TEXTURE_2D, framebuffer->image);
          glGenerateMipmap(GL_TEXTURE_2D);
          glBindTexture(GL_TEXTURE_2D, 0);
       }
@@ -2154,6 +2161,17 @@ struct gl3_filter_chain
 {
 public:
    gl3_filter_chain(unsigned num_passes) { set_num_passes(num_passes); }
+
+   /* copy_framebuffer and the history entries were unique_ptrs that the
+    * implicit destructor released; as owned pointers they need this. */
+   ~gl3_filter_chain()
+   {
+      size_t h;
+      for (h = 0; h < num_original_history; h++)
+         gl3_shader::gl3_framebuffer_delete(original_history[h]);
+      free(original_history);
+      gl3_shader::gl3_framebuffer_delete(copy_framebuffer);
+   }
 
    inline void set_shader_preset(std::unique_ptr<video_shader> shader)
    {
@@ -2205,7 +2223,7 @@ private:
    std::vector<std::unique_ptr<gl3_shader::Pass>> passes;
    std::vector<gl3_filter_chain_pass_info> pass_info;
    std::vector<std::vector<std::function<void ()>>> deferred_calls;
-   std::unique_ptr<gl3_shader::Framebuffer> copy_framebuffer;
+   struct gl3_shader::gl3_framebuffer *copy_framebuffer = NULL;
    gl3_shader::CommonResources common;
 
    gl3_filter_chain_texture input_texture = {};
@@ -2213,7 +2231,8 @@ private:
    bool init_history();
    bool init_feedback();
    bool init_alias();
-   std::vector<std::unique_ptr<gl3_shader::Framebuffer>> original_history;
+   struct gl3_shader::gl3_framebuffer **original_history = NULL;
+   size_t num_original_history                           = 0;
    bool require_clear = false;
    bool alias_initialized = false;
    void clear_history_and_feedback();
@@ -2226,7 +2245,7 @@ void gl3_filter_chain::update_history_info()
 {
    unsigned i;
 
-   for (i = 0; i < original_history.size(); i++)
+   for (i = 0; i < num_original_history; i++)
    {
       gl3_shader::Texture *source = (gl3_shader::Texture*)
          &common.original_history[i];
@@ -2234,9 +2253,9 @@ void gl3_filter_chain::update_history_info()
       if (!source)
          continue;
 
-      source->texture.image  = original_history[i]->get_image();
-      source->texture.width  = original_history[i]->get_size().width;
-      source->texture.height = original_history[i]->get_size().height;
+      source->texture.image  = original_history[i]->image;
+      source->texture.width  = original_history[i]->size.width;
+      source->texture.height = original_history[i]->size.height;
       source->filter         = passes.front()->get_source_filter();
       source->mip_filter     = passes.front()->get_mip_filter();
       source->address        = passes.front()->get_address_mode();
@@ -2249,7 +2268,7 @@ void gl3_filter_chain::update_feedback_info()
 
    for (i = 0; i < passes.size() - 1; i++)
    {
-      gl3_shader::Framebuffer *fb = passes[i]->get_feedback_framebuffer();
+      struct gl3_shader::gl3_framebuffer *fb = passes[i]->get_feedback_framebuffer();
       if (!fb)
          continue;
 
@@ -2259,9 +2278,9 @@ void gl3_filter_chain::update_feedback_info()
       if (!source)
          continue;
 
-      source->texture.image  = fb->get_image();
-      source->texture.width  = fb->get_size().width;
-      source->texture.height = fb->get_size().height;
+      source->texture.image  = fb->image;
+      source->texture.width  = fb->size.width;
+      source->texture.height = fb->size.height;
       source->filter         = passes[i]->get_source_filter();
       source->mip_filter     = passes[i]->get_mip_filter();
       source->address        = passes[i]->get_address_mode();
@@ -2296,11 +2315,11 @@ void gl3_filter_chain::build_offscreen_passes(const gl3_viewport &vp)
    {
       passes[i]->build_commands(original, source, vp, nullptr);
 
-      const gl3_shader::Framebuffer &fb   = passes[i]->get_framebuffer();
+      const struct gl3_shader::gl3_framebuffer *fb = passes[i]->get_framebuffer();
 
-      source.texture.image             = fb.get_image();
-      source.texture.width             = fb.get_size().width;
-      source.texture.height            = fb.get_size().height;
+      source.texture.image             = fb->image;
+      source.texture.width             = fb->size.width;
+      source.texture.height            = fb->size.height;
       source.filter                    = passes[i + 1]->get_source_filter();
       source.mip_filter                = passes[i + 1]->get_mip_filter();
       source.address                   = passes[i + 1]->get_address_mode();
@@ -2315,31 +2334,38 @@ void gl3_filter_chain::end_frame()
     * TODO: We can improve pipelining by figuring out which
     * pass is the last that reads from
     * the history and dispatch the copy earlier. */
-   if (!original_history.empty())
+   if (num_original_history)
    {
       /* Update history */
-      std::unique_ptr<gl3_shader::Framebuffer> tmp;
-      std::unique_ptr<gl3_shader::Framebuffer> &back = original_history.back();
-      swap(back, tmp);
+      size_t h;
+      struct gl3_shader::gl3_framebuffer *tmp =
+         original_history[num_original_history - 1];
+      original_history[num_original_history - 1] = NULL;
 
-      if (input_texture.width      != tmp->get_size().width  ||
-            input_texture.height     != tmp->get_size().height ||
+      if (input_texture.width      != tmp->size.width  ||
+            input_texture.height     != tmp->size.height ||
             (input_texture.format    != 0
-             && input_texture.format != tmp->get_format()))
-         tmp->set_size({ input_texture.width, input_texture.height }, input_texture.format);
+             && input_texture.format != tmp->format))
+      {
+         Size2D new_size;
+         new_size.width  = input_texture.width;
+         new_size.height = input_texture.height;
+         gl3_framebuffer_set_size(tmp, &new_size, input_texture.format);
+      }
 
-      if (tmp->is_complete())
+      if (tmp->complete)
          gl3_framebuffer_copy(
-               tmp->get_framebuffer(),
+               tmp->framebuffer,
                common.quad_program,
                common.quad_vbo,
                common.quad_loc.flat_ubo_vertex,
-               tmp->get_size(),
+               tmp->size,
                input_texture.image);
 
       /* Should ring buffer, but we don't have *that* many passes. */
-      move_backward(begin(original_history), end(original_history) - 1, end(original_history));
-      swap(original_history.front(), tmp);
+      for (h = num_original_history - 1; h > 0; h--)
+         original_history[h] = original_history[h - 1];
+      original_history[0] = tmp;
    }
 }
 
@@ -2374,11 +2400,11 @@ void gl3_filter_chain::build_viewport_pass(
    }
    else
    {
-      const gl3_shader::Framebuffer &fb = passes[passes.size() - 2]
+      const struct gl3_shader::gl3_framebuffer *fb = passes[passes.size() - 2]
          ->get_framebuffer();
-      source.texture.image           = fb.get_image();
-      source.texture.width           = fb.get_size().width;
-      source.texture.height          = fb.get_size().height;
+      source.texture.image           = fb->image;
+      source.texture.width           = fb->size.width;
+      source.texture.height          = fb->size.height;
       source.filter                  = passes.back()->get_source_filter();
       source.mip_filter              = passes.back()->get_mip_filter();
       source.address                 = passes.back()->get_address_mode();
@@ -2389,7 +2415,7 @@ void gl3_filter_chain::build_viewport_pass(
    /* For feedback FBOs, swap current and previous. */
    for (i = 0; i < passes.size(); i++)
    {
-      gl3_shader::Framebuffer *fb = passes[i]->get_feedback_framebuffer();
+      struct gl3_shader::gl3_framebuffer *fb = passes[i]->get_feedback_framebuffer();
       if (fb)
          passes[i]->end_frame();
    }
@@ -2400,7 +2426,14 @@ bool gl3_filter_chain::init_history()
    unsigned i;
    size_t required_images = 0;
 
-   original_history.clear();
+   {
+      size_t h;
+      for (h = 0; h < num_original_history; h++)
+         gl3_framebuffer_delete(original_history[h]);
+      free(original_history);
+      original_history     = NULL;
+      num_original_history = 0;
+   }
    common.original_history.clear();
 
    for (i = 0; i < passes.size(); i++)
@@ -2419,11 +2452,19 @@ bool gl3_filter_chain::init_history()
    /* We don't need to store array element #0,
     * since it's aliased with the actual original. */
    required_images--;
-   original_history.reserve(required_images);
+   original_history = (struct gl3_shader::gl3_framebuffer**)
+      calloc(required_images, sizeof(*original_history));
+   if (!original_history)
+      return false;
+   num_original_history = required_images;
    common.original_history.resize(required_images);
 
    for (i = 0; i < required_images; i++)
-      original_history.emplace_back(new gl3_shader::Framebuffer(0, 1));
+   {
+      original_history[i] = gl3_shader::gl3_framebuffer_new(0, 1);
+      if (!original_history[i])
+         return false;
+   }
 
    RARCH_LOG("[GLCore] Using history of %u frames.\n", unsigned(required_images));
 
@@ -2878,11 +2919,11 @@ bool gl3_filter_chain::finalize()
 void gl3_filter_chain::clear_history_and_feedback()
 {
    unsigned i;
-   for (i = 0; i < original_history.size(); i++)
+   for (i = 0; i < num_original_history; i++)
    {
-      if (original_history[i]->is_complete())
+      if (original_history[i]->complete)
       {
-         GLuint id = original_history[i]->get_framebuffer();
+         GLuint id = original_history[i]->framebuffer;
          glBindFramebuffer(GL_FRAMEBUFFER, id);
          glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
          glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -2892,10 +2933,10 @@ void gl3_filter_chain::clear_history_and_feedback()
    }
    for (i = 0; i < passes.size(); i++)
    {
-      gl3_shader::Framebuffer *fb = passes[i]->get_feedback_framebuffer();
-      if (fb && fb->is_complete())
+      struct gl3_shader::gl3_framebuffer *fb = passes[i]->get_feedback_framebuffer();
+      if (fb && fb->complete)
       {
-         GLuint id = fb->get_framebuffer();
+         GLuint id = fb->framebuffer;
          glBindFramebuffer(GL_FRAMEBUFFER, id);
          glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
          glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -2916,26 +2957,34 @@ void gl3_filter_chain::set_input_texture(
        input_texture.padded_height != input_texture.height)
    {
       if (!copy_framebuffer)
-         copy_framebuffer.reset(new gl3_shader::Framebuffer(texture.format, 1));
+         copy_framebuffer = gl3_shader::gl3_framebuffer_new(texture.format, 1);
+      if (!copy_framebuffer)
+         return;
 
-      if (input_texture.width   != copy_framebuffer->get_size().width  ||
-          input_texture.height  != copy_framebuffer->get_size().height ||
+      if (input_texture.width   != copy_framebuffer->size.width  ||
+          input_texture.height  != copy_framebuffer->size.height ||
           (input_texture.format != 0                                   &&
-           input_texture.format != copy_framebuffer->get_format()))
-         copy_framebuffer->set_size({ input_texture.width, input_texture.height }, input_texture.format);
+           input_texture.format != copy_framebuffer->format))
+      {
+         Size2D copy_size;
+         copy_size.width  = input_texture.width;
+         copy_size.height = input_texture.height;
+         gl3_shader::gl3_framebuffer_set_size(copy_framebuffer, &copy_size,
+               input_texture.format);
+      }
 
-      if (copy_framebuffer->is_complete())
+      if (copy_framebuffer->complete)
          gl3_framebuffer_copy_partial(
-               copy_framebuffer->get_framebuffer(),
+               copy_framebuffer->framebuffer,
                common.quad_program,
                common.quad_loc.flat_ubo_vertex,
-               copy_framebuffer->get_size(),
+               copy_framebuffer->size,
                input_texture.image,
                float(input_texture.width)
                / input_texture.padded_width,
                float(input_texture.height)
                / input_texture.padded_height);
-      input_texture.image = copy_framebuffer->get_image();
+      input_texture.image = copy_framebuffer->image;
    }
 }
 
