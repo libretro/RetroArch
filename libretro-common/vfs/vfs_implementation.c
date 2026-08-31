@@ -1244,7 +1244,13 @@ int64_t retro_vfs_file_get_sparse_granularity_impl(
    if (!stream)
       return 0;
 
-#if defined(_WIN32) && !defined(_XBOX)
+/* Excludes __WINRT__ for the same reason features_cpu.c does: the probe
+ * below reaches kernel32 through GetModuleHandle, and that entry point is
+ * not in the Windows Store API partition -- dylib_proc() says as much and
+ * refuses to call it there.  A UWP build reports "unknown" and skips
+ * sparse handling, which is already the documented behaviour for any
+ * system that cannot resolve these names. */
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    {
       /* GetFinalPathNameByHandleW and GetVolumeInformationByHandleW are
        * Vista and later. Importing them statically costs more than the
@@ -1279,7 +1285,7 @@ int64_t retro_vfs_file_get_sparse_granularity_impl(
 
       if (!resolved)
       {
-         HMODULE k32 = GetModuleHandle("kernel32.dll");
+         HMODULE k32 = GetModuleHandleA("kernel32.dll");
 
          resolved = 1;
          if (k32)
@@ -1360,7 +1366,7 @@ int64_t retro_vfs_file_get_sparse_granularity_impl(
 
       return cluster;
    }
-#elif !defined(VITA) && !defined(PSP) && !defined(PS2) && !defined(ORBIS) && !defined(GEKKO) && !defined(_3DS)
+#elif !defined(_WIN32) && !defined(VITA) && !defined(PSP) && !defined(PS2) && !defined(ORBIS) && !defined(GEKKO) && !defined(_3DS)
    {
       struct stat st;
       int         fd = stream->fd;
