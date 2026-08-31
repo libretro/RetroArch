@@ -95,6 +95,14 @@
 #define OSMicroseconds(us) OSMicrosecondsToTicks(us)
 #endif
 #define STACKSIZE (128 * 1024)
+#elif defined(PS2)
+#define USE_PS2_THREADS
+#include <kernel.h>
+#include <timer.h>
+#include <timer_alarm.h>
+#include <malloc.h>
+#include <string.h>
+#define STACKSIZE (32 * 1024)
 #elif defined(__SWITCH__)
 #define USE_SWITCH_THREADS
 #include <switch.h>
@@ -235,10 +243,6 @@ static INLINE void CondVar_Broadcast(CondVar* cv)
 #define RTHREADS_HAVE_SCHEDPARAM 1
 #endif
 
-#if defined(PS2)
-#include <ps2sdkapi.h>
-#endif
-
 #if defined(__MACH__) && defined(__APPLE__)
 #include <mach/clock.h>
 #include <mach/mach.h>
@@ -302,6 +306,12 @@ struct thread_data
 #define RTHREADS_SCE_START
 #endif
 
+/* Backends that carry the entry function and its argument in the
+ * sthread itself rather than in a separate thread_data block. */
+#if defined(RTHREADS_SCE_START) || defined(USE_PS2_THREADS)
+#define RTHREADS_NO_THREAD_DATA
+#endif
+
 #ifdef RTHREADS_SCE_START
 #define PSP_THREAD_DONE     1
 #define PSP_THREAD_DETACHED 2
@@ -331,6 +341,14 @@ struct sthread
 #elif defined(USE_SWITCH_THREADS)
    struct sthread *next;   /* reap list link once detached */
    Thread t;
+#elif defined(USE_PS2_THREADS)
+   void (*func)(void*);
+   void *userdata;
+   void *stack;
+   struct sthread *next;   /* reap list link once detached */
+   s32 id;
+   s32 done;               /* semaphore the exit path signals for a joiner */
+   retro_atomic_int_t state;
 #else
    pthread_t id;
 #endif
@@ -352,6 +370,8 @@ struct slock
    OSFastMutex lock;
 #elif defined(USE_SWITCH_THREADS)
    Mutex lock;
+#elif defined(USE_PS2_THREADS)
+   s32 lock;   /* binary semaphore */
 #else
    pthread_mutex_t lock;
 #endif
@@ -457,6 +477,23 @@ struct wiiu_cond_waiter
 };
 #endif
 
+#ifdef USE_PS2_THREADS
+/* One node per blocked waiter, on that waiter's stack for the
+ * duration of the wait. The EE kernel counts wakeups per thread, so
+ * a WakeupThread issued between enqueue and SleepThread is kept
+ * rather than lost; the timed variant arms a timer alarm whose
+ * handler, in interrupt context, marks the node and wakes the
+ * thread. The lists are guarded by disabling interrupts: the kernel
+ * never time-slices, so on a single core that is the only way a
+ * critical section this short can be entered twice. */
+struct ps2_cond_waiter
+{
+   struct ps2_cond_waiter *next;
+   s32 tid;
+   volatile int fired;
+};
+#endif
+
 struct scond
 {
 #if defined(USE_WIN32_THREADS)
@@ -479,10 +516,120 @@ struct scond
    OSFastMutex gate;
 #elif defined(USE_SWITCH_THREADS)
    CondVar cond;
+#elif defined(USE_PS2_THREADS)
+   struct ps2_cond_waiter *head;  /* FIFO of sleeping waiters */
+   struct ps2_cond_waiter *tail;
 #else
    pthread_cond_t cond;
 #endif
 };
+
+#ifdef USE_PS2_THREADS
+#define PS2_THREAD_DONE     1
+#define PS2_THREAD_DETACHED 2
+
+static sthread_t *ps2_reap_list;
+
+/* Detached threads park here until their DONE bit is set, since the
+ * EE kernel frees only the control block on exit and the stack is
+ * ours to release from another thread. */
+static void ps2_reap(void)
+{
+   sthread_t *done = NULL, **pp;
+   DIntr();
+   pp = &ps2_reap_list;
+   while (*pp)
+   {
+      sthread_t *z = *pp;
+      if (retro_atomic_load_acquire_int(&z->state) & PS2_THREAD_DONE)
+      {
+         *pp     = z->next;
+         z->next = done;
+         done    = z;
+      }
+      else
+         pp      = &z->next;
+   }
+   EIntr();
+   while (done)
+   {
+      sthread_t *z = done;
+      done         = z->next;
+      DeleteSema(z->done);
+      free(z->stack);
+      free(z);
+   }
+}
+
+static void ps2_thread_wrap(void *arg)
+{
+   sthread_t *t = (sthread_t*)arg;
+   s32 done     = t->done;
+   t->func(t->userdata);
+   /* From here to the exit syscall nothing may run in this thread's
+    * place: the joiner or the reaper frees the stack it is still
+    * standing on. Priority 0 is the top of the band and the EE
+    * kernel never time-slices equal priorities, so signaling below
+    * readies the joiner without switching to it. Nothing in t is
+    * touched once DONE is published. */
+   ChangeThreadPriority(GetThreadId(), 0);
+   if (!(retro_atomic_fetch_or_int(&t->state, PS2_THREAD_DONE)
+            & PS2_THREAD_DETACHED))
+      SignalSema(done);
+   ExitDeleteThread();
+}
+
+static u64 ps2_cond_alarm(s32 id, u64 scheduled, u64 actual,
+      void *arg, void *pc)
+{
+   struct ps2_cond_waiter *w = (struct ps2_cond_waiter*)arg;
+   (void)id;
+   (void)scheduled;
+   (void)actual;
+   (void)pc;
+   w->fired = 1;
+   iWakeupThread(w->tid);
+   return 0;   /* one-shot */
+}
+
+static void ps2_cond_enqueue(scond_t *cond, struct ps2_cond_waiter *w)
+{
+   w->next  = NULL;
+   w->fired = 0;
+   w->tid   = GetThreadId();
+   DIntr();
+   if (cond->tail)
+      cond->tail->next = w;
+   else
+      cond->head       = w;
+   cond->tail          = w;
+   EIntr();
+}
+
+/* Removes w if it is still queued; returns whether it was. */
+static bool ps2_cond_withdraw(scond_t *cond, struct ps2_cond_waiter *w)
+{
+   struct ps2_cond_waiter *cur, *prev = NULL;
+   DIntr();
+   cur = cond->head;
+   while (cur && cur != w)
+   {
+      prev = cur;
+      cur  = cur->next;
+   }
+   if (cur)
+   {
+      if (prev)
+         prev->next = w->next;
+      else
+         cond->head = w->next;
+      if (cond->tail == w)
+         cond->tail = prev;
+   }
+   EIntr();
+   return cur != NULL;
+}
+#endif
 
 #ifdef USE_SWITCH_THREADS
 /* libnx has no detach: a Thread stays live until threadClose, and a
@@ -564,6 +711,8 @@ static void wiiu_thread_dealloc(OSThread *thread, void *stack)
    (void)stack;
    free(thread);
 }
+#elif defined(USE_PS2_THREADS)
+/* ps2_thread_wrap above takes the sthread itself as its argument. */
 #else
 #ifdef USE_WIN32_THREADS
 static DWORD CALLBACK thread_wrap(void *data_)
@@ -588,7 +737,7 @@ sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
 #if !defined(USE_WIN32_THREADS) && !defined(USE_GX_THREADS) \
       && !defined(USE_CTR_THREADS) && !defined(USE_PSP_THREADS) \
       && !defined(USE_VITA_THREADS) && !defined(USE_WIIU_THREADS) \
-      && !defined(USE_SWITCH_THREADS) \
+      && !defined(USE_SWITCH_THREADS) && !defined(USE_PS2_THREADS) \
       && !defined(__HAIKU__) && !defined(__EMSCRIPTEN__)
 #define HAVE_THREAD_ATTR
 #endif
@@ -600,7 +749,7 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
    bool thread_attr_needed  = false;
 #endif
    bool thread_created      = false;
-#ifndef RTHREADS_SCE_START
+#ifndef RTHREADS_NO_THREAD_DATA
    struct thread_data *data = NULL;
 #endif
    sthread_t *thread        = (sthread_t*)malloc(sizeof(*thread));
@@ -608,7 +757,7 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
    if (!thread)
       return NULL;
 
-#ifndef RTHREADS_SCE_START
+#ifndef RTHREADS_NO_THREAD_DATA
    if (!(data = (struct thread_data*)malloc(sizeof(*data))))
    {
       free(thread);
@@ -707,6 +856,69 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
       }
       if (!thread_created)
          free(start);
+   }
+#elif defined(USE_PS2_THREADS)
+   {
+      /* Priorities run 0..127 with lower numbers scheduled first and
+       * no time-slicing within a level. Workers inherit the creator's
+       * priority; an explicit rthreads priority maps across 1..127.
+       * The stack is ours, handed to the kernel with its size, and
+       * the sthread itself is the start argument. */
+      ee_thread_t        th;
+      ee_sema_t          sema;
+      ee_thread_status_t st;
+      int prio;
+
+      ps2_reap();
+      thread->func     = thread_func;
+      thread->userdata = userdata;
+      thread->next     = NULL;
+      thread->id       = -1;
+      thread->done     = -1;
+      retro_atomic_int_init(&thread->state, 0);
+      thread->stack    = memalign(16, STACKSIZE);
+      if (!thread->stack)
+      {
+         free(thread);
+         return NULL;
+      }
+
+      memset(&sema, 0, sizeof(sema));
+      sema.init_count  = 0;
+      sema.max_count   = 1;
+      thread->done     = CreateSema(&sema);
+
+      memset(&st, 0, sizeof(st));
+      ReferThreadStatus(GetThreadId(), &st);
+      prio             = st.current_priority;
+      if (thread_priority >= 1 && thread_priority <= 100)
+         prio          = 127 - ((thread_priority - 1) * 126) / 99;
+      if (prio < 0)
+         prio          = 0;
+      if (prio > 127)
+         prio          = 127;
+
+      memset(&th, 0, sizeof(th));
+      th.func             = (void*)ps2_thread_wrap;
+      th.stack            = thread->stack;
+      th.stack_size       = STACKSIZE;
+      th.gp_reg           = &_gp;
+      th.initial_priority = prio;
+      if (thread->done >= 0)
+         thread->id       = CreateThread(&th);
+      if (thread->id >= 0)
+      {
+         if (StartThread(thread->id, thread) >= 0)
+            thread_created = true;
+         else
+            DeleteThread(thread->id);
+      }
+      if (!thread_created)
+      {
+         if (thread->done >= 0)
+            DeleteSema(thread->done);
+         free(thread->stack);
+      }
    }
 #elif defined(USE_SWITCH_THREADS)
    {
@@ -861,7 +1073,7 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
 
    if (thread_created)
       return thread;
-#ifndef RTHREADS_SCE_START
+#ifndef RTHREADS_NO_THREAD_DATA
    free(data);
 #endif
    free(thread);
@@ -894,6 +1106,17 @@ bool sthread_raise_current_priority(void)
          prio  = 0x10;
       return sceKernelChangeThreadPriority(
             sceKernelGetThreadId(), prio) == 0;
+   }
+#elif defined(USE_PS2_THREADS)
+   {
+      ee_thread_status_t st;
+      int prio;
+      memset(&st, 0, sizeof(st));
+      ReferThreadStatus(GetThreadId(), &st);
+      prio = st.current_priority - 4;
+      if (prio < 0)
+         prio = 0;
+      return ChangeThreadPriority(GetThreadId(), prio) >= 0;
    }
 #elif defined(USE_SWITCH_THREADS)
    {
@@ -1034,6 +1257,24 @@ int sthread_detach(sthread_t *thread)
    OSDetachThread(thread->id);
    free(thread);
    return 0;
+#elif defined(USE_PS2_THREADS)
+   if (!thread)
+      return 0;
+   ps2_reap();
+   if (retro_atomic_fetch_or_int(&thread->state, PS2_THREAD_DETACHED)
+         & PS2_THREAD_DONE)
+   {
+      /* Already exited: nothing left running on that stack. */
+      DeleteSema(thread->done);
+      free(thread->stack);
+      free(thread);
+      return 0;
+   }
+   DIntr();
+   thread->next  = ps2_reap_list;
+   ps2_reap_list = thread;
+   EIntr();
+   return 0;
 #elif defined(USE_SWITCH_THREADS)
    if (!thread)
       return 0;
@@ -1079,6 +1320,10 @@ void sthread_join(sthread_t *thread)
 #elif defined(USE_SWITCH_THREADS)
    threadWaitForExit(&thread->t);
    threadClose(&thread->t);
+#elif defined(USE_PS2_THREADS)
+   WaitSema(thread->done);
+   DeleteSema(thread->done);
+   free(thread->stack);
 #else
    pthread_join(thread->id, NULL);
 #endif
@@ -1099,6 +1344,8 @@ bool sthread_isself(sthread_t *thread)
    return thread ? OSGetCurrentThread() == thread->id        : false;
 #elif defined(USE_SWITCH_THREADS)
    return thread ? threadGetSelf() == &thread->t             : false;
+#elif defined(USE_PS2_THREADS)
+   return thread ? GetThreadId() == thread->id               : false;
 #else
    return thread ? pthread_equal(pthread_self(), thread->id) : false;
 #endif
@@ -1135,6 +1382,18 @@ slock_t *slock_new(void)
    OSFastMutex_Init(&lock->lock, "rarch_lock");
 #elif defined(USE_SWITCH_THREADS)
    mutexInit(&lock->lock);
+#elif defined(USE_PS2_THREADS)
+   {
+      ee_sema_t sema;
+      memset(&sema, 0, sizeof(sema));
+      sema.init_count = 1;
+      sema.max_count  = 1;
+      if ((lock->lock = CreateSema(&sema)) < 0)
+      {
+         free(lock);
+         return NULL;
+      }
+   }
 #else
    if (pthread_mutex_init(&lock->lock, NULL) != 0)
    {
@@ -1162,6 +1421,8 @@ void slock_free(slock_t *lock)
    sceKernelDeleteLwMutex(&lock->lock);
 #elif defined(USE_WIIU_THREADS) || defined(USE_SWITCH_THREADS)
    /* nothing to destroy */
+#elif defined(USE_PS2_THREADS)
+   DeleteSema(lock->lock);
 #else
    pthread_mutex_destroy(&lock->lock);
 #endif
@@ -1186,6 +1447,8 @@ void slock_lock(slock_t *lock)
    OSFastMutex_Lock(&lock->lock);
 #elif defined(USE_SWITCH_THREADS)
    mutexLock(&lock->lock);
+#elif defined(USE_PS2_THREADS)
+   WaitSema(lock->lock);
 #else
    pthread_mutex_lock(&lock->lock);
 #endif
@@ -1207,6 +1470,8 @@ bool slock_try_lock(slock_t *lock)
    return lock && OSFastMutex_TryLock(&lock->lock);
 #elif defined(USE_SWITCH_THREADS)
    return lock && mutexTryLock(&lock->lock);
+#elif defined(USE_PS2_THREADS)
+   return lock && (PollSema(lock->lock) >= 0);
 #else
    return lock && (pthread_mutex_trylock(&lock->lock) == 0);
 #endif
@@ -1230,6 +1495,8 @@ void slock_unlock(slock_t *lock)
    OSFastMutex_Unlock(&lock->lock);
 #elif defined(USE_SWITCH_THREADS)
    mutexUnlock(&lock->lock);
+#elif defined(USE_PS2_THREADS)
+   SignalSema(lock->lock);
 #else
    pthread_mutex_unlock(&lock->lock);
 #endif
@@ -1297,6 +1564,8 @@ scond_t *scond_new(void)
    OSFastMutex_Init(&cond->gate, "rarch_cond");
 #elif defined(USE_SWITCH_THREADS)
    condvarInit(&cond->cond);
+#elif defined(USE_PS2_THREADS)
+   /* head and tail start NULL from calloc */
 #else
    if (pthread_cond_init(&cond->cond, NULL) != 0)
    {
@@ -1327,7 +1596,7 @@ void scond_free(scond_t *cond)
       sceKernelDeleteLwCond(&cond->work);
 #elif defined(USE_WIIU_THREADS)
    /* nothing to destroy: waiter nodes live on their threads' stacks */
-#elif defined(USE_SWITCH_THREADS)
+#elif defined(USE_SWITCH_THREADS) || defined(USE_PS2_THREADS)
    /* nothing to destroy */
 #else
    pthread_cond_destroy(&cond->cond);
@@ -1850,6 +2119,12 @@ void scond_wait(scond_t *cond, slock_t *lock)
    slock_lock(lock);
 #elif defined(USE_SWITCH_THREADS)
    condvarWait(&cond->cond, &lock->lock);
+#elif defined(USE_PS2_THREADS)
+   struct ps2_cond_waiter w;
+   ps2_cond_enqueue(cond, &w);
+   slock_unlock(lock);
+   SleepThread();
+   slock_lock(lock);
 #else
    pthread_cond_wait(&cond->cond, &lock->lock);
 #endif
@@ -1912,6 +2187,23 @@ int scond_broadcast(scond_t *cond)
    return 0;
 #elif defined(USE_SWITCH_THREADS)
    condvarWakeAll(&cond->cond);
+   return 0;
+#elif defined(USE_PS2_THREADS)
+   struct ps2_cond_waiter *w;
+   DIntr();
+   w          = cond->head;
+   cond->head = NULL;
+   cond->tail = NULL;
+   EIntr();
+   while (w)
+   {
+      /* The node vanishes with its waiter once woken; take the id
+       * and the link first. */
+      struct ps2_cond_waiter *next = w->next;
+      s32 tid                      = w->tid;
+      w                            = next;
+      WakeupThread(tid);
+   }
    return 0;
 #else
    return pthread_cond_broadcast(&cond->cond);
@@ -1981,6 +2273,21 @@ void scond_signal(scond_t *cond)
       OSSignalEvent(&w->ev);
 #elif defined(USE_SWITCH_THREADS)
    condvarWakeOne(&cond->cond);
+#elif defined(USE_PS2_THREADS)
+   struct ps2_cond_waiter *w;
+   s32 tid = -1;
+   DIntr();
+   w = cond->head;
+   if (w)
+   {
+      tid        = w->tid;
+      cond->head = w->next;
+      if (!cond->head)
+         cond->tail = NULL;
+   }
+   EIntr();
+   if (tid >= 0)
+      WakeupThread(tid);
 #else
    pthread_cond_signal(&cond->cond);
 #endif
@@ -2136,6 +2443,55 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
       return false;
    return condvarWaitTimeout(&cond->cond, &lock->lock,
          (u64)timeout_us * 1000ull) == 0;
+#elif defined(USE_PS2_THREADS)
+   struct ps2_cond_waiter w;
+   bool woken;
+   s32 alarm;
+   if (timeout_us <= 0)
+      return false;
+   ps2_cond_enqueue(cond, &w);
+   slock_unlock(lock);
+   alarm = SetTimerAlarm(GetTimerSystemTime()
+         + TimerUSec2BusClock((u32)(timeout_us / INT64_C(1000000)),
+                              (u32)(timeout_us % INT64_C(1000000))),
+         ps2_cond_alarm, &w);
+   if (alarm < 0)
+   {
+      /* No alarm slot free: report a timeout right away, unless a
+       * signaler has already claimed this waiter, whose wake must
+       * then be consumed. */
+      if (ps2_cond_withdraw(cond, &w))
+         woken = false;
+      else
+      {
+         SleepThread();
+         woken = true;
+      }
+      slock_lock(lock);
+      return woken;
+   }
+   SleepThread();
+   /* Which of the alarm and a signaler woke us. Releasing under
+    * DIntr means the handler cannot slip in between the check and
+    * the release. */
+   DIntr();
+   if (!w.fired)
+      iReleaseTimerAlarm(alarm);
+   EIntr();
+   if (!w.fired)
+      woken = true;                 /* a signaler dequeued this node */
+   else if (ps2_cond_withdraw(cond, &w))
+      woken = false;                /* nobody signaled: timed out */
+   else
+   {
+      /* Both the alarm and a signaler fired, so one wakeup is still
+       * banked against this thread; drain it before it can end a
+       * later sleep early. */
+      CancelWakeupThread(w.tid);
+      woken = true;
+   }
+   slock_lock(lock);
+   return woken;
 #else
    int64_t seconds, remainder;
    struct timespec now;
@@ -2159,12 +2515,6 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    sys_time_get_current_time(&s, &n);
    now.tv_sec            = s;
    now.tv_nsec           = n;
-#elif defined(PS2)
-   {
-      int tickms            = ps2_clock();
-      now.tv_sec            = tickms / 1000;
-      now.tv_nsec           = (long)(tickms % 1000) * 1000000L;
-   }
 #elif defined(RETRO_WIN32_USE_PTHREADS)
    _ftime64_s(&now);
 #else
@@ -2262,6 +2612,8 @@ uintptr_t sthread_get_current_thread_id(void)
    return (uintptr_t)OSGetCurrentThread();
 #elif defined(USE_SWITCH_THREADS)
    return (uintptr_t)threadGetSelf();
+#elif defined(USE_PS2_THREADS)
+   return (uintptr_t)GetThreadId();
 #else
    return (uintptr_t)pthread_self();
 #endif
@@ -2286,7 +2638,8 @@ bool sthread_is_main_thread(void)
 #if !defined(USE_WIN32_THREADS) && !defined(USE_GX_THREADS) \
       && !defined(USE_CTR_THREADS) && !defined(USE_PSP_THREADS) \
       && !defined(USE_VITA_THREADS) && !defined(USE_WIIU_THREADS) \
-      && !defined(USE_SWITCH_THREADS) && !defined(__ANDROID__)
+      && !defined(USE_SWITCH_THREADS) && !defined(USE_PS2_THREADS) \
+      && !defined(__ANDROID__)
 #define RTHREADS_HAVE_CANCEL 1
 #endif
 
