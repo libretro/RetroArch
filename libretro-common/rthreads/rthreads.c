@@ -69,6 +69,32 @@
 #include <pspkernel.h>
 #include <pspthreadman.h>
 #define STACKSIZE (32 * 1024)
+#elif defined(WIIU)
+#define USE_WIIU_THREADS
+#include <malloc.h>
+#include <string.h>
+#if defined(__has_include)
+#if __has_include(<wiiu/os/thread.h>)
+#define RTHREADS_WIIU_VENDORED
+#endif
+#endif
+#ifdef RTHREADS_WIIU_VENDORED
+#include <wiiu/os/thread.h>
+#include <wiiu/os/fastmutex.h>
+#include <wiiu/os/event.h>
+#include <wiiu/os/time.h>
+#include <wiiu/os/systeminfo.h>
+#else
+#include <coreinit/thread.h>
+#include <coreinit/fastmutex.h>
+#include <coreinit/event.h>
+#include <coreinit/time.h>
+#include <coreinit/systeminfo.h>
+#endif
+#ifndef OSMicroseconds
+#define OSMicroseconds(us) OSMicrosecondsToTicks(us)
+#endif
+#define STACKSIZE (128 * 1024)
 #elif defined(VITA)
 #define USE_VITA_THREADS
 #include <psp2/kernel/threadmgr.h>
@@ -296,6 +322,8 @@ struct sthread
 #elif defined(RTHREADS_SCE_START)
    struct psp_thread_start *start;
    SceUID id;
+#elif defined(USE_WIIU_THREADS)
+   OSThread *id;   /* head of one allocation that also holds the stack */
 #else
    pthread_t id;
 #endif
@@ -313,6 +341,8 @@ struct slock
    SceUID lock;
 #elif defined(USE_VITA_THREADS)
    SceKernelLwMutexWork lock;
+#elif defined(USE_WIIU_THREADS)
+   OSFastMutex lock;
 #else
    pthread_mutex_t lock;
 #endif
@@ -406,6 +436,18 @@ static struct
 static void scond_global_init(void);
 #endif
 
+#ifdef USE_WIIU_THREADS
+/* One node per blocked waiter, living on that waiter's stack for
+ * exactly the duration of the wait. An auto-reset event both parks
+ * the waiter and carries the wake, so a signal issued between
+ * enqueue and OSWaitEvent latches instead of getting lost. */
+struct wiiu_cond_waiter
+{
+   struct wiiu_cond_waiter *next;
+   OSEvent ev;
+};
+#endif
+
 struct scond
 {
 #if defined(USE_WIN32_THREADS)
@@ -422,6 +464,10 @@ struct scond
    SceKernelLwCondWork work;
    SceKernelLwMutexWork *assoc;   /* the lock this condvar is bound to */
    retro_atomic_int_t bound;      /* nonzero once work exists */
+#elif defined(USE_WIIU_THREADS)
+   struct wiiu_cond_waiter *head; /* FIFO of parked waiters */
+   struct wiiu_cond_waiter *tail;
+   OSFastMutex gate;
 #else
    pthread_cond_t cond;
 #endif
@@ -455,6 +501,27 @@ static void thread_wrap(void *data_)
    data->func(data->userdata);
    free(data);
 }
+#elif defined(USE_WIIU_THREADS)
+static int thread_wrap(int argc, const char **argv)
+{
+   struct thread_data *data = (struct thread_data*)argv;
+   (void)argc;
+   if (!data)
+      return 0;
+   data->func(data->userdata);
+   free(data);
+   return 0;
+}
+
+/* Runs on the scheduler once the thread is fully dead - after a join,
+ * or after exit for a detached thread - so the control block and the
+ * stack are never freed while the thread could still touch them. The
+ * OSThread heads the allocation. */
+static void wiiu_thread_dealloc(OSThread *thread, void *stack)
+{
+   (void)stack;
+   free(thread);
+}
 #else
 #ifdef USE_WIN32_THREADS
 static DWORD CALLBACK thread_wrap(void *data_)
@@ -479,7 +546,7 @@ sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
 /* TODO/FIXME - this needs to be implemented for Switch */
 #if !defined(USE_WIN32_THREADS) && !defined(USE_GX_THREADS) \
       && !defined(USE_CTR_THREADS) && !defined(USE_PSP_THREADS) \
-      && !defined(USE_VITA_THREADS) \
+      && !defined(USE_VITA_THREADS) && !defined(USE_WIIU_THREADS) \
       && !defined(SWITCH) && !defined(__HAIKU__) && !defined(__EMSCRIPTEN__)
 #define HAVE_THREAD_ATTR
 #endif
@@ -599,6 +666,46 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
       if (!thread_created)
          free(start);
    }
+#elif defined(USE_WIIU_THREADS)
+   {
+      /* Priorities run 0..31 with lower numbers scheduled first;
+       * workers inherit the creator's priority, and an explicit
+       * rthreads priority maps across the whole band. The control
+       * block and the stack are one caller-owned allocation, handed
+       * back by the deallocator; the stack pointer passed in is its
+       * top, since PowerPC stacks grow down. */
+      int32_t prio;
+      uint8_t *block = (uint8_t*)memalign(16,
+            sizeof(OSThread) + STACKSIZE);
+
+      if (!block)
+      {
+         free(data);
+         free(thread);
+         return NULL;
+      }
+      memset(block, 0, sizeof(OSThread));
+
+      prio = OSGetThreadPriority(OSGetCurrentThread());
+      if (thread_priority >= 1 && thread_priority <= 100)
+         prio = 31 - ((thread_priority - 1) * 31) / 99;
+      if (prio < 0)
+         prio = 0;
+      if (prio > 31)
+         prio = 31;
+
+      thread->id = (OSThread*)block;
+      if (OSCreateThread(thread->id, thread_wrap, 0, (char*)data,
+            block + sizeof(OSThread) + STACKSIZE, STACKSIZE, prio,
+            OS_THREAD_ATTRIB_AFFINITY_ANY))
+      {
+         OSSetThreadDeallocator(thread->id, wiiu_thread_dealloc);
+         OSResumeThread(thread->id);
+         thread_created = true;
+      }
+      else
+         free(block);
+   }
 #elif defined(USE_VITA_THREADS)
    {
       /* Priorities run 64..191 with lower numbers scheduled first.
@@ -710,6 +817,14 @@ bool sthread_raise_current_priority(void)
          prio  = 0x10;
       return sceKernelChangeThreadPriority(
             sceKernelGetThreadId(), prio) == 0;
+   }
+#elif defined(USE_WIIU_THREADS)
+   {
+      OSThread *self = OSGetCurrentThread();
+      int32_t prio   = OSGetThreadPriority(self) - 4;
+      if (prio < 0)
+         prio        = 0;
+      return OSSetThreadPriority(self, prio) != FALSE;
    }
 #elif defined(USE_VITA_THREADS)
    {
@@ -826,6 +941,13 @@ int sthread_detach(sthread_t *thread)
    }
    free(thread);
    return 0;
+#elif defined(USE_WIIU_THREADS)
+   if (!thread)
+      return 0;
+   /* The deallocator runs once the thread exits and frees its block. */
+   OSDetachThread(thread->id);
+   free(thread);
+   return 0;
 #else
    int ret;
    if (!thread)
@@ -856,6 +978,9 @@ void sthread_join(sthread_t *thread)
    sceKernelWaitThreadEnd(thread->id, NULL, NULL);
    sceKernelDeleteThread(thread->id);
    free(thread->start);
+#elif defined(USE_WIIU_THREADS)
+   /* The deallocator frees the control block and stack. */
+   OSJoinThread(thread->id, NULL);
 #else
    pthread_join(thread->id, NULL);
 #endif
@@ -872,6 +997,8 @@ bool sthread_isself(sthread_t *thread)
    return thread ? threadGetCurrent() == thread->id          : false;
 #elif defined(RTHREADS_SCE_START)
    return thread ? sceKernelGetThreadId() == thread->id      : false;
+#elif defined(USE_WIIU_THREADS)
+   return thread ? OSGetCurrentThread() == thread->id        : false;
 #else
    return thread ? pthread_equal(pthread_self(), thread->id) : false;
 #endif
@@ -904,6 +1031,8 @@ slock_t *slock_new(void)
       free(lock);
       return NULL;
    }
+#elif defined(USE_WIIU_THREADS)
+   OSFastMutex_Init(&lock->lock, "rarch_lock");
 #else
    if (pthread_mutex_init(&lock->lock, NULL) != 0)
    {
@@ -929,6 +1058,8 @@ void slock_free(slock_t *lock)
    sceKernelDeleteSema(lock->lock);
 #elif defined(USE_VITA_THREADS)
    sceKernelDeleteLwMutex(&lock->lock);
+#elif defined(USE_WIIU_THREADS)
+   /* nothing to destroy */
 #else
    pthread_mutex_destroy(&lock->lock);
 #endif
@@ -949,6 +1080,8 @@ void slock_lock(slock_t *lock)
    sceKernelWaitSema(lock->lock, 1, NULL);
 #elif defined(USE_VITA_THREADS)
    sceKernelLockLwMutex(&lock->lock, 1, NULL);
+#elif defined(USE_WIIU_THREADS)
+   OSFastMutex_Lock(&lock->lock);
 #else
    pthread_mutex_lock(&lock->lock);
 #endif
@@ -966,6 +1099,8 @@ bool slock_try_lock(slock_t *lock)
    return lock && (sceKernelPollSema(lock->lock, 1) == 0);
 #elif defined(USE_VITA_THREADS)
    return lock && (sceKernelTryLockLwMutex(&lock->lock, 1) == 0);
+#elif defined(USE_WIIU_THREADS)
+   return lock && OSFastMutex_TryLock(&lock->lock);
 #else
    return lock && (pthread_mutex_trylock(&lock->lock) == 0);
 #endif
@@ -985,6 +1120,8 @@ void slock_unlock(slock_t *lock)
    sceKernelSignalSema(lock->lock, 1);
 #elif defined(USE_VITA_THREADS)
    sceKernelUnlockLwMutex(&lock->lock, 1);
+#elif defined(USE_WIIU_THREADS)
+   OSFastMutex_Unlock(&lock->lock);
 #else
    pthread_mutex_unlock(&lock->lock);
 #endif
@@ -1048,6 +1185,8 @@ scond_t *scond_new(void)
 #elif defined(USE_VITA_THREADS)
    cond->assoc = NULL;
    retro_atomic_int_init(&cond->bound, 0);
+#elif defined(USE_WIIU_THREADS)
+   OSFastMutex_Init(&cond->gate, "rarch_cond");
 #else
    if (pthread_cond_init(&cond->cond, NULL) != 0)
    {
@@ -1076,6 +1215,8 @@ void scond_free(scond_t *cond)
 #elif defined(USE_VITA_THREADS)
    if (retro_atomic_load_acquire_int(&cond->bound))
       sceKernelDeleteLwCond(&cond->work);
+#elif defined(USE_WIIU_THREADS)
+   /* nothing to destroy: waiter nodes live on their threads' stacks */
 #else
    pthread_cond_destroy(&cond->cond);
 #endif
@@ -1581,6 +1722,20 @@ void scond_wait(scond_t *cond, slock_t *lock)
 #elif defined(USE_VITA_THREADS)
    scond_bind_vita(cond, lock);
    sceKernelWaitLwCond(&cond->work, NULL);
+#elif defined(USE_WIIU_THREADS)
+   struct wiiu_cond_waiter w;
+   w.next = NULL;
+   OSInitEvent(&w.ev, FALSE, OS_EVENT_MODE_AUTO);
+   OSFastMutex_Lock(&cond->gate);
+   if (cond->tail)
+      cond->tail->next = &w;
+   else
+      cond->head       = &w;
+   cond->tail          = &w;
+   OSFastMutex_Unlock(&cond->gate);
+   slock_unlock(lock);
+   OSWaitEvent(&w.ev);
+   slock_lock(lock);
 #else
    pthread_cond_wait(&cond->cond, &lock->lock);
 #endif
@@ -1624,6 +1779,22 @@ int scond_broadcast(scond_t *cond)
 #elif defined(USE_VITA_THREADS)
    if (retro_atomic_load_acquire_int(&cond->bound))
       sceKernelSignalLwCondAll(&cond->work);
+   return 0;
+#elif defined(USE_WIIU_THREADS)
+   struct wiiu_cond_waiter *w, *next;
+   OSFastMutex_Lock(&cond->gate);
+   w          = cond->head;
+   cond->head = NULL;
+   cond->tail = NULL;
+   OSFastMutex_Unlock(&cond->gate);
+   while (w)
+   {
+      /* The node vanishes with its waiter once signaled, so step off
+       * it first. */
+      next = w->next;
+      OSSignalEvent(&w->ev);
+      w    = next;
+   }
    return 0;
 #else
    return pthread_cond_broadcast(&cond->cond);
@@ -1678,6 +1849,19 @@ void scond_signal(scond_t *cond)
 #elif defined(USE_VITA_THREADS)
    if (retro_atomic_load_acquire_int(&cond->bound))
       sceKernelSignalLwCond(&cond->work);
+#elif defined(USE_WIIU_THREADS)
+   struct wiiu_cond_waiter *w;
+   OSFastMutex_Lock(&cond->gate);
+   w = cond->head;
+   if (w)
+   {
+      cond->head = w->next;
+      if (!cond->head)
+         cond->tail = NULL;
+   }
+   OSFastMutex_Unlock(&cond->gate);
+   if (w)
+      OSSignalEvent(&w->ev);
 #else
    pthread_cond_signal(&cond->cond);
 #endif
@@ -1779,6 +1963,55 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    to = (timeout_us > INT64_C(0xFFFFFFFF))
          ? 0xFFFFFFFFu : (unsigned int)timeout_us;
    return sceKernelWaitLwCond(&cond->work, &to) == 0;
+#elif defined(USE_WIIU_THREADS)
+   bool woken;
+   struct wiiu_cond_waiter w;
+   if (timeout_us <= 0)
+      return false;
+   w.next = NULL;
+   OSInitEvent(&w.ev, FALSE, OS_EVENT_MODE_AUTO);
+   OSFastMutex_Lock(&cond->gate);
+   if (cond->tail)
+      cond->tail->next = &w;
+   else
+      cond->head       = &w;
+   cond->tail          = &w;
+   OSFastMutex_Unlock(&cond->gate);
+   slock_unlock(lock);
+   woken = OSWaitEventWithTimeout(&w.ev,
+         (OSTime)OSMicroseconds(timeout_us));
+   if (!woken)
+   {
+      /* Timed out: withdraw the registration, unless a signaler
+       * already dequeued this waiter - then its wake is in flight, so
+       * consume it before the node on this stack goes away, and
+       * report the wake. */
+      struct wiiu_cond_waiter *cur, *prev = NULL;
+      OSFastMutex_Lock(&cond->gate);
+      cur = cond->head;
+      while (cur && cur != &w)
+      {
+         prev = cur;
+         cur  = cur->next;
+      }
+      if (cur)
+      {
+         if (prev)
+            prev->next = w.next;
+         else
+            cond->head = w.next;
+         if (cond->tail == &w)
+            cond->tail = prev;
+      }
+      OSFastMutex_Unlock(&cond->gate);
+      if (!cur)
+      {
+         OSWaitEvent(&w.ev);
+         woken = true;
+      }
+   }
+   slock_lock(lock);
+   return woken;
 #else
    int64_t seconds, remainder;
    struct timespec now;
@@ -1897,6 +2130,8 @@ uintptr_t sthread_get_current_thread_id(void)
    return (uintptr_t)threadGetCurrent();
 #elif defined(RTHREADS_SCE_START)
    return (uintptr_t)sceKernelGetThreadId();
+#elif defined(USE_WIIU_THREADS)
+   return (uintptr_t)OSGetCurrentThread();
 #else
    return (uintptr_t)pthread_self();
 #endif
@@ -1920,7 +2155,8 @@ bool sthread_is_main_thread(void)
  * non-pthread backends. Enable only where the backend provides them. */
 #if !defined(USE_WIN32_THREADS) && !defined(USE_GX_THREADS) \
       && !defined(USE_CTR_THREADS) && !defined(USE_PSP_THREADS) \
-      && !defined(USE_VITA_THREADS) && !defined(__ANDROID__)
+      && !defined(USE_VITA_THREADS) && !defined(USE_WIIU_THREADS) \
+      && !defined(__ANDROID__)
 #define RTHREADS_HAVE_CANCEL 1
 #endif
 
