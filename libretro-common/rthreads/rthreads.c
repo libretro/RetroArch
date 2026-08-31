@@ -95,6 +95,10 @@
 #define OSMicroseconds(us) OSMicrosecondsToTicks(us)
 #endif
 #define STACKSIZE (128 * 1024)
+#elif defined(__SWITCH__)
+#define USE_SWITCH_THREADS
+#include <switch.h>
+#define STACKSIZE (128 * 1024)
 #elif defined(VITA)
 #define USE_VITA_THREADS
 #include <psp2/kernel/threadmgr.h>
@@ -324,6 +328,9 @@ struct sthread
    SceUID id;
 #elif defined(USE_WIIU_THREADS)
    OSThread *id;   /* head of one allocation that also holds the stack */
+#elif defined(USE_SWITCH_THREADS)
+   struct sthread *next;   /* reap list link once detached */
+   Thread t;
 #else
    pthread_t id;
 #endif
@@ -343,6 +350,8 @@ struct slock
    SceKernelLwMutexWork lock;
 #elif defined(USE_WIIU_THREADS)
    OSFastMutex lock;
+#elif defined(USE_SWITCH_THREADS)
+   Mutex lock;
 #else
    pthread_mutex_t lock;
 #endif
@@ -468,10 +477,43 @@ struct scond
    struct wiiu_cond_waiter *head; /* FIFO of parked waiters */
    struct wiiu_cond_waiter *tail;
    OSFastMutex gate;
+#elif defined(USE_SWITCH_THREADS)
+   CondVar cond;
 #else
    pthread_cond_t cond;
 #endif
 };
+
+#ifdef USE_SWITCH_THREADS
+/* libnx has no detach: a Thread stays live until threadClose, and a
+ * thread cannot close itself, since that unmaps the stack it is
+ * running on. Detached threads park here and are reaped by the next
+ * create or detach once their handle has signaled, which bounds what
+ * lingers to the detached threads that finished since the last such
+ * call. */
+static Mutex     switch_reap_lock;
+static sthread_t *switch_reap_list;
+
+static void switch_reap(void)
+{
+   sthread_t **pp;
+   mutexLock(&switch_reap_lock);
+   pp = &switch_reap_list;
+   while (*pp)
+   {
+      sthread_t *z = *pp;
+      if (svcWaitSynchronizationSingle(z->t.handle, 0) == 0)
+      {
+         *pp = z->next;
+         threadClose(&z->t);
+         free(z);
+      }
+      else
+         pp = &z->next;
+   }
+   mutexUnlock(&switch_reap_lock);
+}
+#endif
 
 #if defined(RTHREADS_SCE_START)
 /* Joinable threads finish into the dormant state and are reaped by
@@ -492,7 +534,7 @@ static int psp_thread_wrap(SceSize args_size, void *argp)
    }
    return 0;
 }
-#elif defined(USE_CTR_THREADS)
+#elif defined(USE_CTR_THREADS) || defined(USE_SWITCH_THREADS)
 static void thread_wrap(void *data_)
 {
    struct thread_data *data = (struct thread_data*)data_;
@@ -543,11 +585,11 @@ sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
    return sthread_create_with_priority(thread_func, userdata, 0);
 }
 
-/* TODO/FIXME - this needs to be implemented for Switch */
 #if !defined(USE_WIN32_THREADS) && !defined(USE_GX_THREADS) \
       && !defined(USE_CTR_THREADS) && !defined(USE_PSP_THREADS) \
       && !defined(USE_VITA_THREADS) && !defined(USE_WIIU_THREADS) \
-      && !defined(SWITCH) && !defined(__HAIKU__) && !defined(__EMSCRIPTEN__)
+      && !defined(USE_SWITCH_THREADS) \
+      && !defined(__HAIKU__) && !defined(__EMSCRIPTEN__)
 #define HAVE_THREAD_ATTR
 #endif
 
@@ -665,6 +707,41 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
       }
       if (!thread_created)
          free(start);
+   }
+#elif defined(USE_SWITCH_THREADS)
+   {
+      /* Priorities run 0x00..0x3F with lower numbers scheduled first,
+       * within whatever band the process is allowed; 0x2C is where
+       * the main thread runs. Workers inherit the creator's priority,
+       * and an explicit rthreads priority maps across 0x1C..0x3F,
+       * falling back to inheriting if the kernel refuses it. libnx
+       * allocates and maps the stack itself, so the thread lands on
+       * the process's default core. */
+      s32 prio = 0x2C;
+      Result rc;
+
+      switch_reap();
+      svcGetThreadPriority(&prio, CUR_THREAD_HANDLE);
+      if (thread_priority >= 1 && thread_priority <= 100)
+      {
+         s32 want = 0x3F - ((thread_priority - 1) * (0x3F - 0x1C)) / 99;
+         rc       = threadCreate(&thread->t, thread_wrap, data,
+               NULL, STACKSIZE, want, -2);
+         if (R_FAILED(rc))
+            rc    = threadCreate(&thread->t, thread_wrap, data,
+                  NULL, STACKSIZE, prio, -2);
+      }
+      else
+         rc       = threadCreate(&thread->t, thread_wrap, data,
+               NULL, STACKSIZE, prio, -2);
+
+      if (R_SUCCEEDED(rc))
+      {
+         if (R_SUCCEEDED(threadStart(&thread->t)))
+            thread_created = true;
+         else
+            threadClose(&thread->t);
+      }
    }
 #elif defined(USE_WIIU_THREADS)
    {
@@ -818,6 +895,15 @@ bool sthread_raise_current_priority(void)
       return sceKernelChangeThreadPriority(
             sceKernelGetThreadId(), prio) == 0;
    }
+#elif defined(USE_SWITCH_THREADS)
+   {
+      s32 prio = 0x2C;
+      svcGetThreadPriority(&prio, CUR_THREAD_HANDLE);
+      prio -= 2;
+      if (prio < 0x1C)
+         prio  = 0x1C;
+      return R_SUCCEEDED(svcSetThreadPriority(CUR_THREAD_HANDLE, prio));
+   }
 #elif defined(USE_WIIU_THREADS)
    {
       OSThread *self = OSGetCurrentThread();
@@ -948,6 +1034,15 @@ int sthread_detach(sthread_t *thread)
    OSDetachThread(thread->id);
    free(thread);
    return 0;
+#elif defined(USE_SWITCH_THREADS)
+   if (!thread)
+      return 0;
+   switch_reap();
+   mutexLock(&switch_reap_lock);
+   thread->next     = switch_reap_list;
+   switch_reap_list = thread;
+   mutexUnlock(&switch_reap_lock);
+   return 0;
 #else
    int ret;
    if (!thread)
@@ -981,6 +1076,9 @@ void sthread_join(sthread_t *thread)
 #elif defined(USE_WIIU_THREADS)
    /* The deallocator frees the control block and stack. */
    OSJoinThread(thread->id, NULL);
+#elif defined(USE_SWITCH_THREADS)
+   threadWaitForExit(&thread->t);
+   threadClose(&thread->t);
 #else
    pthread_join(thread->id, NULL);
 #endif
@@ -999,6 +1097,8 @@ bool sthread_isself(sthread_t *thread)
    return thread ? sceKernelGetThreadId() == thread->id      : false;
 #elif defined(USE_WIIU_THREADS)
    return thread ? OSGetCurrentThread() == thread->id        : false;
+#elif defined(USE_SWITCH_THREADS)
+   return thread ? threadGetSelf() == &thread->t             : false;
 #else
    return thread ? pthread_equal(pthread_self(), thread->id) : false;
 #endif
@@ -1033,6 +1133,8 @@ slock_t *slock_new(void)
    }
 #elif defined(USE_WIIU_THREADS)
    OSFastMutex_Init(&lock->lock, "rarch_lock");
+#elif defined(USE_SWITCH_THREADS)
+   mutexInit(&lock->lock);
 #else
    if (pthread_mutex_init(&lock->lock, NULL) != 0)
    {
@@ -1058,7 +1160,7 @@ void slock_free(slock_t *lock)
    sceKernelDeleteSema(lock->lock);
 #elif defined(USE_VITA_THREADS)
    sceKernelDeleteLwMutex(&lock->lock);
-#elif defined(USE_WIIU_THREADS)
+#elif defined(USE_WIIU_THREADS) || defined(USE_SWITCH_THREADS)
    /* nothing to destroy */
 #else
    pthread_mutex_destroy(&lock->lock);
@@ -1082,6 +1184,8 @@ void slock_lock(slock_t *lock)
    sceKernelLockLwMutex(&lock->lock, 1, NULL);
 #elif defined(USE_WIIU_THREADS)
    OSFastMutex_Lock(&lock->lock);
+#elif defined(USE_SWITCH_THREADS)
+   mutexLock(&lock->lock);
 #else
    pthread_mutex_lock(&lock->lock);
 #endif
@@ -1101,6 +1205,8 @@ bool slock_try_lock(slock_t *lock)
    return lock && (sceKernelTryLockLwMutex(&lock->lock, 1) == 0);
 #elif defined(USE_WIIU_THREADS)
    return lock && OSFastMutex_TryLock(&lock->lock);
+#elif defined(USE_SWITCH_THREADS)
+   return lock && mutexTryLock(&lock->lock);
 #else
    return lock && (pthread_mutex_trylock(&lock->lock) == 0);
 #endif
@@ -1122,6 +1228,8 @@ void slock_unlock(slock_t *lock)
    sceKernelUnlockLwMutex(&lock->lock, 1);
 #elif defined(USE_WIIU_THREADS)
    OSFastMutex_Unlock(&lock->lock);
+#elif defined(USE_SWITCH_THREADS)
+   mutexUnlock(&lock->lock);
 #else
    pthread_mutex_unlock(&lock->lock);
 #endif
@@ -1187,6 +1295,8 @@ scond_t *scond_new(void)
    retro_atomic_int_init(&cond->bound, 0);
 #elif defined(USE_WIIU_THREADS)
    OSFastMutex_Init(&cond->gate, "rarch_cond");
+#elif defined(USE_SWITCH_THREADS)
+   condvarInit(&cond->cond);
 #else
    if (pthread_cond_init(&cond->cond, NULL) != 0)
    {
@@ -1217,6 +1327,8 @@ void scond_free(scond_t *cond)
       sceKernelDeleteLwCond(&cond->work);
 #elif defined(USE_WIIU_THREADS)
    /* nothing to destroy: waiter nodes live on their threads' stacks */
+#elif defined(USE_SWITCH_THREADS)
+   /* nothing to destroy */
 #else
    pthread_cond_destroy(&cond->cond);
 #endif
@@ -1736,6 +1848,8 @@ void scond_wait(scond_t *cond, slock_t *lock)
    slock_unlock(lock);
    OSWaitEvent(&w.ev);
    slock_lock(lock);
+#elif defined(USE_SWITCH_THREADS)
+   condvarWait(&cond->cond, &lock->lock);
 #else
    pthread_cond_wait(&cond->cond, &lock->lock);
 #endif
@@ -1795,6 +1909,9 @@ int scond_broadcast(scond_t *cond)
       OSSignalEvent(&w->ev);
       w    = next;
    }
+   return 0;
+#elif defined(USE_SWITCH_THREADS)
+   condvarWakeAll(&cond->cond);
    return 0;
 #else
    return pthread_cond_broadcast(&cond->cond);
@@ -1862,6 +1979,8 @@ void scond_signal(scond_t *cond)
    OSFastMutex_Unlock(&cond->gate);
    if (w)
       OSSignalEvent(&w->ev);
+#elif defined(USE_SWITCH_THREADS)
+   condvarWakeOne(&cond->cond);
 #else
    pthread_cond_signal(&cond->cond);
 #endif
@@ -2012,6 +2131,11 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    }
    slock_lock(lock);
    return woken;
+#elif defined(USE_SWITCH_THREADS)
+   if (timeout_us <= 0)
+      return false;
+   return condvarWaitTimeout(&cond->cond, &lock->lock,
+         (u64)timeout_us * 1000ull) == 0;
 #else
    int64_t seconds, remainder;
    struct timespec now;
@@ -2116,7 +2240,11 @@ bool sthread_tls_set(sthread_tls_t *tls, const void *data)
 uintptr_t sthread_get_thread_id(sthread_t *thread)
 {
    if (thread)
+#ifdef USE_SWITCH_THREADS
+      return (uintptr_t)&thread->t;
+#else
       return (uintptr_t)thread->id;
+#endif
    return 0;
 }
 
@@ -2132,6 +2260,8 @@ uintptr_t sthread_get_current_thread_id(void)
    return (uintptr_t)sceKernelGetThreadId();
 #elif defined(USE_WIIU_THREADS)
    return (uintptr_t)OSGetCurrentThread();
+#elif defined(USE_SWITCH_THREADS)
+   return (uintptr_t)threadGetSelf();
 #else
    return (uintptr_t)pthread_self();
 #endif
@@ -2156,7 +2286,7 @@ bool sthread_is_main_thread(void)
 #if !defined(USE_WIN32_THREADS) && !defined(USE_GX_THREADS) \
       && !defined(USE_CTR_THREADS) && !defined(USE_PSP_THREADS) \
       && !defined(USE_VITA_THREADS) && !defined(USE_WIIU_THREADS) \
-      && !defined(__ANDROID__)
+      && !defined(USE_SWITCH_THREADS) && !defined(__ANDROID__)
 #define RTHREADS_HAVE_CANCEL 1
 #endif
 
