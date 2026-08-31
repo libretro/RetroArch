@@ -112,7 +112,10 @@ config_file_t *config_file_new_with_callback(
    }
    else if (ret == 1)
    {
-      free(conf);
+      /* The conf from config_file_new_alloc() carries live internals
+       * (the entries hash map); a raw free() leaks them on every
+       * failed read - config_file_free() tears them down first. */
+      config_file_free(conf);
       return NULL;
    }
    return conf;
