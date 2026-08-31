@@ -831,7 +831,7 @@ static void common_resources_free(CommonResources *common)
    common->num_original_history   = 0;
    common->num_framebuffer_feedback = 0;
    common->num_pass_outputs       = 0;
-   delete common->shader_preset;
+   free(common->shader_preset);
    common->shader_preset          = NULL;
    slang_texture_semantic_name_map_free(&common->texture_semantic_map);
    slang_texture_semantic_name_map_free(&common->texture_semantic_uniform_map);
@@ -1019,223 +1019,55 @@ static void gl3_ubo_ring_free(struct gl3_ubo_ring *ring)
    ring->buffer_index = 0;
 }
 
-class Pass
+struct gl3_pass
 {
-public:
-   explicit Pass(bool final_pass) :
-         final_pass(final_pass)
-   {}
-
-   ~Pass();
-
-   Pass(Pass&&) = delete;
-   void operator=(Pass&&) = delete;
-
-   const struct gl3_framebuffer *get_framebuffer() const
-   {
-      return framebuffer;
-   }
-
-   struct gl3_framebuffer *get_feedback_framebuffer()
-   {
-      return framebuffer_feedback;
-   }
-
-   void set_pass_info(const gl3_filter_chain_pass_info &info);
-
-   void set_shader(GLenum stage,
-                   const uint32_t *spirv,
-                   size_t spirv_words);
-
-   bool build();
-   bool init_feedback();
-
-   void build_commands(
-         const Texture &original,
-         const Texture &source,
-         const gl3_viewport &vp,
-         const float *mvp);
-
-   void set_frame_count(uint64_t count)
-   {
-      frame_count = count;
-   }
-
-   void set_frame_count_period(unsigned period)
-   {
-      frame_count_period = period;
-   }
-
-   void set_frame_direction(int32_t direction)
-   {
-      frame_direction = direction;
-   }
-
-   void set_frame_time_delta(uint32_t time_delta)
-   {
-      frame_time_delta = time_delta;
-   }
-
-   void set_original_fps(float fps)
-   {
-      original_fps = fps;
-   }
-
-   void set_rotation(uint32_t rot)
-   {
-      rotation = rot;
-   }
-
-   void set_core_aspect(float coreaspect)
-   {
-      core_aspect = coreaspect;
-   }
-
-   void set_core_aspect_rot(float coreaspectrot)
-   {
-      core_aspect_rot = coreaspectrot;
-   }
-
-   void set_shader_subframes(uint32_t tot_subframes)
-   {
-      total_subframes = tot_subframes;
-   }
-
-   void set_current_shader_subframe(uint32_t cur_subframe)
-   {
-      current_subframe = cur_subframe;
-   }
 
 #ifdef GL3_ROLLING_SCANLINE_SIMULATION
-   void set_simulate_scanline(bool simulate)
-   {
-      simulate_scanline = simulate;
-   }
+
 #endif /* GL3_ROLLING_SCANLINE_SIMULATION */
 
-   void set_name(const char *name)
-   {
-      free(pass_name);
-      pass_name = name ? strdup(name) : NULL;
-   }
-
-   const char *get_name() const
-   {
-      return pass_name ? pass_name : "";
-   }
-
-   glslang_filter_chain_filter get_source_filter() const
-   {
-      return pass_info.source_filter;
-   }
-
-   glslang_filter_chain_filter get_mip_filter() const
-   {
-      return pass_info.mip_filter;
-   }
-
-   glslang_filter_chain_address get_address_mode() const
-   {
-      return pass_info.address;
-   }
-
-   void set_common_resources(CommonResources *common)
-   {
-      this->common = common;
-   }
-
-   const slang_reflection &get_reflection() const
-   {
-      return reflection;
-   }
-
-   void set_pass_number(unsigned pass)
-   {
-      pass_number = pass;
-   }
-
-   void add_parameter(unsigned parameter_index, const char *id);
-
-   void end_frame();
-   void allocate_buffers();
-
-private:
    bool final_pass;
 
-   Size2D get_output_size(const Size2D &original_size,
-                          const Size2D &max_source) const;
+   GLuint pipeline;
+   CommonResources *common;
 
-   GLuint pipeline                 = 0;
-   CommonResources *common         = nullptr;
-
-   Size2D current_framebuffer_size = {};
+   Size2D current_framebuffer_size;
    gl3_viewport curr_vp;
    gl3_filter_chain_pass_info pass_info;
 
-   uint32_t *vertex_shader        = NULL;
-   size_t num_vertex_shader       = 0;
-   uint32_t *fragment_shader      = NULL;
-   size_t num_fragment_shader     = 0;
-   struct gl3_framebuffer *framebuffer          = NULL;
-   struct gl3_framebuffer *framebuffer_feedback = NULL;
-
-   bool init_pipeline();
-
-   void set_semantic_texture(slang_texture_semantic semantic,
-         const Texture &texture);
+   uint32_t *vertex_shader;
+   size_t num_vertex_shader;
+   uint32_t *fragment_shader;
+   size_t num_fragment_shader;
+   struct gl3_framebuffer *framebuffer;
+   struct gl3_framebuffer *framebuffer_feedback;
 
    /* Plain C struct: must be explicitly zero-initialized, since the
        * first build() and a teardown before any build() both run
        * slang_reflection_free() on it.  The previous C++ type had a
        * default constructor doing this implicitly. */
-      slang_reflection reflection = {};
+      slang_reflection reflection;
 
-   uint8_t *uniforms              = NULL;
-   size_t uniforms_size           = 0;
+   uint8_t *uniforms;
+   size_t uniforms_size;
 
-   void build_semantics(uint8_t *buffer,
-                        const float *mvp,
-                        const Texture &original, const Texture &source);
-   void build_semantic_vec4(uint8_t *data, slang_semantic semantic,
-                            unsigned width, unsigned height);
-   void build_semantic_uint(uint8_t *data,
-         slang_semantic semantic, uint32_t value);
-   void build_semantic_int(uint8_t *data,
-         slang_semantic semantic, int32_t value);
-   void build_semantic_float(uint8_t *data,
-         slang_semantic semantic, float value);
-   void build_semantic_vec3(uint8_t *data,
-         slang_semantic semantic, const float *values);
-   void build_semantic_parameter(uint8_t *data, unsigned index, float value);
-   void build_semantic_texture_vec4(uint8_t *data,
-         slang_texture_semantic semantic,
-         unsigned width, unsigned height);
-   void build_semantic_texture_array_vec4(uint8_t *data,
-         slang_texture_semantic semantic, unsigned index,
-         unsigned width, unsigned height);
-   void build_semantic_texture(uint8_t *buffer,
-         slang_texture_semantic semantic, const Texture &texture);
-   void build_semantic_texture_array(uint8_t *buffer,
-         slang_texture_semantic semantic,
-         unsigned index, const Texture &texture);
-
-   uint64_t frame_count = 0;
-   unsigned frame_count_period = 0;
-   int32_t frame_direction = 1;
-   uint32_t frame_time_delta = 0;
-   float original_fps = 0;
-   uint32_t rotation = 0;
-   float core_aspect = 0;
-   float core_aspect_rot = 0;
-   unsigned pass_number = 0;
-   uint32_t total_subframes = 1;
-   uint32_t current_subframe = 1;
+   uint64_t frame_count;
+   unsigned frame_count_period;
+   int32_t frame_direction;
+   uint32_t frame_time_delta;
+   float original_fps;
+   uint32_t rotation;
+   float core_aspect;
+   float core_aspect_rot;
+   unsigned pass_number;
+   uint32_t total_subframes;
+   uint32_t current_subframe;
 #ifdef GL3_ROLLING_SCANLINE_SIMULATION
-   bool simulate_scanline = false;
+   bool simulate_scanline;
 #endif /* GL3_ROLLING_SCANLINE_SIMULATION */
 
-   size_t ubo_offset = 0;
-   char *pass_name   = NULL;   /* owned */
+   size_t ubo_offset;
+   char *pass_name;   /* owned */
 
    struct Parameter
    {
@@ -1244,47 +1076,231 @@ private:
       unsigned semantic_index;
    };
 
-   struct Parameter *parameters      = NULL;
-   size_t num_parameters             = 0;
+   struct Parameter *parameters;
+   size_t num_parameters;
    /* Indices into parameters[]; the vector of copies this replaces stayed
     * valid across a push_back reallocation, and indices do too. */
-   unsigned *filtered_parameters     = NULL;
-   size_t num_filtered_parameters    = 0;
-   uint8_t *push_constant_buffer     = NULL;
-   size_t push_constant_buffer_size  = 0;
-   gl3_buffer_locations locations = {};
+   unsigned *filtered_parameters;
+   size_t num_filtered_parameters;
+   uint8_t *push_constant_buffer;
+   size_t push_constant_buffer_size;
+   gl3_buffer_locations locations;
    struct gl3_ubo_ring ubo_ring;
    /* Only allocated on the GL_ARB_gl_spirv path, where the push constant
     * block becomes a second uniform buffer. */
    struct gl3_ubo_ring push_ring;
    /* SPIR-V modules carry no name reflection, so glGetUniformLocation()
     * cannot be used to find individual block members. */
-   bool spirv_binary = false;
-
-   void reflect_parameter(const char *name, slang_semantic_meta &meta);
-   void reflect_parameter(const char *name, slang_texture_semantic_meta &meta);
-   void reflect_parameter_array(const char *name, slang_texture_semantic_array &meta);
+   bool spirv_binary;
 };
 
-bool Pass::build()
+static const struct gl3_framebuffer * gl3_pass_get_framebuffer(struct gl3_pass *pass);
+static struct gl3_framebuffer * gl3_pass_get_feedback_framebuffer(struct gl3_pass *pass);
+static void gl3_pass_set_frame_count(struct gl3_pass *pass, uint64_t count);
+static void gl3_pass_set_frame_count_period(struct gl3_pass *pass, unsigned period);
+static void gl3_pass_set_frame_direction(struct gl3_pass *pass, int32_t direction);
+static void gl3_pass_set_frame_time_delta(struct gl3_pass *pass, uint32_t time_delta);
+static void gl3_pass_set_original_fps(struct gl3_pass *pass, float fps);
+static void gl3_pass_set_rotation(struct gl3_pass *pass, uint32_t rot);
+static void gl3_pass_set_core_aspect(struct gl3_pass *pass, float coreaspect);
+static void gl3_pass_set_core_aspect_rot(struct gl3_pass *pass, float coreaspectrot);
+static void gl3_pass_set_shader_subframes(struct gl3_pass *pass, uint32_t tot_subframes);
+static void gl3_pass_set_current_shader_subframe(struct gl3_pass *pass, uint32_t cur_subframe);
+static void gl3_pass_set_simulate_scanline(struct gl3_pass *pass, bool simulate);
+static void gl3_pass_set_name(struct gl3_pass *pass, const char *name);
+static const char * gl3_pass_get_name(struct gl3_pass *pass);
+static glslang_filter_chain_filter gl3_pass_get_source_filter(struct gl3_pass *pass);
+static glslang_filter_chain_filter gl3_pass_get_mip_filter(struct gl3_pass *pass);
+static glslang_filter_chain_address gl3_pass_get_address_mode(struct gl3_pass *pass);
+static void gl3_pass_set_common_resources(struct gl3_pass *pass, CommonResources *common);
+static const slang_reflection & gl3_pass_get_reflection(struct gl3_pass *pass);
+static void gl3_pass_set_pass_number(struct gl3_pass *pass, unsigned number);
+static bool gl3_pass_build(struct gl3_pass *pass);
+static void gl3_pass_reflect_parameter(struct gl3_pass *pass, const char *name, slang_semantic_meta &meta);
+static void gl3_pass_reflect_parameter(struct gl3_pass *pass, const char *name, slang_texture_semantic_meta &meta);
+static void gl3_pass_reflect_parameter_array(struct gl3_pass *pass, const char *name, slang_texture_semantic_array &meta);
+static bool gl3_pass_init_pipeline(struct gl3_pass *pass);
+static void gl3_pass_set_pass_info(struct gl3_pass *pass, const gl3_filter_chain_pass_info &info);
+static Size2D gl3_pass_get_output_size(struct gl3_pass *pass, const Size2D &original,
+      const Size2D &source);
+static void gl3_pass_end_frame(struct gl3_pass *pass);
+static void gl3_pass_build_semantic_vec4(struct gl3_pass *pass, uint8_t *data, slang_semantic semantic,
+      unsigned width, unsigned height);
+static void gl3_pass_build_semantic_parameter(struct gl3_pass *pass, uint8_t *data, unsigned index, float value);
+static void gl3_pass_build_semantic_uint(struct gl3_pass *pass, uint8_t *data, slang_semantic semantic,
+                               uint32_t value);
+static void gl3_pass_build_semantic_int(struct gl3_pass *pass, uint8_t *data, slang_semantic semantic,
+                              int32_t value);
+static void gl3_pass_build_semantic_float(struct gl3_pass *pass, uint8_t *data, slang_semantic semantic,
+                              float value);
+static void gl3_pass_build_semantic_vec3(struct gl3_pass *pass, uint8_t *data, slang_semantic semantic,
+                              const float *values);
+static void gl3_pass_build_semantic_texture(struct gl3_pass *pass, uint8_t *buffer,
+      slang_texture_semantic semantic, const Texture &texture);
+static void gl3_pass_build_semantic_texture_array_vec4(struct gl3_pass *pass, uint8_t *data, slang_texture_semantic semantic,
+      unsigned index, unsigned width, unsigned height);
+static void gl3_pass_build_semantic_texture_vec4(struct gl3_pass *pass, uint8_t *data, slang_texture_semantic semantic,
+      unsigned width, unsigned height);
+static bool gl3_pass_init_feedback(struct gl3_pass *pass);
+static void gl3_pass_set_shader(struct gl3_pass *pass, GLenum stage,
+      const uint32_t *spirv,
+      size_t spirv_words);
+static void gl3_pass_add_parameter(struct gl3_pass *pass, unsigned index, const char *id);
+static void gl3_pass_set_semantic_texture(struct gl3_pass *pass, slang_texture_semantic semantic,
+      const Texture &texture);
+static void gl3_pass_build_semantic_texture_array(struct gl3_pass *pass, uint8_t *buffer,
+      slang_texture_semantic semantic, unsigned index, const Texture &texture);
+static void gl3_pass_build_semantics(struct gl3_pass *pass, uint8_t *buffer,
+      const float *mvp, const Texture &original, const Texture &source);
+static void gl3_pass_build_commands(struct gl3_pass *pass, const Texture &original,
+      const Texture &source,
+      const gl3_viewport &vp,
+      const float *mvp);
+static void gl3_pass_free(struct gl3_pass *pass);
+
+/* Every default was zero except these four, which the in-class
+ * initializers used to supply. */
+static struct gl3_pass *gl3_pass_new(bool final_pass)
+{
+   struct gl3_pass *pass = (struct gl3_pass*)calloc(1, sizeof(*pass));
+
+   if (!pass)
+      return NULL;
+
+   pass->final_pass       = final_pass;
+   pass->frame_direction  = 1;
+   pass->total_subframes  = 1;
+   pass->current_subframe = 1;
+   return pass;
+}
+
+static const struct gl3_framebuffer * gl3_pass_get_framebuffer(struct gl3_pass *pass)
+{
+      return pass->framebuffer;
+   }
+
+static struct gl3_framebuffer * gl3_pass_get_feedback_framebuffer(struct gl3_pass *pass)
+{
+      return pass->framebuffer_feedback;
+   }
+
+static void gl3_pass_set_frame_count(struct gl3_pass *pass, uint64_t count)
+{
+      pass->frame_count = count;
+   }
+
+static void gl3_pass_set_frame_count_period(struct gl3_pass *pass, unsigned period)
+{
+      pass->frame_count_period = period;
+   }
+
+static void gl3_pass_set_frame_direction(struct gl3_pass *pass, int32_t direction)
+{
+      pass->frame_direction = direction;
+   }
+
+static void gl3_pass_set_frame_time_delta(struct gl3_pass *pass, uint32_t time_delta)
+{
+      pass->frame_time_delta = time_delta;
+   }
+
+static void gl3_pass_set_original_fps(struct gl3_pass *pass, float fps)
+{
+      pass->original_fps = fps;
+   }
+
+static void gl3_pass_set_rotation(struct gl3_pass *pass, uint32_t rot)
+{
+      pass->rotation = rot;
+   }
+
+static void gl3_pass_set_core_aspect(struct gl3_pass *pass, float coreaspect)
+{
+      pass->core_aspect = coreaspect;
+   }
+
+static void gl3_pass_set_core_aspect_rot(struct gl3_pass *pass, float coreaspectrot)
+{
+      pass->core_aspect_rot = coreaspectrot;
+   }
+
+static void gl3_pass_set_shader_subframes(struct gl3_pass *pass, uint32_t tot_subframes)
+{
+      pass->total_subframes = tot_subframes;
+   }
+
+static void gl3_pass_set_current_shader_subframe(struct gl3_pass *pass, uint32_t cur_subframe)
+{
+      pass->current_subframe = cur_subframe;
+   }
+
+static void gl3_pass_set_simulate_scanline(struct gl3_pass *pass, bool simulate)
+{
+      pass->simulate_scanline = simulate;
+   }
+
+static void gl3_pass_set_name(struct gl3_pass *pass, const char *name)
+{
+      free(pass->pass_name);
+      pass->pass_name = name ? strdup(name) : NULL;
+   }
+
+static const char * gl3_pass_get_name(struct gl3_pass *pass)
+{
+      return pass->pass_name ? pass->pass_name : "";
+   }
+
+static glslang_filter_chain_filter gl3_pass_get_source_filter(struct gl3_pass *pass)
+{
+      return pass->pass_info.source_filter;
+   }
+
+static glslang_filter_chain_filter gl3_pass_get_mip_filter(struct gl3_pass *pass)
+{
+      return pass->pass_info.mip_filter;
+   }
+
+static glslang_filter_chain_address gl3_pass_get_address_mode(struct gl3_pass *pass)
+{
+      return pass->pass_info.address;
+   }
+
+static void gl3_pass_set_common_resources(struct gl3_pass *pass,
+      CommonResources *common)
+{
+   pass->common = common;
+}
+
+static const slang_reflection & gl3_pass_get_reflection(struct gl3_pass *pass)
+{
+      return pass->reflection;
+   }
+
+static void gl3_pass_set_pass_number(struct gl3_pass *pass, unsigned number)
+{
+   pass->pass_number = number;
+}
+
+
+static bool gl3_pass_build(struct gl3_pass *pass)
 {
    slang_semantic_name_map semantic_map = {};
    unsigned i;
    unsigned j = 0;
 
-   gl3_framebuffer_delete(framebuffer);
-   framebuffer          = NULL;
-   gl3_framebuffer_delete(framebuffer_feedback);
-   framebuffer_feedback = NULL;
+   gl3_framebuffer_delete(pass->framebuffer);
+   pass->framebuffer          = NULL;
+   gl3_framebuffer_delete(pass->framebuffer_feedback);
+   pass->framebuffer_feedback = NULL;
 
-   if (!final_pass)
-      framebuffer = gl3_framebuffer_new(pass_info.rt_format,
-            pass_info.max_levels);
+   if (!pass->final_pass)
+      pass->framebuffer = gl3_framebuffer_new(pass->pass_info.rt_format,
+            pass->pass_info.max_levels);
 
-   for (i = 0; i < num_parameters; i++)
+   for (i = 0; i < pass->num_parameters; i++)
    {
       if (!slang_semantic_name_map_set_unique(
-               &semantic_map, parameters[i].id, NULL,
+               &semantic_map, pass->parameters[i].id, NULL,
                SLANG_SEMANTIC_FLOAT_PARAMETER, j))
       {
          slang_semantic_name_map_free(&semantic_map);
@@ -1293,49 +1309,49 @@ bool Pass::build()
       j++;
    }
 
-   slang_reflection_free(&reflection);
-   if (!slang_reflection_init(&reflection))
+   slang_reflection_free(&pass->reflection);
+   if (!slang_reflection_init(&pass->reflection))
    {
       slang_semantic_name_map_free(&semantic_map);
       return false;
    }
-   reflection.pass_number                  = pass_number;
-   reflection.texture_semantic_map         = &common->texture_semantic_map;
-   reflection.texture_semantic_uniform_map = &common->texture_semantic_uniform_map;
-   reflection.semantic_map                 = &semantic_map;
+   pass->reflection.pass_number                  = pass->pass_number;
+   pass->reflection.texture_semantic_map         = &pass->common->texture_semantic_map;
+   pass->reflection.texture_semantic_uniform_map = &pass->common->texture_semantic_uniform_map;
+   pass->reflection.semantic_map                 = &semantic_map;
 
    {
       bool refl_ok = slang_reflect_spirv(
-            vertex_shader, num_vertex_shader,
-            fragment_shader, num_fragment_shader,
-            &reflection);
-      /* The parameter map is only needed during reflection; the
-       * reflection keeps a dangling pointer otherwise. */
+            pass->vertex_shader, pass->num_vertex_shader,
+            pass->fragment_shader, pass->num_fragment_shader,
+            &pass->reflection);
+      /* The parameter map is only needed during pass->reflection; the
+       * pass->reflection keeps a dangling pointer otherwise. */
       slang_semantic_name_map_free(&semantic_map);
-      reflection.semantic_map = NULL;
+      pass->reflection.semantic_map = NULL;
       if (!refl_ok)
          return false;
    }
 
-   /* Filter out parameters which we will never use anyways. */
-   num_filtered_parameters = 0;
+   /* Filter out pass->parameters which we will never use anyways. */
+   pass->num_filtered_parameters = 0;
 
-   for (i = 0; i < reflection.num_float_parameters; i++)
+   for (i = 0; i < pass->reflection.num_float_parameters; i++)
    {
-      if (reflection.semantic_float_parameters[i].uniform ||
-          reflection.semantic_float_parameters[i].push_constant)
+      if (pass->reflection.semantic_float_parameters[i].uniform ||
+          pass->reflection.semantic_float_parameters[i].push_constant)
       {
-         unsigned *next = (unsigned*)realloc(filtered_parameters,
-               (num_filtered_parameters + 1) * sizeof(*filtered_parameters));
+         unsigned *next = (unsigned*)realloc(pass->filtered_parameters,
+               (pass->num_filtered_parameters + 1) * sizeof(*pass->filtered_parameters));
          if (!next)
             return false;
-         filtered_parameters                          = next;
-         filtered_parameters[num_filtered_parameters] = i;
-         num_filtered_parameters++;
+         pass->filtered_parameters                          = next;
+         pass->filtered_parameters[pass->num_filtered_parameters] = i;
+         pass->num_filtered_parameters++;
       }
    }
 
-   if (!init_pipeline())
+   if (!gl3_pass_init_pipeline(pass))
       return false;
 
    return true;
@@ -1352,16 +1368,16 @@ static int gl3_uniform_location_prefixed(GLuint pipeline,
    return glGetUniformLocation(pipeline, n);
 }
 
-void Pass::reflect_parameter(const char *name, slang_semantic_meta &meta)
+static void gl3_pass_reflect_parameter(struct gl3_pass *pass, const char *name, slang_semantic_meta &meta)
 {
-   if (spirv_binary)
+   if (pass->spirv_binary)
       return;
 
    if (meta.uniform)
    {
-      int vert = gl3_uniform_location_prefixed(pipeline,
+      int vert = gl3_uniform_location_prefixed(pass->pipeline,
             "RARCH_UBO_VERTEX_INSTANCE.", name);
-      int frag = gl3_uniform_location_prefixed(pipeline,
+      int frag = gl3_uniform_location_prefixed(pass->pipeline,
             "RARCH_UBO_FRAGMENT_INSTANCE.", name);
 
       if (vert >= 0)
@@ -1372,9 +1388,9 @@ void Pass::reflect_parameter(const char *name, slang_semantic_meta &meta)
 
    if (meta.push_constant)
    {
-      int vert = gl3_uniform_location_prefixed(pipeline,
+      int vert = gl3_uniform_location_prefixed(pass->pipeline,
             "RARCH_PUSH_VERTEX_INSTANCE.", name);
-      int frag = gl3_uniform_location_prefixed(pipeline,
+      int frag = gl3_uniform_location_prefixed(pass->pipeline,
             "RARCH_PUSH_FRAGMENT_INSTANCE.", name);
 
       if (vert >= 0)
@@ -1384,16 +1400,16 @@ void Pass::reflect_parameter(const char *name, slang_semantic_meta &meta)
    }
 }
 
-void Pass::reflect_parameter(const char *name, slang_texture_semantic_meta &meta)
+static void gl3_pass_reflect_parameter(struct gl3_pass *pass, const char *name, slang_texture_semantic_meta &meta)
 {
-   if (spirv_binary)
+   if (pass->spirv_binary)
       return;
 
    if (meta.uniform)
    {
-      int vert = gl3_uniform_location_prefixed(pipeline,
+      int vert = gl3_uniform_location_prefixed(pass->pipeline,
             "RARCH_UBO_VERTEX_INSTANCE.", name);
-      int frag = gl3_uniform_location_prefixed(pipeline,
+      int frag = gl3_uniform_location_prefixed(pass->pipeline,
             "RARCH_UBO_FRAGMENT_INSTANCE.", name);
 
       if (vert >= 0)
@@ -1404,9 +1420,9 @@ void Pass::reflect_parameter(const char *name, slang_texture_semantic_meta &meta
 
    if (meta.push_constant)
    {
-      int vert = gl3_uniform_location_prefixed(pipeline,
+      int vert = gl3_uniform_location_prefixed(pass->pipeline,
             "RARCH_PUSH_VERTEX_INSTANCE.", name);
-      int frag = gl3_uniform_location_prefixed(pipeline,
+      int frag = gl3_uniform_location_prefixed(pass->pipeline,
             "RARCH_PUSH_FRAGMENT_INSTANCE.", name);
 
       if (vert >= 0)
@@ -1416,11 +1432,11 @@ void Pass::reflect_parameter(const char *name, slang_texture_semantic_meta &meta
    }
 }
 
-void Pass::reflect_parameter_array(const char *name, slang_texture_semantic_array &meta)
+static void gl3_pass_reflect_parameter_array(struct gl3_pass *pass, const char *name, slang_texture_semantic_array &meta)
 {
    size_t i;
 
-   if (spirv_binary)
+   if (pass->spirv_binary)
       return;
 
    for (i = 0; i < meta.size; i++)
@@ -1439,8 +1455,8 @@ void Pass::reflect_parameter_array(const char *name, slang_texture_semantic_arra
          size_t _len2 = strlcpy_lit(frag_n, "RARCH_UBO_FRAGMENT_INSTANCE.", sizeof(frag_n));
          strlcpy(vert_n + _len,  n, sizeof(vert_n) - _len);
          strlcpy(frag_n + _len2, n, sizeof(frag_n) - _len2);
-         vert = glGetUniformLocation(pipeline, vert_n);
-         frag = glGetUniformLocation(pipeline, frag_n);
+         vert = glGetUniformLocation(pass->pipeline, vert_n);
+         frag = glGetUniformLocation(pass->pipeline, frag_n);
 
          if (vert >= 0)
             m->location.ubo_vertex   = vert;
@@ -1457,8 +1473,8 @@ void Pass::reflect_parameter_array(const char *name, slang_texture_semantic_arra
          size_t _len2 = strlcpy_lit(frag_n, "RARCH_PUSH_FRAGMENT_INSTANCE.", sizeof(frag_n));
          strlcpy(vert_n + _len,  n, sizeof(vert_n) - _len);
          strlcpy(frag_n + _len2, n, sizeof(frag_n) - _len2);
-         vert = glGetUniformLocation(pipeline, vert_n);
-         frag = glGetUniformLocation(pipeline, frag_n);
+         vert = glGetUniformLocation(pass->pipeline, vert_n);
+         frag = glGetUniformLocation(pass->pipeline, frag_n);
 
          if (vert >= 0)
             m->location.push_vertex   = vert;
@@ -1487,7 +1503,7 @@ static void gl3_ubo_ring_init(struct gl3_ubo_ring *ring, size_t size)
    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
-bool Pass::init_pipeline()
+static bool gl3_pass_init_pipeline(struct gl3_pass *pass)
 {
    /* Handing the SPIR-V straight to the driver skips both SPIRV-Cross and
     * the driver's GLSL front end, which is most of the cost of bringing up
@@ -1497,189 +1513,189 @@ bool Pass::init_pipeline()
    {
       /* The lowered push constant block needs a binding of its own. slang
        * only ever declares a single UBO, so one other slot always exists. */
-      unsigned push_binding = (reflection.ubo_binding == 0) ? 1 : 0;
+      unsigned push_binding = (pass->reflection.ubo_binding == 0) ? 1 : 0;
 
-      if ((pipeline = gl3_spirv_link_program(
-                  vertex_shader,   num_vertex_shader,
-                  fragment_shader, num_fragment_shader,
+      if ((pass->pipeline = gl3_spirv_link_program(
+                  pass->vertex_shader,   pass->num_vertex_shader,
+                  pass->fragment_shader, pass->num_fragment_shader,
                   push_binding)))
       {
-         spirv_binary                       = true;
+         pass->spirv_binary                       = true;
 
-         locations.flat_ubo_vertex          = -1;
-         locations.flat_ubo_fragment        = -1;
-         locations.flat_push_vertex         = -1;
-         locations.flat_push_fragment       = -1;
+         pass->locations.flat_ubo_vertex          = -1;
+         pass->locations.flat_ubo_fragment        = -1;
+         pass->locations.flat_push_vertex         = -1;
+         pass->locations.flat_push_fragment       = -1;
 
          /* Block bindings in a SPIR-V shader are immutable and cannot be
-          * looked up by name, so they come from reflection rather than
+          * looked up by name, so they come from pass->reflection rather than
           * glGetUniformBlockIndex(). */
-         locations.buffer_index_ubo_vertex  =
-            (reflection.ubo_size
-             && (reflection.ubo_stage_mask & SLANG_STAGE_VERTEX_MASK))
-            ? reflection.ubo_binding : GL_INVALID_INDEX;
-         locations.buffer_index_ubo_fragment =
-            (reflection.ubo_size
-             && (reflection.ubo_stage_mask & SLANG_STAGE_FRAGMENT_MASK))
-            ? reflection.ubo_binding : GL_INVALID_INDEX;
+         pass->locations.buffer_index_ubo_vertex  =
+            (pass->reflection.ubo_size
+             && (pass->reflection.ubo_stage_mask & SLANG_STAGE_VERTEX_MASK))
+            ? pass->reflection.ubo_binding : GL_INVALID_INDEX;
+         pass->locations.buffer_index_ubo_fragment =
+            (pass->reflection.ubo_size
+             && (pass->reflection.ubo_stage_mask & SLANG_STAGE_FRAGMENT_MASK))
+            ? pass->reflection.ubo_binding : GL_INVALID_INDEX;
 
-         locations.buffer_index_push_vertex =
-            (reflection.push_constant_size
-             && (reflection.push_constant_stage_mask & SLANG_STAGE_VERTEX_MASK))
+         pass->locations.buffer_index_push_vertex =
+            (pass->reflection.push_constant_size
+             && (pass->reflection.push_constant_stage_mask & SLANG_STAGE_VERTEX_MASK))
             ? push_binding : GL_INVALID_INDEX;
-         locations.buffer_index_push_fragment =
-            (reflection.push_constant_size
-             && (reflection.push_constant_stage_mask & SLANG_STAGE_FRAGMENT_MASK))
+         pass->locations.buffer_index_push_fragment =
+            (pass->reflection.push_constant_size
+             && (pass->reflection.push_constant_stage_mask & SLANG_STAGE_FRAGMENT_MASK))
             ? push_binding : GL_INVALID_INDEX;
       }
    }
 
-   if (!pipeline)
+   if (!pass->pipeline)
    {
-      if (!(pipeline = gl3_cross_compile_program(
-                  vertex_shader,   num_vertex_shader   * sizeof(uint32_t),
-                  fragment_shader, num_fragment_shader * sizeof(uint32_t),
-                  &locations, false)))
+      if (!(pass->pipeline = gl3_cross_compile_program(
+                  pass->vertex_shader,   pass->num_vertex_shader   * sizeof(uint32_t),
+                  pass->fragment_shader, pass->num_fragment_shader * sizeof(uint32_t),
+                  &pass->locations, false)))
          return false;
    }
 
-   free(uniforms);
-   uniforms      = NULL;
-   uniforms_size = 0;
-   if (reflection.ubo_size)
+   free(pass->uniforms);
+   pass->uniforms      = NULL;
+   pass->uniforms_size = 0;
+   if (pass->reflection.ubo_size)
    {
-      if (!(uniforms = (uint8_t*)calloc(1, reflection.ubo_size)))
+      if (!(pass->uniforms = (uint8_t*)calloc(1, pass->reflection.ubo_size)))
          return false;
-      uniforms_size = reflection.ubo_size;
+      pass->uniforms_size = pass->reflection.ubo_size;
    }
-   if (reflection.ubo_size)
-      gl3_ubo_ring_init(&ubo_ring, reflection.ubo_size);
+   if (pass->reflection.ubo_size)
+      gl3_ubo_ring_init(&pass->ubo_ring, pass->reflection.ubo_size);
 
-   free(push_constant_buffer);
-   push_constant_buffer      = NULL;
-   push_constant_buffer_size = 0;
-   if (reflection.push_constant_size)
+   free(pass->push_constant_buffer);
+   pass->push_constant_buffer      = NULL;
+   pass->push_constant_buffer_size = 0;
+   if (pass->reflection.push_constant_size)
    {
-      if (!(push_constant_buffer = (uint8_t*)calloc(1,
-                  reflection.push_constant_size)))
+      if (!(pass->push_constant_buffer = (uint8_t*)calloc(1,
+                  pass->reflection.push_constant_size)))
          return false;
-      push_constant_buffer_size = reflection.push_constant_size;
+      pass->push_constant_buffer_size = pass->reflection.push_constant_size;
    }
-   if (     locations.buffer_index_push_vertex   != GL_INVALID_INDEX
-         || locations.buffer_index_push_fragment != GL_INVALID_INDEX)
+   if (     pass->locations.buffer_index_push_vertex   != GL_INVALID_INDEX
+         || pass->locations.buffer_index_push_fragment != GL_INVALID_INDEX)
    {
       /* A push constant block is packed std430, so its declared size need
        * not be a multiple of 16 the way a std140 block's is. Round up so
        * the buffer can never come up short of the block size the driver
        * derives from the SPIR-V offsets. */
-      gl3_ubo_ring_init(&push_ring,
-            (reflection.push_constant_size + 15) & ~((size_t)15));
+      gl3_ubo_ring_init(&pass->push_ring,
+            (pass->reflection.push_constant_size + 15) & ~((size_t)15));
    }
 
-   reflect_parameter("MVP", reflection.semantics[SLANG_SEMANTIC_MVP]);
-   reflect_parameter("OutputSize", reflection.semantics[SLANG_SEMANTIC_OUTPUT]);
-   reflect_parameter("FinalViewportSize", reflection.semantics[SLANG_SEMANTIC_FINAL_VIEWPORT]);
-   reflect_parameter("FrameCount", reflection.semantics[SLANG_SEMANTIC_FRAME_COUNT]);
-   reflect_parameter("FrameDirection", reflection.semantics[SLANG_SEMANTIC_FRAME_DIRECTION]);
-   reflect_parameter("FrameTimeDelta", reflection.semantics[SLANG_SEMANTIC_FRAME_TIME_DELTA]);
-   reflect_parameter("OriginalFPS", reflection.semantics[SLANG_SEMANTIC_ORIGINAL_FPS]);
-   reflect_parameter("Rotation", reflection.semantics[SLANG_SEMANTIC_ROTATION]);
-   reflect_parameter("OriginalAspect", reflection.semantics[SLANG_SEMANTIC_CORE_ASPECT]);
-   reflect_parameter("OriginalAspectRotated", reflection.semantics[SLANG_SEMANTIC_CORE_ASPECT_ROT]);
-   reflect_parameter("TotalSubFrames", reflection.semantics[SLANG_SEMANTIC_TOTAL_SUBFRAMES]);
-   reflect_parameter("CurrentSubFrame", reflection.semantics[SLANG_SEMANTIC_CURRENT_SUBFRAME]);
-   reflect_parameter("Gyroscope", reflection.semantics[SLANG_SEMANTIC_GYROSCOPE]);
-   reflect_parameter("Accelerometer", reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER]);
-   reflect_parameter("AccelerometerRest", reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER_REST]);
+   gl3_pass_reflect_parameter(pass, "MVP", pass->reflection.semantics[SLANG_SEMANTIC_MVP]);
+   gl3_pass_reflect_parameter(pass, "OutputSize", pass->reflection.semantics[SLANG_SEMANTIC_OUTPUT]);
+   gl3_pass_reflect_parameter(pass, "FinalViewportSize", pass->reflection.semantics[SLANG_SEMANTIC_FINAL_VIEWPORT]);
+   gl3_pass_reflect_parameter(pass, "FrameCount", pass->reflection.semantics[SLANG_SEMANTIC_FRAME_COUNT]);
+   gl3_pass_reflect_parameter(pass, "FrameDirection", pass->reflection.semantics[SLANG_SEMANTIC_FRAME_DIRECTION]);
+   gl3_pass_reflect_parameter(pass, "FrameTimeDelta", pass->reflection.semantics[SLANG_SEMANTIC_FRAME_TIME_DELTA]);
+   gl3_pass_reflect_parameter(pass, "OriginalFPS", pass->reflection.semantics[SLANG_SEMANTIC_ORIGINAL_FPS]);
+   gl3_pass_reflect_parameter(pass, "Rotation", pass->reflection.semantics[SLANG_SEMANTIC_ROTATION]);
+   gl3_pass_reflect_parameter(pass, "OriginalAspect", pass->reflection.semantics[SLANG_SEMANTIC_CORE_ASPECT]);
+   gl3_pass_reflect_parameter(pass, "OriginalAspectRotated", pass->reflection.semantics[SLANG_SEMANTIC_CORE_ASPECT_ROT]);
+   gl3_pass_reflect_parameter(pass, "TotalSubFrames", pass->reflection.semantics[SLANG_SEMANTIC_TOTAL_SUBFRAMES]);
+   gl3_pass_reflect_parameter(pass, "CurrentSubFrame", pass->reflection.semantics[SLANG_SEMANTIC_CURRENT_SUBFRAME]);
+   gl3_pass_reflect_parameter(pass, "Gyroscope", pass->reflection.semantics[SLANG_SEMANTIC_GYROSCOPE]);
+   gl3_pass_reflect_parameter(pass, "Accelerometer", pass->reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER]);
+   gl3_pass_reflect_parameter(pass, "AccelerometerRest", pass->reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER_REST]);
 
    {
-      slang_semantic_meta &g = reflection.semantics[SLANG_SEMANTIC_GYROSCOPE];
-      slang_semantic_meta &a = reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER];
-      slang_semantic_meta &r = reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER_REST];
+      slang_semantic_meta &g = pass->reflection.semantics[SLANG_SEMANTIC_GYROSCOPE];
+      slang_semantic_meta &a = pass->reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER];
+      slang_semantic_meta &r = pass->reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER_REST];
       if (g.uniform || g.push_constant ||
           a.uniform || a.push_constant ||
           r.uniform || r.push_constant)
          input_state_get_ptr()->shader_uses_sensors = true;
    }
 
-   reflect_parameter("OriginalSize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_ORIGINAL].data[0]);
-   reflect_parameter("SourceSize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_SOURCE].data[0]);
-   reflect_parameter_array("OriginalHistorySize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY]);
-   reflect_parameter_array("PassOutputSize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT]);
-   reflect_parameter_array("PassFeedbackSize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK]);
-   reflect_parameter_array("UserSize", reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_USER]);
-   for (size_t mi = 0; mi < common->texture_semantic_uniform_map.count; mi++)
+   gl3_pass_reflect_parameter(pass, "OriginalSize", pass->reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_ORIGINAL].data[0]);
+   gl3_pass_reflect_parameter(pass, "SourceSize", pass->reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_SOURCE].data[0]);
+   gl3_pass_reflect_parameter_array(pass, "OriginalHistorySize", pass->reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY]);
+   gl3_pass_reflect_parameter_array(pass, "PassOutputSize", pass->reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT]);
+   gl3_pass_reflect_parameter_array(pass, "PassFeedbackSize", pass->reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK]);
+   gl3_pass_reflect_parameter_array(pass, "UserSize", pass->reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_USER]);
+   for (size_t mi = 0; mi < pass->common->texture_semantic_uniform_map.count; mi++)
    {
       const slang_texture_semantic_map_entry *ent =
-         &common->texture_semantic_uniform_map.entries[mi];
+         &pass->common->texture_semantic_uniform_map.entries[mi];
       slang_texture_semantic_array &array =
-         reflection.semantic_textures[ent->semantic];
+         pass->reflection.semantic_textures[ent->semantic];
       if (ent->index < array.size)
-         reflect_parameter(ent->name, array.data[ent->index]);
+         gl3_pass_reflect_parameter(pass, ent->name, array.data[ent->index]);
    }
 
    {
       size_t f;
-      for (f = 0; f < num_filtered_parameters; f++)
+      for (f = 0; f < pass->num_filtered_parameters; f++)
       {
-         const struct Parameter *m = &parameters[filtered_parameters[f]];
-         if (m->semantic_index < reflection.num_float_parameters)
-            reflect_parameter(m->id,
-                  reflection.semantic_float_parameters[m->semantic_index]);
+         const struct gl3_pass::Parameter *m = &pass->parameters[pass->filtered_parameters[f]];
+         if (m->semantic_index < pass->reflection.num_float_parameters)
+            gl3_pass_reflect_parameter(pass, m->id,
+                  pass->reflection.semantic_float_parameters[m->semantic_index]);
       }
    }
 
    return true;
 }
 
-void Pass::set_pass_info(const gl3_filter_chain_pass_info &info)
+static void gl3_pass_set_pass_info(struct gl3_pass *pass, const gl3_filter_chain_pass_info &info)
 {
-   pass_info = info;
+   pass->pass_info = info;
 }
 
-Size2D Pass::get_output_size(const Size2D &original,
-      const Size2D &source) const
+static Size2D gl3_pass_get_output_size(struct gl3_pass *pass, const Size2D &original,
+      const Size2D &source)
 {
    float width  = 0.0f;
    float height = 0.0f;
-   switch (pass_info.scale_type_x)
+   switch (pass->pass_info.scale_type_x)
    {
       case GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL:
-         width = float(original.width) * pass_info.scale_x;
+         width = float(original.width) * pass->pass_info.scale_x;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_SOURCE:
-         width = float(source.width) * pass_info.scale_x;
+         width = float(source.width) * pass->pass_info.scale_x;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT:
-         width = (retroarch_get_rotation() % 2 ? curr_vp.height : curr_vp.width) * pass_info.scale_x;
+         width = (retroarch_get_rotation() % 2 ? pass->curr_vp.height : pass->curr_vp.width) * pass->pass_info.scale_x;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE:
-         width = pass_info.scale_x;
+         width = pass->pass_info.scale_x;
          break;
 
       default:
          break;
    }
 
-   switch (pass_info.scale_type_y)
+   switch (pass->pass_info.scale_type_y)
    {
       case GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL:
-         height = float(original.height) * pass_info.scale_y;
+         height = float(original.height) * pass->pass_info.scale_y;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_SOURCE:
-         height = float(source.height) * pass_info.scale_y;
+         height = float(source.height) * pass->pass_info.scale_y;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT:
-         height = (retroarch_get_rotation() % 2 ? curr_vp.width : curr_vp.height) * pass_info.scale_y;
+         height = (retroarch_get_rotation() % 2 ? pass->curr_vp.width : pass->curr_vp.height) * pass->pass_info.scale_y;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE:
-         height = pass_info.scale_y;
+         height = pass->pass_info.scale_y;
          break;
 
       default:
@@ -1689,18 +1705,18 @@ Size2D Pass::get_output_size(const Size2D &original,
    return { unsigned(roundf(width)), unsigned(roundf(height)) };
 }
 
-void Pass::end_frame()
+static void gl3_pass_end_frame(struct gl3_pass *pass)
 {
-   struct gl3_framebuffer *tmp = framebuffer;
-   framebuffer                 = framebuffer_feedback;
-   framebuffer_feedback        = tmp;
+   struct gl3_framebuffer *tmp = pass->framebuffer;
+   pass->framebuffer                 = pass->framebuffer_feedback;
+   pass->framebuffer_feedback        = tmp;
 }
 
-void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
+static void gl3_pass_build_semantic_vec4(struct gl3_pass *pass, uint8_t *data, slang_semantic semantic,
       unsigned width, unsigned height)
 {
    slang_semantic_meta *refl = (slang_semantic_meta*)
-      &reflection.semantics[semantic];
+      &pass->reflection.semantics[semantic];
 
    if (data && refl->uniform)
    {
@@ -1744,7 +1760,7 @@ void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
       else
       {
          float *_data = reinterpret_cast<float *>
-               (push_constant_buffer + refl->push_constant_offset);
+               (pass->push_constant_buffer + refl->push_constant_offset);
          _data[0]     = (float)(width);
          _data[1]     = (float)(height);
          _data[2]     = 1.0f / (float)(width);
@@ -1753,12 +1769,12 @@ void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
    }
 }
 
-void Pass::build_semantic_parameter(uint8_t *data, unsigned index, float value)
+static void gl3_pass_build_semantic_parameter(struct gl3_pass *pass, uint8_t *data, unsigned index, float value)
 {
    slang_semantic_meta *refl = (slang_semantic_meta*)
-      &reflection.semantic_float_parameters[index];
+      &pass->reflection.semantic_float_parameters[index];
 
-   /* We will have filtered out stale parameters. */
+   /* We will have filtered out stale pass->parameters. */
    if (data && refl->uniform)
    {
       if (refl->location.ubo_vertex >= 0 || refl->location.ubo_fragment >= 0)
@@ -1782,14 +1798,14 @@ void Pass::build_semantic_parameter(uint8_t *data, unsigned index, float value)
             glUniform1f(refl->location.push_fragment, value);
       }
       else
-         *reinterpret_cast<float *>(push_constant_buffer + refl->push_constant_offset) = value;
+         *reinterpret_cast<float *>(pass->push_constant_buffer + refl->push_constant_offset) = value;
    }
 }
 
-void Pass::build_semantic_uint(uint8_t *data, slang_semantic semantic,
+static void gl3_pass_build_semantic_uint(struct gl3_pass *pass, uint8_t *data, slang_semantic semantic,
                                uint32_t value)
 {
-   slang_semantic_meta &refl = reflection.semantics[semantic];
+   slang_semantic_meta &refl = pass->reflection.semantics[semantic];
 
    if (data && refl.uniform)
    {
@@ -1801,7 +1817,7 @@ void Pass::build_semantic_uint(uint8_t *data, slang_semantic semantic,
             glUniform1ui(refl.location.ubo_fragment, value);
       }
       else
-         *reinterpret_cast<uint32_t *>(data + reflection.semantics[semantic].ubo_offset) = value;
+         *reinterpret_cast<uint32_t *>(data + pass->reflection.semantics[semantic].ubo_offset) = value;
    }
 
    if (refl.push_constant)
@@ -1814,14 +1830,14 @@ void Pass::build_semantic_uint(uint8_t *data, slang_semantic semantic,
             glUniform1ui(refl.location.push_fragment, value);
       }
       else
-         *reinterpret_cast<uint32_t *>(push_constant_buffer + refl.push_constant_offset) = value;
+         *reinterpret_cast<uint32_t *>(pass->push_constant_buffer + refl.push_constant_offset) = value;
    }
 }
 
-void Pass::build_semantic_int(uint8_t *data, slang_semantic semantic,
+static void gl3_pass_build_semantic_int(struct gl3_pass *pass, uint8_t *data, slang_semantic semantic,
                               int32_t value)
 {
-   slang_semantic_meta &refl = reflection.semantics[semantic];
+   slang_semantic_meta &refl = pass->reflection.semantics[semantic];
 
    if (data && refl.uniform)
    {
@@ -1833,7 +1849,7 @@ void Pass::build_semantic_int(uint8_t *data, slang_semantic semantic,
             glUniform1i(refl.location.ubo_fragment, value);
       }
       else
-         *reinterpret_cast<int32_t *>(data + reflection.semantics[semantic].ubo_offset) = value;
+         *reinterpret_cast<int32_t *>(data + pass->reflection.semantics[semantic].ubo_offset) = value;
    }
 
    if (refl.push_constant)
@@ -1846,14 +1862,14 @@ void Pass::build_semantic_int(uint8_t *data, slang_semantic semantic,
             glUniform1i(refl.location.push_fragment, value);
       }
       else
-         *reinterpret_cast<int32_t *>(push_constant_buffer + refl.push_constant_offset) = value;
+         *reinterpret_cast<int32_t *>(pass->push_constant_buffer + refl.push_constant_offset) = value;
    }
 }
 
-void Pass::build_semantic_float(uint8_t *data, slang_semantic semantic,
+static void gl3_pass_build_semantic_float(struct gl3_pass *pass, uint8_t *data, slang_semantic semantic,
                               float value)
 {
-   slang_semantic_meta &refl = reflection.semantics[semantic];
+   slang_semantic_meta &refl = pass->reflection.semantics[semantic];
 
    if (data && refl.uniform)
    {
@@ -1865,7 +1881,7 @@ void Pass::build_semantic_float(uint8_t *data, slang_semantic semantic,
             glUniform1f(refl.location.ubo_fragment, value);
       }
       else
-         *reinterpret_cast<float *>(data + reflection.semantics[semantic].ubo_offset) = value;
+         *reinterpret_cast<float *>(data + pass->reflection.semantics[semantic].ubo_offset) = value;
    }
 
    if (refl.push_constant)
@@ -1878,14 +1894,14 @@ void Pass::build_semantic_float(uint8_t *data, slang_semantic semantic,
             glUniform1f(refl.location.push_fragment, value);
       }
       else
-         *reinterpret_cast<float *>(push_constant_buffer + refl.push_constant_offset) = value;
+         *reinterpret_cast<float *>(pass->push_constant_buffer + refl.push_constant_offset) = value;
    }
 }
 
-void Pass::build_semantic_vec3(uint8_t *data, slang_semantic semantic,
+static void gl3_pass_build_semantic_vec3(struct gl3_pass *pass, uint8_t *data, slang_semantic semantic,
                               const float *values)
 {
-   slang_semantic_meta &refl = reflection.semantics[semantic];
+   slang_semantic_meta &refl = pass->reflection.semantics[semantic];
 
    if (data && refl.uniform)
    {
@@ -1910,23 +1926,23 @@ void Pass::build_semantic_vec3(uint8_t *data, slang_semantic semantic,
             glUniform3fv(refl.location.push_fragment, 1, values);
       }
       else
-         memcpy(push_constant_buffer + refl.push_constant_offset, values, 3 * sizeof(float));
+         memcpy(pass->push_constant_buffer + refl.push_constant_offset, values, 3 * sizeof(float));
    }
 }
 
-void Pass::build_semantic_texture(uint8_t *buffer,
+static void gl3_pass_build_semantic_texture(struct gl3_pass *pass, uint8_t *buffer,
       slang_texture_semantic semantic, const Texture &texture)
 {
-   build_semantic_texture_vec4(buffer, semantic,
+   gl3_pass_build_semantic_texture_vec4(pass, buffer, semantic,
          texture.texture.width, texture.texture.height);
-   set_semantic_texture(semantic, texture);
+   gl3_pass_set_semantic_texture(pass, semantic, texture);
 }
 
-void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semantic semantic,
+static void gl3_pass_build_semantic_texture_array_vec4(struct gl3_pass *pass, uint8_t *data, slang_texture_semantic semantic,
       unsigned index, unsigned width, unsigned height)
 {
    const slang_texture_semantic_array &arr =
-      reflection.semantic_textures[semantic];
+      pass->reflection.semantic_textures[semantic];
    const slang_texture_semantic_meta *refl;
    if (index >= arr.size)
       return;
@@ -1972,7 +1988,7 @@ void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semant
       }
       else
       {
-         float *_data = reinterpret_cast<float *>(push_constant_buffer + refl->push_constant_offset);
+         float *_data = reinterpret_cast<float *>(pass->push_constant_buffer + refl->push_constant_offset);
          _data[0]     = (float)(width);
          _data[1]     = (float)(height);
          _data[2]     = 1.0f / (float)(width);
@@ -1981,77 +1997,83 @@ void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semant
    }
 }
 
-void Pass::build_semantic_texture_vec4(uint8_t *data, slang_texture_semantic semantic,
+static void gl3_pass_build_semantic_texture_vec4(struct gl3_pass *pass, uint8_t *data, slang_texture_semantic semantic,
       unsigned width, unsigned height)
 {
-   build_semantic_texture_array_vec4(data, semantic, 0, width, height);
+   gl3_pass_build_semantic_texture_array_vec4(pass, data, semantic, 0, width, height);
 }
 
-bool Pass::init_feedback()
+static bool gl3_pass_init_feedback(struct gl3_pass *pass)
 {
-   if (final_pass)
+   if (pass->final_pass)
       return false;
 
-   gl3_framebuffer_delete(framebuffer_feedback);
-   framebuffer_feedback = gl3_framebuffer_new(pass_info.rt_format,
-         pass_info.max_levels);
+   gl3_framebuffer_delete(pass->framebuffer_feedback);
+   pass->framebuffer_feedback = gl3_framebuffer_new(pass->pass_info.rt_format,
+         pass->pass_info.max_levels);
    return true;
 }
 
-Pass::~Pass()
+static void gl3_pass_free(struct gl3_pass *pass)
 {
-   if (pipeline != 0)
-      glDeleteProgram(pipeline);
+   if (!pass)
+      return;
+
+   if (pass->pipeline != 0)
+      glDeleteProgram(pass->pipeline);
    /* the unique_ptrs these replaced were released by ~Pass itself */
-   gl3_framebuffer_delete(framebuffer);
-   gl3_framebuffer_delete(framebuffer_feedback);
+   gl3_framebuffer_delete(pass->framebuffer);
+   gl3_framebuffer_delete(pass->framebuffer_feedback);
    /* likewise ~UBORing, which ran as a member destructor */
-   gl3_ubo_ring_free(&ubo_ring);
-   gl3_ubo_ring_free(&push_ring);
+   gl3_ubo_ring_free(&pass->ubo_ring);
+   gl3_ubo_ring_free(&pass->push_ring);
    /* and the string / vector members these replaced */
    {
       size_t p;
-      for (p = 0; p < num_parameters; p++)
-         free(parameters[p].id);
+      for (p = 0; p < pass->num_parameters; p++)
+         free(pass->parameters[p].id);
    }
-   free(parameters);
-   free(filtered_parameters);
-   free(pass_name);
-   free(vertex_shader);
-   free(fragment_shader);
-   free(uniforms);
-   free(push_constant_buffer);
-   slang_reflection_free(&reflection);
+   free(pass->parameters);
+   free(pass->filtered_parameters);
+   free(pass->pass_name);
+   free(pass->vertex_shader);
+   free(pass->fragment_shader);
+   free(pass->uniforms);
+   free(pass->push_constant_buffer);
+   slang_reflection_free(&pass->reflection);
+   /* the destructor released the members; `delete` released the object,
+    * and nothing else does now */
+   free(pass);
 }
 
-void Pass::set_shader(GLenum stage,
+static void gl3_pass_set_shader(struct gl3_pass *pass, GLenum stage,
       const uint32_t *spirv,
       size_t spirv_words)
 {
    switch (stage)
    {
       case GL_VERTEX_SHADER:
-         free(vertex_shader);
-         vertex_shader     = NULL;
-         num_vertex_shader = 0;
+         free(pass->vertex_shader);
+         pass->vertex_shader     = NULL;
+         pass->num_vertex_shader = 0;
          if (spirv_words &&
-               (vertex_shader = (uint32_t*)malloc(
+               (pass->vertex_shader = (uint32_t*)malloc(
                      spirv_words * sizeof(uint32_t))))
          {
-            memcpy(vertex_shader, spirv, spirv_words * sizeof(uint32_t));
-            num_vertex_shader = spirv_words;
+            memcpy(pass->vertex_shader, spirv, spirv_words * sizeof(uint32_t));
+            pass->num_vertex_shader = spirv_words;
          }
          break;
       case GL_FRAGMENT_SHADER:
-         free(fragment_shader);
-         fragment_shader     = NULL;
-         num_fragment_shader = 0;
+         free(pass->fragment_shader);
+         pass->fragment_shader     = NULL;
+         pass->num_fragment_shader = 0;
          if (spirv_words &&
-               (fragment_shader = (uint32_t*)malloc(
+               (pass->fragment_shader = (uint32_t*)malloc(
                      spirv_words * sizeof(uint32_t))))
          {
-            memcpy(fragment_shader, spirv, spirv_words * sizeof(uint32_t));
-            num_fragment_shader = spirv_words;
+            memcpy(pass->fragment_shader, spirv, spirv_words * sizeof(uint32_t));
+            pass->num_fragment_shader = spirv_words;
          }
          break;
       default:
@@ -2059,27 +2081,27 @@ void Pass::set_shader(GLenum stage,
    }
 }
 
-void Pass::add_parameter(unsigned index, const char *id)
+static void gl3_pass_add_parameter(struct gl3_pass *pass, unsigned index, const char *id)
 {
-   struct Parameter *next = (struct Parameter*)realloc(parameters,
-         (num_parameters + 1) * sizeof(*parameters));
+   struct gl3_pass::Parameter *next = (struct gl3_pass::Parameter*)realloc(pass->parameters,
+         (pass->num_parameters + 1) * sizeof(*pass->parameters));
 
    if (!next)
       return;
 
-   parameters                        = next;
-   parameters[num_parameters].id     = id ? strdup(id) : NULL;
-   parameters[num_parameters].index  = index;
-   parameters[num_parameters].semantic_index = (unsigned)num_parameters;
-   num_parameters++;
+   pass->parameters                        = next;
+   pass->parameters[pass->num_parameters].id     = id ? strdup(id) : NULL;
+   pass->parameters[pass->num_parameters].index  = index;
+   pass->parameters[pass->num_parameters].semantic_index = (unsigned)pass->num_parameters;
+   pass->num_parameters++;
 }
 
-void Pass::set_semantic_texture(slang_texture_semantic semantic,
+static void gl3_pass_set_semantic_texture(struct gl3_pass *pass, slang_texture_semantic semantic,
       const Texture &texture)
 {
-   if (reflection.semantic_textures[semantic].data[0].texture)
+   if (pass->reflection.semantic_textures[semantic].data[0].texture)
    {
-      unsigned binding = reflection.semantic_textures[semantic].data[0].binding;
+      unsigned binding = pass->reflection.semantic_textures[semantic].data[0].binding;
       glActiveTexture(GL_TEXTURE0 + binding);
       glBindTexture(GL_TEXTURE_2D, texture.texture.image);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, convert_filter_to_mag_gl(texture.filter));
@@ -2089,16 +2111,16 @@ void Pass::set_semantic_texture(slang_texture_semantic semantic,
    }
 }
 
-void Pass::build_semantic_texture_array(uint8_t *buffer,
+static void gl3_pass_build_semantic_texture_array(struct gl3_pass *pass, uint8_t *buffer,
       slang_texture_semantic semantic, unsigned index, const Texture &texture)
 {
-   build_semantic_texture_array_vec4(buffer, semantic, index,
+   gl3_pass_build_semantic_texture_array_vec4(pass, buffer, semantic, index,
          texture.texture.width, texture.texture.height);
 
-   if (index < reflection.semantic_textures[semantic].size &&
-         reflection.semantic_textures[semantic].data[index].texture)
+   if (index < pass->reflection.semantic_textures[semantic].size &&
+         pass->reflection.semantic_textures[semantic].data[index].texture)
    {
-      unsigned binding = reflection.semantic_textures[semantic].data[index].binding;
+      unsigned binding = pass->reflection.semantic_textures[semantic].data[index].binding;
       glActiveTexture(GL_TEXTURE0 + binding);
       glBindTexture(GL_TEXTURE_2D, texture.texture.image);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, convert_filter_to_mag_gl(texture.filter));
@@ -2108,15 +2130,15 @@ void Pass::build_semantic_texture_array(uint8_t *buffer,
    }
 }
 
-void Pass::build_semantics(uint8_t *buffer,
+static void gl3_pass_build_semantics(struct gl3_pass *pass, uint8_t *buffer,
       const float *mvp, const Texture &original, const Texture &source)
 {
    unsigned i;
 
    /* MVP */
-   if (buffer && reflection.semantics[SLANG_SEMANTIC_MVP].uniform)
+   if (buffer && pass->reflection.semantics[SLANG_SEMANTIC_MVP].uniform)
    {
-      size_t offset = reflection.semantics[
+      size_t offset = pass->reflection.semantics[
          SLANG_SEMANTIC_MVP].ubo_offset;
       if (mvp)
          memcpy(buffer + offset,
@@ -2126,159 +2148,158 @@ void Pass::build_semantics(uint8_t *buffer,
                   buffer + offset));
    }
 
-   if (reflection.semantics[SLANG_SEMANTIC_MVP].push_constant)
+   if (pass->reflection.semantics[SLANG_SEMANTIC_MVP].push_constant)
    {
-      size_t offset = reflection.semantics[
+      size_t offset = pass->reflection.semantics[
          SLANG_SEMANTIC_MVP].push_constant_offset;
 
       if (mvp)
-         memcpy(push_constant_buffer + offset,
+         memcpy(pass->push_constant_buffer + offset,
                mvp, sizeof(float) * 16);
       else
          gl3_build_default_matrix(reinterpret_cast<float *>(
-                  push_constant_buffer + offset));
+                  pass->push_constant_buffer + offset));
    }
 
    /* Output information */
-   build_semantic_vec4(buffer, SLANG_SEMANTIC_OUTPUT,
-                       current_framebuffer_size.width,
-                       current_framebuffer_size.height);
-   build_semantic_vec4(buffer, SLANG_SEMANTIC_FINAL_VIEWPORT,
-                       unsigned(curr_vp.width),
-                       unsigned(curr_vp.height));
+   gl3_pass_build_semantic_vec4(pass, buffer, SLANG_SEMANTIC_OUTPUT,
+                       pass->current_framebuffer_size.width,
+                       pass->current_framebuffer_size.height);
+   gl3_pass_build_semantic_vec4(pass, buffer, SLANG_SEMANTIC_FINAL_VIEWPORT,
+                       unsigned(pass->curr_vp.width),
+                       unsigned(pass->curr_vp.height));
 
-   build_semantic_uint(buffer, SLANG_SEMANTIC_FRAME_COUNT,
-                       frame_count_period
-                       ? uint32_t(frame_count % frame_count_period)
-                       : uint32_t(frame_count));
+   gl3_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_FRAME_COUNT,
+                       pass->frame_count_period
+                       ? uint32_t(pass->frame_count % pass->frame_count_period)
+                       : uint32_t(pass->frame_count));
 
-   build_semantic_int(buffer, SLANG_SEMANTIC_FRAME_DIRECTION,
-                      frame_direction);
+   gl3_pass_build_semantic_int(pass, buffer, SLANG_SEMANTIC_FRAME_DIRECTION,
+                      pass->frame_direction);
 
-   build_semantic_uint(buffer, SLANG_SEMANTIC_FRAME_TIME_DELTA,
-                      frame_time_delta);
+   gl3_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_FRAME_TIME_DELTA,
+                      pass->frame_time_delta);
 
-   build_semantic_float(buffer, SLANG_SEMANTIC_ORIGINAL_FPS,
-                      original_fps);
+   gl3_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_ORIGINAL_FPS,
+                      pass->original_fps);
 
-   build_semantic_uint(buffer, SLANG_SEMANTIC_ROTATION,
-                      rotation);
+   gl3_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_ROTATION,
+                      pass->rotation);
 
-   build_semantic_float(buffer, SLANG_SEMANTIC_CORE_ASPECT,
-                      core_aspect);
+   gl3_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_CORE_ASPECT,
+                      pass->core_aspect);
 
-   build_semantic_float(buffer, SLANG_SEMANTIC_CORE_ASPECT_ROT,
-                      core_aspect_rot);
+   gl3_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_CORE_ASPECT_ROT,
+                      pass->core_aspect_rot);
 
-   build_semantic_uint(buffer, SLANG_SEMANTIC_TOTAL_SUBFRAMES,
-                      total_subframes);
-   build_semantic_uint(buffer, SLANG_SEMANTIC_CURRENT_SUBFRAME,
-                      current_subframe);
+   gl3_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_TOTAL_SUBFRAMES,
+                      pass->total_subframes);
+   gl3_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_CURRENT_SUBFRAME,
+                      pass->current_subframe);
 
-   /* Sensor uniforms — per-frame snapshot cached
+   /* Sensor pass->uniforms — per-frame snapshot cached
     * by input_driver_poll() on the main thread */
    {
       input_driver_state_t *input_st = input_state_get_ptr();
-      build_semantic_vec3(buffer, SLANG_SEMANTIC_GYROSCOPE,
+      gl3_pass_build_semantic_vec3(pass, buffer, SLANG_SEMANTIC_GYROSCOPE,
                         input_st->sensor_gyroscope_cache);
-      build_semantic_vec3(buffer, SLANG_SEMANTIC_ACCELEROMETER,
+      gl3_pass_build_semantic_vec3(pass, buffer, SLANG_SEMANTIC_ACCELEROMETER,
                         input_st->sensor_accelerometer_cache);
-      build_semantic_vec3(buffer, SLANG_SEMANTIC_ACCELEROMETER_REST,
+      gl3_pass_build_semantic_vec3(pass, buffer, SLANG_SEMANTIC_ACCELEROMETER_REST,
                         input_st->sensor_accelerometer_rest);
    }
 
    /* Standard inputs */
-   build_semantic_texture(buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
-   build_semantic_texture(buffer, SLANG_TEXTURE_SEMANTIC_SOURCE, source);
+   gl3_pass_build_semantic_texture(pass, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
+   gl3_pass_build_semantic_texture(pass, buffer, SLANG_TEXTURE_SEMANTIC_SOURCE, source);
 
    /* ORIGINAL_HISTORY[0] is an alias of ORIGINAL. */
-   build_semantic_texture_array(buffer,
+   gl3_pass_build_semantic_texture_array(pass, buffer,
          SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, 0, original);
 
    /* Parameters. */
-   for (i = 0; i < num_filtered_parameters; i++)
+   for (i = 0; i < pass->num_filtered_parameters; i++)
    {
-      const struct Parameter *m = &parameters[filtered_parameters[i]];
-      build_semantic_parameter(buffer, m->semantic_index,
-            common->shader_preset->parameters[m->index].current);
+      const struct gl3_pass::Parameter *m = &pass->parameters[pass->filtered_parameters[i]];
+      gl3_pass_build_semantic_parameter(pass, buffer, m->semantic_index,
+            pass->common->shader_preset->parameters[m->index].current);
    }
 
    /* Previous inputs. */
-   for (i = 0; i < common->num_original_history; i++)
-      build_semantic_texture_array(buffer,
+   for (i = 0; i < pass->common->num_original_history; i++)
+      gl3_pass_build_semantic_texture_array(pass, buffer,
             SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, i + 1,
-            common->original_history[i]);
+            pass->common->original_history[i]);
 
    /* Previous passes. */
-   for (i = 0; i < common->num_pass_outputs; i++)
-      build_semantic_texture_array(buffer,
+   for (i = 0; i < pass->common->num_pass_outputs; i++)
+      gl3_pass_build_semantic_texture_array(pass, buffer,
             SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i,
-            common->pass_outputs[i]);
+            pass->common->pass_outputs[i]);
 
    /* Feedback FBOs. */
-   for (i = 0; i < common->num_framebuffer_feedback; i++)
-      build_semantic_texture_array(buffer,
+   for (i = 0; i < pass->common->num_framebuffer_feedback; i++)
+      gl3_pass_build_semantic_texture_array(pass, buffer,
             SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i,
-            common->framebuffer_feedback[i]);
+            pass->common->framebuffer_feedback[i]);
 
    /* LUTs. */
-   for (i = 0; i < common->num_luts; i++)
-      build_semantic_texture_array(buffer,
+   for (i = 0; i < pass->common->num_luts; i++)
+      gl3_pass_build_semantic_texture_array(pass, buffer,
             SLANG_TEXTURE_SEMANTIC_USER, i,
-            common->luts[i].texture);
+            pass->common->luts[i].texture);
 }
 
-void Pass::build_commands(
-      const Texture &original,
+static void gl3_pass_build_commands(struct gl3_pass *pass, const Texture &original,
       const Texture &source,
       const gl3_viewport &vp,
       const float *mvp)
 {
-   curr_vp          = vp;
-   Size2D size      = get_output_size(
+   pass->curr_vp          = vp;
+   Size2D size      = gl3_pass_get_output_size(pass, 
          { original.texture.width, original.texture.height },
          { source.texture.width, source.texture.height });
 
-   if (framebuffer &&
-       (size.width  != framebuffer->size.width ||
-        size.height != framebuffer->size.height))
-      gl3_framebuffer_set_size(framebuffer, &size, 0);
+   if (pass->framebuffer &&
+       (size.width  != pass->framebuffer->size.width ||
+        size.height != pass->framebuffer->size.height))
+      gl3_framebuffer_set_size(pass->framebuffer, &size, 0);
 
-   current_framebuffer_size = size;
+   pass->current_framebuffer_size = size;
 
-   glUseProgram(pipeline);
+   glUseProgram(pass->pipeline);
 
-   build_semantics(uniforms, mvp, original, source);
+   gl3_pass_build_semantics(pass, pass->uniforms, mvp, original, source);
 
-   if (locations.flat_ubo_vertex >= 0)
-      glUniform4fv(locations.flat_ubo_vertex,
-                   GLsizei((reflection.ubo_size + 15) / 16),
-                   reinterpret_cast<const float *>(uniforms));
+   if (pass->locations.flat_ubo_vertex >= 0)
+      glUniform4fv(pass->locations.flat_ubo_vertex,
+                   GLsizei((pass->reflection.ubo_size + 15) / 16),
+                   reinterpret_cast<const float *>(pass->uniforms));
 
-   if (locations.flat_ubo_fragment >= 0)
-      glUniform4fv(locations.flat_ubo_fragment,
-                   GLsizei((reflection.ubo_size + 15) / 16),
-                   reinterpret_cast<const float *>(uniforms));
+   if (pass->locations.flat_ubo_fragment >= 0)
+      glUniform4fv(pass->locations.flat_ubo_fragment,
+                   GLsizei((pass->reflection.ubo_size + 15) / 16),
+                   reinterpret_cast<const float *>(pass->uniforms));
 
-   if (locations.flat_push_vertex >= 0)
-      glUniform4fv(locations.flat_push_vertex,
-                   GLsizei((reflection.push_constant_size + 15) / 16),
-                   reinterpret_cast<const float *>(push_constant_buffer));
+   if (pass->locations.flat_push_vertex >= 0)
+      glUniform4fv(pass->locations.flat_push_vertex,
+                   GLsizei((pass->reflection.push_constant_size + 15) / 16),
+                   reinterpret_cast<const float *>(pass->push_constant_buffer));
 
-   if (locations.flat_push_fragment >= 0)
-      glUniform4fv(locations.flat_push_fragment,
-                   GLsizei((reflection.push_constant_size + 15) / 16),
-                   reinterpret_cast<const float *>(push_constant_buffer));
+   if (pass->locations.flat_push_fragment >= 0)
+      glUniform4fv(pass->locations.flat_push_fragment,
+                   GLsizei((pass->reflection.push_constant_size + 15) / 16),
+                   reinterpret_cast<const float *>(pass->push_constant_buffer));
 
-   if (!(      locations.buffer_index_ubo_vertex   == GL_INVALID_INDEX
-            && locations.buffer_index_ubo_fragment == GL_INVALID_INDEX))
+   if (!(      pass->locations.buffer_index_ubo_vertex   == GL_INVALID_INDEX
+            && pass->locations.buffer_index_ubo_fragment == GL_INVALID_INDEX))
    {
       /* UBO Ring - update and bind */
-      unsigned vertex_binding   = locations.buffer_index_ubo_vertex;
-      unsigned fragment_binding = locations.buffer_index_ubo_fragment;
-      const void *data          = uniforms;
-      size_t _len               = reflection.ubo_size;
-      GLuint id                 = ubo_ring.buffers[ubo_ring.buffer_index];
+      unsigned vertex_binding   = pass->locations.buffer_index_ubo_vertex;
+      unsigned fragment_binding = pass->locations.buffer_index_ubo_fragment;
+      const void *data          = pass->uniforms;
+      size_t _len               = pass->reflection.ubo_size;
+      GLuint id                 = pass->ubo_ring.buffers[pass->ubo_ring.buffer_index];
 
       glBindBuffer(GL_UNIFORM_BUFFER, id);
       glBufferSubData(GL_UNIFORM_BUFFER, 0, _len, data);
@@ -2289,21 +2310,21 @@ void Pass::build_commands(
             && fragment_binding != vertex_binding)
          glBindBufferBase(GL_UNIFORM_BUFFER, fragment_binding, id);
 
-      ubo_ring.buffer_index++;
-      if (ubo_ring.buffer_index >= ubo_ring.num_buffers)
-         ubo_ring.buffer_index = 0;
+      pass->ubo_ring.buffer_index++;
+      if (pass->ubo_ring.buffer_index >= pass->ubo_ring.num_buffers)
+         pass->ubo_ring.buffer_index = 0;
    }
 
-   if (!(      locations.buffer_index_push_vertex   == GL_INVALID_INDEX
-            && locations.buffer_index_push_fragment == GL_INVALID_INDEX))
+   if (!(      pass->locations.buffer_index_push_vertex   == GL_INVALID_INDEX
+            && pass->locations.buffer_index_push_fragment == GL_INVALID_INDEX))
    {
       /* Push constant ring - the GL_ARB_gl_spirv path carries the push
        * constant block in a uniform buffer of its own. */
-      unsigned vertex_binding   = locations.buffer_index_push_vertex;
-      unsigned fragment_binding = locations.buffer_index_push_fragment;
-      const void *data          = push_constant_buffer;
-      size_t _len               = reflection.push_constant_size;
-      GLuint id                 = push_ring.buffers[push_ring.buffer_index];
+      unsigned vertex_binding   = pass->locations.buffer_index_push_vertex;
+      unsigned fragment_binding = pass->locations.buffer_index_push_fragment;
+      const void *data          = pass->push_constant_buffer;
+      size_t _len               = pass->reflection.push_constant_size;
+      GLuint id                 = pass->push_ring.buffers[pass->push_ring.buffer_index];
 
       glBindBuffer(GL_UNIFORM_BUFFER, id);
       glBufferSubData(GL_UNIFORM_BUFFER, 0, _len, data);
@@ -2314,48 +2335,48 @@ void Pass::build_commands(
             && fragment_binding != vertex_binding)
          glBindBufferBase(GL_UNIFORM_BUFFER, fragment_binding, id);
 
-      push_ring.buffer_index++;
-      if (push_ring.buffer_index >= push_ring.num_buffers)
-         push_ring.buffer_index = 0;
+      pass->push_ring.buffer_index++;
+      if (pass->push_ring.buffer_index >= pass->push_ring.num_buffers)
+         pass->push_ring.buffer_index = 0;
    }
 
    /* The final pass is always executed inside
     * another render pass since the frontend will
     * want to overlay various things on top for
     * the passes that end up on-screen. */
-   if (!final_pass && framebuffer->complete)
+   if (!pass->final_pass && pass->framebuffer->complete)
    {
-      glBindFramebuffer(GL_FRAMEBUFFER, framebuffer->framebuffer);
+      glBindFramebuffer(GL_FRAMEBUFFER, pass->framebuffer->framebuffer);
       glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
       glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
       glClear(GL_COLOR_BUFFER_BIT);
    }
 
 #ifdef GL3_ROLLING_SCANLINE_SIMULATION
-   if (simulate_scanline)
+   if (pass->simulate_scanline)
    {
       glEnable(GL_SCISSOR_TEST);
    }
 #endif /* GL3_ROLLING_SCANLINE_SIMULATION */
 
-   if (final_pass)
+   if (pass->final_pass)
    {
-      glViewport(curr_vp.x, curr_vp.y,
-                 curr_vp.width, curr_vp.height);
+      glViewport(pass->curr_vp.x, pass->curr_vp.y,
+                 pass->curr_vp.width, pass->curr_vp.height);
 #ifdef GL3_ROLLING_SCANLINE_SIMULATION
-      if (simulate_scanline)
+      if (pass->simulate_scanline)
       {
-         glScissor(  curr_vp.x,
-                     int32_t((float(curr_vp.height) / float(total_subframes))
-                              * float(current_subframe - 1)),
-                     curr_vp.width,
-                     uint32_t(float(curr_vp.height) / float(total_subframes))
+         glScissor(  pass->curr_vp.x,
+                     int32_t((float(pass->curr_vp.height) / float(pass->total_subframes))
+                              * float(pass->current_subframe - 1)),
+                     pass->curr_vp.width,
+                     uint32_t(float(pass->curr_vp.height) / float(pass->total_subframes))
          );
       }
       else
       {
-         glScissor(  curr_vp.x,     curr_vp.y,
-                     curr_vp.width, curr_vp.height);
+         glScissor(  pass->curr_vp.x,     pass->curr_vp.y,
+                     pass->curr_vp.width, pass->curr_vp.height);
       }
 #endif /* GL3_ROLLING_SCANLINE_SIMULATION */
    }
@@ -2364,13 +2385,13 @@ void Pass::build_commands(
       glViewport(0, 0, size.width, size.height);
 
 #ifdef GL3_ROLLING_SCANLINE_SIMULATION
-      if (simulate_scanline)
+      if (pass->simulate_scanline)
       {
          glScissor(  0,
-                     int32_t((float(size.height) / float(total_subframes))
-                              * float(current_subframe - 1)),
+                     int32_t((float(size.height) / float(pass->total_subframes))
+                              * float(pass->current_subframe - 1)),
                      size.width,
-                     uint32_t(float(size.height) / float(total_subframes))
+                     uint32_t(float(size.height) / float(pass->total_subframes))
          );
       }
       else
@@ -2381,7 +2402,7 @@ void Pass::build_commands(
    }
 
 #if !defined(HAVE_OPENGLES)
-   if (framebuffer && framebuffer->format == GL_SRGB8_ALPHA8)
+   if (pass->framebuffer && pass->framebuffer->format == GL_SRGB8_ALPHA8)
       glEnable(GL_FRAMEBUFFER_SRGB);
    else
       glDisable(GL_FRAMEBUFFER_SRGB);
@@ -2393,7 +2414,7 @@ void Pass::build_commands(
    glDisable(GL_DEPTH_TEST);
    glEnableVertexAttribArray(0);
    glEnableVertexAttribArray(1);
-   glBindBuffer(GL_ARRAY_BUFFER, common->quad_vbo);
+   glBindBuffer(GL_ARRAY_BUFFER, pass->common->quad_vbo);
    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
                          reinterpret_cast<void *>(uintptr_t(0)));
    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
@@ -2403,7 +2424,7 @@ void Pass::build_commands(
    glDisableVertexAttribArray(0);
    glDisableVertexAttribArray(1);
 #ifdef GL3_ROLLING_SCANLINE_SIMULATION
-   if (simulate_scanline)
+   if (pass->simulate_scanline)
    {
       glDisable(GL_SCISSOR_TEST);
    }
@@ -2415,11 +2436,11 @@ void Pass::build_commands(
 
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-   if (!final_pass)
-      if (framebuffer->levels > 1)
+   if (!pass->final_pass)
+      if (pass->framebuffer->levels > 1)
       {
          glBindFramebuffer(GL_FRAMEBUFFER, 0);
-         glBindTexture(GL_TEXTURE_2D, framebuffer->image);
+         glBindTexture(GL_TEXTURE_2D, pass->framebuffer->image);
          glGenerateMipmap(GL_TEXTURE_2D);
          glBindTexture(GL_TEXTURE_2D, 0);
       }
@@ -2429,7 +2450,7 @@ void Pass::build_commands(
 
 struct gl3_filter_chain
 {
-   gl3_shader::Pass **passes;
+   struct gl3_shader::gl3_pass **passes;
    size_t num_passes;
    gl3_filter_chain_pass_info *pass_info;
    size_t num_pass_info;
@@ -2509,7 +2530,7 @@ static void gl3_chain_free(struct gl3_filter_chain *chain)
    free(chain->original_history);
    gl3_shader::gl3_framebuffer_delete(chain->copy_framebuffer);
    for (h = 0; h < chain->num_passes; h++)
-      delete chain->passes[h];
+      gl3_shader::gl3_pass_free(chain->passes[h]);
    free(chain->passes);
    free(chain->pass_info);
    /* ran as the member destructor until CommonResources flattened */
@@ -2520,10 +2541,8 @@ static void gl3_chain_free(struct gl3_filter_chain *chain)
 static void gl3_chain_set_shader_preset(struct gl3_filter_chain *chain,
       video_shader *shader)
 {
-   /* still new-allocated by the create paths, so this stays delete
-    * until those move to calloc with the rest of the chain */
    if (chain->common.shader_preset != shader)
-      delete chain->common.shader_preset;
+      free(chain->common.shader_preset);
    chain->common.shader_preset = shader;
 }
 
@@ -2550,9 +2569,9 @@ static void gl3_chain_update_history_info(struct gl3_filter_chain *chain)
       source->texture.image  = chain->original_history[i]->image;
       source->texture.width  = chain->original_history[i]->size.width;
       source->texture.height = chain->original_history[i]->size.height;
-      source->filter         = chain->passes[0]->get_source_filter();
-      source->mip_filter     = chain->passes[0]->get_mip_filter();
-      source->address        = chain->passes[0]->get_address_mode();
+      source->filter         = gl3_pass_get_source_filter(chain->passes[0]);
+      source->mip_filter     = gl3_pass_get_mip_filter(chain->passes[0]);
+      source->address        = gl3_pass_get_address_mode(chain->passes[0]);
    }
 }
 
@@ -2562,7 +2581,7 @@ static void gl3_chain_update_feedback_info(struct gl3_filter_chain *chain)
 
    for (i = 0; i < chain->num_passes - 1; i++)
    {
-      struct gl3_shader::gl3_framebuffer *fb = chain->passes[i]->get_feedback_framebuffer();
+      struct gl3_shader::gl3_framebuffer *fb = gl3_pass_get_feedback_framebuffer(chain->passes[i]);
       if (!fb)
          continue;
 
@@ -2575,9 +2594,9 @@ static void gl3_chain_update_feedback_info(struct gl3_filter_chain *chain)
       source->texture.image  = fb->image;
       source->texture.width  = fb->size.width;
       source->texture.height = fb->size.height;
-      source->filter         = chain->passes[i]->get_source_filter();
-      source->mip_filter     = chain->passes[i]->get_mip_filter();
-      source->address        = chain->passes[i]->get_address_mode();
+      source->filter         = gl3_pass_get_source_filter(chain->passes[i]);
+      source->mip_filter     = gl3_pass_get_mip_filter(chain->passes[i]);
+      source->address        = gl3_pass_get_address_mode(chain->passes[i]);
    }
 }
 
@@ -2599,24 +2618,24 @@ static void gl3_chain_build_offscreen_passes(struct gl3_filter_chain *chain, con
 
    const gl3_shader::Texture original = {
          chain->input_texture,
-         chain->passes[0]->get_source_filter(),
-         chain->passes[0]->get_mip_filter(),
-         chain->passes[0]->get_address_mode(),
+         gl3_pass_get_source_filter(chain->passes[0]),
+         gl3_pass_get_mip_filter(chain->passes[0]),
+         gl3_pass_get_address_mode(chain->passes[0]),
    };
    gl3_shader::Texture source = original;
 
    for (i = 0; i < chain->num_passes - 1; i++)
    {
-      chain->passes[i]->build_commands(original, source, vp, nullptr);
+      gl3_pass_build_commands(chain->passes[i], original, source, vp, nullptr);
 
-      const struct gl3_shader::gl3_framebuffer *fb = chain->passes[i]->get_framebuffer();
+      const struct gl3_shader::gl3_framebuffer *fb = gl3_pass_get_framebuffer(chain->passes[i]);
 
       source.texture.image             = fb->image;
       source.texture.width             = fb->size.width;
       source.texture.height            = fb->size.height;
-      source.filter                    = chain->passes[i + 1]->get_source_filter();
-      source.mip_filter                = chain->passes[i + 1]->get_mip_filter();
-      source.address                   = chain->passes[i + 1]->get_address_mode();
+      source.filter                    = gl3_pass_get_source_filter(chain->passes[i + 1]);
+      source.mip_filter                = gl3_pass_get_mip_filter(chain->passes[i + 1]);
+      source.address                   = gl3_pass_get_address_mode(chain->passes[i + 1]);
 
       chain->common.pass_outputs[i]           = source;
    }
@@ -2677,40 +2696,40 @@ static void gl3_chain_build_viewport_pass(struct gl3_filter_chain *chain, const 
    gl3_shader::Texture source;
    const gl3_shader::Texture original = {
          chain->input_texture,
-         chain->passes[0]->get_source_filter(),
-         chain->passes[0]->get_mip_filter(),
-         chain->passes[0]->get_address_mode(),
+         gl3_pass_get_source_filter(chain->passes[0]),
+         gl3_pass_get_mip_filter(chain->passes[0]),
+         gl3_pass_get_address_mode(chain->passes[0]),
    };
 
    if (chain->num_passes == 1)
    {
       source = {
             chain->input_texture,
-            chain->passes[chain->num_passes - 1]->get_source_filter(),
-            chain->passes[chain->num_passes - 1]->get_mip_filter(),
-            chain->passes[chain->num_passes - 1]->get_address_mode(),
+            gl3_pass_get_source_filter(chain->passes[chain->num_passes - 1]),
+            gl3_pass_get_mip_filter(chain->passes[chain->num_passes - 1]),
+            gl3_pass_get_address_mode(chain->passes[chain->num_passes - 1]),
       };
    }
    else
    {
-      const struct gl3_shader::gl3_framebuffer *fb = chain->passes[chain->num_passes - 2]
-         ->get_framebuffer();
+      const struct gl3_shader::gl3_framebuffer *fb =
+         gl3_pass_get_framebuffer(chain->passes[chain->num_passes - 2]);
       source.texture.image           = fb->image;
       source.texture.width           = fb->size.width;
       source.texture.height          = fb->size.height;
-      source.filter                  = chain->passes[chain->num_passes - 1]->get_source_filter();
-      source.mip_filter              = chain->passes[chain->num_passes - 1]->get_mip_filter();
-      source.address                 = chain->passes[chain->num_passes - 1]->get_address_mode();
+      source.filter                  = gl3_pass_get_source_filter(chain->passes[chain->num_passes - 1]);
+      source.mip_filter              = gl3_pass_get_mip_filter(chain->passes[chain->num_passes - 1]);
+      source.address                 = gl3_pass_get_address_mode(chain->passes[chain->num_passes - 1]);
    }
 
-   chain->passes[chain->num_passes - 1]->build_commands(original, source, vp, mvp);
+   gl3_pass_build_commands(chain->passes[chain->num_passes - 1], original, source, vp, mvp);
 
    /* For feedback FBOs, swap current and previous. */
    for (i = 0; i < chain->num_passes; i++)
    {
-      struct gl3_shader::gl3_framebuffer *fb = chain->passes[i]->get_feedback_framebuffer();
+      struct gl3_shader::gl3_framebuffer *fb = gl3_pass_get_feedback_framebuffer(chain->passes[i]);
       if (fb)
-         chain->passes[i]->end_frame();
+         gl3_pass_end_frame(chain->passes[i]);
    }
 }
 
@@ -2732,7 +2751,7 @@ static bool gl3_chain_init_history(struct gl3_filter_chain *chain)
 
    for (i = 0; i < chain->num_passes; i++)
    {
-      size_t _y = chain->passes[i]->get_reflection().semantic_textures[
+      size_t _y = gl3_pass_get_reflection(chain->passes[i]).semantic_textures[
                 SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size;
       required_images = MAX(required_images, _y);
    }
@@ -2787,7 +2806,7 @@ static bool gl3_chain_init_feedback(struct gl3_filter_chain *chain)
       size_t q;
       for (q = 0; q < chain->num_passes; q++)
       {
-         const slang_reflection &r          = chain->passes[q]->get_reflection();
+         const slang_reflection &r          = gl3_pass_get_reflection(chain->passes[q]);
          const slang_texture_semantic_array &feedbacks =
             r.semantic_textures[SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK];
 
@@ -2799,7 +2818,7 @@ static bool gl3_chain_init_feedback(struct gl3_filter_chain *chain)
          }
       }
 
-      if (use_feedback && !chain->passes[i]->init_feedback())
+      if (use_feedback && !gl3_pass_init_feedback(chain->passes[i]))
          return false;
 
       if (use_feedback)
@@ -2829,7 +2848,7 @@ static bool gl3_chain_init_alias(struct gl3_filter_chain *chain)
    for (i = 0; i < (int)chain->num_passes; i++)
    {
       unsigned j;
-      const char *name = chain->passes[i]->get_name();
+      const char *name = gl3_pass_get_name(chain->passes[i]);
       if (string_is_empty(name))
          continue;
 
@@ -2902,7 +2921,7 @@ static void gl3_chain_set_num_passes(struct gl3_filter_chain *chain, unsigned nu
    /* The vectors released the old generation on resize; the arrays do
     * not, so drop any previous set first. */
    for (i = 0; i < chain->num_passes; i++)
-      delete chain->passes[i];
+      gl3_shader::gl3_pass_free(chain->passes[i]);
    free(chain->passes);
    chain->passes         = NULL;
    chain->num_passes     = 0;
@@ -2918,29 +2937,29 @@ static void gl3_chain_set_num_passes(struct gl3_filter_chain *chain, unsigned nu
       return;
    chain->num_pass_info  = num_passes_;
 
-   if (!(chain->passes = (gl3_shader::Pass**)
+   if (!(chain->passes = (struct gl3_shader::gl3_pass**)
             calloc(num_passes_, sizeof(*chain->passes))))
       return;
 
    for (i = 0; i < num_passes_; i++)
    {
-      if (!(chain->passes[i] = new gl3_shader::Pass(i + 1 == num_passes_)))
+      if (!(chain->passes[i] = gl3_shader::gl3_pass_new(i + 1 == num_passes_)))
          return;
-      chain->passes[i]->set_common_resources(&chain->common);
-      chain->passes[i]->set_pass_number(i);
+      gl3_pass_set_common_resources(chain->passes[i], &chain->common);
+      gl3_pass_set_pass_number(chain->passes[i], i);
       chain->num_passes++;
    }
 }
 
 static void gl3_chain_set_shader(struct gl3_filter_chain *chain, unsigned pass, GLenum stage, const uint32_t *spirv, size_t spirv_words)
 {
-   chain->passes[pass]->set_shader(stage, spirv, spirv_words);
+   gl3_pass_set_shader(chain->passes[pass], stage, spirv, spirv_words);
 }
 
 static void gl3_chain_add_parameter(struct gl3_filter_chain *chain, unsigned pass,
       unsigned index, const char *id)
 {
-   chain->passes[pass]->add_parameter(index, id);
+   gl3_pass_add_parameter(chain->passes[pass], index, id);
 }
 
 static bool gl3_chain_init(struct gl3_filter_chain *chain)
@@ -2954,12 +2973,12 @@ static bool gl3_chain_init(struct gl3_filter_chain *chain)
    for (i = 0; i < chain->num_passes; i++)
    {
       RARCH_LOG("[GLCore] Building pass #%u (%s)\n", i,
-            string_is_empty(chain->passes[i]->get_name()) ?
+            string_is_empty(gl3_pass_get_name(chain->passes[i])) ?
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE) :
-            chain->passes[i]->get_name());
+            gl3_pass_get_name(chain->passes[i]));
 
-      chain->passes[i]->set_pass_info(chain->pass_info[i]);
-      if (!chain->passes[i]->build())
+      gl3_pass_set_pass_info(chain->passes[i], chain->pass_info[i]);
+      if (!gl3_pass_build(chain->passes[i]))
          return false;
    }
 
@@ -2980,12 +2999,12 @@ static bool gl3_chain_init_single_pass(struct gl3_filter_chain *chain, unsigned 
       return false;
 
    RARCH_LOG("[GLCore] Building pass #%u (%s)\n", pass_idx,
-         string_is_empty(chain->passes[pass_idx]->get_name()) ?
+         string_is_empty(gl3_pass_get_name(chain->passes[pass_idx])) ?
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE) :
-         chain->passes[pass_idx]->get_name());
+         gl3_pass_get_name(chain->passes[pass_idx]));
 
-   chain->passes[pass_idx]->set_pass_info(chain->pass_info[pass_idx]);
-   if (!chain->passes[pass_idx]->build())
+   gl3_pass_set_pass_info(chain->passes[pass_idx], chain->pass_info[pass_idx]);
+   if (!gl3_pass_build(chain->passes[pass_idx]))
       return false;
 
    return true;
@@ -3095,7 +3114,7 @@ static bool gl3_chain_compile_full_pass(struct gl3_filter_chain *chain, unsigned
 
    /* Update the alias map so later chain->passes can reference this one.
     * Re-running init_alias is safe — it clears and repopulates. */
-   if (!string_is_empty(chain->passes[pass_idx]->get_name()))
+   if (!string_is_empty(gl3_pass_get_name(chain->passes[pass_idx])))
    {
       chain->alias_initialized = false;
       if (!gl3_chain_init_alias_early(chain))
@@ -3271,7 +3290,7 @@ static void gl3_chain_clear_history_and_feedback(struct gl3_filter_chain *chain)
    }
    for (i = 0; i < chain->num_passes; i++)
    {
-      struct gl3_shader::gl3_framebuffer *fb = chain->passes[i]->get_feedback_framebuffer();
+      struct gl3_shader::gl3_framebuffer *fb = gl3_pass_get_feedback_framebuffer(chain->passes[i]);
       if (fb && fb->complete)
       {
          GLuint id = fb->framebuffer;
@@ -3342,54 +3361,54 @@ static void gl3_chain_set_frame_count(struct gl3_filter_chain *chain, uint64_t c
 {
    unsigned i;
    for (i = 0; i < chain->num_passes; i++)
-      chain->passes[i]->set_frame_count(count);
+      gl3_pass_set_frame_count(chain->passes[i], count);
 }
 
 static void gl3_chain_set_frame_count_period(struct gl3_filter_chain *chain, unsigned pass, unsigned period)
 {
-   chain->passes[pass]->set_frame_count_period(period);
+   gl3_pass_set_frame_count_period(chain->passes[pass], period);
 }
 
 static void gl3_chain_set_frame_direction(struct gl3_filter_chain *chain, int32_t direction)
 {
    unsigned i;
    for (i = 0; i < chain->num_passes; i++)
-      chain->passes[i]->set_frame_direction(direction);
+      gl3_pass_set_frame_direction(chain->passes[i], direction);
 }
 
 static void gl3_chain_set_frame_time_delta(struct gl3_filter_chain *chain, uint32_t time_delta)
 {
    unsigned i;
    for (i = 0; i < chain->num_passes; i++)
-      chain->passes[i]->set_frame_time_delta(time_delta);
+      gl3_pass_set_frame_time_delta(chain->passes[i], time_delta);
 }
 
 static void gl3_chain_set_original_fps(struct gl3_filter_chain *chain, float fps)
 {
    unsigned i;
    for (i = 0; i < chain->num_passes; i++)
-      chain->passes[i]->set_original_fps(fps);
+      gl3_pass_set_original_fps(chain->passes[i], fps);
 }
 
 static void gl3_chain_set_rotation(struct gl3_filter_chain *chain, uint32_t rot)
 {
    unsigned i;
    for (i = 0; i < chain->num_passes; i++)
-      chain->passes[i]->set_rotation(rot);
+      gl3_pass_set_rotation(chain->passes[i], rot);
 }
 
 static void gl3_chain_set_core_aspect(struct gl3_filter_chain *chain, float coreaspect)
 {
    unsigned i;
    for (i = 0; i < chain->num_passes; i++)
-      chain->passes[i]->set_core_aspect(coreaspect);
+      gl3_pass_set_core_aspect(chain->passes[i], coreaspect);
 }
 
 static void gl3_chain_set_core_aspect_rot(struct gl3_filter_chain *chain, float coreaspectrot)
 {
    unsigned i;
    for (i = 0; i < chain->num_passes; i++)
-      chain->passes[i]->set_core_aspect_rot(coreaspectrot);
+      gl3_pass_set_core_aspect_rot(chain->passes[i], coreaspectrot);
 }
 
 
@@ -3397,14 +3416,14 @@ static void gl3_chain_set_shader_subframes(struct gl3_filter_chain *chain, uint3
 {
    unsigned i;
    for (i = 0; i < chain->num_passes; i++)
-      chain->passes[i]->set_shader_subframes(tot_subframes);
+      gl3_pass_set_shader_subframes(chain->passes[i], tot_subframes);
 }
 
 static void gl3_chain_set_current_shader_subframe(struct gl3_filter_chain *chain, uint32_t cur_subframe)
 {
    unsigned i;
    for (i = 0; i < chain->num_passes; i++)
-      chain->passes[i]->set_current_shader_subframe(cur_subframe);
+      gl3_pass_set_current_shader_subframe(chain->passes[i], cur_subframe);
 }
 
 #ifdef GL3_ROLLING_SCANLINE_SIMULATION
@@ -3412,13 +3431,13 @@ static void gl3_chain_set_simulate_scanline(struct gl3_filter_chain *chain, bool
 {
    unsigned i;
    for (i = 0; i < chain->num_passes; i++)
-      chain->passes[i]->set_simulate_scanline(simulate_scanline);
+      gl3_pass_set_simulate_scanline(chain->passes[i], simulate_scanline);
 }
 #endif /* GL3_ROLLING_SCANLINE_SIMULATION */
 
 static void gl3_chain_set_pass_name(struct gl3_filter_chain *chain, unsigned pass, const char *name)
 {
-   chain->passes[pass]->set_name(name);
+   gl3_pass_set_name(chain->passes[pass], name);
 }
 
 static bool gl3_filter_chain_load_lut(
@@ -3531,13 +3550,13 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
       const char *path, glslang_filter_chain_filter filter)
 {
    unsigned i;
-   video_shader *shader = new video_shader();
+   video_shader *shader = (video_shader*)calloc(1, sizeof(*shader));
    if (!shader)
       return NULL;
 
    if (!video_shader_load_preset_into_shader(path, shader))
    {
-      delete shader;
+      free(shader);
       return NULL;
    }
 
@@ -3548,7 +3567,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
          shader->passes + (last_pass_is_fbo ? 1 : 0));
    if (!chain)
       {
-         delete shader;
+         free(shader);
          gl3_chain_free(chain);
          return NULL;
       }
@@ -3556,7 +3575,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
    if (      shader->luts
          && !gl3_filter_chain_load_luts(chain, shader))
       {
-         delete shader;
+         free(shader);
          gl3_chain_free(chain);
          return NULL;
       }
@@ -3596,7 +3615,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
          RARCH_ERR("[GLCore] Failed to compile shader: \"%s\".\n",
                pass->source.path);
          {
-         delete shader;
+         free(shader);
          gl3_chain_free(chain);
          return NULL;
       }
@@ -3611,7 +3630,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
             RARCH_ERR("[GLCore] Exceeded maximum number of parameters (%u).\n", GFX_MAX_PARAMETERS);
             glslang_output_free(&output);
             {
-         delete shader;
+         free(shader);
          gl3_chain_free(chain);
          return NULL;
       }
@@ -3651,7 +3670,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
                      itr->id);
                glslang_output_free(&output);
                {
-         delete shader;
+         free(shader);
          gl3_chain_free(chain);
          return NULL;
       }
@@ -3843,7 +3862,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
 
    if (!gl3_chain_init(chain))
       {
-         delete shader;
+         free(shader);
          gl3_chain_free(chain);
          return NULL;
       }
@@ -3859,13 +3878,13 @@ gl3_filter_chain_t *gl3_filter_chain_create_deferred(
       unsigned *out_num_passes)
 {
    unsigned i;
-   video_shader *shader = new video_shader();
+   video_shader *shader = (video_shader*)calloc(1, sizeof(*shader));
    if (!shader)
       return NULL;
 
    if (!video_shader_load_preset_into_shader(path, shader))
    {
-      delete shader;
+      free(shader);
       return NULL;
    }
 
@@ -3876,7 +3895,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_deferred(
    struct gl3_filter_chain *chain = gl3_chain_new(total_passes);
    if (!chain)
       {
-         delete shader;
+         free(shader);
          gl3_chain_free(chain);
          return NULL;
       }
@@ -3884,7 +3903,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_deferred(
    if (      shader->luts
          && !gl3_filter_chain_load_luts(chain, shader))
       {
-         delete shader;
+         free(shader);
          gl3_chain_free(chain);
          return NULL;
       }
@@ -3937,7 +3956,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_deferred(
    {
       RARCH_ERR("[GLCore] Deferred: failed to initialize alias map.\n");
       {
-         delete shader;
+         free(shader);
          gl3_chain_free(chain);
          return NULL;
       }
