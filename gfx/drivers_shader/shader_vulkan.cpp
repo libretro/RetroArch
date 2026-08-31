@@ -773,184 +773,126 @@ struct CommonResources
 #endif /* VULKAN_HDR_SWAPCHAIN */
 };
 
-class Pass
+struct slang_pass_parameter
 {
-   public:
-      Pass(VkDevice device,
-            const VkPhysicalDeviceMemoryProperties &memory_properties,
-            VkPipelineCache cache, unsigned num_sync_indices, bool final_pass) :
-         device(device),
-         memory_properties(memory_properties),
-         cache(cache),
-         num_sync_indices(num_sync_indices),
-         final_pass(final_pass)
-      {}
-
-      ~Pass();
-
-      Pass(Pass&&) = delete;
-      void operator=(Pass&&) = delete;
-
-      const struct slang_framebuffer *get_framebuffer() const { return framebuffer; }
-      struct slang_framebuffer *get_feedback_framebuffer() { return fb_feedback; }
-
-      Size2D set_pass_info(
-            const Size2D &max_original,
-            const Size2D &max_source,
-            const vulkan_filter_chain_swapchain_info &swapchain,
-            const vulkan_filter_chain_pass_info &info);
-
-      void set_shader(VkShaderStageFlags stage,
-            const uint32_t *spirv,
-            size_t spirv_words);
-
-      bool build();
-      bool init_feedback();
-
-      void build_commands(
-            struct deferred_disposes *disposer,
-            VkCommandBuffer cmd,
-            const Texture &original,
-            const Texture &source,
-            const VkViewport &vp,
-            const float *mvp);
-
-      void notify_sync_index(unsigned index) { sync_index = index; }
-      void set_frame_count(uint64_t count) { frame_count = count; }
-      void set_frame_count_period(unsigned p) { frame_count_period = p; }
-
-      void set_name(const char *name)
-      {
-         free(pass_name);
-         pass_name = name ? strdup(name) : nullptr;
-      }
-      const char *get_name() const { return pass_name ? pass_name : ""; }
-      glslang_filter_chain_filter get_source_filter() const {
-         return pass_info.source_filter; }
-
-      glslang_filter_chain_filter get_mip_filter() const
-      {
-         return pass_info.mip_filter;
-      }
-
-      glslang_filter_chain_address get_address_mode() const
-      {
-         return pass_info.address;
-      }
-
-      void set_common_resources(CommonResources *c) { this->common = c; }
-      const slang_reflection &get_reflection() const { return reflection; }
-      void set_pass_number(unsigned pass) { pass_number = pass; }
-
-      bool add_parameter(unsigned parameter_index, const char *id);
-
-      void end_frame();
-      void allocate_buffers();
-
-   private:
-      VkDevice device;
-      const VkPhysicalDeviceMemoryProperties &memory_properties;
-      VkPipelineCache cache;
-      unsigned num_sync_indices;
-      unsigned sync_index;
-      bool final_pass;
-
-      Size2D get_output_size(const Size2D &original_size,
-            const Size2D &max_source) const;
-
-      VkPipeline pipeline              = VK_NULL_HANDLE;
-      VkPipelineLayout pipeline_layout = VK_NULL_HANDLE;
-      VkDescriptorSetLayout set_layout = VK_NULL_HANDLE;
-      VkDescriptorPool pool            = VK_NULL_HANDLE;
-
-      VkDescriptorSet *sets = nullptr;
-      CommonResources *common = nullptr;
-
-      Size2D current_framebuffer_size;
-      VkViewport curr_vp;
-      vulkan_filter_chain_pass_info pass_info;
-
-      uint32_t *vertex_shader    = nullptr;
-      size_t num_vertex_shader   = 0;
-      uint32_t *fragment_shader  = nullptr;
-      size_t num_fragment_shader = 0;
-      struct slang_framebuffer *framebuffer = nullptr;
-      struct slang_framebuffer *fb_feedback = nullptr;
-      VkRenderPass swapchain_render_pass;
-
-      void clear_vk();
-      bool init_pipeline();
-      bool init_pipeline_layout();
-
-      void set_semantic_texture(VkDescriptorSet set,
-            slang_texture_semantic semantic,
-            const Texture &texture,
-            VkDescriptorImageInfo *image_infos, VkWriteDescriptorSet *writes,
-            unsigned &write_count);
-      void set_semantic_texture_array(VkDescriptorSet set,
-            slang_texture_semantic semantic, unsigned index,
-            const Texture &texture,
-            VkDescriptorImageInfo *image_infos, VkWriteDescriptorSet *writes,
-            unsigned &write_count);
-
-      /* Plain C struct: must be explicitly zero-initialized, since the
-       * first build() and a teardown before any build() both run
-       * slang_reflection_free() on it.  The previous C++ type had a
-       * default constructor doing this implicitly. */
-      slang_reflection reflection = {};
-      void build_semantics(VkDescriptorSet set, uint8_t *buffer,
-            const float *mvp, const Texture &original, const Texture &source);
-      void build_semantic_vec4(uint8_t *data, slang_semantic semantic,
-            unsigned width, unsigned height);
-      void build_semantic_uint(uint8_t *data, slang_semantic semantic, uint32_t value);
-      void build_semantic_int(uint8_t *data, slang_semantic semantic, int32_t value);
-      void build_semantic_float(uint8_t *data,slang_semantic semantic, float value);
-      void build_semantic_vec3(uint8_t *data, slang_semantic semantic, const float *values);
-      void build_semantic_parameter(uint8_t *data, unsigned index, float value);
-      void build_semantic_texture_vec4(uint8_t *data,
-            slang_texture_semantic semantic,
-            unsigned width, unsigned height);
-      void build_semantic_texture_array_vec4(uint8_t *data,
-            slang_texture_semantic semantic, unsigned index,
-            unsigned width, unsigned height);
-      void build_semantic_texture(VkDescriptorSet set, uint8_t *buffer,
-            slang_texture_semantic semantic, const Texture &texture,
-            VkDescriptorImageInfo *image_infos, VkWriteDescriptorSet *writes,
-            unsigned &write_count);
-      void build_semantic_texture_array(VkDescriptorSet set, uint8_t *buffer,
-            slang_texture_semantic semantic, unsigned index, const Texture &texture,
-            VkDescriptorImageInfo *image_infos, VkWriteDescriptorSet *writes,
-            unsigned &write_count);
-
-      uint64_t frame_count        = 0;   /* shadow: may differ from common due to frame_count_period */
-      unsigned frame_count_period = 0;
-      unsigned pass_number        = 0;
-      
-      size_t ubo_offset           = 0;
-      char *pass_name             = nullptr;
-
-      struct Parameter
-      {
-         char *id;       /* owned (strdup'd) */
-         unsigned index;
-         unsigned semantic_index;
-      };
-
-      struct Parameter *parameters = nullptr;
-      size_t num_parameters        = 0;
-      /* Indices into parameters[]; rebuilt by every build(), so they
-       * survive parameters growing (and thus moving) in between. */
-      size_t *filtered_parameters  = nullptr;
-      size_t num_filtered          = 0;
-
-      struct PushConstant
-      {
-         VkShaderStageFlags stages = 0;
-         uint32_t *buffer          = nullptr; /* uint32_t for alignment. */
-         size_t buffer_size        = 0;       /* in uint32_t units */
-      };
-      PushConstant push;
+   char *id;       /* owned (strdup'd) */
+   unsigned index;
+   unsigned semantic_index;
 };
+
+struct slang_pass
+{
+   VkDevice device;
+   const VkPhysicalDeviceMemoryProperties *memory_properties;
+   VkPipelineCache cache;
+   unsigned num_sync_indices;
+   unsigned sync_index;
+   bool final_pass;
+
+   VkPipeline pipeline;
+   VkPipelineLayout pipeline_layout;
+   VkDescriptorSetLayout set_layout;
+   VkDescriptorPool pool;
+   VkDescriptorSet *sets;
+
+   CommonResources *common;
+
+   Size2D current_framebuffer_size;
+   VkViewport curr_vp;
+   vulkan_filter_chain_pass_info pass_info;
+
+   uint32_t *vertex_shader;
+   size_t num_vertex_shader;
+   uint32_t *fragment_shader;
+   size_t num_fragment_shader;
+
+   struct slang_framebuffer *framebuffer;
+   struct slang_framebuffer *fb_feedback;
+   VkRenderPass swapchain_render_pass;
+
+   /* Plain C struct: explicitly zero-initialized by slang_pass_new()'s
+    * calloc, since the first build() and a teardown before any build()
+    * both run slang_reflection_free() on it. */
+   slang_reflection reflection;
+
+   uint64_t frame_count;   /* shadow: may differ from common due to frame_count_period */
+   unsigned frame_count_period;
+   unsigned pass_number;
+
+   size_t ubo_offset;
+   char *pass_name;
+
+   struct slang_pass_parameter *parameters;
+   size_t num_parameters;
+   /* Indices into parameters[]; rebuilt by every build(), so they
+    * survive parameters growing (and thus moving) in between. */
+   size_t *filtered_parameters;
+   size_t num_filtered;
+
+   struct
+   {
+      VkShaderStageFlags stages;
+      uint32_t *buffer;          /* uint32_t for alignment. */
+      size_t buffer_size;        /* in uint32_t units */
+   } push;
+};
+
+static struct slang_pass *slang_pass_new(VkDevice device,
+      const VkPhysicalDeviceMemoryProperties *memory_properties,
+      VkPipelineCache cache, unsigned num_sync_indices, bool final_pass)
+{
+   struct slang_pass *pass = (struct slang_pass*)calloc(1, sizeof(*pass));
+   if (!pass)
+      return NULL;
+   pass->device            = device;
+   pass->memory_properties = memory_properties;
+   pass->cache             = cache;
+   pass->num_sync_indices  = num_sync_indices;
+   pass->final_pass        = final_pass;
+   return pass;
+}
+
+static void slang_pass_free(struct slang_pass *pass);
+static void slang_pass_clear_vk(struct slang_pass *pass);
+
+static Size2D slang_pass_set_pass_info(struct slang_pass *pass,
+      const Size2D &max_original,
+      const Size2D &max_source,
+      const vulkan_filter_chain_swapchain_info &swapchain,
+      const vulkan_filter_chain_pass_info &info);
+static void slang_pass_set_shader(struct slang_pass *pass,
+      VkShaderStageFlags stage, const uint32_t *spirv, size_t spirv_words);
+static bool slang_pass_build(struct slang_pass *pass);
+static bool slang_pass_init_feedback(struct slang_pass *pass);
+static void slang_pass_build_commands(struct slang_pass *pass,
+      struct deferred_disposes *disposer,
+      VkCommandBuffer cmd,
+      const Texture &original,
+      const Texture &source,
+      const VkViewport &vp,
+      const float *mvp);
+static bool slang_pass_add_parameter(struct slang_pass *pass,
+      unsigned parameter_index, const char *id);
+static void slang_pass_end_frame(struct slang_pass *pass);
+static void slang_pass_allocate_buffers(struct slang_pass *pass);
+
+static INLINE void slang_pass_notify_sync_index(struct slang_pass *pass,
+      unsigned index) { pass->sync_index = index; }
+static INLINE void slang_pass_set_frame_count(struct slang_pass *pass,
+      uint64_t count) { pass->frame_count = count; }
+static INLINE void slang_pass_set_frame_count_period(
+      struct slang_pass *pass, unsigned p) { pass->frame_count_period = p; }
+static INLINE void slang_pass_set_name(struct slang_pass *pass,
+      const char *name)
+{
+   free(pass->pass_name);
+   pass->pass_name = name ? strdup(name) : NULL;
+}
+static INLINE const char *slang_pass_get_name(
+      const struct slang_pass *pass)
+{
+   return pass->pass_name ? pass->pass_name : "";
+}
 
 /* struct here since we're implementing the opaque typedef from C. */
 struct vulkan_filter_chain
@@ -1033,7 +975,8 @@ struct vulkan_filter_chain
       VkPhysicalDevice gpu;
       const VkPhysicalDeviceMemoryProperties &memory_properties;
       VkPipelineCache cache;
-      std::vector<std::unique_ptr<Pass>> passes;
+      struct slang_pass **passes = nullptr;
+      size_t pass_count = 0;
       std::vector<vulkan_filter_chain_pass_info> pass_info;
       struct deferred_disposes *deferred_calls;
       unsigned num_deferred;
@@ -1495,6 +1438,9 @@ vulkan_filter_chain::~vulkan_filter_chain()
 {
    unsigned i;
    flush();
+   for (i = 0; i < pass_count; i++)
+      slang_pass_free(passes[i]);
+   free(passes);
    for (i = 0; i < num_history; i++)
       slang_framebuffer_delete(&original_history[i]);
    free(original_history);
@@ -1552,8 +1498,8 @@ void vulkan_filter_chain::notify_sync_index(unsigned index)
 
    current_sync_index = index;
 
-   for (i = 0; i < passes.size(); i++)
-      passes[i]->notify_sync_index(index);
+   for (i = 0; i < pass_count; i++)
+      slang_pass_notify_sync_index(passes[i], index);
 }
 
 bool vulkan_filter_chain::update_swapchain_info(
@@ -1601,9 +1547,9 @@ void vulkan_filter_chain::update_history_info()
       source->texture.image    = original_history[ring_slot]->image;
       source->texture.width    = original_history[ring_slot]->size.width;
       source->texture.height   = original_history[ring_slot]->size.height;
-      source->filter           = passes.front()->get_source_filter();
-      source->mip_filter       = passes.front()->get_mip_filter();
-      source->address          = passes.front()->get_address_mode();
+      source->filter           = passes[0]->pass_info.source_filter;
+      source->mip_filter       = passes[0]->pass_info.mip_filter;
+      source->address          = passes[0]->pass_info.address;
    }
 }
 
@@ -1613,9 +1559,9 @@ void vulkan_filter_chain::update_feedback_info()
    if (common.fb_feedback.empty())
       return;
 
-   for (i = 0; i < passes.size() - 1; i++)
+   for (i = 0; i < pass_count - 1; i++)
    {
-      struct slang_framebuffer *fb = passes[i]->get_feedback_framebuffer();
+      struct slang_framebuffer *fb = passes[i]->fb_feedback;
       if (!fb)
          continue;
 
@@ -1626,9 +1572,9 @@ void vulkan_filter_chain::update_feedback_info()
       source->texture.layout  = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
       source->texture.width   = fb->size.width;
       source->texture.height  = fb->size.height;
-      source->filter          = passes[i]->get_source_filter();
-      source->mip_filter      = passes[i]->get_mip_filter();
-      source->address         = passes[i]->get_address_mode();
+      source->filter          = passes[i]->pass_info.source_filter;
+      source->mip_filter      = passes[i]->pass_info.mip_filter;
+      source->address         = passes[i]->pass_info.address;
    }
 }
 
@@ -1652,9 +1598,9 @@ void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
    struct deferred_disposes *disposer = &deferred_calls[current_sync_index];
    const Texture original = {
       input_texture,
-      passes.front()->get_source_filter(),
-      passes.front()->get_mip_filter(),
-      passes.front()->get_address_mode(),
+      passes[0]->pass_info.source_filter,
+      passes[0]->pass_info.mip_filter,
+      passes[0]->pass_info.address,
    };
 
    source = original;
@@ -1671,21 +1617,21 @@ void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
    for (i = 0; i < common.pass_outputs.size(); i++)
       common.pass_outputs[i] = original;
 
-   for (i = 0; i < passes.size() - 1; i++)
+   for (i = 0; i < pass_count - 1; i++)
    {
-      passes[i]->build_commands(disposer, cmd,
+      slang_pass_build_commands(passes[i], disposer, cmd,
             original, source, vp, nullptr);
 
-      const struct slang_framebuffer *fb = passes[i]->get_framebuffer();
+      const struct slang_framebuffer *fb = passes[i]->framebuffer;
 
       source.texture.image    = fb->image;
       source.texture.view     = fb->view;
       source.texture.layout   = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
       source.texture.width    = fb->size.width;
       source.texture.height   = fb->size.height;
-      source.filter           = passes[i + 1]->get_source_filter();
-      source.mip_filter       = passes[i + 1]->get_mip_filter();
-      source.address          = passes[i + 1]->get_address_mode();
+      source.filter           = passes[i + 1]->pass_info.source_filter;
+      source.mip_filter       = passes[i + 1]->pass_info.mip_filter;
+      source.address          = passes[i + 1]->pass_info.address;
 
       common.pass_outputs[i]  = source;
    }
@@ -1780,39 +1726,39 @@ void vulkan_filter_chain::build_viewport_pass(
    struct deferred_disposes *disposer = &deferred_calls[current_sync_index];
    const Texture original = {
       input_texture,
-      passes.front()->get_source_filter(),
-      passes.front()->get_mip_filter(),
-      passes.front()->get_address_mode(),
+      passes[0]->pass_info.source_filter,
+      passes[0]->pass_info.mip_filter,
+      passes[0]->pass_info.address,
    };
 
-   if (passes.size() == 1)
+   if (pass_count == 1)
    {
       source = {
          input_texture,
-         passes.back()->get_source_filter(),
-         passes.back()->get_mip_filter(),
-         passes.back()->get_address_mode(),
+         passes[pass_count - 1]->pass_info.source_filter,
+         passes[pass_count - 1]->pass_info.mip_filter,
+         passes[pass_count - 1]->pass_info.address,
       };
    }
    else
    {
-      const struct slang_framebuffer *fb = passes[passes.size() - 2]->get_framebuffer();
+      const struct slang_framebuffer *fb = passes[pass_count - 2]->framebuffer;
       source.texture.image   = fb->image;
       source.texture.view    = fb->view;
       source.texture.layout  = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
       source.texture.width   = fb->size.width;
       source.texture.height  = fb->size.height;
-      source.filter          = passes.back()->get_source_filter();
-      source.mip_filter      = passes.back()->get_mip_filter();
-      source.address         = passes.back()->get_address_mode();
+      source.filter          = passes[pass_count - 1]->pass_info.source_filter;
+      source.mip_filter      = passes[pass_count - 1]->pass_info.mip_filter;
+      source.address         = passes[pass_count - 1]->pass_info.address;
    }
 
-   passes.back()->build_commands(disposer, cmd,
+   slang_pass_build_commands(passes[pass_count - 1], disposer, cmd,
          original, source, vp, mvp);
 
    /* For feedback FBOs, swap current and previous. */
-   for (i = 0; i < passes.size(); i++)
-      passes[i]->end_frame();
+   for (i = 0; i < pass_count; i++)
+      slang_pass_end_frame(passes[i]);
 }
 
 bool vulkan_filter_chain::init_history()
@@ -1828,9 +1774,9 @@ bool vulkan_filter_chain::init_history()
    common.original_history.clear();
    history_ring_index = 0;
 
-   for (i = 0; i < passes.size(); i++)
+   for (i = 0; i < pass_count; i++)
    {
-      size_t _y = passes[i]->get_reflection().semantic_textures[
+      size_t _y = passes[i]->reflection.semantic_textures[
                SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size;
       required_images = MAX(required_images, _y);
    }
@@ -1880,12 +1826,14 @@ bool vulkan_filter_chain::init_feedback()
    common.fb_feedback.clear();
 
    /* Final pass cannot have feedback. */
-   for (i = 0; i < passes.size() - 1; i++)
+   for (i = 0; i < pass_count - 1; i++)
    {
+      size_t j;
       bool use_feedback = false;
-      for (auto &pass : passes)
+      for (j = 0; j < pass_count; j++)
       {
-         const slang_reflection &r = pass->get_reflection();
+         const struct slang_pass *pass = passes[j];
+         const slang_reflection &r = pass->reflection;
          const slang_texture_semantic_array &feedbacks =
             r.semantic_textures[SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK];
 
@@ -1899,7 +1847,7 @@ bool vulkan_filter_chain::init_feedback()
 
       if (use_feedback)
       {
-         if (!passes[i]->init_feedback())
+         if (!slang_pass_init_feedback(passes[i]))
             return false;
          RARCH_LOG("[Vulkan] Using framebuffer feedback for pass #%u.\n", i);
       }
@@ -1913,7 +1861,7 @@ bool vulkan_filter_chain::init_feedback()
       return true;
    }
 
-   common.fb_feedback.resize(passes.size() - 1);
+   common.fb_feedback.resize(pass_count - 1);
    require_clear = true;
    return true;
 }
@@ -1925,9 +1873,9 @@ bool vulkan_filter_chain::init_alias()
    slang_texture_semantic_name_map_free(&common.texture_semantic_map);
    slang_texture_semantic_name_map_free(&common.texture_semantic_uniform_map);
 
-   for (i = 0; i < (unsigned)passes.size(); i++)
+   for (i = 0; i < (unsigned)pass_count; i++)
    {
-      const char *name = passes[i]->get_name();
+      const char *name = slang_pass_get_name(passes[i]);
       if (!*name)
          continue;
 
@@ -2006,14 +1954,21 @@ void vulkan_filter_chain::set_num_passes(unsigned num_passes)
    unsigned i;
 
    pass_info.resize(num_passes);
-   passes.reserve(num_passes);
-
+   for (i = 0; i < pass_count; i++)
+      slang_pass_free(passes[i]);
+   free(passes);
+   pass_count = 0;
+   if (!(passes = (struct slang_pass**)
+            calloc(num_passes, sizeof(*passes))))
+      return;
    for (i = 0; i < num_passes; i++)
    {
-      passes.emplace_back(new Pass(device, memory_properties,
-               cache, num_deferred, i + 1 == num_passes));
-      passes.back()->set_common_resources(&common);
-      passes.back()->set_pass_number(i);
+      if (!(passes[i] = slang_pass_new(device, &memory_properties,
+               cache, num_deferred, i + 1 == num_passes)))
+         return;
+      passes[i]->common      = &common;
+      passes[i]->pass_number = i;
+      pass_count++;
    }
 }
 
@@ -2023,13 +1978,13 @@ void vulkan_filter_chain::set_shader(
       const uint32_t *spirv,
       size_t spirv_words)
 {
-   passes[pass]->set_shader(stage, spirv, spirv_words);
+   slang_pass_set_shader(passes[pass], stage, spirv, spirv_words);
 }
 
 void vulkan_filter_chain::add_parameter(unsigned pass,
       unsigned index, const char *id)
 {
-   passes[pass]->add_parameter(index, id);
+   slang_pass_add_parameter(passes[pass], index, id);
 }
 
 bool vulkan_filter_chain::init_ubo()
@@ -2047,8 +2002,8 @@ bool vulkan_filter_chain::init_ubo()
    if (common.ubo_alignment == 0)
       common.ubo_alignment = 1;
 
-   for (i = 0; i < passes.size(); i++)
-      passes[i]->allocate_buffers();
+   for (i = 0; i < pass_count; i++)
+      slang_pass_allocate_buffers(passes[i]);
 
    common.ubo_offset            =
       (common.ubo_offset + common.ubo_alignment - 1) &
@@ -2076,18 +2031,18 @@ bool vulkan_filter_chain::init()
       return false;
    alias_initialized = true;
 
-   for (i = 0; i < passes.size(); i++)
+   for (i = 0; i < pass_count; i++)
    {
 #ifdef VULKAN_DEBUG
-      const char *name = passes[i]->get_name();
+      const char *name = slang_pass_get_name(passes[i]);
       RARCH_LOG("[Vulkan] Building pass #%u (%s)\n", i,
             (name && *name)
             ? name 
             : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
 #endif
-      source = passes[i]->set_pass_info(max_input_size,
+      source = slang_pass_set_pass_info(passes[i], max_input_size,
             source, swapchain_info, pass_info[i]);
-      if (!passes[i]->build())
+      if (!slang_pass_build(passes[i]))
          return false;
    }
 
@@ -2098,27 +2053,27 @@ bool vulkan_filter_chain::init()
       return false;
    if (!init_feedback())
       return false;
-   common.pass_outputs.resize(passes.size());
+   common.pass_outputs.resize(pass_count);
    return true;
 }
 
 bool vulkan_filter_chain::init_single_pass(unsigned pass_idx)
 {
-   if (pass_idx >= passes.size())
+   if (pass_idx >= pass_count)
       return false;
 
    /* Only call set_pass_info on this pass, using the accumulated
     * source size. set_pass_info calls clear_vk() which destroys
     * Vulkan objects — we must NOT re-call it on prior passes. */
-   deferred_source = passes[pass_idx]->set_pass_info(max_input_size,
+   deferred_source = slang_pass_set_pass_info(passes[pass_idx], max_input_size,
          deferred_source, swapchain_info, pass_info[pass_idx]);
 
    RARCH_LOG("[Vulkan] Building pass #%u (%s)\n", pass_idx,
-         *passes[pass_idx]->get_name()
-         ? passes[pass_idx]->get_name()
+         *slang_pass_get_name(passes[pass_idx])
+         ? slang_pass_get_name(passes[pass_idx])
          : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
 
-   if (!passes[pass_idx]->build())
+   if (!slang_pass_build(passes[pass_idx]))
       return false;
 
    return true;
@@ -2128,7 +2083,7 @@ bool vulkan_filter_chain::compile_full_pass(unsigned pass_idx,
       glslang_filter_chain_filter default_filter)
 {
    video_shader *shader = common.shader_preset.get();
-   if (!shader || pass_idx >= passes.size())
+   if (!shader || pass_idx >= pass_count)
       return false;
 
    /* Extra opaque pass (last_pass_is_fbo) — SPIRV already set */
@@ -2226,7 +2181,7 @@ bool vulkan_filter_chain::compile_full_pass(unsigned pass_idx,
       set_pass_name(pass_idx, pass->alias);
 
    /* Update alias map incrementally */
-   if (*passes[pass_idx]->get_name())
+   if (*slang_pass_get_name(passes[pass_idx]))
    {
       alias_initialized = false;
       if (!init_alias_early())
@@ -2397,7 +2352,7 @@ bool vulkan_filter_chain::finalize()
       return false;
    if (!init_feedback())
       return false;
-   common.pass_outputs.resize(passes.size());
+   common.pass_outputs.resize(pass_count);
    return true;
 }
 
@@ -2406,9 +2361,9 @@ void vulkan_filter_chain::clear_history_and_feedback(VkCommandBuffer cmd)
    unsigned i;
    for (i = 0; i < num_history; i++)
       vulkan_framebuffer_clear(original_history[i]->image, cmd);
-   for (i = 0; i < passes.size(); i++)
+   for (i = 0; i < pass_count; i++)
    {
-      struct slang_framebuffer *fb = passes[i]->get_feedback_framebuffer();
+      struct slang_framebuffer *fb = passes[i]->fb_feedback;
       if (fb)
          vulkan_framebuffer_clear(fb->image, cmd);
    }
@@ -2424,14 +2379,14 @@ void vulkan_filter_chain::set_frame_count(uint64_t count)
 {
    common.frame_count = count;
    unsigned i;
-   for (i = 0; i < passes.size(); i++)
-      passes[i]->set_frame_count(count);
+   for (i = 0; i < pass_count; i++)
+      slang_pass_set_frame_count(passes[i], count);
 }
 
 void vulkan_filter_chain::set_frame_count_period(
       unsigned pass, unsigned period)
 {
-   passes[pass]->set_frame_count_period(period);
+   slang_pass_set_frame_count_period(passes[pass], period);
 }
 
 void vulkan_filter_chain::set_shader_subframes(uint32_t total_subframes)
@@ -2523,7 +2478,7 @@ void vulkan_filter_chain::set_hdr10(float hdr10)
 
 void vulkan_filter_chain::set_pass_name(unsigned pass, const char *name)
 {
-   passes[pass]->set_name(name);
+   slang_pass_set_name(passes[pass], name);
 }
 
 bool vulkan_filter_chain::add_static_texture(
@@ -2618,111 +2573,115 @@ static void slang_buffer_free(struct slang_buffer *buf)
    buf->memory = VK_NULL_HANDLE;
 }
 
-Pass::~Pass()
+static void slang_pass_free(struct slang_pass *pass)
 {
    size_t i;
-   clear_vk();
-   slang_framebuffer_delete(&framebuffer);
-   slang_framebuffer_delete(&fb_feedback);
-   slang_reflection_free(&reflection);
-   for (i = 0; i < num_parameters; i++)
-      free(parameters[i].id);
-   free(parameters);
-   free(filtered_parameters);
-   free(vertex_shader);
-   free(fragment_shader);
-   free(push.buffer);
-   free(sets);
-   free(pass_name);
+   slang_pass_clear_vk(pass);
+   slang_framebuffer_delete(&pass->framebuffer);
+   slang_framebuffer_delete(&pass->fb_feedback);
+   slang_reflection_free(&pass->reflection);
+   for (i = 0; i < pass->num_parameters; i++)
+      free(pass->parameters[i].id);
+   free(pass->parameters);
+   free(pass->filtered_parameters);
+   free(pass->vertex_shader);
+   free(pass->fragment_shader);
+   free(pass->push.buffer);
+   free(pass->sets);
+   free(pass->pass_name);
+   free(pass);
 }
 
-bool Pass::add_parameter(unsigned index, const char *id)
+static bool slang_pass_add_parameter(struct slang_pass *pass,
+      unsigned index, const char *id)
 {
-   struct Parameter *new_params = (struct Parameter*)
-      realloc(parameters, (num_parameters + 1) * sizeof(*new_params));
+   struct slang_pass_parameter *new_params = (struct slang_pass_parameter*)
+      realloc(pass->parameters, (pass->num_parameters + 1) * sizeof(*new_params));
    if (!new_params)
       return false;
-   parameters                                  = new_params;
-   if (!(parameters[num_parameters].id = strdup(id)))
+   pass->parameters                                  = new_params;
+   if (!(pass->parameters[pass->num_parameters].id = strdup(id)))
       return false;
-   parameters[num_parameters].index            = index;
-   parameters[num_parameters].semantic_index   = (unsigned)num_parameters;
-   num_parameters++;
+   pass->parameters[pass->num_parameters].index            = index;
+   pass->parameters[pass->num_parameters].semantic_index   = (unsigned)pass->num_parameters;
+   pass->num_parameters++;
    return true;
 }
 
-void Pass::set_shader(VkShaderStageFlags stage,
+static void slang_pass_set_shader(struct slang_pass *pass,
+      VkShaderStageFlags stage,
       const uint32_t *spirv,
       size_t spirv_words)
 {
    switch (stage)
    {
       case VK_SHADER_STAGE_VERTEX_BIT:
-         free(vertex_shader);
-         num_vertex_shader = 0;
-         if (!(vertex_shader = (uint32_t*)
+         free(pass->vertex_shader);
+         pass->num_vertex_shader = 0;
+         if (!(pass->vertex_shader = (uint32_t*)
                   malloc(spirv_words * sizeof(uint32_t))))
             break;
-         memcpy(vertex_shader, spirv, spirv_words * sizeof(uint32_t));
-         num_vertex_shader = spirv_words;
+         memcpy(pass->vertex_shader, spirv, spirv_words * sizeof(uint32_t));
+         pass->num_vertex_shader = spirv_words;
          break;
       case VK_SHADER_STAGE_FRAGMENT_BIT:
-         free(fragment_shader);
-         num_fragment_shader = 0;
-         if (!(fragment_shader = (uint32_t*)
+         free(pass->fragment_shader);
+         pass->num_fragment_shader = 0;
+         if (!(pass->fragment_shader = (uint32_t*)
                   malloc(spirv_words * sizeof(uint32_t))))
             break;
-         memcpy(fragment_shader, spirv, spirv_words * sizeof(uint32_t));
-         num_fragment_shader = spirv_words;
+         memcpy(pass->fragment_shader, spirv, spirv_words * sizeof(uint32_t));
+         pass->num_fragment_shader = spirv_words;
          break;
       default:
          break;
    }
 }
 
-Size2D Pass::get_output_size(const Size2D &original,
-      const Size2D &source) const
+static Size2D slang_pass_get_output_size(struct slang_pass *pass,
+      const Size2D &original,
+      const Size2D &source)
 {
    float width  = 0.0f;
    float height = 0.0f;
-   switch (pass_info.scale_type_x)
+   switch (pass->pass_info.scale_type_x)
    {
       case GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL:
-         width = float(original.width) * pass_info.scale_x;
+         width = float(original.width) * pass->pass_info.scale_x;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_SOURCE:
-         width = float(source.width) * pass_info.scale_x;
+         width = float(source.width) * pass->pass_info.scale_x;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT:
-         width = (retroarch_get_rotation() % 2 ? curr_vp.height : curr_vp.width) * pass_info.scale_x;
+         width = (retroarch_get_rotation() % 2 ? pass->curr_vp.height : pass->curr_vp.width) * pass->pass_info.scale_x;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE:
-         width = pass_info.scale_x;
+         width = pass->pass_info.scale_x;
          break;
 
       default:
          break;
    }
 
-   switch (pass_info.scale_type_y)
+   switch (pass->pass_info.scale_type_y)
    {
       case GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL:
-         height = float(original.height) * pass_info.scale_y;
+         height = float(original.height) * pass->pass_info.scale_y;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_SOURCE:
-         height = float(source.height) * pass_info.scale_y;
+         height = float(source.height) * pass->pass_info.scale_y;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT:
-         height = (retroarch_get_rotation() % 2 ? curr_vp.width : curr_vp.height) * pass_info.scale_y;
+         height = (retroarch_get_rotation() % 2 ? pass->curr_vp.width : pass->curr_vp.height) * pass->pass_info.scale_y;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE:
-         height = pass_info.scale_y;
+         height = pass->pass_info.scale_y;
          break;
 
       default:
@@ -2732,44 +2691,45 @@ Size2D Pass::get_output_size(const Size2D &original,
    return { unsigned(roundf(width)), unsigned(roundf(height)) };
 }
 
-Size2D Pass::set_pass_info(
+static Size2D slang_pass_set_pass_info(struct slang_pass *pass,
+      
       const Size2D &max_original,
       const Size2D &max_source,
       const vulkan_filter_chain_swapchain_info &swapchain,
       const vulkan_filter_chain_pass_info &info)
 {
-   clear_vk();
+   slang_pass_clear_vk(pass);
 
-   curr_vp                  = swapchain.vp;
-   pass_info                = info;
+   pass->curr_vp                  = swapchain.vp;
+   pass->pass_info                = info;
 
-   num_sync_indices         = swapchain.num_indices;
-   sync_index               = 0;
+   pass->num_sync_indices         = swapchain.num_indices;
+   pass->sync_index               = 0;
 
-   current_framebuffer_size = get_output_size(max_original, max_source);
-   swapchain_render_pass    = swapchain.render_pass;
+   pass->current_framebuffer_size = slang_pass_get_output_size(pass, max_original, max_source);
+   pass->swapchain_render_pass    = swapchain.render_pass;
 
-   return current_framebuffer_size;
+   return pass->current_framebuffer_size;
 }
 
-void Pass::clear_vk()
+static void slang_pass_clear_vk(struct slang_pass *pass)
 {
-   if (pool != VK_NULL_HANDLE)
-      vkDestroyDescriptorPool(device, pool, nullptr);
-   if (pipeline != VK_NULL_HANDLE)
-      vkDestroyPipeline(device, pipeline, nullptr);
-   if (set_layout != VK_NULL_HANDLE)
-      vkDestroyDescriptorSetLayout(device, set_layout, nullptr);
-   if (pipeline_layout != VK_NULL_HANDLE)
-      vkDestroyPipelineLayout(device, pipeline_layout, nullptr);
+   if (pass->pool != VK_NULL_HANDLE)
+      vkDestroyDescriptorPool(pass->device, pass->pool, nullptr);
+   if (pass->pipeline != VK_NULL_HANDLE)
+      vkDestroyPipeline(pass->device, pass->pipeline, nullptr);
+   if (pass->set_layout != VK_NULL_HANDLE)
+      vkDestroyDescriptorSetLayout(pass->device, pass->set_layout, nullptr);
+   if (pass->pipeline_layout != VK_NULL_HANDLE)
+      vkDestroyPipelineLayout(pass->device, pass->pipeline_layout, nullptr);
 
-   pool            = VK_NULL_HANDLE;
-   pipeline        = VK_NULL_HANDLE;
-   set_layout      = VK_NULL_HANDLE;
-   pipeline_layout = VK_NULL_HANDLE;
+   pass->pool            = VK_NULL_HANDLE;
+   pass->pipeline        = VK_NULL_HANDLE;
+   pass->set_layout      = VK_NULL_HANDLE;
+   pass->pipeline_layout = VK_NULL_HANDLE;
 }
 
-bool Pass::init_pipeline_layout()
+static bool slang_pass_init_pipeline_layout(struct slang_pass *pass)
 {
    unsigned i;
    VkPushConstantRange push_range;
@@ -2784,14 +2744,14 @@ bool Pass::init_pipeline_layout()
    /* Main UBO. */
    VkShaderStageFlags ubo_mask = 0;
 
-   if (reflection.ubo_stage_mask & SLANG_STAGE_VERTEX_MASK)
+   if (pass->reflection.ubo_stage_mask & SLANG_STAGE_VERTEX_MASK)
       ubo_mask |= VK_SHADER_STAGE_VERTEX_BIT;
-   if (reflection.ubo_stage_mask & SLANG_STAGE_FRAGMENT_MASK)
+   if (pass->reflection.ubo_stage_mask & SLANG_STAGE_FRAGMENT_MASK)
       ubo_mask |= VK_SHADER_STAGE_FRAGMENT_BIT;
 
    /* Upper bound, then fill: the UBO slot plus every semantic-texture
     * entry that is actually referenced. */
-   for (auto &semantic : reflection.semantic_textures)
+   for (auto &semantic : pass->reflection.semantic_textures)
       max_bindings += semantic.size;
    if (!(bindings = (VkDescriptorSetLayoutBinding*)
             calloc(max_bindings, sizeof(*bindings))))
@@ -2805,18 +2765,18 @@ bool Pass::init_pipeline_layout()
 
    if (ubo_mask != 0)
    {
-      bindings[num_bindings].binding            = reflection.ubo_binding;
+      bindings[num_bindings].binding            = pass->reflection.ubo_binding;
       bindings[num_bindings].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
       bindings[num_bindings].descriptorCount    = 1;
       bindings[num_bindings].stageFlags         = ubo_mask;
       bindings[num_bindings].pImmutableSamplers = nullptr;
       desc_counts[num_bindings].type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-      desc_counts[num_bindings].descriptorCount = num_sync_indices;
+      desc_counts[num_bindings].descriptorCount = pass->num_sync_indices;
       num_bindings++;
    }
 
    /* Semantic textures. */
-   for (auto &semantic : reflection.semantic_textures)
+   for (auto &semantic : pass->reflection.semantic_textures)
    {
       for (size_t ti = 0; ti < semantic.size; ti++)
       {
@@ -2837,7 +2797,7 @@ bool Pass::init_pipeline_layout()
          bindings[num_bindings].stageFlags         = stages;
          bindings[num_bindings].pImmutableSamplers = nullptr;
          desc_counts[num_bindings].type            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-         desc_counts[num_bindings].descriptorCount = num_sync_indices;
+         desc_counts[num_bindings].descriptorCount = pass->num_sync_indices;
          num_bindings++;
       }
    }
@@ -2848,8 +2808,8 @@ bool Pass::init_pipeline_layout()
    set_layout_info.bindingCount           = (uint32_t)num_bindings;
    set_layout_info.pBindings              = bindings;
 
-   if (vkCreateDescriptorSetLayout(device,
-            &set_layout_info, NULL, &set_layout) != VK_SUCCESS)
+   if (vkCreateDescriptorSetLayout(pass->device,
+            &set_layout_info, NULL, &pass->set_layout) != VK_SUCCESS)
    {
       free(bindings);
       free(desc_counts);
@@ -2860,7 +2820,7 @@ bool Pass::init_pipeline_layout()
    layout_info.pNext                      = NULL;
    layout_info.flags                      = 0;
    layout_info.setLayoutCount             = 1;
-   layout_info.pSetLayouts                = &set_layout;
+   layout_info.pSetLayouts                = &pass->set_layout;
    layout_info.pushConstantRangeCount     = 0;
    layout_info.pPushConstantRanges        = NULL;
 
@@ -2869,46 +2829,46 @@ bool Pass::init_pipeline_layout()
    push_range.size                        = 0;
 
    /* Push constants */
-   if (reflection.push_constant_stage_mask && reflection.push_constant_size)
+   if (pass->reflection.push_constant_stage_mask && pass->reflection.push_constant_size)
    {
-      if (reflection.push_constant_stage_mask & SLANG_STAGE_VERTEX_MASK)
+      if (pass->reflection.push_constant_stage_mask & SLANG_STAGE_VERTEX_MASK)
          push_range.stageFlags |= VK_SHADER_STAGE_VERTEX_BIT;
-      if (reflection.push_constant_stage_mask & SLANG_STAGE_FRAGMENT_MASK)
+      if (pass->reflection.push_constant_stage_mask & SLANG_STAGE_FRAGMENT_MASK)
          push_range.stageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
 
 #ifdef VULKAN_DEBUG
-      RARCH_LOG("[Vulkan] Push Constant Block: %u bytes.\n", (unsigned int)reflection.push_constant_size);
+      RARCH_LOG("[Vulkan] Push Constant Block: %u bytes.\n", (unsigned int)pass->reflection.push_constant_size);
 #endif
 
       layout_info.pushConstantRangeCount = 1;
       layout_info.pPushConstantRanges    = &push_range;
    {
-      size_t new_size = (reflection.push_constant_size
+      size_t new_size = (pass->reflection.push_constant_size
             + sizeof(uint32_t) - 1) / sizeof(uint32_t);
-      free(push.buffer);
-      push.buffer_size = 0;
-      if (!(push.buffer = (uint32_t*)calloc(new_size, sizeof(uint32_t))))
+      free(pass->push.buffer);
+      pass->push.buffer_size = 0;
+      if (!(pass->push.buffer = (uint32_t*)calloc(new_size, sizeof(uint32_t))))
          return false;
-      push.buffer_size = new_size;
+      pass->push.buffer_size = new_size;
    }
    }
 
-   push.stages     = push_range.stageFlags;
-   push_range.size = (uint32_t)reflection.push_constant_size;
+   pass->push.stages     = push_range.stageFlags;
+   push_range.size = (uint32_t)pass->reflection.push_constant_size;
 
-   if (vkCreatePipelineLayout(device,
-            &layout_info, NULL, &pipeline_layout) != VK_SUCCESS)
+   if (vkCreatePipelineLayout(pass->device,
+            &layout_info, NULL, &pass->pipeline_layout) != VK_SUCCESS)
       return false;
 
    pool_info.sType                      = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
    pool_info.pNext                      = NULL;
    pool_info.flags                      = 0;
-   pool_info.maxSets                    = num_sync_indices;
+   pool_info.maxSets                    = pass->num_sync_indices;
    pool_info.poolSizeCount              = (uint32_t)num_bindings;
    pool_info.pPoolSizes                 = desc_counts;
    {
-      VkResult res = vkCreateDescriptorPool(device, &pool_info, nullptr,
-            &pool);
+      VkResult res = vkCreateDescriptorPool(pass->device, &pool_info, nullptr,
+            &pass->pool);
       free(bindings);
       free(desc_counts);
       if (res != VK_SUCCESS)
@@ -2917,25 +2877,25 @@ bool Pass::init_pipeline_layout()
 
    alloc_info.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
    alloc_info.pNext              = NULL;
-   alloc_info.descriptorPool     = pool;
+   alloc_info.descriptorPool     = pass->pool;
    alloc_info.descriptorSetCount = 1;
-   alloc_info.pSetLayouts        = &set_layout;
+   alloc_info.pSetLayouts        = &pass->set_layout;
 
-   free(sets);
-   if (!(sets = (VkDescriptorSet*)
-            calloc(num_sync_indices, sizeof(*sets))))
+   free(pass->sets);
+   if (!(pass->sets = (VkDescriptorSet*)
+            calloc(pass->num_sync_indices, sizeof(*pass->sets))))
       return false;
 
-   for (i = 0; i < num_sync_indices; i++)
+   for (i = 0; i < pass->num_sync_indices; i++)
    {
-      if (vkAllocateDescriptorSets(device, &alloc_info, &sets[i]) != VK_SUCCESS)
+      if (vkAllocateDescriptorSets(pass->device, &alloc_info, &pass->sets[i]) != VK_SUCCESS)
          return false;
    }
 
    return true;
 }
 
-bool Pass::init_pipeline()
+static bool slang_pass_init_pipeline(struct slang_pass *pass)
 {
    VkGraphicsPipelineCreateInfo pipe;
    VkVertexInputBindingDescription binding;
@@ -2959,7 +2919,7 @@ bool Pass::init_pipeline()
       { VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO },
    };
 
-   if (!init_pipeline_layout())
+   if (!slang_pass_init_pipeline_layout(pass))
       return false;
 
    /* Input assembly */
@@ -3052,22 +3012,22 @@ bool Pass::init_pipeline()
    module_info.sType         = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
    module_info.pNext         = NULL;
    module_info.flags         = 0;
-   module_info.codeSize      = num_vertex_shader * sizeof(uint32_t);
-   module_info.pCode         = vertex_shader;
+   module_info.codeSize      = pass->num_vertex_shader * sizeof(uint32_t);
+   module_info.pCode         = pass->vertex_shader;
    shader_stages[0].stage    = VK_SHADER_STAGE_VERTEX_BIT;
    shader_stages[0].pName    = "main";
-   if (vkCreateShaderModule(device, &module_info, NULL,
+   if (vkCreateShaderModule(pass->device, &module_info, NULL,
             &shader_stages[0].module) != VK_SUCCESS)
       return false;
 
-   module_info.codeSize      = num_fragment_shader * sizeof(uint32_t);
-   module_info.pCode         = fragment_shader;
+   module_info.codeSize      = pass->num_fragment_shader * sizeof(uint32_t);
+   module_info.pCode         = pass->fragment_shader;
    shader_stages[1].stage    = VK_SHADER_STAGE_FRAGMENT_BIT;
    shader_stages[1].pName    = "main";
-   if (vkCreateShaderModule(device, &module_info, NULL,
+   if (vkCreateShaderModule(pass->device, &module_info, NULL,
             &shader_stages[1].module) != VK_SUCCESS)
    {
-      vkDestroyShaderModule(device, shader_stages[0].module, NULL);
+      vkDestroyShaderModule(pass->device, shader_stages[0].module, NULL);
       return false;
    }
 
@@ -3085,24 +3045,24 @@ bool Pass::init_pipeline()
    pipe.pDepthStencilState   = &depth_stencil;
    pipe.pColorBlendState     = &blend;
    pipe.pDynamicState        = &dynamic;
-   pipe.layout               = pipeline_layout;
-   pipe.renderPass           = final_pass
-	   ? swapchain_render_pass
-	   : framebuffer->render_pass;
+   pipe.layout               = pass->pipeline_layout;
+   pipe.renderPass           = pass->final_pass
+	   ? pass->swapchain_render_pass
+	   : pass->framebuffer->render_pass;
    pipe.subpass              = 0;
    pipe.basePipelineHandle   = VK_NULL_HANDLE;
    pipe.basePipelineIndex    = 0;
 
-   if (vkCreateGraphicsPipelines(device,
-            cache, 1, &pipe, NULL, &pipeline) != VK_SUCCESS)
+   if (vkCreateGraphicsPipelines(pass->device,
+            pass->cache, 1, &pipe, NULL, &pass->pipeline) != VK_SUCCESS)
    {
-      vkDestroyShaderModule(device, shader_stages[0].module, NULL);
-      vkDestroyShaderModule(device, shader_stages[1].module, NULL);
+      vkDestroyShaderModule(pass->device, shader_stages[0].module, NULL);
+      vkDestroyShaderModule(pass->device, shader_stages[1].module, NULL);
       return false;
    }
 
-   vkDestroyShaderModule(device, shader_stages[0].module, NULL);
-   vkDestroyShaderModule(device, shader_stages[1].module, NULL);
+   vkDestroyShaderModule(pass->device, shader_stages[0].module, NULL);
+   vkDestroyShaderModule(pass->device, shader_stages[1].module, NULL);
    return true;
 }
 
@@ -3253,64 +3213,64 @@ CommonResources::~CommonResources()
    free(luts);
 }
 
-void Pass::allocate_buffers()
+static void slang_pass_allocate_buffers(struct slang_pass *pass)
 {
-   if (reflection.ubo_stage_mask)
+   if (pass->reflection.ubo_stage_mask)
    {
       /* Align */
-      common->ubo_offset = (common->ubo_offset + common->ubo_alignment - 1) &
-         ~(common->ubo_alignment - 1);
-      ubo_offset = common->ubo_offset;
+      pass->common->ubo_offset = (pass->common->ubo_offset + pass->common->ubo_alignment - 1) &
+         ~(pass->common->ubo_alignment - 1);
+      pass->ubo_offset = pass->common->ubo_offset;
 
       /* Allocate */
-      common->ubo_offset += reflection.ubo_size;
+      pass->common->ubo_offset += pass->reflection.ubo_size;
    }
 }
 
-void Pass::end_frame()
+static void slang_pass_end_frame(struct slang_pass *pass)
 {
-   if (fb_feedback)
+   if (pass->fb_feedback)
    {
-      struct slang_framebuffer *tmp = framebuffer;
-      framebuffer                   = fb_feedback;
-      fb_feedback                   = tmp;
+      struct slang_framebuffer *tmp = pass->framebuffer;
+      pass->framebuffer                   = pass->fb_feedback;
+      pass->fb_feedback                   = tmp;
    }
 }
 
-bool Pass::init_feedback()
+static bool slang_pass_init_feedback(struct slang_pass *pass)
 {
-   if (final_pass)
+   if (pass->final_pass)
       return false;
 
-   fb_feedback = slang_framebuffer_new(device, &memory_properties,
-         &current_framebuffer_size,
-         pass_info.rt_format, pass_info.max_levels,
-         common ? &common->framebuffer_pool : nullptr);
-   return fb_feedback != nullptr;
+   pass->fb_feedback = slang_framebuffer_new(pass->device, pass->memory_properties,
+         &pass->current_framebuffer_size,
+         pass->pass_info.rt_format, pass->pass_info.max_levels,
+         pass->common ? &pass->common->framebuffer_pool : nullptr);
+   return pass->fb_feedback != nullptr;
 }
 
-bool Pass::build()
+static bool slang_pass_build(struct slang_pass *pass)
 {
    unsigned i;
    unsigned j = 0;
    slang_semantic_name_map semantic_map = {};
 
-   slang_framebuffer_delete(&framebuffer);
-   slang_framebuffer_delete(&fb_feedback);
+   slang_framebuffer_delete(&pass->framebuffer);
+   slang_framebuffer_delete(&pass->fb_feedback);
 
-   if (!final_pass)
+   if (!pass->final_pass)
    {
-      if (!(framebuffer = slang_framebuffer_new(device, &memory_properties,
-               &current_framebuffer_size,
-               pass_info.rt_format, pass_info.max_levels,
-               common ? &common->framebuffer_pool : nullptr)))
+      if (!(pass->framebuffer = slang_framebuffer_new(pass->device, pass->memory_properties,
+               &pass->current_framebuffer_size,
+               pass->pass_info.rt_format, pass->pass_info.max_levels,
+               pass->common ? &pass->common->framebuffer_pool : nullptr)))
          return false;
    }
 
-   for (i = 0; i < num_parameters; i++)
+   for (i = 0; i < pass->num_parameters; i++)
    {
       if (!slang_semantic_name_map_set_unique(
-               &semantic_map, parameters[i].id, NULL,
+               &semantic_map, pass->parameters[i].id, NULL,
                SLANG_SEMANTIC_FLOAT_PARAMETER, j))
       {
          slang_semantic_name_map_free(&semantic_map);
@@ -3319,94 +3279,97 @@ bool Pass::build()
       j++;
    }
 
-   slang_reflection_free(&reflection);
-   if (!slang_reflection_init(&reflection))
+   slang_reflection_free(&pass->reflection);
+   if (!slang_reflection_init(&pass->reflection))
    {
       slang_semantic_name_map_free(&semantic_map);
       return false;
    }
-   reflection.pass_number                  = pass_number;
-   reflection.texture_semantic_map         = &common->texture_semantic_map;
-   reflection.texture_semantic_uniform_map = &common->texture_semantic_uniform_map;
-   reflection.semantic_map                 = &semantic_map;
+   pass->reflection.pass_number                  = pass->pass_number;
+   pass->reflection.texture_semantic_map         = &pass->common->texture_semantic_map;
+   pass->reflection.texture_semantic_uniform_map = &pass->common->texture_semantic_uniform_map;
+   pass->reflection.semantic_map                 = &semantic_map;
 
    {
       bool refl_ok = slang_reflect_spirv(
-            vertex_shader, num_vertex_shader,
-            fragment_shader, num_fragment_shader,
-            &reflection);
-      /* The parameter map is only needed during reflection; the
-       * reflection keeps a dangling pointer otherwise. */
+            pass->vertex_shader, pass->num_vertex_shader,
+            pass->fragment_shader, pass->num_fragment_shader,
+            &pass->reflection);
+      /* The parameter map is only needed during pass->reflection; the
+       * pass->reflection keeps a dangling pointer otherwise. */
       slang_semantic_name_map_free(&semantic_map);
-      reflection.semantic_map = NULL;
+      pass->reflection.semantic_map = NULL;
       if (!refl_ok)
          return false;
    }
 
    {
-      auto &g = reflection.semantics[SLANG_SEMANTIC_GYROSCOPE];
-      auto &a = reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER];
-      auto &r = reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER_REST];
+      auto &g = pass->reflection.semantics[SLANG_SEMANTIC_GYROSCOPE];
+      auto &a = pass->reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER];
+      auto &r = pass->reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER_REST];
       if (g.uniform || g.push_constant ||
           a.uniform || a.push_constant ||
           r.uniform || r.push_constant)
          input_state_get_ptr()->shader_uses_sensors = true;
    }
 
-   /* Filter out parameters which we will never use anyways. */
-   num_filtered = 0;
-   free(filtered_parameters);
-   filtered_parameters = NULL;
-   if (num_parameters &&
-         !(filtered_parameters = (size_t*)
-            malloc(num_parameters * sizeof(*filtered_parameters))))
+   /* Filter out pass->parameters which we will never use anyways. */
+   pass->num_filtered = 0;
+   free(pass->filtered_parameters);
+   pass->filtered_parameters = NULL;
+   if (pass->num_parameters &&
+         !(pass->filtered_parameters = (size_t*)
+            malloc(pass->num_parameters * sizeof(*pass->filtered_parameters))))
       return false;
 
-   for (i = 0; i < reflection.num_float_parameters; i++)
+   for (i = 0; i < pass->reflection.num_float_parameters; i++)
    {
-      if (reflection.semantic_float_parameters[i].uniform ||
-          reflection.semantic_float_parameters[i].push_constant)
-         filtered_parameters[num_filtered++] = i;
+      if (pass->reflection.semantic_float_parameters[i].uniform ||
+          pass->reflection.semantic_float_parameters[i].push_constant)
+         pass->filtered_parameters[pass->num_filtered++] = i;
    }
 
-   return init_pipeline();
+   return slang_pass_init_pipeline(pass);
 }
 
-void Pass::set_semantic_texture(VkDescriptorSet set,
+static void slang_pass_set_semantic_texture(struct slang_pass *pass,
+      VkDescriptorSet set,
       slang_texture_semantic semantic, const Texture &texture,
       VkDescriptorImageInfo *image_infos, VkWriteDescriptorSet *writes,
       unsigned &write_count)
 {
-   if (reflection.semantic_textures[semantic].data[0].texture
+   if (pass->reflection.semantic_textures[semantic].data[0].texture
          && texture.texture.view != VK_NULL_HANDLE)
    {
       if (write_count >= VULKAN_MAX_DESCRIPTOR_WRITES)
-         vulkan_flush_descriptor_writes(device, writes, &write_count);
-      VULKAN_PASS_SET_TEXTURE_BATCHED(set, common->samplers[texture.filter][texture.mip_filter][texture.address], reflection.semantic_textures[semantic].data[0].binding, texture.texture.view, texture.texture.layout, image_infos, writes, write_count);
+         vulkan_flush_descriptor_writes(pass->device, writes, &write_count);
+      VULKAN_PASS_SET_TEXTURE_BATCHED(set, pass->common->samplers[texture.filter][texture.mip_filter][texture.address], pass->reflection.semantic_textures[semantic].data[0].binding, texture.texture.view, texture.texture.layout, image_infos, writes, write_count);
    }
 }
 
-void Pass::set_semantic_texture_array(VkDescriptorSet set,
+static void slang_pass_set_semantic_texture_array(struct slang_pass *pass,
+      VkDescriptorSet set,
       slang_texture_semantic semantic, unsigned index,
       const Texture &texture,
       VkDescriptorImageInfo *image_infos, VkWriteDescriptorSet *writes,
       unsigned &write_count)
 {
-   if (index < reflection.semantic_textures[semantic].size &&
-         reflection.semantic_textures[semantic].data[index].texture &&
+   if (index < pass->reflection.semantic_textures[semantic].size &&
+         pass->reflection.semantic_textures[semantic].data[index].texture &&
          texture.texture.view != VK_NULL_HANDLE)
    {
       if (write_count >= VULKAN_MAX_DESCRIPTOR_WRITES)
-         vulkan_flush_descriptor_writes(device, writes, &write_count);
-      VULKAN_PASS_SET_TEXTURE_BATCHED(set, common->samplers[texture.filter][texture.mip_filter][texture.address],  reflection.semantic_textures[semantic].data[index].binding, texture.texture.view, texture.texture.layout, image_infos, writes, write_count);
+         vulkan_flush_descriptor_writes(pass->device, writes, &write_count);
+      VULKAN_PASS_SET_TEXTURE_BATCHED(set, pass->common->samplers[texture.filter][texture.mip_filter][texture.address],  pass->reflection.semantic_textures[semantic].data[index].binding, texture.texture.view, texture.texture.layout, image_infos, writes, write_count);
    }
 }
 
-void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semantic semantic,
+static void slang_pass_build_semantic_texture_array_vec4(struct slang_pass *pass,
+      uint8_t *data, slang_texture_semantic semantic,
       unsigned index, unsigned width, unsigned height)
 {
    const slang_texture_semantic_array &arr =
-      reflection.semantic_textures[semantic];
+      pass->reflection.semantic_textures[semantic];
    const slang_texture_semantic_meta *refl;
 
    if (index >= arr.size)
@@ -3424,7 +3387,7 @@ void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semant
 
    if (refl->push_constant)
    {
-      float *_data = reinterpret_cast<float *>(push.buffer + (refl->push_constant_offset >> 2));
+      float *_data = reinterpret_cast<float *>(pass->push.buffer + (refl->push_constant_offset >> 2));
       _data[0]     = (float)(width);
       _data[1]     = (float)(height);
       _data[2]     = 1.0f / (float)(width);
@@ -3432,16 +3395,18 @@ void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semant
    }
 }
 
-void Pass::build_semantic_texture_vec4(uint8_t *data, slang_texture_semantic semantic,
+static void slang_pass_build_semantic_texture_vec4(struct slang_pass *pass,
+      uint8_t *data, slang_texture_semantic semantic,
       unsigned width, unsigned height)
 {
-   build_semantic_texture_array_vec4(data, semantic, 0, width, height);
+   slang_pass_build_semantic_texture_array_vec4(pass, data, semantic, 0, width, height);
 }
 
-void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
+static void slang_pass_build_semantic_vec4(struct slang_pass *pass,
+      uint8_t *data, slang_semantic semantic,
       unsigned width, unsigned height)
 {
-   auto &refl = reflection.semantics[semantic];
+   auto &refl = pass->reflection.semantics[semantic];
 
    if (data && refl.uniform)
    {
@@ -3455,7 +3420,7 @@ void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
    if (refl.push_constant)
    {
       float *_data = reinterpret_cast<float *>
-            (push.buffer + (refl.push_constant_offset >> 2));
+            (pass->push.buffer + (refl.push_constant_offset >> 2));
       _data[0]     = (float)(width);
       _data[1]     = (float)(height);
       _data[2]     = 1.0f / (float)(width);
@@ -3463,90 +3428,98 @@ void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
    }
 }
 
-void Pass::build_semantic_parameter(uint8_t *data, unsigned index, float value)
+static void slang_pass_build_semantic_parameter(struct slang_pass *pass,
+      uint8_t *data, unsigned index, float value)
 {
-   auto &refl = reflection.semantic_float_parameters[index];
+   auto &refl = pass->reflection.semantic_float_parameters[index];
 
-   /* We will have filtered out stale parameters. */
+   /* We will have filtered out stale pass->parameters. */
    if (data && refl.uniform)
       *reinterpret_cast<float*>(data + refl.ubo_offset) = value;
 
    if (refl.push_constant)
-      *reinterpret_cast<float*>(push.buffer + (refl.push_constant_offset >> 2)) = value;
+      *reinterpret_cast<float*>(pass->push.buffer + (refl.push_constant_offset >> 2)) = value;
 }
 
-void Pass::build_semantic_uint(uint8_t *data, slang_semantic semantic,
+static void slang_pass_build_semantic_uint(struct slang_pass *pass,
+      uint8_t *data, slang_semantic semantic,
       uint32_t value)
 {
-   auto &refl = reflection.semantics[semantic];
+   auto &refl = pass->reflection.semantics[semantic];
 
    if (data && refl.uniform)
-      *reinterpret_cast<uint32_t*>(data + reflection.semantics[semantic].ubo_offset) = value;
+      *reinterpret_cast<uint32_t*>(data + pass->reflection.semantics[semantic].ubo_offset) = value;
 
    if (refl.push_constant)
-      *reinterpret_cast<uint32_t*>(push.buffer + (refl.push_constant_offset >> 2)) = value;
+      *reinterpret_cast<uint32_t*>(pass->push.buffer + (refl.push_constant_offset >> 2)) = value;
 }
 
-void Pass::build_semantic_int(uint8_t *data, slang_semantic semantic,
+static void slang_pass_build_semantic_int(struct slang_pass *pass,
+      uint8_t *data, slang_semantic semantic,
                               int32_t value)
 {
-   auto &refl = reflection.semantics[semantic];
+   auto &refl = pass->reflection.semantics[semantic];
 
    if (data && refl.uniform)
-      *reinterpret_cast<int32_t*>(data + reflection.semantics[semantic].ubo_offset) = value;
+      *reinterpret_cast<int32_t*>(data + pass->reflection.semantics[semantic].ubo_offset) = value;
 
    if (refl.push_constant)
-      *reinterpret_cast<int32_t*>(push.buffer + (refl.push_constant_offset >> 2)) = value;
+      *reinterpret_cast<int32_t*>(pass->push.buffer + (refl.push_constant_offset >> 2)) = value;
 }
 
-void Pass::build_semantic_float(uint8_t *data, slang_semantic semantic,
+static void slang_pass_build_semantic_float(struct slang_pass *pass,
+      uint8_t *data, slang_semantic semantic,
                               float value)
 {
-   auto &refl = reflection.semantics[semantic];
+   auto &refl = pass->reflection.semantics[semantic];
 
    if (data && refl.uniform)
-      *reinterpret_cast<float*>(data + reflection.semantics[semantic].ubo_offset) = value;
+      *reinterpret_cast<float*>(data + pass->reflection.semantics[semantic].ubo_offset) = value;
 
    if (refl.push_constant)
-      *reinterpret_cast<float*>(push.buffer + (refl.push_constant_offset >> 2)) = value;
+      *reinterpret_cast<float*>(pass->push.buffer + (refl.push_constant_offset >> 2)) = value;
 }
 
-void Pass::build_semantic_vec3(uint8_t *data, slang_semantic semantic,
+static void slang_pass_build_semantic_vec3(struct slang_pass *pass,
+      uint8_t *data, slang_semantic semantic,
                               const float *values)
 {
-   auto &refl = reflection.semantics[semantic];
+   auto &refl = pass->reflection.semantics[semantic];
 
    if (data && refl.uniform)
       memcpy(data + refl.ubo_offset, values, 3 * sizeof(float));
 
    if (refl.push_constant)
-      memcpy(push.buffer + (refl.push_constant_offset >> 2), values, 3 * sizeof(float));
+      memcpy(pass->push.buffer + (refl.push_constant_offset >> 2), values, 3 * sizeof(float));
 }
 
 
-void Pass::build_semantic_texture(VkDescriptorSet set, uint8_t *buffer,
+static void slang_pass_build_semantic_texture(struct slang_pass *pass,
+      VkDescriptorSet set, uint8_t *buffer,
       slang_texture_semantic semantic, const Texture &texture,
       VkDescriptorImageInfo *image_infos, VkWriteDescriptorSet *writes,
       unsigned &write_count)
 {
-   build_semantic_texture_vec4(buffer, semantic,
+   slang_pass_build_semantic_texture_vec4(pass, buffer, semantic,
          texture.texture.width, texture.texture.height);
-   set_semantic_texture(set, semantic, texture,
+   slang_pass_set_semantic_texture(pass, set, semantic, texture,
          image_infos, writes, write_count);
 }
 
-void Pass::build_semantic_texture_array(VkDescriptorSet set, uint8_t *buffer,
+static void slang_pass_build_semantic_texture_array(struct slang_pass *pass,
+      VkDescriptorSet set, uint8_t *buffer,
       slang_texture_semantic semantic, unsigned index, const Texture &texture,
       VkDescriptorImageInfo *image_infos, VkWriteDescriptorSet *writes,
       unsigned &write_count)
 {
-   build_semantic_texture_array_vec4(buffer, semantic, index,
+   slang_pass_build_semantic_texture_array_vec4(pass, buffer, semantic, index,
          texture.texture.width, texture.texture.height);
-   set_semantic_texture_array(set, semantic, index, texture,
+   slang_pass_set_semantic_texture_array(pass, set, semantic, index, texture,
          image_infos, writes, write_count);
 }
 
-void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
+static void slang_pass_build_semantics(struct slang_pass *pass,
+      VkDescriptorSet set, uint8_t *buffer,
       const float *mvp, const Texture &original, const Texture &source)
 {
    unsigned i;
@@ -3556,147 +3529,148 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
    unsigned              batch_count = 0;
 
    /* MVP */
-   if (buffer && reflection.semantics[SLANG_SEMANTIC_MVP].uniform)
+   if (buffer && pass->reflection.semantics[SLANG_SEMANTIC_MVP].uniform)
    {
-      size_t offset = reflection.semantics[SLANG_SEMANTIC_MVP].ubo_offset;
+      size_t offset = pass->reflection.semantics[SLANG_SEMANTIC_MVP].ubo_offset;
       if (mvp)
          memcpy(buffer + offset, mvp, sizeof(float) * 16);
       else
          build_identity_matrix(reinterpret_cast<float *>(buffer + offset));
    }
 
-   if (reflection.semantics[SLANG_SEMANTIC_MVP].push_constant)
+   if (pass->reflection.semantics[SLANG_SEMANTIC_MVP].push_constant)
    {
-      size_t offset = reflection.semantics[SLANG_SEMANTIC_MVP].push_constant_offset;
+      size_t offset = pass->reflection.semantics[SLANG_SEMANTIC_MVP].push_constant_offset;
       if (mvp)
-         memcpy(push.buffer + (offset >> 2), mvp, sizeof(float) * 16);
+         memcpy(pass->push.buffer + (offset >> 2), mvp, sizeof(float) * 16);
       else
-         build_identity_matrix(reinterpret_cast<float *>(push.buffer + (offset >> 2)));
+         build_identity_matrix(reinterpret_cast<float *>(pass->push.buffer + (offset >> 2)));
    }
 
    /* Output information */
-   build_semantic_vec4(buffer, SLANG_SEMANTIC_OUTPUT,
-                       current_framebuffer_size.width,
-                       current_framebuffer_size.height);
-   build_semantic_vec4(buffer, SLANG_SEMANTIC_FINAL_VIEWPORT,
-                       unsigned(curr_vp.width),
-                       unsigned(curr_vp.height));
+   slang_pass_build_semantic_vec4(pass, buffer, SLANG_SEMANTIC_OUTPUT,
+                       pass->current_framebuffer_size.width,
+                       pass->current_framebuffer_size.height);
+   slang_pass_build_semantic_vec4(pass, buffer, SLANG_SEMANTIC_FINAL_VIEWPORT,
+                       unsigned(pass->curr_vp.width),
+                       unsigned(pass->curr_vp.height));
 
-   build_semantic_uint(buffer, SLANG_SEMANTIC_FRAME_COUNT,
-                       frame_count_period
-                       ? uint32_t(frame_count % frame_count_period)
-                       : uint32_t(frame_count));
+   slang_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_FRAME_COUNT,
+                       pass->frame_count_period
+                       ? uint32_t(pass->frame_count % pass->frame_count_period)
+                       : uint32_t(pass->frame_count));
 
-   build_semantic_int(buffer, SLANG_SEMANTIC_FRAME_DIRECTION,
-                      common->frame_direction);
+   slang_pass_build_semantic_int(pass, buffer, SLANG_SEMANTIC_FRAME_DIRECTION,
+                      pass->common->frame_direction);
 
-   build_semantic_uint(buffer, SLANG_SEMANTIC_TOTAL_SUBFRAMES,
-                      common->total_subframes);
+   slang_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_TOTAL_SUBFRAMES,
+                      pass->common->total_subframes);
 
-   build_semantic_uint(buffer, SLANG_SEMANTIC_CURRENT_SUBFRAME,
-                      common->current_subframe);
+   slang_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_CURRENT_SUBFRAME,
+                      pass->common->current_subframe);
 
-   build_semantic_uint(buffer, SLANG_SEMANTIC_FRAME_TIME_DELTA,
-                      common->frame_time_delta);
+   slang_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_FRAME_TIME_DELTA,
+                      pass->common->frame_time_delta);
 
-   build_semantic_float(buffer, SLANG_SEMANTIC_ORIGINAL_FPS,
-                      common->original_fps);
+   slang_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_ORIGINAL_FPS,
+                      pass->common->original_fps);
 
-   build_semantic_uint(buffer, SLANG_SEMANTIC_ROTATION,
-                      common->rotation);
+   slang_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_ROTATION,
+                      pass->common->rotation);
 
-   build_semantic_float(buffer, SLANG_SEMANTIC_CORE_ASPECT,
-                      common->core_aspect);
+   slang_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_CORE_ASPECT,
+                      pass->common->core_aspect);
 
-   build_semantic_float(buffer, SLANG_SEMANTIC_CORE_ASPECT_ROT,
-                      common->core_aspect_rot);
+   slang_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_CORE_ASPECT_ROT,
+                      pass->common->core_aspect_rot);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-   build_semantic_uint(buffer, SLANG_SEMANTIC_HDR,
-                      common->hdr_mode);
+   slang_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_HDR,
+                      pass->common->hdr_mode);
 
-   build_semantic_float(buffer, SLANG_SEMANTIC_PAPER_WHITE_NITS,
-                      common->paper_white_nits);
+   slang_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_PAPER_WHITE_NITS,
+                      pass->common->paper_white_nits);
 
-   build_semantic_float(buffer, SLANG_SEMANTIC_SCANLINES,
-                      common->scanlines);
+   slang_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_SCANLINES,
+                      pass->common->scanlines);
 
-   build_semantic_uint(buffer, SLANG_SEMANTIC_SUBPIXEL_LAYOUT,
-                      common->subpixel_layout);
+   slang_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_SUBPIXEL_LAYOUT,
+                      pass->common->subpixel_layout);
 
-   build_semantic_uint(buffer, SLANG_SEMANTIC_EXPAND_GAMUT,
-                      common->expand_gamut);
+   slang_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_EXPAND_GAMUT,
+                      pass->common->expand_gamut);
 
-   build_semantic_float(buffer, SLANG_SEMANTIC_INVERSE_TONEMAP,
-                      common->inverse_tonemap);
+   slang_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_INVERSE_TONEMAP,
+                      pass->common->inverse_tonemap);
 
-   build_semantic_float(buffer, SLANG_SEMANTIC_HDR10,
-                      common->hdr10);
+   slang_pass_build_semantic_float(pass, buffer, SLANG_SEMANTIC_HDR10,
+                      pass->common->hdr10);
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
    /* Sensor uniforms — per-frame snapshot cached
     * by input_driver_poll() on the main thread */
    {
       input_driver_state_t *input_st = input_state_get_ptr();
-      build_semantic_vec3(buffer, SLANG_SEMANTIC_GYROSCOPE,
+      slang_pass_build_semantic_vec3(pass, buffer, SLANG_SEMANTIC_GYROSCOPE,
                         input_st->sensor_gyroscope_cache);
-      build_semantic_vec3(buffer, SLANG_SEMANTIC_ACCELEROMETER,
+      slang_pass_build_semantic_vec3(pass, buffer, SLANG_SEMANTIC_ACCELEROMETER,
                         input_st->sensor_accelerometer_cache);
-      build_semantic_vec3(buffer, SLANG_SEMANTIC_ACCELEROMETER_REST,
+      slang_pass_build_semantic_vec3(pass, buffer, SLANG_SEMANTIC_ACCELEROMETER_REST,
                         input_st->sensor_accelerometer_rest);
    }
 
    /* Standard inputs */
-   build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original,
+   slang_pass_build_semantic_texture(pass, set, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original,
          batch_image_infos, batch_writes, batch_count);
-   build_semantic_texture(set, buffer, SLANG_TEXTURE_SEMANTIC_SOURCE, source,
+   slang_pass_build_semantic_texture(pass, set, buffer, SLANG_TEXTURE_SEMANTIC_SOURCE, source,
          batch_image_infos, batch_writes, batch_count);
 
    /* ORIGINAL_HISTORY[0] is an alias of ORIGINAL. */
-   build_semantic_texture_array(set, buffer,
+   slang_pass_build_semantic_texture_array(pass, set, buffer,
          SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, 0, original,
          batch_image_infos, batch_writes, batch_count);
 
    /* Parameters. */
-   for (i = 0; i < num_filtered; i++)
-      build_semantic_parameter(buffer,
-            parameters[filtered_parameters[i]].semantic_index,
-            common->shader_preset->parameters[
-            parameters[filtered_parameters[i]].index].current);
+   for (i = 0; i < pass->num_filtered; i++)
+      slang_pass_build_semantic_parameter(pass, buffer,
+            pass->parameters[pass->filtered_parameters[i]].semantic_index,
+            pass->common->shader_preset->parameters[
+            pass->parameters[pass->filtered_parameters[i]].index].current);
 
    /* Previous inputs. */
-   for (i = 0; i < common->original_history.size(); i++)
-      build_semantic_texture_array(set, buffer,
+   for (i = 0; i < pass->common->original_history.size(); i++)
+      slang_pass_build_semantic_texture_array(pass, set, buffer,
             SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, i + 1,
-            common->original_history[i],
+            pass->common->original_history[i],
             batch_image_infos, batch_writes, batch_count);
 
    /* Previous passes. */
-   for (i = 0; i < common->pass_outputs.size(); i++)
-      build_semantic_texture_array(set, buffer,
+   for (i = 0; i < pass->common->pass_outputs.size(); i++)
+      slang_pass_build_semantic_texture_array(pass, set, buffer,
             SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i,
-            common->pass_outputs[i],
+            pass->common->pass_outputs[i],
             batch_image_infos, batch_writes, batch_count);
 
    /* Feedback FBOs. */
-   for (i = 0; i < common->fb_feedback.size(); i++)
-      build_semantic_texture_array(set, buffer,
+   for (i = 0; i < pass->common->fb_feedback.size(); i++)
+      slang_pass_build_semantic_texture_array(pass, set, buffer,
             SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i,
-            common->fb_feedback[i],
+            pass->common->fb_feedback[i],
             batch_image_infos, batch_writes, batch_count);
 
    /* LUTs. */
-   for (i = 0; i < common->num_luts; i++)
-      build_semantic_texture_array(set, buffer,
+   for (i = 0; i < pass->common->num_luts; i++)
+      slang_pass_build_semantic_texture_array(pass, set, buffer,
             SLANG_TEXTURE_SEMANTIC_USER, i,
-            common->luts[i].texture,
+            pass->common->luts[i].texture,
             batch_image_infos, batch_writes, batch_count);
 
    /* Flush all batched descriptor writes in a single driver call. */
-   vulkan_flush_descriptor_writes(device, batch_writes, &batch_count);
+   vulkan_flush_descriptor_writes(pass->device, batch_writes, &batch_count);
 }
 
-void Pass::build_commands(
+static void slang_pass_build_commands(struct slang_pass *pass,
+      
       struct deferred_disposes *disposer,
       VkCommandBuffer cmd,
       const Texture &original,
@@ -3706,46 +3680,46 @@ void Pass::build_commands(
 {
    uint8_t *u       = nullptr;
 
-   curr_vp          = vp;
-   Size2D size      = get_output_size(
+   pass->curr_vp          = vp;
+   Size2D size      = slang_pass_get_output_size(pass, 
          { original.texture.width, original.texture.height },
          { source.texture.width, source.texture.height });
 
-   if (framebuffer &&
-         (size.width  != framebuffer->size.width ||
-          size.height != framebuffer->size.height))
+   if (pass->framebuffer &&
+         (size.width  != pass->framebuffer->size.width ||
+          size.height != pass->framebuffer->size.height))
    {
-      if (!slang_framebuffer_set_size(framebuffer, disposer, &size,
+      if (!slang_framebuffer_set_size(pass->framebuffer, disposer, &size,
                VK_FORMAT_UNDEFINED))
       {
-         RARCH_ERR("[Vulkan] Failed to resize shader framebuffer.\n");
+         RARCH_ERR("[Vulkan] Failed to resize shader pass->framebuffer.\n");
          return;
       }
    }
 
-   current_framebuffer_size = size;
+   pass->current_framebuffer_size = size;
 
-   if (reflection.ubo_stage_mask && common->ubo_mapped)
-      u = common->ubo_mapped + ubo_offset +
-         sync_index * common->ubo_sync_index_stride;
+   if (pass->reflection.ubo_stage_mask && pass->common->ubo_mapped)
+      u = pass->common->ubo_mapped + pass->ubo_offset +
+         pass->sync_index * pass->common->ubo_sync_index_stride;
 
-   build_semantics(sets[sync_index], u, mvp, original, source);
+   slang_pass_build_semantics(pass, pass->sets[pass->sync_index], u, mvp, original, source);
 
-   if (reflection.ubo_stage_mask)
+   if (pass->reflection.ubo_stage_mask)
    {
-      VULKAN_SET_UNIFORM_BUFFER(device,
-            sets[sync_index],
-            reflection.ubo_binding,
-            common->ubo.buffer,
-            ubo_offset + sync_index * common->ubo_sync_index_stride,
-            reflection.ubo_size);
+      VULKAN_SET_UNIFORM_BUFFER(pass->device,
+            pass->sets[pass->sync_index],
+            pass->reflection.ubo_binding,
+            pass->common->ubo.buffer,
+            pass->ubo_offset + pass->sync_index * pass->common->ubo_sync_index_stride,
+            pass->reflection.ubo_size);
    }
 
    /* The final pass is always executed inside
     * another render pass since the frontend will
     * want to overlay various things on top for
     * the passes that end up on-screen. */
-   if (!final_pass)
+   if (!pass->final_pass)
    {
       VkRenderPassBeginInfo rp_info;
 
@@ -3753,7 +3727,7 @@ void Pass::build_commands(
        * discarded), so no prior work needs to complete — use
        * TOP_OF_PIPE_BIT as the source stage. */
       VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
-            framebuffer->image, 1,
+            pass->framebuffer->image, 1,
             VK_IMAGE_LAYOUT_UNDEFINED,
             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             0,
@@ -3766,53 +3740,53 @@ void Pass::build_commands(
 
       rp_info.sType                    = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
       rp_info.pNext                    = NULL;
-      rp_info.renderPass               = framebuffer->render_pass;
-      rp_info.framebuffer              = framebuffer->framebuffer;
+      rp_info.renderPass               = pass->framebuffer->render_pass;
+      rp_info.framebuffer              = pass->framebuffer->framebuffer;
       rp_info.renderArea.offset.x      = 0;
       rp_info.renderArea.offset.y      = 0;
-      rp_info.renderArea.extent.width  = current_framebuffer_size.width;
-      rp_info.renderArea.extent.height = current_framebuffer_size.height;
+      rp_info.renderArea.extent.width  = pass->current_framebuffer_size.width;
+      rp_info.renderArea.extent.height = pass->current_framebuffer_size.height;
       rp_info.clearValueCount          = 0;
       rp_info.pClearValues             = nullptr;
 
       vkCmdBeginRenderPass(cmd, &rp_info, VK_SUBPASS_CONTENTS_INLINE);
    }
 
-   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pass->pipeline);
    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-         pipeline_layout,
-         0, 1, &sets[sync_index], 0, nullptr);
+         pass->pipeline_layout,
+         0, 1, &pass->sets[pass->sync_index], 0, nullptr);
 
-   if (push.stages != 0)
+   if (pass->push.stages != 0)
    {
-      vkCmdPushConstants(cmd, pipeline_layout,
-            push.stages, 0, (uint32_t)reflection.push_constant_size,
-            push.buffer);
+      vkCmdPushConstants(cmd, pass->pipeline_layout,
+            pass->push.stages, 0, (uint32_t)pass->reflection.push_constant_size,
+            pass->push.buffer);
    }
 
    {
-      VkDeviceSize offset = final_pass ? 16 * sizeof(float) : 0;
+      VkDeviceSize offset = pass->final_pass ? 16 * sizeof(float) : 0;
       vkCmdBindVertexBuffers(cmd, 0, 1,
-            &common->vbo.buffer,
+            &pass->common->vbo.buffer,
             &offset);
    }
 
-   if (final_pass)
+   if (pass->final_pass)
    {
-      vkCmdSetViewport(cmd, 0, 1, &curr_vp);
+      vkCmdSetViewport(cmd, 0, 1, &pass->curr_vp);
 
 #ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
-      if (common->simulate_scanline)
+      if (pass->common->simulate_scanline)
       {
          const VkRect2D sci = {
             {
-               int32_t(curr_vp.x),
-               int32_t((curr_vp.height / float(common->total_subframes))
-                        * float(common->current_subframe - 1))
+               int32_t(pass->curr_vp.x),
+               int32_t((pass->curr_vp.height / float(pass->common->total_subframes))
+                        * float(pass->common->current_subframe - 1))
             },
             {
-               uint32_t(curr_vp.width),
-               uint32_t(curr_vp.height / float(common->total_subframes))
+               uint32_t(pass->curr_vp.width),
+               uint32_t(pass->curr_vp.height / float(pass->common->total_subframes))
             },
          };
          vkCmdSetScissor(cmd, 0, 1, &sci);
@@ -3822,12 +3796,12 @@ void Pass::build_commands(
       {
          const VkRect2D sci = {
             {
-               int32_t(curr_vp.x),
-               int32_t(curr_vp.y)
+               int32_t(pass->curr_vp.x),
+               int32_t(pass->curr_vp.y)
             },
             {
-               uint32_t(curr_vp.width),
-               uint32_t(curr_vp.height)
+               uint32_t(pass->curr_vp.width),
+               uint32_t(pass->curr_vp.height)
             },
          };
          vkCmdSetScissor(cmd, 0, 1, &sci);
@@ -3837,25 +3811,25 @@ void Pass::build_commands(
    {
       const VkViewport _vp = {
          0.0f, 0.0f,
-         float(current_framebuffer_size.width),
-         float(current_framebuffer_size.height),
+         float(pass->current_framebuffer_size.width),
+         float(pass->current_framebuffer_size.height),
          0.0f, 1.0f
       };
 
       vkCmdSetViewport(cmd, 0, 1, &_vp);
 
 #ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
-      if (common->simulate_scanline)
+      if (pass->common->simulate_scanline)
       {
          const VkRect2D sci = {
             {
                0,
-               int32_t((float(current_framebuffer_size.height) / float(common->total_subframes))
-                        * float(common->current_subframe - 1))
+               int32_t((float(pass->current_framebuffer_size.height) / float(pass->common->total_subframes))
+                        * float(pass->common->current_subframe - 1))
             },
             {
-               uint32_t(current_framebuffer_size.width),
-               uint32_t(float(current_framebuffer_size.height) / float(common->total_subframes))
+               uint32_t(pass->current_framebuffer_size.width),
+               uint32_t(float(pass->current_framebuffer_size.height) / float(pass->common->total_subframes))
             },
          };
          vkCmdSetScissor(cmd, 0, 1, &sci);
@@ -3866,8 +3840,8 @@ void Pass::build_commands(
          const VkRect2D sci = {
             { 0, 0 },
             {
-               current_framebuffer_size.width,
-               current_framebuffer_size.height
+               pass->current_framebuffer_size.width,
+               pass->current_framebuffer_size.height
             },
          };
          vkCmdSetScissor(cmd, 0, 1, &sci);
@@ -3876,23 +3850,23 @@ void Pass::build_commands(
 
    vkCmdDraw(cmd, 4, 1, 0, 0);
 
-   if (!final_pass)
+   if (!pass->final_pass)
    {
       vkCmdEndRenderPass(cmd);
 
-      if (framebuffer->levels > 1)
+      if (pass->framebuffer->levels > 1)
          vulkan_framebuffer_generate_mips(
-               framebuffer->framebuffer,
-               framebuffer->image,
-               framebuffer->size,
+               pass->framebuffer->framebuffer,
+               pass->framebuffer->image,
+               pass->framebuffer->size,
                cmd,
-               framebuffer->levels);
+               pass->framebuffer->levels);
       else
       {
          /* Barrier to sync with next pass. */
          VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(
                cmd,
-               framebuffer->image,
+               pass->framebuffer->image,
                VK_REMAINING_MIP_LEVELS,
                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
