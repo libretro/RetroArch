@@ -102,6 +102,10 @@ typedef struct
    void *user_data;
    enum msg_hash_enums enum_idx;
    char path[PATH_MAX_LENGTH];
+   /* Where the body was streamed to as it arrived, when the push site
+    * resolved the destination up front; empty when the body is handed
+    * to the callback in memory instead. */
+   char sink_path[PATH_MAX_LENGTH];
 } file_transfer_t;
 
 /**

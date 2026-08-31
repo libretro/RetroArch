@@ -454,6 +454,12 @@ static int64_t retro_vfs_fd_seek64(int fd, int64_t offset, int whence)
    return (int64_t)_lseeki64(fd, (__int64)offset, whence);
 #elif defined(__ANDROID__)
    return (int64_t)lseek64(fd, (off64_t)offset, whence);
+#elif defined(VITA)
+   /* SCE_SEEK_SET/CUR/END are 0/1/2, the same values as SEEK_*. */
+   {
+      SceOff pos = sceIoLseek(fd, (SceOff)offset, whence);
+      return (pos < 0) ? -1 : (int64_t)pos;
+   }
 #else
    /* Compile-time: the cast is lossless exactly when off_t is wide
     * enough, and the guard costs nothing when it is (the comparison
@@ -673,6 +679,16 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
          && mode == RETRO_VFS_FILE_ACCESS_READ
          && stream->scheme == VFS_SCHEME_NONE)
       stream->hints |= RFILE_HINT_UNBUFFERED;
+#ifdef VFS_HAVE_DESCRIPTOR_WRITE
+   /* A write-once stream is the same shape: every byte it will ever
+    * write arrives in one call, so a stdio buffer only adds a copy
+    * and a flush. */
+   if (     (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK)
+         && (     mode == RETRO_VFS_FILE_ACCESS_WRITE
+               || mode == RETRO_VFS_FILE_ACCESS_READ_WRITE)
+         && stream->scheme == VFS_SCHEME_NONE)
+      stream->hints |= RFILE_HINT_UNBUFFERED;
+#endif
 #endif
 
    switch (mode)
@@ -926,6 +942,35 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
                if (path_wide)
                   free(path_wide);
 #endif
+#elif defined(VITA)
+               {
+                  int sce_flags = 0;
+                  SceUID uid;
+
+                  /* The POSIX flags above are for the open() targets. */
+                  (void)flags;
+
+                  switch (mode)
+                  {
+                     case RETRO_VFS_FILE_ACCESS_READ:
+                        sce_flags = SCE_O_RDONLY;
+                        break;
+                     case RETRO_VFS_FILE_ACCESS_WRITE:
+                        sce_flags = SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC;
+                        break;
+                     case RETRO_VFS_FILE_ACCESS_READ_WRITE:
+                        sce_flags = SCE_O_RDWR | SCE_O_CREAT | SCE_O_TRUNC;
+                        break;
+                     default:
+                        sce_flags = SCE_O_RDWR;
+                        break;
+                  }
+
+                  /* SceUID error codes are negative; the descriptor
+                   * path only ever tests for -1. */
+                  uid        = sceIoOpen(path, sce_flags, 0777);
+                  stream->fd = (uid < 0) ? -1 : (int)uid;
+               }
 #else
                stream->fd          = open(path, flags, S_IRUSR | S_IWUSR);
 #endif
@@ -1011,6 +1056,11 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
    }
    else
 #endif
+   /* A truncating open leaves a zero-length file positioned at 0,
+    * so the probe below - a seek to the end, a tell and a seek back,
+    * each a system call - would only ever confirm that. */
+   if (     mode != RETRO_VFS_FILE_ACCESS_WRITE
+         && mode != RETRO_VFS_FILE_ACCESS_READ_WRITE)
    {
       retro_vfs_file_seek_internal(stream, 0, SEEK_END);
 
@@ -1071,7 +1121,13 @@ int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
    }
 
    if (stream->fd >= 0)
+   {
+#if defined(VITA)
+      sceIoClose((SceUID)stream->fd);
+#else
       close(stream->fd);
+#endif
+   }
 #ifdef HAVE_CDROM
 end:
    /* Reached both by the goto above and by fall-through from the
@@ -1550,7 +1606,11 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream,
       {
          size_t  _chunk = (len > VFS_STDIO_IO_CHUNK_MAX)
                ? (size_t)VFS_STDIO_IO_CHUNK_MAX : (size_t)len;
+#if defined(VITA)
+         ssize_t _got   = (ssize_t)sceIoRead((SceUID)stream->fd, p, (SceSize)_chunk);
+#else
          ssize_t _got   = read(stream->fd, p, _chunk);
+#endif
          if (_got < 0)
             return (total != 0) ? (int64_t)total : -1;
          total += (uint64_t)_got;
@@ -1623,7 +1683,11 @@ int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file *stream, cons
       {
          size_t  _chunk = (len > VFS_STDIO_IO_CHUNK_MAX)
                ? (size_t)VFS_STDIO_IO_CHUNK_MAX : (size_t)len;
+#if defined(VITA)
+         ssize_t _put   = (ssize_t)sceIoWrite((SceUID)stream->fd, p, (SceSize)_chunk);
+#else
          ssize_t _put   = write(stream->fd, p, _chunk);
+#endif
          if (_put < 0)
          {
             if (total == 0)
