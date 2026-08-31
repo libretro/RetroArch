@@ -1735,10 +1735,10 @@ bool filestream_matches_buf(const char *path, const void *data, size_t len)
    {
       /* FILESTREAM_MATCHES_BUF_WINDOW, which is sized by the smallest
        * thread stack in the tree rather than by throughput.  GEKKO
-       * threads get 8 KiB (STACKSIZE in rthreads.c), 3DS 32 KiB and
-       * Vita 64 KiB - and this is libretro-common API, so a caller on
-       * a spawned thread is not hypothetical.  The 8 KiB floor is
-       * GEKKO's.
+       * threads get 8 KiB (STACKSIZE in rthreads.c), 3DS and PSP
+       * 32 KiB and Vita 64 KiB - and this is libretro-common API, so
+       * a caller on a spawned thread is not hypothetical.  The 8 KiB
+       * floor is GEKKO's.
        *
        * Bigger reads are faster, and at or above the VFS's own 64 KiB
        * stdio buffer they skip it entirely: measured on the unchanged

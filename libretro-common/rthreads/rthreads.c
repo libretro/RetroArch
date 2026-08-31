@@ -50,197 +50,31 @@
 #include <windows.h>
 #endif
 #elif defined(GEKKO)
-#include <ogc/lwp_watchdog.h>
-
-/* pthread wrapper over libogc LWP */
-
-#include <ogcsys.h>
+#define USE_GX_THREADS
 #include <gccore.h>
+#include <ogc/lwp.h>
+#include <ogc/mutex.h>
 #include <ogc/cond.h>
-#include <retro_inline.h>
-
-#ifndef OSThread
-#define OSThread lwp_t
-#endif
-
-#ifndef OSCond
-#define OSCond lwpq_t
-#endif
-
-#ifndef OSThreadQueue
-#define OSThreadQueue lwpq_t
-#endif
-
-#ifndef OSInitMutex
-#define OSInitMutex(mutex) LWP_MutexInit(mutex, 0)
-#endif
-
-#ifndef OSLockMutex
-#define OSLockMutex(mutex) LWP_MutexLock(mutex)
-#endif
-
-#ifndef OSUnlockMutex
-#define OSUnlockMutex(mutex) LWP_MutexUnlock(mutex)
-#endif
-
-#ifndef OSTryLockMutex
-#define OSTryLockMutex(mutex) LWP_MutexTryLock(mutex)
-#endif
-
-#ifndef OSInitCond
-#define OSInitCond(cond) LWP_CondInit(cond)
-#endif
-
-#ifndef OSWaitCond
-#define OSWaitCond(cond, mutex) LWP_CondWait(cond, mutex)
-#endif
-
-#ifndef OSInitThreadQueue
-#define OSInitThreadQueue(queue) LWP_InitQueue(queue)
-#endif
-
-#ifndef OSSleepThread
-#define OSSleepThread(queue) LWP_ThreadSleep(queue)
-#endif
-
-#ifndef OSJoinThread
-#define OSJoinThread(thread, val) LWP_JoinThread(thread, val)
-#endif
-
-#ifndef OSCreateThread
-#define OSCreateThread(thread, func, intarg, ptrarg, stackbase, stacksize, priority, attrs) LWP_CreateThread(thread, func, ptrarg, stackbase, stacksize, priority)
-#endif
-
 #define STACKSIZE (8 * 1024)
-
-typedef OSThread pthread_t;
-typedef mutex_t pthread_mutex_t;
-typedef OSCond pthread_cond_t;
-
-#if defined(GX_PTHREAD_LEGACY)
-typedef void* pthread_mutexattr_t;
-typedef int pthread_attr_t;
-typedef OSCond pthread_condattr_t;
-#endif
-
-static INLINE int pthread_create(pthread_t *thread,
-      const pthread_attr_t *attr, void *(*start_routine)(void*), void *arg)
-{
-   *thread = 0;
-   return OSCreateThread(thread, start_routine, 0 /* unused */, arg,
-         0, STACKSIZE, 64, 0 /* unused */);
-}
-
-static INLINE pthread_t pthread_self(void)
-{
-   /* zero 20-mar-2016: untested */
-   return LWP_GetSelf();
-}
-
-static INLINE int pthread_mutex_init(pthread_mutex_t *mutex,
-      const pthread_mutexattr_t *attr)
-{
-   return OSInitMutex(mutex);
-}
-
-static INLINE int pthread_mutex_destroy(pthread_mutex_t *mutex)
-{
-   return LWP_MutexDestroy(*mutex);
-}
-
-static INLINE int pthread_mutex_lock(pthread_mutex_t *mutex)
-{
-   return OSLockMutex(*mutex);
-}
-
-static INLINE int pthread_mutex_unlock(pthread_mutex_t *mutex)
-{
-   return OSUnlockMutex(*mutex);
-}
-
-static INLINE void pthread_exit(void *retval)
-{
-   /* FIXME: No LWP equivalent for this? */
-   (void)retval;
-}
-
-static INLINE int pthread_detach(pthread_t thread)
-{
-   /* FIXME: pthread_detach equivalent missing? */
-   (void)thread;
-   return 0;
-}
-
-static INLINE int pthread_join(pthread_t thread, void **retval)
-{
-   return OSJoinThread(thread, retval);
-}
-
-static INLINE int pthread_mutex_trylock(pthread_mutex_t *mutex)
-{
-   return OSTryLockMutex(*mutex);
-}
-
-static INLINE int pthread_cond_wait(pthread_cond_t *cond,
-      pthread_mutex_t *mutex)
-{
-   return OSWaitCond(*cond, *mutex);
-}
-
-static INLINE int pthread_cond_timedwait(pthread_cond_t *cond,
-      pthread_mutex_t *mutex, const struct timespec *abstime)
-{
-   return LWP_CondTimedWait(*cond, *mutex, abstime);
-}
-
-static INLINE int pthread_cond_init(pthread_cond_t *cond,
-      const pthread_condattr_t *attr)
-{
-   return OSInitCond(cond);
-}
-
-static INLINE int pthread_cond_signal(pthread_cond_t *cond)
-{
-   return LWP_CondSignal(*cond);
-}
-
-static INLINE int pthread_cond_broadcast(pthread_cond_t *cond)
-{
-   return LWP_CondBroadcast(*cond);
-}
-
-static INLINE int pthread_cond_destroy(pthread_cond_t *cond)
-{
-   return LWP_CondDestroy(*cond);
-}
-
 #elif defined(_3DS)
-
-/* pthread wrapper over libctru */
-
+#define USE_CTR_THREADS
 #include <3ds/thread.h>
 #include <3ds/synchronization.h>
 #include <3ds/svc.h>
 #include <3ds/services/apt.h>
-#include <sys/time.h>
-#include <time.h>
-#include <errno.h>
 #include <retro_inline.h>
-
 #define STACKSIZE (32 * 1024)
-
-#ifndef PTHREAD_SCOPE_PROCESS
-/* An earlier version of devkitARM does not define the pthread types. Can remove in r54+. */
-
-typedef Thread     pthread_t;
-typedef LightLock  pthread_mutex_t;
-typedef void*      pthread_mutexattr_t;
-typedef int        pthread_attr_t;
-typedef uint32_t   pthread_cond_t;
-typedef int        pthread_condattr_t;
+#elif defined(PSP)
+#define USE_PSP_THREADS
+#include <pspkernel.h>
+#include <pspthreadman.h>
+#define STACKSIZE (32 * 1024)
+#else
+#include <pthread.h>
+#include <time.h>
 #endif
 
-#ifndef USE_CTRULIB_2
+#if defined(USE_CTR_THREADS) && !defined(USE_CTRULIB_2)
 /* Backported CondVar API from libctru 2.0, and under its license:
    https://github.com/devkitPro/libctru
    Slightly modified for compatibility with older libctru. */
@@ -342,195 +176,13 @@ static INLINE void CondVar_Broadcast(CondVar* cv)
 /* End libctru 2.0 backport */
 #endif
 
-/* libctru threads return void but pthreads return void pointer */
-static bool mutex_inited = false;
-static LightLock safe_double_thread_launch;
-static void *(*start_routine_jump)(void*);
 
-static void ctr_thread_launcher(void* data)
-{
-	void *(*start_routine_jump_safe)(void*) = start_routine_jump;
-	LightLock_Unlock(&safe_double_thread_launch);
-	start_routine_jump_safe(data);
-}
-
-static INLINE int pthread_create(pthread_t *thread,
-      const pthread_attr_t *attr, void *(*start_routine)(void*), void *arg)
-{
-   s32 prio = 0;
-   Thread new_ctr_thread;
-   int procnum = -2; /* use default cpu */
-   bool isNew3DS;
-
-   APT_CheckNew3DS(&isNew3DS);
-
-   if (isNew3DS)
-      procnum = 2;
-
-   if (!mutex_inited)
-   {
-      LightLock_Init(&safe_double_thread_launch);
-      mutex_inited = true;
-   }
-
-   /* Must wait if attempting to launch 2 threads at once to prevent corruption of function pointer*/
-   while (LightLock_TryLock(&safe_double_thread_launch) != 0);
-
-   svcGetThreadPriority(&prio, CUR_THREAD_HANDLE);
-
-   start_routine_jump = start_routine;
-   new_ctr_thread     = threadCreate(ctr_thread_launcher, arg, STACKSIZE, prio - 1, procnum, false);
-
-   if (!new_ctr_thread)
-   {
-      LightLock_Unlock(&safe_double_thread_launch);
-      return EAGAIN;
-   }
-
-   *thread = (pthread_t)new_ctr_thread;
-   return 0;
-}
-
-static INLINE pthread_t pthread_self(void)
-{
-   return (pthread_t)threadGetCurrent();
-}
-
-static INLINE int pthread_mutex_init(pthread_mutex_t *mutex,
-      const pthread_mutexattr_t *attr)
-{
-   LightLock_Init((LightLock *)mutex);
-   return 0;
-}
-
-static INLINE int pthread_mutex_destroy(pthread_mutex_t *mutex)
-{
-   /*Nothing to destroy*/
-   return 0;
-}
-
-static INLINE int pthread_mutex_lock(pthread_mutex_t *mutex)
-{
-   LightLock_Lock((LightLock *)mutex);
-   return 0;
-}
-
-static INLINE int pthread_mutex_unlock(pthread_mutex_t *mutex)
-{
-   LightLock_Unlock((LightLock *)mutex);
-   return 0;
-}
-
-static INLINE void pthread_exit(void *retval)
-{
-   /*Yes the pointer to int cast is not ideal*/
-   /*threadExit((int)retval);*/
-   (void)retval;
-
-   threadExit(0);
-}
-
-static INLINE int pthread_detach(pthread_t thread)
-{
-   threadDetach((Thread)thread);
-   return 0;
-}
-
-static INLINE int pthread_join(pthread_t thread, void **retval)
-{
-   /*retval is ignored*/
-   if (threadJoin((Thread)thread, INT64_MAX))
-      return -1;
-
-   threadFree((Thread)thread);
-
-   return 0;
-}
-
-static INLINE int pthread_mutex_trylock(pthread_mutex_t *mutex)
-{
-   return LightLock_TryLock((LightLock *)mutex);
-}
-
-static INLINE int pthread_cond_wait(pthread_cond_t *cond,
-      pthread_mutex_t *mutex)
-{
-   CondVar_Wait((CondVar *)cond, (LightLock *)mutex);
-   return 0;
-}
-
-static INLINE int pthread_cond_timedwait(pthread_cond_t *cond,
-      pthread_mutex_t *mutex, const struct timespec *abstime)
-{
-   /* Missing clock_gettime*/
-   struct timespec now;
-   struct timeval tm;
-   int retval = 0;
-
-   do
-   {
-      s64 timeout;
-      gettimeofday(&tm, NULL);
-      now.tv_sec  = tm.tv_sec;
-      now.tv_nsec = tm.tv_usec * 1000;
-
-      if ((timeout = (abstime->tv_sec - now.tv_sec) * 1000000000 +
-(abstime->tv_nsec - now.tv_nsec)) < 0)
-      {
-         retval = ETIMEDOUT;
-         break;
-      }
-
-      if (!CondVar_WaitTimeout((CondVar *)cond, (LightLock *)mutex, timeout))
-         break;
-   } while (1);
-
-   return retval;
-}
-
-static INLINE int pthread_cond_init(pthread_cond_t *cond,
-      const pthread_condattr_t *attr)
-{
-   CondVar_Init((CondVar *)cond);
-   return 0;
-}
-
-static INLINE int pthread_cond_signal(pthread_cond_t *cond)
-{
-   CondVar_Signal((CondVar *)cond);
-   return 0;
-}
-
-static INLINE int pthread_cond_broadcast(pthread_cond_t *cond)
-{
-   CondVar_Broadcast((CondVar *)cond);
-   return 0;
-}
-
-static INLINE int pthread_cond_destroy(pthread_cond_t *cond)
-{
-   /*Nothing to destroy*/
-   return 0;
-}
-
-static INLINE int pthread_equal(pthread_t t1, pthread_t t2)
-{
-	if (threadGetHandle((Thread)t1) == threadGetHandle((Thread)t2))
-		return 1;
-	return 0;
-}
-
-#else
-#include <pthread.h>
-#include <time.h>
-#endif
-
-#if defined(VITA) || defined(BSD) || defined(ORBIS) || defined(_3DS) || defined(PSP)
+#if defined(VITA) || defined(BSD) || defined(ORBIS)
 #include <sys/time.h>
 #endif
 
 /* sthread_setname */
-#if defined(__linux__) && !defined(USE_WIN32_THREADS) && !defined(GEKKO) && !defined(_3DS)
+#if defined(__linux__) && !defined(USE_WIN32_THREADS)
 #include <sys/prctl.h>
 #endif
 
@@ -541,8 +193,7 @@ static INLINE int pthread_equal(pthread_t t1, pthread_t t2)
 
 #if (defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) \
       || defined(__NetBSD__) || defined(__OpenBSD__)) \
-      && !defined(USE_WIN32_THREADS) && !defined(GEKKO) && !defined(_3DS) \
-      && !defined(__ANDROID__)
+      && !defined(USE_WIN32_THREADS) && !defined(__ANDROID__)
 #include <sched.h>
 #define RTHREADS_HAVE_SCHEDPARAM 1
 #endif
@@ -610,11 +261,30 @@ struct thread_data
    void *userdata;
 };
 
+#ifdef USE_PSP_THREADS
+#define PSP_THREAD_DONE     1
+#define PSP_THREAD_DETACHED 2
+
+struct psp_thread_start
+{
+   void (*func)(void*);
+   void *userdata;
+   retro_atomic_int_t state;
+};
+#endif
+
 struct sthread
 {
-#ifdef USE_WIN32_THREADS
+#if defined(USE_WIN32_THREADS)
    HANDLE thread;
    DWORD id;
+#elif defined(USE_GX_THREADS)
+   lwp_t id;
+#elif defined(USE_CTR_THREADS)
+   Thread id;
+#elif defined(USE_PSP_THREADS)
+   struct psp_thread_start *start;
+   SceUID id;
 #else
    pthread_t id;
 #endif
@@ -622,8 +292,14 @@ struct sthread
 
 struct slock
 {
-#ifdef USE_WIN32_THREADS
+#if defined(USE_WIN32_THREADS)
    CRITICAL_SECTION lock;
+#elif defined(USE_GX_THREADS)
+   mutex_t lock;
+#elif defined(USE_CTR_THREADS)
+   LightLock lock;
+#elif defined(USE_PSP_THREADS)
+   SceUID lock;
 #else
    pthread_mutex_t lock;
 #endif
@@ -719,13 +395,49 @@ static void scond_global_init(void);
 
 struct scond
 {
-#ifdef USE_WIN32_THREADS
+#if defined(USE_WIN32_THREADS)
    retro_atomic_ptr_t head;   /* struct scond_waiter * | SCOND_HEAD_LOCK */
+#elif defined(USE_GX_THREADS)
+   cond_t cond;
+#elif defined(USE_CTR_THREADS)
+   CondVar cond;
+#elif defined(USE_PSP_THREADS)
+   SceUID gate;   /* binary semaphore guarding waiters */
+   SceUID sema;   /* wait tokens, one credit per wake  */
+   int waiters;
 #else
    pthread_cond_t cond;
 #endif
 };
 
+#if defined(USE_PSP_THREADS)
+/* Joinable threads finish into the dormant state and are reaped by
+ * sthread_join. A detached thread reaps itself: whichever of the
+ * finishing thread and sthread_detach runs second sees the other's
+ * bit and frees the start block, and self-reaping also removes the
+ * kernel thread so nothing stays dormant. */
+static int psp_thread_wrap(SceSize args_size, void *argp)
+{
+   struct psp_thread_start *s = *(struct psp_thread_start**)argp;
+   s->func(s->userdata);
+   if (retro_atomic_fetch_or_int(&s->state, PSP_THREAD_DONE)
+         & PSP_THREAD_DETACHED)
+   {
+      free(s);
+      sceKernelExitDeleteThread(0);
+   }
+   return 0;
+}
+#elif defined(USE_CTR_THREADS)
+static void thread_wrap(void *data_)
+{
+   struct thread_data *data = (struct thread_data*)data_;
+   if (!data)
+      return;
+   data->func(data->userdata);
+   free(data);
+}
+#else
 #ifdef USE_WIN32_THREADS
 static DWORD CALLBACK thread_wrap(void *data_)
 #else
@@ -739,14 +451,17 @@ static void *thread_wrap(void *data_)
    free(data);
    return 0;
 }
+#endif
 
 sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
 {
    return sthread_create_with_priority(thread_func, userdata, 0);
 }
 
-/* TODO/FIXME - this needs to be implemented for Switch/3DS */
-#if !defined(SWITCH) && !defined(USE_WIN32_THREADS) && !defined(_3DS) && !defined(GEKKO) && !defined(__HAIKU__) && !defined(__EMSCRIPTEN__)
+/* TODO/FIXME - this needs to be implemented for Switch */
+#if !defined(USE_WIN32_THREADS) && !defined(USE_GX_THREADS) \
+      && !defined(USE_CTR_THREADS) && !defined(USE_PSP_THREADS) \
+      && !defined(SWITCH) && !defined(__HAIKU__) && !defined(__EMSCRIPTEN__)
 #define HAVE_THREAD_ATTR
 #endif
 
@@ -757,12 +472,15 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
    bool thread_attr_needed  = false;
 #endif
    bool thread_created      = false;
+#ifndef USE_PSP_THREADS
    struct thread_data *data = NULL;
+#endif
    sthread_t *thread        = (sthread_t*)malloc(sizeof(*thread));
 
    if (!thread)
       return NULL;
 
+#ifndef USE_PSP_THREADS
    if (!(data = (struct thread_data*)malloc(sizeof(*data))))
    {
       free(thread);
@@ -771,13 +489,99 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
 
    data->func               = thread_func;
    data->userdata           = userdata;
+#endif
 
+#if defined(USE_WIN32_THREADS)
    thread->id               = 0;
-#ifdef USE_WIN32_THREADS
    thread->thread           = CreateThread(NULL, 0, thread_wrap,
          data, 0, &thread->id);
    thread_created           = !!thread->thread;
+#elif defined(USE_GX_THREADS)
+   {
+      /* LWP priorities run 0..127 with higher numbers scheduled
+       * first; workers default to the middle of the band. */
+      u8 prio        = 64;
+      if (thread_priority >= 1 && thread_priority <= 100)
+         prio        = (u8)(1 + ((thread_priority - 1) * 126) / 99);
+      thread->id     = LWP_THREAD_NULL;
+      thread_created = LWP_CreateThread(&thread->id, thread_wrap,
+            data, NULL, STACKSIZE, prio) == 0;
+   }
+#elif defined(USE_CTR_THREADS)
+   {
+      /* Userland priorities run 0x18..0x3F with lower numbers
+       * scheduled first. A worker sits one step above its creator so
+       * the work it is handed is acted on promptly; an explicit
+       * rthreads priority maps across the whole band instead. New3DS
+       * gets workers on the third core, which the application owns
+       * outright; elsewhere the exheader's default core is used. */
+      s32 prio       = 0x30;
+      int core_id    = -2;
+      bool new3ds    = false;
+
+      APT_CheckNew3DS(&new3ds);
+      if (new3ds)
+         core_id     = 2;
+
+      svcGetThreadPriority(&prio, CUR_THREAD_HANDLE);
+      if (thread_priority >= 1 && thread_priority <= 100)
+         prio        = 0x3F - ((thread_priority - 1) * (0x3F - 0x18)) / 99;
+      else
+         prio        = prio - 1;
+      if (prio < 0x18)
+         prio        = 0x18;
+      if (prio > 0x3F)
+         prio        = 0x3F;
+
+      thread->id     = threadCreate(thread_wrap, data,
+            STACKSIZE, prio, core_id, false);
+      thread_created = !!thread->id;
+   }
+#elif defined(USE_PSP_THREADS)
+   {
+      /* Priorities run 0x10..0x6F with lower numbers scheduled first.
+       * Workers inherit the creator's priority; an explicit rthreads
+       * priority maps across the whole band instead. The kernel copies
+       * the argument block when the thread starts, so the pointer to
+       * the start block travels by value. */
+      struct psp_thread_start *start = (struct psp_thread_start*)
+            malloc(sizeof(*start));
+      int prio;
+
+      if (!start)
+      {
+         free(thread);
+         return NULL;
+      }
+
+      start->func     = thread_func;
+      start->userdata = userdata;
+      retro_atomic_int_init(&start->state, 0);
+
+      prio            = sceKernelGetThreadCurrentPriority();
+      if (thread_priority >= 1 && thread_priority <= 100)
+         prio         = 0x6F - ((thread_priority - 1) * (0x6F - 0x10)) / 99;
+      if (prio < 0x10)
+         prio         = 0x10;
+      if (prio > 0x6F)
+         prio         = 0x6F;
+
+      thread->start   = start;
+      thread->id      = sceKernelCreateThread("rarch_thread",
+            psp_thread_wrap, prio, STACKSIZE,
+            PSP_THREAD_ATTR_USER | PSP_THREAD_ATTR_VFPU, NULL);
+      if (thread->id >= 0)
+      {
+         if (sceKernelStartThread(thread->id, sizeof(start), &start) >= 0)
+            thread_created = true;
+         else
+            sceKernelDeleteThread(thread->id);
+      }
+      if (!thread_created)
+         free(start);
+   }
 #else
+   thread->id               = 0;
 #ifdef HAVE_THREAD_ATTR
    pthread_attr_init(&thread_attr);
 
@@ -811,12 +615,13 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
 #else
    thread_created    = pthread_create(&thread->id, NULL, thread_wrap, data) == 0;
 #endif
-
 #endif
 
    if (thread_created)
       return thread;
+#ifndef USE_PSP_THREADS
    free(data);
+#endif
    free(thread);
    return NULL;
 }
@@ -826,6 +631,28 @@ bool sthread_raise_current_priority(void)
 #if defined(USE_WIN32_THREADS)
    return SetThreadPriority(GetCurrentThread(),
          THREAD_PRIORITY_TIME_CRITICAL) != 0;
+#elif defined(USE_GX_THREADS)
+   /* Into the upper quarter of the band: above the workers this file
+    * creates, below anything the system parks at the very top. */
+   LWP_SetThreadPriority(LWP_GetSelf(), 100);
+   return true;
+#elif defined(USE_CTR_THREADS)
+   {
+      s32 prio = 0x30;
+      svcGetThreadPriority(&prio, CUR_THREAD_HANDLE);
+      prio -= 2;
+      if (prio < 0x18)
+         prio  = 0x18;
+      return svcSetThreadPriority(CUR_THREAD_HANDLE, prio) == 0;
+   }
+#elif defined(USE_PSP_THREADS)
+   {
+      int prio = sceKernelGetThreadCurrentPriority() - 4;
+      if (prio < 0x10)
+         prio  = 0x10;
+      return sceKernelChangeThreadPriority(
+            sceKernelGetThreadId(), prio) == 0;
+   }
 #elif defined(__ANDROID__)
    /* Bionic lets an app move its own threads into the audio band
     * without privilege; -16 is ANDROID_PRIORITY_AUDIO. */
@@ -851,7 +678,7 @@ bool sthread_raise_current_priority(void)
 
 void sthread_setname(const char *name)
 {
-#if defined(__linux__) && !defined(USE_WIN32_THREADS) && !defined(GEKKO) && !defined(_3DS)
+#if defined(__linux__) && !defined(USE_WIN32_THREADS)
    /* prctl rather than pthread_setname_np: it is available on every
     * bionic and glibc version we build against, and takes the name as
     * a plain buffer, so the caller cannot be rejected outright for
@@ -884,10 +711,39 @@ void sthread_setname(const char *name)
 
 int sthread_detach(sthread_t *thread)
 {
-#ifdef USE_WIN32_THREADS
+#if defined(USE_WIN32_THREADS)
    if (!thread)
       return 0;
    CloseHandle(thread->thread);
+   free(thread);
+   return 0;
+#elif defined(USE_GX_THREADS)
+   /* LWP has no detach: a thread that is never joined keeps its
+    * control block and stack allocated for the life of the process.
+    * Long-lived workers are unaffected; anything churning through
+    * short-lived threads should join them on this platform. */
+   if (!thread)
+      return 0;
+   free(thread);
+   return 0;
+#elif defined(USE_CTR_THREADS)
+   if (!thread)
+      return 0;
+   threadDetach(thread->id);
+   free(thread);
+   return 0;
+#elif defined(USE_PSP_THREADS)
+   if (!thread)
+      return 0;
+   if (retro_atomic_fetch_or_int(&thread->start->state,
+            PSP_THREAD_DETACHED) & PSP_THREAD_DONE)
+   {
+      /* Already finished: it is dormant (or about to be) and can no
+       * longer reap itself, so reap it here. */
+      sceKernelWaitThreadEnd(thread->id, NULL);
+      sceKernelDeleteThread(thread->id);
+      free(thread->start);
+   }
    free(thread);
    return 0;
 #else
@@ -904,33 +760,60 @@ void sthread_join(sthread_t *thread)
 {
    if (!thread)
       return;
-#ifdef USE_WIN32_THREADS
+#if defined(USE_WIN32_THREADS)
    WaitForSingleObject(thread->thread, INFINITE);
    CloseHandle(thread->thread);
+#elif defined(USE_GX_THREADS)
+   LWP_JoinThread(thread->id, NULL);
+#elif defined(USE_CTR_THREADS)
+   threadJoin(thread->id, UINT64_MAX);
+   threadFree(thread->id);
+#elif defined(USE_PSP_THREADS)
+   sceKernelWaitThreadEnd(thread->id, NULL);
+   sceKernelDeleteThread(thread->id);
+   free(thread->start);
 #else
    pthread_join(thread->id, NULL);
 #endif
    free(thread);
 }
 
-#if !defined(GEKKO)
 bool sthread_isself(sthread_t *thread)
 {
-#ifdef USE_WIN32_THREADS
+#if defined(USE_WIN32_THREADS)
    return thread ? GetCurrentThreadId() == thread->id        : false;
+#elif defined(USE_GX_THREADS)
+   return thread ? LWP_GetSelf() == thread->id               : false;
+#elif defined(USE_CTR_THREADS)
+   return thread ? threadGetCurrent() == thread->id          : false;
+#elif defined(USE_PSP_THREADS)
+   return thread ? sceKernelGetThreadId() == thread->id      : false;
 #else
    return thread ? pthread_equal(pthread_self(), thread->id) : false;
 #endif
 }
-#endif
 
 slock_t *slock_new(void)
 {
    slock_t      *lock = (slock_t*)calloc(1, sizeof(*lock));
    if (!lock)
       return NULL;
-#ifdef USE_WIN32_THREADS
+#if defined(USE_WIN32_THREADS)
    InitializeCriticalSection(&lock->lock);
+#elif defined(USE_GX_THREADS)
+   if (LWP_MutexInit(&lock->lock, false) != 0)
+   {
+      free(lock);
+      return NULL;
+   }
+#elif defined(USE_CTR_THREADS)
+   LightLock_Init(&lock->lock);
+#elif defined(USE_PSP_THREADS)
+   if ((lock->lock = sceKernelCreateSema("rarch_lock", 0, 1, 1, NULL)) < 0)
+   {
+      free(lock);
+      return NULL;
+   }
 #else
    if (pthread_mutex_init(&lock->lock, NULL) != 0)
    {
@@ -946,8 +829,14 @@ void slock_free(slock_t *lock)
    if (!lock)
       return;
 
-#ifdef USE_WIN32_THREADS
+#if defined(USE_WIN32_THREADS)
    DeleteCriticalSection(&lock->lock);
+#elif defined(USE_GX_THREADS)
+   LWP_MutexDestroy(lock->lock);
+#elif defined(USE_CTR_THREADS)
+   /* nothing to destroy */
+#elif defined(USE_PSP_THREADS)
+   sceKernelDeleteSema(lock->lock);
 #else
    pthread_mutex_destroy(&lock->lock);
 #endif
@@ -958,8 +847,14 @@ void slock_lock(slock_t *lock)
 {
    if (!lock)
       return;
-#ifdef USE_WIN32_THREADS
+#if defined(USE_WIN32_THREADS)
    EnterCriticalSection(&lock->lock);
+#elif defined(USE_GX_THREADS)
+   LWP_MutexLock(lock->lock);
+#elif defined(USE_CTR_THREADS)
+   LightLock_Lock(&lock->lock);
+#elif defined(USE_PSP_THREADS)
+   sceKernelWaitSema(lock->lock, 1, NULL);
 #else
    pthread_mutex_lock(&lock->lock);
 #endif
@@ -967,8 +862,14 @@ void slock_lock(slock_t *lock)
 
 bool slock_try_lock(slock_t *lock)
 {
-#ifdef USE_WIN32_THREADS
+#if defined(USE_WIN32_THREADS)
    return lock && TryEnterCriticalSection(&lock->lock);
+#elif defined(USE_GX_THREADS)
+   return lock && (LWP_MutexTryLock(lock->lock) == 0);
+#elif defined(USE_CTR_THREADS)
+   return lock && (LightLock_TryLock(&lock->lock) == 0);
+#elif defined(USE_PSP_THREADS)
+   return lock && (sceKernelPollSema(lock->lock, 1) == 0);
 #else
    return lock && (pthread_mutex_trylock(&lock->lock) == 0);
 #endif
@@ -978,8 +879,14 @@ void slock_unlock(slock_t *lock)
 {
    if (!lock)
       return;
-#ifdef USE_WIN32_THREADS
+#if defined(USE_WIN32_THREADS)
    LeaveCriticalSection(&lock->lock);
+#elif defined(USE_GX_THREADS)
+   LWP_MutexUnlock(lock->lock);
+#elif defined(USE_CTR_THREADS)
+   LightLock_Unlock(&lock->lock);
+#elif defined(USE_PSP_THREADS)
+   sceKernelSignalSema(lock->lock, 1);
 #else
    pthread_mutex_unlock(&lock->lock);
 #endif
@@ -992,9 +899,30 @@ scond_t *scond_new(void)
    if (!cond)
       return NULL;
 
-#ifdef USE_WIN32_THREADS
+#if defined(USE_WIN32_THREADS)
    scond_global_init();
    retro_atomic_ptr_init(&cond->head, NULL);
+#elif defined(USE_GX_THREADS)
+   if (LWP_CondInit(&cond->cond) != 0)
+   {
+      free(cond);
+      return NULL;
+   }
+#elif defined(USE_CTR_THREADS)
+   CondVar_Init(&cond->cond);
+#elif defined(USE_PSP_THREADS)
+   cond->waiters = 0;
+   cond->gate    = sceKernelCreateSema("rarch_cond_gate", 0, 1, 1, NULL);
+   cond->sema    = sceKernelCreateSema("rarch_cond", 0, 0, 0x7FFFFFFF, NULL);
+   if (cond->gate < 0 || cond->sema < 0)
+   {
+      if (cond->gate >= 0)
+         sceKernelDeleteSema(cond->gate);
+      if (cond->sema >= 0)
+         sceKernelDeleteSema(cond->sema);
+      free(cond);
+      return NULL;
+   }
 #else
    if (pthread_cond_init(&cond->cond, NULL) != 0)
    {
@@ -1011,8 +939,15 @@ void scond_free(scond_t *cond)
    if (!cond)
       return;
 
-#ifdef USE_WIN32_THREADS
+#if defined(USE_WIN32_THREADS)
    /* nothing is owned: the waiter blocks live on their threads' stacks */
+#elif defined(USE_GX_THREADS)
+   LWP_CondDestroy(cond->cond);
+#elif defined(USE_CTR_THREADS)
+   /* nothing to destroy */
+#elif defined(USE_PSP_THREADS)
+   sceKernelDeleteSema(cond->sema);
+   sceKernelDeleteSema(cond->gate);
 #else
    pthread_cond_destroy(&cond->cond);
 #endif
@@ -1502,8 +1437,19 @@ done:
 
 void scond_wait(scond_t *cond, slock_t *lock)
 {
-#ifdef USE_WIN32_THREADS
+#if defined(USE_WIN32_THREADS)
    scond_wait_win32(cond, lock, INFINITE);
+#elif defined(USE_GX_THREADS)
+   LWP_CondWait(cond->cond, lock->lock);
+#elif defined(USE_CTR_THREADS)
+   CondVar_Wait(&cond->cond, &lock->lock);
+#elif defined(USE_PSP_THREADS)
+   sceKernelWaitSema(cond->gate, 1, NULL);
+   cond->waiters++;
+   sceKernelSignalSema(cond->gate, 1);
+   slock_unlock(lock);
+   sceKernelWaitSema(cond->sema, 1, NULL);
+   slock_lock(lock);
 #else
    pthread_cond_wait(&cond->cond, &lock->lock);
 #endif
@@ -1511,7 +1457,7 @@ void scond_wait(scond_t *cond, slock_t *lock)
 
 int scond_broadcast(scond_t *cond)
 {
-#ifdef USE_WIN32_THREADS
+#if defined(USE_WIN32_THREADS)
    struct scond_waiter *w;
    uintptr_t old;
    if (!(scond_head(cond) & SCOND_HEAD_MASK))
@@ -1530,6 +1476,20 @@ int scond_broadcast(scond_t *cond)
       w = next;
    }
    return 0;
+#elif defined(USE_GX_THREADS)
+   return LWP_CondBroadcast(cond->cond);
+#elif defined(USE_CTR_THREADS)
+   CondVar_Broadcast(&cond->cond);
+   return 0;
+#elif defined(USE_PSP_THREADS)
+   int n;
+   sceKernelWaitSema(cond->gate, 1, NULL);
+   n             = cond->waiters;
+   cond->waiters = 0;
+   if (n > 0)
+      sceKernelSignalSema(cond->sema, n);
+   sceKernelSignalSema(cond->gate, 1);
+   return 0;
 #else
    return pthread_cond_broadcast(&cond->cond);
 #endif
@@ -1537,7 +1497,7 @@ int scond_broadcast(scond_t *cond)
 
 void scond_signal(scond_t *cond)
 {
-#ifdef USE_WIN32_THREADS
+#if defined(USE_WIN32_THREADS)
    struct scond_waiter *w;
    if (!(scond_head(cond) & SCOND_HEAD_MASK))
       return;
@@ -1568,6 +1528,18 @@ void scond_signal(scond_t *cond)
    scond_unlock(cond);
    if (w)
       scond_wake_one(w);
+#elif defined(USE_GX_THREADS)
+   LWP_CondSignal(cond->cond);
+#elif defined(USE_CTR_THREADS)
+   CondVar_Signal(&cond->cond);
+#elif defined(USE_PSP_THREADS)
+   sceKernelWaitSema(cond->gate, 1, NULL);
+   if (cond->waiters > 0)
+   {
+      cond->waiters--;
+      sceKernelSignalSema(cond->sema, 1);
+   }
+   sceKernelSignalSema(cond->gate, 1);
 #else
    pthread_cond_signal(&cond->cond);
 #endif
@@ -1576,7 +1548,7 @@ void scond_signal(scond_t *cond)
 
 bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
 {
-#ifdef USE_WIN32_THREADS
+#if defined(USE_WIN32_THREADS)
    /* How to convert a microsecond (us) timeout to millisecond (ms)?
     *
     * Someone asking for a 0 timeout clearly wants immediate timeout.
@@ -1596,6 +1568,71 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    /* Someone asking for 1000 or 1001 timeout shouldn't
     * accidentally get 2ms. */
    return scond_wait_win32(cond, lock, timeout_us / 1000);
+#elif defined(USE_GX_THREADS)
+#ifdef INTERNAL_LIBOGC
+   /* The in-tree libogc takes an absolute deadline and compares it
+    * against its RTC-based single-argument clock_gettime, so the
+    * deadline has to come from that same clock. Its prototype clashes
+    * with newlib's POSIX clock_gettime, hence the asm binding. A zero
+    * timeout is treated as always timing out, as on Win32. */
+   struct timespec dl;
+   if (timeout_us <= 0)
+      return false;
+   {
+      extern int ogc_rtc_gettime(struct timespec *tp)
+            __asm__("clock_gettime");
+      if (ogc_rtc_gettime(&dl) != 0)
+         return false;
+   }
+   dl.tv_sec  += (time_t)(timeout_us / INT64_C(1000000));
+   dl.tv_nsec += (long)(timeout_us % INT64_C(1000000)) * 1000L;
+   if (dl.tv_nsec >= 1000000000L)
+   {
+      dl.tv_sec  += 1;
+      dl.tv_nsec -= 1000000000L;
+   }
+   return LWP_CondTimedWait(cond->cond, lock->lock, &dl) == 0;
+#else
+   /* Upstream libogc takes the timeout as a relative timespec; a zero
+    * timeout is treated as always timing out, as on Win32. */
+   struct timespec rel;
+   if (timeout_us <= 0)
+      return false;
+   rel.tv_sec  = (time_t)(timeout_us / INT64_C(1000000));
+   rel.tv_nsec = (long)(timeout_us % INT64_C(1000000)) * 1000L;
+   return LWP_CondTimedWait(cond->cond, lock->lock, &rel) == 0;
+#endif
+#elif defined(USE_CTR_THREADS)
+   if (timeout_us <= 0)
+      return false;
+   return CondVar_WaitTimeout(&cond->cond, &lock->lock,
+         timeout_us * INT64_C(1000)) == 0;
+#elif defined(USE_PSP_THREADS)
+   bool woken;
+   SceUInt to;
+   if (timeout_us <= 0)
+      return false;
+   to = (timeout_us > INT64_C(0xFFFFFFFF))
+         ? 0xFFFFFFFFu : (SceUInt)timeout_us;
+   sceKernelWaitSema(cond->gate, 1, NULL);
+   cond->waiters++;
+   sceKernelSignalSema(cond->gate, 1);
+   slock_unlock(lock);
+   woken = sceKernelWaitSema(cond->sema, 1, &to) == 0;
+   if (!woken)
+   {
+      /* Timed out: withdraw the registration, unless a wake credit
+       * arrived in the meantime, in which case consume it and report
+       * the wake. */
+      sceKernelWaitSema(cond->gate, 1, NULL);
+      if (sceKernelPollSema(cond->sema, 1) == 0)
+         woken = true;
+      else
+         cond->waiters--;
+      sceKernelSignalSema(cond->gate, 1);
+   }
+   slock_lock(lock);
+   return woken;
 #else
    int64_t seconds, remainder;
    struct timespec now;
@@ -1625,7 +1662,7 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
       now.tv_sec            = tickms / 1000;
       now.tv_nsec           = (long)(tickms % 1000) * 1000000L;
    }
-#elif !defined(DINGUX_BETA) && (defined(VITA) || defined(_3DS) || defined(PSP))
+#elif !defined(DINGUX_BETA) && defined(VITA)
    {
       struct timeval tm;
       gettimeofday(&tm, NULL);
@@ -1634,12 +1671,6 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    }
 #elif defined(RETRO_WIN32_USE_PTHREADS)
    _ftime64_s(&now);
-#elif defined(GEKKO)
-   {
-      const uint64_t tickms = gettime() / TB_TIMER_CLOCK;
-      now.tv_sec            = tickms / 1000;
-      now.tv_nsec           = (long)(tickms % 1000) * 1000000L;
-   }
 #else
    clock_gettime(CLOCK_REALTIME, &now);
 #endif
@@ -1719,8 +1750,14 @@ uintptr_t sthread_get_thread_id(sthread_t *thread)
 
 uintptr_t sthread_get_current_thread_id(void)
 {
-#ifdef USE_WIN32_THREADS
+#if defined(USE_WIN32_THREADS)
    return (uintptr_t)GetCurrentThreadId();
+#elif defined(USE_GX_THREADS)
+   return (uintptr_t)LWP_GetSelf();
+#elif defined(USE_CTR_THREADS)
+   return (uintptr_t)threadGetCurrent();
+#elif defined(USE_PSP_THREADS)
+   return (uintptr_t)sceKernelGetThreadId();
 #else
    return (uintptr_t)pthread_self();
 #endif
@@ -1742,7 +1779,9 @@ bool sthread_is_main_thread(void)
 /* pthread_cancel / pthread_setcancelstate are POSIX but not universally
  * available: notably absent on Android/Bionic, and meaningless on the
  * non-pthread backends. Enable only where the backend provides them. */
-#if !defined(USE_WIN32_THREADS) && !defined(GEKKO) && !defined(_3DS) && !defined(__ANDROID__)
+#if !defined(USE_WIN32_THREADS) && !defined(USE_GX_THREADS) \
+      && !defined(USE_CTR_THREADS) && !defined(USE_PSP_THREADS) \
+      && !defined(__ANDROID__)
 #define RTHREADS_HAVE_CANCEL 1
 #endif
 

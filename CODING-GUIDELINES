@@ -75,13 +75,13 @@ RetroArch. These are the thread stacks the tree creates today:
 
    * GEKKO (Wii/GC)    8 KiB   STACKSIZE, rthreads/rthreads.c
    * 3DS              32 KiB   STACKSIZE, rthreads/rthreads.c
+   * PSP              32 KiB   STACKSIZE, rthreads/rthreads.c
    * Vita             64 KiB   rthreads.c, 0x10000
    * Apple             2 MiB   rthreads.c, raised from a 512 KiB default
    * Windows           1 MiB   reserved by default, committed lazily
 
 8 KiB on GEKKO is the floor, and it is the number to design
-against. (PSP threads come from the toolchain's pthreads and are
-not listed here.)
+against.
 
 Which thread your code runs on is not something you get to assume.
 Anything reachable from a task handler can end up on one of these:
