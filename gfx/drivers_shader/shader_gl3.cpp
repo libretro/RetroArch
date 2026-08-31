@@ -769,28 +769,27 @@ static void gl3_static_texture_free(struct gl3_static_texture *tex)
 
 struct CommonResources
 {
-   CommonResources();
-   ~CommonResources();
+   Texture *original_history;
+   size_t num_original_history;
+   Texture *framebuffer_feedback;
+   size_t num_framebuffer_feedback;
+   Texture *pass_outputs;
+   size_t num_pass_outputs;
+   struct gl3_static_texture *luts;
+   size_t num_luts;
 
-   Texture *original_history        = NULL;
-   size_t num_original_history      = 0;
-   Texture *framebuffer_feedback    = NULL;
-   size_t num_framebuffer_feedback  = 0;
-   Texture *pass_outputs            = NULL;
-   size_t num_pass_outputs          = 0;
-   struct gl3_static_texture *luts = NULL;
-   size_t num_luts                 = 0;
+   slang_texture_semantic_name_map texture_semantic_map;
+   slang_texture_semantic_name_map texture_semantic_uniform_map;
+   video_shader *shader_preset;
 
-   slang_texture_semantic_name_map texture_semantic_map        = {};
-   slang_texture_semantic_name_map texture_semantic_uniform_map = {};
-   video_shader *shader_preset = NULL;
-
-   GLuint quad_program = 0;
-   GLuint quad_vbo = 0;
-   gl3_buffer_locations quad_loc = {};
+   GLuint quad_program;
+   GLuint quad_vbo;
+   gl3_buffer_locations quad_loc;
 };
 
-CommonResources::CommonResources()
+/* Every default was zero, so a memset covers the initializers the
+ * in-class ones used to supply. */
+static void common_resources_init(CommonResources *common)
 {
    static float quad_data[] = {
       0.0f, 0.0f, 0.0f, 0.0f,
@@ -799,45 +798,47 @@ CommonResources::CommonResources()
       1.0f, 1.0f, 1.0f, 1.0f,
    };
 
-   glGenBuffers(1, &quad_vbo);
-   glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
+   memset(common, 0, sizeof(*common));
+
+   glGenBuffers(1, &common->quad_vbo);
+   glBindBuffer(GL_ARRAY_BUFFER, common->quad_vbo);
    glBufferData(GL_ARRAY_BUFFER, sizeof(quad_data), quad_data, GL_STATIC_DRAW);
    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-   quad_program = gl3_cross_compile_program(
+   common->quad_program = gl3_cross_compile_program(
          opaque_vert, sizeof(opaque_vert),
-         opaque_frag, sizeof(opaque_frag), &quad_loc, true);
+         opaque_frag, sizeof(opaque_frag), &common->quad_loc, true);
 }
 
-CommonResources::~CommonResources()
+static void common_resources_free(CommonResources *common)
 {
    size_t i;
    /* The unique_ptr vector used to free these on destruction; the plain
     * array does not, so every LUT has to be released by hand. */
-   for (i = 0; i < num_luts; i++)
-      gl3_static_texture_free(&luts[i]);
-   free(luts);
-   luts     = NULL;
-   num_luts = 0;
-   /* the three Texture vectors and the shader_preset unique_ptr were
+   for (i = 0; i < common->num_luts; i++)
+      gl3_static_texture_free(&common->luts[i]);
+   free(common->luts);
+   common->luts     = NULL;
+   common->num_luts = 0;
+   /* the three Texture vectors and the common->shader_preset unique_ptr were
     * released by the implicit member destructors */
-   free(original_history);
-   free(framebuffer_feedback);
-   free(pass_outputs);
-   original_history       = NULL;
-   framebuffer_feedback   = NULL;
-   pass_outputs           = NULL;
-   num_original_history   = 0;
-   num_framebuffer_feedback = 0;
-   num_pass_outputs       = 0;
-   delete shader_preset;
-   shader_preset          = NULL;
-   slang_texture_semantic_name_map_free(&texture_semantic_map);
-   slang_texture_semantic_name_map_free(&texture_semantic_uniform_map);
-   if (quad_program != 0)
-      glDeleteProgram(quad_program);
-   if (quad_vbo != 0)
-      glDeleteBuffers(1, &quad_vbo);
+   free(common->original_history);
+   free(common->framebuffer_feedback);
+   free(common->pass_outputs);
+   common->original_history       = NULL;
+   common->framebuffer_feedback   = NULL;
+   common->pass_outputs           = NULL;
+   common->num_original_history   = 0;
+   common->num_framebuffer_feedback = 0;
+   common->num_pass_outputs       = 0;
+   delete common->shader_preset;
+   common->shader_preset          = NULL;
+   slang_texture_semantic_name_map_free(&common->texture_semantic_map);
+   slang_texture_semantic_name_map_free(&common->texture_semantic_uniform_map);
+   if (common->quad_program != 0)
+      glDeleteProgram(common->quad_program);
+   if (common->quad_vbo != 0)
+      glDeleteBuffers(1, &common->quad_vbo);
 }
 
 struct gl3_framebuffer
@@ -2481,25 +2482,16 @@ static video_shader *gl3_chain_get_shader_preset(
       struct gl3_filter_chain *chain);
 static void gl3_chain_free(struct gl3_filter_chain *chain);
 
-/* CommonResources still has a constructor, so the chain is new'd rather
- * than calloc'd until that flattens too. */
 static struct gl3_filter_chain *gl3_chain_new(unsigned num_passes)
 {
-   struct gl3_filter_chain *chain = new gl3_filter_chain();
+   struct gl3_filter_chain *chain = (struct gl3_filter_chain*)
+      calloc(1, sizeof(*chain));
 
    if (!chain)
       return NULL;
 
-   chain->passes               = NULL;
-   chain->num_passes           = 0;
-   chain->pass_info            = NULL;
-   chain->num_pass_info        = 0;
-   chain->copy_framebuffer     = NULL;
-   memset(&chain->input_texture, 0, sizeof(chain->input_texture));
-   chain->original_history     = NULL;
-   chain->num_original_history = 0;
-   chain->require_clear        = false;
-   chain->alias_initialized    = false;
+   /* ran as the member constructor until CommonResources flattened */
+   gl3_shader::common_resources_init(&chain->common);
 
    gl3_chain_set_num_passes(chain, num_passes);
    return chain;
@@ -2520,7 +2512,9 @@ static void gl3_chain_free(struct gl3_filter_chain *chain)
       delete chain->passes[h];
    free(chain->passes);
    free(chain->pass_info);
-   delete chain;
+   /* ran as the member destructor until CommonResources flattened */
+   gl3_shader::common_resources_free(&chain->common);
+   free(chain);
 }
 
 static void gl3_chain_set_shader_preset(struct gl3_filter_chain *chain,
