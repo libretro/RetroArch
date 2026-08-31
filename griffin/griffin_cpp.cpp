@@ -59,9 +59,6 @@ UI
 /*============================================================
 VIDEO DRIVER
 ============================================================ */
-#if defined(HAVE_VULKAN) && defined(HAVE_SLANG)
-#endif
-
 #if defined(HAVE_OPENGL_CORE) && defined(HAVE_SLANG)
 #include "../gfx/drivers_shader/shader_gl3.cpp"
 #endif

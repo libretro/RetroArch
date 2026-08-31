@@ -406,6 +406,15 @@ VIDEO SHADERS
 #include "../gfx/drivers_shader/glslang_util.c"
 #include "../gfx/drivers_shader/slang_cache.c"
 #include "../gfx/drivers_shader/slang_process.c"
+#endif
+
+/* Must mirror the guard this file carried in griffin_cpp.cpp exactly:
+ * shader_vulkan.c calls vulkan_common.c and the Vulkan symbol wrapper,
+ * neither of which is in the build unless HAVE_VULKAN is set.  HAVE_SLANG
+ * alone is a real configuration (MSVC lanes ship D3D + slang without
+ * Vulkan) and compiling this file there produces unresolved externals at
+ * link time, not a compile error. */
+#if defined(HAVE_VULKAN) && defined(HAVE_SLANG)
 #include "../gfx/drivers_shader/shader_vulkan.c"
 #endif
 
