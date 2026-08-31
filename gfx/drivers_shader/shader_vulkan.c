@@ -17,11 +17,7 @@
 #include "../include/vulkan/vk_sdk_platform.h"
 #include "shader_vulkan.h"
 #include "glslang_util.h"
-#include <string>
-#include <vector>
-#include <memory>
-#include <functional>
-#include <utility>
+#include <stdlib.h>
 #include <string.h>
 
 #include <compat/strl.h>
@@ -37,6 +33,15 @@
 #include "../../verbosity.h"
 #include "../../msg_hash.h"
 #include "../../input/input_driver.h"
+
+typedef struct vulkan_filter_chain_texture vulkan_filter_chain_texture;
+typedef struct vulkan_filter_chain_pass_info vulkan_filter_chain_pass_info;
+typedef struct vulkan_filter_chain_swapchain_info vulkan_filter_chain_swapchain_info;
+typedef struct FramebufferMemoryPool FramebufferMemoryPool;
+typedef struct CommonResources CommonResources;
+typedef struct Size2D Size2D;
+typedef struct vulkan_filter_chain vulkan_filter_chain;
+typedef struct vulkan_filter_chain_create_info vulkan_filter_chain_create_info;
 
 /* Maximum number of texture descriptor writes that can be batched in a
  * single pass.  This covers: Original, Source, OriginalHistory[0],
@@ -69,7 +74,6 @@
    (write_count)++; \
 }
 
-extern "C" {
 
    static bool vulkan_initialize_render_pass(VkDevice device, VkFormat format,
          VkRenderPass *render_pass)
@@ -381,7 +385,6 @@ extern "C" {
             VK_QUEUE_FAMILY_IGNORED,
             VK_QUEUE_FAMILY_IGNORED);
    }
-}
 
 static void vulkan_flush_descriptor_writes(VkDevice device,
       VkWriteDescriptorSet *writes, unsigned *write_count)
@@ -392,7 +395,6 @@ static void vulkan_flush_descriptor_writes(VkDevice device,
       *write_count = 0;
    }
 }
-
 
 static const uint32_t opaque_vert[] =
 #include "../drivers/vulkan_shaders/opaque.vert.inc"
@@ -408,13 +410,13 @@ static const uint32_t hdr_frag[] =
 ;
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
-struct Texture
+typedef struct
 {
    vulkan_filter_chain_texture texture;
    glslang_filter_chain_filter filter;
    glslang_filter_chain_filter mip_filter;
    glslang_filter_chain_address address;
-};
+} Texture;
 
 struct deferred_disposes;
 
@@ -430,7 +432,7 @@ struct slang_buffer
 };
 
 static bool slang_buffer_init(struct slang_buffer *buf,
-      VkDevice device, const VkPhysicalDeviceMemoryProperties &mem_props,
+      VkDevice device, const VkPhysicalDeviceMemoryProperties *mem_props,
       size_t len, VkBufferUsageFlags usage);
 static void *slang_buffer_map(struct slang_buffer *buf);
 static void slang_buffer_unmap(struct slang_buffer *buf);
@@ -492,11 +494,11 @@ static void slang_static_texture_free(struct slang_static_texture *tex)
 {
    slang_buffer_free(&tex->buffer);
    if (tex->view != VK_NULL_HANDLE)
-      vkDestroyImageView(tex->device, tex->view, nullptr);
+      vkDestroyImageView(tex->device, tex->view, NULL);
    if (tex->image != VK_NULL_HANDLE)
-      vkDestroyImage(tex->device, tex->image, nullptr);
+      vkDestroyImage(tex->device, tex->image, NULL);
    if (tex->memory != VK_NULL_HANDLE)
-      vkFreeMemory(tex->device, tex->memory, nullptr);
+      vkFreeMemory(tex->device, tex->memory, NULL);
    free(tex->id);
    tex->view   = VK_NULL_HANDLE;
    tex->image  = VK_NULL_HANDLE;
@@ -520,18 +522,19 @@ static void slang_static_texture_free(struct slang_static_texture *tex)
  * alive at every deferred_calls drain point (including the destructor-body
  * flush()), which is why a deferred callback may capture a pointer to it
  * even though it must never capture the framebuffer object itself. */
+struct fbpool_block
+{
+   VkDeviceMemory memory;
+   size_t         size;
+   uint32_t       type;
+};
+
 struct FramebufferMemoryPool
 {
-   struct Block
-   {
-      VkDeviceMemory memory;
-      size_t         size;
-      uint32_t       type;
-   };
 
    /* Keep only a handful of blocks; oscillating between two sizes (the
     * common "toggle integer scale" case) needs at most two. */
-   Block blocks[4];
+   struct fbpool_block blocks[4];
    size_t num_blocks;
 #define FBPOOL_MAX_BLOCKS 4
 
@@ -540,12 +543,12 @@ struct FramebufferMemoryPool
     * caller. */
 };
 
-static struct FramebufferMemoryPool::Block fbpool_acquire(
+static struct fbpool_block fbpool_acquire(
       FramebufferMemoryPool *pool, size_t size, uint32_t type)
    {
       size_t i;
       size_t best = (size_t)-1;
-      struct FramebufferMemoryPool::Block result;
+      struct fbpool_block result;
       result.memory = VK_NULL_HANDLE;
       result.size   = 0;
       result.type   = type;
@@ -568,7 +571,7 @@ static void fbpool_release(FramebufferMemoryPool *pool,
       VkDevice device, VkDeviceMemory memory,
       size_t size, uint32_t type)
    {
-      struct FramebufferMemoryPool::Block b;
+      struct fbpool_block b;
       if (memory == VK_NULL_HANDLE)
          return;
       if (pool->num_blocks >= FBPOOL_MAX_BLOCKS)
@@ -582,10 +585,10 @@ static void fbpool_release(FramebufferMemoryPool *pool,
                smallest = i;
          if (pool->blocks[smallest].size >= size)
          {
-            vkFreeMemory(device, memory, nullptr);
+            vkFreeMemory(device, memory, NULL);
             return;
          }
-         vkFreeMemory(device, pool->blocks[smallest].memory, nullptr);
+         vkFreeMemory(device, pool->blocks[smallest].memory, NULL);
          pool->blocks[smallest] = pool->blocks[pool->num_blocks - 1];
          pool->num_blocks--;
       }
@@ -599,7 +602,7 @@ static void fbpool_drain(FramebufferMemoryPool *pool, VkDevice device)
    {
       size_t i;
       for (i = 0; i < pool->num_blocks; i++)
-         vkFreeMemory(device, pool->blocks[i].memory, nullptr);
+         vkFreeMemory(device, pool->blocks[i].memory, NULL);
       pool->num_blocks = 0;
    }
 
@@ -634,25 +637,25 @@ struct deferred_disposes
 static void deferred_fb_dispose_run(const struct deferred_fb_dispose *c)
 {
    if (c->framebuffer != VK_NULL_HANDLE)
-      vkDestroyFramebuffer(c->device, c->framebuffer, nullptr);
+      vkDestroyFramebuffer(c->device, c->framebuffer, NULL);
    if (c->view != VK_NULL_HANDLE)
-      vkDestroyImageView(c->device, c->view, nullptr);
+      vkDestroyImageView(c->device, c->view, NULL);
    if (c->fb_view != VK_NULL_HANDLE)
-      vkDestroyImageView(c->device, c->fb_view, nullptr);
+      vkDestroyImageView(c->device, c->fb_view, NULL);
    /* The image must be destroyed before its memory becomes reusable;
     * the pool only ever hands out blocks whose image is already gone. */
    if (c->image != VK_NULL_HANDLE)
-      vkDestroyImage(c->device, c->image, nullptr);
+      vkDestroyImage(c->device, c->image, NULL);
    if (c->memory != VK_NULL_HANDLE)
    {
       if (c->pool)
          fbpool_release(c->pool, c->device, c->memory, c->memory_size,
                c->memory_type);
       else
-         vkFreeMemory(c->device, c->memory, nullptr);
+         vkFreeMemory(c->device, c->memory, NULL);
    }
    if (c->render_pass != VK_NULL_HANDLE)
-      vkDestroyRenderPass(c->device, c->render_pass, nullptr);
+      vkDestroyRenderPass(c->device, c->render_pass, NULL);
 }
 
 static void deferred_disposes_run_clear(struct deferred_disposes *d)
@@ -881,10 +884,10 @@ static void slang_pass_free(struct slang_pass *pass);
 static void slang_pass_clear_vk(struct slang_pass *pass);
 
 static Size2D slang_pass_set_pass_info(struct slang_pass *pass,
-      const Size2D &max_original,
-      const Size2D &max_source,
-      const vulkan_filter_chain_swapchain_info &swapchain,
-      const vulkan_filter_chain_pass_info &info);
+      const Size2D max_original,
+      const Size2D max_source,
+      const vulkan_filter_chain_swapchain_info swapchain,
+      const vulkan_filter_chain_pass_info info);
 static void slang_pass_set_shader(struct slang_pass *pass,
       VkShaderStageFlags stage, const uint32_t *spirv, size_t spirv_words);
 static bool slang_pass_build(struct slang_pass *pass);
@@ -892,9 +895,9 @@ static bool slang_pass_init_feedback(struct slang_pass *pass);
 static void slang_pass_build_commands(struct slang_pass *pass,
       struct deferred_disposes *disposer,
       VkCommandBuffer cmd,
-      const Texture &original,
-      const Texture &source,
-      const VkViewport &vp,
+      const Texture *original,
+      const Texture *source,
+      const VkViewport *vp,
       const float *mvp);
 static bool slang_pass_add_parameter(struct slang_pass *pass,
       unsigned parameter_index, const char *id);
@@ -962,14 +965,14 @@ static INLINE void slang_chain_set_shader_preset(
    free(chain->common.shader_preset);
    chain->common.shader_preset = shader;
 }
-static INLINE video_shader *slang_chain_get_shader_preset(
+static INLINE struct video_shader *slang_chain_get_shader_preset(
       struct vulkan_filter_chain *chain)
 {
    return chain->common.shader_preset;
 }
 
 static void slang_chain_set_pass_info(struct vulkan_filter_chain *chain,
-      unsigned pass, const vulkan_filter_chain_pass_info &info);
+      unsigned pass, const vulkan_filter_chain_pass_info info);
 static void slang_chain_set_shader(struct vulkan_filter_chain *chain,
       unsigned pass, VkShaderStageFlags stage,
       const uint32_t *spirv, size_t spirv_words);
@@ -983,18 +986,18 @@ static bool slang_chain_compile_full_pass(struct vulkan_filter_chain *chain,
 static bool slang_chain_finalize(struct vulkan_filter_chain *chain);
 static bool slang_chain_update_swapchain_info(
       struct vulkan_filter_chain *chain,
-      const vulkan_filter_chain_swapchain_info &info);
+      const vulkan_filter_chain_swapchain_info info);
 
 static void slang_chain_notify_sync_index(struct vulkan_filter_chain *chain,
       unsigned index);
 static void slang_chain_set_input_texture(struct vulkan_filter_chain *chain,
-      const vulkan_filter_chain_texture &texture);
+      const vulkan_filter_chain_texture texture);
 static void slang_chain_build_offscreen_passes(
       struct vulkan_filter_chain *chain,
-      VkCommandBuffer cmd, const VkViewport &vp);
+      VkCommandBuffer cmd, const VkViewport vp);
 static void slang_chain_build_viewport_pass(
       struct vulkan_filter_chain *chain,
-      VkCommandBuffer cmd, const VkViewport &vp, const float *mvp);
+      VkCommandBuffer cmd, const VkViewport vp, const float *mvp);
 static void slang_chain_end_frame(struct vulkan_filter_chain *chain,
       VkCommandBuffer cmd);
 
@@ -1065,7 +1068,7 @@ static void slang_chain_execute_deferred(struct vulkan_filter_chain *chain);
 static void slang_chain_set_num_sync_indices(
       struct vulkan_filter_chain *chain, unsigned num_indices);
 static void slang_chain_set_swapchain_info(struct vulkan_filter_chain *chain,
-      const vulkan_filter_chain_swapchain_info &info);
+      const vulkan_filter_chain_swapchain_info info);
 static bool slang_chain_init_ubo(struct vulkan_filter_chain *chain);
 static bool slang_chain_init_history(struct vulkan_filter_chain *chain);
 static bool slang_chain_init_feedback(struct vulkan_filter_chain *chain);
@@ -1080,18 +1083,18 @@ static void slang_chain_update_history_info(
       struct vulkan_filter_chain *chain);
 
 static uint32_t find_memory_type_fallback(
-      const VkPhysicalDeviceMemoryProperties &mem_props,
+      const VkPhysicalDeviceMemoryProperties *mem_props,
       uint32_t device_reqs, uint32_t host_reqs)
 {
    unsigned i;
    for (i = 0; i < VK_MAX_MEMORY_TYPES; i++)
    {
       if ((device_reqs & (1u << i)) &&
-            (mem_props.memoryTypes[i].propertyFlags & host_reqs) == host_reqs)
+            (mem_props->memoryTypes[i].propertyFlags & host_reqs) == host_reqs)
          return i;
    }
 
-   return vulkan_find_memory_type(&mem_props, device_reqs, 0);
+   return vulkan_find_memory_type(mem_props, device_reqs, 0);
 }
 
 static void build_identity_matrix(float *data)
@@ -1165,10 +1168,10 @@ static bool vulkan_filter_chain_load_lut(
       VkCommandBuffer cmd,
       const struct vulkan_filter_chain_create_info *info,
       vulkan_filter_chain *chain,
-      const video_shader_lut *shader)
+      const struct video_shader_lut *shader)
 {
    unsigned i;
-   texture_image image;
+   struct texture_image image;
    VkBufferImageCopy region;
    VkImageCreateInfo image_info;
    struct slang_buffer buffer          = {};
@@ -1178,7 +1181,7 @@ static bool vulkan_filter_chain_load_lut(
    VkImage tex                     = VK_NULL_HANDLE;
    VkDeviceMemory memory           = VK_NULL_HANDLE;
    VkImageView view                = VK_NULL_HANDLE;
-   void *ptr                       = nullptr;
+   void *ptr                       = NULL;
 
    image.width                     = 0;
    image.height                    = 0;
@@ -1186,7 +1189,7 @@ static bool vulkan_filter_chain_load_lut(
    image.supports_rgba             = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
 
    if (!image_texture_load(&image, shader->path))
-      return {};
+      return false;
 
    image_info.sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
    image_info.pNext                 = NULL;
@@ -1209,10 +1212,10 @@ static bool vulkan_filter_chain_load_lut(
    image_info.pQueueFamilyIndices   = NULL;
    image_info.initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED;
 
-   if (vkCreateImage(info->device, &image_info, nullptr, &tex) != VK_SUCCESS)
+   if (vkCreateImage(info->device, &image_info, NULL, &tex) != VK_SUCCESS)
    {
       image_texture_free(&image);
-      return {};
+      return false;
    }
    vulkan_debug_mark_image(info->device, tex);
    vkGetImageMemoryRequirements(info->device, tex, &mem_reqs);
@@ -1225,7 +1228,7 @@ static bool vulkan_filter_chain_load_lut(
          mem_reqs.memoryTypeBits,
          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-   if (vkAllocateMemory(info->device, &alloc, nullptr, &memory) != VK_SUCCESS)
+   if (vkAllocateMemory(info->device, &alloc, NULL, &memory) != VK_SUCCESS)
       goto error;
 
    vulkan_debug_mark_memory(info->device, memory);
@@ -1246,13 +1249,13 @@ static bool vulkan_filter_chain_load_lut(
    view_info.subresourceRange.levelCount     = image_info.mipLevels;
    view_info.subresourceRange.baseArrayLayer = 0;
    view_info.subresourceRange.layerCount     = 1;
-   if (vkCreateImageView(info->device, &view_info, nullptr, &view) != VK_SUCCESS)
+   if (vkCreateImageView(info->device, &view_info, NULL, &view) != VK_SUCCESS)
    {
       image_texture_free(&image);
       goto error;
    }
 
-   slang_buffer_init(&buffer, info->device, *info->memory_properties,
+   slang_buffer_init(&buffer, info->device, info->memory_properties,
          image.width * image.height * sizeof(uint32_t),
          VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
    ptr                                   = slang_buffer_map(&buffer);
@@ -1360,7 +1363,7 @@ static bool vulkan_filter_chain_load_lut(
          VK_QUEUE_FAMILY_IGNORED);
 
    image_texture_free(&image);
-   image.pixels = nullptr;
+   image.pixels = NULL;
 
    if (!slang_static_texture_init(out, shader->id, info->device,
             tex, view, memory, &buffer, image.width, image.height,
@@ -1374,11 +1377,11 @@ error:
    if (image.pixels)
       image_texture_free(&image);
    if (tex != VK_NULL_HANDLE)
-      vkDestroyImage(info->device, tex, nullptr);
+      vkDestroyImage(info->device, tex, NULL);
    if (view != VK_NULL_HANDLE)
-      vkDestroyImageView(info->device, view, nullptr);
+      vkDestroyImageView(info->device, view, NULL);
    if (memory != VK_NULL_HANDLE)
-      vkFreeMemory(info->device, memory, nullptr);
+      vkFreeMemory(info->device, memory, NULL);
    slang_buffer_free(&buffer);
    return false;
 }
@@ -1386,7 +1389,7 @@ error:
 static bool vulkan_filter_chain_load_luts(
       const struct vulkan_filter_chain_create_info *info,
       vulkan_filter_chain *chain,
-      video_shader *shader)
+      struct video_shader *shader)
 {
    size_t i;
    VkSubmitInfo submit_info;
@@ -1460,7 +1463,7 @@ static bool vulkan_filter_chain_load_luts(
       fence_info.pNext             = NULL;
       fence_info.flags             = 0;
 
-      vkCreateFence(info->device, &fence_info, nullptr, &fence);
+      vkCreateFence(info->device, &fence_info, NULL, &fence);
       if (fence == VK_NULL_HANDLE)
       {
          vkFreeCommandBuffers(info->device, info->command_pool, 1, &cmd);
@@ -1468,12 +1471,12 @@ static bool vulkan_filter_chain_load_luts(
       }
       if (vkQueueSubmit(info->queue, 1, &submit_info, fence) != VK_SUCCESS)
       {
-         vkDestroyFence(info->device, fence, nullptr);
+         vkDestroyFence(info->device, fence, NULL);
          vkFreeCommandBuffers(info->device, info->command_pool, 1, &cmd);
          return false;
       }
       vkWaitForFences(info->device, 1, &fence, VK_TRUE, UINT64_MAX);
-      vkDestroyFence(info->device, fence, nullptr);
+      vkDestroyFence(info->device, fence, NULL);
    }
 
    vkFreeCommandBuffers(info->device, info->command_pool, 1, &cmd);
@@ -1527,7 +1530,7 @@ static void slang_chain_free(struct vulkan_filter_chain *chain)
 
 static void slang_chain_set_swapchain_info(struct vulkan_filter_chain *chain,
       
-      const vulkan_filter_chain_swapchain_info &info)
+      const vulkan_filter_chain_swapchain_info info)
 {
    chain->swapchain_info = info;
    slang_chain_set_num_sync_indices(chain, info.num_indices);
@@ -1544,7 +1547,7 @@ static void slang_chain_set_num_sync_indices(struct vulkan_filter_chain *chain,
    if (!num_indices)
    {
       free(chain->deferred_calls);
-      chain->deferred_calls = nullptr;
+      chain->deferred_calls = NULL;
    }
    else
    {
@@ -1559,7 +1562,7 @@ static void slang_chain_set_num_sync_indices(struct vulkan_filter_chain *chain,
       }
       for (i = chain->num_deferred; i < num_indices; i++)
       {
-         new_calls[i].calls = nullptr;
+         new_calls[i].calls = NULL;
          new_calls[i].size  = 0;
          new_calls[i].cap   = 0;
       }
@@ -1583,7 +1586,7 @@ static void slang_chain_notify_sync_index(struct vulkan_filter_chain *chain,
 
 static bool slang_chain_update_swapchain_info(struct vulkan_filter_chain *chain,
       
-      const vulkan_filter_chain_swapchain_info &info)
+      const vulkan_filter_chain_swapchain_info info)
 {
    slang_chain_flush(chain);
    slang_chain_set_swapchain_info(chain, info);
@@ -1642,10 +1645,11 @@ static void slang_chain_update_feedback_info(struct vulkan_filter_chain *chain)
    for (i = 0; i < chain->pass_count - 1; i++)
    {
       struct slang_framebuffer *fb = chain->passes[i]->fb_feedback;
+      Texture *source;
       if (!fb)
          continue;
 
-      Texture *source         = &chain->common.fb_feedback[i];
+      source                  = &chain->common.fb_feedback[i];
 
       source->texture.image   = fb->image;
       source->texture.view    = fb->view;
@@ -1660,10 +1664,12 @@ static void slang_chain_update_feedback_info(struct vulkan_filter_chain *chain)
 
 static void slang_chain_build_offscreen_passes(struct vulkan_filter_chain *chain,
       VkCommandBuffer cmd,
-      const VkViewport &vp)
+      const VkViewport vp)
 {
    unsigned i;
    Texture source;
+   struct deferred_disposes *disposer;
+   Texture original;
 
    /* First frame, make sure our history and feedback textures
     * are in a clean state. */
@@ -1676,13 +1682,11 @@ static void slang_chain_build_offscreen_passes(struct vulkan_filter_chain *chain
    slang_chain_update_history_info(chain);
    slang_chain_update_feedback_info(chain);
 
-   struct deferred_disposes *disposer = &chain->deferred_calls[chain->current_sync_index];
-   const Texture original = {
-      chain->input_texture,
-      chain->passes[0]->pass_info.source_filter,
-      chain->passes[0]->pass_info.mip_filter,
-      chain->passes[0]->pass_info.address,
-   };
+   disposer            = &chain->deferred_calls[chain->current_sync_index];
+   original.texture    = chain->input_texture;
+   original.filter     = chain->passes[0]->pass_info.source_filter;
+   original.mip_filter = chain->passes[0]->pass_info.mip_filter;
+   original.address    = chain->passes[0]->pass_info.address;
 
    source = original;
 
@@ -1700,10 +1704,11 @@ static void slang_chain_build_offscreen_passes(struct vulkan_filter_chain *chain
 
    for (i = 0; i < chain->pass_count - 1; i++)
    {
+      const struct slang_framebuffer *fb;
       slang_pass_build_commands(chain->passes[i], disposer, cmd,
-            original, source, vp, nullptr);
+            &original, &source, &vp, NULL);
 
-      const struct slang_framebuffer *fb = chain->passes[i]->framebuffer;
+      fb = chain->passes[i]->framebuffer;
 
       source.texture.image    = fb->image;
       source.texture.view     = fb->view;
@@ -1722,6 +1727,9 @@ static void slang_chain_update_history(struct vulkan_filter_chain *chain,
       struct deferred_disposes *disposer,
       VkCommandBuffer cmd)
 {
+   unsigned next_history_ring_index;
+   struct slang_framebuffer *target;
+   bool copy_history;
    VkImageLayout src_layout = chain->input_texture.layout;
    unsigned hist_size       = (unsigned)chain->num_history;
 
@@ -1744,13 +1752,12 @@ static void slang_chain_update_history(struct vulkan_filter_chain *chain,
 
    /* Advance ring index backwards: the oldest slot becomes the newest.
     * This replaces the O(N) move_backward with O(1) index arithmetic. */
-   unsigned next_history_ring_index = (chain->history_ring_index == 0)
+   next_history_ring_index = (chain->history_ring_index == 0)
       ? hist_size - 1
       : chain->history_ring_index - 1;
 
-   struct slang_framebuffer *target = chain->original_history[next_history_ring_index];
-
-   bool copy_history = true;
+   target       = chain->original_history[next_history_ring_index];
+   copy_history = true;
 
    if   (    chain->input_texture.width  != target->size.width
          ||  chain->input_texture.height != target->size.height
@@ -1802,7 +1809,7 @@ static void slang_chain_end_frame(struct vulkan_filter_chain *chain,
 
 static void slang_chain_build_viewport_pass(struct vulkan_filter_chain *chain,
       
-      VkCommandBuffer cmd, const VkViewport &vp, const float *mvp)
+      VkCommandBuffer cmd, const VkViewport vp, const float *mvp)
 {
    unsigned i;
    Texture source;
@@ -1817,12 +1824,10 @@ static void slang_chain_build_viewport_pass(struct vulkan_filter_chain *chain,
 
    if (chain->pass_count == 1)
    {
-      source = {
-         chain->input_texture,
-         chain->passes[chain->pass_count - 1]->pass_info.source_filter,
-         chain->passes[chain->pass_count - 1]->pass_info.mip_filter,
-         chain->passes[chain->pass_count - 1]->pass_info.address,
-      };
+      source.texture    = chain->input_texture;
+      source.filter     = chain->passes[chain->pass_count - 1]->pass_info.source_filter;
+      source.mip_filter = chain->passes[chain->pass_count - 1]->pass_info.mip_filter;
+      source.address    = chain->passes[chain->pass_count - 1]->pass_info.address;
    }
    else
    {
@@ -1838,7 +1843,7 @@ static void slang_chain_build_viewport_pass(struct vulkan_filter_chain *chain,
    }
 
    slang_pass_build_commands(chain->passes[chain->pass_count - 1], disposer, cmd,
-         original, source, vp, mvp);
+         &original, &source, &vp, mvp);
 
    /* For feedback FBOs, swap current and previous. */
    for (i = 0; i < chain->pass_count; i++)
@@ -1853,7 +1858,7 @@ static bool slang_chain_init_history(struct vulkan_filter_chain *chain)
    for (i = 0; i < chain->num_history; i++)
       slang_framebuffer_delete(&chain->original_history[i]);
    free(chain->original_history);
-   chain->original_history = nullptr;
+   chain->original_history = NULL;
    chain->num_history      = 0;
    texture_array_resize(&chain->common.original_history,
          &chain->common.num_original_history, 0);
@@ -1894,7 +1899,7 @@ static bool slang_chain_init_history(struct vulkan_filter_chain *chain)
    }
 
 #ifdef VULKAN_DEBUG
-   RARCH_LOG("[Vulkan] Using history of %u frames.\n", unsigned(required_images));
+   RARCH_LOG("[Vulkan] Using history of %u frames.\n", (unsigned)(required_images));
 #endif
 
    /* On first frame, we need to clear the textures to
@@ -1920,11 +1925,11 @@ static bool slang_chain_init_feedback(struct vulkan_filter_chain *chain)
       for (j = 0; j < chain->pass_count; j++)
       {
          const struct slang_pass *pass = chain->passes[j];
-         const slang_reflection &r = pass->reflection;
-         const slang_texture_semantic_array &feedbacks =
-            r.semantic_textures[SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK];
+         const slang_reflection *r = &pass->reflection;
+         const slang_texture_semantic_array *feedbacks =
+            &r->semantic_textures[SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK];
 
-         if (i < feedbacks.size && feedbacks.data[i].texture)
+         if (i < feedbacks->size && feedbacks->data[i].texture)
          {
             use_feedback  = true;
             use_feedbacks = true;
@@ -2009,7 +2014,7 @@ static bool slang_chain_init_alias(struct vulkan_filter_chain *chain)
 
 static void slang_chain_set_pass_info(struct vulkan_filter_chain *chain,
       unsigned pass,
-      const vulkan_filter_chain_pass_info &info)
+      const vulkan_filter_chain_pass_info info)
 {
    chain->pass_info[pass] = info;
 }
@@ -2117,13 +2122,13 @@ static bool slang_chain_init_ubo(struct vulkan_filter_chain *chain)
 
    if (chain->common.ubo_offset != 0)
       slang_buffer_init(&chain->common.ubo, chain->device,
-            chain->memory_properties, chain->common.ubo_offset * chain->num_deferred,
+            &chain->memory_properties, chain->common.ubo_offset * chain->num_deferred,
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
    if (chain->common.ubo.buffer != VK_NULL_HANDLE)
-      chain->common.ubo_mapped         = static_cast<uint8_t*>(slang_buffer_map(&chain->common.ubo));
+      chain->common.ubo_mapped         = ((uint8_t*)(slang_buffer_map(&chain->common.ubo)));
    else
-      chain->common.ubo_mapped         = nullptr;
+      chain->common.ubo_mapped         = NULL;
    return true;
 }
 
@@ -2190,21 +2195,27 @@ static bool slang_chain_compile_full_pass(struct vulkan_filter_chain *chain,
       unsigned pass_idx,
       glslang_filter_chain_filter default_filter)
 {
-   video_shader *shader = chain->common.shader_preset;
+   size_t j;
+   const struct video_shader_pass *pass;
+   const struct video_shader_pass *next_pass;
+   glslang_output output;
+   struct vulkan_filter_chain_pass_info p_info;
+   bool explicit_format;
+   struct video_shader *shader = chain->common.shader_preset;
+
    if (!shader || pass_idx >= chain->pass_count)
       return false;
 
    /* Extra opaque pass (last_pass_is_fbo) — SPIRV already set */
+
    if (pass_idx >= shader->passes)
       return slang_chain_init_single_pass(chain, pass_idx);
 
-   const video_shader_pass *pass      = &shader->pass[pass_idx];
-   const video_shader_pass *next_pass =
-      pass_idx + 1 < shader->passes
-      ? &shader->pass[pass_idx + 1] : nullptr;
+   pass      = &shader->pass[pass_idx];
+   next_pass = pass_idx + 1 < shader->passes
+      ? &shader->pass[pass_idx + 1] : NULL;
 
    /* ---- SPIRV cross-compile (CPU) ---- */
-   glslang_output output;
    if (!glslang_compile_shader(pass->source.path, &output))
    {
       RARCH_ERR("[Vulkan] Failed to compile shader: \"%s\".\n",
@@ -2213,9 +2224,10 @@ static bool slang_chain_compile_full_pass(struct vulkan_filter_chain *chain,
    }
 
    /* ---- Extract parameters ---- */
-   for (size_t j = 0; j < output.meta.num_parameters; j++)
+   for (j = 0; j < output.meta.num_parameters; j++)
    {
       const glslang_parameter *meta_param = &output.meta.parameters[j];
+      struct video_shader_parameter *itr;
 
       if (shader->num_parameters >= GFX_MAX_PARAMETERS)
       {
@@ -2225,7 +2237,7 @@ static bool slang_chain_compile_full_pass(struct vulkan_filter_chain *chain,
          return false;
       }
 
-      video_shader_parameter *itr = NULL;
+      itr = NULL;
       {
          unsigned k;
          size_t mid_len = strlen(meta_param->id);
@@ -2261,7 +2273,7 @@ static bool slang_chain_compile_full_pass(struct vulkan_filter_chain *chain,
       }
       else
       {
-         video_shader_parameter *param =
+         struct video_shader_parameter *param =
             &shader->parameters[shader->num_parameters];
          strlcpy(param->id, meta_param->id, sizeof(param->id));
          strlcpy(param->desc, meta_param->desc, sizeof(param->desc));
@@ -2300,7 +2312,6 @@ static bool slang_chain_compile_full_pass(struct vulkan_filter_chain *chain,
    }
 
    /* ---- Pass info (scale, filter, format) ---- */
-   struct vulkan_filter_chain_pass_info p_info;
    p_info.scale_type_x  = GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL;
    p_info.scale_type_y  = GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL;
    p_info.scale_x       = 0.0f;
@@ -2331,7 +2342,7 @@ static bool slang_chain_compile_full_pass(struct vulkan_filter_chain *chain,
       ? GLSLANG_FILTER_CHAIN_LINEAR
       : GLSLANG_FILTER_CHAIN_NEAREST;
 
-   bool explicit_format = output.meta.rt_format != SLANG_FORMAT_UNKNOWN;
+   explicit_format = output.meta.rt_format != SLANG_FORMAT_UNKNOWN;
 
    if (output.meta.rt_format == SLANG_FORMAT_UNKNOWN)
       output.meta.rt_format = SLANG_FORMAT_R8G8B8A8_UNORM;
@@ -2345,10 +2356,11 @@ static bool slang_chain_compile_full_pass(struct vulkan_filter_chain *chain,
 
       if (pass_idx + 1 == shader->passes)
       {
+         VkFormat pass_format;
          p_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
          p_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
 
-         VkFormat pass_format = glslang_format_to_vk(output.meta.rt_format);
+         pass_format = glslang_format_to_vk(output.meta.rt_format);
 
          if (explicit_format && vulkan_is_hdr10_format(pass_format))
             slang_chain_set_emits_hdr10(chain);
@@ -2401,7 +2413,7 @@ static bool slang_chain_compile_full_pass(struct vulkan_filter_chain *chain,
             p_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_SOURCE;
             break;
          case RARCH_SCALE_ABSOLUTE:
-            p_info.scale_x      = float(pass->fbo.abs_x);
+            p_info.scale_x      = (float)(pass->fbo.abs_x);
             p_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE;
             break;
          case RARCH_SCALE_VIEWPORT:
@@ -2417,7 +2429,7 @@ static bool slang_chain_compile_full_pass(struct vulkan_filter_chain *chain,
             p_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_SOURCE;
             break;
          case RARCH_SCALE_ABSOLUTE:
-            p_info.scale_y      = float(pass->fbo.abs_y);
+            p_info.scale_y      = (float)(pass->fbo.abs_y);
             p_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE;
             break;
          case RARCH_SCALE_VIEWPORT:
@@ -2481,7 +2493,7 @@ static void slang_chain_clear_history_and_feedback(struct vulkan_filter_chain *c
 
 static void slang_chain_set_input_texture(struct vulkan_filter_chain *chain,
       
-      const vulkan_filter_chain_texture &texture)
+      const vulkan_filter_chain_texture texture)
 {
    chain->input_texture = texture;
 }
@@ -2489,8 +2501,8 @@ static void slang_chain_set_input_texture(struct vulkan_filter_chain *chain,
 static void slang_chain_set_frame_count(struct vulkan_filter_chain *chain,
       uint64_t count)
 {
-   chain->common.frame_count = count;
    unsigned i;
+   chain->common.frame_count = count;
    for (i = 0; i < chain->pass_count; i++)
       slang_pass_set_frame_count(chain->passes[i], count);
 }
@@ -2627,7 +2639,7 @@ static bool slang_chain_add_static_texture(struct vulkan_filter_chain *chain,
 
 
 static bool slang_buffer_init(struct slang_buffer *buf,
-      VkDevice device, const VkPhysicalDeviceMemoryProperties &mem_props,
+      VkDevice device, const VkPhysicalDeviceMemoryProperties *mem_props,
       size_t len, VkBufferUsageFlags usage)
 {
    VkBufferCreateInfo info;
@@ -2636,7 +2648,7 @@ static bool slang_buffer_init(struct slang_buffer *buf,
 
    buf->device = device;
    buf->size   = len;
-   buf->mapped = nullptr;
+   buf->mapped = NULL;
 
    info.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
    info.pNext                 = NULL;
@@ -2646,7 +2658,7 @@ static bool slang_buffer_init(struct slang_buffer *buf,
    info.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
    info.queueFamilyIndexCount = 0;
    info.pQueueFamilyIndices   = NULL;
-   if (vkCreateBuffer(device, &info, nullptr, &buf->buffer) != VK_SUCCESS)
+   if (vkCreateBuffer(device, &info, NULL, &buf->buffer) != VK_SUCCESS)
    {
       buf->buffer = VK_NULL_HANDLE;
       buf->memory = VK_NULL_HANDLE;
@@ -2659,7 +2671,7 @@ static bool slang_buffer_init(struct slang_buffer *buf,
    alloc.pNext                = NULL;
    alloc.allocationSize       = mem_reqs.size;
    alloc.memoryTypeIndex      = vulkan_find_memory_type(
-         &mem_props, mem_reqs.memoryTypeBits,
+         mem_props, mem_reqs.memoryTypeBits,
          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
          | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
@@ -2680,7 +2692,7 @@ static void *slang_buffer_map(struct slang_buffer *buf)
    {
       if (vkMapMemory(buf->device, buf->memory, 0, buf->size, 0,
                &buf->mapped) != VK_SUCCESS)
-         return nullptr;
+         return NULL;
    }
    return buf->mapped;
 }
@@ -2689,7 +2701,7 @@ static void slang_buffer_unmap(struct slang_buffer *buf)
 {
    if (buf->mapped)
       vkUnmapMemory(buf->device, buf->memory);
-   buf->mapped = nullptr;
+   buf->mapped = NULL;
 }
 
 static void slang_buffer_free(struct slang_buffer *buf)
@@ -2697,9 +2709,9 @@ static void slang_buffer_free(struct slang_buffer *buf)
    if (buf->mapped)
       slang_buffer_unmap(buf);
    if (buf->memory != VK_NULL_HANDLE)
-      vkFreeMemory(buf->device, buf->memory, nullptr);
+      vkFreeMemory(buf->device, buf->memory, NULL);
    if (buf->buffer != VK_NULL_HANDLE)
-      vkDestroyBuffer(buf->device, buf->buffer, nullptr);
+      vkDestroyBuffer(buf->device, buf->buffer, NULL);
    buf->buffer = VK_NULL_HANDLE;
    buf->memory = VK_NULL_HANDLE;
 }
@@ -2770,19 +2782,19 @@ static void slang_pass_set_shader(struct slang_pass *pass,
 }
 
 static Size2D slang_pass_get_output_size(struct slang_pass *pass,
-      const Size2D &original,
-      const Size2D &source)
+      const Size2D original,
+      const Size2D source)
 {
    float width  = 0.0f;
    float height = 0.0f;
    switch (pass->pass_info.scale_type_x)
    {
       case GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL:
-         width = float(original.width) * pass->pass_info.scale_x;
+         width = (float)(original.width) * pass->pass_info.scale_x;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_SOURCE:
-         width = float(source.width) * pass->pass_info.scale_x;
+         width = (float)(source.width) * pass->pass_info.scale_x;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT:
@@ -2800,11 +2812,11 @@ static Size2D slang_pass_get_output_size(struct slang_pass *pass,
    switch (pass->pass_info.scale_type_y)
    {
       case GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL:
-         height = float(original.height) * pass->pass_info.scale_y;
+         height = (float)(original.height) * pass->pass_info.scale_y;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_SOURCE:
-         height = float(source.height) * pass->pass_info.scale_y;
+         height = (float)(source.height) * pass->pass_info.scale_y;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT:
@@ -2819,15 +2831,20 @@ static Size2D slang_pass_get_output_size(struct slang_pass *pass,
          break;
    }
 
-   return { unsigned(roundf(width)), unsigned(roundf(height)) };
+   {
+      Size2D out;
+      out.width  = (unsigned)(roundf(width));
+      out.height = (unsigned)(roundf(height));
+      return out;
+   }
 }
 
 static Size2D slang_pass_set_pass_info(struct slang_pass *pass,
       
-      const Size2D &max_original,
-      const Size2D &max_source,
-      const vulkan_filter_chain_swapchain_info &swapchain,
-      const vulkan_filter_chain_pass_info &info)
+      const Size2D max_original,
+      const Size2D max_source,
+      const vulkan_filter_chain_swapchain_info swapchain,
+      const vulkan_filter_chain_pass_info info)
 {
    slang_pass_clear_vk(pass);
 
@@ -2846,13 +2863,13 @@ static Size2D slang_pass_set_pass_info(struct slang_pass *pass,
 static void slang_pass_clear_vk(struct slang_pass *pass)
 {
    if (pass->pool != VK_NULL_HANDLE)
-      vkDestroyDescriptorPool(pass->device, pass->pool, nullptr);
+      vkDestroyDescriptorPool(pass->device, pass->pool, NULL);
    if (pass->pipeline != VK_NULL_HANDLE)
-      vkDestroyPipeline(pass->device, pass->pipeline, nullptr);
+      vkDestroyPipeline(pass->device, pass->pipeline, NULL);
    if (pass->set_layout != VK_NULL_HANDLE)
-      vkDestroyDescriptorSetLayout(pass->device, pass->set_layout, nullptr);
+      vkDestroyDescriptorSetLayout(pass->device, pass->set_layout, NULL);
    if (pass->pipeline_layout != VK_NULL_HANDLE)
-      vkDestroyPipelineLayout(pass->device, pass->pipeline_layout, nullptr);
+      vkDestroyPipelineLayout(pass->device, pass->pipeline_layout, NULL);
 
    pass->pool            = VK_NULL_HANDLE;
    pass->pipeline        = VK_NULL_HANDLE;
@@ -2882,8 +2899,8 @@ static bool slang_pass_init_pipeline_layout(struct slang_pass *pass)
 
    /* Upper bound, then fill: the UBO slot plus every semantic-texture
     * entry that is actually referenced. */
-   for (auto &semantic : pass->reflection.semantic_textures)
-      max_bindings += semantic.size;
+   for (i = 0; i < SLANG_NUM_TEXTURE_SEMANTICS; i++)
+      max_bindings += pass->reflection.semantic_textures[i].size;
    if (!(bindings = (VkDescriptorSetLayoutBinding*)
             calloc(max_bindings, sizeof(*bindings))))
       return false;
@@ -2900,33 +2917,36 @@ static bool slang_pass_init_pipeline_layout(struct slang_pass *pass)
       bindings[num_bindings].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
       bindings[num_bindings].descriptorCount    = 1;
       bindings[num_bindings].stageFlags         = ubo_mask;
-      bindings[num_bindings].pImmutableSamplers = nullptr;
+      bindings[num_bindings].pImmutableSamplers = NULL;
       desc_counts[num_bindings].type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
       desc_counts[num_bindings].descriptorCount = pass->num_sync_indices;
       num_bindings++;
    }
 
    /* Semantic textures. */
-   for (auto &semantic : pass->reflection.semantic_textures)
+   for (i = 0; i < SLANG_NUM_TEXTURE_SEMANTICS; i++)
    {
-      for (size_t ti = 0; ti < semantic.size; ti++)
+      const slang_texture_semantic_array *semantic =
+         &pass->reflection.semantic_textures[i];
+      size_t ti;
+      for (ti = 0; ti < semantic->size; ti++)
       {
-         const slang_texture_semantic_meta &texture = semantic.data[ti];
+         const slang_texture_semantic_meta *texture = &semantic->data[ti];
          VkShaderStageFlags stages = 0;
 
-         if (!texture.texture)
+         if (!texture->texture)
             continue;
 
-         if (texture.stage_mask & SLANG_STAGE_VERTEX_MASK)
+         if (texture->stage_mask & SLANG_STAGE_VERTEX_MASK)
             stages |= VK_SHADER_STAGE_VERTEX_BIT;
-         if (texture.stage_mask & SLANG_STAGE_FRAGMENT_MASK)
+         if (texture->stage_mask & SLANG_STAGE_FRAGMENT_MASK)
             stages |= VK_SHADER_STAGE_FRAGMENT_BIT;
 
-         bindings[num_bindings].binding            = texture.binding;
+         bindings[num_bindings].binding            = texture->binding;
          bindings[num_bindings].descriptorType     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
          bindings[num_bindings].descriptorCount    = 1;
          bindings[num_bindings].stageFlags         = stages;
-         bindings[num_bindings].pImmutableSamplers = nullptr;
+         bindings[num_bindings].pImmutableSamplers = NULL;
          desc_counts[num_bindings].type            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
          desc_counts[num_bindings].descriptorCount = pass->num_sync_indices;
          num_bindings++;
@@ -2998,7 +3018,7 @@ static bool slang_pass_init_pipeline_layout(struct slang_pass *pass)
    pool_info.poolSizeCount              = (uint32_t)num_bindings;
    pool_info.pPoolSizes                 = desc_counts;
    {
-      VkResult res = vkCreateDescriptorPool(pass->device, &pool_info, nullptr,
+      VkResult res = vkCreateDescriptorPool(pass->device, &pool_info, NULL,
             &pass->pool);
       free(bindings);
       free(desc_counts);
@@ -3201,20 +3221,9 @@ static void common_resources_init(CommonResources *common,
       VkDevice device,
       const VkPhysicalDeviceMemoryProperties *memory_properties)
 {
-   memset(common, 0, sizeof(*common));
-   common->device          = device;
-   common->ubo_alignment   = 1;
-   common->frame_direction = 1;
-   common->total_subframes = 1;
-   common->current_subframe= 1;
-
    void *ptr;
    unsigned i;
    VkSamplerCreateInfo info;
-   /* The final pass uses an MVP designed for [0, 1] range VBO.
-    * For in-between passes, we just go with identity matrices,
-    * so keep it simple.
-    */
    const float vbo_data[]       = {
       /* Offscreen */
       -1.0f, -1.0f, 0.0f, 0.0f,
@@ -3229,8 +3238,20 @@ static void common_resources_init(CommonResources *common,
       1.0f, +1.0f, 1.0f, 1.0f,
    };
 
+   memset(common, 0, sizeof(*common));
+   common->device          = device;
+   common->ubo_alignment   = 1;
+   common->frame_direction = 1;
+   common->total_subframes = 1;
+   common->current_subframe= 1;
+   /* The final pass uses an MVP designed for [0, 1] range VBO.
+    * For in-between passes, we just go with identity matrices,
+    * so keep it simple.
+    */
+
+
    slang_buffer_init(&common->vbo, common->device,
-         *memory_properties, sizeof(vbo_data), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+         memory_properties, sizeof(vbo_data), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 
    ptr                          = slang_buffer_map(&common->vbo);
    memcpy(ptr, vbo_data, sizeof(vbo_data));
@@ -3259,7 +3280,7 @@ static void common_resources_init(CommonResources *common,
    {
       unsigned j;
 
-      switch (static_cast<glslang_filter_chain_filter>(i))
+      switch ((glslang_filter_chain_filter)i)
       {
          case GLSLANG_FILTER_CHAIN_LINEAR:
             info.magFilter = VK_FILTER_LINEAR;
@@ -3279,7 +3300,7 @@ static void common_resources_init(CommonResources *common,
       {
          unsigned k;
 
-         switch (static_cast<glslang_filter_chain_filter>(j))
+         switch ((glslang_filter_chain_filter)j)
          {
             case GLSLANG_FILTER_CHAIN_LINEAR:
                info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
@@ -3297,7 +3318,7 @@ static void common_resources_init(CommonResources *common,
          {
             VkSamplerAddressMode mode = VK_SAMPLER_ADDRESS_MODE_MAX_ENUM;
 
-            switch (static_cast<glslang_filter_chain_address>(k))
+            switch ((glslang_filter_chain_address)k)
             {
                case GLSLANG_FILTER_CHAIN_ADDRESS_REPEAT:
                   mode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
@@ -3326,7 +3347,7 @@ static void common_resources_init(CommonResources *common,
             info.addressModeU = mode;
             info.addressModeV = mode;
             info.addressModeW = mode;
-            if (vkCreateSampler(common->device, &info, nullptr,
+            if (vkCreateSampler(common->device, &info, NULL,
                      &common->samplers[i][j][k]) != VK_SUCCESS)
                common->samplers[i][j][k] = VK_NULL_HANDLE;
          }
@@ -3338,16 +3359,23 @@ static void common_resources_free(CommonResources *common)
 {
    slang_texture_semantic_name_map_free(&common->texture_semantic_map);
    slang_texture_semantic_name_map_free(&common->texture_semantic_uniform_map);
-   for (auto &i : common->samplers)
-      for (auto &j : i)
-         for (auto &k : j)
-            if (k != VK_NULL_HANDLE)
-               vkDestroySampler(common->device, k, nullptr);
+   {
+      unsigned i, j, k;
+      for (i = 0; i < GLSLANG_FILTER_CHAIN_COUNT; i++)
+         for (j = 0; j < GLSLANG_FILTER_CHAIN_COUNT; j++)
+            for (k = 0; k < GLSLANG_FILTER_CHAIN_ADDRESS_COUNT; k++)
+               if (common->samplers[i][j][k] != VK_NULL_HANDLE)
+                  vkDestroySampler(common->device,
+                        common->samplers[i][j][k], NULL);
+   }
    fbpool_drain(&common->framebuffer_pool, common->device);
    slang_buffer_free(&common->vbo);
    slang_buffer_free(&common->ubo);
-   for (size_t i = 0; i < common->num_luts; i++)
-      slang_static_texture_free(&common->luts[i]);
+   {
+      size_t i;
+      for (i = 0; i < common->num_luts; i++)
+         slang_static_texture_free(&common->luts[i]);
+   }
    free(common->luts);
    free(common->original_history);
    free(common->fb_feedback);
@@ -3387,8 +3415,8 @@ static bool slang_pass_init_feedback(struct slang_pass *pass)
    pass->fb_feedback = slang_framebuffer_new(pass->device, pass->memory_properties,
          &pass->current_framebuffer_size,
          pass->pass_info.rt_format, pass->pass_info.max_levels,
-         pass->common ? &pass->common->framebuffer_pool : nullptr);
-   return pass->fb_feedback != nullptr;
+         pass->common ? &pass->common->framebuffer_pool : NULL);
+   return pass->fb_feedback != NULL;
 }
 
 static bool slang_pass_build(struct slang_pass *pass)
@@ -3405,7 +3433,7 @@ static bool slang_pass_build(struct slang_pass *pass)
       if (!(pass->framebuffer = slang_framebuffer_new(pass->device, pass->memory_properties,
                &pass->current_framebuffer_size,
                pass->pass_info.rt_format, pass->pass_info.max_levels,
-               pass->common ? &pass->common->framebuffer_pool : nullptr)))
+               pass->common ? &pass->common->framebuffer_pool : NULL)))
          return false;
    }
 
@@ -3446,12 +3474,15 @@ static bool slang_pass_build(struct slang_pass *pass)
    }
 
    {
-      auto &g = pass->reflection.semantics[SLANG_SEMANTIC_GYROSCOPE];
-      auto &a = pass->reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER];
-      auto &r = pass->reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER_REST];
-      if (g.uniform || g.push_constant ||
-          a.uniform || a.push_constant ||
-          r.uniform || r.push_constant)
+      const slang_semantic_meta *g =
+         &pass->reflection.semantics[SLANG_SEMANTIC_GYROSCOPE];
+      const slang_semantic_meta *a =
+         &pass->reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER];
+      const slang_semantic_meta *r =
+         &pass->reflection.semantics[SLANG_SEMANTIC_ACCELEROMETER_REST];
+      if (g->uniform || g->push_constant ||
+          a->uniform || a->push_constant ||
+          r->uniform || r->push_constant)
          input_state_get_ptr()->shader_uses_sensors = true;
    }
 
@@ -3476,51 +3507,51 @@ static bool slang_pass_build(struct slang_pass *pass)
 
 static void slang_pass_set_semantic_texture(struct slang_pass *pass,
       VkDescriptorSet set,
-      slang_texture_semantic semantic, const Texture &texture,
+      enum slang_texture_semantic semantic, const Texture *texture,
       VkDescriptorImageInfo *image_infos, VkWriteDescriptorSet *writes,
-      unsigned &write_count)
+      unsigned *write_count)
 {
    if (pass->reflection.semantic_textures[semantic].data[0].texture
-         && texture.texture.view != VK_NULL_HANDLE)
+         && texture->texture.view != VK_NULL_HANDLE)
    {
-      if (write_count >= VULKAN_MAX_DESCRIPTOR_WRITES)
-         vulkan_flush_descriptor_writes(pass->device, writes, &write_count);
-      VULKAN_PASS_SET_TEXTURE_BATCHED(set, pass->common->samplers[texture.filter][texture.mip_filter][texture.address], pass->reflection.semantic_textures[semantic].data[0].binding, texture.texture.view, texture.texture.layout, image_infos, writes, write_count);
+      if (*write_count >= VULKAN_MAX_DESCRIPTOR_WRITES)
+         vulkan_flush_descriptor_writes(pass->device, writes, write_count);
+      VULKAN_PASS_SET_TEXTURE_BATCHED(set, pass->common->samplers[texture->filter][texture->mip_filter][texture->address], pass->reflection.semantic_textures[semantic].data[0].binding, texture->texture.view, texture->texture.layout, image_infos, writes, *write_count);
    }
 }
 
 static void slang_pass_set_semantic_texture_array(struct slang_pass *pass,
       VkDescriptorSet set,
-      slang_texture_semantic semantic, unsigned index,
-      const Texture &texture,
+      enum slang_texture_semantic semantic, unsigned index,
+      const Texture *texture,
       VkDescriptorImageInfo *image_infos, VkWriteDescriptorSet *writes,
-      unsigned &write_count)
+      unsigned *write_count)
 {
    if (index < pass->reflection.semantic_textures[semantic].size &&
          pass->reflection.semantic_textures[semantic].data[index].texture &&
-         texture.texture.view != VK_NULL_HANDLE)
+         texture->texture.view != VK_NULL_HANDLE)
    {
-      if (write_count >= VULKAN_MAX_DESCRIPTOR_WRITES)
-         vulkan_flush_descriptor_writes(pass->device, writes, &write_count);
-      VULKAN_PASS_SET_TEXTURE_BATCHED(set, pass->common->samplers[texture.filter][texture.mip_filter][texture.address],  pass->reflection.semantic_textures[semantic].data[index].binding, texture.texture.view, texture.texture.layout, image_infos, writes, write_count);
+      if (*write_count >= VULKAN_MAX_DESCRIPTOR_WRITES)
+         vulkan_flush_descriptor_writes(pass->device, writes, write_count);
+      VULKAN_PASS_SET_TEXTURE_BATCHED(set, pass->common->samplers[texture->filter][texture->mip_filter][texture->address],  pass->reflection.semantic_textures[semantic].data[index].binding, texture->texture.view, texture->texture.layout, image_infos, writes, *write_count);
    }
 }
 
 static void slang_pass_build_semantic_texture_array_vec4(struct slang_pass *pass,
-      uint8_t *data, slang_texture_semantic semantic,
+      uint8_t *data, enum slang_texture_semantic semantic,
       unsigned index, unsigned width, unsigned height)
 {
-   const slang_texture_semantic_array &arr =
-      pass->reflection.semantic_textures[semantic];
+   const slang_texture_semantic_array *arr =
+      &pass->reflection.semantic_textures[semantic];
    const slang_texture_semantic_meta *refl;
 
-   if (index >= arr.size)
+   if (index >= arr->size)
       return;
-   refl = &arr.data[index];
+   refl = &arr->data[index];
 
    if (data && refl->uniform)
    {
-      float *_data = reinterpret_cast<float *>(data + refl->ubo_offset);
+      float *_data = ((float *)(data + refl->ubo_offset));
       _data[0]     = (float)(width);
       _data[1]     = (float)(height);
       _data[2]     = 1.0f / (float)(width);
@@ -3529,7 +3560,7 @@ static void slang_pass_build_semantic_texture_array_vec4(struct slang_pass *pass
 
    if (refl->push_constant)
    {
-      float *_data = reinterpret_cast<float *>(pass->push.buffer + (refl->push_constant_offset >> 2));
+      float *_data = ((float *)(pass->push.buffer + (refl->push_constant_offset >> 2)));
       _data[0]     = (float)(width);
       _data[1]     = (float)(height);
       _data[2]     = 1.0f / (float)(width);
@@ -3538,31 +3569,31 @@ static void slang_pass_build_semantic_texture_array_vec4(struct slang_pass *pass
 }
 
 static void slang_pass_build_semantic_texture_vec4(struct slang_pass *pass,
-      uint8_t *data, slang_texture_semantic semantic,
+      uint8_t *data, enum slang_texture_semantic semantic,
       unsigned width, unsigned height)
 {
    slang_pass_build_semantic_texture_array_vec4(pass, data, semantic, 0, width, height);
 }
 
 static void slang_pass_build_semantic_vec4(struct slang_pass *pass,
-      uint8_t *data, slang_semantic semantic,
+      uint8_t *data, enum slang_semantic semantic,
       unsigned width, unsigned height)
 {
-   auto &refl = pass->reflection.semantics[semantic];
+   const slang_semantic_meta *refl = &pass->reflection.semantics[semantic];
 
-   if (data && refl.uniform)
+   if (data && refl->uniform)
    {
-      float *_data = reinterpret_cast<float *>(data + refl.ubo_offset);
+      float *_data = ((float *)(data + refl->ubo_offset));
       _data[0]     = (float)(width);
       _data[1]     = (float)(height);
       _data[2]     = 1.0f / (float)(width);
       _data[3]     = 1.0f / (float)(height);
    }
 
-   if (refl.push_constant)
+   if (refl->push_constant)
    {
-      float *_data = reinterpret_cast<float *>
-            (pass->push.buffer + (refl.push_constant_offset >> 2));
+      float *_data = (float*)
+            (pass->push.buffer + (refl->push_constant_offset >> 2));
       _data[0]     = (float)(width);
       _data[1]     = (float)(height);
       _data[2]     = 1.0f / (float)(width);
@@ -3573,96 +3604,96 @@ static void slang_pass_build_semantic_vec4(struct slang_pass *pass,
 static void slang_pass_build_semantic_parameter(struct slang_pass *pass,
       uint8_t *data, unsigned index, float value)
 {
-   auto &refl = pass->reflection.semantic_float_parameters[index];
+   const slang_semantic_meta *refl = &pass->reflection.semantic_float_parameters[index];
 
    /* We will have filtered out stale pass->parameters. */
-   if (data && refl.uniform)
-      *reinterpret_cast<float*>(data + refl.ubo_offset) = value;
+   if (data && refl->uniform)
+      *((float*)(data + refl->ubo_offset)) = value;
 
-   if (refl.push_constant)
-      *reinterpret_cast<float*>(pass->push.buffer + (refl.push_constant_offset >> 2)) = value;
+   if (refl->push_constant)
+      *((float*)(pass->push.buffer + (refl->push_constant_offset >> 2))) = value;
 }
 
 static void slang_pass_build_semantic_uint(struct slang_pass *pass,
-      uint8_t *data, slang_semantic semantic,
+      uint8_t *data, enum slang_semantic semantic,
       uint32_t value)
 {
-   auto &refl = pass->reflection.semantics[semantic];
+   const slang_semantic_meta *refl = &pass->reflection.semantics[semantic];
 
-   if (data && refl.uniform)
-      *reinterpret_cast<uint32_t*>(data + pass->reflection.semantics[semantic].ubo_offset) = value;
+   if (data && refl->uniform)
+      *((uint32_t*)(data + pass->reflection.semantics[semantic].ubo_offset)) = value;
 
-   if (refl.push_constant)
-      *reinterpret_cast<uint32_t*>(pass->push.buffer + (refl.push_constant_offset >> 2)) = value;
+   if (refl->push_constant)
+      *((uint32_t*)(pass->push.buffer + (refl->push_constant_offset >> 2))) = value;
 }
 
 static void slang_pass_build_semantic_int(struct slang_pass *pass,
-      uint8_t *data, slang_semantic semantic,
+      uint8_t *data, enum slang_semantic semantic,
                               int32_t value)
 {
-   auto &refl = pass->reflection.semantics[semantic];
+   const slang_semantic_meta *refl = &pass->reflection.semantics[semantic];
 
-   if (data && refl.uniform)
-      *reinterpret_cast<int32_t*>(data + pass->reflection.semantics[semantic].ubo_offset) = value;
+   if (data && refl->uniform)
+      *((int32_t*)(data + pass->reflection.semantics[semantic].ubo_offset)) = value;
 
-   if (refl.push_constant)
-      *reinterpret_cast<int32_t*>(pass->push.buffer + (refl.push_constant_offset >> 2)) = value;
+   if (refl->push_constant)
+      *((int32_t*)(pass->push.buffer + (refl->push_constant_offset >> 2))) = value;
 }
 
 static void slang_pass_build_semantic_float(struct slang_pass *pass,
-      uint8_t *data, slang_semantic semantic,
+      uint8_t *data, enum slang_semantic semantic,
                               float value)
 {
-   auto &refl = pass->reflection.semantics[semantic];
+   const slang_semantic_meta *refl = &pass->reflection.semantics[semantic];
 
-   if (data && refl.uniform)
-      *reinterpret_cast<float*>(data + pass->reflection.semantics[semantic].ubo_offset) = value;
+   if (data && refl->uniform)
+      *((float*)(data + pass->reflection.semantics[semantic].ubo_offset)) = value;
 
-   if (refl.push_constant)
-      *reinterpret_cast<float*>(pass->push.buffer + (refl.push_constant_offset >> 2)) = value;
+   if (refl->push_constant)
+      *((float*)(pass->push.buffer + (refl->push_constant_offset >> 2))) = value;
 }
 
 static void slang_pass_build_semantic_vec3(struct slang_pass *pass,
-      uint8_t *data, slang_semantic semantic,
+      uint8_t *data, enum slang_semantic semantic,
                               const float *values)
 {
-   auto &refl = pass->reflection.semantics[semantic];
+   const slang_semantic_meta *refl = &pass->reflection.semantics[semantic];
 
-   if (data && refl.uniform)
-      memcpy(data + refl.ubo_offset, values, 3 * sizeof(float));
+   if (data && refl->uniform)
+      memcpy(data + refl->ubo_offset, values, 3 * sizeof(float));
 
-   if (refl.push_constant)
-      memcpy(pass->push.buffer + (refl.push_constant_offset >> 2), values, 3 * sizeof(float));
+   if (refl->push_constant)
+      memcpy(pass->push.buffer + (refl->push_constant_offset >> 2), values, 3 * sizeof(float));
 }
 
 
 static void slang_pass_build_semantic_texture(struct slang_pass *pass,
       VkDescriptorSet set, uint8_t *buffer,
-      slang_texture_semantic semantic, const Texture &texture,
+      enum slang_texture_semantic semantic, const Texture *texture,
       VkDescriptorImageInfo *image_infos, VkWriteDescriptorSet *writes,
-      unsigned &write_count)
+      unsigned *write_count)
 {
    slang_pass_build_semantic_texture_vec4(pass, buffer, semantic,
-         texture.texture.width, texture.texture.height);
+         texture->texture.width, texture->texture.height);
    slang_pass_set_semantic_texture(pass, set, semantic, texture,
          image_infos, writes, write_count);
 }
 
 static void slang_pass_build_semantic_texture_array(struct slang_pass *pass,
       VkDescriptorSet set, uint8_t *buffer,
-      slang_texture_semantic semantic, unsigned index, const Texture &texture,
+      enum slang_texture_semantic semantic, unsigned index, const Texture *texture,
       VkDescriptorImageInfo *image_infos, VkWriteDescriptorSet *writes,
-      unsigned &write_count)
+      unsigned *write_count)
 {
    slang_pass_build_semantic_texture_array_vec4(pass, buffer, semantic, index,
-         texture.texture.width, texture.texture.height);
+         texture->texture.width, texture->texture.height);
    slang_pass_set_semantic_texture_array(pass, set, semantic, index, texture,
          image_infos, writes, write_count);
 }
 
 static void slang_pass_build_semantics(struct slang_pass *pass,
       VkDescriptorSet set, uint8_t *buffer,
-      const float *mvp, const Texture &original, const Texture &source)
+      const float *mvp, const Texture *original, const Texture *source)
 {
    unsigned i;
    /* Batch arrays for descriptor writes - flushed once at the end. */
@@ -3677,7 +3708,7 @@ static void slang_pass_build_semantics(struct slang_pass *pass,
       if (mvp)
          memcpy(buffer + offset, mvp, sizeof(float) * 16);
       else
-         build_identity_matrix(reinterpret_cast<float *>(buffer + offset));
+         build_identity_matrix((float*)(buffer + offset));
    }
 
    if (pass->reflection.semantics[SLANG_SEMANTIC_MVP].push_constant)
@@ -3686,7 +3717,7 @@ static void slang_pass_build_semantics(struct slang_pass *pass,
       if (mvp)
          memcpy(pass->push.buffer + (offset >> 2), mvp, sizeof(float) * 16);
       else
-         build_identity_matrix(reinterpret_cast<float *>(pass->push.buffer + (offset >> 2)));
+         build_identity_matrix((float*)(pass->push.buffer + (offset >> 2)));
    }
 
    /* Output information */
@@ -3694,13 +3725,13 @@ static void slang_pass_build_semantics(struct slang_pass *pass,
                        pass->current_framebuffer_size.width,
                        pass->current_framebuffer_size.height);
    slang_pass_build_semantic_vec4(pass, buffer, SLANG_SEMANTIC_FINAL_VIEWPORT,
-                       unsigned(pass->curr_vp.width),
-                       unsigned(pass->curr_vp.height));
+                       (unsigned)(pass->curr_vp.width),
+                       (unsigned)(pass->curr_vp.height));
 
    slang_pass_build_semantic_uint(pass, buffer, SLANG_SEMANTIC_FRAME_COUNT,
                        pass->frame_count_period
-                       ? uint32_t(pass->frame_count % pass->frame_count_period)
-                       : uint32_t(pass->frame_count));
+                       ? (uint32_t)(pass->frame_count % pass->frame_count_period)
+                       : (uint32_t)(pass->frame_count));
 
    slang_pass_build_semantic_int(pass, buffer, SLANG_SEMANTIC_FRAME_DIRECTION,
                       pass->common->frame_direction);
@@ -3763,14 +3794,14 @@ static void slang_pass_build_semantics(struct slang_pass *pass,
 
    /* Standard inputs */
    slang_pass_build_semantic_texture(pass, set, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original,
-         batch_image_infos, batch_writes, batch_count);
+         batch_image_infos, batch_writes, &batch_count);
    slang_pass_build_semantic_texture(pass, set, buffer, SLANG_TEXTURE_SEMANTIC_SOURCE, source,
-         batch_image_infos, batch_writes, batch_count);
+         batch_image_infos, batch_writes, &batch_count);
 
    /* ORIGINAL_HISTORY[0] is an alias of ORIGINAL. */
    slang_pass_build_semantic_texture_array(pass, set, buffer,
          SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, 0, original,
-         batch_image_infos, batch_writes, batch_count);
+         batch_image_infos, batch_writes, &batch_count);
 
    /* Parameters. */
    for (i = 0; i < pass->num_filtered; i++)
@@ -3783,29 +3814,29 @@ static void slang_pass_build_semantics(struct slang_pass *pass,
    for (i = 0; i < pass->common->num_original_history; i++)
       slang_pass_build_semantic_texture_array(pass, set, buffer,
             SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, i + 1,
-            pass->common->original_history[i],
-            batch_image_infos, batch_writes, batch_count);
+            &pass->common->original_history[i],
+            batch_image_infos, batch_writes, &batch_count);
 
    /* Previous passes. */
    for (i = 0; i < pass->common->num_pass_outputs; i++)
       slang_pass_build_semantic_texture_array(pass, set, buffer,
             SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i,
-            pass->common->pass_outputs[i],
-            batch_image_infos, batch_writes, batch_count);
+            &pass->common->pass_outputs[i],
+            batch_image_infos, batch_writes, &batch_count);
 
    /* Feedback FBOs. */
    for (i = 0; i < pass->common->num_fb_feedback; i++)
       slang_pass_build_semantic_texture_array(pass, set, buffer,
             SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i,
-            pass->common->fb_feedback[i],
-            batch_image_infos, batch_writes, batch_count);
+            &pass->common->fb_feedback[i],
+            batch_image_infos, batch_writes, &batch_count);
 
    /* LUTs. */
    for (i = 0; i < pass->common->num_luts; i++)
       slang_pass_build_semantic_texture_array(pass, set, buffer,
             SLANG_TEXTURE_SEMANTIC_USER, i,
-            pass->common->luts[i].texture,
-            batch_image_infos, batch_writes, batch_count);
+            &pass->common->luts[i].texture,
+            batch_image_infos, batch_writes, &batch_count);
 
    /* Flush all batched descriptor writes in a single driver call. */
    vulkan_flush_descriptor_writes(pass->device, batch_writes, &batch_count);
@@ -3815,17 +3846,23 @@ static void slang_pass_build_commands(struct slang_pass *pass,
       
       struct deferred_disposes *disposer,
       VkCommandBuffer cmd,
-      const Texture &original,
-      const Texture &source,
-      const VkViewport &vp,
+      const Texture *original,
+      const Texture *source,
+      const VkViewport *vp,
       const float *mvp)
 {
-   uint8_t *u       = nullptr;
+   uint8_t *u       = NULL;
 
-   pass->curr_vp          = vp;
-   Size2D size      = slang_pass_get_output_size(pass, 
-         { original.texture.width, original.texture.height },
-         { source.texture.width, source.texture.height });
+   Size2D size;
+   Size2D size_orig;
+   Size2D size_src;
+   pass->curr_vp          = *vp;
+   size_orig.width        = original->texture.width;
+   size_orig.height       = original->texture.height;
+   size_src.width         = source->texture.width;
+   size_src.height        = source->texture.height;
+   size                   = slang_pass_get_output_size(pass, size_orig,
+         size_src);
 
    if (pass->framebuffer &&
          (size.width  != pass->framebuffer->size.width ||
@@ -3889,7 +3926,7 @@ static void slang_pass_build_commands(struct slang_pass *pass,
       rp_info.renderArea.extent.width  = pass->current_framebuffer_size.width;
       rp_info.renderArea.extent.height = pass->current_framebuffer_size.height;
       rp_info.clearValueCount          = 0;
-      rp_info.pClearValues             = nullptr;
+      rp_info.pClearValues             = NULL;
 
       vkCmdBeginRenderPass(cmd, &rp_info, VK_SUBPASS_CONTENTS_INLINE);
    }
@@ -3897,7 +3934,7 @@ static void slang_pass_build_commands(struct slang_pass *pass,
    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pass->pipeline);
    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
          pass->pipeline_layout,
-         0, 1, &pass->sets[pass->sync_index], 0, nullptr);
+         0, 1, &pass->sets[pass->sync_index], 0, NULL);
 
    if (pass->push.stages != 0)
    {
@@ -3922,13 +3959,13 @@ static void slang_pass_build_commands(struct slang_pass *pass,
       {
          const VkRect2D sci = {
             {
-               int32_t(pass->curr_vp.x),
-               int32_t((pass->curr_vp.height / float(pass->common->total_subframes))
-                        * float(pass->common->current_subframe - 1))
+               (int32_t)(pass->curr_vp.x),
+               (int32_t)((pass->curr_vp.height / (float)(pass->common->total_subframes))
+                        * (float)(pass->common->current_subframe - 1))
             },
             {
-               uint32_t(pass->curr_vp.width),
-               uint32_t(pass->curr_vp.height / float(pass->common->total_subframes))
+               (uint32_t)(pass->curr_vp.width),
+               (uint32_t)(pass->curr_vp.height / (float)(pass->common->total_subframes))
             },
          };
          vkCmdSetScissor(cmd, 0, 1, &sci);
@@ -3938,12 +3975,12 @@ static void slang_pass_build_commands(struct slang_pass *pass,
       {
          const VkRect2D sci = {
             {
-               int32_t(pass->curr_vp.x),
-               int32_t(pass->curr_vp.y)
+               (int32_t)(pass->curr_vp.x),
+               (int32_t)(pass->curr_vp.y)
             },
             {
-               uint32_t(pass->curr_vp.width),
-               uint32_t(pass->curr_vp.height)
+               (uint32_t)(pass->curr_vp.width),
+               (uint32_t)(pass->curr_vp.height)
             },
          };
          vkCmdSetScissor(cmd, 0, 1, &sci);
@@ -3953,8 +3990,8 @@ static void slang_pass_build_commands(struct slang_pass *pass,
    {
       const VkViewport _vp = {
          0.0f, 0.0f,
-         float(pass->current_framebuffer_size.width),
-         float(pass->current_framebuffer_size.height),
+         (float)(pass->current_framebuffer_size.width),
+         (float)(pass->current_framebuffer_size.height),
          0.0f, 1.0f
       };
 
@@ -3966,12 +4003,12 @@ static void slang_pass_build_commands(struct slang_pass *pass,
          const VkRect2D sci = {
             {
                0,
-               int32_t((float(pass->current_framebuffer_size.height) / float(pass->common->total_subframes))
-                        * float(pass->common->current_subframe - 1))
+               (int32_t)(((float)(pass->current_framebuffer_size.height) / (float)(pass->common->total_subframes))
+                        * (float)(pass->common->current_subframe - 1))
             },
             {
-               uint32_t(pass->current_framebuffer_size.width),
-               uint32_t(float(pass->current_framebuffer_size.height) / float(pass->common->total_subframes))
+               (uint32_t)(pass->current_framebuffer_size.width),
+               (uint32_t)((float)(pass->current_framebuffer_size.height) / (float)(pass->common->total_subframes))
             },
          };
          vkCmdSetScissor(cmd, 0, 1, &sci);
@@ -4117,7 +4154,7 @@ static bool slang_framebuffer_build(struct slang_framebuffer *fb)
       return false;
    }
 
-   if (vkCreateImage(fb->device, &info, nullptr, &new_image) != VK_SUCCESS)
+   if (vkCreateImage(fb->device, &info, NULL, &new_image) != VK_SUCCESS)
       goto error;
    vulkan_debug_mark_image(fb->device, new_image);
 
@@ -4127,7 +4164,7 @@ static bool slang_framebuffer_build(struct slang_framebuffer *fb)
    alloc.pNext            = NULL;
    alloc.allocationSize   = mem_reqs.size;
    new_memory_type       = find_memory_type_fallback(
-         *fb->memory_properties, mem_reqs.memoryTypeBits,
+         fb->memory_properties, mem_reqs.memoryTypeBits,
          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
    alloc.memoryTypeIndex  = new_memory_type;
 
@@ -4138,7 +4175,7 @@ static bool slang_framebuffer_build(struct slang_framebuffer *fb)
     * construction its previous fb->image has been destroyed and drained. */
    if (fb->mem_pool)
    {
-      FramebufferMemoryPool::Block blk =
+      struct fbpool_block blk =
          fbpool_acquire(fb->mem_pool, mem_reqs.size, new_memory_type);
       if (blk.memory != VK_NULL_HANDLE)
       {
@@ -4149,7 +4186,7 @@ static bool slang_framebuffer_build(struct slang_framebuffer *fb)
 
    if (new_memory == VK_NULL_HANDLE)
    {
-      if (vkAllocateMemory(fb->device, &alloc, nullptr, &new_memory) != VK_SUCCESS)
+      if (vkAllocateMemory(fb->device, &alloc, NULL, &new_memory) != VK_SUCCESS)
          goto error;
       new_memory_size = mem_reqs.size;
       vulkan_debug_mark_memory(fb->device, new_memory);
@@ -4174,10 +4211,10 @@ static bool slang_framebuffer_build(struct slang_framebuffer *fb)
    view_info.subresourceRange.baseArrayLayer = 0;
    view_info.subresourceRange.layerCount     = 1;
 
-   if (vkCreateImageView(fb->device, &view_info, nullptr, &new_view) != VK_SUCCESS)
+   if (vkCreateImageView(fb->device, &view_info, NULL, &new_view) != VK_SUCCESS)
       goto error;
    view_info.subresourceRange.levelCount     = 1;
-   if (vkCreateImageView(fb->device, &view_info, nullptr, &new_fb_view) != VK_SUCCESS)
+   if (vkCreateImageView(fb->device, &view_info, NULL, &new_fb_view) != VK_SUCCESS)
       goto error;
 
    /* Initialize fb->framebuffer */
@@ -4191,7 +4228,7 @@ static bool slang_framebuffer_build(struct slang_framebuffer *fb)
    fb_info.height          = fb->size.height;
    fb_info.layers          = 1;
 
-   if (vkCreateFramebuffer(fb->device, &fb_info, nullptr,
+   if (vkCreateFramebuffer(fb->device, &fb_info, NULL,
             &new_framebuffer) != VK_SUCCESS)
       goto error;
 
@@ -4207,15 +4244,15 @@ static bool slang_framebuffer_build(struct slang_framebuffer *fb)
 
 error:
    if (new_framebuffer != VK_NULL_HANDLE)
-      vkDestroyFramebuffer(fb->device, new_framebuffer, nullptr);
+      vkDestroyFramebuffer(fb->device, new_framebuffer, NULL);
    if (new_view != VK_NULL_HANDLE)
-      vkDestroyImageView(fb->device, new_view, nullptr);
+      vkDestroyImageView(fb->device, new_view, NULL);
    if (new_fb_view != VK_NULL_HANDLE)
-      vkDestroyImageView(fb->device, new_fb_view, nullptr);
+      vkDestroyImageView(fb->device, new_fb_view, NULL);
    if (new_image != VK_NULL_HANDLE)
-      vkDestroyImage(fb->device, new_image, nullptr);
+      vkDestroyImage(fb->device, new_image, NULL);
    if (new_memory != VK_NULL_HANDLE)
-      vkFreeMemory(fb->device, new_memory, nullptr);
+      vkFreeMemory(fb->device, new_memory, NULL);
    return false;
 }
 
@@ -4256,7 +4293,7 @@ static bool slang_framebuffer_set_size(struct slang_framebuffer *fb,
    if (!slang_framebuffer_build(fb))
    {
       if (format_changed)
-         vkDestroyRenderPass(fb->device, fb->render_pass, nullptr);
+         vkDestroyRenderPass(fb->device, fb->render_pass, NULL);
       fb->size  = old_size;
       fb->format = old_format;
       fb->render_pass  = old_render_pass;
@@ -4294,17 +4331,17 @@ static bool slang_framebuffer_set_size(struct slang_framebuffer *fb,
 static void slang_framebuffer_free(struct slang_framebuffer *fb)
 {
    if (fb->framebuffer != VK_NULL_HANDLE)
-      vkDestroyFramebuffer(fb->device, fb->framebuffer, nullptr);
+      vkDestroyFramebuffer(fb->device, fb->framebuffer, NULL);
    if (fb->render_pass != VK_NULL_HANDLE)
-      vkDestroyRenderPass(fb->device, fb->render_pass, nullptr);
+      vkDestroyRenderPass(fb->device, fb->render_pass, NULL);
    if (fb->view != VK_NULL_HANDLE)
-      vkDestroyImageView(fb->device, fb->view, nullptr);
+      vkDestroyImageView(fb->device, fb->view, NULL);
    if (fb->fb_view != VK_NULL_HANDLE)
-      vkDestroyImageView(fb->device, fb->fb_view, nullptr);
+      vkDestroyImageView(fb->device, fb->fb_view, NULL);
    if (fb->image != VK_NULL_HANDLE)
-      vkDestroyImage(fb->device, fb->image, nullptr);
+      vkDestroyImage(fb->device, fb->image, NULL);
    if (fb->memory.memory != VK_NULL_HANDLE)
-      vkFreeMemory(fb->device, fb->memory.memory, nullptr);
+      vkFreeMemory(fb->device, fb->memory.memory, NULL);
    fb->framebuffer   = VK_NULL_HANDLE;
    fb->render_pass   = VK_NULL_HANDLE;
    fb->view          = VK_NULL_HANDLE;
@@ -4325,13 +4362,14 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_default(
       glslang_filter_chain_filter filter)
 {
    struct vulkan_filter_chain_pass_info pass_info;
-   auto tmpinfo            = *info;
+   struct vulkan_filter_chain_create_info tmpinfo = *info;
+   vulkan_filter_chain *chain;
 
    tmpinfo.num_passes      = 1;
 
-   vulkan_filter_chain *chain = slang_chain_new(&tmpinfo);
+   chain = slang_chain_new(&tmpinfo);
    if (!chain)
-      return nullptr;
+      return NULL;
 
    pass_info.scale_type_x  = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
    pass_info.scale_type_y  = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
@@ -4367,7 +4405,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_default(
    if (!slang_chain_init(chain))
    {
       slang_chain_free(chain);
-      return nullptr;
+      return NULL;
    }
 
    return chain;
@@ -4389,7 +4427,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
    glslang_output_init(&output);
 
    if (!shader)
-      return nullptr;
+      return NULL;
 
     if (!video_shader_load_preset_into_shader(path, shader))
         goto error;
@@ -4419,9 +4457,10 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
    for (i = 0; i < shader->passes; i++)
    {
       struct vulkan_filter_chain_pass_info pass_info;
-      const video_shader_pass *pass      = &shader->pass[i];
-      const video_shader_pass *next_pass =
-         i + 1 < shader->passes ? &shader->pass[i + 1] : nullptr;
+      bool explicit_format;
+      const struct video_shader_pass *pass      = &shader->pass[i];
+      const struct video_shader_pass *next_pass =
+         i + 1 < shader->passes ? &shader->pass[i + 1] : NULL;
 
       pass_info.scale_type_x  = GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL;
       pass_info.scale_type_y  = GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL;
@@ -4441,11 +4480,13 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
          goto error;
       }
 
-      for (size_t j = 0; j < output.meta.num_parameters; j++)
+      {
+      size_t j;
+      for (j = 0; j < output.meta.num_parameters; j++)
       {
          unsigned k;
          const glslang_parameter *meta_param = &output.meta.parameters[j];
-         video_shader_parameter *itr = NULL;
+         struct video_shader_parameter *itr = NULL;
 
          if (shader->num_parameters >= GFX_MAX_PARAMETERS)
          {
@@ -4487,7 +4528,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
          }
          else
          {
-            video_shader_parameter *param = &shader->parameters[shader->num_parameters];
+            struct video_shader_parameter *param = &shader->parameters[shader->num_parameters];
             strlcpy(param->id, meta_param->id, sizeof(param->id));
             strlcpy(param->desc, meta_param->desc, sizeof(param->desc));
             param->initial = meta_param->initial;
@@ -4497,6 +4538,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             slang_chain_add_parameter(chain, i, shader->num_parameters, meta_param->id);
             shader->num_parameters++;
          }
+      }
       }
 
       slang_chain_set_shader(chain, i,
@@ -4542,7 +4584,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
          ? GLSLANG_FILTER_CHAIN_LINEAR
          : GLSLANG_FILTER_CHAIN_NEAREST;
 
-      bool explicit_format         = output.meta.rt_format != SLANG_FORMAT_UNKNOWN;
+      explicit_format              = output.meta.rt_format != SLANG_FORMAT_UNKNOWN;
 
       /* Set a reasonable default. */
       if (output.meta.rt_format == SLANG_FORMAT_UNKNOWN)
@@ -4557,10 +4599,11 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
 
          if (i + 1 == shader->passes)
          {
+            VkFormat pass_format;
             pass_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
             pass_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
 
-            VkFormat pass_format = glslang_format_to_vk(output.meta.rt_format);
+            pass_format = glslang_format_to_vk(output.meta.rt_format);
 
             /* If final pass explicitly emits RGB10, consider it HDR color space. */
             if (explicit_format && vulkan_is_hdr10_format(pass_format))
@@ -4633,7 +4676,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
                break;
 
             case RARCH_SCALE_ABSOLUTE:
-               pass_info.scale_x      = float(pass->fbo.abs_x);
+               pass_info.scale_x      = (float)(pass->fbo.abs_x);
                pass_info.scale_type_x = GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE;
                break;
 
@@ -4651,7 +4694,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
                break;
 
             case RARCH_SCALE_ABSOLUTE:
-               pass_info.scale_y      = float(pass->fbo.abs_y);
+               pass_info.scale_y      = (float)(pass->fbo.abs_y);
                pass_info.scale_type_y = GLSLANG_FILTER_CHAIN_SCALE_ABSOLUTE;
                break;
 
@@ -4715,7 +4758,7 @@ error:
    slang_chain_free(chain);
    free(shader);
    glslang_output_free(&output);
-   return nullptr;
+   return NULL;
 }
 
 /* ---- Deferred (per-frame) Vulkan filter chain construction ---- */
@@ -4734,12 +4777,12 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_deferred(
       calloc(1, sizeof(*shader));
 
    if (!shader)
-      return nullptr;
+      return NULL;
 
    if (!video_shader_load_preset_into_shader(path, shader))
    {
       free(shader);
-      return nullptr;
+      return NULL;
    }
 
    last_pass_is_fbo   = shader->pass[shader->passes - 1].fbo.flags &
@@ -4751,14 +4794,14 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_deferred(
    if (!chain)
    {
       free(shader);
-      return nullptr;
+      return NULL;
    }
 
    if (shader->luts && !vulkan_filter_chain_load_luts(info, chain, shader))
    {
       slang_chain_free(chain);
       free(shader);
-      return nullptr;
+      return NULL;
    }
 
    shader->num_parameters = 0;
@@ -4804,7 +4847,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_deferred(
    {
       RARCH_ERR("[Vulkan] Deferred: failed to initialize alias map.\n");
       slang_chain_free(chain);
-      return nullptr;
+      return NULL;
    }
 
    if (out_num_passes)

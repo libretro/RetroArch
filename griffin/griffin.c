@@ -406,6 +406,7 @@ VIDEO SHADERS
 #include "../gfx/drivers_shader/glslang_util.c"
 #include "../gfx/drivers_shader/slang_cache.c"
 #include "../gfx/drivers_shader/slang_process.c"
+#include "../gfx/drivers_shader/shader_vulkan.c"
 #endif
 
 /* Must mirror the guard on shader_gl3.cpp in griffin_cpp.cpp exactly:

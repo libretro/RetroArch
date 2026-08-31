@@ -352,7 +352,7 @@
 		05A8C79120DB72F100FF7857 /* shader_glsl.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = shader_glsl.c; sourceTree = "<group>"; };
 		05A8C79220DB72F100FF7857 /* slang_process.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = slang_process.h; sourceTree = "<group>"; };
 		05A8C79420DB72F100FF7857 /* slang_process.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = slang_process.cpp; sourceTree = "<group>"; };
-		05A8C79520DB72F100FF7857 /* shader_vulkan.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = shader_vulkan.cpp; sourceTree = "<group>"; };
+		05A8C79520DB72F100FF7857 /* shader_vulkan.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = shader_vulkan.c; sourceTree = "<group>"; };
 		05A8C79720DB72F100FF7857 /* shader_glsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = shader_glsl.h; sourceTree = "<group>"; };
 		05A8C79B20DB72F100FF7857 /* shader_gl_cg.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = shader_gl_cg.c; sourceTree = "<group>"; };
 		05A8C79C20DB72F100FF7857 /* shader_vulkan.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = shader_vulkan.h; sourceTree = "<group>"; };
@@ -1002,7 +1002,7 @@
 				05A8C79B20DB72F100FF7857 /* shader_gl_cg.c */,
 				05A8C79120DB72F100FF7857 /* shader_glsl.c */,
 				05A8C79720DB72F100FF7857 /* shader_glsl.h */,
-				05A8C79520DB72F100FF7857 /* shader_vulkan.cpp */,
+				05A8C79520DB72F100FF7857 /* shader_vulkan.c */,
 				05A8C79C20DB72F100FF7857 /* shader_vulkan.h */,
 				05A8C79420DB72F100FF7857 /* slang_process.cpp */,
 				05A8C79220DB72F100FF7857 /* slang_process.h */,
