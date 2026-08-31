@@ -531,74 +531,78 @@ struct FramebufferMemoryPool
 
    /* Keep only a handful of blocks; oscillating between two sizes (the
     * common "toggle integer scale" case) needs at most two. */
-   static const size_t max_blocks = 4;
    Block blocks[4];
-   size_t num_blocks = 0;
+   size_t num_blocks;
+#define FBPOOL_MAX_BLOCKS 4
 
    /* Best-fit: smallest block that satisfies type+size, or a null block on
     * miss.  The returned block is removed from the pool and owned by the
     * caller. */
-   Block acquire(size_t size, uint32_t type)
+};
+
+static struct FramebufferMemoryPool::Block fbpool_acquire(
+      FramebufferMemoryPool *pool, size_t size, uint32_t type)
    {
       size_t i;
       size_t best = (size_t)-1;
-      Block  result;
+      struct FramebufferMemoryPool::Block result;
       result.memory = VK_NULL_HANDLE;
       result.size   = 0;
       result.type   = type;
-      for (i = 0; i < num_blocks; i++)
+      for (i = 0; i < pool->num_blocks; i++)
       {
-         if (     blocks[i].type == type
-               && blocks[i].size >= size
-               && (best == (size_t)-1 || blocks[i].size < blocks[best].size))
+         if (     pool->blocks[i].type == type
+               && pool->blocks[i].size >= size
+               && (best == (size_t)-1 || pool->blocks[i].size < pool->blocks[best].size))
             best = i;
       }
       if (best == (size_t)-1)
          return result;
-      result       = blocks[best];
-      blocks[best] = blocks[num_blocks - 1];
-      num_blocks--;
+      result       = pool->blocks[best];
+      pool->blocks[best] = pool->blocks[pool->num_blocks - 1];
+      pool->num_blocks--;
       return result;
    }
 
-   void release(VkDevice device, VkDeviceMemory memory,
-         size_t size, uint32_t type)
+static void fbpool_release(FramebufferMemoryPool *pool,
+      VkDevice device, VkDeviceMemory memory,
+      size_t size, uint32_t type)
    {
-      Block b;
+      struct FramebufferMemoryPool::Block b;
       if (memory == VK_NULL_HANDLE)
          return;
-      if (num_blocks >= max_blocks)
+      if (pool->num_blocks >= FBPOOL_MAX_BLOCKS)
       {
          /* Pool full: evict the smallest block so the larger, more reusable
           * allocations survive.  If the incoming block is itself the
           * smallest, just free it. */
          size_t i, smallest = 0;
-         for (i = 1; i < num_blocks; i++)
-            if (blocks[i].size < blocks[smallest].size)
+         for (i = 1; i < pool->num_blocks; i++)
+            if (pool->blocks[i].size < pool->blocks[smallest].size)
                smallest = i;
-         if (blocks[smallest].size >= size)
+         if (pool->blocks[smallest].size >= size)
          {
             vkFreeMemory(device, memory, nullptr);
             return;
          }
-         vkFreeMemory(device, blocks[smallest].memory, nullptr);
-         blocks[smallest] = blocks[num_blocks - 1];
-         num_blocks--;
+         vkFreeMemory(device, pool->blocks[smallest].memory, nullptr);
+         pool->blocks[smallest] = pool->blocks[pool->num_blocks - 1];
+         pool->num_blocks--;
       }
       b.memory = memory;
       b.size   = size;
       b.type   = type;
-      blocks[num_blocks++] = b;
+      pool->blocks[pool->num_blocks++] = b;
    }
 
-   void drain(VkDevice device)
+static void fbpool_drain(FramebufferMemoryPool *pool, VkDevice device)
    {
       size_t i;
-      for (i = 0; i < num_blocks; i++)
-         vkFreeMemory(device, blocks[i].memory, nullptr);
-      num_blocks = 0;
+      for (i = 0; i < pool->num_blocks; i++)
+         vkFreeMemory(device, pool->blocks[i].memory, nullptr);
+      pool->num_blocks = 0;
    }
-};
+
 
 /* One queued disposal: the resources a replaced framebuffer instance
  * held.  Replacing a framebuffer is the only operation that ever defers
@@ -642,7 +646,7 @@ static void deferred_fb_dispose_run(const struct deferred_fb_dispose *c)
    if (c->memory != VK_NULL_HANDLE)
    {
       if (c->pool)
-         c->pool->release(c->device, c->memory, c->memory_size,
+         fbpool_release(c->pool, c->device, c->memory, c->memory_size,
                c->memory_type);
       else
          vkFreeMemory(c->device, c->memory, nullptr);
@@ -734,31 +738,28 @@ static bool texture_array_resize(Texture **arr, size_t *count,
 
 struct CommonResources
 {
-   CommonResources(VkDevice device,
-         const VkPhysicalDeviceMemoryProperties &memory_properties);
-   ~CommonResources();
 
-   struct slang_buffer vbo = {};
-   struct slang_buffer ubo = {};
-   uint8_t *ubo_mapped          = nullptr;
-   size_t ubo_sync_index_stride = 0;
-   size_t ubo_offset            = 0;
-   size_t ubo_alignment         = 1;
+   struct slang_buffer vbo;
+   struct slang_buffer ubo;
+   uint8_t *ubo_mapped;
+   size_t ubo_sync_index_stride;
+   size_t ubo_offset;
+   size_t ubo_alignment;          /* init: 1 */
 
    VkSampler samplers[GLSLANG_FILTER_CHAIN_COUNT][GLSLANG_FILTER_CHAIN_COUNT][GLSLANG_FILTER_CHAIN_ADDRESS_COUNT];
 
-   Texture *original_history = nullptr;
-   size_t num_original_history = 0;
-   Texture *fb_feedback = nullptr;
-   size_t num_fb_feedback = 0;
-   Texture *pass_outputs = nullptr;
-   size_t num_pass_outputs = 0;
-   struct slang_static_texture *luts = nullptr;
-   size_t num_luts = 0;
+   Texture *original_history;
+   size_t num_original_history;
+   Texture *fb_feedback;
+   size_t num_fb_feedback;
+   Texture *pass_outputs;
+   size_t num_pass_outputs;
+   struct slang_static_texture *luts;
+   size_t num_luts;
 
-   slang_texture_semantic_name_map texture_semantic_map        = {};
-   slang_texture_semantic_name_map texture_semantic_uniform_map = {};
-   struct video_shader *shader_preset = nullptr;
+   slang_texture_semantic_name_map texture_semantic_map;
+   slang_texture_semantic_name_map texture_semantic_uniform_map;
+   struct video_shader *shader_preset;
 
    VkDevice device;
 
@@ -769,28 +770,33 @@ struct CommonResources
    /* Shared per-frame state: written once per frame by the filter chain,
     * read by every pass in build_semantics().  Eliminates N per-pass
     * copies of identical data and the O(passes) broadcast loops. */
-   uint64_t frame_count        = 0;
-   int32_t frame_direction     = 1;
-   uint32_t frame_time_delta   = 0;
-   float original_fps          = 0;
-   uint32_t rotation           = 0;
-   float core_aspect           = 0;
-   float core_aspect_rot       = 0;
-   uint32_t total_subframes    = 1;
-   uint32_t current_subframe   = 1;
+   uint64_t frame_count;
+   int32_t frame_direction;       /* init: 1 */
+   uint32_t frame_time_delta;
+   float original_fps;
+   uint32_t rotation;
+   float core_aspect;
+   float core_aspect_rot;
+   uint32_t total_subframes;      /* init: 1 */
+   uint32_t current_subframe;     /* init: 1 */
 #ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
-   bool simulate_scanline      = false;
+   bool simulate_scanline;
 #endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
 #ifdef VULKAN_HDR_SWAPCHAIN
-   unsigned hdr_mode           = 0;
-   float paper_white_nits      = 0.0f;
-   unsigned expand_gamut       = 0;
-   float scanlines             = 0.0f;
-   unsigned subpixel_layout    = 0;
-   float inverse_tonemap       = 0.0f;
-   float hdr10                 = 0.0f;
+   unsigned hdr_mode;
+   float paper_white_nits;
+   unsigned expand_gamut;
+   float scanlines;
+   unsigned subpixel_layout;
+   float inverse_tonemap;
+   float hdr10;
 #endif /* VULKAN_HDR_SWAPCHAIN */
 };
+
+static void common_resources_init(CommonResources *common,
+      VkDevice device,
+      const VkPhysicalDeviceMemoryProperties *memory_properties);
+static void common_resources_free(CommonResources *common);
 
 struct slang_pass_parameter
 {
@@ -916,126 +922,162 @@ static INLINE const char *slang_pass_get_name(
 /* struct here since we're implementing the opaque typedef from C. */
 struct vulkan_filter_chain
 {
-   public:
-      vulkan_filter_chain(const vulkan_filter_chain_create_info &info);
-      ~vulkan_filter_chain();
+   VkDevice device;
+   VkPhysicalDevice gpu;
+   VkPhysicalDeviceMemoryProperties memory_properties;
+   VkPipelineCache cache;
+   struct slang_pass **passes;
+   size_t pass_count;
+   vulkan_filter_chain_pass_info *pass_info;
+   size_t pass_info_count;
+   struct deferred_disposes *deferred_calls;
+   unsigned num_deferred;
+   CommonResources common;
+   VkFormat original_format;
 
-      /* Takes ownership; any previous preset is freed. */
-      inline void set_shader_preset(struct video_shader *shader)
-      {
-         free(common.shader_preset);
-         common.shader_preset = shader;
-      }
+   vulkan_filter_chain_texture input_texture;
 
-      inline video_shader *get_shader_preset()
-      {
-         return common.shader_preset;
-      }
+   Size2D max_input_size;
+   Size2D deferred_source;   /* accumulated source size for per-frame builds */
+   vulkan_filter_chain_swapchain_info swapchain_info;
+   unsigned current_sync_index;
 
-      void set_pass_info(unsigned pass,
-            const vulkan_filter_chain_pass_info &info);
-      void set_shader(unsigned pass, VkShaderStageFlags stage,
-            const uint32_t *spirv, size_t spirv_words);
+   struct slang_framebuffer **original_history;
+   size_t num_history;
+   unsigned history_ring_index;
+   bool require_clear;
+   bool alias_initialized;
+   bool emits_hdr_colorspace;
+   bool emits_hdr16_output;
+};
 
-      bool init();
-      bool init_single_pass(unsigned pass_idx);
-      bool init_alias_early();
-      bool compile_full_pass(unsigned pass_idx,
-            enum glslang_filter_chain_filter default_filter);
-      bool finalize();
-      bool update_swapchain_info(
-            const vulkan_filter_chain_swapchain_info &info);
+static struct vulkan_filter_chain *slang_chain_new(
+      const vulkan_filter_chain_create_info *info);
+static void slang_chain_free(struct vulkan_filter_chain *chain);
 
-      void notify_sync_index(unsigned index);
-      void set_input_texture(const vulkan_filter_chain_texture &texture);
-      void build_offscreen_passes(VkCommandBuffer cmd, const VkViewport &vp);
-      void build_viewport_pass(VkCommandBuffer cmd,
-            const VkViewport &vp, const float *mvp);
-      void end_frame(VkCommandBuffer cmd);
+/* Takes ownership; any previous preset is freed. */
+static INLINE void slang_chain_set_shader_preset(
+      struct vulkan_filter_chain *chain, struct video_shader *shader)
+{
+   free(chain->common.shader_preset);
+   chain->common.shader_preset = shader;
+}
+static INLINE video_shader *slang_chain_get_shader_preset(
+      struct vulkan_filter_chain *chain)
+{
+   return chain->common.shader_preset;
+}
 
-      void set_frame_count(uint64_t count);
-      void set_frame_count_period(unsigned pass, unsigned period);
-      void set_shader_subframes(uint32_t total_subframes);
-      void set_current_shader_subframe(uint32_t current_subframe);
+static void slang_chain_set_pass_info(struct vulkan_filter_chain *chain,
+      unsigned pass, const vulkan_filter_chain_pass_info &info);
+static void slang_chain_set_shader(struct vulkan_filter_chain *chain,
+      unsigned pass, VkShaderStageFlags stage,
+      const uint32_t *spirv, size_t spirv_words);
+
+static bool slang_chain_init(struct vulkan_filter_chain *chain);
+static bool slang_chain_init_single_pass(struct vulkan_filter_chain *chain,
+      unsigned pass_idx);
+static bool slang_chain_init_alias_early(struct vulkan_filter_chain *chain);
+static bool slang_chain_compile_full_pass(struct vulkan_filter_chain *chain,
+      unsigned pass_idx, enum glslang_filter_chain_filter default_filter);
+static bool slang_chain_finalize(struct vulkan_filter_chain *chain);
+static bool slang_chain_update_swapchain_info(
+      struct vulkan_filter_chain *chain,
+      const vulkan_filter_chain_swapchain_info &info);
+
+static void slang_chain_notify_sync_index(struct vulkan_filter_chain *chain,
+      unsigned index);
+static void slang_chain_set_input_texture(struct vulkan_filter_chain *chain,
+      const vulkan_filter_chain_texture &texture);
+static void slang_chain_build_offscreen_passes(
+      struct vulkan_filter_chain *chain,
+      VkCommandBuffer cmd, const VkViewport &vp);
+static void slang_chain_build_viewport_pass(
+      struct vulkan_filter_chain *chain,
+      VkCommandBuffer cmd, const VkViewport &vp, const float *mvp);
+static void slang_chain_end_frame(struct vulkan_filter_chain *chain,
+      VkCommandBuffer cmd);
+
+static void slang_chain_set_frame_count(struct vulkan_filter_chain *chain,
+      uint64_t count);
+static void slang_chain_set_frame_count_period(
+      struct vulkan_filter_chain *chain, unsigned pass, unsigned period);
+static void slang_chain_set_shader_subframes(
+      struct vulkan_filter_chain *chain, uint32_t total_subframes);
+static void slang_chain_set_current_shader_subframe(
+      struct vulkan_filter_chain *chain, uint32_t current_subframe);
 #ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
-      void set_simulate_scanline(bool simulate_scanline);
+static void slang_chain_set_simulate_scanline(
+      struct vulkan_filter_chain *chain, bool simulate_scanline);
 #endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
-      void set_frame_direction(int32_t direction);
-      void set_frame_time_delta(uint32_t time_delta);
-      void set_original_fps(float fps);
-      void set_rotation(uint32_t rot);
-      void set_core_aspect(float coreaspect);
-      void set_core_aspect_rot(float coreaspect);
+static void slang_chain_set_frame_direction(
+      struct vulkan_filter_chain *chain, int32_t direction);
+static void slang_chain_set_frame_time_delta(
+      struct vulkan_filter_chain *chain, uint32_t time_delta);
+static void slang_chain_set_original_fps(struct vulkan_filter_chain *chain,
+      float fps);
+static void slang_chain_set_rotation(struct vulkan_filter_chain *chain,
+      uint32_t rot);
+static void slang_chain_set_core_aspect(struct vulkan_filter_chain *chain,
+      float coreaspect);
+static void slang_chain_set_core_aspect_rot(
+      struct vulkan_filter_chain *chain, float coreaspect);
 #ifdef VULKAN_HDR_SWAPCHAIN
-      void set_hdr_mode(unsigned hdr_mode);
-      void set_paper_white_nits(float paper_white_nits);
-      void set_expand_gamut(unsigned expand_gamut);
-      void set_scanlines(float scanlines);
-      void set_subpixel_layout(unsigned subpixel_layout);
-      void set_inverse_tonemap(float inverse_tonemap);
-      void set_hdr10(float hdr10);
+static void slang_chain_set_hdr_mode(struct vulkan_filter_chain *chain,
+      unsigned hdr_mode);
+static void slang_chain_set_paper_white_nits(
+      struct vulkan_filter_chain *chain, float paper_white_nits);
+static void slang_chain_set_expand_gamut(struct vulkan_filter_chain *chain,
+      unsigned expand_gamut);
+static void slang_chain_set_scanlines(struct vulkan_filter_chain *chain,
+      float scanlines);
+static void slang_chain_set_subpixel_layout(
+      struct vulkan_filter_chain *chain, unsigned subpixel_layout);
+static void slang_chain_set_inverse_tonemap(
+      struct vulkan_filter_chain *chain, float inverse_tonemap);
+static void slang_chain_set_hdr10(struct vulkan_filter_chain *chain,
+      float hdr10);
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
-      void set_pass_name(unsigned pass, const char *name);
-      /* Takes ownership of *texture, which is zeroed. */
-      bool add_static_texture(struct slang_static_texture *texture);
+static void slang_chain_set_pass_name(struct vulkan_filter_chain *chain,
+      unsigned pass, const char *name);
+/* Takes ownership of *texture, which is zeroed. */
+static bool slang_chain_add_static_texture(struct vulkan_filter_chain *chain,
+      struct slang_static_texture *texture);
 
-      void add_parameter(unsigned pass, unsigned parameter_index, const char *id);
-      void release_staging_buffers();
+static void slang_chain_add_parameter(struct vulkan_filter_chain *chain,
+      unsigned pass, unsigned parameter_index, const char *id);
+static void slang_chain_release_staging_buffers(
+      struct vulkan_filter_chain *chain);
 
-      VkFormat get_pass_rt_format(unsigned pass);
+static VkFormat slang_chain_get_pass_rt_format(
+      struct vulkan_filter_chain *chain, unsigned pass);
 
-      bool emits_hdr10() const;
-      void set_hdr10();
+static bool slang_chain_emits_hdr10(const struct vulkan_filter_chain *chain);
+static void slang_chain_set_emits_hdr10(struct vulkan_filter_chain *chain);
+static bool slang_chain_emits_hdr16(const struct vulkan_filter_chain *chain);
+static void slang_chain_set_emits_hdr16(struct vulkan_filter_chain *chain);
 
-      bool emits_hdr16() const;
-      void set_hdr16();
-
-   private:
-      VkDevice device;
-      VkPhysicalDevice gpu;
-      const VkPhysicalDeviceMemoryProperties &memory_properties;
-      VkPipelineCache cache;
-      struct slang_pass **passes = nullptr;
-      size_t pass_count = 0;
-      vulkan_filter_chain_pass_info *pass_info = nullptr;
-      size_t pass_info_count = 0;
-      struct deferred_disposes *deferred_calls;
-      unsigned num_deferred;
-      CommonResources common;
-      VkFormat original_format;
-
-      vulkan_filter_chain_texture input_texture;
-
-      Size2D max_input_size;
-      Size2D deferred_source;   /* accumulated source size for per-frame builds */
-      vulkan_filter_chain_swapchain_info swapchain_info;
-      unsigned current_sync_index;
-
-      struct slang_framebuffer **original_history = nullptr;
-      size_t num_history = 0;
-      unsigned history_ring_index    = 0;
-      bool require_clear        = false;
-      bool alias_initialized    = false;
-      bool emits_hdr_colorspace = false;
-      bool emits_hdr16_output   = false;
-
-      void flush();
-
-      void set_num_passes(unsigned passes);
-      void execute_deferred();
-      void set_num_sync_indices(unsigned num_indices);
-      void set_swapchain_info(const vulkan_filter_chain_swapchain_info &info);
-
-      bool init_ubo();
-      bool init_history();
-      bool init_feedback();
-      bool init_alias();
-      void update_history(struct deferred_disposes *disposer, VkCommandBuffer cmd);
-      void clear_history_and_feedback(VkCommandBuffer cmd);
-      void update_feedback_info();
-      void update_history_info();
-};
+static void slang_chain_flush(struct vulkan_filter_chain *chain);
+static void slang_chain_set_num_passes(struct vulkan_filter_chain *chain,
+      unsigned passes);
+static void slang_chain_execute_deferred(struct vulkan_filter_chain *chain);
+static void slang_chain_set_num_sync_indices(
+      struct vulkan_filter_chain *chain, unsigned num_indices);
+static void slang_chain_set_swapchain_info(struct vulkan_filter_chain *chain,
+      const vulkan_filter_chain_swapchain_info &info);
+static bool slang_chain_init_ubo(struct vulkan_filter_chain *chain);
+static bool slang_chain_init_history(struct vulkan_filter_chain *chain);
+static bool slang_chain_init_feedback(struct vulkan_filter_chain *chain);
+static bool slang_chain_init_alias(struct vulkan_filter_chain *chain);
+static void slang_chain_update_history(struct vulkan_filter_chain *chain,
+      struct deferred_disposes *disposer, VkCommandBuffer cmd);
+static void slang_chain_clear_history_and_feedback(
+      struct vulkan_filter_chain *chain, VkCommandBuffer cmd);
+static void slang_chain_update_feedback_info(
+      struct vulkan_filter_chain *chain);
+static void slang_chain_update_history_info(
+      struct vulkan_filter_chain *chain);
 
 static uint32_t find_memory_type_fallback(
       const VkPhysicalDeviceMemoryProperties &mem_props,
@@ -1385,7 +1427,7 @@ static bool vulkan_filter_chain_load_luts(
             vkFreeCommandBuffers(info->device, info->command_pool, 1, &cmd);
          return false;
       }
-      if (!chain->add_static_texture(&image))
+      if (!slang_chain_add_static_texture(chain, &image))
       {
          slang_static_texture_free(&image);
          vkEndCommandBuffer(cmd);
@@ -1435,66 +1477,79 @@ static bool vulkan_filter_chain_load_luts(
    }
 
    vkFreeCommandBuffers(info->device, info->command_pool, 1, &cmd);
-   chain->release_staging_buffers();
+   slang_chain_release_staging_buffers(chain);
    return true;
 }
 
-vulkan_filter_chain::vulkan_filter_chain(
-      const vulkan_filter_chain_create_info &info)
-   : device(info.device),
-     gpu(info.gpu),
-     memory_properties(*info.memory_properties),
-     cache(info.pipeline_cache),
-     deferred_calls(nullptr),
-     num_deferred(0),
-     common(info.device, *info.memory_properties),
-     original_format(info.original_format)
+static struct vulkan_filter_chain *slang_chain_new(
+      const vulkan_filter_chain_create_info *info)
 {
-   max_input_size = { info.max_input_size.width, info.max_input_size.height };
-   deferred_source = max_input_size;
-   set_swapchain_info(info.swapchain);
-   set_num_passes(info.num_passes);
+   struct vulkan_filter_chain *chain = (struct vulkan_filter_chain*)
+      calloc(1, sizeof(*chain));
+   if (!chain)
+      return NULL;
+   chain->device            = info->device;
+   chain->gpu               = info->gpu;
+   chain->memory_properties = *info->memory_properties;
+   chain->cache             = info->pipeline_cache;
+   chain->original_format   = info->original_format;
+   common_resources_init(&chain->common, info->device,
+         info->memory_properties);
+   chain->max_input_size.width  = info->max_input_size.width;
+   chain->max_input_size.height = info->max_input_size.height;
+   chain->deferred_source       = chain->max_input_size;
+   slang_chain_set_swapchain_info(chain, info->swapchain);
+   slang_chain_set_num_passes(chain, info->num_passes);
+   return chain;
 }
 
-vulkan_filter_chain::~vulkan_filter_chain()
+static void slang_chain_free(struct vulkan_filter_chain *chain)
 {
    unsigned i;
-   flush();
-   for (i = 0; i < pass_count; i++)
-      slang_pass_free(passes[i]);
-   free(passes);
-   for (i = 0; i < num_history; i++)
-      slang_framebuffer_delete(&original_history[i]);
-   free(original_history);
-   for (i = 0; i < num_deferred; i++)
-      free(deferred_calls[i].calls);
-   free(deferred_calls);
-   free(pass_info);
+   if (!chain)
+      return;
+   slang_chain_flush(chain);
+   for (i = 0; i < chain->pass_count; i++)
+      slang_pass_free(chain->passes[i]);
+   free(chain->passes);
+   for (i = 0; i < chain->num_history; i++)
+      slang_framebuffer_delete(&chain->original_history[i]);
+   free(chain->original_history);
+   for (i = 0; i < chain->num_deferred; i++)
+      free(chain->deferred_calls[i].calls);
+   free(chain->deferred_calls);
+   free(chain->pass_info);
+   /* Last, as in the implicit C++ member-destruction order it replaces:
+    * the pool must stay alive through the flush drain above. */
+   common_resources_free(&chain->common);
+   free(chain);
 }
 
-void vulkan_filter_chain::set_swapchain_info(
+static void slang_chain_set_swapchain_info(struct vulkan_filter_chain *chain,
+      
       const vulkan_filter_chain_swapchain_info &info)
 {
-   swapchain_info = info;
-   set_num_sync_indices(info.num_indices);
+   chain->swapchain_info = info;
+   slang_chain_set_num_sync_indices(chain, info.num_indices);
 }
 
-void vulkan_filter_chain::set_num_sync_indices(unsigned num_indices)
+static void slang_chain_set_num_sync_indices(struct vulkan_filter_chain *chain,
+      unsigned num_indices)
 {
    unsigned i;
-   execute_deferred();
+   slang_chain_execute_deferred(chain);
    /* Every queue is empty now; only capacity storage remains. */
-   for (i = num_indices; i < num_deferred; i++)
-      free(deferred_calls[i].calls);
+   for (i = num_indices; i < chain->num_deferred; i++)
+      free(chain->deferred_calls[i].calls);
    if (!num_indices)
    {
-      free(deferred_calls);
-      deferred_calls = nullptr;
+      free(chain->deferred_calls);
+      chain->deferred_calls = nullptr;
    }
    else
    {
       struct deferred_disposes *new_calls = (struct deferred_disposes*)
-         realloc(deferred_calls, num_indices * sizeof(*new_calls));
+         realloc(chain->deferred_calls, num_indices * sizeof(*new_calls));
       if (!new_calls)
       {
          /* Growth failed: keep the old, still-valid block and count.
@@ -1502,106 +1557,109 @@ void vulkan_filter_chain::set_num_sync_indices(unsigned num_indices)
          RARCH_ERR("[Vulkan] Failed to size deferred-disposal queues.\n");
          return;
       }
-      for (i = num_deferred; i < num_indices; i++)
+      for (i = chain->num_deferred; i < num_indices; i++)
       {
          new_calls[i].calls = nullptr;
          new_calls[i].size  = 0;
          new_calls[i].cap   = 0;
       }
-      deferred_calls = new_calls;
+      chain->deferred_calls = new_calls;
    }
-   num_deferred = num_indices;
+   chain->num_deferred = num_indices;
 }
 
-void vulkan_filter_chain::notify_sync_index(unsigned index)
+static void slang_chain_notify_sync_index(struct vulkan_filter_chain *chain,
+      unsigned index)
 {
    unsigned i;
-   if (index < num_deferred)
-      deferred_disposes_run_clear(&deferred_calls[index]);
+   if (index < chain->num_deferred)
+      deferred_disposes_run_clear(&chain->deferred_calls[index]);
 
-   current_sync_index = index;
+   chain->current_sync_index = index;
 
-   for (i = 0; i < pass_count; i++)
-      slang_pass_notify_sync_index(passes[i], index);
+   for (i = 0; i < chain->pass_count; i++)
+      slang_pass_notify_sync_index(chain->passes[i], index);
 }
 
-bool vulkan_filter_chain::update_swapchain_info(
+static bool slang_chain_update_swapchain_info(struct vulkan_filter_chain *chain,
+      
       const vulkan_filter_chain_swapchain_info &info)
 {
-   flush();
-   set_swapchain_info(info);
-   return init();
+   slang_chain_flush(chain);
+   slang_chain_set_swapchain_info(chain, info);
+   return slang_chain_init(chain);
 }
 
-void vulkan_filter_chain::release_staging_buffers()
+static void slang_chain_release_staging_buffers(struct vulkan_filter_chain *chain)
 {
    unsigned i;
-   for (i = 0; i < common.num_luts; i++)
-      slang_buffer_free(&common.luts[i].buffer);
+   for (i = 0; i < chain->common.num_luts; i++)
+      slang_buffer_free(&chain->common.luts[i].buffer);
 }
 
-void vulkan_filter_chain::execute_deferred()
+static void slang_chain_execute_deferred(struct vulkan_filter_chain *chain)
 {
    unsigned i;
-   for (i = 0; i < num_deferred; i++)
-      deferred_disposes_run_clear(&deferred_calls[i]);
+   for (i = 0; i < chain->num_deferred; i++)
+      deferred_disposes_run_clear(&chain->deferred_calls[i]);
 }
 
-void vulkan_filter_chain::flush()
+static void slang_chain_flush(struct vulkan_filter_chain *chain)
 {
-   vkDeviceWaitIdle(device);
-   execute_deferred();
+   vkDeviceWaitIdle(chain->device);
+   slang_chain_execute_deferred(chain);
 }
 
-void vulkan_filter_chain::update_history_info()
+static void slang_chain_update_history_info(struct vulkan_filter_chain *chain)
 {
    unsigned i;
-   unsigned hist_size = (unsigned)num_history;
+   unsigned hist_size = (unsigned)chain->num_history;
 
    for (i = 0; i < hist_size; i++)
    {
       /* Map logical index i (0 = most recent) to the ring buffer slot. */
-      unsigned ring_slot = (history_ring_index + i) % hist_size;
-      Texture *source = &common.original_history[i];
+      unsigned ring_slot = (chain->history_ring_index + i) % hist_size;
+      Texture *source = &chain->common.original_history[i];
 
       source->texture.layout   = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-      source->texture.view     = original_history[ring_slot]->view;
-      source->texture.image    = original_history[ring_slot]->image;
-      source->texture.width    = original_history[ring_slot]->size.width;
-      source->texture.height   = original_history[ring_slot]->size.height;
-      source->filter           = passes[0]->pass_info.source_filter;
-      source->mip_filter       = passes[0]->pass_info.mip_filter;
-      source->address          = passes[0]->pass_info.address;
+      source->texture.view     = chain->original_history[ring_slot]->view;
+      source->texture.image    = chain->original_history[ring_slot]->image;
+      source->texture.width    = chain->original_history[ring_slot]->size.width;
+      source->texture.height   = chain->original_history[ring_slot]->size.height;
+      source->filter           = chain->passes[0]->pass_info.source_filter;
+      source->mip_filter       = chain->passes[0]->pass_info.mip_filter;
+      source->address          = chain->passes[0]->pass_info.address;
    }
 }
 
-void vulkan_filter_chain::update_feedback_info()
+static void slang_chain_update_feedback_info(struct vulkan_filter_chain *chain)
 {
    unsigned i;
-   if (!common.num_fb_feedback)
+   if (!chain->common.num_fb_feedback)
       return;
 
-   for (i = 0; i < pass_count - 1; i++)
+   for (i = 0; i < chain->pass_count - 1; i++)
    {
-      struct slang_framebuffer *fb = passes[i]->fb_feedback;
+      struct slang_framebuffer *fb = chain->passes[i]->fb_feedback;
       if (!fb)
          continue;
 
-      Texture *source         = &common.fb_feedback[i];
+      Texture *source         = &chain->common.fb_feedback[i];
 
       source->texture.image   = fb->image;
       source->texture.view    = fb->view;
       source->texture.layout  = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
       source->texture.width   = fb->size.width;
       source->texture.height  = fb->size.height;
-      source->filter          = passes[i]->pass_info.source_filter;
-      source->mip_filter      = passes[i]->pass_info.mip_filter;
-      source->address         = passes[i]->pass_info.address;
+      source->filter          = chain->passes[i]->pass_info.source_filter;
+      source->mip_filter      = chain->passes[i]->pass_info.mip_filter;
+      source->address         = chain->passes[i]->pass_info.address;
    }
 }
 
-void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
+static void slang_chain_build_offscreen_passes(struct vulkan_filter_chain *chain,
+      VkCommandBuffer cmd,
       const VkViewport &vp)
 {
    unsigned i;
@@ -1609,69 +1667,70 @@ void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
 
    /* First frame, make sure our history and feedback textures
     * are in a clean state. */
-   if (require_clear)
+   if (chain->require_clear)
    {
-      clear_history_and_feedback(cmd);
-      require_clear = false;
+      slang_chain_clear_history_and_feedback(chain, cmd);
+      chain->require_clear = false;
    }
 
-   update_history_info();
-   update_feedback_info();
+   slang_chain_update_history_info(chain);
+   slang_chain_update_feedback_info(chain);
 
-   struct deferred_disposes *disposer = &deferred_calls[current_sync_index];
+   struct deferred_disposes *disposer = &chain->deferred_calls[chain->current_sync_index];
    const Texture original = {
-      input_texture,
-      passes[0]->pass_info.source_filter,
-      passes[0]->pass_info.mip_filter,
-      passes[0]->pass_info.address,
+      chain->input_texture,
+      chain->passes[0]->pass_info.source_filter,
+      chain->passes[0]->pass_info.mip_filter,
+      chain->passes[0]->pass_info.address,
    };
 
    source = original;
 
    /* A pass may sample PassOutput[j] for a j that has not been produced
     * yet this frame (a forward or self reference), and on the first frame
-    * no pass output exists at all. common.pass_outputs entries are only
+    * no pass output exists at all. chain->common.pass_outputs entries are only
     * filled lazily below, after each pass renders, so any not-yet-produced
     * slot would otherwise still hold a zero-initialized Texture whose image
     * view is VK_NULL_HANDLE. Binding that null view into a descriptor set
     * and submitting it to vkUpdateDescriptorSets crashes inside the driver.
     * Seed every slot with the current input texture so unproduced outputs
     * sample defined data; real outputs overwrite their slot as they render. */
-   for (i = 0; i < common.num_pass_outputs; i++)
-      common.pass_outputs[i] = original;
+   for (i = 0; i < chain->common.num_pass_outputs; i++)
+      chain->common.pass_outputs[i] = original;
 
-   for (i = 0; i < pass_count - 1; i++)
+   for (i = 0; i < chain->pass_count - 1; i++)
    {
-      slang_pass_build_commands(passes[i], disposer, cmd,
+      slang_pass_build_commands(chain->passes[i], disposer, cmd,
             original, source, vp, nullptr);
 
-      const struct slang_framebuffer *fb = passes[i]->framebuffer;
+      const struct slang_framebuffer *fb = chain->passes[i]->framebuffer;
 
       source.texture.image    = fb->image;
       source.texture.view     = fb->view;
       source.texture.layout   = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
       source.texture.width    = fb->size.width;
       source.texture.height   = fb->size.height;
-      source.filter           = passes[i + 1]->pass_info.source_filter;
-      source.mip_filter       = passes[i + 1]->pass_info.mip_filter;
-      source.address          = passes[i + 1]->pass_info.address;
+      source.filter           = chain->passes[i + 1]->pass_info.source_filter;
+      source.mip_filter       = chain->passes[i + 1]->pass_info.mip_filter;
+      source.address          = chain->passes[i + 1]->pass_info.address;
 
-      common.pass_outputs[i]  = source;
+      chain->common.pass_outputs[i]  = source;
    }
 }
 
-void vulkan_filter_chain::update_history(struct deferred_disposes *disposer,
+static void slang_chain_update_history(struct vulkan_filter_chain *chain,
+      struct deferred_disposes *disposer,
       VkCommandBuffer cmd)
 {
-   VkImageLayout src_layout = input_texture.layout;
-   unsigned hist_size       = (unsigned)num_history;
+   VkImageLayout src_layout = chain->input_texture.layout;
+   unsigned hist_size       = (unsigned)chain->num_history;
 
    /* Transition input texture to something appropriate. */
-   if (input_texture.layout != VK_IMAGE_LAYOUT_GENERAL)
+   if (chain->input_texture.layout != VK_IMAGE_LAYOUT_GENERAL)
    {
       VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
-            input_texture.image,VK_REMAINING_MIP_LEVELS,
-            input_texture.layout,
+            chain->input_texture.image,VK_REMAINING_MIP_LEVELS,
+            chain->input_texture.layout,
             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
             0,
             VK_ACCESS_TRANSFER_READ_BIT,
@@ -1685,40 +1744,40 @@ void vulkan_filter_chain::update_history(struct deferred_disposes *disposer,
 
    /* Advance ring index backwards: the oldest slot becomes the newest.
     * This replaces the O(N) move_backward with O(1) index arithmetic. */
-   unsigned next_history_ring_index = (history_ring_index == 0)
+   unsigned next_history_ring_index = (chain->history_ring_index == 0)
       ? hist_size - 1
-      : history_ring_index - 1;
+      : chain->history_ring_index - 1;
 
-   struct slang_framebuffer *target = original_history[next_history_ring_index];
+   struct slang_framebuffer *target = chain->original_history[next_history_ring_index];
 
    bool copy_history = true;
 
-   if   (    input_texture.width  != target->size.width
-         ||  input_texture.height != target->size.height
-         || (input_texture.format != VK_FORMAT_UNDEFINED
-         &&  input_texture.format != target->format))
+   if   (    chain->input_texture.width  != target->size.width
+         ||  chain->input_texture.height != target->size.height
+         || (chain->input_texture.format != VK_FORMAT_UNDEFINED
+         &&  chain->input_texture.format != target->format))
    {
-      Size2D new_size = { input_texture.width, input_texture.height };
+      Size2D new_size = { chain->input_texture.width, chain->input_texture.height };
       copy_history    = slang_framebuffer_set_size(target, disposer,
-            &new_size, input_texture.format);
+            &new_size, chain->input_texture.format);
    }
 
    if (copy_history)
    {
-      history_ring_index = next_history_ring_index;
+      chain->history_ring_index = next_history_ring_index;
       vulkan_framebuffer_copy(target->image, target->size,
-            cmd, input_texture.image, src_layout);
+            cmd, chain->input_texture.image, src_layout);
    }
    else
       RARCH_ERR("[Vulkan] Failed to resize shader history framebuffer.\n");
 
    /* Transition input texture back. */
-   if (input_texture.layout != VK_IMAGE_LAYOUT_GENERAL)
+   if (chain->input_texture.layout != VK_IMAGE_LAYOUT_GENERAL)
    {
       VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
-            input_texture.image,VK_REMAINING_MIP_LEVELS,
+            chain->input_texture.image,VK_REMAINING_MIP_LEVELS,
             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-            input_texture.layout,
+            chain->input_texture.layout,
             0,
             VK_ACCESS_SHADER_READ_BIT,
             VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -1728,79 +1787,81 @@ void vulkan_filter_chain::update_history(struct deferred_disposes *disposer,
    }
 }
 
-void vulkan_filter_chain::end_frame(VkCommandBuffer cmd)
+static void slang_chain_end_frame(struct vulkan_filter_chain *chain,
+      VkCommandBuffer cmd)
 {
    /* If we need to keep old frames, copy it after fragment is complete.
     * TODO: We can improve pipelining by figuring out which
     * pass is the last that reads from
     * the history and dispatch the copy earlier. */
-   if (num_history)
+   if (chain->num_history)
    {
-      update_history(&deferred_calls[current_sync_index], cmd);
+      slang_chain_update_history(chain, &chain->deferred_calls[chain->current_sync_index], cmd);
    }
 }
 
-void vulkan_filter_chain::build_viewport_pass(
+static void slang_chain_build_viewport_pass(struct vulkan_filter_chain *chain,
+      
       VkCommandBuffer cmd, const VkViewport &vp, const float *mvp)
 {
    unsigned i;
    Texture source;
 
-   struct deferred_disposes *disposer = &deferred_calls[current_sync_index];
+   struct deferred_disposes *disposer = &chain->deferred_calls[chain->current_sync_index];
    const Texture original = {
-      input_texture,
-      passes[0]->pass_info.source_filter,
-      passes[0]->pass_info.mip_filter,
-      passes[0]->pass_info.address,
+      chain->input_texture,
+      chain->passes[0]->pass_info.source_filter,
+      chain->passes[0]->pass_info.mip_filter,
+      chain->passes[0]->pass_info.address,
    };
 
-   if (pass_count == 1)
+   if (chain->pass_count == 1)
    {
       source = {
-         input_texture,
-         passes[pass_count - 1]->pass_info.source_filter,
-         passes[pass_count - 1]->pass_info.mip_filter,
-         passes[pass_count - 1]->pass_info.address,
+         chain->input_texture,
+         chain->passes[chain->pass_count - 1]->pass_info.source_filter,
+         chain->passes[chain->pass_count - 1]->pass_info.mip_filter,
+         chain->passes[chain->pass_count - 1]->pass_info.address,
       };
    }
    else
    {
-      const struct slang_framebuffer *fb = passes[pass_count - 2]->framebuffer;
+      const struct slang_framebuffer *fb = chain->passes[chain->pass_count - 2]->framebuffer;
       source.texture.image   = fb->image;
       source.texture.view    = fb->view;
       source.texture.layout  = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
       source.texture.width   = fb->size.width;
       source.texture.height  = fb->size.height;
-      source.filter          = passes[pass_count - 1]->pass_info.source_filter;
-      source.mip_filter      = passes[pass_count - 1]->pass_info.mip_filter;
-      source.address         = passes[pass_count - 1]->pass_info.address;
+      source.filter          = chain->passes[chain->pass_count - 1]->pass_info.source_filter;
+      source.mip_filter      = chain->passes[chain->pass_count - 1]->pass_info.mip_filter;
+      source.address         = chain->passes[chain->pass_count - 1]->pass_info.address;
    }
 
-   slang_pass_build_commands(passes[pass_count - 1], disposer, cmd,
+   slang_pass_build_commands(chain->passes[chain->pass_count - 1], disposer, cmd,
          original, source, vp, mvp);
 
    /* For feedback FBOs, swap current and previous. */
-   for (i = 0; i < pass_count; i++)
-      slang_pass_end_frame(passes[i]);
+   for (i = 0; i < chain->pass_count; i++)
+      slang_pass_end_frame(chain->passes[i]);
 }
 
-bool vulkan_filter_chain::init_history()
+static bool slang_chain_init_history(struct vulkan_filter_chain *chain)
 {
    unsigned i;
    size_t required_images = 0;
 
-   for (i = 0; i < num_history; i++)
-      slang_framebuffer_delete(&original_history[i]);
-   free(original_history);
-   original_history = nullptr;
-   num_history      = 0;
-   texture_array_resize(&common.original_history,
-         &common.num_original_history, 0);
-   history_ring_index = 0;
+   for (i = 0; i < chain->num_history; i++)
+      slang_framebuffer_delete(&chain->original_history[i]);
+   free(chain->original_history);
+   chain->original_history = nullptr;
+   chain->num_history      = 0;
+   texture_array_resize(&chain->common.original_history,
+         &chain->common.num_original_history, 0);
+   chain->history_ring_index = 0;
 
-   for (i = 0; i < pass_count; i++)
+   for (i = 0; i < chain->pass_count; i++)
    {
-      size_t _y = passes[i]->reflection.semantic_textures[
+      size_t _y = chain->passes[i]->reflection.semantic_textures[
                SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size;
       required_images = MAX(required_images, _y);
    }
@@ -1816,20 +1877,20 @@ bool vulkan_filter_chain::init_history()
    /* We don't need to store array element #0,
     * since it's aliased with the actual original. */
    required_images--;
-   if (!(original_history = (struct slang_framebuffer**)
-            calloc(required_images, sizeof(*original_history))))
+   if (!(chain->original_history = (struct slang_framebuffer**)
+            calloc(required_images, sizeof(*chain->original_history))))
       return false;
-   if (!texture_array_resize(&common.original_history,
-            &common.num_original_history, required_images))
+   if (!texture_array_resize(&chain->common.original_history,
+            &chain->common.num_original_history, required_images))
       return false;
 
    for (i = 0; i < required_images; i++)
    {
-      if (!(original_history[i] = slang_framebuffer_new(
-               device, &memory_properties, &max_input_size, original_format,
-               1, &common.framebuffer_pool)))
+      if (!(chain->original_history[i] = slang_framebuffer_new(
+               chain->device, &chain->memory_properties, &chain->max_input_size, chain->original_format,
+               1, &chain->common.framebuffer_pool)))
          return false;
-      num_history++;
+      chain->num_history++;
    }
 
 #ifdef VULKAN_DEBUG
@@ -1840,25 +1901,25 @@ bool vulkan_filter_chain::init_history()
     * a known state, but we need
     * a command buffer for that, so just defer to first frame.
     */
-   require_clear = true;
+   chain->require_clear = true;
    return true;
 }
 
-bool vulkan_filter_chain::init_feedback()
+static bool slang_chain_init_feedback(struct vulkan_filter_chain *chain)
 {
    unsigned i;
    bool use_feedbacks = false;
 
-   texture_array_resize(&common.fb_feedback, &common.num_fb_feedback, 0);
+   texture_array_resize(&chain->common.fb_feedback, &chain->common.num_fb_feedback, 0);
 
    /* Final pass cannot have feedback. */
-   for (i = 0; i < pass_count - 1; i++)
+   for (i = 0; i < chain->pass_count - 1; i++)
    {
       size_t j;
       bool use_feedback = false;
-      for (j = 0; j < pass_count; j++)
+      for (j = 0; j < chain->pass_count; j++)
       {
-         const struct slang_pass *pass = passes[j];
+         const struct slang_pass *pass = chain->passes[j];
          const slang_reflection &r = pass->reflection;
          const slang_texture_semantic_array &feedbacks =
             r.semantic_textures[SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK];
@@ -1873,7 +1934,7 @@ bool vulkan_filter_chain::init_feedback()
 
       if (use_feedback)
       {
-         if (!slang_pass_init_feedback(passes[i]))
+         if (!slang_pass_init_feedback(chain->passes[i]))
             return false;
          RARCH_LOG("[Vulkan] Using framebuffer feedback for pass #%u.\n", i);
       }
@@ -1887,58 +1948,58 @@ bool vulkan_filter_chain::init_feedback()
       return true;
    }
 
-   if (!texture_array_resize(&common.fb_feedback,
-            &common.num_fb_feedback, pass_count - 1))
+   if (!texture_array_resize(&chain->common.fb_feedback,
+            &chain->common.num_fb_feedback, chain->pass_count - 1))
       return false;
-   require_clear = true;
+   chain->require_clear = true;
    return true;
 }
 
-bool vulkan_filter_chain::init_alias()
+static bool slang_chain_init_alias(struct vulkan_filter_chain *chain)
 {
    unsigned i;
 
-   slang_texture_semantic_name_map_free(&common.texture_semantic_map);
-   slang_texture_semantic_name_map_free(&common.texture_semantic_uniform_map);
+   slang_texture_semantic_name_map_free(&chain->common.texture_semantic_map);
+   slang_texture_semantic_name_map_free(&chain->common.texture_semantic_uniform_map);
 
-   for (i = 0; i < (unsigned)pass_count; i++)
+   for (i = 0; i < (unsigned)chain->pass_count; i++)
    {
-      const char *name = slang_pass_get_name(passes[i]);
+      const char *name = slang_pass_get_name(chain->passes[i]);
       if (!*name)
          continue;
 
       if (!slang_texture_semantic_name_map_set_unique(
-               &common.texture_semantic_map, name, NULL,
+               &chain->common.texture_semantic_map, name, NULL,
                SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i))
          return false;
 
       if (!slang_texture_semantic_name_map_set_unique(
-               &common.texture_semantic_uniform_map, name, "Size",
+               &chain->common.texture_semantic_uniform_map, name, "Size",
                SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i))
          return false;
 
       if (!slang_texture_semantic_name_map_set_unique(
-               &common.texture_semantic_map, name, "Feedback",
+               &chain->common.texture_semantic_map, name, "Feedback",
                SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i))
          return false;
 
       if (!slang_texture_semantic_name_map_set_unique(
-               &common.texture_semantic_uniform_map, name, "FeedbackSize",
+               &chain->common.texture_semantic_uniform_map, name, "FeedbackSize",
                SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i))
          return false;
    }
 
-   for (i = 0; i < (unsigned)common.num_luts; i++)
+   for (i = 0; i < (unsigned)chain->common.num_luts; i++)
    {
       if (!slang_texture_semantic_name_map_set_unique(
-               &common.texture_semantic_map,
-               common.luts[i].id, NULL,
+               &chain->common.texture_semantic_map,
+               chain->common.luts[i].id, NULL,
                SLANG_TEXTURE_SEMANTIC_USER, i))
          return false;
 
       if (!slang_texture_semantic_name_map_set_unique(
-               &common.texture_semantic_uniform_map,
-               common.luts[i].id, "Size",
+               &chain->common.texture_semantic_uniform_map,
+               chain->common.luts[i].id, "Size",
                SLANG_TEXTURE_SEMANTIC_USER, i))
          return false;
    }
@@ -1946,189 +2007,196 @@ bool vulkan_filter_chain::init_alias()
    return true;
 }
 
-void vulkan_filter_chain::set_pass_info(unsigned pass,
+static void slang_chain_set_pass_info(struct vulkan_filter_chain *chain,
+      unsigned pass,
       const vulkan_filter_chain_pass_info &info)
 {
-   pass_info[pass] = info;
+   chain->pass_info[pass] = info;
 }
 
-VkFormat vulkan_filter_chain::get_pass_rt_format(unsigned pass)
+static VkFormat slang_chain_get_pass_rt_format(struct vulkan_filter_chain *chain,
+      unsigned pass)
 {
-   return pass_info[pass].rt_format;
+   return chain->pass_info[pass].rt_format;
 }
 
-bool vulkan_filter_chain::emits_hdr10() const
+static bool slang_chain_emits_hdr10(const struct vulkan_filter_chain *chain)
 {
-   return emits_hdr_colorspace;
+   return chain->emits_hdr_colorspace;
 }
 
-void vulkan_filter_chain::set_hdr10()
+static void slang_chain_set_emits_hdr10(struct vulkan_filter_chain *chain)
 {
-   emits_hdr_colorspace = true;
+   chain->emits_hdr_colorspace = true;
 }
 
-bool vulkan_filter_chain::emits_hdr16() const
+static bool slang_chain_emits_hdr16(const struct vulkan_filter_chain *chain)
 {
-   return emits_hdr16_output;
+   return chain->emits_hdr16_output;
 }
 
-void vulkan_filter_chain::set_hdr16()
+static void slang_chain_set_emits_hdr16(struct vulkan_filter_chain *chain)
 {
-   emits_hdr16_output = true;
+   chain->emits_hdr16_output = true;
 }
 
-void vulkan_filter_chain::set_num_passes(unsigned num_passes)
+static void slang_chain_set_num_passes(struct vulkan_filter_chain *chain,
+      unsigned num_passes)
 {
    unsigned i;
 
    {
       vulkan_filter_chain_pass_info *new_info =
-         (vulkan_filter_chain_pass_info*)realloc(pass_info,
-               num_passes * sizeof(*pass_info));
+         (vulkan_filter_chain_pass_info*)realloc(chain->pass_info,
+               num_passes * sizeof(*chain->pass_info));
       if (!new_info && num_passes)
          return;
-      pass_info = new_info;
-      if (num_passes > pass_info_count)
-         memset(&pass_info[pass_info_count], 0,
-               (num_passes - pass_info_count) * sizeof(*pass_info));
-      pass_info_count = num_passes;
+      chain->pass_info = new_info;
+      if (num_passes > chain->pass_info_count)
+         memset(&chain->pass_info[chain->pass_info_count], 0,
+               (num_passes - chain->pass_info_count) * sizeof(*chain->pass_info));
+      chain->pass_info_count = num_passes;
    }
-   for (i = 0; i < pass_count; i++)
-      slang_pass_free(passes[i]);
-   free(passes);
-   pass_count = 0;
-   if (!(passes = (struct slang_pass**)
-            calloc(num_passes, sizeof(*passes))))
+   for (i = 0; i < chain->pass_count; i++)
+      slang_pass_free(chain->passes[i]);
+   free(chain->passes);
+   chain->pass_count = 0;
+   if (!(chain->passes = (struct slang_pass**)
+            calloc(num_passes, sizeof(*chain->passes))))
       return;
    for (i = 0; i < num_passes; i++)
    {
-      if (!(passes[i] = slang_pass_new(device, &memory_properties,
-               cache, num_deferred, i + 1 == num_passes)))
+      if (!(chain->passes[i] = slang_pass_new(chain->device, &chain->memory_properties,
+               chain->cache, chain->num_deferred, i + 1 == num_passes)))
          return;
-      passes[i]->common      = &common;
-      passes[i]->pass_number = i;
-      pass_count++;
+      chain->passes[i]->common      = &chain->common;
+      chain->passes[i]->pass_number = i;
+      chain->pass_count++;
    }
 }
 
-void vulkan_filter_chain::set_shader(
+static void slang_chain_set_shader(struct vulkan_filter_chain *chain,
+      
       unsigned pass,
       VkShaderStageFlags stage,
       const uint32_t *spirv,
       size_t spirv_words)
 {
-   slang_pass_set_shader(passes[pass], stage, spirv, spirv_words);
+   slang_pass_set_shader(chain->passes[pass], stage, spirv, spirv_words);
 }
 
-void vulkan_filter_chain::add_parameter(unsigned pass,
+static void slang_chain_add_parameter(struct vulkan_filter_chain *chain,
+      unsigned pass,
       unsigned index, const char *id)
 {
-   slang_pass_add_parameter(passes[pass], index, id);
+   slang_pass_add_parameter(chain->passes[pass], index, id);
 }
 
-bool vulkan_filter_chain::init_ubo()
+static bool slang_chain_init_ubo(struct vulkan_filter_chain *chain)
 {
    unsigned i;
    VkPhysicalDeviceProperties props;
 
-   slang_buffer_free(&common.ubo);
-   common.ubo_offset            = 0;
+   slang_buffer_free(&chain->common.ubo);
+   chain->common.ubo_offset            = 0;
 
-   vkGetPhysicalDeviceProperties(gpu, &props);
-   common.ubo_alignment         = props.limits.minUniformBufferOffsetAlignment;
+   vkGetPhysicalDeviceProperties(chain->gpu, &props);
+   chain->common.ubo_alignment         = props.limits.minUniformBufferOffsetAlignment;
 
    /* Who knows. :) */
-   if (common.ubo_alignment == 0)
-      common.ubo_alignment = 1;
+   if (chain->common.ubo_alignment == 0)
+      chain->common.ubo_alignment = 1;
 
-   for (i = 0; i < pass_count; i++)
-      slang_pass_allocate_buffers(passes[i]);
+   for (i = 0; i < chain->pass_count; i++)
+      slang_pass_allocate_buffers(chain->passes[i]);
 
-   common.ubo_offset            =
-      (common.ubo_offset + common.ubo_alignment - 1) &
-      ~(common.ubo_alignment - 1);
-   common.ubo_sync_index_stride = common.ubo_offset;
+   chain->common.ubo_offset            =
+      (chain->common.ubo_offset + chain->common.ubo_alignment - 1) &
+      ~(chain->common.ubo_alignment - 1);
+   chain->common.ubo_sync_index_stride = chain->common.ubo_offset;
 
-   if (common.ubo_offset != 0)
-      slang_buffer_init(&common.ubo, device,
-            memory_properties, common.ubo_offset * num_deferred,
+   if (chain->common.ubo_offset != 0)
+      slang_buffer_init(&chain->common.ubo, chain->device,
+            chain->memory_properties, chain->common.ubo_offset * chain->num_deferred,
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
-   if (common.ubo.buffer != VK_NULL_HANDLE)
-      common.ubo_mapped         = static_cast<uint8_t*>(slang_buffer_map(&common.ubo));
+   if (chain->common.ubo.buffer != VK_NULL_HANDLE)
+      chain->common.ubo_mapped         = static_cast<uint8_t*>(slang_buffer_map(&chain->common.ubo));
    else
-      common.ubo_mapped         = nullptr;
+      chain->common.ubo_mapped         = nullptr;
    return true;
 }
 
-bool vulkan_filter_chain::init()
+static bool slang_chain_init(struct vulkan_filter_chain *chain)
 {
    unsigned i;
-   Size2D source = max_input_size;
+   Size2D source = chain->max_input_size;
 
-   if (!init_alias())
+   if (!slang_chain_init_alias(chain))
       return false;
-   alias_initialized = true;
+   chain->alias_initialized = true;
 
-   for (i = 0; i < pass_count; i++)
+   for (i = 0; i < chain->pass_count; i++)
    {
 #ifdef VULKAN_DEBUG
-      const char *name = slang_pass_get_name(passes[i]);
+      const char *name = slang_pass_get_name(chain->passes[i]);
       RARCH_LOG("[Vulkan] Building pass #%u (%s)\n", i,
             (name && *name)
             ? name 
             : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
 #endif
-      source = slang_pass_set_pass_info(passes[i], max_input_size,
-            source, swapchain_info, pass_info[i]);
-      if (!slang_pass_build(passes[i]))
+      source = slang_pass_set_pass_info(chain->passes[i], chain->max_input_size,
+            source, chain->swapchain_info, chain->pass_info[i]);
+      if (!slang_pass_build(chain->passes[i]))
          return false;
    }
 
-   require_clear = false;
-   if (!init_ubo())
+   chain->require_clear = false;
+   if (!slang_chain_init_ubo(chain))
       return false;
-   if (!init_history())
+   if (!slang_chain_init_history(chain))
       return false;
-   if (!init_feedback())
+   if (!slang_chain_init_feedback(chain))
       return false;
-   texture_array_resize(&common.pass_outputs,
-         &common.num_pass_outputs, pass_count);
+   texture_array_resize(&chain->common.pass_outputs,
+         &chain->common.num_pass_outputs, chain->pass_count);
    return true;
 }
 
-bool vulkan_filter_chain::init_single_pass(unsigned pass_idx)
+static bool slang_chain_init_single_pass(struct vulkan_filter_chain *chain,
+      unsigned pass_idx)
 {
-   if (pass_idx >= pass_count)
+   if (pass_idx >= chain->pass_count)
       return false;
 
    /* Only call set_pass_info on this pass, using the accumulated
     * source size. set_pass_info calls clear_vk() which destroys
-    * Vulkan objects — we must NOT re-call it on prior passes. */
-   deferred_source = slang_pass_set_pass_info(passes[pass_idx], max_input_size,
-         deferred_source, swapchain_info, pass_info[pass_idx]);
+    * Vulkan objects — we must NOT re-call it on prior chain->passes. */
+   chain->deferred_source = slang_pass_set_pass_info(chain->passes[pass_idx], chain->max_input_size,
+         chain->deferred_source, chain->swapchain_info, chain->pass_info[pass_idx]);
 
    RARCH_LOG("[Vulkan] Building pass #%u (%s)\n", pass_idx,
-         *slang_pass_get_name(passes[pass_idx])
-         ? slang_pass_get_name(passes[pass_idx])
+         *slang_pass_get_name(chain->passes[pass_idx])
+         ? slang_pass_get_name(chain->passes[pass_idx])
          : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
 
-   if (!slang_pass_build(passes[pass_idx]))
+   if (!slang_pass_build(chain->passes[pass_idx]))
       return false;
 
    return true;
 }
 
-bool vulkan_filter_chain::compile_full_pass(unsigned pass_idx,
+static bool slang_chain_compile_full_pass(struct vulkan_filter_chain *chain,
+      unsigned pass_idx,
       glslang_filter_chain_filter default_filter)
 {
-   video_shader *shader = common.shader_preset;
-   if (!shader || pass_idx >= pass_count)
+   video_shader *shader = chain->common.shader_preset;
+   if (!shader || pass_idx >= chain->pass_count)
       return false;
 
    /* Extra opaque pass (last_pass_is_fbo) — SPIRV already set */
    if (pass_idx >= shader->passes)
-      return init_single_pass(pass_idx);
+      return slang_chain_init_single_pass(chain, pass_idx);
 
    const video_shader_pass *pass      = &shader->pass[pass_idx];
    const video_shader_pass *next_pass =
@@ -2188,7 +2256,7 @@ bool vulkan_filter_chain::compile_full_pass(unsigned pass_idx,
             glslang_output_free(&output);
             return false;
          }
-         add_parameter(pass_idx,
+         slang_chain_add_parameter(chain, pass_idx,
                (unsigned)(itr - shader->parameters), meta_param->id);
       }
       else
@@ -2201,30 +2269,30 @@ bool vulkan_filter_chain::compile_full_pass(unsigned pass_idx,
          param->minimum = meta_param->minimum;
          param->maximum = meta_param->maximum;
          param->step    = meta_param->step;
-         add_parameter(pass_idx, shader->num_parameters, meta_param->id);
+         slang_chain_add_parameter(chain, pass_idx, shader->num_parameters, meta_param->id);
          shader->num_parameters++;
       }
    }
 
    /* ---- Set SPIRV on the pass ---- */
-   set_shader(pass_idx, VK_SHADER_STAGE_VERTEX_BIT,
+   slang_chain_set_shader(chain, pass_idx, VK_SHADER_STAGE_VERTEX_BIT,
          output.vertex, output.vertex_len);
-   set_shader(pass_idx, VK_SHADER_STAGE_FRAGMENT_BIT,
+   slang_chain_set_shader(chain, pass_idx, VK_SHADER_STAGE_FRAGMENT_BIT,
          output.fragment, output.fragment_len);
 
-   set_frame_count_period(pass_idx, pass->frame_count_mod);
+   slang_chain_set_frame_count_period(chain, pass_idx, pass->frame_count_mod);
 
    /* ---- Pass name ---- */
    if (output.meta.name[0])
-      set_pass_name(pass_idx, output.meta.name);
+      slang_chain_set_pass_name(chain, pass_idx, output.meta.name);
    if (*pass->alias)
-      set_pass_name(pass_idx, pass->alias);
+      slang_chain_set_pass_name(chain, pass_idx, pass->alias);
 
    /* Update alias map incrementally */
-   if (*slang_pass_get_name(passes[pass_idx]))
+   if (*slang_pass_get_name(chain->passes[pass_idx]))
    {
-      alias_initialized = false;
-      if (!init_alias_early())
+      chain->alias_initialized = false;
+      if (!slang_chain_init_alias_early(chain))
       {
          glslang_output_free(&output);
          return false;
@@ -2283,12 +2351,12 @@ bool vulkan_filter_chain::compile_full_pass(unsigned pass_idx,
          VkFormat pass_format = glslang_format_to_vk(output.meta.rt_format);
 
          if (explicit_format && vulkan_is_hdr10_format(pass_format))
-            set_hdr10();
+            slang_chain_set_emits_hdr10(chain);
 #ifdef VULKAN_HDR_SWAPCHAIN
          if (explicit_format && pass_format == VK_FORMAT_R16G16B16A16_SFLOAT)
-            set_hdr16();
+            slang_chain_set_emits_hdr16(chain);
 #endif
-         p_info.rt_format = swapchain_info.format;
+         p_info.rt_format = chain->swapchain_info.format;
 
          if (explicit_format && pass_format != p_info.rt_format)
             RARCH_WARN("[Vulkan] Using explicit format for last pass in chain,"
@@ -2320,9 +2388,9 @@ bool vulkan_filter_chain::compile_full_pass(unsigned pass_idx,
       if (pass_idx + 1 == shader->passes)
       {
          if (explicit_format && vulkan_is_hdr10_format(p_info.rt_format))
-            set_hdr10();
+            slang_chain_set_emits_hdr10(chain);
          else if (explicit_format && p_info.rt_format == VK_FORMAT_R16G16B16A16_SFLOAT)
-            set_hdr16();
+            slang_chain_set_emits_hdr16(chain);
       }
 #endif
 
@@ -2359,178 +2427,200 @@ bool vulkan_filter_chain::compile_full_pass(unsigned pass_idx,
       }
    }
 
-   set_pass_info(pass_idx, p_info);
+   slang_chain_set_pass_info(chain, pass_idx, p_info);
    glslang_output_free(&output);
 
    /* ---- Vulkan pipeline creation ---- */
-   return init_single_pass(pass_idx);
+   return slang_chain_init_single_pass(chain, pass_idx);
 }
 
-bool vulkan_filter_chain::init_alias_early()
+static bool slang_chain_init_alias_early(struct vulkan_filter_chain *chain)
 {
-   if (alias_initialized)
+   if (chain->alias_initialized)
       return true;
-   if (!init_alias())
+   if (!slang_chain_init_alias(chain))
       return false;
-   alias_initialized = true;
+   chain->alias_initialized = true;
    return true;
 }
 
-bool vulkan_filter_chain::finalize()
+static bool slang_chain_finalize(struct vulkan_filter_chain *chain)
 {
-   if (!alias_initialized)
+   if (!chain->alias_initialized)
    {
-      if (!init_alias())
+      if (!slang_chain_init_alias(chain))
          return false;
-      alias_initialized = true;
+      chain->alias_initialized = true;
    }
 
-   require_clear = false;
-   if (!init_ubo())
+   chain->require_clear = false;
+   if (!slang_chain_init_ubo(chain))
       return false;
-   if (!init_history())
+   if (!slang_chain_init_history(chain))
       return false;
-   if (!init_feedback())
+   if (!slang_chain_init_feedback(chain))
       return false;
-   texture_array_resize(&common.pass_outputs,
-         &common.num_pass_outputs, pass_count);
+   texture_array_resize(&chain->common.pass_outputs,
+         &chain->common.num_pass_outputs, chain->pass_count);
    return true;
 }
 
-void vulkan_filter_chain::clear_history_and_feedback(VkCommandBuffer cmd)
+static void slang_chain_clear_history_and_feedback(struct vulkan_filter_chain *chain,
+      VkCommandBuffer cmd)
 {
    unsigned i;
-   for (i = 0; i < num_history; i++)
-      vulkan_framebuffer_clear(original_history[i]->image, cmd);
-   for (i = 0; i < pass_count; i++)
+   for (i = 0; i < chain->num_history; i++)
+      vulkan_framebuffer_clear(chain->original_history[i]->image, cmd);
+   for (i = 0; i < chain->pass_count; i++)
    {
-      struct slang_framebuffer *fb = passes[i]->fb_feedback;
+      struct slang_framebuffer *fb = chain->passes[i]->fb_feedback;
       if (fb)
          vulkan_framebuffer_clear(fb->image, cmd);
    }
 }
 
-void vulkan_filter_chain::set_input_texture(
+static void slang_chain_set_input_texture(struct vulkan_filter_chain *chain,
+      
       const vulkan_filter_chain_texture &texture)
 {
-   input_texture = texture;
+   chain->input_texture = texture;
 }
 
-void vulkan_filter_chain::set_frame_count(uint64_t count)
+static void slang_chain_set_frame_count(struct vulkan_filter_chain *chain,
+      uint64_t count)
 {
-   common.frame_count = count;
+   chain->common.frame_count = count;
    unsigned i;
-   for (i = 0; i < pass_count; i++)
-      slang_pass_set_frame_count(passes[i], count);
+   for (i = 0; i < chain->pass_count; i++)
+      slang_pass_set_frame_count(chain->passes[i], count);
 }
 
-void vulkan_filter_chain::set_frame_count_period(
+static void slang_chain_set_frame_count_period(struct vulkan_filter_chain *chain,
+      
       unsigned pass, unsigned period)
 {
-   slang_pass_set_frame_count_period(passes[pass], period);
+   slang_pass_set_frame_count_period(chain->passes[pass], period);
 }
 
-void vulkan_filter_chain::set_shader_subframes(uint32_t total_subframes)
+static void slang_chain_set_shader_subframes(struct vulkan_filter_chain *chain,
+      uint32_t total_subframes)
 {
-   common.total_subframes = total_subframes;
+   chain->common.total_subframes = total_subframes;
 }
 
-void vulkan_filter_chain::set_current_shader_subframe(uint32_t current_subframe)
+static void slang_chain_set_current_shader_subframe(struct vulkan_filter_chain *chain,
+      uint32_t current_subframe)
 {
-   common.current_subframe = current_subframe;
+   chain->common.current_subframe = current_subframe;
 }
 
 #ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
-void vulkan_filter_chain::set_simulate_scanline(bool simulate_scanline)
+static void slang_chain_set_simulate_scanline(struct vulkan_filter_chain *chain,
+      bool simulate_scanline)
 {
-   common.simulate_scanline = simulate_scanline;
+   chain->common.simulate_scanline = simulate_scanline;
 }
 #endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
 
-void vulkan_filter_chain::set_frame_direction(int32_t direction)
+static void slang_chain_set_frame_direction(struct vulkan_filter_chain *chain,
+      int32_t direction)
 {
-   common.frame_direction = direction;
+   chain->common.frame_direction = direction;
 }
 
-void vulkan_filter_chain::set_frame_time_delta(uint32_t time_delta)
+static void slang_chain_set_frame_time_delta(struct vulkan_filter_chain *chain,
+      uint32_t time_delta)
 {
-   common.frame_time_delta = time_delta;
+   chain->common.frame_time_delta = time_delta;
 }
 
-void vulkan_filter_chain::set_original_fps(float fps)
+static void slang_chain_set_original_fps(struct vulkan_filter_chain *chain,
+      float fps)
 {
-   common.original_fps = fps;
+   chain->common.original_fps = fps;
 }
 
-void vulkan_filter_chain::set_rotation(uint32_t rot)
+static void slang_chain_set_rotation(struct vulkan_filter_chain *chain,
+      uint32_t rot)
 {
-   common.rotation = rot;
+   chain->common.rotation = rot;
 }
 
-void vulkan_filter_chain::set_core_aspect(float coreaspect)
+static void slang_chain_set_core_aspect(struct vulkan_filter_chain *chain,
+      float coreaspect)
 {
-   common.core_aspect = coreaspect;
+   chain->common.core_aspect = coreaspect;
 }
 
-void vulkan_filter_chain::set_core_aspect_rot(float coreaspectrot)
+static void slang_chain_set_core_aspect_rot(struct vulkan_filter_chain *chain,
+      float coreaspectrot)
 {
-   common.core_aspect_rot = coreaspectrot;
+   chain->common.core_aspect_rot = coreaspectrot;
 }
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-void vulkan_filter_chain::set_hdr_mode(unsigned hdr_mode)
+static void slang_chain_set_hdr_mode(struct vulkan_filter_chain *chain,
+      unsigned hdr_mode)
 {
-   common.hdr_mode = hdr_mode;
+   chain->common.hdr_mode = hdr_mode;
 }
 
-void vulkan_filter_chain::set_paper_white_nits(float paper_white_nits)
+static void slang_chain_set_paper_white_nits(struct vulkan_filter_chain *chain,
+      float paper_white_nits)
 {
-   common.paper_white_nits = paper_white_nits;
+   chain->common.paper_white_nits = paper_white_nits;
 }
 
 
 
-void vulkan_filter_chain::set_expand_gamut(unsigned expand_gamut)
+static void slang_chain_set_expand_gamut(struct vulkan_filter_chain *chain,
+      unsigned expand_gamut)
 {
-   common.expand_gamut = expand_gamut;
+   chain->common.expand_gamut = expand_gamut;
 }
 
-void vulkan_filter_chain::set_scanlines(float scanlines)
+static void slang_chain_set_scanlines(struct vulkan_filter_chain *chain,
+      float scanlines)
 {
-   common.scanlines = scanlines;
+   chain->common.scanlines = scanlines;
 }
 
-void vulkan_filter_chain::set_subpixel_layout(unsigned subpixel_layout)
+static void slang_chain_set_subpixel_layout(struct vulkan_filter_chain *chain,
+      unsigned subpixel_layout)
 {
-   common.subpixel_layout = subpixel_layout;
+   chain->common.subpixel_layout = subpixel_layout;
 }
 
-void vulkan_filter_chain::set_inverse_tonemap(float inverse_tonemap)
+static void slang_chain_set_inverse_tonemap(struct vulkan_filter_chain *chain,
+      float inverse_tonemap)
 {
-   common.inverse_tonemap = inverse_tonemap;
+   chain->common.inverse_tonemap = inverse_tonemap;
 }
 
-void vulkan_filter_chain::set_hdr10(float hdr10)
+static void slang_chain_set_hdr10(struct vulkan_filter_chain *chain,
+      float hdr10)
 {
-   common.hdr10 = hdr10;
+   chain->common.hdr10 = hdr10;
 }
 
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
-void vulkan_filter_chain::set_pass_name(unsigned pass, const char *name)
+static void slang_chain_set_pass_name(struct vulkan_filter_chain *chain,
+      unsigned pass, const char *name)
 {
-   slang_pass_set_name(passes[pass], name);
+   slang_pass_set_name(chain->passes[pass], name);
 }
 
-bool vulkan_filter_chain::add_static_texture(
+static bool slang_chain_add_static_texture(struct vulkan_filter_chain *chain,
+      
       struct slang_static_texture *texture)
 {
    struct slang_static_texture *new_luts = (struct slang_static_texture*)
-      realloc(common.luts, (common.num_luts + 1) * sizeof(*new_luts));
+      realloc(chain->common.luts, (chain->common.num_luts + 1) * sizeof(*new_luts));
    if (!new_luts)
       return false;
-   common.luts                        = new_luts;
-   common.luts[common.num_luts++]     = *texture;
+   chain->common.luts                        = new_luts;
+   chain->common.luts[chain->common.num_luts++]     = *texture;
    memset(texture, 0, sizeof(*texture));
    return true;
 }
@@ -3107,10 +3197,17 @@ static bool slang_pass_init_pipeline(struct slang_pass *pass)
    return true;
 }
 
-CommonResources::CommonResources(VkDevice device,
-      const VkPhysicalDeviceMemoryProperties &memory_properties)
-   : device(device)
+static void common_resources_init(CommonResources *common,
+      VkDevice device,
+      const VkPhysicalDeviceMemoryProperties *memory_properties)
 {
+   memset(common, 0, sizeof(*common));
+   common->device          = device;
+   common->ubo_alignment   = 1;
+   common->frame_direction = 1;
+   common->total_subframes = 1;
+   common->current_subframe= 1;
+
    void *ptr;
    unsigned i;
    VkSamplerCreateInfo info;
@@ -3132,12 +3229,12 @@ CommonResources::CommonResources(VkDevice device,
       1.0f, +1.0f, 1.0f, 1.0f,
    };
 
-   slang_buffer_init(&vbo, device,
-         memory_properties, sizeof(vbo_data), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+   slang_buffer_init(&common->vbo, common->device,
+         *memory_properties, sizeof(vbo_data), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 
-   ptr                          = slang_buffer_map(&vbo);
+   ptr                          = slang_buffer_map(&common->vbo);
    memcpy(ptr, vbo_data, sizeof(vbo_data));
-   slang_buffer_unmap(&vbo);
+   slang_buffer_unmap(&common->vbo);
 
    info.sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
    info.pNext                   = NULL;
@@ -3229,33 +3326,33 @@ CommonResources::CommonResources(VkDevice device,
             info.addressModeU = mode;
             info.addressModeV = mode;
             info.addressModeW = mode;
-            if (vkCreateSampler(device, &info, nullptr,
-                     &samplers[i][j][k]) != VK_SUCCESS)
-               samplers[i][j][k] = VK_NULL_HANDLE;
+            if (vkCreateSampler(common->device, &info, nullptr,
+                     &common->samplers[i][j][k]) != VK_SUCCESS)
+               common->samplers[i][j][k] = VK_NULL_HANDLE;
          }
       }
    }
 }
 
-CommonResources::~CommonResources()
+static void common_resources_free(CommonResources *common)
 {
-   slang_texture_semantic_name_map_free(&texture_semantic_map);
-   slang_texture_semantic_name_map_free(&texture_semantic_uniform_map);
-   for (auto &i : samplers)
+   slang_texture_semantic_name_map_free(&common->texture_semantic_map);
+   slang_texture_semantic_name_map_free(&common->texture_semantic_uniform_map);
+   for (auto &i : common->samplers)
       for (auto &j : i)
          for (auto &k : j)
             if (k != VK_NULL_HANDLE)
-               vkDestroySampler(device, k, nullptr);
-   framebuffer_pool.drain(device);
-   slang_buffer_free(&vbo);
-   slang_buffer_free(&ubo);
-   for (size_t i = 0; i < num_luts; i++)
-      slang_static_texture_free(&luts[i]);
-   free(luts);
-   free(original_history);
-   free(fb_feedback);
-   free(pass_outputs);
-   free(shader_preset);
+               vkDestroySampler(common->device, k, nullptr);
+   fbpool_drain(&common->framebuffer_pool, common->device);
+   slang_buffer_free(&common->vbo);
+   slang_buffer_free(&common->ubo);
+   for (size_t i = 0; i < common->num_luts; i++)
+      slang_static_texture_free(&common->luts[i]);
+   free(common->luts);
+   free(common->original_history);
+   free(common->fb_feedback);
+   free(common->pass_outputs);
+   free(common->shader_preset);
 }
 
 static void slang_pass_allocate_buffers(struct slang_pass *pass)
@@ -4042,7 +4139,7 @@ static bool slang_framebuffer_build(struct slang_framebuffer *fb)
    if (fb->mem_pool)
    {
       FramebufferMemoryPool::Block blk =
-         fb->mem_pool->acquire(mem_reqs.size, new_memory_type);
+         fbpool_acquire(fb->mem_pool, mem_reqs.size, new_memory_type);
       if (blk.memory != VK_NULL_HANDLE)
       {
          new_memory      = blk.memory;
@@ -4220,7 +4317,7 @@ static void slang_framebuffer_free(struct slang_framebuffer *fb)
 vulkan_filter_chain_t *vulkan_filter_chain_new(
       const vulkan_filter_chain_create_info *info)
 {
-   return new vulkan_filter_chain(*info);
+   return slang_chain_new(info);
 }
 
 vulkan_filter_chain_t *vulkan_filter_chain_create_default(
@@ -4232,7 +4329,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_default(
 
    tmpinfo.num_passes      = 1;
 
-   vulkan_filter_chain *chain = new vulkan_filter_chain(tmpinfo);
+   vulkan_filter_chain *chain = slang_chain_new(&tmpinfo);
    if (!chain)
       return nullptr;
 
@@ -4246,30 +4343,30 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_default(
    pass_info.address       = GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE;
    pass_info.max_levels    = 0;
 
-   chain->set_pass_info(0, pass_info);
+   slang_chain_set_pass_info(chain, 0, pass_info);
 
-   chain->set_shader(0, VK_SHADER_STAGE_VERTEX_BIT,
+   slang_chain_set_shader(chain, 0, VK_SHADER_STAGE_VERTEX_BIT,
          opaque_vert,
          sizeof(opaque_vert) / sizeof(uint32_t));
 
 #ifdef VULKAN_HDR_SWAPCHAIN
    if (info->hdr_enabled)
    {
-      chain->set_shader(0, VK_SHADER_STAGE_FRAGMENT_BIT,
+      slang_chain_set_shader(chain, 0, VK_SHADER_STAGE_FRAGMENT_BIT,
             hdr_frag,
             sizeof(hdr_frag) / sizeof(uint32_t));
    }
    else
 #endif /* VULKAN_HDR_SWAPCHAIN */ 
    {
-      chain->set_shader(0, VK_SHADER_STAGE_FRAGMENT_BIT,
+      slang_chain_set_shader(chain, 0, VK_SHADER_STAGE_FRAGMENT_BIT,
             opaque_frag,
             sizeof(opaque_frag) / sizeof(uint32_t));
    }
 
-   if (!chain->init())
+   if (!slang_chain_init(chain))
    {
-      delete chain;
+      slang_chain_free(chain);
       return nullptr;
    }
 
@@ -4302,7 +4399,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
    tmpinfo            = *info;
    tmpinfo.num_passes = shader->passes + (last_pass_is_fbo ? 1 : 0);
 
-   chain = new vulkan_filter_chain(tmpinfo);
+   chain = slang_chain_new(&tmpinfo);
    if (!chain)
       goto error;
 
@@ -4386,7 +4483,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
                      itr->id);
                goto error;
             }
-            chain->add_parameter(i, (unsigned)(itr - shader->parameters), meta_param->id);
+            slang_chain_add_parameter(chain, i, (unsigned)(itr - shader->parameters), meta_param->id);
          }
          else
          {
@@ -4397,29 +4494,29 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             param->minimum = meta_param->minimum;
             param->maximum = meta_param->maximum;
             param->step    = meta_param->step;
-            chain->add_parameter(i, shader->num_parameters, meta_param->id);
+            slang_chain_add_parameter(chain, i, shader->num_parameters, meta_param->id);
             shader->num_parameters++;
          }
       }
 
-      chain->set_shader(i,
+      slang_chain_set_shader(chain, i,
             VK_SHADER_STAGE_VERTEX_BIT,
             output.vertex,
             output.vertex_len);
 
-      chain->set_shader(i,
+      slang_chain_set_shader(chain, i,
             VK_SHADER_STAGE_FRAGMENT_BIT,
             output.fragment,
             output.fragment_len);
 
-      chain->set_frame_count_period(i, pass->frame_count_mod);
+      slang_chain_set_frame_count_period(chain, i, pass->frame_count_mod);
 
       if (output.meta.name[0])
-         chain->set_pass_name(i, output.meta.name);
+         slang_chain_set_pass_name(chain, i, output.meta.name);
 
       /* Preset overrides. */
       if (*pass->alias)
-         chain->set_pass_name(i, pass->alias);
+         slang_chain_set_pass_name(chain, i, pass->alias);
 
       if (pass->filter == RARCH_FILTER_UNSPEC)
          pass_info.source_filter = filter;
@@ -4467,7 +4564,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
 
             /* If final pass explicitly emits RGB10, consider it HDR color space. */
             if (explicit_format && vulkan_is_hdr10_format(pass_format))
-               chain->set_hdr10();
+               slang_chain_set_emits_hdr10(chain);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
             /* If the final pass explicitly requests RGBA16F, flag it so
@@ -4477,7 +4574,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
              * rt_format inherits the swapchain format — the hardware
              * handles any quantisation (e.g. float → 10-bit for PQ). */
             if (explicit_format && pass_format == VK_FORMAT_R16G16B16A16_SFLOAT)
-               chain->set_hdr16();
+               slang_chain_set_emits_hdr16(chain);
 #endif
 
             /* Inherit swapchain format. */
@@ -4522,9 +4619,9 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
          if (i + 1 == shader->passes)
          {
             if (explicit_format && vulkan_is_hdr10_format(pass_info.rt_format))
-               chain->set_hdr10();
+               slang_chain_set_emits_hdr10(chain);
             else if (explicit_format && pass_info.rt_format == VK_FORMAT_R16G16B16A16_SFLOAT)
-               chain->set_hdr16();
+               slang_chain_set_emits_hdr16(chain);
          }
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
@@ -4565,7 +4662,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
          }
       }
 
-      chain->set_pass_info(i, pass_info);
+      slang_chain_set_pass_info(chain, i, pass_info);
       glslang_output_free(&output);
    }
    glslang_include_cache_free(include_cache);
@@ -4589,25 +4686,25 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
 
       pass_info.max_levels    = 0;
 
-      chain->set_pass_info(shader->passes, pass_info);
+      slang_chain_set_pass_info(chain, shader->passes, pass_info);
 
-      chain->set_shader(shader->passes,
+      slang_chain_set_shader(chain, shader->passes,
             VK_SHADER_STAGE_VERTEX_BIT,
             opaque_vert,
             sizeof(opaque_vert) / sizeof(uint32_t));
 
       /* The hidden copy/scale pass is always a plain blit.
        * HDR conversion is handled by the HDR pipeline, not here. */
-      chain->set_shader(shader->passes,
+      slang_chain_set_shader(chain, shader->passes,
             VK_SHADER_STAGE_FRAGMENT_BIT,
             opaque_frag,
             sizeof(opaque_frag) / sizeof(uint32_t));
    }
 
-   chain->set_shader_preset(shader);
+   slang_chain_set_shader_preset(chain, shader);
    shader = NULL; /* owned by the chain now */
 
-   if (!chain->init())
+   if (!slang_chain_init(chain))
       goto error;
 
    glslang_output_free(&output);
@@ -4615,7 +4712,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
 
 error:
    glslang_include_cache_free(include_cache);
-   delete chain;
+   slang_chain_free(chain);
    free(shader);
    glslang_output_free(&output);
    return nullptr;
@@ -4650,7 +4747,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_deferred(
    tmpinfo            = *info;
    tmpinfo.num_passes = shader->passes + (last_pass_is_fbo ? 1 : 0);
 
-   chain = new vulkan_filter_chain(tmpinfo);
+   chain = slang_chain_new(&tmpinfo);
    if (!chain)
    {
       free(shader);
@@ -4659,7 +4756,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_deferred(
 
    if (shader->luts && !vulkan_filter_chain_load_luts(info, chain, shader))
    {
-      delete chain;
+      slang_chain_free(chain);
       free(shader);
       return nullptr;
    }
@@ -4670,7 +4767,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_deferred(
    for (i = 0; i < shader->passes; i++)
    {
       if (*shader->pass[i].alias)
-         chain->set_pass_name(i, shader->pass[i].alias);
+         slang_chain_set_pass_name(chain, i, shader->pass[i].alias);
    }
 
    if (last_pass_is_fbo)
@@ -4687,26 +4784,26 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_deferred(
       pass_info.address       = GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE;
       pass_info.max_levels    = 0;
 
-      chain->set_pass_info(shader->passes, pass_info);
+      slang_chain_set_pass_info(chain, shader->passes, pass_info);
 
-      chain->set_shader(shader->passes,
+      slang_chain_set_shader(chain, shader->passes,
             VK_SHADER_STAGE_VERTEX_BIT,
             opaque_vert,
             sizeof(opaque_vert) / sizeof(uint32_t));
 
-      chain->set_shader(shader->passes,
+      slang_chain_set_shader(chain, shader->passes,
             VK_SHADER_STAGE_FRAGMENT_BIT,
             opaque_frag,
             sizeof(opaque_frag) / sizeof(uint32_t));
    }
 
-   chain->set_shader_preset(shader);
+   slang_chain_set_shader_preset(chain, shader);
    shader = NULL; /* owned by the chain now */
 
-   if (!chain->init_alias_early())
+   if (!slang_chain_init_alias_early(chain))
    {
       RARCH_ERR("[Vulkan] Deferred: failed to initialize alias map.\n");
-      delete chain;
+      slang_chain_free(chain);
       return nullptr;
    }
 
@@ -4721,24 +4818,24 @@ bool vulkan_filter_chain_compile_pass(
       unsigned pass_index,
       glslang_filter_chain_filter filter)
 {
-   return chain->compile_full_pass(pass_index, filter);
+   return slang_chain_compile_full_pass(chain, pass_index, filter);
 }
 
 bool vulkan_filter_chain_finalize(vulkan_filter_chain_t *chain)
 {
-   return chain->finalize();
+   return slang_chain_finalize(chain);
 }
 
 struct video_shader *vulkan_filter_chain_get_preset(
       vulkan_filter_chain_t *chain)
 {
-   return chain->get_shader_preset();
+   return slang_chain_get_shader_preset(chain);
 }
 
 void vulkan_filter_chain_free(
       vulkan_filter_chain_t *chain)
 {
-   delete chain;
+   slang_chain_free(chain);
    input_state_get_ptr()->shader_uses_sensors = false;
 }
 
@@ -4749,7 +4846,7 @@ void vulkan_filter_chain_set_shader(
       const uint32_t *spirv,
       size_t spirv_words)
 {
-   chain->set_shader(pass, stage, spirv, spirv_words);
+   slang_chain_set_shader(chain, pass, stage, spirv, spirv_words);
 }
 
 void vulkan_filter_chain_set_pass_info(
@@ -4757,47 +4854,47 @@ void vulkan_filter_chain_set_pass_info(
       unsigned pass,
       const struct vulkan_filter_chain_pass_info *info)
 {
-   chain->set_pass_info(pass, *info);
+   slang_chain_set_pass_info(chain, pass, *info);
 }
 
 VkFormat vulkan_filter_chain_get_pass_rt_format(
       vulkan_filter_chain_t *chain,
       unsigned pass)
 {
-   return chain->get_pass_rt_format(pass);
+   return slang_chain_get_pass_rt_format(chain, pass);
 }
 
 bool vulkan_filter_chain_update_swapchain_info(
       vulkan_filter_chain_t *chain,
       const vulkan_filter_chain_swapchain_info *info)
 {
-   return chain->update_swapchain_info(*info);
+   return slang_chain_update_swapchain_info(chain, *info);
 }
 
 void vulkan_filter_chain_notify_sync_index(
       vulkan_filter_chain_t *chain,
       unsigned index)
 {
-   chain->notify_sync_index(index);
+   slang_chain_notify_sync_index(chain, index);
 }
 
 bool vulkan_filter_chain_init(vulkan_filter_chain_t *chain)
 {
-   return chain->init();
+   return slang_chain_init(chain);
 }
 
 void vulkan_filter_chain_set_input_texture(
       vulkan_filter_chain_t *chain,
       const struct vulkan_filter_chain_texture *texture)
 {
-   chain->set_input_texture(*texture);
+   slang_chain_set_input_texture(chain, *texture);
 }
 
 void vulkan_filter_chain_set_frame_count(
       vulkan_filter_chain_t *chain,
       uint64_t count)
 {
-   chain->set_frame_count(count);
+   slang_chain_set_frame_count(chain, count);
 }
 
 void vulkan_filter_chain_set_frame_count_period(
@@ -4805,21 +4902,21 @@ void vulkan_filter_chain_set_frame_count_period(
       unsigned pass,
       unsigned period)
 {
-   chain->set_frame_count_period(pass, period);
+   slang_chain_set_frame_count_period(chain, pass, period);
 }
 
 void vulkan_filter_chain_set_shader_subframes(
       vulkan_filter_chain_t *chain,
       uint32_t tot_subframes)
 {
-   chain->set_shader_subframes(tot_subframes);
+   slang_chain_set_shader_subframes(chain, tot_subframes);
 }
 
 void vulkan_filter_chain_set_current_shader_subframe(
       vulkan_filter_chain_t *chain,
       uint32_t cur_subframe)
 {
-   chain->set_current_shader_subframe(cur_subframe);
+   slang_chain_set_current_shader_subframe(chain, cur_subframe);
 }
 
 #ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
@@ -4827,7 +4924,7 @@ void vulkan_filter_chain_set_simulate_scanline(
       vulkan_filter_chain_t *chain,
       bool simulate_scanline)
 {
-   chain->set_simulate_scanline(simulate_scanline);
+   slang_chain_set_simulate_scanline(chain, simulate_scanline);
 }
 #endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
 
@@ -4835,42 +4932,42 @@ void vulkan_filter_chain_set_frame_direction(
       vulkan_filter_chain_t *chain,
       int32_t direction)
 {
-   chain->set_frame_direction(direction);
+   slang_chain_set_frame_direction(chain, direction);
 }
 
 void vulkan_filter_chain_set_frame_time_delta(
       vulkan_filter_chain_t *chain,
       uint32_t time_delta)
 {
-   chain->set_frame_time_delta(time_delta);
+   slang_chain_set_frame_time_delta(chain, time_delta);
 }
 
 void vulkan_filter_chain_set_original_fps(
       vulkan_filter_chain_t *chain,
       float fps)
 {
-   chain->set_original_fps(fps);
+   slang_chain_set_original_fps(chain, fps);
 }
 
 void vulkan_filter_chain_set_rotation(
       vulkan_filter_chain_t *chain,
       uint32_t rot)
 {
-   chain->set_rotation(rot);
+   slang_chain_set_rotation(chain, rot);
 }
 
 void vulkan_filter_chain_set_core_aspect(
       vulkan_filter_chain_t *chain,
       float coreaspect)
 {
-   chain->set_core_aspect(coreaspect);
+   slang_chain_set_core_aspect(chain, coreaspect);
 }
 
 void vulkan_filter_chain_set_core_aspect_rot(
       vulkan_filter_chain_t *chain,
       float coreaspectrot)
 {
-   chain->set_core_aspect_rot(coreaspectrot);
+   slang_chain_set_core_aspect_rot(chain, coreaspectrot);
 }
 
 #ifdef VULKAN_HDR_SWAPCHAIN
@@ -4878,14 +4975,14 @@ void vulkan_filter_chain_set_hdr_mode(
       vulkan_filter_chain_t *chain,
       unsigned hdr_mode)
 {
-   chain->set_hdr_mode(hdr_mode);
+   slang_chain_set_hdr_mode(chain, hdr_mode);
 }
 
 void vulkan_filter_chain_set_paper_white_nits(
       vulkan_filter_chain_t *chain,
       float paper_white_nits)
 {
-   chain->set_paper_white_nits(paper_white_nits);
+   slang_chain_set_paper_white_nits(chain, paper_white_nits);
 }
 
 
@@ -4893,35 +4990,35 @@ void vulkan_filter_chain_set_expand_gamut(
       vulkan_filter_chain_t *chain,
       unsigned expand_gamut)
 {
-   chain->set_expand_gamut(expand_gamut);
+   slang_chain_set_expand_gamut(chain, expand_gamut);
 }
 
 void vulkan_filter_chain_set_scanlines(
       vulkan_filter_chain_t *chain,
       float scanlines)
 {
-   chain->set_scanlines(scanlines);
+   slang_chain_set_scanlines(chain, scanlines);
 }
 
 void vulkan_filter_chain_set_subpixel_layout(
       vulkan_filter_chain_t *chain,
       unsigned subpixel_layout)
 {
-   chain->set_subpixel_layout(subpixel_layout);
+   slang_chain_set_subpixel_layout(chain, subpixel_layout);
 }
 
 void vulkan_filter_chain_set_inverse_tonemap(
       vulkan_filter_chain_t *chain,
       float inverse_tonemap)
 {
-   chain->set_inverse_tonemap(inverse_tonemap);
+   slang_chain_set_inverse_tonemap(chain, inverse_tonemap);
 }
 
 void vulkan_filter_chain_set_hdr10(
       vulkan_filter_chain_t *chain,
       float hdr10)
 {
-   chain->set_hdr10(hdr10);
+   slang_chain_set_hdr10(chain, hdr10);
 }
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
@@ -4930,36 +5027,36 @@ void vulkan_filter_chain_set_pass_name(
       unsigned pass,
       const char *name)
 {
-   chain->set_pass_name(pass, name);
+   slang_chain_set_pass_name(chain, pass, name);
 }
 
 void vulkan_filter_chain_build_offscreen_passes(
       vulkan_filter_chain_t *chain,
       VkCommandBuffer cmd, const VkViewport *vp)
 {
-   chain->build_offscreen_passes(cmd, *vp);
+   slang_chain_build_offscreen_passes(chain, cmd, *vp);
 }
 
 void vulkan_filter_chain_build_viewport_pass(
       vulkan_filter_chain_t *chain,
       VkCommandBuffer cmd, const VkViewport *vp, const float *mvp)
 {
-   chain->build_viewport_pass(cmd, *vp, mvp);
+   slang_chain_build_viewport_pass(chain, cmd, *vp, mvp);
 }
 
 void vulkan_filter_chain_end_frame(
       vulkan_filter_chain_t *chain,
       VkCommandBuffer cmd)
 {
-   chain->end_frame(cmd);
+   slang_chain_end_frame(chain, cmd);
 }
 
 bool vulkan_filter_chain_emits_hdr10(vulkan_filter_chain_t *chain)
 {
-   return chain->emits_hdr10();
+   return slang_chain_emits_hdr10(chain);
 }
 
 bool vulkan_filter_chain_emits_hdr16(vulkan_filter_chain_t *chain)
 {
-   return chain->emits_hdr16();
+   return slang_chain_emits_hdr16(chain);
 }
