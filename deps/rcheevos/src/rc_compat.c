@@ -1,4 +1,4 @@
-#if !defined(RC_NO_THREADS) && !defined(_WIN32) && !defined(GEKKO) && !defined(_3DS) && !defined(VITA) && (!defined(_XOPEN_SOURCE) || (_XOPEN_SOURCE - 0) < 500)
+#if !defined(RC_NO_THREADS) && !defined(_WIN32) && !defined(GEKKO) && !defined(_3DS) && !defined(VITA) && !defined(WIIU) && (!defined(_XOPEN_SOURCE) || (_XOPEN_SOURCE - 0) < 500)
 /* We'll want to use pthread_mutexattr_settype/PTHREAD_MUTEX_RECURSIVE, but glibc only conditionally exposes pthread_mutexattr_settype and PTHREAD_MUTEX_RECURSIVE depending on feature flags
  * Defining _XOPEN_SOURCE must be done at the top of the source file, before including any headers
  * pthread_mutexattr_settype/PTHREAD_MUTEX_RECURSIVE are specified the Single UNIX Specification (Version 2, 1997), along with POSIX later on (IEEE Standard 1003.1-2008), so should cover practically any pthread implementation
@@ -221,6 +221,32 @@ void rc_mutex_lock(rc_mutex_t* mutex)
 void rc_mutex_unlock(rc_mutex_t* mutex)
 {
   sceKernelUnlockMutex(mutex->handle, 1);
+}
+
+#elif defined(WIIU)
+
+/* RetroArch-local: OSMutex is recursive, matching the recursive pthread
+ * mutex the generic backend asks for. There is no destroy entry point --
+ * the object is caller-owned storage with no kernel handle behind it. */
+
+void rc_mutex_init(rc_mutex_t* mutex)
+{
+  OSInitMutex(mutex);
+}
+
+void rc_mutex_destroy(rc_mutex_t* mutex)
+{
+  (void)mutex;
+}
+
+void rc_mutex_lock(rc_mutex_t* mutex)
+{
+  OSLockMutex(mutex);
+}
+
+void rc_mutex_unlock(rc_mutex_t* mutex)
+{
+  OSUnlockMutex(mutex);
 }
 
 #elif defined(_3DS)
