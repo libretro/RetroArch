@@ -171,9 +171,25 @@ struct queue_entry
 };
 #endif
 
+#ifdef USE_WIN32_THREADS
+typedef BOOL (WINAPI *scond_cv_sleep_t)(void *cv, CRITICAL_SECTION *cs,
+      DWORD ms);
+typedef void (WINAPI *scond_cv_wake_t)(void *cv);
+#endif
+
 struct scond
 {
 #ifdef USE_WIN32_THREADS
+   /* Vista and later have a condition variable that wakes every waiter
+    * in one call. It is resolved from kernel32 when the scond is created,
+    * so a build for an older _WIN32_WINNT uses it wherever it exists and
+    * the queue below only serves the systems that lack it. The variable
+    * itself is a single pointer, kept as such so no header at the newer
+    * target version is needed. cv_sleep is NULL on the queue path. */
+   scond_cv_sleep_t cv_sleep;
+   scond_cv_wake_t cv_wake;
+   scond_cv_wake_t cv_wake_all;
+   void *cv;
    /* With this implementation of scond, we don't have any way of waking
     * (or even identifying) specific threads.
     * But we need to wake them in the order indicated by the queue.
@@ -496,6 +512,34 @@ scond_t *scond_new(void)
     *
     * Note: We might could simplify this using vista+ condition variables,
     * but we wanted an XP compatible solution. */
+   cond->cv_sleep    = NULL;
+   cond->cv_wake     = NULL;
+   cond->cv_wake_all = NULL;
+   cond->cv          = NULL;
+#if !defined(_XBOX)
+   {
+      HMODULE k32 = GetModuleHandleA("kernel32.dll");
+      if (k32)
+      {
+         scond_cv_wake_t cv_init = (scond_cv_wake_t)(void (*)(void))
+            GetProcAddress(k32, "InitializeConditionVariable");
+         cond->cv_sleep    = (scond_cv_sleep_t)(void (*)(void))
+            GetProcAddress(k32, "SleepConditionVariableCS");
+         cond->cv_wake     = (scond_cv_wake_t)(void (*)(void))
+            GetProcAddress(k32, "WakeConditionVariable");
+         cond->cv_wake_all = (scond_cv_wake_t)(void (*)(void))
+            GetProcAddress(k32, "WakeAllConditionVariable");
+         if (cv_init && cond->cv_sleep && cond->cv_wake && cond->cv_wake_all)
+         {
+            cv_init(&cond->cv);
+            return cond;
+         }
+         cond->cv_sleep    = NULL;
+         cond->cv_wake     = NULL;
+         cond->cv_wake_all = NULL;
+      }
+   }
+#endif
    if (!(cond->event = CreateEvent(NULL, FALSE, FALSE, NULL)))
    {
       free(cond);
@@ -526,9 +570,12 @@ void scond_free(scond_t *cond)
       return;
 
 #ifdef USE_WIN32_THREADS
-   CloseHandle(cond->event);
-   CloseHandle(cond->hot_potato);
-   DeleteCriticalSection(&cond->cs);
+   if (!cond->cv_sleep)
+   {
+      CloseHandle(cond->event);
+      CloseHandle(cond->hot_potato);
+      DeleteCriticalSection(&cond->cs);
+   }
 #else
    pthread_cond_destroy(&cond->cond);
 #endif
@@ -576,6 +623,11 @@ static bool scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds)
    DWORD dwFinalTimeout = dwMilliseconds; /* Careful! in case we begin in the head,
                                              we don't do the hot potato stuff,
                                              so this timeout needs presetting. */
+
+   /* the native variable releases and reacquires the caller's lock
+    * itself; non-zero means woken, zero means the wait timed out */
+   if (cond->cv_sleep)
+      return cond->cv_sleep(&cond->cv, &lock->lock, dwMilliseconds) != 0;
 
    /* Reminder: `lock` is held before this is called. */
    /* however, someone else may have called scond_signal without the lock. soo... */
@@ -765,6 +817,11 @@ void scond_wait(scond_t *cond, slock_t *lock)
 int scond_broadcast(scond_t *cond)
 {
 #ifdef USE_WIN32_THREADS
+   if (cond->cv_wake_all)
+   {
+      cond->cv_wake_all(&cond->cv);
+      return 0;
+   }
    EnterCriticalSection(&cond->cs);
    if (cond->waiters != 0)
    {
@@ -786,6 +843,11 @@ int scond_broadcast(scond_t *cond)
 void scond_signal(scond_t *cond)
 {
 #ifdef USE_WIN32_THREADS
+   if (cond->cv_wake)
+   {
+      cond->cv_wake(&cond->cv);
+      return;
+   }
 
    /* Unfortunately, pthread_cond_signal does not require that the
     * lock be held in advance */
