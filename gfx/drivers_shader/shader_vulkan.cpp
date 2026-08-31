@@ -819,8 +819,12 @@ class Pass
       void set_frame_count(uint64_t count) { frame_count = count; }
       void set_frame_count_period(unsigned p) { frame_count_period = p; }
 
-      void set_name(const char *name) { pass_name = name; }
-      const std::string &get_name() const { return pass_name; }
+      void set_name(const char *name)
+      {
+         free(pass_name);
+         pass_name = name ? strdup(name) : nullptr;
+      }
+      const char *get_name() const { return pass_name ? pass_name : ""; }
       glslang_filter_chain_filter get_source_filter() const {
          return pass_info.source_filter; }
 
@@ -838,7 +842,7 @@ class Pass
       const slang_reflection &get_reflection() const { return reflection; }
       void set_pass_number(unsigned pass) { pass_number = pass; }
 
-      void add_parameter(unsigned parameter_index, const std::string &id);
+      bool add_parameter(unsigned parameter_index, const char *id);
 
       void end_frame();
       void allocate_buffers();
@@ -859,15 +863,17 @@ class Pass
       VkDescriptorSetLayout set_layout = VK_NULL_HANDLE;
       VkDescriptorPool pool            = VK_NULL_HANDLE;
 
-      std::vector<VkDescriptorSet> sets;
+      VkDescriptorSet *sets = nullptr;
       CommonResources *common = nullptr;
 
       Size2D current_framebuffer_size;
       VkViewport curr_vp;
       vulkan_filter_chain_pass_info pass_info;
 
-      std::vector<uint32_t> vertex_shader;
-      std::vector<uint32_t> fragment_shader;
+      uint32_t *vertex_shader    = nullptr;
+      size_t num_vertex_shader   = 0;
+      uint32_t *fragment_shader  = nullptr;
+      size_t num_fragment_shader = 0;
       struct slang_framebuffer *framebuffer = nullptr;
       struct slang_framebuffer *fb_feedback = nullptr;
       VkRenderPass swapchain_render_pass;
@@ -921,22 +927,27 @@ class Pass
       unsigned pass_number        = 0;
       
       size_t ubo_offset           = 0;
-      std::string pass_name;
+      char *pass_name             = nullptr;
 
       struct Parameter
       {
-         std::string id;
+         char *id;       /* owned (strdup'd) */
          unsigned index;
          unsigned semantic_index;
       };
 
-      std::vector<Parameter> parameters;
-      std::vector<Parameter> filtered_parameters;
+      struct Parameter *parameters = nullptr;
+      size_t num_parameters        = 0;
+      /* Indices into parameters[]; rebuilt by every build(), so they
+       * survive parameters growing (and thus moving) in between. */
+      size_t *filtered_parameters  = nullptr;
+      size_t num_filtered          = 0;
 
       struct PushConstant
       {
          VkShaderStageFlags stages = 0;
-         std::vector<uint32_t> buffer; /* uint32_t to have correct alignment. */
+         uint32_t *buffer          = nullptr; /* uint32_t for alignment. */
+         size_t buffer_size        = 0;       /* in uint32_t units */
       };
       PushConstant push;
 };
@@ -1006,7 +1017,7 @@ struct vulkan_filter_chain
       /* Takes ownership of *texture, which is zeroed. */
       bool add_static_texture(struct slang_static_texture *texture);
 
-      void add_parameter(unsigned pass, unsigned parameter_index, const std::string &id);
+      void add_parameter(unsigned pass, unsigned parameter_index, const char *id);
       void release_staging_buffers();
 
       VkFormat get_pass_rt_format(unsigned pass);
@@ -1916,27 +1927,27 @@ bool vulkan_filter_chain::init_alias()
 
    for (i = 0; i < (unsigned)passes.size(); i++)
    {
-      const std::string name = passes[i]->get_name();
-      if (name.empty())
+      const char *name = passes[i]->get_name();
+      if (!*name)
          continue;
 
       if (!slang_texture_semantic_name_map_set_unique(
-               &common.texture_semantic_map, name.c_str(), NULL,
+               &common.texture_semantic_map, name, NULL,
                SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i))
          return false;
 
       if (!slang_texture_semantic_name_map_set_unique(
-               &common.texture_semantic_uniform_map, name.c_str(), "Size",
+               &common.texture_semantic_uniform_map, name, "Size",
                SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i))
          return false;
 
       if (!slang_texture_semantic_name_map_set_unique(
-               &common.texture_semantic_map, name.c_str(), "Feedback",
+               &common.texture_semantic_map, name, "Feedback",
                SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i))
          return false;
 
       if (!slang_texture_semantic_name_map_set_unique(
-               &common.texture_semantic_uniform_map, name.c_str(), "FeedbackSize",
+               &common.texture_semantic_uniform_map, name, "FeedbackSize",
                SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i))
          return false;
    }
@@ -2016,7 +2027,7 @@ void vulkan_filter_chain::set_shader(
 }
 
 void vulkan_filter_chain::add_parameter(unsigned pass,
-      unsigned index, const std::string &id)
+      unsigned index, const char *id)
 {
    passes[pass]->add_parameter(index, id);
 }
@@ -2068,7 +2079,7 @@ bool vulkan_filter_chain::init()
    for (i = 0; i < passes.size(); i++)
    {
 #ifdef VULKAN_DEBUG
-      const char *name = passes[i]->get_name().c_str();
+      const char *name = passes[i]->get_name();
       RARCH_LOG("[Vulkan] Building pass #%u (%s)\n", i,
             (name && *name)
             ? name 
@@ -2103,9 +2114,9 @@ bool vulkan_filter_chain::init_single_pass(unsigned pass_idx)
          deferred_source, swapchain_info, pass_info[pass_idx]);
 
    RARCH_LOG("[Vulkan] Building pass #%u (%s)\n", pass_idx,
-         passes[pass_idx]->get_name().empty()
-         ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)
-         : passes[pass_idx]->get_name().c_str());
+         *passes[pass_idx]->get_name()
+         ? passes[pass_idx]->get_name()
+         : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
 
    if (!passes[pass_idx]->build())
       return false;
@@ -2215,7 +2226,7 @@ bool vulkan_filter_chain::compile_full_pass(unsigned pass_idx,
       set_pass_name(pass_idx, pass->alias);
 
    /* Update alias map incrementally */
-   if (!passes[pass_idx]->get_name().empty())
+   if (*passes[pass_idx]->get_name())
    {
       alias_initialized = false;
       if (!init_alias_early())
@@ -2609,15 +2620,35 @@ static void slang_buffer_free(struct slang_buffer *buf)
 
 Pass::~Pass()
 {
+   size_t i;
    clear_vk();
    slang_framebuffer_delete(&framebuffer);
    slang_framebuffer_delete(&fb_feedback);
    slang_reflection_free(&reflection);
+   for (i = 0; i < num_parameters; i++)
+      free(parameters[i].id);
+   free(parameters);
+   free(filtered_parameters);
+   free(vertex_shader);
+   free(fragment_shader);
+   free(push.buffer);
+   free(sets);
+   free(pass_name);
 }
 
-void Pass::add_parameter(unsigned index, const std::string &id)
+bool Pass::add_parameter(unsigned index, const char *id)
 {
-   parameters.push_back({ id, index, unsigned(parameters.size()) });
+   struct Parameter *new_params = (struct Parameter*)
+      realloc(parameters, (num_parameters + 1) * sizeof(*new_params));
+   if (!new_params)
+      return false;
+   parameters                                  = new_params;
+   if (!(parameters[num_parameters].id = strdup(id)))
+      return false;
+   parameters[num_parameters].index            = index;
+   parameters[num_parameters].semantic_index   = (unsigned)num_parameters;
+   num_parameters++;
+   return true;
 }
 
 void Pass::set_shader(VkShaderStageFlags stage,
@@ -2627,14 +2658,22 @@ void Pass::set_shader(VkShaderStageFlags stage,
    switch (stage)
    {
       case VK_SHADER_STAGE_VERTEX_BIT:
-         vertex_shader.clear();
-         vertex_shader.insert(end(vertex_shader),
-               spirv, spirv + spirv_words);
+         free(vertex_shader);
+         num_vertex_shader = 0;
+         if (!(vertex_shader = (uint32_t*)
+                  malloc(spirv_words * sizeof(uint32_t))))
+            break;
+         memcpy(vertex_shader, spirv, spirv_words * sizeof(uint32_t));
+         num_vertex_shader = spirv_words;
          break;
       case VK_SHADER_STAGE_FRAGMENT_BIT:
-         fragment_shader.clear();
-         fragment_shader.insert(end(fragment_shader),
-               spirv, spirv + spirv_words);
+         free(fragment_shader);
+         num_fragment_shader = 0;
+         if (!(fragment_shader = (uint32_t*)
+                  malloc(spirv_words * sizeof(uint32_t))))
+            break;
+         memcpy(fragment_shader, spirv, spirv_words * sizeof(uint32_t));
+         num_fragment_shader = spirv_words;
          break;
       default:
          break;
@@ -2736,8 +2775,10 @@ bool Pass::init_pipeline_layout()
    VkPushConstantRange push_range;
    VkDescriptorPoolCreateInfo pool_info;
    VkPipelineLayoutCreateInfo layout_info;
-   std::vector<VkDescriptorSetLayoutBinding> bindings;
-   std::vector<VkDescriptorPoolSize> desc_counts;
+   VkDescriptorSetLayoutBinding *bindings = NULL;
+   VkDescriptorPoolSize *desc_counts      = NULL;
+   size_t num_bindings                    = 0;
+   size_t max_bindings                    = 1; /* the UBO slot */
    VkDescriptorSetLayoutCreateInfo set_layout_info;
    VkDescriptorSetAllocateInfo alloc_info;
    /* Main UBO. */
@@ -2748,12 +2789,30 @@ bool Pass::init_pipeline_layout()
    if (reflection.ubo_stage_mask & SLANG_STAGE_FRAGMENT_MASK)
       ubo_mask |= VK_SHADER_STAGE_FRAGMENT_BIT;
 
+   /* Upper bound, then fill: the UBO slot plus every semantic-texture
+    * entry that is actually referenced. */
+   for (auto &semantic : reflection.semantic_textures)
+      max_bindings += semantic.size;
+   if (!(bindings = (VkDescriptorSetLayoutBinding*)
+            calloc(max_bindings, sizeof(*bindings))))
+      return false;
+   if (!(desc_counts = (VkDescriptorPoolSize*)
+            calloc(max_bindings, sizeof(*desc_counts))))
+   {
+      free(bindings);
+      return false;
+   }
+
    if (ubo_mask != 0)
    {
-      bindings.push_back({ reflection.ubo_binding,
-            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
-            ubo_mask, nullptr });
-      desc_counts.push_back({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, num_sync_indices });
+      bindings[num_bindings].binding            = reflection.ubo_binding;
+      bindings[num_bindings].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+      bindings[num_bindings].descriptorCount    = 1;
+      bindings[num_bindings].stageFlags         = ubo_mask;
+      bindings[num_bindings].pImmutableSamplers = nullptr;
+      desc_counts[num_bindings].type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+      desc_counts[num_bindings].descriptorCount = num_sync_indices;
+      num_bindings++;
    }
 
    /* Semantic textures. */
@@ -2772,22 +2831,30 @@ bool Pass::init_pipeline_layout()
          if (texture.stage_mask & SLANG_STAGE_FRAGMENT_MASK)
             stages |= VK_SHADER_STAGE_FRAGMENT_BIT;
 
-         bindings.push_back({ texture.binding,
-               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
-               stages, nullptr });
-         desc_counts.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, num_sync_indices });
+         bindings[num_bindings].binding            = texture.binding;
+         bindings[num_bindings].descriptorType     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+         bindings[num_bindings].descriptorCount    = 1;
+         bindings[num_bindings].stageFlags         = stages;
+         bindings[num_bindings].pImmutableSamplers = nullptr;
+         desc_counts[num_bindings].type            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+         desc_counts[num_bindings].descriptorCount = num_sync_indices;
+         num_bindings++;
       }
    }
 
    set_layout_info.sType                  = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
    set_layout_info.pNext                  = NULL;
    set_layout_info.flags                  = 0;
-   set_layout_info.bindingCount           = (uint32_t)bindings.size();
-   set_layout_info.pBindings              = bindings.data();
+   set_layout_info.bindingCount           = (uint32_t)num_bindings;
+   set_layout_info.pBindings              = bindings;
 
    if (vkCreateDescriptorSetLayout(device,
             &set_layout_info, NULL, &set_layout) != VK_SUCCESS)
+   {
+      free(bindings);
+      free(desc_counts);
       return false;
+   }
 
    layout_info.sType                      = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
    layout_info.pNext                      = NULL;
@@ -2815,7 +2882,15 @@ bool Pass::init_pipeline_layout()
 
       layout_info.pushConstantRangeCount = 1;
       layout_info.pPushConstantRanges    = &push_range;
-      push.buffer.resize((reflection.push_constant_size + sizeof(uint32_t) - 1) / sizeof(uint32_t));
+   {
+      size_t new_size = (reflection.push_constant_size
+            + sizeof(uint32_t) - 1) / sizeof(uint32_t);
+      free(push.buffer);
+      push.buffer_size = 0;
+      if (!(push.buffer = (uint32_t*)calloc(new_size, sizeof(uint32_t))))
+         return false;
+      push.buffer_size = new_size;
+   }
    }
 
    push.stages     = push_range.stageFlags;
@@ -2829,10 +2904,16 @@ bool Pass::init_pipeline_layout()
    pool_info.pNext                      = NULL;
    pool_info.flags                      = 0;
    pool_info.maxSets                    = num_sync_indices;
-   pool_info.poolSizeCount              = (uint32_t)desc_counts.size();
-   pool_info.pPoolSizes                 = desc_counts.data();
-   if (vkCreateDescriptorPool(device, &pool_info, nullptr, &pool) != VK_SUCCESS)
-      return false;
+   pool_info.poolSizeCount              = (uint32_t)num_bindings;
+   pool_info.pPoolSizes                 = desc_counts;
+   {
+      VkResult res = vkCreateDescriptorPool(device, &pool_info, nullptr,
+            &pool);
+      free(bindings);
+      free(desc_counts);
+      if (res != VK_SUCCESS)
+         return false;
+   }
 
    alloc_info.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
    alloc_info.pNext              = NULL;
@@ -2840,7 +2921,10 @@ bool Pass::init_pipeline_layout()
    alloc_info.descriptorSetCount = 1;
    alloc_info.pSetLayouts        = &set_layout;
 
-   sets.resize(num_sync_indices);
+   free(sets);
+   if (!(sets = (VkDescriptorSet*)
+            calloc(num_sync_indices, sizeof(*sets))))
+      return false;
 
    for (i = 0; i < num_sync_indices; i++)
    {
@@ -2968,16 +3052,16 @@ bool Pass::init_pipeline()
    module_info.sType         = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
    module_info.pNext         = NULL;
    module_info.flags         = 0;
-   module_info.codeSize      = vertex_shader.size() * sizeof(uint32_t);
-   module_info.pCode         = vertex_shader.data();
+   module_info.codeSize      = num_vertex_shader * sizeof(uint32_t);
+   module_info.pCode         = vertex_shader;
    shader_stages[0].stage    = VK_SHADER_STAGE_VERTEX_BIT;
    shader_stages[0].pName    = "main";
    if (vkCreateShaderModule(device, &module_info, NULL,
             &shader_stages[0].module) != VK_SUCCESS)
       return false;
 
-   module_info.codeSize      = fragment_shader.size() * sizeof(uint32_t);
-   module_info.pCode         = fragment_shader.data();
+   module_info.codeSize      = num_fragment_shader * sizeof(uint32_t);
+   module_info.pCode         = fragment_shader;
    shader_stages[1].stage    = VK_SHADER_STAGE_FRAGMENT_BIT;
    shader_stages[1].pName    = "main";
    if (vkCreateShaderModule(device, &module_info, NULL,
@@ -3223,10 +3307,10 @@ bool Pass::build()
          return false;
    }
 
-   for (i = 0; i < parameters.size(); i++)
+   for (i = 0; i < num_parameters; i++)
    {
       if (!slang_semantic_name_map_set_unique(
-               &semantic_map, parameters[i].id.c_str(), NULL,
+               &semantic_map, parameters[i].id, NULL,
                SLANG_SEMANTIC_FLOAT_PARAMETER, j))
       {
          slang_semantic_name_map_free(&semantic_map);
@@ -3248,8 +3332,8 @@ bool Pass::build()
 
    {
       bool refl_ok = slang_reflect_spirv(
-            vertex_shader.data(), vertex_shader.size(),
-            fragment_shader.data(), fragment_shader.size(),
+            vertex_shader, num_vertex_shader,
+            fragment_shader, num_fragment_shader,
             &reflection);
       /* The parameter map is only needed during reflection; the
        * reflection keeps a dangling pointer otherwise. */
@@ -3270,13 +3354,19 @@ bool Pass::build()
    }
 
    /* Filter out parameters which we will never use anyways. */
-   filtered_parameters.clear();
+   num_filtered = 0;
+   free(filtered_parameters);
+   filtered_parameters = NULL;
+   if (num_parameters &&
+         !(filtered_parameters = (size_t*)
+            malloc(num_parameters * sizeof(*filtered_parameters))))
+      return false;
 
    for (i = 0; i < reflection.num_float_parameters; i++)
    {
       if (reflection.semantic_float_parameters[i].uniform ||
           reflection.semantic_float_parameters[i].push_constant)
-         filtered_parameters.push_back(parameters[i]);
+         filtered_parameters[num_filtered++] = i;
    }
 
    return init_pipeline();
@@ -3334,7 +3424,7 @@ void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semant
 
    if (refl->push_constant)
    {
-      float *_data = reinterpret_cast<float *>(push.buffer.data() + (refl->push_constant_offset >> 2));
+      float *_data = reinterpret_cast<float *>(push.buffer + (refl->push_constant_offset >> 2));
       _data[0]     = (float)(width);
       _data[1]     = (float)(height);
       _data[2]     = 1.0f / (float)(width);
@@ -3365,7 +3455,7 @@ void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
    if (refl.push_constant)
    {
       float *_data = reinterpret_cast<float *>
-            (push.buffer.data() + (refl.push_constant_offset >> 2));
+            (push.buffer + (refl.push_constant_offset >> 2));
       _data[0]     = (float)(width);
       _data[1]     = (float)(height);
       _data[2]     = 1.0f / (float)(width);
@@ -3382,7 +3472,7 @@ void Pass::build_semantic_parameter(uint8_t *data, unsigned index, float value)
       *reinterpret_cast<float*>(data + refl.ubo_offset) = value;
 
    if (refl.push_constant)
-      *reinterpret_cast<float*>(push.buffer.data() + (refl.push_constant_offset >> 2)) = value;
+      *reinterpret_cast<float*>(push.buffer + (refl.push_constant_offset >> 2)) = value;
 }
 
 void Pass::build_semantic_uint(uint8_t *data, slang_semantic semantic,
@@ -3394,7 +3484,7 @@ void Pass::build_semantic_uint(uint8_t *data, slang_semantic semantic,
       *reinterpret_cast<uint32_t*>(data + reflection.semantics[semantic].ubo_offset) = value;
 
    if (refl.push_constant)
-      *reinterpret_cast<uint32_t*>(push.buffer.data() + (refl.push_constant_offset >> 2)) = value;
+      *reinterpret_cast<uint32_t*>(push.buffer + (refl.push_constant_offset >> 2)) = value;
 }
 
 void Pass::build_semantic_int(uint8_t *data, slang_semantic semantic,
@@ -3406,7 +3496,7 @@ void Pass::build_semantic_int(uint8_t *data, slang_semantic semantic,
       *reinterpret_cast<int32_t*>(data + reflection.semantics[semantic].ubo_offset) = value;
 
    if (refl.push_constant)
-      *reinterpret_cast<int32_t*>(push.buffer.data() + (refl.push_constant_offset >> 2)) = value;
+      *reinterpret_cast<int32_t*>(push.buffer + (refl.push_constant_offset >> 2)) = value;
 }
 
 void Pass::build_semantic_float(uint8_t *data, slang_semantic semantic,
@@ -3418,7 +3508,7 @@ void Pass::build_semantic_float(uint8_t *data, slang_semantic semantic,
       *reinterpret_cast<float*>(data + reflection.semantics[semantic].ubo_offset) = value;
 
    if (refl.push_constant)
-      *reinterpret_cast<float*>(push.buffer.data() + (refl.push_constant_offset >> 2)) = value;
+      *reinterpret_cast<float*>(push.buffer + (refl.push_constant_offset >> 2)) = value;
 }
 
 void Pass::build_semantic_vec3(uint8_t *data, slang_semantic semantic,
@@ -3430,7 +3520,7 @@ void Pass::build_semantic_vec3(uint8_t *data, slang_semantic semantic,
       memcpy(data + refl.ubo_offset, values, 3 * sizeof(float));
 
    if (refl.push_constant)
-      memcpy(push.buffer.data() + (refl.push_constant_offset >> 2), values, 3 * sizeof(float));
+      memcpy(push.buffer + (refl.push_constant_offset >> 2), values, 3 * sizeof(float));
 }
 
 
@@ -3479,9 +3569,9 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
    {
       size_t offset = reflection.semantics[SLANG_SEMANTIC_MVP].push_constant_offset;
       if (mvp)
-         memcpy(push.buffer.data() + (offset >> 2), mvp, sizeof(float) * 16);
+         memcpy(push.buffer + (offset >> 2), mvp, sizeof(float) * 16);
       else
-         build_identity_matrix(reinterpret_cast<float *>(push.buffer.data() + (offset >> 2)));
+         build_identity_matrix(reinterpret_cast<float *>(push.buffer + (offset >> 2)));
    }
 
    /* Output information */
@@ -3568,11 +3658,11 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
          batch_image_infos, batch_writes, batch_count);
 
    /* Parameters. */
-   for (i = 0; i < filtered_parameters.size(); i++)
+   for (i = 0; i < num_filtered; i++)
       build_semantic_parameter(buffer,
-            filtered_parameters[i].semantic_index,
+            parameters[filtered_parameters[i]].semantic_index,
             common->shader_preset->parameters[
-            filtered_parameters[i].index].current);
+            parameters[filtered_parameters[i]].index].current);
 
    /* Previous inputs. */
    for (i = 0; i < common->original_history.size(); i++)
@@ -3697,7 +3787,7 @@ void Pass::build_commands(
    {
       vkCmdPushConstants(cmd, pipeline_layout,
             push.stages, 0, (uint32_t)reflection.push_constant_size,
-            push.buffer.data());
+            push.buffer);
    }
 
    {
