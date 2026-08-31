@@ -362,6 +362,13 @@ static void android_app_free(struct android_app* android_app)
 {
    bool acked;
 
+   /* onDestroy() hands this whatever android_app_create() returned, and
+    * that is NULL when the create failed.  The other four callbacks
+    * that take the struct already tolerate it; this one dereferenced
+    * it. */
+   if (!android_app)
+      return;
+
    /* Nothing ever wrote APP_CMD_DESTROY, so destroyRequested was dead
     * and the app thread was never told to stop - while this function
     * joined it holding the very mutex the thread needs to finish. If
@@ -657,6 +664,7 @@ static struct android_app* android_app_create(ANativeActivity* activity,
         void* savedState, size_t savedStateSize)
 {
    int msgpipe[2];
+   bool started;
    struct android_app *android_app;
 
    /* The activity can be recreated in the same process while the app
@@ -703,6 +711,7 @@ static struct android_app* android_app_create(ANativeActivity* activity,
       if (android_app->cond)
          scond_free(android_app->cond);
       free(android_app);
+      g_android_early = NULL;
       RARCH_ERR("Failed to allocate android_app locks.\n");
       return NULL;
    }
@@ -731,6 +740,7 @@ static struct android_app* android_app_create(ANativeActivity* activity,
       slock_free(android_app->mutex);
       scond_free(android_app->cond);
       free(android_app);
+      g_android_early = NULL;
       return NULL;
    }
 
@@ -752,15 +762,49 @@ static struct android_app* android_app_create(ANativeActivity* activity,
       slock_free(android_app->mutex);
       scond_free(android_app->cond);
       free(android_app);
+      g_android_early = NULL;
       RARCH_ERR("Failed to spawn android_app thread.\n");
       return NULL;
    }
 
-   /* Wait for thread to start. */
+   /* Wait for the thread to start, or to leave without ever having
+    * started.  'running' is set in frontend_unix_init(), a long way
+    * into rarch_main(); an init failure before that point returns from
+    * android_app_entry() with it still clear, and this wait - the only
+    * one on this condvar with neither a timeout nor an
+    * app_thread_exited test - then parks the Java UI thread inside
+    * ANativeActivity_onCreate() until ActivityManager kills the
+    * process.  The app thread sets the flag and broadcasts on its way
+    * out, so take that as the other way this wait can end.
+    *
+    * 'running' is what decides the outcome, not the flag: a thread
+    * that started and then exited quickly can set both before the
+    * wait is even entered, and that is a successful create. */
    slock_lock(android_app->mutex);
-   while (!android_app->running)
+   while (!android_app->running && !android_app->app_thread_exited)
       scond_wait(android_app->cond, android_app->mutex);
+   started = (android_app->running != 0);
    slock_unlock(android_app->mutex);
+
+   if (!started)
+   {
+      /* Nothing was initialised, so there is no teardown to
+       * orchestrate - and no reason to hand the framework an
+       * android_app it would keep delivering lifecycle callbacks to.
+       * The thread has released the mutex and touches nothing after
+       * that, so the join completes and the struct is ours to free. */
+      RARCH_ERR("[Android] App thread exited before it started.\n");
+      sthread_join(android_app->thread);
+      close(android_app->msgread);
+      close(android_app->msgwrite);
+      if (android_app->savedState)
+         free(android_app->savedState);
+      scond_free(android_app->cond);
+      slock_free(android_app->mutex);
+      free(android_app);
+      g_android_early = NULL;
+      return NULL;
+   }
 
    return android_app;
 }
