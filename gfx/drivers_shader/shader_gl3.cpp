@@ -647,15 +647,18 @@ struct CommonResources
    CommonResources();
    ~CommonResources();
 
-   std::vector<Texture> original_history;
-   std::vector<Texture> framebuffer_feedback;
-   std::vector<Texture> pass_outputs;
+   Texture *original_history        = NULL;
+   size_t num_original_history      = 0;
+   Texture *framebuffer_feedback    = NULL;
+   size_t num_framebuffer_feedback  = 0;
+   Texture *pass_outputs            = NULL;
+   size_t num_pass_outputs          = 0;
    struct gl3_static_texture *luts = NULL;
    size_t num_luts                 = 0;
 
    slang_texture_semantic_name_map texture_semantic_map        = {};
    slang_texture_semantic_name_map texture_semantic_uniform_map = {};
-   std::unique_ptr<video_shader> shader_preset;
+   video_shader *shader_preset = NULL;
 
    GLuint quad_program = 0;
    GLuint quad_vbo = 0;
@@ -691,6 +694,19 @@ CommonResources::~CommonResources()
    free(luts);
    luts     = NULL;
    num_luts = 0;
+   /* the three Texture vectors and the shader_preset unique_ptr were
+    * released by the implicit member destructors */
+   free(original_history);
+   free(framebuffer_feedback);
+   free(pass_outputs);
+   original_history       = NULL;
+   framebuffer_feedback   = NULL;
+   pass_outputs           = NULL;
+   num_original_history   = 0;
+   num_framebuffer_feedback = 0;
+   num_pass_outputs       = 0;
+   delete shader_preset;
+   shader_preset          = NULL;
    slang_texture_semantic_name_map_free(&texture_semantic_map);
    slang_texture_semantic_name_map_free(&texture_semantic_uniform_map);
    if (quad_program != 0)
@@ -849,6 +865,25 @@ struct gl3_ubo_ring
    unsigned num_buffers  = 0;
    unsigned buffer_index = 0;
 };
+
+/* Every resize below follows a clear and every element is written before it
+ * is read, so allocating fresh zeroed storage matches what vector::resize
+ * did. */
+static bool gl3_texture_array_resize(Texture **arr, size_t *count,
+      size_t want)
+{
+   Texture *next;
+   free(*arr);
+   *arr   = NULL;
+   *count = 0;
+   if (!want)
+      return true;
+   if (!(next = (Texture*)calloc(want, sizeof(*next))))
+      return false;
+   *arr   = next;
+   *count = want;
+   return true;
+}
 
 static void gl3_ubo_ring_free(struct gl3_ubo_ring *ring)
 {
@@ -1945,19 +1980,19 @@ void Pass::build_semantics(uint8_t *buffer,
             filtered_parameters[i].index].current);
 
    /* Previous inputs. */
-   for (i = 0; i < common->original_history.size(); i++)
+   for (i = 0; i < common->num_original_history; i++)
       build_semantic_texture_array(buffer,
             SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, i + 1,
             common->original_history[i]);
 
    /* Previous passes. */
-   for (i = 0; i < common->pass_outputs.size(); i++)
+   for (i = 0; i < common->num_pass_outputs; i++)
       build_semantic_texture_array(buffer,
             SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i,
             common->pass_outputs[i]);
 
    /* Feedback FBOs. */
-   for (i = 0; i < common->framebuffer_feedback.size(); i++)
+   for (i = 0; i < common->num_framebuffer_feedback; i++)
       build_semantic_texture_array(buffer,
             SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i,
             common->framebuffer_feedback[i]);
@@ -2184,14 +2219,18 @@ public:
       gl3_shader::gl3_framebuffer_delete(copy_framebuffer);
    }
 
-   inline void set_shader_preset(std::unique_ptr<video_shader> shader)
+   inline void set_shader_preset(video_shader *shader)
    {
-      common.shader_preset = std::move(shader);
+      /* still new-allocated by the create paths, so this stays delete
+       * until those move to calloc with the rest of the chain */
+      if (common.shader_preset != shader)
+         delete common.shader_preset;
+      common.shader_preset = shader;
    }
 
    inline video_shader *get_shader_preset()
    {
-      return common.shader_preset.get();
+      return common.shader_preset;
    }
 
    void set_pass_info(unsigned pass,
@@ -2311,7 +2350,7 @@ void gl3_filter_chain::build_offscreen_passes(const gl3_viewport &vp)
    }
 
    update_history_info();
-   if (!common.framebuffer_feedback.empty())
+   if (common.num_framebuffer_feedback)
       update_feedback_info();
 
    const gl3_shader::Texture original = {
@@ -2445,7 +2484,8 @@ bool gl3_filter_chain::init_history()
       original_history     = NULL;
       num_original_history = 0;
    }
-   common.original_history.clear();
+   gl3_shader::gl3_texture_array_resize(&common.original_history,
+         &common.num_original_history, 0);
 
    for (i = 0; i < passes.size(); i++)
    {
@@ -2468,7 +2508,9 @@ bool gl3_filter_chain::init_history()
    if (!original_history)
       return false;
    num_original_history = required_images;
-   common.original_history.resize(required_images);
+   if (!gl3_shader::gl3_texture_array_resize(&common.original_history,
+            &common.num_original_history, required_images))
+      return false;
 
    for (i = 0; i < required_images; i++)
    {
@@ -2492,7 +2534,8 @@ bool gl3_filter_chain::init_feedback()
    unsigned i;
    bool use_feedbacks = false;
 
-   common.framebuffer_feedback.clear();
+   gl3_shader::gl3_texture_array_resize(&common.framebuffer_feedback,
+         &common.num_framebuffer_feedback, 0);
 
    /* Final pass cannot have feedback. */
    for (i = 0; i < passes.size() - 1; i++)
@@ -2525,7 +2568,9 @@ bool gl3_filter_chain::init_feedback()
       return true;
    }
 
-   common.framebuffer_feedback.resize(passes.size() - 1);
+   if (!gl3_shader::gl3_texture_array_resize(&common.framebuffer_feedback,
+            &common.num_framebuffer_feedback, passes.size() - 1))
+      return false;
    require_clear = true;
    return true;
 }
@@ -2645,7 +2690,9 @@ bool gl3_filter_chain::init()
       return false;
    if (!init_feedback())
       return false;
-   common.pass_outputs.resize(passes.size());
+   if (!gl3_shader::gl3_texture_array_resize(&common.pass_outputs,
+            &common.num_pass_outputs, passes.size()))
+      return false;
    return true;
 }
 
@@ -2669,7 +2716,7 @@ bool gl3_filter_chain::init_single_pass(unsigned pass_idx)
 bool gl3_filter_chain::compile_full_pass(unsigned pass_idx,
       glslang_filter_chain_filter default_filter)
 {
-   video_shader *shader = common.shader_preset.get();
+   video_shader *shader = common.shader_preset;
    if (!shader || pass_idx >= passes.size())
       return false;
 
@@ -2923,7 +2970,9 @@ bool gl3_filter_chain::finalize()
       return false;
    if (!init_feedback())
       return false;
-   common.pass_outputs.resize(passes.size());
+   if (!gl3_shader::gl3_texture_array_resize(&common.pass_outputs,
+            &common.num_pass_outputs, passes.size()))
+      return false;
    return true;
 }
 
@@ -3486,7 +3535,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
             sizeof(gl3_shader::opaque_frag) / sizeof(uint32_t));
    }
 
-   chain->set_shader_preset(std::move(shader));
+   chain->set_shader_preset(shader.release());
 
    if (!chain->init())
       return nullptr;
@@ -3559,7 +3608,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_deferred(
             sizeof(gl3_shader::opaque_frag) / sizeof(uint32_t));
    }
 
-   chain->set_shader_preset(std::move(shader));
+   chain->set_shader_preset(shader.release());
 
    /* Populate the alias map with preset-defined aliases.
     * compile_full_pass() will incrementally update the map
