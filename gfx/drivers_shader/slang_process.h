@@ -413,20 +413,6 @@ RETRO_END_DECLS
 #undef __out_bcount_part
 #undef __deref_out_ecount
 
-
-/* Owns an include cache for a scope, so a filter chain's pass loop can
- * share one across every pass without having to free it on each error
- * exit.  Defined here rather than in each chain's translation unit
- * because the griffin build compiles the Vulkan and GLCore chains into
- * one TU, where two identical definitions are still a redefinition. */
-struct glslang_include_cache_guard
-{
-   void *handle;
-   glslang_include_cache_guard() : handle(glslang_include_cache_new()) {}
-   ~glslang_include_cache_guard() { glslang_include_cache_free(handle); }
-   glslang_include_cache_guard(const glslang_include_cache_guard&) = delete;
-   glslang_include_cache_guard& operator=(const glslang_include_cache_guard&) = delete;
-};
 #endif
 
 #endif
