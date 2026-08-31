@@ -2552,12 +2552,10 @@ ifeq ($(HAVE_NETWORKING), 1)
       DEFINES += -DHAVE_CHEEVOS -DRC_CLIENT_SUPPORTS_HASH
       INCLUDE_DIRS += -Ideps/rcheevos/include
 
+      # rc_compat carries native recursive mutexes for the consoles
+      # that build threaded (GEKKO, 3DS, WiiU, Vita), so only a
+      # thread-less build compiles the locks out.
       ifneq ($(HAVE_THREADS), 1)
-         DEFINES += -DRC_NO_THREADS
-      else ifneq (,$(filter GEKKO,$(CFLAGS)))
-         # Gekko (Wii) and 3DS use custom pthread wrappers (see rthreads.c)
-         DEFINES += -DRC_NO_THREADS
-      else ifneq (,$(filter _3DS,$(CFLAGS)))
          DEFINES += -DRC_NO_THREADS
       endif
 
