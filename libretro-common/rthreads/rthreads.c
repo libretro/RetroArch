@@ -663,9 +663,25 @@ static INLINE void scond_umwait(unsigned __int64 deadline)
 #endif /* SCOND_HAVE_X86 */
 
 /* the spin polls the waiter's own flag word: a plain load on x86 (the
- * word is written by one waker with a locked op), an acquire elsewhere */
-#if defined(SCOND_HAVE_X86)
-#define scond_flags_peek(w) (*(volatile LONG*)&(w)->flags)
+ * word is written by one waker with a locked op), an acquire elsewhere.
+ *
+ * The plain load has to be spelled per backend rather than by casting the
+ * field.  retro_atomic_int_t is a real atomic type on the C11, C++11 and
+ * __atomic backends -- mingw picks C11, so the field is an atomic_int --
+ * and reading one through a volatile LONG lvalue is a type pun that both
+ * breaks strict aliasing and is undefined besides.  Those three backends
+ * go through the API instead, which costs nothing here: their acquire
+ * load is a plain MOV on x86.  The MSVC, Apple, __sync and volatile
+ * backends type the field as a plain volatile integer, so it can just be
+ * read -- same type, no cast -- and that matters for them, because their
+ * acquire load is a locked RMW (InterlockedCompareExchangeAcquire,
+ * OSAtomicAdd32Barrier, __sync_fetch_and_add(p, 0)), far too heavy to run
+ * every iteration against a line one waker writes. */
+#if defined(SCOND_HAVE_X86) && (defined(RETRO_ATOMIC_BACKEND_MSVC)  \
+      || defined(RETRO_ATOMIC_BACKEND_APPLE)                        \
+      || defined(RETRO_ATOMIC_BACKEND_SYNC)                         \
+      || defined(RETRO_ATOMIC_BACKEND_VOLATILE))
+#define scond_flags_peek(w) ((w)->flags)
 #else
 #define scond_flags_peek(w) retro_atomic_load_acquire_int(&(w)->flags)
 #endif
