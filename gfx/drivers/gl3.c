@@ -289,7 +289,7 @@ void gl3_framebuffer_copy(
       GLuint quad_program,
       GLuint quad_vbo,
       GLint flat_ubo_vertex,
-      struct Size2D size,
+      unsigned size_width, unsigned size_height,
       GLuint image)
 {
    glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
@@ -299,7 +299,7 @@ void gl3_framebuffer_copy(
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-   glViewport(0, 0, size.width, size.height);
+   glViewport(0, 0, size_width, size_height);
    glClear(GL_COLOR_BUFFER_BIT);
 
    glUseProgram(quad_program);
@@ -339,7 +339,7 @@ void gl3_framebuffer_copy_partial(
       GLuint fb_id,
       GLuint quad_program,
       GLint flat_ubo_vertex,
-      struct Size2D size,
+      unsigned size_width, unsigned size_height,
       GLuint image,
       float rx, float ry)
 {
@@ -358,7 +358,7 @@ void gl3_framebuffer_copy_partial(
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-   glViewport(0, 0, size.width, size.height);
+   glViewport(0, 0, size_width, size_height);
    glClear(GL_COLOR_BUFFER_BIT);
 
    glUseProgram(quad_program);

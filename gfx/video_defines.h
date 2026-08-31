@@ -184,11 +184,6 @@ typedef struct gfx_ctx_flags
    uint32_t flags;
 } gfx_ctx_flags_t;
 
-struct Size2D
-{
-   unsigned width, height;
-};
-
 enum gfx_ctx_api
 {
    GFX_CTX_NONE = 0,

@@ -53,8 +53,7 @@ typedef struct gl3_filter_chain_texture gl3_filter_chain_texture;
 typedef struct gl3_viewport gl3_viewport;
 typedef struct gl3_filter_chain_pass_info gl3_filter_chain_pass_info;
 typedef struct gl3_buffer_locations gl3_buffer_locations;
-typedef struct CommonResources CommonResources;
-typedef struct Size2D Size2D;
+typedef struct gl3_common_resources gl3_common_resources;
 
 static void gl3_build_default_matrix(float *data)
 {
@@ -83,14 +82,14 @@ RETRO_BEGIN_DECLS
          GLuint quad_program,
          GLuint quad_vbo,
          GLint flat_ubo_vertex,
-         struct Size2D size,
+         unsigned size_width, unsigned size_height,
          GLuint image);
 
    void gl3_framebuffer_copy_partial(
          GLuint fb_id,
          GLuint quad_program,
          GLint flat_ubo_vertex,
-         struct Size2D size,
+         unsigned size_width, unsigned size_height,
          GLuint image,
          float rx, float ry);
 
@@ -639,11 +638,11 @@ GLuint gl3_spirv_link_program(
 }
 #endif
 
-static const uint32_t opaque_vert[] =
+static const uint32_t gl3_opaque_vert[] =
 #include "../drivers/vulkan_shaders/opaque.vert.inc"
 ;
 
-static const uint32_t opaque_frag[] =
+static const uint32_t gl3_opaque_frag[] =
 #include "../drivers/vulkan_shaders/opaque.frag.inc"
 ;
 
@@ -653,7 +652,7 @@ typedef struct
    glslang_filter_chain_filter filter;
    glslang_filter_chain_filter mip_filter;
    glslang_filter_chain_address address;
-} Texture;
+} gl3_texture_t;
 
 static GLenum convert_glslang_format(glslang_format fmt)
 {
@@ -706,7 +705,7 @@ struct gl3_static_texture
 {
    char *id;        /* owned (strdup'd) */
    GLuint image;
-   Texture texture;
+   gl3_texture_t texture;
 };
 
 static void gl3_static_texture_init(struct gl3_static_texture *tex,
@@ -715,7 +714,7 @@ static void gl3_static_texture_init(struct gl3_static_texture *tex,
       glslang_filter_chain_address address)
 {
    GLenum gl_address         = address_to_gl(address);
-   Texture *texture          = &tex->texture;
+   gl3_texture_t *texture          = &tex->texture;
 
    tex->id                   = id_ ? strdup(id_) : NULL;
    tex->image                = image_;
@@ -769,13 +768,13 @@ static void gl3_static_texture_free(struct gl3_static_texture *tex)
    tex->id    = NULL;
 }
 
-struct CommonResources
+struct gl3_common_resources
 {
-   Texture *original_history;
+   gl3_texture_t *original_history;
    size_t num_original_history;
-   Texture *framebuffer_feedback;
+   gl3_texture_t *framebuffer_feedback;
    size_t num_framebuffer_feedback;
-   Texture *pass_outputs;
+   gl3_texture_t *pass_outputs;
    size_t num_pass_outputs;
    struct gl3_static_texture *luts;
    size_t num_luts;
@@ -791,7 +790,7 @@ struct CommonResources
 
 /* Every default was zero, so a memset covers the initializers the
  * in-class ones used to supply. */
-static void common_resources_init(CommonResources *common)
+static void gl3_common_resources_init(gl3_common_resources *common)
 {
    static float quad_data[] = {
       0.0f, 0.0f, 0.0f, 0.0f,
@@ -808,11 +807,11 @@ static void common_resources_init(CommonResources *common)
    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
    common->quad_program = gl3_cross_compile_program(
-         opaque_vert, sizeof(opaque_vert),
-         opaque_frag, sizeof(opaque_frag), &common->quad_loc, true);
+         gl3_opaque_vert, sizeof(gl3_opaque_vert),
+         gl3_opaque_frag, sizeof(gl3_opaque_frag), &common->quad_loc, true);
 }
 
-static void common_resources_free(CommonResources *common)
+static void gl3_common_resources_free(gl3_common_resources *common)
 {
    size_t i;
    /* The unique_ptr vector used to free these on destruction; the plain
@@ -822,7 +821,7 @@ static void common_resources_free(CommonResources *common)
    free(common->luts);
    common->luts     = NULL;
    common->num_luts = 0;
-   /* the three Texture vectors and the common->shader_preset unique_ptr were
+   /* the three gl3_texture_t vectors and the common->shader_preset unique_ptr were
     * released by the implicit member destructors */
    free(common->original_history);
    free(common->framebuffer_feedback);
@@ -846,7 +845,8 @@ static void common_resources_free(CommonResources *common)
 struct gl3_framebuffer
 {
    GLuint image;
-   Size2D size;
+   unsigned size_width;
+      unsigned size_height;
    GLenum format;
    unsigned max_levels;
    unsigned levels;
@@ -867,8 +867,8 @@ static struct gl3_framebuffer *gl3_framebuffer_new(GLenum format_,
    if (!fb)
       return NULL;
 
-   fb->size.width  = 1;
-   fb->size.height = 1;
+   fb->size_width  = 1;
+   fb->size_height = 1;
    fb->format      = format_;
    fb->max_levels  = max_levels_;
 
@@ -885,9 +885,10 @@ static struct gl3_framebuffer *gl3_framebuffer_new(GLenum format_,
 }
 
 static void gl3_framebuffer_set_size(struct gl3_framebuffer *fb,
-      const Size2D *size_, GLenum format_)
+      unsigned width_, unsigned height_, GLenum format_)
 {
-   fb->size = *size_;
+   fb->size_width  = width_;
+   fb->size_height = height_;
    if (format_ != 0)
       fb->format = format_;
 
@@ -909,12 +910,12 @@ static void gl3_framebuffer_build(struct gl3_framebuffer *fb)
    glGenTextures(1, &fb->image);
    glBindTexture(GL_TEXTURE_2D, fb->image);
 
-   if (fb->size.width == 0)
-      fb->size.width = 1;
-   if (fb->size.height == 0)
-      fb->size.height = 1;
+   if (fb->size_width == 0)
+      fb->size_width = 1;
+   if (fb->size_height == 0)
+      fb->size_height = 1;
 
-   fb->levels = glslang_num_miplevels(fb->size.width, fb->size.height);
+   fb->levels = glslang_num_miplevels(fb->size_width, fb->size_height);
    if (fb->max_levels < fb->levels)
       fb->levels = fb->max_levels;
    if (fb->levels == 0)
@@ -922,7 +923,7 @@ static void gl3_framebuffer_build(struct gl3_framebuffer *fb)
 
    glTexStorage2D(GL_TEXTURE_2D, fb->levels,
                   fb->format,
-                  fb->size.width, fb->size.height);
+                  fb->size_width, fb->size_height);
 
    glFramebufferTexture2D(GL_FRAMEBUFFER,
          GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fb->image, 0);
@@ -955,12 +956,12 @@ static void gl3_framebuffer_build(struct gl3_framebuffer *fb)
                glGenTextures(1, &fb->image);
                glBindTexture(GL_TEXTURE_2D, fb->image);
 
-               levels = glslang_num_miplevels(fb->size.width, fb->size.height);
+               levels = glslang_num_miplevels(fb->size_width, fb->size_height);
                if (fb->max_levels < levels)
                   levels = fb->max_levels;
                glTexStorage2D(GL_TEXTURE_2D, levels,
                      GL_RGBA8,
-                     fb->size.width, fb->size.height);
+                     fb->size_width, fb->size_height);
                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fb->image, 0);
                fb->complete = glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
             }
@@ -1004,16 +1005,16 @@ struct gl3_ubo_ring
 /* Every resize below follows a clear and every element is written before it
  * is read, so allocating fresh zeroed storage matches what vector::resize
  * did. */
-static bool gl3_texture_array_resize(Texture **arr, size_t *count,
+static bool gl3_texture_array_resize(gl3_texture_t **arr, size_t *count,
       size_t want)
 {
-   Texture *next;
+   gl3_texture_t *next;
    free(*arr);
    *arr   = NULL;
    *count = 0;
    if (!want)
       return true;
-   if (!(next = (Texture*)calloc(want, sizeof(*next))))
+   if (!(next = (gl3_texture_t*)calloc(want, sizeof(*next))))
       return false;
    *arr   = next;
    *count = want;
@@ -1038,9 +1039,10 @@ struct gl3_pass
    bool final_pass;
 
    GLuint pipeline;
-   CommonResources *common;
+   gl3_common_resources *common;
 
-   Size2D current_framebuffer_size;
+   unsigned current_framebuffer_size_width;
+      unsigned current_framebuffer_size_height;
    gl3_viewport curr_vp;
    gl3_filter_chain_pass_info pass_info;
 
@@ -1114,7 +1116,7 @@ static const char * gl3_pass_get_name(struct gl3_pass *pass);
 static glslang_filter_chain_filter gl3_pass_get_source_filter(struct gl3_pass *pass);
 static glslang_filter_chain_filter gl3_pass_get_mip_filter(struct gl3_pass *pass);
 static glslang_filter_chain_address gl3_pass_get_address_mode(struct gl3_pass *pass);
-static void gl3_pass_set_common_resources(struct gl3_pass *pass, CommonResources *common);
+static void gl3_pass_set_common_resources(struct gl3_pass *pass, gl3_common_resources *common);
 static const slang_reflection *gl3_pass_get_reflection(struct gl3_pass *pass);
 static void gl3_pass_set_pass_number(struct gl3_pass *pass, unsigned number);
 static bool gl3_pass_build(struct gl3_pass *pass);
@@ -1123,8 +1125,10 @@ static void gl3_pass_reflect_texture_parameter(struct gl3_pass *pass, const char
 static void gl3_pass_reflect_parameter_array(struct gl3_pass *pass, const char *name, slang_texture_semantic_array *meta);
 static bool gl3_pass_init_pipeline(struct gl3_pass *pass);
 static void gl3_pass_set_pass_info(struct gl3_pass *pass, const gl3_filter_chain_pass_info info);
-static Size2D gl3_pass_get_output_size(struct gl3_pass *pass, const Size2D original,
-      const Size2D source);
+static void gl3_pass_get_output_size(struct gl3_pass *pass,
+      unsigned original_width, unsigned original_height,
+      unsigned source_width, unsigned source_height,
+      unsigned *out_width, unsigned *out_height);
 static void gl3_pass_end_frame(struct gl3_pass *pass);
 static void gl3_pass_build_semantic_vec4(struct gl3_pass *pass, uint8_t *data, enum slang_semantic semantic,
       unsigned width, unsigned height);
@@ -1138,7 +1142,7 @@ static void gl3_pass_build_semantic_float(struct gl3_pass *pass, uint8_t *data, 
 static void gl3_pass_build_semantic_vec3(struct gl3_pass *pass, uint8_t *data, enum slang_semantic semantic,
                               const float *values);
 static void gl3_pass_build_semantic_texture(struct gl3_pass *pass, uint8_t *buffer,
-      enum slang_texture_semantic semantic, const Texture *texture);
+      enum slang_texture_semantic semantic, const gl3_texture_t *texture);
 static void gl3_pass_build_semantic_texture_array_vec4(struct gl3_pass *pass, uint8_t *data, enum slang_texture_semantic semantic,
       unsigned index, unsigned width, unsigned height);
 static void gl3_pass_build_semantic_texture_vec4(struct gl3_pass *pass, uint8_t *data, enum slang_texture_semantic semantic,
@@ -1149,14 +1153,14 @@ static void gl3_pass_set_shader(struct gl3_pass *pass, GLenum stage,
       size_t spirv_words);
 static void gl3_pass_add_parameter(struct gl3_pass *pass, unsigned index, const char *id);
 static void gl3_pass_set_semantic_texture(struct gl3_pass *pass, enum slang_texture_semantic semantic,
-      const Texture *texture);
+      const gl3_texture_t *texture);
 static void gl3_pass_build_semantic_texture_array(struct gl3_pass *pass, uint8_t *buffer,
-      enum slang_texture_semantic semantic, unsigned index, const Texture *texture);
+      enum slang_texture_semantic semantic, unsigned index, const gl3_texture_t *texture);
 static void gl3_pass_build_semantics(struct gl3_pass *pass, uint8_t *buffer,
-      const float *mvp, const Texture *original, const Texture *source);
+      const float *mvp, const gl3_texture_t *original, const gl3_texture_t *source);
 static void gl3_pass_build_commands(struct gl3_pass *pass,
-      const Texture *original,
-      const Texture *source,
+      const gl3_texture_t *original,
+      const gl3_texture_t *source,
       const gl3_viewport *vp,
       const float *mvp);
 static void gl3_pass_free(struct gl3_pass *pass);
@@ -1269,7 +1273,7 @@ static glslang_filter_chain_address gl3_pass_get_address_mode(struct gl3_pass *p
    }
 
 static void gl3_pass_set_common_resources(struct gl3_pass *pass,
-      CommonResources *common)
+      gl3_common_resources *common)
 {
    pass->common = common;
 }
@@ -1664,19 +1668,21 @@ static void gl3_pass_set_pass_info(struct gl3_pass *pass, const gl3_filter_chain
    pass->pass_info = info;
 }
 
-static Size2D gl3_pass_get_output_size(struct gl3_pass *pass, const Size2D original,
-      const Size2D source)
+static void gl3_pass_get_output_size(struct gl3_pass *pass,
+      unsigned original_width, unsigned original_height,
+      unsigned source_width, unsigned source_height,
+      unsigned *out_width, unsigned *out_height)
 {
    float width  = 0.0f;
    float height = 0.0f;
    switch (pass->pass_info.scale_type_x)
    {
       case GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL:
-         width = (float)(original.width) * pass->pass_info.scale_x;
+         width = (float)(original_width) * pass->pass_info.scale_x;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_SOURCE:
-         width = (float)(source.width) * pass->pass_info.scale_x;
+         width = (float)(source_width) * pass->pass_info.scale_x;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT:
@@ -1694,11 +1700,11 @@ static Size2D gl3_pass_get_output_size(struct gl3_pass *pass, const Size2D origi
    switch (pass->pass_info.scale_type_y)
    {
       case GLSLANG_FILTER_CHAIN_SCALE_ORIGINAL:
-         height = (float)(original.height) * pass->pass_info.scale_y;
+         height = (float)(original_height) * pass->pass_info.scale_y;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_SOURCE:
-         height = (float)(source.height) * pass->pass_info.scale_y;
+         height = (float)(source_height) * pass->pass_info.scale_y;
          break;
 
       case GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT:
@@ -1713,12 +1719,8 @@ static Size2D gl3_pass_get_output_size(struct gl3_pass *pass, const Size2D origi
          break;
    }
 
-   {
-      Size2D out;
-      out.width  = (unsigned)(roundf(width));
-      out.height = (unsigned)(roundf(height));
-      return out;
-   }
+   *out_width  = (unsigned)(roundf(width));
+   *out_height = (unsigned)(roundf(height));
 }
 
 static void gl3_pass_end_frame(struct gl3_pass *pass)
@@ -1947,7 +1949,7 @@ static void gl3_pass_build_semantic_vec3(struct gl3_pass *pass, uint8_t *data, e
 }
 
 static void gl3_pass_build_semantic_texture(struct gl3_pass *pass, uint8_t *buffer,
-      enum slang_texture_semantic semantic, const Texture *texture)
+      enum slang_texture_semantic semantic, const gl3_texture_t *texture)
 {
    gl3_pass_build_semantic_texture_vec4(pass, buffer, semantic,
          texture->texture.width, texture->texture.height);
@@ -2113,7 +2115,7 @@ static void gl3_pass_add_parameter(struct gl3_pass *pass, unsigned index, const 
 }
 
 static void gl3_pass_set_semantic_texture(struct gl3_pass *pass, enum slang_texture_semantic semantic,
-      const Texture *texture)
+      const gl3_texture_t *texture)
 {
    if (pass->reflection.semantic_textures[semantic].data[0].texture)
    {
@@ -2128,7 +2130,7 @@ static void gl3_pass_set_semantic_texture(struct gl3_pass *pass, enum slang_text
 }
 
 static void gl3_pass_build_semantic_texture_array(struct gl3_pass *pass, uint8_t *buffer,
-      enum slang_texture_semantic semantic, unsigned index, const Texture *texture)
+      enum slang_texture_semantic semantic, unsigned index, const gl3_texture_t *texture)
 {
    gl3_pass_build_semantic_texture_array_vec4(pass, buffer, semantic, index,
          texture->texture.width, texture->texture.height);
@@ -2147,7 +2149,7 @@ static void gl3_pass_build_semantic_texture_array(struct gl3_pass *pass, uint8_t
 }
 
 static void gl3_pass_build_semantics(struct gl3_pass *pass, uint8_t *buffer,
-      const float *mvp, const Texture *original, const Texture *source)
+      const float *mvp, const gl3_texture_t *original, const gl3_texture_t *source)
 {
    unsigned i;
 
@@ -2179,8 +2181,8 @@ static void gl3_pass_build_semantics(struct gl3_pass *pass, uint8_t *buffer,
 
    /* Output information */
    gl3_pass_build_semantic_vec4(pass, buffer, SLANG_SEMANTIC_OUTPUT,
-                       pass->current_framebuffer_size.width,
-                       pass->current_framebuffer_size.height);
+                       pass->current_framebuffer_size_width,
+                       pass->current_framebuffer_size_height);
    gl3_pass_build_semantic_vec4(pass, buffer, SLANG_SEMANTIC_FINAL_VIEWPORT,
                        (unsigned)(pass->curr_vp.width),
                        (unsigned)(pass->curr_vp.height));
@@ -2267,28 +2269,33 @@ static void gl3_pass_build_semantics(struct gl3_pass *pass, uint8_t *buffer,
 }
 
 static void gl3_pass_build_commands(struct gl3_pass *pass,
-      const Texture *original,
-      const Texture *source,
+      const gl3_texture_t *original,
+      const gl3_texture_t *source,
       const gl3_viewport *vp,
       const float *mvp)
 {
-   Size2D size;
-   Size2D size_orig;
-   Size2D size_src;
+   unsigned size_width;
+      unsigned size_height;
+   unsigned size_orig_width;
+      unsigned size_orig_height;
+   unsigned size_src_width;
+      unsigned size_src_height;
 
    pass->curr_vp    = *vp;
-   size_orig.width  = original->texture.width;
-   size_orig.height = original->texture.height;
-   size_src.width   = source->texture.width;
-   size_src.height  = source->texture.height;
-   size             = gl3_pass_get_output_size(pass, size_orig, size_src);
+   size_orig_width  = original->texture.width;
+   size_orig_height = original->texture.height;
+   size_src_width   = source->texture.width;
+   size_src_height  = source->texture.height;
+   gl3_pass_get_output_size(pass, size_orig_width, size_orig_height,
+         size_src_width, size_src_height, &size_width, &size_height);
 
    if (pass->framebuffer &&
-       (size.width  != pass->framebuffer->size.width ||
-        size.height != pass->framebuffer->size.height))
-      gl3_framebuffer_set_size(pass->framebuffer, &size, 0);
+       (size_width  != pass->framebuffer->size_width ||
+        size_height != pass->framebuffer->size_height))
+      gl3_framebuffer_set_size(pass->framebuffer, size_width, size_height, 0);
 
-   pass->current_framebuffer_size = size;
+   pass->current_framebuffer_size_width  = size_width;
+   pass->current_framebuffer_size_height = size_height;
 
    glUseProgram(pass->pipeline);
 
@@ -2405,21 +2412,21 @@ static void gl3_pass_build_commands(struct gl3_pass *pass,
    }
    else
    {
-      glViewport(0, 0, size.width, size.height);
+      glViewport(0, 0, size_width, size_height);
 
 #ifdef GL3_ROLLING_SCANLINE_SIMULATION
       if (pass->simulate_scanline)
       {
          glScissor(  0,
-                     (int32_t)(((float)(size.height) / (float)(pass->total_subframes))
+                     (int32_t)(((float)(size_height) / (float)(pass->total_subframes))
                               * (float)(pass->current_subframe - 1)),
-                     size.width,
-                     (uint32_t)((float)(size.height) / (float)(pass->total_subframes))
+                     size_width,
+                     (uint32_t)((float)(size_height) / (float)(pass->total_subframes))
          );
       }
       else
       {
-         glScissor(0, 0, size.width, size.height);
+         glScissor(0, 0, size_width, size_height);
       }
 #endif /* GL3_ROLLING_SCANLINE_SIMULATION */
    }
@@ -2476,7 +2483,7 @@ struct gl3_filter_chain
    gl3_filter_chain_pass_info *pass_info;
    size_t num_pass_info;
    struct gl3_framebuffer *copy_framebuffer;
-   CommonResources common;
+   gl3_common_resources common;
    gl3_filter_chain_texture input_texture;
    struct gl3_framebuffer **original_history;
    size_t num_original_history;
@@ -2532,8 +2539,8 @@ static struct gl3_filter_chain *gl3_chain_new(unsigned num_passes)
    if (!chain)
       return NULL;
 
-   /* ran as the member constructor until CommonResources flattened */
-   common_resources_init(&chain->common);
+   /* ran as the member constructor until gl3_common_resources flattened */
+   gl3_common_resources_init(&chain->common);
 
    gl3_chain_set_num_passes(chain, num_passes);
    return chain;
@@ -2554,8 +2561,8 @@ static void gl3_chain_free(struct gl3_filter_chain *chain)
       gl3_pass_free(chain->passes[h]);
    free(chain->passes);
    free(chain->pass_info);
-   /* ran as the member destructor until CommonResources flattened */
-   common_resources_free(&chain->common);
+   /* ran as the member destructor until gl3_common_resources flattened */
+   gl3_common_resources_free(&chain->common);
    free(chain);
 }
 
@@ -2581,15 +2588,15 @@ static void gl3_chain_update_history_info(struct gl3_filter_chain *chain)
 
    for (i = 0; i < chain->num_original_history; i++)
    {
-      Texture *source = (Texture*)
+      gl3_texture_t *source = (gl3_texture_t*)
          &chain->common.original_history[i];
 
       if (!source)
          continue;
 
       source->texture.image  = chain->original_history[i]->image;
-      source->texture.width  = chain->original_history[i]->size.width;
-      source->texture.height = chain->original_history[i]->size.height;
+      source->texture.width  = chain->original_history[i]->size_width;
+      source->texture.height = chain->original_history[i]->size_height;
       source->filter         = gl3_pass_get_source_filter(chain->passes[0]);
       source->mip_filter     = gl3_pass_get_mip_filter(chain->passes[0]);
       source->address        = gl3_pass_get_address_mode(chain->passes[0]);
@@ -2603,18 +2610,18 @@ static void gl3_chain_update_feedback_info(struct gl3_filter_chain *chain)
    for (i = 0; i < chain->num_passes - 1; i++)
    {
       struct gl3_framebuffer *fb = gl3_pass_get_feedback_framebuffer(chain->passes[i]);
-      Texture *source;
+      gl3_texture_t *source;
       if (!fb)
          continue;
 
-      source = (Texture*)&chain->common.framebuffer_feedback[i];
+      source = (gl3_texture_t*)&chain->common.framebuffer_feedback[i];
 
       if (!source)
          continue;
 
       source->texture.image  = fb->image;
-      source->texture.width  = fb->size.width;
-      source->texture.height = fb->size.height;
+      source->texture.width  = fb->size_width;
+      source->texture.height = fb->size_height;
       source->filter         = gl3_pass_get_source_filter(chain->passes[i]);
       source->mip_filter     = gl3_pass_get_mip_filter(chain->passes[i]);
       source->address        = gl3_pass_get_address_mode(chain->passes[i]);
@@ -2627,8 +2634,8 @@ static void gl3_chain_build_offscreen_passes(struct gl3_filter_chain *chain, con
 
    /* First frame, make sure our history and feedback textures
     * are in a clean state. */
-   Texture original;
-   Texture source;
+   gl3_texture_t original;
+   gl3_texture_t source;
 
    if (chain->require_clear)
    {
@@ -2654,8 +2661,8 @@ static void gl3_chain_build_offscreen_passes(struct gl3_filter_chain *chain, con
       fb = gl3_pass_get_framebuffer(chain->passes[i]);
 
       source.texture.image             = fb->image;
-      source.texture.width             = fb->size.width;
-      source.texture.height            = fb->size.height;
+      source.texture.width             = fb->size_width;
+      source.texture.height            = fb->size_height;
       source.filter                    = gl3_pass_get_source_filter(chain->passes[i + 1]);
       source.mip_filter                = gl3_pass_get_mip_filter(chain->passes[i + 1]);
       source.address                   = gl3_pass_get_address_mode(chain->passes[i + 1]);
@@ -2678,15 +2685,17 @@ static void gl3_chain_end_frame(struct gl3_filter_chain *chain)
          chain->original_history[chain->num_original_history - 1];
       chain->original_history[chain->num_original_history - 1] = NULL;
 
-      if (chain->input_texture.width      != tmp->size.width  ||
-            chain->input_texture.height     != tmp->size.height ||
+      if (chain->input_texture.width      != tmp->size_width  ||
+            chain->input_texture.height     != tmp->size_height ||
             (chain->input_texture.format    != 0
              && chain->input_texture.format != tmp->format))
       {
-         Size2D new_size;
-         new_size.width  = chain->input_texture.width;
-         new_size.height = chain->input_texture.height;
-         gl3_framebuffer_set_size(tmp, &new_size, chain->input_texture.format);
+         unsigned new_size_width;
+      unsigned new_size_height;
+         new_size_width  = chain->input_texture.width;
+         new_size_height = chain->input_texture.height;
+         gl3_framebuffer_set_size(tmp, new_size_width, new_size_height,
+               chain->input_texture.format);
       }
 
       if (tmp->complete)
@@ -2695,7 +2704,7 @@ static void gl3_chain_end_frame(struct gl3_filter_chain *chain)
                chain->common.quad_program,
                chain->common.quad_vbo,
                chain->common.quad_loc.flat_ubo_vertex,
-               tmp->size,
+               tmp->size_width, tmp->size_height,
                chain->input_texture.image);
 
       /* Should ring buffer, but we don't have *that* many chain->passes. */
@@ -2710,8 +2719,8 @@ static void gl3_chain_build_viewport_pass(struct gl3_filter_chain *chain, const 
    unsigned i;
    /* First frame, make sure our history and
     * feedback textures are in a clean state. */
-   Texture source;
-   Texture original;
+   gl3_texture_t source;
+   gl3_texture_t original;
 
    if (chain->require_clear)
    {
@@ -2737,8 +2746,8 @@ static void gl3_chain_build_viewport_pass(struct gl3_filter_chain *chain, const 
       const struct gl3_framebuffer *fb =
          gl3_pass_get_framebuffer(chain->passes[chain->num_passes - 2]);
       source.texture.image           = fb->image;
-      source.texture.width           = fb->size.width;
-      source.texture.height          = fb->size.height;
+      source.texture.width           = fb->size_width;
+      source.texture.height          = fb->size_height;
       source.filter                  = gl3_pass_get_source_filter(chain->passes[chain->num_passes - 1]);
       source.mip_filter              = gl3_pass_get_mip_filter(chain->passes[chain->num_passes - 1]);
       source.address                 = gl3_pass_get_address_mode(chain->passes[chain->num_passes - 1]);
@@ -3347,15 +3356,17 @@ static void gl3_chain_set_input_texture(struct gl3_filter_chain *chain, const gl
       if (!chain->copy_framebuffer)
          return;
 
-      if (chain->input_texture.width   != chain->copy_framebuffer->size.width  ||
-          chain->input_texture.height  != chain->copy_framebuffer->size.height ||
+      if (chain->input_texture.width   != chain->copy_framebuffer->size_width  ||
+          chain->input_texture.height  != chain->copy_framebuffer->size_height ||
           (chain->input_texture.format != 0                                   &&
            chain->input_texture.format != chain->copy_framebuffer->format))
       {
-         Size2D copy_size;
-         copy_size.width  = chain->input_texture.width;
-         copy_size.height = chain->input_texture.height;
-         gl3_framebuffer_set_size(chain->copy_framebuffer, &copy_size,
+         unsigned copy_size_width;
+      unsigned copy_size_height;
+         copy_size_width  = chain->input_texture.width;
+         copy_size_height = chain->input_texture.height;
+         gl3_framebuffer_set_size(chain->copy_framebuffer,
+               copy_size_width, copy_size_height,
                chain->input_texture.format);
       }
 
@@ -3364,7 +3375,8 @@ static void gl3_chain_set_input_texture(struct gl3_filter_chain *chain, const gl
                chain->copy_framebuffer->framebuffer,
                chain->common.quad_program,
                chain->common.quad_loc.flat_ubo_vertex,
-               chain->copy_framebuffer->size,
+               chain->copy_framebuffer->size_width,
+               chain->copy_framebuffer->size_height,
                chain->input_texture.image,
                (float)(chain->input_texture.width)
                / chain->input_texture.padded_width,
@@ -3562,11 +3574,11 @@ gl3_filter_chain_t *gl3_filter_chain_create_default(
    gl3_chain_set_pass_info(chain, 0, pass_info);
 
    gl3_chain_set_shader(chain, 0, GL_VERTEX_SHADER,
-         opaque_vert,
-         sizeof(opaque_vert) / sizeof(uint32_t));
+         gl3_opaque_vert,
+         sizeof(gl3_opaque_vert) / sizeof(uint32_t));
    gl3_chain_set_shader(chain, 0, GL_FRAGMENT_SHADER,
-         opaque_frag,
-         sizeof(opaque_frag) / sizeof(uint32_t));
+         gl3_opaque_frag,
+         sizeof(gl3_opaque_frag) / sizeof(uint32_t));
 
    if (!gl3_chain_init(chain))
    {
@@ -3889,13 +3901,13 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
 
       gl3_chain_set_shader(chain, shader->passes,
             GL_VERTEX_SHADER,
-            opaque_vert,
-            sizeof(opaque_vert) / sizeof(uint32_t));
+            gl3_opaque_vert,
+            sizeof(gl3_opaque_vert) / sizeof(uint32_t));
 
       gl3_chain_set_shader(chain, shader->passes,
             GL_FRAGMENT_SHADER,
-            opaque_frag,
-            sizeof(opaque_frag) / sizeof(uint32_t));
+            gl3_opaque_frag,
+            sizeof(gl3_opaque_frag) / sizeof(uint32_t));
    }
 
    gl3_chain_set_shader_preset(chain, shader);
@@ -3982,13 +3994,13 @@ gl3_filter_chain_t *gl3_filter_chain_create_deferred(
 
       gl3_chain_set_shader(chain, shader->passes,
             GL_VERTEX_SHADER,
-            opaque_vert,
-            sizeof(opaque_vert) / sizeof(uint32_t));
+            gl3_opaque_vert,
+            sizeof(gl3_opaque_vert) / sizeof(uint32_t));
 
       gl3_chain_set_shader(chain, shader->passes,
             GL_FRAGMENT_SHADER,
-            opaque_frag,
-            sizeof(opaque_frag) / sizeof(uint32_t));
+            gl3_opaque_frag,
+            sizeof(gl3_opaque_frag) / sizeof(uint32_t));
    }
 
    gl3_chain_set_shader_preset(chain, shader);
