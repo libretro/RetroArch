@@ -206,19 +206,20 @@ struct http_connection_t
 static void net_http_log_transport_state(
       struct http_t *state, const char *stage, ssize_t io_len)
 {
+#if defined(DEBUG)
+   int port           = 0;
+   int fd             = -1;
+   int connected      = 0;
+   const char *method = "GET";
+   const char *domain = "<null>";
+   const char *path   = "<null>";
+#endif
    /* Keep the first failure: a connect that fails on one address and
     * then another says the same thing twice, while a later stage
     * failing because of an earlier one says less. */
    if (state && !state->fail_stage)
       state->fail_stage = stage;
 #if defined(DEBUG)
-   const char *method = "GET";
-   const char *domain = "<null>";
-   const char *path   = "<null>";
-   int port           = 0;
-   int fd             = -1;
-   int connected      = 0;
-
    if (state)
    {
       method = state->request.method ? state->request.method : "GET";
@@ -249,10 +250,6 @@ static void net_http_log_transport_state(
          errno,
          strerror(errno));
    fflush(stderr);
-#else
-   (void)state;
-   (void)stage;
-   (void)io_len;
 #endif
 }
 
