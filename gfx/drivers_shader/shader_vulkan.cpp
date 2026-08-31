@@ -418,40 +418,34 @@ struct Texture
 
 struct deferred_disposes;
 
-class Buffer
+/* A host-visible, host-coherent VkBuffer with its backing memory.
+ * Zero-initialized = empty; slang_buffer_free() is safe on any state. */
+struct slang_buffer
 {
-   public:
-      Buffer(VkDevice device,
-            const VkPhysicalDeviceMemoryProperties &mem_props,
-            size_t len, VkBufferUsageFlags usage);
-      ~Buffer();
-
-      size_t get_size() const { return size; }
-      void *map();
-      void unmap();
-
-      const VkBuffer &get_buffer() const { return buffer; }
-
-      Buffer(Buffer&&) = delete;
-      void operator=(Buffer&&) = delete;
-
-   private:
-      VkDevice device;
-      VkBuffer buffer;
-      VkDeviceMemory memory;
-      size_t size;
-      void *mapped = nullptr;
+   VkDevice device;
+   VkBuffer buffer;
+   VkDeviceMemory memory;
+   size_t size;
+   void *mapped;
 };
+
+static bool slang_buffer_init(struct slang_buffer *buf,
+      VkDevice device, const VkPhysicalDeviceMemoryProperties &mem_props,
+      size_t len, VkBufferUsageFlags usage);
+static void *slang_buffer_map(struct slang_buffer *buf);
+static void slang_buffer_unmap(struct slang_buffer *buf);
+static void slang_buffer_free(struct slang_buffer *buf);
 
 class StaticTexture
 {
    public:
+      /* Takes ownership of *staging, which is zeroed. */
       StaticTexture(std::string id,
             VkDevice device,
             VkImage image,
             VkImageView view,
             VkDeviceMemory memory,
-            std::unique_ptr<Buffer> buffer,
+            struct slang_buffer *staging,
             unsigned width, unsigned height,
             bool linear,
             bool mipmap,
@@ -461,7 +455,7 @@ class StaticTexture
       StaticTexture(StaticTexture&&) = delete;
       void operator=(StaticTexture&&) = delete;
 
-      void release_staging_buffer() { buffer.reset(); }
+      void release_staging_buffer() { slang_buffer_free(&buffer); }
       void set_id(std::string name) { id = std::move(name); }
       const std::string &get_id() const { return id; }
       const Texture &get_texture() const { return texture; }
@@ -471,7 +465,7 @@ class StaticTexture
       VkImage image;
       VkImageView view;
       VkDeviceMemory memory;
-      std::unique_ptr<Buffer> buffer;
+      struct slang_buffer buffer;
       std::string id;
       Texture texture;
 };
@@ -713,8 +707,8 @@ struct CommonResources
          const VkPhysicalDeviceMemoryProperties &memory_properties);
    ~CommonResources();
 
-   std::unique_ptr<Buffer> vbo;
-   std::unique_ptr<Buffer> ubo;
+   struct slang_buffer vbo = {};
+   struct slang_buffer ubo = {};
    uint8_t *ubo_mapped          = nullptr;
    size_t ubo_sync_index_stride = 0;
    size_t ubo_offset            = 0;
@@ -1140,7 +1134,7 @@ static std::unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
    texture_image image;
    VkBufferImageCopy region;
    VkImageCreateInfo image_info;
-   std::unique_ptr<Buffer> buffer;
+   struct slang_buffer buffer          = {};
    VkMemoryRequirements mem_reqs;
    VkImageViewCreateInfo view_info;
    VkMemoryAllocateInfo alloc;
@@ -1221,12 +1215,12 @@ static std::unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
       goto error;
    }
 
-   buffer                                =
-      std::unique_ptr<Buffer>(new Buffer(info->device, *info->memory_properties,
-               image.width * image.height * sizeof(uint32_t), VK_BUFFER_USAGE_TRANSFER_SRC_BIT));
-   ptr                                   = buffer->map();
+   slang_buffer_init(&buffer, info->device, *info->memory_properties,
+         image.width * image.height * sizeof(uint32_t),
+         VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+   ptr                                   = slang_buffer_map(&buffer);
    memcpy(ptr, image.pixels, image.width * image.height * sizeof(uint32_t));
-   buffer->unmap();
+   slang_buffer_unmap(&buffer);
 
    VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
          tex,
@@ -1258,7 +1252,7 @@ static std::unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
    region.imageExtent.depth               = 1;
 
    vkCmdCopyBufferToImage(cmd,
-         buffer->get_buffer(),
+         buffer.buffer,
          tex,
          shader->mipmap
          ? VK_IMAGE_LAYOUT_GENERAL
@@ -1332,7 +1326,7 @@ static std::unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
    image.pixels = nullptr;
 
    return std::unique_ptr<StaticTexture>(new StaticTexture(shader->id, info->device,
-            tex, view, memory, std::move(buffer), image.width, image.height,
+            tex, view, memory, &buffer, image.width, image.height,
             shader->filter != RARCH_FILTER_NEAREST,
             image_info.mipLevels > 1,
             rarch_wrap_to_address(shader->wrap)));
@@ -1346,6 +1340,7 @@ error:
       vkDestroyImageView(info->device, view, nullptr);
    if (memory != VK_NULL_HANDLE)
       vkFreeMemory(info->device, memory, nullptr);
+   slang_buffer_free(&buffer);
    return {};
 }
 
@@ -1993,7 +1988,7 @@ bool vulkan_filter_chain::init_ubo()
    unsigned i;
    VkPhysicalDeviceProperties props;
 
-   common.ubo.reset();
+   slang_buffer_free(&common.ubo);
    common.ubo_offset            = 0;
 
    vkGetPhysicalDeviceProperties(gpu, &props);
@@ -2012,12 +2007,12 @@ bool vulkan_filter_chain::init_ubo()
    common.ubo_sync_index_stride = common.ubo_offset;
 
    if (common.ubo_offset != 0)
-      common.ubo                = std::unique_ptr<Buffer>(new Buffer(device,
-               memory_properties, common.ubo_offset * num_deferred,
-               VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
+      slang_buffer_init(&common.ubo, device,
+            memory_properties, common.ubo_offset * num_deferred,
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
-   if (common.ubo)
-      common.ubo_mapped         = static_cast<uint8_t*>(common.ubo->map());
+   if (common.ubo.buffer != VK_NULL_HANDLE)
+      common.ubo_mapped         = static_cast<uint8_t*>(slang_buffer_map(&common.ubo));
    else
       common.ubo_mapped         = nullptr;
    return true;
@@ -2493,7 +2488,7 @@ StaticTexture::StaticTexture(std::string id,
       VkImage image,
       VkImageView view,
       VkDeviceMemory memory,
-      std::unique_ptr<Buffer> buffer,
+      struct slang_buffer *staging,
       unsigned width, unsigned height,
       bool linear,
       bool mipmap,
@@ -2502,9 +2497,10 @@ StaticTexture::StaticTexture(std::string id,
      image(image),
      view(view),
      memory(memory),
-     buffer(std::move(buffer)),
+     buffer(*staging),
      id(std::move(id))
 {
+   memset(staging, 0, sizeof(*staging));
    texture.filter         = GLSLANG_FILTER_CHAIN_NEAREST;
    texture.mip_filter     = GLSLANG_FILTER_CHAIN_NEAREST;
    texture.address        = address;
@@ -2522,6 +2518,7 @@ StaticTexture::StaticTexture(std::string id,
 
 StaticTexture::~StaticTexture()
 {
+   slang_buffer_free(&buffer);
    if (view != VK_NULL_HANDLE)
       vkDestroyImageView(device, view, nullptr);
    if (image != VK_NULL_HANDLE)
@@ -2530,14 +2527,17 @@ StaticTexture::~StaticTexture()
       vkFreeMemory(device, memory, nullptr);
 }
 
-Buffer::Buffer(VkDevice device,
-      const VkPhysicalDeviceMemoryProperties &mem_props,
-      size_t len, VkBufferUsageFlags usage) :
-   device(device), size(len)
+static bool slang_buffer_init(struct slang_buffer *buf,
+      VkDevice device, const VkPhysicalDeviceMemoryProperties &mem_props,
+      size_t len, VkBufferUsageFlags usage)
 {
    VkBufferCreateInfo info;
    VkMemoryRequirements mem_reqs;
    VkMemoryAllocateInfo alloc;
+
+   buf->device = device;
+   buf->size   = len;
+   buf->mapped = nullptr;
 
    info.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
    info.pNext                 = NULL;
@@ -2547,14 +2547,14 @@ Buffer::Buffer(VkDevice device,
    info.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
    info.queueFamilyIndexCount = 0;
    info.pQueueFamilyIndices   = NULL;
-   if (vkCreateBuffer(device, &info, nullptr, &buffer) != VK_SUCCESS)
+   if (vkCreateBuffer(device, &info, nullptr, &buf->buffer) != VK_SUCCESS)
    {
-      buffer = VK_NULL_HANDLE;
-      memory = VK_NULL_HANDLE;
-      return;
+      buf->buffer = VK_NULL_HANDLE;
+      buf->memory = VK_NULL_HANDLE;
+      return false;
    }
 
-   vkGetBufferMemoryRequirements(device, buffer, &mem_reqs);
+   vkGetBufferMemoryRequirements(device, buf->buffer, &mem_reqs);
 
    alloc.sType                = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
    alloc.pNext                = NULL;
@@ -2564,41 +2564,45 @@ Buffer::Buffer(VkDevice device,
          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
          | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-   if (vkAllocateMemory(device, &alloc, NULL, &memory) != VK_SUCCESS)
+   if (vkAllocateMemory(device, &alloc, NULL, &buf->memory) != VK_SUCCESS)
    {
-      memory = VK_NULL_HANDLE;
-      return;
+      buf->memory = VK_NULL_HANDLE;
+      return false;
    }
 
-   vulkan_debug_mark_memory(device, memory);
-   vkBindBufferMemory(device, buffer, memory, 0);
+   vulkan_debug_mark_memory(device, buf->memory);
+   vkBindBufferMemory(device, buf->buffer, buf->memory, 0);
+   return true;
 }
 
-void *Buffer::map()
+static void *slang_buffer_map(struct slang_buffer *buf)
 {
-   if (!mapped)
+   if (!buf->mapped)
    {
-      if (vkMapMemory(device, memory, 0, size, 0, &mapped) != VK_SUCCESS)
+      if (vkMapMemory(buf->device, buf->memory, 0, buf->size, 0,
+               &buf->mapped) != VK_SUCCESS)
          return nullptr;
    }
-   return mapped;
+   return buf->mapped;
 }
 
-void Buffer::unmap()
+static void slang_buffer_unmap(struct slang_buffer *buf)
 {
-   if (mapped)
-      vkUnmapMemory(device, memory);
-   mapped = nullptr;
+   if (buf->mapped)
+      vkUnmapMemory(buf->device, buf->memory);
+   buf->mapped = nullptr;
 }
 
-Buffer::~Buffer()
+static void slang_buffer_free(struct slang_buffer *buf)
 {
-   if (mapped)
-      unmap();
-   if (memory != VK_NULL_HANDLE)
-      vkFreeMemory(device, memory, nullptr);
-   if (buffer != VK_NULL_HANDLE)
-      vkDestroyBuffer(device, buffer, nullptr);
+   if (buf->mapped)
+      slang_buffer_unmap(buf);
+   if (buf->memory != VK_NULL_HANDLE)
+      vkFreeMemory(buf->device, buf->memory, nullptr);
+   if (buf->buffer != VK_NULL_HANDLE)
+      vkDestroyBuffer(buf->device, buf->buffer, nullptr);
+   buf->buffer = VK_NULL_HANDLE;
+   buf->memory = VK_NULL_HANDLE;
 }
 
 Pass::~Pass()
@@ -3039,13 +3043,12 @@ CommonResources::CommonResources(VkDevice device,
       1.0f, +1.0f, 1.0f, 1.0f,
    };
 
-   vbo                          =
-      std::unique_ptr<Buffer>(new Buffer(device,
-               memory_properties, sizeof(vbo_data), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
+   slang_buffer_init(&vbo, device,
+         memory_properties, sizeof(vbo_data), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 
-   ptr                          = vbo->map();
+   ptr                          = slang_buffer_map(&vbo);
    memcpy(ptr, vbo_data, sizeof(vbo_data));
-   vbo->unmap();
+   slang_buffer_unmap(&vbo);
 
    info.sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
    info.pNext                   = NULL;
@@ -3155,6 +3158,8 @@ CommonResources::~CommonResources()
             if (k != VK_NULL_HANDLE)
                vkDestroySampler(device, k, nullptr);
    framebuffer_pool.drain(device);
+   slang_buffer_free(&vbo);
+   slang_buffer_free(&ubo);
 }
 
 void Pass::allocate_buffers()
@@ -3632,7 +3637,7 @@ void Pass::build_commands(
       VULKAN_SET_UNIFORM_BUFFER(device,
             sets[sync_index],
             reflection.ubo_binding,
-            common->ubo->get_buffer(),
+            common->ubo.buffer,
             ubo_offset + sync_index * common->ubo_sync_index_stride,
             reflection.ubo_size);
    }
@@ -3689,7 +3694,7 @@ void Pass::build_commands(
    {
       VkDeviceSize offset = final_pass ? 16 * sizeof(float) : 0;
       vkCmdBindVertexBuffers(cmd, 0, 1,
-            &common->vbo->get_buffer(),
+            &common->vbo.buffer,
             &offset);
    }
 
