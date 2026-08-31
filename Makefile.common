@@ -1990,6 +1990,8 @@ ifneq ($(HAVE_BUILTINSPIRV_CROSS), 0)
    DEFINES += -DSPIRV_CROSS_C_API_CPP=0
    DEFINES += -DSPIRV_CROSS_C_API_REFLECT=0
 else
+   # slang_process.c is C: the header path must reach the C compiler too.
+   CFLAGS   += $(SPIRV_CROSS_CFLAGS)
    CXXFLAGS += $(SPIRV_CROSS_CFLAGS)
    LIBS     += $(SPIRV_CROSS_LIBS)
 endif
