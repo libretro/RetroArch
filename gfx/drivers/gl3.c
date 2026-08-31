@@ -4918,6 +4918,16 @@ static bool gl3_frame(void *data, const void *frame,
       if (!filter_chain && gl->filter_chain_default)
          filter_chain = gl->filter_chain_default;
 
+      /* Every chain call below dereferences this. If the preset failed to
+       * build and the default chain is missing too, there is nothing to
+       * render through, and continuing faults on the first setter rather
+       * than reporting a dead frame. */
+      if (!filter_chain)
+      {
+         RARCH_ERR("[GLCore] No filter chain available for this frame.\n");
+         return false;
+      }
+
       gl3_filter_chain_set_frame_count(filter_chain, frame_count);
 #ifdef HAVE_REWIND
       gl3_filter_chain_set_frame_direction(filter_chain, state_manager_frame_is_reversed() ? -1 : 1);
