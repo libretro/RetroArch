@@ -575,36 +575,23 @@ static GLenum convert_glslang_format(glslang_format fmt)
    return 0;
 }
 
-class StaticTexture
+struct gl3_static_texture
 {
-public:
-   StaticTexture(std::string id,
-                 GLuint image,
-                 unsigned width, unsigned height,
-                 bool linear,
-                 bool mipmap,
-                 glslang_filter_chain_address address);
-   ~StaticTexture();
-
-   StaticTexture(StaticTexture&&) = delete;
-   void operator=(StaticTexture&&) = delete;
-
-   void set_id(std::string name) { id = std::move(name); }
-   const std::string &get_id() const { return id; }
-   const Texture &get_texture() const { return texture; }
-
-private:
-   std::string id;
+   char *id;        /* owned (strdup'd) */
    GLuint image;
    Texture texture;
 };
 
-StaticTexture::StaticTexture(std::string id_, GLuint image_,
+static void gl3_static_texture_init(struct gl3_static_texture *tex,
+      const char *id_, GLuint image_,
       unsigned width, unsigned height, bool linear, bool mipmap,
       glslang_filter_chain_address address)
-   : id(std::move(id_)), image(image_)
 {
    GLenum gl_address         = address_to_gl(address);
+   Texture &texture          = tex->texture;
+
+   tex->id                   = id_ ? strdup(id_) : NULL;
+   tex->image                = image_;
 
    texture.filter            = GLSLANG_FILTER_CHAIN_NEAREST;
    texture.mip_filter        = GLSLANG_FILTER_CHAIN_NEAREST;
@@ -612,7 +599,7 @@ StaticTexture::StaticTexture(std::string id_, GLuint image_,
    texture.texture.width     = width;
    texture.texture.height    = height;
    texture.texture.format    = 0;
-   texture.texture.image     = image;
+   texture.texture.image     = image_;
 
    if (linear)
    {
@@ -621,7 +608,7 @@ StaticTexture::StaticTexture(std::string id_, GLuint image_,
          texture.mip_filter  = GLSLANG_FILTER_CHAIN_LINEAR;
    }
 
-   glBindTexture(GL_TEXTURE_2D, image);
+   glBindTexture(GL_TEXTURE_2D, image_);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, gl_address);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, gl_address);
 
@@ -644,10 +631,15 @@ StaticTexture::StaticTexture(std::string id_, GLuint image_,
    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-StaticTexture::~StaticTexture()
+static void gl3_static_texture_free(struct gl3_static_texture *tex)
 {
-   if (image != 0)
-      glDeleteTextures(1, &image);
+   if (!tex)
+      return;
+   if (tex->image != 0)
+      glDeleteTextures(1, &tex->image);
+   tex->image = 0;
+   free(tex->id);
+   tex->id    = NULL;
 }
 
 struct CommonResources
@@ -658,7 +650,8 @@ struct CommonResources
    std::vector<Texture> original_history;
    std::vector<Texture> framebuffer_feedback;
    std::vector<Texture> pass_outputs;
-   std::vector<std::unique_ptr<StaticTexture>> luts;
+   struct gl3_static_texture *luts = NULL;
+   size_t num_luts                 = 0;
 
    slang_texture_semantic_name_map texture_semantic_map        = {};
    slang_texture_semantic_name_map texture_semantic_uniform_map = {};
@@ -690,6 +683,14 @@ CommonResources::CommonResources()
 
 CommonResources::~CommonResources()
 {
+   size_t i;
+   /* The unique_ptr vector used to free these on destruction; the plain
+    * array does not, so every LUT has to be released by hand. */
+   for (i = 0; i < num_luts; i++)
+      gl3_static_texture_free(&luts[i]);
+   free(luts);
+   luts     = NULL;
+   num_luts = 0;
    slang_texture_semantic_name_map_free(&texture_semantic_map);
    slang_texture_semantic_name_map_free(&texture_semantic_uniform_map);
    if (quad_program != 0)
@@ -1944,10 +1945,10 @@ void Pass::build_semantics(uint8_t *buffer,
             common->framebuffer_feedback[i]);
 
    /* LUTs. */
-   for (i = 0; i < common->luts.size(); i++)
+   for (i = 0; i < common->num_luts; i++)
       build_semantic_texture_array(buffer,
             SLANG_TEXTURE_SEMANTIC_USER, i,
-            common->luts[i]->get_texture());
+            common->luts[i].texture);
 }
 
 void Pass::build_commands(
@@ -2196,7 +2197,7 @@ public:
 #endif /* GL3_ROLLING_SCANLINE_SIMULATION */
    void set_pass_name(unsigned pass, const char *name);
 
-   void add_static_texture(std::unique_ptr<gl3_shader::StaticTexture> texture);
+   bool add_static_texture(const struct gl3_shader::gl3_static_texture *texture);
    void add_parameter(unsigned pass, unsigned parameter_index, const std::string &id);
    void set_num_passes(unsigned passes);
 
@@ -2515,18 +2516,18 @@ bool gl3_filter_chain::init_alias()
          return false;
    }
 
-   for (i = 0; i < (int)common.luts.size(); i++)
+   for (i = 0; i < (int)common.num_luts; i++)
    {
-      unsigned j = (unsigned)(&common.luts[i] - common.luts.data());
+      unsigned j = (unsigned)i;
       if (!slang_texture_semantic_name_map_set_unique(
                &common.texture_semantic_map,
-               common.luts[i]->get_id().c_str(), NULL,
+               common.luts[i].id, NULL,
                SLANG_TEXTURE_SEMANTIC_USER, j))
          return false;
 
       if (!slang_texture_semantic_name_map_set_unique(
                &common.texture_semantic_uniform_map,
-               common.luts[i]->get_id().c_str(), "Size",
+               common.luts[i].id, "Size",
                SLANG_TEXTURE_SEMANTIC_USER, j))
          return false;
    }
@@ -2938,9 +2939,18 @@ void gl3_filter_chain::set_input_texture(
    }
 }
 
-void gl3_filter_chain::add_static_texture(std::unique_ptr<gl3_shader::StaticTexture> texture)
+bool gl3_filter_chain::add_static_texture(
+      const struct gl3_shader::gl3_static_texture *texture)
 {
-   common.luts.push_back(std::move(texture));
+   struct gl3_shader::gl3_static_texture *next =
+      (struct gl3_shader::gl3_static_texture*)realloc(common.luts,
+            (common.num_luts + 1) * sizeof(*common.luts));
+   if (!next)
+      return false;
+   common.luts                  = next;
+   common.luts[common.num_luts] = *texture;
+   common.num_luts++;
+   return true;
 }
 
 void gl3_filter_chain::set_frame_count(uint64_t count)
@@ -3026,9 +3036,10 @@ void gl3_filter_chain::set_pass_name(unsigned pass, const char *name)
    passes[pass]->set_name(name);
 }
 
-static std::unique_ptr<gl3_shader::StaticTexture> gl3_filter_chain_load_lut(
+static bool gl3_filter_chain_load_lut(
       gl3_filter_chain *chain,
-      const video_shader_lut *shader)
+      const video_shader_lut *shader,
+      struct gl3_shader::gl3_static_texture *out)
 {
    texture_image image;
    GLuint tex                      = 0;
@@ -3039,7 +3050,7 @@ static std::unique_ptr<gl3_shader::StaticTexture> gl3_filter_chain_load_lut(
    image.supports_rgba             = true;
 
    if (!image_texture_load(&image, shader->path))
-      return {};
+      return false;
 
    unsigned levels = shader->mipmap ? glslang_num_miplevels(image.width, image.height) : 1;
 
@@ -3062,11 +3073,12 @@ static std::unique_ptr<gl3_shader::StaticTexture> gl3_filter_chain_load_lut(
    if (image.pixels)
       image_texture_free(&image);
 
-   return std::unique_ptr<gl3_shader::StaticTexture>(new gl3_shader::StaticTexture(shader->id,
-            tex, image.width, image.height,
-            shader->filter != RARCH_FILTER_NEAREST,
-            levels > 1,
-            rarch_wrap_to_address(shader->wrap)));
+   gl3_static_texture_init(out, shader->id,
+         tex, image.width, image.height,
+         shader->filter != RARCH_FILTER_NEAREST,
+         levels > 1,
+         rarch_wrap_to_address(shader->wrap));
+   return true;
 }
 
 static bool gl3_filter_chain_load_luts(
@@ -3076,14 +3088,18 @@ static bool gl3_filter_chain_load_luts(
    unsigned i;
    for (i = 0; i < shader->luts; i++)
    {
-      std::unique_ptr<gl3_shader::StaticTexture> image = gl3_filter_chain_load_lut(chain, &shader->lut[i]);
-      if (!image)
+      struct gl3_shader::gl3_static_texture image;
+      if (!gl3_filter_chain_load_lut(chain, &shader->lut[i], &image))
       {
          RARCH_ERR("[GLCore] Failed to load LUT \"%s\".\n", shader->lut[i].path);
          return false;
       }
 
-      chain->add_static_texture(std::move(image));
+      if (!chain->add_static_texture(&image))
+      {
+         gl3_static_texture_free(&image);
+         return false;
+      }
    }
 
    return true;
