@@ -33,7 +33,7 @@
 
 #include "slang_process.h"
 #include "spirv_opengl.h"
-#include "spirv_glsl.hpp"
+#include <spirv_cross_c.h>
 
 #include "../common/gl3_defines.h"
 
@@ -148,228 +148,335 @@ RETRO_BEGIN_DECLS
 
 RETRO_END_DECLS
 
+/* Fetch one reflected-resource list; mirrors slang_process.c's helper. */
+static bool gl3_spvc_list(spvc_resources resources, spvc_resource_type type,
+      const spvc_reflected_resource **list, size_t *count)
+{
+   *list  = NULL;
+   *count = 0;
+   return spvc_resources_get_resource_list_for_type(
+         resources, type, list, count) == SPVC_SUCCESS;
+}
+
+/* Rename a stage variable to RARCH_<prefix>_<location> and drop the
+ * location decoration, the way the C++ path did. */
+static void gl3_spvc_rename_by_location(spvc_compiler compiler,
+      const spvc_reflected_resource *list, size_t count, const char *prefix)
+{
+   size_t i;
+   for (i = 0; i < count; i++)
+   {
+      char name[64];
+      unsigned location = spvc_compiler_get_decoration(compiler,
+            list[i].id, SpvDecorationLocation);
+      snprintf(name, sizeof(name), "%s%u", prefix, location);
+      spvc_compiler_set_name(compiler, list[i].id, name);
+      spvc_compiler_unset_decoration(compiler, list[i].id,
+            SpvDecorationLocation);
+   }
+}
+
 GLuint gl3_cross_compile_program(
       const uint32_t *vertex, size_t vertex_size,
       const uint32_t *fragment, size_t fragment_size,
       gl3_buffer_locations *loc, bool flatten)
 {
-   GLuint program = 0;
-   try
-   {
-      spirv_cross::ShaderResources vertex_resources;
-      spirv_cross::ShaderResources fragment_resources;
-      spirv_cross::CompilerGLSL vertex_compiler(vertex, vertex_size / 4);
-      spirv_cross::CompilerGLSL fragment_compiler(fragment, fragment_size / 4);
-      spirv_cross::CompilerGLSL::Options opts;
-#ifdef HAVE_OPENGLES3
-      opts.es                               = true;
-#else
-      opts.es                               = false;
-#endif
-      opts.version                          = gl3_get_cross_compiler_target_version();
-      opts.fragment.default_float_precision = spirv_cross::CompilerGLSL::Options::Precision::Highp;
-      opts.fragment.default_int_precision   = spirv_cross::CompilerGLSL::Options::Precision::Highp;
-      opts.enable_420pack_extension         = false;
+   GLuint program                  = 0;
+   GLuint vertex_shader            = 0;
+   GLuint fragment_shader          = 0;
+   GLint status                    = 0;
+   spvc_context ctx                = NULL;
+   spvc_parsed_ir vs_ir            = NULL;
+   spvc_parsed_ir ps_ir            = NULL;
+   spvc_compiler vs_compiler       = NULL;
+   spvc_compiler ps_compiler       = NULL;
+   spvc_resources vs_resources     = NULL;
+   spvc_resources ps_resources     = NULL;
+   spvc_compiler_options vs_opts   = NULL;
+   spvc_compiler_options ps_opts   = NULL;
+   const char *vertex_source       = NULL;
+   const char *fragment_source     = NULL;
+   uint32_t *texture_fixups        = NULL;
+   size_t num_texture_fixups       = 0;
+   const spvc_reflected_resource *list = NULL;
+   const spvc_reflected_resource *vs_inputs = NULL;
+   size_t num_vs_inputs            = 0;
+   size_t count                    = 0;
+   size_t i;
 
-      vertex_compiler.set_common_options(opts);
-      fragment_compiler.set_common_options(opts);
-
-      vertex_resources                      = vertex_compiler.get_shader_resources();
-      fragment_resources                    = fragment_compiler.get_shader_resources();
-
-      for (spirv_cross::Resource &res : vertex_resources.stage_inputs)
-      {
-         uint32_t location = vertex_compiler.get_decoration(res.id, spv::DecorationLocation);
-         char loc_buf[64];
-         snprintf(loc_buf, sizeof(loc_buf), "RARCH_ATTRIBUTE_%d", location);
-         vertex_compiler.set_name(res.id, loc_buf);
-         vertex_compiler.unset_decoration(res.id, spv::DecorationLocation);
-      }
-
-      for (spirv_cross::Resource &res : vertex_resources.stage_outputs)
-      {
-         uint32_t location = vertex_compiler.get_decoration(res.id, spv::DecorationLocation);
-         char loc_buf[64];
-         snprintf(loc_buf, sizeof(loc_buf), "RARCH_VARYING_%d", location);
-         vertex_compiler.set_name(res.id, loc_buf);
-         vertex_compiler.unset_decoration(res.id, spv::DecorationLocation);
-      }
-
-      for (spirv_cross::Resource &res : fragment_resources.stage_inputs)
-      {
-         uint32_t location = fragment_compiler.get_decoration(res.id, spv::DecorationLocation);
-         char loc_buf[64];
-         snprintf(loc_buf, sizeof(loc_buf), "RARCH_VARYING_%d", location);
-         fragment_compiler.set_name(res.id, loc_buf);
-         fragment_compiler.unset_decoration(res.id, spv::DecorationLocation);
-      }
-
-      if (vertex_resources.push_constant_buffers.size() > 1)
-      {
-         RARCH_ERR("[GLCore] Cannot have more than one push constant buffer.\n");
-         return 0;
-      }
-
-      for (spirv_cross::Resource &res : vertex_resources.push_constant_buffers)
-      {
-         vertex_compiler.set_name(res.id, "RARCH_PUSH_VERTEX_INSTANCE");
-         vertex_compiler.set_name(res.base_type_id, "RARCH_PUSH_VERTEX");
-      }
-
-      if (vertex_resources.uniform_buffers.size() > 1)
-      {
-         RARCH_ERR("[GLCore] Cannot have more than one uniform buffer.\n");
-         return 0;
-      }
-
-      for (spirv_cross::Resource &res : vertex_resources.uniform_buffers)
-      {
-         if (flatten)
-            vertex_compiler.flatten_buffer_block(res.id);
-         vertex_compiler.set_name(res.id, "RARCH_UBO_VERTEX_INSTANCE");
-         vertex_compiler.set_name(res.base_type_id, "RARCH_UBO_VERTEX");
-         vertex_compiler.unset_decoration(res.id, spv::DecorationDescriptorSet);
-         vertex_compiler.unset_decoration(res.id, spv::DecorationBinding);
-      }
-
-      if (fragment_resources.push_constant_buffers.size() > 1)
-      {
-         RARCH_ERR("[GLCore] Cannot have more than one push constant block.\n");
-         return 0;
-      }
-
-      for (spirv_cross::Resource &res : fragment_resources.push_constant_buffers)
-      {
-         fragment_compiler.set_name(res.id, "RARCH_PUSH_FRAGMENT_INSTANCE");
-         fragment_compiler.set_name(res.base_type_id, "RARCH_PUSH_FRAGMENT");
-      }
-
-      if (fragment_resources.uniform_buffers.size() > 1)
-      {
-         RARCH_ERR("[GLCore] Cannot have more than one uniform buffer.\n");
-         return 0;
-      }
-
-      for (spirv_cross::Resource &res : fragment_resources.uniform_buffers)
-      {
-         if (flatten)
-            fragment_compiler.flatten_buffer_block(res.id);
-         fragment_compiler.set_name(res.id, "RARCH_UBO_FRAGMENT_INSTANCE");
-         fragment_compiler.set_name(res.base_type_id, "RARCH_UBO_FRAGMENT");
-         fragment_compiler.unset_decoration(res.id, spv::DecorationDescriptorSet);
-         fragment_compiler.unset_decoration(res.id, spv::DecorationBinding);
-      }
-
-      std::vector<uint32_t> texture_binding_fixups;
-      for (spirv_cross::Resource &res : fragment_resources.sampled_images)
-      {
-         uint32_t binding = fragment_compiler.get_decoration(res.id, spv::DecorationBinding);
-         char loc_buf[64];
-         snprintf(loc_buf, sizeof(loc_buf), "RARCH_TEXTURE_%d", binding);
-         fragment_compiler.set_name(res.id, loc_buf);
-         fragment_compiler.unset_decoration(res.id, spv::DecorationDescriptorSet);
-         fragment_compiler.unset_decoration(res.id, spv::DecorationBinding);
-         texture_binding_fixups.push_back(binding);
-      }
-
-      std::string vertex_source     = vertex_compiler.compile();
-      std::string fragment_source   = fragment_compiler.compile();
-      GLuint vertex_shader   = gl3_compile_shader(GL_VERTEX_SHADER, vertex_source.c_str());
-      GLuint fragment_shader = gl3_compile_shader(GL_FRAGMENT_SHADER, fragment_source.c_str());
-
-      if (!vertex_shader || !fragment_shader)
-      {
-         RARCH_ERR("[GLCore] One or more shaders failed to compile.\n");
-         if (vertex_shader)
-            glDeleteShader(vertex_shader);
-         if (fragment_shader)
-            glDeleteShader(fragment_shader);
-         return 0;
-      }
-
-      program = glCreateProgram();
-      glAttachShader(program, vertex_shader);
-      glAttachShader(program, fragment_shader);
-      for (spirv_cross::Resource &res : vertex_resources.stage_inputs)
-      {
-         char loc_buf[64];
-         uint32_t _loc = vertex_compiler.get_decoration(res.id, spv::DecorationLocation);
-         snprintf(loc_buf, sizeof(loc_buf), "RARCH_ATTRIBUTE_%d", _loc);
-         glBindAttribLocation(program, _loc, loc_buf);
-      }
-      glLinkProgram(program);
-      glDeleteShader(vertex_shader);
-      glDeleteShader(fragment_shader);
-
-      GLint status;
-      glGetProgramiv(program, GL_LINK_STATUS, &status);
-      if (!status)
-      {
-         GLint length;
-         glGetProgramiv(program, GL_INFO_LOG_LENGTH, &length);
-         if (length > 0)
-         {
-            char *info_log = (char*)malloc(length);
-
-            if (info_log)
-            {
-               glGetProgramInfoLog(program, length, &length, info_log);
-               RARCH_ERR("[GLCore] Failed to link program: %s\n", info_log);
-               free(info_log);
-               glDeleteProgram(program);
-               return 0;
-            }
-         }
-      }
-
-      glUseProgram(program);
-
-      if (loc)
-      {
-         loc->flat_ubo_fragment            = -1;
-         loc->flat_ubo_vertex              = -1;
-         loc->flat_push_vertex             = -1;
-         loc->flat_push_fragment           = -1;
-         loc->buffer_index_ubo_vertex      = GL_INVALID_INDEX;
-         loc->buffer_index_ubo_fragment    = GL_INVALID_INDEX;
-         loc->buffer_index_push_vertex     = GL_INVALID_INDEX;
-         loc->buffer_index_push_fragment   = GL_INVALID_INDEX;
-
-         if (flatten)
-         {
-            loc->flat_ubo_vertex           = glGetUniformLocation(program, "RARCH_UBO_VERTEX");
-            loc->flat_ubo_fragment         = glGetUniformLocation(program, "RARCH_UBO_FRAGMENT");
-            loc->flat_push_vertex          = glGetUniformLocation(program, "RARCH_PUSH_VERTEX");
-            loc->flat_push_fragment        = glGetUniformLocation(program, "RARCH_PUSH_FRAGMENT");
-         }
-         else
-         {
-            loc->buffer_index_ubo_vertex   = glGetUniformBlockIndex(program, "RARCH_UBO_VERTEX");
-            loc->buffer_index_ubo_fragment = glGetUniformBlockIndex(program, "RARCH_UBO_FRAGMENT");
-         }
-      }
-
-      /* Force proper bindings for textures. */
-      for (uint32_t &binding : texture_binding_fixups)
-      {
-         char loc_buf[64];
-         snprintf(loc_buf, sizeof(loc_buf), "RARCH_TEXTURE_%d", binding);
-         GLint location = glGetUniformLocation(program, loc_buf);
-         if (location >= 0)
-            glUniform1i(location, binding);
-      }
-
-      glUseProgram(0);
-   }
-   catch (const std::exception &e)
-   {
-      RARCH_ERR("[GLCore] Failed to cross compile program: %s\n", e.what());
-      if (program != 0)
-         glDeleteProgram(program);
+   if (spvc_context_create(&ctx) != SPVC_SUCCESS)
       return 0;
+
+   if (   spvc_context_parse_spirv(ctx, (const SpvId*)vertex,
+            vertex_size / 4, &vs_ir) != SPVC_SUCCESS
+       || spvc_context_parse_spirv(ctx, (const SpvId*)fragment,
+            fragment_size / 4, &ps_ir) != SPVC_SUCCESS
+       || spvc_context_create_compiler(ctx, SPVC_BACKEND_GLSL, vs_ir,
+            SPVC_CAPTURE_MODE_TAKE_OWNERSHIP, &vs_compiler) != SPVC_SUCCESS
+       || spvc_context_create_compiler(ctx, SPVC_BACKEND_GLSL, ps_ir,
+            SPVC_CAPTURE_MODE_TAKE_OWNERSHIP, &ps_compiler) != SPVC_SUCCESS
+       || spvc_compiler_create_shader_resources(vs_compiler,
+            &vs_resources) != SPVC_SUCCESS
+       || spvc_compiler_create_shader_resources(ps_compiler,
+            &ps_resources) != SPVC_SUCCESS
+       || spvc_compiler_create_compiler_options(vs_compiler,
+            &vs_opts) != SPVC_SUCCESS
+       || spvc_compiler_create_compiler_options(ps_compiler,
+            &ps_opts) != SPVC_SUCCESS)
+      goto error;
+
+   for (i = 0; i < 2; i++)
+   {
+      spvc_compiler_options o = i ? ps_opts : vs_opts;
+      spvc_compiler_options_set_bool(o, SPVC_COMPILER_OPTION_GLSL_ES,
+#ifdef HAVE_OPENGLES3
+            SPVC_TRUE
+#else
+            SPVC_FALSE
+#endif
+            );
+      spvc_compiler_options_set_uint(o, SPVC_COMPILER_OPTION_GLSL_VERSION,
+            gl3_get_cross_compiler_target_version());
+      spvc_compiler_options_set_bool(o,
+            SPVC_COMPILER_OPTION_GLSL_ES_DEFAULT_FLOAT_PRECISION_HIGHP,
+            SPVC_TRUE);
+      spvc_compiler_options_set_bool(o,
+            SPVC_COMPILER_OPTION_GLSL_ES_DEFAULT_INT_PRECISION_HIGHP,
+            SPVC_TRUE);
+      spvc_compiler_options_set_bool(o,
+            SPVC_COMPILER_OPTION_GLSL_ENABLE_420PACK_EXTENSION, SPVC_FALSE);
    }
 
+   if (   spvc_compiler_install_compiler_options(vs_compiler,
+            vs_opts) != SPVC_SUCCESS
+       || spvc_compiler_install_compiler_options(ps_compiler,
+            ps_opts) != SPVC_SUCCESS)
+      goto error;
+
+   if (!gl3_spvc_list(vs_resources, SPVC_RESOURCE_TYPE_STAGE_INPUT,
+            &vs_inputs, &num_vs_inputs))
+      goto error;
+   gl3_spvc_rename_by_location(vs_compiler, vs_inputs, num_vs_inputs,
+         "RARCH_ATTRIBUTE_");
+
+   if (!gl3_spvc_list(vs_resources, SPVC_RESOURCE_TYPE_STAGE_OUTPUT,
+            &list, &count))
+      goto error;
+   gl3_spvc_rename_by_location(vs_compiler, list, count, "RARCH_VARYING_");
+
+   if (!gl3_spvc_list(ps_resources, SPVC_RESOURCE_TYPE_STAGE_INPUT,
+            &list, &count))
+      goto error;
+   gl3_spvc_rename_by_location(ps_compiler, list, count, "RARCH_VARYING_");
+
+   if (!gl3_spvc_list(vs_resources, SPVC_RESOURCE_TYPE_PUSH_CONSTANT,
+            &list, &count))
+      goto error;
+   if (count > 1)
+   {
+      RARCH_ERR("[GLCore] Cannot have more than one push constant buffer.\n");
+      goto error;
+   }
+   for (i = 0; i < count; i++)
+   {
+      spvc_compiler_set_name(vs_compiler, list[i].id,
+            "RARCH_PUSH_VERTEX_INSTANCE");
+      spvc_compiler_set_name(vs_compiler, list[i].base_type_id,
+            "RARCH_PUSH_VERTEX");
+   }
+
+   if (!gl3_spvc_list(vs_resources, SPVC_RESOURCE_TYPE_UNIFORM_BUFFER,
+            &list, &count))
+      goto error;
+   if (count > 1)
+   {
+      RARCH_ERR("[GLCore] Cannot have more than one uniform buffer.\n");
+      goto error;
+   }
+   for (i = 0; i < count; i++)
+   {
+      if (flatten)
+         spvc_compiler_flatten_buffer_block(vs_compiler, list[i].id);
+      spvc_compiler_set_name(vs_compiler, list[i].id,
+            "RARCH_UBO_VERTEX_INSTANCE");
+      spvc_compiler_set_name(vs_compiler, list[i].base_type_id,
+            "RARCH_UBO_VERTEX");
+      spvc_compiler_unset_decoration(vs_compiler, list[i].id,
+            SpvDecorationDescriptorSet);
+      spvc_compiler_unset_decoration(vs_compiler, list[i].id,
+            SpvDecorationBinding);
+   }
+
+   if (!gl3_spvc_list(ps_resources, SPVC_RESOURCE_TYPE_PUSH_CONSTANT,
+            &list, &count))
+      goto error;
+   if (count > 1)
+   {
+      RARCH_ERR("[GLCore] Cannot have more than one push constant block.\n");
+      goto error;
+   }
+   for (i = 0; i < count; i++)
+   {
+      spvc_compiler_set_name(ps_compiler, list[i].id,
+            "RARCH_PUSH_FRAGMENT_INSTANCE");
+      spvc_compiler_set_name(ps_compiler, list[i].base_type_id,
+            "RARCH_PUSH_FRAGMENT");
+   }
+
+   if (!gl3_spvc_list(ps_resources, SPVC_RESOURCE_TYPE_UNIFORM_BUFFER,
+            &list, &count))
+      goto error;
+   if (count > 1)
+   {
+      RARCH_ERR("[GLCore] Cannot have more than one uniform buffer.\n");
+      goto error;
+   }
+   for (i = 0; i < count; i++)
+   {
+      if (flatten)
+         spvc_compiler_flatten_buffer_block(ps_compiler, list[i].id);
+      spvc_compiler_set_name(ps_compiler, list[i].id,
+            "RARCH_UBO_FRAGMENT_INSTANCE");
+      spvc_compiler_set_name(ps_compiler, list[i].base_type_id,
+            "RARCH_UBO_FRAGMENT");
+      spvc_compiler_unset_decoration(ps_compiler, list[i].id,
+            SpvDecorationDescriptorSet);
+      spvc_compiler_unset_decoration(ps_compiler, list[i].id,
+            SpvDecorationBinding);
+   }
+
+   if (!gl3_spvc_list(ps_resources, SPVC_RESOURCE_TYPE_SAMPLED_IMAGE,
+            &list, &count))
+      goto error;
+   if (count)
+   {
+      if (!(texture_fixups = (uint32_t*)malloc(count * sizeof(*texture_fixups))))
+         goto error;
+      for (i = 0; i < count; i++)
+      {
+         char name[64];
+         unsigned binding = spvc_compiler_get_decoration(ps_compiler,
+               list[i].id, SpvDecorationBinding);
+         snprintf(name, sizeof(name), "RARCH_TEXTURE_%u", binding);
+         spvc_compiler_set_name(ps_compiler, list[i].id, name);
+         spvc_compiler_unset_decoration(ps_compiler, list[i].id,
+               SpvDecorationDescriptorSet);
+         spvc_compiler_unset_decoration(ps_compiler, list[i].id,
+               SpvDecorationBinding);
+         texture_fixups[num_texture_fixups++] = binding;
+      }
+   }
+
+   if (   spvc_compiler_compile(vs_compiler, &vertex_source) != SPVC_SUCCESS
+       || spvc_compiler_compile(ps_compiler, &fragment_source) != SPVC_SUCCESS)
+      goto error;
+
+   vertex_shader   = gl3_compile_shader(GL_VERTEX_SHADER, vertex_source);
+   fragment_shader = gl3_compile_shader(GL_FRAGMENT_SHADER, fragment_source);
+
+   if (!vertex_shader || !fragment_shader)
+   {
+      RARCH_ERR("[GLCore] One or more shaders failed to compile.\n");
+      if (vertex_shader)
+         glDeleteShader(vertex_shader);
+      if (fragment_shader)
+         glDeleteShader(fragment_shader);
+      goto error;
+   }
+
+   program = glCreateProgram();
+   glAttachShader(program, vertex_shader);
+   glAttachShader(program, fragment_shader);
+
+   for (i = 0; i < num_vs_inputs; i++)
+   {
+      char name[64];
+      unsigned _loc = spvc_compiler_get_decoration(vs_compiler,
+            vs_inputs[i].id, SpvDecorationLocation);
+      snprintf(name, sizeof(name), "RARCH_ATTRIBUTE_%u", _loc);
+      glBindAttribLocation(program, _loc, name);
+   }
+
+   glLinkProgram(program);
+   glDeleteShader(vertex_shader);
+   glDeleteShader(fragment_shader);
+
+   glGetProgramiv(program, GL_LINK_STATUS, &status);
+   if (!status)
+   {
+      GLint length;
+      glGetProgramiv(program, GL_INFO_LOG_LENGTH, &length);
+      if (length > 0)
+      {
+         char *info_log = (char*)malloc(length);
+
+         if (info_log)
+         {
+            glGetProgramInfoLog(program, length, &length, info_log);
+            RARCH_ERR("[GLCore] Failed to link program: %s\n", info_log);
+            free(info_log);
+            glDeleteProgram(program);
+            program = 0;
+            goto error;
+         }
+      }
+   }
+
+   glUseProgram(program);
+
+   if (loc)
+   {
+      loc->flat_ubo_fragment            = -1;
+      loc->flat_ubo_vertex              = -1;
+      loc->flat_push_vertex             = -1;
+      loc->flat_push_fragment           = -1;
+      loc->buffer_index_ubo_vertex      = GL_INVALID_INDEX;
+      loc->buffer_index_ubo_fragment    = GL_INVALID_INDEX;
+      loc->buffer_index_push_vertex     = GL_INVALID_INDEX;
+      loc->buffer_index_push_fragment   = GL_INVALID_INDEX;
+
+      if (flatten)
+      {
+         loc->flat_ubo_vertex           = glGetUniformLocation(program, "RARCH_UBO_VERTEX");
+         loc->flat_ubo_fragment         = glGetUniformLocation(program, "RARCH_UBO_FRAGMENT");
+         loc->flat_push_vertex          = glGetUniformLocation(program, "RARCH_PUSH_VERTEX");
+         loc->flat_push_fragment        = glGetUniformLocation(program, "RARCH_PUSH_FRAGMENT");
+      }
+      else
+      {
+         loc->buffer_index_ubo_vertex   = glGetUniformBlockIndex(program, "RARCH_UBO_VERTEX");
+         loc->buffer_index_ubo_fragment = glGetUniformBlockIndex(program, "RARCH_UBO_FRAGMENT");
+      }
+   }
+
+   /* Force proper bindings for textures. */
+   for (i = 0; i < num_texture_fixups; i++)
+   {
+      char name[64];
+      GLint location;
+      snprintf(name, sizeof(name), "RARCH_TEXTURE_%u", texture_fixups[i]);
+      if ((location = glGetUniformLocation(program, name)) >= 0)
+         glUniform1i(location, texture_fixups[i]);
+   }
+
+   glUseProgram(0);
+
+   free(texture_fixups);
+   spvc_context_destroy(ctx);
    return program;
+
+error:
+   if (ctx)
+   {
+      const char *err = spvc_context_get_last_error_string(ctx);
+      if (err && *err)
+         RARCH_ERR("[GLCore] Failed to cross compile program: %s\n", err);
+      spvc_context_destroy(ctx);
+   }
+   free(texture_fixups);
+   if (program != 0)
+      glDeleteProgram(program);
+   return 0;
 }
 
 #ifdef GL3_HAVE_SPIRV_BINARY
