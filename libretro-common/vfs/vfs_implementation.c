@@ -1927,6 +1927,60 @@ int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
 #endif
    return ret;
 
+#elif defined(VITA)
+   /* rename() here means "replace": the Win32 branch above says so
+    * with MOVEFILE_REPLACE_EXISTING and POSIX says so by definition,
+    * and the write-to-temporary-then-rename pattern - playlists, the
+    * config file, core info - is built on it.  The kernel's own
+    * sceIoRename() refuses an existing destination, and newlib's
+    * rename() bridges that gap by sceIoRemove()ing the destination
+    * first and renaming after.  Between those two calls nothing is
+    * on disk, and if the rename then fails the caller's temporary
+    * is discarded on top: the file that was being replaced is
+    * simply gone.
+    *
+    * So call the kernel directly and, when the destination is in the
+    * way, move it aside rather than delete it.  The old file is only
+    * removed once its replacement is in place, and is put back if
+    * the replacement cannot be. */
+   {
+      SceIoStat st;
+      size_t _len;
+      char *aside;
+      int ret;
+
+      if (!old_path || !*old_path || !new_path || !*new_path)
+         return -1;
+
+      if (sceIoRename(old_path, new_path) >= 0)
+         return 0;
+
+      /* Only worth trying when there is a destination to move aside. */
+      if (sceIoGetstat(new_path, &st) < 0)
+         return -1;
+
+      _len  = strlen(new_path);
+      if (!(aside = (char*)malloc(_len + sizeof(".old"))))
+         return -1;
+      memcpy(aside, new_path, _len);
+      memcpy(aside + _len, ".old", sizeof(".old"));
+
+      ret = -1;
+      sceIoRemove(aside);              /* a leftover from an earlier run */
+      if (sceIoRename(new_path, aside) >= 0)
+      {
+         if (sceIoRename(old_path, new_path) >= 0)
+         {
+            sceIoRemove(aside);
+            ret = 0;
+         }
+         else
+            sceIoRename(aside, new_path);
+      }
+
+      free(aside);
+      return ret;
+   }
 #else
    /* Every other platform */
    if (!old_path || !*old_path || !new_path || !*new_path)
