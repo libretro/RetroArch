@@ -27,6 +27,7 @@
 #include <string.h>
 
 #include <compat/strl.h>
+#include <string/stdstring.h>
 #include <formats/image.h>
 #include <retro_miscellaneous.h>
 
@@ -989,12 +990,13 @@ public:
 
    void set_name(const char *name)
    {
-      pass_name = name;
+      free(pass_name);
+      pass_name = name ? strdup(name) : NULL;
    }
 
-   const std::string &get_name() const
+   const char *get_name() const
    {
-      return pass_name;
+      return pass_name ? pass_name : "";
    }
 
    glslang_filter_chain_filter get_source_filter() const
@@ -1027,7 +1029,7 @@ public:
       pass_number = pass;
    }
 
-   void add_parameter(unsigned parameter_index, const std::string &id);
+   void add_parameter(unsigned parameter_index, const char *id);
 
    void end_frame();
    void allocate_buffers();
@@ -1045,8 +1047,10 @@ private:
    gl3_viewport curr_vp;
    gl3_filter_chain_pass_info pass_info;
 
-   std::vector<uint32_t> vertex_shader;
-   std::vector<uint32_t> fragment_shader;
+   uint32_t *vertex_shader        = NULL;
+   size_t num_vertex_shader       = 0;
+   uint32_t *fragment_shader      = NULL;
+   size_t num_fragment_shader     = 0;
    struct gl3_framebuffer *framebuffer          = NULL;
    struct gl3_framebuffer *framebuffer_feedback = NULL;
 
@@ -1061,7 +1065,8 @@ private:
        * default constructor doing this implicitly. */
       slang_reflection reflection = {};
 
-   std::vector<uint8_t> uniforms;
+   uint8_t *uniforms              = NULL;
+   size_t uniforms_size           = 0;
 
    void build_semantics(uint8_t *buffer,
                         const float *mvp,
@@ -1105,18 +1110,23 @@ private:
 #endif /* GL3_ROLLING_SCANLINE_SIMULATION */
 
    size_t ubo_offset = 0;
-   std::string pass_name;
+   char *pass_name   = NULL;   /* owned */
 
    struct Parameter
    {
-      std::string id;
+      char *id;                /* owned */
       unsigned index;
       unsigned semantic_index;
    };
 
-   std::vector<Parameter> parameters;
-   std::vector<Parameter> filtered_parameters;
-   std::vector<uint8_t> push_constant_buffer;
+   struct Parameter *parameters      = NULL;
+   size_t num_parameters             = 0;
+   /* Indices into parameters[]; the vector of copies this replaces stayed
+    * valid across a push_back reallocation, and indices do too. */
+   unsigned *filtered_parameters     = NULL;
+   size_t num_filtered_parameters    = 0;
+   uint8_t *push_constant_buffer     = NULL;
+   size_t push_constant_buffer_size  = 0;
    gl3_buffer_locations locations = {};
    struct gl3_ubo_ring ubo_ring;
    /* Only allocated on the GL_ARB_gl_spirv path, where the push constant
@@ -1126,8 +1136,8 @@ private:
     * cannot be used to find individual block members. */
    bool spirv_binary = false;
 
-   void reflect_parameter(const std::string &name, slang_semantic_meta &meta);
-   void reflect_parameter(const std::string &name, slang_texture_semantic_meta &meta);
+   void reflect_parameter(const char *name, slang_semantic_meta &meta);
+   void reflect_parameter(const char *name, slang_texture_semantic_meta &meta);
    void reflect_parameter_array(const char *name, slang_texture_semantic_array &meta);
 };
 
@@ -1146,10 +1156,10 @@ bool Pass::build()
       framebuffer = gl3_framebuffer_new(pass_info.rt_format,
             pass_info.max_levels);
 
-   for (i = 0; i < parameters.size(); i++)
+   for (i = 0; i < num_parameters; i++)
    {
       if (!slang_semantic_name_map_set_unique(
-               &semantic_map, parameters[i].id.c_str(), NULL,
+               &semantic_map, parameters[i].id, NULL,
                SLANG_SEMANTIC_FLOAT_PARAMETER, j))
       {
          slang_semantic_name_map_free(&semantic_map);
@@ -1171,8 +1181,8 @@ bool Pass::build()
 
    {
       bool refl_ok = slang_reflect_spirv(
-            vertex_shader.data(), vertex_shader.size(),
-            fragment_shader.data(), fragment_shader.size(),
+            vertex_shader, num_vertex_shader,
+            fragment_shader, num_fragment_shader,
             &reflection);
       /* The parameter map is only needed during reflection; the
        * reflection keeps a dangling pointer otherwise. */
@@ -1183,13 +1193,21 @@ bool Pass::build()
    }
 
    /* Filter out parameters which we will never use anyways. */
-   filtered_parameters.clear();
+   num_filtered_parameters = 0;
 
    for (i = 0; i < reflection.num_float_parameters; i++)
    {
       if (reflection.semantic_float_parameters[i].uniform ||
           reflection.semantic_float_parameters[i].push_constant)
-         filtered_parameters.push_back(parameters[i]);
+      {
+         unsigned *next = (unsigned*)realloc(filtered_parameters,
+               (num_filtered_parameters + 1) * sizeof(*filtered_parameters));
+         if (!next)
+            return false;
+         filtered_parameters                          = next;
+         filtered_parameters[num_filtered_parameters] = i;
+         num_filtered_parameters++;
+      }
    }
 
    if (!init_pipeline())
@@ -1198,15 +1216,28 @@ bool Pass::build()
    return true;
 }
 
-void Pass::reflect_parameter(const std::string &name, slang_semantic_meta &meta)
+/* The four instance-block prefixes are literals, so the qualified name
+ * fits a fixed buffer the same way reflect_parameter_array's does. */
+static int gl3_uniform_location_prefixed(GLuint pipeline,
+      const char *prefix, const char *name)
+{
+   char n[256];
+   size_t _len = strlcpy(n, prefix, sizeof(n));
+   strlcpy(n + _len, name, sizeof(n) - _len);
+   return glGetUniformLocation(pipeline, n);
+}
+
+void Pass::reflect_parameter(const char *name, slang_semantic_meta &meta)
 {
    if (spirv_binary)
       return;
 
    if (meta.uniform)
    {
-      int vert = glGetUniformLocation(pipeline, (std::string("RARCH_UBO_VERTEX_INSTANCE.") + name).c_str());
-      int frag = glGetUniformLocation(pipeline, (std::string("RARCH_UBO_FRAGMENT_INSTANCE.") + name).c_str());
+      int vert = gl3_uniform_location_prefixed(pipeline,
+            "RARCH_UBO_VERTEX_INSTANCE.", name);
+      int frag = gl3_uniform_location_prefixed(pipeline,
+            "RARCH_UBO_FRAGMENT_INSTANCE.", name);
 
       if (vert >= 0)
          meta.location.ubo_vertex = vert;
@@ -1216,8 +1247,10 @@ void Pass::reflect_parameter(const std::string &name, slang_semantic_meta &meta)
 
    if (meta.push_constant)
    {
-      int vert = glGetUniformLocation(pipeline, (std::string("RARCH_PUSH_VERTEX_INSTANCE.") + name).c_str());
-      int frag = glGetUniformLocation(pipeline, (std::string("RARCH_PUSH_FRAGMENT_INSTANCE.") + name).c_str());
+      int vert = gl3_uniform_location_prefixed(pipeline,
+            "RARCH_PUSH_VERTEX_INSTANCE.", name);
+      int frag = gl3_uniform_location_prefixed(pipeline,
+            "RARCH_PUSH_FRAGMENT_INSTANCE.", name);
 
       if (vert >= 0)
          meta.location.push_vertex = vert;
@@ -1226,15 +1259,17 @@ void Pass::reflect_parameter(const std::string &name, slang_semantic_meta &meta)
    }
 }
 
-void Pass::reflect_parameter(const std::string &name, slang_texture_semantic_meta &meta)
+void Pass::reflect_parameter(const char *name, slang_texture_semantic_meta &meta)
 {
    if (spirv_binary)
       return;
 
    if (meta.uniform)
    {
-      int vert = glGetUniformLocation(pipeline, (std::string("RARCH_UBO_VERTEX_INSTANCE.") + name).c_str());
-      int frag = glGetUniformLocation(pipeline, (std::string("RARCH_UBO_FRAGMENT_INSTANCE.") + name).c_str());
+      int vert = gl3_uniform_location_prefixed(pipeline,
+            "RARCH_UBO_VERTEX_INSTANCE.", name);
+      int frag = gl3_uniform_location_prefixed(pipeline,
+            "RARCH_UBO_FRAGMENT_INSTANCE.", name);
 
       if (vert >= 0)
          meta.location.ubo_vertex = vert;
@@ -1244,8 +1279,10 @@ void Pass::reflect_parameter(const std::string &name, slang_texture_semantic_met
 
    if (meta.push_constant)
    {
-      int vert = glGetUniformLocation(pipeline, (std::string("RARCH_PUSH_VERTEX_INSTANCE.") + name).c_str());
-      int frag = glGetUniformLocation(pipeline, (std::string("RARCH_PUSH_FRAGMENT_INSTANCE.") + name).c_str());
+      int vert = gl3_uniform_location_prefixed(pipeline,
+            "RARCH_PUSH_VERTEX_INSTANCE.", name);
+      int frag = gl3_uniform_location_prefixed(pipeline,
+            "RARCH_PUSH_FRAGMENT_INSTANCE.", name);
 
       if (vert >= 0)
          meta.location.push_vertex = vert;
@@ -1338,8 +1375,8 @@ bool Pass::init_pipeline()
       unsigned push_binding = (reflection.ubo_binding == 0) ? 1 : 0;
 
       if ((pipeline = gl3_spirv_link_program(
-                  vertex_shader.data(),   vertex_shader.size(),
-                  fragment_shader.data(), fragment_shader.size(),
+                  vertex_shader,   num_vertex_shader,
+                  fragment_shader, num_fragment_shader,
                   push_binding)))
       {
          spirv_binary                       = true;
@@ -1375,17 +1412,34 @@ bool Pass::init_pipeline()
    if (!pipeline)
    {
       if (!(pipeline = gl3_cross_compile_program(
-                  vertex_shader.data(),   vertex_shader.size()   * sizeof(uint32_t),
-                  fragment_shader.data(), fragment_shader.size() * sizeof(uint32_t),
+                  vertex_shader,   num_vertex_shader   * sizeof(uint32_t),
+                  fragment_shader, num_fragment_shader * sizeof(uint32_t),
                   &locations, false)))
          return false;
    }
 
-   uniforms.resize(reflection.ubo_size);
+   free(uniforms);
+   uniforms      = NULL;
+   uniforms_size = 0;
+   if (reflection.ubo_size)
+   {
+      if (!(uniforms = (uint8_t*)calloc(1, reflection.ubo_size)))
+         return false;
+      uniforms_size = reflection.ubo_size;
+   }
    if (reflection.ubo_size)
       gl3_ubo_ring_init(&ubo_ring, reflection.ubo_size);
 
-   push_constant_buffer.resize(reflection.push_constant_size);
+   free(push_constant_buffer);
+   push_constant_buffer      = NULL;
+   push_constant_buffer_size = 0;
+   if (reflection.push_constant_size)
+   {
+      if (!(push_constant_buffer = (uint8_t*)calloc(1,
+                  reflection.push_constant_size)))
+         return false;
+      push_constant_buffer_size = reflection.push_constant_size;
+   }
    if (     locations.buffer_index_push_vertex   != GL_INVALID_INDEX
          || locations.buffer_index_push_fragment != GL_INVALID_INDEX)
    {
@@ -1439,9 +1493,16 @@ bool Pass::init_pipeline()
          reflect_parameter(ent->name, array.data[ent->index]);
    }
 
-   for (Parameter &m : filtered_parameters)
-      if (m.semantic_index < reflection.num_float_parameters)
-         reflect_parameter(m.id, reflection.semantic_float_parameters[m.semantic_index]);
+   {
+      size_t f;
+      for (f = 0; f < num_filtered_parameters; f++)
+      {
+         const struct Parameter *m = &parameters[filtered_parameters[f]];
+         if (m->semantic_index < reflection.num_float_parameters)
+            reflect_parameter(m->id,
+                  reflection.semantic_float_parameters[m->semantic_index]);
+      }
+   }
 
    return true;
 }
@@ -1558,7 +1619,7 @@ void Pass::build_semantic_vec4(uint8_t *data, slang_semantic semantic,
       else
       {
          float *_data = reinterpret_cast<float *>
-               (push_constant_buffer.data() + refl->push_constant_offset);
+               (push_constant_buffer + refl->push_constant_offset);
          _data[0]     = (float)(width);
          _data[1]     = (float)(height);
          _data[2]     = 1.0f / (float)(width);
@@ -1596,7 +1657,7 @@ void Pass::build_semantic_parameter(uint8_t *data, unsigned index, float value)
             glUniform1f(refl->location.push_fragment, value);
       }
       else
-         *reinterpret_cast<float *>(push_constant_buffer.data() + refl->push_constant_offset) = value;
+         *reinterpret_cast<float *>(push_constant_buffer + refl->push_constant_offset) = value;
    }
 }
 
@@ -1628,7 +1689,7 @@ void Pass::build_semantic_uint(uint8_t *data, slang_semantic semantic,
             glUniform1ui(refl.location.push_fragment, value);
       }
       else
-         *reinterpret_cast<uint32_t *>(push_constant_buffer.data() + refl.push_constant_offset) = value;
+         *reinterpret_cast<uint32_t *>(push_constant_buffer + refl.push_constant_offset) = value;
    }
 }
 
@@ -1660,7 +1721,7 @@ void Pass::build_semantic_int(uint8_t *data, slang_semantic semantic,
             glUniform1i(refl.location.push_fragment, value);
       }
       else
-         *reinterpret_cast<int32_t *>(push_constant_buffer.data() + refl.push_constant_offset) = value;
+         *reinterpret_cast<int32_t *>(push_constant_buffer + refl.push_constant_offset) = value;
    }
 }
 
@@ -1692,7 +1753,7 @@ void Pass::build_semantic_float(uint8_t *data, slang_semantic semantic,
             glUniform1f(refl.location.push_fragment, value);
       }
       else
-         *reinterpret_cast<float *>(push_constant_buffer.data() + refl.push_constant_offset) = value;
+         *reinterpret_cast<float *>(push_constant_buffer + refl.push_constant_offset) = value;
    }
 }
 
@@ -1724,7 +1785,7 @@ void Pass::build_semantic_vec3(uint8_t *data, slang_semantic semantic,
             glUniform3fv(refl.location.push_fragment, 1, values);
       }
       else
-         memcpy(push_constant_buffer.data() + refl.push_constant_offset, values, 3 * sizeof(float));
+         memcpy(push_constant_buffer + refl.push_constant_offset, values, 3 * sizeof(float));
    }
 }
 
@@ -1786,7 +1847,7 @@ void Pass::build_semantic_texture_array_vec4(uint8_t *data, slang_texture_semant
       }
       else
       {
-         float *_data = reinterpret_cast<float *>(push_constant_buffer.data() + refl->push_constant_offset);
+         float *_data = reinterpret_cast<float *>(push_constant_buffer + refl->push_constant_offset);
          _data[0]     = (float)(width);
          _data[1]     = (float)(height);
          _data[2]     = 1.0f / (float)(width);
@@ -1822,6 +1883,19 @@ Pass::~Pass()
    /* likewise ~UBORing, which ran as a member destructor */
    gl3_ubo_ring_free(&ubo_ring);
    gl3_ubo_ring_free(&push_ring);
+   /* and the string / vector members these replaced */
+   {
+      size_t p;
+      for (p = 0; p < num_parameters; p++)
+         free(parameters[p].id);
+   }
+   free(parameters);
+   free(filtered_parameters);
+   free(pass_name);
+   free(vertex_shader);
+   free(fragment_shader);
+   free(uniforms);
+   free(push_constant_buffer);
    slang_reflection_free(&reflection);
 }
 
@@ -1832,23 +1906,47 @@ void Pass::set_shader(GLenum stage,
    switch (stage)
    {
       case GL_VERTEX_SHADER:
-         vertex_shader.clear();
-         vertex_shader.insert(end(vertex_shader),
-               spirv, spirv + spirv_words);
+         free(vertex_shader);
+         vertex_shader     = NULL;
+         num_vertex_shader = 0;
+         if (spirv_words &&
+               (vertex_shader = (uint32_t*)malloc(
+                     spirv_words * sizeof(uint32_t))))
+         {
+            memcpy(vertex_shader, spirv, spirv_words * sizeof(uint32_t));
+            num_vertex_shader = spirv_words;
+         }
          break;
       case GL_FRAGMENT_SHADER:
-         fragment_shader.clear();
-         fragment_shader.insert(end(fragment_shader),
-               spirv, spirv + spirv_words);
+         free(fragment_shader);
+         fragment_shader     = NULL;
+         num_fragment_shader = 0;
+         if (spirv_words &&
+               (fragment_shader = (uint32_t*)malloc(
+                     spirv_words * sizeof(uint32_t))))
+         {
+            memcpy(fragment_shader, spirv, spirv_words * sizeof(uint32_t));
+            num_fragment_shader = spirv_words;
+         }
          break;
       default:
          break;
    }
 }
 
-void Pass::add_parameter(unsigned index, const std::string &id)
+void Pass::add_parameter(unsigned index, const char *id)
 {
-   parameters.push_back({ id, index, unsigned(parameters.size()) });
+   struct Parameter *next = (struct Parameter*)realloc(parameters,
+         (num_parameters + 1) * sizeof(*parameters));
+
+   if (!next)
+      return;
+
+   parameters                        = next;
+   parameters[num_parameters].id     = id ? strdup(id) : NULL;
+   parameters[num_parameters].index  = index;
+   parameters[num_parameters].semantic_index = (unsigned)num_parameters;
+   num_parameters++;
 }
 
 void Pass::set_semantic_texture(slang_texture_semantic semantic,
@@ -1909,11 +2007,11 @@ void Pass::build_semantics(uint8_t *buffer,
          SLANG_SEMANTIC_MVP].push_constant_offset;
 
       if (mvp)
-         memcpy(push_constant_buffer.data() + offset,
+         memcpy(push_constant_buffer + offset,
                mvp, sizeof(float) * 16);
       else
          gl3_build_default_matrix(reinterpret_cast<float *>(
-                  push_constant_buffer.data() + offset));
+                  push_constant_buffer + offset));
    }
 
    /* Output information */
@@ -1973,11 +2071,12 @@ void Pass::build_semantics(uint8_t *buffer,
          SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, 0, original);
 
    /* Parameters. */
-   for (i = 0; i < filtered_parameters.size(); i++)
-      build_semantic_parameter(buffer,
-            filtered_parameters[i].semantic_index,
-            common->shader_preset->parameters[
-            filtered_parameters[i].index].current);
+   for (i = 0; i < num_filtered_parameters; i++)
+   {
+      const struct Parameter *m = &parameters[filtered_parameters[i]];
+      build_semantic_parameter(buffer, m->semantic_index,
+            common->shader_preset->parameters[m->index].current);
+   }
 
    /* Previous inputs. */
    for (i = 0; i < common->num_original_history; i++)
@@ -2024,27 +2123,27 @@ void Pass::build_commands(
 
    glUseProgram(pipeline);
 
-   build_semantics(uniforms.data(), mvp, original, source);
+   build_semantics(uniforms, mvp, original, source);
 
    if (locations.flat_ubo_vertex >= 0)
       glUniform4fv(locations.flat_ubo_vertex,
                    GLsizei((reflection.ubo_size + 15) / 16),
-                   reinterpret_cast<const float *>(uniforms.data()));
+                   reinterpret_cast<const float *>(uniforms));
 
    if (locations.flat_ubo_fragment >= 0)
       glUniform4fv(locations.flat_ubo_fragment,
                    GLsizei((reflection.ubo_size + 15) / 16),
-                   reinterpret_cast<const float *>(uniforms.data()));
+                   reinterpret_cast<const float *>(uniforms));
 
    if (locations.flat_push_vertex >= 0)
       glUniform4fv(locations.flat_push_vertex,
                    GLsizei((reflection.push_constant_size + 15) / 16),
-                   reinterpret_cast<const float *>(push_constant_buffer.data()));
+                   reinterpret_cast<const float *>(push_constant_buffer));
 
    if (locations.flat_push_fragment >= 0)
       glUniform4fv(locations.flat_push_fragment,
                    GLsizei((reflection.push_constant_size + 15) / 16),
-                   reinterpret_cast<const float *>(push_constant_buffer.data()));
+                   reinterpret_cast<const float *>(push_constant_buffer));
 
    if (!(      locations.buffer_index_ubo_vertex   == GL_INVALID_INDEX
             && locations.buffer_index_ubo_fragment == GL_INVALID_INDEX))
@@ -2052,7 +2151,7 @@ void Pass::build_commands(
       /* UBO Ring - update and bind */
       unsigned vertex_binding   = locations.buffer_index_ubo_vertex;
       unsigned fragment_binding = locations.buffer_index_ubo_fragment;
-      const void *data          = uniforms.data();
+      const void *data          = uniforms;
       size_t _len               = reflection.ubo_size;
       GLuint id                 = ubo_ring.buffers[ubo_ring.buffer_index];
 
@@ -2077,7 +2176,7 @@ void Pass::build_commands(
        * constant block in a uniform buffer of its own. */
       unsigned vertex_binding   = locations.buffer_index_push_vertex;
       unsigned fragment_binding = locations.buffer_index_push_fragment;
-      const void *data          = push_constant_buffer.data();
+      const void *data          = push_constant_buffer;
       size_t _len               = reflection.push_constant_size;
       GLuint id                 = push_ring.buffers[push_ring.buffer_index];
 
@@ -2266,7 +2365,7 @@ public:
    void set_pass_name(unsigned pass, const char *name);
 
    bool add_static_texture(const struct gl3_shader::gl3_static_texture *texture);
-   void add_parameter(unsigned pass, unsigned parameter_index, const std::string &id);
+   void add_parameter(unsigned pass, unsigned parameter_index, const char *id);
    void set_num_passes(unsigned passes);
 
 private:
@@ -2585,29 +2684,29 @@ bool gl3_filter_chain::init_alias()
    for (i = 0; i < (int)passes.size(); i++)
    {
       unsigned j;
-      const std::string name = passes[i]->get_name();
-      if (name.empty())
+      const char *name = passes[i]->get_name();
+      if (string_is_empty(name))
          continue;
 
-      j = (unsigned)(&passes[i] - passes.data());
+      j = (unsigned)i;
 
       if (!slang_texture_semantic_name_map_set_unique(
-               &common.texture_semantic_map, name.c_str(), NULL,
+               &common.texture_semantic_map, name, NULL,
                SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, j))
          return false;
 
       if (!slang_texture_semantic_name_map_set_unique(
-               &common.texture_semantic_uniform_map, name.c_str(), "Size",
+               &common.texture_semantic_uniform_map, name, "Size",
                SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, j))
          return false;
 
       if (!slang_texture_semantic_name_map_set_unique(
-               &common.texture_semantic_map, name.c_str(), "Feedback",
+               &common.texture_semantic_map, name, "Feedback",
                SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, j))
          return false;
 
       if (!slang_texture_semantic_name_map_set_unique(
-               &common.texture_semantic_uniform_map, name.c_str(),
+               &common.texture_semantic_uniform_map, name,
                "FeedbackSize",
                SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, j))
          return false;
@@ -2660,7 +2759,7 @@ void gl3_filter_chain::set_shader(unsigned pass, GLenum stage, const uint32_t *s
 }
 
 void gl3_filter_chain::add_parameter(unsigned pass,
-      unsigned index, const std::string &id)
+      unsigned index, const char *id)
 {
    passes[pass]->add_parameter(index, id);
 }
@@ -2676,9 +2775,9 @@ bool gl3_filter_chain::init()
    for (i = 0; i < passes.size(); i++)
    {
       RARCH_LOG("[GLCore] Building pass #%u (%s)\n", i,
-            passes[i]->get_name().empty() ?
+            string_is_empty(passes[i]->get_name()) ?
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE) :
-            passes[i]->get_name().c_str());
+            passes[i]->get_name());
 
       passes[i]->set_pass_info(pass_info[i]);
       if (!passes[i]->build())
@@ -2702,9 +2801,9 @@ bool gl3_filter_chain::init_single_pass(unsigned pass_idx)
       return false;
 
    RARCH_LOG("[GLCore] Building pass #%u (%s)\n", pass_idx,
-         passes[pass_idx]->get_name().empty() ?
+         string_is_empty(passes[pass_idx]->get_name()) ?
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE) :
-         passes[pass_idx]->get_name().c_str());
+         passes[pass_idx]->get_name());
 
    passes[pass_idx]->set_pass_info(pass_info[pass_idx]);
    if (!passes[pass_idx]->build())
@@ -2817,7 +2916,7 @@ bool gl3_filter_chain::compile_full_pass(unsigned pass_idx,
 
    /* Update the alias map so later passes can reference this one.
     * Re-running init_alias is safe — it clears and repopulates. */
-   if (!passes[pass_idx]->get_name().empty())
+   if (!string_is_empty(passes[pass_idx]->get_name()))
    {
       alias_initialized = false;
       if (!init_alias_early())
