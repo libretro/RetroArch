@@ -1014,7 +1014,11 @@ private:
    void set_semantic_texture(slang_texture_semantic semantic,
          const Texture &texture);
 
-   slang_reflection reflection;
+   /* Plain C struct: must be explicitly zero-initialized, since the
+       * first build() and a teardown before any build() both run
+       * slang_reflection_free() on it.  The previous C++ type had a
+       * default constructor doing this implicitly. */
+      slang_reflection reflection = {};
 
    std::vector<uint8_t> uniforms;
 

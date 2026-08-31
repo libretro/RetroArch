@@ -813,7 +813,11 @@ class Pass
             VkDescriptorImageInfo *image_infos, VkWriteDescriptorSet *writes,
             unsigned &write_count);
 
-      slang_reflection reflection;
+      /* Plain C struct: must be explicitly zero-initialized, since the
+       * first build() and a teardown before any build() both run
+       * slang_reflection_free() on it.  The previous C++ type had a
+       * default constructor doing this implicitly. */
+      slang_reflection reflection = {};
       void build_semantics(VkDescriptorSet set, uint8_t *buffer,
             const float *mvp, const Texture &original, const Texture &source);
       void build_semantic_vec4(uint8_t *data, slang_semantic semantic,
