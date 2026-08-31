@@ -20,8 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/* Regression test for the .bsv replay-file event-count bounds in
- * input/bsv/bsvmovie.c.
+/* Regression test for .bsv replay-file bounds in input/bsv/bsvmovie.c.
  *
  * The .bsv replay format stores per-frame input events as:
  *   uint8_t  key_event_count;
@@ -52,9 +51,16 @@
  * writer cannot produce more events than the array holds
  * because the same array backs the writer's append path.
  *
- * IMPORTANT: this test keeps a verbatim copy of the post-fix
- * bound-check predicate.  If input/bsv/bsvmovie.c amends the
- * predicate, the copy below must follow.  Convention used by
+ * Version-2 replays also serialize separate unencoded, encoded, and
+ * compressed encoded checkpoint sizes. For an uncompressed raw
+ * checkpoint, the loader allocates cur_save using the unencoded size
+ * then reads the compressed encoded size into it. A malformed replay
+ * can therefore overflow cur_save unless compressed_encoded_size is
+ * no larger than encoded_size and encoded_size is no larger than size.
+ *
+ * IMPORTANT: this test keeps verbatim copies of the post-fix
+ * bound-check predicates. If input/bsv/bsvmovie.c amends a predicate,
+ * the copy below must follow. Convention used by
  * archive_name_safety_test, http_method_match_test,
  * video_shader_wildcard_test, input_remap_bounds_test in
  * this directory tree.
@@ -69,6 +75,8 @@
 /* Mirror constants from input/input_driver.h. */
 #define KEY_EVENTS_CAP    128
 #define INPUT_EVENTS_CAP  512
+#define REPLAY_COMPRESSION_NONE 0
+#define REPLAY_ENCODING_RAW     0
 
 /* Mirror layout of bsv_key_data and bsv_input_data from
  * input/input_driver.h lines 221-240. */
@@ -115,7 +123,72 @@ static int input_event_count_in_bounds(unsigned input_event_count,
       return 0;
    return 1;
 }
+
+static int checkpoint_sizes_in_bounds(uint32_t compression,
+      uint32_t encoding, uint32_t compressed_encoded_size,
+      uint32_t encoded_size, uint32_t size)
+{
+   if (   compression == REPLAY_COMPRESSION_NONE
+       && compressed_encoded_size > encoded_size)
+      return 0;
+   if (   encoding == REPLAY_ENCODING_RAW
+       && encoded_size > size)
+      return 0;
+   return 1;
+}
 /* === end verbatim copy === */
+
+static void write_le32(uint8_t *dst, uint32_t value)
+{
+   dst[0] = (uint8_t)(value >> 0);
+   dst[1] = (uint8_t)(value >> 8);
+   dst[2] = (uint8_t)(value >> 16);
+   dst[3] = (uint8_t)(value >> 24);
+}
+
+static uint32_t read_le32(const uint8_t *src)
+{
+   return ((uint32_t)src[0] << 0)
+      | ((uint32_t)src[1] << 8)
+      | ((uint32_t)src[2] << 16)
+      | ((uint32_t)src[3] << 24);
+}
+
+/* Model the raw, uncompressed checkpoint read in
+ * bsv_movie_load_checkpoint(). The checkpoint starts at its three
+ * serialized size fields; the compression and encoding are supplied
+ * by the enclosing replay record. ASan catches the memcpy below if
+ * the production bounds predicate is removed. */
+static int simulate_raw_checkpoint_load(const uint8_t *checkpoint,
+      size_t checkpoint_len)
+{
+   uint32_t size;
+   uint32_t encoded_size;
+   uint32_t compressed_encoded_size;
+   uint8_t *save;
+
+   if (checkpoint_len < 3 * sizeof(uint32_t))
+      return 0;
+
+   size                    = read_le32(checkpoint + 0);
+   encoded_size            = read_le32(checkpoint + 4);
+   compressed_encoded_size = read_le32(checkpoint + 8);
+
+   if (   !checkpoint_sizes_in_bounds(REPLAY_COMPRESSION_NONE,
+               REPLAY_ENCODING_RAW, compressed_encoded_size,
+               encoded_size, size)
+       || compressed_encoded_size > checkpoint_len - 3 * sizeof(uint32_t))
+      return 0;
+
+   save = (uint8_t*)malloc(size);
+   if (!save)
+      return 0;
+
+   memcpy(save, checkpoint + 3 * sizeof(uint32_t),
+         compressed_encoded_size);
+   free(save);
+   return 1;
+}
 
 /* Drive a write loop the way the production read path does.
  * Returns 1 if all writes succeeded, 0 if the bound rejected.
@@ -253,12 +326,60 @@ static void test_input_count_oob_rejected(void)
    printf("[SUCCESS] OOB input_event_counts (513..65535) rejected without writes\n");
 }
 
+static void test_checkpoint_overflow_rejected(void)
+{
+   const uint32_t compressed_encoded_size = 4096;
+   const size_t checkpoint_len = 3 * sizeof(uint32_t)
+      + compressed_encoded_size;
+   uint8_t *checkpoint = (uint8_t*)calloc(1, checkpoint_len);
+
+   if (!checkpoint)
+   {
+      printf("[ERROR] failed to allocate checkpoint test input\n");
+      failures++;
+      return;
+   }
+
+   /* A version-2 raw/uncompressed checkpoint with a one-byte state
+    * but 4096 encoded bytes. Before the production check, loading
+    * this exact size prelude copied 4096 bytes into a one-byte heap
+    * allocation. */
+   write_le32(checkpoint + 0, 1);
+   write_le32(checkpoint + 4, 1);
+   write_le32(checkpoint + 8, compressed_encoded_size);
+
+   if (simulate_raw_checkpoint_load(checkpoint, checkpoint_len))
+   {
+      printf("[ERROR] oversized checkpoint was not rejected\n");
+      failures++;
+   }
+   else
+      printf("[SUCCESS] oversized checkpoint rejected before copy\n");
+
+   free(checkpoint);
+}
+
+static void test_checkpoint_smaller_sizes_accepted(void)
+{
+   if (   !checkpoint_sizes_in_bounds(REPLAY_COMPRESSION_NONE,
+               REPLAY_ENCODING_RAW, 8, 12, 16)
+       || !checkpoint_sizes_in_bounds(1, REPLAY_ENCODING_RAW, 64, 12, 16))
+   {
+      printf("[ERROR] smaller checkpoint sizes were rejected\n");
+      failures++;
+      return;
+   }
+   printf("[SUCCESS] smaller checkpoint sizes accepted\n");
+}
+
 int main(void)
 {
    test_key_count_legitimate();
    test_key_count_oob_rejected();
    test_input_count_legitimate();
    test_input_count_oob_rejected();
+   test_checkpoint_overflow_rejected();
+   test_checkpoint_smaller_sizes_accepted();
 
    if (failures)
    {
