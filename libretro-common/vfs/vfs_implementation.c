@@ -1429,7 +1429,17 @@ int retro_vfs_file_punch_hole_impl(libretro_vfs_implementation_file *stream,
          return -1;
       return 0;
    }
-#elif defined(__linux__) && defined(FALLOC_FL_PUNCH_HOLE)
+/* fallocate() sits behind _GNU_SOURCE in glibc (it is gated on __USE_GNU),
+ * so whether it is *declared* depends on the consumer's feature-test
+ * macros rather than on anything this file controls.  <linux/falloc.h>
+ * supplies FALLOC_FL_PUNCH_HOLE either way, so testing the flag alone
+ * leaves a consumer that does not define _GNU_SOURCE calling an
+ * undeclared function -- a warning today, an error on stricter
+ * compilers, and wrong argument passing for the off_t pair on 32-bit.
+ * Require the declaration too, and fall through to the unsupported
+ * path when it is absent. */
+#elif defined(__linux__) && defined(FALLOC_FL_PUNCH_HOLE) \
+      && (defined(_GNU_SOURCE) || defined(__USE_GNU))
    {
       int fd = stream->fd;
 
