@@ -2428,131 +2428,152 @@ void Pass::build_commands(
 
 struct gl3_filter_chain
 {
-public:
-   gl3_filter_chain(unsigned num_passes) { set_num_passes(num_passes); }
-
-   /* copy_framebuffer and the history entries were unique_ptrs that the
-    * implicit destructor released; as owned pointers they need this. */
-   ~gl3_filter_chain()
-   {
-      size_t h;
-      for (h = 0; h < num_original_history; h++)
-         gl3_shader::gl3_framebuffer_delete(original_history[h]);
-      free(original_history);
-      gl3_shader::gl3_framebuffer_delete(copy_framebuffer);
-      /* the passes vector<unique_ptr> released these itself */
-      for (h = 0; h < num_passes; h++)
-         delete passes[h];
-      free(passes);
-      free(pass_info);
-   }
-
-   inline void set_shader_preset(video_shader *shader)
-   {
-      /* still new-allocated by the create paths, so this stays delete
-       * until those move to calloc with the rest of the chain */
-      if (common.shader_preset != shader)
-         delete common.shader_preset;
-      common.shader_preset = shader;
-   }
-
-   inline video_shader *get_shader_preset()
-   {
-      return common.shader_preset;
-   }
-
-   void set_pass_info(unsigned pass,
-                      const gl3_filter_chain_pass_info &info);
-   void set_shader(unsigned pass, GLenum stage,
-                   const uint32_t *spirv, size_t spirv_words);
-
-   bool init();
-   bool init_single_pass(unsigned pass_idx);
-   bool init_alias_early();
-   bool compile_full_pass(unsigned pass_idx,
-         enum glslang_filter_chain_filter default_filter);
-   bool finalize();
-
-   void set_input_texture(const gl3_filter_chain_texture &texture);
-   void build_offscreen_passes(const gl3_viewport &vp);
-   void build_viewport_pass(const gl3_viewport &vp, const float *mvp);
-   void end_frame();
-
-   void set_frame_count(uint64_t count);
-   void set_frame_count_period(unsigned pass, unsigned period);
-   void set_frame_direction(int32_t direction);
-   void set_frame_time_delta(uint32_t rot);
-   void set_original_fps(float fps);
-   void set_rotation(uint32_t rot);
-   void set_core_aspect(float coreaspect);
-   void set_core_aspect_rot(float coreaspectrot);
-   void set_shader_subframes(uint32_t tot_subframes);
-   void set_current_shader_subframe(uint32_t cur_subframe);
-#ifdef GL3_ROLLING_SCANLINE_SIMULATION
-   void set_simulate_scanline(bool simulate);
-#endif /* GL3_ROLLING_SCANLINE_SIMULATION */
-   void set_pass_name(unsigned pass, const char *name);
-
-   bool add_static_texture(const struct gl3_shader::gl3_static_texture *texture);
-   void add_parameter(unsigned pass, unsigned parameter_index, const char *id);
-   void set_num_passes(unsigned passes);
-
-private:
-   gl3_shader::Pass **passes          = NULL;
-   size_t num_passes                  = 0;
-   gl3_filter_chain_pass_info *pass_info = NULL;
-   size_t num_pass_info               = 0;
-   struct gl3_shader::gl3_framebuffer *copy_framebuffer = NULL;
+   gl3_shader::Pass **passes;
+   size_t num_passes;
+   gl3_filter_chain_pass_info *pass_info;
+   size_t num_pass_info;
+   struct gl3_shader::gl3_framebuffer *copy_framebuffer;
    gl3_shader::CommonResources common;
-
-   gl3_filter_chain_texture input_texture = {};
-
-   bool init_history();
-   bool init_feedback();
-   bool init_alias();
-   struct gl3_shader::gl3_framebuffer **original_history = NULL;
-   size_t num_original_history                           = 0;
-   bool require_clear = false;
-   bool alias_initialized = false;
-   void clear_history_and_feedback();
-   void update_feedback_info();
-   void update_history_info();
+   gl3_filter_chain_texture input_texture;
+   struct gl3_shader::gl3_framebuffer **original_history;
+   size_t num_original_history;
+   bool require_clear;
+   bool alias_initialized;
 };
 
+static void gl3_chain_update_history_info(struct gl3_filter_chain *chain);
+static void gl3_chain_update_feedback_info(struct gl3_filter_chain *chain);
+static void gl3_chain_build_offscreen_passes(struct gl3_filter_chain *chain, const gl3_viewport &vp);
+static void gl3_chain_end_frame(struct gl3_filter_chain *chain);
+static void gl3_chain_build_viewport_pass(struct gl3_filter_chain *chain, const gl3_viewport &vp, const float *mvp);
+static bool gl3_chain_init_history(struct gl3_filter_chain *chain);
+static bool gl3_chain_init_feedback(struct gl3_filter_chain *chain);
+static bool gl3_chain_init_alias(struct gl3_filter_chain *chain);
+static void gl3_chain_set_pass_info(struct gl3_filter_chain *chain, unsigned pass, const gl3_filter_chain_pass_info &info);
+static void gl3_chain_set_num_passes(struct gl3_filter_chain *chain, unsigned num_passes_);
+static void gl3_chain_set_shader(struct gl3_filter_chain *chain, unsigned pass, GLenum stage, const uint32_t *spirv, size_t spirv_words);
+static void gl3_chain_add_parameter(struct gl3_filter_chain *chain, unsigned pass,
+      unsigned index, const char *id);
+static bool gl3_chain_init(struct gl3_filter_chain *chain);
+static bool gl3_chain_init_single_pass(struct gl3_filter_chain *chain, unsigned pass_idx);
+static bool gl3_chain_compile_full_pass(struct gl3_filter_chain *chain, unsigned pass_idx,
+      glslang_filter_chain_filter default_filter);
+static bool gl3_chain_init_alias_early(struct gl3_filter_chain *chain);
+static bool gl3_chain_finalize(struct gl3_filter_chain *chain);
+static void gl3_chain_clear_history_and_feedback(struct gl3_filter_chain *chain);
+static void gl3_chain_set_input_texture(struct gl3_filter_chain *chain, const gl3_filter_chain_texture &texture);
+static bool gl3_chain_add_static_texture(struct gl3_filter_chain *chain, const struct gl3_shader::gl3_static_texture *texture);
+static void gl3_chain_set_frame_count(struct gl3_filter_chain *chain, uint64_t count);
+static void gl3_chain_set_frame_count_period(struct gl3_filter_chain *chain, unsigned pass, unsigned period);
+static void gl3_chain_set_frame_direction(struct gl3_filter_chain *chain, int32_t direction);
+static void gl3_chain_set_frame_time_delta(struct gl3_filter_chain *chain, uint32_t time_delta);
+static void gl3_chain_set_original_fps(struct gl3_filter_chain *chain, float fps);
+static void gl3_chain_set_rotation(struct gl3_filter_chain *chain, uint32_t rot);
+static void gl3_chain_set_core_aspect(struct gl3_filter_chain *chain, float coreaspect);
+static void gl3_chain_set_core_aspect_rot(struct gl3_filter_chain *chain, float coreaspectrot);
+static void gl3_chain_set_shader_subframes(struct gl3_filter_chain *chain, uint32_t tot_subframes);
+static void gl3_chain_set_current_shader_subframe(struct gl3_filter_chain *chain, uint32_t cur_subframe);
+static void gl3_chain_set_simulate_scanline(struct gl3_filter_chain *chain, bool simulate_scanline);
+static void gl3_chain_set_pass_name(struct gl3_filter_chain *chain, unsigned pass, const char *name);
+static void gl3_chain_set_shader_preset(struct gl3_filter_chain *chain,
+      video_shader *shader);
+static video_shader *gl3_chain_get_shader_preset(
+      struct gl3_filter_chain *chain);
+static void gl3_chain_free(struct gl3_filter_chain *chain);
 
-void gl3_filter_chain::update_history_info()
+/* CommonResources still has a constructor, so the chain is new'd rather
+ * than calloc'd until that flattens too. */
+static struct gl3_filter_chain *gl3_chain_new(unsigned num_passes)
+{
+   struct gl3_filter_chain *chain = new gl3_filter_chain();
+
+   if (!chain)
+      return NULL;
+
+   chain->passes               = NULL;
+   chain->num_passes           = 0;
+   chain->pass_info            = NULL;
+   chain->num_pass_info        = 0;
+   chain->copy_framebuffer     = NULL;
+   memset(&chain->input_texture, 0, sizeof(chain->input_texture));
+   chain->original_history     = NULL;
+   chain->num_original_history = 0;
+   chain->require_clear        = false;
+   chain->alias_initialized    = false;
+
+   gl3_chain_set_num_passes(chain, num_passes);
+   return chain;
+}
+
+static void gl3_chain_free(struct gl3_filter_chain *chain)
+{
+   size_t h;
+
+   if (!chain)
+      return;
+
+   for (h = 0; h < chain->num_original_history; h++)
+      gl3_shader::gl3_framebuffer_delete(chain->original_history[h]);
+   free(chain->original_history);
+   gl3_shader::gl3_framebuffer_delete(chain->copy_framebuffer);
+   for (h = 0; h < chain->num_passes; h++)
+      delete chain->passes[h];
+   free(chain->passes);
+   free(chain->pass_info);
+   delete chain;
+}
+
+static void gl3_chain_set_shader_preset(struct gl3_filter_chain *chain,
+      video_shader *shader)
+{
+   /* still new-allocated by the create paths, so this stays delete
+    * until those move to calloc with the rest of the chain */
+   if (chain->common.shader_preset != shader)
+      delete chain->common.shader_preset;
+   chain->common.shader_preset = shader;
+}
+
+static video_shader *gl3_chain_get_shader_preset(
+      struct gl3_filter_chain *chain)
+{
+   return chain->common.shader_preset;
+}
+
+
+
+static void gl3_chain_update_history_info(struct gl3_filter_chain *chain)
 {
    unsigned i;
 
-   for (i = 0; i < num_original_history; i++)
+   for (i = 0; i < chain->num_original_history; i++)
    {
       gl3_shader::Texture *source = (gl3_shader::Texture*)
-         &common.original_history[i];
+         &chain->common.original_history[i];
 
       if (!source)
          continue;
 
-      source->texture.image  = original_history[i]->image;
-      source->texture.width  = original_history[i]->size.width;
-      source->texture.height = original_history[i]->size.height;
-      source->filter         = passes[0]->get_source_filter();
-      source->mip_filter     = passes[0]->get_mip_filter();
-      source->address        = passes[0]->get_address_mode();
+      source->texture.image  = chain->original_history[i]->image;
+      source->texture.width  = chain->original_history[i]->size.width;
+      source->texture.height = chain->original_history[i]->size.height;
+      source->filter         = chain->passes[0]->get_source_filter();
+      source->mip_filter     = chain->passes[0]->get_mip_filter();
+      source->address        = chain->passes[0]->get_address_mode();
    }
 }
 
-void gl3_filter_chain::update_feedback_info()
+static void gl3_chain_update_feedback_info(struct gl3_filter_chain *chain)
 {
    unsigned i;
 
-   for (i = 0; i < num_passes - 1; i++)
+   for (i = 0; i < chain->num_passes - 1; i++)
    {
-      struct gl3_shader::gl3_framebuffer *fb = passes[i]->get_feedback_framebuffer();
+      struct gl3_shader::gl3_framebuffer *fb = chain->passes[i]->get_feedback_framebuffer();
       if (!fb)
          continue;
 
       gl3_shader::Texture *source = (gl3_shader::Texture*)
-         &common.framebuffer_feedback[i];
+         &chain->common.framebuffer_feedback[i];
 
       if (!source)
          continue;
@@ -2560,165 +2581,164 @@ void gl3_filter_chain::update_feedback_info()
       source->texture.image  = fb->image;
       source->texture.width  = fb->size.width;
       source->texture.height = fb->size.height;
-      source->filter         = passes[i]->get_source_filter();
-      source->mip_filter     = passes[i]->get_mip_filter();
-      source->address        = passes[i]->get_address_mode();
+      source->filter         = chain->passes[i]->get_source_filter();
+      source->mip_filter     = chain->passes[i]->get_mip_filter();
+      source->address        = chain->passes[i]->get_address_mode();
    }
 }
 
-void gl3_filter_chain::build_offscreen_passes(const gl3_viewport &vp)
+static void gl3_chain_build_offscreen_passes(struct gl3_filter_chain *chain, const gl3_viewport &vp)
 {
    unsigned i;
 
    /* First frame, make sure our history and feedback textures
     * are in a clean state. */
-   if (require_clear)
+   if (chain->require_clear)
    {
-      clear_history_and_feedback();
-      require_clear = false;
+      gl3_chain_clear_history_and_feedback(chain);
+      chain->require_clear = false;
    }
 
-   update_history_info();
-   if (common.num_framebuffer_feedback)
-      update_feedback_info();
+   gl3_chain_update_history_info(chain);
+   if (chain->common.num_framebuffer_feedback)
+      gl3_chain_update_feedback_info(chain);
 
    const gl3_shader::Texture original = {
-         input_texture,
-         passes[0]->get_source_filter(),
-         passes[0]->get_mip_filter(),
-         passes[0]->get_address_mode(),
+         chain->input_texture,
+         chain->passes[0]->get_source_filter(),
+         chain->passes[0]->get_mip_filter(),
+         chain->passes[0]->get_address_mode(),
    };
    gl3_shader::Texture source = original;
 
-   for (i = 0; i < num_passes - 1; i++)
+   for (i = 0; i < chain->num_passes - 1; i++)
    {
-      passes[i]->build_commands(original, source, vp, nullptr);
+      chain->passes[i]->build_commands(original, source, vp, nullptr);
 
-      const struct gl3_shader::gl3_framebuffer *fb = passes[i]->get_framebuffer();
+      const struct gl3_shader::gl3_framebuffer *fb = chain->passes[i]->get_framebuffer();
 
       source.texture.image             = fb->image;
       source.texture.width             = fb->size.width;
       source.texture.height            = fb->size.height;
-      source.filter                    = passes[i + 1]->get_source_filter();
-      source.mip_filter                = passes[i + 1]->get_mip_filter();
-      source.address                   = passes[i + 1]->get_address_mode();
+      source.filter                    = chain->passes[i + 1]->get_source_filter();
+      source.mip_filter                = chain->passes[i + 1]->get_mip_filter();
+      source.address                   = chain->passes[i + 1]->get_address_mode();
 
-      common.pass_outputs[i]           = source;
+      chain->common.pass_outputs[i]           = source;
    }
 }
 
-void gl3_filter_chain::end_frame()
+static void gl3_chain_end_frame(struct gl3_filter_chain *chain)
 {
    /* If we need to keep old frames, copy it after fragment is complete.
     * TODO: We can improve pipelining by figuring out which
     * pass is the last that reads from
     * the history and dispatch the copy earlier. */
-   if (num_original_history)
+   if (chain->num_original_history)
    {
       /* Update history */
       size_t h;
       struct gl3_shader::gl3_framebuffer *tmp =
-         original_history[num_original_history - 1];
-      original_history[num_original_history - 1] = NULL;
+         chain->original_history[chain->num_original_history - 1];
+      chain->original_history[chain->num_original_history - 1] = NULL;
 
-      if (input_texture.width      != tmp->size.width  ||
-            input_texture.height     != tmp->size.height ||
-            (input_texture.format    != 0
-             && input_texture.format != tmp->format))
+      if (chain->input_texture.width      != tmp->size.width  ||
+            chain->input_texture.height     != tmp->size.height ||
+            (chain->input_texture.format    != 0
+             && chain->input_texture.format != tmp->format))
       {
          Size2D new_size;
-         new_size.width  = input_texture.width;
-         new_size.height = input_texture.height;
-         gl3_framebuffer_set_size(tmp, &new_size, input_texture.format);
+         new_size.width  = chain->input_texture.width;
+         new_size.height = chain->input_texture.height;
+         gl3_framebuffer_set_size(tmp, &new_size, chain->input_texture.format);
       }
 
       if (tmp->complete)
          gl3_framebuffer_copy(
                tmp->framebuffer,
-               common.quad_program,
-               common.quad_vbo,
-               common.quad_loc.flat_ubo_vertex,
+               chain->common.quad_program,
+               chain->common.quad_vbo,
+               chain->common.quad_loc.flat_ubo_vertex,
                tmp->size,
-               input_texture.image);
+               chain->input_texture.image);
 
-      /* Should ring buffer, but we don't have *that* many passes. */
-      for (h = num_original_history - 1; h > 0; h--)
-         original_history[h] = original_history[h - 1];
-      original_history[0] = tmp;
+      /* Should ring buffer, but we don't have *that* many chain->passes. */
+      for (h = chain->num_original_history - 1; h > 0; h--)
+         chain->original_history[h] = chain->original_history[h - 1];
+      chain->original_history[0] = tmp;
    }
 }
 
-void gl3_filter_chain::build_viewport_pass(
-      const gl3_viewport &vp, const float *mvp)
+static void gl3_chain_build_viewport_pass(struct gl3_filter_chain *chain, const gl3_viewport &vp, const float *mvp)
 {
    unsigned i;
    /* First frame, make sure our history and
     * feedback textures are in a clean state. */
-   if (require_clear)
+   if (chain->require_clear)
    {
-      clear_history_and_feedback();
-      require_clear = false;
+      gl3_chain_clear_history_and_feedback(chain);
+      chain->require_clear = false;
    }
 
    gl3_shader::Texture source;
    const gl3_shader::Texture original = {
-         input_texture,
-         passes[0]->get_source_filter(),
-         passes[0]->get_mip_filter(),
-         passes[0]->get_address_mode(),
+         chain->input_texture,
+         chain->passes[0]->get_source_filter(),
+         chain->passes[0]->get_mip_filter(),
+         chain->passes[0]->get_address_mode(),
    };
 
-   if (num_passes == 1)
+   if (chain->num_passes == 1)
    {
       source = {
-            input_texture,
-            passes[num_passes - 1]->get_source_filter(),
-            passes[num_passes - 1]->get_mip_filter(),
-            passes[num_passes - 1]->get_address_mode(),
+            chain->input_texture,
+            chain->passes[chain->num_passes - 1]->get_source_filter(),
+            chain->passes[chain->num_passes - 1]->get_mip_filter(),
+            chain->passes[chain->num_passes - 1]->get_address_mode(),
       };
    }
    else
    {
-      const struct gl3_shader::gl3_framebuffer *fb = passes[num_passes - 2]
+      const struct gl3_shader::gl3_framebuffer *fb = chain->passes[chain->num_passes - 2]
          ->get_framebuffer();
       source.texture.image           = fb->image;
       source.texture.width           = fb->size.width;
       source.texture.height          = fb->size.height;
-      source.filter                  = passes[num_passes - 1]->get_source_filter();
-      source.mip_filter              = passes[num_passes - 1]->get_mip_filter();
-      source.address                 = passes[num_passes - 1]->get_address_mode();
+      source.filter                  = chain->passes[chain->num_passes - 1]->get_source_filter();
+      source.mip_filter              = chain->passes[chain->num_passes - 1]->get_mip_filter();
+      source.address                 = chain->passes[chain->num_passes - 1]->get_address_mode();
    }
 
-   passes[num_passes - 1]->build_commands(original, source, vp, mvp);
+   chain->passes[chain->num_passes - 1]->build_commands(original, source, vp, mvp);
 
    /* For feedback FBOs, swap current and previous. */
-   for (i = 0; i < num_passes; i++)
+   for (i = 0; i < chain->num_passes; i++)
    {
-      struct gl3_shader::gl3_framebuffer *fb = passes[i]->get_feedback_framebuffer();
+      struct gl3_shader::gl3_framebuffer *fb = chain->passes[i]->get_feedback_framebuffer();
       if (fb)
-         passes[i]->end_frame();
+         chain->passes[i]->end_frame();
    }
 }
 
-bool gl3_filter_chain::init_history()
+static bool gl3_chain_init_history(struct gl3_filter_chain *chain)
 {
    unsigned i;
    size_t required_images = 0;
 
    {
       size_t h;
-      for (h = 0; h < num_original_history; h++)
-         gl3_framebuffer_delete(original_history[h]);
-      free(original_history);
-      original_history     = NULL;
-      num_original_history = 0;
+      for (h = 0; h < chain->num_original_history; h++)
+         gl3_framebuffer_delete(chain->original_history[h]);
+      free(chain->original_history);
+      chain->original_history     = NULL;
+      chain->num_original_history = 0;
    }
-   gl3_shader::gl3_texture_array_resize(&common.original_history,
-         &common.num_original_history, 0);
+   gl3_shader::gl3_texture_array_resize(&chain->common.original_history,
+         &chain->common.num_original_history, 0);
 
-   for (i = 0; i < num_passes; i++)
+   for (i = 0; i < chain->num_passes; i++)
    {
-      size_t _y = passes[i]->get_reflection().semantic_textures[
+      size_t _y = chain->passes[i]->get_reflection().semantic_textures[
                 SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY].size;
       required_images = MAX(required_images, _y);
    }
@@ -2732,19 +2752,19 @@ bool gl3_filter_chain::init_history()
    /* We don't need to store array element #0,
     * since it's aliased with the actual original. */
    required_images--;
-   original_history = (struct gl3_shader::gl3_framebuffer**)
-      calloc(required_images, sizeof(*original_history));
-   if (!original_history)
+   chain->original_history = (struct gl3_shader::gl3_framebuffer**)
+      calloc(required_images, sizeof(*chain->original_history));
+   if (!chain->original_history)
       return false;
-   num_original_history = required_images;
-   if (!gl3_shader::gl3_texture_array_resize(&common.original_history,
-            &common.num_original_history, required_images))
+   chain->num_original_history = required_images;
+   if (!gl3_shader::gl3_texture_array_resize(&chain->common.original_history,
+            &chain->common.num_original_history, required_images))
       return false;
 
    for (i = 0; i < required_images; i++)
    {
-      original_history[i] = gl3_shader::gl3_framebuffer_new(0, 1);
-      if (!original_history[i])
+      chain->original_history[i] = gl3_shader::gl3_framebuffer_new(0, 1);
+      if (!chain->original_history[i])
          return false;
    }
 
@@ -2754,26 +2774,26 @@ bool gl3_filter_chain::init_history()
     * a known state, but we need
     * a command buffer for that, so just defer to first frame.
     */
-   require_clear = true;
+   chain->require_clear = true;
    return true;
 }
 
-bool gl3_filter_chain::init_feedback()
+static bool gl3_chain_init_feedback(struct gl3_filter_chain *chain)
 {
    unsigned i;
    bool use_feedbacks = false;
 
-   gl3_shader::gl3_texture_array_resize(&common.framebuffer_feedback,
-         &common.num_framebuffer_feedback, 0);
+   gl3_shader::gl3_texture_array_resize(&chain->common.framebuffer_feedback,
+         &chain->common.num_framebuffer_feedback, 0);
 
    /* Final pass cannot have feedback. */
-   for (i = 0; i < num_passes - 1; i++)
+   for (i = 0; i < chain->num_passes - 1; i++)
    {
       bool use_feedback = false;
       size_t q;
-      for (q = 0; q < num_passes; q++)
+      for (q = 0; q < chain->num_passes; q++)
       {
-         const slang_reflection &r          = passes[q]->get_reflection();
+         const slang_reflection &r          = chain->passes[q]->get_reflection();
          const slang_texture_semantic_array &feedbacks =
             r.semantic_textures[SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK];
 
@@ -2785,7 +2805,7 @@ bool gl3_filter_chain::init_feedback()
          }
       }
 
-      if (use_feedback && !passes[i]->init_feedback())
+      if (use_feedback && !chain->passes[i]->init_feedback())
          return false;
 
       if (use_feedback)
@@ -2798,63 +2818,63 @@ bool gl3_filter_chain::init_feedback()
       return true;
    }
 
-   if (!gl3_shader::gl3_texture_array_resize(&common.framebuffer_feedback,
-            &common.num_framebuffer_feedback, num_passes - 1))
+   if (!gl3_shader::gl3_texture_array_resize(&chain->common.framebuffer_feedback,
+            &chain->common.num_framebuffer_feedback, chain->num_passes - 1))
       return false;
-   require_clear = true;
+   chain->require_clear = true;
    return true;
 }
 
-bool gl3_filter_chain::init_alias()
+static bool gl3_chain_init_alias(struct gl3_filter_chain *chain)
 {
    int i;
 
-   slang_texture_semantic_name_map_free(&common.texture_semantic_map);
-   slang_texture_semantic_name_map_free(&common.texture_semantic_uniform_map);
+   slang_texture_semantic_name_map_free(&chain->common.texture_semantic_map);
+   slang_texture_semantic_name_map_free(&chain->common.texture_semantic_uniform_map);
 
-   for (i = 0; i < (int)num_passes; i++)
+   for (i = 0; i < (int)chain->num_passes; i++)
    {
       unsigned j;
-      const char *name = passes[i]->get_name();
+      const char *name = chain->passes[i]->get_name();
       if (string_is_empty(name))
          continue;
 
       j = (unsigned)i;
 
       if (!slang_texture_semantic_name_map_set_unique(
-               &common.texture_semantic_map, name, NULL,
+               &chain->common.texture_semantic_map, name, NULL,
                SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, j))
          return false;
 
       if (!slang_texture_semantic_name_map_set_unique(
-               &common.texture_semantic_uniform_map, name, "Size",
+               &chain->common.texture_semantic_uniform_map, name, "Size",
                SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, j))
          return false;
 
       if (!slang_texture_semantic_name_map_set_unique(
-               &common.texture_semantic_map, name, "Feedback",
+               &chain->common.texture_semantic_map, name, "Feedback",
                SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, j))
          return false;
 
       if (!slang_texture_semantic_name_map_set_unique(
-               &common.texture_semantic_uniform_map, name,
+               &chain->common.texture_semantic_uniform_map, name,
                "FeedbackSize",
                SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, j))
          return false;
    }
 
-   for (i = 0; i < (int)common.num_luts; i++)
+   for (i = 0; i < (int)chain->common.num_luts; i++)
    {
       unsigned j = (unsigned)i;
       if (!slang_texture_semantic_name_map_set_unique(
-               &common.texture_semantic_map,
-               common.luts[i].id, NULL,
+               &chain->common.texture_semantic_map,
+               chain->common.luts[i].id, NULL,
                SLANG_TEXTURE_SEMANTIC_USER, j))
          return false;
 
       if (!slang_texture_semantic_name_map_set_unique(
-               &common.texture_semantic_uniform_map,
-               common.luts[i].id, "Size",
+               &chain->common.texture_semantic_uniform_map,
+               chain->common.luts[i].id, "Size",
                SLANG_TEXTURE_SEMANTIC_USER, j))
          return false;
    }
@@ -2862,132 +2882,132 @@ bool gl3_filter_chain::init_alias()
    return true;
 }
 
-void gl3_filter_chain::set_pass_info(unsigned pass, const gl3_filter_chain_pass_info &info)
+static void gl3_chain_set_pass_info(struct gl3_filter_chain *chain, unsigned pass, const gl3_filter_chain_pass_info &info)
 {
-   if (pass >= num_pass_info)
+   if (pass >= chain->num_pass_info)
    {
       /* Growth here keeps the entries already set, so this is a realloc
        * with the new tail zeroed -- not the clear-and-allocate the other
        * resizes in this file do. */
       gl3_filter_chain_pass_info *next = (gl3_filter_chain_pass_info*)
-         realloc(pass_info, (pass + 1) * sizeof(*pass_info));
+         realloc(chain->pass_info, (pass + 1) * sizeof(*chain->pass_info));
       if (!next)
          return;
-      memset(next + num_pass_info, 0,
-            ((pass + 1) - num_pass_info) * sizeof(*next));
-      pass_info     = next;
-      num_pass_info = pass + 1;
+      memset(next + chain->num_pass_info, 0,
+            ((pass + 1) - chain->num_pass_info) * sizeof(*next));
+      chain->pass_info     = next;
+      chain->num_pass_info = pass + 1;
    }
-   pass_info[pass] = info;
+   chain->pass_info[pass] = info;
 }
 
-void gl3_filter_chain::set_num_passes(unsigned num_passes_)
+static void gl3_chain_set_num_passes(struct gl3_filter_chain *chain, unsigned num_passes_)
 {
    unsigned i;
 
    /* The vectors released the old generation on resize; the arrays do
     * not, so drop any previous set first. */
-   for (i = 0; i < num_passes; i++)
-      delete passes[i];
-   free(passes);
-   passes         = NULL;
-   num_passes     = 0;
-   free(pass_info);
-   pass_info      = NULL;
-   num_pass_info  = 0;
+   for (i = 0; i < chain->num_passes; i++)
+      delete chain->passes[i];
+   free(chain->passes);
+   chain->passes         = NULL;
+   chain->num_passes     = 0;
+   free(chain->pass_info);
+   chain->pass_info      = NULL;
+   chain->num_pass_info  = 0;
 
    if (!num_passes_)
       return;
 
-   if (!(pass_info = (gl3_filter_chain_pass_info*)
-            calloc(num_passes_, sizeof(*pass_info))))
+   if (!(chain->pass_info = (gl3_filter_chain_pass_info*)
+            calloc(num_passes_, sizeof(*chain->pass_info))))
       return;
-   num_pass_info  = num_passes_;
+   chain->num_pass_info  = num_passes_;
 
-   if (!(passes = (gl3_shader::Pass**)
-            calloc(num_passes_, sizeof(*passes))))
+   if (!(chain->passes = (gl3_shader::Pass**)
+            calloc(num_passes_, sizeof(*chain->passes))))
       return;
 
    for (i = 0; i < num_passes_; i++)
    {
-      if (!(passes[i] = new gl3_shader::Pass(i + 1 == num_passes_)))
+      if (!(chain->passes[i] = new gl3_shader::Pass(i + 1 == num_passes_)))
          return;
-      passes[i]->set_common_resources(&common);
-      passes[i]->set_pass_number(i);
-      num_passes++;
+      chain->passes[i]->set_common_resources(&chain->common);
+      chain->passes[i]->set_pass_number(i);
+      chain->num_passes++;
    }
 }
 
-void gl3_filter_chain::set_shader(unsigned pass, GLenum stage, const uint32_t *spirv, size_t spirv_words)
+static void gl3_chain_set_shader(struct gl3_filter_chain *chain, unsigned pass, GLenum stage, const uint32_t *spirv, size_t spirv_words)
 {
-   passes[pass]->set_shader(stage, spirv, spirv_words);
+   chain->passes[pass]->set_shader(stage, spirv, spirv_words);
 }
 
-void gl3_filter_chain::add_parameter(unsigned pass,
+static void gl3_chain_add_parameter(struct gl3_filter_chain *chain, unsigned pass,
       unsigned index, const char *id)
 {
-   passes[pass]->add_parameter(index, id);
+   chain->passes[pass]->add_parameter(index, id);
 }
 
-bool gl3_filter_chain::init()
+static bool gl3_chain_init(struct gl3_filter_chain *chain)
 {
    unsigned i;
 
-   if (!init_alias())
+   if (!gl3_chain_init_alias(chain))
       return false;
-   alias_initialized = true;
+   chain->alias_initialized = true;
 
-   for (i = 0; i < num_passes; i++)
+   for (i = 0; i < chain->num_passes; i++)
    {
       RARCH_LOG("[GLCore] Building pass #%u (%s)\n", i,
-            string_is_empty(passes[i]->get_name()) ?
+            string_is_empty(chain->passes[i]->get_name()) ?
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE) :
-            passes[i]->get_name());
+            chain->passes[i]->get_name());
 
-      passes[i]->set_pass_info(pass_info[i]);
-      if (!passes[i]->build())
+      chain->passes[i]->set_pass_info(chain->pass_info[i]);
+      if (!chain->passes[i]->build())
          return false;
    }
 
-   require_clear = false;
-   if (!init_history())
+   chain->require_clear = false;
+   if (!gl3_chain_init_history(chain))
       return false;
-   if (!init_feedback())
+   if (!gl3_chain_init_feedback(chain))
       return false;
-   if (!gl3_shader::gl3_texture_array_resize(&common.pass_outputs,
-            &common.num_pass_outputs, num_passes))
+   if (!gl3_shader::gl3_texture_array_resize(&chain->common.pass_outputs,
+            &chain->common.num_pass_outputs, chain->num_passes))
       return false;
    return true;
 }
 
-bool gl3_filter_chain::init_single_pass(unsigned pass_idx)
+static bool gl3_chain_init_single_pass(struct gl3_filter_chain *chain, unsigned pass_idx)
 {
-   if (pass_idx >= num_passes)
+   if (pass_idx >= chain->num_passes)
       return false;
 
    RARCH_LOG("[GLCore] Building pass #%u (%s)\n", pass_idx,
-         string_is_empty(passes[pass_idx]->get_name()) ?
+         string_is_empty(chain->passes[pass_idx]->get_name()) ?
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE) :
-         passes[pass_idx]->get_name());
+         chain->passes[pass_idx]->get_name());
 
-   passes[pass_idx]->set_pass_info(pass_info[pass_idx]);
-   if (!passes[pass_idx]->build())
+   chain->passes[pass_idx]->set_pass_info(chain->pass_info[pass_idx]);
+   if (!chain->passes[pass_idx]->build())
       return false;
 
    return true;
 }
 
-bool gl3_filter_chain::compile_full_pass(unsigned pass_idx,
+static bool gl3_chain_compile_full_pass(struct gl3_filter_chain *chain, unsigned pass_idx,
       glslang_filter_chain_filter default_filter)
 {
-   video_shader *shader = common.shader_preset;
-   if (!shader || pass_idx >= num_passes)
+   video_shader *shader = chain->common.shader_preset;
+   if (!shader || pass_idx >= chain->num_passes)
       return false;
 
    /* For the extra opaque pass appended when last_pass_is_fbo,
     * the SPIRV was already set in create_deferred — just build. */
    if (pass_idx >= shader->passes)
-      return init_single_pass(pass_idx);
+      return gl3_chain_init_single_pass(chain, pass_idx);
 
    const video_shader_pass *pass      = &shader->pass[pass_idx];
    const video_shader_pass *next_pass =
@@ -3047,7 +3067,7 @@ bool gl3_filter_chain::compile_full_pass(unsigned pass_idx,
             glslang_output_free(&output);
             return false;
          }
-         add_parameter(pass_idx,
+         gl3_chain_add_parameter(chain, pass_idx,
                (unsigned)(itr - shader->parameters), meta_param->id);
       }
       else
@@ -3060,31 +3080,31 @@ bool gl3_filter_chain::compile_full_pass(unsigned pass_idx,
          param->minimum = meta_param->minimum;
          param->maximum = meta_param->maximum;
          param->step    = meta_param->step;
-         add_parameter(pass_idx, shader->num_parameters, meta_param->id);
+         gl3_chain_add_parameter(chain, pass_idx, shader->num_parameters, meta_param->id);
          shader->num_parameters++;
       }
    }
 
    /* ---- Set SPIRV on the pass ---- */
-   set_shader(pass_idx, GL_VERTEX_SHADER,
+   gl3_chain_set_shader(chain, pass_idx, GL_VERTEX_SHADER,
          output.vertex, output.vertex_len);
-   set_shader(pass_idx, GL_FRAGMENT_SHADER,
+   gl3_chain_set_shader(chain, pass_idx, GL_FRAGMENT_SHADER,
          output.fragment, output.fragment_len);
 
-   set_frame_count_period(pass_idx, pass->frame_count_mod);
+   gl3_chain_set_frame_count_period(chain, pass_idx, pass->frame_count_mod);
 
    /* ---- Pass name (from shader #pragma or preset alias) ---- */
    if (output.meta.name[0])
-      set_pass_name(pass_idx, output.meta.name);
+      gl3_chain_set_pass_name(chain, pass_idx, output.meta.name);
    if (*pass->alias)
-      set_pass_name(pass_idx, pass->alias);
+      gl3_chain_set_pass_name(chain, pass_idx, pass->alias);
 
-   /* Update the alias map so later passes can reference this one.
+   /* Update the alias map so later chain->passes can reference this one.
     * Re-running init_alias is safe — it clears and repopulates. */
-   if (!string_is_empty(passes[pass_idx]->get_name()))
+   if (!string_is_empty(chain->passes[pass_idx]->get_name()))
    {
-      alias_initialized = false;
-      if (!init_alias_early())
+      chain->alias_initialized = false;
+      if (!gl3_chain_init_alias_early(chain))
       {
          glslang_output_free(&output);
          return false;
@@ -3201,53 +3221,53 @@ bool gl3_filter_chain::compile_full_pass(unsigned pass_idx,
       }
    }
 
-   set_pass_info(pass_idx, p_info);
+   gl3_chain_set_pass_info(chain, pass_idx, p_info);
    glslang_output_free(&output);
 
    /* ---- GPU compile/link (the expensive GL part) ---- */
-   return init_single_pass(pass_idx);
+   return gl3_chain_init_single_pass(chain, pass_idx);
 }
 
-bool gl3_filter_chain::init_alias_early()
+static bool gl3_chain_init_alias_early(struct gl3_filter_chain *chain)
 {
-   if (alias_initialized)
+   if (chain->alias_initialized)
       return true;
-   if (!init_alias())
+   if (!gl3_chain_init_alias(chain))
       return false;
-   alias_initialized = true;
+   chain->alias_initialized = true;
    return true;
 }
 
-bool gl3_filter_chain::finalize()
+static bool gl3_chain_finalize(struct gl3_filter_chain *chain)
 {
    /* init_alias may have been called early for deferred loading;
     * skip it if already done. */
-   if (!alias_initialized)
+   if (!chain->alias_initialized)
    {
-      if (!init_alias())
+      if (!gl3_chain_init_alias(chain))
          return false;
-      alias_initialized = true;
+      chain->alias_initialized = true;
    }
 
-   require_clear = false;
-   if (!init_history())
+   chain->require_clear = false;
+   if (!gl3_chain_init_history(chain))
       return false;
-   if (!init_feedback())
+   if (!gl3_chain_init_feedback(chain))
       return false;
-   if (!gl3_shader::gl3_texture_array_resize(&common.pass_outputs,
-            &common.num_pass_outputs, num_passes))
+   if (!gl3_shader::gl3_texture_array_resize(&chain->common.pass_outputs,
+            &chain->common.num_pass_outputs, chain->num_passes))
       return false;
    return true;
 }
 
-void gl3_filter_chain::clear_history_and_feedback()
+static void gl3_chain_clear_history_and_feedback(struct gl3_filter_chain *chain)
 {
    unsigned i;
-   for (i = 0; i < num_original_history; i++)
+   for (i = 0; i < chain->num_original_history; i++)
    {
-      if (original_history[i]->complete)
+      if (chain->original_history[i]->complete)
       {
-         GLuint id = original_history[i]->framebuffer;
+         GLuint id = chain->original_history[i]->framebuffer;
          glBindFramebuffer(GL_FRAMEBUFFER, id);
          glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
          glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -3255,9 +3275,9 @@ void gl3_filter_chain::clear_history_and_feedback()
          glBindFramebuffer(GL_FRAMEBUFFER, 0);
       }
    }
-   for (i = 0; i < num_passes; i++)
+   for (i = 0; i < chain->num_passes; i++)
    {
-      struct gl3_shader::gl3_framebuffer *fb = passes[i]->get_feedback_framebuffer();
+      struct gl3_shader::gl3_framebuffer *fb = chain->passes[i]->get_feedback_framebuffer();
       if (fb && fb->complete)
       {
          GLuint id = fb->framebuffer;
@@ -3270,143 +3290,141 @@ void gl3_filter_chain::clear_history_and_feedback()
    }
 }
 
-void gl3_filter_chain::set_input_texture(
-      const gl3_filter_chain_texture &texture)
+static void gl3_chain_set_input_texture(struct gl3_filter_chain *chain, const gl3_filter_chain_texture &texture)
 {
-   input_texture = texture;
+   chain->input_texture = texture;
 
    /* Need a copy to remove padding.
     * GL HW render interface in libretro is kinda garbage now ... */
-   if (input_texture.padded_width  != input_texture.width ||
-       input_texture.padded_height != input_texture.height)
+   if (chain->input_texture.padded_width  != chain->input_texture.width ||
+       chain->input_texture.padded_height != chain->input_texture.height)
    {
-      if (!copy_framebuffer)
-         copy_framebuffer = gl3_shader::gl3_framebuffer_new(texture.format, 1);
-      if (!copy_framebuffer)
+      if (!chain->copy_framebuffer)
+         chain->copy_framebuffer = gl3_shader::gl3_framebuffer_new(texture.format, 1);
+      if (!chain->copy_framebuffer)
          return;
 
-      if (input_texture.width   != copy_framebuffer->size.width  ||
-          input_texture.height  != copy_framebuffer->size.height ||
-          (input_texture.format != 0                                   &&
-           input_texture.format != copy_framebuffer->format))
+      if (chain->input_texture.width   != chain->copy_framebuffer->size.width  ||
+          chain->input_texture.height  != chain->copy_framebuffer->size.height ||
+          (chain->input_texture.format != 0                                   &&
+           chain->input_texture.format != chain->copy_framebuffer->format))
       {
          Size2D copy_size;
-         copy_size.width  = input_texture.width;
-         copy_size.height = input_texture.height;
-         gl3_shader::gl3_framebuffer_set_size(copy_framebuffer, &copy_size,
-               input_texture.format);
+         copy_size.width  = chain->input_texture.width;
+         copy_size.height = chain->input_texture.height;
+         gl3_shader::gl3_framebuffer_set_size(chain->copy_framebuffer, &copy_size,
+               chain->input_texture.format);
       }
 
-      if (copy_framebuffer->complete)
+      if (chain->copy_framebuffer->complete)
          gl3_framebuffer_copy_partial(
-               copy_framebuffer->framebuffer,
-               common.quad_program,
-               common.quad_loc.flat_ubo_vertex,
-               copy_framebuffer->size,
-               input_texture.image,
-               float(input_texture.width)
-               / input_texture.padded_width,
-               float(input_texture.height)
-               / input_texture.padded_height);
-      input_texture.image = copy_framebuffer->image;
+               chain->copy_framebuffer->framebuffer,
+               chain->common.quad_program,
+               chain->common.quad_loc.flat_ubo_vertex,
+               chain->copy_framebuffer->size,
+               chain->input_texture.image,
+               float(chain->input_texture.width)
+               / chain->input_texture.padded_width,
+               float(chain->input_texture.height)
+               / chain->input_texture.padded_height);
+      chain->input_texture.image = chain->copy_framebuffer->image;
    }
 }
 
-bool gl3_filter_chain::add_static_texture(
-      const struct gl3_shader::gl3_static_texture *texture)
+static bool gl3_chain_add_static_texture(struct gl3_filter_chain *chain, const struct gl3_shader::gl3_static_texture *texture)
 {
    struct gl3_shader::gl3_static_texture *next =
-      (struct gl3_shader::gl3_static_texture*)realloc(common.luts,
-            (common.num_luts + 1) * sizeof(*common.luts));
+      (struct gl3_shader::gl3_static_texture*)realloc(chain->common.luts,
+            (chain->common.num_luts + 1) * sizeof(*chain->common.luts));
    if (!next)
       return false;
-   common.luts                  = next;
-   common.luts[common.num_luts] = *texture;
-   common.num_luts++;
+   chain->common.luts                  = next;
+   chain->common.luts[chain->common.num_luts] = *texture;
+   chain->common.num_luts++;
    return true;
 }
 
-void gl3_filter_chain::set_frame_count(uint64_t count)
+static void gl3_chain_set_frame_count(struct gl3_filter_chain *chain, uint64_t count)
 {
    unsigned i;
-   for (i = 0; i < num_passes; i++)
-      passes[i]->set_frame_count(count);
+   for (i = 0; i < chain->num_passes; i++)
+      chain->passes[i]->set_frame_count(count);
 }
 
-void gl3_filter_chain::set_frame_count_period(unsigned pass, unsigned period)
+static void gl3_chain_set_frame_count_period(struct gl3_filter_chain *chain, unsigned pass, unsigned period)
 {
-   passes[pass]->set_frame_count_period(period);
+   chain->passes[pass]->set_frame_count_period(period);
 }
 
-void gl3_filter_chain::set_frame_direction(int32_t direction)
-{
-   unsigned i;
-   for (i = 0; i < num_passes; i++)
-      passes[i]->set_frame_direction(direction);
-}
-
-void gl3_filter_chain::set_frame_time_delta(uint32_t time_delta)
+static void gl3_chain_set_frame_direction(struct gl3_filter_chain *chain, int32_t direction)
 {
    unsigned i;
-   for (i = 0; i < num_passes; i++)
-      passes[i]->set_frame_time_delta(time_delta);
+   for (i = 0; i < chain->num_passes; i++)
+      chain->passes[i]->set_frame_direction(direction);
 }
 
-void gl3_filter_chain::set_original_fps(float fps)
+static void gl3_chain_set_frame_time_delta(struct gl3_filter_chain *chain, uint32_t time_delta)
 {
    unsigned i;
-   for (i = 0; i < num_passes; i++)
-      passes[i]->set_original_fps(fps);
+   for (i = 0; i < chain->num_passes; i++)
+      chain->passes[i]->set_frame_time_delta(time_delta);
 }
 
-void gl3_filter_chain::set_rotation(uint32_t rot)
+static void gl3_chain_set_original_fps(struct gl3_filter_chain *chain, float fps)
 {
    unsigned i;
-   for (i = 0; i < num_passes; i++)
-      passes[i]->set_rotation(rot);
+   for (i = 0; i < chain->num_passes; i++)
+      chain->passes[i]->set_original_fps(fps);
 }
 
-void gl3_filter_chain::set_core_aspect(float coreaspect)
+static void gl3_chain_set_rotation(struct gl3_filter_chain *chain, uint32_t rot)
 {
    unsigned i;
-   for (i = 0; i < num_passes; i++)
-      passes[i]->set_core_aspect(coreaspect);
+   for (i = 0; i < chain->num_passes; i++)
+      chain->passes[i]->set_rotation(rot);
 }
 
-void gl3_filter_chain::set_core_aspect_rot(float coreaspectrot)
+static void gl3_chain_set_core_aspect(struct gl3_filter_chain *chain, float coreaspect)
 {
    unsigned i;
-   for (i = 0; i < num_passes; i++)
-      passes[i]->set_core_aspect_rot(coreaspectrot);
+   for (i = 0; i < chain->num_passes; i++)
+      chain->passes[i]->set_core_aspect(coreaspect);
+}
+
+static void gl3_chain_set_core_aspect_rot(struct gl3_filter_chain *chain, float coreaspectrot)
+{
+   unsigned i;
+   for (i = 0; i < chain->num_passes; i++)
+      chain->passes[i]->set_core_aspect_rot(coreaspectrot);
 }
 
 
-void gl3_filter_chain::set_shader_subframes(uint32_t tot_subframes)
+static void gl3_chain_set_shader_subframes(struct gl3_filter_chain *chain, uint32_t tot_subframes)
 {
    unsigned i;
-   for (i = 0; i < num_passes; i++)
-      passes[i]->set_shader_subframes(tot_subframes);
+   for (i = 0; i < chain->num_passes; i++)
+      chain->passes[i]->set_shader_subframes(tot_subframes);
 }
 
-void gl3_filter_chain::set_current_shader_subframe(uint32_t cur_subframe)
+static void gl3_chain_set_current_shader_subframe(struct gl3_filter_chain *chain, uint32_t cur_subframe)
 {
    unsigned i;
-   for (i = 0; i < num_passes; i++)
-      passes[i]->set_current_shader_subframe(cur_subframe);
+   for (i = 0; i < chain->num_passes; i++)
+      chain->passes[i]->set_current_shader_subframe(cur_subframe);
 }
 
 #ifdef GL3_ROLLING_SCANLINE_SIMULATION
-void gl3_filter_chain::set_simulate_scanline(bool simulate_scanline)
+static void gl3_chain_set_simulate_scanline(struct gl3_filter_chain *chain, bool simulate_scanline)
 {
    unsigned i;
-   for (i = 0; i < num_passes; i++)
-      passes[i]->set_simulate_scanline(simulate_scanline);
+   for (i = 0; i < chain->num_passes; i++)
+      chain->passes[i]->set_simulate_scanline(simulate_scanline);
 }
 #endif /* GL3_ROLLING_SCANLINE_SIMULATION */
 
-void gl3_filter_chain::set_pass_name(unsigned pass, const char *name)
+static void gl3_chain_set_pass_name(struct gl3_filter_chain *chain, unsigned pass, const char *name)
 {
-   passes[pass]->set_name(name);
+   chain->passes[pass]->set_name(name);
 }
 
 static bool gl3_filter_chain_load_lut(
@@ -3468,7 +3486,7 @@ static bool gl3_filter_chain_load_luts(
          return false;
       }
 
-      if (!chain->add_static_texture(&image))
+      if (!gl3_chain_add_static_texture(chain, &image))
       {
          gl3_static_texture_free(&image);
          return false;
@@ -3483,9 +3501,9 @@ gl3_filter_chain_t *gl3_filter_chain_create_default(
 {
    struct gl3_filter_chain_pass_info pass_info;
 
-   std::unique_ptr<gl3_filter_chain> chain{ new gl3_filter_chain(1) };
+   struct gl3_filter_chain *chain = gl3_chain_new(1);
    if (!chain)
-      return nullptr;
+      return NULL;
 
    pass_info.scale_type_x  = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
    pass_info.scale_type_y  = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
@@ -3497,42 +3515,57 @@ gl3_filter_chain_t *gl3_filter_chain_create_default(
    pass_info.address       = GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE;
    pass_info.max_levels    = 0;
 
-   chain->set_pass_info(0, pass_info);
+   gl3_chain_set_pass_info(chain, 0, pass_info);
 
-   chain->set_shader(0, GL_VERTEX_SHADER,
+   gl3_chain_set_shader(chain, 0, GL_VERTEX_SHADER,
          gl3_shader::opaque_vert,
          sizeof(gl3_shader::opaque_vert) / sizeof(uint32_t));
-   chain->set_shader(0, GL_FRAGMENT_SHADER,
+   gl3_chain_set_shader(chain, 0, GL_FRAGMENT_SHADER,
          gl3_shader::opaque_frag,
          sizeof(gl3_shader::opaque_frag) / sizeof(uint32_t));
 
-   if (!chain->init())
-      return nullptr;
+   if (!gl3_chain_init(chain))
+   {
+      gl3_chain_free(chain);
+      return NULL;
+   }
 
-   return chain.release();
+   return chain;
 }
 
 gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
       const char *path, glslang_filter_chain_filter filter)
 {
    unsigned i;
-   std::unique_ptr<video_shader> shader{ new video_shader() };
+   video_shader *shader = new video_shader();
    if (!shader)
-      return nullptr;
+      return NULL;
 
-   if (!video_shader_load_preset_into_shader(path, shader.get()))
-      return nullptr;
+   if (!video_shader_load_preset_into_shader(path, shader))
+   {
+      delete shader;
+      return NULL;
+   }
 
    bool last_pass_is_fbo = shader->pass[shader->passes - 1].fbo.flags &
       FBO_SCALE_FLAG_VALID;
 
-   std::unique_ptr<gl3_filter_chain> chain{ new gl3_filter_chain(shader->passes + (last_pass_is_fbo ? 1 : 0)) };
+   struct gl3_filter_chain *chain = gl3_chain_new(
+         shader->passes + (last_pass_is_fbo ? 1 : 0));
    if (!chain)
-      return nullptr;
+      {
+         delete shader;
+         gl3_chain_free(chain);
+         return NULL;
+      }
 
    if (      shader->luts
-         && !gl3_filter_chain_load_luts(chain.get(), shader.get()))
-      return nullptr;
+         && !gl3_filter_chain_load_luts(chain, shader))
+      {
+         delete shader;
+         gl3_chain_free(chain);
+         return NULL;
+      }
 
    shader->num_parameters = 0;
 
@@ -3568,7 +3601,11 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
       {
          RARCH_ERR("[GLCore] Failed to compile shader: \"%s\".\n",
                pass->source.path);
-         return nullptr;
+         {
+         delete shader;
+         gl3_chain_free(chain);
+         return NULL;
+      }
       }
 
       for (size_t j = 0; j < output.meta.num_parameters; j++)
@@ -3579,7 +3616,11 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
          {
             RARCH_ERR("[GLCore] Exceeded maximum number of parameters (%u).\n", GFX_MAX_PARAMETERS);
             glslang_output_free(&output);
-            return nullptr;
+            {
+         delete shader;
+         gl3_chain_free(chain);
+         return NULL;
+      }
          }
 
          video_shader_parameter *itr = NULL;
@@ -3615,9 +3656,13 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
                RARCH_ERR("[GLCore] Duplicate parameters found for \"%s\", but arguments do not match.\n",
                      itr->id);
                glslang_output_free(&output);
-               return nullptr;
+               {
+         delete shader;
+         gl3_chain_free(chain);
+         return NULL;
+      }
             }
-            chain->add_parameter(i, (unsigned)(itr - shader->parameters), meta_param->id);
+            gl3_chain_add_parameter(chain, i, (unsigned)(itr - shader->parameters), meta_param->id);
          }
          else
          {
@@ -3628,29 +3673,29 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
             param->minimum = meta_param->minimum;
             param->maximum = meta_param->maximum;
             param->step    = meta_param->step;
-            chain->add_parameter(i, shader->num_parameters, meta_param->id);
+            gl3_chain_add_parameter(chain, i, shader->num_parameters, meta_param->id);
             shader->num_parameters++;
          }
       }
 
-      chain->set_shader(i,
+      gl3_chain_set_shader(chain, i,
             GL_VERTEX_SHADER,
             output.vertex,
             output.vertex_len);
 
-      chain->set_shader(i,
+      gl3_chain_set_shader(chain, i,
             GL_FRAGMENT_SHADER,
             output.fragment,
             output.fragment_len);
 
-      chain->set_frame_count_period(i, pass->frame_count_mod);
+      gl3_chain_set_frame_count_period(chain, i, pass->frame_count_mod);
 
       if (output.meta.name[0])
-         chain->set_pass_name(i, output.meta.name);
+         gl3_chain_set_pass_name(chain, i, output.meta.name);
 
       /* Preset overrides. */
       if (*pass->alias)
-         chain->set_pass_name(i, pass->alias);
+         gl3_chain_set_pass_name(chain, i, pass->alias);
 
       if (pass->filter == RARCH_FILTER_UNSPEC)
          pass_info.source_filter = filter;
@@ -3764,7 +3809,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
          }
       }
 
-      chain->set_pass_info(i, pass_info);
+      gl3_chain_set_pass_info(chain, i, pass_info);
       glslang_output_free(&output);
    }
    }   /* include cache scope: freed here, and on any early return above */
@@ -3786,25 +3831,30 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
 
       pass_info.max_levels    = 0;
 
-      chain->set_pass_info(shader->passes, pass_info);
+      gl3_chain_set_pass_info(chain, shader->passes, pass_info);
 
-      chain->set_shader(shader->passes,
+      gl3_chain_set_shader(chain, shader->passes,
             GL_VERTEX_SHADER,
             gl3_shader::opaque_vert,
             sizeof(gl3_shader::opaque_vert) / sizeof(uint32_t));
 
-      chain->set_shader(shader->passes,
+      gl3_chain_set_shader(chain, shader->passes,
             GL_FRAGMENT_SHADER,
             gl3_shader::opaque_frag,
             sizeof(gl3_shader::opaque_frag) / sizeof(uint32_t));
    }
 
-   chain->set_shader_preset(shader.release());
+   gl3_chain_set_shader_preset(chain, shader);
+   shader = NULL;   /* the chain owns it now */
 
-   if (!chain->init())
-      return nullptr;
+   if (!gl3_chain_init(chain))
+      {
+         delete shader;
+         gl3_chain_free(chain);
+         return NULL;
+      }
 
-   return chain.release();
+   return chain;
 }
 
 /* ---- Deferred (per-frame) filter chain construction ---- */
@@ -3815,24 +3865,35 @@ gl3_filter_chain_t *gl3_filter_chain_create_deferred(
       unsigned *out_num_passes)
 {
    unsigned i;
-   std::unique_ptr<video_shader> shader{ new video_shader() };
+   video_shader *shader = new video_shader();
    if (!shader)
-      return nullptr;
+      return NULL;
 
-   if (!video_shader_load_preset_into_shader(path, shader.get()))
-      return nullptr;
+   if (!video_shader_load_preset_into_shader(path, shader))
+   {
+      delete shader;
+      return NULL;
+   }
 
    bool last_pass_is_fbo = shader->pass[shader->passes - 1].fbo.flags &
       FBO_SCALE_FLAG_VALID;
 
    unsigned total_passes = shader->passes + (last_pass_is_fbo ? 1 : 0);
-   std::unique_ptr<gl3_filter_chain> chain{ new gl3_filter_chain(total_passes) };
+   struct gl3_filter_chain *chain = gl3_chain_new(total_passes);
    if (!chain)
-      return nullptr;
+      {
+         delete shader;
+         gl3_chain_free(chain);
+         return NULL;
+      }
 
    if (      shader->luts
-         && !gl3_filter_chain_load_luts(chain.get(), shader.get()))
-      return nullptr;
+         && !gl3_filter_chain_load_luts(chain, shader))
+      {
+         delete shader;
+         gl3_chain_free(chain);
+         return NULL;
+      }
 
    shader->num_parameters = 0;
 
@@ -3842,7 +3903,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_deferred(
    for (i = 0; i < shader->passes; i++)
    {
       if (*shader->pass[i].alias)
-         chain->set_pass_name(i, shader->pass[i].alias);
+         gl3_chain_set_pass_name(chain, i, shader->pass[i].alias);
    }
 
    if (last_pass_is_fbo)
@@ -3859,38 +3920,43 @@ gl3_filter_chain_t *gl3_filter_chain_create_deferred(
       pass_info.address       = GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE;
       pass_info.max_levels    = 0;
 
-      chain->set_pass_info(shader->passes, pass_info);
+      gl3_chain_set_pass_info(chain, shader->passes, pass_info);
 
-      chain->set_shader(shader->passes,
+      gl3_chain_set_shader(chain, shader->passes,
             GL_VERTEX_SHADER,
             gl3_shader::opaque_vert,
             sizeof(gl3_shader::opaque_vert) / sizeof(uint32_t));
 
-      chain->set_shader(shader->passes,
+      gl3_chain_set_shader(chain, shader->passes,
             GL_FRAGMENT_SHADER,
             gl3_shader::opaque_frag,
             sizeof(gl3_shader::opaque_frag) / sizeof(uint32_t));
    }
 
-   chain->set_shader_preset(shader.release());
+   gl3_chain_set_shader_preset(chain, shader);
+   shader = NULL;   /* the chain owns it now */
 
    /* Populate the alias map with preset-defined aliases.
     * compile_full_pass() will incrementally update the map
     * when shaders add names via #pragma name. */
-   if (!chain->init_alias_early())
+   if (!gl3_chain_init_alias_early(chain))
    {
       RARCH_ERR("[GLCore] Deferred: failed to initialize alias map.\n");
-      return nullptr;
+      {
+         delete shader;
+         gl3_chain_free(chain);
+         return NULL;
+      }
    }
 
-   /* NOTE: We do NOT call chain->init() here.
+   /* NOTE: We do NOT call gl3_chain_init(chain) here.
     * Passes are compiled one per frame via
     * gl3_filter_chain_compile_pass / gl3_filter_chain_finalize. */
 
    if (out_num_passes)
       *out_num_passes = total_passes;
 
-   return chain.release();
+   return chain;
 }
 
 bool gl3_filter_chain_compile_pass(
@@ -3898,19 +3964,19 @@ bool gl3_filter_chain_compile_pass(
       unsigned pass_index,
       glslang_filter_chain_filter filter)
 {
-   return chain->compile_full_pass(pass_index, filter);
+   return gl3_chain_compile_full_pass(chain, pass_index, filter);
 }
 
 bool gl3_filter_chain_finalize(gl3_filter_chain_t *chain)
 {
-   return chain->finalize();
+   return gl3_chain_finalize(chain);
 }
 
 struct video_shader *gl3_filter_chain_get_preset(
-      gl3_filter_chain_t *chain) { return chain->get_shader_preset(); }
+      gl3_filter_chain_t *chain) { return gl3_chain_get_shader_preset(chain); }
 void gl3_filter_chain_free(gl3_filter_chain_t *chain)
 {
-   delete chain;
+   gl3_chain_free(chain);
    input_state_get_ptr()->shader_uses_sensors = false;
 }
 
@@ -3921,7 +3987,7 @@ void gl3_filter_chain_set_shader(
       const uint32_t *spirv,
       size_t spirv_words)
 {
-   chain->set_shader(pass, shader_stage, spirv, spirv_words);
+   gl3_chain_set_shader(chain, pass, shader_stage, spirv, spirv_words);
 }
 
 void gl3_filter_chain_set_pass_info(
@@ -3929,82 +3995,82 @@ void gl3_filter_chain_set_pass_info(
       unsigned pass,
       const struct gl3_filter_chain_pass_info *info)
 {
-   chain->set_pass_info(pass, *info);
+   gl3_chain_set_pass_info(chain, pass, *info);
 }
 
 bool gl3_filter_chain_init(gl3_filter_chain_t *chain)
 {
-   return chain->init();
+   return gl3_chain_init(chain);
 }
 
 void gl3_filter_chain_set_input_texture(
       gl3_filter_chain_t *chain,
       const struct gl3_filter_chain_texture *texture)
 {
-   chain->set_input_texture(*texture);
+   gl3_chain_set_input_texture(chain, *texture);
 }
 
 void gl3_filter_chain_set_frame_count(
       gl3_filter_chain_t *chain,
       uint64_t count)
 {
-   chain->set_frame_count(count);
+   gl3_chain_set_frame_count(chain, count);
 }
 
 void gl3_filter_chain_set_frame_direction(
       gl3_filter_chain_t *chain,
       int32_t direction)
 {
-   chain->set_frame_direction(direction);
+   gl3_chain_set_frame_direction(chain, direction);
 }
 
 void gl3_filter_chain_set_frame_time_delta(
       gl3_filter_chain_t *chain,
       uint32_t time_delta)
 {
-   chain->set_frame_time_delta(time_delta);
+   gl3_chain_set_frame_time_delta(chain, time_delta);
 }
 
 void gl3_filter_chain_set_original_fps(
       gl3_filter_chain_t *chain,
       float fps)
 {
-   chain->set_original_fps(fps);
+   gl3_chain_set_original_fps(chain, fps);
 }
 
 void gl3_filter_chain_set_rotation(
       gl3_filter_chain_t *chain,
       uint32_t rot)
 {
-   chain->set_rotation(rot);
+   gl3_chain_set_rotation(chain, rot);
 }
 
 void gl3_filter_chain_set_core_aspect(
       gl3_filter_chain_t *chain,
       float coreaspect)
 {
-   chain->set_core_aspect(coreaspect);
+   gl3_chain_set_core_aspect(chain, coreaspect);
 }
 
 void gl3_filter_chain_set_core_aspect_rot(
       gl3_filter_chain_t *chain,
       float coreaspectrot)
 {
-   chain->set_core_aspect_rot(coreaspectrot);
+   gl3_chain_set_core_aspect_rot(chain, coreaspectrot);
 }
 
 void gl3_filter_chain_set_shader_subframes(
       gl3_filter_chain_t *chain,
       uint32_t tot_subframes)
 {
-   chain->set_shader_subframes(tot_subframes);
+   gl3_chain_set_shader_subframes(chain, tot_subframes);
 }
 
 void gl3_filter_chain_set_current_shader_subframe(
       gl3_filter_chain_t *chain,
       uint32_t cur_subframe)
 {
-   chain->set_current_shader_subframe(cur_subframe);
+   gl3_chain_set_current_shader_subframe(chain, cur_subframe);
 }
 
 #ifdef GL3_ROLLING_SCANLINE_SIMULATION
@@ -4012,7 +4078,7 @@ void gl3_filter_chain_set_simulate_scanline(
       gl3_filter_chain_t *chain,
       bool simulate_scanline)
 {
-   chain->set_simulate_scanline(simulate_scanline);
+   gl3_chain_set_simulate_scanline(chain, simulate_scanline);
 }
 #endif /* GL3_ROLLING_SCANLINE_SIMULATION */
 
@@ -4021,7 +4087,7 @@ void gl3_filter_chain_set_frame_count_period(
       unsigned pass,
       unsigned period)
 {
-   chain->set_frame_count_period(pass, period);
+   gl3_chain_set_frame_count_period(chain, pass, period);
 }
 
 void gl3_filter_chain_set_pass_name(
@@ -4029,24 +4095,24 @@ void gl3_filter_chain_set_pass_name(
       unsigned pass,
       const char *name)
 {
-   chain->set_pass_name(pass, name);
+   gl3_chain_set_pass_name(chain, pass, name);
 }
 
 void gl3_filter_chain_build_offscreen_passes(
       gl3_filter_chain_t *chain,
       const gl3_viewport *vp)
 {
-   chain->build_offscreen_passes(*vp);
+   gl3_chain_build_offscreen_passes(chain, *vp);
 }
 
 void gl3_filter_chain_build_viewport_pass(
       gl3_filter_chain_t *chain,
       const gl3_viewport *vp, const float *mvp)
 {
-   chain->build_viewport_pass(*vp, mvp);
+   gl3_chain_build_viewport_pass(chain, *vp, mvp);
 }
 
 void gl3_filter_chain_end_frame(gl3_filter_chain_t *chain)
 {
-   chain->end_frame();
+   gl3_chain_end_frame(chain);
 }
