@@ -229,6 +229,16 @@
 #define DT_NO_POOL
 #endif
 #endif
+
+/* The console targets have no native TLS: GCC lowers __thread there
+ * through emutls, which is a per-access table lookup plus a gthread
+ * mutex on the control path - on Vita that mutex is the toolchain's
+ * pthread port, the only thing left asking for it.  That costs more
+ * than the pool miss the cache exists to avoid, so the pool is
+ * compiled out and every load takes the fresh-reservation path. */
+#if defined(VITA) || defined(PSP) || defined(_3DS) || defined(GEKKO)
+#define DT_NO_POOL
+#endif
 #endif
 
 #if !defined(DT_NO_POOL)

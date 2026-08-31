@@ -374,7 +374,7 @@ bool sthread_is_main_thread(void);
  * sthread_set_cancel_enable(false) ... sthread_set_cancel_enable(true).
  *
  * A no-op on backends without thread cancellation (Win32, Android/Bionic,
- * GEKKO, 3DS, PSP); pair it with a cooperative "done" flag so shutdown does not
+ * GEKKO, 3DS, PSP, Vita); pair it with a cooperative "done" flag so shutdown does not
  * rely on cancellation being available.
  *
  * @param enable true to allow cancellation, false to defer it.
@@ -388,7 +388,7 @@ void sthread_set_cancel_enable(bool enable);
  *
  * @param thread The thread to cancel.
  * @return true if the request was issued; false on failure or where the
- * backend provides no cancellation (Win32, Android/Bionic, GEKKO, 3DS, PSP).
+ * backend provides no cancellation (Win32, Android/Bionic, GEKKO, 3DS, PSP, Vita).
  */
 bool sthread_cancel(sthread_t *thread);
 

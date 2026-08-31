@@ -39,9 +39,6 @@
 #include <pspsdk.h>
 #endif
 
-#ifdef VITA
-#include <pthread.h>
-#endif
 
 #include <string/stdstring.h>
 #include <boolean.h>
@@ -222,9 +219,6 @@ static void frontend_psp_get_env_settings(int *argc, char *argv[],
 static void frontend_psp_deinit(void *data)
 {
    (void)data;
-#if !defined(IS_SALAMANDER) && defined(VITA)
-   pthread_terminate();
-#endif
 }
 
 static void frontend_psp_shutdown(bool unused)
@@ -297,10 +291,6 @@ static void frontend_psp_init(void *data)
    pspFpuSetEnable(0); /* disable FPU exceptions */
    scePowerSetClockFrequency(333,333,166);
 #endif
-#ifdef VITA
-   pthread_init();
-#endif
-
 #endif
 
 #if defined(PSP) && defined(HAVE_KERNEL_PRX)

@@ -69,6 +69,13 @@
 #include <pspkernel.h>
 #include <pspthreadman.h>
 #define STACKSIZE (32 * 1024)
+#elif defined(VITA)
+#define USE_VITA_THREADS
+#include <psp2/kernel/threadmgr.h>
+#ifdef DEBUG
+#include <retro_assert.h>
+#endif
+#define STACKSIZE (64 * 1024)
 #else
 #include <pthread.h>
 #include <time.h>
@@ -177,7 +184,7 @@ static INLINE void CondVar_Broadcast(CondVar* cv)
 #endif
 
 
-#if defined(VITA) || defined(BSD) || defined(ORBIS)
+#if defined(BSD) || defined(ORBIS)
 #include <sys/time.h>
 #endif
 
@@ -261,7 +268,11 @@ struct thread_data
    void *userdata;
 };
 
-#ifdef USE_PSP_THREADS
+#if defined(USE_PSP_THREADS) || defined(USE_VITA_THREADS)
+#define RTHREADS_SCE_START
+#endif
+
+#ifdef RTHREADS_SCE_START
 #define PSP_THREAD_DONE     1
 #define PSP_THREAD_DETACHED 2
 
@@ -282,7 +293,7 @@ struct sthread
    lwp_t id;
 #elif defined(USE_CTR_THREADS)
    Thread id;
-#elif defined(USE_PSP_THREADS)
+#elif defined(RTHREADS_SCE_START)
    struct psp_thread_start *start;
    SceUID id;
 #else
@@ -300,6 +311,8 @@ struct slock
    LightLock lock;
 #elif defined(USE_PSP_THREADS)
    SceUID lock;
+#elif defined(USE_VITA_THREADS)
+   SceKernelLwMutexWork lock;
 #else
    pthread_mutex_t lock;
 #endif
@@ -405,12 +418,16 @@ struct scond
    SceUID gate;   /* binary semaphore guarding waiters */
    SceUID sema;   /* wait tokens, one credit per wake  */
    int waiters;
+#elif defined(USE_VITA_THREADS)
+   SceKernelLwCondWork work;
+   SceKernelLwMutexWork *assoc;   /* the lock this condvar is bound to */
+   retro_atomic_int_t bound;      /* nonzero once work exists */
 #else
    pthread_cond_t cond;
 #endif
 };
 
-#if defined(USE_PSP_THREADS)
+#if defined(RTHREADS_SCE_START)
 /* Joinable threads finish into the dormant state and are reaped by
  * sthread_join. A detached thread reaps itself: whichever of the
  * finishing thread and sthread_detach runs second sees the other's
@@ -419,6 +436,7 @@ struct scond
 static int psp_thread_wrap(SceSize args_size, void *argp)
 {
    struct psp_thread_start *s = *(struct psp_thread_start**)argp;
+   (void)args_size;
    s->func(s->userdata);
    if (retro_atomic_fetch_or_int(&s->state, PSP_THREAD_DONE)
          & PSP_THREAD_DETACHED)
@@ -461,6 +479,7 @@ sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
 /* TODO/FIXME - this needs to be implemented for Switch */
 #if !defined(USE_WIN32_THREADS) && !defined(USE_GX_THREADS) \
       && !defined(USE_CTR_THREADS) && !defined(USE_PSP_THREADS) \
+      && !defined(USE_VITA_THREADS) \
       && !defined(SWITCH) && !defined(__HAIKU__) && !defined(__EMSCRIPTEN__)
 #define HAVE_THREAD_ATTR
 #endif
@@ -472,7 +491,7 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
    bool thread_attr_needed  = false;
 #endif
    bool thread_created      = false;
-#ifndef USE_PSP_THREADS
+#ifndef RTHREADS_SCE_START
    struct thread_data *data = NULL;
 #endif
    sthread_t *thread        = (sthread_t*)malloc(sizeof(*thread));
@@ -480,7 +499,7 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
    if (!thread)
       return NULL;
 
-#ifndef USE_PSP_THREADS
+#ifndef RTHREADS_SCE_START
    if (!(data = (struct thread_data*)malloc(sizeof(*data))))
    {
       free(thread);
@@ -580,6 +599,48 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
       if (!thread_created)
          free(start);
    }
+#elif defined(USE_VITA_THREADS)
+   {
+      /* Priorities run 64..191 with lower numbers scheduled first.
+       * Workers inherit the creator's priority; an explicit rthreads
+       * priority maps across the whole band instead. The kernel
+       * copies the argument block when the thread starts, so the
+       * pointer to the start block travels by value. */
+      struct psp_thread_start *start = (struct psp_thread_start*)
+            malloc(sizeof(*start));
+      int prio;
+
+      if (!start)
+      {
+         free(thread);
+         return NULL;
+      }
+
+      start->func     = thread_func;
+      start->userdata = userdata;
+      retro_atomic_int_init(&start->state, 0);
+
+      prio            = sceKernelGetThreadCurrentPriority();
+      if (thread_priority >= 1 && thread_priority <= 100)
+         prio         = 191 - ((thread_priority - 1) * (191 - 64)) / 99;
+      if (prio < 64)
+         prio         = 64;
+      if (prio > 191)
+         prio         = 191;
+
+      thread->start   = start;
+      thread->id      = sceKernelCreateThread("rarch_thread",
+            psp_thread_wrap, prio, STACKSIZE, 0, 0, NULL);
+      if (thread->id >= 0)
+      {
+         if (sceKernelStartThread(thread->id, sizeof(start), &start) >= 0)
+            thread_created = true;
+         else
+            sceKernelDeleteThread(thread->id);
+      }
+      if (!thread_created)
+         free(start);
+   }
 #else
    thread->id               = 0;
 #ifdef HAVE_THREAD_ATTR
@@ -596,10 +657,7 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
       thread_attr_needed = true;
    }
 
-#if defined(VITA)
-   pthread_attr_setstacksize(&thread_attr , 0x10000 );
-   thread_attr_needed = true;
-#elif defined(__APPLE__)
+#if defined(__APPLE__)
    /* Default stack size on Apple is 512Kb;
     * for PS2 disc scanning and other reasons, we'd like 2MB. */
    pthread_attr_setstacksize(&thread_attr , 0x200000 );
@@ -619,7 +677,7 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
 
    if (thread_created)
       return thread;
-#ifndef USE_PSP_THREADS
+#ifndef RTHREADS_SCE_START
    free(data);
 #endif
    free(thread);
@@ -650,6 +708,14 @@ bool sthread_raise_current_priority(void)
       int prio = sceKernelGetThreadCurrentPriority() - 4;
       if (prio < 0x10)
          prio  = 0x10;
+      return sceKernelChangeThreadPriority(
+            sceKernelGetThreadId(), prio) == 0;
+   }
+#elif defined(USE_VITA_THREADS)
+   {
+      int prio = sceKernelGetThreadCurrentPriority() - 8;
+      if (prio < 64)
+         prio  = 64;
       return sceKernelChangeThreadPriority(
             sceKernelGetThreadId(), prio) == 0;
    }
@@ -746,6 +812,20 @@ int sthread_detach(sthread_t *thread)
    }
    free(thread);
    return 0;
+#elif defined(USE_VITA_THREADS)
+   if (!thread)
+      return 0;
+   if (retro_atomic_fetch_or_int(&thread->start->state,
+            PSP_THREAD_DETACHED) & PSP_THREAD_DONE)
+   {
+      /* Already finished: it is dormant (or about to be) and can no
+       * longer reap itself, so reap it here. */
+      sceKernelWaitThreadEnd(thread->id, NULL, NULL);
+      sceKernelDeleteThread(thread->id);
+      free(thread->start);
+   }
+   free(thread);
+   return 0;
 #else
    int ret;
    if (!thread)
@@ -772,6 +852,10 @@ void sthread_join(sthread_t *thread)
    sceKernelWaitThreadEnd(thread->id, NULL);
    sceKernelDeleteThread(thread->id);
    free(thread->start);
+#elif defined(USE_VITA_THREADS)
+   sceKernelWaitThreadEnd(thread->id, NULL, NULL);
+   sceKernelDeleteThread(thread->id);
+   free(thread->start);
 #else
    pthread_join(thread->id, NULL);
 #endif
@@ -786,7 +870,7 @@ bool sthread_isself(sthread_t *thread)
    return thread ? LWP_GetSelf() == thread->id               : false;
 #elif defined(USE_CTR_THREADS)
    return thread ? threadGetCurrent() == thread->id          : false;
-#elif defined(USE_PSP_THREADS)
+#elif defined(RTHREADS_SCE_START)
    return thread ? sceKernelGetThreadId() == thread->id      : false;
 #else
    return thread ? pthread_equal(pthread_self(), thread->id) : false;
@@ -814,6 +898,12 @@ slock_t *slock_new(void)
       free(lock);
       return NULL;
    }
+#elif defined(USE_VITA_THREADS)
+   if (sceKernelCreateLwMutex(&lock->lock, "rarch_lock", 0, 0, NULL) < 0)
+   {
+      free(lock);
+      return NULL;
+   }
 #else
    if (pthread_mutex_init(&lock->lock, NULL) != 0)
    {
@@ -837,6 +927,8 @@ void slock_free(slock_t *lock)
    /* nothing to destroy */
 #elif defined(USE_PSP_THREADS)
    sceKernelDeleteSema(lock->lock);
+#elif defined(USE_VITA_THREADS)
+   sceKernelDeleteLwMutex(&lock->lock);
 #else
    pthread_mutex_destroy(&lock->lock);
 #endif
@@ -855,6 +947,8 @@ void slock_lock(slock_t *lock)
    LightLock_Lock(&lock->lock);
 #elif defined(USE_PSP_THREADS)
    sceKernelWaitSema(lock->lock, 1, NULL);
+#elif defined(USE_VITA_THREADS)
+   sceKernelLockLwMutex(&lock->lock, 1, NULL);
 #else
    pthread_mutex_lock(&lock->lock);
 #endif
@@ -870,6 +964,8 @@ bool slock_try_lock(slock_t *lock)
    return lock && (LightLock_TryLock(&lock->lock) == 0);
 #elif defined(USE_PSP_THREADS)
    return lock && (sceKernelPollSema(lock->lock, 1) == 0);
+#elif defined(USE_VITA_THREADS)
+   return lock && (sceKernelTryLockLwMutex(&lock->lock, 1) == 0);
 #else
    return lock && (pthread_mutex_trylock(&lock->lock) == 0);
 #endif
@@ -887,10 +983,36 @@ void slock_unlock(slock_t *lock)
    LightLock_Unlock(&lock->lock);
 #elif defined(USE_PSP_THREADS)
    sceKernelSignalSema(lock->lock, 1);
+#elif defined(USE_VITA_THREADS)
+   sceKernelUnlockLwMutex(&lock->lock, 1);
 #else
    pthread_mutex_unlock(&lock->lock);
 #endif
 }
+
+#ifdef USE_VITA_THREADS
+/* A LwCond is created bound to one LwMutex, and scond only learns its
+ * lock at the first wait, so binding happens there. The caller holds
+ * the lock at that point, so concurrent first waits are serialized by
+ * the lock itself; a signal that still observes the condvar as
+ * unbound corresponds to a moment with no blocked waiter, where
+ * dropping the signal is what a condvar does anyway. Waiting on one
+ * condvar with two different locks is as undefined here as it is for
+ * pthreads. */
+static void scond_bind_vita(scond_t *cond, slock_t *lock)
+{
+   if (!retro_atomic_load_acquire_int(&cond->bound))
+   {
+      cond->assoc = &lock->lock;
+      sceKernelCreateLwCond(&cond->work, "rarch_cond", 0,
+            &lock->lock, NULL);
+      retro_atomic_store_release_int(&cond->bound, 1);
+   }
+#ifdef DEBUG
+   retro_assert(cond->assoc == &lock->lock);
+#endif
+}
+#endif
 
 scond_t *scond_new(void)
 {
@@ -923,6 +1045,9 @@ scond_t *scond_new(void)
       free(cond);
       return NULL;
    }
+#elif defined(USE_VITA_THREADS)
+   cond->assoc = NULL;
+   retro_atomic_int_init(&cond->bound, 0);
 #else
    if (pthread_cond_init(&cond->cond, NULL) != 0)
    {
@@ -948,6 +1073,9 @@ void scond_free(scond_t *cond)
 #elif defined(USE_PSP_THREADS)
    sceKernelDeleteSema(cond->sema);
    sceKernelDeleteSema(cond->gate);
+#elif defined(USE_VITA_THREADS)
+   if (retro_atomic_load_acquire_int(&cond->bound))
+      sceKernelDeleteLwCond(&cond->work);
 #else
    pthread_cond_destroy(&cond->cond);
 #endif
@@ -1450,6 +1578,9 @@ void scond_wait(scond_t *cond, slock_t *lock)
    slock_unlock(lock);
    sceKernelWaitSema(cond->sema, 1, NULL);
    slock_lock(lock);
+#elif defined(USE_VITA_THREADS)
+   scond_bind_vita(cond, lock);
+   sceKernelWaitLwCond(&cond->work, NULL);
 #else
    pthread_cond_wait(&cond->cond, &lock->lock);
 #endif
@@ -1489,6 +1620,10 @@ int scond_broadcast(scond_t *cond)
    if (n > 0)
       sceKernelSignalSema(cond->sema, n);
    sceKernelSignalSema(cond->gate, 1);
+   return 0;
+#elif defined(USE_VITA_THREADS)
+   if (retro_atomic_load_acquire_int(&cond->bound))
+      sceKernelSignalLwCondAll(&cond->work);
    return 0;
 #else
    return pthread_cond_broadcast(&cond->cond);
@@ -1540,6 +1675,9 @@ void scond_signal(scond_t *cond)
       sceKernelSignalSema(cond->sema, 1);
    }
    sceKernelSignalSema(cond->gate, 1);
+#elif defined(USE_VITA_THREADS)
+   if (retro_atomic_load_acquire_int(&cond->bound))
+      sceKernelSignalLwCond(&cond->work);
 #else
    pthread_cond_signal(&cond->cond);
 #endif
@@ -1633,6 +1771,14 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    }
    slock_lock(lock);
    return woken;
+#elif defined(USE_VITA_THREADS)
+   unsigned int to;
+   if (timeout_us <= 0)
+      return false;
+   scond_bind_vita(cond, lock);
+   to = (timeout_us > INT64_C(0xFFFFFFFF))
+         ? 0xFFFFFFFFu : (unsigned int)timeout_us;
+   return sceKernelWaitLwCond(&cond->work, &to) == 0;
 #else
    int64_t seconds, remainder;
    struct timespec now;
@@ -1661,13 +1807,6 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
       int tickms            = ps2_clock();
       now.tv_sec            = tickms / 1000;
       now.tv_nsec           = (long)(tickms % 1000) * 1000000L;
-   }
-#elif !defined(DINGUX_BETA) && defined(VITA)
-   {
-      struct timeval tm;
-      gettimeofday(&tm, NULL);
-      now.tv_sec            = tm.tv_sec;
-      now.tv_nsec           = tm.tv_usec * 1000;
    }
 #elif defined(RETRO_WIN32_USE_PTHREADS)
    _ftime64_s(&now);
@@ -1756,7 +1895,7 @@ uintptr_t sthread_get_current_thread_id(void)
    return (uintptr_t)LWP_GetSelf();
 #elif defined(USE_CTR_THREADS)
    return (uintptr_t)threadGetCurrent();
-#elif defined(USE_PSP_THREADS)
+#elif defined(RTHREADS_SCE_START)
    return (uintptr_t)sceKernelGetThreadId();
 #else
    return (uintptr_t)pthread_self();
@@ -1781,7 +1920,7 @@ bool sthread_is_main_thread(void)
  * non-pthread backends. Enable only where the backend provides them. */
 #if !defined(USE_WIN32_THREADS) && !defined(USE_GX_THREADS) \
       && !defined(USE_CTR_THREADS) && !defined(USE_PSP_THREADS) \
-      && !defined(__ANDROID__)
+      && !defined(USE_VITA_THREADS) && !defined(__ANDROID__)
 #define RTHREADS_HAVE_CANCEL 1
 #endif
 
