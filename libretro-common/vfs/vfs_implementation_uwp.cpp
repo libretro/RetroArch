@@ -29,7 +29,7 @@
 #include <robuffer.h>
 #include <functional>
 #include <fileapifromapp.h>
-#include <AclAPI.h>
+#include <aclapi.h>
 #include <sddl.h>
 #include <io.h>
 #include <fcntl.h>
