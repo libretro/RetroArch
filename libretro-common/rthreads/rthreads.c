@@ -672,7 +672,15 @@ static INLINE void scond_umwait(unsigned __int64 deadline)
 
 /* ---- once-per-process setup ---------------------------------------- */
 
-#define SCOND_DEFAULT_SPIN_CYCLES 0x90b40u  /* the value ntdll ships */
+/* TSC cycles a waiter spins on its flag word before blocking. Measured
+ * on a 9950X3D at 600 dispatches a frame: below about 32k the spin no
+ * longer bridges the interval between dispatches and every one of them
+ * pays a kernel wait, while above 64k nothing is gained at four or
+ * eight threads and an oversubscribed pool loses steadily, its spinners
+ * taking cycles from the sibling threads doing the work. ntdll spins
+ * 0x90b40, an order of magnitude longer, which suits a general-purpose
+ * wait rather than one dispatch arriving every few microseconds. */
+#define SCOND_DEFAULT_SPIN_CYCLES 64000u
 
 static void scond_global_resolve(void)
 {
