@@ -887,7 +887,7 @@ int sha1_calculate(const char *path, char *result)
       /* No mapping, so copy a block at a time.  The buffer is heap
        * rather than a local: as unsigned char buff[4096] this was a
        * 4304-byte frame, over half of the 8 KiB a GEKKO thread gets
-       * (STACKSIZE in rthreads/gx_pthread.h), and hashing a whole
+       * (the GEKKO STACKSIZE in rthreads.c), and hashing a whole
        * file dwarfs one allocation either way.
        *
        * A block far larger than a page keeps the number of reads down,

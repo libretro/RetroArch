@@ -471,7 +471,7 @@ void filestream_set_mapped_ptr_cb(filestream_mapped_ptr_cb_t cb);
  *
  * The ceiling is a stack budget, not a throughput one: this buffer is
  * a local, and the smallest thread stack in the tree is GEKKO's
- * 8 KiB (STACKSIZE in rthreads/gx_pthread.h), with 32 KiB on 3DS and
+ * 8 KiB (the GEKKO STACKSIZE in rthreads.c), with 32 KiB on 3DS and
  * 64 KiB on Vita. Larger reads are faster - at or above the VFS's
  * own 64 KiB stdio buffer they bypass it entirely - but the platforms
  * that take this path are the ones without memory mapping, which are

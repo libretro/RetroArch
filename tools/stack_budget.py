@@ -3,11 +3,8 @@
 console thread stack.
 
 The smallest thread stack in the tree is GEKKO's 8 KiB - STACKSIZE in
-rthreads/gx_pthread.h - with 32 KiB on 3DS (ctr_pthread.h) and 0x10000
-on Vita. (rthreads/psp_pthread.h names 8 KiB as well, but nothing
-includes it: rthreads.c takes gx_pthread.h under GEKKO and
-ctr_pthread.h under _3DS, and PSP falls through to plain pthreads. The
-floor is GEKKO's.) Nothing warns when a local buffer outgrows them:
+rthreads/rthreads.c - with 32 KiB on 3DS and 0x10000 on Vita. (PSP
+threads come from the toolchain's pthreads. The floor is GEKKO's.) Nothing warns when a local buffer outgrows them:
 it builds everywhere, and overflows only on a target most contributors
 cannot build, at whatever moment that code first runs on a task
 thread.

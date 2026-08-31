@@ -179,7 +179,7 @@ bool config_file_write(config_file_t *conf, const char *path, bool sort)
          /* The stdio buffer is heap, not a local.  At 16 KiB it was
           * twice the whole thread stack on the smallest target -
           * GEKKO threads get 8 KiB, see STACKSIZE in
-          * rthreads/gx_pthread.h - and this is reached from a task
+          * rthreads.c - and this is reached from a task
           * handler, so it runs on the task thread rather than the
           * main one whenever the queue is threaded:
           * input_autoconfigure_connect_handler ->
