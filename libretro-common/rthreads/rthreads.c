@@ -183,9 +183,15 @@ struct slock
  * NtWaitForAlertByThreadId / NtAlertThreadByThreadId (Windows 8 and
  * later), the keyed event pair (XP and later), and an auto-reset event
  * per thread where neither exists (the Xbox targets). RTHREADS_SCOND in
- * the environment picks one by name (alert, keyed, event) and
- * RTHREADS_SCOND_SPIN a spin mode (none, pause, mwaitx, umwait) or a
- * TSC bound as a number, for measurement.
+ * the environment picks one by name (alert, keyed, event),
+ * RTHREADS_SCOND_SPIN a spin mode (none, pause, mwaitx, umwait) and
+ * RTHREADS_SCOND_SPIN_CYCLES the TSC bound, for measurement.
+ *
+ * The spin defaults to the pause loop even where mwaitx or umwait exist:
+ * measured against the native variable at 600 dispatches a frame on a
+ * 9950X3D, pause is ahead of mwaitx at every thread count, because the
+ * hardware wait's exit latency is on the order of the whole interval
+ * between dispatches. The hardware waits remain selectable.
  *
  * Bit 0 of the scond word is a lock that wakers and timed-out waiters
  * take to edit the list; pushes never take it. Signal wakes the oldest
@@ -722,30 +728,6 @@ static void scond_global_resolve(void)
 #endif
    scond_g.spin = si.dwNumberOfProcessors > 1 ? SCOND_SPIN_PAUSE : SCOND_SPIN_NONE;
 #endif
-#if defined(SCOND_HAVE_X86)
-   if (scond_g.spin)
-   {
-      unsigned r[4];
-      scond_cpuid(0, 0, r);
-      if (r[0] >= 7)
-      {
-         scond_cpuid(7, 0, r);
-#if defined(SCOND_HAVE_UMWAIT)
-         if (r[2] & (1u << 5))
-            scond_g.spin = SCOND_SPIN_UMWAIT;
-#endif
-      }
-#if defined(SCOND_HAVE_MWAITX)
-      scond_cpuid(0x80000000u, 0, r);
-      if (r[0] >= 0x80000001u)
-      {
-         scond_cpuid(0x80000001u, 0, r);
-         if (r[2] & (1u << 29))
-            scond_g.spin = SCOND_SPIN_MWAITX;
-      }
-#endif
-   }
-#endif
    env = getenv("RTHREADS_SCOND_SPIN");
    if (env)
    {
@@ -753,17 +735,38 @@ static void scond_global_resolve(void)
          scond_g.spin = SCOND_SPIN_NONE;
       else if (!strcmp(env, "pause"))
          scond_g.spin = SCOND_SPIN_PAUSE;
-#if defined(SCOND_HAVE_MWAITX)
-      else if (!strcmp(env, "mwaitx"))
-         scond_g.spin = SCOND_SPIN_MWAITX;
-#endif
+#if defined(SCOND_HAVE_X86)
+      else if (!strcmp(env, "mwaitx") || !strcmp(env, "umwait"))
+      {
+         /* only where the processor has it */
+         unsigned r[4];
+         scond_cpuid(0, 0, r);
 #if defined(SCOND_HAVE_UMWAIT)
-      else if (!strcmp(env, "umwait"))
-         scond_g.spin = SCOND_SPIN_UMWAIT;
+         if (env[0] == 'u' && r[0] >= 7)
+         {
+            scond_cpuid(7, 0, r);
+            if (r[2] & (1u << 5))
+               scond_g.spin = SCOND_SPIN_UMWAIT;
+         }
 #endif
-      else if (env[0] >= '0' && env[0] <= '9')
-         cycles = (unsigned)strtoul(env, NULL, 0);
+#if defined(SCOND_HAVE_MWAITX)
+         if (env[0] == 'm')
+         {
+            scond_cpuid(0x80000000u, 0, r);
+            if (r[0] >= 0x80000001u)
+            {
+               scond_cpuid(0x80000001u, 0, r);
+               if (r[2] & (1u << 29))
+                  scond_g.spin = SCOND_SPIN_MWAITX;
+            }
+         }
+#endif
+      }
+#endif
    }
+   env = getenv("RTHREADS_SCOND_SPIN_CYCLES");
+   if (env && env[0] >= '0' && env[0] <= '9')
+      cycles = (unsigned)strtoul(env, NULL, 0);
    scond_g.spin_cycles = cycles;
    /* a pause is on the order of a hundred cycles */
    scond_g.spin_iters  = cycles / 128u;
