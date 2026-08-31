@@ -416,19 +416,7 @@ struct Texture
    glslang_filter_chain_address address;
 };
 
-class DeferredDisposer
-{
-   public:
-      DeferredDisposer(std::vector<std::function<void ()>> &calls) : calls(calls) {}
-
-      void defer(std::function<void ()> func)
-      {
-         calls.push_back(std::move(func));
-      }
-
-   private:
-      std::vector<std::function<void ()>> &calls;
-};
+struct deferred_disposes;
 
 class Buffer
 {
@@ -583,6 +571,82 @@ struct FramebufferMemoryPool
    }
 };
 
+/* One queued disposal: the resources a replaced framebuffer instance
+ * held.  Replacing a framebuffer is the only operation that ever defers
+ * work, so the queue holds plain records of this shape instead of
+ * type-erased callables. */
+struct deferred_fb_dispose
+{
+   VkDevice device;
+   FramebufferMemoryPool *pool;
+   VkFramebuffer framebuffer;
+   VkImageView view;
+   VkImageView fb_view;
+   VkImage image;
+   VkDeviceMemory memory;
+   size_t memory_size;
+   uint32_t memory_type;
+   /* VK_NULL_HANDLE unless the format changed with the resize. */
+   VkRenderPass render_pass;
+};
+
+/* Per-sync-index queue of pending disposals. */
+struct deferred_disposes
+{
+   struct deferred_fb_dispose *calls;
+   size_t size;
+   size_t cap;
+};
+
+static void deferred_fb_dispose_run(const struct deferred_fb_dispose *c)
+{
+   if (c->framebuffer != VK_NULL_HANDLE)
+      vkDestroyFramebuffer(c->device, c->framebuffer, nullptr);
+   if (c->view != VK_NULL_HANDLE)
+      vkDestroyImageView(c->device, c->view, nullptr);
+   if (c->fb_view != VK_NULL_HANDLE)
+      vkDestroyImageView(c->device, c->fb_view, nullptr);
+   /* The image must be destroyed before its memory becomes reusable;
+    * the pool only ever hands out blocks whose image is already gone. */
+   if (c->image != VK_NULL_HANDLE)
+      vkDestroyImage(c->device, c->image, nullptr);
+   if (c->memory != VK_NULL_HANDLE)
+   {
+      if (c->pool)
+         c->pool->release(c->device, c->memory, c->memory_size,
+               c->memory_type);
+      else
+         vkFreeMemory(c->device, c->memory, nullptr);
+   }
+   if (c->render_pass != VK_NULL_HANDLE)
+      vkDestroyRenderPass(c->device, c->render_pass, nullptr);
+}
+
+static void deferred_disposes_run_clear(struct deferred_disposes *d)
+{
+   size_t i;
+   for (i = 0; i < d->size; i++)
+      deferred_fb_dispose_run(&d->calls[i]);
+   d->size = 0;
+}
+
+static bool deferred_disposes_push(struct deferred_disposes *d,
+      const struct deferred_fb_dispose *call)
+{
+   if (d->size == d->cap)
+   {
+      size_t new_cap                        = d->cap ? d->cap * 2 : 4;
+      struct deferred_fb_dispose *new_calls = (struct deferred_fb_dispose*)
+         realloc(d->calls, new_cap * sizeof(*new_calls));
+      if (!new_calls)
+         return false;
+      d->calls = new_calls;
+      d->cap   = new_cap;
+   }
+   d->calls[d->size++] = *call;
+   return true;
+}
+
 class Framebuffer
 {
    public:
@@ -595,7 +659,7 @@ class Framebuffer
       Framebuffer(Framebuffer&&) = delete;
       void operator=(Framebuffer&&) = delete;
 
-      bool set_size(DeferredDisposer &disposer, const Size2D &size, VkFormat format = VK_FORMAT_UNDEFINED);
+      bool set_size(struct deferred_disposes *disposer, const Size2D &size, VkFormat format = VK_FORMAT_UNDEFINED);
 
       const Size2D &get_size() const { return size; }
       VkFormat get_format() const { return format; }
@@ -734,7 +798,7 @@ class Pass
       bool init_feedback();
 
       void build_commands(
-            DeferredDisposer &disposer,
+            struct deferred_disposes *disposer,
             VkCommandBuffer cmd,
             const Texture &original,
             const Texture &source,
@@ -949,7 +1013,8 @@ struct vulkan_filter_chain
       VkPipelineCache cache;
       std::vector<std::unique_ptr<Pass>> passes;
       std::vector<vulkan_filter_chain_pass_info> pass_info;
-      std::vector<std::vector<std::function<void ()>>> deferred_calls;
+      struct deferred_disposes *deferred_calls;
+      unsigned num_deferred;
       CommonResources common;
       VkFormat original_format;
 
@@ -978,7 +1043,7 @@ struct vulkan_filter_chain
       bool init_history();
       bool init_feedback();
       bool init_alias();
-      void update_history(DeferredDisposer &disposer, VkCommandBuffer cmd);
+      void update_history(struct deferred_disposes *disposer, VkCommandBuffer cmd);
       void clear_history_and_feedback(VkCommandBuffer cmd);
       void update_feedback_info();
       void update_history_info();
@@ -1382,6 +1447,8 @@ vulkan_filter_chain::vulkan_filter_chain(
      gpu(info.gpu),
      memory_properties(*info.memory_properties),
      cache(info.pipeline_cache),
+     deferred_calls(nullptr),
+     num_deferred(0),
      common(info.device, *info.memory_properties),
      original_format(info.original_format)
 {
@@ -1393,7 +1460,11 @@ vulkan_filter_chain::vulkan_filter_chain(
 
 vulkan_filter_chain::~vulkan_filter_chain()
 {
+   unsigned i;
    flush();
+   for (i = 0; i < num_deferred; i++)
+      free(deferred_calls[i].calls);
+   free(deferred_calls);
 }
 
 void vulkan_filter_chain::set_swapchain_info(
@@ -1405,17 +1476,43 @@ void vulkan_filter_chain::set_swapchain_info(
 
 void vulkan_filter_chain::set_num_sync_indices(unsigned num_indices)
 {
+   unsigned i;
    execute_deferred();
-   deferred_calls.resize(num_indices);
+   /* Every queue is empty now; only capacity storage remains. */
+   for (i = num_indices; i < num_deferred; i++)
+      free(deferred_calls[i].calls);
+   if (!num_indices)
+   {
+      free(deferred_calls);
+      deferred_calls = nullptr;
+   }
+   else
+   {
+      struct deferred_disposes *new_calls = (struct deferred_disposes*)
+         realloc(deferred_calls, num_indices * sizeof(*new_calls));
+      if (!new_calls)
+      {
+         /* Growth failed: keep the old, still-valid block and count.
+          * (The vector this replaces terminated the process here.) */
+         RARCH_ERR("[Vulkan] Failed to size deferred-disposal queues.\n");
+         return;
+      }
+      for (i = num_deferred; i < num_indices; i++)
+      {
+         new_calls[i].calls = nullptr;
+         new_calls[i].size  = 0;
+         new_calls[i].cap   = 0;
+      }
+      deferred_calls = new_calls;
+   }
+   num_deferred = num_indices;
 }
 
 void vulkan_filter_chain::notify_sync_index(unsigned index)
 {
    unsigned i;
-   auto &calls = deferred_calls[index];
-   for (auto &call : calls)
-      call();
-   calls.clear();
+   if (index < num_deferred)
+      deferred_disposes_run_clear(&deferred_calls[index]);
 
    current_sync_index = index;
 
@@ -1440,12 +1537,9 @@ void vulkan_filter_chain::release_staging_buffers()
 
 void vulkan_filter_chain::execute_deferred()
 {
-   for (auto &calls : deferred_calls)
-   {
-      for (auto &call : calls)
-         call();
-      calls.clear();
-   }
+   unsigned i;
+   for (i = 0; i < num_deferred; i++)
+      deferred_disposes_run_clear(&deferred_calls[i]);
 }
 
 void vulkan_filter_chain::flush()
@@ -1519,7 +1613,7 @@ void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
    update_history_info();
    update_feedback_info();
 
-   DeferredDisposer disposer(deferred_calls[current_sync_index]);
+   struct deferred_disposes *disposer = &deferred_calls[current_sync_index];
    const Texture original = {
       input_texture,
       passes.front()->get_source_filter(),
@@ -1561,7 +1655,7 @@ void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
    }
 }
 
-void vulkan_filter_chain::update_history(DeferredDisposer &disposer,
+void vulkan_filter_chain::update_history(struct deferred_disposes *disposer,
       VkCommandBuffer cmd)
 {
    VkImageLayout src_layout = input_texture.layout;
@@ -1634,8 +1728,7 @@ void vulkan_filter_chain::end_frame(VkCommandBuffer cmd)
     * the history and dispatch the copy earlier. */
    if (!original_history.empty())
    {
-      DeferredDisposer disposer(deferred_calls[current_sync_index]);
-      update_history(disposer, cmd);
+      update_history(&deferred_calls[current_sync_index], cmd);
    }
 }
 
@@ -1645,7 +1738,7 @@ void vulkan_filter_chain::build_viewport_pass(
    unsigned i;
    Texture source;
 
-   DeferredDisposer disposer(deferred_calls[current_sync_index]);
+   struct deferred_disposes *disposer = &deferred_calls[current_sync_index];
    const Texture original = {
       input_texture,
       passes.front()->get_source_filter(),
@@ -1874,7 +1967,7 @@ void vulkan_filter_chain::set_num_passes(unsigned num_passes)
    for (i = 0; i < num_passes; i++)
    {
       passes.emplace_back(new Pass(device, memory_properties,
-               cache, (unsigned)deferred_calls.size(), i + 1 == num_passes));
+               cache, num_deferred, i + 1 == num_passes));
       passes.back()->set_common_resources(&common);
       passes.back()->set_pass_number(i);
    }
@@ -1920,7 +2013,7 @@ bool vulkan_filter_chain::init_ubo()
 
    if (common.ubo_offset != 0)
       common.ubo                = std::unique_ptr<Buffer>(new Buffer(device,
-               memory_properties, common.ubo_offset * deferred_calls.size(),
+               memory_properties, common.ubo_offset * num_deferred,
                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
 
    if (common.ubo)
@@ -3501,7 +3594,7 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
 }
 
 void Pass::build_commands(
-      DeferredDisposer &disposer,
+      struct deferred_disposes *disposer,
       VkCommandBuffer cmd,
       const Texture &original,
       const Texture &source,
@@ -3886,7 +3979,7 @@ error:
    return false;
 }
 
-bool Framebuffer::set_size(DeferredDisposer &disposer, const Size2D &size, VkFormat format)
+bool Framebuffer::set_size(struct deferred_disposes *disposer, const Size2D &size, VkFormat format)
 {
    Size2D old_size               = this->size;
    VkFormat old_format           = this->format;
@@ -3931,33 +4024,26 @@ bool Framebuffer::set_size(DeferredDisposer &disposer, const Size2D &size, VkFor
    /* The replaced resources can still be referenced by an in-flight
     * command buffer. Defer their destruction together, including memory. */
    {
-      /* Copy the pool pointer to a local: the callback must not capture
-       * 'this', since the Framebuffer may be destroyed before it runs. The
-       * pool is chain-scoped and outlives every drain point. */
-      VkDevice d                   = device;
-      FramebufferMemoryPool *pool  = mem_pool;
-      disposer.defer([=]
-      {
-         if (old_framebuffer != VK_NULL_HANDLE)
-            vkDestroyFramebuffer(d, old_framebuffer, nullptr);
-         if (old_view != VK_NULL_HANDLE)
-            vkDestroyImageView(d, old_view, nullptr);
-         if (old_fb_view != VK_NULL_HANDLE)
-            vkDestroyImageView(d, old_fb_view, nullptr);
-         /* The image must be destroyed before its memory becomes reusable;
-          * the pool only ever hands out blocks whose image is already gone. */
-         if (old_image != VK_NULL_HANDLE)
-            vkDestroyImage(d, old_image, nullptr);
-         if (old_memory != VK_NULL_HANDLE)
-         {
-            if (pool)
-               pool->release(d, old_memory, old_memory_size, old_memory_type);
-            else
-               vkFreeMemory(d, old_memory, nullptr);
-         }
-         if (format_changed && old_render_pass != VK_NULL_HANDLE)
-            vkDestroyRenderPass(d, old_render_pass, nullptr);
-      });
+      /* The pool pointer is copied into the record: the record must not
+       * reference 'this', since the Framebuffer may be destroyed before
+       * the queue drains. The pool is chain-scoped and outlives every
+       * drain point. */
+      struct deferred_fb_dispose call;
+      call.device      = device;
+      call.pool        = mem_pool;
+      call.framebuffer = old_framebuffer;
+      call.view        = old_view;
+      call.fb_view     = old_fb_view;
+      call.image       = old_image;
+      call.memory      = old_memory;
+      call.memory_size = old_memory_size;
+      call.memory_type = old_memory_type;
+      call.render_pass = format_changed ? old_render_pass : VK_NULL_HANDLE;
+      /* On queue failure the resources must NOT be destroyed here - an
+       * in-flight command buffer can still reference them; leaking is
+       * the safe direction. (The vector terminated the process here.) */
+      if (!deferred_disposes_push(disposer, &call))
+         RARCH_ERR("[Vulkan] Failed to defer framebuffer disposal, leaking replaced resources.\n");
    }
 
    return true;
