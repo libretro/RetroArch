@@ -18,6 +18,7 @@
 #include "shader_gl3.h"
 #include "glslang_util.h"
 
+#include <string>
 #include <vector>
 #include <memory>
 #include <functional>

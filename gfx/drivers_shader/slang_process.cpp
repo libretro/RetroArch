@@ -14,9 +14,6 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <spirv_glsl.hpp>
-#include <spirv_hlsl.hpp>
-#include <spirv_msl.hpp>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
 #include <string>
@@ -27,7 +24,8 @@
 #if defined(HAVE_GLSLANG)
 #include "slang_cache.h"
 #endif
-#include "spirv_cross.hpp"
+#include <spirv_cross_c.h>
+
 #include "slang_process.h"
 
 #include "../../verbosity.h"
@@ -76,6 +74,23 @@ static const char *semantic_uniform_names[] = {
    "Accelerometer",
    "AccelerometerRest"
 };
+
+static bool slang_reflect(
+      spvc_compiler vertex_compiler, spvc_compiler fragment_compiler,
+      spvc_resources vertex_resources, spvc_resources fragment_resources,
+      slang_reflection *reflection);
+
+/* Fetch one typed resource list, treating any API failure as an
+ * empty list plus error return. */
+static bool spvc_fetch_list(spvc_resources resources,
+      spvc_resource_type type,
+      const spvc_reflected_resource **list, size_t *count)
+{
+   *list  = NULL;
+   *count = 0;
+   return spvc_resources_get_resource_list_for_type(
+         resources, type, list, count) == SPVC_SUCCESS;
+}
 
 /* ---- C name maps -------------------------------------------------- */
 
@@ -425,10 +440,10 @@ static bool sem_array_push_texture(texture_sem_t **arr,
 }
 
 static bool slang_process_reflection(
-      const spirv_cross::Compiler*        vs_compiler,
-      const spirv_cross::Compiler*        ps_compiler,
-      const spirv_cross::ShaderResources& vs_resources,
-      const spirv_cross::ShaderResources& ps_resources,
+      spvc_compiler          vs_compiler,
+      spvc_compiler          ps_compiler,
+      spvc_resources         vs_resources,
+      spvc_resources         ps_resources,
       video_shader*          shader_info,
       unsigned               pass_number,
       const semantics_map_t* map,
@@ -512,7 +527,7 @@ static bool slang_process_reflection(
    sl_reflection.texture_semantic_uniform_map = &texture_semantic_uniform_map;
    sl_reflection.semantic_map                 = &uniform_semantic_map;
 
-   if (!slang_reflect(*vs_compiler, *ps_compiler,
+   if (!slang_reflect(vs_compiler, ps_compiler,
             vs_resources, ps_resources, &sl_reflection))
    {
       RARCH_ERR("[Slang] Failed to reflect SPIR-V."
@@ -1384,8 +1399,20 @@ bool slang_process(
       pass_semantics_t*      out)
 {
    glslang_output          output;
-   spirv_cross::Compiler  *vs_compiler = NULL;
-   spirv_cross::Compiler  *ps_compiler = NULL;
+   spvc_context            ctx         = NULL;
+   spvc_parsed_ir          vs_ir       = NULL;
+   spvc_parsed_ir          ps_ir       = NULL;
+   spvc_compiler           vs_compiler = NULL;
+   spvc_compiler           ps_compiler = NULL;
+   spvc_resources          vs_resources = NULL;
+   spvc_resources          ps_resources = NULL;
+   spvc_compiler_options   vs_options  = NULL;
+   spvc_compiler_options   ps_options  = NULL;
+   spvc_backend            backend     = SPVC_BACKEND_GLSL;
+   const char             *vs_code     = NULL;
+   const char             *ps_code     = NULL;
+   const spvc_reflected_resource *list = NULL;
+   size_t                  list_num    = 0;
    video_shader_pass      &pass        = shader_info->pass[pass_number];
 
    if (!glslang_compile_shader(pass.source.path, &output))
@@ -1418,176 +1445,185 @@ bool slang_process(
    pass.source.string.vertex   = NULL;
    pass.source.string.fragment = NULL;
 
-   try
+   switch (dst_type)
    {
-      spirv_cross::ShaderResources vs_resources;
-      spirv_cross::ShaderResources ps_resources;
-      std::string     vs_code;
-      std::string     ps_code;
-
-      switch (dst_type)
-      {
-         case RARCH_SHADER_HLSL:
-         case RARCH_SHADER_CG:
+      case RARCH_SHADER_HLSL:
+      case RARCH_SHADER_CG:
 #ifdef HAVE_HLSL
-            vs_compiler = new spirv_cross::CompilerHLSL(
-                  output.vertex, output.vertex_len);
-            ps_compiler = new spirv_cross::CompilerHLSL(
-                  output.fragment, output.fragment_len);
-#endif
-            break;
-
-         case RARCH_SHADER_METAL:
-            vs_compiler = new spirv_cross::CompilerMSL(
-                  output.vertex, output.vertex_len);
-            ps_compiler = new spirv_cross::CompilerMSL(
-                  output.fragment, output.fragment_len);
-            break;
-
-         default:
-            vs_compiler = new spirv_cross::CompilerGLSL(
-                  output.vertex, output.vertex_len);
-            ps_compiler = new spirv_cross::CompilerGLSL(
-                  output.fragment, output.fragment_len);
-            break;
-      }
-
-      if (vs_compiler)
-         vs_resources   = vs_compiler->get_shader_resources();
-      if (ps_compiler)
-         ps_resources   = ps_compiler->get_shader_resources();
-
-      if (!vs_resources.uniform_buffers.empty())
-         vs_compiler->set_decoration(
-               vs_resources.uniform_buffers[0].id, spv::DecorationBinding, 0);
-      if (!ps_resources.uniform_buffers.empty())
-         ps_compiler->set_decoration(
-               ps_resources.uniform_buffers[0].id, spv::DecorationBinding, 0);
-
-      if (!vs_resources.push_constant_buffers.empty())
-         vs_compiler->set_decoration(
-               vs_resources.push_constant_buffers[0].id, spv::DecorationBinding, 1);
-      if (!ps_resources.push_constant_buffers.empty())
-         ps_compiler->set_decoration(
-               ps_resources.push_constant_buffers[0].id, spv::DecorationBinding, 1);
-
-      switch (dst_type)
-      {
-         case RARCH_SHADER_HLSL:
-         case RARCH_SHADER_CG:
-#ifdef HAVE_HLSL
-            {
-               spirv_cross::CompilerHLSL::Options options;
-               spirv_cross::CompilerHLSL *vs = (spirv_cross::CompilerHLSL*)vs_compiler;
-               spirv_cross::CompilerHLSL *ps = (spirv_cross::CompilerHLSL*)ps_compiler;
-               options.shader_model          = version;
-               vs->set_hlsl_options(options);
-               ps->set_hlsl_options(options);
-               vs_code = vs->compile();
-               ps_code = ps->compile();
-            }
-#endif
-            break;
-         case RARCH_SHADER_METAL:
-            {
-               spirv_cross::CompilerMSL::Options options;
-               spirv_cross::CompilerMSL *vs = (spirv_cross::CompilerMSL*)vs_compiler;
-               spirv_cross::CompilerMSL *ps = (spirv_cross::CompilerMSL*)ps_compiler;
-               options.msl_version          = version;
-               vs->set_msl_options(options);
-               ps->set_msl_options(options);
-
-               const auto remap_push_constant = [](spirv_cross::CompilerMSL *comp,
-                     const spirv_cross::ShaderResources &resources) {
-                  for (const spirv_cross::Resource& resource : resources.push_constant_buffers)
-                  {
-                     /* Explicit 1:1 mapping for bindings. */
-                     spirv_cross::MSLResourceBinding binding;
-                     binding.stage              = comp->get_execution_model();
-                     binding.desc_set           = spirv_cross::kPushConstDescSet;
-                     binding.binding            = spirv_cross::kPushConstBinding;
-                     /* Use earlier decoration override. */
-                     binding.basetype           = spirv_cross::SPIRType::Unknown;
-                     binding.count              = 0;
-                     binding.msl_buffer         = comp->get_decoration(
-                           resource.id, spv::DecorationBinding);
-                     binding.msl_texture        = 0;
-                     binding.msl_sampler        = 0;
-                     comp->add_msl_resource_binding(binding);
-                  }
-               };
-
-               const auto remap_generic_resource = [](spirv_cross::CompilerMSL *comp,
-                     const spirv_cross::SmallVector<spirv_cross::Resource> &resources) {
-                  for (const spirv_cross::Resource& resource : resources)
-                  {
-                     /* Explicit 1:1 mapping for bindings. */
-                     spirv_cross::MSLResourceBinding binding;
-                     binding.stage              = comp->get_execution_model();
-                     binding.desc_set           = comp->get_decoration(
-                           resource.id, spv::DecorationDescriptorSet);
-                     binding.basetype           = spirv_cross::SPIRType::Unknown;
-                     binding.count              = 0;
-
-                     /* Use existing decoration override. */
-                     uint32_t msl_binding       = comp->get_decoration(
-                           resource.id, spv::DecorationBinding);
-                     binding.binding            = msl_binding;
-                     binding.msl_buffer         = msl_binding;
-                     binding.msl_texture        = msl_binding;
-                     binding.msl_sampler        = msl_binding;
-                     comp->add_msl_resource_binding(binding);
-                  }
-               };
-
-               remap_push_constant(vs, vs_resources);
-               remap_push_constant(ps, ps_resources);
-               remap_generic_resource(vs, vs_resources.uniform_buffers);
-               remap_generic_resource(ps, ps_resources.uniform_buffers);
-               remap_generic_resource(vs, vs_resources.sampled_images);
-               remap_generic_resource(ps, ps_resources.sampled_images);
-
-               vs_code = vs->compile();
-               ps_code = ps->compile();
-            }
-            break;
-         case RARCH_SHADER_GLSL:
-            {
-               spirv_cross::CompilerGLSL::Options options;
-               spirv_cross::CompilerGLSL *vs = (spirv_cross::CompilerGLSL*)vs_compiler;
-               spirv_cross::CompilerGLSL *ps = (spirv_cross::CompilerGLSL*)ps_compiler;
-               options.version               = version;
-               ps->set_common_options(options);
-               vs->set_common_options(options);
-
-               vs_code = vs->compile();
-               ps_code = ps->compile();
-            }
-            break;
-         default:
-            goto error;
-      }
-
-      pass.source.string.vertex   = strdup(vs_code.c_str());
-      pass.source.string.fragment = strdup(ps_code.c_str());
-
-      if (!slang_process_reflection(
-                vs_compiler, ps_compiler,
-                vs_resources, ps_resources, shader_info, pass_number,
-                semantics_map, out))
+         backend = SPVC_BACKEND_HLSL;
+         break;
+#else
+         RARCH_ERR("[Slang] HLSL backend not compiled in.\n");
          goto error;
-   }
-   catch (const std::exception& e)
-   {
-      RARCH_ERR("[Slang] SPIRV-Cross threw exception: %s.\n", e.what());
-      goto error;
+#endif
+      case RARCH_SHADER_METAL:
+         backend = SPVC_BACKEND_MSL;
+         break;
+      default:
+         backend = SPVC_BACKEND_GLSL;
+         break;
    }
 
-   delete vs_compiler;
-   delete ps_compiler;
+   if (spvc_context_create(&ctx) != SPVC_SUCCESS)
+      goto error;
+
+   if (   spvc_context_parse_spirv(ctx, output.vertex,
+            output.vertex_len, &vs_ir) != SPVC_SUCCESS
+       || spvc_context_parse_spirv(ctx, output.fragment,
+            output.fragment_len, &ps_ir) != SPVC_SUCCESS
+       || spvc_context_create_compiler(ctx, backend, vs_ir,
+            SPVC_CAPTURE_MODE_TAKE_OWNERSHIP,
+            &vs_compiler) != SPVC_SUCCESS
+       || spvc_context_create_compiler(ctx, backend, ps_ir,
+            SPVC_CAPTURE_MODE_TAKE_OWNERSHIP,
+            &ps_compiler) != SPVC_SUCCESS
+       || spvc_compiler_create_shader_resources(vs_compiler,
+            &vs_resources) != SPVC_SUCCESS
+       || spvc_compiler_create_shader_resources(ps_compiler,
+            &ps_resources) != SPVC_SUCCESS)
+      goto spvc_error;
+
+   /* Normalize buffer bindings the way the C++ implementation did:
+    * uniform buffer at binding 0, push constant buffer at binding 1. */
+   if (!spvc_fetch_list(vs_resources,
+            SPVC_RESOURCE_TYPE_UNIFORM_BUFFER, &list, &list_num))
+      goto spvc_error;
+   if (list_num)
+      spvc_compiler_set_decoration(vs_compiler, list[0].id,
+            SpvDecorationBinding, 0);
+   if (!spvc_fetch_list(ps_resources,
+            SPVC_RESOURCE_TYPE_UNIFORM_BUFFER, &list, &list_num))
+      goto spvc_error;
+   if (list_num)
+      spvc_compiler_set_decoration(ps_compiler, list[0].id,
+            SpvDecorationBinding, 0);
+
+   if (!spvc_fetch_list(vs_resources,
+            SPVC_RESOURCE_TYPE_PUSH_CONSTANT, &list, &list_num))
+      goto spvc_error;
+   if (list_num)
+      spvc_compiler_set_decoration(vs_compiler, list[0].id,
+            SpvDecorationBinding, 1);
+   if (!spvc_fetch_list(ps_resources,
+            SPVC_RESOURCE_TYPE_PUSH_CONSTANT, &list, &list_num))
+      goto spvc_error;
+   if (list_num)
+      spvc_compiler_set_decoration(ps_compiler, list[0].id,
+            SpvDecorationBinding, 1);
+
+   if (   spvc_compiler_create_compiler_options(vs_compiler,
+            &vs_options) != SPVC_SUCCESS
+       || spvc_compiler_create_compiler_options(ps_compiler,
+            &ps_options) != SPVC_SUCCESS)
+      goto spvc_error;
+
+   switch (dst_type)
+   {
+      case RARCH_SHADER_HLSL:
+      case RARCH_SHADER_CG:
+         spvc_compiler_options_set_uint(vs_options,
+               SPVC_COMPILER_OPTION_HLSL_SHADER_MODEL, version);
+         spvc_compiler_options_set_uint(ps_options,
+               SPVC_COMPILER_OPTION_HLSL_SHADER_MODEL, version);
+         break;
+      case RARCH_SHADER_METAL:
+         spvc_compiler_options_set_uint(vs_options,
+               SPVC_COMPILER_OPTION_MSL_VERSION, version);
+         spvc_compiler_options_set_uint(ps_options,
+               SPVC_COMPILER_OPTION_MSL_VERSION, version);
+         break;
+      default:
+         spvc_compiler_options_set_uint(vs_options,
+               SPVC_COMPILER_OPTION_GLSL_VERSION, version);
+         spvc_compiler_options_set_uint(ps_options,
+               SPVC_COMPILER_OPTION_GLSL_VERSION, version);
+         break;
+   }
+
+   if (   spvc_compiler_install_compiler_options(vs_compiler,
+            vs_options) != SPVC_SUCCESS
+       || spvc_compiler_install_compiler_options(ps_compiler,
+            ps_options) != SPVC_SUCCESS)
+      goto spvc_error;
+
+   if (dst_type == RARCH_SHADER_METAL)
+   {
+      /* Explicit 1:1 binding remaps, as the C++ implementation set up
+       * via MSLResourceBinding.  The compiler and its resource list
+       * pairs are (vs, vs_resources) and (ps, ps_resources). */
+      static const spvc_resource_type remap_types[] = {
+         SPVC_RESOURCE_TYPE_PUSH_CONSTANT,
+         SPVC_RESOURCE_TYPE_UNIFORM_BUFFER,
+         SPVC_RESOURCE_TYPE_SAMPLED_IMAGE,
+      };
+      unsigned c, t;
+      for (c = 0; c < 2; c++)
+      {
+         spvc_compiler comp  = c ? ps_compiler : vs_compiler;
+         spvc_resources res  = c ? ps_resources : vs_resources;
+         for (t = 0; t < 3; t++)
+         {
+            size_t r;
+            if (!spvc_fetch_list(res, remap_types[t], &list, &list_num))
+               goto spvc_error;
+            for (r = 0; r < list_num; r++)
+            {
+               spvc_msl_resource_binding binding;
+               unsigned msl_binding = spvc_compiler_get_decoration(comp,
+                     list[r].id, SpvDecorationBinding);
+               spvc_msl_resource_binding_init(&binding);
+               binding.stage = spvc_compiler_get_execution_model(comp);
+               if (remap_types[t] == SPVC_RESOURCE_TYPE_PUSH_CONSTANT)
+               {
+                  binding.desc_set    = SPVC_MSL_PUSH_CONSTANT_DESC_SET;
+                  binding.binding     = SPVC_MSL_PUSH_CONSTANT_BINDING;
+                  /* Use earlier decoration override. */
+                  binding.msl_buffer  = msl_binding;
+                  binding.msl_texture = 0;
+                  binding.msl_sampler = 0;
+               }
+               else
+               {
+                  binding.desc_set    = spvc_compiler_get_decoration(comp,
+                        list[r].id, SpvDecorationDescriptorSet);
+                  binding.binding     = msl_binding;
+                  binding.msl_buffer  = msl_binding;
+                  binding.msl_texture = msl_binding;
+                  binding.msl_sampler = msl_binding;
+               }
+               if (spvc_compiler_msl_add_resource_binding(comp,
+                        &binding) != SPVC_SUCCESS)
+                  goto spvc_error;
+            }
+         }
+      }
+   }
+
+   if (   spvc_compiler_compile(vs_compiler, &vs_code) != SPVC_SUCCESS
+       || spvc_compiler_compile(ps_compiler, &ps_code) != SPVC_SUCCESS)
+      goto spvc_error;
+
+   pass.source.string.vertex   = strdup(vs_code);
+   pass.source.string.fragment = strdup(ps_code);
+   if (!pass.source.string.vertex || !pass.source.string.fragment)
+      goto error;
+
+   if (!slang_process_reflection(
+             vs_compiler, ps_compiler,
+             vs_resources, ps_resources, shader_info, pass_number,
+             semantics_map, out))
+      goto error;
+
+   /* The context owns the IRs, compilers, options, resource lists and
+    * compiled source strings (already strdup'd above). */
+   spvc_context_destroy(ctx);
    glslang_output_free(&output);
 
    return true;
+
+spvc_error:
+   RARCH_ERR("[Slang] SPIRV-Cross: %s.\n",
+         spvc_context_get_last_error_string(ctx));
 
 error:
    free(pass.source.string.vertex);
@@ -1596,8 +1632,7 @@ error:
    pass.source.string.vertex   = NULL;
    pass.source.string.fragment = NULL;
 
-   delete vs_compiler;
-   delete ps_compiler;
+   spvc_context_destroy(ctx);
    glslang_output_free(&output);
 
    return false;
@@ -1717,13 +1752,13 @@ static bool set_ubo_offset(
    return true;
 }
 
-static bool validate_type_for_semantic(const spirv_cross::SPIRType &type, slang_semantic sem)
+static bool validate_type_for_semantic(spvc_type type, slang_semantic sem)
 {
-   if (!type.array.empty())
+   if (spvc_type_get_num_array_dimensions(type) != 0)
       return false;
-   if (     type.basetype != spirv_cross::SPIRType::Float
-         && type.basetype != spirv_cross::SPIRType::Int
-         && type.basetype != spirv_cross::SPIRType::UInt)
+   if (     spvc_type_get_basetype(type) != SPVC_BASETYPE_FP32
+         && spvc_type_get_basetype(type) != SPVC_BASETYPE_INT32
+         && spvc_type_get_basetype(type) != SPVC_BASETYPE_UINT32)
       return false;
 
    switch (sem)
@@ -1731,107 +1766,107 @@ static bool validate_type_for_semantic(const spirv_cross::SPIRType &type, slang_
          /* mat4 */
       case SLANG_SEMANTIC_MVP:
          return
-               type.basetype == spirv_cross::SPIRType::Float
-            && type.vecsize  == 4
-            && type.columns  == 4;
+               spvc_type_get_basetype(type) == SPVC_BASETYPE_FP32
+            && spvc_type_get_vector_size(type)  == 4
+            && spvc_type_get_columns(type)  == 4;
          /* uint */
       case SLANG_SEMANTIC_FRAME_COUNT:
-         return type.basetype == spirv_cross::SPIRType::UInt
-            &&  type.vecsize  == 1
-            &&  type.columns  == 1;
+         return spvc_type_get_basetype(type) == SPVC_BASETYPE_UINT32
+            &&  spvc_type_get_vector_size(type)  == 1
+            &&  spvc_type_get_columns(type)  == 1;
          /* int */
       case SLANG_SEMANTIC_TOTAL_SUBFRAMES:
-         return type.basetype == spirv_cross::SPIRType::UInt
-            &&  type.vecsize  == 1
-            &&  type.columns  == 1;
+         return spvc_type_get_basetype(type) == SPVC_BASETYPE_UINT32
+            &&  spvc_type_get_vector_size(type)  == 1
+            &&  spvc_type_get_columns(type)  == 1;
          /* int */
       case SLANG_SEMANTIC_CURRENT_SUBFRAME:
-         return type.basetype == spirv_cross::SPIRType::UInt
-            &&  type.vecsize  == 1
-            &&  type.columns  == 1;
+         return spvc_type_get_basetype(type) == SPVC_BASETYPE_UINT32
+            &&  spvc_type_get_vector_size(type)  == 1
+            &&  spvc_type_get_columns(type)  == 1;
          /* int */
       case SLANG_SEMANTIC_FRAME_DIRECTION:
-         return type.basetype == spirv_cross::SPIRType::Int
-            &&  type.vecsize  == 1
-            &&  type.columns  == 1;
+         return spvc_type_get_basetype(type) == SPVC_BASETYPE_INT32
+            &&  spvc_type_get_vector_size(type)  == 1
+            &&  spvc_type_get_columns(type)  == 1;
          /* uint */
       case SLANG_SEMANTIC_FRAME_TIME_DELTA:
-         return type.basetype == spirv_cross::SPIRType::UInt
-            &&  type.vecsize  == 1
-            &&  type.columns  == 1;
+         return spvc_type_get_basetype(type) == SPVC_BASETYPE_UINT32
+            &&  spvc_type_get_vector_size(type)  == 1
+            &&  spvc_type_get_columns(type)  == 1;
          /* uint */
       case SLANG_SEMANTIC_ORIGINAL_FPS:
-         return type.basetype == spirv_cross::SPIRType::Float
-            &&  type.vecsize  == 1
-            &&  type.columns  == 1;
+         return spvc_type_get_basetype(type) == SPVC_BASETYPE_FP32
+            &&  spvc_type_get_vector_size(type)  == 1
+            &&  spvc_type_get_columns(type)  == 1;
          /* uint */
       case SLANG_SEMANTIC_ROTATION:
-         return type.basetype == spirv_cross::SPIRType::UInt
-            &&  type.vecsize  == 1
-            &&  type.columns  == 1;
+         return spvc_type_get_basetype(type) == SPVC_BASETYPE_UINT32
+            &&  spvc_type_get_vector_size(type)  == 1
+            &&  spvc_type_get_columns(type)  == 1;
       case SLANG_SEMANTIC_CORE_ASPECT:
-         return type.basetype == spirv_cross::SPIRType::Float
-            &&  type.vecsize  == 1
-            &&  type.columns  == 1;
+         return spvc_type_get_basetype(type) == SPVC_BASETYPE_FP32
+            &&  spvc_type_get_vector_size(type)  == 1
+            &&  spvc_type_get_columns(type)  == 1;
       case SLANG_SEMANTIC_CORE_ASPECT_ROT:
-         return type.basetype == spirv_cross::SPIRType::Float
-            &&  type.vecsize  == 1
-            &&  type.columns  == 1;
+         return spvc_type_get_basetype(type) == SPVC_BASETYPE_FP32
+            &&  spvc_type_get_vector_size(type)  == 1
+            &&  spvc_type_get_columns(type)  == 1;
          /* vec3 - sensor uniforms */
       case SLANG_SEMANTIC_GYROSCOPE:
       case SLANG_SEMANTIC_ACCELEROMETER:
       case SLANG_SEMANTIC_ACCELEROMETER_REST:
-         return type.basetype == spirv_cross::SPIRType::Float
-            &&  type.vecsize  == 3
-            &&  type.columns  == 1;
+         return spvc_type_get_basetype(type) == SPVC_BASETYPE_FP32
+            &&  spvc_type_get_vector_size(type)  == 3
+            &&  spvc_type_get_columns(type)  == 1;
          /* float */
       case SLANG_SEMANTIC_FLOAT_PARAMETER:
-         return type.basetype == spirv_cross::SPIRType::Float
-            &&  type.vecsize  == 1
-            &&  type.columns  == 1;
+         return spvc_type_get_basetype(type) == SPVC_BASETYPE_FP32
+            &&  spvc_type_get_vector_size(type)  == 1
+            &&  spvc_type_get_columns(type)  == 1;
       case SLANG_SEMANTIC_HDR:
-         return type.basetype == spirv_cross::SPIRType::UInt
-            &&  type.vecsize  == 1
-            &&  type.columns  == 1;
+         return spvc_type_get_basetype(type) == SPVC_BASETYPE_UINT32
+            &&  spvc_type_get_vector_size(type)  == 1
+            &&  spvc_type_get_columns(type)  == 1;
       case SLANG_SEMANTIC_PAPER_WHITE_NITS:
-         return type.basetype == spirv_cross::SPIRType::Float
-            &&  type.vecsize  == 1
-            &&  type.columns  == 1;
+         return spvc_type_get_basetype(type) == SPVC_BASETYPE_FP32
+            &&  spvc_type_get_vector_size(type)  == 1
+            &&  spvc_type_get_columns(type)  == 1;
       case SLANG_SEMANTIC_SCANLINES:
-         return type.basetype == spirv_cross::SPIRType::Float
-            &&  type.vecsize  == 1
-            &&  type.columns  == 1;
+         return spvc_type_get_basetype(type) == SPVC_BASETYPE_FP32
+            &&  spvc_type_get_vector_size(type)  == 1
+            &&  spvc_type_get_columns(type)  == 1;
       case SLANG_SEMANTIC_SUBPIXEL_LAYOUT:
-         return type.basetype == spirv_cross::SPIRType::UInt
-            &&  type.vecsize  == 1
-            &&  type.columns  == 1;
+         return spvc_type_get_basetype(type) == SPVC_BASETYPE_UINT32
+            &&  spvc_type_get_vector_size(type)  == 1
+            &&  spvc_type_get_columns(type)  == 1;
       case SLANG_SEMANTIC_EXPAND_GAMUT:
-         return type.basetype == spirv_cross::SPIRType::UInt
-            &&  type.vecsize  == 1
-            &&  type.columns  == 1;
+         return spvc_type_get_basetype(type) == SPVC_BASETYPE_UINT32
+            &&  spvc_type_get_vector_size(type)  == 1
+            &&  spvc_type_get_columns(type)  == 1;
       case SLANG_SEMANTIC_INVERSE_TONEMAP:
-         return type.basetype == spirv_cross::SPIRType::Float
-            &&  type.vecsize  == 1
-            &&  type.columns  == 1;
+         return spvc_type_get_basetype(type) == SPVC_BASETYPE_FP32
+            &&  spvc_type_get_vector_size(type)  == 1
+            &&  spvc_type_get_columns(type)  == 1;
       case SLANG_SEMANTIC_HDR10:
-         return type.basetype == spirv_cross::SPIRType::Float
-            &&  type.vecsize  == 1
-            &&  type.columns  == 1;
+         return spvc_type_get_basetype(type) == SPVC_BASETYPE_FP32
+            &&  spvc_type_get_vector_size(type)  == 1
+            &&  spvc_type_get_columns(type)  == 1;
          /* vec4 */
       default:
          break;
    }
-   return type.basetype == spirv_cross::SPIRType::Float
-      &&  type.vecsize  == 4
-      &&  type.columns  == 1;
+   return spvc_type_get_basetype(type) == SPVC_BASETYPE_FP32
+      &&  spvc_type_get_vector_size(type)  == 4
+      &&  spvc_type_get_columns(type)  == 1;
 }
 
-static bool validate_type_for_texture_semantic(const spirv_cross::SPIRType &type)
+static bool validate_type_for_texture_semantic(spvc_type type)
 {
-   return    (type.array.empty())
-          && (type.basetype == spirv_cross::SPIRType::Float)
-          && (type.vecsize  == 4)
-          && (type.columns  == 1);
+   return    (spvc_type_get_num_array_dimensions(type) == 0)
+          && (spvc_type_get_basetype(type) == SPVC_BASETYPE_FP32)
+          && (spvc_type_get_vector_size(type) == 4)
+          && (spvc_type_get_columns(type) == 1);
 }
 
 /* Validate that a texture semantic's array index falls inside the
@@ -1900,30 +1935,36 @@ static bool validate_texture_semantic_index(slang_reflection *reflection,
 }
 
 static bool add_active_buffer_ranges(
-      const spirv_cross::Compiler &compiler,
-      const spirv_cross::Resource &resource,
+      spvc_compiler compiler,
+      const spvc_reflected_resource *resource,
       slang_reflection *reflection,
       bool push_constant)
 {
-   unsigned i;
-   /* Get which uniforms are actually in use by this shader. */
-   spirv_cross::SmallVector<spirv_cross::BufferRange> ranges =
-      compiler.get_active_buffer_ranges(resource.id);
+   size_t i;
+   size_t num_ranges               = 0;
+   const spvc_buffer_range *ranges = NULL;
+   spvc_type base_type             =
+      spvc_compiler_get_type_handle(compiler, resource->base_type_id);
 
-   for (i = 0; i < ranges.size(); i++)
+   /* Get which uniforms are actually in use by this shader. */
+   if (spvc_compiler_get_active_buffer_ranges(compiler,
+            resource->id, &ranges, &num_ranges) != SPVC_SUCCESS)
+      return false;
+
+   for (i = 0; i < num_ranges; i++)
    {
       unsigned sem_index             = 0;
       unsigned tex_sem_index         = 0;
-      const std::string &name        = compiler.get_member_name(
-            resource.base_type_id, ranges[i].index);
-      const spirv_cross::SPIRType &type = compiler.get_type(
-            compiler.get_type(resource.base_type_id).member_types[
-            ranges[i].index]);
+      const char *name               = spvc_compiler_get_member_name(
+            compiler, resource->base_type_id, ranges[i].index);
+      spvc_type type                 = spvc_compiler_get_type_handle(
+            compiler,
+            spvc_type_get_member_type(base_type, ranges[i].index));
       slang_semantic sem             = slang_uniform_name_to_semantic(
-            reflection->semantic_map, name.c_str(), &sem_index);
+            reflection->semantic_map, name, &sem_index);
       slang_texture_semantic tex_sem = slang_uniform_name_to_texture_semantic(
             reflection->texture_semantic_uniform_map,
-            name.c_str(), &tex_sem_index);
+            name, &tex_sem_index);
 
       if (tex_sem != SLANG_INVALID_TEXTURE_SEMANTIC &&
             !validate_texture_semantic_index(reflection,
@@ -1942,14 +1983,16 @@ static bool add_active_buffer_ranges(
          {
             case SLANG_SEMANTIC_FLOAT_PARAMETER:
                if (!set_ubo_float_parameter_offset(reflection, sem_index,
-                        ranges[i].offset, type.vecsize, push_constant))
+                        ranges[i].offset, spvc_type_get_vector_size(type),
+                        push_constant))
                   return false;
                break;
 
             default:
                if (!set_ubo_offset(reflection, sem,
                         ranges[i].offset,
-                        type.vecsize * type.columns, push_constant))
+                        spvc_type_get_vector_size(type)
+                        * spvc_type_get_columns(type), push_constant))
                   return false;
                break;
          }
@@ -1969,7 +2012,7 @@ static bool add_active_buffer_ranges(
       }
       else
       {
-         RARCH_ERR("[Slang] Unknown semantic found: \"%s\".\n", name.c_str());
+         RARCH_ERR("[Slang] Unknown semantic found: \"%s\".\n", name);
          return false;
       }
    }
@@ -1977,56 +2020,95 @@ static bool add_active_buffer_ranges(
 }
 
 
-bool slang_reflect(
-      const spirv_cross::Compiler &vertex_compiler,
-      const spirv_cross::Compiler &fragment_compiler,
-      const spirv_cross::ShaderResources &vertex,
-      const spirv_cross::ShaderResources &fragment,
+static bool slang_reflect(
+      spvc_compiler vertex_compiler, spvc_compiler fragment_compiler,
+      spvc_resources vertex_resources, spvc_resources fragment_resources,
       slang_reflection *reflection)
 {
    uint32_t location_mask = 0;
    uint32_t binding_mask  = 0;
    unsigned i             = 0;
+   const spvc_reflected_resource *v_inputs, *v_ubos, *v_pushes, *v_imgs;
+   const spvc_reflected_resource *v_sbos, *v_subs, *v_simgs, *v_atomics;
+   const spvc_reflected_resource *f_outputs, *f_ubos, *f_pushes, *f_imgs;
+   const spvc_reflected_resource *f_sbos, *f_subs, *f_simgs, *f_atomics;
+   size_t v_num_inputs, v_num_ubos, v_num_pushes, v_num_imgs;
+   size_t v_num_sbos, v_num_subs, v_num_simgs, v_num_atomics;
+   size_t f_num_outputs, f_num_ubos, f_num_pushes, f_num_imgs;
+   size_t f_num_sbos, f_num_subs, f_num_simgs, f_num_atomics;
+   uint32_t vertex_ubo, fragment_ubo, vertex_push, fragment_push;
+   unsigned vertex_ubo_binding, fragment_ubo_binding, ubo_binding;
+   bool has_ubo;
+
+   if (   !spvc_fetch_list(vertex_resources,
+            SPVC_RESOURCE_TYPE_STAGE_INPUT, &v_inputs, &v_num_inputs)
+       || !spvc_fetch_list(vertex_resources,
+            SPVC_RESOURCE_TYPE_UNIFORM_BUFFER, &v_ubos, &v_num_ubos)
+       || !spvc_fetch_list(vertex_resources,
+            SPVC_RESOURCE_TYPE_PUSH_CONSTANT, &v_pushes, &v_num_pushes)
+       || !spvc_fetch_list(vertex_resources,
+            SPVC_RESOURCE_TYPE_SAMPLED_IMAGE, &v_imgs, &v_num_imgs)
+       || !spvc_fetch_list(vertex_resources,
+            SPVC_RESOURCE_TYPE_STORAGE_BUFFER, &v_sbos, &v_num_sbos)
+       || !spvc_fetch_list(vertex_resources,
+            SPVC_RESOURCE_TYPE_SUBPASS_INPUT, &v_subs, &v_num_subs)
+       || !spvc_fetch_list(vertex_resources,
+            SPVC_RESOURCE_TYPE_STORAGE_IMAGE, &v_simgs, &v_num_simgs)
+       || !spvc_fetch_list(vertex_resources,
+            SPVC_RESOURCE_TYPE_ATOMIC_COUNTER, &v_atomics, &v_num_atomics)
+       || !spvc_fetch_list(fragment_resources,
+            SPVC_RESOURCE_TYPE_STAGE_OUTPUT, &f_outputs, &f_num_outputs)
+       || !spvc_fetch_list(fragment_resources,
+            SPVC_RESOURCE_TYPE_UNIFORM_BUFFER, &f_ubos, &f_num_ubos)
+       || !spvc_fetch_list(fragment_resources,
+            SPVC_RESOURCE_TYPE_PUSH_CONSTANT, &f_pushes, &f_num_pushes)
+       || !spvc_fetch_list(fragment_resources,
+            SPVC_RESOURCE_TYPE_SAMPLED_IMAGE, &f_imgs, &f_num_imgs)
+       || !spvc_fetch_list(fragment_resources,
+            SPVC_RESOURCE_TYPE_STORAGE_BUFFER, &f_sbos, &f_num_sbos)
+       || !spvc_fetch_list(fragment_resources,
+            SPVC_RESOURCE_TYPE_SUBPASS_INPUT, &f_subs, &f_num_subs)
+       || !spvc_fetch_list(fragment_resources,
+            SPVC_RESOURCE_TYPE_STORAGE_IMAGE, &f_simgs, &f_num_simgs)
+       || !spvc_fetch_list(fragment_resources,
+            SPVC_RESOURCE_TYPE_ATOMIC_COUNTER, &f_atomics, &f_num_atomics))
+   {
+      RARCH_ERR("[Slang] Failed to enumerate shader resources.\n");
+      return false;
+   }
 
    /* Validate use of unexpected types. */
-   if (
-            !vertex.sampled_images.empty()
-         || !vertex.storage_buffers.empty()
-         || !vertex.subpass_inputs.empty()
-         || !vertex.storage_images.empty()
-         || !vertex.atomic_counters.empty()
-         || !fragment.storage_buffers.empty()
-         || !fragment.subpass_inputs.empty()
-         || !fragment.storage_images.empty()
-         || !fragment.atomic_counters.empty())
+   if (     v_num_imgs || v_num_sbos || v_num_subs
+         || v_num_simgs || v_num_atomics
+         || f_num_sbos || f_num_subs || f_num_simgs || f_num_atomics)
    {
       RARCH_ERR("[Slang] Invalid resource type detected.\n");
       return false;
    }
 
    /* Validate vertex input. */
-   if (vertex.stage_inputs.size() != 2)
+   if (v_num_inputs != 2)
    {
       RARCH_ERR("[Slang] Vertex must have two attributes.\n");
       return false;
    }
 
-   if (fragment.stage_outputs.size() != 1)
+   if (f_num_outputs != 1)
    {
       RARCH_ERR("[Slang] Multiple render targets not supported.\n");
       return false;
    }
 
-   if (fragment_compiler.get_decoration(
-            fragment.stage_outputs[0].id, spv::DecorationLocation) != 0)
+   if (spvc_compiler_get_decoration(fragment_compiler,
+            f_outputs[0].id, SpvDecorationLocation) != 0)
    {
       RARCH_ERR("[Slang] Render target must use location = 0.\n");
       return false;
    }
 
-   for (i = 0; i < vertex.stage_inputs.size(); i++)
-      location_mask |= 1 << vertex_compiler.get_decoration(
-            vertex.stage_inputs[i].id, spv::DecorationLocation);
+   for (i = 0; i < v_num_inputs; i++)
+      location_mask |= 1 << spvc_compiler_get_decoration(vertex_compiler,
+            v_inputs[i].id, SpvDecorationLocation);
 
    if (location_mask != 0x3)
    {
@@ -2036,63 +2118,61 @@ bool slang_reflect(
    }
 
    /* Validate the single uniform buffer. */
-   if (vertex.uniform_buffers.size() > 1)
+   if (v_num_ubos > 1)
    {
       RARCH_ERR("[Slang] Vertex must use zero or one uniform buffer.\n");
       return false;
    }
 
-   if (fragment.uniform_buffers.size() > 1)
+   if (f_num_ubos > 1)
    {
       RARCH_ERR("[Slang] Fragment must use zero or one uniform buffer.\n");
       return false;
    }
 
    /* Validate the single push constant buffer. */
-   if (vertex.push_constant_buffers.size() > 1)
+   if (v_num_pushes > 1)
    {
       RARCH_ERR("[Slang] Vertex must use zero or one push constant buffers.\n");
       return false;
    }
 
-   if (fragment.push_constant_buffers.size() > 1)
+   if (f_num_pushes > 1)
    {
       RARCH_ERR("[Slang] Fragment must use zero or one push constant buffer.\n");
       return false;
    }
 
-   uint32_t vertex_ubo    = vertex.uniform_buffers.empty()
-      ? 0 : (uint32_t)vertex.uniform_buffers[0].id;
-   uint32_t fragment_ubo  = fragment.uniform_buffers.empty()
-      ? 0 : (uint32_t)fragment.uniform_buffers[0].id;
-   uint32_t vertex_push   = vertex.push_constant_buffers.empty()
-      ? 0 : (uint32_t)vertex.push_constant_buffers[0].id;
-   uint32_t fragment_push = fragment.push_constant_buffers.empty()
-      ? 0 : (uint32_t)fragment.push_constant_buffers[0].id;
+   vertex_ubo    = v_num_ubos   ? (uint32_t)v_ubos[0].id   : 0;
+   fragment_ubo  = f_num_ubos   ? (uint32_t)f_ubos[0].id   : 0;
+   vertex_push   = v_num_pushes ? (uint32_t)v_pushes[0].id : 0;
+   fragment_push = f_num_pushes ? (uint32_t)f_pushes[0].id : 0;
 
    if (vertex_ubo &&
-         vertex_compiler.get_decoration(
-            vertex_ubo, spv::DecorationDescriptorSet) != 0)
+         spvc_compiler_get_decoration(vertex_compiler,
+            vertex_ubo, SpvDecorationDescriptorSet) != 0)
    {
       RARCH_ERR("[Slang] Resources must use descriptor set #0.\n");
       return false;
    }
 
    if (fragment_ubo &&
-         fragment_compiler.get_decoration(
-            fragment_ubo, spv::DecorationDescriptorSet) != 0)
+         spvc_compiler_get_decoration(fragment_compiler,
+            fragment_ubo, SpvDecorationDescriptorSet) != 0)
    {
       RARCH_ERR("[Slang] Resources must use descriptor set #0.\n");
       return false;
    }
 
-   unsigned vertex_ubo_binding   = vertex_ubo
-      ? vertex_compiler.get_decoration(vertex_ubo, spv::DecorationBinding)
+   vertex_ubo_binding   = vertex_ubo
+      ? spvc_compiler_get_decoration(vertex_compiler,
+            vertex_ubo, SpvDecorationBinding)
       : (unsigned)-1;
-   unsigned fragment_ubo_binding = fragment_ubo
-      ? fragment_compiler.get_decoration(fragment_ubo, spv::DecorationBinding)
+   fragment_ubo_binding = fragment_ubo
+      ? spvc_compiler_get_decoration(fragment_compiler,
+            fragment_ubo, SpvDecorationBinding)
       : (unsigned)-1;
-   bool has_ubo                  = vertex_ubo || fragment_ubo;
+   has_ubo              = vertex_ubo || fragment_ubo;
 
    if (  (vertex_ubo_binding   != (unsigned)-1) &&
          (fragment_ubo_binding != (unsigned)-1) &&
@@ -2102,7 +2182,7 @@ bool slang_reflect(
       return false;
    }
 
-   unsigned ubo_binding = (vertex_ubo_binding != (unsigned)-1)
+   ubo_binding = (vertex_ubo_binding != (unsigned)-1)
       ? vertex_ubo_binding
       : fragment_ubo_binding;
 
@@ -2120,42 +2200,46 @@ bool slang_reflect(
 
    if (vertex_ubo)
    {
-      size_t _y;
+      size_t _y = 0;
       reflection->ubo_stage_mask |= SLANG_STAGE_VERTEX_MASK;
-      _y = vertex_compiler.get_declared_struct_size(
-               vertex_compiler.get_type(
-                  vertex.uniform_buffers[0].base_type_id));
+      if (spvc_compiler_get_declared_struct_size(vertex_compiler,
+               spvc_compiler_get_type_handle(vertex_compiler,
+                  v_ubos[0].base_type_id), &_y) != SPVC_SUCCESS)
+         return false;
       reflection->ubo_size        = MAX(reflection->ubo_size, _y);
    }
 
    if (fragment_ubo)
    {
-      size_t _y;
+      size_t _y = 0;
       reflection->ubo_stage_mask |= SLANG_STAGE_FRAGMENT_MASK;
-      _y = fragment_compiler.get_declared_struct_size(
-               fragment_compiler.get_type(
-                  fragment.uniform_buffers[0].base_type_id));
+      if (spvc_compiler_get_declared_struct_size(fragment_compiler,
+               spvc_compiler_get_type_handle(fragment_compiler,
+                  f_ubos[0].base_type_id), &_y) != SPVC_SUCCESS)
+         return false;
       reflection->ubo_size        = MAX(reflection->ubo_size, _y);
    }
 
    if (vertex_push)
    {
-      size_t _y;
+      size_t _y = 0;
       reflection->push_constant_stage_mask |= SLANG_STAGE_VERTEX_MASK;
-      _y = vertex_compiler.get_declared_struct_size(
-               vertex_compiler.get_type(
-                  vertex.push_constant_buffers[0].base_type_id));
+      if (spvc_compiler_get_declared_struct_size(vertex_compiler,
+               spvc_compiler_get_type_handle(vertex_compiler,
+                  v_pushes[0].base_type_id), &_y) != SPVC_SUCCESS)
+         return false;
       reflection->push_constant_size        = MAX(
             reflection->push_constant_size, _y);
    }
 
    if (fragment_push)
    {
-      size_t _y;
+      size_t _y = 0;
       reflection->push_constant_stage_mask |= SLANG_STAGE_FRAGMENT_MASK;
-      _y = fragment_compiler.get_declared_struct_size(
-               fragment_compiler.get_type(
-                  fragment.push_constant_buffers[0].base_type_id));
+      if (spvc_compiler_get_declared_struct_size(fragment_compiler,
+               spvc_compiler_get_type_handle(fragment_compiler,
+                  f_pushes[0].base_type_id), &_y) != SPVC_SUCCESS)
+         return false;
       reflection->push_constant_size        = MAX(
             reflection->push_constant_size, _y);
    }
@@ -2171,31 +2255,30 @@ bool slang_reflect(
 
    /* Find all relevant uniforms and push constants. */
    if (vertex_ubo && !add_active_buffer_ranges(vertex_compiler,
-            vertex.uniform_buffers[0], reflection, false))
+            &v_ubos[0], reflection, false))
       return false;
    if (fragment_ubo && !add_active_buffer_ranges(fragment_compiler,
-            fragment.uniform_buffers[0], reflection, false))
+            &f_ubos[0], reflection, false))
       return false;
    if (vertex_push && !add_active_buffer_ranges(vertex_compiler,
-            vertex.push_constant_buffers[0], reflection, true))
+            &v_pushes[0], reflection, true))
       return false;
    if (fragment_push && !add_active_buffer_ranges(fragment_compiler,
-            fragment.push_constant_buffers[0], reflection, true))
+            &f_pushes[0], reflection, true))
       return false;
 
    if (has_ubo)
       binding_mask = 1 << ubo_binding;
 
    /* On to textures. */
-   for (i = 0; i < fragment.sampled_images.size(); i++)
+   for (i = 0; i < f_num_imgs; i++)
    {
       unsigned array_index = 0;
-      unsigned set         = fragment_compiler.get_decoration(
-            fragment.sampled_images[i].id,
-            spv::DecorationDescriptorSet);
-      unsigned binding     = fragment_compiler.get_decoration(
-            fragment.sampled_images[i].id,
-            spv::DecorationBinding);
+      unsigned set         = spvc_compiler_get_decoration(fragment_compiler,
+            f_imgs[i].id, SpvDecorationDescriptorSet);
+      unsigned binding     = spvc_compiler_get_decoration(fragment_compiler,
+            f_imgs[i].id, SpvDecorationBinding);
+      slang_texture_semantic index;
 
       if (set != 0)
       {
@@ -2216,16 +2299,16 @@ bool slang_reflect(
       }
       binding_mask |= 1 << binding;
 
-      slang_texture_semantic index = slang_name_to_texture_semantic(
+      index = slang_name_to_texture_semantic(
             reflection->texture_semantic_map,
-            fragment.sampled_images[i].name.c_str(), &array_index);
+            f_imgs[i].name, &array_index);
 
       if (index == SLANG_INVALID_TEXTURE_SEMANTIC)
       {
          RARCH_ERR("[Slang] Texture name \"%s\" not found in semantic map, "
                    "Probably the texture name or pass alias is not defined "
                    "in the preset (Non-semantic textures not supported yet)\n",
-                   fragment.sampled_images[i].name.c_str());
+                   f_imgs[i].name);
          return false;
       }
 
@@ -2332,29 +2415,47 @@ bool slang_reflect_spirv(const uint32_t *vertex, size_t vertex_len,
       const uint32_t *fragment, size_t fragment_len,
       slang_reflection *reflection)
 {
-   try
-   {
-      spirv_cross::Compiler vertex_compiler(vertex, vertex_len);
-      spirv_cross::Compiler fragment_compiler(fragment, fragment_len);
-      spirv_cross::ShaderResources
-         vertex_resources     = vertex_compiler.get_shader_resources();
-      spirv_cross::ShaderResources
-         fragment_resources   = fragment_compiler.get_shader_resources();
+   spvc_context ctx           = NULL;
+   spvc_parsed_ir vs_ir       = NULL;
+   spvc_parsed_ir ps_ir       = NULL;
+   spvc_compiler vs_compiler  = NULL;
+   spvc_compiler ps_compiler  = NULL;
+   spvc_resources vs_res      = NULL;
+   spvc_resources ps_res      = NULL;
+   bool ret                   = false;
 
-      if (!slang_reflect(vertex_compiler, fragment_compiler,
-               vertex_resources, fragment_resources,
-               reflection))
-      {
-         RARCH_ERR("[Slang] Failed to reflect SPIR-V."
-               " Resource usage is inconsistent with expectations.\n");
-         return false;
-      }
-
-      return true;
-   }
-   catch (const std::exception &e)
-   {
-      RARCH_ERR("[Slang] SPIRV-Cross threw exception: %s.\n", e.what());
+   if (spvc_context_create(&ctx) != SPVC_SUCCESS)
       return false;
+
+   if (   spvc_context_parse_spirv(ctx, vertex, vertex_len,
+            &vs_ir) != SPVC_SUCCESS
+       || spvc_context_parse_spirv(ctx, fragment, fragment_len,
+            &ps_ir) != SPVC_SUCCESS
+       || spvc_context_create_compiler(ctx, SPVC_BACKEND_NONE, vs_ir,
+            SPVC_CAPTURE_MODE_TAKE_OWNERSHIP, &vs_compiler) != SPVC_SUCCESS
+       || spvc_context_create_compiler(ctx, SPVC_BACKEND_NONE, ps_ir,
+            SPVC_CAPTURE_MODE_TAKE_OWNERSHIP, &ps_compiler) != SPVC_SUCCESS
+       || spvc_compiler_create_shader_resources(vs_compiler,
+            &vs_res) != SPVC_SUCCESS
+       || spvc_compiler_create_shader_resources(ps_compiler,
+            &ps_res) != SPVC_SUCCESS)
+   {
+      RARCH_ERR("[Slang] SPIRV-Cross: %s.\n",
+            spvc_context_get_last_error_string(ctx));
+      goto out;
    }
+
+   if (!slang_reflect(vs_compiler, ps_compiler, vs_res, ps_res, reflection))
+   {
+      RARCH_ERR("[Slang] Failed to reflect SPIR-V."
+            " Resource usage is inconsistent with expectations.\n");
+      goto out;
+   }
+
+   ret = true;
+
+out:
+   /* The context owns the IRs, compilers and resource lists. */
+   spvc_context_destroy(ctx);
+   return ret;
 }

@@ -1981,6 +1981,14 @@ ifneq ($(HAVE_BUILTINSPIRV_CROSS), 0)
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_msl.o
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_parser.o
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_cross_parsed_ir.o
+   OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_cross_c.o
+   # The C API translation unit compiles its backend wrappers only
+   # when these are defined truthy.
+   DEFINES += -DSPIRV_CROSS_C_API_GLSL=1
+   DEFINES += -DSPIRV_CROSS_C_API_HLSL=1
+   DEFINES += -DSPIRV_CROSS_C_API_MSL=1
+   DEFINES += -DSPIRV_CROSS_C_API_CPP=0
+   DEFINES += -DSPIRV_CROSS_C_API_REFLECT=0
 else
    CXXFLAGS += $(SPIRV_CROSS_CFLAGS)
    LIBS     += $(SPIRV_CROSS_LIBS)

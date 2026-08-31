@@ -413,7 +413,6 @@ RETRO_END_DECLS
 #undef __out_bcount_part
 #undef __deref_out_ecount
 
-#include <spirv_cross.hpp>
 
 /* Owns an include cache for a scope, so a filter chain's pass loop can
  * share one across every pass without having to free it on each error
@@ -428,13 +427,6 @@ struct glslang_include_cache_guard
    glslang_include_cache_guard(const glslang_include_cache_guard&) = delete;
    glslang_include_cache_guard& operator=(const glslang_include_cache_guard&) = delete;
 };
-
-bool slang_reflect(
-      const spirv_cross::Compiler &vertex_compiler,
-      const spirv_cross::Compiler &fragment_compiler,
-      const spirv_cross::ShaderResources &vertex,
-      const spirv_cross::ShaderResources &fragment,
-      slang_reflection *reflection);
 #endif
 
 #endif
