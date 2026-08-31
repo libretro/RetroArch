@@ -5492,7 +5492,7 @@ void video_driver_frame(const void *data, unsigned width,
                av_info->timing.fps,
                av_info->timing.sample_rate,
                (audio_st->stat_core_is_float) ? "FLOAT" : "INT16",
-               vid->ident,
+               (vid && vid->ident) ? vid->ident : "n/a",
                pixel_format_name(video_st->pix_fmt),
                video_info.width,
                video_info.height,
@@ -5516,7 +5516,8 @@ void video_driver_frame(const void *data, unsigned width,
                "AUDIO: %s %s\n"
                " SampleRate: %u %s\n"
                ,
-               audio_st->current_audio->ident,
+               (audio_st->current_audio && audio_st->current_audio->ident)
+                  ? audio_st->current_audio->ident : "n/a",
                (audio_st->stat_frontend_is_float) ? "FLOAT" : "INT16",
                settings->uints.audio_output_sample_rate,
                (audio_st->src_ratio_orig == 1.0) ? "" : "R");
