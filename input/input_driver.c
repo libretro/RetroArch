@@ -6799,6 +6799,8 @@ static void input_keys_pressed(
    unsigned joy_idx               = joypad_info->joy_idx;
    int32_t ret                    = 0;
    input_driver_state_t *input_st = &input_driver_st;
+   /* RetroPad buttons held this frame, for wait_release_mask pruning */
+   uint16_t held_now              = 0;
    bool block_hotkey[RARCH_BIND_LIST_END];
    bool enable_hotkey_pressed     = false;
    bool any_pressed               = false;
@@ -6846,6 +6848,12 @@ static void input_keys_pressed(
          input_st->flags |= INP_FLAG_BLOCK_HOTKEY;
    }
 
+   /* While the wait is clear nothing has been captured; the first
+    * frame it is armed (here, or by the menu bind / dialog paths)
+    * captures whatever is held below. */
+   if (!(input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE))
+      input_st->wait_release_mask[port] = 0xFFFF;
+
 #ifdef HAVE_MENU
    /* Prevent triggering menu actions after binding */
    if (     !(input_st->flags & INP_FLAG_MENU_PRESS_PENDING)
@@ -6874,12 +6882,22 @@ static void input_keys_pressed(
             || input_keys_pressed_other_sources(input_st, i, p_new_state))
       {
          any_pressed = true;
-         if (input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE)
+         held_now   |= (uint16_t)(1u << i);
+         /* Only the buttons the wait was armed against are held
+          * back; a button pressed after arming is delivered, so a
+          * button that stays down (rear-touch triggers, a stuck or
+          * remapped key) cannot lock out the rest of the pad. */
+         if (     (input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE)
+               && (input_st->wait_release_mask[port] & (1u << i)))
             continue;
 
          BIT256_SET_PTR(p_new_state, i);
       }
    }
+
+   /* Drop released buttons from the captured set; on the arming
+    * frame this narrows 0xFFFF down to what is actually held. */
+   input_st->wait_release_mask[port] &= held_now;
 
    /* Allow menu toggle to bypass 'enable_hotkey' when it is
     * not part of the usual buttons, unless 'enable_hotkey'
@@ -7170,7 +7188,8 @@ static void input_keys_pressed(
       }
    }
 
-   if ((input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE) && !any_pressed)
+   if (     (input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE)
+         && !input_st->wait_release_mask[port])
       input_st->flags &= ~INP_FLAG_WAIT_INPUT_RELEASE;
 
    if (input_st->flags & INP_FLAG_BLOCK_HOTKEY && !enable_hotkey_pressed)

@@ -663,6 +663,16 @@ typedef struct
     * old per-button query pattern instead of JOYPAD_MASK.
     * Invalidated at the start of each input_driver_poll(). */
    int32_t joypad_state_cache[MAX_USERS];
+
+   /* Per-port set of RetroPad buttons (bits 0..RARCH_FIRST_CUSTOM_BIND-1)
+    * that INP_FLAG_WAIT_INPUT_RELEASE is still waiting on.  Captured
+    * from whatever is held on the frame the wait is armed and pruned
+    * as those buttons are released; a button pressed after the wait
+    * was armed is never in the set, so it is delivered normally.
+    * While the flag is clear it simply tracks what is held, so a wait
+    * armed outside input_keys_pressed() starts from the previous
+    * frame's held set. */
+   uint16_t wait_release_mask[MAX_USERS];
    bool    joypad_state_cache_valid[MAX_USERS];
 
    retro_bits_512_t keyboard_mapping_bits;    /* bool alignment */
