@@ -4346,7 +4346,7 @@ static bool gl2_frame(void *data, const void *frame,
        *
        * The glcore driver has the same shape here but is unaffected:
        * its filter chain re-runs glViewport on the final pass every
-       * frame (shader_gl3.cpp), so the leak never survives to a draw.
+       * frame (shader_gl3.c), so the leak never survives to a draw.
        * The gl2 GLSL path has no equivalent choke point. */
       glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
    }

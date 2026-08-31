@@ -5134,7 +5134,7 @@ static bool gl3_frame(void *data, const void *frame,
                5, ubo_data);
 
       /* The cross-compiled pipelines sample the unit matching the
-       * SPIR-V binding (shader_gl3.cpp forces sampler uniform N to
+       * SPIR-V binding (shader_gl3.c forces sampler uniform N to
        * texture unit N); uTex is binding 1, the same convention the
        * alpha_blend / font draws use. Binding the offscreen to unit 0
        * left the program sampling whatever unit 1 last held -- the

@@ -417,10 +417,18 @@ VIDEO SHADERS
 #include "../gfx/drivers_shader/shader_vulkan.c"
 #endif
 
-/* Must mirror the guard on shader_gl3.cpp in griffin_cpp.cpp exactly:
+/* Must mirror the guard on shader_gl3.c in griffin_cpp.cpp exactly:
  * that is the only consumer of spirv_opengl_lower(). */
 #if defined(HAVE_OPENGL_CORE) && defined(HAVE_SLANG)
 #include "../gfx/drivers_shader/spirv_opengl.c"
+#endif
+
+/* Guard copied verbatim from the one this file carried in
+ * griffin_cpp.cpp; shader_gl3.c calls the gl3 driver's helpers and
+ * spirv_opengl_lower(), both of which are inside the same pair of
+ * defines. */
+#if defined(HAVE_OPENGL_CORE) && defined(HAVE_SLANG)
+#include "../gfx/drivers_shader/shader_gl3.c"
 #endif
 
 #ifdef HAVE_CG

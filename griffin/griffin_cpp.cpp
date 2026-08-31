@@ -68,10 +68,6 @@ UI
 /*============================================================
 VIDEO DRIVER
 ============================================================ */
-#if defined(HAVE_OPENGL_CORE) && defined(HAVE_SLANG)
-#include "../gfx/drivers_shader/shader_gl3.cpp"
-#endif
-
 /* Tripwire for the invariant above: if any header included before this
  * point has defined the windows.h min()/max() macros, the vendored
  * SPIRV-Cross sources below will fail with a C2589/C2059 cascade that
