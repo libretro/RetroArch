@@ -137,6 +137,18 @@ int net_http_status(struct http_t *state);
 bool net_http_error(struct http_t *state);
 
 /**
+ * net_http_failure:
+ *
+ * Where a transfer that never produced a status failed: the transport
+ * stage, as a literal ("dns_lookup_failed", "ssl_connect_failed",
+ * ...), and through @code the library's own error for it when there
+ * is one - the TLS library's for the ssl stages, 0 otherwise.  NULL
+ * when the transport did not fail.  For turning "HTTP -1" into a
+ * message that says what went wrong.
+ **/
+const char *net_http_failure(struct http_t *state, int *code);
+
+/**
  * net_http_headers:
  *
  * Leaf function.

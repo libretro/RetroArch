@@ -447,7 +447,8 @@ static char *webdav_get_auth_header(const char *method, const char *url)
    return webdav_create_digest_auth_header(method, url);
 }
 
-static void webdav_log_http_failure(const char *path, http_transfer_data_t *data)
+static void webdav_log_http_failure(const char *path,
+      http_transfer_data_t *data, const char *err)
 {
     size_t i;
     size_t _len = 0;
@@ -459,6 +460,11 @@ static void webdav_log_http_failure(const char *path, http_transfer_data_t *data
 
     _len  = snprintf(report, sizeof(report), "[webdav] Failed: %s: HTTP %d",
           path, data->status);
+    /* No status means the transport failed before the server answered;
+     * the task's error names the stage (and the TLS code, if any),
+     * which is the only clue a log on a console will carry. */
+    if (data->status < 0 && err && *err && _len < sizeof(report) - 1)
+       _len += snprintf(report + _len, sizeof(report) - _len, " (%s)", err);
     for (i = 0; data->headers && i < data->headers->size; i++)
     {
        if (_len >= sizeof(report) - 1)
@@ -578,7 +584,7 @@ static void webdav_stat_cb(retro_task_t *task, void *task_data, void *user_data,
    }
 
    if (!success && data)
-       webdav_log_http_failure(webdav_st->url, data);
+       webdav_log_http_failure(webdav_st->url, data, err);
 
    if (success && data)
    {
@@ -683,7 +689,7 @@ static void webdav_read_cb(retro_task_t *task, void *task_data, void *user_data,
               && ((data->status >= 200 && data->status < 300) || data->status == 404));
 
    if (!success && data)
-       webdav_log_http_failure(webdav_cb_st->path, data);
+       webdav_log_http_failure(webdav_cb_st->path, data, err);
 
    if (webdav_needs_reauth(data))
    {
@@ -841,7 +847,7 @@ static void webdav_mkdir_cb(retro_task_t *task, void *task_data,
            && !(data->status == 405 && webdav_st->dav_verified)))
    {
       if (data)
-         webdav_log_http_failure(webdav_mkdir_st->url, data);
+         webdav_log_http_failure(webdav_mkdir_st->url, data, err);
       else
          RARCH_WARN("[webdav] Could not mkdir %s\n", webdav_mkdir_st ? webdav_mkdir_st->url : "<unknown>");
       webdav_mkdir_st->cb(false, webdav_mkdir_st->cb_st);
@@ -901,7 +907,7 @@ static void webdav_update_cb(retro_task_t *task, void *task_data,
    bool                  success      = (data && data->status >= 200 && data->status < 300);
 
    if (!success && data)
-       webdav_log_http_failure(webdav_cb_st->path, data);
+       webdav_log_http_failure(webdav_cb_st->path, data, err);
    else if (!data)
       RARCH_WARN("[webdav] Could not upload %s\n", webdav_cb_st ? webdav_cb_st->path : "<unknown>");
 
@@ -988,7 +994,7 @@ static void webdav_delete_cb(retro_task_t *task, void *task_data,
    bool                  success      = (data != NULL && data->status >= 200 && data->status < 300);
 
    if (!success && data)
-      webdav_log_http_failure(webdav_cb_st->path, data);
+      webdav_log_http_failure(webdav_cb_st->path, data, err);
    else if (!data)
       RARCH_WARN("[webdav] Could not delete %s\n", webdav_cb_st ? webdav_cb_st->path : "<unknown>");
 
@@ -1028,7 +1034,7 @@ static void webdav_backup_cb(retro_task_t *task, void *task_data,
    bool                  success      = (data != NULL && data->status >= 200 && data->status < 300);
 
    if (!success && data)
-       webdav_log_http_failure(webdav_cb_st->path, data);
+       webdav_log_http_failure(webdav_cb_st->path, data, err);
    else if (!data)
       RARCH_WARN("[webdav] Could not backup %s\n", webdav_cb_st ? webdav_cb_st->path : "<unknown>");
 
