@@ -532,7 +532,8 @@ struct FramebufferMemoryPool
    /* Keep only a handful of blocks; oscillating between two sizes (the
     * common "toggle integer scale" case) needs at most two. */
    static const size_t max_blocks = 4;
-   std::vector<Block> blocks;
+   Block blocks[4];
+   size_t num_blocks = 0;
 
    /* Best-fit: smallest block that satisfies type+size, or a null block on
     * miss.  The returned block is removed from the pool and owned by the
@@ -545,7 +546,7 @@ struct FramebufferMemoryPool
       result.memory = VK_NULL_HANDLE;
       result.size   = 0;
       result.type   = type;
-      for (i = 0; i < blocks.size(); i++)
+      for (i = 0; i < num_blocks; i++)
       {
          if (     blocks[i].type == type
                && blocks[i].size >= size
@@ -554,9 +555,9 @@ struct FramebufferMemoryPool
       }
       if (best == (size_t)-1)
          return result;
-      result = blocks[best];
-      blocks[best] = blocks.back();
-      blocks.pop_back();
+      result       = blocks[best];
+      blocks[best] = blocks[num_blocks - 1];
+      num_blocks--;
       return result;
    }
 
@@ -566,13 +567,13 @@ struct FramebufferMemoryPool
       Block b;
       if (memory == VK_NULL_HANDLE)
          return;
-      if (blocks.size() >= max_blocks)
+      if (num_blocks >= max_blocks)
       {
          /* Pool full: evict the smallest block so the larger, more reusable
           * allocations survive.  If the incoming block is itself the
           * smallest, just free it. */
          size_t i, smallest = 0;
-         for (i = 1; i < blocks.size(); i++)
+         for (i = 1; i < num_blocks; i++)
             if (blocks[i].size < blocks[smallest].size)
                smallest = i;
          if (blocks[smallest].size >= size)
@@ -581,21 +582,21 @@ struct FramebufferMemoryPool
             return;
          }
          vkFreeMemory(device, blocks[smallest].memory, nullptr);
-         blocks[smallest] = blocks.back();
-         blocks.pop_back();
+         blocks[smallest] = blocks[num_blocks - 1];
+         num_blocks--;
       }
       b.memory = memory;
       b.size   = size;
       b.type   = type;
-      blocks.push_back(b);
+      blocks[num_blocks++] = b;
    }
 
    void drain(VkDevice device)
    {
       size_t i;
-      for (i = 0; i < blocks.size(); i++)
+      for (i = 0; i < num_blocks; i++)
          vkFreeMemory(device, blocks[i].memory, nullptr);
-      blocks.clear();
+      num_blocks = 0;
    }
 };
 
@@ -716,6 +717,21 @@ static struct slang_framebuffer *slang_framebuffer_new(VkDevice device,
 /* Frees *fb if set and nulls it. */
 static void slang_framebuffer_delete(struct slang_framebuffer **fb);
 
+/* Fresh zeroed array of new_count Textures (the vector resize sites all
+ * follow a clear(), and every element is rewritten before it is read). */
+static bool texture_array_resize(Texture **arr, size_t *count,
+      size_t new_count)
+{
+   free(*arr);
+   *arr   = NULL;
+   *count = 0;
+   if (new_count &&
+         !(*arr = (Texture*)calloc(new_count, sizeof(**arr))))
+      return false;
+   *count = new_count;
+   return true;
+}
+
 struct CommonResources
 {
    CommonResources(VkDevice device,
@@ -731,15 +747,18 @@ struct CommonResources
 
    VkSampler samplers[GLSLANG_FILTER_CHAIN_COUNT][GLSLANG_FILTER_CHAIN_COUNT][GLSLANG_FILTER_CHAIN_ADDRESS_COUNT];
 
-   std::vector<Texture> original_history;
-   std::vector<Texture> fb_feedback;
-   std::vector<Texture> pass_outputs;
+   Texture *original_history = nullptr;
+   size_t num_original_history = 0;
+   Texture *fb_feedback = nullptr;
+   size_t num_fb_feedback = 0;
+   Texture *pass_outputs = nullptr;
+   size_t num_pass_outputs = 0;
    struct slang_static_texture *luts = nullptr;
    size_t num_luts = 0;
 
    slang_texture_semantic_name_map texture_semantic_map        = {};
    slang_texture_semantic_name_map texture_semantic_uniform_map = {};
-   std::unique_ptr<video_shader> shader_preset;
+   struct video_shader *shader_preset = nullptr;
 
    VkDevice device;
 
@@ -901,14 +920,16 @@ struct vulkan_filter_chain
       vulkan_filter_chain(const vulkan_filter_chain_create_info &info);
       ~vulkan_filter_chain();
 
-      inline void set_shader_preset(std::unique_ptr<video_shader> shader)
+      /* Takes ownership; any previous preset is freed. */
+      inline void set_shader_preset(struct video_shader *shader)
       {
-         common.shader_preset = std::move(shader);
+         free(common.shader_preset);
+         common.shader_preset = shader;
       }
 
       inline video_shader *get_shader_preset()
       {
-         return common.shader_preset.get();
+         return common.shader_preset;
       }
 
       void set_pass_info(unsigned pass,
@@ -977,7 +998,8 @@ struct vulkan_filter_chain
       VkPipelineCache cache;
       struct slang_pass **passes = nullptr;
       size_t pass_count = 0;
-      std::vector<vulkan_filter_chain_pass_info> pass_info;
+      vulkan_filter_chain_pass_info *pass_info = nullptr;
+      size_t pass_info_count = 0;
       struct deferred_disposes *deferred_calls;
       unsigned num_deferred;
       CommonResources common;
@@ -1447,6 +1469,7 @@ vulkan_filter_chain::~vulkan_filter_chain()
    for (i = 0; i < num_deferred; i++)
       free(deferred_calls[i].calls);
    free(deferred_calls);
+   free(pass_info);
 }
 
 void vulkan_filter_chain::set_swapchain_info(
@@ -1556,7 +1579,7 @@ void vulkan_filter_chain::update_history_info()
 void vulkan_filter_chain::update_feedback_info()
 {
    unsigned i;
-   if (common.fb_feedback.empty())
+   if (!common.num_fb_feedback)
       return;
 
    for (i = 0; i < pass_count - 1; i++)
@@ -1614,7 +1637,7 @@ void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
     * and submitting it to vkUpdateDescriptorSets crashes inside the driver.
     * Seed every slot with the current input texture so unproduced outputs
     * sample defined data; real outputs overwrite their slot as they render. */
-   for (i = 0; i < common.pass_outputs.size(); i++)
+   for (i = 0; i < common.num_pass_outputs; i++)
       common.pass_outputs[i] = original;
 
    for (i = 0; i < pass_count - 1; i++)
@@ -1771,7 +1794,8 @@ bool vulkan_filter_chain::init_history()
    free(original_history);
    original_history = nullptr;
    num_history      = 0;
-   common.original_history.clear();
+   texture_array_resize(&common.original_history,
+         &common.num_original_history, 0);
    history_ring_index = 0;
 
    for (i = 0; i < pass_count; i++)
@@ -1795,7 +1819,9 @@ bool vulkan_filter_chain::init_history()
    if (!(original_history = (struct slang_framebuffer**)
             calloc(required_images, sizeof(*original_history))))
       return false;
-   common.original_history.resize(required_images);
+   if (!texture_array_resize(&common.original_history,
+            &common.num_original_history, required_images))
+      return false;
 
    for (i = 0; i < required_images; i++)
    {
@@ -1823,7 +1849,7 @@ bool vulkan_filter_chain::init_feedback()
    unsigned i;
    bool use_feedbacks = false;
 
-   common.fb_feedback.clear();
+   texture_array_resize(&common.fb_feedback, &common.num_fb_feedback, 0);
 
    /* Final pass cannot have feedback. */
    for (i = 0; i < pass_count - 1; i++)
@@ -1861,7 +1887,9 @@ bool vulkan_filter_chain::init_feedback()
       return true;
    }
 
-   common.fb_feedback.resize(pass_count - 1);
+   if (!texture_array_resize(&common.fb_feedback,
+            &common.num_fb_feedback, pass_count - 1))
+      return false;
    require_clear = true;
    return true;
 }
@@ -1953,7 +1981,18 @@ void vulkan_filter_chain::set_num_passes(unsigned num_passes)
 {
    unsigned i;
 
-   pass_info.resize(num_passes);
+   {
+      vulkan_filter_chain_pass_info *new_info =
+         (vulkan_filter_chain_pass_info*)realloc(pass_info,
+               num_passes * sizeof(*pass_info));
+      if (!new_info && num_passes)
+         return;
+      pass_info = new_info;
+      if (num_passes > pass_info_count)
+         memset(&pass_info[pass_info_count], 0,
+               (num_passes - pass_info_count) * sizeof(*pass_info));
+      pass_info_count = num_passes;
+   }
    for (i = 0; i < pass_count; i++)
       slang_pass_free(passes[i]);
    free(passes);
@@ -2053,7 +2092,8 @@ bool vulkan_filter_chain::init()
       return false;
    if (!init_feedback())
       return false;
-   common.pass_outputs.resize(pass_count);
+   texture_array_resize(&common.pass_outputs,
+         &common.num_pass_outputs, pass_count);
    return true;
 }
 
@@ -2082,7 +2122,7 @@ bool vulkan_filter_chain::init_single_pass(unsigned pass_idx)
 bool vulkan_filter_chain::compile_full_pass(unsigned pass_idx,
       glslang_filter_chain_filter default_filter)
 {
-   video_shader *shader = common.shader_preset.get();
+   video_shader *shader = common.shader_preset;
    if (!shader || pass_idx >= pass_count)
       return false;
 
@@ -2352,7 +2392,8 @@ bool vulkan_filter_chain::finalize()
       return false;
    if (!init_feedback())
       return false;
-   common.pass_outputs.resize(pass_count);
+   texture_array_resize(&common.pass_outputs,
+         &common.num_pass_outputs, pass_count);
    return true;
 }
 
@@ -3211,6 +3252,10 @@ CommonResources::~CommonResources()
    for (size_t i = 0; i < num_luts; i++)
       slang_static_texture_free(&luts[i]);
    free(luts);
+   free(original_history);
+   free(fb_feedback);
+   free(pass_outputs);
+   free(shader_preset);
 }
 
 static void slang_pass_allocate_buffers(struct slang_pass *pass)
@@ -3638,21 +3683,21 @@ static void slang_pass_build_semantics(struct slang_pass *pass,
             pass->parameters[pass->filtered_parameters[i]].index].current);
 
    /* Previous inputs. */
-   for (i = 0; i < pass->common->original_history.size(); i++)
+   for (i = 0; i < pass->common->num_original_history; i++)
       slang_pass_build_semantic_texture_array(pass, set, buffer,
             SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY, i + 1,
             pass->common->original_history[i],
             batch_image_infos, batch_writes, batch_count);
 
    /* Previous passes. */
-   for (i = 0; i < pass->common->pass_outputs.size(); i++)
+   for (i = 0; i < pass->common->num_pass_outputs; i++)
       slang_pass_build_semantic_texture_array(pass, set, buffer,
             SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT, i,
             pass->common->pass_outputs[i],
             batch_image_infos, batch_writes, batch_count);
 
    /* Feedback FBOs. */
-   for (i = 0; i < pass->common->fb_feedback.size(); i++)
+   for (i = 0; i < pass->common->num_fb_feedback; i++)
       slang_pass_build_semantic_texture_array(pass, set, buffer,
             SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK, i,
             pass->common->fb_feedback[i],
@@ -4187,7 +4232,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_default(
 
    tmpinfo.num_passes      = 1;
 
-   std::unique_ptr<vulkan_filter_chain> chain{ new vulkan_filter_chain(tmpinfo) };
+   vulkan_filter_chain *chain = new vulkan_filter_chain(tmpinfo);
    if (!chain)
       return nullptr;
 
@@ -4223,9 +4268,12 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_default(
    }
 
    if (!chain->init())
+   {
+      delete chain;
       return nullptr;
+   }
 
-   return chain.release();
+   return chain;
 }
 
 vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
@@ -4233,27 +4281,32 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       const char *path, glslang_filter_chain_filter filter)
 {
    unsigned i;
+   bool last_pass_is_fbo;
    glslang_output output;
-   std::unique_ptr<video_shader> shader{ new video_shader() };
+   struct vulkan_filter_chain_create_info tmpinfo;
+   void *include_cache = NULL;
+   vulkan_filter_chain *chain = NULL;
+   struct video_shader *shader = (struct video_shader*)
+      calloc(1, sizeof(*shader));
 
    glslang_output_init(&output);
 
    if (!shader)
       return nullptr;
 
-    if (!video_shader_load_preset_into_shader(path, shader.get()))
-        return nullptr;
+    if (!video_shader_load_preset_into_shader(path, shader))
+        goto error;
 
-   bool last_pass_is_fbo = shader->pass[shader->passes - 1].fbo.flags &
+   last_pass_is_fbo   = shader->pass[shader->passes - 1].fbo.flags &
       FBO_SCALE_FLAG_VALID;
-   struct vulkan_filter_chain_create_info tmpinfo = *info;
-   tmpinfo.num_passes    = shader->passes + (last_pass_is_fbo ? 1 : 0);
+   tmpinfo            = *info;
+   tmpinfo.num_passes = shader->passes + (last_pass_is_fbo ? 1 : 0);
 
-   std::unique_ptr<vulkan_filter_chain> chain{ new vulkan_filter_chain(tmpinfo) };
+   chain = new vulkan_filter_chain(tmpinfo);
    if (!chain)
       goto error;
 
-   if (shader->luts && !vulkan_filter_chain_load_luts(info, chain.get(), shader.get()))
+   if (shader->luts && !vulkan_filter_chain_load_luts(info, chain, shader))
       goto error;
 
    shader->num_parameters = 0;
@@ -4264,8 +4317,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
     * distinct files.  The guard frees it on every exit from here,
     * including the error paths below. */
    {
-   glslang_include_cache_guard include_cache_guard;
-   void *include_cache = include_cache_guard.handle;
+   include_cache = glslang_include_cache_new();
 
    for (i = 0; i < shader->passes; i++)
    {
@@ -4516,7 +4568,9 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       chain->set_pass_info(i, pass_info);
       glslang_output_free(&output);
    }
-   }   /* include cache scope: freed here, and on any error exit above */
+   glslang_include_cache_free(include_cache);
+   include_cache = NULL;
+   }   /* include cache scope: freed just above, and on any error exit */
 
    if (last_pass_is_fbo)
    {
@@ -4550,14 +4604,19 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             sizeof(opaque_frag) / sizeof(uint32_t));
    }
 
-   chain->set_shader_preset(std::move(shader));
+   chain->set_shader_preset(shader);
+   shader = NULL; /* owned by the chain now */
 
    if (!chain->init())
       goto error;
 
-   return chain.release();
+   glslang_output_free(&output);
+   return chain;
 
 error:
+   glslang_include_cache_free(include_cache);
+   delete chain;
+   free(shader);
    glslang_output_free(&output);
    return nullptr;
 }
@@ -4571,25 +4630,39 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_deferred(
       unsigned *out_num_passes)
 {
    unsigned i;
-   std::unique_ptr<video_shader> shader{ new video_shader() };
+   bool last_pass_is_fbo;
+   struct vulkan_filter_chain_create_info tmpinfo;
+   vulkan_filter_chain *chain = NULL;
+   struct video_shader *shader = (struct video_shader*)
+      calloc(1, sizeof(*shader));
 
    if (!shader)
       return nullptr;
 
-   if (!video_shader_load_preset_into_shader(path, shader.get()))
+   if (!video_shader_load_preset_into_shader(path, shader))
+   {
+      free(shader);
       return nullptr;
+   }
 
-   bool last_pass_is_fbo = shader->pass[shader->passes - 1].fbo.flags &
+   last_pass_is_fbo   = shader->pass[shader->passes - 1].fbo.flags &
       FBO_SCALE_FLAG_VALID;
-   struct vulkan_filter_chain_create_info tmpinfo = *info;
+   tmpinfo            = *info;
    tmpinfo.num_passes = shader->passes + (last_pass_is_fbo ? 1 : 0);
 
-   std::unique_ptr<vulkan_filter_chain> chain{ new vulkan_filter_chain(tmpinfo) };
+   chain = new vulkan_filter_chain(tmpinfo);
    if (!chain)
+   {
+      free(shader);
       return nullptr;
+   }
 
-   if (shader->luts && !vulkan_filter_chain_load_luts(info, chain.get(), shader.get()))
+   if (shader->luts && !vulkan_filter_chain_load_luts(info, chain, shader))
+   {
+      delete chain;
+      free(shader);
       return nullptr;
+   }
 
    shader->num_parameters = 0;
 
@@ -4627,18 +4700,20 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_deferred(
             sizeof(opaque_frag) / sizeof(uint32_t));
    }
 
-   chain->set_shader_preset(std::move(shader));
+   chain->set_shader_preset(shader);
+   shader = NULL; /* owned by the chain now */
 
    if (!chain->init_alias_early())
    {
       RARCH_ERR("[Vulkan] Deferred: failed to initialize alias map.\n");
+      delete chain;
       return nullptr;
    }
 
    if (out_num_passes)
       *out_num_passes = tmpinfo.num_passes;
 
-   return chain.release();
+   return chain;
 }
 
 bool vulkan_filter_chain_compile_pass(
