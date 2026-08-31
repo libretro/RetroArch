@@ -1605,8 +1605,11 @@ static rarch_setting_t setting_uint_setting(const char* name,
 
    result.size                      = sizeof(unsigned int);
 
-   result.name                      = dont_use_enum_idx ? strdup(name) : name;
-   result.short_description         = dont_use_enum_idx ? strdup(short_description) : short_description;
+   /* Callers that build a runtime name hand over their own copies
+    * and tag the entry with SD_FREE_FLAG_NAME | SD_FREE_FLAG_SHORT, so
+    * the strings are owned here as given; the rest are literals. */
+   result.name                      = name;
+   result.short_description         = short_description;
    result.values                    = NULL;
 
    result.index                     = 0;
@@ -1874,8 +1877,11 @@ static rarch_setting_t setting_string_setting(enum setting_type type,
 
    result.size                      = size;
 
-   result.name                      = dont_use_enum_idx ? strdup(name) : name;
-   result.short_description         = dont_use_enum_idx ? strdup(short_description) : short_description;
+   /* Callers that build a runtime name hand over their own copies
+    * and tag the entry with SD_FREE_FLAG_NAME | SD_FREE_FLAG_SHORT, so
+    * the strings are owned here as given; the rest are literals. */
+   result.name                      = name;
+   result.short_description         = short_description;
    result.values                    = NULL;
 
    result.index                     = 0;
