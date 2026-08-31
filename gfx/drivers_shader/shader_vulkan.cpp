@@ -436,39 +436,73 @@ static void *slang_buffer_map(struct slang_buffer *buf);
 static void slang_buffer_unmap(struct slang_buffer *buf);
 static void slang_buffer_free(struct slang_buffer *buf);
 
-class StaticTexture
+/* An immutable LUT texture with its staging buffer (freed after
+ * upload) and its semantic id.  Zero-initialized = empty;
+ * slang_static_texture_free() is safe on any state. */
+struct slang_static_texture
 {
-   public:
-      /* Takes ownership of *staging, which is zeroed. */
-      StaticTexture(std::string id,
-            VkDevice device,
-            VkImage image,
-            VkImageView view,
-            VkDeviceMemory memory,
-            struct slang_buffer *staging,
-            unsigned width, unsigned height,
-            bool linear,
-            bool mipmap,
-            glslang_filter_chain_address address);
-      ~StaticTexture();
-
-      StaticTexture(StaticTexture&&) = delete;
-      void operator=(StaticTexture&&) = delete;
-
-      void release_staging_buffer() { slang_buffer_free(&buffer); }
-      void set_id(std::string name) { id = std::move(name); }
-      const std::string &get_id() const { return id; }
-      const Texture &get_texture() const { return texture; }
-
-   private:
-      VkDevice device;
-      VkImage image;
-      VkImageView view;
-      VkDeviceMemory memory;
-      struct slang_buffer buffer;
-      std::string id;
-      Texture texture;
+   VkDevice device;
+   VkImage image;
+   VkImageView view;
+   VkDeviceMemory memory;
+   struct slang_buffer buffer;
+   char *id;
+   Texture texture;
 };
+
+/* Takes ownership of *staging, which is zeroed. */
+static bool slang_static_texture_init(struct slang_static_texture *tex,
+      const char *id,
+      VkDevice device,
+      VkImage image,
+      VkImageView view,
+      VkDeviceMemory memory,
+      struct slang_buffer *staging,
+      unsigned width, unsigned height,
+      bool linear,
+      bool mipmap,
+      glslang_filter_chain_address address)
+{
+   tex->device            = device;
+   tex->image             = image;
+   tex->view              = view;
+   tex->memory            = memory;
+   tex->buffer            = *staging;
+   memset(staging, 0, sizeof(*staging));
+   if (!(tex->id = strdup(id)))
+      return false;
+
+   tex->texture.filter         = GLSLANG_FILTER_CHAIN_NEAREST;
+   tex->texture.mip_filter     = GLSLANG_FILTER_CHAIN_NEAREST;
+   tex->texture.address        = address;
+   tex->texture.texture.image  = image;
+   tex->texture.texture.view   = view;
+   tex->texture.texture.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+   tex->texture.texture.width  = width;
+   tex->texture.texture.height = height;
+
+   if (linear)
+      tex->texture.filter      = GLSLANG_FILTER_CHAIN_LINEAR;
+   if (mipmap && linear)
+      tex->texture.mip_filter  = GLSLANG_FILTER_CHAIN_LINEAR;
+   return true;
+}
+
+static void slang_static_texture_free(struct slang_static_texture *tex)
+{
+   slang_buffer_free(&tex->buffer);
+   if (tex->view != VK_NULL_HANDLE)
+      vkDestroyImageView(tex->device, tex->view, nullptr);
+   if (tex->image != VK_NULL_HANDLE)
+      vkDestroyImage(tex->device, tex->image, nullptr);
+   if (tex->memory != VK_NULL_HANDLE)
+      vkFreeMemory(tex->device, tex->memory, nullptr);
+   free(tex->id);
+   tex->view   = VK_NULL_HANDLE;
+   tex->image  = VK_NULL_HANDLE;
+   tex->memory = VK_NULL_HANDLE;
+   tex->id     = NULL;
+}
 
 /* Recycle pool for framebuffer device-memory allocations.
  *
@@ -719,7 +753,8 @@ struct CommonResources
    std::vector<Texture> original_history;
    std::vector<Texture> fb_feedback;
    std::vector<Texture> pass_outputs;
-   std::vector<std::unique_ptr<StaticTexture>> luts;
+   struct slang_static_texture *luts = nullptr;
+   size_t num_luts = 0;
 
    slang_texture_semantic_name_map texture_semantic_map        = {};
    slang_texture_semantic_name_map texture_semantic_uniform_map = {};
@@ -987,8 +1022,9 @@ struct vulkan_filter_chain
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
       void set_pass_name(unsigned pass, const char *name);
+      /* Takes ownership of *texture, which is zeroed. */
+      bool add_static_texture(struct slang_static_texture *texture);
 
-      void add_static_texture(std::unique_ptr<StaticTexture> texture);
       void add_parameter(unsigned pass, unsigned parameter_index, const std::string &id);
       void release_staging_buffers();
 
@@ -1124,7 +1160,8 @@ static VkFormat glslang_format_to_vk(glslang_format fmt)
    return VK_FORMAT_UNDEFINED;
 }
 
-static std::unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
+static bool vulkan_filter_chain_load_lut(
+      struct slang_static_texture *out,
       VkCommandBuffer cmd,
       const struct vulkan_filter_chain_create_info *info,
       vulkan_filter_chain *chain,
@@ -1325,11 +1362,13 @@ static std::unique_ptr<StaticTexture> vulkan_filter_chain_load_lut(
    image_texture_free(&image);
    image.pixels = nullptr;
 
-   return std::unique_ptr<StaticTexture>(new StaticTexture(shader->id, info->device,
+   if (!slang_static_texture_init(out, shader->id, info->device,
             tex, view, memory, &buffer, image.width, image.height,
             shader->filter != RARCH_FILTER_NEAREST,
             image_info.mipLevels > 1,
-            rarch_wrap_to_address(shader->wrap)));
+            rarch_wrap_to_address(shader->wrap)))
+      goto error;
+   return true;
 
 error:
    if (image.pixels)
@@ -1341,7 +1380,7 @@ error:
    if (memory != VK_NULL_HANDLE)
       vkFreeMemory(info->device, memory, nullptr);
    slang_buffer_free(&buffer);
-   return {};
+   return false;
 }
 
 static bool vulkan_filter_chain_load_luts(
@@ -1377,9 +1416,10 @@ static bool vulkan_filter_chain_load_luts(
 
    for (i = 0; i < shader->luts; i++)
    {
-      std::unique_ptr<StaticTexture> image =
-         vulkan_filter_chain_load_lut(cmd, info, chain, &shader->lut[i]);
-      if (!image)
+      struct slang_static_texture image;
+      memset(&image, 0, sizeof(image));
+      if (!vulkan_filter_chain_load_lut(&image, cmd, info, chain,
+               &shader->lut[i]))
       {
          RARCH_ERR("[Vulkan] Failed to load LUT \"%s\".\n", shader->lut[i].path);
          vkEndCommandBuffer(cmd);
@@ -1387,8 +1427,13 @@ static bool vulkan_filter_chain_load_luts(
             vkFreeCommandBuffers(info->device, info->command_pool, 1, &cmd);
          return false;
       }
-
-      chain->add_static_texture(std::move(image));
+      if (!chain->add_static_texture(&image))
+      {
+         slang_static_texture_free(&image);
+         vkEndCommandBuffer(cmd);
+         vkFreeCommandBuffers(info->device, info->command_pool, 1, &cmd);
+         return false;
+      }
    }
 
    if (vkEndCommandBuffer(cmd) != VK_SUCCESS)
@@ -1526,8 +1571,8 @@ bool vulkan_filter_chain::update_swapchain_info(
 void vulkan_filter_chain::release_staging_buffers()
 {
    unsigned i;
-   for (i = 0; i < common.luts.size(); i++)
-      common.luts[i]->release_staging_buffer();
+   for (i = 0; i < common.num_luts; i++)
+      slang_buffer_free(&common.luts[i].buffer);
 }
 
 void vulkan_filter_chain::execute_deferred()
@@ -1903,17 +1948,17 @@ bool vulkan_filter_chain::init_alias()
          return false;
    }
 
-   for (i = 0; i < (unsigned)common.luts.size(); i++)
+   for (i = 0; i < (unsigned)common.num_luts; i++)
    {
       if (!slang_texture_semantic_name_map_set_unique(
                &common.texture_semantic_map,
-               common.luts[i]->get_id().c_str(), NULL,
+               common.luts[i].id, NULL,
                SLANG_TEXTURE_SEMANTIC_USER, i))
          return false;
 
       if (!slang_texture_semantic_name_map_set_unique(
                &common.texture_semantic_uniform_map,
-               common.luts[i]->get_id().c_str(), "Size",
+               common.luts[i].id, "Size",
                SLANG_TEXTURE_SEMANTIC_USER, i))
          return false;
    }
@@ -2371,12 +2416,6 @@ void vulkan_filter_chain::set_input_texture(
    input_texture = texture;
 }
 
-void vulkan_filter_chain::add_static_texture(
-      std::unique_ptr<StaticTexture> texture)
-{
-   common.luts.push_back(std::move(texture));
-}
-
 void vulkan_filter_chain::set_frame_count(uint64_t count)
 {
    common.frame_count = count;
@@ -2483,49 +2522,19 @@ void vulkan_filter_chain::set_pass_name(unsigned pass, const char *name)
    passes[pass]->set_name(name);
 }
 
-StaticTexture::StaticTexture(std::string id,
-      VkDevice device,
-      VkImage image,
-      VkImageView view,
-      VkDeviceMemory memory,
-      struct slang_buffer *staging,
-      unsigned width, unsigned height,
-      bool linear,
-      bool mipmap,
-      glslang_filter_chain_address address)
-   : device(device),
-     image(image),
-     view(view),
-     memory(memory),
-     buffer(*staging),
-     id(std::move(id))
+bool vulkan_filter_chain::add_static_texture(
+      struct slang_static_texture *texture)
 {
-   memset(staging, 0, sizeof(*staging));
-   texture.filter         = GLSLANG_FILTER_CHAIN_NEAREST;
-   texture.mip_filter     = GLSLANG_FILTER_CHAIN_NEAREST;
-   texture.address        = address;
-   texture.texture.image  = image;
-   texture.texture.view   = view;
-   texture.texture.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-   texture.texture.width  = width;
-   texture.texture.height = height;
-
-   if (linear)
-      texture.filter      = GLSLANG_FILTER_CHAIN_LINEAR;
-   if (mipmap && linear)
-      texture.mip_filter  = GLSLANG_FILTER_CHAIN_LINEAR;
+   struct slang_static_texture *new_luts = (struct slang_static_texture*)
+      realloc(common.luts, (common.num_luts + 1) * sizeof(*new_luts));
+   if (!new_luts)
+      return false;
+   common.luts                        = new_luts;
+   common.luts[common.num_luts++]     = *texture;
+   memset(texture, 0, sizeof(*texture));
+   return true;
 }
 
-StaticTexture::~StaticTexture()
-{
-   slang_buffer_free(&buffer);
-   if (view != VK_NULL_HANDLE)
-      vkDestroyImageView(device, view, nullptr);
-   if (image != VK_NULL_HANDLE)
-      vkDestroyImage(device, image, nullptr);
-   if (memory != VK_NULL_HANDLE)
-      vkFreeMemory(device, memory, nullptr);
-}
 
 static bool slang_buffer_init(struct slang_buffer *buf,
       VkDevice device, const VkPhysicalDeviceMemoryProperties &mem_props,
@@ -3160,6 +3169,9 @@ CommonResources::~CommonResources()
    framebuffer_pool.drain(device);
    slang_buffer_free(&vbo);
    slang_buffer_free(&ubo);
+   for (size_t i = 0; i < num_luts; i++)
+      slang_static_texture_free(&luts[i]);
+   free(luts);
 }
 
 void Pass::allocate_buffers()
@@ -3588,10 +3600,10 @@ void Pass::build_semantics(VkDescriptorSet set, uint8_t *buffer,
             batch_image_infos, batch_writes, batch_count);
 
    /* LUTs. */
-   for (i = 0; i < common->luts.size(); i++)
+   for (i = 0; i < common->num_luts; i++)
       build_semantic_texture_array(set, buffer,
             SLANG_TEXTURE_SEMANTIC_USER, i,
-            common->luts[i]->get_texture(),
+            common->luts[i].texture,
             batch_image_infos, batch_writes, batch_count);
 
    /* Flush all batched descriptor writes in a single driver call. */
