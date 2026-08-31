@@ -20,6 +20,15 @@
 
 #if defined(_WIN32) && !defined(_XBOX)
 #define WIN32_LEAN_AND_MEAN
+/* windows.h defines function-like min()/max() unless NOMINMAX is set, and
+ * vendored SPIRV-Cross is not written to survive that: spirv_common.hpp
+ * calls std::numeric_limits<int32_t>::min() unparenthesized.  Every
+ * RetroArch source in this TU reaches windows.h through
+ * retro_miscellaneous.h, so NOMINMAX has to be set here, before the first
+ * one.  It used to be set by accident -- shader_vulkan.cpp was included
+ * first and its vk_sdk_platform.h defines it -- and moving that file to
+ * griffin.c broke the MSVC C++ lanes. */
+#define NOMINMAX
 #endif
 
 #if defined(_MSC_VER)
@@ -61,6 +70,14 @@ VIDEO DRIVER
 ============================================================ */
 #if defined(HAVE_OPENGL_CORE) && defined(HAVE_SLANG)
 #include "../gfx/drivers_shader/shader_gl3.cpp"
+#endif
+
+/* Tripwire for the invariant above: if any header included before this
+ * point has defined the windows.h min()/max() macros, the vendored
+ * SPIRV-Cross sources below will fail with a C2589/C2059 cascade that
+ * points at SPIRV-Cross rather than at the cause.  Fail here instead. */
+#if defined(min) || defined(max)
+#error "windows.h min()/max() macros are defined: NOMINMAX was lost before the vendored SPIRV-Cross includes."
 #endif
 
 #if defined(HAVE_SPIRV_CROSS)
