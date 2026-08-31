@@ -24,6 +24,14 @@
 #endif
 #include <spirv_cross_c.h>
 
+/* SPIR-V words are uint32_t on our side; the C API declares SpvId
+ * (hardcoded 'unsigned int' in spirv.h).  Same width everywhere by
+ * spec, but distinct types on toolchains where uint32_t is unsigned
+ * long (devkitPPC newlib), so the boundary casts below are required
+ * and this guarantees they are safe: */
+typedef char slang_spvid_word_size_check[
+      (sizeof(SpvId) == sizeof(uint32_t)) ? 1 : -1];
+
 #include "slang_process.h"
 
 #include "../../verbosity.h"
@@ -784,6 +792,7 @@ struct stage_source_buf
    size_t cap;
 };
 
+#if defined(HAVE_GLSLANG)
 static bool stage_source_append(struct stage_source_buf *buf,
       const char *s, size_t s_len)
 {
@@ -889,6 +898,7 @@ error:
    free(buf.data);
    return NULL;
 }
+#endif /* HAVE_GLSLANG */
 
 void glslang_output_init(glslang_output *output)
 {
@@ -1465,9 +1475,9 @@ bool slang_process(
    if (spvc_context_create(&ctx) != SPVC_SUCCESS)
       goto error;
 
-   if (   spvc_context_parse_spirv(ctx, output.vertex,
+   if (   spvc_context_parse_spirv(ctx, (const SpvId*)output.vertex,
             output.vertex_len, &vs_ir) != SPVC_SUCCESS
-       || spvc_context_parse_spirv(ctx, output.fragment,
+       || spvc_context_parse_spirv(ctx, (const SpvId*)output.fragment,
             output.fragment_len, &ps_ir) != SPVC_SUCCESS
        || spvc_context_create_compiler(ctx, backend, vs_ir,
             SPVC_CAPTURE_MODE_TAKE_OWNERSHIP,
@@ -2436,9 +2446,9 @@ bool slang_reflect_spirv(const uint32_t *vertex, size_t vertex_len,
    if (spvc_context_create(&ctx) != SPVC_SUCCESS)
       return false;
 
-   if (   spvc_context_parse_spirv(ctx, vertex, vertex_len,
+   if (   spvc_context_parse_spirv(ctx, (const SpvId*)vertex, vertex_len,
             &vs_ir) != SPVC_SUCCESS
-       || spvc_context_parse_spirv(ctx, fragment, fragment_len,
+       || spvc_context_parse_spirv(ctx, (const SpvId*)fragment, fragment_len,
             &ps_ir) != SPVC_SUCCESS
        || spvc_context_create_compiler(ctx, SPVC_BACKEND_NONE, vs_ir,
             SPVC_CAPTURE_MODE_TAKE_OWNERSHIP, &vs_compiler) != SPVC_SUCCESS
