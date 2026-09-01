@@ -204,17 +204,11 @@ static void *dinput_init(const char *joypad_driver)
 static void dinput_poll(void *data)
 {
    struct dinput_input *di = (struct dinput_input*)data;
-   uint8_t *kb_state       = NULL;
 
    if (!di)
       return;
 
-   kb_state                = &di->state[0];
-
-   for (
-         ; kb_state < di->state + 256
-         ; kb_state++)
-      *kb_state = 0;
+   memset(di->state, 0, sizeof(di->state));
 
    if (di->keyboard)
    {
@@ -222,14 +216,13 @@ static void dinput_poll(void *data)
                   di->keyboard, sizeof(di->state), di->state)))
       {
          IDirectInputDevice8_Acquire(di->keyboard);
+         /* Clear again: GetDeviceState() does not promise to leave the
+          * buffer untouched when it fails, and a partial write would
+          * otherwise be read as live key state. dinput_joypad_poll()
+          * does the same for its own device state. */
          if (FAILED(IDirectInputDevice8_GetDeviceState(
                      di->keyboard, sizeof(di->state), di->state)))
-         {
-            for (
-                  ; kb_state < di->state + 256
-                  ; kb_state++)
-               *kb_state = 0;
-         }
+            memset(di->state, 0, sizeof(di->state));
       }
       else
       {
