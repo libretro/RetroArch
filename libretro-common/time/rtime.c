@@ -28,6 +28,7 @@
 #include <string.h>
 
 #include <boolean.h>
+#include <retro_atomic.h>
 #include <time/rtime.h>
 
 #ifdef HAVE_THREADS
@@ -130,8 +131,10 @@ static CreateWaitableTimerExW_t rtime_create_waitable_timer_ex = NULL;
 static SetWaitableTimer_t rtime_set_waitable_timer             = NULL;
 static NtSetTimerResolution_t rtime_nt_set_timer_resolution    = NULL;
 static ULONG rtime_timer_resolution       = 0;
-static volatile LONG rtime_sleep_state    = RTIME_SLEEP_UNKNOWN;
-static volatile LONG rtime_sleep_init_ran = 0;
+static retro_atomic_int_t rtime_sleep_state =
+   RETRO_ATOMIC_INT_INITIALIZER(RTIME_SLEEP_UNKNOWN);
+static retro_atomic_int_t rtime_sleep_init_ran =
+   RETRO_ATOMIC_INT_INITIALIZER(0);
 static DWORD rtime_sleep_tls              = TLS_OUT_OF_INDEXES;
 
 static bool rtime_timer_resolution_init(void)
@@ -181,7 +184,8 @@ error:
  * refcounted, so it has to be reasserted rather than set once. */
 static void rtime_sleep_fallback(unsigned usec)
 {
-   if (     rtime_sleep_state == RTIME_SLEEP_TIMERES
+   if (     retro_atomic_load_acquire_int(&rtime_sleep_state)
+               == RTIME_SLEEP_TIMERES
          && rtime_nt_set_timer_resolution)
    {
       ULONG res_current = 0;
@@ -234,7 +238,10 @@ static void rtime_sleep_init(void)
    if (state != RTIME_SLEEP_HIGHRES && rtime_timer_resolution_init())
       state = RTIME_SLEEP_TIMERES;
 
-   InterlockedExchange(&rtime_sleep_state, state);
+   /* Release store: rtime_sleep_tls and the resolved entry points are
+    * written above and must be visible to any thread that observes the
+    * published state. */
+   retro_atomic_store_release_int(&rtime_sleep_state, state);
 }
 
 /* The timer object must not be shared between threads: SetWaitableTimer()
@@ -275,12 +282,13 @@ void retro_sleep_us(unsigned usec)
       return;
    }
 
-   if (rtime_sleep_state == RTIME_SLEEP_UNKNOWN)
+   if (retro_atomic_load_acquire_int(&rtime_sleep_state)
+         == RTIME_SLEEP_UNKNOWN)
    {
       /* First caller performs the probe; any thread that races it
        * takes the plain Sleep() path for this one call rather than
        * spinning on the result. */
-      if (InterlockedCompareExchange(&rtime_sleep_init_ran, 1, 0) != 0)
+      if (!retro_atomic_cas_int(&rtime_sleep_init_ran, 0, 1))
       {
          Sleep((usec + 500) / 1000);
          return;
@@ -289,7 +297,8 @@ void retro_sleep_us(unsigned usec)
       rtime_sleep_init();
    }
 
-   if (     rtime_sleep_state != RTIME_SLEEP_HIGHRES
+   if (     retro_atomic_load_acquire_int(&rtime_sleep_state)
+               != RTIME_SLEEP_HIGHRES
          || !(timer = rtime_sleep_timer_get()))
    {
       rtime_sleep_fallback(usec);
@@ -344,8 +353,9 @@ static void rtime_sleep_deinit(void)
 
    if (rtime_sleep_tls == TLS_OUT_OF_INDEXES)
    {
-      InterlockedExchange(&rtime_sleep_state, RTIME_SLEEP_UNKNOWN);
-      InterlockedExchange(&rtime_sleep_init_ran, 0);
+      retro_atomic_store_release_int(&rtime_sleep_state,
+            RTIME_SLEEP_UNKNOWN);
+      retro_atomic_store_release_int(&rtime_sleep_init_ran, 0);
       return;
    }
 
@@ -358,8 +368,8 @@ static void rtime_sleep_deinit(void)
    TlsFree(rtime_sleep_tls);
    rtime_sleep_tls = TLS_OUT_OF_INDEXES;
 
-   InterlockedExchange(&rtime_sleep_state, RTIME_SLEEP_UNKNOWN);
-   InterlockedExchange(&rtime_sleep_init_ran, 0);
+   retro_atomic_store_release_int(&rtime_sleep_state, RTIME_SLEEP_UNKNOWN);
+   retro_atomic_store_release_int(&rtime_sleep_init_ran, 0);
 }
 #endif
 
