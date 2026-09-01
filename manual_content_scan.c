@@ -731,7 +731,7 @@ enum manual_content_scan_playlist_refresh_status
    fill_pathname(system_name, path_basename(playlist_path),
          "", sizeof(system_name));
 
-   if (database_name_lpl && database_name_lpl && *database_name_lpl)
+   if (database_name_lpl && *database_name_lpl)
       fill_pathname(database_name,database_name_lpl,"",sizeof(database_name));
    /* Cannot happen, but would constitute a
     * 'system name' error */
