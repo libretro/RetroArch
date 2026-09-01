@@ -168,10 +168,14 @@ ifeq ($(WHOLE_ARCHIVE_LINK), 1)
 endif
 CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions
 
+# -lpthread is not for rthreads, which drives the Vita kernel directly. It
+# satisfies libstdc++.a: a C++ core is linked in under --whole-archive, and its
+# static-init guards, EH pool and std::locale reach gthreads. Static archive, so
+# a link that references none of it pulls in nothing.
 VITA_LIBS := -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub -lSceAppUtil_stub \
 	-lSceSysmodule_stub -lSceCtrl_stub -lSceHid_stub -lSceTouch_stub -lSceAudio_stub \
 	-lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lSceMotion_stub \
-	-lSceFiber_stub -lSceMotion_stub -lSceAppMgr_stub -lSceShaccCg_stub
+	-lSceFiber_stub -lSceMotion_stub -lSceAppMgr_stub -lpthread -lSceShaccCg_stub
 
 ifeq ($(HAVE_VITAGLES), 1)
    VITA_LIBS += -llibScePiglet_stub -ltaihen_stub
