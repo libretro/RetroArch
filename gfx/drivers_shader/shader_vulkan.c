@@ -3445,6 +3445,13 @@ static bool slang_pass_build(struct slang_pass *pass)
    unsigned j = 0;
    slang_semantic_name_map semantic_map = {};
 
+   /* The reflection below reads the semantic maps out of common
+    * unconditionally, so a pass without one cannot be built at all.
+    * slang_chain_set_num_passes() assigns it directly after
+    * slang_pass_new(), which is the only way a pass reaches here. */
+   if (!pass->common)
+      return false;
+
    slang_framebuffer_delete(&pass->framebuffer);
    slang_framebuffer_delete(&pass->fb_feedback);
 
@@ -3452,9 +3459,9 @@ static bool slang_pass_build(struct slang_pass *pass)
    {
       if (!(pass->framebuffer = slang_framebuffer_new(pass->device, pass->memory_properties,
                pass->current_framebuffer_size_width,
-         pass->current_framebuffer_size_height,
+               pass->current_framebuffer_size_height,
                pass->pass_info.rt_format, pass->pass_info.max_levels,
-               pass->common ? &pass->common->framebuffer_pool : NULL)))
+               &pass->common->framebuffer_pool)))
          return false;
    }
 
