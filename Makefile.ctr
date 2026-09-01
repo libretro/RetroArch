@@ -318,14 +318,16 @@ ctr-shaders:
 	mv $$d/ctr_sprite_shbin.S.tmp $$d/ctr_sprite_shbin.S
 
 %.o: %.vsh %.gsh
-	$(DEVKITTOOLS)/bin/picasso $^ -o $*.shbin
-	$(DEVKITTOOLS)/bin/bin2s $*.shbin | $(PREFIX)as -o $@
-	rm $*.shbin
+	$(CTR_PICASSO) $^ -o $*.shbin
+	$(CTR_BIN2S) $*.shbin > $*.shbin.s
+	$(PREFIX)as -o $@ $*.shbin.s
+	rm $*.shbin $*.shbin.s
 
 %.o: %.vsh
-	$(DEVKITTOOLS)/bin/picasso $^ -o $*.shbin
-	$(DEVKITTOOLS)/bin/bin2s $*.shbin | $(PREFIX)as -o $@
-	rm $*.shbin
+	$(CTR_PICASSO) $^ -o $*.shbin
+	$(CTR_BIN2S) $*.shbin > $*.shbin.s
+	$(PREFIX)as -o $@ $*.shbin.s
+	rm $*.shbin $*.shbin.s
 
 %.o: %.cpp
 	@$(if $(Q), $(shell echo echo CXX $<),)
@@ -389,5 +391,6 @@ clean:
 	$(Q)rm -f $(TARGET).icn
 	$(Q)rm -f ctr/ctr_config_*.o
 	$(Q)rm -f ctr/3dsx_custom_crt0.o
+	$(Q)rm -f gfx/drivers/ctr_shaders/*.shbin gfx/drivers/ctr_shaders/*.shbin.s
 
 .PHONY: clean

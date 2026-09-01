@@ -4,6 +4,8 @@
 *.exe
 *.bmpobj
 *.binobj
+*.shbin
+*.shbin.s
 *.so
 *.so.*
 *.dll
