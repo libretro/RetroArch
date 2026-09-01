@@ -46,6 +46,63 @@ extern "C" {
 
 #include "../input_keymaps.h"
 
+/* Threading model
+ * ---------------
+ * On every Windows video driver that can actually use this input
+ * driver, it is built by the video context driver's input_driver
+ * callback - gfx_ctx_wgl_input_driver() and the w_vk / d3d_common /
+ * gdi equivalents - rather than by the runloop. Under video_threaded
+ * the video driver's init() runs on the video thread
+ * (video_thread_wrapper.c, CMD_INIT), so winraw_init() and therefore
+ * winraw_create_window() run there too.
+ *
+ * There is a second path. A video driver may leave *input NULL, and
+ * video_driver_init_input() then picks the configured driver itself -
+ * on the main thread, since video_driver_init_internal() calls it
+ * after the video thread has been spun up. A winraw window created
+ * that way would not share a thread with the pump and would never see
+ * WM_INPUT. The only Windows driver that takes that path is sdl2,
+ * which sets *input = NULL at sdl2_gfx.c:470, and that combination is
+ * already unusable and warned about for an unrelated reason - see the
+ * note at the end of this comment. Worth knowing if another driver
+ * ever stops providing one.
+ *
+ * That matters because RegisterRawInputDevices() targets wr->window,
+ * a HWND_MESSAGE window, and WM_INPUT is delivered to the queue of the
+ * thread that created it. The pump,
+ * ui_application_win32_process_events(), uses
+ * PeekMessage(&msg, 0, 0, 0, PM_REMOVE), which retrieves messages for
+ * every window belonging to the calling thread - and it runs on the
+ * main thread when video is not threaded (runloop.c) or on the video
+ * thread when it is (win32_check_window()). Either way the pump and
+ * wr->window are on the same thread, so WM_INPUT is dispatched in both
+ * configurations.
+ *
+ * The split that does exist: winraw_callback() runs on whichever
+ * thread owns the window, while winraw_poll() is called from
+ * input_driver_poll() in the runloop, always on the main thread. Every
+ * field the two share crosses a thread boundary. dlt_x/dlt_y,
+ * whl_u/whl_d, pos_pending and rect_check_pending are retro_atomic_int_t
+ * for that reason.
+ *
+ * x and y are deliberately not. They have two writers - the wndproc
+ * accumulates into them, and winraw_poll() overwrites them from the
+ * system cursor - and both do read-modify-write, so the race is lost
+ * updates rather than tearing. Making the fields atomic would not fix
+ * that; it would only make the code look synchronised. A real fix means
+ * giving one thread sole ownership of the position, which is a
+ * restructure rather than a type change. In practice a lost update
+ * costs one stale report and self-corrects on the next one, and it only
+ * arises under video_threaded with a software-rendered core, since
+ * VIDEO_DRIVER_IS_THREADED_INTERNAL is false whenever there is a
+ * hardware context.
+ *
+ * Note also that whoever drains raw input owns it process-wide: the
+ * SDL2 video driver calls RegisterRawInputDevices() and
+ * GetRawInputBuffer() internally, which takes the WM_INPUT stream away
+ * from this driver entirely. See the warning in gfx/drivers/sdl2_gfx.c.
+ */
+
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
