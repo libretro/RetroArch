@@ -100,6 +100,9 @@ typedef struct
    RECT active_rect; /* Needed for checking for a windows size change */
    RECT prev_rect;   /* Needed for checking for a windows size change */
    int rect_delay;   /* Needed to delay resize of window */
+   /* Raised once per frame by winraw_poll(), consumed by the first raw
+    * input report of that frame. */
+   retro_atomic_int_t rect_check_pending;
    winraw_mouse_t *mice;
    unsigned mouse_cnt;
    uint8_t kb_keys[SC_LAST];
@@ -466,21 +469,31 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
    POINT crs_pos;
    bool swap_mouse_buttons = (g_win32_flags & WIN32_CMN_FLAG_SWAP_MOUSE_BTNS) ? true : false;
 
-   /* Used for fixing coordinates after switching resolutions */
-   GetClientRect((HWND)video_driver_window_get(), &wr->prev_rect);
-
-   if (!EqualRect(&wr->active_rect, &wr->prev_rect))
+   /* Used for fixing coordinates after switching resolutions.
+    *
+    * Gated to once per frame. The client rect cannot change more often
+    * than that, while this function runs once per raw input report -
+    * about sixteen times per frame with a 1000 Hz mouse. Ungated, a
+    * resolution change ran winraw_init_mouse_xy_mapping() up to ten
+    * times inside one frame, and that is a viewport query plus a
+    * GetCursorPos() syscall each time. */
+   if (retro_atomic_exchange_int(&wr->rect_check_pending, 0))
    {
-      if (wr->rect_delay < 10)
+      GetClientRect((HWND)video_driver_window_get(), &wr->prev_rect);
+
+      if (!EqualRect(&wr->active_rect, &wr->prev_rect))
       {
-          winraw_init_mouse_xy_mapping(wr); /* Triggering fewer times seems to fix the issue. Forcing resize while resolution is changing */
-          wr->rect_delay ++;
-      }
-      else
-      {
-         wr->active_rect = wr->prev_rect;
-         winraw_init_mouse_xy_mapping(wr);
-         wr->rect_delay  = 0;
+         if (wr->rect_delay < 10)
+         {
+             winraw_init_mouse_xy_mapping(wr); /* Triggering fewer times seems to fix the issue. Forcing resize while resolution is changing */
+             wr->rect_delay ++;
+         }
+         else
+         {
+            wr->active_rect = wr->prev_rect;
+            winraw_init_mouse_xy_mapping(wr);
+            wr->rect_delay  = 0;
+         }
       }
    }
 
@@ -789,6 +802,9 @@ static void winraw_poll(void *data)
    POINT crs_pos          = {0, 0};
    bool crs_pos_valid     = false;
    winraw_input_t *wr     = (winraw_input_t*)data;
+
+   /* Let the next raw input report re-check the client rect. */
+   retro_atomic_store_release_int(&wr->rect_check_pending, 1);
 
    /* Sync coordinates when window regains focus */
    if (winraw_focus && !wr->last_focus)
