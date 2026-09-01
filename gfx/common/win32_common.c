@@ -513,13 +513,28 @@ static retro_atomic_int_t win32_kb_mods;
 /* GetKeyState and GetKeyboardState read the same per-thread
  * synchronous key table, but only GetKeyboardState exposes it in its
  * documented form: a 256-byte array with 0x80 for down and 0x01 for
- * toggled. GetKeyState returns those bits repacked into a SHORT in
- * which only bit 15 is contractual.
+ * toggled. GetKeyState repacks those bits into a SHORT in which only
+ * bit 15 is contractual.
  *
- * One call is also cheaper. user32's GetKeyState cache only covers
- * virtual-key codes below 0x20, so VK_NUMLOCK, VK_SCROLL, VK_LWIN and
- * VK_RWIN would each take an unconditional kernel transition per key;
- * GetKeyboardState is a single thunk for all 256 keys.
+ * Every implementation happens to also set bit 7 on the down value,
+ * so the 0x80 mask this code used to apply did work - user.exe
+ * 4.10.2222 (Windows 98 SE, 16-bit) builds it with mov bx,0xff80,
+ * user32 5.1.2600.2180 (XP SP2, x86) with or edi,0xff80, and user32
+ * 10.0.26100.7462 (24H2, x64) with or ax,0xff80. Three unrelated
+ * implementations, twenty-six years, no shared code, same constant.
+ * It is still undocumented, and GetAsyncKeyState in those same three
+ * binaries returns 0x8000 with bit 7 clear, so the mask is not even
+ * consistent between the two calls. Use the documented byte form.
+ *
+ * One call is also cheaper, and more so the older the target. On NT
+ * the GetKeyState cache covers virtual-key codes below 0x20 only, so
+ * VK_NUMLOCK, VK_SCROLL, VK_LWIN and VK_RWIN each took an
+ * unconditional kernel transition per key. On 9x user32 does not
+ * implement either function: both are four-byte stubs that select a
+ * thunk ordinal and jump into 16-bit user.exe through FT_Thunk, so
+ * every query was a 32->16 transition. There GetKeyboardState is a
+ * flat 256-byte copy of the table in its native layout while
+ * GetKeyState is the call doing extra work to repack it.
  *
  * The table is per-thread and is only advanced as that thread
  * dispatches keyboard messages, so this must run on the thread owning
