@@ -250,6 +250,20 @@ static INLINE void CondVar_Broadcast(CondVar* cv)
 #define RTHREADS_FUTEX_MATCH_ANY            0xffffffffu
 #endif
 
+/* sthread_prefer_fast_cores: Linux and Android, through the raw
+ * affinity syscalls so that no particular libc vintage is assumed. */
+#if defined(__linux__) && !defined(USE_WIN32_THREADS)
+#include <sys/syscall.h>
+#include <stdio.h>
+#include <unistd.h>
+/* The prototype every Linux libc uses; spelled out so a strict C89
+ * build, where glibc hides it, sees the same one. */
+extern long syscall(long number, ...);
+#define RTHREADS_HAVE_AFFINITY 1
+#ifndef RTHREADS_CPU_SYSFS
+#define RTHREADS_CPU_SYSFS "/sys/devices/system/cpu"
+#endif
+#endif
 
 #if (defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) \
       || defined(__NetBSD__) || defined(__OpenBSD__)) \
@@ -1096,6 +1110,75 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
 #endif
    free(thread);
    return NULL;
+}
+
+#ifdef RTHREADS_HAVE_AFFINITY
+/* The set of CPUs whose maximum frequency matches the highest in the
+ * system, intersected with what this thread may already run on.
+ * Computed once; on a homogeneous part it comes out equal to the
+ * allowed set and the pin is skipped. */
+static unsigned long rthreads_fast_mask[4];
+static int           rthreads_fast_state; /* 0 unknown, 1 pin, -1 no-op */
+
+static void rthreads_find_fast_cores(void)
+{
+   unsigned long allowed[4];
+   unsigned long best = 0;
+   unsigned      i;
+   int           ncpu = (int)(sizeof(allowed) * 8);
+
+   memset(allowed, 0, sizeof(allowed));
+   if (syscall(__NR_sched_getaffinity, 0, sizeof(allowed), allowed) <= 0)
+   {
+      rthreads_fast_state = -1;
+      return;
+   }
+   memset(rthreads_fast_mask, 0, sizeof(rthreads_fast_mask));
+   for (i = 0; i < (unsigned)ncpu; i++)
+   {
+      char path[96];
+      FILE *f;
+      unsigned long khz = 0;
+      if (!(allowed[i / (8 * sizeof(unsigned long))]
+               & (1ul << (i % (8 * sizeof(unsigned long))))))
+         continue;
+      sprintf(path, RTHREADS_CPU_SYSFS "/cpu%u/cpufreq/cpuinfo_max_freq", i);
+      f = fopen(path, "r");
+      if (!f)
+         continue;
+      if (fscanf(f, "%lu", &khz) != 1)
+         khz = 0;
+      fclose(f);
+      if (khz > best)
+      {
+         best = khz;
+         memset(rthreads_fast_mask, 0, sizeof(rthreads_fast_mask));
+      }
+      if (khz && khz == best)
+         rthreads_fast_mask[i / (8 * sizeof(unsigned long))]
+            |= 1ul << (i % (8 * sizeof(unsigned long)));
+   }
+   /* Nothing readable, or every allowed CPU is a fast one: leave the
+    * thread where the scheduler puts it. */
+   if (!best || !memcmp(rthreads_fast_mask, allowed, sizeof(allowed)))
+      rthreads_fast_state = -1;
+   else
+      rthreads_fast_state = 1;
+}
+#endif
+
+bool sthread_prefer_fast_cores(void)
+{
+#ifdef RTHREADS_HAVE_AFFINITY
+   if (!rthreads_fast_state)
+      rthreads_find_fast_cores();
+   if (rthreads_fast_state < 0)
+      return false;
+   return syscall(__NR_sched_setaffinity, 0,
+         sizeof(rthreads_fast_mask), rthreads_fast_mask) == 0;
+#else
+   return false;
+#endif
 }
 
 bool sthread_raise_current_priority(void)

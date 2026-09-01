@@ -93,6 +93,20 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
  */
 bool sthread_raise_current_priority(void);
 
+/**
+ * sthread_prefer_fast_cores:
+ *
+ * Pins the calling thread to the CPUs whose maximum clock is the
+ * highest in the system - the big cluster on an asymmetric part - so
+ * the scheduler cannot park it on a slow core. On a homogeneous
+ * machine, where the platform offers no affinity control, or where
+ * the fast cores are outside what this thread may already use, the
+ * thread is left where it is and this returns false. Never fails the
+ * thread. Meant for the emulation and audio threads.
+ *
+ * @return Whether the thread was pinned.
+ */
+bool sthread_prefer_fast_cores(void);
 
 /**
  * Labels the calling thread for debuggers, crash dumps and system
