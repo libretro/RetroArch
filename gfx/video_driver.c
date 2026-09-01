@@ -6263,7 +6263,6 @@ VIDEO_NOINLINE static void video_driver_scanline_before_frame(video_driver_state
    int16_t scanline_hold  = video_st->scanline[SCANLINE_HOLD];
    int16_t scanline_blank = video_st->scanline[SCANLINE_TOTAL] - video_height;
    int16_t scanline       = video_driver_scanline_get();
-   bool tuned             = false;
 
    /* Minimum usage is vblank */
    uint16_t min_run_time  = (scanline_blank > 0) ? (double)scanline_blank / (double)video_height * (double)frame_time_target : 1000;
@@ -6275,14 +6274,29 @@ VIDEO_NOINLINE static void video_driver_scanline_before_frame(video_driver_state
       scanline_next = 0;
       scanline_hold = refresh_rate;
    }
+   else if (video_st->frame_count > refresh_rate)
+   {
+      /* Disable if the core and/or frame takes too long */
+      uint16_t frame_time_index = video_st->frame_time_count & (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
+      uint16_t sample_index     = (uint16_t)((frame_time_index - 1) & (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1));
+      retro_time_t frame_time   = video_st->frame_time_samples[sample_index];
+      bool frame_time_deviation = frame_time >= frame_time_target * 1.66f || frame_time <= frame_time_target * 0.33f;
+
+      if (scanline_hold && (frame_time_deviation || core_run_time >= frame_time_target - 3000))
+      {
+         scanline_next = 0;
+         scanline_hold = refresh_rate / 2;
+      }
+      else if (!scanline_hold && frame_time_deviation)
+         scanline_hold += 3;
+   }
+
    /* Shift overflow */
    if (scanline > (int)video_height - (scanline_blank * 4))
       scanline -= video_height;
 
    /* Allow change */
-   tuned = !scanline_hold;
-
-   if (tuned)
+   if (!scanline_hold)
    {
       int16_t corelines = (video_height + scanline_blank) * ((double)core_run_time / (double)frame_time_target);
 
@@ -6312,45 +6326,6 @@ VIDEO_NOINLINE static void video_driver_scanline_before_frame(video_driver_state
    }
    else if (scanline_hold)
       scanline_hold--;
-
-   /* Decide the hold for the next frame.
-    *
-    * This ran before the "Allow change" block above, which meant a
-    * deviation raised scanline_hold to 3 and the tune test a few lines
-    * later saw a non-zero hold and skipped. hold then cycled
-    * 3-2-1-0-3 and the recovery never got a frame to run in: measured
-    * on a PS2 core, rearm fired 40 times per 120 frames with tune at 0
-    * and scanline_next pinned at 0 for over a minute. Companion to
-    * 0966f2f32d, which fixed the same shape of latch one level up.
-    *
-    * Gated on having tuned this frame, so a hold that is already
-    * counting down is not extended by every frame that deviates while
-    * it runs - that was the 0966f2f32d failure. */
-   if (tuned && scanline >= 0 && video_st->frame_count > refresh_rate)
-   {
-      uint16_t frame_time_index = video_st->frame_time_count & (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
-      uint16_t sample_index     = (uint16_t)((frame_time_index - 1) & (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1));
-      retro_time_t frame_time   = video_st->frame_time_samples[sample_index];
-      /* frame_time > 0 gates the comparison: the ring starts zeroed, and
-       * under video_frame_time_sample_gated a sample that fails the
-       * clean predicate is not written and frame_time_count is not
-       * advanced, so this can read an unwritten slot. Zero satisfies
-       * "<= target * 0.33" and would register as a permanent deviation. */
-      bool frame_time_deviation = frame_time > 0
-            && (   frame_time >= frame_time_target * 1.66f
-                || frame_time <= frame_time_target * 0.33f);
-
-      if (core_run_time >= frame_time_target - 3000)
-      {
-         /* Structural: the core cannot fit in the budget. Long hold,
-          * and give up the target so nothing waits meanwhile. */
-         scanline_next = 0;
-         scanline_hold = (int16_t)(refresh_rate / 2);
-      }
-      else if (frame_time_deviation)
-         /* Transient: ride it out briefly, keep the target. */
-         scanline_hold += 3;
-   }
 
    /* Wrap overflow */
    if (     scanline_next >= (int)video_height
@@ -6387,61 +6362,15 @@ VIDEO_NOINLINE static void video_driver_scanline_after_frame(video_driver_state_
    /* Minimum usage is vblank */
    core_run_time = (core_run_time < min_run_time) ? min_run_time : core_run_time;
 
-   /* Sleep off the bulk of the wait, then poll the remainder.
-    *
-    * The poll below is the only authority on beam position, and it is
-    * expensive: D3DKMTGetScanLine measures ~223 us on a WDDM driver, so
-    * the beam covers ~60 lines per sample at 4K120. Whatever is not
-    * slept is therefore paid for at that rate, and the D3DKMT surface
-    * offers no blocking wait on a scanline - every wait it exposes
-    * (WaitForVerticalBlankEvent, SetSyncRefreshCountWaitTarget) is
-    * frame-granular, so a sub-frame wait is either a sleep or a spin.
-    *
-    * The sleep length was (frame_time_target - core_run_time) / 1000 - 4
-    * milliseconds. At 120 Hz that is (8306 - core_run) / 1000 - 4, which
-    * is negative for any core using more than ~4 ms and clamps to the
-    * 1 ms floor - so ~7 ms of every frame went into the poll loop, 31
-    * samples of 223 us, a core pinned for most of the frame period.
-    *
-    * Size it from the distance actually left to travel instead. This is
-    * an efficiency estimate, not a timing authority: the loop still
-    * exits on a measured scanline, so an inaccurate sleep costs extra
-    * samples or an overshoot that scanline_total learning already
-    * absorbs. Deliberately short by SCANLINE_SLEEP_MARGIN_US, plus
-    * whatever the truncation to whole milliseconds adds, so the poll and
-    * not the sleep decides the moment.
-    *
-    * retro_sleep() is the right primitive for this on Windows: it is
-    * not Sleep() but the out-of-line rtime.c implementation over a high
-    * resolution waitable timer, added because "Frame Delay and Scanline
-    * Sync both depend on sub-frame sleeps". Where that timer is
-    * unavailable it falls back to Sleep() at ~15.6 ms granularity, which
-    * overshoots a frame either way - the old 1 ms sleep no less than
-    * this one. */
-   if (wait && scanline_total > 0)
+   /* Use CPU friendlier sleep as much as possible */
+   if (wait && frame_time_target > core_run_time)
    {
-#define SCANLINE_SLEEP_MARGIN_US 1500
-      int16_t here = video_driver_scanline_get();
-
-      if (here >= 0 && here < scanline_target)
-      {
-         /* us per scanline, from the frame period the caller already
-          * has and the total line count the loop has learned. */
-         int32_t togo_us = (int32_t)((scanline_target - here)
-               * ((double)frame_time_target / (double)scanline_total));
-
-         if (togo_us > SCANLINE_SLEEP_MARGIN_US)
-            retro_sleep((togo_us - SCANLINE_SLEEP_MARGIN_US) / 1000);
-      }
-   }
-   else if (wait && frame_time_target > core_run_time)
-   {
-      /* No line count learned yet (first frames, or the query failed).
-       * Fall back to the original conservative sleep. */
       int8_t sleep = (frame_time_target - core_run_time) / 1000;
       if (sleep > 1)
       {
+         /* Sleeping too much causes problems */
          sleep -= 4;
+         /* At least 1ms for balancing heavier loads */
          sleep = (sleep < 1) ? 1 : sleep;
          retro_sleep(sleep);
       }
