@@ -47,7 +47,10 @@ static int keyboard_led(int led, int state)
    if (!(key = key_translate(key)))
       return -1;
 
-   status = GetKeyState(key);
+   /* Only bit 0 of the GetKeyState return is the toggle (lock) state.
+    * The down bit must be masked off, or a lock key that happens to be
+    * held at the time of the read is reported as lit and gets toggled. */
+   status = GetKeyState(key) & 0x01;
 
    if (state == -1)
       return status;
