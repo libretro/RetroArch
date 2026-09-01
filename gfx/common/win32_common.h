@@ -134,8 +134,13 @@ void win32_destroy_window(void);
 
 uint8_t win32_get_flags(void);
 
-/* Returns the RETROKMOD_* mask for the calling thread's
- * synchronous keyboard state. */
+/* Re-read the synchronous keyboard state and publish it as a
+ * RETROKMOD_* mask. Only valid on the thread owning the main window's
+ * message queue; use win32_get_keyboard_mods() everywhere else. */
+uint16_t win32_update_keyboard_mods(void);
+
+/* Returns the last mask published by win32_update_keyboard_mods().
+ * Safe from any thread. */
 uint16_t win32_get_keyboard_mods(void);
 
 #if defined(HAVE_D3D8) || defined(HAVE_D3D9) || defined (HAVE_D3D10) || defined (HAVE_D3D11) || defined (HAVE_D3D12)

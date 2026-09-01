@@ -35,6 +35,7 @@
 
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
+#include <retro_atomic.h>
 #ifdef HAVE_DYLIB
 #include <dynamic/dylib.h>
 #endif
@@ -504,24 +505,34 @@ static void win32_get_av_info_geometry(unsigned *width, unsigned *height)
    *height                        = video_st->av_info.geometry.base_height;
 }
 
+/* Published RETROKMOD_* mask, written only by
+ * win32_update_keyboard_mods() from the thread that owns the main
+ * window's message queue, read from anywhere. */
+static retro_atomic_int_t win32_kb_mods;
+
 /* GetKeyState and GetKeyboardState read the same per-thread
  * synchronous key table, but only GetKeyboardState exposes it in its
  * documented form: a 256-byte array with 0x80 for down and 0x01 for
  * toggled. GetKeyState returns those bits repacked into a SHORT in
- * which only bit 15 is contractual, so the 0x80 and 0x81 masks the
- * callers below used to apply were reading undocumented territory.
+ * which only bit 15 is contractual.
  *
  * One call is also cheaper. user32's GetKeyState cache only covers
  * virtual-key codes below 0x20, so VK_NUMLOCK, VK_SCROLL, VK_LWIN and
- * VK_RWIN each took an unconditional kernel transition on every query;
- * GetKeyboardState is a single thunk for all 256 keys. */
-uint16_t win32_get_keyboard_mods(void)
+ * VK_RWIN would each take an unconditional kernel transition per key;
+ * GetKeyboardState is a single thunk for all 256 keys.
+ *
+ * The table is per-thread and is only advanced as that thread
+ * dispatches keyboard messages, so this must run on the thread owning
+ * the main window. Every caller below is a window procedure for that
+ * window, or window creation on the same thread. Everyone else reads
+ * the published value through win32_get_keyboard_mods(). */
+uint16_t win32_update_keyboard_mods(void)
 {
    BYTE ks[256];
    uint16_t mod = 0;
 
    if (!GetKeyboardState(ks))
-      return 0;
+      return (uint16_t)retro_atomic_load_acquire_int(&win32_kb_mods);
 
    if (ks[VK_SHIFT]   & 0x80)
       mod |= RETROKMOD_SHIFT;
@@ -538,7 +549,13 @@ uint16_t win32_get_keyboard_mods(void)
    if ((ks[VK_LWIN] | ks[VK_RWIN]) & 0x80)
       mod |= RETROKMOD_META;
 
+   retro_atomic_store_release_int(&win32_kb_mods, (int)mod);
    return mod;
+}
+
+uint16_t win32_get_keyboard_mods(void)
+{
+   return (uint16_t)retro_atomic_load_acquire_int(&win32_kb_mods);
 }
 
 static LRESULT CALLBACK wnd_proc_common(
@@ -574,7 +591,7 @@ static LRESULT CALLBACK wnd_proc_common(
          {
             uint16_t mod          = 0;
 
-            mod = win32_get_keyboard_mods();
+            mod = win32_update_keyboard_mods();
 
             /* Seems to be hard to synchronize
              * WM_CHAR and WM_KEYDOWN properly.
@@ -773,7 +790,7 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
 
             keycode = input_keymaps_translate_keysym_to_rk(keysym);
 
-            mod = win32_get_keyboard_mods();
+            mod = win32_update_keyboard_mods();
 
             input_keyboard_event(keydown, keycode,
                   0, mod, RETRO_DEVICE_KEYBOARD);
@@ -1061,7 +1078,7 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
 
             keycode = input_keymaps_translate_keysym_to_rk(keysym);
 
-            mod = win32_get_keyboard_mods();
+            mod = win32_update_keyboard_mods();
 
             input_keyboard_event(keydown, keycode,
                   0, mod, RETRO_DEVICE_KEYBOARD);
@@ -1964,6 +1981,11 @@ bool win32_set_video_mode(void *data,
 
    if (g_win32_flags & WIN32_CMN_FLAG_QUIT)
       return false;
+
+   /* Seed the published mask so the lock states are not reported as
+    * clear until the first key event reaches the window procedure. */
+   win32_update_keyboard_mods();
+
    return true;
 }
 #endif
