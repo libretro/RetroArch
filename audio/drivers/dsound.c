@@ -35,6 +35,7 @@
 #include <rthreads/rthreads.h>
 #endif
 #include <lists/string_list.h>
+#include <retro_atomic.h>
 #include <retro_spsc.h>
 #include <string/stdstring.h>
 
@@ -98,7 +99,12 @@ typedef struct dsound
    bool nonblock;
    bool is_paused;
    bool use_float;
-   volatile bool thread_alive;
+   /* Written by both the main thread (start/stop) and the mixer thread
+    * (which clears it when the buffer can no longer be locked), and
+    * read by both. volatile carries no ordering under MSVC
+    * /volatile:iso, which is what ARM64 builds get, so state it like
+    * the ring buffer beside it already does. */
+   retro_atomic_int_t thread_alive;
 } dsound_t;
 
 struct audio_lock
@@ -257,7 +263,7 @@ static DWORD CALLBACK dsound_thread(PVOID data)
    if (write_ptr >= ds->buffer_size)
       write_ptr -= ds->buffer_size;
 
-   while (ds->thread_alive)
+   while (retro_atomic_load_acquire_int(&ds->thread_alive))
    {
       HRESULT res;
       bool is_pull = false;
@@ -290,7 +296,7 @@ static DWORD CALLBACK dsound_thread(PVOID data)
       {
          if (!dsound_grab_region(ds, write_ptr, &region, res))
          {
-            ds->thread_alive = false;
+            retro_atomic_store_release_int(&ds->thread_alive, 0);
             SetEvent(ds->event);
             break;
          }
@@ -355,7 +361,7 @@ static void dsound_stop_thread(dsound_t *ds)
    if (!ds->thread)
       return;
 
-   ds->thread_alive = false;
+   retro_atomic_store_release_int(&ds->thread_alive, 0);
 
 #ifdef HAVE_THREADS
    sthread_join(ds->thread);
@@ -371,7 +377,7 @@ static bool dsound_start_thread(dsound_t *ds)
 {
    if (!ds->thread)
    {
-      ds->thread_alive = true;
+      retro_atomic_store_release_int(&ds->thread_alive, 1);
 #ifdef HAVE_THREADS
       ds->thread = sthread_create(dsound_thread, ds);
 #else
@@ -677,7 +683,7 @@ static ssize_t dsound_write(void *data, const void *buf_, size_t len)
    dsound_t       *ds = (dsound_t*)data;
    const uint8_t *buf = (const uint8_t*)buf_;
 
-   if (!ds->thread_alive)
+   if (!retro_atomic_load_acquire_int(&ds->thread_alive))
       return -1;
 
    if (ds->nonblock)
@@ -711,7 +717,7 @@ static ssize_t dsound_write(void *data, const void *buf_, size_t len)
          _len += avail;
          len  -= avail;
 
-         if (!ds->thread_alive)
+         if (!retro_atomic_load_acquire_int(&ds->thread_alive))
             break;
 
          if (avail == 0 && !(WaitForSingleObject(ds->event, DSOUND_TIMEOUT) == WAIT_OBJECT_0))
@@ -737,7 +743,7 @@ static size_t dsound_wait_writable(void *data, size_t len)
 
    for (;;)
    {
-      if (!ds->thread_alive)
+      if (!retro_atomic_load_acquire_int(&ds->thread_alive))
          return 0;
       avail = retro_spsc_write_avail(&ds->ring);
       if (avail >= len)
