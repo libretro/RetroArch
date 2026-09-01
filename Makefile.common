@@ -1851,7 +1851,6 @@ ifeq ($(HAVE_D3D12), 1)
    HAVE_D3D_COMMON = 1
    OBJ += gfx/drivers/d3d12.o
    DEFINES += -DHAVE_D3D12
-   DEFINES += -DHAVE_D3DKMT
 endif
 
 ifneq ($(findstring 1, $(HAVE_D3D10) $(HAVE_D3D11) $(HAVE_D3D12)),)
@@ -2668,6 +2667,19 @@ ifneq ($(findstring Win32,$(OS)),)
           frontend/drivers/platform_win32.o \
           gfx/display_servers/dispserv_win32.o \
           gfx/common/dx_guids.o
+
+   # Scanline Sync. Despite the name, D3DKMT is the kernel-mode thunk
+   # into dxgkrnl.sys rather than Direct3D: gdi32 forwards
+   # D3DKMTGetScanLine to ext-ms-win-dx-d3dkmt-dxcore, the adapter is
+   # opened from a plain GDI HDC via EnumDisplayDevices()/CreateDC(),
+   # and d3dkmt_init() runs from win32_window_init(), which every win32
+   # video driver calls - w_vk_ctx, wgl_ctx, gdi and sdl2 as much as
+   # the d3d ones. It lives in win32_common.c, so gate it the same way
+   # that object is gated. It used to be defined only as a side effect
+   # of HAVE_D3D12, which silently dropped the feature from a
+   # Vulkan-or-GL-only Windows build.
+   DEFINES += -DHAVE_D3DKMT
+   INCLUDE_DIRS += -isystemgfx/include/dxsdk
 
    # Legacy pre-DXGI GUID storage in their own TUs to avoid clashes
    # between system <d3d8types.h> / <d3d9types.h> and the bundled

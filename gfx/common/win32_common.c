@@ -189,6 +189,22 @@ static void d3dkmt_init(void)
       pD3DKMTGetScanLine = (D3DKMTGETSCANLINE)
             GetProcAddress(GetModuleHandle("gdi32.dll"), "D3DKMTGetScanLine");
 
+      /* Both exports are WDDM, so they are absent under XDDM - there
+       * are no D3DKMT entry points in gdi32 before Vista at all.
+       * pD3DKMTGetScanLine is null-checked at its two use sites;
+       * pD3DKMTOpenAdapterFromHdc was not, and it is called inside the
+       * loop below, so a missing export was a call through NULL on the
+       * first display device. Leave the scanline state zeroed and let
+       * d3dkmt_scanline_get() report -1, which
+       * video_driver_scanline_before_frame() already treats as
+       * unsupported. */
+      if (!pD3DKMTOpenAdapterFromHdc || !pD3DKMTGetScanLine)
+      {
+         memset(&d3dkmt_adapter, 0, sizeof(d3dkmt_adapter_t));
+         video_driver_scanline_init();
+         return;
+      }
+
       while (EnumDisplayDevices(NULL, adapter_index, &add, 0))
       {
          HDC hdc = CreateDC(NULL, add.DeviceName, NULL, NULL);
