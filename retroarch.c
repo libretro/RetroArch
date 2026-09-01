@@ -8949,6 +8949,12 @@ void retroarch_init_task_queue(void)
    net_http_init();
 #endif
    task_queue_init(threaded_enable, runloop_task_msg_queue_push);
+#ifdef HAVE_THREADS
+   /* The main thread runs the emulation loop; on a mixed-core part
+    * keep it off the slow cluster when asked. */
+   if (settings->bools.thread_prefer_fast_cores)
+      sthread_prefer_fast_cores();
+#endif
 
 #ifdef DEBUG
    /* With Threaded Tasks off, task handlers run on the thread that

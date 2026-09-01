@@ -935,6 +935,7 @@ typedef struct settings
       /* Misc. */
       bool discord_enable;
       bool threaded_data_runloop_enable;
+      bool thread_prefer_fast_cores;
       bool set_supports_no_game_enable;
       bool auto_screenshot_filename;
       bool history_list_enable;

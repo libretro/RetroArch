@@ -50,6 +50,7 @@ typedef struct audio_thread
    bool use_float;
    /* Ask the OS for a higher scheduling class from inside the thread. */
    bool raise_priority;
+   bool prefer_fast_cores;
 } audio_thread_t;
 
 /**
@@ -70,6 +71,12 @@ static void audio_thread_loop(void *data)
          RARCH_LOG("[Audio] Audio thread priority raised.\n");
       else
          RARCH_LOG("[Audio] Audio thread priority not raised; the system refused or has no such class.\n");
+   }
+
+   if (thr->prefer_fast_cores)
+   {
+      if (sthread_prefer_fast_cores())
+         RARCH_LOG("[Audio] Audio thread placed on the performance cores.\n");
    }
 
    if (!thr)
@@ -374,6 +381,7 @@ bool audio_init_thread(const audio_driver_t **out_driver,
       void **out_data, const char *device, unsigned audio_out_rate,
       unsigned *new_rate, unsigned latency,
       unsigned block_frames, bool raise_priority,
+      bool prefer_fast_cores,
       const audio_driver_t *drv)
 {
    audio_thread_t *thr = (audio_thread_t*)calloc(1, sizeof(*thr));
@@ -381,7 +389,8 @@ bool audio_init_thread(const audio_driver_t **out_driver,
       return false;
 
    thr->driver         = (const audio_driver_t*)drv;
-   thr->raise_priority = raise_priority;
+   thr->raise_priority    = raise_priority;
+   thr->prefer_fast_cores = prefer_fast_cores;
    thr->device         = device;
    thr->out_rate       = audio_out_rate;
    thr->new_rate       = new_rate;

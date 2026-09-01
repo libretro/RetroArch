@@ -501,6 +501,7 @@
 #if defined(GEKKO) || defined(PSP) || defined(PS2)
 /* For single-core consoles right now it's best to have this be disabled. */
 #define DEFAULT_THREADED_DATA_RUNLOOP_ENABLE false
+#define DEFAULT_THREAD_PREFER_FAST_CORES false
 #else
 #define DEFAULT_THREADED_DATA_RUNLOOP_ENABLE true
 #endif

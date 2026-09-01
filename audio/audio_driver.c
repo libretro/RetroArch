@@ -1951,6 +1951,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
                audio_latency,
                settings->uints.audio_block_frames,
                settings->bools.audio_thread_priority,
+               settings->bools.thread_prefer_fast_cores,
                audio_driver_st.current_audio))
       {
          RARCH_ERR("[Audio] Cannot open threaded audio driver. Exiting...\n");
