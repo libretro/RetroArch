@@ -152,6 +152,13 @@ typedef struct
    double view_abs_ratio_x;
    double view_abs_ratio_y;
    HWND window;
+#ifdef _WIN64
+   /* Drain buffer for GetRawInputBuffer(). malloc() is at least
+    * 16-byte aligned, which satisfies the 8-byte alignment RAWINPUT
+    * records need on x64. See winraw_drain(). */
+   uint8_t *rib;
+   UINT     rib_size;
+#endif
    /* Dummy head for easier iteration */
    struct winraw_pointer_status pointer_head;
    RECT active_rect; /* Needed for checking for a windows size change */
@@ -695,81 +702,136 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
    }
 }
 
+static void winraw_handle_record(winraw_input_t *wr, RAWINPUT *ri)
+{
+   unsigned i;
+   unsigned mcode, flags, down, mod;
+
+   switch (ri->header.dwType)
+   {
+      case RIM_TYPEKEYBOARD:
+         mcode = ri->data.keyboard.MakeCode;
+         flags = ri->data.keyboard.Flags;
+         down  = (flags & RI_KEY_BREAK) ? 0 : 1;
+         mod   = 0;
+
+         /* Extended scancodes */
+         if (flags & RI_KEY_E0)
+            mcode |= 0xE000;
+         else if (flags & RI_KEY_E1)
+            mcode |= 0xE100;
+
+         /* Special pause-key handling due to
+          * scancode 0xE11D45 incoming separately */
+         if ((wr->flags & WRAW_INP_FLG_KB_PAUSE) > 0)
+         {
+            wr->flags &= ~(WRAW_INP_FLG_KB_PAUSE);
+            if (mcode == SC_NUMLOCK)
+               mcode = SC_PAUSE;
+         }
+         else if (mcode == 0xE11D)
+            wr->flags |=  (WRAW_INP_FLG_KB_PAUSE);
+
+         /* Ignored scancodes */
+         switch (mcode)
+         {
+            case RETROK_UNKNOWN:
+            case 0xE11D:
+            case 0xE02A:
+            case 0xE036:
+            case 0xE0AA:
+            case 0xE0B6:
+               return;
+         }
+
+         mod = win32_get_keyboard_mods();
+
+         wr->kb_keys[mcode] = down;
+         input_keyboard_event(down,
+               input_keymaps_translate_keysym_to_rk(mcode),
+               0, mod, RETRO_DEVICE_KEYBOARD);
+         break;
+      case RIM_TYPEMOUSE:
+         for (i = 0; i < wr->mouse_cnt; ++i)
+         {
+            if (g_mice[i].hnd == ri->header.hDevice)
+            {
+               winraw_update_mouse_state(wr,
+                     &g_mice[i], &ri->data.mouse);
+               break;
+            }
+         }
+         break;
+   }
+}
+
+#ifdef _WIN64
+/* Drain every buffered raw input record in one go.
+ *
+ * GetRawInputData() is a bare jmp to win32u!NtUserGetRawInputData with
+ * no user-mode path, so the per-message form costs one kernel
+ * transition per report - measured at ~1000/s with a 1000 Hz mouse.
+ * GetRawInputBuffer() returns as many records as fit per call and can
+ * answer "nothing buffered" without a transition at all, by reading the
+ * raw input change bit out of CLIENTINFO.pClientThreadInfo. Later
+ * WM_INPUT messages in the same frame therefore find an empty buffer.
+ *
+ * 64-bit only, deliberately. In a 32-bit process under WOW64,
+ * GetRawInputBuffer() returns records carrying the 64-bit header size,
+ * so NEXTRAWINPUTBLOCK walks off by eight bytes per record from the
+ * second one onward. The correction is possible but it is fiddly code
+ * on the configuration where getting it wrong means silently corrupt
+ * mouse input, so 32-bit builds keep the per-message path below. Do not
+ * unify the two without handling that. */
+static void winraw_drain(winraw_input_t *wr)
+{
+   for (;;)
+   {
+      RAWINPUT *ri = (RAWINPUT*)wr->rib;
+      UINT      sz = wr->rib_size;
+      UINT      n  = GetRawInputBuffer(ri, &sz, sizeof(RAWINPUTHEADER));
+
+      if (n == 0 || n == (UINT)-1)
+         return;
+
+      while (n--)
+      {
+         winraw_handle_record(wr, ri);
+         /* NEXTRAWINPUTBLOCK() is spelled out because mingw-w64's
+          * RAWINPUT_ALIGN() references QWORD, which its headers do not
+          * define - the macro does not compile there. This is the same
+          * 8-byte round-up. */
+         ri = (RAWINPUT*)((((ULONG_PTR)((BYTE*)ri + ri->header.dwSize))
+                  + sizeof(UINT64) - 1) & ~(ULONG_PTR)(sizeof(UINT64) - 1));
+      }
+   }
+}
+#endif
+
 static LRESULT CALLBACK winraw_callback(
       HWND wnd, UINT msg, WPARAM wpar, LPARAM lpar)
 {
-   static uint8_t data[1024];
-   RAWINPUT       *ri = (RAWINPUT*)data;
-   UINT size          = sizeof(data);
-
    if (msg != WM_INPUT)
       return DefWindowProcA(wnd, msg, wpar, lpar);
 
-   if (!(
-          GET_RAWINPUT_CODE_WPARAM(wpar) != RIM_INPUT  /* app is in the background */
-       || GetRawInputData((HRAWINPUT)lpar, RID_INPUT,
-         data, &size, sizeof(RAWINPUTHEADER)) == (UINT)-1))
+   /* RIM_INPUTSINK means the app is in the background */
+   if (GET_RAWINPUT_CODE_WPARAM(wpar) == RIM_INPUT)
    {
-      unsigned i;
-      unsigned mcode, flags, down, mod;
       winraw_input_t *wr = (winraw_input_t*)(LONG_PTR)
          GetWindowLongPtr(wnd, GWLP_USERDATA);
 
-      switch (ri->header.dwType)
+      if (wr)
       {
-         case RIM_TYPEKEYBOARD:
-            mcode = ri->data.keyboard.MakeCode;
-            flags = ri->data.keyboard.Flags;
-            down  = (flags & RI_KEY_BREAK) ? 0 : 1;
-            mod   = 0;
+#ifdef _WIN64
+         winraw_drain(wr);
+#else
+         static uint8_t data[1024];
+         UINT size = sizeof(data);
 
-            /* Extended scancodes */
-            if (flags & RI_KEY_E0)
-               mcode |= 0xE000;
-            else if (flags & RI_KEY_E1)
-               mcode |= 0xE100;
-
-            /* Special pause-key handling due to
-             * scancode 0xE11D45 incoming separately */
-            if ((wr->flags & WRAW_INP_FLG_KB_PAUSE) > 0)
-            {
-               wr->flags &= ~(WRAW_INP_FLG_KB_PAUSE);
-               if (mcode == SC_NUMLOCK)
-                  mcode = SC_PAUSE;
-            }
-            else if (mcode == 0xE11D)
-               wr->flags |=  (WRAW_INP_FLG_KB_PAUSE);
-
-            /* Ignored scancodes */
-            switch (mcode)
-            {
-               case RETROK_UNKNOWN:
-               case 0xE11D:
-               case 0xE02A:
-               case 0xE036:
-               case 0xE0AA:
-               case 0xE0B6:
-                  return 0;
-            }
-
-            mod = win32_get_keyboard_mods();
-
-            wr->kb_keys[mcode] = down;
-            input_keyboard_event(down,
-                  input_keymaps_translate_keysym_to_rk(mcode),
-                  0, mod, RETRO_DEVICE_KEYBOARD);
-            break;
-         case RIM_TYPEMOUSE:
-            for (i = 0; i < wr->mouse_cnt; ++i)
-            {
-               if (g_mice[i].hnd == ri->header.hDevice)
-               {
-                  winraw_update_mouse_state(wr,
-                        &g_mice[i], &ri->data.mouse);
-                  break;
-               }
-            }
-            break;
+         if (GetRawInputData((HRAWINPUT)lpar, RID_INPUT,
+                  data, &size, sizeof(RAWINPUTHEADER)) != (UINT)-1)
+            winraw_handle_record(wr, (RAWINPUT*)data);
+#endif
       }
    }
 
@@ -791,6 +853,17 @@ static void *winraw_init(const char *joypad_driver)
 
    if (!(wr->window = winraw_create_window(winraw_callback)))
       goto error;
+
+#ifdef _WIN64
+   /* Sized against a long frame's backlog rather than the mean. A
+    * ~200 ms startup hitch at 1000 Hz queues ~200 records, and a mouse
+    * record is 40 bytes here, so 16 KiB covers roughly 400. The drain
+    * loops until empty regardless, so an underestimate costs an extra
+    * call rather than dropped input. */
+   wr->rib_size = 16 * 1024;
+   if (!(wr->rib = (uint8_t*)malloc(wr->rib_size)))
+      goto error;
+#endif
    if (!winraw_init_devices(&g_mice, &wr->mouse_cnt))
       goto error;
 
@@ -871,7 +944,12 @@ error:
    }
    free(g_mice);
    if (wr)
+   {
       free(wr->mice);
+#ifdef _WIN64
+      free(wr->rib);
+#endif
+   }
    free(wr);
    return NULL;
 }
@@ -1327,6 +1405,9 @@ static void winraw_free(void *data)
    }
    free(g_mice);
    free(wr->mice);
+#ifdef _WIN64
+   free(wr->rib);
+#endif
 
    free(data);
 }
