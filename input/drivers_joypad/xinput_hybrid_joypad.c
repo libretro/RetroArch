@@ -1245,9 +1245,41 @@ static void xinput_joypad_poll(void)
          DWORD result = g_XInputGetStateEx(xinput_hotplug_index, &tmp_state);
          if (result == ERROR_SUCCESS)
          {
-            const char *name = xinput_joypad_name(xinput_hotplug_index);
-            int32_t vid = 0;
-            int32_t pid = 0;
+            /* Recover the identity from the DirectInput cross-reference
+             * the way dinput_enum_hybrid_autoconf_flush() does, rather
+             * than reporting 0/0.
+             *
+             * g_pads[] is indexed by enumeration order and
+             * g_xinput_pad_indexes[] maps that to the XInput user
+             * index, so the two are only interchangeable when every
+             * enumerated pad is an XInput pad. Search for the entry
+             * that maps to this user rather than indexing g_pads[] by
+             * it, which would pull another device's name as soon as a
+             * DirectInput-only pad is enumerated alongside. */
+            const char *name = NULL;
+            int32_t vid      = 0;
+            int32_t pid      = 0;
+            unsigned p;
+
+            for (p = 0; p < g_joypad_cnt; p++)
+            {
+               if (     g_pads[p].joypad
+                     && g_xinput_pad_indexes[p]
+                           == (int)xinput_hotplug_index)
+               {
+                  name = g_pads[p].joy_name;
+                  vid  = g_pads[p].vid;
+                  pid  = g_pads[p].pid;
+                  break;
+               }
+            }
+
+            /* No entry: the pad appeared after the last enumeration and
+             * DirectInput has not seen it, so there is nothing to
+             * recover. Fall back to what XInput alone can report. */
+            if (!name)
+               name = xinput_joypad_name(xinput_hotplug_index);
+
             input_autoconfigure_connect(
                name,
                NULL, NULL,
