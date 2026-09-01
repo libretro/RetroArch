@@ -239,13 +239,13 @@ static void dinput_poll(void *data)
 
       /* If both shift keys are pressed simultaneously, the OS will not issue
        * a WM_KEYUP for the first one. That up event will be issued here. */
-      if ((di->flags & DINP_FLAG_SHIFT_L) && !(GetAsyncKeyState(VK_LSHIFT) >> 1))
+      if ((di->flags & DINP_FLAG_SHIFT_L) && !(di->state[DIK_LSHIFT] & 0x80))
       {
          input_keyboard_event(false, RETROK_LSHIFT, 0,
                win32_get_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
          di->flags &= ~DINP_FLAG_SHIFT_L;
       }
-      if ((di->flags & DINP_FLAG_SHIFT_R) && !(GetAsyncKeyState(VK_RSHIFT) >> 1))
+      if ((di->flags & DINP_FLAG_SHIFT_R) && !(di->state[DIK_RSHIFT] & 0x80))
       {
          input_keyboard_event(false, RETROK_RSHIFT, 0,
                win32_get_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
@@ -254,13 +254,13 @@ static void dinput_poll(void *data)
 
       /* When using alt-tab, the alt key won't get a WM_KEYUP message from the
        * OS. Instead we issue it here when ALT isn't pressed down anymore. */
-      if ((di->flags & DINP_FLAG_ALT_L) && !(GetAsyncKeyState(VK_LMENU) >> 1))
+      if ((di->flags & DINP_FLAG_ALT_L) && !(di->state[DIK_LMENU]  & 0x80))
       {
          input_keyboard_event(false, RETROK_LALT, 0,
                win32_get_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
          di->flags &= ~DINP_FLAG_ALT_L;
       }
-      if ((di->flags & DINP_FLAG_ALT_R) && !(GetAsyncKeyState(VK_RMENU) >> 1))
+      if ((di->flags & DINP_FLAG_ALT_R) && !(di->state[DIK_RMENU]  & 0x80))
       {
          input_keyboard_event(false, RETROK_RALT, 0,
                win32_get_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
