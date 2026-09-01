@@ -30,7 +30,6 @@ APP_USE_SVCHAX       = 0
 include pkg/ctr/Makefile.cores
 
 OBJ :=
-OBJ += gfx/drivers/ctr_shaders/ctr_sprite.o
 OBJ += ctr/ctr_system.o
 OBJ += ctr/ctr_memory.o
 OBJ += ctr/ctr_linear.o
@@ -137,6 +136,17 @@ ifeq ($(strip $(DEVKITTOOLS)),)
 	else
 		DEVKITTOOLS = $(DEVKITARM)
 	endif
+endif
+
+CTR_PICASSO := $(firstword $(wildcard $(DEVKITTOOLS)/bin/picasso $(DEVKITTOOLS)/bin/picasso.exe))
+CTR_BIN2S   := $(firstword $(wildcard $(DEVKITTOOLS)/bin/bin2s $(DEVKITTOOLS)/bin/bin2s.exe))
+
+ifeq ($(words $(CTR_PICASSO) $(CTR_BIN2S)),2)
+OBJ += gfx/drivers/ctr_shaders/ctr_sprite.o
+else
+$(info CTR: picasso/bin2s unavailable, using prebuilt gfx/drivers/ctr_shaders/ctr_sprite_shbin.S)
+$(info CTR: run 'make -f Makefile.ctr ctr-shaders' on a complete devkitPro install after editing any .vsh/.gsh)
+OBJ += gfx/drivers/ctr_shaders/ctr_sprite_shbin.o
 endif
 
 APP_TITLE         := $(shell echo "$(APP_TITLE)" | cut -c1-128)
@@ -297,6 +307,12 @@ endif
 $(TARGET): $(TARGET_3DSX) $(TARGET_3DS) $(TARGET_CIA)
 $(TARGET).3dsx: $(TARGET).elf
 $(TARGET).elf: $(OBJ) $(LIB_CORE_FULL)
+
+.PHONY: ctr-shaders
+ctr-shaders:
+	$(CTR_PICASSO) gfx/drivers/ctr_shaders/ctr_sprite.vsh gfx/drivers/ctr_shaders/ctr_sprite.gsh -o gfx/drivers/ctr_shaders/ctr_sprite.shbin
+	$(CTR_BIN2S) gfx/drivers/ctr_shaders/ctr_sprite.shbin > gfx/drivers/ctr_shaders/ctr_sprite_shbin.S
+	rm gfx/drivers/ctr_shaders/ctr_sprite.shbin
 
 %.o: %.vsh %.gsh
 	$(DEVKITTOOLS)/bin/picasso $^ -o $*.shbin
