@@ -509,6 +509,13 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
             getcursorpos = true;
       }
 
+      /* Both queries below can fail, and the tail of this block stores
+       * crs_pos unconditionally. Seed it with the current position so a
+       * failure leaves the mouse where it was instead of storing an
+       * uninitialised stack value. */
+      crs_pos.x = mouse->x;
+      crs_pos.y = mouse->y;
+
       if (getcursorpos)
       {
          InterlockedExchangeAdd(&mouse->dlt_x, state->lLastX);
