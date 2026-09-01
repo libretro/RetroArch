@@ -6263,6 +6263,7 @@ VIDEO_NOINLINE static void video_driver_scanline_before_frame(video_driver_state
    int16_t scanline_hold  = video_st->scanline[SCANLINE_HOLD];
    int16_t scanline_blank = video_st->scanline[SCANLINE_TOTAL] - video_height;
    int16_t scanline       = video_driver_scanline_get();
+   bool tuned             = false;
 
    /* Minimum usage is vblank */
    uint16_t min_run_time  = (scanline_blank > 0) ? (double)scanline_blank / (double)video_height * (double)frame_time_target : 1000;
@@ -6274,53 +6275,14 @@ VIDEO_NOINLINE static void video_driver_scanline_before_frame(video_driver_state
       scanline_next = 0;
       scanline_hold = refresh_rate;
    }
-   else if (video_st->frame_count > refresh_rate)
-   {
-      /* Disable if the core and/or frame takes too long */
-      uint16_t frame_time_index = video_st->frame_time_count & (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
-      uint16_t sample_index     = (uint16_t)((frame_time_index - 1) & (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1));
-      retro_time_t frame_time   = video_st->frame_time_samples[sample_index];
-      /* frame_time > 0 gates the comparison: the ring starts zeroed, and
-       * under video_frame_time_sample_gated a sample that fails the
-       * clean predicate is not written and frame_time_count is not
-       * advanced, so this can read an unwritten slot. Zero satisfies
-       * "<= target * 0.33" and would register as a permanent deviation. */
-      bool frame_time_deviation = frame_time > 0
-            && (   frame_time >= frame_time_target * 1.66f
-                || frame_time <= frame_time_target * 0.33f);
-
-      /* Only decide while the sync is actually running (hold == 0).
-       * This used to test "scanline_hold &&", so it re-fired on every
-       * frame of the hold it had just armed - hold was reset to
-       * refresh_rate / 2 and decremented by one at the tail, pinning it
-       * one below that value forever. It could therefore never reach
-       * zero, the "Allow change" block below is gated on !scanline_hold,
-       * and scanline_next stayed at 0, which makes
-       * video_driver_scanline_after_frame() take its
-       * "scanline_target <= 0 -> wait = false" exit every frame. Once
-       * the first deviation latched it, Scanline Sync did nothing at all
-       * for the rest of the session. */
-      if (!scanline_hold)
-      {
-         if (core_run_time >= frame_time_target - 3000)
-         {
-            /* Structural: the core cannot fit in the budget. Long hold,
-             * and give up the target so nothing waits meanwhile. */
-            scanline_next = 0;
-            scanline_hold = (int16_t)(refresh_rate / 2);
-         }
-         else if (frame_time_deviation)
-            /* Transient: ride it out briefly, keep the target. */
-            scanline_hold += 3;
-      }
-   }
-
    /* Shift overflow */
    if (scanline > (int)video_height - (scanline_blank * 4))
       scanline -= video_height;
 
    /* Allow change */
-   if (!scanline_hold)
+   tuned = !scanline_hold;
+
+   if (tuned)
    {
       int16_t corelines = (video_height + scanline_blank) * ((double)core_run_time / (double)frame_time_target);
 
@@ -6350,6 +6312,45 @@ VIDEO_NOINLINE static void video_driver_scanline_before_frame(video_driver_state
    }
    else if (scanline_hold)
       scanline_hold--;
+
+   /* Decide the hold for the next frame.
+    *
+    * This ran before the "Allow change" block above, which meant a
+    * deviation raised scanline_hold to 3 and the tune test a few lines
+    * later saw a non-zero hold and skipped. hold then cycled
+    * 3-2-1-0-3 and the recovery never got a frame to run in: measured
+    * on a PS2 core, rearm fired 40 times per 120 frames with tune at 0
+    * and scanline_next pinned at 0 for over a minute. Companion to
+    * 0966f2f32d, which fixed the same shape of latch one level up.
+    *
+    * Gated on having tuned this frame, so a hold that is already
+    * counting down is not extended by every frame that deviates while
+    * it runs - that was the 0966f2f32d failure. */
+   if (tuned && scanline >= 0 && video_st->frame_count > refresh_rate)
+   {
+      uint16_t frame_time_index = video_st->frame_time_count & (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1);
+      uint16_t sample_index     = (uint16_t)((frame_time_index - 1) & (MEASURE_FRAME_TIME_SAMPLES_COUNT - 1));
+      retro_time_t frame_time   = video_st->frame_time_samples[sample_index];
+      /* frame_time > 0 gates the comparison: the ring starts zeroed, and
+       * under video_frame_time_sample_gated a sample that fails the
+       * clean predicate is not written and frame_time_count is not
+       * advanced, so this can read an unwritten slot. Zero satisfies
+       * "<= target * 0.33" and would register as a permanent deviation. */
+      bool frame_time_deviation = frame_time > 0
+            && (   frame_time >= frame_time_target * 1.66f
+                || frame_time <= frame_time_target * 0.33f);
+
+      if (core_run_time >= frame_time_target - 3000)
+      {
+         /* Structural: the core cannot fit in the budget. Long hold,
+          * and give up the target so nothing waits meanwhile. */
+         scanline_next = 0;
+         scanline_hold = (int16_t)(refresh_rate / 2);
+      }
+      else if (frame_time_deviation)
+         /* Transient: ride it out briefly, keep the target. */
+         scanline_hold += 3;
+   }
 
    /* Wrap overflow */
    if (     scanline_next >= (int)video_height
