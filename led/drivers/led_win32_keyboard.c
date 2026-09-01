@@ -7,6 +7,27 @@
 
 #include <windows.h>
 
+#include "../../gfx/common/win32_common.h"
+
+/* RETROKMOD_* bit carried by the published modifier mask for each
+ * lock key. */
+static uint16_t led_toggle_bit(int key)
+{
+   switch (key)
+   {
+      case VK_NUMLOCK:
+         return RETROKMOD_NUMLOCK;
+      case VK_CAPITAL:
+         return RETROKMOD_CAPSLOCK;
+      case VK_SCROLL:
+         return RETROKMOD_SCROLLOCK;
+      default:
+         break;
+   }
+
+   return 0;
+}
+
 static int key_translate(int key)
 {
    switch (key)
@@ -47,10 +68,11 @@ static int keyboard_led(int led, int state)
    if (!(key = key_translate(key)))
       return -1;
 
-   /* Only bit 0 of the GetKeyState return is the toggle (lock) state.
-    * The down bit must be masked off, or a lock key that happens to be
-    * held at the time of the read is reported as lit and gets toggled. */
-   status = GetKeyState(key) & 0x01;
+   /* GetKeyState reads the calling thread's synchronous key table,
+    * which is empty here whenever the main window belongs to the video
+    * thread. Take the lock state from the mask published by that
+    * thread instead. */
+   status = (win32_get_keyboard_mods() & led_toggle_bit(key)) ? 1 : 0;
 
    if (state == -1)
       return status;
