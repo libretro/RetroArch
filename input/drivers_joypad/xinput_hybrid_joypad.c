@@ -52,40 +52,7 @@
 #include <queues/task_queue.h>
 #include <retro_timers.h>
 
-#ifndef __DINPUT_JOYPAD_H
-#define __DINPUT_JOYPAD_H
-
-#include <stdint.h>
-#include <boolean.h>
-#include <retro_common_api.h>
-
-#define WIN32_LEAN_AND_MEAN
-#include <dinput.h>
-
-/* For DIJOYSTATE2 struct, rgbButtons will always have 128 elements */
-#define ARRAY_SIZE_RGB_BUTTONS 128
-
-/* DirectInput POV value indicating the hat is centred (no direction pressed).
- * rgdwPOV[] returns this sentinel when the hat is released. */
-#define DINPUT_POV_CENTERED 0xFFFFFFFFu
-
-RETRO_BEGIN_DECLS
-
-struct dinput_joypad_data
-{
-   LPDIRECTINPUTDEVICE8 joypad;
-   DIJOYSTATE2          joy_state;
-   char                *joy_name;
-   char                *joy_friendly_name;
-   int32_t              vid;
-   int32_t              pid;
-   LPDIRECTINPUTEFFECT  rumble_iface[2];
-   DIEFFECT             rumble_props;
-};
-
-RETRO_END_DECLS
-
-#endif
+#include "dinput_joypad.h"
 
 #ifndef __XINPUT_JOYPAD_H
 #define __XINPUT_JOYPAD_H
@@ -226,12 +193,9 @@ static const uint16_t button_index_to_bitmap_code[] =  {
 #include <dinput.h>
 #include <mmsystem.h>
 
-/* Forward declarations */
-extern struct dinput_joypad_data g_pads[MAX_USERS];
-extern unsigned g_joypad_cnt;
+/* Forward declarations. g_pads, g_joypad_cnt, g_dinput_joypad_ctx and
+ * g_dinput_enum_inflight come from dinput_joypad.h. */
 extern LPDIRECTINPUT8 g_dinput_ctx;
-extern LPDIRECTINPUT8 g_dinput_joypad_ctx;
-extern volatile bool g_dinput_enum_inflight;
 
 void dinput_destroy_context(void);
 bool dinput_init_context(void);
