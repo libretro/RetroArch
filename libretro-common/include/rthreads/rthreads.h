@@ -93,6 +93,7 @@ sthread_t *sthread_create_with_priority(void (*thread_func)(void*), void *userda
  */
 bool sthread_raise_current_priority(void);
 
+
 /**
  * Labels the calling thread for debuggers, crash dumps and system
  * thread listings.

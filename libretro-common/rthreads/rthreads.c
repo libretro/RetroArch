@@ -236,6 +236,21 @@ static INLINE void CondVar_Broadcast(CondVar* cv)
 #include <unistd.h>
 #endif
 
+/* Android: scond goes straight to the futex. Bionic's condvar issues
+ * the wake syscall on every signal whether or not anyone is waiting,
+ * so a waiter count in front of it makes the common empty signal
+ * free. The constants are spelled out here because they are ABI
+ * facts, not header facts: the same values from 2.6-era kernels on. */
+#if defined(__ANDROID__) && !defined(USE_WIN32_THREADS)
+#include <sys/syscall.h>
+#include <errno.h>
+#define RTHREADS_FUTEX_SCOND 1
+#define RTHREADS_FUTEX_WAIT_BITSET_PRIVATE  (9 | 128)
+#define RTHREADS_FUTEX_WAKE_PRIVATE         (1 | 128)
+#define RTHREADS_FUTEX_MATCH_ANY            0xffffffffu
+#endif
+
+
 #if (defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) \
       || defined(__NetBSD__) || defined(__OpenBSD__)) \
       && !defined(USE_WIN32_THREADS) && !defined(__ANDROID__)
@@ -519,6 +534,9 @@ struct scond
 #elif defined(USE_PS2_THREADS)
    struct ps2_cond_waiter *head;  /* FIFO of sleeping waiters */
    struct ps2_cond_waiter *tail;
+#elif defined(RTHREADS_FUTEX_SCOND)
+   retro_atomic_int_t seq;        /* bumped by every signal; futex word */
+   retro_atomic_int_t waiters;    /* threads between enqueue and wake */
 #else
    pthread_cond_t cond;
 #endif
@@ -1566,6 +1584,9 @@ scond_t *scond_new(void)
    condvarInit(&cond->cond);
 #elif defined(USE_PS2_THREADS)
    /* head and tail start NULL from calloc */
+#elif defined(RTHREADS_FUTEX_SCOND)
+   retro_atomic_int_init(&cond->seq, 0);
+   retro_atomic_int_init(&cond->waiters, 0);
 #else
    if (pthread_cond_init(&cond->cond, NULL) != 0)
    {
@@ -1596,7 +1617,8 @@ void scond_free(scond_t *cond)
       sceKernelDeleteLwCond(&cond->work);
 #elif defined(USE_WIIU_THREADS)
    /* nothing to destroy: waiter nodes live on their threads' stacks */
-#elif defined(USE_SWITCH_THREADS) || defined(USE_PS2_THREADS)
+#elif defined(USE_SWITCH_THREADS) || defined(USE_PS2_THREADS) \
+      || defined(RTHREADS_FUTEX_SCOND)
    /* nothing to destroy */
 #else
    pthread_cond_destroy(&cond->cond);
@@ -2125,6 +2147,17 @@ void scond_wait(scond_t *cond, slock_t *lock)
    slock_unlock(lock);
    SleepThread();
    slock_lock(lock);
+#elif defined(RTHREADS_FUTEX_SCOND)
+   /* Registering and sampling seq happen under the caller's lock, so
+    * a signal issued once we let go either bumps seq before the futex
+    * looks at it (immediate return) or wakes the sleep. */
+   int seq = retro_atomic_load_acquire_int(&cond->seq);
+   retro_atomic_fetch_add_int(&cond->waiters, 1);
+   slock_unlock(lock);
+   syscall(__NR_futex, &cond->seq, RTHREADS_FUTEX_WAIT_BITSET_PRIVATE,
+         seq, NULL, NULL, RTHREADS_FUTEX_MATCH_ANY);
+   retro_atomic_fetch_add_int(&cond->waiters, -1);
+   slock_lock(lock);
 #else
    pthread_cond_wait(&cond->cond, &lock->lock);
 #endif
@@ -2203,6 +2236,14 @@ int scond_broadcast(scond_t *cond)
       s32 tid                      = w->tid;
       w                            = next;
       WakeupThread(tid);
+   }
+   return 0;
+#elif defined(RTHREADS_FUTEX_SCOND)
+   if (retro_atomic_load_acquire_int(&cond->waiters) > 0)
+   {
+      retro_atomic_fetch_add_int(&cond->seq, 1);
+      syscall(__NR_futex, &cond->seq, RTHREADS_FUTEX_WAKE_PRIVATE,
+            0x7fffffff, NULL, NULL, 0);
    }
    return 0;
 #else
@@ -2288,6 +2329,13 @@ void scond_signal(scond_t *cond)
    EIntr();
    if (tid >= 0)
       WakeupThread(tid);
+#elif defined(RTHREADS_FUTEX_SCOND)
+   if (retro_atomic_load_acquire_int(&cond->waiters) > 0)
+   {
+      retro_atomic_fetch_add_int(&cond->seq, 1);
+      syscall(__NR_futex, &cond->seq, RTHREADS_FUTEX_WAKE_PRIVATE,
+            1, NULL, NULL, 0);
+   }
 #else
    pthread_cond_signal(&cond->cond);
 #endif
@@ -2492,6 +2540,30 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    }
    slock_lock(lock);
    return woken;
+#elif defined(RTHREADS_FUTEX_SCOND)
+   /* FUTEX_WAIT_BITSET takes an absolute CLOCK_MONOTONIC deadline, so
+    * a spurious wake never shortens or stretches the wait. */
+   struct timespec dl;
+   int seq, rc;
+   if (timeout_us <= 0)
+      return false;
+   clock_gettime(CLOCK_MONOTONIC, &dl);
+   dl.tv_sec  += (time_t)(timeout_us / INT64_C(1000000));
+   dl.tv_nsec += (long)(timeout_us % INT64_C(1000000)) * 1000L;
+   if (dl.tv_nsec >= 1000000000L)
+   {
+      dl.tv_sec  += 1;
+      dl.tv_nsec -= 1000000000L;
+   }
+   seq = retro_atomic_load_acquire_int(&cond->seq);
+   retro_atomic_fetch_add_int(&cond->waiters, 1);
+   slock_unlock(lock);
+   rc = (int)syscall(__NR_futex, &cond->seq,
+         RTHREADS_FUTEX_WAIT_BITSET_PRIVATE, seq, &dl, NULL,
+         RTHREADS_FUTEX_MATCH_ANY);
+   retro_atomic_fetch_add_int(&cond->waiters, -1);
+   slock_lock(lock);
+   return !(rc < 0 && errno == ETIMEDOUT);
 #else
    int64_t seconds, remainder;
    struct timespec now;
