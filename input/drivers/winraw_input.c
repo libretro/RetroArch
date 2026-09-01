@@ -658,20 +658,7 @@ static LRESULT CALLBACK winraw_callback(
                   return 0;
             }
 
-            if (GetKeyState(VK_SHIFT)   & 0x80)
-               mod |= RETROKMOD_SHIFT;
-            if (GetKeyState(VK_CONTROL) & 0x80)
-               mod |= RETROKMOD_CTRL;
-            if (GetKeyState(VK_MENU)    & 0x80)
-               mod |= RETROKMOD_ALT;
-            if (GetKeyState(VK_CAPITAL) & 0x81)
-               mod |= RETROKMOD_CAPSLOCK;
-            if (GetKeyState(VK_SCROLL)  & 0x81)
-               mod |= RETROKMOD_SCROLLOCK;
-            if (GetKeyState(VK_NUMLOCK) & 0x81)
-               mod |= RETROKMOD_NUMLOCK;
-            if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
-               mod |= RETROKMOD_META;
+            mod = win32_get_keyboard_mods();
 
             wr->kb_keys[mcode] = down;
             input_keyboard_event(down,

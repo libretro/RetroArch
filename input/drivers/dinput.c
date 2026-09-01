@@ -201,26 +201,6 @@ static void *dinput_init(const char *joypad_driver)
    return di;
 }
 
-static uint16_t dinput_get_active_keyboard_mods()
-{
-   uint16_t mod = 0;
-   if (GetKeyState(VK_SHIFT)   & 0x80)
-      mod |= RETROKMOD_SHIFT;
-   if (GetKeyState(VK_CONTROL) & 0x80)
-      mod |= RETROKMOD_CTRL;
-   if (GetKeyState(VK_MENU)    & 0x80)
-      mod |= RETROKMOD_ALT;
-   if (GetKeyState(VK_CAPITAL) & 0x81)
-      mod |= RETROKMOD_CAPSLOCK;
-   if (GetKeyState(VK_SCROLL)  & 0x81)
-      mod |= RETROKMOD_SCROLLOCK;
-   if (GetKeyState(VK_NUMLOCK) & 0x81)
-      mod |= RETROKMOD_NUMLOCK;
-   if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
-      mod |= RETROKMOD_META;
-   return mod;
-}
-
 static void dinput_poll(void *data)
 {
    struct dinput_input *di = (struct dinput_input*)data;
@@ -262,13 +242,13 @@ static void dinput_poll(void *data)
       if ((di->flags & DINP_FLAG_SHIFT_L) && !(GetAsyncKeyState(VK_LSHIFT) >> 1))
       {
          input_keyboard_event(false, RETROK_LSHIFT, 0,
-               dinput_get_active_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
+               win32_get_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
          di->flags &= ~DINP_FLAG_SHIFT_L;
       }
       if ((di->flags & DINP_FLAG_SHIFT_R) && !(GetAsyncKeyState(VK_RSHIFT) >> 1))
       {
          input_keyboard_event(false, RETROK_RSHIFT, 0,
-               dinput_get_active_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
+               win32_get_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
          di->flags &= ~DINP_FLAG_SHIFT_R;
       }
 
@@ -277,13 +257,13 @@ static void dinput_poll(void *data)
       if ((di->flags & DINP_FLAG_ALT_L) && !(GetAsyncKeyState(VK_LMENU) >> 1))
       {
          input_keyboard_event(false, RETROK_LALT, 0,
-               dinput_get_active_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
+               win32_get_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
          di->flags &= ~DINP_FLAG_ALT_L;
       }
       if ((di->flags & DINP_FLAG_ALT_R) && !(GetAsyncKeyState(VK_RMENU) >> 1))
       {
          input_keyboard_event(false, RETROK_RALT, 0,
-               dinput_get_active_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
+               win32_get_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
          di->flags &= ~DINP_FLAG_ALT_R;
       }
    }

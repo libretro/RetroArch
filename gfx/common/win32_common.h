@@ -134,6 +134,10 @@ void win32_destroy_window(void);
 
 uint8_t win32_get_flags(void);
 
+/* Returns the RETROKMOD_* mask for the calling thread's
+ * synchronous keyboard state. */
+uint16_t win32_get_keyboard_mods(void);
+
 #if defined(HAVE_D3D8) || defined(HAVE_D3D9) || defined (HAVE_D3D10) || defined (HAVE_D3D11) || defined (HAVE_D3D12)
 LRESULT CALLBACK wnd_proc_d3d_dinput(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);

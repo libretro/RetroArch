@@ -504,6 +504,43 @@ static void win32_get_av_info_geometry(unsigned *width, unsigned *height)
    *height                        = video_st->av_info.geometry.base_height;
 }
 
+/* GetKeyState and GetKeyboardState read the same per-thread
+ * synchronous key table, but only GetKeyboardState exposes it in its
+ * documented form: a 256-byte array with 0x80 for down and 0x01 for
+ * toggled. GetKeyState returns those bits repacked into a SHORT in
+ * which only bit 15 is contractual, so the 0x80 and 0x81 masks the
+ * callers below used to apply were reading undocumented territory.
+ *
+ * One call is also cheaper. user32's GetKeyState cache only covers
+ * virtual-key codes below 0x20, so VK_NUMLOCK, VK_SCROLL, VK_LWIN and
+ * VK_RWIN each took an unconditional kernel transition on every query;
+ * GetKeyboardState is a single thunk for all 256 keys. */
+uint16_t win32_get_keyboard_mods(void)
+{
+   BYTE ks[256];
+   uint16_t mod = 0;
+
+   if (!GetKeyboardState(ks))
+      return 0;
+
+   if (ks[VK_SHIFT]   & 0x80)
+      mod |= RETROKMOD_SHIFT;
+   if (ks[VK_CONTROL] & 0x80)
+      mod |= RETROKMOD_CTRL;
+   if (ks[VK_MENU]    & 0x80)
+      mod |= RETROKMOD_ALT;
+   if (ks[VK_CAPITAL] & 0x01)
+      mod |= RETROKMOD_CAPSLOCK;
+   if (ks[VK_SCROLL]  & 0x01)
+      mod |= RETROKMOD_SCROLLOCK;
+   if (ks[VK_NUMLOCK] & 0x01)
+      mod |= RETROKMOD_NUMLOCK;
+   if ((ks[VK_LWIN] | ks[VK_RWIN]) & 0x80)
+      mod |= RETROKMOD_META;
+
+   return mod;
+}
+
 static LRESULT CALLBACK wnd_proc_common(
       bool *quit, HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
@@ -537,20 +574,7 @@ static LRESULT CALLBACK wnd_proc_common(
          {
             uint16_t mod          = 0;
 
-            if (GetKeyState(VK_SHIFT)   & 0x80)
-               mod |= RETROKMOD_SHIFT;
-            if (GetKeyState(VK_CONTROL) & 0x80)
-               mod |= RETROKMOD_CTRL;
-            if (GetKeyState(VK_MENU)    & 0x80)
-               mod |= RETROKMOD_ALT;
-            if (GetKeyState(VK_CAPITAL) & 0x81)
-               mod |= RETROKMOD_CAPSLOCK;
-            if (GetKeyState(VK_SCROLL)  & 0x81)
-               mod |= RETROKMOD_SCROLLOCK;
-            if (GetKeyState(VK_NUMLOCK) & 0x81)
-               mod |= RETROKMOD_NUMLOCK;
-            if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
-               mod |= RETROKMOD_META;
+            mod = win32_get_keyboard_mods();
 
             /* Seems to be hard to synchronize
              * WM_CHAR and WM_KEYDOWN properly.
@@ -749,20 +773,7 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
 
             keycode = input_keymaps_translate_keysym_to_rk(keysym);
 
-            if (GetKeyState(VK_SHIFT)   & 0x80)
-               mod |= RETROKMOD_SHIFT;
-            if (GetKeyState(VK_CONTROL) & 0x80)
-               mod |= RETROKMOD_CTRL;
-            if (GetKeyState(VK_MENU)    & 0x80)
-               mod |= RETROKMOD_ALT;
-            if (GetKeyState(VK_CAPITAL) & 0x81)
-               mod |= RETROKMOD_CAPSLOCK;
-            if (GetKeyState(VK_SCROLL)  & 0x81)
-               mod |= RETROKMOD_SCROLLOCK;
-            if (GetKeyState(VK_NUMLOCK) & 0x81)
-               mod |= RETROKMOD_NUMLOCK;
-            if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
-               mod |= RETROKMOD_META;
+            mod = win32_get_keyboard_mods();
 
             input_keyboard_event(keydown, keycode,
                   0, mod, RETRO_DEVICE_KEYBOARD);
@@ -1050,20 +1061,7 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
 
             keycode = input_keymaps_translate_keysym_to_rk(keysym);
 
-            if (GetKeyState(VK_SHIFT)   & 0x80)
-               mod |= RETROKMOD_SHIFT;
-            if (GetKeyState(VK_CONTROL) & 0x80)
-               mod |= RETROKMOD_CTRL;
-            if (GetKeyState(VK_MENU)    & 0x80)
-               mod |= RETROKMOD_ALT;
-            if (GetKeyState(VK_CAPITAL) & 0x81)
-               mod |= RETROKMOD_CAPSLOCK;
-            if (GetKeyState(VK_SCROLL)  & 0x81)
-               mod |= RETROKMOD_SCROLLOCK;
-            if (GetKeyState(VK_NUMLOCK) & 0x81)
-               mod |= RETROKMOD_NUMLOCK;
-            if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
-               mod |= RETROKMOD_META;
+            mod = win32_get_keyboard_mods();
 
             input_keyboard_event(keydown, keycode,
                   0, mod, RETRO_DEVICE_KEYBOARD);
