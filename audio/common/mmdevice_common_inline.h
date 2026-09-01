@@ -32,6 +32,7 @@
 #include <audioclient.h>
 
 #include <retro_common_api.h>
+#include <retro_atomic.h>
 
 #ifdef __cplusplus
 #define RELEASE(x) \
@@ -98,7 +99,7 @@ typedef struct IMMNotificationClientVtbl {
 #if !defined(_XBOX) && !defined(__WINRT__)
 typedef struct MyNotificationClient {
     IMMNotificationClientVtbl *lpVtbl;
-    LONG refCount;
+    retro_atomic_int_t refCount;
 } MyNotificationClient;
 #endif
 
