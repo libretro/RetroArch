@@ -3012,15 +3012,20 @@ static bool slang_pass_init_pipeline_layout(struct slang_pass *pass)
 
       layout_info.pushConstantRangeCount = 1;
       layout_info.pPushConstantRanges    = &push_range;
-   {
-      size_t new_size = (pass->reflection.push_constant_size
-            + sizeof(uint32_t) - 1) / sizeof(uint32_t);
-      free(pass->push.buffer);
-      pass->push.buffer_size = 0;
-      if (!(pass->push.buffer = (uint32_t*)calloc(new_size, sizeof(uint32_t))))
-         return false;
-      pass->push.buffer_size = new_size;
-   }
+
+      {
+         size_t new_size = (pass->reflection.push_constant_size
+               + sizeof(uint32_t) - 1) / sizeof(uint32_t);
+         free(pass->push.buffer);
+         pass->push.buffer_size = 0;
+         if (!(pass->push.buffer = (uint32_t*)calloc(new_size, sizeof(uint32_t))))
+         {
+            free(bindings);
+            free(desc_counts);
+            return false;
+         }
+         pass->push.buffer_size = new_size;
+      }
    }
 
    pass->push.stages     = push_range.stageFlags;
@@ -3028,7 +3033,11 @@ static bool slang_pass_init_pipeline_layout(struct slang_pass *pass)
 
    if (vkCreatePipelineLayout(pass->device,
             &layout_info, NULL, &pass->pipeline_layout) != VK_SUCCESS)
+   {
+      free(bindings);
+      free(desc_counts);
       return false;
+   }
 
    pool_info.sType                      = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
    pool_info.pNext                      = NULL;
