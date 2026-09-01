@@ -2026,6 +2026,13 @@ void win32_destroy_window(void)
 #endif
 #endif
    main_window.hwnd = NULL;
+   /* video_st->window is a copy of this handle taken by
+    * win32_window_create(). Nothing else clears it - video_driver.c
+    * only resets it at the top of the next
+    * video_driver_init_internal() - so without this the two disagree
+    * from here until the next video driver init, and
+    * video_driver_window_get() hands out a destroyed HWND in between. */
+   video_driver_window_set(0);
 }
 
 /* --- HDR (scRGB) pixel format support -------------------------------
