@@ -35,6 +35,7 @@ IMPORT(OSSleepTicks);
 IMPORT(OSGetTitleID);
 IMPORT(OSIsThreadTerminated);
 IMPORT(OSSetThreadPriority);
+IMPORT(OSSetThreadAffinity);
 IMPORT(OSGetThreadPriority);
 IMPORT(OSDetachThread);
 IMPORT(OSCreateThread);

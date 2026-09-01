@@ -1167,15 +1167,106 @@ static void rthreads_find_fast_cores(void)
 }
 #endif
 
+#ifdef USE_WIN32_THREADS
+/* Windows 10 1607+ describes every logical CPU through
+ * GetSystemCpuSetInformation, whose EfficiencyClass rises with
+ * performance, and SetThreadSelectedCpuSets is a soft preference the
+ * scheduler may still override under pressure - the right strength
+ * for "prefer". Both are resolved at run time so builds that still
+ * target older Windows keep linking and simply report false there,
+ * and the records are read by offset since older SDKs lack the type. */
+typedef BOOL (WINAPI *rthreads_get_cpusets_t)(void*, ULONG, ULONG*,
+      HANDLE, ULONG);
+typedef BOOL (WINAPI *rthreads_set_cpusets_t)(HANDLE, const ULONG*, ULONG);
+
+static ULONG  rthreads_fast_ids[64];
+static ULONG  rthreads_fast_count;
+static int    rthreads_fast_state; /* 0 unknown, 1 pin, -1 no-op */
+static rthreads_set_cpusets_t rthreads_set_cpusets;
+
+static void rthreads_find_fast_cores(void)
+{
+   HMODULE k32                    = GetModuleHandleA("kernel32.dll");
+   rthreads_get_cpusets_t getinfo = NULL;
+   unsigned char *buf             = NULL;
+   ULONG len                      = 0;
+   ULONG off;
+   BYTE  best                     = 0;
+   ULONG total                    = 0;
+
+   rthreads_fast_state = -1;
+   if (!k32)
+      return;
+   getinfo              = (rthreads_get_cpusets_t)(void (*)(void))
+      GetProcAddress(k32, "GetSystemCpuSetInformation");
+   rthreads_set_cpusets = (rthreads_set_cpusets_t)(void (*)(void))
+      GetProcAddress(k32, "SetThreadSelectedCpuSets");
+   if (!getinfo || !rthreads_set_cpusets)
+      return;
+   getinfo(NULL, 0, &len, GetCurrentProcess(), 0);
+   if (!len || !(buf = (unsigned char*)malloc(len)))
+      return;
+   if (!getinfo(buf, len, &len, GetCurrentProcess(), 0))
+   {
+      free(buf);
+      return;
+   }
+   /* SYSTEM_CPU_SET_INFORMATION: Size at 0, Type at 4 (0 = CpuSet),
+    * CpuSet.Id at 8, CpuSet.EfficiencyClass at 18. */
+   for (off = 0; off + 20 <= len; )
+   {
+      DWORD size = *(DWORD*)(buf + off);
+      if (size < 20)
+         break;
+      if (*(DWORD*)(buf + off + 4) == 0)
+      {
+         BYTE cls = buf[off + 18];
+         total++;
+         if (cls > best)
+         {
+            best                = cls;
+            rthreads_fast_count = 0;
+         }
+         if (cls == best && rthreads_fast_count
+               < sizeof(rthreads_fast_ids) / sizeof(rthreads_fast_ids[0]))
+            rthreads_fast_ids[rthreads_fast_count++]
+               = *(DWORD*)(buf + off + 8);
+      }
+      off += size;
+   }
+   free(buf);
+   /* Every CPU in the top class means a homogeneous part. */
+   if (rthreads_fast_count && rthreads_fast_count < total)
+      rthreads_fast_state = 1;
+}
+#endif
+
 bool sthread_prefer_fast_cores(void)
 {
-#ifdef RTHREADS_HAVE_AFFINITY
+#if defined(RTHREADS_HAVE_AFFINITY)
    if (!rthreads_fast_state)
       rthreads_find_fast_cores();
    if (rthreads_fast_state < 0)
       return false;
    return syscall(__NR_sched_setaffinity, 0,
          sizeof(rthreads_fast_mask), rthreads_fast_mask) == 0;
+#elif defined(USE_WIN32_THREADS)
+   if (!rthreads_fast_state)
+      rthreads_find_fast_cores();
+   if (rthreads_fast_state < 0)
+      return false;
+   return rthreads_set_cpusets(GetCurrentThread(),
+         rthreads_fast_ids, rthreads_fast_count) != 0;
+#elif defined(RTHREADS_HAVE_QOS_OVERRIDE)
+   /* Apple silicon offers no affinity; quality of service is what
+    * steers a thread onto the performance cores. */
+   return pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0) == 0;
+#elif defined(USE_WIIU_THREADS)
+   /* Three identical cores, but core 1 carries a 2 MiB L2 against
+    * 512 KiB on the others, which is why Cafe OS keeps the main
+    * application thread there. */
+   return OSSetThreadAffinity(OSGetCurrentThread(),
+         OS_THREAD_ATTRIB_AFFINITY_CPU1) != FALSE;
 #else
    return false;
 #endif
