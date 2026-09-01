@@ -878,7 +878,7 @@ unsigned cpu_features_get_core_amount(void)
 #if defined(_WIN32) && !defined(_XBOX)
    /* Win32 */
    SYSTEM_INFO sysinfo;
-#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#if defined(__WINRT__) || (defined(WINAPI_FAMILY) && defined(WINAPI_FAMILY_PHONE_APP) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
    GetNativeSystemInfo(&sysinfo);
 #else
    GetSystemInfo(&sysinfo);

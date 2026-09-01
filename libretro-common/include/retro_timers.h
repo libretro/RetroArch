@@ -44,7 +44,9 @@
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX)
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 #elif defined(_WIN32) && defined(_XBOX)
 #include <Xtl.h>
@@ -86,7 +88,7 @@ static int nanosleepDOS(const struct timespec *rqtp, struct timespec *rmtp)
 #define retro_sleep(msec) (sceKernelDelayThread(1000 * (msec)))
 #elif defined(_3DS)
 #define retro_sleep(msec) (svcSleepThread(1000000 * (s64)(msec)))
-#elif defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#elif defined(__WINRT__) || (defined(WINAPI_FAMILY) && defined(WINAPI_FAMILY_PHONE_APP) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
 #define retro_sleep(msec) (SleepEx((msec), FALSE))
 #elif defined(_WIN32) && !defined(_XBOX)
 /* Desktop Windows.
@@ -151,7 +153,7 @@ static INLINE void retro_sleep(unsigned msec)
 #define retro_sleep_us(usec) (sceKernelDelayThread((usec)))
 #elif defined(_3DS)
 #define retro_sleep_us(usec) (svcSleepThread(1000 * (s64)(usec)))
-#elif defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#elif defined(__WINRT__) || (defined(WINAPI_FAMILY) && defined(WINAPI_FAMILY_PHONE_APP) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
 #define retro_sleep_us(usec) (SleepEx(((usec) + 500) / 1000, FALSE))
 #elif defined(_WIN32) && !defined(_XBOX)
 /* Desktop Windows: see the note on retro_sleep() above. Implemented in
