@@ -82,20 +82,21 @@ extern "C" {
  * thread owns the window, while winraw_poll() is called from
  * input_driver_poll() in the runloop, always on the main thread. Every
  * field the two share crosses a thread boundary. dlt_x/dlt_y,
- * whl_u/whl_d, pos_pending and rect_check_pending are retro_atomic_int_t
- * for that reason.
+ * whl_u/whl_d, pos_pending, abs_pending and abs_x/abs_y are
+ * retro_atomic_int_t for that reason.
  *
- * x and y are deliberately not. They have two writers - the wndproc
- * accumulates into them, and winraw_poll() overwrites them from the
- * system cursor - and both do read-modify-write, so the race is lost
- * updates rather than tearing. Making the fields atomic would not fix
- * that; it would only make the code look synchronised. A real fix means
- * giving one thread sole ownership of the position, which is a
- * restructure rather than a type change. In practice a lost update
- * costs one stale report and self-corrects on the next one, and it only
- * arises under video_threaded with a software-rendered core, since
- * VIDEO_DRIVER_IS_THREADED_INTERNAL is false whenever there is a
- * hardware context.
+ * x and y are plain LONG because they have exactly one writer:
+ * winraw_poll(). The wndproc never reads or writes them. It publishes
+ * what it knows - an accumulated delta, a request to sample the system
+ * cursor, or an absolute position - and poll derives the position from
+ * whichever applies, once per frame. abs_ref_x/abs_ref_y are the
+ * wndproc's own copy of the last absolute report, used to turn
+ * successive absolute positions into deltas without reading the
+ * position it does not own.
+ *
+ * It used to be two writers both doing read-modify-write, which was a
+ * lost-update race that atomics would not have fixed - only made to
+ * look synchronised.
  *
  * Note also that whoever drains raw input owns it process-wide: the
  * SDL2 video driver calls RegisterRawInputDevices() and
@@ -137,7 +138,15 @@ enum winraw_mouse_flags
 typedef struct
 {
    HANDLE hnd;
+   /* Position. Written only by winraw_poll(), on the main thread. The
+    * wndproc never touches these - it publishes what it knows through
+    * the atomics below and poll derives the position from them once
+    * per frame. Two writers doing read-modify-write here was a
+    * lost-update race that no amount of atomicity would have fixed. */
    LONG x, y;
+   /* Absolute-position reference, touched only by the wndproc. Used to
+    * turn successive MOUSE_MOVE_ABSOLUTE reports into deltas. */
+   LONG abs_ref_x, abs_ref_y;
    /* Produced by the wndproc, drained once per frame by winraw_poll().
     * The snapshot in winraw_input_t::mice is single-threaded; only the
     * g_mice originals are ever accessed concurrently. */
@@ -146,6 +155,11 @@ typedef struct
    /* Set by the wndproc when this mouse needs its position taken from
     * the system cursor, drained once per frame by winraw_poll(). */
    retro_atomic_int_t pos_pending;
+   /* Set by the wndproc for a MOUSE_MOVE_ABSOLUTE report, with the
+    * scaled position alongside. Takes precedence over the accumulated
+    * delta, and yields to pos_pending. */
+   retro_atomic_int_t abs_pending;
+   retro_atomic_int_t abs_x, abs_y;
    int device;
    uint8_t flags;
 } winraw_mouse_t;
@@ -175,9 +189,6 @@ typedef struct
    RECT active_rect; /* Needed for checking for a windows size change */
    RECT prev_rect;   /* Needed for checking for a windows size change */
    int rect_delay;   /* Needed to delay resize of window */
-   /* Raised once per frame by winraw_poll(), consumed by the first raw
-    * input report of that frame. */
-   retro_atomic_int_t rect_check_pending;
    winraw_mouse_t *mice;
    unsigned mouse_cnt;
    uint8_t kb_keys[SC_LAST];
@@ -541,36 +552,7 @@ static void winraw_init_mouse_xy_mapping(winraw_input_t *wr)
 static void winraw_update_mouse_state(winraw_input_t *wr,
       winraw_mouse_t *mouse, RAWMOUSE *state)
 {
-   POINT crs_pos;
    bool swap_mouse_buttons = (g_win32_flags & WIN32_CMN_FLAG_SWAP_MOUSE_BTNS) ? true : false;
-
-   /* Used for fixing coordinates after switching resolutions.
-    *
-    * Gated to once per frame. The client rect cannot change more often
-    * than that, while this function runs once per raw input report -
-    * about sixteen times per frame with a 1000 Hz mouse. Ungated, a
-    * resolution change ran winraw_init_mouse_xy_mapping() up to ten
-    * times inside one frame, and that is a viewport query plus a
-    * GetCursorPos() syscall each time. */
-   if (retro_atomic_exchange_int(&wr->rect_check_pending, 0))
-   {
-      GetClientRect((HWND)video_driver_window_get(), &wr->prev_rect);
-
-      if (!EqualRect(&wr->active_rect, &wr->prev_rect))
-      {
-         if (wr->rect_delay < 10)
-         {
-             winraw_init_mouse_xy_mapping(wr); /* Triggering fewer times seems to fix the issue. Forcing resize while resolution is changing */
-             wr->rect_delay ++;
-         }
-         else
-         {
-            wr->active_rect = wr->prev_rect;
-            winraw_init_mouse_xy_mapping(wr);
-            wr->rect_delay  = 0;
-         }
-      }
-   }
 
    if (state->usFlags & MOUSE_MOVE_ABSOLUTE)
    {
@@ -578,15 +560,19 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
       {
          state->lLastX = (LONG)(wr->view_abs_ratio_x * state->lLastX);
          state->lLastY = (LONG)(wr->view_abs_ratio_y * state->lLastY);
+         /* abs_ref_* is this thread's own copy of the last absolute
+          * position, so the delta can be derived without reading the
+          * position that winraw_poll() owns. */
          retro_atomic_fetch_add_int(&mouse->dlt_x,
-               state->lLastX - mouse->x);
+               state->lLastX - mouse->abs_ref_x);
          retro_atomic_fetch_add_int(&mouse->dlt_y,
-               state->lLastY - mouse->y);
-         mouse->x      = state->lLastX;
-         mouse->y      = state->lLastY;
+               state->lLastY - mouse->abs_ref_y);
+         mouse->abs_ref_x = state->lLastX;
+         mouse->abs_ref_y = state->lLastY;
+         retro_atomic_store_release_int(&mouse->abs_x, state->lLastX);
+         retro_atomic_store_release_int(&mouse->abs_y, state->lLastY);
+         retro_atomic_store_release_int(&mouse->abs_pending, 1);
       }
-      else
-         winraw_init_mouse_xy_mapping(wr);
    }
    else if (state->lLastX || state->lLastY)
    {
@@ -607,13 +593,6 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
             getcursorpos = true;
       }
 
-      /* Both queries below can fail, and the tail of this block stores
-       * crs_pos unconditionally. Seed it with the current position so a
-       * failure leaves the mouse where it was instead of storing an
-       * uninitialised stack value. */
-      crs_pos.x = mouse->x;
-      crs_pos.y = mouse->y;
-
       if (getcursorpos)
       {
          retro_atomic_fetch_add_int(&mouse->dlt_x, state->lLastX);
@@ -629,9 +608,10 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
       }
       else
       {
-         /* This branch establishes the position itself, so any deferred
-          * query from an earlier report in this frame is superseded. */
+         /* This branch moves by delta, so any deferred cursor query or
+          * absolute report from earlier in this frame is superseded. */
          retro_atomic_store_release_int(&mouse->pos_pending, 0);
+         retro_atomic_store_release_int(&mouse->abs_pending, 0);
 
          /* Handle different sensitivity for lightguns */
          if (mouse->device == RETRO_DEVICE_LIGHTGUN)
@@ -644,24 +624,7 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
             retro_atomic_fetch_add_int(&mouse->dlt_x, state->lLastX);
             retro_atomic_fetch_add_int(&mouse->dlt_y, state->lLastY);
          }
-
-         crs_pos.x = mouse->x + state->lLastX;
-         crs_pos.y = mouse->y + state->lLastY;
-
-         /* Prevent travel outside active window */
-         if (crs_pos.x < wr->active_rect.left)
-            crs_pos.x = wr->active_rect.left;
-         else if (crs_pos.x > wr->active_rect.right)
-            crs_pos.x = wr->active_rect.right;
-
-         if (crs_pos.y < wr->active_rect.top)
-            crs_pos.y = wr->active_rect.top;
-         else if (crs_pos.y > wr->active_rect.bottom)
-            crs_pos.y = wr->active_rect.bottom;
       }
-
-      mouse->x = crs_pos.x;
-      mouse->y = crs_pos.y;
    }
 
    if (swap_mouse_buttons)
@@ -901,8 +864,27 @@ static void winraw_poll(void *data)
    bool crs_pos_valid     = false;
    winraw_input_t *wr     = (winraw_input_t*)data;
 
-   /* Let the next raw input report re-check the client rect. */
-   retro_atomic_store_release_int(&wr->rect_check_pending, 1);
+   /* Fix coordinates after a resolution change. Runs here rather than
+    * in the wndproc so that active_rect, view_abs_ratio_* and the
+    * position all belong to this thread. */
+   GetClientRect((HWND)video_driver_window_get(), &wr->prev_rect);
+
+   if (!EqualRect(&wr->active_rect, &wr->prev_rect))
+   {
+      if (wr->rect_delay < 10)
+      {
+         winraw_init_mouse_xy_mapping(wr); /* Triggering fewer times seems to fix the issue. Forcing resize while resolution is changing */
+         wr->rect_delay++;
+      }
+      else
+      {
+         wr->active_rect = wr->prev_rect;
+         winraw_init_mouse_xy_mapping(wr);
+         wr->rect_delay  = 0;
+      }
+   }
+   else if (!(wr->flags & WRAW_INP_FLG_MOUSE_XY_MAPPING_READY))
+      winraw_init_mouse_xy_mapping(wr);
 
    /* Sync coordinates when window regains focus */
    if (winraw_focus && !wr->last_focus)
@@ -941,12 +923,23 @@ static void winraw_poll(void *data)
 
    for (i = 0; i < wr->mouse_cnt; ++i)
    {
+      /* Derive the position. This is the only writer of g_mice[i].x/y.
+       *
+       * The three sources are mutually exclusive and the wndproc marks
+       * which one applies: a deferred cursor query wins, then an
+       * absolute report, then the delta accumulated over the frame.
+       * The cursor query happens at most once per frame however many
+       * reports asked for it or however many mice are attached. */
+      LONG dx;
+      LONG dy;
+
       /* Clear buttons when not focused */
       if (!winraw_focus)
          g_mice[i].flags = 0;
 
-      /* Resolve a deferred cursor position, at most once per frame no
-       * matter how many reports asked for it or how many mice did. */
+      dx = (LONG)retro_atomic_exchange_int(&g_mice[i].dlt_x, 0);
+      dy = (LONG)retro_atomic_exchange_int(&g_mice[i].dlt_y, 0);
+
       if (retro_atomic_exchange_int(&g_mice[i].pos_pending, 0))
       {
          if (!crs_pos_valid)
@@ -965,11 +958,34 @@ static void winraw_poll(void *data)
             g_mice[i].y = crs_pos.y;
          }
       }
+      else if (retro_atomic_exchange_int(&g_mice[i].abs_pending, 0))
+      {
+         g_mice[i].x = (LONG)retro_atomic_load_acquire_int(&g_mice[i].abs_x);
+         g_mice[i].y = (LONG)retro_atomic_load_acquire_int(&g_mice[i].abs_y);
+      }
+      else if (dx || dy)
+      {
+         LONG nx = g_mice[i].x + dx;
+         LONG ny = g_mice[i].y + dy;
+         /* Prevent travel outside active window */
+         if (nx < wr->active_rect.left)
+            nx = wr->active_rect.left;
+         else if (nx > wr->active_rect.right)
+            nx = wr->active_rect.right;
+
+         if (ny < wr->active_rect.top)
+            ny = wr->active_rect.top;
+         else if (ny > wr->active_rect.bottom)
+            ny = wr->active_rect.bottom;
+
+         g_mice[i].x = nx;
+         g_mice[i].y = ny;
+      }
 
       wr->mice[i].x       = g_mice[i].x;
       wr->mice[i].y       = g_mice[i].y;
-      wr->mice[i].dlt_x   = retro_atomic_exchange_int(&g_mice[i].dlt_x, 0);
-      wr->mice[i].dlt_y   = retro_atomic_exchange_int(&g_mice[i].dlt_y, 0);
+      wr->mice[i].dlt_x   = dx;
+      wr->mice[i].dlt_y   = dy;
       wr->mice[i].whl_u   = retro_atomic_exchange_int(&g_mice[i].whl_u, 0);
       wr->mice[i].whl_d   = retro_atomic_exchange_int(&g_mice[i].whl_d, 0);
       wr->mice[i].flags   = g_mice[i].flags;
