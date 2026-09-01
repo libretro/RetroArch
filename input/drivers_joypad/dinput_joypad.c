@@ -419,7 +419,15 @@ static void dinput_joypad_destroy(void)
       free(g_pads[i].joy_friendly_name);
       g_pads[i].joy_friendly_name = NULL;
 
-      input_config_clear_device_name(i);
+      /* No input_config_clear_device_name() here. Disconnects are
+       * announced from poll() - joypad_driver_reinit() runs it once
+       * more before destroy() for exactly that - and
+       * input_autoconfigure_disconnect() clears the whole port record.
+       * Clearing just the name here left vid, pid and the
+       * autoconfigured flag behind, and blanked the field that
+       * input_autoconfigure_connect_ex() compares against to suppress
+       * a repeat 'configured in port' notification. No other joypad
+       * driver does this. */
    }
 
    g_joypad_cnt = 0;
