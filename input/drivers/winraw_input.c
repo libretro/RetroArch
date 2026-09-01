@@ -823,6 +823,29 @@ static void *winraw_init(const char *joypad_driver)
 
    SetWindowLongPtr(wr->window, GWLP_USERDATA, (LONG_PTR)wr);
 
+#ifndef _XBOX
+   /* wr->window was created on this thread, so WM_INPUT is posted to
+    * this thread's queue and only a pump running here will dispatch it.
+    * The pump belongs to whichever thread owns the main window - the
+    * video thread under video_threaded. See the threading note at the
+    * top of this file: every Windows video driver that supports this
+    * input driver builds it from its own context callback, so the two
+    * match, but the video_driver_init_input() fallback runs on the main
+    * thread after the video thread already exists. Say so rather than
+    * leaving the user with silently dead input. */
+   {
+      DWORD self_tid = GetCurrentThreadId();
+      DWORD wnd_tid  = main_window.hwnd
+         ? GetWindowThreadProcessId(main_window.hwnd, NULL) : 0;
+
+      if (wnd_tid && wnd_tid != self_tid)
+         RARCH_ERR("[WinRaw] Raw input window is on thread %lu but the "
+               "message pump runs on thread %lu - WM_INPUT will not be "
+               "dispatched and keyboard/mouse input will not work.\n",
+               (unsigned long)self_tid, (unsigned long)wnd_tid);
+   }
+#endif
+
    return wr;
 
 error:
