@@ -691,7 +691,6 @@ typedef struct ra_asio
    long               buffer_frames;
    size_t             ring_size;
    unsigned           sample_rate;
-   volatile bool      running;
    /* Read by asio_cb_buffer_switch() on the driver's realtime thread
     * and written from the main thread; shutdown is also written from
     * the driver thread by asio_cb_message(). volatile carries no
@@ -1163,12 +1162,10 @@ static void *ra_asio_init(const char *device, unsigned rate,
       asio_prime_ring(ad);
 
       g_asio = ad;
-      ad->running = true;
 
       if (ASIO_CALL_START(ad->iasio) != ASE_OK)
       {
          RARCH_ERR("[ASIO] Failed to restart.\n");
-         ad->running = false;
          g_asio = NULL;
          g_asio_persistent = ad; /* Park it again */
          return NULL;
@@ -1414,12 +1411,9 @@ static void *ra_asio_init(const char *device, unsigned rate,
    /* Start streaming — the driver will issue bufferSwitch callbacks
     * to prefill its output buffers.  The callback will output silence
     * from the empty ring buffer, which is correct. */
-   ad->running = true;
-
    if (ASIO_CALL_START(ad->iasio) != ASE_OK)
    {
       RARCH_ERR("[ASIO] Failed to start.\n");
-      ad->running = false;
       g_asio = NULL;
       goto error;
    }
@@ -1580,7 +1574,6 @@ static void ra_asio_free(void *data)
       return;
 
    retro_atomic_store_release_int(&ad->shutdown, 1);
-   ad->running   = false;
    retro_atomic_store_release_int(&ad->is_paused, 0);
 
 #ifdef HAVE_THREADS
