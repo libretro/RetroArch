@@ -6386,15 +6386,61 @@ VIDEO_NOINLINE static void video_driver_scanline_after_frame(video_driver_state_
    /* Minimum usage is vblank */
    core_run_time = (core_run_time < min_run_time) ? min_run_time : core_run_time;
 
-   /* Use CPU friendlier sleep as much as possible */
-   if (wait && frame_time_target > core_run_time)
+   /* Sleep off the bulk of the wait, then poll the remainder.
+    *
+    * The poll below is the only authority on beam position, and it is
+    * expensive: D3DKMTGetScanLine measures ~223 us on a WDDM driver, so
+    * the beam covers ~60 lines per sample at 4K120. Whatever is not
+    * slept is therefore paid for at that rate, and the D3DKMT surface
+    * offers no blocking wait on a scanline - every wait it exposes
+    * (WaitForVerticalBlankEvent, SetSyncRefreshCountWaitTarget) is
+    * frame-granular, so a sub-frame wait is either a sleep or a spin.
+    *
+    * The sleep length was (frame_time_target - core_run_time) / 1000 - 4
+    * milliseconds. At 120 Hz that is (8306 - core_run) / 1000 - 4, which
+    * is negative for any core using more than ~4 ms and clamps to the
+    * 1 ms floor - so ~7 ms of every frame went into the poll loop, 31
+    * samples of 223 us, a core pinned for most of the frame period.
+    *
+    * Size it from the distance actually left to travel instead. This is
+    * an efficiency estimate, not a timing authority: the loop still
+    * exits on a measured scanline, so an inaccurate sleep costs extra
+    * samples or an overshoot that scanline_total learning already
+    * absorbs. Deliberately short by SCANLINE_SLEEP_MARGIN_US, plus
+    * whatever the truncation to whole milliseconds adds, so the poll and
+    * not the sleep decides the moment.
+    *
+    * retro_sleep() is the right primitive for this on Windows: it is
+    * not Sleep() but the out-of-line rtime.c implementation over a high
+    * resolution waitable timer, added because "Frame Delay and Scanline
+    * Sync both depend on sub-frame sleeps". Where that timer is
+    * unavailable it falls back to Sleep() at ~15.6 ms granularity, which
+    * overshoots a frame either way - the old 1 ms sleep no less than
+    * this one. */
+   if (wait && scanline_total > 0)
    {
+#define SCANLINE_SLEEP_MARGIN_US 1500
+      int16_t here = video_driver_scanline_get();
+
+      if (here >= 0 && here < scanline_target)
+      {
+         /* us per scanline, from the frame period the caller already
+          * has and the total line count the loop has learned. */
+         int32_t togo_us = (int32_t)((scanline_target - here)
+               * ((double)frame_time_target / (double)scanline_total));
+
+         if (togo_us > SCANLINE_SLEEP_MARGIN_US)
+            retro_sleep((togo_us - SCANLINE_SLEEP_MARGIN_US) / 1000);
+      }
+   }
+   else if (wait && frame_time_target > core_run_time)
+   {
+      /* No line count learned yet (first frames, or the query failed).
+       * Fall back to the original conservative sleep. */
       int8_t sleep = (frame_time_target - core_run_time) / 1000;
       if (sleep > 1)
       {
-         /* Sleeping too much causes problems */
          sleep -= 4;
-         /* At least 1ms for balancing heavier loads */
          sleep = (sleep < 1) ? 1 : sleep;
          retro_sleep(sleep);
       }
