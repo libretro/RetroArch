@@ -3523,20 +3523,34 @@ static bool slang_pass_build(struct slang_pass *pass)
          input_state_get_ptr()->shader_uses_sensors = true;
    }
 
-   /* Filter out pass->parameters which we will never use anyways. */
-   pass->num_filtered = 0;
-   free(pass->filtered_parameters);
-   pass->filtered_parameters = NULL;
-   if (pass->num_parameters &&
-         !(pass->filtered_parameters = (size_t*)
-            malloc(pass->num_parameters * sizeof(*pass->filtered_parameters))))
-      return false;
-
-   for (i = 0; i < pass->reflection.num_float_parameters; i++)
+   /* Filter out pass->parameters which we will never use anyways.
+    * The stored values index pass->parameters[], so the walk is
+    * bounded by both counts: the reflected float parameters decide
+    * which entries are live, the parameter count keeps the indices
+    * in range. Sizing the allocation off num_parameters alone left
+    * the walk free to run past it, and left the array NULL when a
+    * pass carries no parameters at all. */
    {
-      if (pass->reflection.semantic_float_parameters[i].uniform ||
-          pass->reflection.semantic_float_parameters[i].push_constant)
-         pass->filtered_parameters[pass->num_filtered++] = i;
+      size_t num_reflected = pass->reflection.num_float_parameters;
+      size_t k;
+
+      if (num_reflected > pass->num_parameters)
+         num_reflected          = pass->num_parameters;
+
+      pass->num_filtered        = 0;
+      free(pass->filtered_parameters);
+      pass->filtered_parameters = NULL;
+      if (num_reflected &&
+            !(pass->filtered_parameters = (size_t*)
+               malloc(num_reflected * sizeof(*pass->filtered_parameters))))
+         return false;
+
+      for (k = 0; k < num_reflected; k++)
+      {
+         if (pass->reflection.semantic_float_parameters[k].uniform ||
+             pass->reflection.semantic_float_parameters[k].push_constant)
+            pass->filtered_parameters[pass->num_filtered++] = k;
+      }
    }
 
    return slang_pass_init_pipeline(pass);
