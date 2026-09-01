@@ -55,6 +55,7 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 #include <lists/string_list.h>
+#include <retro_atomic.h>
 #include <retro_spsc.h>
 
 #ifdef HAVE_THREADS
@@ -691,9 +692,15 @@ typedef struct ra_asio
    size_t             ring_size;
    unsigned           sample_rate;
    volatile bool      running;
-   volatile bool      shutdown;
+   /* Read by asio_cb_buffer_switch() on the driver's realtime thread
+    * and written from the main thread; shutdown is also written from
+    * the driver thread by asio_cb_message(). volatile carries no
+    * ordering under MSVC /volatile:iso, which is what ARM64 builds
+    * get, so state it explicitly like everything else this callback
+    * touches. */
+   retro_atomic_int_t shutdown;
+   retro_atomic_int_t is_paused;
    bool               nonblock;
-   bool               is_paused;
    bool               com_initialized;
    bool               buffers_created;
 } ra_asio_t;
@@ -906,7 +913,8 @@ static void asio_cb_buffer_switch(long index,
    ra_asio_t *ad = g_asio;
 
    if (     !ad || !ad->ring_initialized || !ad->scratch
-         || ad->is_paused || ad->shutdown)
+         || retro_atomic_load_acquire_int(&ad->is_paused)
+         || retro_atomic_load_acquire_int(&ad->shutdown))
    {
       if (ad && ad->buf_info[0].buffers[index])
       {
@@ -942,7 +950,7 @@ static void asio_request_shutdown(void)
    ra_asio_t *ad = g_asio;
    if (!ad)
       return;
-   ad->shutdown = true;
+   retro_atomic_store_release_int(&ad->shutdown, 1);
 #ifdef HAVE_THREADS
    if (ad->cond)
       scond_signal(ad->cond);
@@ -1102,8 +1110,8 @@ static void *ra_asio_init(const char *device, unsigned rate,
 
       RARCH_LOG("[ASIO] Reclaiming parked driver instance.\n");
 
-      ad->shutdown  = false;
-      ad->is_paused = false;
+      retro_atomic_int_init(&ad->shutdown, 0);
+      retro_atomic_int_init(&ad->is_paused, 0);
       ad->nonblock  = false;
 
       /* Update sample rate if the new core wants something different */
@@ -1462,7 +1470,7 @@ static ssize_t ra_asio_write(void *data, const void *buf, size_t len)
    size_t written     = 0;
    int64_t wait_us    = 1000;
 
-   if (!ad || ad->shutdown)
+   if (!ad || retro_atomic_load_acquire_int(&ad->shutdown))
       return -1;
 
    /* Bound for the blocking wait below, one device period.  Both
@@ -1479,7 +1487,7 @@ static ssize_t ra_asio_write(void *data, const void *buf, size_t len)
    {
       size_t avail, to_write;
 
-      if (ad->shutdown)
+      if (retro_atomic_load_acquire_int(&ad->shutdown))
          return -1;
 
       avail    = retro_spsc_write_avail(&ad->ring);
@@ -1537,7 +1545,7 @@ static bool ra_asio_stop(void *data)
 {
    ra_asio_t *ad = (ra_asio_t *)data;
    if (ad)
-      ad->is_paused = true;
+      retro_atomic_store_release_int(&ad->is_paused, 1);
    return true;
 }
 
@@ -1545,7 +1553,7 @@ static bool ra_asio_start(void *data, bool u)
 {
    ra_asio_t *ad = (ra_asio_t *)data;
    if (ad)
-      ad->is_paused = false;
+      retro_atomic_store_release_int(&ad->is_paused, 0);
    return true;
 }
 
@@ -1554,7 +1562,8 @@ static bool ra_asio_alive(void *data)
    ra_asio_t *ad = (ra_asio_t *)data;
    if (!ad)
       return false;
-   return !ad->is_paused && !ad->shutdown;
+   return    !retro_atomic_load_acquire_int(&ad->is_paused)
+          && !retro_atomic_load_acquire_int(&ad->shutdown);
 }
 
 static void ra_asio_set_nonblock_state(void *data, bool state)
@@ -1570,9 +1579,9 @@ static void ra_asio_free(void *data)
    if (!ad)
       return;
 
-   ad->shutdown  = true;
+   retro_atomic_store_release_int(&ad->shutdown, 1);
    ad->running   = false;
-   ad->is_paused = false;
+   retro_atomic_store_release_int(&ad->is_paused, 0);
 
 #ifdef HAVE_THREADS
    if (ad->cond)
@@ -1631,7 +1640,7 @@ static size_t ra_asio_wait_writable(void *data, size_t len)
 
    for (;;)
    {
-      if (ad->shutdown)
+      if (retro_atomic_load_acquire_int(&ad->shutdown))
          return 0;
       avail = retro_spsc_write_avail(&ad->ring);
       if (avail >= len)
