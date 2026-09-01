@@ -101,6 +101,24 @@ extern "C" {
  * SDL2 video driver calls RegisterRawInputDevices() and
  * GetRawInputBuffer() internally, which takes the WM_INPUT stream away
  * from this driver entirely. See the warning in gfx/drivers/sdl2_gfx.c.
+ *
+ * That cuts both ways, and it is the reason GetRawInputBuffer() is not
+ * used here. It drains the queue for the whole thread, not for one
+ * window, so a drain in winraw_callback() also takes the joystick and
+ * gamepad records that winraw_joypad registered against its own
+ * HWND_MESSAGE window - created on this same thread by
+ * input_driver_init_joypads(), immediately after winraw_init(). This
+ * was tried in d087a820cd and reverted in 7858994d45: forwarding the
+ * RIM_TYPEHID records back to the joypad driver restored pad input, but
+ * keyboard and mouse buttons stayed broken for a reason that was never
+ * established, while mouse coordinates kept working. Anyone trying
+ * again needs to be the single drain point for the entire process,
+ * which means winraw_joypad giving up its own window and its own
+ * GetRawInputData() call, and should know the prize is small: measured
+ * at 8.32 reports per frame with a 1000 Hz mouse at 120 fps, the drain
+ * removes about seven of the roughly seventeen syscalls per frame,
+ * since WM_INPUT is still posted per report and PeekMessage() with
+ * PM_REMOVE has no user-mode fast path.
  */
 
 #include "../../configuration.h"
