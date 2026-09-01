@@ -310,9 +310,12 @@ $(TARGET).elf: $(OBJ) $(LIB_CORE_FULL)
 
 .PHONY: ctr-shaders
 ctr-shaders:
-	$(CTR_PICASSO) gfx/drivers/ctr_shaders/ctr_sprite.vsh gfx/drivers/ctr_shaders/ctr_sprite.gsh -o gfx/drivers/ctr_shaders/ctr_sprite.shbin
-	$(CTR_BIN2S) gfx/drivers/ctr_shaders/ctr_sprite.shbin > gfx/drivers/ctr_shaders/ctr_sprite_shbin.S
-	rm gfx/drivers/ctr_shaders/ctr_sprite.shbin
+	@set -e; \
+	d=gfx/drivers/ctr_shaders; \
+	trap 'rm -f $$d/ctr_sprite.shbin $$d/ctr_sprite_shbin.S.tmp' EXIT; \
+	$(CTR_PICASSO) $$d/ctr_sprite.vsh $$d/ctr_sprite.gsh -o $$d/ctr_sprite.shbin; \
+	$(CTR_BIN2S) $$d/ctr_sprite.shbin > $$d/ctr_sprite_shbin.S.tmp; \
+	mv $$d/ctr_sprite_shbin.S.tmp $$d/ctr_sprite_shbin.S
 
 %.o: %.vsh %.gsh
 	$(DEVKITTOOLS)/bin/picasso $^ -o $*.shbin
