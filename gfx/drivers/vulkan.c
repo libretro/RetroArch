@@ -5786,12 +5786,15 @@ static void *vulkan_init(const video_info_t *video,
       goto error;
    }
 
+   RARCH_DBG("[Vulkan] Filter chain ready.\n");
+
    if (vk->ctx_driver->input_driver)
    {
       const char *joypad_name = settings->arrays.input_joypad_driver;
       vk->ctx_driver->input_driver(
             vk->ctx_data, joypad_name,
             input, input_data);
+      RARCH_DBG("[Vulkan] Context input driver ready.\n");
    }
 
    /* The MoltenVK driver needs this, particularly after driver reinit

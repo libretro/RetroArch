@@ -2155,13 +2155,11 @@ static bool slang_chain_init(struct vulkan_filter_chain *chain)
 
    for (i = 0; i < chain->pass_count; i++)
    {
-#ifdef VULKAN_DEBUG
       const char *name = slang_pass_get_name(chain->passes[i]);
-      RARCH_LOG("[Vulkan] Building pass #%u (%s)\n", i,
+      RARCH_DBG("[Vulkan] Building pass #%u (%s).\n", i,
             (name && *name)
-            ? name 
+            ? name
             : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
-#endif
       slang_pass_set_pass_info(chain->passes[i],
             chain->max_input_size_width, chain->max_input_size_height,
             source_w, source_h, chain->swapchain_info, chain->pass_info[i],
@@ -2173,10 +2171,13 @@ static bool slang_chain_init(struct vulkan_filter_chain *chain)
    chain->require_clear = false;
    if (!slang_chain_init_ubo(chain))
       return false;
+   RARCH_DBG("[Vulkan] Chain UBO ready.\n");
    if (!slang_chain_init_history(chain))
       return false;
+   RARCH_DBG("[Vulkan] Chain history ready.\n");
    if (!slang_chain_init_feedback(chain))
       return false;
+   RARCH_DBG("[Vulkan] Chain feedback ready.\n");
    texture_array_resize(&chain->common.pass_outputs,
          &chain->common.num_pass_outputs, chain->pass_count);
    return true;
@@ -4433,6 +4434,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_default(
    chain = slang_chain_new(&tmpinfo);
    if (!chain)
       return NULL;
+   RARCH_DBG("[Vulkan] Stock chain allocated.\n");
 
    pass_info.scale_type_x  = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
    pass_info.scale_type_y  = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
@@ -4471,6 +4473,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_default(
       return NULL;
    }
 
+   RARCH_DBG("[Vulkan] Stock chain built.\n");
    return chain;
 }
 
