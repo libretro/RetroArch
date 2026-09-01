@@ -533,8 +533,8 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
             InterlockedExchangeAdd(&mouse->dlt_y, state->lLastY);
          }
 
-         crs_pos.x = mouse->x + mouse->dlt_x;
-         crs_pos.y = mouse->y + mouse->dlt_y;
+         crs_pos.x = mouse->x + state->lLastX;
+         crs_pos.y = mouse->y + state->lLastY;
 
          /* Prevent travel outside active window */
          if (crs_pos.x < wr->active_rect.left)
