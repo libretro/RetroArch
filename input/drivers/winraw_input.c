@@ -63,6 +63,9 @@ typedef struct
    HANDLE hnd;
    LONG x, y, dlt_x, dlt_y;
    LONG whl_u, whl_d;
+   /* Set by the wndproc when this mouse needs its position taken from
+    * the system cursor, drained once per frame by winraw_poll(). */
+   LONG pos_pending;
    int device;
    uint8_t flags;
 } winraw_mouse_t;
@@ -521,13 +524,20 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
          InterlockedExchangeAdd(&mouse->dlt_x, state->lLastX);
          InterlockedExchangeAdd(&mouse->dlt_y, state->lLastY);
 
-         if (!GetCursorPos(&crs_pos))
-            RARCH_DBG("[WinRaw] GetCursorPos failed with error %lu.\n", GetLastError());
-         else if (!ScreenToClient((HWND)video_driver_window_get(), &crs_pos))
-            RARCH_DBG("[WinRaw] ScreenToClient failed with error %lu.\n", GetLastError());
+         /* Defer the cursor query to winraw_poll(). GetCursorPos() is an
+          * unconditional kernel transition on every Windows version, and
+          * this runs once per raw input report - about sixteen times per
+          * frame with a 1000 Hz mouse at 60 fps. Only the value in place
+          * at the frame snapshot is ever read, so resolving it once per
+          * frame gives the same result from a fresher sample. */
+         InterlockedExchange(&mouse->pos_pending, 1);
       }
       else
       {
+         /* This branch establishes the position itself, so any deferred
+          * query from an earlier report in this frame is superseded. */
+         InterlockedExchange(&mouse->pos_pending, 0);
+
          /* Handle different sensitivity for lightguns */
          if (mouse->device == RETRO_DEVICE_LIGHTGUN)
          {
@@ -769,6 +779,8 @@ error:
 static void winraw_poll(void *data)
 {
    unsigned i;
+   POINT crs_pos          = {0, 0};
+   bool crs_pos_valid     = false;
    winraw_input_t *wr     = (winraw_input_t*)data;
 
    /* Sync coordinates when window regains focus */
@@ -811,6 +823,27 @@ static void winraw_poll(void *data)
       /* Clear buttons when not focused */
       if (!winraw_focus)
          g_mice[i].flags = 0;
+
+      /* Resolve a deferred cursor position, at most once per frame no
+       * matter how many reports asked for it or how many mice did. */
+      if (InterlockedExchange(&g_mice[i].pos_pending, 0))
+      {
+         if (!crs_pos_valid)
+         {
+            HWND wnd = (HWND)video_driver_window_get();
+            if (!GetCursorPos(&crs_pos))
+               RARCH_DBG("[WinRaw] GetCursorPos failed with error %lu.\n", GetLastError());
+            else if (!wnd || !ScreenToClient(wnd, &crs_pos))
+               RARCH_DBG("[WinRaw] ScreenToClient failed with error %lu.\n", GetLastError());
+            else
+               crs_pos_valid = true;
+         }
+         if (crs_pos_valid)
+         {
+            g_mice[i].x = crs_pos.x;
+            g_mice[i].y = crs_pos.y;
+         }
+      }
 
       wr->mice[i].x       = g_mice[i].x;
       wr->mice[i].y       = g_mice[i].y;
