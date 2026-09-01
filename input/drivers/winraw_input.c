@@ -32,6 +32,7 @@ extern "C" {
 
 #include <compat/strl.h>
 #include <string/stdstring.h>
+#include <retro_atomic.h>
 
 #ifndef _XBOX
 #include "../../gfx/common/win32_common.h"
@@ -61,11 +62,15 @@ enum winraw_mouse_flags
 typedef struct
 {
    HANDLE hnd;
-   LONG x, y, dlt_x, dlt_y;
-   LONG whl_u, whl_d;
+   LONG x, y;
+   /* Produced by the wndproc, drained once per frame by winraw_poll().
+    * The snapshot in winraw_input_t::mice is single-threaded; only the
+    * g_mice originals are ever accessed concurrently. */
+   retro_atomic_int_t dlt_x, dlt_y;
+   retro_atomic_int_t whl_u, whl_d;
    /* Set by the wndproc when this mouse needs its position taken from
     * the system cursor, drained once per frame by winraw_poll(). */
-   LONG pos_pending;
+   retro_atomic_int_t pos_pending;
    int device;
    uint8_t flags;
 } winraw_mouse_t;
@@ -485,8 +490,10 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
       {
          state->lLastX = (LONG)(wr->view_abs_ratio_x * state->lLastX);
          state->lLastY = (LONG)(wr->view_abs_ratio_y * state->lLastY);
-         InterlockedExchangeAdd(&mouse->dlt_x, state->lLastX - mouse->x);
-         InterlockedExchangeAdd(&mouse->dlt_y, state->lLastY - mouse->y);
+         retro_atomic_fetch_add_int(&mouse->dlt_x,
+               state->lLastX - mouse->x);
+         retro_atomic_fetch_add_int(&mouse->dlt_y,
+               state->lLastY - mouse->y);
          mouse->x      = state->lLastX;
          mouse->y      = state->lLastY;
       }
@@ -521,8 +528,8 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
 
       if (getcursorpos)
       {
-         InterlockedExchangeAdd(&mouse->dlt_x, state->lLastX);
-         InterlockedExchangeAdd(&mouse->dlt_y, state->lLastY);
+         retro_atomic_fetch_add_int(&mouse->dlt_x, state->lLastX);
+         retro_atomic_fetch_add_int(&mouse->dlt_y, state->lLastY);
 
          /* Defer the cursor query to winraw_poll(). GetCursorPos() is an
           * unconditional kernel transition on every Windows version, and
@@ -530,24 +537,24 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
           * frame with a 1000 Hz mouse at 60 fps. Only the value in place
           * at the frame snapshot is ever read, so resolving it once per
           * frame gives the same result from a fresher sample. */
-         InterlockedExchange(&mouse->pos_pending, 1);
+         retro_atomic_store_release_int(&mouse->pos_pending, 1);
       }
       else
       {
          /* This branch establishes the position itself, so any deferred
           * query from an earlier report in this frame is superseded. */
-         InterlockedExchange(&mouse->pos_pending, 0);
+         retro_atomic_store_release_int(&mouse->pos_pending, 0);
 
          /* Handle different sensitivity for lightguns */
          if (mouse->device == RETRO_DEVICE_LIGHTGUN)
          {
-            InterlockedExchange(&mouse->dlt_x, state->lLastX);
-            InterlockedExchange(&mouse->dlt_y, state->lLastY);
+            retro_atomic_store_release_int(&mouse->dlt_x, state->lLastX);
+            retro_atomic_store_release_int(&mouse->dlt_y, state->lLastY);
          }
          else
          {
-            InterlockedExchangeAdd(&mouse->dlt_x, state->lLastX);
-            InterlockedExchangeAdd(&mouse->dlt_y, state->lLastY);
+            retro_atomic_fetch_add_int(&mouse->dlt_x, state->lLastX);
+            retro_atomic_fetch_add_int(&mouse->dlt_y, state->lLastY);
          }
 
          crs_pos.x = mouse->x + state->lLastX;
@@ -612,9 +619,9 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
    if (state->usButtonFlags & RI_MOUSE_WHEEL)
    {
       if ((SHORT)state->usButtonData > 0)
-         InterlockedExchange(&mouse->whl_u, 1);
+         retro_atomic_store_release_int(&mouse->whl_u, 1);
       else if ((SHORT)state->usButtonData < 0)
-         InterlockedExchange(&mouse->whl_d, 1);
+         retro_atomic_store_release_int(&mouse->whl_d, 1);
    }
 }
 
@@ -826,7 +833,7 @@ static void winraw_poll(void *data)
 
       /* Resolve a deferred cursor position, at most once per frame no
        * matter how many reports asked for it or how many mice did. */
-      if (InterlockedExchange(&g_mice[i].pos_pending, 0))
+      if (retro_atomic_exchange_int(&g_mice[i].pos_pending, 0))
       {
          if (!crs_pos_valid)
          {
@@ -847,10 +854,10 @@ static void winraw_poll(void *data)
 
       wr->mice[i].x       = g_mice[i].x;
       wr->mice[i].y       = g_mice[i].y;
-      wr->mice[i].dlt_x   = InterlockedExchange(&g_mice[i].dlt_x, 0);
-      wr->mice[i].dlt_y   = InterlockedExchange(&g_mice[i].dlt_y, 0);
-      wr->mice[i].whl_u   = InterlockedExchange(&g_mice[i].whl_u, 0);
-      wr->mice[i].whl_d   = InterlockedExchange(&g_mice[i].whl_d, 0);
+      wr->mice[i].dlt_x   = retro_atomic_exchange_int(&g_mice[i].dlt_x, 0);
+      wr->mice[i].dlt_y   = retro_atomic_exchange_int(&g_mice[i].dlt_y, 0);
+      wr->mice[i].whl_u   = retro_atomic_exchange_int(&g_mice[i].whl_u, 0);
+      wr->mice[i].whl_d   = retro_atomic_exchange_int(&g_mice[i].whl_d, 0);
       wr->mice[i].flags   = g_mice[i].flags;
    }
 }
