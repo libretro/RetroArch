@@ -122,6 +122,9 @@ RC_BEGIN_C_DECLS
   typedef struct rc_mutex_t {
     int handle;
   } rc_mutex_t;
+ #elif defined(__SWITCH__)
+  #include <switch.h>
+  typedef RMutex rc_mutex_t;
  #else
   #include <pthread.h>
   typedef pthread_mutex_t rc_mutex_t;
