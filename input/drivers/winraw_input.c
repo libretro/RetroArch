@@ -183,6 +183,11 @@ typedef struct
 {
    double view_abs_ratio_x;
    double view_abs_ratio_y;
+   /* Raised by the wndproc when an absolute report arrives before the
+    * xy mapping exists. winraw_poll() builds it, because
+    * winraw_init_mouse_xy_mapping() writes the position and the wndproc
+    * no longer owns that. */
+   retro_atomic_int_t map_pending;
    HWND window;
    /* Dummy head for easier iteration */
    struct winraw_pointer_status pointer_head;
@@ -573,6 +578,8 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
          retro_atomic_store_release_int(&mouse->abs_y, state->lLastY);
          retro_atomic_store_release_int(&mouse->abs_pending, 1);
       }
+      else
+         retro_atomic_store_release_int(&wr->map_pending, 1);
    }
    else if (state->lLastX || state->lLastY)
    {
@@ -883,7 +890,7 @@ static void winraw_poll(void *data)
          wr->rect_delay  = 0;
       }
    }
-   else if (!(wr->flags & WRAW_INP_FLG_MOUSE_XY_MAPPING_READY))
+   else if (retro_atomic_exchange_int(&wr->map_pending, 0))
       winraw_init_mouse_xy_mapping(wr);
 
    /* Sync coordinates when window regains focus */
