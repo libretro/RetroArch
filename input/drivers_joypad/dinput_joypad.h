@@ -18,8 +18,20 @@
  * xinput_hybrid_joypad.c, which cross-references DirectInput to
  * recover the VID/PID that XInput does not expose. Both files used to
  * carry their own copy of struct dinput_joypad_data under the same
- * __DINPUT_JOYPAD_H guard, and the copies had drifted apart, so the
- * two objects disagreed on the array stride. One declaration, here.
+ * __DINPUT_JOYPAD_H guard, and the copies had drifted apart: the
+ * definer's was 432 bytes, the reader's 400, because four rumble
+ * storage fields were added to one and not the other.
+ *
+ * That was latent rather than live. Each file also had its own static
+ * copies of the accessors, and only one joypad driver is active at a
+ * time, so whichever of the two was running used its own view of the
+ * array consistently and the other never touched it. The array was
+ * over-allocated, not overrun. It would have become live the moment
+ * the two drivers cooperated on the same entries, or the moment
+ * someone added a field to one copy and not the other again - which
+ * is how it got here.
+ *
+ * One declaration, here.
  */
 
 #ifndef __DINPUT_JOYPAD_H
