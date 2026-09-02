@@ -515,11 +515,13 @@ static bool webdav_needs_reauth(http_transfer_data_t *data)
 }
 
 /* RFC 9110 5.6.1.2: the Allow header is a comma-separated list of
- * method tokens.  Match whole tokens so that a method merely
- * containing "PUT" cannot be mistaken for PUT itself. */
-static bool webdav_allow_lists_put(const char *allow)
+ * method tokens describing what the *target resource* supports. Match
+ * whole tokens so that a method merely containing another's name
+ * cannot be mistaken for it. */
+static bool webdav_allow_lists_method(const char *allow, const char *method)
 {
    const char *p = allow;
+   size_t _len   = strlen(method);
 
    while (*p)
    {
@@ -530,7 +532,8 @@ static bool webdav_allow_lists_put(const char *allow)
       tok = p;
       while (*p && *p != ',' && *p != ' ' && *p != '\t')
          p++;
-      if (p - tok == 3 && string_starts_with_case_insensitive(tok, "PUT"))
+      if (     (size_t)(p - tok) == _len
+            && string_starts_with_case_insensitive(tok, method))
          return true;
    }
 
@@ -538,12 +541,16 @@ static bool webdav_allow_lists_put(const char *allow)
 }
 
 /* Inspects the response to the OPTIONS request cloud sync opens with.
- * A WebDAV server announces itself with a DAV header (RFC 4918 10.1);
- * a plain HTTP server answers OPTIONS quite happily and only refuses
- * once the first PUT arrives, which is far too late to tell the user
- * anything useful. */
+ *
+ * The URL cloud sync is given is a collection, and Allow describes the
+ * collection itself: PUT is not defined on one (RFC 4918 9.7.1), so a
+ * correct server may well leave it out and its absence says nothing
+ * about the endpoint. What separates a WebDAV server from a plain HTTP
+ * server that answers OPTIONS is the DAV header it announces itself
+ * with (RFC 4918 10.1), and failing that, whether it offers any method
+ * only WebDAV defines. */
 static void webdav_check_options(http_transfer_data_t *data,
-      bool *dav, bool *allow_seen, bool *allow_put)
+      bool *dav, bool *allow_seen, bool *allow_dav_method)
 {
    size_t i;
 
@@ -555,9 +562,13 @@ static void webdav_check_options(http_transfer_data_t *data,
          *dav = true;
       else if (string_starts_with_case_insensitive(hdr, "Allow:"))
       {
+         const char *allow = hdr + STRLEN_CONST("Allow:");
+
          *allow_seen = true;
-         if (webdav_allow_lists_put(hdr + STRLEN_CONST("Allow:")))
-            *allow_put = true;
+         if (     webdav_allow_lists_method(allow, "PROPFIND")
+               || webdav_allow_lists_method(allow, "MKCOL")
+               || webdav_allow_lists_method(allow, "PROPPATCH"))
+            *allow_dav_method = true;
       }
    }
 }
@@ -588,21 +599,34 @@ static void webdav_stat_cb(retro_task_t *task, void *task_data, void *user_data,
 
    if (success && data)
    {
-      bool dav        = false;
-      bool allow_seen = false;
-      bool allow_put  = false;
+      bool dav              = false;
+      bool allow_seen       = false;
+      bool allow_dav_method = false;
 
-      webdav_check_options(data, &dav, &allow_seen, &allow_put);
-      webdav_st->dav_verified = dav;
+      webdav_check_options(data, &dav, &allow_seen, &allow_dav_method);
 
-      if (allow_seen && !allow_put)
+      /* A server that answers OPTIONS with neither the DAV header nor
+       * a single WebDAV method in Allow is an ordinary HTTP server,
+       * and it will refuse the first PUT far too late to tell the user
+       * anything useful. Anything that shows either one is taken at
+       * its word; PUT's absence from a collection's Allow means
+       * nothing (RFC 4918 9.7.1) and is not consulted. */
+      webdav_st->dav_verified = dav || allow_dav_method;
+
+      if (webdav_st->dav_verified)
       {
-         RARCH_ERR("[webdav] %s answers OPTIONS but does not accept PUT, so it is not a WebDAV endpoint. Check the URL: providers commonly serve WebDAV over https only, on a dedicated host.\n",
+         if (!dav)
+            RARCH_WARN("[webdav] %s did not return a DAV header, but offers WebDAV methods. Continuing.\n",
+                  webdav_st->url);
+      }
+      else if (allow_seen)
+      {
+         RARCH_ERR("[webdav] %s answers OPTIONS but offers no WebDAV method, so it is not a WebDAV endpoint. Check the URL: providers commonly serve WebDAV over https only, on a dedicated host.\n",
                webdav_st->url);
          success = false;
       }
-      else if (!dav)
-         RARCH_WARN("[webdav] %s did not return a DAV header, so it may not be a WebDAV endpoint. Continuing anyway.\n",
+      else
+         RARCH_WARN("[webdav] %s returned neither a DAV header nor an Allow header, so it may not be a WebDAV endpoint. Continuing anyway.\n",
                webdav_st->url);
    }
 
