@@ -10780,6 +10780,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_VIDEO_MAX_SWAPCHAIN_IMAGES, PARSE_ONLY_UINT, false},
 #ifdef HAVE_D3DKMT
                {MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC,        PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC_OFFSET, PARSE_ONLY_INT,  true},
 #endif
                {MENU_ENUM_LABEL_VIDEO_FRAME_DELAY_AUTO,     PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_VIDEO_FRAME_DELAY,          PARSE_ONLY_UINT, true},
@@ -11416,6 +11417,10 @@ unsigned menu_displaylist_build_list(
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC,
                   PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC_OFFSET,
+                  PARSE_ONLY_INT, false) == 0)
                count++;
 #endif
 #ifdef HAVE_RUNAHEAD
