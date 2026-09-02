@@ -21,6 +21,7 @@
  * pre-rewrite implementation that uses RetroArch's portable slock/scond
  * primitives and a fifo_buffer_t.                                     */
 #include <AvailabilityMacros.h>
+#include <lists/string_list.h>
 #if !defined(MAC_OS_X_VERSION_10_7) || \
     (defined(MAC_OS_X_VERSION_MIN_REQUIRED) && \
      MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_7)
@@ -470,9 +471,81 @@ static size_t coreaudio_wait_writable(void *data, size_t len)
    return write_avail;
 }
 
-/* TODO/FIXME - implement */
-static void *coreaudio_device_list_new(void *data) { return NULL; }
-static void coreaudio_device_list_free(void *data, void *array_list_data) { }
+/* Enumerates output devices from the HAL. Needs no driver instance:
+ * kAudioObjectSystemObject is always there. Same query as
+ * coreaudio_choose_output_device() above, collected instead of
+ * matched. iOS has no HAL device enumeration for output; NULL there. */
+static void *coreaudio_device_list_new(void *data)
+{
+#if TARGET_OS_IPHONE
+   (void)data;
+   return NULL;
+#else
+   int i;
+   UInt32 device_count;
+   AudioObjectPropertyAddress propaddr;
+   AudioDeviceID *devices = NULL;
+   UInt32 size            = 0;
+   union string_list_elem_attr attr;
+   struct string_list *sl = string_list_new();
+
+   (void)data;
+   attr.i = 0;
+   if (!sl)
+      return NULL;
+
+   propaddr.mSelector = kAudioHardwarePropertyDevices;
+#if HAS_MACOSX_10_12
+   propaddr.mScope    = kAudioObjectPropertyScopeOutput;
+#else
+   propaddr.mScope    = kAudioObjectPropertyScopeGlobal;
+#endif
+   propaddr.mElement  = kAudioObjectPropertyElementMaster;
+
+   if (AudioObjectGetPropertyDataSize(kAudioObjectSystemObject,
+            &propaddr, 0, 0, &size) != noErr)
+   {
+      string_list_free(sl);
+      return NULL;
+   }
+
+   device_count = size / sizeof(AudioDeviceID);
+   devices      = (AudioDeviceID*)malloc(size);
+
+   if (devices && AudioObjectGetPropertyData(kAudioObjectSystemObject,
+            &propaddr, 0, 0, &size, devices) == noErr)
+   {
+#if HAS_MACOSX_10_12
+#else
+      propaddr.mScope    = kAudioDevicePropertyScopeOutput;
+#endif
+      propaddr.mSelector = kAudioDevicePropertyDeviceName;
+
+      for (i = 0; i < (int)device_count; i++)
+      {
+         char device_name[1024];
+         device_name[0] = 0;
+         size           = 1024;
+
+         if (AudioObjectGetPropertyData(devices[i],
+                  &propaddr, 0, 0, &size, device_name) == noErr
+               && device_name[0])
+            string_list_append(sl, device_name, attr);
+      }
+   }
+
+   free(devices);
+   return sl;
+#endif
+}
+
+static void coreaudio_device_list_free(void *data, void *array_list_data)
+{
+   struct string_list *sl = (struct string_list*)array_list_data;
+   (void)data;
+   if (sl)
+      string_list_free(sl);
+}
 
 audio_driver_t audio_coreaudio = {
    coreaudio_init,
@@ -1287,9 +1360,81 @@ static size_t coreaudio_wait_writable(void *data, size_t len)
    }
 }
 
-/* TODO/FIXME - implement */
-static void *coreaudio_device_list_new(void *data) { return NULL; }
-static void coreaudio_device_list_free(void *data, void *array_list_data) { }
+/* Enumerates output devices from the HAL. Needs no driver instance:
+ * kAudioObjectSystemObject is always there. Same query as
+ * coreaudio_choose_output_device() above, collected instead of
+ * matched. iOS has no HAL device enumeration for output; NULL there. */
+static void *coreaudio_device_list_new(void *data)
+{
+#if TARGET_OS_IPHONE
+   (void)data;
+   return NULL;
+#else
+   int i;
+   UInt32 device_count;
+   AudioObjectPropertyAddress propaddr;
+   AudioDeviceID *devices = NULL;
+   UInt32 size            = 0;
+   union string_list_elem_attr attr;
+   struct string_list *sl = string_list_new();
+
+   (void)data;
+   attr.i = 0;
+   if (!sl)
+      return NULL;
+
+   propaddr.mSelector = kAudioHardwarePropertyDevices;
+#if HAS_MACOSX_10_12
+   propaddr.mScope    = kAudioObjectPropertyScopeOutput;
+#else
+   propaddr.mScope    = kAudioObjectPropertyScopeGlobal;
+#endif
+   propaddr.mElement  = kAudioObjectPropertyElementMaster;
+
+   if (AudioObjectGetPropertyDataSize(kAudioObjectSystemObject,
+            &propaddr, 0, 0, &size) != noErr)
+   {
+      string_list_free(sl);
+      return NULL;
+   }
+
+   device_count = size / sizeof(AudioDeviceID);
+   devices      = (AudioDeviceID*)malloc(size);
+
+   if (devices && AudioObjectGetPropertyData(kAudioObjectSystemObject,
+            &propaddr, 0, 0, &size, devices) == noErr)
+   {
+#if HAS_MACOSX_10_12
+#else
+      propaddr.mScope    = kAudioDevicePropertyScopeOutput;
+#endif
+      propaddr.mSelector = kAudioDevicePropertyDeviceName;
+
+      for (i = 0; i < (int)device_count; i++)
+      {
+         char device_name[1024];
+         device_name[0] = 0;
+         size           = 1024;
+
+         if (AudioObjectGetPropertyData(devices[i],
+                  &propaddr, 0, 0, &size, device_name) == noErr
+               && device_name[0])
+            string_list_append(sl, device_name, attr);
+      }
+   }
+
+   free(devices);
+   return sl;
+#endif
+}
+
+static void coreaudio_device_list_free(void *data, void *array_list_data)
+{
+   struct string_list *sl = (struct string_list*)array_list_data;
+   (void)data;
+   if (sl)
+      string_list_free(sl);
+}
 
 audio_driver_t audio_coreaudio = {
    coreaudio_init,
