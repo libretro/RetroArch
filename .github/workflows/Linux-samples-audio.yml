@@ -146,3 +146,29 @@ jobs:
           make clean all SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 300 ./tinyalsa_write_test
           echo "[pass] tinyalsa_write_test (TSan)"
+
+      - name: Build and run pipeline_stall_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/audio/pipeline_stall
+        run: |
+          set -eu
+          # Includes audio/audio_driver.c and runs the threaded pipeline's
+          # shipping producer and consumer against a scripted driver whose
+          # write_raw() path reaches the device without the resampler or
+          # the arenas. The device is then made to stop taking audio. The
+          # consumer must take nothing from the ring it cannot deliver and
+          # report no progress it did not make; the producer must record
+          # the stall after one bounded wait and drop at once thereafter;
+          # and both must recover when the device returns. The previous
+          # consumer took the chunk first, threw it away on finding no
+          # room, and cleared the stall - the frontend paced at one frame
+          # per failed pass for as long as the device was stuck.
+          make clean all SANITIZER=address,undefined
+          test -x pipeline_stall_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 180 \
+             ./pipeline_stall_test
+          echo "[pass] pipeline_stall_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 400 ./pipeline_stall_test
+          echo "[pass] pipeline_stall_test (TSan)"
