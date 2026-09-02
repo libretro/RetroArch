@@ -2199,7 +2199,31 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
             audio_driver_st.current_audio->buffer_size(
                   audio_driver_st.context_audio_data);
          if (audio_driver_st.buffer_size > 0)
+         {
+            /* The reported buffer against the setting, in the units the
+             * user thinks in. Half of it is the rate control's setpoint,
+             * so half of it in time is the latency this driver gives at
+             * steady state; a driver that reports only some of its
+             * stages, or in the wrong unit, shows here as a size that
+             * does not match the setting. */
+            unsigned out_rate     = new_rate
+                  ? new_rate : settings->uints.audio_output_sample_rate;
+            size_t   frame_bytes  =
+                  (AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_USE_FLOAT)
+                  ? 2 * sizeof(float) : 2 * sizeof(int16_t);
+            double   buffer_ms    = out_rate
+                  ? (double)audio_driver_st.buffer_size / frame_bytes
+                     * 1000.0 / out_rate
+                  : 0.0;
+            RARCH_LOG("[Audio] Driver \"%s\" reports a %u-byte buffer: "
+                  "%.1f ms of %s at %u Hz against a %u ms latency setting; "
+                  "rate control holds it near %.1f ms.\n",
+                  audio_driver_st.current_audio->ident,
+                  (unsigned)audio_driver_st.buffer_size, buffer_ms,
+                  (frame_bytes == 2 * sizeof(float)) ? "float" : "int16",
+                  out_rate, audio_latency, buffer_ms / 2.0);
             AUDIO_FLAGS_SET(&audio_driver_st, AUDIO_FLAG_CONTROL);
+         }
          else
             RARCH_WARN("[Audio] Rate control was desired, but the driver "
                   "reported a zero buffer size.\n");
