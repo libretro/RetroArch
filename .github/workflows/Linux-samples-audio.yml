@@ -119,3 +119,30 @@ jobs:
           make clean all SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 300 ./alsa_wait_writable_test
           echo "[pass] alsa_wait_writable_test (TSan)"
+
+      - name: Build and run tinyalsa_write_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/audio/tinyalsa_write
+        run: |
+          set -eu
+          # Includes audio/drivers/tinyalsa.c and scripts the kernel at
+          # ioctl()/poll() via -Wl,--wrap, so the write and wait loops run
+          # against a device that is full, unstarted, stalled, signal-
+          # interrupted or gone. The previous non-blocking loop added a
+          # refused write's -1 to its count, shifted a negative to walk
+          # its source pointer backwards past the caller's buffer, grew
+          # its remaining size and never returned (UBSan reports the
+          # shift, the watchdog the loop); the first write reported zero
+          # frames after taking them all, so callers wrote the opening
+          # chunk twice; and both the blocking write and wait_writable()
+          # polled with no timeout. Each case asserts a bounded return
+          # and the right count.
+          make clean all SANITIZER=address,undefined
+          test -x tinyalsa_write_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 120 \
+             ./tinyalsa_write_test
+          echo "[pass] tinyalsa_write_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 300 ./tinyalsa_write_test
+          echo "[pass] tinyalsa_write_test (TSan)"

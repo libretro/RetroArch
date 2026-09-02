@@ -1358,7 +1358,10 @@ restart:
          return -1;
       }
       pcm->running = 1;
-      return 0;
+      /* The frames the kernel took, as on every other write: the
+       * callers advance by the return, and a zero here made them
+       * write the opening chunk a second time. */
+      return x.result;
    }
 
    if (ioctl(pcm->fd, SNDRV_PCM_IOCTL_WRITEI_FRAMES, &x))
@@ -1956,15 +1959,16 @@ static int pcm_wait(struct pcm *pcm, int timeout)
       /* let's wait for avail or timeout */
       int err = poll(&pfd, 1, timeout);
       if (err < 0)
+      {
+         /* A signal interrupting the poll is not a device error. */
+         if (errno == EINTR)
+            continue;
          return -errno;
+      }
 
       /* timeout ? */
       if (err == 0)
          return 0;
-
-      /* have we been interrupted ? */
-      if (errno == -EINTR)
-         continue;
 
       /* check for any errors */
       if (pfd.revents & (POLLERR | POLLNVAL))
@@ -2292,6 +2296,28 @@ error:
    return NULL;
 }
 
+/* Iteration cap for tinyalsa_wait_writable(): bounds wakes that
+ * deliver no space, so one call costs at most this many bounded
+ * waits before it hands the pass back. */
+#define TINYALSA_WAIT_WRITABLE_LAPS 8
+
+/* Two periods' worth of time, clamped, as the bound on any wait for
+ * the device: a device that is draining signals well inside it. */
+static int tinyalsa_wait_timeout_ms(tinyalsa_t *tinyalsa)
+{
+   const struct pcm_config *cfg = &tinyalsa->pcm->config;
+   int timeout_ms = 100;
+
+   if (cfg->rate)
+      timeout_ms = (int)(((unsigned long)cfg->period_size * 2000ul)
+            / cfg->rate);
+   if (timeout_ms < 20)
+      timeout_ms = 20;
+   if (timeout_ms > 200)
+      timeout_ms = 200;
+   return timeout_ms;
+}
+
 static ssize_t
 tinyalsa_write(void *data, const void *buf_, size_t len)
 {
@@ -2307,8 +2333,13 @@ tinyalsa_write(void *data, const void *buf_, size_t len)
       {
          snd_pcm_sframes_t frames   = pcm_writei(tinyalsa->pcm, buf, size);
 
-         if (frames < 0)
-            pcm_stop(tinyalsa->pcm);
+         /* A full device refuses with -1 here (EAGAIN on the
+          * non-blocking fd), and that is the normal state of a
+          * device being fed faster than it drains: nothing more goes
+          * in this call, and the write returns what did. Nothing
+          * else is done to the device over it. */
+         if (frames <= 0)
+            break;
 
          _len    += frames;
          buf     += (frames << 1) * frames_size;
@@ -2317,15 +2348,28 @@ tinyalsa_write(void *data, const void *buf_, size_t len)
    }
    else
    {
+      int timeout_ms = tinyalsa_wait_timeout_ms(tinyalsa);
+
       while (size)
       {
          snd_pcm_sframes_t frames;
-         pcm_wait(tinyalsa->pcm, -1);
+         int rc   = pcm_wait(tinyalsa->pcm, timeout_ms);
+
+         /* Nothing ready within the bound: the device has stopped
+          * draining, and the frames not yet written are given up
+          * rather than the thread. An xrun or a suspend is left for
+          * pcm_writei() to recover. */
+         if (rc == 0)
+            break;
+         if (rc < 0 && rc != -EPIPE && rc != -ESTRPIPE)
+            return -1;
 
          frames   = pcm_writei(tinyalsa->pcm, buf, size);
 
          if (frames < 0)
             return -1;
+         if (!frames)
+            break;
 
          _len    += frames;
          buf     += (frames << 1) * frames_size;
@@ -2432,25 +2476,35 @@ static void tinyalsa_free(void *data)
 }
 
 /* Sleep in pcm_wait() (poll on the pcm fd) until at least len bytes
- * fit, capped at half the buffer so the wait always ends. Returns the
- * free space then, or 0 on a device error. */
+ * fit, capped at half the buffer. Every wait is bounded to two
+ * periods' worth of time and the loop to TINYALSA_WAIT_WRITABLE_LAPS,
+ * so on a device that stalls, vanishes, or wakes without delivering
+ * space this returns 0 - skip the pass, retry on a later wake - and
+ * the audio thread keeps servicing its messages. Returns the free
+ * space otherwise. */
 static size_t tinyalsa_wait_writable(void *data, size_t len)
 {
    tinyalsa_t *alsa       = (tinyalsa_t*)data;
    snd_pcm_sframes_t want = BYTES_TO_FRAMES(len, alsa->frame_bits);
    snd_pcm_sframes_t half = BYTES_TO_FRAMES(alsa->buffer_size / 2, alsa->frame_bits);
+   int laps               = TINYALSA_WAIT_WRITABLE_LAPS;
+   int timeout_ms         = tinyalsa_wait_timeout_ms(alsa);
 
    if (want > half)
       want = half;
 
    for (;;)
    {
+      int rc;
       snd_pcm_sframes_t avail = pcm_avail_update(alsa->pcm);
       if (avail < 0)
          return 0;
       if (avail >= want)
          return FRAMES_TO_BYTES(avail, alsa->frame_bits);
-      if (pcm_wait(alsa->pcm, -1) < 0)
+      rc = pcm_wait(alsa->pcm, timeout_ms);
+      if (rc <= 0 && rc != -EPIPE && rc != -ESTRPIPE)
+         return 0;
+      if (--laps < 0)
          return 0;
    }
 }
