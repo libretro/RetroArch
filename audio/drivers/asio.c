@@ -65,6 +65,7 @@
 #endif
 
 #include "../audio_driver.h"
+#include "../../gfx/video_driver.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
 
@@ -1163,7 +1164,17 @@ static void *ra_asio_init(const char *device, unsigned rate,
     * HWND, the driver may initialize successfully but never issue
     * any callbacks. */
    {
-      HWND hwnd = GetForegroundWindow();
+      /* The driver's window: RetroArch's own. Several drivers parent
+       * a message-only window to the handle given to init and never
+       * call back without a live one; the foreground window at the
+       * moment of init - another application's, as often as not - or
+       * the desktop was what they got, and the symptom was a driver
+       * that initialised and stayed silent. The video driver's window
+       * exists by the time audio initialises; the old lookups remain
+       * for a reinit that runs before it does. */
+      HWND hwnd = (HWND)video_driver_window_get();
+      if (!hwnd)
+         hwnd = GetForegroundWindow();
       if (!hwnd)
          hwnd = GetDesktopWindow();
       if (!ASIO_CALL_INIT(ad->iasio, hwnd))
