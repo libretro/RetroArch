@@ -196,10 +196,13 @@ static void *libnx_audren_thread_audio_init(const char *device, unsigned rate, u
          aud->buffer_size = 64 * frame_bytes;
    }
    aud->samples     = (aud->buffer_size / num_channels / sizeof(int16_t));
-   RARCH_LOG("[Audren] %u ms as a %u-frame fifo (measured) in front of %u wave buffers of %u frames (%u ms).\n",
+   RARCH_LOG("[Audren] %u ms setting: a %u-frame fifo (%u ms, rate control holds it about half full) in front of %u wave buffers of %u frames (%u ms); about %u ms from write to the renderer.\n",
          real_latency, (unsigned)(aud->fifo_size / (num_channels * sizeof(int16_t))),
+         (unsigned)(aud->fifo_size / (num_channels * sizeof(int16_t)) * 1000 / sample_rate),
          (unsigned)BUFFER_COUNT, (unsigned)aud->samples,
-         (unsigned)(aud->samples * BUFFER_COUNT * 1000 / sample_rate));
+         (unsigned)(aud->samples * BUFFER_COUNT * 1000 / sample_rate),
+         (unsigned)(aud->fifo_size / (num_channels * sizeof(int16_t)) * 1000 / sample_rate / 2
+            + aud->samples * BUFFER_COUNT * 1000 / sample_rate));
 
    mempool_size     = (aud->buffer_size * BUFFER_COUNT +
          (AUDREN_MEMPOOL_ALIGNMENT-1)) &~ (AUDREN_MEMPOOL_ALIGNMENT-1);

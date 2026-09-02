@@ -102,8 +102,11 @@ static void *rs_init(const char *device, unsigned rate, unsigned latency,
       rsd_set_param(rd, RSD_CHANNELS, &channels);
       rsd_set_param(rd, RSD_SAMPLERATE, &rate);
       rsd_set_param(rd, RSD_LATENCY, &server_latency);
-      RARCH_LOG("[RSound] %u ms as a %u-byte fifo (measured) in front of a %u ms server buffer.\n",
-            latency, (unsigned)rsd->fifo_size, server_latency);
+      RARCH_LOG("[RSound] %u ms setting: a %u-byte fifo (%u ms, rate control holds it about half full) in front of a %u ms server buffer; about %u ms from write to the server.\n",
+            latency, (unsigned)rsd->fifo_size,
+            (unsigned)(rsd->fifo_size / (channels * sizeof(int16_t)) * 1000 / rate),
+            server_latency,
+            (unsigned)(rsd->fifo_size / (channels * sizeof(int16_t)) * 1000 / rate / 2 + server_latency));
    }
 
    if (device)

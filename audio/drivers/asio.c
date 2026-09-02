@@ -771,12 +771,15 @@ static void asio_log_stages(const ra_asio_t *ad, unsigned latency)
 {
    size_t ring_frames   = ad->ring_size / (2 * sizeof(float));
    size_t device_frames = asio_device_frames(ad);
-   RARCH_LOG("[ASIO] %u ms as a %u-frame ring (%.1f ms, measured) in front of the device's %s of %u frames (%.1f ms).\n",
-         latency, (unsigned)ring_frames,
-         (double)ring_frames * 1000.0 / ad->sample_rate,
+   double ring_ms       = (double)ring_frames * 1000.0 / ad->sample_rate;
+   double device_ms     = (double)device_frames * 1000.0 / ad->sample_rate;
+   /* Rate control holds the ring about half full, so half the ring plus
+    * the device stage is what leaves RetroArch on this path. */
+   RARCH_LOG("[ASIO] %u ms setting: a %u-frame ring (%.1f ms, rate control holds it about half full) in front of the device's %s of %u frames (%.1f ms); about %.1f ms from write to the device.\n",
+         latency, (unsigned)ring_frames, ring_ms,
          ad->output_latency > 0 ? "reported output latency" : "double buffer",
-         (unsigned)device_frames,
-         (double)device_frames * 1000.0 / ad->sample_rate);
+         (unsigned)device_frames, device_ms,
+         ring_ms / 2.0 + device_ms);
 }
 
 /* Singleton — ASIO callbacks have no user-data parameter */

@@ -765,9 +765,12 @@ static void *pwire_init(const char *device, unsigned rate,
     * it short of one. */
    if (audio->highwater_mark < buf_samples * 2 * audio->frame_size)
       audio->highwater_mark = (uint32_t)(buf_samples * 2 * audio->frame_size);
-   RARCH_LOG("[PipeWire] %u ms as a %u-byte ring (measured) in front of a requested %" PRIu64 "-frame quantum (%u ms).\n",
-         latency, (unsigned)audio->highwater_mark, buf_samples,
-         (unsigned)(buf_samples * 1000 / rate));
+   RARCH_LOG("[PipeWire] %u ms setting: a %u-byte ring (%u ms, rate control holds it about half full) in front of a requested %" PRIu64 "-frame quantum (%u ms); about %u ms from write to the graph, which adds a quantum or more of its own.\n",
+         latency, (unsigned)audio->highwater_mark,
+         (unsigned)(audio->highwater_mark / audio->frame_size * 1000 / rate),
+         buf_samples, (unsigned)(buf_samples * 1000 / rate),
+         (unsigned)(audio->highwater_mark / audio->frame_size * 1000 / rate / 2
+            + buf_samples * 1000 / rate));
 
    /* The state callback signals once the stream has connected (to
     * paused) or failed. A daemon that never gets it there fails the

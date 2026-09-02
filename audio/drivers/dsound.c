@@ -637,14 +637,15 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
     * capacity. */
    ds->fifo_bufsize = retro_spsc_write_avail(&ds->ring);
 
-   RARCH_LOG("[DirectSound] Initialized %u-bit %s: latency setting %u ms as a %u-byte fifo (%u ms, measured) in front of a %u-byte ring (%u ms).\n",
+   RARCH_LOG("[DirectSound] Initialized %u-bit %s: %u ms setting as a %u-byte fifo (%u ms, rate control holds it about half full) in front of a %u-byte ring (%u ms); about %u ms from write to the device.\n",
          wf.wBitsPerSample,
          dsound_wave_format_name(&wf),
          latency,
          (unsigned)ds->fifo_bufsize,
          (unsigned)((1000 * ds->fifo_bufsize) / wf.nAvgBytesPerSec),
          ds->buffer_size,
-         (unsigned)((1000 * ds->buffer_size) / wf.nAvgBytesPerSec));
+         (unsigned)((1000 * ds->buffer_size) / wf.nAvgBytesPerSec),
+         (unsigned)((1000 * (ds->fifo_bufsize / 2 + ds->buffer_size)) / wf.nAvgBytesPerSec));
 
    IDirectSoundBuffer_SetVolume(ds->dsb, DSBVOLUME_MAX);
    IDirectSoundBuffer_SetCurrentPosition(ds->dsb, 0);
