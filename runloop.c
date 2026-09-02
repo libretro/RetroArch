@@ -7958,20 +7958,6 @@ int runloop_iterate(void)
    }
 #endif
 
-   /* Reset the pace record every iteration. Several paths below return
-    * before the block that computes it - the menu's "rely on vsync
-    * throttling" early return, POLLED_AND_SLEEP - and without this the
-    * overlay keeps showing the previous frame's sources on a frame that
-    * is not being held by any of them. The vsync bit is state rather
-    * than path, so it is set here and holds for those early returns:
-    * they do rely on it. */
-   runloop_st->pace = RUNLOOP_PACE_NONE;
-   AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_WROTE);
-   if (     settings->bools.video_vsync
-         && !(input_st->flags & INP_FLAG_NONBLOCKING)
-         && !(runloop_st->flags & RUNLOOP_FLAG_FORCE_NONBLOCK))
-      runloop_st->pace |= RUNLOOP_PACE_VSYNC;
-
 #ifdef HAVE_BSV_MOVIE
    bsv_movie_dequeue_next(input_st);
 #endif
@@ -8075,6 +8061,8 @@ int runloop_iterate(void)
          command_event(CMD_EVENT_QUIT, NULL);
          return -1;
       case RUNLOOP_STATE_POLLED_AND_CONTINUE:
+         runloop_st->pace = RUNLOOP_PACE_NONE;
+         AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_WROTE);
          /* Config replaced, startup page pushed, core loaded, dialog
           * command run, list cache flushed: one-shot work is done and
           * the next iteration should begin fresh. Nothing to wait for;
@@ -8083,6 +8071,8 @@ int runloop_iterate(void)
             return -1;
          return 1;
       case RUNLOOP_STATE_POLLED_AND_SLEEP:
+         runloop_st->pace = RUNLOOP_PACE_NONE;
+         AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_WROTE);
          if (runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
             return -1;
 #ifdef HAVE_NETWORKING
@@ -8142,7 +8132,17 @@ int runloop_iterate(void)
 #ifdef HAVE_MENU
          /* Rely on vsync throttling unless VRR is enabled and menu throttle is disabled. */
          if (vrr_runloop_enable && !settings->bools.menu_throttle_framerate)
+         {
+            /* Returns before the pace block: record what holds this
+             * path - vsync if it is blocking, nothing otherwise. */
+            runloop_st->pace = RUNLOOP_PACE_NONE;
+            if (     settings->bools.video_vsync
+                  && !(input_st->flags & INP_FLAG_NONBLOCKING)
+                  && !(runloop_st->flags & RUNLOOP_FLAG_FORCE_NONBLOCK))
+               runloop_st->pace |= RUNLOOP_PACE_VSYNC;
+            AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_WROTE);
             return 0;
+         }
          /* When content is actively running behind the menu (menu_pause_libretro
           * is off), core_run() -> audio_driver_write() already paces the iterate
           * loop at the audio buffer's drain rate -- i.e. the core's natural fps.
@@ -8292,13 +8292,25 @@ end:
          runloop_set_frame_limit(&video_st->av_info, 1.0f);
    }
 
-   /* Record which sources hold the pace this frame. The other three
-    * block inside their own subsystems; only the timer is decided
-    * here. See enum runloop_pace_source. */
-   /* VSYNC was set at the top of the iteration; see there. The vsync
-    * bit reads the driver's blocking state, not the setting: fast-forward
-    * (INP_FLAG_NONBLOCKING) and RUNLOOP_FLAG_FORCE_NONBLOCK both put the
-    * driver into non-blocking presentation while the setting stays true. */
+   /* Record which sources held the pace this iteration. The other three
+    * block inside their own subsystems; only the timer is decided here.
+    * See enum runloop_pace_source.
+    *
+    * Computed at the end of the iteration and read by the overlay during
+    * the next one - one frame stale by design. It must not be reset at
+    * the top of the iteration: the overlay reads it from inside
+    * video_driver_frame(), which runs between the top and here, and a
+    * reset there made it read NONE on every frame. Paths that return
+    * before this block set it themselves. */
+   runloop_st->pace = RUNLOOP_PACE_NONE;
+   /* The vsync bit reads the driver's blocking state, not the setting:
+    * fast-forward (INP_FLAG_NONBLOCKING) and RUNLOOP_FLAG_FORCE_NONBLOCK
+    * both put the driver into non-blocking presentation while the
+    * setting stays true. */
+   if (     settings->bools.video_vsync
+         && !(input_st->flags & INP_FLAG_NONBLOCKING)
+         && !(runloop_st->flags & RUNLOOP_FLAG_FORCE_NONBLOCK))
+      runloop_st->pace |= RUNLOOP_PACE_VSYNC;
    /* The live blocking state, not the audio_sync setting. Fast-forward
     * puts the driver into non-blocking mode for a few frames while
     * audio_sync stays true, and during those frames audio is not
@@ -8312,6 +8324,7 @@ end:
          && !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK)
          && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_WROTE))
       runloop_st->pace |= RUNLOOP_PACE_AUDIO;
+   AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_WROTE);
    /* Mirrors the gate at the video_driver_scanline_after_frame() call
     * site, which skips the wait under fast-forward. A failed
     * calibration zeroes SCANLINE_NEXT, so the target test covers the
