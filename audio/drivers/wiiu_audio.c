@@ -326,7 +326,7 @@ static size_t ax_audio_write_avail(void* data)
 {
    ax_audio_t* ax = (ax_audio_t*)data;
    size_t ret = AX_AUDIO_COUNT - ax->written;
-   return (ret < AX_AUDIO_SAMPLE_COUNT ? 0 : ret);
+   return (ret < AX_AUDIO_SAMPLE_COUNT ? 0 : ret * 2 * sizeof(int16_t));
 }
 
 /* Sleep on the frame event until at least len samples are free below
@@ -338,9 +338,12 @@ static size_t ax_audio_wait_writable(void* data, size_t len)
    ax_audio_t* ax = (ax_audio_t*)data;
    size_t avail;
    int laps       = AX_AUDIO_WAIT_LAPS;
+   /* len arrives in bytes; the count is kept in frames of int16
+    * stereo, four bytes each. */
+   size_t want    = len / (2 * sizeof(int16_t));
 
-   if (len > AX_AUDIO_MAX_FREE / 2)
-      len = AX_AUDIO_MAX_FREE / 2;
+   if (want > AX_AUDIO_MAX_FREE / 2)
+      want = AX_AUDIO_MAX_FREE / 2;
 
    for (;;)
    {
@@ -348,8 +351,8 @@ static size_t ax_audio_wait_writable(void* data, size_t len)
          return 0;
       avail = (ax->written > AX_AUDIO_MAX_FREE)
             ? 0 : (AX_AUDIO_MAX_FREE - ax->written);
-      if (avail >= len)
-         return avail;
+      if (avail >= want)
+         return avail * 2 * sizeof(int16_t);
       /* Timed and capped: a callback that has stopped hands the pass
        * back as no space coming from this call. */
       OSWaitEventWithTimeout(&ax->frame_event,
@@ -359,9 +362,11 @@ static size_t ax_audio_wait_writable(void* data, size_t len)
    }
 }
 
+/* Both in bytes of int16 stereo, as the interface asks: written counts
+ * frames, a frame per four bytes. They were reported in frames. */
 static size_t ax_audio_buffer_size(void* data)
 {
-   return AX_AUDIO_COUNT;
+   return AX_AUDIO_COUNT * 2 * sizeof(int16_t);
 }
 
 audio_driver_t audio_ax =

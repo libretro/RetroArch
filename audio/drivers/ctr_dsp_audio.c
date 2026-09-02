@@ -222,7 +222,8 @@ static size_t ctr_dsp_audio_write_avail(void *data)
 {
    ctr_dsp_audio_t* ctr = (ctr_dsp_audio_t*)data;
 
-   return (ndspChnGetSamplePos(ctr->channel) - ctr->pos) & CTR_DSP_AUDIO_COUNT_MASK;
+   return ((ndspChnGetSamplePos(ctr->channel) - ctr->pos) & CTR_DSP_AUDIO_COUNT_MASK)
+         * 2 * sizeof(int16_t);
 }
 
 /* Sleep on the DSP frame event until the ring has room for len bytes
@@ -246,14 +247,18 @@ static size_t ctr_dsp_audio_wait_writable(void *data, size_t len)
       avail = (ndspChnGetSamplePos(ctr->channel) - ctr->pos)
             & CTR_DSP_AUDIO_COUNT_MASK;
       if (avail >= want)
-         return avail;
+         return avail * 2 * sizeof(int16_t);
       LightEvent_Wait(&ctr->frame_event);
    }
 }
 
+/* Both in bytes of int16 stereo, as the interface asks: the ring is
+ * CTR_DSP_AUDIO_COUNT frames and pos advances a frame per four bytes
+ * written. They were reported in frames, a quarter of the truth, which
+ * left rate control's ratio right and fast-forward's byte bound wrong. */
 static size_t ctr_dsp_audio_buffer_size(void *data)
 {
-   return CTR_DSP_AUDIO_COUNT;
+   return CTR_DSP_AUDIO_COUNT * 2 * sizeof(int16_t);
 }
 
 audio_driver_t audio_ctr_dsp = {
