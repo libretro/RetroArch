@@ -682,6 +682,9 @@ typedef struct ra_asio
    /* Whether ASIOOutputReady() returned ASE_OK when probed after the
     * buffers were created; the callback calls it only then. */
    bool               output_ready_supported;
+   /* Whether the last period ended in silence for want of audio, so
+    * the next audio is faded in. Callback thread only. */
+   bool               last_underran;
    /* Set by the message callback on kAsioResetRequest or
     * kAsioBufferSizeChange: the buffers are to be disposed and created
     * anew - the driver's preferred size may have changed - when the
@@ -817,7 +820,6 @@ static ra_asio_t *g_asio_persistent = NULL;
 static void asio_deinterleave_to_buffers(ra_asio_t *ad,
       long index, long frames)
 {
-   const float *src = ad->scratch;
    void *buf_l  = ad->buf_info[0].buffers[index];
    void *buf_r  = ad->buf_info[1].buffers[index];
    /* Acquire-load on the producer's head cursor.  Pairs with the
@@ -842,8 +844,12 @@ static void asio_deinterleave_to_buffers(ra_asio_t *ad,
    /* Every type the specification defines, in asio_convert.h; the
     * five this used to handle left every other one - the Int32LSB24
     * family that pro interfaces report among them - to a silent
-    * memset with nothing in the log. */
-   asio_convert_frames(ad->sample_type, src, have, frames, buf_l, buf_r);
+    * memset with nothing in the log. Audio that starts after a period
+    * that ended in silence is faded in, and audio that runs out is
+    * faded out, so an underrun's edges do not click. */
+   asio_convert_frames(ad->sample_type, ad->scratch, have, frames,
+         buf_l, buf_r, ad->last_underran);
+   ad->last_underran = (have < frames);
 }
 
 /* ═══════════════════════════════════════════════════════════════════

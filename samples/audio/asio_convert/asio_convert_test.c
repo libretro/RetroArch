@@ -8,8 +8,9 @@
  * full scale both ways, zero, a half, a small value past the rounding
  * boundary - and the byte order of each; a value's expected bytes are
  * written by hand from the type's definition, not derived from the
- * code under test. Saturation and the silence fill for frames past
- * what was supplied are checked too. */
+ * code under test. Saturation, the silence fill for frames past what
+ * was supplied, and the fades at an underrun's edges are checked
+ * too. */
 
 #include <stdio.h>
 #include <string.h>
@@ -34,7 +35,7 @@ static unsigned failures = 0;
  * is supplied: it must be silence. */
 static const float in_left[4] = { 1.0f, 0.0f, 0.5f, 0.000030517578125f /* 2^-15 */ };
 #define FRAMES_IN  4
-#define FRAMES_OUT 5
+#define FRAMES_OUT 4
 
 static void run(const char *name, ASIOSampleType type, size_t bps,
       const unsigned char *expect_l, const unsigned char *expect_r)
@@ -56,7 +57,7 @@ static void run(const char *name, ASIOSampleType type, size_t bps,
          (unsigned)asio_bytes_per_sample(type), (unsigned)bps);
    CHECK(asio_convert_known(type), "%s: reported unknown", name);
 
-   asio_convert_frames(type, src, FRAMES_IN, FRAMES_OUT, out_l, out_r);
+   asio_convert_frames(type, src, FRAMES_IN, FRAMES_OUT, out_l, out_r, false);
 
    for (i = 0; i < FRAMES_IN * bps; i++)
    {
@@ -76,9 +77,6 @@ static void run(const char *name, ASIOSampleType type, size_t bps,
          i = (f + 1) * bps - 1;
       }
    }
-   for (i = FRAMES_IN * bps; i < FRAMES_OUT * bps; i++)
-      CHECK(out_l[i] == 0 && out_r[i] == 0,
-            "%s: frame past the supplied ones is not silence", name);
 }
 
 /* Fixtures. Values: +1.0 saturates to max, -1.0 is exactly min; 0 is 0;
@@ -161,11 +159,55 @@ int main(void)
    run("Float64LSB",  ASIOSTFloat64LSB,  8, f64le_l,    f64le_r);
    run("Float64MSB",  ASIOSTFloat64MSB,  8, f64be_l,    f64be_r);
 
+   /* Audio that runs out mid period: the frames past it are silence,
+    * and the last ASIO_FADE_FRAMES of it ramp down to it - the last one
+    * exactly zero, the first of the ramp near full - so the edge does
+    * not click. Frames before the ramp are untouched. */
+   {
+      float src[100 * 2];
+      int16_t l[128], r[128];
+      int i;
+      for (i = 0; i < 100; i++) { src[i * 2] = 0.5f; src[i * 2 + 1] = -0.5f; }
+      asio_convert_frames(ASIOSTInt16LSB, src, 100, 128, l, r, false);
+      CHECK(l[0] == 16384 && r[0] == -16384, "run-out: frames before the ramp were changed");
+      CHECK(l[100 - ASIO_FADE_FRAMES - 1] == 16384, "run-out: frame before the ramp was changed");
+      CHECK(l[99] == 0 && r[99] == 0, "run-out: the last supplied frame is not zero (%d)", l[99]);
+      CHECK(l[100 - ASIO_FADE_FRAMES] > 15000, "run-out: the ramp does not start near full (%d)",
+            l[100 - ASIO_FADE_FRAMES]);
+      CHECK(l[100 - ASIO_FADE_FRAMES / 2] > 6000 && l[100 - ASIO_FADE_FRAMES / 2] < 10000,
+            "run-out: midway through the ramp is not about half (%d)", l[100 - ASIO_FADE_FRAMES / 2]);
+      for (i = 100; i < 128; i++)
+         CHECK(l[i] == 0 && r[i] == 0, "run-out: frame %d past the supplied ones is not silence", i);
+   }
+
+   /* Audio returning after silence ramps up over its first frames. */
+   {
+      float src[64 * 2];
+      int16_t l[64], r[64];
+      int i;
+      for (i = 0; i < 64; i++) { src[i * 2] = 0.5f; src[i * 2 + 1] = -0.5f; }
+      asio_convert_frames(ASIOSTInt16LSB, src, 64, 64, l, r, true);
+      CHECK(l[0] < 1000 && l[0] > 0, "fade-in: the first frame is not near zero (%d)", l[0]);
+      CHECK(l[ASIO_FADE_FRAMES - 1] == 16384, "fade-in: the last ramp frame is not full (%d)",
+            l[ASIO_FADE_FRAMES - 1]);
+      CHECK(l[63] == 16384 && r[63] == -16384, "fade-in: frames after the ramp were changed");
+   }
+
+   /* A full period with no fade asked for is untouched at both ends. */
+   {
+      float src[64 * 2];
+      int16_t l[64], r[64];
+      int i;
+      for (i = 0; i < 64; i++) { src[i * 2] = 0.5f; src[i * 2 + 1] = -0.5f; }
+      asio_convert_frames(ASIOSTInt16LSB, src, 64, 64, l, r, false);
+      CHECK(l[0] == 16384 && l[63] == 16384, "full period: a fade was applied (%d, %d)", l[0], l[63]);
+   }
+
    /* Saturation: 1.5 clamps to max, -1.5 to min, at 16 bits. */
    {
       float src[2] = { 1.5f, -1.5f };
       unsigned char l[2], r[2];
-      asio_convert_frames(ASIOSTInt16LSB, src, 1, 1, l, r);
+      asio_convert_frames(ASIOSTInt16LSB, src, 1, 1, l, r, false);
       CHECK(l[0] == 0xff && l[1] == 0x7f, "saturation: +1.5 did not clamp to max");
       CHECK(r[0] == 0x00 && r[1] == 0x80, "saturation: -1.5 did not clamp to min");
    }
@@ -176,7 +218,7 @@ int main(void)
       unsigned char l[4], r[4];
       memset(l, 0xAA, 4); memset(r, 0xAA, 4);
       CHECK(!asio_convert_known(99L), "type 99 reported as convertible");
-      asio_convert_frames(99L, src, 1, 1, l, r);
+      asio_convert_frames(99L, src, 1, 1, l, r, false);
       CHECK(l[0] == 0 && l[3] == 0 && r[0] == 0 && r[3] == 0,
             "unknown type: not silence");
    }

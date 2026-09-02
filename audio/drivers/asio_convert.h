@@ -176,11 +176,21 @@ static INLINE void asio_store_u64(uint8_t *p, uint64_t v, bool big_endian)
    }
 }
 
+/* Frames over which audio is faded to silence when it runs out mid
+ * period, and up from silence when it returns: a step at either edge
+ * is a click. Under a millisecond at 48 kHz, so an underrun is not
+ * hidden, only its edges. */
+#define ASIO_FADE_FRAMES 32
+
 /* Writes have frames of src - interleaved float stereo - to buf_l and
  * buf_r in type, then silence to frames. Types asio_convert_known()
- * rejects get silence for all frames. */
+ * rejects get silence for all frames. Audio that stops short of frames
+ * is faded out over its last ASIO_FADE_FRAMES; with fade_in set, the
+ * caller having had silence last period, it is faded in over its first.
+ * The fades are applied to src in place. */
 static INLINE void asio_convert_frames(ASIOSampleType type,
-      const float *src, long have, long frames, void *buf_l, void *buf_r)
+      float *src, long have, long frames, void *buf_l, void *buf_r,
+      bool fade_in)
 {
    uint8_t *dl = (uint8_t*)buf_l;
    uint8_t *dr = (uint8_t*)buf_r;
@@ -193,6 +203,25 @@ static INLINE void asio_convert_frames(ASIOSampleType type,
       have = 0;
    if (have > frames)
       have = frames;
+
+   if (have > 0)
+   {
+      long fade = have < ASIO_FADE_FRAMES ? have : ASIO_FADE_FRAMES;
+      if (fade_in)
+         for (i = 0; i < fade; i++)
+         {
+            float g = (float)(i + 1) / (float)fade;
+            src[i * 2 + 0] *= g;
+            src[i * 2 + 1] *= g;
+         }
+      if (have < frames)
+         for (i = 0; i < fade; i++)
+         {
+            float g = (float)(fade - i - 1) / (float)fade;
+            src[(have - fade + i) * 2 + 0] *= g;
+            src[(have - fade + i) * 2 + 1] *= g;
+         }
+   }
 
    switch (type)
    {
