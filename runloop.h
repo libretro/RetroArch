@@ -80,6 +80,10 @@ enum runloop_state_enum
 {
    RUNLOOP_STATE_ITERATE = 0,
    RUNLOOP_STATE_POLLED_AND_SLEEP,
+   /* A one-shot menu action was performed and the next iteration should
+    * start clean. Not idle: returns to the caller immediately, without
+    * the idle sleep POLLED_AND_SLEEP takes. */
+   RUNLOOP_STATE_POLLED_AND_CONTINUE,
    RUNLOOP_STATE_PAUSE,
    RUNLOOP_STATE_MENU,
    RUNLOOP_STATE_QUIT

@@ -6693,7 +6693,7 @@ static enum runloop_state_enum runloop_check_state(
          bool config_save_on_exit = settings->bools.config_save_on_exit;
          menu_st->flags          &= ~MENU_ST_FLAG_PENDING_CONFIG_REPLACE;
          config_replace(config_save_on_exit, menu_st->pending_config_path);
-         return RUNLOOP_STATE_POLLED_AND_SLEEP;
+         return RUNLOOP_STATE_POLLED_AND_CONTINUE;
       }
 #endif
 
@@ -6717,7 +6717,7 @@ static enum runloop_state_enum runloop_check_state(
          menu_st->selection_ptr  = 0;
          menu_st->flags         &= ~MENU_ST_FLAG_PENDING_QUICK_MENU;
          menu_st->flags         &= ~MENU_ST_FLAG_PENDING_STARTUP_PAGE;
-         return RUNLOOP_STATE_POLLED_AND_SLEEP;
+         return RUNLOOP_STATE_POLLED_AND_CONTINUE;
       }
       /* Navigate to initial startup page */
       else if (menu_st->flags & MENU_ST_FLAG_PENDING_STARTUP_PAGE)
@@ -6808,7 +6808,7 @@ static enum runloop_state_enum runloop_check_state(
          }
 
          menu_st->flags &= ~MENU_ST_FLAG_PENDING_STARTUP_PAGE;
-         return RUNLOOP_STATE_POLLED_AND_SLEEP;
+         return RUNLOOP_STATE_POLLED_AND_CONTINUE;
       }
       else if ((menu_st->flags & MENU_ST_FLAG_PENDING_CLOSE_CONTENT)
             || (menu_st->flags & MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH))
@@ -6898,7 +6898,7 @@ static enum runloop_state_enum runloop_check_state(
             menu_st->flags |= MENU_ST_FLAG_PENDING_RELOAD_CORE;
             menu_st->flags |= MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH;
          }
-         return RUNLOOP_STATE_POLLED_AND_SLEEP;
+         return RUNLOOP_STATE_POLLED_AND_CONTINUE;
       }
       else if (!menu_driver_iterate(menu_st, p_disp, anim_get_ptr(),
                settings, action, current_time))
@@ -6941,7 +6941,7 @@ static enum runloop_state_enum runloop_check_state(
                             |  MENU_ST_FLAG_PREVENT_POPULATE;
          }
 #endif
-         return RUNLOOP_STATE_POLLED_AND_SLEEP;
+         return RUNLOOP_STATE_POLLED_AND_CONTINUE;
       }
 
       if (focused || !(runloop_st->flags & RUNLOOP_FLAG_IDLE))
@@ -7043,7 +7043,7 @@ static enum runloop_state_enum runloop_check_state(
             command_event(CMD_EVENT_RESUME, NULL);
 
          menu_dialog_confirm_clear(menu_st);
-         return RUNLOOP_STATE_POLLED_AND_SLEEP;
+         return RUNLOOP_STATE_POLLED_AND_CONTINUE;
       }
 
       if (     !focused
@@ -8073,6 +8073,14 @@ int runloop_iterate(void)
          runloop_st->flags                &= ~RUNLOOP_FLAG_CORE_RUNNING;
          command_event(CMD_EVENT_QUIT, NULL);
          return -1;
+      case RUNLOOP_STATE_POLLED_AND_CONTINUE:
+         /* Config replaced, startup page pushed, core loaded, dialog
+          * command run, list cache flushed: one-shot work is done and
+          * the next iteration should begin fresh. Nothing to wait for;
+          * the 10 ms below was a visible stall on every one of them. */
+         if (runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
+            return -1;
+         return 1;
       case RUNLOOP_STATE_POLLED_AND_SLEEP:
          if (runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
             return -1;
