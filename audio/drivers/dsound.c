@@ -720,8 +720,13 @@ static ssize_t dsound_write(void *data, const void *buf_, size_t len)
          if (!retro_atomic_load_acquire_int(&ds->thread_alive))
             break;
 
+         /* The notify thread sets the event after every block it moves
+          * and clears thread_alive when the buffer is lost for good, so
+          * a period with no event is a play cursor that has stalled,
+          * not a device gone: the write returns what went, and a lost
+          * buffer still reports through the flag on the next call. */
          if (avail == 0 && !(WaitForSingleObject(ds->event, DSOUND_TIMEOUT) == WAIT_OBJECT_0))
-            return -1;
+            break;
       }
    }
 
@@ -737,6 +742,7 @@ static size_t dsound_wait_writable(void *data, size_t len)
 {
    dsound_t *ds = (dsound_t*)data;
    size_t avail;
+   int laps     = 8;
 
    if (len > ds->fifo_bufsize / 2)
       len = ds->fifo_bufsize / 2;
@@ -748,6 +754,10 @@ static size_t dsound_wait_writable(void *data, size_t len)
       avail = retro_spsc_write_avail(&ds->ring);
       if (avail >= len)
          return avail;
+      /* Each wait is bounded; this bounds the loop, for a thread that
+       * keeps moving blocks but never frees enough. */
+      if (--laps < 0)
+         return 0;
       if (WaitForSingleObject(ds->event, DSOUND_TIMEOUT) != WAIT_OBJECT_0)
          return 0;
    }
