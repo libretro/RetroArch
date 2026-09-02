@@ -365,15 +365,17 @@ static ssize_t sl_write(void *data, const void *s, size_t len)
       if (sl->buffer_ptr >= sl->buf_size)
       {
          SLresult res     = (*sl->buffer_queue)->Enqueue(sl->buffer_queue, sl->buffer[sl->buffer_index], sl->buf_size);
-         sl->buffer_index = (sl->buffer_index + 1) % sl->buf_count;
-         retro_atomic_fetch_add_int(&sl->buffered_blocks, 1);
-         sl->buffer_ptr   = 0;
 
+         /* A block the device refused is not on the device: it is not
+          * counted, and the index stays on it. */
          if (res != SL_RESULT_SUCCESS)
          {
             RARCH_ERR("[OpenSL] Failed to write. Error: 0x%x.\n", (unsigned)res);
             return -1;
          }
+         sl->buffer_index = (sl->buffer_index + 1) % sl->buf_count;
+         retro_atomic_fetch_add_int(&sl->buffered_blocks, 1);
+         sl->buffer_ptr   = 0;
       }
    }
 
@@ -395,8 +397,16 @@ static size_t sl_wait_writable(void *data, size_t len)
    for (;;)
    {
       int buffered = retro_atomic_load_acquire_int(&sl->buffered_blocks);
-      avail = ((sl->buf_count - buffered - 1) * sl->buf_size
-            + (sl->buf_size - (int)sl->buffer_ptr));
+      /* Whole blocks not on the device, less the one being filled,
+       * plus what is left of that one. With every block enqueued there
+       * is no block to fill and the space is nil; said so, rather than
+       * left to the unsigned arithmetic that only came to zero because
+       * buffer_ptr is always zero in that state. */
+      if (buffered >= (int)sl->buf_count)
+         avail = 0;
+      else
+         avail = ((size_t)(sl->buf_count - buffered - 1) * sl->buf_size
+               + (sl->buf_size - sl->buffer_ptr));
       if (avail >= len)
          return avail;
       slock_lock(sl->lock);
