@@ -3919,6 +3919,26 @@ error:
    return false;
 }
 
+/* The driver's buffer as opened, in milliseconds of the output format
+ * at the output rate: what buffer_size() reported at init, which is
+ * what the latency setting asked for as far as the driver could honour
+ * it. Zero when no driver is up or it reports no buffer. Half of it is
+ * where rate control holds the fill, so half of it in time is the
+ * latency heard from the driver at steady state. */
+double audio_driver_get_buffer_latency_ms(void)
+{
+   audio_driver_state_t *audio_st = &audio_driver_st;
+   settings_t *settings           = config_get_ptr();
+   unsigned    rate               = settings->uints.audio_output_sample_rate;
+   size_t      frame_bytes        =
+         (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
+         ? 2 * sizeof(float) : 2 * sizeof(int16_t);
+
+   if (!audio_st->current_audio || !audio_st->buffer_size || !rate)
+      return 0.0;
+   return (double)audio_st->buffer_size / frame_bytes * 1000.0 / rate;
+}
+
 const char *audio_driver_get_ident(void)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;

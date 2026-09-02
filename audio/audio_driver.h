@@ -865,6 +865,8 @@ void audio_driver_update_drc_threshold(audio_driver_state_t *audio_st);
 
 const char *audio_driver_get_ident(void);
 
+double audio_driver_get_buffer_latency_ms(void);
+
 extern audio_driver_t *audio_drivers[];
 
 RETRO_END_DECLS

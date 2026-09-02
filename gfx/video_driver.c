@@ -5532,15 +5532,34 @@ void video_driver_frame(const void *data, unsigned width,
          /* Split from the block above: a single concatenated format
           * literal exceeded the 509-byte minimum ISO C90 guarantees
           * (-Werror=overlength-strings in the C89 lane). */
-         __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
-               "AUDIO: %s %s\n"
-               " SampleRate: %u %s\n"
-               ,
-               (audio_st->current_audio && audio_st->current_audio->ident)
-                  ? audio_st->current_audio->ident : "n/a",
-               (audio_st->stat_frontend_is_float) ? "FLOAT" : "INT16",
-               settings->uints.audio_output_sample_rate,
-               (audio_st->src_ratio_orig == 1.0) ? "" : "R");
+         {
+            /* The driver's name, not the wrapper's under the threaded
+             * pipeline. */
+            const char *audio_ident   = audio_driver_get_ident();
+            /* The buffer the driver opened with against what was asked:
+             * the setting is a hint, and this is what came of it. Half
+             * is where rate control holds the fill. */
+            double      buffer_ms     = audio_driver_get_buffer_latency_ms();
+            unsigned    setting_ms    = settings->uints.audio_latency;
+            unsigned    runloop_ms    = runloop_st->audio_latency;
+            if (runloop_ms > setting_ms)
+               setting_ms             = runloop_ms;
+            __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+                  "AUDIO: %s %s\n"
+                  " SampleRate: %u %s\n"
+                  ,
+                  audio_ident ? audio_ident : "n/a",
+                  (audio_st->stat_frontend_is_float) ? "FLOAT" : "INT16",
+                  settings->uints.audio_output_sample_rate,
+                  (audio_st->src_ratio_orig == 1.0) ? "" : "R");
+            if (buffer_ms > 0.0)
+               __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+                     " Buffer:   %6.1f ms (asked %u, held ~%.0f)\n",
+                     buffer_ms, setting_ms, buffer_ms / 2.0);
+            else
+               __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+                     " Buffer:      n/a (asked %u ms)\n", setting_ms);
+         }
 
          if (audio_st->rate_control_delta)
             __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
