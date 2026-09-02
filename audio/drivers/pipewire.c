@@ -612,6 +612,33 @@ static const struct pw_registry_events pwire_registry_events = {
       .global = pwire_registry_event_global,
 };
 
+/* Context-free enumeration: bring up a throwaway core with the same
+ * registry listener the driver uses, wait for the registry to sync so
+ * every existing Audio/Sink node has been reported, take the list, tear
+ * the core down. Used when there is no driver instance. */
+static struct string_list *pwire_enumerate_sinks(void)
+{
+   pipewire_core_t     *pw = NULL;
+   struct string_list  *sl = NULL;
+
+   if (!pipewire_core_init(&pw, "audio_enum", &pwire_registry_events))
+   {
+      pipewire_core_deinit(pw);
+      return NULL;
+   }
+
+   /* pipewire_core_init() returns holding the loop lock; wait_resync
+    * releases it while it waits and reacquires, as in pwire_init(). */
+   pipewire_core_wait_resync(pw);
+   if (pw->devicelist)
+      sl = string_list_clone(pw->devicelist);
+   pw_thread_loop_unlock(pw->thread_loop);
+
+   pipewire_core_deinit(pw);
+   return sl;
+}
+
+
 static void *pwire_init(const char *device, unsigned rate,
       unsigned latency,
       unsigned block_frames,
@@ -852,14 +879,17 @@ static void pwire_free(void *data)
 
 static bool pwire_use_float(void *data) { return true; }
 
+static struct string_list *pwire_enumerate_sinks(void);
+
 static void *pwire_device_list_new(void *data)
 {
    pipewire_audio_t *audio = (pipewire_audio_t*)data;
 
+   /* A live driver already holds the list its registry built. */
    if (audio && audio->pw && audio->pw->devicelist)
       return string_list_clone(audio->pw->devicelist);
 
-   return NULL;
+   return pwire_enumerate_sinks();
 }
 
 static void pwire_device_list_free(void *data, void *array_list_data)
