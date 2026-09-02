@@ -29,6 +29,8 @@
 
 #include "../../../audio/audio_driver.c"
 
+extern microphone_driver_t microphone_alsa;
+
 static unsigned failures = 0;
 
 #define CHECK(cond, ...) \
@@ -110,6 +112,33 @@ int main(void)
          "free left the list or its builder behind");
    CHECK(!audio_driver_free_devices_list(),
          "a second free reported work to do");
+
+   /* 6. The microphone list, the same way. Nothing is running - the
+    *    usual state, a microphone driver opening only when a core asks
+    *    for one - and the list must still come from the configured
+    *    driver: alsa enumerates its inputs with no context, null lists
+    *    nothing. It used to be built only when a driver had opened. */
+   {
+      microphone_driver_state_t *mic_st = &mic_driver_st;
+      settings_t *settings = config_get_ptr();
+      memset(mic_st, 0, sizeof(*mic_st));
+
+      strlcpy(settings->arrays.microphone_driver, "alsa",
+            sizeof(settings->arrays.microphone_driver));
+      microphone_driver_refresh_devices_list();
+      CHECK(mic_st->devices_list_driver == &microphone_alsa,
+            "mic: alsa configured, nothing running: list not built by alsa");
+
+      strlcpy(settings->arrays.microphone_driver, "null",
+            sizeof(settings->arrays.microphone_driver));
+      microphone_driver_refresh_devices_list();
+      CHECK(mic_st->devices_list_driver != &microphone_alsa,
+            "mic: null configured: list still attributed to alsa");
+
+      microphone_driver_free_devices_list();
+      CHECK(!mic_st->devices_list && !mic_st->devices_list_driver,
+            "mic: free left the list or its builder behind");
+   }
 
    if (failures)
    {

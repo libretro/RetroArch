@@ -5829,6 +5829,9 @@ static int menu_displaylist_parse_microphone_device_list(
    if (!setting)
       return 0;
 
+   /* Rebuilt on each open, from the configured driver, as the audio
+    * device list is. */
+   microphone_driver_refresh_devices_list();
    if (!microphone_driver_get_devices_list((void**)&ptr))
       return 0;
 

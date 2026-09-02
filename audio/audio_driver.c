@@ -5084,17 +5084,58 @@ error:
 static bool microphone_driver_free_devices_list(void)
 {
    microphone_driver_state_t *mic_st = &mic_driver_st;
-   const microphone_driver_t *mic    = mic_st->driver;
-   if (
-            !mic
-         || !mic->device_list_free
-         || !mic_st->driver_context
-         || !mic_st->devices_list)
+   const microphone_driver_t *mic    = mic_st->devices_list_driver;
+   if (!mic_st->devices_list)
       return false;
-
-   mic->device_list_free(mic_st->driver_context, mic_st->devices_list);
-   mic_st->devices_list = NULL;
+   /* Released by the driver that built it, with no context: none of
+    * the microphone drivers' frees read one, and the context it was
+    * built with may be gone. */
+   if (mic && mic->device_list_free)
+      mic->device_list_free(NULL, mic_st->devices_list);
+   else
+      string_list_free(mic_st->devices_list);
+   mic_st->devices_list        = NULL;
+   mic_st->devices_list_driver = NULL;
    return true;
+}
+
+/* The driver whose device_list_new to call, as for audio: the running
+ * driver when it is the one configured, the configured driver with no
+ * context otherwise. The list was built once at init, only when the
+ * driver had opened, and always from the running driver: a driver
+ * picked in the menu showed the old driver's devices until a restart,
+ * and one that failed to open showed nothing to pick instead. */
+static const microphone_driver_t *microphone_driver_enumeration_driver(
+      microphone_driver_state_t *mic_st, const void **ctx)
+{
+   settings_t *settings           = config_get_ptr();
+   const microphone_driver_t *mic = mic_st->driver;
+   *ctx                           = mic_st->driver_context;
+   if (     mic && mic_st->driver_context
+         && string_is_equal(mic->ident, settings->arrays.microphone_driver))
+      return mic;
+   {
+      int i = (int)driver_find_index("microphone_driver",
+            settings->arrays.microphone_driver);
+      *ctx  = NULL;
+      if (i >= 0)
+         return microphone_drivers[i];
+   }
+   return NULL;
+}
+
+void microphone_driver_refresh_devices_list(void)
+{
+   microphone_driver_state_t *mic_st = &mic_driver_st;
+   const void *ctx                   = NULL;
+   const microphone_driver_t *mic;
+   microphone_driver_free_devices_list();
+   mic = microphone_driver_enumeration_driver(mic_st, &ctx);
+   if (mic && mic->device_list_new)
+   {
+      mic_st->devices_list        = mic->device_list_new(ctx);
+      mic_st->devices_list_driver = mic;
+   }
 }
 
 bool microphone_driver_deinit(bool is_reset)

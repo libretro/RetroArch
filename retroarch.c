@@ -1691,8 +1691,9 @@ void drivers_init(
    if (flags & DRIVER_MICROPHONE_MASK)
    {
       microphone_driver_init_internal(settings);
-      if (mic_st->driver && mic_st->driver->device_list_new && mic_st->driver_context)
-         mic_st->devices_list = mic_st->driver->device_list_new(mic_st->driver_context);
+      /* Whether or not init succeeded, as for audio: the list is how
+       * the user gets out of a failed device choice. */
+      microphone_driver_refresh_devices_list();
    }
 #endif
 

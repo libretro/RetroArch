@@ -24,6 +24,7 @@
 #include "../../../gfx/video_driver.h"
 #include <string/stdstring.h>
 #include "../../../audio/audio_driver.h"
+#include "../../../audio/microphone_driver.h"
 #include "../../../command.h"
 
 void RARCH_LOG(const char *fmt, ...) { (void)fmt; }
@@ -242,7 +243,13 @@ const char *char_list_new_special(enum string_list_type type, void *data)
 int driver_find_index(const char *label, const char *drv)
 {
    int i;
-   (void)label;
+   if (string_is_equal(label, "microphone_driver"))
+   {
+      for (i = 0; microphone_drivers[i]; i++)
+         if (string_is_equal(microphone_drivers[i]->ident, drv))
+            return i;
+      return -1;
+   }
    for (i = 0; audio_drivers[i]; i++)
       if (string_is_equal(audio_drivers[i]->ident, drv))
          return i;
@@ -297,3 +304,7 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
 }
 
 /* retro_resampler_realloc: the real one is linked in. */
+
+/* The microphone path checks whether rewind is running frames
+ * backwards before it feeds a core; no rewind here. */
+bool state_manager_frame_is_reversed(void) { return false; }

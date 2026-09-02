@@ -23,6 +23,8 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
 	$(LIBRETRO_COMM_DIR)/queues/retro_spsc.c \
 	$(LIBRETRO_COMM_DIR)/queues/fifo_queue.c \
+	$(LIBRETRO_COMM_DIR)/audio/conversion/mono_to_stereo_float.c \
+	$(LIBRETRO_COMM_DIR)/audio/conversion/stereo_to_mono_float.c \
 	$(LIBRETRO_COMM_DIR)/audio/conversion/float_to_s16.c \
 	$(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float.c \
 	$(LIBRETRO_COMM_DIR)/audio/resampler/audio_resampler.c \
@@ -45,7 +47,7 @@ SOURCES_C := \
 
 CFLAGS += -Wall $(INCDIRS)
 CFLAGS += -DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_AUDIOMIXER -DHAVE_MENU \
-	-DHAVE_CONFIGFILE -DHAVE_ALSA -D_GNU_SOURCE
+	-DHAVE_CONFIGFILE -DHAVE_ALSA -DHAVE_MICROPHONE -D_GNU_SOURCE
 LDFLAGS += -lm -lpthread -lasound
 
 ifneq ($(SAN),)
