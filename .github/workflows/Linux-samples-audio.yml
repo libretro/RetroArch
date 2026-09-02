@@ -1,0 +1,121 @@
+name: CI Linux samples/audio
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+jobs:
+  samples-audio:
+    name: Build and run samples/audio
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 5
+        run: |
+          pkgs="build-essential libasound2-dev"
+          if dpkg -s $pkgs >/dev/null 2>&1; then
+            echo "All packages already present on runner image; skipping apt."
+            exit 0
+          fi
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Build and run mixer_lock_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/audio/mixer_lock
+        run: |
+          set -eu
+          # Includes audio/audio_driver.c and drives the mixer's public
+          # entry points with a real state lock in place. The lock is a
+          # plain mutex, so any path that reaches a locking entry point
+          # while already holding it parks the thread against itself;
+          # loading the first menu sound did exactly that
+          # (libretro/RetroArch#19485). Every case runs on a watchdog:
+          # a reintroduced recursive acquisition aborts with a stack
+          # instead of hanging the job. Also covers the lock being
+          # released on out-of-range slots and a NULL stream name
+          # surviving removal.
+          make clean all SANITIZER=address,undefined
+          test -x mixer_lock_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 120 \
+             ./mixer_lock_test
+          echo "[pass] mixer_lock_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 300 ./mixer_lock_test
+          echo "[pass] mixer_lock_test (TSan)"
+
+      - name: Build and run thread_handshake_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/audio/thread_handshake
+        run: |
+          set -eu
+          # Links audio/audio_thread_wrapper.c against a scripted
+          # driver. The wrapped thread parks in one of two waits and
+          # the main thread's block() needs stopped_ack from either; a
+          # stop() landing between start()'s signal and the thread's
+          # re-check used to leave it in the one wait that never
+          # acknowledged. Two thousand start/stop round-trips hit that
+          # window on the previous wrapper on every run. The scripted
+          # device can also stop returning from a call: a stop must
+          # then still complete once the call does, and must be
+          # reported exactly once meanwhile - prompt handshakes are
+          # asserted not to be reported.
+          make clean all SANITIZER=address,undefined
+          test -x thread_handshake_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 300 \
+             ./thread_handshake_test
+          echo "[pass] thread_handshake_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 600 ./thread_handshake_test
+          echo "[pass] thread_handshake_test (TSan)"
+
+      - name: Build and run alsa_wait_writable_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/audio/alsa_wait_writable
+        run: |
+          set -eu
+          # Links the shipping audio/drivers/alsa.c and interposes the
+          # five libasound calls alsa_wait_writable() makes via
+          # -Wl,--wrap, so the devices no stock PCM can produce on
+          # demand are scripted: a running stream whose poll never
+          # signals, a prepared stream reporting no space, a start that
+          # lands in an underrun storm, and wakes that never deliver
+          # space. Each must return 0 within a bounded lap and wall-time
+          # budget rather than parking the audio thread; the previous
+          # wait was an unbounded snd_pcm_wait(-1). The conforming path
+          # runs end-to-end on the null PCM, and the harness skips
+          # cleanly if no ALSA configuration is available at all.
+          make clean all SANITIZER=address,undefined
+          test -x alsa_wait_writable_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 120 \
+             ./alsa_wait_writable_test
+          echo "[pass] alsa_wait_writable_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 300 ./alsa_wait_writable_test
+          echo "[pass] alsa_wait_writable_test (TSan)"

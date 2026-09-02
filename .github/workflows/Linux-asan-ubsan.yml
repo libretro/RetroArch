@@ -21,8 +21,10 @@ name: CI Linux ASan + UBSan [No Menu]
 #      surfaced in step output for triage.
 #
 # The per-sample tests under .github/workflows/Linux-samples-gfx.yml,
-# Linux-samples-tasks.yml, and Linux-libretro-{db,common}-samples.yml
-# regression-test specific predicates that previously had bugs.  This
+# Linux-samples-tasks.yml, Linux-samples-audio.yml,
+# Linux-samples-network.yml, Linux-samples-settings.yml, and
+# Linux-libretro-{db,common}-samples.yml regression-test specific
+# predicates that previously had bugs.  This
 # job is complementary -- it covers everything those harnesses can't
 # reach because the code only runs from main(), and catches future
 # heap-corruption / UB regressions across the whole code base for

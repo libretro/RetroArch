@@ -1,0 +1,67 @@
+name: CI Linux samples/settings
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+jobs:
+  samples-settings:
+    name: Build and run samples/settings
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 5
+        run: |
+          pkgs="build-essential"
+          if dpkg -s $pkgs >/dev/null 2>&1; then
+            echo "All packages already present on runner image; skipping apt."
+            exit 0
+          fi
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Build and run pipeline_migration_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/settings/pipeline_migration
+        run: |
+          set -eu
+          # The audio_threaded_pipeline config migration. The setting
+          # briefly held off/automatic/on and was saved as a number; it
+          # is a bool again, and a bool is always saved as "true" or
+          # "false", so a bare digit on the key is the older three-way
+          # value. config_get_bool() reads its automatic (1) as an
+          # explicit on, which forced the pipeline on for users who
+          # never chose it. Pins each stored digit against both
+          # defaults, and pins that "true", "false", absent, empty and
+          # multi-character values are untouched. The rule under test
+          # is restated from config_load_file(), which needs most of the
+          # frontend to run; a change to one must be made in the other.
+          make clean all SANITIZER=address,undefined
+          test -x pipeline_migration_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
+             ./pipeline_migration_test
+          echo "[pass] pipeline_migration_test (ASan)"
