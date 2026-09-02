@@ -783,7 +783,10 @@ extern audio_driver_t audio_dsound;
 extern audio_driver_t audio_wasapi;
 #ifdef HAVE_ASIO
 extern audio_driver_t audio_asio;
-void audio_asio_open_control_panel(void);
+/* Opens the running ASIO driver's control panel. False when ASIO is not
+ * the driver running - it was picked in the menu and audio has not
+ * been reinitialised since - so the caller can say so. */
+bool audio_asio_open_control_panel(void);
 #endif
 extern audio_driver_t audio_coreaudio;
 extern audio_driver_t audio_coreaudio3;

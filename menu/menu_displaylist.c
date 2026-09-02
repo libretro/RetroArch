@@ -8541,8 +8541,13 @@ unsigned menu_displaylist_build_list(
             }
 #endif
 #ifdef HAVE_ASIO
-            if (  string_is_equal(settings->arrays.audio_driver, "asio")
-               && !string_is_empty(settings->arrays.audio_device))
+            /* Shown for the configured driver, as the WASAPI items are:
+             * the page rebuilds on a driver change without audio being
+             * reinitialised, so this is what tells the user ASIO is the
+             * driver they picked. The panel itself needs ASIO running,
+             * and says so if it is not. A device does not gate it - the
+             * driver opens its default device when none is set. */
+            if (string_is_equal(settings->arrays.audio_driver, "asio"))
             {
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_AUDIO_ASIO_CONTROL_PANEL,

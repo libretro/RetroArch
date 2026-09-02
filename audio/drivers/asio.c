@@ -1750,7 +1750,7 @@ audio_driver_t audio_asio = {
  * buffer sizes, and adjust driver-specific settings.  Essential
  * for drivers like ASIO4ALL that require the user to enable
  * specific audio endpoints before streaming can work. */
-void audio_asio_open_control_panel(void)
+bool audio_asio_open_control_panel(void)
 {
    ra_asio_t *ad = g_asio ? g_asio : g_asio_persistent;
    if (ad && ad->iasio)
@@ -1758,9 +1758,10 @@ void audio_asio_open_control_panel(void)
       RARCH_LOG("[ASIO] Opening driver control panel...\n");
       ASIO_CALL_CONTROL_PANEL(ad->iasio);
       RARCH_LOG("[ASIO] Control panel closed.\n");
+      return true;
    }
-   else
-      RARCH_WARN("[ASIO] Cannot open control panel — driver not initialized.\n");
+   RARCH_WARN("[ASIO] Cannot open control panel: driver not initialized.\n");
+   return false;
 }
 
 #endif /* HAVE_ASIO */

@@ -5284,7 +5284,12 @@ static size_t setting_get_string_representation_uint_custom_vp_height(
 static int setting_action_asio_control_panel(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-   audio_asio_open_control_panel();
+   if (!audio_asio_open_control_panel())
+   {
+      const char *_msg = msg_hash_to_str(MSG_AUDIO_ASIO_NOT_RUNNING);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+   }
    return 0;
 }
 #endif

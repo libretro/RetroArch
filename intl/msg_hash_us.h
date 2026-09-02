@@ -31449,6 +31449,10 @@ MSG_HASH(
    "Audio muted."
    )
 MSG_HASH(
+   MSG_AUDIO_ASIO_NOT_RUNNING,
+   "ASIO is not the running audio driver yet. Restart RetroArch to open its control panel."
+   )
+MSG_HASH(
    MSG_AUDIO_UNMUTED,
    "Audio unmuted."
    )
