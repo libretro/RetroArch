@@ -77,6 +77,11 @@ static size_t switch_audio_buffer_size(void *data)
  * 0 when none was available and block was not set, -1 on error. The
  * buffer stays current across calls until a write fills and appends
  * it, so a wait that acquires one hands it to the write that follows. */
+/* Bound on a wait for the service to release a buffer: one wait, in
+ * nanoseconds, and how many before the write is skipped. */
+#define SWITCH_AUDIO_WAIT_NS   100000000ULL
+#define SWITCH_AUDIO_WAIT_LAPS 8
+
 static int switch_audio_acquire_buffer(switch_audio_t *swa, bool block)
 {
    uint32_t num;
@@ -95,6 +100,13 @@ static int switch_audio_acquire_buffer(switch_audio_t *swa, bool block)
 
    if (!swa->current_buffer)
    {
+      /* The service releases a buffer as it finishes playing one; a
+       * service that has stopped - the device change, the console on
+       * its way to sleep - releases none, and this waited for it with
+       * no end. Each wait is bounded and the loop is capped; with no
+       * buffer in hand after that, the write is skipped this call. */
+      int laps = SWITCH_AUDIO_WAIT_LAPS;
+
       if (!block)
          return 0;
 
@@ -106,14 +118,18 @@ static int switch_audio_acquire_buffer(switch_audio_t *swa, bool block)
          num                 = 0;
 
 #ifdef HAVE_LIBNX
-         if (audoutWaitPlayFinish(&swa->current_buffer, &num, UINT64_MAX) != 0) { }
+         if (audoutWaitPlayFinish(&swa->current_buffer, &num,
+                  SWITCH_AUDIO_WAIT_NS) != 0)
+            swa->current_buffer = NULL;
 #else
-         svcWaitSynchronization(&handle_idx, &swa->event, 1, 33333333);
+         svcWaitSynchronization(&handle_idx, &swa->event, 1, SWITCH_AUDIO_WAIT_NS);
          svcResetSignal(swa->event);
 
          if (switch_audio_ipc_output_get_released_buffer(swa, num) != 0)
             return -1;
 #endif
+         if (!swa->current_buffer && --laps < 0)
+            return 0;
       }
    }
 
