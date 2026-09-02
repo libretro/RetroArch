@@ -111,6 +111,17 @@ typedef struct audio_driver
 {
    /* Creates and initializes handle to audio driver.
     *
+    * latency is the user's audio latency setting, in milliseconds. It
+    * is the amount of audio the driver should be able to hold between
+    * write() returning and the device consuming it - the buffering the
+    * driver itself controls, sized to that much of the output format
+    * at the rate the device ends up at. A driver that can learn the
+    * device's own latency beyond that may subtract it, so the total the
+    * user hears approaches the setting; one that cannot reports what it
+    * has and leaves the rest to buffer_size() below. The frontend has
+    * already applied the policy minimum before calling; a driver only
+    * raises latency further for a hardware minimum of its own.
+    *
     * Returns: audio driver handle on success, otherwise NULL.
     **/
    void *(*init)(const char *device, unsigned rate,
@@ -224,9 +235,37 @@ typedef struct audio_driver
    /* Optional. Frees audio device list. data MAY BE NULL. */
    void (*device_list_free)(void *data, void *data2);
 
-   /* Optional. */
+   /**
+    * Optional. How much the driver will take right now without
+    * blocking, in bytes of the driver's output format - int16 or
+    * float stereo frames as use_float() decides. Counts every stage
+    * the driver controls that has room: its own fifo or ring, and the
+    * device-side buffer where the device reports its fill, so that a
+    * device with room and a fifo with room add up. Never more than
+    * buffer_size() reports. The rate control samples this once per
+    * frame and steers it toward half of buffer_size(); fast-forward
+    * bounds the resampler's input by it; the threaded pipeline sizes
+    * its passes from it. A driver that cannot measure its fill should
+    * leave this NULL rather than report a constant, which reads as a
+    * device that never drains.
+    */
    size_t (*write_avail)(void *data);
 
+   /**
+    * Optional. The most the driver can hold between write() returning
+    * and the device consuming it, in the same bytes write_avail()
+    * counts: every stage the driver controls, summed - fifo plus
+    * engine buffer plus queued blocks. Read once at init, so it is a
+    * property of the opened device; a driver whose server renegotiates
+    * it afterwards pushes the new size through
+    * audio_driver_set_buffer_size(), as pulse does. Half of it is the
+    * rate control's setpoint, so half of it, in time, is the latency
+    * the user hears from this driver at steady state; a stage the
+    * driver cannot see (the hardware's own DMA, a mixing daemon's sink)
+    * adds to that and is not reported here. Zero disables rate
+    * control for the session, which the frontend logs; a driver that
+    * has a buffer reports it rather than zero.
+    */
    size_t (*buffer_size)(void *data);
 
    /**
