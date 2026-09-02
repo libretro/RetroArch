@@ -6330,6 +6330,7 @@ typedef struct
    double   anchor_us;      /* time of the last observed vblank */
    unsigned anchor_age;     /* frames since anchor_us was refreshed */
    int      total;          /* lines including blanking */
+   int      visible;        /* lines the display shows; from the mode */
    bool     locked;
    unsigned misses;         /* frames that could not make their target */
    int      target;         /* last aim point, clamped frame to frame */
@@ -6390,6 +6391,24 @@ static bool scanline_pll_calibrate(void)
 
    scl_pll.period_us = acc / (double)n;
    scl_pll.line_us   = scl_pll.period_us / (double)scl_pll.total;
+
+   /* The visible line count is the display mode's height, not the
+    * output window's. video_st->height is the window - it coincides
+    * with the mode only in fullscreen at native resolution, and the
+    * blanking arithmetic below is nonsense otherwise: a 1080p window on
+    * a 2250-line panel would report 1170 lines of blanking. Ask the
+    * display server for the mode, and fall back to the window only if
+    * it cannot say. */
+   {
+      unsigned w = 0, h = 0;
+      char     unused[8];
+      if (   video_display_server_get_video_output_size(&w, &h,
+               unused, sizeof(unused))
+          && h > 0 && (int)h < scl_pll.total)
+         scl_pll.visible = (int)h;
+      else
+         scl_pll.visible = (int)video_state_get_ptr()->height;
+   }
 
    /* Residual offset: predict at a fixed delay and compare with a real
     * sample. Averaged rather than medianed to keep this short; the
@@ -6566,8 +6585,8 @@ VIDEO_NOINLINE static void video_driver_scanline_before_frame(video_driver_state
     * the next as well. A sustained change still converges in a few
     * frames. */
    {
-      int blank   = scl_pll.total - (int)video_st->height;
-      int centre  = (int)video_st->height + (blank > 0 ? blank / 2 : 0);
+      int blank   = scl_pll.total - scl_pll.visible;
+      int centre  = scl_pll.visible + (blank > 0 ? blank / 2 : 0);
       int want    = centre
             - (int)(scl_pll.work_us / scl_pll.line_us)
             + config_get_ptr()->ints.video_scanline_sync_offset;
