@@ -852,7 +852,9 @@ static size_t sdl_audio_write_avail(void *data)
 static size_t sdl_audio_buffer_size(void *data)
 {
    sdl_audio_t *sdl = (sdl_audio_t*)data;
-   return sdl->speaker_buffer->size;
+   /* The fifo's capacity: fifo_new(len) keeps len + 1 slots and holds
+    * len bytes, which is what write_avail() can reach. */
+   return sdl->speaker_buffer->size - 1;
 }
 
 /* Sleep on the condition the speaker thread signals after every pull
@@ -868,8 +870,8 @@ static size_t sdl_audio_wait_writable(void *data, size_t len)
     * keeps calling back but never frees enough. */
    int laps = 8;
 
-   if (len > sdl->speaker_buffer->size / 2)
-      len = sdl->speaker_buffer->size / 2;
+   if (len > (sdl->speaker_buffer->size - 1) / 2)
+      len = (sdl->speaker_buffer->size - 1) / 2;
 
    for (;;)
    {

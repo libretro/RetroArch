@@ -1622,8 +1622,9 @@ static size_t wasapi_buffer_size(void *wh)
     * shared mode let avail exceed the "buffer size", pushing the rate
     * controller's direction term past its intended +-1 range. */
    if (w->flags & WASAPI_FLG_EXCLUSIVE)
-      return w->buffer->size;
-   return w->buffer->size + w->engine_buffer_size;
+      return w->buffer->size - 1;
+   /* The fifo's capacity is one less than its slot count. */
+   return (w->buffer->size - 1) + w->engine_buffer_size;
 }
 
 /* Sleep on the engine's event until the fifo in front of it has room.

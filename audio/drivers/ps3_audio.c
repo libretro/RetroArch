@@ -254,7 +254,8 @@ static size_t ps3_audio_write_avail(void *data)
 static size_t ps3_audio_buffer_size(void *data)
 {
    ps3_audio_t *aud = data;
-   return aud->buffer->size;
+   /* The fifo's capacity, one less than its slot count. */
+   return aud->buffer->size - 1;
 }
 
 /* Sleep on the condition the output thread signals after every block
@@ -267,8 +268,8 @@ static size_t ps3_audio_wait_writable(void *data, size_t len)
    size_t avail;
    int laps         = PS3_AUDIO_WAIT_LAPS;
 
-   if (len > aud->buffer->size / 2)
-      len = aud->buffer->size / 2;
+   if (len > (aud->buffer->size - 1) / 2)
+      len = (aud->buffer->size - 1) / 2;
 
    for (;;)
    {
