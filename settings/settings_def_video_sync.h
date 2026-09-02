@@ -64,7 +64,7 @@ S_INT(video_max_frame_latency, VIDEO_MAX_FRAME_LATENCY,
       "Tells the video driver to explicitly use a specified buffering mode.")
 S_INT(video_scanline_sync_offset, VIDEO_SCANLINE_SYNC_OFFSET,
       "video_scanline_sync_offset",
-      DEFAULT_SCANLINE_SYNC_OFFSET, SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, -MAXIMUM_SCANLINE_SYNC_OFFSET, MAXIMUM_SCANLINE_SYNC_OFFSET, 1, 0, setting_action_ok_uint, NULL,
+      DEFAULT_SCANLINE_SYNC_OFFSET, SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, -MAXIMUM_SCANLINE_SYNC_OFFSET, MAXIMUM_SCANLINE_SYNC_OFFSET, 10, -MAXIMUM_SCANLINE_SYNC_OFFSET, setting_action_ok_uint, NULL,
       "Scanline Sync Offset",
       "Shifts the Scanline Sync target by this many scanlines. The sync cannot see when the GPU finishes a frame or when the flip reaches the display, so adjust this until the tear line moves off screen. Negative aims earlier.")
 S_BOOL(video_hard_sync, VIDEO_HARD_SYNC,
