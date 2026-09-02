@@ -80,7 +80,7 @@ for f in $FILES; do
    # Skip pass 2 for files that are Windows-only by path; they are not
    # in the linux-c89 job and -ansi breaks the Windows headers.
    case "$f" in
-      *win32*|*dinput*|*xinput*|*wasapi*|*xaudio*|*dsound*|*d3d*|*dxgi*|*wgl*|*uwp*|*winraw*|*_w.c|*/w_*) continue;;
+      *win32*|*dinput*|*xinput*|*wasapi*|*xaudio*|*asio*|*dsound*|*d3d*|*dxgi*|*wgl*|*uwp*|*winraw*|*_w.c|*/w_*) continue;;
    esac
    err=$($C89CC $C89FLAGS "$f" 2>&1 | grep -E ' error: ' \
          | grep -vE 'No such file|file not found' | head -3)
