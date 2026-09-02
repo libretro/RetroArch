@@ -1682,12 +1682,9 @@ void drivers_init(
       audio_driver_init_internal(
             settings,
             audio_st->callback.callback != NULL);
-      if (     audio_st->current_audio
-            && audio_st->current_audio->device_list_new
-            && audio_st->context_audio_data)
-         audio_st->devices_list = (struct string_list*)
-            audio_st->current_audio->device_list_new(
-                  audio_st->context_audio_data);
+      /* Whether or not init succeeded: the list is how the user gets
+       * out of a failed device choice. */
+      audio_driver_refresh_devices_list();
    }
 
 #ifdef HAVE_MICROPHONE

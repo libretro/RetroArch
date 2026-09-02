@@ -352,7 +352,9 @@ static ssize_t audio_thread_write(void *data, const void *s, size_t len)
 static void *audio_thread_device_list_new(void *data)
 {
    audio_thread_t *thr = (audio_thread_t*)data;
-   if (thr && thr->driver && thr->driver->device_list_new && thr->driver_data)
+   /* Enumeration does not need the inner driver to be initialised;
+    * forward whatever context exists, NULL included. */
+   if (thr && thr->driver && thr->driver->device_list_new)
       return thr->driver->device_list_new(thr->driver_data);
    return NULL;
 }
@@ -360,8 +362,16 @@ static void *audio_thread_device_list_new(void *data)
 static void audio_thread_device_list_free(void *data, void *list)
 {
    audio_thread_t *thr = (audio_thread_t*)data;
-   if (thr && thr->driver && thr->driver->device_list_free && thr->driver_data)
+   if (thr && thr->driver && thr->driver->device_list_free)
       thr->driver->device_list_free(thr->driver_data, list);
+}
+
+const audio_driver_t *audio_thread_wrapped_driver(void *data)
+{
+   audio_thread_t *thr = (audio_thread_t*)data;
+   if (thr)
+      return thr->driver;
+   return NULL;
 }
 
 const char *audio_thread_wrapped_ident(void *data)

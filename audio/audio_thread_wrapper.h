@@ -42,6 +42,9 @@
  * "audio-thread". NULL if data is not a wrapper context. */
 const char *audio_thread_wrapped_ident(void *data);
 
+/* The driver the wrapper is running, or NULL if data is NULL. */
+const audio_driver_t *audio_thread_wrapped_driver(void *data);
+
 bool audio_init_thread(const audio_driver_t **out_driver, void **out_data,
       const char *device, unsigned out_rate, unsigned *new_rate, unsigned latency,
       unsigned block_frames, bool raise_priority,

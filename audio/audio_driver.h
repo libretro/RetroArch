@@ -211,10 +211,17 @@ typedef struct audio_driver
    /* Human-readable identifier. */
    const char *ident;
 
-   /* Optional. Get audio device list (allocates, caller has to free this) */
+   /* Optional. Get audio device list (allocates, caller has to free this).
+    *
+    * data is the driver context and MAY BE NULL. Enumeration must not
+    * require an initialised driver: the frontend builds this list
+    * whether or not init succeeded, so the user can pick a device when
+    * the current one failed, and refreshes it from the menu. A driver
+    * that caches a list at init may return the cache when given its
+    * context and must still enumerate when given NULL. */
    void *(*device_list_new)(void *data);
 
-   /* Optional. Frees audio device list */
+   /* Optional. Frees audio device list. data MAY BE NULL. */
    void (*device_list_free)(void *data, void *data2);
 
    /* Optional. */
@@ -676,6 +683,10 @@ bool audio_compute_buffer_statistics(audio_statistics_t *stats);
 bool audio_driver_init_internal(void *data, bool audio_cb_inited);
 
 bool audio_driver_deinit(void);
+
+/* Rebuild audio_driver_st.devices_list from the driver that is, or
+ * would be, in use. Does not require the driver to be initialised. */
+void audio_driver_refresh_devices_list(void);
 
 bool audio_driver_find_driver(const char *audio_drv,
       const char *prefix, bool verbosity_enabled);

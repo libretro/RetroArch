@@ -5681,6 +5681,9 @@ static int menu_displaylist_parse_audio_device_list(file_list_t *info_list,
    if (!setting)
       return 0;
 
+   /* Enumerate now rather than showing whatever init cached: devices
+    * come and go, and the cached list is empty when init failed. */
+   audio_driver_refresh_devices_list();
    if (!audio_driver_get_devices_list((void**)&ptr))
       return 0;
 
