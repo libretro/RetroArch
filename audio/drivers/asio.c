@@ -56,6 +56,8 @@
 #include <string/stdstring.h>
 #include <lists/string_list.h>
 #include <retro_atomic.h>
+
+#include "asio_convert.h"
 #include <retro_spsc.h>
 
 #ifdef HAVE_THREADS
@@ -85,25 +87,8 @@ typedef long ASIOError;
 #define ASE_NoClock         (-995L)
 #define ASE_NoMemory        (-994L)
 
-typedef long ASIOSampleType;
-#define ASIOSTInt16MSB       0L
-#define ASIOSTInt24MSB       1L
-#define ASIOSTInt32MSB       2L
-#define ASIOSTFloat32MSB     3L
-#define ASIOSTFloat64MSB     4L
-#define ASIOSTInt32MSB16     8L
-#define ASIOSTInt32MSB18     9L
-#define ASIOSTInt32MSB20    10L
-#define ASIOSTInt32MSB24    11L
-#define ASIOSTInt16LSB      16L
-#define ASIOSTInt24LSB      17L
-#define ASIOSTInt32LSB      18L
-#define ASIOSTFloat32LSB    19L
-#define ASIOSTFloat64LSB    20L
-#define ASIOSTInt32LSB16    24L
-#define ASIOSTInt32LSB18    25L
-#define ASIOSTInt32LSB20    26L
-#define ASIOSTInt32LSB24    27L
+/* ASIOSampleType and its values, with the conversion that writes them,
+ * live in asio_convert.h: pure C, tested on any host. */
 
 typedef double ASIOSampleRate;
 
@@ -807,41 +792,9 @@ static ra_asio_t *g_asio_persistent = NULL;
  *  Sample conversion: ring buffer → ASIO deinterleaved output
  * ═══════════════════════════════════════════════════════════════════ */
 
-static size_t asio_bytes_per_sample(ASIOSampleType type)
-{
-   switch (type)
-   {
-      case ASIOSTInt16LSB:
-      case ASIOSTInt16MSB:
-         return 2;
-      case ASIOSTInt24LSB:
-      case ASIOSTInt24MSB:
-         return 3;
-      case ASIOSTInt32LSB:
-      case ASIOSTInt32MSB:
-      case ASIOSTInt32LSB16:
-      case ASIOSTInt32LSB18:
-      case ASIOSTInt32LSB20:
-      case ASIOSTInt32LSB24:
-      case ASIOSTInt32MSB16:
-      case ASIOSTInt32MSB18:
-      case ASIOSTInt32MSB20:
-      case ASIOSTInt32MSB24:
-      case ASIOSTFloat32LSB:
-      case ASIOSTFloat32MSB:
-         return 4;
-      case ASIOSTFloat64LSB:
-      case ASIOSTFloat64MSB:
-         return 8;
-      default:
-         return 4;
-   }
-}
-
 static void asio_deinterleave_to_buffers(ra_asio_t *ad,
       long index, long frames)
 {
-   long i;
    const float *src = ad->scratch;
    void *buf_l  = ad->buf_info[0].buffers[index];
    void *buf_r  = ad->buf_info[1].buffers[index];
@@ -864,132 +817,11 @@ static void asio_deinterleave_to_buffers(ra_asio_t *ad,
       have = (long)(retro_spsc_read(&ad->ring, ad->scratch,
             (size_t)have * 2 * sizeof(float)) / (2 * sizeof(float)));
 
-   switch (ad->sample_type)
-   {
-      case ASIOSTFloat32LSB:
-      {
-         float *dl = (float *)buf_l;
-         float *dr = (float *)buf_r;
-         for (i = 0; i < have; i++)
-         {
-            dl[i] = src[i * 2 + 0];
-            dr[i] = src[i * 2 + 1];
-         }
-         for (; i < frames; i++) { dl[i] = 0.0f; dr[i] = 0.0f; }
-         break;
-      }
-
-      case ASIOSTFloat64LSB:
-      {
-         double *dl = (double *)buf_l;
-         double *dr = (double *)buf_r;
-         for (i = 0; i < have; i++)
-         {
-            dl[i] = (double)src[i * 2 + 0];
-            dr[i] = (double)src[i * 2 + 1];
-         }
-         for (; i < frames; i++) { dl[i] = 0.0; dr[i] = 0.0; }
-         break;
-      }
-
-      case ASIOSTInt32LSB:
-      {
-         int32_t *dl = (int32_t *)buf_l;
-         int32_t *dr = (int32_t *)buf_r;
-         for (i = 0; i < have; i++)
-         {
-            double l, r;
-            /* Symmetric full-scale (2^31) with round-half-away and
-             * saturation, matching convert_float_to_s16's semantics at
-             * 16-bit.  The previous (2^31 - 1) truncating form had an
-             * asymmetric transfer curve and doubled the quantisation
-             * error; it also relied on the frontend's float clamp for
-             * range safety.  Computed in double: float's 24-bit mantissa
-             * cannot address 32-bit steps, and the +-0.5 bias would be
-             * absorbed at float precision. */
-            l = (double)src[i * 2 + 0] * 2147483648.0;
-            r = (double)src[i * 2 + 1] * 2147483648.0;
-            l += (l >= 0.0) ? 0.5 : -0.5;
-            r += (r >= 0.0) ? 0.5 : -0.5;
-            if      (l >  2147483647.0) dl[i] = INT32_MAX;
-            else if (l < -2147483648.0) dl[i] = INT32_MIN;
-            else                        dl[i] = (int32_t)l;
-            if      (r >  2147483647.0) dr[i] = INT32_MAX;
-            else if (r < -2147483648.0) dr[i] = INT32_MIN;
-            else                        dr[i] = (int32_t)r;
-         }
-         for (; i < frames; i++) { dl[i] = 0; dr[i] = 0; }
-         break;
-      }
-
-      case ASIOSTInt24LSB:
-      {
-         char *dl = (char *)buf_l;
-         char *dr = (char *)buf_r;
-         for (i = 0; i < have; i++)
-         {
-            int32_t l, r;
-            float fl, fr;
-            /* Symmetric full-scale (2^23), round-half-away, saturate -
-             * see the Int32 branch comment. */
-            fl = src[i * 2 + 0] * 8388608.0f;
-            fr = src[i * 2 + 1] * 8388608.0f;
-            fl += (fl >= 0.0f) ? 0.5f : -0.5f;
-            fr += (fr >= 0.0f) ? 0.5f : -0.5f;
-            if      (fl >  8388607.0f) l =  8388607;
-            else if (fl < -8388608.0f) l = -8388608;
-            else                       l = (int32_t)fl;
-            if      (fr >  8388607.0f) r =  8388607;
-            else if (fr < -8388608.0f) r = -8388608;
-            else                       r = (int32_t)fr;
-            dl[i*3+0]=(char)(l&0xFF); dl[i*3+1]=(char)((l>>8)&0xFF); dl[i*3+2]=(char)((l>>16)&0xFF);
-            dr[i*3+0]=(char)(r&0xFF); dr[i*3+1]=(char)((r>>8)&0xFF); dr[i*3+2]=(char)((r>>16)&0xFF);
-         }
-         for (; i < frames; i++)
-         {
-            dl[i*3+0]=dl[i*3+1]=dl[i*3+2]=0;
-            dr[i*3+0]=dr[i*3+1]=dr[i*3+2]=0;
-         }
-         break;
-      }
-
-      case ASIOSTInt16LSB:
-      {
-         int16_t *dl = (int16_t *)buf_l;
-         int16_t *dr = (int16_t *)buf_r;
-         for (i = 0; i < have; i++)
-         {
-            int32_t l, r;
-            float fl, fr;
-            /* Same semantics as convert_float_to_s16's scalar path:
-             * symmetric 0x8000 scale, round-half-away, saturate.  The
-             * previous 32767-scale truncating form cost ~6 dB of
-             * quantisation noise and skewed the transfer curve. */
-            fl = src[i * 2 + 0] * 32768.0f;
-            fr = src[i * 2 + 1] * 32768.0f;
-            fl += (fl >= 0.0f) ? 0.5f : -0.5f;
-            fr += (fr >= 0.0f) ? 0.5f : -0.5f;
-            if      (fl >  32767.0f) l =  32767;
-            else if (fl < -32768.0f) l = -32768;
-            else                     l = (int32_t)fl;
-            if      (fr >  32767.0f) r =  32767;
-            else if (fr < -32768.0f) r = -32768;
-            else                     r = (int32_t)fr;
-            dl[i] = (int16_t)l;
-            dr[i] = (int16_t)r;
-         }
-         for (; i < frames; i++) { dl[i] = 0; dr[i] = 0; }
-         break;
-      }
-
-      default:
-      {
-         size_t sz = frames * asio_bytes_per_sample(ad->sample_type);
-         memset(buf_l, 0, sz);
-         memset(buf_r, 0, sz);
-         break;
-      }
-   }
+   /* Every type the specification defines, in asio_convert.h; the
+    * five this used to handle left every other one - the Int32LSB24
+    * family that pro interfaces report among them - to a silent
+    * memset with nothing in the log. */
+   asio_convert_frames(ad->sample_type, src, have, frames, buf_l, buf_r);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -1398,6 +1230,9 @@ static void *ra_asio_init(const char *device, unsigned rate,
       goto error;
    }
    ad->sample_type = ch_info.type;
+   if (!asio_convert_known(ad->sample_type))
+      RARCH_ERR("[ASIO] Output sample type %ld is not one this driver converts; the device will be silent.\n",
+            (long)ad->sample_type);
    RARCH_LOG("[ASIO] Output sample type: %ld (%s)\n",
          (long)ad->sample_type, ch_info.name);
 
