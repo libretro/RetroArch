@@ -8269,8 +8269,12 @@ end:
    runloop_st->pace = RUNLOOP_PACE_NONE;
    if (settings->bools.video_vsync)
       runloop_st->pace |= RUNLOOP_PACE_VSYNC;
-   if (     settings->bools.audio_sync
-         && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE))
+   /* The live blocking state, not the audio_sync setting. Fast-forward
+    * puts the driver into non-blocking mode for a few frames while
+    * audio_sync stays true, and during those frames audio is not
+    * holding anything. */
+   if (     (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
+         && !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK))
       runloop_st->pace |= RUNLOOP_PACE_AUDIO;
    if (     settings->bools.video_scanline_sync
          && video_st->scanline[SCANLINE_NEXT])
