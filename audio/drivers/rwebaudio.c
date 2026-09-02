@@ -98,6 +98,17 @@ static void *rwebaudio_init(const char *device, unsigned rate, unsigned latency,
    return rwebaudio;
 }
 
+/* How many times a blocking write asks the context for room before
+ * dropping the rest. With ASYNCIFY each lap sleeps a millisecond, so
+ * this is about two seconds; without it the laps are resume attempts
+ * back to back on the page's thread, so it is a count that ends the
+ * spin within a few milliseconds. */
+#if defined(EMSCRIPTEN_FULL_ASYNCIFY) || defined(EMSCRIPTEN_AUDIO_ASYNC_BLOCK)
+#define RWEBAUDIO_WAIT_LAPS 2000
+#else
+#define RWEBAUDIO_WAIT_LAPS 100000
+#endif
+
 static ssize_t rwebaudio_write(void *data, const void *s, size_t len)
 {
    rwebaudio_data_t *rwebaudio = (rwebaudio_data_t*)data;
@@ -137,12 +148,20 @@ static ssize_t rwebaudio_write(void *data, const void *s, size_t len)
 #endif
       /* async external block doesn't need to do anything else */
 #else
-      while (RWebAudioWriteAvailFrames() == 0)
       {
+         /* Bounded: a context that will not run - suspended by the
+          * autoplay policy until the page is clicked, or by the browser
+          * for a background tab - frees nothing, and without ASYNCIFY
+          * this loop is a spin on the page's own thread. It ends, and
+          * the audio is dropped, rather than the tab freezing. */
+         unsigned laps = RWEBAUDIO_WAIT_LAPS;
+         while (RWebAudioWriteAvailFrames() == 0 && laps--)
+         {
 #ifdef EMSCRIPTEN_FULL_ASYNCIFY
-         retro_sleep(1);
+            retro_sleep(1);
 #endif
-         RWebAudioResumeCtx();
+            RWebAudioResumeCtx();
+         }
       }
 #endif
    }
@@ -172,14 +191,21 @@ bool rwebaudio_external_block(void)
 #endif
 
 #ifdef EMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK
-   while (!rwebaudio->nonblock && RWebAudioWriteAvailFrames() == 0)
    {
-      RWebAudioResumeCtx();
+      unsigned laps = RWEBAUDIO_WAIT_LAPS;
+      while (!rwebaudio->nonblock && RWebAudioWriteAvailFrames() == 0)
+      {
+         RWebAudioResumeCtx();
 #ifdef EMSCRIPTEN_AUDIO_ASYNC_BLOCK
-      retro_sleep(1);
+         retro_sleep(1);
+         /* Bounded, as the write's own wait is. */
+         if (!laps--)
+            break;
 #else
-      return true;
+         (void)laps;
+         return true;
 #endif
+      }
    }
 #endif
 
