@@ -2497,6 +2497,40 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
       if (cap >= 64 && have > cap)
          have = cap;
    }
+
+   snap = retro_atomic_load_acquire_int(&audio_st->runloop_snapshot);
+   if (    (snap & AUDIO_SNAP_PAUSED)
+        || !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
+        || !audio_st->output_samples_buf)
+   {
+      /* Nothing is going to the device while paused; the chunk is
+       * taken and dropped so the ring keeps flowing for the producer. */
+      retro_spsc_read(&audio_st->pipe_ring, audio_st->pipe_scratch,
+            have * sizeof(int16_t));
+      slock_lock(audio_st->pipe_lock);
+      audio_st->pipe_gen++;
+      scond_signal(audio_st->pipe_cond);
+      slock_unlock(audio_st->pipe_lock);
+      return;
+   }
+
+   /* Second wait: room for this chunk, so the write inside flush()
+    * returns at once and the fill rate control reads before it is the
+    * device's real fill, as it is for the inline path. The chunk is
+    * one publish's worth resampled, so a little more than have*ratio;
+    * wait for that with a small margin.
+    *
+    * Waited for before the chunk leaves the ring. A device that makes
+    * no room gets nothing taken on its behalf: the ring stays full, the
+    * producer's one bounded wait finds it so, and it drops at full
+    * frame rate until a pass completes. Taking the chunk first and then
+    * finding no room threw it away while telling the producer the ring
+    * had drained, and paced the frontend at one frame per failed pass. */
+   out_bytes   = (size_t)((double)(have >> 1) * audio_st->src_ratio_curr + 16.0)
+         * frame_bytes;
+   if (!audio->wait_writable(audio_st->context_audio_data, out_bytes))
+      return;
+
    retro_spsc_read(&audio_st->pipe_ring, audio_st->pipe_scratch,
          have * sizeof(int16_t));
 
@@ -2507,22 +2541,6 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
    audio_st->pipe_stalled = false;
    scond_signal(audio_st->pipe_cond);
    slock_unlock(audio_st->pipe_lock);
-
-   snap = retro_atomic_load_acquire_int(&audio_st->runloop_snapshot);
-   if (    (snap & AUDIO_SNAP_PAUSED)
-        || !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
-        || !audio_st->output_samples_buf)
-      return;
-
-   /* Second wait: room for this chunk, so the write inside flush()
-    * returns at once and the fill rate control reads before it is the
-    * device's real fill, as it is for the inline path. The chunk is
-    * one publish's worth resampled, so a little more than have*ratio;
-    * wait for that with a small margin. */
-   out_bytes   = (size_t)((double)(have >> 1) * audio_st->src_ratio_curr + 16.0)
-         * frame_bytes;
-   if (!audio->wait_writable(audio_st->context_audio_data, out_bytes))
-      return;
 
    audio_driver_state_lock();
    audio_driver_flush(audio_st,
