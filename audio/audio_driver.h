@@ -826,6 +826,8 @@ extern audio_driver_t audio_asio;
  * the driver running - it was picked in the menu and audio has not
  * been reinitialised since - so the caller can say so. */
 bool audio_asio_open_control_panel(void);
+bool audio_asio_output_channel_name(unsigned ch, char *buf, size_t len);
+unsigned audio_asio_output_channel_count(void);
 #endif
 extern audio_driver_t audio_coreaudio;
 extern audio_driver_t audio_coreaudio3;

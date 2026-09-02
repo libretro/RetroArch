@@ -8550,6 +8550,10 @@ unsigned menu_displaylist_build_list(
             if (string_is_equal(settings->arrays.audio_driver, "asio"))
             {
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_AUDIO_ASIO_OUTPUT_CHANNEL,
+                        PARSE_ONLY_UINT, false) == 0)
+                  count++;
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_AUDIO_ASIO_CONTROL_PANEL,
                         PARSE_ACTION, false) == 0)
                   count++;

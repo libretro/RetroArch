@@ -157,6 +157,7 @@ typedef struct settings
 
 #ifdef HAVE_WASAPI
       unsigned audio_wasapi_sh_buffer_length;
+      unsigned audio_asio_output_channel;
 #endif
 
 #ifdef HAVE_MICROPHONE

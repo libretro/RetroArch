@@ -5294,7 +5294,26 @@ static int setting_action_asio_control_panel(
 }
 #endif
 
+#ifdef HAVE_ASIO
+/* The pair as the device numbers it for people - 1-2, 3-4 - with the
+ * device's own names for the two when the driver is up to be asked. */
+static size_t setting_get_string_representation_uint_audio_asio_output_channel(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   unsigned left;
+   char lname[32], rname[32];
+   if (!setting)
+      return 0;
+   left = *setting->value.target.unsigned_integer;
+   if (     audio_asio_output_channel_name(left, lname, sizeof(lname))
+         && audio_asio_output_channel_name(left + 1, rname, sizeof(rname)))
+      return snprintf(s, len, "%u-%u (%s / %s)", left + 1, left + 2, lname, rname);
+   return snprintf(s, len, "%u-%u", left + 1, left + 2);
+}
+#endif
+
 #ifdef HAVE_WASAPI
+
 static size_t setting_get_string_representation_uint_audio_wasapi_sh_buffer_length(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -9483,6 +9502,9 @@ static void general_write_handler(rarch_setting_t *setting)
 #ifdef HAVE_WASAPI
       case MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE:
       case MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH:
+#endif
+#ifdef HAVE_ASIO
+      case MENU_ENUM_LABEL_AUDIO_ASIO_OUTPUT_CHANNEL:
 #endif
          rarch_cmd = CMD_EVENT_AUDIO_REINIT;
          break;

@@ -948,6 +948,7 @@
 #define MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND_STR "android_input_disconnect_workaround"
 #define MENU_ENUM_LABEL_ASSETS_DIRECTORY_STR "assets_directory"
 #define MENU_ENUM_LABEL_AUDIO_ASIO_CONTROL_PANEL_STR "audio_asio_control_panel"
+#define MENU_ENUM_LABEL_AUDIO_ASIO_OUTPUT_CHANNEL_STR "audio_asio_output_channel"
 #define MENU_ENUM_LABEL_AUDIO_BLOCK_FRAMES_STR "audio_block_frames"
 #define MENU_ENUM_LABEL_AUDIO_DEVICE_STR "audio_device"
 #define MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN_STR "audio_dsp_plugin"

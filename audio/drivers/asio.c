@@ -687,6 +687,11 @@ typedef struct ra_asio
     * anew - the driver's preferred size may have changed - when the
     * frontend reinitialises audio, which the same callback requests. */
    retro_atomic_int_t rebuild_pending;
+   /* The device's output count, and the first of the two outputs the
+    * buffers were created on: the audio_asio_output_channel setting,
+    * clamped to the device. */
+   long               out_channels;
+   long               out_left;
    size_t             ring_size;
    unsigned           sample_rate;
    /* Read by asio_cb_buffer_switch() on the driver's realtime thread
@@ -1066,8 +1071,26 @@ static bool asio_create_buffers(ra_asio_t *ad, unsigned latency)
       return false;
    }
 
+   /* The pair of outputs to play through: the setting names the first,
+    * the second follows it. A device lists its outputs as numbered
+    * mono channels, and on a multi-output interface the first two are
+    * not always the ones the user is listening to - a digital pair
+    * before the analog ones is common. A setting past the device's
+    * outputs falls back to the first pair and says so. */
+   {
+      long left = (long)config_get_ptr()->uints.audio_asio_output_channel;
+      if (left < 0 || left + 1 >= ad->out_channels)
+      {
+         if (left != 0)
+            RARCH_WARN("[ASIO] Output channel setting %ld is past this device's %ld outputs; using the first pair.\n",
+                  left, ad->out_channels);
+         left = 0;
+      }
+      ad->out_left = left;
+   }
+
    memset(&ch_info, 0, sizeof(ch_info));
-   ch_info.channel  = 0;
+   ch_info.channel  = ad->out_left;
    ch_info.isInput  = ASIOFalse;
    if (ASIO_CALL_GET_CHANNEL_INFO(ad->iasio, &ch_info) != ASE_OK)
    {
@@ -1080,12 +1103,22 @@ static bool asio_create_buffers(ra_asio_t *ad, unsigned latency)
             (long)ad->sample_type);
    RARCH_LOG("[ASIO] Output sample type: %ld (%s)\n",
          (long)ad->sample_type, ch_info.name);
+   {
+      ASIOChannelInfo right;
+      memset(&right, 0, sizeof(right));
+      right.channel = ad->out_left + 1;
+      right.isInput = ASIOFalse;
+      if (ASIO_CALL_GET_CHANNEL_INFO(ad->iasio, &right) != ASE_OK)
+         strlcpy(right.name, "?", sizeof(right.name));
+      RARCH_LOG("[ASIO] Playing through outputs %ld and %ld: \"%s\" and \"%s\".\n",
+            ad->out_left + 1, ad->out_left + 2, ch_info.name, right.name);
+   }
 
    memset(ad->buf_info, 0, sizeof(ad->buf_info));
    ad->buf_info[0].isInput    = ASIOFalse;
-   ad->buf_info[0].channelNum = 0;
+   ad->buf_info[0].channelNum = ad->out_left;
    ad->buf_info[1].isInput    = ASIOFalse;
-   ad->buf_info[1].channelNum = 1;
+   ad->buf_info[1].channelNum = ad->out_left + 1;
 
    /* Sized from two periods for now - the device's reported latency is
     * only known once buffers exist - and resized to it below, before
@@ -1173,9 +1206,12 @@ static void *ra_asio_init(const char *device, unsigned rate,
        * the frontend reinitialised audio for it. The buffers are
        * disposed and made again at whatever size it prefers now, in
        * place of ending audio for the session. */
-      if (retro_atomic_load_acquire_int(&ad->rebuild_pending))
+      if (     retro_atomic_load_acquire_int(&ad->rebuild_pending)
+            || (long)config_get_ptr()->uints.audio_asio_output_channel != ad->out_left)
       {
-         RARCH_LOG("[ASIO] Rebuilding buffers after the driver's reset request.\n");
+         RARCH_LOG("[ASIO] Rebuilding buffers: %s.\n",
+               retro_atomic_load_acquire_int(&ad->rebuild_pending)
+               ? "the driver asked for a reset" : "the output channels changed");
          retro_atomic_store_release_int(&ad->rebuild_pending, 0);
          asio_dispose_buffers(ad);
          g_asio = ad;
@@ -1333,6 +1369,7 @@ static void *ra_asio_init(const char *device, unsigned rate,
       goto error;
    }
    RARCH_LOG("[ASIO] Channels: %ld in, %ld out.\n", in_ch, out_ch);
+   ad->out_channels = out_ch;
 
    /* Set sample rate */
    if (ASIO_CALL_CAN_SAMPLE_RATE(ad->iasio, (ASIOSampleRate)rate) == ASE_OK)
@@ -1733,6 +1770,32 @@ bool audio_asio_open_control_panel(void)
    }
    RARCH_WARN("[ASIO] Cannot open control panel: driver not initialized.\n");
    return false;
+}
+
+/* The device's name for output channel ch - "Analog 1", "SPDIF L" -
+ * from the running or parked instance, for the menu to show beside the
+ * output channel setting. False, and buf untouched, when no instance
+ * exists or the channel does not. */
+bool audio_asio_output_channel_name(unsigned ch, char *buf, size_t len)
+{
+   ra_asio_t *ad = g_asio ? g_asio : g_asio_persistent;
+   ASIOChannelInfo info;
+   if (!ad || !ad->iasio || (long)ch >= ad->out_channels)
+      return false;
+   memset(&info, 0, sizeof(info));
+   info.channel = (long)ch;
+   info.isInput = ASIOFalse;
+   if (ASIO_CALL_GET_CHANNEL_INFO(ad->iasio, &info) != ASE_OK)
+      return false;
+   strlcpy(buf, info.name, len);
+   return true;
+}
+
+/* The device's output count, or 0 with no instance. */
+unsigned audio_asio_output_channel_count(void)
+{
+   ra_asio_t *ad = g_asio ? g_asio : g_asio_persistent;
+   return (ad && ad->iasio && ad->out_channels > 0) ? (unsigned)ad->out_channels : 0;
 }
 
 #endif /* HAVE_ASIO */
