@@ -57,7 +57,11 @@ enum wasapi_flags
 {
    WASAPI_FLG_EXCLUSIVE = (1 << 0),
    WASAPI_FLG_NONBLOCK  = (1 << 1),
-   WASAPI_FLG_RUNNING   = (1 << 2)
+   WASAPI_FLG_RUNNING   = (1 << 2),
+   /* Shared client initialised via IAudioClient3 at the engine's minimum
+    * period rather than its default. The client FIFO keeps its
+    * audio_latency size; only the release cadence is finer. */
+   WASAPI_FLG_LOWLAT    = (1 << 3)
 };
 
 typedef struct
@@ -430,7 +434,8 @@ error:
 }
 
 static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
-      bool *float_fmt, unsigned *rate, unsigned latency, unsigned channels)
+      bool *float_fmt, unsigned *rate, unsigned latency, unsigned channels,
+      bool *low_latency)
 {
    WAVEFORMATEXTENSIBLE wf;
    IAudioClient *client           = NULL;
@@ -477,6 +482,60 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
       goto error;
    }
 
+   if (low_latency)
+      *low_latency = false;
+
+#ifdef __IAudioClient3_INTERFACE_DEFINED__
+   /* Windows 10 1607+: ask the engine for its minimum shared-mode
+    * period instead of the default 10 ms. The write event then fires
+    * at that period, and a client blocking on it is released on a
+    * grid several times finer - which, with audio_sync on, is the grid
+    * the whole frame loop is released on. Any failure here falls
+    * through to the IAudioClient path below on a fresh client, so a
+    * system that cannot do this behaves exactly as before. */
+   {
+      IAudioClient3 *client3 = NULL;
+      hr = _IAudioClient_QueryInterface(client,
+            &mmdevice_IID_IAudioClient3, (void**)&client3);
+      if (SUCCEEDED(hr) && client3)
+      {
+         UINT32 p_default = 0, p_fundamental = 0, p_min = 0, p_max = 0;
+         hr = _IAudioClient3_GetSharedModeEnginePeriod(client3,
+               (WAVEFORMATEX*)&wf, &p_default, &p_fundamental, &p_min, &p_max);
+         if (SUCCEEDED(hr) && p_min > 0 && p_min < p_default)
+         {
+            hr = _IAudioClient3_InitializeSharedAudioStream(client3,
+                  AUDCLNT_STREAMFLAGS_EVENTCALLBACK, p_min,
+                  (WAVEFORMATEX*)&wf, NULL);
+            if (SUCCEEDED(hr))
+            {
+               if (low_latency)
+                  *low_latency = true;
+               RARCH_LOG("[WASAPI] Shared client at engine period %u frames (%.2f ms; default %u).\n",
+                     p_min, (double)p_min * 1000.0 / (double)wf.Format.nSamplesPerSec,
+                     p_default);
+            }
+         }
+         _IAudioClient3_Release(client3);
+      }
+
+      if (low_latency && *low_latency)
+         goto initialized;
+
+      /* Not taken, or failed partway: start again from a fresh client
+       * so the legacy path sees exactly the object it always has. */
+      RELEASE(client);
+      hr = _IMMDevice_Activate(device, IID_IAudioClient, CLSCTX_ALL, NULL,
+            (void**)&client);
+      if (FAILED(hr))
+      {
+         RARCH_ERR("[WASAPI] IMMDevice::Activate failed: %s.\n",
+               mmdevice_hresult_name(hr));
+         return NULL;
+      }
+   }
+#endif
+
    hr = _IAudioClient_Initialize(client, AUDCLNT_SHAREMODE_SHARED,
          AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
          buffer_duration, 0, (WAVEFORMATEX*)&wf, NULL);
@@ -507,6 +566,9 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
       goto error;
    }
 
+#ifdef __IAudioClient3_INTERFACE_DEFINED__
+initialized:
+#endif
    *float_fmt = wf.Format.wFormatTag != WAVE_FORMAT_PCM;
    *rate      = wf.Format.nSamplesPerSec;
    return client;
@@ -518,7 +580,8 @@ error:
 
 
 static IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
-      bool *float_fmt, unsigned *rate, unsigned latency, unsigned channels)
+      bool *float_fmt, unsigned *rate, unsigned latency, unsigned channels,
+      bool *low_latency)
 {
    HRESULT hr;
    IAudioClient *client;
@@ -534,14 +597,14 @@ static IAudioClient *wasapi_init_client(IMMDevice *device, bool *exclusive,
       if (!client)
       {
          RARCH_WARN("[WASAPI] Failed to initialize exclusive client, attempting shared client.\n");
-         client = wasapi_init_client_sh(device, float_fmt, rate, latency, channels);
+         client = wasapi_init_client_sh(device, float_fmt, rate, latency, channels, low_latency);
          if (client)
             *exclusive = false;
       }
    }
    else
    {
-      client = wasapi_init_client_sh(device, float_fmt, rate, latency, channels);
+      client = wasapi_init_client_sh(device, float_fmt, rate, latency, channels, low_latency);
       if (!client)
       {
          RARCH_WARN("[WASAPI] Failed to initialize shared client, attempting exclusive client.\n");
@@ -954,7 +1017,7 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
    }
 
    mic->client = wasapi_init_client(mic->device,
-      &mic->exclusive, &float_format, &rate, latency, 1);
+      &mic->exclusive, &float_format, &rate, latency, 1, NULL);
    if (!mic->client)
    {
       RARCH_ERR("[WASAPI] Failed to open client for capture device \"%s\".\n", mic->device_name);
@@ -1160,6 +1223,7 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    bool exclusive_mode       = settings->bools.audio_wasapi_exclusive_mode;
    bool audio_sync           = settings->bools.audio_sync;
    unsigned sh_buffer_length = settings->uints.audio_wasapi_sh_buffer_length;
+   bool low_latency          = false;
    wasapi_t *w               = (wasapi_t*)calloc(1, sizeof(wasapi_t));
 
    if (!w)
@@ -1172,10 +1236,12 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
       goto error;
 
    if (!(w->client = wasapi_init_client(w->device,
-         &exclusive_mode, &float_format, &rate, latency, 2)))
+         &exclusive_mode, &float_format, &rate, latency, 2, &low_latency)))
       goto error;
    if (exclusive_mode)
       w->flags              |= WASAPI_FLG_EXCLUSIVE;
+   if (low_latency)
+      w->flags              |= WASAPI_FLG_LOWLAT;
 
    hr = _IAudioClient_GetBufferSize(w->client, &frame_count);
    if (FAILED(hr))
@@ -1196,7 +1262,16 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
       {
          case WASAPI_SH_BUFFER_AUDIO_LATENCY:
          case WASAPI_SH_BUFFER_CLIENT_BUFFER:
-            sh_buffer_length = frame_count;
+            /* Under IAudioClient3 the engine sizes its own buffer to the
+             * small period, so frame_count is a few ms and no longer
+             * reflects audio_latency. Keep the FIFO at the latency the
+             * user asked for; the engine buffer is only the drain step. */
+            if (w->flags & WASAPI_FLG_LOWLAT)
+               sh_buffer_length = (unsigned)(((uint64_t)latency * rate) / 1000);
+            else
+               sh_buffer_length = frame_count;
+            if (sh_buffer_length < frame_count)
+               sh_buffer_length = frame_count;
             break;
          case WASAPI_SH_BUFFER_DEVICE_PERIOD:
             hr = _IAudioClient_GetDevicePeriod(w->client, &dev_period, NULL);
