@@ -8281,10 +8281,21 @@ end:
     * audio_sync stays true, and during those frames audio is not
     * holding anything. */
    if (     (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
-         && !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK))
+         && !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK)
+         /* ...and the core is actually writing samples this frame. In
+          * the menu with the core paused the driver stays in blocking
+          * mode but nothing calls audio_driver_write(). Same predicate
+          * the RUNLOOP_STATE_MENU throttle uses for this question. */
+         && runloop_is_libretro_running(runloop_st,
+               settings->bools.menu_pause_libretro))
       runloop_st->pace |= RUNLOOP_PACE_AUDIO;
+   /* Mirrors the gate at the video_driver_scanline_after_frame() call
+    * site, which skips the wait under fast-forward. A failed
+    * calibration zeroes SCANLINE_NEXT, so the target test covers the
+    * unlocked case. */
    if (     settings->bools.video_scanline_sync
-         && video_st->scanline[SCANLINE_NEXT])
+         && video_st->scanline[SCANLINE_NEXT]
+         && !(input_st->flags & INP_FLAG_NONBLOCKING))
       runloop_st->pace |= RUNLOOP_PACE_SCANLINE;
    {
       retro_time_t frame_limit_min = runloop_st->frame_limit_minimum_time;
