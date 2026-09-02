@@ -873,6 +873,18 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    audio_st->synth_buf                = NULL;
    audio_st->output_samples_buf       = NULL;
 
+#ifdef HAVE_AUDIO_TIMESTRETCH
+   /* Not part of either arena, so freed here - the chokepoint for
+    * audio_driver_deinit() and CMD_EVENT_AUDIO_REINIT alike, both
+    * discontinuities the stretcher must not carry buffered audio across. */
+   if (audio_st->time_stretch)
+   {
+      audio_time_stretch_free(audio_st->time_stretch);
+      free(audio_st->time_stretch);
+      audio_st->time_stretch = NULL;
+   }
+#endif
+
    if (!audio_enable)
    {
       AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_ACTIVE);
@@ -1863,6 +1875,81 @@ static size_t audio_driver_ff_discard_bound(audio_driver_state_t *audio_st,
    return (in_frames < max_in_frames) ? in_frames : max_in_frames;
 }
 
+#ifdef HAVE_AUDIO_TIMESTRETCH
+/* Weight of one flush in the arrival average. Matches
+ * AUDIO_FF_EXP_AVG_SAMPLES so the two control loops agree on how much
+ * history counts. */
+#define AUDIO_STRETCH_ARRIVAL_AVG_N AUDIO_FF_EXP_AVG_SAMPLES
+
+/**
+ * audio_driver_time_stretch:
+ *
+ * Runs @in_frames of interleaved s16 through the WSOLA stretcher, emitting
+ * only as much as the device can accept.  Lazily allocates the ~290KB
+ * rings on first use.  @out may alias @in - audio_time_stretch_write()
+ * copies its source into the ring before audio_time_stretch_read() ever
+ * touches @out.
+ *
+ * Returns: frames written to @out, which may be 0 while filling.  Returns
+ * -1 if the driver has no write_avail() or on allocation failure; the
+ * caller should fall back to the discard/speedup path.
+ **/
+static int audio_driver_time_stretch(audio_driver_state_t *audio_st,
+      const int16_t *in, size_t in_frames, int16_t *out, size_t out_capacity)
+{
+   double ratio;
+   size_t want;
+   int    target;
+   const audio_driver_t *audio = audio_st->current_audio;
+
+   /* Without write_avail(), audio_driver_ff_discard_bound() cannot learn how
+    * much room the device has and returns @out_capacity unbounded, which
+    * would invert the ratio and expand instead of compress.  -1 is the
+    * sentinel every call site already treats as "fall back". */
+   if (!audio->write_avail)
+      return -1;
+
+   if (!audio_st->time_stretch)
+   {
+      audio_st->time_stretch = (audio_time_stretch_t*)
+            calloc(1, sizeof(*audio_st->time_stretch));
+      if (!audio_st->time_stretch)
+         return -1;
+      if (!audio_time_stretch_init(audio_st->time_stretch))
+      {
+         audio_time_stretch_free(audio_st->time_stretch);
+         free(audio_st->time_stretch);
+         audio_st->time_stretch = NULL;
+         return -1;
+      }
+      audio_st->stretch_arrival_avg = (double)in_frames;
+   }
+
+   audio_st->stretch_arrival_avg =
+           (audio_st->stretch_arrival_avg
+            * (AUDIO_STRETCH_ARRIVAL_AVG_N - 1)
+            / AUDIO_STRETCH_ARRIVAL_AVG_N)
+         + ((double)in_frames / AUDIO_STRETCH_ARRIVAL_AVG_N);
+
+   /* Overflow is dropped, not buffered - the ring is already sized for
+    * two flushes plus the search window. */
+   audio_time_stretch_write(audio_st->time_stretch, in, (int)in_frames);
+
+   /* Passing src_ratio_curr (not 1.0) converts the device's output-rate
+    * write budget into an input-rate frame count; 1.0 would ask for
+    * src_ratio_curr times too much every flush. */
+   want = audio_driver_ff_discard_bound(audio_st,
+         audio_st->src_ratio_curr, out_capacity);
+
+   target = audio_time_stretch_target_input_fill(audio_st->stretch_arrival_avg);
+   ratio  = audio_time_stretch_ratio(audio_st->stretch_arrival_avg, (int)want,
+         audio_time_stretch_input_fill(audio_st->time_stretch), target);
+
+   return audio_time_stretch_read(audio_st->time_stretch, out,
+         (int)want, ratio);
+}
+#endif
+
 /* Whether the deterministic integer (s16) game path would run for a core
  * delivering samples in format is_float.  Mirrors the use_i16 gate in
  * audio_driver_flush; also used at mixer play() time to choose the voice
@@ -2207,6 +2294,21 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          (audio_st->mute_enable || AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_MUTED)
                ? 0.0f
                : audio_st->volume_gain;
+#ifdef HAVE_AUDIO_TIMESTRETCH
+   /* Engaging/disengaging time-stretch is a discontinuity, so both edges
+    * need a reset below; computed here, at function scope, because the
+    * write_raw fast path's gate reads it too. */
+   bool stretch_engaged            = (is_slowmotion || is_fastforward)
+         && (config_get_ptr()->uints.audio_fastforward_mode
+               == FASTFORWARD_AUDIO_TIMESTRETCH);
+#endif
+
+#ifdef HAVE_AUDIO_TIMESTRETCH
+   if (audio_st->time_stretch
+         && (stretch_engaged != audio_st->stretch_was_engaged))
+      audio_time_stretch_reset(audio_st->time_stretch);
+   audio_st->stretch_was_engaged = stretch_engaged;
+#endif
 
    /* Record the core's delivered sample format for the statistics overlay. */
    audio_st->stat_core_is_float = is_float;
@@ -2219,8 +2321,19 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
     * only available when the core delivered int16; float-native cores
     * fall through to the float resampler path below (which is exactly
     * where the redundant int16<->float round-trip is avoided). */
+#ifdef HAVE_AUDIO_TIMESTRETCH
+   /* write_raw has no hook for the stretcher, so a stretch-engaged flush
+    * must be excluded here too or Time-Stretch silently does nothing on
+    * coreaudio/sdl3_audio; both also implement a normal write(), and the
+    * resamplers this path falls through to are allocated at init
+    * regardless of driver write_raw capability, so falling through here
+    * is safe. */
+#endif
    if (audio->write_raw
          && !is_float
+#ifdef HAVE_AUDIO_TIMESTRETCH
+         && !stretch_engaged
+#endif
          /* The raw path hands the driver stereo int16 as it is: no
           * upmix, no headphone render. Only when the output is plain
           * stereo. */
@@ -2319,8 +2432,9 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
     * summed into the game audio before the integer DSP/resample, exactly where
     * the float path sums them.  This removes the s16<->float round-trip on the
     * game signal and is bit-identical across platforms for that signal
-    * (reproducible output for validation and regression comparison).  Any
-    * condition failing falls through to the float path below.
+    * (reproducible output for validation and regression comparison) - except
+    * when Time-Stretch is engaged, whose WSOLA search runs in float even
+    * here. Any condition failing falls through to the float path below.
     *
     * This buys determinism, not speed, and on hosts with a vector FPU it
     * costs speed.  The float sinc driver is SIMD (SSE/NEON/AltiVec) while
@@ -2437,22 +2551,51 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          if (!(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_CONTROL))
             audio_st->src_ratio_curr = audio_st->src_ratio_orig
                   * audio_driver_sink_bias(audio_st);
+         i16_ratio = audio_st->src_ratio_curr;
          if (!is_fastforward && !audio_st->pipe_threaded)
             audio_driver_ff_mult_reset(audio_st);
-         i16_ratio = audio_driver_effective_ratio(audio_st, is_slowmotion,
-               slowmotion_ratio,
-               (   is_fastforward
-                && config_get_ptr()->uints.audio_fastforward_mode
-                      == FASTFORWARD_AUDIO_SPEEDUP)
-                  ? audio_driver_ff_mult(audio_st, rs_frames) : 1.0);
-         /* Without speedup the device is pinned near full and the
-          * write below drops most of the output; resample only what
-          * it can accept.  See audio_driver_ff_discard_bound. */
-         if (     is_fastforward
-               && config_get_ptr()->uints.audio_fastforward_mode
-                     != FASTFORWARD_AUDIO_SPEEDUP)
-            rs_frames = (unsigned)audio_driver_ff_discard_bound(
-                  audio_st, i16_ratio, rs_frames);
+         if (is_slowmotion || is_fastforward)
+         {
+            unsigned ff_mode   = config_get_ptr()->uints.audio_fastforward_mode;
+            int      stretched = -1;
+
+#ifdef HAVE_AUDIO_TIMESTRETCH
+            if (ff_mode == FASTFORWARD_AUDIO_TIMESTRETCH)
+            {
+               /* input_data_int16 has the same frame capacity as input_data
+                * (int16 units, half the float byte count) - see the arena
+                * comment above audio_driver_init_internal(). Safe to write
+                * back into it even if rs_in already points there - see
+                * audio_driver_time_stretch(). */
+               stretched = audio_driver_time_stretch(audio_st, rs_in,
+                     rs_frames, audio_st->input_data_int16,
+                     audio_st->input_data_length / (2 * sizeof(float)));
+               if (stretched >= 0)
+               {
+                  rs_in     = audio_st->input_data_int16;
+                  rs_frames = (unsigned)stretched;
+               }
+            }
+#endif
+
+            /* Not selected, or lazy allocation failed - fall back rather
+             * than break audio. */
+            if (stretched < 0)
+            {
+               i16_ratio = audio_driver_effective_ratio(audio_st,
+                     is_slowmotion, slowmotion_ratio,
+                     (   is_fastforward
+                      && ff_mode == FASTFORWARD_AUDIO_SPEEDUP)
+                        ? audio_driver_ff_mult(audio_st, rs_frames) : 1.0);
+               /* Without speedup the device is pinned near full and the
+                * write below drops most of the output; resample only what
+                * it can accept.  See audio_driver_ff_discard_bound. */
+               if (     is_fastforward
+                     && ff_mode != FASTFORWARD_AUDIO_SPEEDUP)
+                  rs_frames = (unsigned)audio_driver_ff_discard_bound(
+                        audio_st, i16_ratio, rs_frames);
+            }
+         }
 
          /* The int16 resampler writes to output_samples_int16 with no
           * capacity argument; bound the ratio to what that buffer holds. */
@@ -2767,24 +2910,63 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
    if (!(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_CONTROL))
       audio_st->src_ratio_curr = audio_st->src_ratio_orig
             * audio_driver_sink_bias(audio_st);
+   src_data.ratio           = audio_st->src_ratio_curr;
+
    if (!is_fastforward && !audio_st->pipe_threaded)
       audio_driver_ff_mult_reset(audio_st);
-   src_data.ratio           = audio_driver_effective_ratio(audio_st,
-         is_slowmotion, slowmotion_ratio,
-         (   is_fastforward
-          && config_get_ptr()->uints.audio_fastforward_mode
-                == FASTFORWARD_AUDIO_SPEEDUP)
-            ? audio_driver_ff_mult(audio_st, src_data.input_frames) : 1.0);
 
-   if (is_fastforward)
+   if (is_slowmotion || is_fastforward)
    {
-      /* Without speedup the device is pinned near full and the write
-       * below drops most of the output; resample only what it can
-       * accept.  See audio_driver_ff_discard_bound. */
-      if (config_get_ptr()->uints.audio_fastforward_mode
-            != FASTFORWARD_AUDIO_SPEEDUP)
-         src_data.input_frames = audio_driver_ff_discard_bound(
-               audio_st, src_data.ratio, src_data.input_frames);
+      unsigned ff_mode   = config_get_ptr()->uints.audio_fastforward_mode;
+      int      stretched = -1;
+
+#ifdef HAVE_AUDIO_TIMESTRETCH
+      if (ff_mode == FASTFORWARD_AUDIO_TIMESTRETCH)
+      {
+         /* The stretcher works in s16: narrow the float input into the s16
+          * scratch, stretch in place, then widen back into input_data -
+          * bounded by the smaller of the two buffers. */
+         size_t cap_i = audio_st->output_samples_int16_length
+               / (2 * sizeof(int16_t));
+         size_t cap_f = audio_st->input_data_length / (2 * sizeof(float));
+         size_t cap   = (cap_i < cap_f) ? cap_i : cap_f;
+
+         convert_float_to_s16(audio_st->output_samples_int16,
+               src_data.data_in, src_data.input_frames * 2);
+         /* Same buffer as both source and destination: safe, see
+          * audio_driver_time_stretch(). */
+         stretched = audio_driver_time_stretch(audio_st,
+               audio_st->output_samples_int16, src_data.input_frames,
+               audio_st->output_samples_int16, cap);
+         if (stretched >= 0)
+         {
+            convert_s16_to_float(audio_st->input_data,
+                  audio_st->output_samples_int16,
+                  (size_t)stretched * 2, 1.0f);
+            src_data.data_in      = audio_st->input_data;
+            src_data.input_frames = (size_t)stretched;
+         }
+      }
+#endif
+
+      /* Not selected, or lazy allocation failed - fall back rather than
+       * break audio. */
+      if (stretched < 0)
+      {
+         src_data.ratio = audio_driver_effective_ratio(audio_st,
+               is_slowmotion, slowmotion_ratio,
+               (   is_fastforward
+                && ff_mode == FASTFORWARD_AUDIO_SPEEDUP)
+                  ? audio_driver_ff_mult(audio_st, src_data.input_frames)
+                  : 1.0);
+         /* Without speedup the device is pinned near full and the write
+          * below drops most of the output; resample only what it can
+          * accept.  See audio_driver_ff_discard_bound. */
+         if (     is_fastforward
+               && ff_mode != FASTFORWARD_AUDIO_SPEEDUP)
+            src_data.input_frames = audio_driver_ff_discard_bound(
+                  audio_st, src_data.ratio, src_data.input_frames);
+      }
    }
 
    /* Bound the ratio to what the output scratch holds.  The float result is

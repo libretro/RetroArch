@@ -7262,9 +7262,18 @@ static size_t setting_get_string_representation_uint_audio_fastforward_mode(
          case FASTFORWARD_AUDIO_SPEEDUP:
             return strlcpy(s,
                   msg_hash_to_str(MSG_FASTFORWARD_AUDIO_SPEEDUP), len);
+#ifdef HAVE_AUDIO_TIMESTRETCH
          case FASTFORWARD_AUDIO_TIMESTRETCH:
             return strlcpy(s,
                   msg_hash_to_str(MSG_FASTFORWARD_AUDIO_TIMESTRETCH), len);
+#else
+         /* A stale config value of 3 can reach here in a build without the
+          * time-stretcher; audio_driver_flush() already treats it as
+          * Discard, so label it that way rather than leave the row blank. */
+         case FASTFORWARD_AUDIO_TIMESTRETCH:
+            return strlcpy(s,
+                  msg_hash_to_str(MSG_FASTFORWARD_AUDIO_DISCARD), len);
+#endif
       }
    }
    return 0;

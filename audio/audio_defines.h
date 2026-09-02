@@ -214,9 +214,17 @@ enum fastforward_audio_mode
     * pitch. */
    FASTFORWARD_AUDIO_SPEEDUP,
    /* Time-compress via WSOLA, preserving pitch. */
-   FASTFORWARD_AUDIO_TIMESTRETCH,
-   FASTFORWARD_AUDIO_LAST
+   FASTFORWARD_AUDIO_TIMESTRETCH
 };
+
+/* Highest mode the menu combobox and a config value may select. Excludes
+ * FASTFORWARD_AUDIO_TIMESTRETCH when it is compiled out, so the row never
+ * offers a mode that would silently fall back to Discard. */
+#ifdef HAVE_AUDIO_TIMESTRETCH
+#define FASTFORWARD_AUDIO_MAX FASTFORWARD_AUDIO_TIMESTRETCH
+#else
+#define FASTFORWARD_AUDIO_MAX FASTFORWARD_AUDIO_SPEEDUP
+#endif
 
 RETRO_END_DECLS
 

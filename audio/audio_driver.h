@@ -48,6 +48,9 @@ typedef struct scond scond_t;
 #endif
 #include <audio/audio_resampler.h>
 #include <audio/sinc_resampler_int16.h>
+#ifdef HAVE_AUDIO_TIMESTRETCH
+#include <audio/audio_time_stretch.h>
+#endif
 
 #include "audio_defines.h"
 #include "audio_upmix.h"
@@ -478,6 +481,21 @@ typedef struct
    void *resampler_data_int16;
    void (*resampler_int16_process)(void *, struct resampler_data_int16 *);
    void (*resampler_int16_free)(void *);
+
+#ifdef HAVE_AUDIO_TIMESTRETCH
+   /* WSOLA time-stretcher for FASTFORWARD_AUDIO_TIMESTRETCH. Lazily
+    * allocated by audio_driver_flush() on first use; freed in
+    * audio_driver_deinit_internal() alongside the other scratch buffers. */
+   audio_time_stretch_t *time_stretch;
+   /* Exponential average of frames arriving per flush, for the stretch
+    * ratio. Separate from avg_flush_delta, which averages wall-clock
+    * intervals rather than frame counts. */
+   double                stretch_arrival_avg;
+   /* Whether the previous flush engaged the stretcher; compared against
+    * the current flush's value to reset on either edge, so synthesis
+    * never splices across a gap where it went unfed. */
+   bool                  stretch_was_engaged;
+#endif
 
    /**
     * The current audio driver.
