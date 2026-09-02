@@ -689,6 +689,10 @@ typedef struct ra_asio
    float             *scratch;
    ASIOSampleType     sample_type;
    long               buffer_frames;
+   /* ASIOGetLatencies' output figure, in frames, once buffers exist:
+    * the device stage behind the ring. Zero until then, and the ring
+    * is sized from two periods instead. */
+   long               output_latency;
    size_t             ring_size;
    unsigned           sample_rate;
    /* Read by asio_cb_buffer_switch() on the driver's realtime thread
@@ -704,21 +708,29 @@ typedef struct ra_asio
    bool               buffers_created;
 } ra_asio_t;
 
-/* Frames for the ring, from the latency setting and the device
- * period. The ring is the stage rate control measures and holds half
- * full; the device's own double buffer - two periods, one playing and
- * one being filled by the callback - sits behind it and adds about a
- * period and a half. Two periods come off the setting so the two
- * stages add up to about it, and the ring is floored at
+/* The device stage behind the ring, in frames: what ASIOGetLatencies
+ * reports for output once buffers exist - a native driver says about
+ * two periods, ASIO4ALL the WDM-KS pipeline it wraps, several times
+ * that - or two periods until it has been asked. */
+static size_t asio_device_frames(const ra_asio_t *ad)
+{
+   if (ad->output_latency > 0)
+      return (size_t)ad->output_latency;
+   return (size_t)ad->buffer_frames * 2;
+}
+
+/* Frames for the ring, from the latency setting less the device stage.
+ * The ring is the stage rate control measures and holds half full; the
+ * device stage sits behind it and adds all of itself. It comes off the
+ * setting so the two add up to about it, and the ring is floored at
  * ASIO_RING_MULT periods, below which main-thread scheduling jitter
  * underran it audibly. retro_spsc rounds the result up to a power of
  * two; the capacity reported is the rounded one. */
-static size_t asio_ring_frames(unsigned sample_rate, unsigned latency,
-      size_t period_frames)
+static size_t asio_ring_frames(const ra_asio_t *ad, unsigned latency)
 {
-   size_t latency_frames = (size_t)sample_rate * latency / 1000;
-   size_t device_frames  = period_frames * 2;
-   size_t floor_frames   = period_frames * ASIO_RING_MULT;
+   size_t latency_frames = (size_t)ad->sample_rate * latency / 1000;
+   size_t device_frames  = asio_device_frames(ad);
+   size_t floor_frames   = (size_t)ad->buffer_frames * ASIO_RING_MULT;
    size_t ring_frames    = (latency_frames > device_frames)
          ? latency_frames - device_frames : 0;
    if (ring_frames < floor_frames)
@@ -726,14 +738,42 @@ static size_t asio_ring_frames(unsigned sample_rate, unsigned latency,
    return ring_frames;
 }
 
+/* Recreates the ring at the size the setting and the device stage call
+ * for, when that differs enough from what it is; otherwise clears it.
+ * Only while no callback can run: before ASIOStart, or between a stop
+ * and a restart. Returns false when the new ring could not be made,
+ * with the old one gone. */
+static bool asio_size_ring(ra_asio_t *ad, unsigned latency)
+{
+   size_t want = asio_ring_frames(ad, latency) * 2 * sizeof(float);
+
+   if (ad->ring_initialized && !(want > ad->ring_size || want * 2 <= ad->ring_size))
+   {
+      retro_spsc_clear(&ad->ring);
+      return true;
+   }
+   if (ad->ring_initialized)
+      retro_spsc_free(&ad->ring);
+   ad->ring_initialized = false;
+   if (!retro_spsc_init(&ad->ring, want))
+      return false;
+   ad->ring_initialized = true;
+   /* retro_spsc rounds up to a power of two; the capacity reported is
+    * the real one, which an empty ring's write avail is exactly. */
+   ad->ring_size        = retro_spsc_write_avail(&ad->ring);
+   return true;
+}
+
 static void asio_log_stages(const ra_asio_t *ad, unsigned latency)
 {
-   size_t ring_frames = ad->ring_size / (2 * sizeof(float));
-   RARCH_LOG("[ASIO] %u ms as a %u-frame ring (%.1f ms, measured) in front of the device's double buffer of %u frames (%.1f ms).\n",
+   size_t ring_frames   = ad->ring_size / (2 * sizeof(float));
+   size_t device_frames = asio_device_frames(ad);
+   RARCH_LOG("[ASIO] %u ms as a %u-frame ring (%.1f ms, measured) in front of the device's %s of %u frames (%.1f ms).\n",
          latency, (unsigned)ring_frames,
          (double)ring_frames * 1000.0 / ad->sample_rate,
-         (unsigned)(ad->buffer_frames * 2),
-         (double)(ad->buffer_frames * 2) * 1000.0 / ad->sample_rate);
+         ad->output_latency > 0 ? "reported output latency" : "double buffer",
+         (unsigned)device_frames,
+         (double)device_frames * 1000.0 / ad->sample_rate);
 }
 
 /* Singleton — ASIO callbacks have no user-data parameter */
@@ -1165,27 +1205,13 @@ static void *ra_asio_init(const char *device, unsigned rate,
        * reinit the driver through free()/init(), which lands here
        * on the reuse path - without this, a latency change would
        * silently keep the old ring size). */
+      if (!asio_size_ring(ad, latency))
       {
-         size_t ring_frames    = asio_ring_frames(ad->sample_rate, latency,
-               (size_t)ad->buffer_frames);
-         size_t want           = ring_frames * 2 * sizeof(float);
-         if (want > ad->ring_size || want * 2 <= ad->ring_size)
-         {
-            retro_spsc_free(&ad->ring);
-            ad->ring_initialized = false;
-            if (!retro_spsc_init(&ad->ring, want))
-            {
-               RARCH_ERR("[ASIO] Failed to resize ring buffer.\n");
-               g_asio_persistent = ad; /* Park it again */
-               return NULL;
-            }
-            ad->ring_initialized = true;
-            ad->ring_size        = retro_spsc_write_avail(&ad->ring);
-            asio_log_stages(ad, latency);
-         }
-         else
-            retro_spsc_clear(&ad->ring);
+         RARCH_ERR("[ASIO] Failed to resize ring buffer.\n");
+         g_asio_persistent = ad; /* Park it again */
+         return NULL;
       }
+      asio_log_stages(ad, latency);
       asio_prime_ring(ad);
 
       g_asio = ad;
@@ -1378,22 +1404,15 @@ static void *ra_asio_init(const char *device, unsigned rate,
     * audible pop.  Like other drivers, the DRC steady state holds the
     * ring about half full, so effective added latency is roughly half
     * this size plus the device's own double buffer. */
-   ad->ring_size = asio_ring_frames(ad->sample_rate, latency, (size_t)pref_sz)
-         * 2 * sizeof(float);
-   if (!retro_spsc_init(&ad->ring, ad->ring_size))
+   /* Sized from two periods for now - the device's reported latency is
+    * only known once buffers exist - and resized to it below, before
+    * the stream starts. */
+   ad->output_latency = 0;
+   if (!asio_size_ring(ad, latency))
    {
       RARCH_ERR("[ASIO] Failed to create ring buffer.\n");
       goto error;
    }
-   /* retro_spsc_init rounds capacity up to a power of 2.  Report the
-    * true capacity as the driver buffer size, so the frontend's rate
-    * control computes its setpoint against the ring's real bounds
-    * rather than the pre-rounding request.  An empty ring's write
-    * avail is exactly its capacity. */
-   ad->ring_size = retro_spsc_write_avail(&ad->ring);
-   asio_prime_ring(ad);
-   asio_log_stages(ad, latency);
-   ad->ring_initialized = true;
 
 #ifdef HAVE_THREADS
    ad->cond      = scond_new();
@@ -1423,9 +1442,24 @@ static void *ra_asio_init(const char *device, unsigned rate,
 
    /* Query latencies */
    if (ASIO_CALL_GET_LATENCIES(ad->iasio, &in_lat, &out_lat) == ASE_OK)
+   {
       RARCH_LOG("[ASIO] Latencies: input=%ld, output=%ld frames (%.1f ms).\n",
             in_lat, out_lat,
             (float)out_lat * 1000.0f / ad->sample_rate);
+      ad->output_latency = out_lat;
+   }
+
+   /* The device stage is known now; size the ring to the setting less
+    * it. No callback runs between ASIOCreateBuffers returning and
+    * ASIOStart, so the ring is single-threaded here. */
+   if (!asio_size_ring(ad, latency))
+   {
+      RARCH_ERR("[ASIO] Failed to size ring buffer.\n");
+      g_asio = NULL;
+      goto error;
+   }
+   asio_prime_ring(ad);
+   asio_log_stages(ad, latency);
 
    /* Start streaming — the driver will issue bufferSwitch callbacks
     * to prefill its output buffers.  The callback will output silence
