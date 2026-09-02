@@ -24,6 +24,12 @@
 #include "audio_driver.h"
 #include "../verbosity.h"
 
+/* How long a handshake between the main thread and the audio thread
+ * may run before it is reported. Both are sub-millisecond on a device
+ * that is answering, so anything near this is a device that has
+ * stopped returning from a call; the wait continues either way. */
+#define AUDIO_THREAD_HANDSHAKE_WARN_US (2 * 1000 * 1000)
+
 typedef struct audio_thread
 {
    const audio_driver_t *driver;
@@ -174,9 +180,27 @@ static void audio_thread_block(audio_thread_t *thr)
     * after its timeout. */
    audio_driver_pipeline_wake();
 
-   /* Wait until audio driver actually goes to sleep. */
-   while (!thr->stopped_ack)
-      scond_wait(thr->cond, thr->lock);
+   /* Wait until audio driver actually goes to sleep. This wait is not
+    * abandoned: callers past it act as though the thread is parked,
+    * and free() joins the thread either way, so a device that never
+    * returns from a write still stops here. It is reported, so the log
+    * names what the frontend is waiting on. */
+   {
+      bool warned = false;
+      while (!thr->stopped_ack)
+      {
+         if (scond_wait_timeout(thr->cond, thr->lock,
+                  AUDIO_THREAD_HANDSHAKE_WARN_US))
+            continue;
+         if (!warned)
+         {
+            RARCH_WARN("[Audio] Driver \"%s\" has not acknowledged a stop after %d seconds; it is not returning from a call to the device.\n",
+                  thr->driver->ident ? thr->driver->ident : "?",
+                  (int)(AUDIO_THREAD_HANDSHAKE_WARN_US / 1000000));
+            warned = true;
+         }
+      }
+   }
 
    slock_unlock(thr->lock);
 }
@@ -456,10 +480,27 @@ bool audio_init_thread(const audio_driver_t **out_driver,
    if (!(thr->thread   = sthread_create(audio_thread_loop, thr)))
       goto error;
 
-   /* Wait until thread has initialized (or failed) the driver. */
+   /* Wait until thread has initialized (or failed) the driver. Not
+    * abandoned either: the thread owns thr until it is joined, so
+    * returning early would free it underneath. A driver whose init()
+    * does not return is reported instead of stalling silently. */
    slock_lock(thr->lock);
-   while (!thr->inited)
-      scond_wait(thr->cond, thr->lock);
+   {
+      bool warned = false;
+      while (!thr->inited)
+      {
+         if (scond_wait_timeout(thr->cond, thr->lock,
+                  AUDIO_THREAD_HANDSHAKE_WARN_US))
+            continue;
+         if (!warned)
+         {
+            RARCH_WARN("[Audio] Driver \"%s\" has not returned from init after %d seconds; the device is not opening.\n",
+                  thr->driver->ident ? thr->driver->ident : "?",
+                  (int)(AUDIO_THREAD_HANDSHAKE_WARN_US / 1000000));
+            warned = true;
+         }
+      }
+   }
    slock_unlock(thr->lock);
 
    if (thr->inited < 0) /* Thread failed. */

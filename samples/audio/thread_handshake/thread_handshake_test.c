@@ -41,6 +41,10 @@ static unsigned failures = 0;
       } \
    } while (0)
 
+/* Counted by the RARCH_WARN stub in stubs_retroarch.c: the wrapper's
+ * only report that a handshake has run long. */
+extern retro_atomic_int_t warn_count;
+
 static retro_atomic_int_t stage = RETRO_ATOMIC_INT_INITIALIZER(0);
 #define STAGE(v) retro_atomic_store_release_int(&stage, (v))
 
@@ -173,6 +177,8 @@ int main(void)
          "init against a responsive device failed");
    CHECK(drv && drv->stop(data), "stop before first start failed");
    CHECK(drv && drv->start(data, false), "first start failed");
+   CHECK(retro_atomic_load_acquire_int(&warn_count) == 0,
+         "a prompt init or stop was reported as running long");
 
    /* 2. start()/stop() back to back, many times: the stop lands in
     *    the initial wait or the loop wait depending on scheduling,
@@ -189,20 +195,50 @@ int main(void)
          STAGE(2 + (int)(i >> 8));
    }
 
-   /* 3. The device stops returning from writes. The stop must still
-    *    complete once the write returns, and not before. */
+   CHECK(retro_atomic_load_acquire_int(&warn_count) == 0,
+         "prompt round-trips were reported as running long");
+
+   /* 3. The device stops returning from writes for longer than the
+    *    report threshold. The stop must still complete once the write
+    *    returns - not before, since callers then treat the thread as
+    *    parked - and it must have been reported once meanwhile. */
    STAGE(20);
-   retro_atomic_store_release_int(&stall_write_us, 2 * 1000 * 1000);
+   retro_atomic_store_release_int(&stall_write_us, 3 * 1000 * 1000);
+   /* Let the thread get into the stalled write before asking it to
+    * stop; a stop that arrives first is acknowledged promptly, which
+    * is correct but is not the case under test. */
+   sleep_us(300 * 1000);
    t0 = now_ms();
    CHECK(drv && drv->stop(data), "stop failed against a stalled device");
    t1 = now_ms();
+   CHECK(t1 - t0 >= 1000.0,
+         "stop returned before the device did (%f ms)", t1 - t0);
    CHECK(t1 - t0 < 15000.0, "stop against a stalled device took %f ms",
          t1 - t0);
+   CHECK(retro_atomic_load_acquire_int(&warn_count) == 1,
+         "a stop that ran %f ms was reported %d times, expected once",
+         t1 - t0, retro_atomic_load_acquire_int(&warn_count));
    retro_atomic_store_release_int(&stall_write_us, 0);
    CHECK(drv && drv->start(data, false), "start after a stalled stop failed");
 
    /* 4. Teardown joins the thread. */
    STAGE(21);
+   if (drv)
+      drv->free(data);
+   drv  = NULL;
+   data = NULL;
+
+   /* 5. A device slow to open: init still completes, reported once. */
+   STAGE(22);
+   retro_atomic_store_release_int(&warn_count, 0);
+   retro_atomic_store_release_int(&stall_init_us, 3 * 1000 * 1000);
+   CHECK(audio_init_thread(&drv, &data, "fake", 48000, &new_rate, 64,
+            512, false, false, &fake_driver),
+         "init against a slow device failed");
+   CHECK(retro_atomic_load_acquire_int(&warn_count) == 1,
+         "a slow init was reported %d times, expected once",
+         retro_atomic_load_acquire_int(&warn_count));
+   retro_atomic_store_release_int(&stall_init_us, 0);
    if (drv)
       drv->free(data);
 
@@ -212,6 +248,6 @@ int main(void)
       printf("%u failure(s)\n", failures);
       return 1;
    }
-   printf("audio thread handshakes: every stop acknowledged\n");
+   printf("audio thread handshakes: every stop acknowledged, stalls reported once\n");
    return 0;
 }
