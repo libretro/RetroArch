@@ -263,6 +263,17 @@ error:
       free(dest_ports[i]);
    if (jports)
       jack_free(jports);
+   /* The client, ring, condition and lock are made before the server
+    * is asked for anything; a server that is not there leaves all four
+    * to release. */
+   if (jd->client)
+      jack_client_close(jd->client);
+   if (jd->buffer)
+      jack_ringbuffer_free(jd->buffer);
+   if (jd->cond)
+      scond_free(jd->cond);
+   if (jd->cond_lock)
+      slock_free(jd->cond_lock);
    free(jd);
    return NULL;
 }
