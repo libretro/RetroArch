@@ -35,6 +35,8 @@ typedef struct rsd
    /* Bound for the blocking wait in rs_write, one callback period.
     * See the note there. */
    int64_t wait_us;
+   /* The fifo's capacity in bytes: what buffer_size() reports. */
+   size_t fifo_size;
 
    bool nonblock;
    bool is_paused;
@@ -75,14 +77,34 @@ static void *rs_init(const char *device, unsigned rate, unsigned latency,
    rsd->cond_lock = slock_new();
    rsd->cond      = scond_new();
 
-   rsd->buffer    = fifo_new(1024 * 4);
-
    channels       = 2;
    format         = RSD_S16_NE;
 
-   rsd_set_param(rd, RSD_CHANNELS, &channels);
-   rsd_set_param(rd, RSD_SAMPLERATE, &rate);
-   rsd_set_param(rd, RSD_LATENCY, &latency);
+   /* Two stages: the fifo here, which the writer fills and rate control
+    * measures and holds half full, and librsound's own buffer behind
+    * it, which its callback pulls from the fifo to keep full. The fifo
+    * holds the latency setting, in bytes of int16 stereo, and is what
+    * is reported; librsound is asked for what is left of the setting
+    * after half the fifo - half of it, floored at 16 ms or the setting
+    * - so the two add up to the setting. The fifo was a fixed 4 KiB,
+    * 21 ms at 48 kHz, whatever the setting, and librsound was asked
+    * for the whole setting on top of it. */
+   {
+      unsigned server_latency = latency / 2;
+      unsigned floor_ms       = latency < 16 ? latency : 16;
+      if (server_latency < floor_ms)
+         server_latency       = floor_ms;
+      rsd->fifo_size          = ((size_t)rate * latency / 1000)
+            * channels * sizeof(int16_t);
+      if (rsd->fifo_size < 1024 * 4)
+         rsd->fifo_size       = 1024 * 4;
+      rsd->buffer             = fifo_new(rsd->fifo_size);
+      rsd_set_param(rd, RSD_CHANNELS, &channels);
+      rsd_set_param(rd, RSD_SAMPLERATE, &rate);
+      rsd_set_param(rd, RSD_LATENCY, &server_latency);
+      RARCH_LOG("[RSound] %u ms as a %u-byte fifo (measured) in front of a %u ms server buffer.\n",
+            latency, (unsigned)rsd->fifo_size, server_latency);
+   }
 
    if (device)
       rsd_set_param(rd, RSD_HOST, (void*)device);
@@ -253,7 +275,14 @@ static size_t rs_write_avail(void *data)
 }
 
 /* TODO/FIXME - implement? */
-static size_t rs_buffer_size(void *data) { return 1024 * 4; }
+/* The fifo: the stage the writer fills and write_avail() measures.
+ * librsound's buffer behind it is kept full by its callback and adds
+ * on top. */
+static size_t rs_buffer_size(void *data)
+{
+   rsd_t *rsd = (rsd_t*)data;
+   return rsd ? rsd->fifo_size : 0;
+}
 
 /* Sleep on the condition librsound's audio callback signals after every
  * pull until at least len bytes fit in the fifo, capped at half the
