@@ -1124,6 +1124,9 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t len)
    const float *buf   = (const float *)buf_;
    size_t samples     = len / sizeof(float);
    size_t written     = 0;
+   /* Each wait below is bounded; this bounds the loop, for a unit that
+    * reports running but never renders. */
+   int laps           = 8;
 
    while (!dev->is_paused && samples > 0)
    {
@@ -1151,6 +1154,8 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t len)
                   kAudioOutputUnitProperty_IsRunning,
                   kAudioUnitScope_Global, 0,
                   &running, &size) == noErr && !running)
+            break;
+         if (--laps < 0)
             break;
          /* Brief timeout as safety net for the race where the unit
           * stops during the wait; we'll re-check on the next iteration. */
@@ -1233,6 +1238,7 @@ static ssize_t coreaudio_write_raw(void *data, const int16_t *samples,
       {
          float *out_ptr     = dev->conv_buffer;
          size_t out_samples = output_frames * 2; /* stereo */
+         int    laps        = 8;
 
          while (!dev->is_paused && out_samples > 0)
          {
@@ -1258,6 +1264,8 @@ static ssize_t coreaudio_write_raw(void *data, const int16_t *samples,
                         kAudioOutputUnitProperty_IsRunning,
                         kAudioUnitScope_Global, 0,
                         &running, &sz) == noErr && !running)
+                  break;
+               if (--laps < 0)
                   break;
                dispatch_semaphore_wait(dev->sema,
                      dispatch_time(DISPATCH_TIME_NOW, 100 * NSEC_PER_MSEC));
