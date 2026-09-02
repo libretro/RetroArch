@@ -14825,13 +14825,18 @@ ADD_DESC(audio_skew_desc);
 
             ADD_DESC(audio_dsp_desc);
 
+            /* Built whatever driver is running or configured. The
+             * settings list is built once per session, and the audio
+             * output page gates each driver's items on the configured
+             * driver when it lists them; building only the running
+             * driver's rows here left the other driver's items out of
+             * the table for the whole session, so switching driver in
+             * the menu could never show them. */
 #ifdef HAVE_WASAPI
-      if (string_is_equal(audio_driver_get_ident(), "wasapi"))
             ADD_DESC(audio_wasapi_desc);
 #endif
 
 #ifdef HAVE_ASIO
-      if (string_is_equal(audio_driver_get_ident(), "asio"))
             ADD_DESC(audio_asio_desc);
 #endif
 
@@ -14886,8 +14891,9 @@ static void settings_build_microphone(
 
             ADD_DESC(mic_misc_desc);
 
+            /* As above: built whatever driver is configured, and gated
+             * by the microphone page when it lists them. */
 #ifdef HAVE_WASAPI
-      if (string_is_equal(settings->arrays.microphone_driver, "wasapi"))
             ADD_DESC(mic_wasapi_desc);
 #endif
 

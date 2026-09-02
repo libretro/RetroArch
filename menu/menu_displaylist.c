@@ -8583,6 +8583,11 @@ unsigned menu_displaylist_build_list(
                   PARSE_ONLY_UINT, false) == 0)
             count++;
 #ifdef HAVE_WASAPI
+         /* Shown for the configured driver, as the audio output page
+          * shows its WASAPI items: the rows are always in the settings
+          * table now, and this is what keeps them off the page for
+          * every other microphone driver. */
+         if (string_is_equal(settings->arrays.microphone_driver, "wasapi"))
          {
             static const menu_displaylist_settings_row_t dl_rows_5[] = {
                { MENU_ENUM_LABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE, PARSE_ONLY_BOOL, false },
