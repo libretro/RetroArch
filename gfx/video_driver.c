@@ -6333,14 +6333,18 @@ typedef struct
    bool     locked;
    unsigned misses;         /* frames that could not make their target */
    int      target;         /* last aim point, clamped frame to frame */
+   double   release_us;     /* when the previous wait let the frame go */
+   double   work_us;        /* release -> present, measured */
 } scanline_pll_t;
 
 static scanline_pll_t scl_pll;
 
 static void scanline_pll_reset(void)
 {
-   scl_pll.locked = false;
-   scl_pll.target = 0;
+   scl_pll.locked     = false;
+   scl_pll.target     = 0;
+   scl_pll.release_us = 0.0;
+   scl_pll.work_us    = 0.0;
 }
 
 static bool scanline_pll_calibrate(void)
@@ -6499,6 +6503,7 @@ VIDEO_NOINLINE static void video_driver_scanline_before_frame(video_driver_state
 {
    (void)refresh_rate;
    (void)frame_time_target;
+   (void)core_run_time;
 
    /* Lock on first use. Calibration measures the line count, the period
     * and the residual bias together, because a mode change moves all
@@ -6515,12 +6520,15 @@ VIDEO_NOINLINE static void video_driver_scanline_before_frame(video_driver_state
 
    /* Aim so the flip lands in the middle of the blanking interval.
     *
-    * The wait releases the frame loop; the present happens
-    * core_run_time later. Aiming at a fixed fraction of the visible
-    * area therefore puts the tear on screen - a fixed 15/16 of height
-    * is line 2025 with the visible area ending at 2160, which is 135
-    * lines inside the picture. Subtract the core's own duration so the
-    * present, not the release, is what lands in blanking.
+    * The wait releases the frame loop; the flip reaches the display a
+    * whole frame's worth of work later. Aiming at a fixed fraction of
+    * the visible area therefore puts the tear on screen - a fixed 15/16
+    * of height is line 2025 with the visible area ending at 2160, 135
+    * lines inside the picture. Subtract the measured release-to-present
+    * interval so the flip, not the release, is what lands in blanking.
+    * Measured, not named: core_run_time is only 5.3 ms of a 16.2 ms
+    * frame on a PS2 core, and subtracting it alone leaves the flip
+    * 1500 lines late.
     *
     * No smoothing on core_run_time. The target moving is the
     * correction, not error: it moves because the core's duration moves,
@@ -6540,7 +6548,7 @@ VIDEO_NOINLINE static void video_driver_scanline_before_frame(video_driver_state
       int blank   = scl_pll.total - (int)video_st->height;
       int centre  = (int)video_st->height + (blank > 0 ? blank / 2 : 0);
       int want    = centre
-            - (int)((double)core_run_time / scl_pll.line_us);
+            - (int)(scl_pll.work_us / scl_pll.line_us);
       int limit   = (blank > 4) ? blank / 2 : 2;
 
       if (!scl_pll.target)
@@ -6572,6 +6580,21 @@ VIDEO_NOINLINE static void video_driver_scanline_after_frame(video_driver_state_
    (void)frame_time_target;
    (void)core_run_time;
 
+   /* Time from the previous release to here is what actually elapses
+    * between letting the frame loop go and the flip reaching the
+    * display: the core, the render, the submit and the present. Measure
+    * it rather than naming one of them - core_run_time is 5.3 ms of a
+    * 16.2 ms frame on a PS2 core, so aiming with that alone left the
+    * flip 1500 lines late and put the tear back near the top. */
+   if (scl_pll.release_us > 0.0)
+   {
+      double w = (double)cpu_features_get_time_usec() - scl_pll.release_us;
+      if (w > 0.0 && w < scl_pll.period_us * 4.0)
+         scl_pll.work_us = w;
+   }
+
    if ((target = (int)video_st->scanline[SCANLINE_NEXT]) > 0)
       scanline_pll_wait(target);
+
+   scl_pll.release_us = (double)cpu_features_get_time_usec();
 }
