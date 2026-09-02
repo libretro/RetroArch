@@ -438,6 +438,14 @@ ifeq ($(HAVE_BSV_MOVIE), 1)
    OBJ += input/bsv/bsvmovie.o
 endif
 
+# The MessagePack encoder is shared: the database stores its records
+# with it and the BSV movie format writes its frames with it, so it is
+# linked when either is built rather than only with the database.
+ifneq ($(filter 1,$(HAVE_LIBRETRODB) $(HAVE_BSV_MOVIE)),)
+   OBJ += libretro-db/rmsgpack.o \
+          libretro-db/rmsgpack_dom.o
+endif
+
 ifeq ($(HAVE_STATESTREAM), 1)
    DEFINES += -DHAVE_STATESTREAM
    OBJ += input/bsv/uint32s_index.o
@@ -549,8 +557,6 @@ ifeq ($(HAVE_LIBRETRODB), 1)
    OBJ += libretro-db/bintree.o \
           libretro-db/libretrodb.o \
           libretro-db/query.o \
-          libretro-db/rmsgpack.o \
-          libretro-db/rmsgpack_dom.o \
           database_info.o \
           tasks/task_database_cue.o
 
