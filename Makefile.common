@@ -396,6 +396,11 @@ endif
 
 OBJ     += $(LIBRETRO_COMM_DIR)/audio/resampler/audio_resampler.o
 
+ifeq ($(HAVE_AUDIO_TIMESTRETCH), 1)
+DEFINES += -DHAVE_AUDIO_TIMESTRETCH
+OBJ     += $(LIBRETRO_COMM_DIR)/audio/audio_time_stretch.o
+endif
+
 ifeq ($(HAVE_DSP_FILTER), 1)
 DEFINES += -DHAVE_DSP_FILTER
 OBJ     += $(LIBRETRO_COMM_DIR)/audio/dsp_filter.o

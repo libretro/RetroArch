@@ -923,6 +923,9 @@ FIFO BUFFER
 AUDIO RESAMPLER
 ============================================================ */
 #include "../libretro-common/audio/resampler/audio_resampler.c"
+#ifdef HAVE_AUDIO_TIMESTRETCH
+#include "../libretro-common/audio/audio_time_stretch.c"
+#endif
 #include "../libretro-common/audio/resampler/drivers/sinc_resampler.c"
 #include "../libretro-common/audio/resampler/drivers/sinc_resampler_int16.c"
 #ifdef HAVE_NEAREST_RESAMPLER

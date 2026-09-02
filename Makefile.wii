@@ -125,6 +125,8 @@ CFLAGS += -DGEKKO -U__INT32_TYPE__ -U __UINT32_TYPE__ -D__INT32_TYPE__=int
 
 HAVE_RUNAHEAD            := 1
 HAVE_DSP_FILTER          := 1
+# WSOLA rings are ~290KB; not worth it on Wii.
+HAVE_AUDIO_TIMESTRETCH   := 0
 HAVE_VIDEO_FILTER        := 1
 HAVE_FILTERS_BUILTIN     := 1
 HAVE_THREADS             := 1
