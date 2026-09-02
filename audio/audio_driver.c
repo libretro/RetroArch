@@ -530,7 +530,10 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    audio_st->pipe_cond                = NULL;
    audio_st->pipe_data_cond           = NULL;
    audio_st->pipe_lock                = NULL;
-   /* Last: everything above may have taken it. */
+   /* Last: everything above may have taken it, and audio->free() at
+    * the top of this function joined the thread that contends for it.
+    * Nothing that runs after this point may touch the mixer or the
+    * DSP filter from another thread - see audio_driver_state_lock(). */
    if (audio_st->state_lock)
       slock_free(audio_st->state_lock);
    audio_st->state_lock               = NULL;
@@ -2198,6 +2201,8 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    audio_driver_st.cached_rate_adjust = 1.0;
    audio_driver_st.samples_since_drc  = 0;
 #ifdef HAVE_THREADS
+   /* Before anything that could start a thread reaching the mixer or
+    * the DSP filter: those readers assume it is already there. */
    if (!audio_driver_st.state_lock)
       audio_driver_st.state_lock      = slock_new();
 #endif
@@ -2276,6 +2281,18 @@ static void audio_driver_pipeline_signal(audio_driver_state_t *audio_st)
 #endif
 }
 
+/**
+ * audio_driver_state_lock:
+ *
+ * Guards the mixer streams and the DSP filter against the audio
+ * thread. The NULL test is not optional locking: the lock is created
+ * before that thread exists and freed after audio->free() has joined
+ * it, so every moment at which a second thread can reach this state
+ * is a moment at which the lock is there. A caller that reaches the
+ * mixer from another thread outside an initialised audio driver would
+ * find no lock and no diagnostic, so anything that widens who touches
+ * that state has to widen this lifetime with it.
+ **/
 void audio_driver_state_lock(void)
 {
 #ifdef HAVE_THREADS
