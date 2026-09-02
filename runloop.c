@@ -7924,6 +7924,19 @@ int runloop_iterate(void)
    runloop_state_t *runloop_st            = &runloop_state;
    bool vrr_runloop_enable                = settings->bools.vrr_runloop_enable;
    retro_time_t current_time              = cpu_features_get_time_usec();
+
+   /* Reset the pace record every iteration. Several paths below return
+    * before the block that computes it - the menu's "rely on vsync
+    * throttling" early return, POLLED_AND_SLEEP - and without this the
+    * overlay keeps showing the previous frame's sources on a frame that
+    * is not being held by any of them. The vsync bit is state rather
+    * than path, so it is set here and holds for those early returns:
+    * they do rely on it. */
+   runloop_st->pace = RUNLOOP_PACE_NONE;
+   if (     settings->bools.video_vsync
+         && !(input_st->flags & INP_FLAG_NONBLOCKING)
+         && !(runloop_st->flags & RUNLOOP_FLAG_FORCE_NONBLOCK))
+      runloop_st->pace |= RUNLOOP_PACE_VSYNC;
 #ifdef HAVE_NETWORKING
    bool netplay_is_enabled                = netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL);
    bool netplay_allow_timeskip            = netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_TIMESKIP, NULL);
@@ -8266,16 +8279,10 @@ end:
    /* Record which sources hold the pace this frame. The other three
     * block inside their own subsystems; only the timer is decided
     * here. See enum runloop_pace_source. */
-   runloop_st->pace = RUNLOOP_PACE_NONE;
-   /* The driver's blocking state, not the video_vsync setting. This is
-    * the expression driver_set_nonblock_state() applies: fast-forward
-    * (INP_FLAG_NONBLOCKING) and RUNLOOP_FLAG_FORCE_NONBLOCK both put
-    * the driver into non-blocking presentation while the setting stays
-    * true, and during those frames vsync holds nothing. */
-   if (     settings->bools.video_vsync
-         && !(input_st->flags & INP_FLAG_NONBLOCKING)
-         && !(runloop_st->flags & RUNLOOP_FLAG_FORCE_NONBLOCK))
-      runloop_st->pace |= RUNLOOP_PACE_VSYNC;
+   /* VSYNC was set at the top of the iteration; see there. The vsync
+    * bit reads the driver's blocking state, not the setting: fast-forward
+    * (INP_FLAG_NONBLOCKING) and RUNLOOP_FLAG_FORCE_NONBLOCK both put the
+    * driver into non-blocking presentation while the setting stays true. */
    /* The live blocking state, not the audio_sync setting. Fast-forward
     * puts the driver into non-blocking mode for a few frames while
     * audio_sync stays true, and during those frames audio is not
