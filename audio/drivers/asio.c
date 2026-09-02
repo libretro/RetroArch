@@ -682,6 +682,11 @@ typedef struct ra_asio
    /* Whether ASIOOutputReady() returned ASE_OK when probed after the
     * buffers were created; the callback calls it only then. */
    bool               output_ready_supported;
+   /* Set by the message callback on kAsioResetRequest or
+    * kAsioBufferSizeChange: the buffers are to be disposed and created
+    * anew - the driver's preferred size may have changed - when the
+    * frontend reinitialises audio, which the same callback requests. */
+   retro_atomic_int_t rebuild_pending;
    size_t             ring_size;
    unsigned           sample_rate;
    /* Read by asio_cb_buffer_switch() on the driver's realtime thread
@@ -879,22 +884,6 @@ static void asio_cb_sample_rate_changed(ASIOSampleRate rate)
    RARCH_LOG("[ASIO] Sample rate changed to %.0f Hz.\n", rate);
 }
 
-/* Raise the shutdown flag and wake anyone blocked in ra_asio_write.
- * Setting the flag alone is not enough: it makes asio_cb_buffer_switch
- * take its early-out, so the routine that would otherwise have done the
- * waking stops signalling from that moment on. */
-static void asio_request_shutdown(void)
-{
-   ra_asio_t *ad = g_asio;
-   if (!ad)
-      return;
-   retro_atomic_store_release_int(&ad->shutdown, 1);
-#ifdef HAVE_THREADS
-   if (ad->cond)
-      scond_signal(ad->cond);
-#endif
-}
-
 static long asio_cb_message(long selector, long value,
       void *message, double *opt)
 {
@@ -913,12 +902,19 @@ static long asio_cb_message(long selector, long value,
       case kAsioEngineVersion:
          return 2L;
       case kAsioResetRequest:
-         RARCH_WARN("[ASIO] Driver requests reset.\n");
-         asio_request_shutdown();
-         return 1L;
       case kAsioBufferSizeChange:
-         RARCH_WARN("[ASIO] Buffer size change requested.\n");
-         asio_request_shutdown();
+         /* The driver's buffer size or sample rate has changed and it
+          * wants the host to tear its buffers down and make them again.
+          * As the WASAPI device-change path does, ask the frontend to
+          * reinitialise audio - on the main thread, in its own time -
+          * and have the reclaim path rebuild the buffers when it does.
+          * This used to raise shutdown, which ended audio for the
+          * session on any change from the driver's control panel. */
+         RARCH_WARN("[ASIO] Driver requests %s; audio will reinitialise.\n",
+               selector == kAsioResetRequest ? "a reset" : "a buffer size change");
+         if (g_asio)
+            retro_atomic_store_release_int(&g_asio->rebuild_pending, 1);
+         audio_state_get_ptr()->reinit_request = true;
          return 1L;
       case kAsioSupportsTimeInfo:
          return 1L; /* We implement bufferSwitchTimeInfo */
@@ -1016,6 +1012,119 @@ static void asio_prime_ring(ra_asio_t *ad)
    }
 }
 
+static void asio_dispose_buffers(ra_asio_t *ad)
+{
+   if (ad->buffers_created)
+      ASIO_CALL_DISPOSE_BUFFERS(ad->iasio);
+   ad->buffers_created = false;
+}
+
+/* Everything that depends on the driver's buffer size, from asking for
+ * it to a primed ring: the period, the scratch it needs, the output
+ * channel's sample type, the buffers themselves, the OutputReady probe,
+ * the latencies, and the ring sized from them. Run at first init, and
+ * again on reclaim after the driver asked for a reset, when its
+ * preferred size may have changed. g_asio is set by the caller before
+ * this, as the driver may call back during ASIOCreateBuffers. */
+static bool asio_create_buffers(ra_asio_t *ad, unsigned latency)
+{
+   long min_sz, max_sz, pref_sz, gran;
+   long in_lat, out_lat;
+   ASIOChannelInfo ch_info;
+
+   if (ASIO_CALL_GET_BUFFER_SIZE(ad->iasio,
+            &min_sz, &max_sz, &pref_sz, &gran) != ASE_OK)
+   {
+      RARCH_ERR("[ASIO] Failed to query buffer size.\n");
+      return false;
+   }
+   RARCH_LOG("[ASIO] Buffer sizes: min=%ld, max=%ld, preferred=%ld, granularity=%ld\n",
+         min_sz, max_sz, pref_sz, gran);
+   ad->buffer_frames = pref_sz;
+   RARCH_LOG("[ASIO] Using buffer size: %ld frames (%.1f ms).\n",
+         ad->buffer_frames,
+         (float)ad->buffer_frames * 1000.0f / ad->sample_rate);
+
+   /* Scratch for one period of interleaved float; sized to the period,
+    * so made again when the period is. */
+   free(ad->scratch);
+   ad->scratch = (float *)malloc((size_t)ad->buffer_frames
+         * 2 * sizeof(float));
+   if (!ad->scratch)
+   {
+      RARCH_ERR("[ASIO] Failed to allocate deinterleave scratch.\n");
+      return false;
+   }
+
+   memset(&ch_info, 0, sizeof(ch_info));
+   ch_info.channel  = 0;
+   ch_info.isInput  = ASIOFalse;
+   if (ASIO_CALL_GET_CHANNEL_INFO(ad->iasio, &ch_info) != ASE_OK)
+   {
+      RARCH_ERR("[ASIO] Failed to query channel info.\n");
+      return false;
+   }
+   ad->sample_type = ch_info.type;
+   if (!asio_convert_known(ad->sample_type))
+      RARCH_ERR("[ASIO] Output sample type %ld is not one this driver converts; the device will be silent.\n",
+            (long)ad->sample_type);
+   RARCH_LOG("[ASIO] Output sample type: %ld (%s)\n",
+         (long)ad->sample_type, ch_info.name);
+
+   memset(ad->buf_info, 0, sizeof(ad->buf_info));
+   ad->buf_info[0].isInput    = ASIOFalse;
+   ad->buf_info[0].channelNum = 0;
+   ad->buf_info[1].isInput    = ASIOFalse;
+   ad->buf_info[1].channelNum = 1;
+
+   /* Sized from two periods for now - the device's reported latency is
+    * only known once buffers exist - and resized to it below, before
+    * the stream starts. */
+   ad->output_latency = 0;
+   if (!asio_size_ring(ad, latency))
+   {
+      RARCH_ERR("[ASIO] Failed to create ring buffer.\n");
+      return false;
+   }
+
+   if (ASIO_CALL_CREATE_BUFFERS(ad->iasio,
+            ad->buf_info, 2, ad->buffer_frames,
+            &g_asio_callbacks) != ASE_OK)
+   {
+      RARCH_ERR("[ASIO] Failed to create buffers.\n");
+      return false;
+   }
+   ad->buffers_created = true;
+
+   /* Probe ASIOOutputReady once, now that buffers exist and before the
+    * latencies are read: a driver that honours it knows from this call
+    * that the host will notify it, and reports the shorter output
+    * latency that follows. */
+   ad->output_ready_supported = (ASIO_CALL_OUTPUT_READY(ad->iasio) == ASE_OK);
+   RARCH_LOG("[ASIO] ASIOOutputReady: %s.\n",
+         ad->output_ready_supported ? "supported; the callback will notify each half" : "not supported");
+
+   if (ASIO_CALL_GET_LATENCIES(ad->iasio, &in_lat, &out_lat) == ASE_OK)
+   {
+      RARCH_LOG("[ASIO] Latencies: input=%ld, output=%ld frames (%.1f ms).\n",
+            in_lat, out_lat,
+            (float)out_lat * 1000.0f / ad->sample_rate);
+      ad->output_latency = out_lat;
+   }
+
+   /* The device stage is known now; size the ring to the setting less
+    * it. No callback runs between ASIOCreateBuffers returning and
+    * ASIOStart, so the ring is single-threaded here. */
+   if (!asio_size_ring(ad, latency))
+   {
+      RARCH_ERR("[ASIO] Failed to size ring buffer.\n");
+      return false;
+   }
+   asio_prime_ring(ad);
+   asio_log_stages(ad, latency);
+   return true;
+}
+
 static void *ra_asio_init(const char *device, unsigned rate,
       unsigned latency, unsigned block_frames, unsigned *new_rate)
 {
@@ -1025,9 +1134,6 @@ static void *ra_asio_init(const char *device, unsigned rate,
    char drv_name[64];
    char err_msg[128];
    long in_ch, out_ch;
-   long min_sz, max_sz, pref_sz, gran;
-   long in_lat, out_lat;
-   ASIOChannelInfo ch_info;
    ASIOSampleRate current_rate;
    ra_asio_t *ad;
 
@@ -1051,6 +1157,26 @@ static void *ra_asio_init(const char *device, unsigned rate,
       retro_atomic_int_init(&ad->shutdown, 0);
       retro_atomic_int_init(&ad->is_paused, 0);
       ad->nonblock  = false;
+
+      /* The driver asked for a reset while it ran - its buffer size or
+       * sample rate changed, from its control panel or otherwise - and
+       * the frontend reinitialised audio for it. The buffers are
+       * disposed and made again at whatever size it prefers now, in
+       * place of ending audio for the session. */
+      if (retro_atomic_load_acquire_int(&ad->rebuild_pending))
+      {
+         RARCH_LOG("[ASIO] Rebuilding buffers after the driver's reset request.\n");
+         retro_atomic_store_release_int(&ad->rebuild_pending, 0);
+         asio_dispose_buffers(ad);
+         g_asio = ad;
+         if (!asio_create_buffers(ad, latency))
+         {
+            g_asio = NULL;
+            g_asio_persistent = ad; /* Park it again */
+            return NULL;
+         }
+         g_asio = NULL;
+      }
 
       /* Update sample rate if the new core wants something different */
       if (rate != ad->sample_rate
@@ -1217,83 +1343,6 @@ static void *ra_asio_init(const char *device, unsigned rate,
       *new_rate = ad->sample_rate;
 
    /* Query buffer size */
-   if (ASIO_CALL_GET_BUFFER_SIZE(ad->iasio,
-            &min_sz, &max_sz, &pref_sz, &gran) != ASE_OK)
-   {
-      RARCH_ERR("[ASIO] Failed to query buffer size.\n");
-      goto error;
-   }
-
-   RARCH_LOG("[ASIO] Buffer sizes: min=%ld, max=%ld, preferred=%ld, granularity=%ld\n",
-         min_sz, max_sz, pref_sz, gran);
-
-   ad->buffer_frames = pref_sz;
-   RARCH_LOG("[ASIO] Using buffer size: %ld frames (%.1f ms).\n",
-         ad->buffer_frames,
-         (float)ad->buffer_frames * 1000.0f / ad->sample_rate);
-
-   /* Scratch for the callback's bulk ring drain.  Allocated here, once
-    * buffer_frames is known and before anything can issue a
-    * bufferSwitch: the driver may call back during ASIOCreateBuffers.
-    * buffer_frames is never reassigned afterwards - the ASIO buffer
-    * size belongs to the COM object, which outlives park/reclaim - so
-    * this allocation stays correctly sized for the instance's whole
-    * life and is only released when the instance is really destroyed. */
-   ad->scratch = (float *)malloc((size_t)ad->buffer_frames
-         * 2 * sizeof(float));
-   if (!ad->scratch)
-   {
-      RARCH_ERR("[ASIO] Failed to allocate deinterleave scratch.\n");
-      goto error;
-   }
-
-   /* Query output channel sample type */
-   memset(&ch_info, 0, sizeof(ch_info));
-   ch_info.channel  = 0;
-   ch_info.isInput  = ASIOFalse;
-   if (ASIO_CALL_GET_CHANNEL_INFO(ad->iasio, &ch_info) != ASE_OK)
-   {
-      RARCH_ERR("[ASIO] Failed to query channel info.\n");
-      goto error;
-   }
-   ad->sample_type = ch_info.type;
-   if (!asio_convert_known(ad->sample_type))
-      RARCH_ERR("[ASIO] Output sample type %ld is not one this driver converts; the device will be silent.\n",
-            (long)ad->sample_type);
-   RARCH_LOG("[ASIO] Output sample type: %ld (%s)\n",
-         (long)ad->sample_type, ch_info.name);
-
-   /* Prepare buffer descriptors — stereo output only */
-   memset(ad->buf_info, 0, sizeof(ad->buf_info));
-   ad->buf_info[0].isInput    = ASIOFalse;
-   ad->buf_info[0].channelNum = 0;
-   ad->buf_info[1].isInput    = ASIOFalse;
-   ad->buf_info[1].channelNum = 1;
-
-   /* Create ring buffer BEFORE ASIO buffers — the driver may issue
-    * a bufferSwitch callback during ASIOCreateBuffers, and the
-    * callback needs the ring buffer to exist (even if empty).
-    *
-    * Size the ring from the user's audio latency setting, floored at
-    * ASIO_RING_MULT device periods.  The previous sizing used device
-    * periods alone, which ignored the latency setting entirely: a pro
-    * interface at a typical 32-128 sample ASIO buffer produced a
-    * 1.3-5 ms ring at 96 kHz, far below main-thread scheduling jitter
-    * (the writer runs once per video frame), so the ring chronically
-    * underran and every underrun's zero-fill in bufferSwitch was an
-    * audible pop.  Like other drivers, the DRC steady state holds the
-    * ring about half full, so effective added latency is roughly half
-    * this size plus the device's own double buffer. */
-   /* Sized from two periods for now - the device's reported latency is
-    * only known once buffers exist - and resized to it below, before
-    * the stream starts. */
-   ad->output_latency = 0;
-   if (!asio_size_ring(ad, latency))
-   {
-      RARCH_ERR("[ASIO] Failed to create ring buffer.\n");
-      goto error;
-   }
-
 #ifdef HAVE_THREADS
    ad->cond      = scond_new();
    ad->cond_lock = slock_new();
@@ -1304,52 +1353,14 @@ static void *ra_asio_init(const char *device, unsigned rate,
    }
 #endif
 
-   /* Set global pointer BEFORE creating ASIO buffers — the driver
-    * may call bufferSwitch during ASIOCreateBuffers or ASIOStart,
-    * and the callback needs g_asio to be valid. */
+   /* g_asio before the buffers: the driver may call back during
+    * ASIOCreateBuffers. */
    g_asio = ad;
-
-   /* Create ASIO buffers */
-   if (ASIO_CALL_CREATE_BUFFERS(ad->iasio,
-            ad->buf_info, 2, ad->buffer_frames,
-            &g_asio_callbacks) != ASE_OK)
+   if (!asio_create_buffers(ad, latency))
    {
-      RARCH_ERR("[ASIO] Failed to create buffers.\n");
       g_asio = NULL;
       goto error;
    }
-   ad->buffers_created = true;
-
-   /* Probe ASIOOutputReady once, now that buffers exist and before the
-    * latencies are read: a driver that honours it knows from this call
-    * that the host will notify it, and reports the shorter output
-    * latency that follows. The probe used to come after ASIOStart, too
-    * late to shape anything, and the callback called it every period
-    * whatever the answer. */
-   ad->output_ready_supported = (ASIO_CALL_OUTPUT_READY(ad->iasio) == ASE_OK);
-   RARCH_LOG("[ASIO] ASIOOutputReady: %s.\n",
-         ad->output_ready_supported ? "supported; the callback will notify each half" : "not supported");
-
-   /* Query latencies */
-   if (ASIO_CALL_GET_LATENCIES(ad->iasio, &in_lat, &out_lat) == ASE_OK)
-   {
-      RARCH_LOG("[ASIO] Latencies: input=%ld, output=%ld frames (%.1f ms).\n",
-            in_lat, out_lat,
-            (float)out_lat * 1000.0f / ad->sample_rate);
-      ad->output_latency = out_lat;
-   }
-
-   /* The device stage is known now; size the ring to the setting less
-    * it. No callback runs between ASIOCreateBuffers returning and
-    * ASIOStart, so the ring is single-threaded here. */
-   if (!asio_size_ring(ad, latency))
-   {
-      RARCH_ERR("[ASIO] Failed to size ring buffer.\n");
-      g_asio = NULL;
-      goto error;
-   }
-   asio_prime_ring(ad);
-   asio_log_stages(ad, latency);
 
    /* Start streaming — the driver will issue bufferSwitch callbacks
     * to prefill its output buffers.  The callback will output silence
