@@ -67,6 +67,12 @@ typedef struct psp_audio
 #define AUDIO_BUFFER_SIZE (1u<<13u)
 #define AUDIO_BUFFER_SIZE_MASK (AUDIO_BUFFER_SIZE-1)
 
+/* Bound on any wait for the audio thread to consume: one wait, and how
+ * many of them before the caller gets the pass back. The thread
+ * consumes a period every period while the device runs. */
+#define PSP_AUDIO_WAIT_US   100000
+#define PSP_AUDIO_WAIT_LAPS 8
+
 /* Return port used */
 static int psp_configure_audio(unsigned rate)
 {
@@ -221,9 +227,25 @@ static ssize_t psp_audio_write(void *data, const void *s, size_t len)
    }
 
    slock_lock(psp->cond_lock);
-   while (AUDIO_BUFFER_SIZE - ((uint16_t)
-      (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK) < len)
-      scond_wait(psp->cond, psp->cond_lock);
+   {
+      /* The audio thread signals every period it consumes. One that has
+       * stopped consuming - the device suspended, the thread gone -
+       * signals nothing; the wait is bounded and the write then returns
+       * having written nothing rather than holding the caller. */
+      int laps = PSP_AUDIO_WAIT_LAPS;
+      while (AUDIO_BUFFER_SIZE - ((uint16_t)
+         (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK) < len)
+      {
+         if (     !scond_wait_timeout(psp->cond, psp->cond_lock,
+                     PSP_AUDIO_WAIT_US)
+               || --laps < 0
+               || !psp->running)
+         {
+            slock_unlock(psp->cond_lock);
+            return 0;
+         }
+      }
+   }
    slock_unlock(psp->cond_lock);
 
    slock_lock(psp->fifo_lock);
@@ -321,6 +343,7 @@ static size_t psp_wait_writable(void *data, size_t len)
 {
    psp_audio_t* psp = (psp_audio_t*)data;
    size_t avail;
+   int laps         = PSP_AUDIO_WAIT_LAPS;
 
    if (len > AUDIO_BUFFER_SIZE / 2)
       len = AUDIO_BUFFER_SIZE / 2;
@@ -337,7 +360,16 @@ static size_t psp_wait_writable(void *data, size_t len)
             (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK);
       if (avail >= len)
          break;
-      scond_wait(psp->cond, psp->cond_lock);
+      /* Bounded per wait and overall: a thread that has stopped
+       * consuming hands the pass back as no space coming from this
+       * call. */
+      if (     !scond_wait_timeout(psp->cond, psp->cond_lock,
+                  PSP_AUDIO_WAIT_US)
+            || --laps < 0)
+      {
+         slock_unlock(psp->cond_lock);
+         return 0;
+      }
    }
    slock_unlock(psp->cond_lock);
    return avail;

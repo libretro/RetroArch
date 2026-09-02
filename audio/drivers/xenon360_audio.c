@@ -64,6 +64,10 @@ static INLINE uint32_t xenon360_bswap_32(uint32_t val)
       ((val >> 8) & 0xff00) | ((val << 8) & 0xff0000);
 }
 
+/* How many 50 us delays a blocking write waits for the queue to drain
+ * before giving up on it (about a second). */
+#define XENON360_AUDIO_WAIT_LAPS 20000
+
 static ssize_t xenon360_audio_write(void *data, const void *s, size_t len)
 {
    size_t _len = 0, i;
@@ -83,11 +87,16 @@ static ssize_t xenon360_audio_write(void *data, const void *s, size_t len)
    }
    else
    {
+      /* Capped: a sound queue that stops draining never drops below the
+       * mark, and the write then returns having written nothing. */
+      int laps = XENON360_AUDIO_WAIT_LAPS;
       while (xenon_sound_get_unplayed() >= MAX_BUFFER)
       {
          /* libxenon doesn't have proper
           * synchronization primitives for this... */
          udelay(50);
+         if (--laps < 0)
+            return 0;
       }
 
       xenon_sound_submit(xa->buffer, len);

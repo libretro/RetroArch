@@ -110,6 +110,10 @@ static void ctr_dsp_audio_free(void *data)
    ndspExit();
 }
 
+/* How many 100 ms polls a blocking write waits for the channel to
+ * advance before giving up on it. */
+#define CTR_DSP_AUDIO_WAIT_LAPS 20
+
 static ssize_t ctr_dsp_audio_write(void *data, const void *buf, size_t len)
 {
    u32 pos;
@@ -124,6 +128,12 @@ static ssize_t ctr_dsp_audio_write(void *data, const void *buf, size_t len)
          ctr->pos = (sample_pos + (CTR_DSP_AUDIO_COUNT >> 1)) & CTR_DSP_AUDIO_COUNT_MASK;
       else
       {
+         /* Poll the channel position while the DSP plays this out. A
+          * channel that has stopped advancing - the DSP reset, the
+          * system back from sleep with the channel dropped - never
+          * satisfies the test below, so the poll is capped and the
+          * write then returns having written nothing. */
+         int laps = CTR_DSP_AUDIO_WAIT_LAPS;
          do
          {
             svcSleepThread(100000);
@@ -133,8 +143,10 @@ static ssize_t ctr_dsp_audio_write(void *data, const void *buf, size_t len)
             if (!aptMainLoop())
             {
                retroarch_main_quit();
-               return true;
+               return -1;
             }
+            if (--laps < 0)
+               return 0;
 
             sample_pos = ndspChnGetSamplePos(ctr->channel);
          }while (    ((sample_pos - (ctr->pos + (len >>2))) & CTR_DSP_AUDIO_COUNT_MASK) > (CTR_DSP_AUDIO_COUNT >> 1)

@@ -279,6 +279,7 @@ static size_t libnx_audren_thread_audio_wait_writable(void *data, size_t len)
 {
    size_t available;
    libnx_audren_thread_t *aud = (libnx_audren_thread_t*)data;
+   int laps                   = LIBNX_AUDREN_WAIT_LAPS;
 
    if (!aud)
       return 0;
@@ -294,9 +295,14 @@ static size_t libnx_audren_thread_audio_wait_writable(void *data, size_t len)
       mutexUnlock(&aud->fifo_lock);
       if (available >= len)
          return available;
+      /* Timed and capped: a renderer that has stopped hands the pass
+       * back as no space coming from this call. */
       mutexLock(&aud->fifo_condlock);
-      condvarWait(&aud->fifo_condvar, &aud->fifo_condlock);
+      condvarWaitTimeout(&aud->fifo_condvar, &aud->fifo_condlock,
+            LIBNX_AUDREN_WAIT_NS);
       mutexUnlock(&aud->fifo_condlock);
+      if (--laps < 0)
+         return 0;
    }
 }
 
@@ -309,6 +315,12 @@ static size_t libnx_audren_thread_audio_buffer_size(void *data)
 
    return aud->buffer_size;
 }
+
+/* Bound on a wait for the render thread to take from the fifo: one
+ * wait, in nanoseconds (condvarWaitTimeout's unit), and how many before
+ * the caller gets the pass back. */
+#define LIBNX_AUDREN_WAIT_NS   100000000ULL
+#define LIBNX_AUDREN_WAIT_LAPS 8
 
 static ssize_t libnx_audren_thread_audio_write(void *data,
       const void *s, size_t len)
@@ -333,6 +345,8 @@ static ssize_t libnx_audren_thread_audio_write(void *data,
    }
    else
    {
+      int laps = LIBNX_AUDREN_WAIT_LAPS;
+
       _len = 0;
       while (_len < len && aud->running)
       {
@@ -347,10 +361,19 @@ static ssize_t libnx_audren_thread_audio_write(void *data,
          }
          else
          {
+            /* The render thread signals each time it takes from the
+             * fifo. Paused it takes nothing, and a renderer that has
+             * stopped takes nothing either; the wait is timed and
+             * capped, and the write returns what went. */
             mutexUnlock(&aud->fifo_lock);
+            if (aud->paused)
+               break;
             mutexLock(&aud->fifo_condlock);
-            condvarWait(&aud->fifo_condvar, &aud->fifo_condlock);
+            condvarWaitTimeout(&aud->fifo_condvar, &aud->fifo_condlock,
+                  LIBNX_AUDREN_WAIT_NS);
             mutexUnlock(&aud->fifo_condlock);
+            if (--laps < 0)
+               break;
          }
       }
    }
