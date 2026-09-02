@@ -53,6 +53,20 @@ else
       ls *.c 2>/dev/null)
 fi
 
+# Pass 2: the linux-c89 CI job's flags, verbatim from the Makefile's
+# C89_BUILD block, on the native compiler. -Werror=pedantic and
+# -Werror=declaration-after-statement are what MSVC-era C89 compliance
+# actually means here, and neither is implied by -std=gnu99 above. A
+# file that passes pass 1 and fails this one is exactly what has broken
+# the build before: a statement placed between declarations.
+C89CC="${C89CC:-gcc}"
+C89FLAGS="-fsyntax-only -std=c89 -ansi -pedantic -Werror=pedantic \
+ -Wno-long-long -Werror=declaration-after-statement -Wno-variadic-macros \
+ -D_GNU_SOURCE -I. -Ilibretro-common/include -Ideps -Ideps/stb -Igfx/include \
+ -DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_CONFIGFILE -DHAVE_MENU \
+ -DHAVE_NETWORKING -DHAVE_CHEEVOS -DHAVE_RUNAHEAD -DHAVE_REWIND \
+ -DHAVE_AUDIOMIXER -DHAVE_OVERLAY -DHAVE_RGUI -DHAVE_XMB -DHAVE_OZONE"
+
 fail=0; n=0
 for f in $FILES; do
    n=$((n+1))
@@ -61,8 +75,18 @@ for f in $FILES; do
    err=$($CC $FLAGS "$f" 2>&1 | grep -E ' error: ' \
          | grep -vE 'No such file|file not found' | head -3)
    if [ -n "$err" ]; then
-      echo "FAIL $f"; echo "$err" | sed 's/^/     /'; fail=1
+      echo "FAIL [win32] $f"; echo "$err" | sed 's/^/     /'; fail=1
+   fi
+   # Skip pass 2 for files that are Windows-only by path; they are not
+   # in the linux-c89 job and -ansi breaks the Windows headers.
+   case "$f" in
+      *win32*|*dinput*|*xinput*|*wasapi*|*xaudio*|*dsound*|*d3d*|*dxgi*|*wgl*|*uwp*|*winraw*|*_w.c|*/w_*) continue;;
+   esac
+   err=$($C89CC $C89FLAGS "$f" 2>&1 | grep -E ' error: ' \
+         | grep -vE 'No such file|file not found' | head -3)
+   if [ -n "$err" ]; then
+      echo "FAIL [c89]   $f"; echo "$err" | sed 's/^/     /'; fail=1
    fi
 done
-[ $fail = 0 ] && echo "ok: $n translation units clean"
+[ $fail = 0 ] && echo "ok: $n translation units clean (win32 gnu99 + linux c89 pedantic)"
 exit $fail

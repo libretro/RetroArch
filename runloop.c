@@ -7925,19 +7925,6 @@ int runloop_iterate(void)
    bool vrr_runloop_enable                = settings->bools.vrr_runloop_enable;
    retro_time_t current_time              = cpu_features_get_time_usec();
 
-   /* Reset the pace record every iteration. Several paths below return
-    * before the block that computes it - the menu's "rely on vsync
-    * throttling" early return, POLLED_AND_SLEEP - and without this the
-    * overlay keeps showing the previous frame's sources on a frame that
-    * is not being held by any of them. The vsync bit is state rather
-    * than path, so it is set here and holds for those early returns:
-    * they do rely on it. */
-   runloop_st->pace = RUNLOOP_PACE_NONE;
-   AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_WROTE);
-   if (     settings->bools.video_vsync
-         && !(input_st->flags & INP_FLAG_NONBLOCKING)
-         && !(runloop_st->flags & RUNLOOP_FLAG_FORCE_NONBLOCK))
-      runloop_st->pace |= RUNLOOP_PACE_VSYNC;
 #ifdef HAVE_NETWORKING
    bool netplay_is_enabled                = netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL);
    bool netplay_allow_timeskip            = netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_TIMESKIP, NULL);
@@ -7970,6 +7957,20 @@ int runloop_iterate(void)
       Discord_UpdateConnection();
    }
 #endif
+
+   /* Reset the pace record every iteration. Several paths below return
+    * before the block that computes it - the menu's "rely on vsync
+    * throttling" early return, POLLED_AND_SLEEP - and without this the
+    * overlay keeps showing the previous frame's sources on a frame that
+    * is not being held by any of them. The vsync bit is state rather
+    * than path, so it is set here and holds for those early returns:
+    * they do rely on it. */
+   runloop_st->pace = RUNLOOP_PACE_NONE;
+   AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_WROTE);
+   if (     settings->bools.video_vsync
+         && !(input_st->flags & INP_FLAG_NONBLOCKING)
+         && !(runloop_st->flags & RUNLOOP_FLAG_FORCE_NONBLOCK))
+      runloop_st->pace |= RUNLOOP_PACE_VSYNC;
 
 #ifdef HAVE_BSV_MOVIE
    bsv_movie_dequeue_next(input_st);
