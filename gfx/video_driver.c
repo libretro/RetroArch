@@ -5568,6 +5568,28 @@ void video_driver_frame(const void *data, unsigned width,
                   " Scanline:   %5d\n",
                   video_st->scanline[SCANLINE_NEXT]);
 
+         /* Which sources held the loop on the last frame; from
+          * runloop_state_t::pace. More than one is possible and is shown
+          * as such, since that is the overlap this exists to expose. */
+         {
+            unsigned pace = runloop_st->pace;
+            char     pbuf[48];
+            size_t   plen = 0;
+            pbuf[0] = '\0';
+            if (pace & RUNLOOP_PACE_VSYNC)
+               plen += strlcpy(pbuf + plen, "VSync", sizeof(pbuf) - plen);
+            if (pace & RUNLOOP_PACE_AUDIO)
+               plen += strlcpy(pbuf + plen, plen ? "+Audio" : "Audio", sizeof(pbuf) - plen);
+            if (pace & RUNLOOP_PACE_SCANLINE)
+               plen += strlcpy(pbuf + plen, plen ? "+Scanline" : "Scanline", sizeof(pbuf) - plen);
+            if (pace & RUNLOOP_PACE_TIMER)
+               plen += strlcpy(pbuf + plen, plen ? "+Timer" : "Timer", sizeof(pbuf) - plen);
+            if (!plen)
+               strlcpy(pbuf, "None", sizeof(pbuf));
+            __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+                  " Pacing:     %s\n", pbuf);
+         }
+
          if (video_st->frame_delay_target > 0)
             __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
                   " Frame Delay:%2u.00 ms\n"
