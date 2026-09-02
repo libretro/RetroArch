@@ -188,6 +188,12 @@ static void d3dkmt_init(void)
             GetProcAddress(GetModuleHandle("gdi32.dll"), "D3DKMTOpenAdapterFromHdc");
       pD3DKMTGetScanLine = (D3DKMTGETSCANLINE)
             GetProcAddress(GetModuleHandle("gdi32.dll"), "D3DKMTGetScanLine");
+      /* Optional: only the phase anchor depends on it, and
+       * d3dkmt_wait_vblank() reports its absence so the caller can
+       * fall back. Not part of the guard below for that reason. */
+      pD3DKMTWaitForVerticalBlankEvent = (D3DKMTWAITFORVERTICALBLANKEVENT)
+            GetProcAddress(GetModuleHandle("gdi32.dll"),
+                  "D3DKMTWaitForVerticalBlankEvent");
 
       /* Both exports are WDDM, so they are absent under XDDM - there
        * are no D3DKMT entry points in gdi32 before Vista at all.
@@ -234,9 +240,26 @@ static void d3dkmt_init(void)
          sl.VidPnSourceId      = d3dkmt_adapter_VidPnSourceId;
          d3dkmt_adapter.sl     = sl;
       }
+
+      {
+         D3DKMT_WAITFORVERTICALBLANKEVENT vb = {0};
+         vb.hAdapter           = d3dkmt_adapter_hAdapter;
+         vb.VidPnSourceId      = d3dkmt_adapter_VidPnSourceId;
+         /* hDevice is documented optional and is not needed to wait on
+          * a VidPn source. */
+         d3dkmt_adapter.vb     = vb;
+      }
    }
 
    video_driver_scanline_init();
+}
+
+bool d3dkmt_wait_vblank(void)
+{
+   if (!pD3DKMTWaitForVerticalBlankEvent || !d3dkmt_adapter.vb.hAdapter)
+      return false;
+   return (pD3DKMTWaitForVerticalBlankEvent(&d3dkmt_adapter.vb)
+         == STATUS_SUCCESS);
 }
 
 int d3dkmt_scanline_get(void)
