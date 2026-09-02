@@ -6480,6 +6480,25 @@ static bool config_load_file(global_t *global,
          *bool_settings[i].ptr = tmp;
    }
 
+   /* audio_threaded_pipeline briefly held off/automatic/on rather than
+    * a plain bool, and wrote that as a number. A bool is always saved
+    * as "true" or "false", so a numeric value here is that older
+    * three-way one: automatic (1) means the pipeline was never asked
+    * for and reads as the default, on (2) means it was. The value is
+    * rewritten in the settings, so the next save records it as a
+    * bool and this stops applying. */
+   {
+      const struct config_entry_list *entry =
+            (const struct config_entry_list*)config_get_entry(conf,
+                  "audio_threaded_pipeline");
+
+      if (entry && entry->value[0] >= '0' && entry->value[0] <= '9'
+            && entry->value[1] == '\0')
+         configuration_set_bool(settings,
+               settings->bools.audio_threaded_pipeline,
+               (entry->value[0] == '2'));
+   }
+
 #ifdef HAVE_NETWORKGAMEPAD
    {
       char tmp[64];
