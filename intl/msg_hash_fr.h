@@ -301,6 +301,8 @@ static const struct
    char s_8c7495e3[16];
    char s_ad7c73f6[16];
    char s_30acd6fb[22];
+   char s_35dcde4f[41];
+   char s_ce7da552[49];
    char s_04b30c51[20];
    char s_e5aeacf9[21];
    char s_24976a5b[35];
@@ -2420,6 +2422,7 @@ static const struct
    char s_f7cc6630[35];
    char s_310ec7bd[80];
    char s_5832a2c2[132];
+   char s_f47e544f[288];
    char s_20cc6597[108];
    char s_21b0bad3[48];
    char s_66e9521c[77];
@@ -2449,6 +2452,10 @@ static const struct
    char s_5977d6d8[50];
    char s_cb67f2a4[35];
    char s_3c3598a9[49];
+   char s_3bac47bd_0[500];
+   char s_3bac47bd_1[20];
+   char s_90e7db40_0[500];
+   char s_90e7db40_1[80];
    char s_4b78ee7f[88];
    char s_aed11d67[133];
    char s_dbe6e749[98];
@@ -4717,6 +4724,8 @@ static const struct
    "Etat : Arr\303\252t\303\251",
    "Synchronisation",
    "Synchronisation audio",
+   "Pipeline sur plusieurs fils d'ex\303\251cution",
+   "Augmenter la priorit\303\251 du fil d'ex\303\251cution audio",
    "Gain de volume (dB)",
    "Mode exclusif WASAPI",
    "Format de virgule flottante WASAPI",
@@ -6876,6 +6885,10 @@ static const struct
    "Les ressources de menu utilis\303\251s par RetroArch sont conserv\303\251s dans ce dossier.",
    "Ouvrir le panneau de configuration du pilote ASIO pour configurer les r\303\251glages de routage"
    " et de m\303\251moire tampon du p\303\251riph\303\251rique.",
+   "Nombre d'images que le pilote audio traite par bloc. 0 demande au pilote d'utiliser la valeur pr"
+   "opre au p\303\251riph\303\251rique, ce qui convient \303\240 la plupart des configurations ; une"
+   " taille de bloc plus importante privil\303\251gie la stabilit\303\251 (en \303\251vitant les cou"
+   "pures) au d\303\251triment de la latence.",
    "Remplacer le p\303\251riph\303\251rique audio utilis\303\251 par d\303\251faut par le pilote aud"
    "io. Cette option d\303\251pend du pilote.",
    "Pilote audio \303\240 utiliser. (Red\303\251marrage requis)",
@@ -6932,6 +6945,22 @@ static const struct
    "Modifier les r\303\251glages de l'entr\303\251e/sortie audio.",
    "Synchroniser l'audio. Recommand\303\251.",
    "Modifier les r\303\251glages de synchronisation audio.",
+   "Le r\303\251\303\251chantillonnage, le filtrage et le mixage audio sont effectu\303\251s sur le "
+   "fil d'ex\303\251cution audio plut\303\264t qu'au sein de chaque image. On obtient ainsi la m\303"
+   "\252me latence que pour le chemin synchrone aux images, quel que soit le r\303\251glage de laten"
+   "ce audio, tout en mesurant le contr\303\264le de cadence au rythme propre du p\303\251riph\303"
+   "\251rique et en sortant le r\303\251\303\251chantillonneur du budget allou\303\251 \303\240 l'im"
+   "age. Les pilotes audio incapables de sortir le p\303\251riph\303\251rique de veille continuent d"
+   "'utiliser le chemin sy",
+   "nchrone aux images.",
+   "Demande au syst\303\250me d'exploitation de planifier le fil d'ex\303\251cution audio avec une p"
+   "riorit\303\251 sup\303\251rieure \303\240 celle du reste de l'interface graphique, afin de r\303"
+   "\251duire le risque qu'une image gourmande en ressources ne prive le p\303\251riph\303\251rique "
+   "audio de donn\303\251es. Cela permet d'obtenir une latence audio plus faible sur les syst\303"
+   "\250mes qui le prennent en charge ; si le syst\303\250me refuse, la priorit\303\251 par d\303"
+   "\251faut est conserv\303\251e et rien d'autre ne change. Cette mesure s'applique au fil d'ex\303"
+   "\251cution audio sur",
+   " lequel s'ex\303\251cutent le pipeline multithread et les callbacks audio principaux.",
    "Volume sonore (en dB). 0 dB correspond au volume normal, et aucun gain n'est appliqu\303\251.",
    "Autoriser le pilote WASAPI \303\240 prendre le contr\303\264le exclusif du p\303\251riph\303\251"
    "rique audio. Si d\303\251sactiv\303\251, le mode partag\303\251 sera utilis\303\251.",
@@ -9501,7 +9530,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (215972u
+      (sizeof(msg_hash_fr_blob) == (217450u
 #ifdef ANDROID
        + 373u
 #endif
@@ -10197,6 +10226,8 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_THREADED_PIPELINE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
@@ -12315,6 +12346,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
@@ -12342,6 +12374,8 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,

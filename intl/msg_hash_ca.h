@@ -2434,6 +2434,8 @@ static const struct
    char s_5977d6d8[52];
    char s_cb67f2a4[33];
    char s_3c3598a9[51];
+   char s_3bac47bd[425];
+   char s_90e7db40[450];
    char s_4b78ee7f[72];
    char s_aed11d67[146];
    char s_dbe6e749[97];
@@ -6858,6 +6860,17 @@ static const struct
    "Canvia les opcions d'entrada i sortida de l'\303\240udio.",
    "Sincronitza l'\303\240udio. Recomanat.",
    "Canvia les opcions de sincronitzaci\303\263 de l'\303\240udio.",
+   "Remostreja, filtra i mescla l'\303\240udio al fil d'\303\240udio en comptes de dins de cada foto"
+   "grama. La mateixa lat\303\250ncia que la ruta s\303\255ncrona amb fotogrames a qualsevol configu"
+   "raci\303\263 de lat\303\250ncia d'\303\240udio, amb el control de velocitat mesurat al ritme pro"
+   "pi del dispositiu i el remostrejador fora del pressupost de fotogrames. Els controladors d'\303"
+   "\240udio que no es poden activar al dispositiu mantenen la ruta s\303\255ncrona amb fotogrames.",
+   "Demana al sistema operatiu que programi el fil d'\303\240udio per davant de la resta del fronten"
+   "d, de manera que sigui menys probable que un marc ocupat deixi el dispositiu d'\303\240udio sens"
+   "e servei. Permet que la lat\303\250ncia d'\303\240udio disminueixi en els sistemes que la conced"
+   "eixen; un sistema que la rebutja mant\303\251 la prioritat per defecte i res m\303\251s canvia. "
+   "S'aplica al fil d'\303\240udio en qu\303\250 s'executen el Threaded Pipeline i les callbacks d'"
+   "\303\240udio principals.",
    "Volum del so (en dB). 0 dB \303\251s el volum normal, sense cap guany afegit.",
    "Permet al controlador WASAPI prendre el control exclusiu del dispositiu d\342\200\231\303\240udi"
    "o. Si es desactiva aquesta opci\303\263, ser\303\240 usat en mode compartit.",
@@ -9282,7 +9295,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (200774u
+      (sizeof(msg_hash_ca_blob) == (201649u
 #ifdef ANDROID
        + 281u
 #endif
@@ -12114,6 +12127,8 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,

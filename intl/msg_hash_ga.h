@@ -300,6 +300,8 @@ static const struct
    char s_8c7495e3[15];
    char s_ad7c73f6[12];
    char s_30acd6fb[12];
+   char s_35dcde4f[22];
+   char s_ce7da552[35];
    char s_04b30c51[24];
    char s_e5aeacf9[20];
    char s_24976a5b[23];
@@ -2474,6 +2476,8 @@ static const struct
    char s_5977d6d8[44];
    char s_cb67f2a4[28];
    char s_3c3598a9[42];
+   char s_3bac47bd[393];
+   char s_90e7db40[492];
    char s_4b78ee7f[95];
    char s_aed11d67[146];
    char s_dbe6e749[106];
@@ -4806,6 +4810,8 @@ static const struct
    "St\303\241t: Stoptha",
    "Sioncr\303\263n\303\272",
    "Sioncr\303\263n\303\272",
+   "P\303\255bl\303\255ne Sn\303\241ithithe",
+   "Ardaigh Tosa\303\255ocht Sn\303\241ithe Fuaime",
    "Gn\303\263thachan Toirte (dB)",
    "M\303\263d Eisiach WASAPI",
    "Form\303\241id Sn\303\241mh WASAPI",
@@ -7073,6 +7079,20 @@ static const struct
    "Athraigh socruithe ionchuir/aschuir fuaime.",
    "Sioncr\303\263naigh fuaim. Molta.",
    "Athraigh socruithe sioncr\303\263naithe fuaime.",
+   "Athshampl\303\241il, scag agus measc fuaim ar an sn\303\241ithe fuaime seachas taobh istigh de g"
+   "ach fr\303\241ma. An moill ch\303\251anna leis an gcos\303\241n fr\303\241ma-shioncr\303\263nach"
+   " ag aon socr\303\272 Moill Fuaime, le rial\303\272 r\303\241ta \303\241 thomhas ag luas an fheis"
+   "te f\303\251in agus an t-athshampl\303\241la\303\255 lasmuigh den bhuis\303\251ad fr\303\241ma. "
+   "Coinn\303\255onn tiom\303\241naithe fuaime nach f\303\251idir leo m\303\272scailt ar an bhfeiste"
+   " an cos\303\241n fr\303\241ma-shioncr\303\263nach.",
+   "Iarr ar an gc\303\263ras oibri\303\272ch\303\241in an sn\303\241ithe fuaime a sceideal\303\272 r"
+   "oimh an gcuid eile den tosaigh, ionas go mbeidh fr\303\241ma gn\303\263thach n\303\255os l\303"
+   "\272 seans ann go gcuirfidh s\303\251 isteach ar an ngl\303\251as fuaime. Ligeann s\303\251 don "
+   "Mhoill Fuaime dul n\303\255os \303\255sle ar ch\303\263rais a dheona\303\255onn \303\251; coinn"
+   "\303\255onn c\303\263ras a dhi\303\272lta\303\255onn an tosa\303\255ocht r\303\251amhshocraithe "
+   "agus n\303\255 athra\303\255onn aon rud eile. Baineann s\303\251 seo leis an sn\303\241ithe fuai"
+   "me a ritheann an P\303\255bl\303\255ne Sn\303\241ithithe agus na glaonna ais fuaime l\303\241rna"
+   "cha air.",
    "Toirt fuaime (i dB). Is gn\303\241th-thoirt \303\251 0 dB, agus n\303\255 chuirtear aon ghn\303"
    "\263thachan i bhfeidhm.",
    "Lig don tiom\303\241na\303\255 WASAPI smacht eisiach a ghlacadh ar an ngl\303\251as fuaime. M"
@@ -9879,7 +9899,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (204527u
+      (sizeof(msg_hash_ga_blob) == (205469u
 #ifdef ANDROID
        + 390u
 #endif
@@ -10577,6 +10597,8 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_THREADED_PIPELINE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
@@ -12748,6 +12770,8 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,

@@ -292,6 +292,7 @@ static const struct
    char s_8c7495e3[17];
    char s_ad7c73f6[16];
    char s_30acd6fb[16];
+   char s_ce7da552[38];
    char s_04b30c51[26];
    char s_e5aeacf9[24];
    char s_24976a5b[25];
@@ -2377,6 +2378,8 @@ static const struct
    char s_5977d6d8[50];
    char s_cb67f2a4[34];
    char s_3c3598a9[44];
+   char s_3bac47bd[447];
+   char s_90e7db40[465];
    char s_4b78ee7f[62];
    char s_aed11d67[151];
    char s_dbe6e749[94];
@@ -4588,6 +4591,7 @@ static const struct
    "Status: Gestoppt",
    "Synchronisation",
    "Synchronisation",
+   "Priorit\303\244t des Audio-Threads erh\303\266hen",
    "Lautst\303\244rkeanpassung (dB)",
    "Exklusiver WASAPI-Modus",
    "WASAPI-Gleitkomma-Format",
@@ -6724,6 +6728,17 @@ static const struct
    "Audioeinstellungen f\303\274r Ein- und Ausgabe \303\244ndern.",
    "Audio synchronisieren. Empfohlen.",
    "Audiosynchronisationseinstellungen \303\244ndern.",
+   "Das Resampling, Filtern und Mischen von Audio erfolgt im Audiothread statt innerhalb jedes einze"
+   "lnen Frames. Bei jeder Einstellung der Audiolatenz wird die gleiche Latenz wie beim framesynchro"
+   "nen Pfad erreicht, wobei die Ratensteuerung entsprechend dem ger\303\244teeigenen Takt erfolgt u"
+   "nd der Resampler nicht in das Frame-Budget einflie\303\237t. Audiotreiber, die das Ger\303\244t "
+   "nicht aus dem Ruhezustand wecken k\303\266nnen, behalten den framesynchronen Pfad bei.",
+   "Das Betriebssystem wird angewiesen, den Audiothread vor dem Rest des Frontends zu behandeln, sod"
+   "ass es weniger wahrscheinlich ist, dass ein ausgelasteter Frame das Audioger\303\244t ausbremst."
+   " Die Audiolatenz wird auf Systemen, die dies zulassen, verringert; ein System, das dies ablehnt,"
+   " beh\303\244lt die Standardpriorit\303\244t bei, und es \303\244ndert sich nichts weiter. Dies g"
+   "ilt f\303\274r den Audiothread, auf dem die Threaded Pipeline und die Core-Audio-Callbacks ausge"
+   "f\303\274hrt werden.",
    "Lautst\303\244rkeanpassung in dB. 0 dB ist die normale Lautst\303\244rke.",
    "Dem WASAPI-Treiber erlauben, die vollst\303\244ndige Kontrolle \303\274ber das Audio-Ger\303\244"
    "t zu \303\274bernehmen. Wenn deaktiviert, wird der gemeinsame Modus verwendet.",
@@ -9057,7 +9072,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (192678u
+      (sizeof(msg_hash_de_blob) == (193628u
 #ifdef ANDROID
        + 358u
 #endif
@@ -9755,6 +9770,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
@@ -11837,6 +11853,8 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,

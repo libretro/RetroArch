@@ -297,6 +297,8 @@ static const struct
    char s_8c7495e3[15];
    char s_ad7c73f6[16];
    char s_30acd6fb[16];
+   char s_35dcde4f[21];
+   char s_ce7da552[40];
    char s_04b30c51[12];
    char s_e5aeacf9[22];
    char s_24976a5b[34];
@@ -2423,6 +2425,8 @@ static const struct
    char s_5977d6d8[55];
    char s_cb67f2a4[34];
    char s_3c3598a9[56];
+   char s_3bac47bd[397];
+   char s_90e7db40[405];
    char s_4b78ee7f[52];
    char s_aed11d67[129];
    char s_dbe6e749[98];
@@ -4648,6 +4652,8 @@ static const struct
    "Estado: Parado",
    "Sincroniza\303\247\303\243o",
    "Sincroniza\303\247\303\243o",
+   "Pipeline multithread",
+   "Aumentar prioridade da thread de \303\241udio",
    "Volume (dB)",
    "Modo WASAPI exclusivo",
    "Formato WASAPI de ponto flutuante",
@@ -6834,6 +6840,16 @@ static const struct
    "Altera as configura\303\247\303\265es da entrada/sa\303\255da de \303\241udio.",
    "Sincroniza o \303\241udio. Recomendado.",
    "Altera as configura\303\247\303\265es de sincroniza\303\247\303\243o de \303\241udio.",
+   "Reamostra, filtra e combina o \303\241udio na thread de \303\241udio em vez de quadro a quadro. "
+   "Mesma lat\303\252ncia do caminho de quadro s\303\255ncrono em qualquer configura\303\247\303\243"
+   "o da \"Lat\303\252ncia de \303\201udio\", com o controle de taxa calculado no ritmo do pr\303"
+   "\263prio dispositivo e a reamostragem fora do recurso de quadro. Os drivers de \303\241udio que "
+   "n\303\243o podem ser ativados no dispositivo mant\303\252m o caminho de quadro s\303\255ncrono.",
+   "Pede para o sistema operacional processar a thread de \303\241udio na frente das outras, ent\303"
+   "\243o um quadro pesado tem menos probabilidade de frustrar o dispositivo de \303\241udio. Permit"
+   "e que a \"Lat\303\252ncia de \303\201udio\" seja mais baixa em sistemas que aprovam; um sistema "
+   "que recusa mant\303\251m a prioridade padr\303\243o. Aplica-se na thread de \303\241udio da \"Pi"
+   "peline multithread\" e nas chamadas de retorno do n\303\272cleo em execu\303\247\303\243o.",
    "Volume do \303\241udio (em dB). O volume padr\303\243o \303\251 0 dB.",
    "Permite ao driver WASAPI obter controle exclusivo do dispositivo de \303\241udio. Se desativado,"
    " o modo compartilhado ser\303\241 utilizado.",
@@ -9265,7 +9281,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_br_blob_check[
-      (sizeof(msg_hash_pt_br_blob) == (194063u
+      (sizeof(msg_hash_pt_br_blob) == (194926u
 #ifdef ANDROID
        + 352u
 #endif
@@ -9968,6 +9984,8 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_THREADED_PIPELINE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
@@ -12092,6 +12110,8 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
