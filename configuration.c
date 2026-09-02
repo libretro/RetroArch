@@ -7252,6 +7252,18 @@ static bool config_load_file(global_t *global,
       }
    }
 
+   /* Migrate the pre-enum fast-forward audio bools. Only applied when the
+    * new key is absent, so an explicit audio_fastforward_mode always wins. */
+   if (!config_get_entry(conf, "audio_fastforward_mode"))
+   {
+      bool old_val = false;
+      if (config_get_bool(conf, "audio_fastforward_mute", &old_val) && old_val)
+         settings->uints.audio_fastforward_mode = FASTFORWARD_AUDIO_MUTE;
+      else if (config_get_bool(conf, "audio_fastforward_speedup", &old_val)
+            && old_val)
+         settings->uints.audio_fastforward_mode = FASTFORWARD_AUDIO_SPEEDUP;
+   }
+
    if (conf)
       config_file_free(conf);
    if (bool_settings)
@@ -9268,6 +9280,21 @@ bool config_save_file(const char *path)
       struct config_entry_list *tmp = config_get_entry(conf, tmp_key);
       if (tmp)
          config_unset(conf, tmp->key);
+   }
+
+   /* Remove unused fast-forward audio bools after migrating to
+    * "audio_fastforward_mode" */
+   {
+      const char *old_keys[2];
+      size_t i;
+      old_keys[0] = "audio_fastforward_mute";
+      old_keys[1] = "audio_fastforward_speedup";
+      for (i = 0; i < 2; i++)
+      {
+         struct config_entry_list *tmp = config_get_entry(conf, old_keys[i]);
+         if (tmp)
+            config_unset(conf, tmp->key);
+      }
    }
 
    ret = config_file_write(conf, path, true);

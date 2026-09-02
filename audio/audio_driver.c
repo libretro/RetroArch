@@ -2441,12 +2441,16 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
             audio_driver_ff_mult_reset(audio_st);
          i16_ratio = audio_driver_effective_ratio(audio_st, is_slowmotion,
                slowmotion_ratio,
-               (is_fastforward && config_get_ptr()->bools.audio_fastforward_speedup)
+               (   is_fastforward
+                && config_get_ptr()->uints.audio_fastforward_mode
+                      == FASTFORWARD_AUDIO_SPEEDUP)
                   ? audio_driver_ff_mult(audio_st, rs_frames) : 1.0);
          /* Without speedup the device is pinned near full and the
           * write below drops most of the output; resample only what
           * it can accept.  See audio_driver_ff_discard_bound. */
-         if (is_fastforward && !config_get_ptr()->bools.audio_fastforward_speedup)
+         if (     is_fastforward
+               && config_get_ptr()->uints.audio_fastforward_mode
+                     != FASTFORWARD_AUDIO_SPEEDUP)
             rs_frames = (unsigned)audio_driver_ff_discard_bound(
                   audio_st, i16_ratio, rs_frames);
 
@@ -2767,7 +2771,9 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       audio_driver_ff_mult_reset(audio_st);
    src_data.ratio           = audio_driver_effective_ratio(audio_st,
          is_slowmotion, slowmotion_ratio,
-         (is_fastforward && config_get_ptr()->bools.audio_fastforward_speedup)
+         (   is_fastforward
+          && config_get_ptr()->uints.audio_fastforward_mode
+                == FASTFORWARD_AUDIO_SPEEDUP)
             ? audio_driver_ff_mult(audio_st, src_data.input_frames) : 1.0);
 
    if (is_fastforward)
@@ -2775,7 +2781,8 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       /* Without speedup the device is pinned near full and the write
        * below drops most of the output; resample only what it can
        * accept.  See audio_driver_ff_discard_bound. */
-      if (!config_get_ptr()->bools.audio_fastforward_speedup)
+      if (config_get_ptr()->uints.audio_fastforward_mode
+            != FASTFORWARD_AUDIO_SPEEDUP)
          src_data.input_frames = audio_driver_ff_discard_bound(
                audio_st, src_data.ratio, src_data.input_frames);
    }
@@ -4018,7 +4025,8 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
        * audio_driver_fastforward_ratio_mult(). Measured before the ring
        * write so a block the full ring drops still counts as the time
        * the core took to produce it. */
-      if (is_fastforward && config_get_ptr()->bools.audio_fastforward_speedup)
+      if (is_fastforward && config_get_ptr()->uints.audio_fastforward_mode
+            == FASTFORWARD_AUDIO_SPEEDUP)
          retro_atomic_store_release_int(&audio_st->pipe_ff_mult_q16,
                (int)(audio_driver_fastforward_ratio_mult(audio_st, frames)
                   * 65536.0));
@@ -4197,7 +4205,8 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
          (snap & AUDIO_SNAP_SLOWMOTION) ? true : false,
          config_get_ptr()->floats.slowmotion_ratio,
          (   (snap & AUDIO_SNAP_FASTMOTION)
-          && config_get_ptr()->bools.audio_fastforward_speedup)
+          && config_get_ptr()->uints.audio_fastforward_mode
+                == FASTFORWARD_AUDIO_SPEEDUP)
             ? audio_driver_ff_mult(audio_st, have) : 1.0);
    if (audio_st->buffer_size)
    {

@@ -333,6 +333,10 @@ enum msg_hash_enums
    MSG_COMPRESSION_CODEC_ZSTD,
    MSG_RESAMPLER_QUALITY_HIGHER,
    MSG_RESAMPLER_QUALITY_HIGHEST,
+   MSG_FASTFORWARD_AUDIO_DISCARD,
+   MSG_FASTFORWARD_AUDIO_MUTE,
+   MSG_FASTFORWARD_AUDIO_SPEEDUP,
+   MSG_FASTFORWARD_AUDIO_TIMESTRETCH,
    MSG_DISCORD_CONNECTION_REQUEST,
    MSG_ADDED_TO_FAVORITES,
    MSG_ADD_TO_FAVORITES_FAILED,
@@ -20570,8 +20574,14 @@ enum msg_hash_enums
    MENU_LABEL(AUDIO_MUTE),
    MENU_LABEL(AUDIO_MIXER_MUTE),
    MENU_LABEL(AUDIO_RESPECT_SILENT_MODE),
+   /* AUDIO_FASTFORWARD_MUTE and AUDIO_FASTFORWARD_SPEEDUP back no setting
+    * but stay declared: each intl/msg_hash_XX.h holds an ids[] array
+    * positionally correlated with its own string table, so dropping an id
+    * here without dropping its paired entry in every translation would shift
+    * the rest out of alignment. */
    MENU_LABEL(AUDIO_FASTFORWARD_MUTE),
    MENU_LABEL(AUDIO_FASTFORWARD_SPEEDUP),
+   MENU_LABEL(AUDIO_FASTFORWARD_MODE),
    MENU_LABEL(AUDIO_REWIND_MUTE),
    /* GENERATED REGION: audio sync setting enum rows (see settings/settings_def_audio_sync.h). */
 #define SETTINGS_DEF_ENUM_PASS

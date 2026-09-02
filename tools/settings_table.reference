@@ -144,8 +144,6 @@ bool	menu_xmb_show_horizontal_list	1	1
 bool	menu_xmb_show_title_header	1	1
 bool	crt_switch_resolution_use_custom_refresh_rate	1	0
 bool	crt_switch_hires_menu	1	0
-bool	audio_fastforward_mute	1	0
-bool	audio_fastforward_speedup	1	0
 bool	audio_rewind_mute	1	0
 bool	input_sensors_enable	1	1
 bool	ai_service_enable	1	0
@@ -490,6 +488,7 @@ uint	xmb_current_menu_icon	1	1
 uint	crt_switch_resolution	1	CRT_SWITCH_NONE
 uint	crt_switch_resolution_super	1	2560
 uint	video_sdl_display_server	1	VIDEO_SDL_DISPLAY_SERVER_AUTO
+uint	audio_fastforward_mode	1	FASTFORWARD_AUDIO_DISCARD
 uint	menu_scroll_delay	1	256
 uint	ai_service_source_lang	1	0
 uint	ai_service_target_lang	1	0
@@ -800,8 +799,6 @@ bool	menu_xmb_show_horizontal_list	1	1
 bool	menu_xmb_show_title_header	1	1
 bool	crt_switch_resolution_use_custom_refresh_rate	1	0
 bool	crt_switch_hires_menu	1	0
-bool	audio_fastforward_mute	1	0
-bool	audio_fastforward_speedup	1	0
 bool	audio_rewind_mute	1	0
 bool	input_sensors_enable	1	1
 bool	ai_service_enable	1	0
@@ -1144,6 +1141,7 @@ uint	xmb_current_menu_icon	1	1
 uint	crt_switch_resolution	1	CRT_SWITCH_NONE
 uint	crt_switch_resolution_super	1	2560
 uint	video_sdl_display_server	1	VIDEO_SDL_DISPLAY_SERVER_AUTO
+uint	audio_fastforward_mode	1	FASTFORWARD_AUDIO_DISCARD
 uint	menu_scroll_delay	1	256
 uint	ai_service_source_lang	1	0
 uint	ai_service_target_lang	1	0
@@ -1453,8 +1451,6 @@ bool	menu_xmb_show_horizontal_list	1	1
 bool	menu_xmb_show_title_header	1	1
 bool	crt_switch_resolution_use_custom_refresh_rate	1	0
 bool	crt_switch_hires_menu	1	0
-bool	audio_fastforward_mute	1	0
-bool	audio_fastforward_speedup	1	0
 bool	audio_rewind_mute	1	0
 bool	input_sensors_enable	1	1
 bool	ui_companion_enable	1	0
@@ -1807,6 +1803,7 @@ uint	xmb_current_menu_icon	1	1
 uint	crt_switch_resolution	1	CRT_SWITCH_NONE
 uint	crt_switch_resolution_super	1	2560
 uint	video_sdl_display_server	1	VIDEO_SDL_DISPLAY_SERVER_AUTO
+uint	audio_fastforward_mode	1	FASTFORWARD_AUDIO_DISCARD
 uint	menu_scroll_delay	1	256
 uint	desktop_menu_view_type	1	0
 uint	desktop_menu_thumbnail_type	1	0

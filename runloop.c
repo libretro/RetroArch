@@ -4436,7 +4436,7 @@ static bool core_unload_game(void)
 static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st,
       bool frame_time_counter_auto_reset,
       float fastforward_ratio_default,
-      bool audio_fastforward_mute)
+      unsigned audio_fastforward_mode)
 {
    float fastforward_ratio_current;
    video_driver_state_t *video_st                     = video_state_get_ptr();
@@ -4464,7 +4464,8 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st,
       else
          runloop_st->flags &= ~RUNLOOP_FLAG_FASTMOTION;
 
-      if (audio_fastforward_mute && (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
+      if (     (audio_fastforward_mode == FASTFORWARD_AUDIO_MUTE)
+            && (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
          AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_MUTED);
       else
          AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_MUTED);
@@ -4584,7 +4585,7 @@ void runloop_event_deinit_core(void)
       runloop_apply_fastmotion_override(runloop_st,
             settings->bools.frame_time_counter_auto_reset,
             settings->floats.fastforward_ratio,
-            settings->bools.audio_fastforward_mute
+            settings->uints.audio_fastforward_mode
             );
       runloop_st->fastmotion_override.pending = false;
    }
@@ -7574,7 +7575,7 @@ static enum runloop_state_enum runloop_check_state(
       runloop_apply_fastmotion_override(runloop_st,
             settings->bools.frame_time_counter_auto_reset,
             settings->floats.fastforward_ratio,
-            settings->bools.audio_fastforward_mute);
+            settings->uints.audio_fastforward_mode);
       runloop_st->fastmotion_override.pending = false;
    }
 
@@ -7611,7 +7612,7 @@ static enum runloop_state_enum runloop_check_state(
 
       if (check2)
       {
-         bool audio_fastforward_mute = settings->bools.audio_fastforward_mute;
+         unsigned audio_fastforward_mode = settings->uints.audio_fastforward_mode;
          bool frame_time_counter_auto_reset = settings->bools.frame_time_counter_auto_reset;
          if (input_st->flags & INP_FLAG_NONBLOCKING)
          {
@@ -7626,7 +7627,8 @@ static enum runloop_state_enum runloop_check_state(
             command_event(CMD_EVENT_SET_FRAME_LIMIT, NULL);
          }
 
-         if (audio_fastforward_mute && (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
+         if (     (audio_fastforward_mode == FASTFORWARD_AUDIO_MUTE)
+               && (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
             AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_MUTED);
          else
             AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_MUTED);

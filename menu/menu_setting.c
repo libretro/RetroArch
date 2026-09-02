@@ -7246,6 +7246,30 @@ static size_t setting_get_string_representation_uint_audio_output_layout(
    return 0;
 }
 
+static size_t setting_get_string_representation_uint_audio_fastforward_mode(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case FASTFORWARD_AUDIO_DISCARD:
+            return strlcpy(s,
+                  msg_hash_to_str(MSG_FASTFORWARD_AUDIO_DISCARD), len);
+         case FASTFORWARD_AUDIO_MUTE:
+            return strlcpy(s,
+                  msg_hash_to_str(MSG_FASTFORWARD_AUDIO_MUTE), len);
+         case FASTFORWARD_AUDIO_SPEEDUP:
+            return strlcpy(s,
+                  msg_hash_to_str(MSG_FASTFORWARD_AUDIO_SPEEDUP), len);
+         case FASTFORWARD_AUDIO_TIMESTRETCH:
+            return strlcpy(s,
+                  msg_hash_to_str(MSG_FASTFORWARD_AUDIO_TIMESTRETCH), len);
+      }
+   }
+   return 0;
+}
+
 static size_t setting_get_string_representation_uint_audio_format_negotiation(
       rarch_setting_t *setting, char *s, size_t len)
 {

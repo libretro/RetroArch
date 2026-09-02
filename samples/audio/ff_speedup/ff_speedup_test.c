@@ -164,7 +164,7 @@ static void test_producer_publishes_at_its_cadence(void)
 
    fresh();
    memset(block, 0, sizeof(block));
-   settings->bools.audio_fastforward_speedup = true;
+   settings->uints.audio_fastforward_mode = FASTFORWARD_AUDIO_SPEEDUP;
    audio_driver_st.pipe_threaded    = true;
    audio_driver_st.pipe_frame_bytes = 2 * sizeof(int16_t);
    audio_driver_st.pipe_pass_frames = FRAMES;

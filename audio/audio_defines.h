@@ -196,6 +196,28 @@ typedef struct audio_statistics
    float close_to_blocking;
 } audio_statistics_t;
 
+/**
+ * What to do with core audio while the frontend runs off real time.
+ *
+ * Discard is zero so an unmigrated configuration keeps the behaviour it had.
+ */
+enum fastforward_audio_mode
+{
+   /* Resample only what the device can accept and drop the rest.  The
+    * device buffer is pinned near full during fast-forward, so most of a
+    * chunk would be dropped by the write anyway; this moves the discard
+    * ahead of the resampler instead of after it. */
+   FASTFORWARD_AUDIO_DISCARD = 0,
+   /* Silence. */
+   FASTFORWARD_AUDIO_MUTE,
+   /* Time-compress via the resampler ratio. Prevents crackling, raises
+    * pitch. */
+   FASTFORWARD_AUDIO_SPEEDUP,
+   /* Time-compress via WSOLA, preserving pitch. */
+   FASTFORWARD_AUDIO_TIMESTRETCH,
+   FASTFORWARD_AUDIO_LAST
+};
+
 RETRO_END_DECLS
 
 #endif

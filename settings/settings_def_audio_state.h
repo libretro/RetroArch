@@ -24,16 +24,11 @@ S_BOOL(audio_respect_silent_mode, AUDIO_RESPECT_SILENT_MODE,
       "Mute all audio in Silent Mode.")
 #endif
 #endif
-S_BOOL(audio_fastforward_mute, AUDIO_FASTFORWARD_MUTE,
-      "audio_fastforward_mute",
-      DEFAULT_AUDIO_FASTFORWARD_MUTE, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
-      "Fast-Forward Audio Mute",
-      "Automatically mute audio when using fast-forward.")
-S_BOOL(audio_fastforward_speedup, AUDIO_FASTFORWARD_SPEEDUP,
-      "audio_fastforward_speedup",
-      DEFAULT_AUDIO_FASTFORWARD_SPEEDUP, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
-      "Fast-Forward Audio Speedup",
-      "Speed up audio when fast-forwarding. Prevents crackling but shifts pitch.")
+S_UINT_EX(audio_fastforward_mode, AUDIO_FASTFORWARD_MODE,
+      "audio_fastforward_mode",
+      DEFAULT_AUDIO_FASTFORWARD_MODE, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, FASTFORWARD_AUDIO_DISCARD, FASTFORWARD_AUDIO_TIMESTRETCH, 1.0, 0, setting_action_ok_uint, setting_get_string_representation_uint_audio_fastforward_mode, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
+      "Fast-Forward Audio",
+      "What to do with audio while fast-forwarding. 'Discard' drops samples the output device cannot take. 'Speed Up' prevents crackling but raises pitch. 'Time-Stretch' keeps the pitch, at some CPU cost.")
 S_BOOL(audio_rewind_mute, AUDIO_REWIND_MUTE,
       "audio_rewind_mute",
       DEFAULT_AUDIO_REWIND_MUTE, SD_FLAG_NONE, 0, CMD_EVENT_NONE,

@@ -33232,6 +33232,22 @@ MSG_HASH(
    "Highest"
    )
 MSG_HASH(
+   MSG_FASTFORWARD_AUDIO_DISCARD,
+   "Discard"
+   )
+MSG_HASH(
+   MSG_FASTFORWARD_AUDIO_MUTE,
+   "Mute"
+   )
+MSG_HASH(
+   MSG_FASTFORWARD_AUDIO_SPEEDUP,
+   "Speed Up (Higher Pitch)"
+   )
+MSG_HASH(
+   MSG_FASTFORWARD_AUDIO_TIMESTRETCH,
+   "Time-Stretch (Same Pitch)"
+   )
+MSG_HASH(
    MSG_MISSING_ASSETS,
    "Warning: Missing assets, use the Online Updater if available."
    )
