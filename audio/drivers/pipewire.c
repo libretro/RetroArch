@@ -226,7 +226,11 @@ static void *pwire_microphone_init(void)
    if (!pipewire_core_init(&pw, "microphone_driver", &pwire_mic_registry_events))
       goto error;
 
-   pipewire_core_wait_resync(pw);
+   if (!pipewire_core_wait_resync(pw))
+   {
+      pw_thread_loop_unlock(pw->thread_loop);
+      goto error;
+   }
    pw_thread_loop_unlock(pw->thread_loop);
 
    return pw;
@@ -278,7 +282,13 @@ static int pwire_microphone_read(void *driver_context, void *mic_context, void *
             break;
          }
 
-         pw_thread_loop_wait(pw->thread_loop);
+         if (!pipewire_loop_wait_ms(pw->thread_loop, PIPEWIRE_STREAM_WAIT_MS))
+         {
+            /* No capture cycle within the bound: read nothing this
+             * call rather than hold the caller. */
+            len = readable;
+            break;
+         }
          if (pw_stream_get_state(mic->stream, &error) != PW_STREAM_STATE_STREAMING)
          {
             pw_thread_loop_unlock(mic->pw->thread_loop);
@@ -408,7 +418,33 @@ static void *pwire_microphone_open_mic(void *driver_context,
    if (res < 0)
       goto unlock_error;
 
-   pw_thread_loop_wait(mic->pw->thread_loop);
+   /* As for playback: wait for the stream to connect or fail, and
+    * fail the open at the bound if the daemon never gets it there. */
+   {
+      unsigned waited_ms = 0;
+      enum pw_stream_state st;
+      const char *err = NULL;
+      for (;;)
+      {
+         st = pw_stream_get_state(mic->stream, &err);
+         if (st != PW_STREAM_STATE_CONNECTING && st != PW_STREAM_STATE_UNCONNECTED)
+            break;
+         if (pipewire_loop_wait_ms(mic->pw->thread_loop, PIPEWIRE_LOOP_WAIT_STEP_MS))
+            continue;
+         waited_ms += PIPEWIRE_LOOP_WAIT_STEP_MS;
+         if (waited_ms >= PIPEWIRE_SYNC_WAIT_MS)
+         {
+            RARCH_ERR("[PipeWire] Capture stream did not connect within %u ms.\n",
+                  PIPEWIRE_SYNC_WAIT_MS);
+            goto unlock_error;
+         }
+      }
+      if (st == PW_STREAM_STATE_ERROR)
+      {
+         RARCH_ERR("[PipeWire] Capture stream failed to connect: %s.\n", err ? err : "?");
+         goto unlock_error;
+      }
+   }
    pw_thread_loop_unlock(mic->pw->thread_loop);
 
    *new_rate = mic->info.rate;
@@ -629,6 +665,8 @@ static struct string_list *pwire_enumerate_sinks(void)
 
    /* pipewire_core_init() returns holding the loop lock; wait_resync
     * releases it while it waits and reacquires, as in pwire_init(). */
+   /* A daemon that does not answer has enumerated nothing; the list
+    * is whatever the registry delivered before the deadline. */
    pipewire_core_wait_resync(pw);
    if (pw->devicelist)
       sl = string_list_clone(pw->devicelist);
@@ -660,7 +698,8 @@ static void *pwire_init(const char *device, unsigned rate,
       goto error;
 
    /* unlock, run the loop and wait, this will trigger the callbacks */
-   pipewire_core_wait_resync(audio->pw);
+   if (!pipewire_core_wait_resync(audio->pw))
+      goto unlock_error;
 
    audio->info.format   = is_little_endian() ? SPA_AUDIO_FORMAT_F32_LE : SPA_AUDIO_FORMAT_F32_BE;
    audio->info.channels = DEFAULT_CHANNELS;
@@ -711,7 +750,34 @@ static void *pwire_init(const char *device, unsigned rate,
    audio->highwater_mark = MIN(RINGBUFFER_SIZE,
          latency * (uint64_t)rate / 1000 * audio->frame_size);
 
-   pw_thread_loop_wait(audio->pw->thread_loop);
+   /* The state callback signals once the stream has connected (to
+    * paused) or failed. A daemon that never gets it there fails the
+    * init at the bound instead of holding the thread that opened it. */
+   {
+      unsigned waited_ms = 0;
+      enum pw_stream_state st;
+      const char *err = NULL;
+      for (;;)
+      {
+         st = pw_stream_get_state(audio->stream, &err);
+         if (st != PW_STREAM_STATE_CONNECTING && st != PW_STREAM_STATE_UNCONNECTED)
+            break;
+         if (pipewire_loop_wait_ms(audio->pw->thread_loop, PIPEWIRE_LOOP_WAIT_STEP_MS))
+            continue;
+         waited_ms += PIPEWIRE_LOOP_WAIT_STEP_MS;
+         if (waited_ms >= PIPEWIRE_SYNC_WAIT_MS)
+         {
+            RARCH_ERR("[PipeWire] Stream did not connect within %u ms.\n",
+                  PIPEWIRE_SYNC_WAIT_MS);
+            goto unlock_error;
+         }
+      }
+      if (st == PW_STREAM_STATE_ERROR)
+      {
+         RARCH_ERR("[PipeWire] Stream failed to connect: %s.\n", err ? err : "?");
+         goto unlock_error;
+      }
+   }
    pw_thread_loop_unlock(audio->pw->thread_loop);
 
    *new_rate = audio->info.rate;
@@ -764,7 +830,16 @@ static ssize_t pwire_write(void *data, const void *buf_, size_t len)
             break;
          }
 
-         pw_thread_loop_wait(audio->pw->thread_loop);
+         /* The process callback signals every cycle. A graph that has
+          * stopped scheduling the stream while it still reads as
+          * streaming signals nothing; the bound turns that into a
+          * write of nothing this call rather than a thread held
+          * inside the driver. */
+         if (!pipewire_loop_wait_ms(audio->pw->thread_loop, PIPEWIRE_STREAM_WAIT_MS))
+         {
+            pw_thread_loop_unlock(audio->pw->thread_loop);
+            return 0;
+         }
          if (pw_stream_get_state(audio->stream, &error) != PW_STREAM_STATE_STREAMING)
          {
             pw_thread_loop_unlock(audio->pw->thread_loop);
@@ -949,7 +1024,14 @@ static size_t pwire_wait_writable(void *data, size_t len)
       avail  = audio->highwater_mark - filled;
       if (avail >= (int32_t)len)
          break;
-      pw_thread_loop_wait(audio->pw->thread_loop);
+      /* As in pwire_write(): no cycle within the bound means no space
+       * is coming from this call, which the pipeline treats as a pass
+       * to skip, not a device gone. */
+      if (!pipewire_loop_wait_ms(audio->pw->thread_loop, PIPEWIRE_STREAM_WAIT_MS))
+      {
+         pw_thread_loop_unlock(audio->pw->thread_loop);
+         return 0;
+      }
    }
    pw_thread_loop_unlock(audio->pw->thread_loop);
    return (size_t)avail;

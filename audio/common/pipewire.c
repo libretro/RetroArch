@@ -30,7 +30,13 @@ static void core_error_cb(void *data, uint32_t id, int seq, int res, const char 
    RARCH_ERR("[PipeWire] Error id:%u seq:%d res:%d (%s): %s.\n",
              id, seq, res, spa_strerror(res), message);
 
-   pw_thread_loop_stop(pw->thread_loop);
+   /* This runs on the loop thread, which cannot stop and join itself;
+    * a stop issued here left the thread finished but never joined, and
+    * the owner's later stop found nothing running and skipped the join.
+    * Record the error and wake whoever is waiting on the loop instead;
+    * the owner stops it at teardown. */
+   pw->error = true;
+   pw_thread_loop_signal(pw->thread_loop, false);
 }
 
 static void core_done_cb(void *data, uint32_t id, int seq)
@@ -51,17 +57,42 @@ static const struct pw_core_events core_events = {
       .error = core_error_cb,
 };
 
-void pipewire_core_wait_resync(pipewire_core_t *pw)
+bool pipewire_loop_wait_ms(struct pw_thread_loop *loop, unsigned ms)
 {
+   struct timespec abstime;
+   pw_thread_loop_get_time(loop, &abstime, (int64_t)ms * 1000000);
+   /* Zero on a signal; -ETIMEDOUT (or ETIMEDOUT, depending on the
+    * library's sign convention) on the deadline. Anything nonzero is
+    * "no signal came". */
+   return pw_thread_loop_timed_wait_full(loop, &abstime) == 0;
+}
+
+bool pipewire_core_wait_resync(pipewire_core_t *pw)
+{
+   unsigned waited_ms = 0;
+
    retro_assert(pw);
    pw->pending_seq = pw_core_sync(pw->core, PW_ID_CORE, pw->pending_seq);
 
-   for (;;)
+   /* The done callback signals when the daemon has answered the sync.
+    * A daemon that has gone away, or errored - core_error_cb() stops
+    * the loop and signals nobody - never answers, so the wait is
+    * bounded and reports the miss rather than holding the caller. */
+   while (pw->pending_seq != pw->last_seq)
    {
-      pw_thread_loop_wait(pw->thread_loop);
-      if (pw->pending_seq == pw->last_seq)
-         break;
+      if (pw->error)
+         return false;
+      if (pipewire_loop_wait_ms(pw->thread_loop, PIPEWIRE_LOOP_WAIT_STEP_MS))
+         continue;
+      waited_ms += PIPEWIRE_LOOP_WAIT_STEP_MS;
+      if (waited_ms >= PIPEWIRE_SYNC_WAIT_MS)
+      {
+         RARCH_WARN("[PipeWire] The daemon did not answer a sync within %u ms.\n",
+               PIPEWIRE_SYNC_WAIT_MS);
+         return false;
+      }
    }
+   return true;
 }
 
 /* Upper bound on how long a stream may take to reach the requested
@@ -89,12 +120,13 @@ bool pipewire_stream_set_active(struct pw_thread_loop *loop, struct pw_stream *s
     * state raises no further event, an error is final, and a stream
     * the graph never runs is given up on at the bound rather than
     * holding the calling thread. */
-   for (laps = 0; laps < PIPEWIRE_SET_ACTIVE_WAIT_SEC; laps++)
+   for (laps = 0; laps < PIPEWIRE_SET_ACTIVE_WAIT_SEC * 1000
+         / PIPEWIRE_LOOP_WAIT_STEP_MS; laps++)
    {
       st = pw_stream_get_state(stream, &error);
       if (st == want || st == PW_STREAM_STATE_ERROR)
          break;
-      pw_thread_loop_timed_wait(loop, 1);
+      pipewire_loop_wait_ms(loop, PIPEWIRE_LOOP_WAIT_STEP_MS);
    }
    st = pw_stream_get_state(stream, &error);
    pw_thread_loop_unlock(loop);
