@@ -3057,6 +3057,10 @@ static void audio_mixer_play_stop_sequential_cb(
    }
 }
 
+/* Defined below, next to their locking public entry points. */
+static void audio_driver_mixer_stop_stream_locked(unsigned i);
+static void audio_driver_mixer_remove_stream_locked(unsigned i);
+
 static bool audio_driver_mixer_get_free_stream_slot(
       unsigned *id, enum audio_mixer_stream_type type)
 {
@@ -3109,11 +3113,22 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
       case AUDIO_MIXER_SLOT_SELECTION_MANUAL:
          free_slot = params->slot_selection_idx;
 
+         /* The unlocked internals below index the array directly, so
+          * the range the public entry points check is checked here. */
+         if (free_slot >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
+         {
+            if (params->buf_owner)
+               params->buf_owner_free(params->buf_owner);
+            audio_driver_state_unlock();
+            return false;
+         }
+
          /* If we are using a manually specified
           * slot, must free any existing stream
-          * before assigning the new one */
-         audio_driver_mixer_stop_stream(free_slot);
-         audio_driver_mixer_remove_stream(free_slot);
+          * before assigning the new one. The lock is already
+          * held here, so the unlocked internals are what run. */
+         audio_driver_mixer_stop_stream_locked(free_slot);
+         audio_driver_mixer_remove_stream_locked(free_slot);
          break;
       case AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC:
       default:
@@ -3575,12 +3590,12 @@ void audio_driver_mixer_set_stream_volume(unsigned i, float vol)
    audio_driver_state_unlock();
 }
 
-void audio_driver_mixer_stop_stream(unsigned i)
+/* Callers already holding the state lock use this; the public
+ * entry point below takes the lock and calls it. The lock is a
+ * plain mutex, so a locked caller that reached the public entry
+ * point instead would deadlock against itself. */
+static void audio_driver_mixer_stop_stream_locked(unsigned i)
 {
-   audio_driver_state_lock();
-   if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
-      return;
-
    switch (audio_driver_st.mixer_streams[i].state)
    {
       case AUDIO_STREAM_STATE_PLAYING:
@@ -3601,21 +3616,25 @@ void audio_driver_mixer_stop_stream(unsigned i)
       case AUDIO_STREAM_STATE_NONE:
          break;
    }
+}
+
+void audio_driver_mixer_stop_stream(unsigned i)
+{
+   if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
+      return;
+   audio_driver_state_lock();
+   audio_driver_mixer_stop_stream_locked(i);
    audio_driver_state_unlock();
 }
 
-void audio_driver_mixer_remove_stream(unsigned i)
+static void audio_driver_mixer_remove_stream_locked(unsigned i)
 {
-   audio_driver_state_lock();
-   if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
-      return;
-
    switch (audio_driver_st.mixer_streams[i].state)
    {
       case AUDIO_STREAM_STATE_PLAYING:
       case AUDIO_STREAM_STATE_PLAYING_LOOPED:
       case AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL:
-         audio_driver_mixer_stop_stream(i);
+         audio_driver_mixer_stop_stream_locked(i);
          /* fall-through */
       case AUDIO_STREAM_STATE_STOPPED:
          {
@@ -3623,7 +3642,10 @@ void audio_driver_mixer_remove_stream(unsigned i)
             if (handle)
                audio_mixer_destroy(handle);
 
-            if (*audio_driver_st.mixer_streams[i].name)
+            /* A stream loaded without a basename - every menu sound -
+             * carries a NULL name, so the pointer is tested before the
+             * bytes behind it. */
+            if (audio_driver_st.mixer_streams[i].name)
                free(audio_driver_st.mixer_streams[i].name);
 
             audio_driver_st.mixer_streams[i].state   = AUDIO_STREAM_STATE_NONE;
@@ -3637,6 +3659,14 @@ void audio_driver_mixer_remove_stream(unsigned i)
       case AUDIO_STREAM_STATE_NONE:
          break;
    }
+}
+
+void audio_driver_mixer_remove_stream(unsigned i)
+{
+   if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
+      return;
+   audio_driver_state_lock();
+   audio_driver_mixer_remove_stream_locked(i);
    audio_driver_state_unlock();
 }
 
