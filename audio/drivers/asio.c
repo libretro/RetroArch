@@ -1457,12 +1457,20 @@ error:
    return NULL;
 }
 
+/* How many period-long waits a blocked write or wait_writable() may
+ * take before giving up on the callback making room. The callback
+ * drains and signals every period while streaming; a driver that has
+ * stopped calling it back - reset, device lost, stalled - never does,
+ * and shutdown is not raised for that. */
+#define ASIO_WAIT_LAPS 8
+
 static ssize_t ra_asio_write(void *data, const void *buf, size_t len)
 {
    ra_asio_t *ad      = (ra_asio_t *)data;
    const char *src    = (const char *)buf;
    size_t written     = 0;
    int64_t wait_us    = 1000;
+   int laps           = ASIO_WAIT_LAPS;
 
    if (!ad || retro_atomic_load_acquire_int(&ad->shutdown))
       return -1;
@@ -1503,6 +1511,12 @@ static ssize_t ra_asio_write(void *data, const void *buf, size_t len)
       }
       else if (!ad->nonblock)
       {
+         /* Paused, the callback zero-fills and returns before it drains
+          * or signals: nothing here would ever be woken. The write
+          * returns what went; the rest is the caller's to retry once
+          * the stream is started. */
+         if (retro_atomic_load_acquire_int(&ad->is_paused))
+            break;
 #ifdef HAVE_THREADS
          /* Timed, not indefinite.  The predicate here is the ring's
           * write_avail, which is lock-free by design - the consumer is
@@ -1527,6 +1541,10 @@ static ssize_t ra_asio_write(void *data, const void *buf, size_t len)
 #else
          Sleep(1);
 #endif
+         /* And bounded overall: a driver that has stopped calling back
+          * without shutting down ends the write with what went. */
+         if (--laps < 0)
+            break;
       }
       else
          break;
@@ -1619,6 +1637,7 @@ static size_t ra_asio_wait_writable(void *data, size_t len)
    ra_asio_t *ad   = (ra_asio_t *)data;
    int64_t wait_us = 1000;
    size_t avail;
+   int laps        = ASIO_WAIT_LAPS;
 
    if (!ad || !ad->ring_initialized)
       return 0;
@@ -1633,11 +1652,18 @@ static size_t ra_asio_wait_writable(void *data, size_t len)
 
    for (;;)
    {
-      if (retro_atomic_load_acquire_int(&ad->shutdown))
+      /* Shut down or paused, the callback drains nothing and signals
+       * nothing: no space is coming from this call. */
+      if (     retro_atomic_load_acquire_int(&ad->shutdown)
+            || retro_atomic_load_acquire_int(&ad->is_paused))
          return 0;
       avail = retro_spsc_write_avail(&ad->ring);
       if (avail >= len)
          return avail;
+      /* No room after this many periods: the driver is not calling
+       * back, and the pass is handed back rather than waited on. */
+      if (--laps < 0)
+         return 0;
 #ifdef HAVE_THREADS
       slock_lock(ad->cond_lock);
       scond_wait_timeout(ad->cond, ad->cond_lock, wait_us);
