@@ -14,6 +14,11 @@ S_BOOL(video_windowed_fullscreen, VIDEO_WINDOWED_FULLSCREEN,
       DEFAULT_WINDOWED_FULLSCREEN, SD_FLAG_LAKKA_ADVANCED, 0, CMD_EVENT_NONE,
       "Windowed Fullscreen Mode",
       "If fullscreen, prefer using a fullscreen window to prevent display mode switching.")
+S_UINT(video_fse_negotiation, VIDEO_FSE_NEGOTIATION,
+      "video_fse_negotiation",
+      DEFAULT_VIDEO_FSE_NEGOTIATION, SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX, CMD_EVENT_REINIT, 0, VIDEO_FSE_LAST - 1, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_video_fse_negotiation,
+      "Exclusive Fullscreen Negotiation",
+      "How hard to ask the driver for exclusive fullscreen when Windowed Fullscreen Mode is off. 'Relaxed' only permits it and the driver may decline; on the Vulkan driver that is a hint the driver has been seen to ignore, leaving the swapchain on the compositor's independent-flip path. 'Forced' takes exclusive mode explicitly and holds it. Requires VK_EXT_full_screen_exclusive.")
 #if !defined(__WINRT__) || !defined(SETTINGS_DEF_CONFIG_PASS)
 S_UINT(video_fullscreen_x, VIDEO_FULLSCREEN_X,
       "video_fullscreen_x",

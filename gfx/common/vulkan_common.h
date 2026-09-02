@@ -267,6 +267,14 @@ typedef struct gfx_ctx_vulkan_data
    uint8_t flags;
    enum vulkan_wsi_type wsi_type;
    bool fse_supported;
+   /* Set once VK_FULL_SCREEN_EXCLUSIVE_APPLICATION_CONTROLLED_EXT has
+    * been acquired on the current swapchain, so it is released before
+    * that swapchain is destroyed. */
+   bool fse_acquired;
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+   PFN_vkAcquireFullScreenExclusiveModeEXT fse_acquire;
+   PFN_vkReleaseFullScreenExclusiveModeEXT fse_release;
+#endif
 #ifdef VULKAN_HDR_SWAPCHAIN
    /* Loaded from VK_EXT_hdr_metadata when that optional device extension is
     * present; NULL otherwise. Used to signal SMPTE-2086 mastering-display

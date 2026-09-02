@@ -264,6 +264,10 @@
 #define DEFAULT_WINDOWED_FULLSCREEN true
 #endif
 
+/* Not platform-specific: how hard to push for exclusive fullscreen
+ * where the platform lets the application decide. */
+#define DEFAULT_VIDEO_FSE_NEGOTIATION VIDEO_FSE_RELAXED
+
 /* Enable automatic switching of the screen refresh rate when using the specified screen mode(s),
  * based on running core/content */
 #define DEFAULT_AUTOSWITCH_REFRESH_RATE AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN

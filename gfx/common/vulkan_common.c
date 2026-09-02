@@ -1029,6 +1029,22 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       return false;
    }
 
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+   /* Resolve the explicit acquire/release now the device exists. Only
+    * used under VIDEO_FSE_FORCED; NULL otherwise and never called. */
+   vk->fse_acquire = NULL;
+   vk->fse_release = NULL;
+   if (vk->fse_supported)
+   {
+      vk->fse_acquire = (PFN_vkAcquireFullScreenExclusiveModeEXT)
+         vkGetDeviceProcAddr(vk->context.device,
+               "vkAcquireFullScreenExclusiveModeEXT");
+      vk->fse_release = (PFN_vkReleaseFullScreenExclusiveModeEXT)
+         vkGetDeviceProcAddr(vk->context.device,
+               "vkReleaseFullScreenExclusiveModeEXT");
+   }
+#endif
+
 #ifdef VULKAN_HDR_SWAPCHAIN
    /* Now that the device exists, resolve vkSetHdrMetadataEXT if the
     * extension was enabled above. Stays NULL (call skipped) otherwise. */
@@ -1470,6 +1486,12 @@ end:
 
 static void vulkan_destroy_swapchain(gfx_ctx_vulkan_data_t *vk)
 {
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+   /* Exclusive mode is bound to the swapchain; release it first. */
+   if (vk->fse_acquired && vk->fse_release && vk->swapchain != VK_NULL_HANDLE)
+      vk->fse_release(vk->context.device, vk->swapchain);
+   vk->fse_acquired = false;
+#endif
    unsigned i;
 
    vulkan_emulated_mailbox_deinit(&vk->mailbox);
@@ -2038,6 +2060,11 @@ retry:
          /* Do nothing. */
          break;
       case VK_ERROR_OUT_OF_DATE_KHR:
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+      case VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT:
+         /* Alt-tab or a mode switch under Forced negotiation. Same
+          * recovery as out-of-date: rebuild and re-acquire. */
+#endif
          /* Throw away the old swapchain and try again. */
          vulkan_destroy_swapchain(vk);
          /* Swapchain out of date, trying to create new one ... */
@@ -2107,13 +2134,24 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    bool adaptive_vsync                     = settings->bools.video_adaptive_vsync;
 #ifdef VK_USE_PLATFORM_WIN32_KHR
    bool video_windowed_fullscreen          = settings->bools.video_windowed_fullscreen;
+   /* Relaxed: ALLOWED is a hint and the driver may decline - and on
+    * NVIDIA it does, leaving the swapchain on DWM's independent-flip
+    * path with the setting silently inert (PresentMon reports
+    * "Hardware Composed: Independent Flip" in both windowed-fullscreen
+    * states). Forced: APPLICATION_CONTROLLED, followed by an explicit
+    * vkAcquireFullScreenExclusiveModeEXT once the swapchain exists. */
+   bool fse_forced                         =
+         !video_windowed_fullscreen
+      && settings->uints.video_fse_negotiation == VIDEO_FSE_FORCED;
    HMONITOR hmonitor;
    VkSurfaceFullScreenExclusiveInfoEXT fse_info = {
       VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_INFO_EXT,
       NULL,
       video_windowed_fullscreen
          ? VK_FULL_SCREEN_EXCLUSIVE_DISALLOWED_EXT
-         : VK_FULL_SCREEN_EXCLUSIVE_ALLOWED_EXT
+         : (fse_forced
+               ? VK_FULL_SCREEN_EXCLUSIVE_APPLICATION_CONTROLLED_EXT
+               : VK_FULL_SCREEN_EXCLUSIVE_ALLOWED_EXT)
    };
    VkSurfaceFullScreenExclusiveWin32InfoEXT fse_win32_info = {
       VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_WIN32_INFO_EXT,
@@ -2697,6 +2735,25 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          return false;
       }
    }
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+   vk->fse_acquired = false;
+   if (fse_forced && vk->fse_supported && vk->fse_acquire)
+   {
+      VkResult res = vk->fse_acquire(vk->context.device, vk->swapchain);
+      if (res == VK_SUCCESS)
+      {
+         vk->fse_acquired = true;
+         RARCH_LOG("[Vulkan] Exclusive fullscreen acquired.\n");
+      }
+      else
+         /* Not fatal: the swapchain still works on the compositor
+          * path, which is where Relaxed would have left it anyway. */
+         RARCH_WARN("[Vulkan] Exclusive fullscreen requested but "
+               "vkAcquireFullScreenExclusiveModeEXT returned %d; "
+               "continuing without it.\n", (int)res);
+   }
+#endif
 
    /* See TODO/FIXME note above - part of the same rubber bandaid hack 'fix' */
 #ifndef __APPLE__

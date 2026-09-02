@@ -6981,6 +6981,26 @@ static size_t setting_get_string_representation_video_frame_delay(
    return _len;
 }
 
+static size_t setting_get_string_representation_uint_video_fse_negotiation(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case VIDEO_FSE_RELAXED:
+            return strlcpy(s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FSE_RELAXED),
+                  len);
+         case VIDEO_FSE_FORCED:
+            return strlcpy(s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FSE_FORCED),
+                  len);
+      }
+   }
+   return 0;
+}
+
 static size_t setting_get_string_representation_uint_video_rotation(
       rarch_setting_t *setting, char *s, size_t len)
 {

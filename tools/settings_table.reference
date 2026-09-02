@@ -429,6 +429,7 @@ uint	video_windowed_position_x	1	0
 uint	video_windowed_position_y	1	0
 uint	video_windowed_position_width	1	1280
 uint	video_windowed_position_height	1	720
+uint	video_fse_negotiation	1	VIDEO_FSE_RELAXED
 uint	video_fullscreen_x	1	0
 uint	video_fullscreen_y	1	0
 uint	video_swap_interval	1	1
@@ -1075,6 +1076,7 @@ uint	video_windowed_position_x	1	0
 uint	video_windowed_position_y	1	0
 uint	video_windowed_position_width	1	1280
 uint	video_windowed_position_height	1	720
+uint	video_fse_negotiation	1	VIDEO_FSE_RELAXED
 uint	video_fullscreen_x	1	0
 uint	video_fullscreen_y	1	0
 uint	video_swap_interval	1	1
@@ -1724,6 +1726,7 @@ uint	video_windowed_position_x	1	0
 uint	video_windowed_position_y	1	0
 uint	video_windowed_position_width	1	1280
 uint	video_windowed_position_height	1	720
+uint	video_fse_negotiation	1	VIDEO_FSE_RELAXED
 uint	video_fullscreen_x	1	0
 uint	video_fullscreen_y	1	0
 uint	video_swap_interval	1	1
