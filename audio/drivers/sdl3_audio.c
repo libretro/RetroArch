@@ -431,6 +431,9 @@ static size_t sdl3_audio_wait_writable(void *data, size_t len)
 {
    sdl3_audio_t *sdl = (sdl3_audio_t*)data;
    size_t avail;
+   /* Each wait ends on a timeout; this ends the loop when the device
+    * keeps moving data but never frees enough. */
+   int laps = 8;
 
    if (len > sdl->buffer_size / 2)
       len = sdl->buffer_size / 2;
@@ -438,6 +441,8 @@ static size_t sdl3_audio_wait_writable(void *data, size_t len)
    for (;;)
    {
       if (SDL_GetAtomicInt(&sdl->device_removed))
+         return 0;
+      if (laps-- < 0)
          return 0;
       avail = sdl3_audio_write_avail(sdl);
       if (avail >= len)

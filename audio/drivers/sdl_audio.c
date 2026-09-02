@@ -841,6 +841,9 @@ static size_t sdl_audio_wait_writable(void *data, size_t len)
 {
    sdl_audio_t *sdl = (sdl_audio_t*)data;
    size_t avail;
+   /* Each wait ends on a timeout; this ends the loop when the device
+    * keeps calling back but never frees enough. */
+   int laps = 8;
 
    if (len > sdl->speaker_buffer->size / 2)
       len = sdl->speaker_buffer->size / 2;
@@ -850,6 +853,8 @@ static size_t sdl_audio_wait_writable(void *data, size_t len)
 #ifdef HAVE_THREADS
       bool signalled;
 #endif
+      if (laps-- < 0)
+         return 0;
       SDL_LockAudioDevice(sdl->speaker_device);
       avail = FIFO_WRITE_AVAIL(sdl->speaker_buffer);
       SDL_UnlockAudioDevice(sdl->speaker_device);

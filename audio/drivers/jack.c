@@ -263,11 +263,19 @@ error:
    return NULL;
 }
 
+/* How many period-long waits a blocked write or wait_writable() may
+ * take before it gives up on the server making room. The process
+ * callback frees a period every period on a running graph; a graph
+ * that has stopped running it - the client deactivated, the server
+ * frozen - never does, and shutdown_cb is not called for that. */
+#define JACK_WAIT_LAPS 8
+
 static ssize_t ja_write(void *data, const void *buf_, size_t len)
 {
    size_t _len = 0;
    jack_t      *jd = (jack_t*)data;
    const char *buf = (const char *)buf_;
+   int laps        = JACK_WAIT_LAPS;
 
    while (len > 0)
    {
@@ -317,6 +325,12 @@ static ssize_t ja_write(void *data, const void *buf_, size_t len)
          slock_lock(jd->cond_lock);
          scond_wait_timeout(jd->cond, jd->cond_lock, jd->wait_us);
          slock_unlock(jd->cond_lock);
+         /* Bounded overall as well as per wait: a graph that never
+          * makes room ends the write with what went. */
+         if (--laps < 0)
+            break;
+#else
+         break;
 #endif
          continue;
       }
@@ -406,6 +420,8 @@ static size_t ja_wait_writable(void *data, size_t len)
    jack_t *jd = (jack_t*)data;
    size_t avail;
 
+   int laps = JACK_WAIT_LAPS;
+
    if (len > jd->buffer_size / 2)
       len = jd->buffer_size / 2;
 
@@ -420,6 +436,11 @@ static size_t ja_wait_writable(void *data, size_t len)
       slock_lock(jd->cond_lock);
       scond_wait_timeout(jd->cond, jd->cond_lock, jd->wait_us);
       slock_unlock(jd->cond_lock);
+      /* No room after this many periods: the graph is not running the
+       * process callback, and the pass is handed back as no space
+       * coming from this call rather than waited on further. */
+      if (--laps < 0)
+         return 0;
 #else
       return 0;
 #endif

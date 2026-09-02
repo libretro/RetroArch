@@ -114,6 +114,11 @@ error:
    return NULL;
 }
 
+/* How many period-long waits a blocked write or wait_writable() may
+ * take before giving up on the server making room. rsound_err_cb
+ * covers a server that fails; this covers one that merely stops. */
+#define RSOUND_WAIT_LAPS 8
+
 static ssize_t rs_write(void *data, const void *buf, size_t len)
 {
    size_t _len;
@@ -136,6 +141,8 @@ static ssize_t rs_write(void *data, const void *buf, size_t len)
    }
    else
    {
+      int laps = RSOUND_WAIT_LAPS;
+
       _len = 0;
       while (_len < len && !rsd->has_error)
       {
@@ -166,6 +173,10 @@ static ssize_t rs_write(void *data, const void *buf, size_t len)
                scond_wait_timeout(rsd->cond, rsd->cond_lock,
                      rsd->wait_us);
                slock_unlock(rsd->cond_lock);
+               /* And bounded overall: a server that stops draining
+                * without erroring ends the write with what went. */
+               if (--laps < 0)
+                  break;
             }
          }
          else
@@ -253,6 +264,7 @@ static size_t rs_wait_writable(void *data, size_t len)
 {
    rsd_t *rsd = (rsd_t*)data;
    size_t avail;
+   int laps = RSOUND_WAIT_LAPS;
 
    if (len > rs_buffer_size(data) / 2)
       len = rs_buffer_size(data) / 2;
@@ -269,6 +281,11 @@ static size_t rs_wait_writable(void *data, size_t len)
       slock_lock(rsd->cond_lock);
       scond_wait_timeout(rsd->cond, rsd->cond_lock, rsd->wait_us);
       slock_unlock(rsd->cond_lock);
+      /* No room after this many waits: the server is not draining and
+       * has not said so; the pass is handed back rather than waited
+       * on further. */
+      if (--laps < 0)
+         return 0;
    }
 }
 static bool rs_use_float(void *data) { return false; }
