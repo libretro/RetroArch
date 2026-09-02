@@ -2522,6 +2522,7 @@ static void android_input_reinit(void)
 static void android_input_poll(void *data)
 {
    int ident;
+   int timeout;
    struct android_app *android_app = (struct android_app*)g_android;
    android_input_t *android        = (android_input_t*)data;
    settings_t            *settings = config_get_ptr();
@@ -2529,10 +2530,25 @@ static void android_input_poll(void *data)
    /* Apply any text staged by the native (IME) keyboard. */
    android_keyboard_poll();
 
+   /* Backgrounded (APP_CMD_PAUSE/STOP set RUNLOOP_FLAG_IDLE): there is
+    * nothing to do until the OS delivers the next command, and the
+    * looper will wake us for it. Block on it with -1 instead of the
+    * short timeout, the same call android_run_events() makes for the
+    * startup pump. Otherwise the runloop's 10 ms idle sleep has this
+    * poll returning empty a hundred times a second, which is the
+    * opposite of the "avoid draining battery" comment at the flag's
+    * set site, and Android's doze accounting penalises exactly that.
+    * First iteration blocks; once an event has woken us, drain the rest
+    * without blocking so a burst (RESUME then INPUT_CHANGED) is handled
+    * in one call. */
+   timeout = settings->uints.input_block_timeout;
+   if (runloop_state_get_ptr()->flags & RUNLOOP_FLAG_IDLE)
+      timeout = -1;
+
    while ((ident =
-            ALooper_pollOnce(settings->uints.input_block_timeout,
-               NULL, NULL, NULL)) >= 0)
+            ALooper_pollOnce(timeout, NULL, NULL, NULL)) >= 0)
    {
+      timeout = 0;
       switch (ident)
       {
          case LOOPER_ID_INPUT:

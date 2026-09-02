@@ -8086,6 +8086,12 @@ int runloop_iterate(void)
 #if defined(HAVE_COCOATOUCH)
          if (!(uico_st->flags & UICO_ST_FLAG_IS_ON_FOREGROUND))
 #endif
+#if defined(ANDROID)
+         /* When IDLE, android_input_poll() already blocked on the looper
+          * until the OS sent something; a sleep on top only delays the
+          * response to it. Unfocused-but-foreground still sleeps. */
+         if (!(runloop_st->flags & RUNLOOP_FLAG_IDLE))
+#endif
             retro_sleep(10);
 #endif
          return 1;
