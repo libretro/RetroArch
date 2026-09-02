@@ -7933,6 +7933,7 @@ int runloop_iterate(void)
     * than path, so it is set here and holds for those early returns:
     * they do rely on it. */
    runloop_st->pace = RUNLOOP_PACE_NONE;
+   AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_WROTE);
    if (     settings->bools.video_vsync
          && !(input_st->flags & INP_FLAG_NONBLOCKING)
          && !(runloop_st->flags & RUNLOOP_FLAG_FORCE_NONBLOCK))
@@ -8287,14 +8288,14 @@ end:
     * puts the driver into non-blocking mode for a few frames while
     * audio_sync stays true, and during those frames audio is not
     * holding anything. */
+   /* ...and a write actually happened this iteration. Not a predicate
+    * on who might have written: the menu feeds a frame of silence
+    * through the same blocking funnel while the core is paused, with
+    * the mixer and thumbnail audio mixed in, so "libretro running" was
+    * the wrong test. The flag is set at the write sites. */
    if (     (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
          && !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK)
-         /* ...and the core is actually writing samples this frame. In
-          * the menu with the core paused the driver stays in blocking
-          * mode but nothing calls audio_driver_write(). Same predicate
-          * the RUNLOOP_STATE_MENU throttle uses for this question. */
-         && runloop_is_libretro_running(runloop_st,
-               settings->bools.menu_pause_libretro))
+         && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_WROTE))
       runloop_st->pace |= RUNLOOP_PACE_AUDIO;
    /* Mirrors the gate at the video_driver_scanline_after_frame() call
     * site, which skips the wait under fast-forward. A failed

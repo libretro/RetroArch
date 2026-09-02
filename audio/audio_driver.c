@@ -1248,6 +1248,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                      out_frames, mixer_gain, override);
             }
 #endif
+            AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_WROTE);
             audio->write(audio_st->context_audio_data,
                   audio_st->output_samples_buf,
                   out_frames * 2 * sizeof(float));
@@ -1321,6 +1322,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                         mixer_gain, override);
             }
 #endif
+            AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_WROTE);
             audio->write(audio_st->context_audio_data,
                   audio_st->output_samples_int16,
                   out_frames * 2 * sizeof(int16_t));
@@ -1738,6 +1740,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          output_frames       *= sizeof(int16_t);  /* Unit: bytes */
       }
 
+      AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_WROTE);
       audio->write(audio_st->context_audio_data,
             output_data, output_frames * 2);
    }
