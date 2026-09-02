@@ -502,7 +502,13 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
          UINT32 p_default = 0, p_fundamental = 0, p_min = 0, p_max = 0;
          hr = _IAudioClient3_GetSharedModeEnginePeriod(client3,
                (WAVEFORMATEX*)&wf, &p_default, &p_fundamental, &p_min, &p_max);
-         if (SUCCEEDED(hr) && p_min > 0 && p_min < p_default)
+         if (FAILED(hr))
+            RARCH_DBG("[WASAPI] IAudioClient3::GetSharedModeEnginePeriod failed: %s; using default period.\n",
+                  mmdevice_hresult_name(hr));
+         else if (!(p_min > 0 && p_min < p_default))
+            RARCH_DBG("[WASAPI] Engine period min %u frames is not below default %u; using default period.\n",
+                  p_min, p_default);
+         else
          {
             hr = _IAudioClient3_InitializeSharedAudioStream(client3,
                   AUDCLNT_STREAMFLAGS_EVENTCALLBACK, p_min,
@@ -515,9 +521,15 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
                      p_min, (double)p_min * 1000.0 / (double)wf.Format.nSamplesPerSec,
                      p_default);
             }
+            else
+               RARCH_DBG("[WASAPI] IAudioClient3::InitializeSharedAudioStream at %u frames failed: %s; using default period.\n",
+                     p_min, mmdevice_hresult_name(hr));
          }
          _IAudioClient3_Release(client3);
       }
+      else
+         RARCH_DBG("[WASAPI] IAudioClient3 not available (%s); using default period.\n",
+               mmdevice_hresult_name(hr));
 
       if (low_latency && *low_latency)
          goto initialized;
