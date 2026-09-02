@@ -162,7 +162,11 @@ static size_t ja_find_buffersize(jack_t *jd, int latency, unsigned out_rate)
    if (buffer_frames < min_buffer_frames)
       buffer_frames = min_buffer_frames;
 
-   return buffer_frames * sizeof(jack_default_audio_sample_t);
+   /* The ring holds interleaved stereo float, two samples a frame.
+    * Sized at one sample a frame it held half the frames asked for, and
+    * buffer_size() reported that half, so the rate control's setpoint -
+    * half of it again - sat at a quarter of the latency setting. */
+   return buffer_frames * 2 * sizeof(jack_default_audio_sample_t);
 }
 
 static void *ja_init(const char *device,
@@ -222,7 +226,7 @@ static void *ja_init(const char *device,
       jd->wait_us  = 1000;
 #endif
 
-   RARCH_LOG("[JACK] Internal buffer size: %d frames.\n", (int)(bufsize / sizeof(jack_default_audio_sample_t)));
+   RARCH_LOG("[JACK] Internal buffer size: %d frames.\n", (int)(bufsize / (2 * sizeof(jack_default_audio_sample_t))));
 
    jd->buffer = jack_ringbuffer_create(bufsize);
    if (!jd->buffer)
