@@ -3710,6 +3710,16 @@ const char *audio_driver_get_ident(void)
    const audio_driver_t *audio    = audio_st->current_audio;
    if (!audio)
       return NULL;
+#ifdef HAVE_THREADS
+   /* Threaded pipeline: current_audio is the wrapper. Report the driver
+    * it wraps, which is what every caller of this actually wants. */
+   if (string_is_equal(audio->ident, "audio-thread"))
+   {
+      const char *wrapped = audio_thread_wrapped_ident(audio_st->context_audio_data);
+      if (wrapped)
+         return wrapped;
+   }
+#endif
    return audio->ident;
 }
 

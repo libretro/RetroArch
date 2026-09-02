@@ -343,6 +343,35 @@ static ssize_t audio_thread_write(void *data, const void *s, size_t len)
    return _len;
 }
 
+/* The wrapper stands in for the real driver in audio_driver_st.current_audio,
+ * so anything that asks the current driver for something the wrapper does
+ * not itself do must be forwarded, or the menu sees a driver called
+ * "audio-thread" with no devices and no settings. The device list is
+ * enumeration, not streaming, and the underlying drivers already build
+ * it from the main thread in the non-threaded case. */
+static void *audio_thread_device_list_new(void *data)
+{
+   audio_thread_t *thr = (audio_thread_t*)data;
+   if (thr && thr->driver && thr->driver->device_list_new && thr->driver_data)
+      return thr->driver->device_list_new(thr->driver_data);
+   return NULL;
+}
+
+static void audio_thread_device_list_free(void *data, void *list)
+{
+   audio_thread_t *thr = (audio_thread_t*)data;
+   if (thr && thr->driver && thr->driver->device_list_free && thr->driver_data)
+      thr->driver->device_list_free(thr->driver_data, list);
+}
+
+const char *audio_thread_wrapped_ident(void *data)
+{
+   audio_thread_t *thr = (audio_thread_t*)data;
+   if (thr && thr->driver)
+      return thr->driver->ident;
+   return NULL;
+}
+
 static const audio_driver_t audio_thread = {
    NULL, /* No need to wrap init, it's called at the start of the thread loop */
    audio_thread_write,
@@ -353,8 +382,8 @@ static const audio_driver_t audio_thread = {
    audio_thread_free,
    audio_thread_use_float,
    "audio-thread",
-   NULL,
-   NULL,
+   audio_thread_device_list_new,
+   audio_thread_device_list_free,
    audio_thread_write_avail,
    audio_thread_buffer_size,
    NULL, /* write_raw */
