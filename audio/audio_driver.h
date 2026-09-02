@@ -272,6 +272,10 @@ typedef struct
    uint64_t free_samples_count;
 
    struct string_list *devices_list;
+   /* The driver whose device_list_new built devices_list, so that its
+    * device_list_free is the one that releases it - not whichever
+    * driver is configured or running when the list is next rebuilt. */
+   const audio_driver_t *devices_list_driver;
 
    /**
     * A scratch buffer for audio output to be processed,

@@ -371,13 +371,20 @@ bool audio_driver_is_ai_service_speech_running(void)
 }
 #endif
 
-/* The driver whose device_list_new to call: the wrapped driver under
- * the threaded pipeline, or the configured driver when nothing is
- * initialised at all. NULL context is legal for enumeration. */
+/* The driver whose device_list_new to call. The devices listed are the
+ * ones the Device setting will be applied to, and that is the
+ * configured driver: when it is the one running, ask it, through the
+ * wrapper if the threaded pipeline is on; when the user has picked a
+ * different driver in the menu and nothing has reinitialised yet, ask
+ * the configured driver with no context, which enumeration allows.
+ * Asking the running driver in that case listed the old driver's
+ * devices under the new driver's name until the next restart. */
 static const audio_driver_t *audio_driver_enumeration_driver(
       audio_driver_state_t *audio_st, void **ctx)
 {
+   settings_t *settings        = config_get_ptr();
    const audio_driver_t *audio = audio_st->current_audio;
+   const char *running_ident   = audio ? audio->ident : NULL;
    *ctx                        = audio_st->context_audio_data;
 #ifdef HAVE_THREADS
    if (audio && string_is_equal(audio->ident, "audio-thread"))
@@ -385,15 +392,22 @@ static const audio_driver_t *audio_driver_enumeration_driver(
       const audio_driver_t *inner =
          audio_thread_wrapped_driver(audio_st->context_audio_data);
       if (inner)
-         return audio; /* the wrapper forwards, context intact */
-      /* Wrapper selected but never started: no inner driver to ask.
-       * Fall through to the configured one with no context. */
-      audio = NULL;
+         running_ident = inner->ident; /* the wrapper forwards, context intact */
+      else
+      {
+         /* Wrapper selected but never started: no inner driver to ask.
+          * Fall through to the configured one with no context. */
+         audio         = NULL;
+         running_ident = NULL;
+      }
    }
 #endif
+   if (     audio
+         && running_ident
+         && !string_is_equal(running_ident, settings->arrays.audio_driver))
+      audio = NULL;
    if (!audio)
    {
-      settings_t *settings = config_get_ptr();
       int i = (int)driver_find_index("audio_driver",
             settings->arrays.audio_driver);
       if (i >= 0)
@@ -406,16 +420,18 @@ static const audio_driver_t *audio_driver_enumeration_driver(
 static bool audio_driver_free_devices_list(void)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;
-   void *ctx                      = NULL;
-   const audio_driver_t *audio;
+   const audio_driver_t *audio    = audio_st->devices_list_driver;
    if (!audio_st->devices_list)
       return false;
-   audio = audio_driver_enumeration_driver(audio_st, &ctx);
+   /* Released by the driver that built it. The context it was built
+    * with may be gone by now; every driver's free takes the list alone
+    * and tolerates a NULL context. */
    if (audio && audio->device_list_free)
-      audio->device_list_free(ctx, audio_st->devices_list);
+      audio->device_list_free(NULL, audio_st->devices_list);
    else
       string_list_free(audio_st->devices_list);
-   audio_st->devices_list = NULL;
+   audio_st->devices_list        = NULL;
+   audio_st->devices_list_driver = NULL;
    return true;
 }
 
@@ -427,8 +443,11 @@ void audio_driver_refresh_devices_list(void)
    audio_driver_free_devices_list();
    audio = audio_driver_enumeration_driver(audio_st, &ctx);
    if (audio && audio->device_list_new)
+   {
       audio_st->devices_list = (struct string_list*)
          audio->device_list_new(ctx);
+      audio_st->devices_list_driver = audio;
+   }
 }
 
 #ifdef DEBUG
