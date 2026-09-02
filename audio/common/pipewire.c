@@ -64,21 +64,48 @@ void pipewire_core_wait_resync(pipewire_core_t *pw)
    }
 }
 
+/* Upper bound on how long a stream may take to reach the requested
+ * state. A graph that is running the stream gets there in
+ * milliseconds; one that never will - no session manager, no sink to
+ * link to - is what the bound is for. */
+#define PIPEWIRE_SET_ACTIVE_WAIT_SEC 2
+
 bool pipewire_stream_set_active(struct pw_thread_loop *loop, struct pw_stream *stream, bool active)
 {
    enum pw_stream_state st;
-   const char       *error;
+   enum pw_stream_state want = active ? PW_STREAM_STATE_STREAMING
+                                      : PW_STREAM_STATE_PAUSED;
+   const char       *error   = NULL;
+   int               laps;
 
    retro_assert(loop);
    retro_assert(stream);
 
    pw_thread_loop_lock(loop);
    pw_stream_set_active(stream, active);
-   pw_thread_loop_wait(loop);
+
+   /* The state callback signals the loop on each transition. Wait only
+    * while the stream is still on its way: one already in the target
+    * state raises no further event, an error is final, and a stream
+    * the graph never runs is given up on at the bound rather than
+    * holding the calling thread. */
+   for (laps = 0; laps < PIPEWIRE_SET_ACTIVE_WAIT_SEC; laps++)
+   {
+      st = pw_stream_get_state(stream, &error);
+      if (st == want || st == PW_STREAM_STATE_ERROR)
+         break;
+      pw_thread_loop_timed_wait(loop, 1);
+   }
+   st = pw_stream_get_state(stream, &error);
    pw_thread_loop_unlock(loop);
 
-   st = pw_stream_get_state(stream, &error);
-   return active ? st == PW_STREAM_STATE_STREAMING : st == PW_STREAM_STATE_PAUSED;
+   if (st != want)
+      RARCH_WARN("[PipeWire] Stream did not reach %s within %d seconds (state: %s%s%s).\n",
+            active ? "streaming" : "paused", PIPEWIRE_SET_ACTIVE_WAIT_SEC,
+            pw_stream_state_as_string(st),
+            error ? ": " : "", error ? error : "");
+
+   return st == want;
 }
 
 bool pipewire_core_init(pipewire_core_t **pw, const char *loop_name, const struct pw_registry_events *events)

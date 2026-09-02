@@ -172,6 +172,16 @@ static void audio_thread_block(audio_thread_t *thr)
       return;
 
    slock_lock(thr->lock);
+   /* alive goes false when the thread is told to leave its loop, or
+    * leaves it on its own after a failed write. Either way it will not
+    * acknowledge anything again, and the wait below would never end.
+    * There is nothing running to park, so there is nothing to wait
+    * for. */
+   if (!thr->alive)
+   {
+      slock_unlock(thr->lock);
+      return;
+   }
    thr->stopped_ack = false;
    thr->stopped = true;
    scond_signal(thr->cond);
@@ -259,6 +269,12 @@ static bool audio_thread_alive(void *data)
    if (!thr)
       return false;
 
+   /* A thread that has ended after a failed write reports the device
+    * as not alive, which is what it is; block() below is a no-op then,
+    * and the answer has to come from somewhere. */
+   if (!thr->alive)
+      return false;
+
    audio_thread_block(thr);
    alive = !thr->is_paused;
    audio_thread_unblock(thr);
@@ -339,24 +355,19 @@ static size_t audio_thread_buffer_size(void *data)
    return thr->driver->buffer_size(thr->driver_data);
 }
 
-/* Only ever called from the audio thread. A wrapped driver that
- * reports the device gone ends this thread the way a failed write
- * does. */
+/* Only ever called from the audio thread. Zero from the wrapped
+ * driver means no space is coming from this call - the device is
+ * stalled, not yet streaming, or gone - and the pipeline skips the
+ * pass and asks again on its next wake (see wait_writable() in
+ * audio_driver.h). It is not a reason to end this thread: a device
+ * that comes back is written to again, and one that never does
+ * fails the write that follows, which is where the thread ends. */
 static size_t audio_thread_wait_writable(void *data, size_t len)
 {
-   size_t _len;
    audio_thread_t *thr = (audio_thread_t*)data;
    if (!thr || !thr->driver->wait_writable || !thr->driver_data)
       return 0;
-   _len = thr->driver->wait_writable(thr->driver_data, len);
-   if (!_len)
-   {
-      slock_lock(thr->lock);
-      thr->alive = false;
-      scond_signal(thr->cond);
-      slock_unlock(thr->lock);
-   }
-   return _len;
+   return thr->driver->wait_writable(thr->driver_data, len);
 }
 
 static ssize_t audio_thread_write(void *data, const void *s, size_t len)

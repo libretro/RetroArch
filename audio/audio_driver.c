@@ -1967,6 +1967,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
          audio_driver_st.pipe_pass_int16s = 128;
       audio_driver_st.pipe_pass_int16s   &= ~(size_t)1;
       audio_driver_st.pipe_gen            = 0;
+      audio_driver_st.pipe_stalled        = false;
       if (!audio_driver_st.pipe_lock)
          audio_driver_st.pipe_lock        = slock_new();
       if (!audio_driver_st.pipe_cond)
@@ -2387,9 +2388,16 @@ static void audio_driver_submit(audio_driver_state_t *audio_st,
           * generation is read under the lock before re-checking the
           * ring, so a pass that finished between the failed write and
           * the wait cannot be missed; the timed wait bounds the stall
-          * if the device stops draining. */
+          * if the device stops draining, and a stall found once is
+          * not waited on again until a pass completes - otherwise a
+          * device that never drains costs every frame the full wait. */
          slock_lock(audio_st->pipe_lock);
          gen = audio_st->pipe_gen;
+         if (audio_st->pipe_stalled)
+         {
+            slock_unlock(audio_st->pipe_lock);
+            break;
+         }
          if (retro_spsc_write_avail(&audio_st->pipe_ring) == 0)
          {
             while (audio_st->pipe_gen == gen)
@@ -2398,7 +2406,9 @@ static void audio_driver_submit(audio_driver_state_t *audio_st,
                   break;
             if (audio_st->pipe_gen == gen)
             {
+               audio_st->pipe_stalled = true;
                slock_unlock(audio_st->pipe_lock);
+               RARCH_WARN("[Audio] Device stopped draining; dropping audio until it resumes.\n");
                break;
             }
          }
@@ -2490,9 +2500,11 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
    retro_spsc_read(&audio_st->pipe_ring, audio_st->pipe_scratch,
          have * sizeof(int16_t));
 
-   /* Let a throttled producer know ring space has opened. */
+   /* Let a throttled producer know ring space has opened - and that
+    * the device is draining again, if it had been found stalled. */
    slock_lock(audio_st->pipe_lock);
    audio_st->pipe_gen++;
+   audio_st->pipe_stalled = false;
    scond_signal(audio_st->pipe_cond);
    slock_unlock(audio_st->pipe_lock);
 

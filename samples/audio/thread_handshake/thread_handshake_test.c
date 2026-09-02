@@ -74,6 +74,10 @@ static void *watchdog(void *arg)
  * call that should see it. */
 static retro_atomic_int_t stall_init_us  = RETRO_ATOMIC_INT_INITIALIZER(0);
 static retro_atomic_int_t stall_write_us = RETRO_ATOMIC_INT_INITIALIZER(0);
+/* While set, wait_writable() reports no space is coming (0), as a
+ * driver does for a stream that is not running. */
+static retro_atomic_int_t no_space       = RETRO_ATOMIC_INT_INITIALIZER(0);
+static retro_atomic_int_t n_wait_writable = RETRO_ATOMIC_INT_INITIALIZER(0);
 
 static void sleep_us(int us)
 {
@@ -120,6 +124,14 @@ static void fake_set_nonblock(void *data, bool state)
 static void fake_free(void *data) { (void)data; }
 static bool fake_use_float(void *data) { (void)data; return true; }
 static size_t fake_write_avail(void *data) { (void)data; return 4096; }
+static size_t fake_wait_writable(void *data, size_t len)
+{
+   (void)data;
+   retro_atomic_fetch_add_int(&n_wait_writable, 1);
+   if (retro_atomic_load_acquire_int(&no_space))
+      return 0;
+   return len;
+}
 static size_t fake_buffer_size(void *data) { (void)data; return 8192; }
 
 static audio_driver_t fake_driver = {
@@ -137,16 +149,30 @@ static audio_driver_t fake_driver = {
    fake_write_avail,
    fake_buffer_size,
    NULL,
-   NULL
+   fake_wait_writable
 };
 
 /* The wrapper's loop calls audio_driver_callback(), which in the
  * frontend feeds the device; here it just does one write, so the
  * thread spends its time exactly where a real one would. */
+/* Set by main to the wrapper's driver table once init has returned,
+ * so the loop can go through the wrapper's own wait_writable() the
+ * way the threaded pipeline does. */
+static const audio_driver_t *wrapper_drv = NULL;
+static void                 *wrapper_ctx = NULL;
+
 bool audio_driver_callback(void)
 {
    char buf[64];
    memset(buf, 0, sizeof(buf));
+   if (wrapper_drv && wrapper_drv->wait_writable)
+   {
+      if (!wrapper_drv->wait_writable(wrapper_ctx, sizeof(buf)))
+      {
+         sleep_us(1000);
+         return true;
+      }
+   }
    fake_write(NULL, buf, sizeof(buf));
    return true;
 }
@@ -175,6 +201,8 @@ int main(void)
    CHECK(audio_init_thread(&drv, &data, "fake", 48000, &new_rate, 64,
             512, false, false, &fake_driver),
          "init against a responsive device failed");
+   wrapper_drv = drv;
+   wrapper_ctx = data;
    CHECK(drv && drv->stop(data), "stop before first start failed");
    CHECK(drv && drv->start(data, false), "first start failed");
    CHECK(retro_atomic_load_acquire_int(&warn_count) == 0,
@@ -221,15 +249,36 @@ int main(void)
    retro_atomic_store_release_int(&stall_write_us, 0);
    CHECK(drv && drv->start(data, false), "start after a stalled stop failed");
 
-   /* 4. Teardown joins the thread. */
+   /* 4. The device reports no space is coming, pass after pass, as a
+    *    stream that is not running does. That is not the device gone:
+    *    the thread stays, alive() still answers, and a stop is still
+    *    acknowledged. Then space returns and writes resume. */
    STAGE(21);
+   retro_atomic_store_release_int(&n_wait_writable, 0);
+   retro_atomic_store_release_int(&no_space, 1);
+   sleep_us(200 * 1000);
+   CHECK(retro_atomic_load_acquire_int(&n_wait_writable) > 5,
+         "the loop did not keep asking the device for space");
+   CHECK(drv && drv->alive(data),
+         "a device with no space was reported as gone");
+   CHECK(drv && drv->stop(data), "stop failed while the device had no space");
+   CHECK(drv && drv->start(data, false), "start failed after a no-space stop");
+   retro_atomic_store_release_int(&no_space, 0);
+   sleep_us(50 * 1000);
+   CHECK(drv && drv->stop(data), "stop failed after space returned");
+   CHECK(drv && drv->start(data, false), "start failed after space returned");
+
+   /* 5. Teardown joins the thread. */
+   STAGE(22);
    if (drv)
       drv->free(data);
    drv  = NULL;
    data = NULL;
+   wrapper_drv = NULL;
+   wrapper_ctx = NULL;
 
    /* 5. A device slow to open: init still completes, reported once. */
-   STAGE(22);
+   STAGE(23);
    retro_atomic_store_release_int(&warn_count, 0);
    retro_atomic_store_release_int(&stall_init_us, 3 * 1000 * 1000);
    CHECK(audio_init_thread(&drv, &data, "fake", 48000, &new_rate, 64,

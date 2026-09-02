@@ -396,6 +396,12 @@ typedef struct
     * the consumer when it acts on it. Sticky, unlike the signal, so a
     * wake raised before the consumer reaches its wait is not lost. */
    bool     pipe_wake;
+   /* Set by the producer under pipe_lock when a full ring did not drain
+    * within its bounded wait, cleared by the consumer when a pass
+    * completes. While set, the producer drops rather than waits, so a
+    * device that has stopped draining costs the frame nothing beyond
+    * the one wait that found it out. */
+   bool     pipe_stalled;
    /**
     * What the audio thread needs to know about the runloop and the
     * menu, published by the main thread with
