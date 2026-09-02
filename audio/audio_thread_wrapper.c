@@ -96,10 +96,19 @@ static void audio_thread_loop(void *data)
       return;
 
    /* Wait until we start to avoid calling
-    * stop immediately after initialization. */
+    * stop immediately after initialization. A stop can land here as
+    * well: start() clears the flag and signals, and a stop that sets
+    * it again before this thread has re-checked leaves it parked in
+    * this loop rather than the one below. block() waits for the
+    * acknowledgement whichever loop the thread is in, so this one
+    * gives it too. */
    slock_lock(thr->lock);
    while (thr->stopped)
+   {
+      thr->stopped_ack = true;
+      scond_signal(thr->cond);
       scond_wait(thr->cond, thr->lock);
+   }
    is_shutdown = thr->is_shutdown;
    slock_unlock(thr->lock);
 
