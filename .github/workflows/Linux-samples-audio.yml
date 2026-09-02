@@ -25,7 +25,7 @@ jobs:
       - name: Install dependencies
         timeout-minutes: 5
         run: |
-          pkgs="build-essential libasound2-dev"
+          pkgs="build-essential libasound2-dev libsdl2-dev libopenal-dev"
           if dpkg -s $pkgs >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
             exit 0
@@ -211,3 +211,26 @@ jobs:
              UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
              ./rate_control_bounds_test
           echo "[pass] rate_control_bounds_test (ASan)"
+
+      - name: Build and run latency_contract_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/audio/latency_contract
+        run: |
+          set -eu
+          # Real drivers on backends that need no hardware - the ALSA null
+          # PCM, SDL's dummy audio, OpenAL Soft's null device - opened at
+          # 64 and 32 ms and checked against audio_driver.h's contract:
+          # buffer_size() is the setting in bytes of the output format,
+          # write_avail() never exceeds it, a buffer's worth offered takes
+          # room, and the room comes back as the device plays. The sdl
+          # driver before fdda5f7 reports 42.7 ms against 64 here.
+          make clean all SANITIZER=address,undefined
+          test -x latency_contract_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 120 \
+             ./latency_contract_test
+          echo "[pass] latency_contract_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1:suppressions=$PWD/tsan.supp \
+             timeout 300 ./latency_contract_test
+          echo "[pass] latency_contract_test (TSan)"
