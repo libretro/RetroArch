@@ -48,8 +48,14 @@
 typedef struct oss_audio
 {
    int fd;
+   /* The rate the device settled on; sizes the wait bound below. */
+   int rate;
    bool is_paused;
 } oss_audio_t;
+
+/* Iteration cap for oss_wait_writable(): bounds wakes that deliver no
+ * space, so one call costs at most this many bounded waits. */
+#define OSS_WAIT_WRITABLE_LAPS 8
 
 static void *oss_init(const char *device,
       unsigned rate, unsigned latency,
@@ -95,6 +101,7 @@ static void *oss_init(const char *device,
       RARCH_WARN("[OSS] Requested sample rate not supported. Adjusting output rate to %d Hz.\n", new_rate);
       *new_out_rate = new_rate;
    }
+   ossaudio->rate = new_rate;
 
    return ossaudio;
 
@@ -124,16 +131,23 @@ static ssize_t oss_write(void *data, const void *s, size_t len)
 /* Sleep in select() on the device until it is writable, which OSS
  * reports at fragment granularity, then ask SNDCTL_DSP_GETOSPACE how
  * much fits; repeat until at least len bytes do, len capped at one
- * fragment. Returns the free space then, or 0 on error. */
+ * fragment. Every select() is bounded to two fragments' worth of time
+ * and the loop to OSS_WAIT_WRITABLE_LAPS, so a device that stalls or
+ * wakes without space returns 0 - a pass to skip - rather than holding
+ * the audio thread. Returns the free space otherwise. */
 static size_t oss_wait_writable(void *data, size_t len)
 {
    oss_audio_t *ossaudio  = (oss_audio_t*)data;
    audio_buf_info info;
+   int laps               = OSS_WAIT_WRITABLE_LAPS;
 
    for (;;)
    {
       fd_set wfds;
-      size_t want = len;
+      struct timeval tv;
+      int rc;
+      size_t want   = len;
+      long   wait_us = 100000;
 
       if (ioctl(ossaudio->fd, SNDCTL_DSP_GETOSPACE, &info) < 0)
          return 0;
@@ -142,14 +156,31 @@ static size_t oss_wait_writable(void *data, size_t len)
       if (info.bytes >= (int)want)
          return (size_t)info.bytes;
 
+      /* Two fragments, in microseconds: a fragment is fragsize bytes
+       * of 16-bit stereo at the device rate. Clamped so a strange
+       * fragment size cannot make the bound useless either way. */
+      if (ossaudio->rate > 0 && info.fragsize > 0)
+         wait_us = (long)((2000000LL * info.fragsize / 4) / ossaudio->rate);
+      if (wait_us < 20000)
+         wait_us = 20000;
+      if (wait_us > 200000)
+         wait_us = 200000;
+      tv.tv_sec  = 0;
+      tv.tv_usec = wait_us;
+
       FD_ZERO(&wfds);
       FD_SET(ossaudio->fd, &wfds);
-      if (select(ossaudio->fd + 1, NULL, &wfds, NULL, NULL) < 0)
+      rc = select(ossaudio->fd + 1, NULL, &wfds, NULL, &tv);
+      if (rc < 0)
       {
          if (errno == EINTR)
             continue;
          return 0;
       }
+      if (rc == 0)
+         return 0;
+      if (--laps < 0)
+         return 0;
    }
 }
 
