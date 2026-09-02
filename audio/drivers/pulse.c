@@ -38,12 +38,49 @@ typedef struct
     * this much room to make progress, since the write itself fills in
     * the rest as it frees. */
    size_t minreq;
+   struct string_list *devicelist;
    bool nonblock;
    bool success;
    bool is_paused;
    bool is_ready;
-   struct string_list *devicelist;
+   /* Set by the timeout event pulse_wait_ms() arms. */
+   bool timed_out;
 } pa_t;
+
+/* Bounds on the waits below. A server that is answering signals in
+ * milliseconds; these are for one that is not - stopped consuming, or
+ * gone without the state callback having fired yet. */
+#define PULSE_CONNECT_WAIT_MS 3000
+#define PULSE_OP_WAIT_MS      1000
+#define PULSE_WRITE_WAIT_MS   1000
+
+static void pulse_timeout_cb(pa_mainloop_api *a, pa_time_event *e,
+      const struct timeval *tv, void *data)
+{
+   pa_t *pa = (pa_t*)data;
+   (void)a; (void)e; (void)tv;
+   pa->timed_out = true;
+   pa_threaded_mainloop_signal(pa->mainloop, 0);
+}
+
+/* libpulse offers no timed wait, so one is made from a one-shot time
+ * event on the mainloop that signals the waiter. Wakes on any signal,
+ * as pa_threaded_mainloop_wait() does - callers re-check what they
+ * were waiting for - or on the deadline, which returns false. Caller
+ * holds the mainloop lock. */
+static bool pulse_wait_ms(pa_t *pa, unsigned ms)
+{
+   pa_time_event *ev;
+
+   pa->timed_out = false;
+   ev = pa_context_rttime_new(pa->context,
+         pa_rtclock_now() + (pa_usec_t)ms * PA_USEC_PER_MSEC,
+         pulse_timeout_cb, pa);
+   pa_threaded_mainloop_wait(pa->mainloop);
+   if (ev)
+      pa_threaded_mainloop_get_api(pa->mainloop)->time_free(ev);
+   return !pa->timed_out;
+}
 
 static void pulse_free(void *data)
 {
@@ -218,10 +255,20 @@ static void *pulse_init(const char *device, unsigned rate,
    if (pa_threaded_mainloop_start(pa->mainloop) < 0)
       goto error;
 
-   pa_threaded_mainloop_wait(pa->mainloop);
-
-   if (pa_context_get_state(pa->context) != PA_CONTEXT_READY)
-      goto unlock_error;
+   /* The state callback signals on ready or failure; a server that
+    * accepts the connection and then says nothing is given up on. */
+   while (pa_context_get_state(pa->context) != PA_CONTEXT_READY)
+   {
+      pa_context_state_t st = pa_context_get_state(pa->context);
+      if (st == PA_CONTEXT_FAILED || st == PA_CONTEXT_TERMINATED)
+         goto unlock_error;
+      if (!pulse_wait_ms(pa, PULSE_CONNECT_WAIT_MS))
+      {
+         RARCH_ERR("[PulseAudio] Server did not become ready within %u ms.\n",
+               PULSE_CONNECT_WAIT_MS);
+         goto unlock_error;
+      }
+   }
 
    pa_context_get_sink_info_list(pa->context, pa_sinklist_cb, pa);
    /* Checking device against sink list would be tricky due to callback, so it is just set. */
@@ -253,10 +300,18 @@ static void *pulse_init(const char *device, unsigned rate,
             &buffer_attr, PA_STREAM_ADJUST_LATENCY, NULL, NULL) < 0)
       goto error;
 
-   pa_threaded_mainloop_wait(pa->mainloop);
-
-   if (pa_stream_get_state(pa->stream) != PA_STREAM_READY)
-      goto unlock_error;
+   while (pa_stream_get_state(pa->stream) != PA_STREAM_READY)
+   {
+      pa_stream_state_t st = pa_stream_get_state(pa->stream);
+      if (st == PA_STREAM_FAILED || st == PA_STREAM_TERMINATED)
+         goto unlock_error;
+      if (!pulse_wait_ms(pa, PULSE_CONNECT_WAIT_MS))
+      {
+         RARCH_ERR("[PulseAudio] Stream did not become ready within %u ms.\n",
+               PULSE_CONNECT_WAIT_MS);
+         goto unlock_error;
+      }
+   }
 
    server_attr = pa_stream_get_buffer_attr(pa->stream);
    if (server_attr)
@@ -300,7 +355,15 @@ static bool pulse_start(void *data, bool is_shutdown)
     * reported; it was never being released, one per start or stop. */
    if ((op = pa_stream_cork(pa->stream, false, pulse_stream_success_cb, pa)))
    {
-      pa_threaded_mainloop_wait(pa->mainloop);
+      /* Wake on the operation's callback, or on the bound: a corked
+       * stream raises no write callbacks, so nothing else would. */
+      while (pa_operation_get_state(op) == PA_OPERATION_RUNNING)
+         if (!pulse_wait_ms(pa, PULSE_OP_WAIT_MS))
+         {
+            pa_operation_cancel(op);
+            pa->success = false;
+            break;
+         }
       pa_operation_unref(op);
    }
    ret = pa->success;
@@ -336,7 +399,13 @@ static ssize_t pulse_write(void *data, const void *s, size_t len)
          _len    += writable;
       }
       else if (!pa->nonblock)
-         pa_threaded_mainloop_wait(pa->mainloop);
+      {
+         /* Wakes on the next write callback. A server that has
+          * stopped consuming raises none; the bound ends the write
+          * with what went, rather than holding the thread on it. */
+         if (!pulse_wait_ms(pa, PULSE_WRITE_WAIT_MS) || !pa->is_ready)
+            break;
+      }
       else
          break;
    }
@@ -363,7 +432,13 @@ static bool pulse_stop(void *data)
     * reported; it was never being released, one per start or stop. */
    if ((op = pa_stream_cork(pa->stream, true, pulse_stream_success_cb, pa)))
    {
-      pa_threaded_mainloop_wait(pa->mainloop);
+      while (pa_operation_get_state(op) == PA_OPERATION_RUNNING)
+         if (!pulse_wait_ms(pa, PULSE_OP_WAIT_MS))
+         {
+            pa_operation_cancel(op);
+            pa->success = false;
+            break;
+         }
       pa_operation_unref(op);
    }
    ret = pa->success;
@@ -437,8 +512,13 @@ static size_t pulse_wait_writable(void *data, size_t len)
       if (_len >= len)
          break;
       /* Wakes on the next write callback, i.e. when the server has
-       * consumed enough for more room to exist. */
-      pa_threaded_mainloop_wait(pa->mainloop);
+       * consumed enough for more room to exist - or on the bound, which
+       * hands the pass back as no space coming from this call. */
+      if (!pulse_wait_ms(pa, PULSE_WRITE_WAIT_MS))
+      {
+         _len = 0;
+         break;
+      }
    }
    if (!pa->is_ready)
       _len = 0;
