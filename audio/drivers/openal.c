@@ -216,22 +216,43 @@ error:
    return NULL;
 }
 
+/* The device may have gone (a disconnected default device, a lost
+ * context), in which case AL_BUFFERS_PROCESSED is never delivered.
+ * Bound the sleep-poll in al_get_buffer() so a write against such a
+ * device returns short rather than never. */
+#define OPENAL_GET_BUFFER_WAIT_MS 200
+
 static bool al_unqueue_buffers(al_t *al)
 {
-   ALint val;
+   ALint val = 0;
+   ALsizei room;
 
+   alGetError();
    alGetSourcei(al->source, AL_BUFFERS_PROCESSED, &val);
 
+   /* On a failed query val is whatever it was, so it starts at zero
+    * and the error is checked; and the count is capped to the slots
+    * left in res_buf, which the processed count can never exceed on a
+    * healthy source but which no query result is allowed to overrun. */
+   if (alGetError() != AL_NO_ERROR || val <= 0)
+      return false;
+   room = al->num_buffers - (ALsizei)al->res_ptr;
+   if (val > room)
+      val = room;
    if (val <= 0)
       return false;
 
    alSourceUnqueueBuffers(al->source, val, &al->res_buf[al->res_ptr]);
+   if (alGetError() != AL_NO_ERROR)
+      return false;
    al->res_ptr += val;
    return true;
 }
 
 static bool al_get_buffer(al_t *al, ALuint *buffer)
 {
+   int waited_ms = 0;
+
    while (al->res_ptr == 0)
    {
       if (al_unqueue_buffers(al))
@@ -240,8 +261,13 @@ static bool al_get_buffer(al_t *al, ALuint *buffer)
       if (al->nonblock)
          return false;
 
-      /* Must sleep as there is no proper blocking method. */
+      /* Must sleep as there is no proper blocking method. A device
+       * that processes nothing within the bound has stopped; the
+       * write returns what it managed rather than waiting on it. */
+      if (waited_ms >= OPENAL_GET_BUFFER_WAIT_MS)
+         return false;
       retro_sleep(1);
+      waited_ms++;
    }
 
    *buffer = al->res_buf[--al->res_ptr];
