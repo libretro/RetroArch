@@ -472,6 +472,41 @@ static const char *dsound_wave_format_name(const WAVEFORMATEX *format)
    return "<unknown>";
 }
 
+/* The two stages, from the setting and the format the device took.
+ * The staging fifo dsound_write() fills is what rate control measures
+ * and holds half full; the DirectSound ring the notify thread keeps
+ * full sits behind it, and what the user hears is the ring plus half
+ * the fifo. Both used to be sized to the setting, so a 64 ms setting
+ * played at about 96. The fifo holds the setting - rounded up to a
+ * power of two by retro_spsc, and reported at its real capacity - and
+ * the ring takes what is left of the setting after half the fifo, so
+ * the two add up to it, floored at 16 ms - or the setting, if lower -
+ * to ride out the scheduler between the thread's 1 ms polls, and at
+ * four chunks in any case. */
+static void dsound_size_stages(dsound_t *ds, unsigned latency,
+      const WAVEFORMATEX *wf)
+{
+   size_t setting_bytes = ((size_t)latency * wf->nAvgBytesPerSec) / 1000;
+   size_t fifo_capacity = 4 * 1024;
+   size_t floor_bytes   = (16 * (size_t)wf->nAvgBytesPerSec) / 1000;
+
+   /* Never a larger ring than the setting asked for in total: at a
+    * setting under 16 ms the ring is the setting, as it always was. */
+   if (floor_bytes > setting_bytes)
+      floor_bytes       = setting_bytes;
+   while (fifo_capacity < setting_bytes)
+      fifo_capacity   <<= 1;
+   ds->fifo_bufsize     = fifo_capacity;
+   ds->buffer_size      = (setting_bytes > fifo_capacity / 2)
+         ? (unsigned)(setting_bytes - fifo_capacity / 2) : 0;
+   if (ds->buffer_size < floor_bytes)
+      ds->buffer_size   = (unsigned)floor_bytes;
+   ds->buffer_size     /= CHUNK_SIZE;
+   ds->buffer_size     *= CHUNK_SIZE;
+   if (ds->buffer_size < 4 * CHUNK_SIZE)
+      ds->buffer_size   = 4 * CHUNK_SIZE;
+}
+
 static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
       unsigned block_frames, unsigned *new_rate)
 {
@@ -546,14 +581,7 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
          wf.nSamplesPerSec,
          latency);
 
-   ds->buffer_size       = (latency * wf.nAvgBytesPerSec) / 1000;
-   ds->buffer_size      /= CHUNK_SIZE;
-   ds->buffer_size      *= CHUNK_SIZE;
-   if (ds->buffer_size < 4 * CHUNK_SIZE)
-      ds->buffer_size    = 4 * CHUNK_SIZE;
-
-   RARCH_LOG("[DirectSound] Setting buffer size of %u bytes, latency %u ms.\n",
-         ds->buffer_size, (unsigned)((1000 * ds->buffer_size) / wf.nAvgBytesPerSec));
+   dsound_size_stages(ds, latency, &wf);
 
    bufdesc.dwSize        = sizeof(DSBUFFERDESC);
    bufdesc.dwFlags       = 0;
@@ -577,12 +605,7 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
       RARCH_WARN("[DirectSound] Failed to create float buffer, falling back to 16-bit PCM.\n");
 
       dsound_set_format(&wf, false, 2, rate);
-
-      ds->buffer_size       = (latency * wf.nAvgBytesPerSec) / 1000;
-      ds->buffer_size      /= CHUNK_SIZE;
-      ds->buffer_size      *= CHUNK_SIZE;
-      if (ds->buffer_size < 4 * CHUNK_SIZE)
-         ds->buffer_size    = 4 * CHUNK_SIZE;
+      dsound_size_stages(ds, latency, &wf);
 
       bufdesc.dwBufferBytes = ds->buffer_size;
       bufdesc.lpwfxFormat   = &wf;
@@ -605,9 +628,6 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
     * nAvgBytesPerSec, already CHUNK_SIZE-aligned), sized after the
     * float->int16 fallback so both agree on the final format.  Keep
     * the old 4 KiB as the floor for very low latency settings. */
-   ds->fifo_bufsize = ds->buffer_size;
-   if (ds->fifo_bufsize < 4 * 1024)
-      ds->fifo_bufsize = 4 * 1024;
    if (!retro_spsc_init(&ds->ring, ds->fifo_bufsize))
       goto error;
    /* retro_spsc_init rounds capacity up to a power of 2.  Report the
@@ -617,9 +637,12 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
     * capacity. */
    ds->fifo_bufsize = retro_spsc_write_avail(&ds->ring);
 
-   RARCH_LOG("[DirectSound] Initialized %u-bit %s buffer, %u bytes, latency %u ms.\n",
+   RARCH_LOG("[DirectSound] Initialized %u-bit %s: latency setting %u ms as a %u-byte fifo (%u ms, measured) in front of a %u-byte ring (%u ms).\n",
          wf.wBitsPerSample,
          dsound_wave_format_name(&wf),
+         latency,
+         (unsigned)ds->fifo_bufsize,
+         (unsigned)((1000 * ds->fifo_bufsize) / wf.nAvgBytesPerSec),
          ds->buffer_size,
          (unsigned)((1000 * ds->buffer_size) / wf.nAvgBytesPerSec));
 
