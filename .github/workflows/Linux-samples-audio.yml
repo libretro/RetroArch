@@ -193,3 +193,21 @@ jobs:
              UBSAN_OPTIONS=print_stacktrace=1 timeout 120 \
              ./device_list_driver_test
           echo "[pass] device_list_driver_test (ASan)"
+
+      - name: Build and run rate_control_bounds_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/audio/rate_control_bounds
+        run: |
+          set -eu
+          # Includes audio/audio_driver.c and runs the rate control's
+          # shipping computation against a scripted driver. At the
+          # setpoint, empty and full it must give 1.0 and the band's two
+          # edges; with write_avail() reporting five times buffer_size()
+          # it must give the upper edge and no more. Before the clamp an
+          # over-reporting driver drove it nine times past the band.
+          make clean all SANITIZER=address,undefined
+          test -x rate_control_bounds_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
+             ./rate_control_bounds_test
+          echo "[pass] rate_control_bounds_test (ASan)"

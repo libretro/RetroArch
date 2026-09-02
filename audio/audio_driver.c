@@ -118,6 +118,13 @@
  * exists so a device that stops draining cannot hang the frontend. */
 #define AUDIO_PIPE_WAIT_MAX_US         1000000
 
+/* The policy floor on the latency setting, in milliseconds, applied
+ * once here before any driver sees it. The setting's range starts at
+ * zero, and zero reached the drivers: some floored it themselves, each
+ * at its own value, one refused to open, one fell back to a fixed
+ * fifo. A driver keeps only a floor of its hardware's own. */
+#define AUDIO_LATENCY_MIN_MS           8
+
 /* Region spacing inside the two scratch arenas, in elements: 64 bytes
  * for either type. Every region starts on a 64-byte boundary for the
  * SIMD conversion and resampler paths, and one extra 64-byte pad sits
@@ -711,6 +718,13 @@ static double audio_driver_compute_rate_adjust(audio_driver_state_t *audio_st)
          audio_st->free_samples_count++ & (AUDIO_BUFFER_FREE_SAMPLES_COUNT - 1);
    avail                  = (int)audio_st->current_audio->write_avail(
          audio_st->context_audio_data);
+   /* Never above the buffer: a driver that counts a stage in
+    * write_avail() it left out of buffer_size() would otherwise push
+    * the direction term past +1, and the controller with it. The
+    * contract forbids it; the clamp is for the driver that has not
+    * caught up with the contract. */
+   if (avail > (int)audio_st->buffer_size)
+      avail               = (int)audio_st->buffer_size;
    half_size              = (int)(audio_st->buffer_size / 2);
    /* half_size is the setpoint's denominator. A driver may report a zero
     * buffer size at runtime as well as at init - pulse pushes its size
@@ -938,6 +952,8 @@ static size_t audio_driver_ff_discard_bound(audio_driver_state_t *audio_st,
       return in_frames;
 
    avail_bytes     = audio->write_avail(audio_st->context_audio_data);
+   if (audio_st->buffer_size && avail_bytes > audio_st->buffer_size)
+      avail_bytes  = audio_st->buffer_size;
    out_frame_bytes = (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
          ? (2 * sizeof(float))
          : (2 * sizeof(int16_t));
@@ -1849,6 +1865,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    unsigned audio_latency         = (runloop_audio_latency > setting_audio_latency)
          ? runloop_audio_latency : setting_audio_latency;
    size_t max_buffer_samples      = AUDIO_CHUNK_SIZE_NONBLOCKING * 2;
+   bool latency_floored           = false;
    /* Accommodate rewind since at some point we might have two full buffers. */
    size_t outsamples_max          = max_buffer_samples * AUDIO_MAX_RATIO * slowmotion_ratio;
    size_t audio_buf_length        = max_buffer_samples * sizeof(float);
@@ -1888,6 +1905,14 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    convert_s16_to_float_init_simd();
    convert_float_to_s16_init_simd();
    audio_driver_clamp_init_simd();
+
+   if (audio_latency < AUDIO_LATENCY_MIN_MS)
+   {
+      RARCH_WARN("[Audio] Latency setting of %u ms is below the %u ms minimum; using %u ms.\n",
+            audio_latency, AUDIO_LATENCY_MIN_MS, AUDIO_LATENCY_MIN_MS);
+      latency_floored = true;
+      audio_latency   = AUDIO_LATENCY_MIN_MS;
+   }
 
    if (!arena_int16 || !arena_float)
    {
@@ -2216,12 +2241,14 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
                      * 1000.0 / out_rate
                   : 0.0;
             RARCH_LOG("[Audio] Driver \"%s\" reports a %u-byte buffer: "
-                  "%.1f ms of %s at %u Hz against a %u ms latency setting; "
+                  "%.1f ms of %s at %u Hz against a %u ms latency setting%s; "
                   "rate control holds it near %.1f ms.\n",
                   audio_driver_st.current_audio->ident,
                   (unsigned)audio_driver_st.buffer_size, buffer_ms,
                   (frame_bytes == 2 * sizeof(float)) ? "float" : "int16",
-                  out_rate, audio_latency, buffer_ms / 2.0);
+                  out_rate, audio_latency,
+                  latency_floored ? " (raised to the minimum)" : "",
+                  buffer_ms / 2.0);
             AUDIO_FLAGS_SET(&audio_driver_st, AUDIO_FLAG_CONTROL);
          }
          else
