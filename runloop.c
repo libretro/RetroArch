@@ -8267,7 +8267,14 @@ end:
     * block inside their own subsystems; only the timer is decided
     * here. See enum runloop_pace_source. */
    runloop_st->pace = RUNLOOP_PACE_NONE;
-   if (settings->bools.video_vsync)
+   /* The driver's blocking state, not the video_vsync setting. This is
+    * the expression driver_set_nonblock_state() applies: fast-forward
+    * (INP_FLAG_NONBLOCKING) and RUNLOOP_FLAG_FORCE_NONBLOCK both put
+    * the driver into non-blocking presentation while the setting stays
+    * true, and during those frames vsync holds nothing. */
+   if (     settings->bools.video_vsync
+         && !(input_st->flags & INP_FLAG_NONBLOCKING)
+         && !(runloop_st->flags & RUNLOOP_FLAG_FORCE_NONBLOCK))
       runloop_st->pace |= RUNLOOP_PACE_VSYNC;
    /* The live blocking state, not the audio_sync setting. Fast-forward
     * puts the driver into non-blocking mode for a few frames while
