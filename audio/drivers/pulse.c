@@ -110,8 +110,8 @@ static void pulse_context_state_cb(pa_context *c, void *data)
 static void pa_sinklist_cb(pa_context *c, const pa_sink_info *l, int eol, void *data)
 {
    union string_list_elem_attr attr;
-   attr.i = 0;
    pa_t *pa = (pa_t*)data;
+   attr.i = 0;
 
    if (!pa || !pa->devicelist)
       return;
@@ -447,14 +447,114 @@ static size_t pulse_wait_writable(void *data, size_t len)
    return _len;
 }
 
+/* Context-free enumeration: a short-lived plain mainloop, connect,
+ * list sinks, tear down. Used when there is no driver instance - init
+ * failed, or the menu asks before the driver is up - which is exactly
+ * when a user needs the list most. The threaded mainloop the driver
+ * runs on is not touched. */
+struct pulse_enum_state
+{
+   struct string_list *sl;
+   int done;      /* sink list callback saw EOL, or an error ended it */
+   int failed;
+};
+
+static void pulse_enum_sinklist_cb(pa_context *c,
+      const pa_sink_info *l, int eol, void *data)
+{
+   struct pulse_enum_state *st = (struct pulse_enum_state*)data;
+   union string_list_elem_attr attr;
+   attr.i = 0;
+   if (!st)
+      return;
+   if (eol > 0)
+   {
+      st->done = 1;
+      return;
+   }
+   if (eol < 0)
+   {
+      st->done   = 1;
+      st->failed = 1;
+      return;
+   }
+   if (l && l->name)
+      string_list_append(st->sl, l->name, attr);
+}
+
+static struct string_list *pulse_enumerate_sinks(void)
+{
+   struct pulse_enum_state st;
+   pa_mainloop *ml   = NULL;
+   pa_context  *ctx  = NULL;
+   pa_operation *op  = NULL;
+   int ret;
+
+   st.sl     = string_list_new();
+   st.done   = 0;
+   st.failed = 0;
+   if (!st.sl)
+      return NULL;
+
+   if (!(ml = pa_mainloop_new()))
+      goto error;
+   if (!(ctx = pa_context_new(pa_mainloop_get_api(ml), "RetroArch")))
+      goto error;
+   if (pa_context_connect(ctx, NULL, PA_CONTEXT_NOFLAGS, NULL) < 0)
+      goto error;
+
+   /* Drive the loop until the context settles one way or the other. */
+   for (;;)
+   {
+      pa_context_state_t state = pa_context_get_state(ctx);
+      if (state == PA_CONTEXT_READY)
+         break;
+      if (!PA_CONTEXT_IS_GOOD(state))
+         goto error;
+      if (pa_mainloop_iterate(ml, 1, &ret) < 0)
+         goto error;
+   }
+
+   if (!(op = pa_context_get_sink_info_list(ctx, pulse_enum_sinklist_cb, &st)))
+      goto error;
+   while (!st.done)
+   {
+      if (pa_mainloop_iterate(ml, 1, &ret) < 0)
+         break;
+   }
+   pa_operation_unref(op);
+   op = NULL;
+   if (st.failed)
+      goto error;
+
+   pa_context_disconnect(ctx);
+   pa_context_unref(ctx);
+   pa_mainloop_free(ml);
+   return st.sl;
+
+error:
+   if (op)
+      pa_operation_unref(op);
+   if (ctx)
+   {
+      pa_context_disconnect(ctx);
+      pa_context_unref(ctx);
+   }
+   if (ml)
+      pa_mainloop_free(ml);
+   string_list_free(st.sl);
+   return NULL;
+}
+
 static void *pulse_device_list_new(void *data)
 {
    pa_t *pa = (pa_t*)data;
 
+   /* A live driver already holds the list it built at connect time. */
    if (pa && pa->devicelist)
       return string_list_clone(pa->devicelist);
 
-   return NULL;
+   return pulse_enumerate_sinks();
 }
 
 static void pulse_device_list_free(void *data, void *array_list_data)
