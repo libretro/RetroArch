@@ -1036,11 +1036,9 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
    vk->fse_release = NULL;
    if (vk->fse_supported)
    {
-      vk->fse_acquire = (PFN_vkAcquireFullScreenExclusiveModeEXT)
-         vkGetDeviceProcAddr(vk->context.device,
+      vk->fse_acquire = vkGetDeviceProcAddr(vk->context.device,
                "vkAcquireFullScreenExclusiveModeEXT");
-      vk->fse_release = (PFN_vkReleaseFullScreenExclusiveModeEXT)
-         vkGetDeviceProcAddr(vk->context.device,
+      vk->fse_release = vkGetDeviceProcAddr(vk->context.device,
                "vkReleaseFullScreenExclusiveModeEXT");
    }
 #endif
@@ -1489,7 +1487,8 @@ static void vulkan_destroy_swapchain(gfx_ctx_vulkan_data_t *vk)
 #ifdef VK_USE_PLATFORM_WIN32_KHR
    /* Exclusive mode is bound to the swapchain; release it first. */
    if (vk->fse_acquired && vk->fse_release && vk->swapchain != VK_NULL_HANDLE)
-      vk->fse_release(vk->context.device, vk->swapchain);
+      ((PFN_vkReleaseFullScreenExclusiveModeEXT)vk->fse_release)(
+            vk->context.device, vk->swapchain);
    vk->fse_acquired = false;
 #endif
    unsigned i;
@@ -2740,7 +2739,8 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    vk->fse_acquired = false;
    if (fse_forced && vk->fse_supported && vk->fse_acquire)
    {
-      VkResult res = vk->fse_acquire(vk->context.device, vk->swapchain);
+      VkResult res = ((PFN_vkAcquireFullScreenExclusiveModeEXT)
+            vk->fse_acquire)(vk->context.device, vk->swapchain);
       if (res == VK_SUCCESS)
       {
          vk->fse_acquired = true;

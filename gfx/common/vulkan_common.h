@@ -271,10 +271,11 @@ typedef struct gfx_ctx_vulkan_data
     * been acquired on the current swapchain, so it is released before
     * that swapchain is destroyed. */
    bool fse_acquired;
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-   PFN_vkAcquireFullScreenExclusiveModeEXT fse_acquire;
-   PFN_vkReleaseFullScreenExclusiveModeEXT fse_release;
-#endif
+   /* PFN_vkVoidFunction rather than the extension's own typedefs: this
+    * header is included by every Vulkan context and by shader_vulkan.c,
+    * most of which never see vulkan_win32.h. Cast at the call site. */
+   PFN_vkVoidFunction fse_acquire;
+   PFN_vkVoidFunction fse_release;
 #ifdef VULKAN_HDR_SWAPCHAIN
    /* Loaded from VK_EXT_hdr_metadata when that optional device extension is
     * present; NULL otherwise. Used to signal SMPTE-2086 mastering-display
