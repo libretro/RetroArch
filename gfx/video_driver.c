@@ -6505,6 +6505,27 @@ VIDEO_NOINLINE static void video_driver_scanline_before_frame(video_driver_state
    (void)frame_time_target;
    (void)core_run_time;
 
+   /* Not under variable refresh.
+    *
+    * Scanline Sync assumes a display that scans on a fixed period, so
+    * that "wait until the beam reaches line N" names a moment. Under
+    * VRR the display holds in blanking until a frame arrives and only
+    * then scans it out, so the scan this waits for starts when we
+    * present - the lock closes on our own output rate and calls it the
+    * display period. That is not a sync, it is a delay on every frame,
+    * and with G-Sync on it showed as tearing and broken A/V sync where
+    * the old inert implementation had done nothing and been harmless.
+    *
+    * There is no software-visible "VRR is active" signal. Sync to
+    * Exact Content Framerate is the setting a user turns on for VRR,
+    * and the RUNLOOP_STATE_MENU throttle already treats it and this as
+    * alternatives, so it is the proxy. */
+   if (config_get_ptr()->bools.vrr_runloop_enable)
+   {
+      video_st->scanline[SCANLINE_NEXT] = 0;
+      return;
+   }
+
    /* Lock on first use. Calibration measures the line count, the period
     * and the residual bias together, because a mode change moves all
     * three. */
