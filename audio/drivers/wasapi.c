@@ -1397,7 +1397,12 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
             size_t write_avail = FIFO_WRITE_AVAIL(w->buffer);
             if (!write_avail)
             {
-               if (WaitForSingleObject(w->write_event, WASAPI_TIMEOUT) == WAIT_OBJECT_0)
+               /* The engine signals every period. One that has stopped
+                * - the device removed, or held through a power event -
+                * signals nothing, and the write returns what went rather
+                * than waiting a period at a time with no end. */
+               if (WaitForSingleObject(w->write_event, WASAPI_TIMEOUT) != WAIT_OBJECT_0)
+                  break;
                {
                   BYTE *dest = NULL;
                   UINT32 frame_count = w->engine_buffer_size >> w->frame_shift;
@@ -1460,8 +1465,13 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
             if (!write_avail)
             {
                size_t read_avail = 0;
+               /* A period with no signal is a stalled engine, not a gone
+                * device: return what went, and let the next write find
+                * out which. The device going away shows up as a failed
+                * padding query or buffer call below, which is what -1
+                * is for. */
                if (!(WaitForSingleObject(w->write_event, WASAPI_TIMEOUT) == WAIT_OBJECT_0))
-                  return -1;
+                  break;
                if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
                   return -1;
                read_avail  = FIFO_READ_AVAIL(w->buffer);
