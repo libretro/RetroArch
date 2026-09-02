@@ -18,6 +18,8 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
+#include <compat/strl.h>
+#include <lists/string_list.h>
 #include <unistd.h>
 #include <errno.h>
 #include <sys/select.h>
@@ -241,6 +243,67 @@ static bool oss_use_float(void *data)
    return false;
 }
 
+/* The device string is a path. List the /dev/dsp nodes that exist:
+ * /dev/dsp itself and /dev/dsp0..15, which covers Linux OSS, OSS4 and
+ * the BSDs. Where SNDCTL_AUDIOINFO exists the card name is appended so
+ * the entry is recognisable; the path stays the value. */
+static void *oss_device_list_new(void *data)
+{
+   int i;
+   union string_list_elem_attr attr;
+   struct string_list *sl = string_list_new();
+
+   (void)data;
+   attr.i = 0;
+   if (!sl)
+      return NULL;
+
+   for (i = -1; i < 16; i++)
+   {
+      char path[32];
+      char label[160];
+      int fd;
+
+      if (i < 0)
+         strlcpy(path, DEFAULT_OSS_DEV, sizeof(path));
+      else
+         snprintf(path, sizeof(path), "/dev/dsp%d", i);
+
+      /* A node that cannot be opened for output is not offered; a busy
+       * one is, since it exists and may be free later. */
+      fd = open(path, O_WRONLY | O_NONBLOCK);
+      if (fd < 0 && errno != EBUSY)
+         continue;
+
+      strlcpy(label, path, sizeof(label));
+#ifdef SNDCTL_AUDIOINFO
+      if (fd >= 0)
+      {
+         oss_audioinfo ai;
+         memset(&ai, 0, sizeof(ai));
+         ai.dev = -1;
+         if (ioctl(fd, SNDCTL_AUDIOINFO, &ai) == 0 && ai.name[0])
+            snprintf(label, sizeof(label), "%s (%s)", path, ai.name);
+      }
+#endif
+      if (fd >= 0)
+         close(fd);
+
+      attr.i = i;
+      string_list_append(sl, label, attr);
+   }
+
+   return sl;
+}
+
+static void oss_device_list_free(void *data, void *array_list_data)
+{
+   struct string_list *sl = (struct string_list*)array_list_data;
+   (void)data;
+   if (sl)
+      string_list_free(sl);
+}
+
 audio_driver_t audio_oss = {
    oss_init,
    oss_write,
@@ -251,8 +314,8 @@ audio_driver_t audio_oss = {
    oss_free,
    oss_use_float,
    "oss",
-   NULL,
-   NULL,
+   oss_device_list_new,
+   oss_device_list_free,
    oss_write_avail,
    oss_buffer_size,
    NULL, /* write_raw */

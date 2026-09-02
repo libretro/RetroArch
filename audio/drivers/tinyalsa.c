@@ -50,6 +50,8 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
+#include <compat/strl.h>
+#include <lists/string_list.h>
 #include <poll.h>
 
 #include <sys/ioctl.h>
@@ -2471,6 +2473,76 @@ static size_t tinyalsa_buffer_size(void *data)
 	return tinyalsa->buffer_size;
 }
 
+/* The device string is "<card>,<device>". Enumerate the playback PCM
+ * nodes the kernel exposes, /dev/snd/pcmC<card>D<device>p, and label
+ * each with the card's name from its mixer where one opens. */
+static void *tinyalsa_device_list_new(void *data)
+{
+   unsigned card, dev;
+   union string_list_elem_attr attr;
+   struct string_list *sl = string_list_new();
+
+   (void)data;
+   attr.i = 0;
+   if (!sl)
+      return NULL;
+
+   for (card = 0; card < 32; card++)
+   {
+      char cname[64];
+      int have_name = 0;
+
+      for (dev = 0; dev < 32; dev++)
+      {
+         char node[64];
+         char value[16];
+         char label[192];
+         snprintf(node, sizeof(node), "/dev/snd/pcmC%uD%up", card, dev);
+         if (access(node, F_OK) != 0)
+            continue;
+         if (!have_name)
+         {
+            /* /proc/asound/cardN/id is the ALSA card id; no library
+             * needed, and this file carries only the PCM half of
+             * tinyalsa. */
+            FILE *f;
+            char path[48];
+            cname[0]  = '\0';
+            have_name = 1;
+            snprintf(path, sizeof(path), "/proc/asound/card%u/id", card);
+            f = fopen(path, "r");
+            if (f)
+            {
+               if (fgets(cname, sizeof(cname), f))
+               {
+                  size_t n = strlen(cname);
+                  while (n && (cname[n - 1] == '\n' || cname[n - 1] == '\r'))
+                     cname[--n] = '\0';
+               }
+               fclose(f);
+            }
+         }
+         snprintf(value, sizeof(value), "%u,%u", card, dev);
+         if (cname[0])
+            snprintf(label, sizeof(label), "%s (%s)", value, cname);
+         else
+            strlcpy(label, value, sizeof(label));
+         attr.i = (int)((card << 8) | dev);
+         string_list_append(sl, label, attr);
+      }
+   }
+
+   return sl;
+}
+
+static void tinyalsa_device_list_free(void *data, void *array_list_data)
+{
+   struct string_list *sl = (struct string_list*)array_list_data;
+   (void)data;
+   if (sl)
+      string_list_free(sl);
+}
+
 audio_driver_t audio_tinyalsa = {
 	tinyalsa_init,               /* AUDIO_init              */
 	tinyalsa_write,              /* AUDIO_write             */
@@ -2481,8 +2553,8 @@ audio_driver_t audio_tinyalsa = {
 	tinyalsa_free,               /* AUDIO_free              */
 	tinyalsa_use_float,          /* AUDIO_use_float         */
 	"tinyalsa",                  /* "AUDIO"                 */
-	NULL,                        /* AUDIO_device_list_new   */ /*TODO*/
-	NULL,                        /* AUDIO_device_list_free  */ /*TODO*/
+	tinyalsa_device_list_new,    /* AUDIO_device_list_new   */
+	tinyalsa_device_list_free,   /* AUDIO_device_list_free  */
 	tinyalsa_write_avail,        /* AUDIO_write_avail       */ /*TODO*/
 	tinyalsa_buffer_size,        /* AUDIO_buffer_size       */ /*TODO*/
 	NULL,                        /* write_raw               */

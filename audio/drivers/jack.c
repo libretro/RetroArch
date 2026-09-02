@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include <jack/jack.h>
+#include <lists/string_list.h>
 #include <jack/types.h>
 #include <jack/ringbuffer.h>
 
@@ -425,6 +426,50 @@ static size_t ja_wait_writable(void *data, size_t len)
    }
 }
 
+/* The device string is "left_port,right_port": physical input ports the
+ * stream connects to. List every physical input port from a throwaway
+ * client, without starting a server that is not already running. */
+static void *ja_device_list_new(void *data)
+{
+   int i;
+   jack_status_t status;
+   union string_list_elem_attr attr;
+   jack_client_t *client   = NULL;
+   const char   **ports    = NULL;
+   struct string_list *sl  = string_list_new();
+
+   (void)data;
+   attr.i = 0;
+   if (!sl)
+      return NULL;
+
+   client = jack_client_open("RetroArch-enum", JackNoStartServer, &status);
+   if (!client)
+   {
+      string_list_free(sl);
+      return NULL;
+   }
+
+   ports = jack_get_ports(client, NULL, NULL, JackPortIsPhysical | JackPortIsInput);
+   if (ports)
+   {
+      for (i = 0; ports[i]; i++)
+         string_list_append(sl, ports[i], attr);
+      jack_free(ports);
+   }
+
+   jack_client_close(client);
+   return sl;
+}
+
+static void ja_device_list_free(void *data, void *array_list_data)
+{
+   struct string_list *sl = (struct string_list*)array_list_data;
+   (void)data;
+   if (sl)
+      string_list_free(sl);
+}
+
 audio_driver_t audio_jack = {
    ja_init,
    ja_write,
@@ -435,8 +480,8 @@ audio_driver_t audio_jack = {
    ja_free,
    ja_use_float,
    "jack",
-   NULL,
-   NULL,
+   ja_device_list_new,
+   ja_device_list_free,
    ja_write_avail,
    ja_buffer_size,
    NULL, /* write_raw */
