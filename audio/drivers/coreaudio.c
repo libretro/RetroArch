@@ -359,17 +359,16 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t len)
          break;
       }
 
-#if TARGET_OS_IOS
+      /* Timed on every platform, as it already was on iOS: the render
+       * callback is what signals this, and a unit that has stopped
+       * rendering - device removed, default output changed while
+       * stopped - signals nothing. The write returns what went. */
       if (write_avail == 0 && !scond_wait_timeout(
                dev->cond, dev->lock, 300000))
       {
          slock_unlock(dev->lock);
          break;
       }
-#else
-      if (write_avail == 0)
-         scond_wait(dev->cond, dev->lock);
-#endif
       slock_unlock(dev->lock);
    }
 
@@ -443,6 +442,8 @@ static size_t coreaudio_wait_writable(void *data, size_t len)
    coreaudio_t *dev = (coreaudio_t*)data;
    size_t write_avail;
 
+   int laps = 8;
+
    if (len > dev->buffer_size / 2)
       len = dev->buffer_size / 2;
 
@@ -457,15 +458,15 @@ static size_t coreaudio_wait_writable(void *data, size_t len)
       write_avail = FIFO_WRITE_AVAIL(dev->buffer);
       if (write_avail >= len)
          break;
-#if TARGET_OS_IOS
-      if (!scond_wait_timeout(dev->cond, dev->lock, 300000))
+      /* Timed on every platform, as on iOS, and capped: a callback
+       * that keeps firing but never frees enough ends the wait too,
+       * and the pass is handed back as no space coming from this
+       * call. */
+      if (!scond_wait_timeout(dev->cond, dev->lock, 300000) || --laps < 0)
       {
          write_avail = 0;
          break;
       }
-#else
-      scond_wait(dev->cond, dev->lock);
-#endif
    }
    slock_unlock(dev->lock);
    return write_avail;
@@ -1335,6 +1336,7 @@ static size_t coreaudio_wait_writable(void *data, size_t len)
    coreaudio_t *dev = (coreaudio_t*)data;
    size_t want      = len / sizeof(float);
    size_t half      = dev->capacity / 2;
+   int    laps      = 8;
 
    if (want > half)
       want = half;
@@ -1354,6 +1356,10 @@ static size_t coreaudio_wait_writable(void *data, size_t len)
                kAudioOutputUnitProperty_IsRunning,
                kAudioUnitScope_Global, 0,
                &running, &size) == noErr && !running)
+         return 0;
+      /* Each wait is bounded; this bounds the loop, for a unit that
+       * reports running but never renders. */
+      if (--laps < 0)
          return 0;
       dispatch_semaphore_wait(dev->sema,
             dispatch_time(DISPATCH_TIME_NOW, 100 * NSEC_PER_MSEC));
