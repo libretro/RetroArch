@@ -130,12 +130,25 @@ static void exercise(const case_t *c, unsigned latency_ms)
             "%s: a buffer's worth offered left more than half the room (%u of %u)",
             d->ident, (unsigned)avail_full, (unsigned)buffer);
 
-   /* 4. The device plays it out and the room comes back. */
+   /* 4. The device plays it out and the room comes back. Polled rather
+    *    than slept for: a null backend drains in real time but through
+    *    its own device buffering, so a fixed wait of twice the setting
+    *    was marginal, and under TSan it was missed. The deadline is
+    *    generous; a driver that drains at all returns well inside it. */
    d->start(ctx, false);
-   usleep(latency_ms * 1000 * 2);
-   avail_later = d->write_avail(ctx);
-   printf("   write_avail after twice the setting has played: %u bytes\n",
-         (unsigned)avail_later);
+   {
+      unsigned waited_ms = 0;
+      avail_later = d->write_avail(ctx);
+      while (   c->models_fill && avail_later <= avail_full
+             && waited_ms < latency_ms * 20)
+      {
+         usleep(5000);
+         waited_ms  += 5;
+         avail_later = d->write_avail(ctx);
+      }
+      printf("   write_avail after the device played for %u ms: %u bytes\n",
+            waited_ms, (unsigned)avail_later);
+   }
    CHECK(avail_later <= buffer,
          "%s: write_avail %u exceeds buffer_size %u after playing",
          d->ident, (unsigned)avail_later, (unsigned)buffer);
