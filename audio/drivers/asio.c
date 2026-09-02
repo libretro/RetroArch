@@ -687,6 +687,11 @@ typedef struct ra_asio
     * anew - the driver's preferred size may have changed - when the
     * frontend reinitialises audio, which the same callback requests. */
    retro_atomic_int_t rebuild_pending;
+   /* Set by kAsioLatenciesChanged: the writer re-reads the latencies on
+    * its own thread, which owns the COM apartment, and logs them. The
+    * ring keeps its size until the next reinit; rate control absorbs
+    * the change meanwhile. */
+   retro_atomic_int_t latencies_changed;
    /* The device's output count, and the first of the two outputs the
     * buffers were created on: the audio_asio_output_channel setting,
     * clamped to the device. */
@@ -901,6 +906,8 @@ static long asio_cb_message(long selector, long value,
             case kAsioSupportsTimeInfo:
             case kAsioResetRequest:
             case kAsioBufferSizeChange:
+            case kAsioResyncRequest:
+            case kAsioLatenciesChanged:
                return 1L;
          }
          return 0L;
@@ -920,6 +927,19 @@ static long asio_cb_message(long selector, long value,
          if (g_asio)
             retro_atomic_store_release_int(&g_asio->rebuild_pending, 1);
          audio_state_get_ptr()->reinit_request = true;
+         return 1L;
+      case kAsioResyncRequest:
+         /* The driver lost its place - a system pause, a clock that
+          * stalled - and asks the host to resync. Nothing here keeps
+          * time of its own: the ring's fill is what rate control
+          * steers, and it re-converges. Acknowledged, and said. */
+         RARCH_LOG("[ASIO] Driver requests a resync; rate control will re-converge.\n");
+         return 1L;
+      case kAsioLatenciesChanged:
+         /* Re-read on the writer's thread, not this one. */
+         RARCH_LOG("[ASIO] Driver reports its latencies changed.\n");
+         if (g_asio)
+            retro_atomic_store_release_int(&g_asio->latencies_changed, 1);
          return 1L;
       case kAsioSupportsTimeInfo:
          return 1L; /* We implement bufferSwitchTimeInfo */
@@ -1468,6 +1488,18 @@ static ssize_t ra_asio_write(void *data, const void *buf, size_t len)
 
    if (!ad || retro_atomic_load_acquire_int(&ad->shutdown))
       return -1;
+
+   if (retro_atomic_load_acquire_int(&ad->latencies_changed))
+   {
+      long in_lat = 0, out_lat = 0;
+      retro_atomic_store_release_int(&ad->latencies_changed, 0);
+      if (ASIO_CALL_GET_LATENCIES(ad->iasio, &in_lat, &out_lat) == ASE_OK)
+      {
+         RARCH_LOG("[ASIO] Latencies now: input=%ld, output=%ld frames (%.1f ms); the ring is resized at the next reinit.\n",
+               in_lat, out_lat, (float)out_lat * 1000.0f / ad->sample_rate);
+         ad->output_latency = out_lat;
+      }
+   }
 
    /* Bound for the blocking wait below, one device period.  Both
     * operands are fixed for the lifetime of the COM object, so this is
