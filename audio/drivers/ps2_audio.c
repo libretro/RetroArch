@@ -108,15 +108,13 @@ static void ps2_audio_set_nonblock_state(void *data, bool toggle)
       ps2->nonblock = toggle;
 }
 
-static size_t ps2_audio_write_avail(void *data)
-{
-   ps2_audio_t* ps2 = (ps2_audio_t*)data;
-
-   if (ps2 && ps2->running)
-      return AUDIO_BUFFER;
-
-   return 0;
-}
+/* No write_avail(): the driver hands audio to audsrv and has nothing
+ * to measure its fill with. It used to report the whole buffer as free
+ * whenever it was running, which the rate control read as an empty
+ * device every frame and answered with its full upward correction,
+ * permanently - audio a half percent fast, and sharp, for as long as
+ * rate control was on. With no write_avail() the frontend disables
+ * rate control for this driver and says so, which is the truth. */
 
 static bool ps2_audio_use_float(void *data) { return false; }
 static size_t ps2_audio_buffer_size(void *data) { return AUDIO_BUFFER; }
@@ -133,7 +131,7 @@ audio_driver_t audio_ps2 = {
    "ps2",
    NULL,
    NULL,
-   ps2_audio_write_avail,
+   NULL, /* write_avail */
    ps2_audio_buffer_size,
    NULL /* write_raw */
 };
