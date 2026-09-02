@@ -1061,6 +1061,49 @@ static void asio_dispose_buffers(ra_asio_t *ad)
  * again on reclaim after the driver asked for a reset, when its
  * preferred size may have changed. g_asio is set by the caller before
  * this, as the driver may call back during ASIOCreateBuffers. */
+/* The device period to ask for. The driver's preferred size is the
+ * default and the ceiling: it is what the driver was tuned around and
+ * what its control panel shows. Below it only when the preferred size
+ * is more than a quarter of the latency setting - the device stage is
+ * about two periods, and two periods of more than a quarter would be
+ * more than half the setting in the device alone - and then the
+ * smallest legal size at or above that quarter. Legal sizes follow
+ * the specification's granularity: a positive step from the minimum,
+ * only the three advertised when zero, powers of two when negative.
+ * A device whose sizes are locked gets its preferred size. */
+static long asio_choose_period(unsigned sample_rate, unsigned latency,
+      long min_sz, long max_sz, long pref_sz, long gran)
+{
+   long target = (long)((uint64_t)sample_rate * latency / 4000);
+   long chosen;
+
+   if (target < min_sz)
+      target = min_sz;
+   if (pref_sz <= target || min_sz >= pref_sz)
+      return pref_sz;
+
+   if (gran > 0)
+   {
+      chosen = min_sz + ((target - min_sz + gran - 1) / gran) * gran;
+   }
+   else if (gran < 0)
+   {
+      chosen = min_sz;
+      while (chosen < target && chosen < max_sz)
+         chosen <<= 1;
+   }
+   else
+      return pref_sz;
+
+   if (chosen > pref_sz)
+      chosen = pref_sz;
+   if (chosen > max_sz)
+      chosen = max_sz;
+   if (chosen < min_sz)
+      chosen = min_sz;
+   return chosen;
+}
+
 static bool asio_create_buffers(ra_asio_t *ad, unsigned latency)
 {
    long min_sz, max_sz, pref_sz, gran;
@@ -1075,10 +1118,13 @@ static bool asio_create_buffers(ra_asio_t *ad, unsigned latency)
    }
    RARCH_LOG("[ASIO] Buffer sizes: min=%ld, max=%ld, preferred=%ld, granularity=%ld\n",
          min_sz, max_sz, pref_sz, gran);
-   ad->buffer_frames = pref_sz;
-   RARCH_LOG("[ASIO] Using buffer size: %ld frames (%.1f ms).\n",
+   ad->buffer_frames = asio_choose_period(ad->sample_rate, latency,
+         min_sz, max_sz, pref_sz, gran);
+   RARCH_LOG("[ASIO] Using buffer size: %ld frames (%.1f ms)%s.\n",
          ad->buffer_frames,
-         (float)ad->buffer_frames * 1000.0f / ad->sample_rate);
+         (float)ad->buffer_frames * 1000.0f / ad->sample_rate,
+         ad->buffer_frames == pref_sz ? ", the driver's preferred size"
+               : ", below the driver's preferred size for the latency setting");
 
    /* Scratch for one period of interleaved float; sized to the period,
     * so made again when the period is. */
