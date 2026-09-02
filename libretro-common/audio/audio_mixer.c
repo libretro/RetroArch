@@ -649,7 +649,15 @@ static bool one_shot_resample(const float* in, size_t samples_in,
    struct resampler_data info;
    void* data                         = NULL;
    const retro_resampler_t* resampler = NULL;
-   float ratio                        = (double)s_rate / (double)rate;
+   float ratio;
+
+   /* A zero on either side leaves nothing to resample toward: the
+    * mixer has not been given its rate, or the source header claims
+    * none. The resampler run on such a ratio emits frames the output
+    * estimate never accounted for, past the end of the buffer. */
+   if (!s_rate || !rate)
+      return false;
+   ratio = (double)s_rate / (double)rate;
 
    if (!retro_resampler_realloc(&data, &resampler,
          resampler_ident, quality, ratio))
@@ -1001,7 +1009,12 @@ static bool one_shot_resample_s16(const int16_t* in, size_t samples_in,
    size_t alloc_samples;
    size_t pad;
    void  *re    = NULL;
-   double ratio = (double)s_rate / (double)rate;
+   double ratio;
+
+   /* As in one_shot_resample(): no rate on either side, no resample. */
+   if (!s_rate || !rate)
+      return false;
+   ratio = (double)s_rate / (double)rate;
 
    re = sinc_resampler_int16_init((ratio < 1.0) ? ratio : 1.0,
          audio_mixer_i16_quality(quality));
@@ -1746,6 +1759,10 @@ static bool audio_mixer_play_stream(
 
    if (rate != s_rate)
    {
+      /* A source claiming no rate, or a mixer not yet given one,
+       * cannot be brought to the output rate; see one_shot_resample(). */
+      if (!s_rate || !rate)
+         goto error;
       ratio = (double)s_rate / (double)rate;
 
       if (!retro_resampler_realloc(&resampler_data,
@@ -1870,6 +1887,8 @@ static bool audio_mixer_play_stream_s16(
 
    if (rate != s_rate)
    {
+      if (!s_rate || !rate)
+         goto error;
       ratio      = (double)s_rate / (double)rate;
       resamp_i16 = sinc_resampler_int16_init(
             (ratio < 1.0) ? ratio : 1.0,
