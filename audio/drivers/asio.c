@@ -747,9 +747,20 @@ static bool asio_size_ring(ra_asio_t *ad, unsigned latency)
 {
    size_t want = asio_ring_frames(ad, latency) * 2 * sizeof(float);
 
-   if (ad->ring_initialized && !(want > ad->ring_size || want * 2 <= ad->ring_size))
+   /* retro_spsc rounds its capacity up to a power of two. The ring's
+    * size for every purpose here - what is reported, what is written
+    * into, what the room is measured against - is the size asked for,
+    * and the capacity beyond it goes unused: asio_ring_room() below
+    * subtracts the excess. A 648-frame request came out as a 1024-frame
+    * ring otherwise, 21 ms reported against a 16 ms setting. The
+    * physical ring is remade only when the request no longer fits it
+    * or would leave more than half of it idle. */
+   if (ad->ring_initialized
+         && want <= ad->ring.capacity
+         && want * 2 > ad->ring.capacity)
    {
       retro_spsc_clear(&ad->ring);
+      ad->ring_size = want;
       return true;
    }
    if (ad->ring_initialized)
@@ -758,10 +769,17 @@ static bool asio_size_ring(ra_asio_t *ad, unsigned latency)
    if (!retro_spsc_init(&ad->ring, want))
       return false;
    ad->ring_initialized = true;
-   /* retro_spsc rounds up to a power of two; the capacity reported is
-    * the real one, which an empty ring's write avail is exactly. */
-   ad->ring_size        = retro_spsc_write_avail(&ad->ring);
+   ad->ring_size        = want;
    return true;
+}
+
+/* Room in the ring against its logical size: the physical room less
+ * the capacity that lies beyond the size asked for. */
+static size_t asio_ring_room(const ra_asio_t *ad)
+{
+   size_t room   = retro_spsc_write_avail(&ad->ring);
+   size_t excess = ad->ring.capacity - ad->ring_size;
+   return room > excess ? room - excess : 0;
 }
 
 static void asio_log_stages(const ra_asio_t *ad, unsigned latency)
@@ -1140,7 +1158,7 @@ static void asio_atexit_cleanup(void)
 static void asio_prime_ring(ra_asio_t *ad)
 {
    static const char zeros[512]; /* zero-initialised */
-   size_t left = retro_spsc_write_avail(&ad->ring) / 2;
+   size_t left = asio_ring_room(ad) / 2;
    while (left > 0)
    {
       size_t n = (left < sizeof(zeros)) ? left : sizeof(zeros);
@@ -1545,7 +1563,7 @@ static ssize_t ra_asio_write(void *data, const void *buf, size_t len)
       if (retro_atomic_load_acquire_int(&ad->shutdown))
          return -1;
 
-      avail    = retro_spsc_write_avail(&ad->ring);
+      avail    = asio_ring_room(ad);
       to_write = (len < avail) ? len : avail;
       /* Align to frame boundary (stereo float = 8 bytes) */
       to_write = (to_write / 8) * 8;
@@ -1710,7 +1728,7 @@ static size_t ra_asio_wait_writable(void *data, size_t len)
       if (     retro_atomic_load_acquire_int(&ad->shutdown)
             || retro_atomic_load_acquire_int(&ad->is_paused))
          return 0;
-      avail = retro_spsc_write_avail(&ad->ring);
+      avail = asio_ring_room(ad);
       if (avail >= len)
          return avail;
       /* No room after this many periods: the driver is not calling
@@ -1735,7 +1753,7 @@ static size_t ra_asio_write_avail(void *data)
    ra_asio_t *ad = (ra_asio_t *)data;
    if (!ad || !ad->ring_initialized)
       return 0;
-   return retro_spsc_write_avail(&ad->ring);
+   return asio_ring_room(ad);
 }
 
 static size_t ra_asio_buffer_size(void *data)
