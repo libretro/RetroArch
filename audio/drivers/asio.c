@@ -678,6 +678,9 @@ typedef struct ra_asio
     * the device stage behind the ring. Zero until then, and the ring
     * is sized from two periods instead. */
    long               output_latency;
+   /* Whether ASIOOutputReady() returned ASE_OK when probed after the
+    * buffers were created; the callback calls it only then. */
+   bool               output_ready_supported;
    size_t             ring_size;
    unsigned           sample_rate;
    /* Read by asio_cb_buffer_switch() on the driver's realtime thread
@@ -846,6 +849,10 @@ static void asio_cb_buffer_switch(long index,
                * asio_bytes_per_sample(ad->sample_type);
          memset(ad->buf_info[0].buffers[index], 0, bsz);
          memset(ad->buf_info[1].buffers[index], 0, bsz);
+         /* The zeros are output too; a driver that waits for the
+          * notification would otherwise hold the previous half. */
+         if (ad->output_ready_supported)
+            ASIO_CALL_OUTPUT_READY(ad->iasio);
       }
       return;
    }
@@ -857,7 +864,13 @@ static void asio_cb_buffer_switch(long index,
       scond_signal(ad->cond);
 #endif
 
-   ASIO_CALL_OUTPUT_READY(ad->iasio);
+   /* After the last store to this half, and only on a driver that
+    * said it wants it: a driver that copies its buffers to the device
+    * can ship this half now rather than at the next switch, one period
+    * sooner. A driver that does not support it returns an error to
+    * every call, and was being called every period regardless. */
+   if (ad->output_ready_supported)
+      ASIO_CALL_OUTPUT_READY(ad->iasio);
 }
 
 static void asio_cb_sample_rate_changed(ASIOSampleRate rate)
@@ -1296,6 +1309,16 @@ static void *ra_asio_init(const char *device, unsigned rate,
    }
    ad->buffers_created = true;
 
+   /* Probe ASIOOutputReady once, now that buffers exist and before the
+    * latencies are read: a driver that honours it knows from this call
+    * that the host will notify it, and reports the shorter output
+    * latency that follows. The probe used to come after ASIOStart, too
+    * late to shape anything, and the callback called it every period
+    * whatever the answer. */
+   ad->output_ready_supported = (ASIO_CALL_OUTPUT_READY(ad->iasio) == ASE_OK);
+   RARCH_LOG("[ASIO] ASIOOutputReady: %s.\n",
+         ad->output_ready_supported ? "supported; the callback will notify each half" : "not supported");
+
    /* Query latencies */
    if (ASIO_CALL_GET_LATENCIES(ad->iasio, &in_lat, &out_lat) == ASE_OK)
    {
@@ -1325,13 +1348,6 @@ static void *ra_asio_init(const char *device, unsigned rate,
       RARCH_ERR("[ASIO] Failed to start.\n");
       g_asio = NULL;
       goto error;
-   }
-
-   /* Check if driver supports ASIOOutputReady optimization */
-   {
-      ASIOError or_err = ASIO_CALL_OUTPUT_READY(ad->iasio);
-      RARCH_LOG("[ASIO] ASIOOutputReady: %s.\n",
-            or_err == ASE_OK ? "supported" : "not supported");
    }
 
    RARCH_LOG("[ASIO] Started successfully.\n");
