@@ -234,3 +234,23 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1:suppressions=$PWD/tsan.supp \
              timeout 300 ./latency_contract_test
           echo "[pass] latency_contract_test (TSan)"
+
+      - name: Build and run asio_convert_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/audio/asio_convert
+        run: |
+          set -eu
+          # audio/drivers/asio_convert.h is the ASIO driver's sample
+          # conversion, pure C, so it runs here without Windows. Every
+          # ASIOSampleType the specification defines is converted for full
+          # scale, zero, half and one 16-bit step in both signs and checked
+          # byte for byte against the layout the specification gives - the
+          # Int32LSB16..24 family as low-aligned, sign-extended words, the
+          # MSB types big-endian. Saturation and the silence fill past the
+          # supplied frames are checked too. The converter this replaced
+          # wrote five types and memset the rest to silence.
+          make clean all SANITIZER=address,undefined
+          test -x asio_convert_test
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
+             ./asio_convert_test
+          echo "[pass] asio_convert_test (ASan)"
