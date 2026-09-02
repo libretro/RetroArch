@@ -26,6 +26,13 @@
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
 
+/* Bound on a wait for the render thread to take from the fifo: one
+ * wait, in nanoseconds (condvarWaitTimeout's unit), and how many before
+ * the caller gets the pass back. */
+#define LIBNX_AUDREN_WAIT_NS   100000000ULL
+#define LIBNX_AUDREN_WAIT_LAPS 8
+
+
 #define BUFFER_COUNT 5
 
 static const int sample_rate           = 48000;
@@ -315,12 +322,6 @@ static size_t libnx_audren_thread_audio_buffer_size(void *data)
 
    return aud->buffer_size;
 }
-
-/* Bound on a wait for the render thread to take from the fifo: one
- * wait, in nanoseconds (condvarWaitTimeout's unit), and how many before
- * the caller gets the pass back. */
-#define LIBNX_AUDREN_WAIT_NS   100000000ULL
-#define LIBNX_AUDREN_WAIT_LAPS 8
 
 static ssize_t libnx_audren_thread_audio_write(void *data,
       const void *s, size_t len)
