@@ -29,7 +29,17 @@
 
 #include "slang_process.h"
 #include "spirv_opengl.h"
+/* The vendored SPIRV-Cross headers end their enumerator lists with a
+ * comma, which the C89 lane rejects under -pedantic; they are upstream
+ * files and are not edited here. */
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
 #include <spirv_cross_c.h>
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 #include "../common/gl3_defines.h"
 
@@ -1291,7 +1301,7 @@ static void gl3_pass_set_pass_number(struct gl3_pass *pass, unsigned number)
 
 static bool gl3_pass_build(struct gl3_pass *pass)
 {
-   slang_semantic_name_map semantic_map = {};
+   slang_semantic_name_map semantic_map = { 0 };
    unsigned i;
    unsigned j = 0;
 

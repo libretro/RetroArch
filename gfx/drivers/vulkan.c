@@ -1792,12 +1792,16 @@ static void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
 
    if (compute_upload)
    {
-      const uint32_t ubo[3] = { dynamic->width, dynamic->height, (uint32_t)(staging->stride / 4) /* in terms of u32 words */ };
+      uint32_t ubo[3];
       VkWriteDescriptorSet write;
       VkDescriptorBufferInfo buffer_info;
       VkDescriptorImageInfo image_info;
       struct vk_buffer_range range;
       VkDescriptorSet set;
+
+      ubo[0] = dynamic->width;
+      ubo[1] = dynamic->height;
+      ubo[2] = (uint32_t)(staging->stride / 4); /* in terms of u32 words */
 
       VULKAN_IMAGE_LAYOUT_TRANSITION(
             cmd,
@@ -6322,10 +6326,7 @@ static void vulkan_set_projection(vk_t *vk,
       {  1.0f,     0.0f,    0.0f,    0.0f ,
          0.0f,     1.0f,    0.0f,    0.0f ,
          0.0f,     0.0f,    1.0f,    0.0f ,
-         vk->translate_x/(float)vk->vp.width,
-         vk->translate_y/(float)vk->vp.height,
-         0.0f,
-         1.0f }
+         0.0f,     0.0f,    0.0f,    1.0f }
    };
    math_matrix_4x4 tmp     = {
       {  1.0f,     0.0f,    0.0f,    0.0f ,
@@ -6333,6 +6334,9 @@ static void vulkan_set_projection(vk_t *vk,
          0.0f,     0.0f,    1.0f,    0.0f ,
          0.0f,     0.0f,    0.0f,    1.0f }
    };
+
+   MAT_ELEM_4X4(trn, 0, 3) = vk->translate_x / (float)vk->vp.width;
+   MAT_ELEM_4X4(trn, 1, 3) = vk->translate_y / (float)vk->vp.height;
 
    /* Calculate projection. */
    matrix_4x4_ortho(vk->mvp_no_rot, ortho->left, ortho->right,

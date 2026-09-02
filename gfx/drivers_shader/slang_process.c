@@ -22,7 +22,17 @@
 #if defined(HAVE_GLSLANG)
 #include "slang_cache.h"
 #endif
+/* The vendored SPIRV-Cross headers end their enumerator lists with a
+ * comma, which the C89 lane rejects under -pedantic; they are upstream
+ * files and are not edited here. */
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
 #include <spirv_cross_c.h>
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 /* SPIR-V words are uint32_t on our side; the C API declares SpvId
  * (hardcoded 'unsigned int' in spirv.h).  Same width everywhere by
@@ -554,10 +564,11 @@ static bool slang_process_reflection(
       slang_semantic_meta *src = &sl_reflection.semantics[semantic];
       if (src->push_constant || src->uniform)
       {
-         uniform_sem_t uniform = { map->uniforms[semantic],
-            src->num_components
-               * (unsigned)sizeof(float) };
+         uniform_sem_t uniform;
          enum slang_semantic _semantic   = (enum slang_semantic)semantic;
+
+         uniform.data = map->uniforms[semantic];
+         uniform.size = src->num_components * (unsigned)sizeof(float);
          if (semantic < (int)(sizeof(semantic_uniform_names) / sizeof(*semantic_uniform_names)))
             strlcpy(uniform.id, semantic_uniform_names[_semantic], sizeof(uniform.id));
          else
@@ -588,8 +599,10 @@ static bool slang_process_reflection(
 
       if (src->push_constant || src->uniform)
       {
-         uniform_sem_t uniform = {
-            &shader_info->parameters[i].current, sizeof(float) };
+         uniform_sem_t uniform;
+
+         uniform.data = &shader_info->parameters[i].current;
+         uniform.size = sizeof(float);
          strlcpy(uniform.id, slang_map_semantic_name(sl_reflection.semantic_map, SLANG_SEMANTIC_FLOAT_PARAMETER, i), sizeof(uniform.id));
 
          if (src->push_constant)
@@ -698,15 +711,15 @@ static bool slang_process_reflection(
 
          if (src->push_constant || src->uniform)
          {
-            uniform_sem_t uniform = {
-               (void*)((uintptr_t)map->textures[semantic].size
-                     + index * map->textures[semantic].size_stride),
-               4 * sizeof(float)
-            };
+            uniform_sem_t uniform;
             enum slang_texture_semantic _semantic = (enum slang_texture_semantic)semantic;
             static const char* names[] = {
                "OriginalSize", "SourceSize", "OriginalHistorySize", "PassOutputSize", "PassFeedbackSize",
             };
+
+            uniform.data = (void*)((uintptr_t)map->textures[semantic].size
+                  + index * map->textures[semantic].size_stride);
+            uniform.size = 4 * sizeof(float);
             if (semantic < (int)SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY)
                strlcpy(uniform.id, names[_semantic], sizeof(uniform.id));
             else

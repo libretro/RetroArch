@@ -968,7 +968,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       }
 
       vk->fse_supported = false;
-      for (unsigned i = 0; i < enabled_device_extension_count; i++)
+      for (i = 0; i < enabled_device_extension_count; i++)
       {
          if (!strcmp(enabled_device_extensions[i], "VK_EXT_full_screen_exclusive"))
          {
@@ -981,7 +981,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       /* Note whether the extension was enabled; the actual entrypoint is
        * loaded below, after the device exists. */
       vk->set_hdr_metadata = NULL;
-      for (unsigned i = 0; i < enabled_device_extension_count; i++)
+      for (i = 0; i < enabled_device_extension_count; i++)
       {
          if (!strcmp(enabled_device_extensions[i], "VK_EXT_hdr_metadata"))
          {

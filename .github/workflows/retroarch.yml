@@ -23,7 +23,11 @@ jobs:
       - name: Dependencies
         timeout-minutes: 5
         run: |
-          pkgs="build-essential libxkbcommon-dev libx11-xcb-dev zlib1g-dev libfreetype6-dev libegl1-mesa-dev libgles2-mesa-dev libgbm-dev nvidia-cg-toolkit nvidia-cg-dev libavcodec-dev libsdl2-dev libsdl-image1.2-dev libxml2-dev yasm"
+          # libvulkan-dev brings the Vulkan driver, the slang shader stack
+          # (shader_vulkan.c, slang_process.c, glslang_util.c, slang_cache.c)
+          # and the Vulkan contexts into this lane; without it configure
+          # drops them and none of those C files ever meet -std=c89.
+          pkgs="build-essential libxkbcommon-dev libx11-xcb-dev libvulkan-dev zlib1g-dev libfreetype6-dev libegl1-mesa-dev libgles2-mesa-dev libgbm-dev nvidia-cg-toolkit nvidia-cg-dev libavcodec-dev libsdl2-dev libsdl-image1.2-dev libxml2-dev yasm"
           if dpkg -s $pkgs >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
             exit 0

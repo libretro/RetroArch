@@ -153,7 +153,7 @@ enum vulkan_wsi_type
    VULKAN_WSI_DISPLAY,
    VULKAN_WSI_MVK_MACOS,
    VULKAN_WSI_MVK_IOS,
-   VULKAN_WSI_SDL3,
+   VULKAN_WSI_SDL3
 };
 
 enum vulkan_context_flags
@@ -167,7 +167,7 @@ enum vulkan_context_flags
    /* Whether HDR colorspaces are supported by the instance */
    VK_CTX_FLAG_HDR_SUPPORT                  = (1 << 5),
    /* scRGB mode: RGBA16F swapchain with extended linear sRGB colour space */
-   VK_CTX_FLAG_HDR_SCRGB                    = (1 << 6),
+   VK_CTX_FLAG_HDR_SCRGB                    = (1 << 6)
 };
 
 enum vulkan_emulated_mailbox_flags
