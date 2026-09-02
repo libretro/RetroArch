@@ -454,6 +454,18 @@ void audio_driver_refresh_devices_list(void)
       audio_st->devices_list = (struct string_list*)
          audio->device_list_new(ctx);
       audio_st->devices_list_driver = audio;
+#ifdef HAVE_THREADS
+      /* Built through the wrapper: the wrapped driver allocated it,
+       * and is the one to free it - the wrapper's own free needs the
+       * context to find that driver, which the free below does not
+       * carry. */
+      if (string_is_equal(audio->ident, "audio-thread"))
+      {
+         const audio_driver_t *inner = audio_thread_wrapped_driver(ctx);
+         if (inner)
+            audio_st->devices_list_driver = inner;
+      }
+#endif
    }
 }
 

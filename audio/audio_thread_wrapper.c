@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <lists/string_list.h>
 #include <queues/fifo_queue.h>
 #include <rthreads/rthreads.h>
 
@@ -408,6 +409,11 @@ static void audio_thread_device_list_free(void *data, void *list)
    audio_thread_t *thr = (audio_thread_t*)data;
    if (thr && thr->driver && thr->driver->device_list_free)
       thr->driver->device_list_free(thr->driver_data, list);
+   else if (list)
+      /* No driver to forward to - the wrapper never started, or the
+       * call carries no context: the list is still a string list and
+       * is released as one rather than leaked. */
+      string_list_free((struct string_list*)list);
 }
 
 const audio_driver_t *audio_thread_wrapped_driver(void *data)
