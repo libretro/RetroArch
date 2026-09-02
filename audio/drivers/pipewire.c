@@ -722,7 +722,19 @@ static void *pwire_init(const char *device, unsigned rate,
    if (device)
       pw_properties_set(props, PW_KEY_TARGET_OBJECT, device);
 
-   buf_samples = latency * rate / 1000;
+   /* Two stages: the ring here, which the writer fills and rate control
+    * measures and holds half full, and the graph's own lead of a
+    * quantum or more behind it, which the process callback pulls a
+    * quantum of from the ring each cycle. The quantum asked for is a
+    * quarter of the setting, floored at 128 frames; the ring, sized
+    * below, holds the setting and is what is reported. Asking for a
+    * quantum of the whole setting, as was done, had each cycle drain
+    * the whole ring - rate control sampling a full-scale sawtooth - and
+    * put a whole setting's worth in the graph on top of the ring. The
+    * quantum is a request; the graph may hold to its own. */
+   buf_samples = (uint64_t)latency * rate / 4000;
+   if (buf_samples < 128)
+      buf_samples = 128;
    pw_properties_setf(props, PW_KEY_NODE_LATENCY, "%" PRIu64 "/%u", buf_samples, rate);
    pw_properties_setf(props, PW_KEY_NODE_RATE, "1/%d", rate);
    audio->stream = pw_stream_new(audio->pw->core, PW_RARCH_APPNAME, props);
@@ -749,6 +761,13 @@ static void *pwire_init(const char *device, unsigned rate,
 
    audio->highwater_mark = MIN(RINGBUFFER_SIZE,
          latency * (uint64_t)rate / 1000 * audio->frame_size);
+   /* The ring holds at least two quanta, so a cycle's pull never finds
+    * it short of one. */
+   if (audio->highwater_mark < buf_samples * 2 * audio->frame_size)
+      audio->highwater_mark = (uint32_t)(buf_samples * 2 * audio->frame_size);
+   RARCH_LOG("[PipeWire] %u ms as a %u-byte ring (measured) in front of a requested %" PRIu64 "-frame quantum (%u ms).\n",
+         latency, (unsigned)audio->highwater_mark, buf_samples,
+         (unsigned)(buf_samples * 1000 / rate));
 
    /* The state callback signals once the stream has connected (to
     * paused) or failed. A daemon that never gets it there fails the
