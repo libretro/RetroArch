@@ -6548,7 +6548,8 @@ VIDEO_NOINLINE static void video_driver_scanline_before_frame(video_driver_state
       int blank   = scl_pll.total - (int)video_st->height;
       int centre  = (int)video_st->height + (blank > 0 ? blank / 2 : 0);
       int want    = centre
-            - (int)(scl_pll.work_us / scl_pll.line_us);
+            - (int)(scl_pll.work_us / scl_pll.line_us)
+            + config_get_ptr()->ints.video_scanline_sync_offset;
       int limit   = (blank > 4) ? blank / 2 : 2;
 
       if (!scl_pll.target)
@@ -6560,9 +6561,11 @@ VIDEO_NOINLINE static void video_driver_scanline_before_frame(video_driver_state
       else
          scl_pll.target = want;
 
-      /* A core that cannot fit leaves nothing to aim at. */
-      if (scl_pll.target < 1)
-         scl_pll.target = 1;
+      /* Keep the aim inside one frame; the offset can push it out. */
+      while (scl_pll.target < 1)
+         scl_pll.target += scl_pll.total;
+      while (scl_pll.target >= scl_pll.total)
+         scl_pll.target -= scl_pll.total;
 
       video_st->scanline[SCANLINE_NEXT] = (int16_t)scl_pll.target;
    }
