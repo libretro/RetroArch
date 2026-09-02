@@ -1194,5 +1194,7 @@ const video_display_server_t dispserv_x11 = {
 #endif
    x11_get_metrics,
    x11_display_server_get_flags,
+   NULL, /* get_scanline */
+   NULL, /* wait_vblank */
    "x11"
 };

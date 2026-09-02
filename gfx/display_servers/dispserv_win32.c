@@ -925,6 +925,20 @@ static uint32_t win32_display_server_get_flags(void *data)
    return flags;
 }
 
+#ifdef HAVE_D3DKMT
+static int win32_display_server_get_scanline(void *data)
+{
+   (void)data;
+   return d3dkmt_scanline_get();
+}
+
+static bool win32_display_server_wait_vblank(void *data)
+{
+   (void)data;
+   return d3dkmt_wait_vblank();
+}
+#endif
+
 const video_display_server_t dispserv_win32 = {
    win32_display_server_init,
    win32_display_server_destroy,
@@ -947,5 +961,12 @@ const video_display_server_t dispserv_win32 = {
    win32_display_server_get_video_output_next,
    win32_display_server_get_metrics,
    win32_display_server_get_flags,
+#ifdef HAVE_D3DKMT
+   win32_display_server_get_scanline,
+   win32_display_server_wait_vblank,
+#else
+   NULL,
+   NULL,
+#endif
    "win32"
 };

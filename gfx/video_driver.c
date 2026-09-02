@@ -137,6 +137,8 @@ static const video_display_server_t dispserv_null = {
    NULL, /* get_video_output_next */
    NULL, /* get_metrics */
    NULL, /* get_flags */
+   NULL, /* get_scanline */
+   NULL, /* wait_vblank */
    "null"
 };
 
@@ -1701,6 +1703,24 @@ enum rotation video_display_server_get_screen_orientation(void)
    return ORIENTATION_NORMAL;
 }
 
+
+int video_display_server_get_scanline(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   if (current_display_server && current_display_server->get_scanline)
+      return current_display_server->get_scanline(
+            video_st->current_display_server_data);
+   return -1;
+}
+
+bool video_display_server_wait_vblank(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   if (current_display_server && current_display_server->wait_vblank)
+      return current_display_server->wait_vblank(
+            video_st->current_display_server_data);
+   return false;
+}
 
 float video_display_server_get_refresh_rate(void)
 {
@@ -6237,9 +6257,7 @@ void video_frame_delay(video_driver_state_t *video_st,
    }
 }
 
-#ifdef HAVE_D3DKMT
 static void scanline_pll_reset(void);
-#endif
 
 void video_driver_scanline_init(void)
 {
@@ -6247,24 +6265,17 @@ void video_driver_scanline_init(void)
    video_st->scanline[SCANLINE_NEXT]  = 1;
    video_st->scanline[SCANLINE_HOLD]  = 1;
    video_st->scanline[SCANLINE_TOTAL] = 0;
-#ifdef HAVE_D3DKMT
-   /* Runs from d3dkmt_init(), so once per video (re)init. Drop the
-    * calibration: the line count, the period and the bias are all
-    * properties of the display mode and all three move when it
-    * changes. */
+   /* Once per video (re)init. Drop the calibration: the line count,
+    * the period and the bias are all properties of the display mode
+    * and all three move when it changes. */
    scanline_pll_reset();
-#endif
 }
 
 static INLINE int16_t video_driver_scanline_get(void)
 {
-#ifdef HAVE_D3DKMT
-   return d3dkmt_scanline_get();
-#endif
-   return -1;
+   return (int16_t)video_display_server_get_scanline();
 }
 
-#ifdef HAVE_D3DKMT
 /* --- Scanline Sync phase lock ------------------------------------
  *
  * D3DKMTGetScanLine costs ~223 us on a WDDM driver, during which the
@@ -6321,6 +6332,7 @@ typedef struct
    int      total;          /* lines including blanking */
    bool     locked;
    unsigned misses;         /* frames that could not make their target */
+   int      target;         /* last aim point, clamped frame to frame */
 } scanline_pll_t;
 
 static scanline_pll_t scl_pll;
@@ -6328,6 +6340,7 @@ static scanline_pll_t scl_pll;
 static void scanline_pll_reset(void)
 {
    scl_pll.locked = false;
+   scl_pll.target = 0;
 }
 
 static bool scanline_pll_calibrate(void)
@@ -6353,7 +6366,7 @@ static bool scanline_pll_calibrate(void)
    for (i = 0; i < SCANLINE_CAL_SAMPLES; i++)
    {
       double t;
-      if (!d3dkmt_wait_vblank())
+      if (!video_display_server_wait_vblank())
          return false;
       t = (double)cpu_features_get_time_usec();
       if (prev > 0.0)
@@ -6385,7 +6398,7 @@ static bool scanline_pll_calibrate(void)
       {
          double t, at, off, pred, d;
          int16_t meas;
-         if (!d3dkmt_wait_vblank())
+         if (!video_display_server_wait_vblank())
             return false;
          t = (double)cpu_features_get_time_usec();
          do { at = (double)cpu_features_get_time_usec(); }
@@ -6421,7 +6434,7 @@ static bool scanline_pll_calibrate(void)
 
 /* Refresh the anchor without blocking.
  *
- * The obvious way to re-anchor is another d3dkmt_wait_vblank(), but
+ * The obvious way to re-anchor is another wait_vblank(), but
  * that blocks for up to a full frame period on top of the frame's own
  * wait - at SCANLINE_ANCHOR_MAXAGE of 30 that was four visible hitches
  * a second, and it is what made the first version of this stutter.
@@ -6478,17 +6491,14 @@ static bool scanline_pll_wait(int target_line)
       ;
    return true;
 }
-#endif /* HAVE_D3DKMT */
 
 VIDEO_NOINLINE static void video_driver_scanline_before_frame(video_driver_state_t *video_st,
       float refresh_rate,
       uint16_t frame_time_target,
       uint16_t core_run_time)
 {
-#ifdef HAVE_D3DKMT
    (void)refresh_rate;
    (void)frame_time_target;
-   (void)core_run_time;
 
    /* Lock on first use. Calibration measures the line count, the period
     * and the residual bias together, because a mode change moves all
@@ -6503,18 +6513,52 @@ VIDEO_NOINLINE static void video_driver_scanline_before_frame(video_driver_state
    }
    scanline_pll_anchor();
 
-   /* Target the far end of the visible area so the flip lands in
-    * blanking. A plain line number: no tuner state, nothing to
-    * converge, and therefore nothing to thrash. */
-   video_st->scanline[SCANLINE_NEXT]  =
-         (int16_t)(video_st->height - (video_st->height / 16));
+   /* Aim so the flip lands in the middle of the blanking interval.
+    *
+    * The wait releases the frame loop; the present happens
+    * core_run_time later. Aiming at a fixed fraction of the visible
+    * area therefore puts the tear on screen - a fixed 15/16 of height
+    * is line 2025 with the visible area ending at 2160, which is 135
+    * lines inside the picture. Subtract the core's own duration so the
+    * present, not the release, is what lands in blanking.
+    *
+    * No smoothing on core_run_time. The target moving is the
+    * correction, not error: it moves because the core's duration moves,
+    * and that is what holds the present in place. Smoothing would lag a
+    * real load change and put the tear on screen during exactly the
+    * transitions this is meant to absorb. The error is the
+    * frame-to-frame delta, since this frame is aimed with last frame's
+    * measurement, and that was 68-142 us on a PS2 core - 9 to 19 lines
+    * against a 90 line blanking interval.
+    *
+    * Movement is clamped instead. Measured peaks reach 1268 us in
+    * steady state and 4335 us across a geometry change, which would
+    * throw the aim 171 and 585 lines; one anomalous frame then spoils
+    * the next as well. A sustained change still converges in a few
+    * frames. */
+   {
+      int blank   = scl_pll.total - (int)video_st->height;
+      int centre  = (int)video_st->height + (blank > 0 ? blank / 2 : 0);
+      int want    = centre
+            - (int)((double)core_run_time / scl_pll.line_us);
+      int limit   = (blank > 4) ? blank / 2 : 2;
+
+      if (!scl_pll.target)
+         scl_pll.target = want;
+      else if (want > scl_pll.target + limit)
+         scl_pll.target += limit;
+      else if (want < scl_pll.target - limit)
+         scl_pll.target -= limit;
+      else
+         scl_pll.target = want;
+
+      /* A core that cannot fit leaves nothing to aim at. */
+      if (scl_pll.target < 1)
+         scl_pll.target = 1;
+
+      video_st->scanline[SCANLINE_NEXT] = (int16_t)scl_pll.target;
+   }
    video_st->scanline[SCANLINE_TOTAL] = (int16_t)scl_pll.total;
-#else
-   (void)video_st;
-   (void)refresh_rate;
-   (void)frame_time_target;
-   (void)core_run_time;
-#endif
 }
 
 VIDEO_NOINLINE static void video_driver_scanline_after_frame(video_driver_state_t *video_st,
@@ -6522,7 +6566,6 @@ VIDEO_NOINLINE static void video_driver_scanline_after_frame(video_driver_state_
       uint16_t frame_time_target,
       uint16_t core_run_time)
 {
-#ifdef HAVE_D3DKMT
    int target;
 
    (void)refresh_rate;
@@ -6531,10 +6574,4 @@ VIDEO_NOINLINE static void video_driver_scanline_after_frame(video_driver_state_
 
    if ((target = (int)video_st->scanline[SCANLINE_NEXT]) > 0)
       scanline_pll_wait(target);
-#else
-   (void)video_st;
-   (void)refresh_rate;
-   (void)frame_time_target;
-   (void)core_run_time;
-#endif
 }

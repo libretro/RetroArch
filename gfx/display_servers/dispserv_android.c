@@ -563,5 +563,7 @@ const video_display_server_t dispserv_android = {
    android_display_server_get_video_output_next,
    android_display_get_metrics,
    android_display_server_get_flags,
+   NULL, /* get_scanline */
+   NULL, /* wait_vblank */
    "android"
 };
