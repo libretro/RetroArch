@@ -8263,9 +8263,21 @@ end:
          runloop_set_frame_limit(&video_st->av_info, 1.0f);
    }
 
-   /* if there's a fast forward limit, inject sleeps to keep from going too fast. */
+   /* Record which sources hold the pace this frame. The other three
+    * block inside their own subsystems; only the timer is decided
+    * here. See enum runloop_pace_source. */
+   runloop_st->pace = RUNLOOP_PACE_NONE;
+   if (settings->bools.video_vsync)
+      runloop_st->pace |= RUNLOOP_PACE_VSYNC;
+   if (     settings->bools.audio_sync
+         && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE))
+      runloop_st->pace |= RUNLOOP_PACE_AUDIO;
+   if (     settings->bools.video_scanline_sync
+         && video_st->scanline[SCANLINE_NEXT])
+      runloop_st->pace |= RUNLOOP_PACE_SCANLINE;
    {
       retro_time_t frame_limit_min = runloop_st->frame_limit_minimum_time;
+      /* Identical to the condition the sleep below used inline. */
       if (   (frame_limit_min)
           && (   (vrr_runloop_enable)
               || (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
@@ -8275,6 +8287,13 @@ end:
                       || !(runloop_st->flags & RUNLOOP_FLAG_FOCUSED)))
 #endif
               || (runloop_st->flags & RUNLOOP_FLAG_PAUSED)))
+         runloop_st->pace |= RUNLOOP_PACE_TIMER;
+   }
+
+   /* if there's a fast forward limit, inject sleeps to keep from going too fast. */
+   {
+      retro_time_t frame_limit_min = runloop_st->frame_limit_minimum_time;
+      if (runloop_st->pace & RUNLOOP_PACE_TIMER)
       {
          const retro_time_t end_frame_time  = cpu_features_get_time_usec();
          const retro_time_t to_sleep_us     = (

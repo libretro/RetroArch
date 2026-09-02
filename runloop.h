@@ -181,6 +181,7 @@ struct runloop
    retro_time_t core_run_time;
    retro_time_t frame_limit_minimum_time;
    retro_time_t frame_limit_last_time;
+   unsigned     pace;                           /* enum runloop_pace_source bits */
    retro_usec_t frame_time_last;                /* int64_t alignment */
 
    /* Per-frame scalar state. Kept adjacent to the timing block above so the
@@ -340,6 +341,36 @@ struct runloop
     * cross-thread race, so reusing it would undo that reasoning for
     * no gain. This is main-thread only. */
    bool content_closing;
+};
+
+/* Frame pacing sources.
+ *
+ * The loop is held to a rate by whichever of these block on a given
+ * frame. They are not exclusive and they are not prioritised: VSync
+ * blocks in the video driver's present, audio backpressure blocks in
+ * audio_driver_write(), Scanline Sync waits in
+ * video_driver_scanline_after_frame(), and the frame-limit timer sleeps
+ * at the end of runloop_iterate(). Any combination can be live on the
+ * same frame, which is why VSync together with audio_sync stutters -
+ * two hardware clocks holding the same loop - and why the comment at
+ * the RUNLOOP_STATE_MENU throttle special-cases audio backpressure
+ * against the timer.
+ *
+ * runloop_state_t::pace records the composition for the current
+ * frame, computed once in runloop_pace_compute() from the same
+ * conditions each mechanism already tests. It does not yet choose
+ * between them: this is the composition made explicit, so that a
+ * priority can be decided in one place later rather than by adding a
+ * fourth special case in a third file. A bitmask rather than an enum
+ * for exactly that reason - a single value would assert a choice the
+ * loop does not currently make. */
+enum runloop_pace_source
+{
+   RUNLOOP_PACE_NONE     = 0,
+   RUNLOOP_PACE_VSYNC    = (1 << 0), /* display: present blocks          */
+   RUNLOOP_PACE_AUDIO    = (1 << 1), /* audio crystal: write blocks      */
+   RUNLOOP_PACE_SCANLINE = (1 << 2), /* display: vblank-locked wait      */
+   RUNLOOP_PACE_TIMER    = (1 << 3)  /* CPU counter: frame-limit sleep   */
 };
 
 typedef struct runloop runloop_state_t;
