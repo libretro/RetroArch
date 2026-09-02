@@ -941,20 +941,17 @@ static ASIOCallbacks g_asio_callbacks = {
 
 /* Called at process exit to clean up a parked ASIO instance.
  * This prevents COM object leaks and satisfies leak checkers. */
-static void asio_atexit_cleanup(void)
+/* The whole teardown: stop, dispose, release the COM object, free what
+ * the instance owns. The callback is gated on g_asio, which the caller
+ * has cleared; the pause after the stop lets a callback that some
+ * drivers - ASIO4ALL among them - still have in flight when ASIOStop
+ * returns run out before the buffers under it go. */
+static void asio_destroy(ra_asio_t *ad)
 {
-   ra_asio_t *ad = g_asio_persistent;
-   if (!ad)
-      ad = g_asio;
-   if (!ad)
-      return;
-
-   g_asio            = NULL;
-   g_asio_persistent = NULL;
-
    if (ad->iasio)
    {
       ASIO_CALL_STOP(ad->iasio);
+      Sleep(20);
       if (ad->buffers_created)
          ASIO_CALL_DISPOSE_BUFFERS(ad->iasio);
       ASIO_CALL_RELEASE(ad->iasio);
@@ -983,6 +980,19 @@ static void asio_atexit_cleanup(void)
       CoUninitialize();
 
    free(ad);
+}
+
+static void asio_atexit_cleanup(void)
+{
+   ra_asio_t *ad = g_asio_persistent;
+   if (!ad)
+      ad = g_asio;
+   if (!ad)
+      return;
+
+   g_asio            = NULL;
+   g_asio_persistent = NULL;
+   asio_destroy(ad);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -1552,11 +1562,25 @@ static void ra_asio_free(void *data)
     * a crash when init() calls CoCreateInstance again.
     * Instead we keep the driver alive — ASIOStop halts
     * streaming but the COM object and buffers remain valid. */
+   /* Detach from the callback - silence output while parked or gone. */
+   g_asio = NULL;
+
+   /* Leaving the driver, not restarting it: the audio driver setting
+    * is written before the reinit that follows a change of driver, so
+    * a setting that no longer says asio here means the next init will
+    * be another driver's. Parking would hold the device - exclusive,
+    * under ASIO - for the rest of the session while another driver
+    * tries to use it; the instance is released instead. A core swap or
+    * an audio setting change leaves the setting at asio, and parks. */
+   if (!string_is_equal(config_get_ptr()->arrays.audio_driver, "asio"))
+   {
+      RARCH_LOG("[ASIO] Driver released: the audio driver setting is no longer asio.\n");
+      asio_destroy(ad);
+      return;
+   }
+
    if (ad->iasio)
       ASIO_CALL_STOP(ad->iasio);
-
-   /* Detach from the callback — silence output while parked */
-   g_asio = NULL;
 
    /* No retro_spsc_clear here.  The pre-port fifo_clear at this
     * site was racy with stray ASIO callbacks that may still be
