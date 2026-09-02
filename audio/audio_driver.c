@@ -2252,10 +2252,22 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
                   ? (double)audio_driver_st.buffer_size / frame_bytes
                      * 1000.0 / out_rate
                   : 0.0;
+            const char *ident     = audio_driver_st.current_audio->ident;
+#ifdef HAVE_THREADS
+            /* Name the driver the user chose, not the wrapper it runs
+             * under. */
+            if (string_is_equal(ident, "audio-thread"))
+            {
+               const audio_driver_t *inner = audio_thread_wrapped_driver(
+                     audio_driver_st.context_audio_data);
+               if (inner)
+                  ident           = inner->ident;
+            }
+#endif
             RARCH_LOG("[Audio] Driver \"%s\" reports a %u-byte buffer: "
                   "%.1f ms of %s at %u Hz against a %u ms latency setting%s; "
                   "rate control holds it near %.1f ms.\n",
-                  audio_driver_st.current_audio->ident,
+                  ident,
                   (unsigned)audio_driver_st.buffer_size, buffer_ms,
                   (frame_bytes == 2 * sizeof(float)) ? "float" : "int16",
                   out_rate, audio_latency,
