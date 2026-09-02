@@ -241,15 +241,18 @@ typedef struct audio_driver
          unsigned input_rate, double rate_adjust, float volume);
 
    /**
-    * Optional. Blocks until the device can accept at least len bytes
+    * Optional. Sleeps until the device can accept at least len bytes
     * without blocking, then returns how many it will take, as
-    * write_avail() would. Returns 0 only when the device is gone or the
-    * stream has failed; a paused or corked stream keeps waiting. The
-    * threaded pipeline calls it with the size of the chunk it is about
-    * to write, so the write itself never blocks and the device fill it
-    * measures for rate control beforehand is the real one. Drivers
-    * without it cannot host the threaded pipeline and keep the inline
-    * path.
+    * write_avail() would. The sleep must be bounded: 0 means no space
+    * is coming from this call - the device is gone, the stream has
+    * failed, or nothing drained within the driver's bounded wait - and
+    * the caller skips the pass and retries on a later wake, so a
+    * stalled device costs dropped audio rather than a parked audio
+    * thread. The threaded pipeline calls it with the size of the chunk
+    * it is about to write, so the write itself never blocks and the
+    * device fill it measures for rate control beforehand is the real
+    * one. Drivers without it cannot host the threaded pipeline and
+    * keep the inline path.
     */
    size_t (*wait_writable)(void *data, size_t len);
 } audio_driver_t;

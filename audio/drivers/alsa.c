@@ -508,17 +508,37 @@ static size_t alsa_buffer_size(void *data)
    return alsa->stream_info.buffer_size;
 }
 
+/* Iteration cap for alsa_wait_writable(): bounds recovery storms and
+ * wakes that deliver no space, so one call costs at most this many
+ * bounded waits before it hands the pass back to the caller. */
+#define ALSA_WAIT_WRITABLE_LAPS 8
+
 /* Sleep in snd_pcm_wait() until at least len bytes fit, capped at one
  * period: the wait wakes at period granularity (avail_min), and the
- * write's own loop takes care of the rest as it frees. Returns the
- * space then available, or 0 once the device is gone. A prepared but
+ * write's own loop takes care of the rest as it frees. A prepared but
  * not yet running stream reports its whole buffer free and returns at
  * once, which is what lets the first writes reach the start
- * threshold. */
+ * threshold. Every wait is bounded to two periods' worth of time and
+ * the loop to ALSA_WAIT_WRITABLE_LAPS, so on a device that stalls,
+ * vanishes, or wakes without delivering space this returns 0 - skip
+ * the pass, retry on a later wake - and the audio thread keeps
+ * servicing its messages. A prepared stream that is short of space is
+ * started here: it drains nothing and arms no poll on its own, and an
+ * empty start's immediate underrun recovers to a prepared stream
+ * reporting a full buffer. */
 static size_t alsa_wait_writable(void *data, size_t len)
 {
    alsa_t *alsa            = (alsa_t*)data;
    snd_pcm_sframes_t want  = BYTES_TO_FRAMES(len, alsa->stream_info.frame_bits);
+   int laps                = ALSA_WAIT_WRITABLE_LAPS;
+   int timeout_ms          = (int)(((unsigned long)
+         alsa->stream_info.period_frames * 2000ul)
+         / (alsa->stream_info.rate ? alsa->stream_info.rate : 48000u));
+
+   if (timeout_ms < 20)
+      timeout_ms = 20;
+   if (timeout_ms > 200)
+      timeout_ms = 200;
 
    if (want > (snd_pcm_sframes_t)alsa->stream_info.period_frames)
       want = (snd_pcm_sframes_t)alsa->stream_info.period_frames;
@@ -532,6 +552,8 @@ static size_t alsa_wait_writable(void *data, size_t len)
       {
          if (snd_pcm_recover(alsa->pcm, (int)avail, 1) < 0)
             return 0;
+         if (--laps < 0)
+            return 0;
          continue;
       }
       if (avail < 0)
@@ -539,14 +561,29 @@ static size_t alsa_wait_writable(void *data, size_t len)
       if (avail >= want)
          return FRAMES_TO_BYTES(avail, alsa->stream_info.frame_bits);
 
-      rc = snd_pcm_wait(alsa->pcm, -1);
+      if (snd_pcm_state(alsa->pcm) == SND_PCM_STATE_PREPARED)
+      {
+         rc = snd_pcm_start(alsa->pcm);
+         if (rc == -EPIPE || rc == -ESTRPIPE || rc == -EINTR)
+         {
+            if (snd_pcm_recover(alsa->pcm, rc, 1) < 0)
+               return 0;
+         }
+         else if (rc < 0)
+            return 0;
+      }
+
+      rc = snd_pcm_wait(alsa->pcm, timeout_ms);
+      if (rc == 0)
+         return 0;
       if (rc == -EPIPE || rc == -ESTRPIPE || rc == -EINTR)
       {
          if (snd_pcm_recover(alsa->pcm, rc, 1) < 0)
             return 0;
-         continue;
       }
-      if (rc < 0)
+      else if (rc < 0)
+         return 0;
+      if (--laps < 0)
          return 0;
    }
 }
