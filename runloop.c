@@ -8281,22 +8281,10 @@ end:
     * audio_sync stays true, and during those frames audio is not
     * holding anything. */
    if (     (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
-         && !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK)
-         /* ...and the core is actually writing samples this frame. In
-          * the menu with the core paused the driver is still in
-          * blocking mode but nothing calls audio_driver_write(), so
-          * nothing is held. Same predicate the RUNLOOP_STATE_MENU
-          * throttle uses for this question. */
-         && runloop_is_libretro_running(runloop_st,
-               settings->bools.menu_pause_libretro))
+         && !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK))
       runloop_st->pace |= RUNLOOP_PACE_AUDIO;
-   /* Mirrors the gate at the video_driver_scanline_after_frame() call
-    * site, which also skips the wait under fast-forward. A failed
-    * calibration zeroes SCANLINE_NEXT, so the target test already
-    * covers the unlocked case. */
    if (     settings->bools.video_scanline_sync
-         && video_st->scanline[SCANLINE_NEXT]
-         && !(input_st->flags & INP_FLAG_NONBLOCKING))
+         && video_st->scanline[SCANLINE_NEXT])
       runloop_st->pace |= RUNLOOP_PACE_SCANLINE;
    {
       retro_time_t frame_limit_min = runloop_st->frame_limit_minimum_time;
@@ -8313,21 +8301,10 @@ end:
          runloop_st->pace |= RUNLOOP_PACE_TIMER;
    }
 
-   /* if there's a fast forward limit, inject sleeps to keep from going too fast.
-    *
-    * Only when no hardware clock is holding the loop. If vsync, audio
-    * backpressure or Scanline Sync is live this frame, the rate is
-    * already set by hardware and the timer would be pacing a loop
-    * that is already paced. The three hardware bits read the drivers'
-    * actual blocking state rather than the settings, so fast-forward -
-    * which puts both drivers into non-blocking mode with the settings
-    * unchanged - clears them and the timer remains the limiter there. */
+   /* if there's a fast forward limit, inject sleeps to keep from going too fast. */
    {
       retro_time_t frame_limit_min = runloop_st->frame_limit_minimum_time;
-      if (     (runloop_st->pace & RUNLOOP_PACE_TIMER)
-            && !(runloop_st->pace & (RUNLOOP_PACE_VSYNC
-                                   | RUNLOOP_PACE_AUDIO
-                                   | RUNLOOP_PACE_SCANLINE)))
+      if (runloop_st->pace & RUNLOOP_PACE_TIMER)
       {
          const retro_time_t end_frame_time  = cpu_features_get_time_usec();
          const retro_time_t to_sleep_us     = (
