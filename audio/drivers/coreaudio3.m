@@ -19,7 +19,7 @@
 #import <Accelerate/Accelerate.h>
 
 #include <stdio.h>
-#include <stdatomic.h>
+#include <retro_atomic.h>
 #include <stdlib.h>
 #include <memory.h>
 #include <math.h>
@@ -38,14 +38,23 @@ typedef struct ringbuffer
    size_t cap;
    size_t write_ptr;
    size_t read_ptr;
-   atomic_int len;
+   retro_atomic_int_t len;
 } ringbuffer_t;
 
 typedef ringbuffer_t * ringbuffer_h;
 
+/* len is the only word shared between the writer (the audio thread)
+ * and the reader (the render callback); the pointers each belong to
+ * one side. The reader's load is an acquire: the writer publishes
+ * samples with a release-add, and a relaxed load - what stood here -
+ * does not order the buffer reads that follow it after the length on
+ * ARM64, so the callback could see the new length and stale samples at
+ * the wrap. x86 gave the acquire for free; Apple silicon does not. On
+ * both the read-modify-writes compile to the same instruction as
+ * before - lock add, ldaddal. */
 static inline size_t rb_len(ringbuffer_h r)
 {
-   return atomic_load_explicit(&r->len, memory_order_relaxed);
+   return (size_t)retro_atomic_load_acquire_int(&r->len);
 }
 
 static inline size_t rb_avail(ringbuffer_h r)
@@ -53,31 +62,41 @@ static inline size_t rb_avail(ringbuffer_h r)
    return r->cap - rb_len(r);
 }
 
+/* No modulo. cap is latency * rate / 1000, not a power of two, and
+ * (p + 1) % cap compiled to a 64-bit udiv and msub per sample in the
+ * render callback - 96,000 divides a second at 48 kHz stereo. n is
+ * never more than cap here, so one conditional subtract wraps it. */
 static inline void rb_advance_write_n(ringbuffer_h r, size_t n)
 {
-   r->write_ptr = (r->write_ptr + n) % r->cap;
+   size_t p = r->write_ptr + n;
+   if (p >= r->cap)
+      p -= r->cap;
+   r->write_ptr = p;
 }
 
 static inline void rb_advance_read(ringbuffer_h r)
 {
-   r->read_ptr = (r->read_ptr + 1) % r->cap;
+   size_t p = r->read_ptr + 1;
+   if (p == r->cap)
+      p = 0;
+   r->read_ptr = p;
 }
 
 static inline void rb_len_add(ringbuffer_h r, int n)
 {
-   atomic_fetch_add(&r->len, n);
+   retro_atomic_fetch_add_int(&r->len, n);
 }
 
 static inline void rb_len_sub(ringbuffer_h r, int n)
 {
-   atomic_fetch_sub(&r->len, n);
+   retro_atomic_fetch_sub_int(&r->len, n);
 }
 
 static void rb_init(ringbuffer_h r, size_t cap)
 {
    r->buffer     = malloc(cap * sizeof(float));
    r->cap        = cap;
-   atomic_init(&r->len, 0);
+   retro_atomic_int_init(&r->len, 0);
    r->write_ptr  = 0;
    r->read_ptr   = 0;
 }
