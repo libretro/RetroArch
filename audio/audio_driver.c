@@ -2207,6 +2207,60 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
 
    AUDIO_FLAGS_CLEAR(&audio_driver_st, AUDIO_FLAG_CONTROL);
 
+   /* The driver's buffer, whether or not rate control will use it: it
+    * is what the latency setting became, shown in the statistics
+    * overlay and read back here against the setting. It was read only
+    * on the rate control path, so with rate control off the overlay
+    * had nothing to show and the log nothing to say. */
+   audio_driver_st.buffer_size = 0;
+   if (     (AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_ACTIVE)
+         && audio_driver_st.current_audio->buffer_size)
+   {
+      audio_driver_st.buffer_size =
+         audio_driver_st.current_audio->buffer_size(
+               audio_driver_st.context_audio_data);
+      if (audio_driver_st.buffer_size > 0)
+      {
+         /* The reported buffer against the setting, in the units the
+          * user thinks in. Half of it is the rate control's setpoint,
+          * so half of it in time is the latency this driver gives at
+          * steady state; a driver that reports only some of its
+          * stages, or in the wrong unit, shows here as a size that
+          * does not match the setting. */
+         unsigned out_rate     = new_rate
+               ? new_rate : settings->uints.audio_output_sample_rate;
+         size_t   frame_bytes  =
+               (AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_USE_FLOAT)
+               ? 2 * sizeof(float) : 2 * sizeof(int16_t);
+         double   buffer_ms    = out_rate
+               ? (double)audio_driver_st.buffer_size / frame_bytes
+                  * 1000.0 / out_rate
+               : 0.0;
+         const char *ident     = audio_driver_st.current_audio->ident;
+#ifdef HAVE_THREADS
+         /* Name the driver the user chose, not the wrapper it runs
+          * under. */
+         if (string_is_equal(ident, "audio-thread"))
+         {
+            const audio_driver_t *inner = audio_thread_wrapped_driver(
+                  audio_driver_st.context_audio_data);
+            if (inner)
+               ident           = inner->ident;
+         }
+#endif
+         RARCH_LOG("[Audio] Driver \"%s\" reports a %u-byte buffer: "
+               "%.1f ms of %s at %u Hz against a %u ms latency setting%s; "
+               "rate control %s it near %.1f ms.\n",
+               ident,
+               (unsigned)audio_driver_st.buffer_size, buffer_ms,
+               (frame_bytes == 2 * sizeof(float)) ? "float" : "int16",
+               out_rate, audio_latency,
+               latency_floored ? " (raised to the minimum)" : "",
+               audio_rate_control ? "holds" : "is off; on, it would hold",
+               buffer_ms / 2.0);
+      }
+   }
+
    if (
             (   !audio_cb_inited
              || audio_driver_st.pipe_threaded)
@@ -2230,57 +2284,13 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
        * SIGFPE" workaround for the same hazard. Check it once, centrally,
        * and fall back to no rate control rather than making every driver
        * defend itself. */
-      if (audio_driver_st.current_audio->buffer_size)
-      {
-         audio_driver_st.buffer_size =
-            audio_driver_st.current_audio->buffer_size(
-                  audio_driver_st.context_audio_data);
-         if (audio_driver_st.buffer_size > 0)
-         {
-            /* The reported buffer against the setting, in the units the
-             * user thinks in. Half of it is the rate control's setpoint,
-             * so half of it in time is the latency this driver gives at
-             * steady state; a driver that reports only some of its
-             * stages, or in the wrong unit, shows here as a size that
-             * does not match the setting. */
-            unsigned out_rate     = new_rate
-                  ? new_rate : settings->uints.audio_output_sample_rate;
-            size_t   frame_bytes  =
-                  (AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_USE_FLOAT)
-                  ? 2 * sizeof(float) : 2 * sizeof(int16_t);
-            double   buffer_ms    = out_rate
-                  ? (double)audio_driver_st.buffer_size / frame_bytes
-                     * 1000.0 / out_rate
-                  : 0.0;
-            const char *ident     = audio_driver_st.current_audio->ident;
-#ifdef HAVE_THREADS
-            /* Name the driver the user chose, not the wrapper it runs
-             * under. */
-            if (string_is_equal(ident, "audio-thread"))
-            {
-               const audio_driver_t *inner = audio_thread_wrapped_driver(
-                     audio_driver_st.context_audio_data);
-               if (inner)
-                  ident           = inner->ident;
-            }
-#endif
-            RARCH_LOG("[Audio] Driver \"%s\" reports a %u-byte buffer: "
-                  "%.1f ms of %s at %u Hz against a %u ms latency setting%s; "
-                  "rate control holds it near %.1f ms.\n",
-                  ident,
-                  (unsigned)audio_driver_st.buffer_size, buffer_ms,
-                  (frame_bytes == 2 * sizeof(float)) ? "float" : "int16",
-                  out_rate, audio_latency,
-                  latency_floored ? " (raised to the minimum)" : "",
-                  buffer_ms / 2.0);
-            AUDIO_FLAGS_SET(&audio_driver_st, AUDIO_FLAG_CONTROL);
-         }
-         else
-            RARCH_WARN("[Audio] Rate control was desired, but the driver "
-                  "reported a zero buffer size.\n");
-      }
-      else
+      if (!audio_driver_st.current_audio->buffer_size)
          RARCH_WARN("[Audio] Rate control was desired, but driver does not support needed features.\n");
+      else if (audio_driver_st.buffer_size == 0)
+         RARCH_WARN("[Audio] Rate control was desired, but the driver "
+               "reported a zero buffer size.\n");
+      else
+         AUDIO_FLAGS_SET(&audio_driver_st, AUDIO_FLAG_CONTROL);
    }
 
    command_event(CMD_EVENT_DSP_FILTER_INIT, NULL);

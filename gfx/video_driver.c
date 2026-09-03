@@ -5552,10 +5552,14 @@ void video_driver_frame(const void *data, unsigned width,
                   (audio_st->stat_frontend_is_float) ? "FLOAT" : "INT16",
                   settings->uints.audio_output_sample_rate,
                   (audio_st->src_ratio_orig == 1.0) ? "" : "R");
-            if (buffer_ms > 0.0)
+            if (buffer_ms > 0.0 && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_CONTROL))
                __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
                      " Buffer:   %6.1f ms (asked %u, held ~%.0f)\n",
                      buffer_ms, setting_ms, buffer_ms / 2.0);
+            else if (buffer_ms > 0.0)
+               __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+                     " Buffer:   %6.1f ms (asked %u, rate control off)\n",
+                     buffer_ms, setting_ms);
             else
                __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
                      " Buffer:      n/a (asked %u ms)\n", setting_ms);
