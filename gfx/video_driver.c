@@ -5558,7 +5558,7 @@ void video_driver_frame(const void *data, unsigned width,
                      buffer_ms, setting_ms, buffer_ms / 2.0);
             else if (buffer_ms > 0.0)
                __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
-                     " Buffer:   %6.1f ms (asked %u, rate control off)\n",
+                     " Buffer:   %6.1f ms (asked %u, DRC off)\n",
                      buffer_ms, setting_ms);
             else
                __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
