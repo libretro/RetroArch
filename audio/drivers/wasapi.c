@@ -1392,11 +1392,28 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
              * path the engine is two 10 ms periods, so a 64 ms setting
              * is a 44 ms fifo and reads as 64; under IAudioClient3 the
              * engine is a few ms and the fifo is nearly the setting. */
-            sh_buffer_length = (unsigned)(((uint64_t)latency * rate) / 1000);
-            if (sh_buffer_length > frame_count * 2 + frame_count)
-               sh_buffer_length -= frame_count;
-            else
-               sh_buffer_length = frame_count * 2;
+            {
+               /* The floor: two engine periods, and never under 20 ms -
+                * the writer's burst is a frame of core audio, 16.7 ms
+                * at 60 fps, with audio sync off. Periods, not engine
+                * buffers: the engine buffer is itself two periods on
+                * the legacy path, and a floor of two of those - 44 ms
+                * on an endpoint whose 20 ms request came back as 22 -
+                * swallowed every setting, 66 ms reported at 16, 24,
+                * 32 and 64 alike. */
+               unsigned period_frames = 0;
+               unsigned floor_frames  = rate / 50;
+               hr = _IAudioClient_GetDevicePeriod(w->client, &dev_period, NULL);
+               if (SUCCEEDED(hr) && dev_period > 0)
+                  period_frames = (unsigned)(dev_period * rate / 10000000);
+               if (floor_frames < period_frames * 2)
+                  floor_frames = period_frames * 2;
+               sh_buffer_length = (unsigned)(((uint64_t)latency * rate) / 1000);
+               if (sh_buffer_length > frame_count + floor_frames)
+                  sh_buffer_length -= frame_count;
+               else
+                  sh_buffer_length = floor_frames;
+            }
             break;
          case WASAPI_SH_BUFFER_DEVICE_PERIOD:
             hr = _IAudioClient_GetDevicePeriod(w->client, &dev_period, NULL);
