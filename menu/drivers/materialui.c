@@ -756,6 +756,9 @@ typedef struct materialui_handle
          last_landscape_layout_optimization;
    enum materialui_list_view_type list_view_type;
 
+   char entry_index_str[32];
+   char entry_index_offset;
+
    char msgbox[1024];
    char menu_title[NAME_MAX_LENGTH];
    char fullscreen_thumbnail_label[NAME_MAX_LENGTH];
@@ -7336,6 +7339,24 @@ MUI_NOINLINE static void materialui_render_header(
             TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, false);
    }
 
+   /* > Draw playlist index, if required */
+   if (*mui->entry_index_str)
+   {
+      int str_width = font_driver_get_message_width(
+            mui->font_data.hint.font,
+            mui->entry_index_str,
+            strlen(mui->entry_index_str),
+            1.0f);
+      int str_x     = (int)(video_width - str_width) >> 1;
+
+      gfx_display_draw_text(mui->font_data.hint.font,
+            mui->entry_index_str,
+            str_x,
+            sys_bar_text_y,
+            video_width, video_height, mui->colors.sys_bar_text,
+            TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, false);
+   }
+
    /* Title bar items */
 
    /* > Draw 'back' icon, if required */
@@ -10070,6 +10091,34 @@ static void materialui_navigation_set(void *data, bool scroll)
    if (show_sublabels && current_sel_only)
       materialui_compute_entries_box(mui, mui->last_width, mui->last_height, p_disp->header_height);
 
+   /* Update entry index text */
+   mui->entry_index_str[0] = '\0';
+   if (     config_get_ptr()->bools.playlist_show_entry_idx
+         && ((mui->flags & MUI_FLAG_IS_PLAYLIST) || (mui->flags & MUI_FLAG_IS_EXPLORE_LIST)))
+   {
+      menu_list_t *menu_list     = menu_st->entries.list;
+      size_t entry_idx_selection = selection + 1;
+      size_t list_size           = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
+      unsigned entry_idx_offset  = mui->entry_index_offset;
+      bool show_entry_idx        = true;
+
+      if (mui->flags & MUI_FLAG_IS_EXPLORE_LIST)
+      {
+         if (entry_idx_selection > entry_idx_offset && entry_idx_offset)
+            entry_idx_selection -= entry_idx_offset;
+         else
+            show_entry_idx = false;
+
+         if (list_size >= entry_idx_offset)
+            list_size           -= entry_idx_offset;
+      }
+
+      if (show_entry_idx)
+         snprintf(mui->entry_index_str, sizeof(mui->entry_index_str),
+               "%lu/%lu", (unsigned long)entry_idx_selection,
+                          (unsigned long)list_size);
+   }
+
    materialui_animate_scroll(
          mui,
          materialui_get_scroll(mui, p_disp),
@@ -10502,6 +10551,51 @@ static void materialui_populate_entries(void *data, const char *path,
    }
    else
       mui->flags &= ~MUI_FLAG_IS_SAVESTATE_LIST;
+
+   /* Determine whether to show entry index */
+   mui->entry_index_str[0] = '\0';
+   if (     settings->bools.playlist_show_entry_idx
+         && ((mui->flags & MUI_FLAG_IS_PLAYLIST) || (mui->flags & MUI_FLAG_IS_EXPLORE_LIST)))
+   {
+      menu_list_t *menu_list     = menu_st->entries.list;
+      size_t entry_idx_selection = menu_st->selection_ptr + 1;
+      size_t list_size           = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
+      unsigned entry_idx_offset  = 0;
+      bool show_entry_idx        = true;
+
+      if (mui->flags & MUI_FLAG_IS_EXPLORE_LIST)
+      {
+         if (string_is_equal(path, MENU_ENUM_LABEL_GOTO_EXPLORE_STR))
+            show_entry_idx = false;
+         else
+         {
+            /* Skip header items (Search Name + Add Additional Filter + Save as View + Delete this View) */
+            menu_entry_t entry;
+            MENU_ENTRY_INITIALIZE(entry);
+            menu_entry_get(&entry, 0, 0, NULL, true);
+
+            if (entry.type == MENU_SETTINGS_LAST + 1 || entry.type == FILE_TYPE_PLAIN)
+               entry_idx_offset = 1;
+            else if (entry.type == FILE_TYPE_RDB)
+               entry_idx_offset = 2;
+         }
+
+         if (entry_idx_selection > entry_idx_offset && entry_idx_offset)
+            entry_idx_selection -= entry_idx_offset;
+         else
+            show_entry_idx = false;
+
+         if (list_size >= entry_idx_offset)
+            list_size           -= entry_idx_offset;
+      }
+
+      mui->entry_index_offset = entry_idx_offset;
+
+      if (show_entry_idx)
+         snprintf(mui->entry_index_str, sizeof(mui->entry_index_str),
+            "%lu/%lu", (unsigned long)entry_idx_selection,
+                       (unsigned long)list_size);
+   }
 
    /* Update navigation bar tabs
     * > Note: We do this regardless of whether

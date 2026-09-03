@@ -429,8 +429,6 @@ typedef struct xmb_handle
    size_t selection_ptr_old;
    size_t fullscreen_thumbnail_selection;
 
-   /* size of the current list */
-   size_t list_size;
    size_t tab_selection[XMB_TAB_MAX_LENGTH];
 
    int depth;
@@ -509,7 +507,6 @@ typedef struct xmb_handle
    char title_name[NAME_MAX_LENGTH];
    char title_name_alt[NAME_MAX_LENGTH];
 
-   /* Cached texts showing current entry index / current list size */
    char entry_index_str[32];
    char entry_index_offset;
 
@@ -567,9 +564,6 @@ typedef struct xmb_handle
     * the very first frame at alpha=0 (a black screen) before the
     * fade-in animation starts. */
    bool is_first_frame;
-
-   /* Whether to show entry index for current list */
-   bool entry_idx_enabled;
 
    /* Per-instance layout scale modifiers (was file-scope static) */
    float scale_mod[8];
@@ -2468,24 +2462,27 @@ static void xmb_selection_pointer_changed(
       unsigned depth          = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
 
       /* Update entry index text */
-      if (xmb->entry_idx_enabled)
+      xmb->entry_index_str[0] = '\0';
+      if (     config_get_ptr()->bools.playlist_show_entry_idx
+            && (xmb->is_playlist || xmb->is_explore_list))
       {
          size_t entry_idx_selection = selection + 1;
          size_t list_size           = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
          unsigned entry_idx_offset  = xmb->entry_index_offset;
-         bool show_entry_idx        = (xmb->is_playlist || xmb->is_explore_list) ? true : false;
+         bool show_entry_idx        = true;
 
          if (xmb->is_explore_list)
          {
-            if (entry_idx_selection > entry_idx_offset)
+            if (entry_idx_selection > entry_idx_offset && entry_idx_offset)
                entry_idx_selection -= entry_idx_offset;
             else
                show_entry_idx = false;
+
+            if (list_size >= entry_idx_offset)
+               list_size           -= entry_idx_offset;
          }
 
-         if (!show_entry_idx)
-            xmb->entry_index_str[0] = '\0';
-         else
+         if (show_entry_idx)
             snprintf(xmb->entry_index_str, sizeof(xmb->entry_index_str),
                   "%lu/%lu", (unsigned long)entry_idx_selection,
                              (unsigned long)list_size);
@@ -3933,7 +3930,6 @@ static void xmb_populate_entries(void *data,
    settings_t *settings               = config_get_ptr();
    struct menu_state *menu_st         = menu_state_get_ptr();
    menu_list_t *menu_list             = menu_st->entries.list;
-   bool playlist_show_entry_idx       = settings->bools.playlist_show_entry_idx;
    bool was_db_manager_list           = false;
    int depth                          = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
 
@@ -4109,39 +4105,44 @@ static void xmb_populate_entries(void *data,
 
    /* Determine whether to show entry index */
    xmb->entry_index_str[0] = '\0';
-   xmb->entry_idx_enabled  = playlist_show_entry_idx;
-
-   if (     !xmb->is_quick_menu
+   if (     settings->bools.playlist_show_entry_idx
          && (xmb->is_playlist || xmb->is_explore_list))
    {
       size_t entry_idx_selection = menu_st->selection_ptr + 1;
       size_t list_size           = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
       unsigned entry_idx_offset  = 0;
-      playlist_show_entry_idx    = (xmb->is_playlist || xmb->is_explore_list)
-         ? playlist_show_entry_idx : false;
+      bool show_entry_idx        = true;
 
       if (xmb->is_explore_list)
       {
-         entry_idx_offset = 2;
-         if (     string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST_STR)
-               || xmb_horizontal_type == MENU_EXPLORE_TAB)
-            entry_idx_offset = 1;
+         if (     string_is_equal(path, MENU_ENUM_LABEL_GOTO_EXPLORE_STR)
+               || (xmb->depth == 1 && !string_is_equal(label, MENU_ENUM_LABEL_HORIZONTAL_MENU_STR)))
+            show_entry_idx = false;
+         else
+         {
+            /* Skip header items (Search Name + Add Additional Filter + Save as View + Delete this View) */
+            menu_entry_t entry;
+            MENU_ENTRY_INITIALIZE(entry);
+            menu_entry_get(&entry, 0, 0, NULL, true);
 
-         if (entry_idx_selection > entry_idx_offset)
+            if (entry.type == MENU_SETTINGS_LAST + 1 || entry.type == FILE_TYPE_PLAIN)
+               entry_idx_offset = 1;
+            else if (entry.type == FILE_TYPE_RDB)
+               entry_idx_offset = 2;
+         }
+
+         if (entry_idx_selection > entry_idx_offset && entry_idx_offset)
             entry_idx_selection -= entry_idx_offset;
          else
-            playlist_show_entry_idx = false;
+            show_entry_idx = false;
 
          if (list_size >= entry_idx_offset)
             list_size           -= entry_idx_offset;
       }
 
-      xmb->list_size          = list_size;
       xmb->entry_index_offset = entry_idx_offset;
 
-      if (!playlist_show_entry_idx)
-         xmb->entry_index_str[0] = '\0';
-      else
+      if (show_entry_idx)
          snprintf(xmb->entry_index_str, sizeof(xmb->entry_index_str),
             "%lu/%lu", (unsigned long)entry_idx_selection,
                        (unsigned long)list_size);
@@ -6174,7 +6175,6 @@ XMB_NOINLINE static int xmb_draw_item(
 
    /* Draw entry index of current selection */
    if (     i == current
-         && xmb->entry_idx_enabled
          && *xmb->entry_index_str)
    {
       float entry_idx_margin = 12 * xmb->last_scale_factor;
