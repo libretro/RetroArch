@@ -574,6 +574,11 @@ audio_driver_t audio_coreaudio = {
  * ===================================================================== */
 #include <dispatch/dispatch.h>
 
+/* AudioConverter lives in AudioToolbox, which the common includes above
+ * pull in only on iOS; on macOS they pull in CoreAudio, which does not
+ * declare it. */
+#include <AudioToolbox/AudioToolbox.h>
+
 /* Nb is defined by AES code included earlier in griffin.c amalgamation.
  * It conflicts with Sparse BLAS headers in Accelerate, so undefine it. */
 #undef Nb
