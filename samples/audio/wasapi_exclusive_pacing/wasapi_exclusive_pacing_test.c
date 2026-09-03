@@ -44,6 +44,8 @@ typedef struct
     * for none. */
    unsigned engine_min_frames, locked_period_frames;
    const char *name;
+   /* The synchronous audio path: init(), writes, and never start(). */
+   bool     no_start;
 } scenario_t;
 
 typedef struct
@@ -91,7 +93,11 @@ static bool run(const scenario_t *sc, result_t *r)
    buf         = calloc(frames_per_write, frame_bytes);
    audio_wasapi.set_nonblock_state(ctx, true);    /* audio sync off */
    r->reported_buffer = audio_wasapi.buffer_size(ctx);
-   audio_wasapi.start(ctx, false);
+   /* The synchronous audio path never calls start(): audio_driver_init()
+    * leaves it to the runloop, which only issues it around pause, menu
+    * and thread-wait transitions. init() must leave the device fed. */
+   if (!sc->no_start)
+      audio_wasapi.start(ctx, false);
 
    clock_gettime(CLOCK_MONOTONIC, &t);
    for (i = 0; i < writes; i++)
@@ -161,6 +167,11 @@ int main(int argc, char **argv)
       /* Another stream holds the engine at 10 ms: the driver must join
        * that period, not fall to the legacy path. */
       { 64, seconds, false, 0,   144, 480, "shared, engine locked at 10 ms" },
+      /* The synchronous path never calls start(). The pump was created
+       * only there, so with the threaded pipeline off the fifo filled
+       * and nothing drained: silence. init() brings the pump up. */
+      { 8,  seconds, true,  0,   0,   0,   "exclusive, no start()", true },
+      { 64, seconds, false, 0,   0,   0,   "shared, no start()", true },
    };
    unsigned i;
    fake_device_configure(48000, 30000, 100000, false);
@@ -200,6 +211,16 @@ int main(int argc, char **argv)
       }
       dropped_pct    = 100.0 * (double)(r.offered - r.taken) / (double)r.offered;
       unanswered_pct = r.dev.periods ? 100.0 * r.dev.periods_unanswered / r.dev.periods : 100.0;
+
+      if (sc[i].no_start)
+      {
+         /* The point is that the device is fed at all without start():
+          * every period answered. An 8 ms fifo against 16.7 ms bursts
+          * drops the remainder of each frame by arithmetic, as the
+          * under-a-frame case above; that is not what is tested here. */
+         CHECK(unanswered_pct < 1.0, "scenario %u (no start): %.2f%% of periods unanswered - the pump is not running", i, unanswered_pct);
+         continue;
+      }
 
       if (sc[i].exclusive && sc[i].latency_ms < 20)
       {

@@ -1320,6 +1320,11 @@ microphone_driver_t microphone_wasapi = {
 };
 #endif
 
+#ifdef HAVE_THREADS
+static bool wasapi_pump_start(wasapi_t *w);
+static void wasapi_pump_stop(wasapi_t *w);
+#endif
+
 static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
       unsigned u1, unsigned *new_rate)
 {
@@ -1498,6 +1503,20 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    if (FAILED(hr))
       goto error;
 
+#ifdef HAVE_THREADS
+   /* The pump beside the client, as start() brings them up together.
+    * The synchronous path never calls start(): audio_driver_init()
+    * leaves that to the runloop, which only issues it around pause,
+    * menu and thread-wait transitions. With the client running and no
+    * pump the fifo filled and nothing drained - silence, with the
+    * threaded pipeline off, since the pump replaced the writer feeding
+    * the device itself. */
+   if (!wasapi_pump_start(w))
+   {
+      RARCH_ERR("[WASAPI] Failed to start the pump thread.\n");
+      goto error;
+   }
+#endif
    hr = _IAudioClient_Start(w->client);
    if (FAILED(hr))
       goto error;
@@ -1517,6 +1536,11 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    return w;
 
 error:
+#ifdef HAVE_THREADS
+   /* A pump that came up before Start failed must be joined before
+    * the event and the client it waits on go away. */
+   wasapi_pump_stop(w);
+#endif
    RELEASE(w->renderer);
    RELEASE(w->client);
    RELEASE(w->device);
