@@ -76,11 +76,7 @@ typedef struct sdl3_input
       float y;
    } touches[SDL3_MAX_TOUCH];
 
-   /* Pen/stylus state, fed by the SDL_EVENT_PEN_* range. The pen is
-    * reported as libretro pointer input, so only what the pointer
-    * needs is kept: whether it's in range, whether it's touching,
-    * and where. Multiple pens are merged into one: last writer
-    * wins. */
+   /* Pen/stylus state, handled through SDL_EVENT_PEN_*. */
    bool pen_in_proximity;
    bool pen_down;
    /* Last reported position in window coordinates (points). */
@@ -90,10 +86,7 @@ typedef struct sdl3_input
    float pen_abs_x;
    float pen_abs_y;
 
-   /* The SDL_Window input is read against, refreshed once per poll
-    * (see sdl3_input_poll). Never dereferenced across frames, so a
-    * window destroyed on a driver switch can't dangle past the next
-    * refresh. */
+   /* The SDL_Window input is read against. */
    SDL_Window *window;
 } sdl3_input_t;
 
@@ -329,14 +322,10 @@ static int16_t sdl3_input_state(
             }
             else if (sdl->pen_in_proximity)
             {
-               /* While the pen is in range SDL also synthesizes mouse
-                * state from it (SDL_PEN_MOUSEID), so taking the pen
-                * ahead of the mouse fallback doubles as the filter
-                * that keeps one stylus tap from registering twice. */
                if (idx != 0)
                   return 0;
-               abs_x   = (int)sdl->pen_abs_x;
-               abs_y   = (int)sdl->pen_abs_y;
+               abs_x = (int)sdl->pen_abs_x;
+               abs_y = (int)sdl->pen_abs_y;
                pressed = sdl->pen_down;
             }
             else
@@ -527,9 +516,9 @@ static SDL_Window *sdl3_input_window(void)
    return NULL;
 }
 
-/* SDL reports mouse and pen coordinates in window coordinates
- * (points), while the video driver's viewport metrics are in
- * output pixels. */
+/* SDL reports mouse and pen coordinates in window coordinates,
+ * while the video driver's viewport metrics are in output
+ * pixels. */
 static float sdl3_window_pixel_density(sdl3_input_t *sdl)
 {
    if (sdl->window)
@@ -610,9 +599,7 @@ static void sdl3_poll_touch(sdl3_input_t *sdl)
       int j, num_fingers = 0;
       SDL_Finger **fingers;
 
-      /* The virtual touch device SDL synthesizes from pen contacts.
-       * The pen is read separately from its own events, so counting
-       * these fingers too would register every stylus tap twice. */
+      /* Pen events are read elsewhere. */
       if (devices[i] == SDL_PEN_TOUCHID)
          continue;
 
@@ -646,11 +633,7 @@ static void sdl3_poll_touch(sdl3_input_t *sdl)
    sdl->num_touch_devices = num_direct;
 }
 
-/* Consume the pen event range. Unlike fingers there is no polled
- * counterpart to read instead, so this tracks the events by hand.
- * Only proximity, contact and position are kept - the rest of the
- * range (barrel buttons, pressure and the other axes) has nothing
- * to map onto the pointer, and is peeped purely to drain it. */
+/* Polls the pen events. */
 static void sdl3_poll_pen(sdl3_input_t *sdl)
 {
    SDL_Event event;
@@ -665,17 +648,14 @@ static void sdl3_poll_pen(sdl3_input_t *sdl)
             sdl->pen_in_proximity = true;
             break;
          case SDL_EVENT_PEN_PROXIMITY_OUT:
-            /* Contact is cleared so nothing keeps reading the pointer
-             * as pressed once the pen leaves hover range; the position
-             * is kept as a last-known-good. */
             sdl->pen_in_proximity = false;
-            sdl->pen_down         = false;
+            sdl->pen_down = false;
             break;
          case SDL_EVENT_PEN_DOWN:
          case SDL_EVENT_PEN_UP:
-            sdl->pen_down  = event.ptouch.down;
             sdl->pen_raw_x = event.ptouch.x;
             sdl->pen_raw_y = event.ptouch.y;
+            sdl->pen_down = event.ptouch.down;
             break;
          case SDL_EVENT_PEN_MOTION:
             sdl->pen_raw_x = event.pmotion.x;
@@ -684,8 +664,7 @@ static void sdl3_poll_pen(sdl3_input_t *sdl)
       }
    }
 
-   /* Nothing reads pen_abs_* outside proximity, so pen-less setups
-    * (the common case) skip the per-frame density lookup. */
+   /* If the pen isn't in proximity, skip calculating its position. */
    if (!sdl->pen_in_proximity)
       return;
 
@@ -769,8 +748,8 @@ static void sdl3_input_poll(void *data)
     * never updates. */
    SDL_PumpEvents();
 
-   /* Cache the window for the frame: the mouse and pen coordinate
-    * scaling both read it. */
+   /* Find the SDL window, so that window coordinates can be calculated
+    * properly. */
    if (!(sdl->window = sdl3_input_window()))
       sdl->window = SDL_GetMouseFocus();
 
@@ -835,13 +814,9 @@ static void sdl3_input_poll(void *data)
          sdl3_build_scancode_lut(sdl);
    }
 
-   /* Fingers are reported as pointer input, but from polled state
-    * (sdl3_poll_touch / SDL_GetTouchFingers) rather than from these
-    * events, so the event range itself is consumed nowhere. The
-    * events fire at device rate for as long as there's contact, so
-    * left in the queue they grow until SDL's queue fills and starts
-    * refusing pushes - at which point the events that do matter
-    * (quit, keys) get dropped along with them. */
+   /* Fingers are reported as pointer input from polled state
+    * (sdl3_poll_touch / SDL_GetTouchFingers), rather than these
+    * events, so flush the finger events. */
    SDL_FlushEvents(SDL_EVENT_FINGER_DOWN, SDL_EVENT_FINGER_CANCELED);
 
    sdl3_poll_pen(sdl);
