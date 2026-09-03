@@ -513,15 +513,16 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
       RARCH_ERR("[WASAPI] Failed to get default device period of shared client: %s.\n",
             mmdevice_hresult_name(hr));
 
-   /* Use audio latency setting for buffer size if allowed */
+   /* The engine buffer on the legacy path, in 100 ns units. It was the
+    * whole latency setting, with a fifo the same size in front of it -
+    * twice the setting in all, 128 ms for 64 - because the writer fed
+    * the engine only when the fifo was full and needed the engine deep
+    * to cover its frame-sized cadence. The pump feeds the engine every
+    * period now; two periods of engine buffer cover it, and the fifo,
+    * sized in wasapi_init(), holds the setting. */
    if (     (sh_buffer_length < WASAPI_SH_BUFFER_DEVICE_PERIOD)
          || (sh_buffer_length > WASAPI_SH_BUFFER_CLIENT_BUFFER))
-   {
-      /* Buffer_duration is in 100ns units. */
-      buffer_duration = latency * 10000.0;
-      if (buffer_duration < default_period)
-         buffer_duration = default_period;
-   }
+      buffer_duration = default_period * 2;
 
    wasapi_set_format(&wf, *float_fmt, *rate, channels);
    RARCH_DBG("[WASAPI] Requesting shared %u-bit %u-channel client with %s samples at %uHz %ums.\n",
@@ -1385,12 +1386,17 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
              * small period, so frame_count is a few ms and no longer
              * reflects audio_latency. Keep the FIFO at the latency the
              * user asked for; the engine buffer is only the drain step. */
-            if (w->flags & WASAPI_FLG_LOWLAT)
-               sh_buffer_length = (unsigned)(((uint64_t)latency * rate) / 1000);
+            /* The setting less the engine buffer in front of it, never
+             * under two engine buffers: the writer's burst - a frame of
+             * core audio, with audio sync off - must fit. On the legacy
+             * path the engine is two 10 ms periods, so a 64 ms setting
+             * is a 44 ms fifo and reads as 64; under IAudioClient3 the
+             * engine is a few ms and the fifo is nearly the setting. */
+            sh_buffer_length = (unsigned)(((uint64_t)latency * rate) / 1000);
+            if (sh_buffer_length > frame_count * 2 + frame_count)
+               sh_buffer_length -= frame_count;
             else
-               sh_buffer_length = frame_count;
-            if (sh_buffer_length < frame_count)
-               sh_buffer_length = frame_count;
+               sh_buffer_length = frame_count * 2;
             break;
          case WASAPI_SH_BUFFER_DEVICE_PERIOD:
             hr = _IAudioClient_GetDevicePeriod(w->client, &dev_period, NULL);
@@ -1406,6 +1412,11 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
 
       if (!(w->buffer = fifo_new(sh_buffer_length * w->frame_size)))
          goto error;
+      RARCH_LOG("[WASAPI] Shared: %u ms setting as a %u-frame fifo (%u ms) in front of a %u-frame engine buffer (%u ms) fed a %s-frame period at a time; %u ms in all, rate control holds the fifo about half full.\n",
+            latency, sh_buffer_length, (unsigned)((uint64_t)sh_buffer_length * 1000 / rate),
+            frame_count, (unsigned)((uint64_t)frame_count * 1000 / rate),
+            (w->flags & WASAPI_FLG_LOWLAT) ? "small" : "480",
+            (unsigned)(((uint64_t)sh_buffer_length + frame_count) * 1000 / rate));
    }
 
 #ifdef HAVE_THREADS
