@@ -81,11 +81,19 @@ static struct
    unsigned rate;
    REFERENCE_TIME min_period, default_period;
    bool accept_float;
-} g_cfg = { 48000, 30000, 100000, false };
+   unsigned engine_min_frames, locked_period_frames;
+} g_cfg = { 48000, 30000, 100000, false, 0, 0 };
+
+void fake_device_configure_engine(unsigned engine_min_frames, unsigned locked_period_frames)
+{
+   g_cfg.engine_min_frames    = engine_min_frames;
+   g_cfg.locked_period_frames = locked_period_frames;
+}
 
 typedef struct fake_client
 {
    IAudioClient       client;
+   IAudioClient3      client3;
    IAudioRenderClient render;
    unsigned           refs;
    bool               initialised, running;
@@ -154,7 +162,18 @@ static void *device_thread(void *p)
 }
 
 /* IAudioClient */
-static HRESULT c_qi(IAudioClient *t, REFIID iid, void **out) { (void)t; (void)iid; *out = NULL; return E_NOINTERFACE; }
+static HRESULT c_qi(IAudioClient *t, REFIID iid, void **out)
+{
+   fake_client_t *c = (fake_client_t*)t->fake;
+   if (g_cfg.engine_min_frames && memcmp(iid, &mmdevice_IID_IAudioClient3, sizeof(GUID)) == 0)
+   {
+      c->refs++;
+      *out = &c->client3;
+      return S_OK;
+   }
+   *out = NULL;
+   return E_NOINTERFACE;
+}
 static DWORD   c_addref(IAudioClient *t) { return ++((fake_client_t*)t->fake)->refs; }
 static DWORD   c_release(IAudioClient *t)
 {
@@ -187,6 +206,8 @@ static HRESULT c_initialize(IAudioClient *t, AUDCLNT_SHAREMODE mode, DWORD flags
    {
       c->period_hns    = g_cfg.default_period;
       c->period_frames = (unsigned)((c->period_hns * g_cfg.rate + 5000000) / 10000000);
+      /* The legacy shared engine buffer: the duration asked for, at
+       * least two periods. */
       c->buffer_frames = (unsigned)((dur * g_cfg.rate + 5000000) / 10000000);
       if (c->buffer_frames < c->period_frames * 2) c->buffer_frames = c->period_frames * 2;
    }
@@ -256,6 +277,51 @@ static const IAudioClientVtbl client_vtbl = {
    c_start, c_stop, c_reset, c_seteventhandle, c_getservice
 };
 
+/* IAudioClient3 */
+static HRESULT c3_qi(IAudioClient3 *t, REFIID iid, void **out) { (void)t; (void)iid; *out = NULL; return E_NOINTERFACE; }
+static DWORD   c3_addref(IAudioClient3 *t) { return ++((fake_client_t*)t->fake)->refs; }
+static DWORD   c3_release(IAudioClient3 *t) { return c_release(&((fake_client_t*)t->fake)->client); }
+static HRESULT c3_getperiods(IAudioClient3 *t, const WAVEFORMATEX *f, UINT32 *d, UINT32 *fu, UINT32 *mn, UINT32 *mx)
+{
+   (void)t; (void)f;
+   *d  = (UINT32)((g_cfg.default_period * g_cfg.rate + 5000000) / 10000000);
+   *fu = 48;
+   *mn = g_cfg.engine_min_frames;
+   *mx = *d;
+   return S_OK;
+}
+static HRESULT c3_getcurrent(IAudioClient3 *t, WAVEFORMATEX **f, UINT32 *p)
+{
+   (void)t;
+   *f = NULL;
+   *p = g_cfg.locked_period_frames ? g_cfg.locked_period_frames
+        : (UINT32)((g_cfg.default_period * g_cfg.rate + 5000000) / 10000000);
+   return S_OK;
+}
+static HRESULT c3_init(IAudioClient3 *t, DWORD flags, UINT32 period, const WAVEFORMATEX *fmt, const GUID *g)
+{
+   fake_client_t *c = (fake_client_t*)t->fake;
+   (void)g;
+   if (c->initialised) return AUDCLNT_E_ALREADY_INITIALIZED;
+   if (!(flags & AUDCLNT_STREAMFLAGS_EVENTCALLBACK)) return E_FAIL;
+   if (g_cfg.locked_period_frames && period != g_cfg.locked_period_frames)
+      return AUDCLNT_E_ENGINE_PERIODICITY_LOCKED;
+   c->mode          = AUDCLNT_SHAREMODE_SHARED;
+   c->period_frames = period;
+   c->period_hns    = (REFERENCE_TIME)period * 10000000 / g_cfg.rate;
+   /* A small engine buffer, as the low-latency engine gives: three
+    * periods. */
+   c->buffer_frames = period * 3;
+   c->frame_bytes   = fmt->nBlockAlign;
+   c->buffer        = (BYTE*)calloc(c->buffer_frames, c->frame_bytes);
+   c->initialised   = true;
+   c->stats.period_frames = c->period_frames;
+   c->stats.share_mode    = 0;
+   c->stats.period_hns    = c->period_hns;
+   return S_OK;
+}
+static const IAudioClient3Vtbl client3_vtbl = { c3_qi, c3_addref, c3_release, c3_getperiods, c3_getcurrent, c3_init };
+
 /* IAudioRenderClient */
 static HRESULT r_qi(IAudioRenderClient *t, REFIID iid, void **out) { (void)t; (void)iid; *out = NULL; return E_NOINTERFACE; }
 static DWORD   r_addref(IAudioRenderClient *t) { return ++((fake_client_t*)t->fake)->refs; }
@@ -294,8 +360,9 @@ static HRESULT d_activate(IMMDevice *t, REFIID iid, DWORD ctx, void *pa, void **
    (void)t; (void)ctx; (void)pa;
    if (memcmp(iid, &IID_IAudioClient, sizeof(GUID)) != 0) { *out = NULL; return E_NOINTERFACE; }
    c = (fake_client_t*)calloc(1, sizeof(*c));
-   c->client.lpVtbl = &client_vtbl; c->client.fake = c;
-   c->render.lpVtbl = &render_vtbl; c->render.fake = c;
+   c->client.lpVtbl  = &client_vtbl;  c->client.fake  = c;
+   c->client3.lpVtbl = &client3_vtbl; c->client3.fake = c;
+   c->render.lpVtbl  = &render_vtbl;  c->render.fake  = c;
    c->refs = 1;
    pthread_mutex_init(&c->m, NULL);
    *out = &c->client;

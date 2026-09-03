@@ -75,6 +75,8 @@ typedef enum { AUDCLNT_SHAREMODE_SHARED = 0, AUDCLNT_SHAREMODE_EXCLUSIVE = 1 } A
 #define AUDCLNT_E_BUFFER_SIZE_ERROR        AUDCLNT_ERR(0x16)
 #define AUDCLNT_E_INVALID_DEVICE_PERIOD    AUDCLNT_ERR(0x20)
 #define AUDCLNT_E_BUFDURATION_PERIOD_NOT_EQUAL AUDCLNT_ERR(0x13)
+#define AUDCLNT_E_ENGINE_PERIODICITY_LOCKED AUDCLNT_ERR(0x028)
+#define AUDCLNT_E_ENGINE_FORMAT_LOCKED AUDCLNT_ERR(0x029)
 
 /* --- COM objects: the vtable shapes the driver's macros dereference --- */
 typedef struct IAudioClient IAudioClient;
@@ -131,11 +133,26 @@ struct IMMDevice { const IMMDeviceVtbl *lpVtbl; void *fake; };
 #define _IAudioClient_GetStreamLatency(This,p)          ((This)->lpVtbl->GetStreamLatency(This,p))
 #define _IAudioClient_GetDevicePeriod(This,a,b)         ((This)->lpVtbl->GetDevicePeriod(This,a,b))
 #define _IAudioClient_Initialize(This,m,f,d,p,fmt,g)    ((This)->lpVtbl->Initialize(This,m,f,d,p,fmt,g))
-#define _IAudioClient_QueryInterface(This,riid,ppv)     ((This)->lpVtbl->QueryInterface(This,&(riid),ppv))
+#define _IAudioClient_QueryInterface(This,riid,ppv)     ((This)->lpVtbl->QueryInterface(This,riid,ppv))
 #define _IAudioClient_IsFormatSupported(This,m,fmt,pp)  ((This)->lpVtbl->IsFormatSupported(This,m,fmt,pp))
 #define _IMMDevice_Activate(This,iid,c,pa,ppv)          ((This)->lpVtbl->Activate(This,&(iid),c,pa,ppv))
-/* IAudioClient3 is not offered by the fake: the driver's shared path
- * falls back to the legacy Initialize, as the reporter's device did. */
+/* IAudioClient3: the Windows 10 interface with selectable shared-mode
+ * engine periods. Offered when configured to be; the fake's vtable
+ * holds only what the driver's macros dereference. */
+#define __IAudioClient3_INTERFACE_DEFINED__ 1
+typedef struct IAudioClient3Vtbl {
+   HRESULT (*QueryInterface)(IAudioClient3 *, REFIID, void **);
+   DWORD   (*AddRef)(IAudioClient3 *);
+   DWORD   (*Release)(IAudioClient3 *);
+   HRESULT (*GetSharedModeEnginePeriod)(IAudioClient3 *, const WAVEFORMATEX *, UINT32 *, UINT32 *, UINT32 *, UINT32 *);
+   HRESULT (*GetCurrentSharedModeEnginePeriod)(IAudioClient3 *, WAVEFORMATEX **, UINT32 *);
+   HRESULT (*InitializeSharedAudioStream)(IAudioClient3 *, DWORD, UINT32, const WAVEFORMATEX *, const GUID *);
+} IAudioClient3Vtbl;
+struct IAudioClient3 { const IAudioClient3Vtbl *lpVtbl; void *fake; };
+#define _IAudioClient3_GetSharedModeEnginePeriod(This,f,d,fu,mn,mx) ((This)->lpVtbl->GetSharedModeEnginePeriod(This,f,d,fu,mn,mx))
+#define _IAudioClient3_GetCurrentSharedModeEnginePeriod(This,pf,p)   ((This)->lpVtbl->GetCurrentSharedModeEnginePeriod(This,pf,p))
+#define _IAudioClient3_InitializeSharedAudioStream(This,fl,p,f,g)     ((This)->lpVtbl->InitializeSharedAudioStream(This,fl,p,f,g))
+#define _IAudioClient3_Release(This)                                  ((This)->lpVtbl->Release(This))
 
 /* --- Win32 calls ----------------------------------------------------- */
 HANDLE CreateEventA(void *sa, BOOL manual, BOOL initial, const char *name);
@@ -168,6 +185,11 @@ typedef struct
 } fake_device_stats_t;
 void fake_device_configure(unsigned rate, REFERENCE_TIME min_period_hns,
       REFERENCE_TIME default_period_hns, bool accept_float);
+/* IAudioClient3: offered when engine_min_frames > 0, with that minimum
+ * shared-mode period; when locked_period_frames > 0 another stream
+ * holds the engine there and any other period is refused with
+ * AUDCLNT_E_ENGINE_PERIODICITY_LOCKED. */
+void fake_device_configure_engine(unsigned engine_min_frames, unsigned locked_period_frames);
 void fake_device_stats(fake_device_stats_t *out);
 
 /* The device-notification thread the driver starts: the fake gives it

@@ -39,6 +39,11 @@ typedef struct
    unsigned latency_ms, seconds;
    bool     exclusive;
    unsigned sh_buffer_length;
+   /* IAudioClient3 on the fake: minimum engine period in frames, 0 for
+    * not offered; and a period another stream holds the engine at, 0
+    * for none. */
+   unsigned engine_min_frames, locked_period_frames;
+   const char *name;
 } scenario_t;
 
 typedef struct
@@ -69,6 +74,7 @@ static bool run(const scenario_t *sc, result_t *r)
    void *buf;
 
    memset(r, 0, sizeof(*r));
+   fake_device_configure_engine(sc->engine_min_frames, sc->locked_period_frames);
    settings->bools.audio_wasapi_exclusive_mode    = sc->exclusive;
    settings->uints.audio_wasapi_sh_buffer_length  = sc->sh_buffer_length;
    settings->uints.audio_output_sample_rate       = 48000;
@@ -110,7 +116,7 @@ static bool run(const scenario_t *sc, result_t *r)
 static void report(const char *name, const scenario_t *sc, const result_t *r)
 {
    double dropped_ms  = (double)(r->offered - r->taken) / (r->dev.share_mode ? 4.0 : 8.0) * 1000.0 / 48000.0;
-   printf("%-34s setting %2u ms: %s, period %u frames (%.1f ms), reported buffer %u frames; "
+   printf("%-32s setting %2u ms: %s, period %u frames (%.1f ms), reported buffer %u frames; "
           "dropped %.1f ms of %u s (%.2f%%), %u of %u periods unanswered (%.2f%%)\n",
          name, sc->latency_ms, r->dev.share_mode ? "exclusive" : "shared",
          r->dev.period_frames, r->dev.period_frames * 1000.0 / 48000.0,
@@ -127,11 +133,19 @@ int main(int argc, char **argv)
     * default, exclusive PCM only. */
    const unsigned seconds = (argc > 1) ? (unsigned)atoi(argv[1]) : 3;
    scenario_t sc[] = {
-      { 16, seconds, true,  0 },
-      { 32, seconds, true,  0 },
-      { 64, seconds, true,  0 },
-      { 64, seconds, false, 800 },   /* the reporter's working shared setup */
-      { 64, seconds, false, 0 },     /* shared at the setting */
+      { 16, seconds, true,  0,   0,   0,   "exclusive, under a frame"     },
+      { 32, seconds, true,  0,   0,   0,   "exclusive"                    },
+      { 64, seconds, true,  0,   0,   0,   "exclusive"                    },
+      { 64, seconds, false, 800, 0,   0,   "shared, 800-frame fifo"       }, /* the reporter's working setup */
+      { 64, seconds, false, 0,   0,   0,   "shared, fifo at the setting"  },
+      /* IAudioClient3: the engine offers a 3 ms period; the driver
+       * takes it, the fifo keeps the setting, and the drain-first write
+       * must keep a 432-frame engine buffer fed. */
+      { 64, seconds, false, 0,   144, 0,   "shared, IAudioClient3 at 3 ms" },
+      { 32, seconds, false, 0,   144, 0,   "shared, IAudioClient3 at 3 ms" },
+      /* Another stream holds the engine at 10 ms: the driver must join
+       * that period, not fall to the legacy path. */
+      { 64, seconds, false, 0,   144, 480, "shared, engine locked at 10 ms" },
    };
    unsigned i;
    fake_device_configure(48000, 30000, 100000, false);
@@ -145,7 +159,14 @@ int main(int argc, char **argv)
          CHECK(false, "scenario %u: init failed", i);
          continue;
       }
-      report("wasapi", &sc[i], &r);
+      report(sc[i].name, &sc[i], &r);
+      if (sc[i].engine_min_frames)
+      {
+         unsigned want = sc[i].locked_period_frames ? sc[i].locked_period_frames : sc[i].engine_min_frames;
+         CHECK(r.dev.period_frames == want,
+               "scenario %u: engine period %u frames, expected %u (IAudioClient3 path not taken)",
+               i, r.dev.period_frames, want);
+      }
       dropped_pct    = 100.0 * (double)(r.offered - r.taken) / (double)r.offered;
       unanswered_pct = r.dev.periods ? 100.0 * r.dev.periods_unanswered / r.dev.periods : 100.0;
 
