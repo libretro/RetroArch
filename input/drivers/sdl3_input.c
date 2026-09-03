@@ -322,6 +322,10 @@ static int16_t sdl3_input_state(
             }
             else if (sdl->pen_in_proximity)
             {
+               /* Reading the pen ahead of the mouse fallback dedups
+                * the mouse state SDL synthesizes from the pen; a real
+                * mouse click during pen hover is indistinguishable
+                * from that and reads as unpressed. */
                if (idx != 0)
                   return 0;
                abs_x = (int)sdl->pen_abs_x;
@@ -653,11 +657,17 @@ static void sdl3_poll_pen(sdl3_input_t *sdl)
             break;
          case SDL_EVENT_PEN_DOWN:
          case SDL_EVENT_PEN_UP:
+            /* Any pen event implies a pen in range; PROXIMITY_IN
+             * alone can be missed (flushed by a previous driver
+             * instance on a runtime driver switch, or a second pen
+             * leaving range clearing the shared flag). */
+            sdl->pen_in_proximity = true;
             sdl->pen_raw_x = event.ptouch.x;
             sdl->pen_raw_y = event.ptouch.y;
             sdl->pen_down = event.ptouch.down;
             break;
          case SDL_EVENT_PEN_MOTION:
+            sdl->pen_in_proximity = true;
             sdl->pen_raw_x = event.pmotion.x;
             sdl->pen_raw_y = event.pmotion.y;
             break;
