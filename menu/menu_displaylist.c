@@ -17539,10 +17539,21 @@ static bool menu_displaylist_ctl_internal(
                               i_step                 = (int32_t)step;
                               if (i_step < 1)
                                  i_step              = 1;
+                              /* A descending combobox walks the same range
+                               * backwards. */
+                              if (setting->ui_type == ST_UI_TYPE_UINT_COMBOBOX_DESC)
+                              {
+                                 int32_t swap = i_min;
+                                 i_min        = i_max;
+                                 i_max        = swap;
+                                 i_step       = -i_step;
+                              }
 
                               if (setting->actions->repr)
                               {
-                                 for (i = i_min; i <= i_max; i += i_step)
+                                 for (i = i_min;
+                                      i_step > 0 ? (i <= i_max) : (i >= i_max);
+                                      i += i_step)
                                  {
                                     char val_s[NAME_MAX_LENGTH];
                                     int val = i;
@@ -17569,7 +17580,9 @@ static bool menu_displaylist_ctl_internal(
                               }
                               else
                               {
-                                 for (i = i_min; i <= i_max; i += i_step)
+                                 for (i = i_min;
+                                      i_step > 0 ? (i <= i_max) : (i >= i_max);
+                                      i += i_step)
                                  {
                                     char val_s[16];
                                     int val = i;
