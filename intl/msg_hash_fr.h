@@ -2031,6 +2031,7 @@ static const struct
    char s_0a008a9d[9];
    char s_9c6ed9ca[18];
    char s_68664e16[40];
+   char s_9ad2e88b[39];
    char s_d4aabe7f[21];
    char s_4674fab3[12];
    char s_904219cb[21];
@@ -2182,6 +2183,9 @@ static const struct
    char s_44e1c38f[28];
    char s_57047267[9];
    char s_6665b7fc[64];
+   char s_2e6ad26e[8];
+   char s_43e9897c[38];
+   char s_7fbf0860[9];
    char s_f417f6f1[23];
    char s_020e2bc5[18];
    char s_59f183c8[24];
@@ -2256,6 +2260,7 @@ static const struct
    char s_f57f6158[18];
    char s_69b801ef[19];
    char s_a40653a7[40];
+   char s_e67b672d[53];
    char s_52e3d6ea[41];
    char s_580e244f[7];
    char s_a9c8430e[15];
@@ -3422,6 +3427,7 @@ static const struct
    char s_ffd591e0[50];
    char s_a51ab538[32];
    char s_55d6cc44[55];
+   char s_5a8f7fb9[241];
    char s_f2963d2d[32];
    char s_4c592ae1[114];
    char s_52ac4fb9[135];
@@ -3493,6 +3499,8 @@ static const struct
    char s_43946ee5[75];
    char s_5492b73d[50];
    char s_01e5fbea[345];
+   char s_0653bf6a_0[500];
+   char s_0653bf6a_1[4];
    char s_123f401f[129];
    char s_0d96ed73[45];
    char s_9f0fd076[131];
@@ -3541,6 +3549,7 @@ static const struct
    char s_f4e4e921[212];
    char s_7968f59d[53];
    char s_8cee3615[211];
+   char s_87ba81db[377];
    char s_58c80718[347];
    char s_67d549fd[41];
    char s_afac733c[38];
@@ -3642,6 +3651,7 @@ static const struct
    char s_25e53d33[39];
    char s_26cce51e[26];
    char s_07dd4745[20];
+   char s_72293658[109];
    char s_aaaaf898[30];
    char s_4173591b[12];
    char s_c2b63d3e[16];
@@ -6472,6 +6482,7 @@ static const struct
    "Syst\303\250me",
    "Capturer l'\303\251cran",
    "T\303\242ches sur plusieurs fils d'ex\303\251cution",
+   "Privil\303\251gier les c\305\223urs de performance",
    "Miniature principale",
    "Miniatures ",
    "Miniature principale",
@@ -6625,6 +6636,9 @@ static const struct
    "Retard d'images automatique",
    "effectif",
    "\303\211chantillon de temps par image dans un \303\251tat stable uniquement",
+   "Forc\303\251e",
+   "N\303\251gociation du plein \303\251cran exclusif",
+   "Relax\303\251e",
    "Affichage plein \303\251cran",
    "Mode plein \303\251cran",
    "Largeur en plein \303\251cran",
@@ -6700,6 +6714,7 @@ static const struct
    "Sous-dimensionner",
    "Mise \303\240 l'\303\251chelle",
    "Synchronisation \303\240 la ligne de balayage",
+   "D\303\251calage de synchronisation de la ligne de balayage",
    "Simulation de ligne de balayage roulante",
    "Vid\303\251o",
    "Shaders vid\303\251o",
@@ -8533,6 +8548,9 @@ static const struct
    "Voir les informations sp\303\251cifiques \303\240 l'appareil.",
    "Capturer une image de l'\303\251cran.",
    "Effectue des t\303\242ches sur un fil d'ex\303\251cution distinct.",
+   "Maintenir les fils d'ex\303\251cution principal et audio sur les c\305\223urs de processeur les "
+   "plus rapides d'un processeur \303\240 architecture hybride. N'a aucun effet sur les processeurs "
+   "dont tous les c\305\223urs sont identiques. Prend effet au red\303\251marrage.",
    "Type de miniatures \303\240 afficher.",
    "Les images de pochettes, de capture d'\303\251cran et de miniatures d'\303\251cran de titre sont"
    " conserv\303\251es dans ce dossier.",
@@ -8661,6 +8679,13 @@ static const struct
    "nce rapide, temps par image dans une enveloppe de coh\303\251rence). Le r\303\251sultat du diagn"
    "ostic devient un v\303\251ritable signal au prix d'une convergence plus lente apr\303\250s le ch"
    "argement de contenu.",
+   "Dans quelle mesure demander au pilote d'activer le mode plein \303\251cran exclusif lorsque le m"
+   "ode plein \303\251cran fen\303\252tr\303\251 est d\303\251sactiv\303\251. 'Relax\303\251e' se co"
+   "ntente d'une simple demande que le pilote peut refuser ; avec le pilote Vulkan, il s'agit d'une "
+   "requ\303\252te que le pilote ignore parfois, laissant la swapchain sur le chemin d'affichage ind"
+   "\303\251pendant (independent-flip path) du compositeur. 'Forc\303\251e' impose explicitement le "
+   "mode exclusif et le maintient. N\303\251cessite l'extension VK_EXT_full_screen_exclusi",
+   "ve.",
    "Affichage en plein \303\251cran. Peut \303\252tre chang\303\251 lors de l'ex\303\251cution, et p"
    "eut \303\252tre remplac\303\251 par une option en ligne de commande.",
    "Modifier les r\303\251glages du mode plein \303\251cran.",
@@ -8768,6 +8793,11 @@ static const struct
    "Synchronisation de la pr\303\251sentation vid\303\251o \303\240 la position de la ligne de balay"
    "age. R\303\251duit la latence au prix d'un risque plus \303\251lev\303\251 de saccades. La synch"
    "ronisation verticale (V-Sync) doit \303\252tre d\303\251sactiv\303\251e.",
+   "D\303\251cale la cible de synchronisation de la ligne de balayage de ce nombre de lignes. La syn"
+   "chronisation ne d\303\251tecte pas la fin du traitement d'une image par le processeur graphique "
+   "ni l'apparition de la ligne de d\303\251chirure \303\240 l'\303\251cran, vous devez donc ajuster"
+   " cette valeur jusqu'\303\240 ce que la ligne disparaisse de l'\303\251cran. Vous pouvez viser pl"
+   "us t\303\264t avec une valeur n\303\251gative.",
    "AVERTISSEMENT : Un scintillement rapide peut causer une persistance de l'image sur certains \303"
    "\251crans. \303\200 utiliser \303\240 vos risques et p\303\251rils // Simule une ligne de balaya"
    "ge roulante basique au cours de plusieurs sous-images en divisant l'\303\251cran verticalement e"
@@ -8947,6 +8977,8 @@ static const struct
    "Application des changements de cheats.",
    "Application du patch : %s",
    "Appliquer le shader",
+   "ASIO n'est pas encore le pilote audio actif. Red\303\251marrer RetroArch pour ouvrir son panneau"
+   " de configuration.",
    "Volume du mixeur audio global",
    "Son coup\303\251.",
    "Son r\303\251activ\303\251.",
@@ -9530,7 +9562,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (217450u
+      (sizeof(msg_hash_fr_blob) == (218828u
 #ifdef ANDROID
        + 373u
 #endif
@@ -11955,6 +11987,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI,
@@ -12106,6 +12139,9 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_FORCED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_NEGOTIATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_RELAXED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
@@ -12180,6 +12216,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC_OFFSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
@@ -13341,6 +13378,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
@@ -13412,6 +13450,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FSE_NEGOTIATION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
@@ -13459,6 +13498,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC_OFFSET,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
@@ -13560,6 +13600,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MSG_APPLYING_CHEAT,
    (uint32_t)MSG_APPLYING_PATCH,
    (uint32_t)MSG_APPLYING_SHADER,
+   (uint32_t)MSG_AUDIO_ASIO_NOT_RUNNING,
    (uint32_t)MSG_AUDIO_MIXER_VOLUME,
    (uint32_t)MSG_AUDIO_MUTED,
    (uint32_t)MSG_AUDIO_UNMUTED,

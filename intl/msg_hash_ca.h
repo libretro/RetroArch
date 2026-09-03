@@ -2019,6 +2019,7 @@ static const struct
    char s_0a008a9d[8];
    char s_9c6ed9ca[28];
    char s_68664e16[17];
+   char s_9ad2e88b[30];
    char s_d4aabe7f[20];
    char s_4674fab3[11];
    char s_904219cb[20];
@@ -2165,6 +2166,8 @@ static const struct
    char s_aa9bc75d[11];
    char s_57047267[8];
    char s_6665b7fc[53];
+   char s_2e6ad26e[8];
+   char s_7fbf0860[8];
    char s_f417f6f1[36];
    char s_020e2bc5[26];
    char s_59f183c8[32];
@@ -6397,6 +6400,7 @@ static const struct
    "Sistema",
    "Fes una captura de pantalla",
    "Tasques multifil",
+   "Preferir nuclis amb rendiment",
    "Miniatura principal",
    "Miniatures",
    "Miniatura principal",
@@ -6545,6 +6549,8 @@ static const struct
    "Autom\303\240tic",
    "real(s)",
    "Temps de fotograma de mostra nom\303\251s en estat estable",
+   "For\303\247ar",
+   "Relaxat",
    "Visualitzaci\303\263 en pantalla completa",
    "Mode de pantalla completa",
    "Amplada de la pantalla completa",
@@ -9295,7 +9301,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (201649u
+      (sizeof(msg_hash_ca_blob) == (201695u
 #ifdef ANDROID
        + 281u
 #endif
@@ -11714,6 +11720,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI,
@@ -11860,6 +11867,8 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_FORCED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_RELAXED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,

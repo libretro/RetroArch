@@ -2014,6 +2014,7 @@ static const struct
    char s_0a008a9d[8];
    char s_9c6ed9ca[14];
    char s_68664e16[23];
+   char s_9ad2e88b[32];
    char s_d4aabe7f[20];
    char s_4674fab3[11];
    char s_904219cb[20];
@@ -2233,6 +2234,7 @@ static const struct
    char s_f57f6158[15];
    char s_69b801ef[7];
    char s_a40653a7[28];
+   char s_e67b672d[47];
    char s_52e3d6ea[47];
    char s_580e244f[7];
    char s_a9c8430e[23];
@@ -3391,6 +3393,7 @@ static const struct
    char s_ffd591e0[53];
    char s_a51ab538[26];
    char s_55d6cc44[55];
+   char s_5a8f7fb9[150];
    char s_f2963d2d[33];
    char s_4c592ae1[89];
    char s_52ac4fb9[107];
@@ -3509,6 +3512,7 @@ static const struct
    char s_f4e4e921[245];
    char s_7968f59d[47];
    char s_8cee3615[172];
+   char s_87ba81db[293];
    char s_58c80718[269];
    char s_67d549fd[47];
    char s_afac733c[30];
@@ -6384,6 +6388,7 @@ static const struct
    "Sistema",
    "Capturar tela",
    "Paralelismo de tarefas",
+   "Priorizar n\303\272cleo de desempenho",
    "Miniatura principal",
    "Miniaturas",
    "Miniatura principal",
@@ -6605,6 +6610,7 @@ static const struct
    "Reduzir escala",
    "Escala",
    "Sincroniza\303\247\303\243o de Scanline",
+   "Deslocar sincroniza\303\247\303\243o da linha de varredura",
    "Simula\303\247\303\243o do rolamento da linha de varredura",
    "V\303\255deo",
    "Sombreadores de v\303\255deo",
@@ -8323,6 +8329,8 @@ static const struct
    "Mostra as informa\303\247\303\265es espec\303\255ficas do dispositivo.",
    "Salva uma imagem da tela.",
    "Executar tarefas em linhas de processamento paralelas.",
+   "Mant\303\251m as threads de \303\241udio e as principais nos n\303\272cleos mais r\303\241pidos "
+   "da CPU. N\303\243o funciona em processadores com n\303\272cleos iguais. Requer rein\303\255cio.",
    "Tipo de miniatura a ser exibida.",
    "Arte das caixas, captura de tela e miniaturas de tela s\303\243o armazenadas neste diret\303\263"
    "rio.",
@@ -8540,6 +8548,10 @@ static const struct
    "Sincronize a apresenta\303\247\303\243o de v\303\255deo com a posi\303\247\303\243o da scanline."
    " Reduz a lat\303\252ncia ao custo de um risco maior de tearing (rasgos na tela). O VSync deve es"
    "tar desativado.",
+   "Desloca o alvo da sincroniza\303\247\303\243o da linha de varredura por uma quantidade de linhas"
+   ". A sicroniza\303\247\303\243o n\303\243o sabe quando a GPU termina um quadro ou quando a virada"
+   " chega na tela, ent\303\243o o deslocamento pode mover a linha de ruptura para fora da tela. Os "
+   "valores negativos disparam mais r\303\241pido.",
    "AVISO: Tremula\303\247\303\243o r\303\241pida pode causar persist\303\252ncia de imagem em algum"
    "as telas. Use por sua conta em risco // Simula uma varredura b\303\241sica sobre v\303\241rios s"
    "ubquadros dividindo a tela verticalmente e renderizando cada parte da tela de acordo com quantos"
@@ -9281,7 +9293,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_br_blob_check[
-      (sizeof(msg_hash_pt_br_blob) == (194926u
+      (sizeof(msg_hash_pt_br_blob) == (195448u
 #ifdef ANDROID
        + 352u
 #endif
@@ -11700,6 +11712,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI,
@@ -11919,6 +11932,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC_OFFSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
@@ -13076,6 +13090,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
@@ -13194,6 +13209,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC_OFFSET,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,

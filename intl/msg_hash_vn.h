@@ -2055,6 +2055,7 @@ static const struct
    char s_0a008a9d[13];
    char s_9c6ed9ca[24];
    char s_68664e16[22];
+   char s_9ad2e88b[33];
    char s_d4aabe7f[23];
    char s_4674fab3[16];
    char s_904219cb[23];
@@ -2212,6 +2213,9 @@ static const struct
    char s_aa9bc75d[13];
    char s_57047267[36];
    char s_6665b7fc[75];
+   char s_2e6ad26e[13];
+   char s_43e9897c[43];
+   char s_7fbf0860[11];
    char s_f417f6f1[30];
    char s_020e2bc5[29];
    char s_59f183c8[32];
@@ -2291,6 +2295,7 @@ static const struct
    char s_f57f6158[16];
    char s_69b801ef[32];
    char s_a40653a7[30];
+   char s_e67b672d[43];
    char s_52e3d6ea[33];
    char s_a9c8430e[23];
    char s_f5911f43[36];
@@ -3463,6 +3468,7 @@ static const struct
    char s_ffd591e0[45];
    char s_a51ab538[43];
    char s_55d6cc44[57];
+   char s_5a8f7fb9[280];
    char s_f2963d2d[42];
    char s_4c592ae1[121];
    char s_52ac4fb9[136];
@@ -3534,6 +3540,8 @@ static const struct
    char s_43946ee5[71];
    char s_5492b73d[80];
    char s_01e5fbea[424];
+   char s_0653bf6a_0[500];
+   char s_0653bf6a_1[161];
    char s_123f401f[128];
    char s_0d96ed73[54];
    char s_9f0fd076[183];
@@ -3583,6 +3591,7 @@ static const struct
    char s_f4e4e921[280];
    char s_7968f59d[28];
    char s_8cee3615[143];
+   char s_87ba81db[416];
    char s_58c80718[372];
    char s_67d549fd[51];
    char s_afac733c[52];
@@ -3684,6 +3693,7 @@ static const struct
    char s_25e53d33[45];
    char s_26cce51e[25];
    char s_07dd4745[34];
+   char s_72293658[165];
    char s_aaaaf898[48];
    char s_4173591b[22];
    char s_c2b63d3e[21];
@@ -7192,6 +7202,7 @@ static const struct
    "H\341\273\207 th\341\273\221ng",
    "Ch\341\273\245p \341\272\243nh m\303\240n h\303\254nh",
    "T\303\241c v\341\273\245 \304\221a lu\341\273\223ng",
+   "\306\257u ti\303\252n c\303\241c l\303\265i hi\341\273\207u n\304\203ng",
    "H\303\254nh thu nh\341\273\217 ch\303\255nh",
    "H\303\254nh thu nh\341\273\217",
    "H\303\254nh thu nh\341\273\217 ch\303\255nh",
@@ -7369,6 +7380,10 @@ static const struct
    "\304\220\341\273\231 tr\341\273\205 khung h\303\254nh th\341\273\261c t\341\272\277",
    "Ch\341\273\211 l\341\272\245y th\341\273\235i gian khung h\303\254nh m\341\272\253u trong tr\341"
    "\272\241ng th\303\241i \341\273\225n \304\221\341\273\213nh",
+   "B\341\272\257t bu\341\273\231c",
+   "Y\303\252u c\341\272\247u to\303\240n m\303\240n h\303\254nh \304\221\341\273\231c quy\341\273"
+   "\201n",
+   "Th\306\260 gi\303\243n",
    "Hi\341\273\203n th\341\273\213 to\303\240n m\303\240n h\303\254nh",
    "Ch\341\272\277 \304\221\341\273\231 to\303\240n m\303\240n h\303\254nh",
    "Chi\341\273\201u r\341\273\231ng to\303\240n m\303\240n h\303\254nh",
@@ -7452,6 +7467,8 @@ static const struct
    "Thu nh\341\273\217 h\303\254nh",
    "Ph\303\263ng to/Thu nh\341\273\217 h\303\254nh \341\272\243nh",
    "\304\220\341\273\223ng b\341\273\231 theo d\303\262ng qu\303\251t",
+   "\304\220\341\273\231 l\341\273\207ch \304\221\341\273\223ng b\341\273\231 theo d\303\262ng qu"
+   "\303\251t",
    "M\303\264 ph\341\273\217ng \304\221\306\260\341\273\235ng qu\303\251t l\304\203n",
    "B\341\273\231 \304\221\341\273\225 b\303\263ng Video",
    "T\341\273\261 \304\221\341\273\231ng ho\303\243n b\341\273\231 \304\221\341\273\225 b\303\263ng",
@@ -10583,6 +10600,13 @@ static const struct
    "Ch\341\273\245p m\341\273\231t h\303\254nh \341\272\243nh c\341\273\247a m\303\240n h\303\254nh.",
    "Th\341\273\261c hi\341\273\207n c\303\241c t\303\241c v\341\273\245 tr\303\252n m\341\273\231t l"
    "u\341\273\223ng ri\303\252ng.",
+   "Gi\341\273\257 c\303\241c lu\341\273\223ng ch\303\255nh v\303\240 lu\341\273\223ng \303\242m tha"
+   "nh ch\341\272\241y tr\303\252n nh\341\273\257ng l\303\265i CPU nhanh nh\341\272\245t c\341\273"
+   "\247a b\341\273\231 x\341\273\255 l\303\275 c\303\263 c\303\241c l\303\265i kh\303\241c lo\341"
+   "\272\241i nhau. Kh\303\264ng c\303\263 t\303\241c d\341\273\245ng \304\221\341\273\221i v\341"
+   "\273\233i b\341\273\231 x\341\273\255 l\303\275 c\303\263 t\341\272\245t c\341\272\243 c\303\241"
+   "c l\303\265i gi\341\273\221ng nhau. C\303\263 hi\341\273\207u l\341\273\261c sau khi kh\341\273"
+   "\237i \304\221\341\273\231ng l\341\272\241i.",
    "Lo\341\272\241i h\303\254nh thu nh\341\273\217 s\341\272\275 hi\341\273\203n th\341\273\213.",
    "H\303\254nh b\303\254a game, \341\272\243nh ch\341\273\245p m\303\240n h\303\254nh v\303\240 h"
    "\303\254nh thu nh\341\273\217 m\303\240n h\303\254nh ti\303\252u \304\221\341\273\201 \304\221"
@@ -10800,6 +10824,23 @@ static const struct
    "\341\273\207u th\341\273\261c t\341\272\277 h\306\241n, nh\306\260ng th\341\273\235i gian x\303"
    "\241c \304\221\341\273\213nh ch\303\255nh x\303\241c sau khi t\341\272\243i n\341\273\231i dung "
    "s\341\272\275 l\303\242u h\306\241n.",
+   "M\341\273\251c \304\221\341\273\231 y\303\252u c\341\272\247u tr\303\254nh \304\221i\341\273\201"
+   "u khi\341\273\203n s\341\273\255 d\341\273\245ng ch\341\272\277 \304\221\341\273\231 to\303\240n"
+   " m\303\240n h\303\254nh \304\221\341\273\231c quy\341\273\201n khi Ch\341\272\277 \304\221\341"
+   "\273\231 to\303\240n m\303\240n h\303\254nh d\341\272\241ng c\341\273\255a s\341\273\225 b\341"
+   "\273\213 t\341\272\257t. 'Tho\341\272\243i m\303\241i' ch\341\273\211 cho ph\303\251p s\341\273"
+   "\255 d\341\273\245ng ch\341\272\277 \304\221\341\273\231 n\303\240y v\303\240 tr\303\254nh \304"
+   "\221i\341\273\201u khi\341\273\203n c\303\263 th\341\273\203 t\341\273\253 ch\341\273\221i; \304"
+   "\221\341\273\221i v\341\273\233i tr\303\254nh \304\221i\341\273\201u khi\341\273\203n Vulkan, "
+   "\304\221\303\242y l\303\240 m\341\273\231t g\341\273\243i \303\275 m\303\240 tr\303\254nh \304"
+   "\221i\341\273\201u khi\341\273\203n c\303\263 th\341\273\203 b\341\273\217 qua, khi\341\272\277n"
+   " chu\341\273\227i hi\341\273\203n th\341\273\213 ti\341\272\277p t\341\273\245c s\341\273\255 d"
+   "\341\273\245ng \304\221\306\260\341\273\235ng xu\341\272\245t h\303\254nh \304\221\341\273\231c "
+   "l\341\272\255p c\341\273\247a b\341\273\231 t\341\273\225ng h",
+   "\341\273\243p. 'B\341\272\257t bu\341\273\231c' s\341\272\275 chuy\341\273\203n sang ch\341\272"
+   "\277 \304\221\341\273\231 \304\221\341\273\231c quy\341\273\201n m\341\273\231t c\303\241ch r"
+   "\303\265 r\303\240ng v\303\240 duy tr\303\254 ch\341\272\277 \304\221\341\273\231 n\303\240y. Y"
+   "\303\252u c\341\272\247u VK_EXT_full_screen_exclusive.",
    "Hi\341\273\203n th\341\273\213 to\303\240n m\303\240n h\303\254nh. C\303\263 th\341\273\203 thay"
    " \304\221\341\273\225i khi ch\341\272\241y. C\303\263 th\341\273\203 ghi \304\221\303\250 b\341"
    "\272\261ng l\341\273\207nh chuy\341\273\203n \304\221\341\273\225i d\303\262ng l\341\273\207nh.",
@@ -10988,6 +11029,16 @@ static const struct
    "\341\273\213 tr\303\255 d\303\262ng qu\303\251t. Gi\341\272\243m \304\221\341\273\231 tr\341\273"
    "\205 nh\306\260ng t\304\203ng nguy c\306\241 b\341\273\213 x\303\251 h\303\254nh. C\341\272\247n"
    " t\341\272\257t VSync.",
+   "D\341\273\213ch chuy\341\273\203n m\341\273\245c ti\303\252u \304\221\341\273\223ng b\341\273"
+   "\231 d\303\262ng qu\303\251t theo s\341\273\221 d\303\262ng qu\303\251t n\303\240y. T\303\255nh "
+   "n\304\203ng \304\221\341\273\223ng b\341\273\231 kh\303\264ng th\341\273\203 bi\341\272\277t ch"
+   "\303\255nh x\303\241c khi GPU ho\303\240n t\341\272\245t m\341\273\231t khung h\303\254nh ho\341"
+   "\272\267c khi khung h\303\254nh \304\221\306\260\341\273\243c \304\221\306\260a l\303\252n m\303"
+   "\240n h\303\254nh, v\303\254 v\341\272\255y h\303\243y \304\221i\341\273\201u ch\341\273\211nh g"
+   "i\303\241 tr\341\273\213 n\303\240y cho \304\221\341\272\277n khi \304\221\306\260\341\273\235ng"
+   " x\303\251 h\303\254nh di chuy\341\273\203n ra kh\341\273\217i m\303\240n h\303\254nh. Gi\303"
+   "\241 tr\341\273\213 \303\242m s\341\272\275 h\306\260\341\273\233ng th\341\273\235i \304\221i"
+   "\341\273\203m \304\221\341\273\223ng b\341\273\231 s\341\273\233m h\306\241n.",
    "C\341\272\242NH B\303\201O: Hi\341\273\207n t\306\260\341\273\243ng nh\341\272\245p nh\303\241y "
    "nhanh c\303\263 th\341\273\203 g\303\242y ra hi\341\273\207n t\306\260\341\273\243ng l\306\260u "
    "\341\272\243nh tr\303\252n m\341\273\231t s\341\273\221 m\303\240n h\303\254nh. T\341\273\261 ch"
@@ -11289,6 +11340,10 @@ static const struct
    "\304\220ang \303\241p d\341\273\245ng thay \304\221\341\273\225i m\303\243 gian l\341\272\255n.",
    "\303\201p d\341\273\245ng b\341\272\243n v\303\241: %s",
    "\304\220ang \303\241p d\341\273\245ng b\341\273\231 \304\221\341\273\225 b\303\263ng",
+   "ASIO ch\306\260a ph\341\272\243i l\303\240 tr\303\254nh \304\221i\341\273\201u khi\341\273\203n "
+   "\303\242m thanh \304\221ang \304\221\306\260\341\273\243c s\341\273\255 d\341\273\245ng. H\303"
+   "\243y kh\341\273\237i \304\221\341\273\231ng l\341\272\241i RetroArch \304\221\341\273\203 m\341"
+   "\273\237 b\341\272\243ng \304\221i\341\273\201u khi\341\273\203n c\341\273\247a ASIO.",
    "\303\202m l\306\260\341\273\243ng t\341\273\225ng c\341\273\247a b\341\273\231 tr\341\273\231n "
    "\303\242m thanh",
    "\304\220\303\243 t\341\272\257t \303\242m thanh.",
@@ -12136,7 +12191,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (229826u
+      (sizeof(msg_hash_vn_blob) == (231491u
 #ifdef ANDROID
        + 373u
 #endif
@@ -14588,6 +14643,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI,
@@ -14745,6 +14801,9 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_FORCED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_NEGOTIATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_RELAXED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
@@ -14824,6 +14883,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC_OFFSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -15989,6 +16049,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
@@ -16060,6 +16121,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FSE_NEGOTIATION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
@@ -16107,6 +16169,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC_OFFSET,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
@@ -16208,6 +16271,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MSG_APPLYING_CHEAT,
    (uint32_t)MSG_APPLYING_PATCH,
    (uint32_t)MSG_APPLYING_SHADER,
+   (uint32_t)MSG_AUDIO_ASIO_NOT_RUNNING,
    (uint32_t)MSG_AUDIO_MIXER_VOLUME,
    (uint32_t)MSG_AUDIO_MUTED,
    (uint32_t)MSG_AUDIO_UNMUTED,

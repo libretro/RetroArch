@@ -2043,6 +2043,7 @@ static const struct
    char s_0a008a9d[8];
    char s_9c6ed9ca[18];
    char s_68664e16[17];
+   char s_9ad2e88b[40];
    char s_d4aabe7f[20];
    char s_4674fab3[11];
    char s_904219cb[20];
@@ -2190,6 +2191,9 @@ static const struct
    char s_aa9bc75d[12];
    char s_57047267[9];
    char s_6665b7fc[63];
+   char s_2e6ad26e[7];
+   char s_43e9897c[44];
+   char s_7fbf0860[9];
    char s_f417f6f1[28];
    char s_020e2bc5[18];
    char s_59f183c8[27];
@@ -2265,6 +2269,7 @@ static const struct
    char s_f57f6158[15];
    char s_69b801ef[9];
    char s_a40653a7[35];
+   char s_e67b672d[63];
    char s_52e3d6ea[52];
    char s_580e244f[7];
    char s_a9c8430e[18];
@@ -3428,6 +3433,7 @@ static const struct
    char s_ffd591e0[50];
    char s_a51ab538[35];
    char s_55d6cc44[47];
+   char s_5a8f7fb9[223];
    char s_f2963d2d[30];
    char s_4c592ae1[123];
    char s_52ac4fb9[116];
@@ -3499,6 +3505,7 @@ static const struct
    char s_43946ee5[95];
    char s_5492b73d[57];
    char s_01e5fbea[380];
+   char s_0653bf6a[479];
    char s_123f401f[143];
    char s_0d96ed73[50];
    char s_9f0fd076[145];
@@ -3546,6 +3553,7 @@ static const struct
    char s_f4e4e921[243];
    char s_7968f59d[43];
    char s_8cee3615[214];
+   char s_87ba81db[356];
    char s_58c80718[411];
    char s_67d549fd[40];
    char s_afac733c[40];
@@ -6454,6 +6462,7 @@ static const struct
    "Sistema",
    "Capturar pantalla",
    "Tareas multihilo",
+   "Preferir n\303\272cleos con mayor rendimiento",
    "Miniatura principal",
    "Miniaturas",
    "Miniatura principal",
@@ -6602,6 +6611,9 @@ static const struct
    "Autom\303\241tico",
    "real(es)",
    "Muestrear duraci\303\263n de fotogramas solo en situaciones estables",
+   "Forzar",
+   "Negociaci\303\263n de pantalla completa exclusiva",
+   "Relajada",
    "Mostrar a pantalla completa",
    "Pantalla completa",
    "Ancho en pantalla completa",
@@ -6678,6 +6690,7 @@ static const struct
    "Reducir escala",
    "Escalado",
    "Sincronizar con l\303\255neas de barrido",
+   "Desplazamiento de la sincronizaci\303\263n de las l\303\255neas de barrido",
    "Simulaci\303\263n de escalonamiento de l\303\255neas de barrido",
    "V\303\255deo",
    "Shaders de v\303\255deo",
@@ -8431,6 +8444,9 @@ static const struct
    "Muestra informaci\303\263n espec\303\255fica del dispositivo.",
    "Captura una imagen de la pantalla.",
    "Ejecuta otras tareas en un hilo independiente.",
+   "Mantiene los hilos principal y de audio en los n\303\272cleos m\303\241s r\303\241pidos de la CP"
+   "U cuando esta sea un procesador de n\303\272cleos mixtos. No afectar\303\241 a aquellos procesad"
+   "ores cuyos n\303\272cleos sean id\303\251nticos. Es necesario reiniciar.",
    "Tipo de miniaturas a mostrar.",
    "En este directorio se guardar\303\241n las car\303\241tulas, capturas de pantalla de ejemplo y m"
    "iniaturas de las pantallas de t\303\255tulo.",
@@ -8556,6 +8572,12 @@ static const struct
    "in estar pausado, sin usar el avance r\303\241pido... Una duraci\303\263n en una situaci\303\263"
    "n normal). La lectura del diagn\303\263stico ser\303\241 m\303\241s precisa a costa de una conve"
    "rgencia m\303\241s lenta nada m\303\241s cargar un contenido.",
+   "Establece la forma de solicitar el modo de pantalla completa exclusiva al controlador cuando el "
+   "modo de pantalla completa en ventana est\303\251 desactivado. Relajada solo lo permite y el cont"
+   "rolador puede rechazarlo, en el controlador de Vulkan, esto es una sugerencia que el controlador"
+   " ha llegado a ignorar, dejando que el swap chain siga utilizando la ruta independiente del compo"
+   "sitor. Forzar toma el modo exclusivo y lo mantiene. Es necesario tener VK_EXT_full_screen_exclus"
+   "ive.",
    "Muestra RetroArch en pantalla completa. Esta opci\303\263n puede ser cambiada en cualquier momen"
    "to o anulada por un argumento de l\303\255nea de comandos.",
    "Cambia los ajustes del modo en pantalla completa.",
@@ -8657,6 +8679,11 @@ static const struct
    "Sincroniza la presentaci\303\263n de la imagen con la posici\303\263n de las l\303\255neas de ba"
    "rrido. Reduce la latencia a costa de aumentar las fragmentaciones en la imagen. Es necesario des"
    "activar la sincron\303\255a vertical (Vsync).",
+   "Desplaza el objetivo de sincronizaci\303\263n de las l\303\255neas de barrido un n\303\272mero c"
+   "oncreto de l\303\255neas. La sincronizaci\303\263n no sabe en qu\303\251 momento termina la GPU "
+   "de renderizar un fotograma o cu\303\241ndo llega el cambio a la pantalla, as\303\255 que debes a"
+   "justar este valor hasta que la l\303\255nea de la fragmentaci\303\263n salga de la pantalla. Un "
+   "valor negativo empezar\303\241 antes.",
    "ADVERTENCIA: los parpadeos r\303\241pidos pueden provocar persistencia de la imagen (\302\253im"
    "\303\241genes fantasma\302\273) en algunas pantallas. Utiliza esta opci\303\263n bajo tu propia "
    "responsabilidad. // Simula de forma b\303\241sica el escalonamiento de las l\303\255neas de barr"
@@ -9396,7 +9423,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (209675u
+      (sizeof(msg_hash_es_blob) == (210896u
 #ifdef ANDROID
        + 329u
 #endif
@@ -11840,6 +11867,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI,
@@ -11987,6 +12015,9 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_FORCED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_NEGOTIATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_RELAXED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
@@ -12062,6 +12093,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC_OFFSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
@@ -13223,6 +13255,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
@@ -13294,6 +13327,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FSE_NEGOTIATION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
@@ -13341,6 +13375,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC_OFFSET,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
