@@ -254,3 +254,27 @@ jobs:
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
              ./asio_convert_test
           echo "[pass] asio_convert_test (ASan)"
+
+      - name: Build and run wasapi_exclusive_pacing_test (ASan + UBSan, then TSan)
+        shell: bash
+        working-directory: samples/audio/wasapi_exclusive_pacing
+        run: |
+          set -eu
+          # audio/drivers/wasapi.c, unmodified but for its Windows include
+          # lines, against a fake device on a real-time clock: exclusive
+          # and event-driven, one period per endpoint buffer, every period
+          # taken or counted unanswered. The writer is a frontend with audio
+          # sync off: one frame of core audio per non-blocking write, no rate
+          # control. Passes when no period goes unanswered in either mode and
+          # nothing is dropped once the buffer holds a frame. Before the pump
+          # thread and the drain-first shared write this run gave 3-10% of
+          # periods unanswered; the first smaller-period attempt without the
+          # pump gave 75%.
+          make clean all SANITIZER=address,undefined
+          test -x wasapi_exclusive_pacing_test
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 timeout 120 \
+             ./wasapi_exclusive_pacing_test 3
+          echo "[pass] wasapi_exclusive_pacing_test (ASan)"
+          make clean all SANITIZER=thread
+          timeout 180 ./wasapi_exclusive_pacing_test 3
+          echo "[pass] wasapi_exclusive_pacing_test (TSan)"
