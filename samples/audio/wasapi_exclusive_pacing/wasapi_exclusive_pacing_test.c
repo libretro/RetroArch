@@ -51,6 +51,7 @@ typedef struct
    size_t offered, taken;
    fake_device_stats_t dev;
    size_t reported_buffer;
+   size_t frame_bytes;
 } result_t;
 
 static void sleep_until(struct timespec *t, long ns)
@@ -86,6 +87,7 @@ static bool run(const scenario_t *sc, result_t *r)
       return false;
    }
    frame_bytes = audio_wasapi.use_float(ctx) ? 8 : 4;
+   r->frame_bytes = frame_bytes;
    buf         = calloc(frames_per_write, frame_bytes);
    audio_wasapi.set_nonblock_state(ctx, true);    /* audio sync off */
    r->reported_buffer = audio_wasapi.buffer_size(ctx);
@@ -115,12 +117,12 @@ static bool run(const scenario_t *sc, result_t *r)
 
 static void report(const char *name, const scenario_t *sc, const result_t *r)
 {
-   double dropped_ms  = (double)(r->offered - r->taken) / (r->dev.share_mode ? 4.0 : 8.0) * 1000.0 / 48000.0;
+   double dropped_ms  = (double)(r->offered - r->taken) / (double)r->frame_bytes * 1000.0 / 48000.0;
    printf("%-32s setting %2u ms: %s, period %u frames (%.1f ms), reported buffer %u frames; "
           "dropped %.1f ms of %u s (%.2f%%), %u of %u periods unanswered (%.2f%%)\n",
          name, sc->latency_ms, r->dev.share_mode ? "exclusive" : "shared",
          r->dev.period_frames, r->dev.period_frames * 1000.0 / 48000.0,
-         (unsigned)(r->reported_buffer / (r->dev.share_mode ? 4 : 8)),
+         (unsigned)(r->reported_buffer / r->frame_bytes),
          dropped_ms, sc->seconds,
          100.0 * (double)(r->offered - r->taken) / (double)r->offered,
          r->dev.periods_unanswered, r->dev.periods,
