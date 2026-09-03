@@ -103,6 +103,11 @@ typedef struct
    uint64_t            consumed;
    uint64_t            released;   /* shared: frames given to the engine */
    unsigned            sh_period_frames; /* shared: frames the engine takes per event */
+   /* Read by the pump thread instead of the EXCLUSIVE bit in flags:
+    * flags is one byte that start(), stop() and set_nonblock_state()
+    * write from other threads while the pump runs, and a read of one
+    * bit races with a write of another. Set at init, never changed. */
+   bool                pump_exclusive;
 #endif
    unsigned char frame_size;          /* 4 or 8 only */
    /* log2(frame_size), i.e. 2 or 3.  Invariant: the two are set
@@ -1355,6 +1360,7 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
       goto error;
    if (exclusive_mode)
       w->flags              |= WASAPI_FLG_EXCLUSIVE;
+   w->pump_exclusive = exclusive_mode;
    if (low_latency)
       w->flags              |= WASAPI_FLG_LOWLAT;
 
@@ -1583,7 +1589,7 @@ static void wasapi_pump_thread(void *data)
          continue;
       if (!retro_atomic_load_acquire_int(&w->pump_run))
          break;
-      if (w->flags & WASAPI_FLG_EXCLUSIVE)
+      if (w->pump_exclusive)
       {
          BYTE *dest         = NULL;
          UINT32 frame_count = (UINT32)(w->engine_buffer_size >> w->frame_shift);
