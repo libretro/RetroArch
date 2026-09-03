@@ -1077,7 +1077,15 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                ? 0.0f
                : audio_st->volume_gain;
 
-   if (audio_st->reinit_request)
+   /* A reinit tears the audio driver down and up, which under the
+    * threaded pipeline stops and joins the audio thread; that cannot
+    * be done from the audio thread, which is what calls this then. On
+    * the pipeline the producer consumes the request in
+    * audio_driver_submit(), on the core's thread; here it is acted on
+    * only inline, where flush runs on that thread already. Taken from
+    * here on the consumer's thread it joined itself: a hang on the
+    * first device change, ASIO or WASAPI, with the pipeline on. */
+   if (audio_st->reinit_request && !audio_st->pipe_threaded)
    {
       audio_st->reinit_request = false;
       RARCH_LOG("[Audio] Driver reinit requested...\n");
@@ -2466,6 +2474,21 @@ static void audio_driver_submit(audio_driver_state_t *audio_st,
    {
       const uint8_t *p = (const uint8_t*)data;
       size_t len       = samples * sizeof(int16_t);
+
+      /* The producer runs on the core's thread, which is the one that
+       * can stop and join the audio thread; a driver's request to
+       * reinitialise is taken here, and this batch dropped, as the
+       * inline path drops it in flush. See the note there. */
+      if (audio_st->reinit_request)
+      {
+         audio_st->reinit_request = false;
+         RARCH_LOG("[Audio] Driver reinit requested...\n");
+         command_event(CMD_EVENT_AUDIO_REINIT, NULL);
+#ifdef HAVE_MICROPHONE
+         command_event(CMD_EVENT_MICROPHONE_REINIT, NULL);
+#endif
+         return;
+      }
       while (len)
       {
          unsigned gen;
