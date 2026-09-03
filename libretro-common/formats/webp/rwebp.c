@@ -189,7 +189,7 @@ static int vh_build(vh *h, const uint8_t *lens, int ns, int root)
    int count[VH_MAXCL + 1], offset[VH_MAXCL + 1];
    /* Symbol scratch, heap rather than stack.  As int sorted[4096] this
     * was 16 KiB in one frame - twice the 8 KiB a GEKKO thread gets
-    * (STACKSIZE in rthreads/gx_pthread.h) - and it is reachable from
+    * (the GEKKO STACKSIZE in rthreads.c) - and it is reachable from
     * a task handler, so it runs on a worker rather than the main
     * thread whenever the task queue is threaded:
     * task_file_load_handler -> task_image_load_handler ->

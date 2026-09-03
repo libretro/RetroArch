@@ -16,6 +16,7 @@ LIBRETRO_COMMON_C = \
 			 $(LIBRETRO_COMM_DIR)/streams/interface_stream.c \
 			 $(LIBRETRO_COMM_DIR)/streams/memory_stream.c \
 			 $(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+			 $(LIBRETRO_COMM_DIR)/string/rstrtod.c \
 			 $(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
 			 $(LIBRETRO_COMM_DIR)/time/rtime.c \
 			 $(LIBRETRO_COMM_DIR)/file/file_path.c \

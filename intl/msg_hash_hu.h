@@ -1416,7 +1416,6 @@ static const struct
    char s_012938fb[34];
    char s_a747cdc9[65];
    char s_2f169651[23];
-   char s_73674a86[4];
    char s_705eee28[47];
    char s_62af62ac[39];
    char s_12b25a4b[53];
@@ -3293,11 +3292,9 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    char s_3e1e294b[51];
    char s_69c0e487[55];
-   char s_706ff4dc[153];
    char s_a0d1a85c[56];
    char s_907ef7cc[39];
    char s_b0a46506[45];
-   char s_04624c88[48];
    char s_f6492edc[51];
 #endif
    char s_f3bfa8b9[91];
@@ -5825,7 +5822,6 @@ static const struct
    "J\303\241t\303\251klista nev\303\251nek r\303\266vid\303\255t\303\251se (\303\272jraind\303\255t"
    "\303\241s sz\303\274ks\303\251ges)",
    "PAL60 m\303\263d haszn\303\241lata",
-   "Fel",
    "Tartalom meg\303\241ll\303\255t\303\241sa, amikor a men\303\274 akt\303\255v",
    "Tartalom meg\303\241ll\303\255t\303\241sa, ha nem akt\303\255v",
    "Tartalom meg\303\241ll\303\255t\303\241sa kontroller lev\303\241laszt\303\241sakor",
@@ -8604,13 +8600,9 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    "A k\303\266rnyezet \303\241ltal haszn\303\241lt hiteles\303\255t\303\251si m\303\263d.",
    "F\303\241jlok b\303\266ng\303\251sz\303\251se a be\303\241ll\303\255tott SMB megoszt\303\241son.",
-   "Hozz\303\241f\303\251r\303\251s az SMB h\303\241l\303\263zati megoszt\303\241sokhoz. Megb\303"
-   "\255zhat\303\263 kapcsolathoz az Ethernet sokkal ink\303\241bb aj\303\241nlott, mint a Wi-Fi. "
-   "\303\232jraind\303\255t\303\241st ig\303\251nyel.",
    "A k\303\266rnyezet \303\241ltal haszn\303\241lhat\303\263 maxim\303\241lis kapcsolat.",
    "A kiszolg\303\241l\303\263 IP c\303\255me vagy hostneve.",
    "Az SMB h\303\241l\303\263zati megoszt\303\241s be\303\241ll\303\255t\303\241sai.",
-   "Az el\303\251rni k\303\255v\303\241nt h\303\241l\303\263zati megoszt\303\241s neve.",
    "Az alap\303\251rtelmezett id\305\221t\303\272ll\303\251p\303\251s m\303\241sodpercben.",
 #endif
    "A ment\303\251seket olyan mapp\303\241kba rendezi, amelyeket a tartalom k\303\266nyvt\303\241ra "
@@ -9735,7 +9727,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hu_blob_check[
-      (sizeof(msg_hash_hu_blob) == (189374u
+      (sizeof(msg_hash_hu_blob) == (189370u
 #ifdef ANDROID
        + 316u
 #endif
@@ -10051,11 +10043,9 @@ typedef char msg_hash_hu_blob_check[
        + 45u
        + 51u
        + 55u
-       + 153u
        + 56u
        + 39u
        + 45u
-       + 48u
        + 51u
 #endif
 #ifdef HAVE_LAKKA
@@ -11543,7 +11533,6 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
@@ -13417,11 +13406,9 @@ static const uint32_t msg_hash_hu_ids[] =
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,

@@ -158,7 +158,7 @@ int
 smb2_process_tree_disconnect_fixed(struct smb2_context *smb2,
                                    struct smb2_pdu *pdu)
 {
-        smb2_disconnect_tree_id(smb2, smb2->hdr.sync.tree_id);
+        smb2_disconnect_tree_id(smb2, smb2->hdr.u.sync.tree_id);
         return 0;
 }
 

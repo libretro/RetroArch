@@ -23,9 +23,24 @@ jobs:
 
     steps:
       - name: Install dependencies
+        timeout-minutes: 5
         run: |
-          sudo apt-get update -y
-          sudo apt-get install -y build-essential zlib1g-dev clang
+          # All three packages ship on the stock ubuntu-latest image, so
+          # this step is a no-op there and apt is only contacted if the
+          # image ever drops one of them.
+          if dpkg -s build-essential zlib1g-dev clang >/dev/null 2>&1; then
+            echo "All packages already present on runner image; skipping apt."
+            exit 0
+          fi
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            build-essential zlib1g-dev clang
 
       - name: Checkout
         uses: actions/checkout@v3
@@ -80,17 +95,27 @@ jobs:
             vfs_seek_contract_test
             vfs_bulk_read_test
             vfs_hybrid_test
+            filestream_rbuf_fault_test
             cdrom_cuesheet_overflow_test
             cdfs_dir_record_test
+            cdfs_pure_api_test
             chd_meta_overflow_test
             strlcpy_append_test
             http_parse_test
             rjson_test
+            rm3u_test
             rtga_test
             rbmp_test
+            rbmp_encode_test
             rpng_chunk_overflow_test
             rpng_roundtrip_test
             rpng_decode_corpus_test
+            # Benchmark, not a pass/fail test, but it runs its default
+            # 4K comparison and exits 0, so under this job's sanitizer
+            # build it doubles as end-to-end ASan/UBSan smoke coverage
+            # of the old and new screenshot encode/write paths.
+            # Timings in its output are informational only.
+            screenshot_io_bench
             word_wrap_overflow_test
             task_queue_title_error_test
             tpool_wait_test
@@ -100,6 +125,7 @@ jobs:
             retro_atomic_extern_c_linkage_test_cxx
             retro_spsc_test
             audio_mixer_loop_test
+            audio_mixer_rate_guard_test
           )
 
           # Targets that are built but deliberately not executed, each
@@ -449,9 +475,23 @@ jobs:
 
     steps:
       - name: Install dependencies
+        timeout-minutes: 5
         run: |
-          sudo apt-get update -y
-          sudo apt-get install -y clang
+          # clang ships on the stock ubuntu-latest image; apt is only
+          # contacted if the image ever drops it.
+          if dpkg -s clang >/dev/null 2>&1; then
+            echo "clang already present on runner image; skipping apt."
+            exit 0
+          fi
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            clang
 
       - name: Checkout
         uses: actions/checkout@v3
@@ -466,6 +506,7 @@ jobs:
             -fno-sanitize-recover=all \
             -I$LC/include -o config_file_fuzz config_file_fuzz.c \
             $LC/file/config_file.c \
+            $LC/string/rstrtod.c \
             $LC/file/file_path.c \
             $LC/compat/compat_strl.c \
             $LC/compat/compat_strcasestr.c \
@@ -519,9 +560,17 @@ jobs:
 
     steps:
       - name: Install dependencies
+        timeout-minutes: 5
         run: |
-          sudo apt-get update -y
-          sudo apt-get install -y build-essential ${{ matrix.apt_pkgs }} qemu-user-static
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            build-essential ${{ matrix.apt_pkgs }} qemu-user-static
 
       - name: Checkout
         uses: actions/checkout@v3
@@ -628,9 +677,17 @@ jobs:
 
     steps:
       - name: Install dependencies
+        timeout-minutes: 5
         run: |
-          sudo apt-get update -y
-          sudo apt-get install -y build-essential ${{ matrix.apt_pkgs }} qemu-user-static
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            build-essential ${{ matrix.apt_pkgs }} qemu-user-static
 
       - name: Checkout
         uses: actions/checkout@v3

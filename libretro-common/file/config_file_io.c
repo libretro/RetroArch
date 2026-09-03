@@ -43,7 +43,10 @@
 #include <string.h>
 
 #include <compat/fopen_utf8.h>
+#include <compat/strl.h>
 #include <file/config_file.h>
+#include <file/file_path.h>
+#include <retro_miscellaneous.h>
 #include <streams/file_stream.h>
 
 static char *config_file_io_fs_read_file(const char *path,
@@ -109,7 +112,10 @@ config_file_t *config_file_new_with_callback(
    }
    else if (ret == 1)
    {
-      free(conf);
+      /* The conf from config_file_new_alloc() carries live internals
+       * (the entries hash map); a raw free() leaks them on every
+       * failed read - config_file_free() tears them down first. */
+      config_file_free(conf);
       return NULL;
    }
    return conf;
@@ -173,7 +179,7 @@ bool config_file_write(config_file_t *conf, const char *path, bool sort)
          /* The stdio buffer is heap, not a local.  At 16 KiB it was
           * twice the whole thread stack on the smallest target -
           * GEKKO threads get 8 KiB, see STACKSIZE in
-          * rthreads/gx_pthread.h - and this is reached from a task
+          * rthreads.c - and this is reached from a task
           * handler, so it runs on the task thread rather than the
           * main one whenever the queue is threaded:
           * input_autoconfigure_connect_handler ->
@@ -192,13 +198,67 @@ bool config_file_write(config_file_t *conf, const char *path, bool sort)
           * Apple, a buffer supplied from outside clears __SMBF and
           * disqualifies fread()'s large-read fast path for the life of
           * the stream. */
-         FILE *file = (FILE*)fopen_utf8(path, "wb");
-         if (!file)
+         FILE *file;
+         bool wr_ok;
+         char *tmp_path;
+         size_t _len;
+         /* The atomic replace below swaps the directory entry
+          * itself, so a save through a symbolic link would
+          * overwrite the link with a regular file.  Resolving the
+          * path first keeps the link in place and replaces the
+          * file it points to.  When resolution is unavailable or
+          * fails - dangling link, over-long path, platform without
+          * realpath - the path is used as given. */
+         char *resolved = NULL;
+
+         if (     strlen(path) < PATH_MAX_LENGTH
+               && (resolved = (char*)malloc(PATH_MAX_LENGTH)))
+         {
+            strlcpy(resolved, path, PATH_MAX_LENGTH);
+            path_resolve_realpath(resolved, PATH_MAX_LENGTH, true);
+            path = resolved;
+         }
+
+         /* The dump goes to a temporary beside the target and is
+          * renamed over it only once complete and error-checked.
+          * An interrupted or failed save - process kill, power
+          * loss, full disk - then leaves the previous file intact
+          * instead of a truncated one, and a save that hits a
+          * write error reports failure instead of silently
+          * replacing a good config with a partial one. */
+         _len     = strlen(path);
+         tmp_path = (char*)malloc(_len + sizeof(".tmp"));
+
+         if (!tmp_path)
+         {
+            free(resolved);
             return false;
+         }
+         memcpy(tmp_path, path, _len);
+         memcpy(tmp_path + _len, ".tmp", sizeof(".tmp"));
+
+         if (!(file = (FILE*)fopen_utf8(tmp_path, "wb")))
+         {
+            free(tmp_path);
+            free(resolved);
+            return false;
+         }
          setvbuf(file, NULL, _IOFBF, 0x4000);
          config_file_dump(conf, file, sort);
-         if (file != stdout)
-            fclose(file);
+
+         wr_ok = !ferror(file);
+         if (fclose(file) != 0)
+            wr_ok = false;
+
+         if (!wr_ok || filestream_rename(tmp_path, path) != 0)
+         {
+            filestream_delete(tmp_path);
+            free(tmp_path);
+            free(resolved);
+            return false;
+         }
+         free(tmp_path);
+         free(resolved);
          conf->flags &= ~CONF_FILE_FLG_MODIFIED;
       }
    }

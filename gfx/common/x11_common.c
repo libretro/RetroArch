@@ -296,7 +296,7 @@ static void xdg_screensaver_inhibit(Window wnd)
        * the same, as if there's no title at all. */
       size_t title_len = video_driver_get_window_title(title, sizeof(title));
       if (title_len == 0)
-         title_len = strlcpy(title, " ", sizeof(title));
+         title_len = strlcpy_lit(title, " ", sizeof(title));
       XChangeProperty(g_x11_dpy, g_x11_win, XA_WM_NAME, XA_STRING,
             8, PropModeReplace, (const unsigned char*) title, title_len);
 
@@ -328,7 +328,7 @@ static void xdg_screensaver_inhibit(Window wnd)
 #endif
    }
 
-   _len = strlcpy(cmd, "xdg-screensaver suspend 0x", sizeof(cmd));
+   _len = strlcpy_lit(cmd, "xdg-screensaver suspend 0x", sizeof(cmd));
    snprintf(cmd + _len, sizeof(cmd) - _len, "%x", (int)wnd);
 
    if ((ret = system(cmd)) == -1)

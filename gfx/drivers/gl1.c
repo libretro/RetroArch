@@ -201,6 +201,19 @@ typedef struct gl1
    unsigned char *video_buf;
    unsigned char *menu_video_buf;
    size_t menu_frame_cap;
+   /* Staging for the CPU BGRA->RGBA swizzle in gl1_draw_tex when the
+    * GL lacks GL_EXT_bgra, kept across frames and grown on demand; it
+    * used to be malloc'd and freed on every upload. */
+   uint8_t *swizzle_buf;
+   size_t   swizzle_cap;
+#ifdef VITA
+   /* Vita's GL needs 3-component vertices; this is the expansion
+    * scratch for the menu quad and font draws, grown on demand and
+    * kept for the driver's lifetime instead of a leaked static that
+    * was reallocated on every draw call. */
+   float   *vertices3;
+   unsigned vertices3_cap;
+#endif
 
    int version_major;
    int version_minor;
@@ -283,6 +296,32 @@ typedef struct gl1
    bool source_10bit;
    bool source_hdr10;
 } gl1_t;
+
+#ifdef VITA
+/* Expand 2-component vertices into the driver's 3-component scratch
+ * (z = 0) for Vita's GL; returns NULL if the scratch cannot grow. */
+static float *gl1_vertices3(gl1_t *gl1, const float *vertex, unsigned n)
+{
+   unsigned i;
+   if (n > gl1->vertices3_cap)
+   {
+      float *grown = (float*)realloc(gl1->vertices3,
+            sizeof(float) * 3 * (size_t)n);
+      if (!grown)
+         return NULL;
+      gl1->vertices3     = grown;
+      gl1->vertices3_cap = n;
+   }
+   for (i = 0; i < n; i++)
+   {
+      gl1->vertices3[i * 3 + 0] = vertex[i * 2 + 0];
+      gl1->vertices3[i * 3 + 1] = vertex[i * 2 + 1];
+      gl1->vertices3[i * 3 + 2] = 0.0f;
+   }
+   return gl1->vertices3;
+}
+#endif
+
 
 /* The packed 2-10-10-10 upload needs GL 1.2 packed pixel types, BGRA
  * ordering and the scRGB composite to be worth anything, so the native
@@ -462,22 +501,8 @@ static void gfx_display_gl1_draw(gfx_display_ctx_draw_t *draw,
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
 #ifdef VITA
-   {
-      unsigned i;
-      static float *vertices3 = NULL;
-
-      if (vertices3)
-         free(vertices3);
-      vertices3 = (float*)malloc(sizeof(float) * 3 * coords.vertices);
-      for (i = 0; i < coords.vertices; i++)
-      {
-         memcpy(&vertices3[i * 3],
-               &coords.vertex[i * 2],
-               sizeof(float) * 2);
-         vertices3[i * 3 + 2]  = 0.0f;
-      }
-      glVertexPointer(3, GL_FLOAT, 0, vertices3);
-   }
+   glVertexPointer(3, GL_FLOAT, 0,
+         gl1_vertices3(gl1, coords.vertex, coords.vertices));
 #else
    glVertexPointer(2, GL_FLOAT, 0, coords.vertex);
 #endif
@@ -717,10 +742,6 @@ static void gl1_raster_font_draw_vertices(
       gl1_raster_t *font,
       const video_coords_t *coords)
 {
-#ifdef VITA
-   static float *vertices3 = NULL;
-#endif
-
    if (font->atlas->dirty)
    {
       gl1_raster_font_upload_atlas(font,
@@ -741,18 +762,8 @@ static void gl1_raster_font_draw_vertices(
    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
 #ifdef VITA
-   if (vertices3)
-      free(vertices3);
-   vertices3 = (float*)malloc(sizeof(float) * 3 * coords->vertices);
-   {
-      int i;
-      for (i = 0; i < coords->vertices; i++)
-      {
-         memcpy(&vertices3[i*3], &coords->vertex[i*2], sizeof(float) * 2);
-         vertices3[i*3+2] = 0.0f;
-      }
-   }
-   glVertexPointer(3, GL_FLOAT, 0, vertices3);
+   glVertexPointer(3, GL_FLOAT, 0,
+         gl1_vertices3(gl, coords->vertex, coords->vertices));
 #else
    glVertexPointer(2, GL_FLOAT, 0, coords->vertex);
 #endif
@@ -1204,10 +1215,8 @@ static void gl1_free_overlay(gl1_t *gl)
 {
    glDeleteTextures(gl->overlays, gl->overlay_tex);
 
+   /* The three coordinate arrays are views into the overlay_tex block. */
    free(gl->overlay_tex);
-   free(gl->overlay_vertex_coord);
-   free(gl->overlay_tex_coord);
-   free(gl->overlay_color_coord);
    gl->overlay_tex          = NULL;
    gl->overlay_vertex_coord = NULL;
    gl->overlay_tex_coord    = NULL;
@@ -1752,7 +1761,18 @@ static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, i
     * order. */
    if (!fb_4444 && !supports_native && !src_10bit)
    {
-      frame_rgba = (uint8_t*)malloc(pot_width * pot_height * 4);
+      size_t need = (size_t)pot_width * (size_t)pot_height * 4;
+      if (need > gl1->swizzle_cap)
+      {
+         uint8_t *grown = (uint8_t*)realloc(gl1->swizzle_buf, need);
+         if (grown)
+         {
+            gl1->swizzle_buf = grown;
+            gl1->swizzle_cap = need;
+         }
+      }
+      if (need <= gl1->swizzle_cap)
+         frame_rgba = gl1->swizzle_buf;
       if (frame_rgba)
       {
          int x, y;
@@ -1785,8 +1805,6 @@ static void gl1_draw_tex(gl1_t *gl1, int pot_width, int pot_height, int width, i
       type           = GL_UNSIGNED_INT_2_10_10_10_REV;
    }
    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, pot_width, pot_height, 0, format, type, frame);
-   if (frame_rgba)
-       free(frame_rgba);
 
 #ifndef VITA
    /* Restore default row length so subsequent uploads (e.g. font atlas
@@ -2747,6 +2765,15 @@ static void gl1_free(void *data)
       free(gl1->menu_video_buf);
    gl1->menu_video_buf = NULL;
 
+   free(gl1->swizzle_buf);
+   gl1->swizzle_buf = NULL;
+   gl1->swizzle_cap = 0;
+#ifdef VITA
+   free(gl1->vertices3);
+   gl1->vertices3     = NULL;
+   gl1->vertices3_cap = 0;
+#endif
+
    if (gl1->tex)
    {
       glDeleteTextures(1, &gl1->tex);
@@ -3198,6 +3225,7 @@ static unsigned gl1_get_alignment(unsigned pitch)
 static bool gl1_overlay_load(void *data,
       const void *image_data, unsigned num_images)
 {
+   size_t o_vertex, o_tex, o_color;
    size_t i;
    int j;
    gl1_t *gl = (gl1_t*)data;
@@ -3208,23 +3236,21 @@ static bool gl1_overlay_load(void *data,
       return false;
 
    gl1_free_overlay(gl);
+   /* The texture names and the vertex, texture and colour coordinate
+    * arrays of all overlay images come out of one zeroed block, each
+    * region starting on a 64-byte boundary; overlay_tex owns it. */
+   o_vertex = ((num_images * sizeof(GLuint)) + 63) & ~(size_t)63;
+   o_tex    = o_vertex + ((2 * 4 * num_images * sizeof(GLfloat) + 63) & ~(size_t)63);
+   o_color  = o_tex    + ((2 * 4 * num_images * sizeof(GLfloat) + 63) & ~(size_t)63);
    gl->overlay_tex = (GLuint*)
-      calloc(num_images, sizeof(*gl->overlay_tex));
+      calloc(1, o_color + 4 * 4 * num_images * sizeof(GLfloat));
 
    if (!gl->overlay_tex)
       return false;
 
-   gl->overlay_vertex_coord = (GLfloat*)
-      calloc(2 * 4 * num_images, sizeof(GLfloat));
-   gl->overlay_tex_coord    = (GLfloat*)
-      calloc(2 * 4 * num_images, sizeof(GLfloat));
-   gl->overlay_color_coord  = (GLfloat*)
-      calloc(4 * 4 * num_images, sizeof(GLfloat));
-
-   if (     !gl->overlay_vertex_coord
-         || !gl->overlay_tex_coord
-         || !gl->overlay_color_coord)
-      return false;
+   gl->overlay_vertex_coord = (GLfloat*)((uint8_t*)gl->overlay_tex + o_vertex);
+   gl->overlay_tex_coord    = (GLfloat*)((uint8_t*)gl->overlay_tex + o_tex);
+   gl->overlay_color_coord  = (GLfloat*)((uint8_t*)gl->overlay_tex + o_color);
 
    gl->overlays             = num_images;
    glGenTextures(num_images, gl->overlay_tex);

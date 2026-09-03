@@ -29,6 +29,7 @@
 #include "../tasks/tasks_internal.h"
 
 #include "natt.h"
+#include <compat/strl.h>
 
 bool natt_init(struct natt_discovery *discovery)
 {
@@ -251,7 +252,7 @@ static bool natt_build_control_url(
       if (control_path)
          *control_path = '\0';
       if (control_url->data[0] != '/')
-         strlcpy(device->control + _len, "/",
+         strlcpy_lit(device->control + _len, "/",
                sizeof(device->control) - _len);
       /* Make sure the control URL isn't too long. */
       if (strlcat(device->control, control_url->data,
@@ -317,6 +318,23 @@ static bool natt_parse_desc_node(rxml_node_t *node,
    return false;
 }
 
+/* Condition for the blocking variants below: wait only while THIS
+ * device's operation is outstanding.  Every one of the callbacks
+ * clears device->busy on all of its paths, so the wait always ends.
+ *
+ * The blocking variants previously waited on a NULL condition, which
+ * task_queue_wait reads as "until the queue is empty" - so a caller
+ * asking to block on one UPnP round trip also waited out every
+ * unrelated task in flight, a content scan or a core download
+ * included.  No in-tree caller passes block = true today (the NAT
+ * task drives these non-blocking and steps its own state machine),
+ * so this is a latent trap being closed rather than a live freeze. */
+static bool natt_device_is_busy(void *data)
+{
+   const struct natt_device *device = (const struct natt_device*)data;
+   return device && device->busy;
+}
+
 static void natt_query_device_cb(retro_task_t *task, void *task_data,
    void *user_data, const char *err)
 {
@@ -372,7 +390,7 @@ bool natt_query_device(struct natt_device *device, bool block)
    }
 
    if (block)
-      task_queue_wait(NULL, NULL);
+      task_queue_wait(natt_device_is_busy, device);
 
    return true;
 }
@@ -628,7 +646,7 @@ bool natt_external_address(struct natt_device *device, bool block)
    }
 
    if (block)
-      task_queue_wait(NULL, NULL);
+      task_queue_wait(natt_device_is_busy, device);
 
    return true;
 }
@@ -692,7 +710,7 @@ bool natt_open_port(struct natt_device *device,
    }
 
    if (block)
-      task_queue_wait(NULL, NULL);
+      task_queue_wait(natt_device_is_busy, device);
 
    return true;
 }
@@ -745,7 +763,7 @@ bool natt_close_port(struct natt_device *device,
    }
 
    if (block)
-      task_queue_wait(NULL, NULL);
+      task_queue_wait(natt_device_is_busy, device);
 
    return true;
 }

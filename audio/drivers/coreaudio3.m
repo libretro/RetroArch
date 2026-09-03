@@ -338,6 +338,9 @@ static void rb_read_data_interleaved(ringbuffer_h r,
 
 - (ssize_t)writeFloat:(const float *)data samples:(size_t)samples {
    size_t _len = 0;
+   /* Each wait below is bounded; this bounds the loop, for a unit that
+    * reports running but never renders. */
+   int laps    = 8;
    while (samples > 0)
    {
       size_t write_avail = rb_avail(&_rb);
@@ -358,6 +361,8 @@ static void rb_read_data_interleaved(ringbuffer_h r,
           * by a phone call), bail out immediately - the callback that
           * drains the buffer will never fire. */
          if (!_au.running)
+            break;
+         if (--laps < 0)
             break;
          /* Brief timeout as a safety net: if the audio unit stops
           * during the wait, we'll re-check _au.running promptly. */

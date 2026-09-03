@@ -44,6 +44,8 @@
 struct content_prefetch_item
 {
    char *path;
+   size_t total;                       /* bytes this item will yield */
+   size_t done;                        /* bytes it has yielded       */
    data_transfer_t *dt;
    RFILE *file;                        /* plain-file source        */
 #ifdef HAVE_COMPRESSION
@@ -62,9 +64,72 @@ struct content_prefetch_state
    size_t cursor;                      /* one file at a time       */
    content_prefetch_deposit_t deposit;
    content_prefetch_done_t done;
+   content_prefetch_progress_t progress_cb;
    void *ud;
+   size_t bytes_total;                 /* across items, once opened  */
+   size_t bytes_done;
+   int8_t progress;                    /* last value computed        */
+   int8_t reported;                    /* last delivered; pump-thread
+                                        * only                       */
    uint8_t all_ok;
 };
+
+/* Report read progress as a whole-number percentage of the bytes
+ * this task will move.
+ *
+ * Sizes are learned per item as each is opened, not up front - an
+ * archive entry's uncompressed size is only known once its header is
+ * read - so the denominator grows as the run proceeds.  For the
+ * single-file case the frontend actually defers (see
+ * task_content_defer_menu_load), it is exact from the first tick.
+ *
+ * The value is pushed only when the integer percentage changes: the
+ * task queue wakes a progress callback on every update, and a 4 MiB
+ * tick against a large ROM would otherwise report the same number
+ * many times over. */
+static void content_prefetch_update_progress(retro_task_t *task,
+      struct content_prefetch_state *st)
+{
+   int8_t pct;
+
+   if (!st->bytes_total)
+      return;
+
+   pct = (int8_t)((st->bytes_done * 100) / st->bytes_total);
+
+   if (pct == st->progress)
+      return;
+
+   st->progress = pct;
+   task_set_progress(task, pct);
+
+   /* On the threaded queue this runs on the worker; delivery there
+    * is content_prefetch_task_progress' job, on the pumping thread.
+    * The regular queue's handler IS the pump, and the queue only
+    * fires progress callbacks at retirement - deliver directly. */
+   if (st->progress_cb && !task_queue_is_threaded())
+   {
+      st->reported = pct;
+      st->progress_cb(st->ud, pct);
+   }
+}
+
+/* Fired by task_queue_push_progress() on the thread that pumps the
+ * queue, under the property lock.  With the direct path above, the
+ * consumer's callback always lands on the pumping thread. */
+static void content_prefetch_task_progress(retro_task_t *task)
+{
+   struct content_prefetch_state *st =
+         (struct content_prefetch_state*)task->state;
+   if (     st && st->progress_cb && task->progress >= 0
+         && task->progress != st->reported)
+   {
+      /* The queue pushes every pump; the contract is per change.
+       * 'reported' is only touched on the pumping thread. */
+      st->reported = task->progress;
+      st->progress_cb(st->ud, task->progress);
+   }
+}
 
 static int64_t content_prefetch_file_read(void *ud, uint8_t *dst,
       size_t n)
@@ -113,6 +178,7 @@ static bool content_prefetch_item_open(struct content_prefetch_item *it)
       int64_t usize = 0;
       if (!(it->src = file_archive_entry_source_open(it->path, &usize)))
          return false;                 /* 7z etc.: skip, not fail */
+      it->total = (usize > 0) ? (size_t)usize : 0;
       if (usize <= 0
             || !(it->dt = data_transfer_open_source((size_t)usize,
                   content_prefetch_entry_read, it->src)))
@@ -127,6 +193,7 @@ static bool content_prefetch_item_open(struct content_prefetch_item *it)
       int64_t sz = path_get_size(it->path);
       if (sz <= 0)
          return false;
+      it->total  = (size_t)sz;
       if (!(it->file = filestream_open(it->path,
             RETRO_VFS_FILE_ACCESS_READ,
             RETRO_VFS_FILE_ACCESS_HINT_NONE)))
@@ -169,7 +236,9 @@ static void content_prefetch_handler(retro_task_t *task)
 
    if (!it->opened)
    {
-      if (!content_prefetch_item_open(it))
+      if (content_prefetch_item_open(it))
+         st->bytes_total += it->total;
+      else
       {
          /* skipped: the load's ordinary read path covers it */
          st->all_ok = 0;
@@ -181,6 +250,18 @@ static void content_prefetch_handler(retro_task_t *task)
    }
 
    data_transfer_iterate(it->dt, CONTENT_PREFETCH_TICK_BYTES);
+
+   {
+      /* Charge the delta rather than the absolute, so the running
+       * total stays right across several items. */
+      size_t avail = data_transfer_avail(it->dt);
+      if (avail > it->done)
+      {
+         st->bytes_done += avail - it->done;
+         it->done        = avail;
+      }
+      content_prefetch_update_progress(task, st);
+   }
 
    if (data_transfer_failed(it->dt))
    {
@@ -257,6 +338,15 @@ bool task_push_content_prefetch(const char **paths, size_t count,
       content_prefetch_deposit_t deposit, content_prefetch_done_t done,
       void *ud)
 {
+   return task_push_content_prefetch_progress(paths, count, deposit,
+         done, NULL, ud);
+}
+
+bool task_push_content_prefetch_progress(const char **paths,
+      size_t count, content_prefetch_deposit_t deposit,
+      content_prefetch_done_t done,
+      content_prefetch_progress_t progress, void *ud)
+{
    struct content_prefetch_state *st = NULL;
    retro_task_t *t                   = NULL;
    size_t i;
@@ -276,7 +366,12 @@ bool task_push_content_prefetch(const char **paths, size_t count,
          goto error;
       st->count++;
    }
-   st->deposit = deposit;
+   /* -1 so the first real value - including a 0%% at the start of a
+    * large read - is reported rather than matching the initial. */
+   st->progress    = -1;
+   st->reported    = -1;
+   st->deposit     = deposit;
+   st->progress_cb = progress;
    st->done    = done;
    st->ud      = ud;
    st->all_ok  = 1;
@@ -285,7 +380,10 @@ bool task_push_content_prefetch(const char **paths, size_t count,
    t->handler  = content_prefetch_handler;
    t->callback = content_prefetch_task_callback;
    t->cleanup  = content_prefetch_cleanup;
-   t->flags   |= RETRO_TASK_FLG_MUTE;
+   /* No mute: it would suppress the progress trampoline.  No title
+    * means no OSD messages either way. */
+   if (progress)
+      t->progress_cb = content_prefetch_task_progress;
    task_queue_push(t);
    return true;
 

@@ -49,6 +49,12 @@
 #define MODETEST_VAL    0xffffff00
 #endif
 
+/* Upper bound on how far into a track any serial/system detector
+ * reads: DISC_DATA_SIZE_PS2 (600000) is the largest probe and 0x9320
+ * the deepest magic-number offset.  Keep this in sync when adding
+ * detectors that reach further. */
+#define SERIAL_PROBE_SPAN (600 * 1024)
+
 static struct magic_entry MAGIC_NUMBERS[] = {
    { "Nintendo - GameCube",         "\xc2\x33\x9f\x3d", 0x00001c},
    { "Nintendo - GameCube",         "\xc2\x33\x9f\x3d", 0x000074}, /* RVZ, WIA */
@@ -143,52 +149,135 @@ static void cue_append_multi_disc_suffix(char * str1, size_t len,
    }
 }
 
-static int64_t task_database_cue_get_token(intfstream_t *fd, char *s,
+/* Cue/GDI sheets are tokenized character by character, and each
+ * character used to be obtained with intfstream_read(fd, c, 1): one
+ * VFS round trip per byte, multiplied by every sheet in a library
+ * scan.  The sheets themselves are KB-scale text, so the read cost
+ * was almost entirely call overhead.
+ *
+ * Pull bytes through a small refill window instead.  The window is
+ * deliberately modest (1 KiB) - a typical single-bin cue fits in one
+ * fill and a large multi-track sheet in a handful - and lives on the
+ * caller's stack, so the parse allocates nothing and holds no more
+ * than the window regardless of sheet size.
+ *
+ * Entry points that receive a caller-owned stream (cue_next_file,
+ * gdi_next_file) must leave the stream position exactly where
+ * byte-at-a-time tokenizing would have left it, because callers
+ * re-enter with the same handle and gdi_next_file keys off
+ * intfstream_tell().  cue_tok_detach() rewinds whatever the window
+ * read ahead before control returns to such callers. */
+
+#define CUE_TOK_BUF_LEN 1024
+
+typedef struct
+{
+   intfstream_t *fd;
+   size_t pos;              /* next unconsumed byte in buf         */
+   size_t end;              /* one past the last valid byte in buf */
+   bool fail;               /* underlying stream reported an error */
+   char buf[CUE_TOK_BUF_LEN];
+} cue_tok_stream_t;
+
+static void cue_tok_init(cue_tok_stream_t *t, intfstream_t *fd)
+{
+   t->fd   = fd;
+   t->pos  = 0;
+   t->end  = 0;
+   t->fail = false;
+}
+
+/* Returns 1 when bytes are available, 0 on EOF, -1 on stream error. */
+static int cue_tok_fill(cue_tok_stream_t *t)
+{
+   int64_t got;
+
+   if (t->fail)
+      return -1;
+
+   got = intfstream_read(t->fd, t->buf, CUE_TOK_BUF_LEN);
+   if (got < 0)
+   {
+      t->fail = true;
+      return -1;
+   }
+
+   t->pos = 0;
+   t->end = (size_t)got;
+   return (got == 0) ? 0 : 1;
+}
+
+/* Reposition the underlying stream on the first unconsumed byte so
+ * the caller-visible position matches unbuffered tokenizing.  Must
+ * be called before returning a caller-owned stream. */
+static void cue_tok_detach(cue_tok_stream_t *t)
+{
+   size_t ahead = t->end - t->pos;
+   if (ahead == 0 || t->fail)
+      return;
+   if (intfstream_seek(t->fd, -(int64_t)ahead, SEEK_CUR) >= 0)
+      t->pos = t->end;
+}
+
+static int64_t task_database_cue_get_token(cue_tok_stream_t *t, char *s,
    uint64_t len)
 {
-   char *c       = s;
    int64_t _len  = 0;
    int in_string = 0;
 
+   if (len < 2)
+      return -1;
+
    for (;;)
    {
-      int64_t rv = (int64_t)intfstream_read(fd, c, 1);
-      if (rv == 0)
-         return 0;
-      else if (rv < 0)
-         return -1;
+      char ch;
 
-      switch (*c)
+      if (t->pos == t->end)
+      {
+         int rv = cue_tok_fill(t);
+         if (rv < 0)
+            return -1;
+         /* EOF with a partial token accumulated discards the token,
+          * as the unbuffered tokenizer always has.  A sheet whose
+          * final line lacks a trailing newline loses its last token
+          * either way; changing that is a parsing-behavior decision,
+          * not an I/O one. */
+         if (rv == 0)
+            return 0;
+      }
+
+      ch = t->buf[t->pos++];
+
+      switch (ch)
       {
          case ' ':
          case '\t':
          case '\r':
          case '\n':
-            if (c == s)
+            if (_len == 0)
                continue;
 
             if (!in_string)
             {
-               *c = '\0';
+               s[_len] = '\0';
                return _len;
             }
             break;
          case '\"':
-            if (c == s)
+            if (_len == 0)
             {
                in_string = 1;
                continue;
             }
 
-            *c = '\0';
+            s[_len] = '\0';
             return _len;
       }
 
-      _len++;
-      c++;
-      if (_len == (int64_t)len)
+      s[_len++] = ch;
+      if (_len == (int64_t)len - 1)
       {
-         *c = '\0';
+         s[_len] = '\0';
          return _len;
       }
    }
@@ -691,7 +780,7 @@ size_t detect_gc_game(intfstream_t *fd, char *s, size_t len,
    will not match redump.**/
 
    /** insert prefix **/
-   _len = strlcpy(pre_game_id, "DL-DOL-", sizeof(pre_game_id));
+   _len = strlcpy_lit(pre_game_id, "DL-DOL-", sizeof(pre_game_id));
    /** add raw serial **/
    strlcpy(pre_game_id + _len, raw_game_id, sizeof(pre_game_id) - _len);
 
@@ -705,32 +794,32 @@ size_t detect_gc_game(intfstream_t *fd, char *s, size_t len,
    switch (region_id)
    {
       case 'E':
-         _len += strlcpy(s + _len, "-USA", len - _len);
+         _len += strlcpy_lit(s + _len, "-USA", len - _len);
          break;
       case 'J':
-         _len += strlcpy(s + _len, "-JPN", len - _len);
+         _len += strlcpy_lit(s + _len, "-JPN", len - _len);
          break;
       case 'P': /** NYI: P can also be P-UKV, P-AUS **/
       case 'X': /** NYI: X can also be X-UKV, X-EUU **/
-         _len += strlcpy(s + _len, "-EUR", len - _len);
+         _len += strlcpy_lit(s + _len, "-EUR", len - _len);
          break;
       case 'Y':
-         _len += strlcpy(s + _len, "-FAH", len - _len);
+         _len += strlcpy_lit(s + _len, "-FAH", len - _len);
          break;
       case 'D':
-         _len += strlcpy(s + _len, "-NOE", len - _len);
+         _len += strlcpy_lit(s + _len, "-NOE", len - _len);
          break;
       case 'S':
-         _len += strlcpy(s + _len, "-ESP", len - _len);
+         _len += strlcpy_lit(s + _len, "-ESP", len - _len);
          break;
       case 'F':
-         _len += strlcpy(s + _len, "-FRA", len - _len);
+         _len += strlcpy_lit(s + _len, "-FRA", len - _len);
          break;
       case 'I':
-         _len += strlcpy(s + _len, "-ITA", len - _len);
+         _len += strlcpy_lit(s + _len, "-ITA", len - _len);
          break;
       case 'H':
-         _len += strlcpy(s + _len, "-HOL", len - _len);
+         _len += strlcpy_lit(s + _len, "-HOL", len - _len);
          break;
       default:
          return 0;
@@ -1219,17 +1308,63 @@ int detect_system(intfstream_t *fd, const char **system_name,
    return 0;
 }
 
-static int64_t intfstream_get_file_size(const char *path)
+/* Open @path once and report its size through the same handle, so the
+ * handle can go on to serve the serial/CRC probe instead of being
+ * closed and the file re-opened.  Returns NULL with *file_size = -1
+ * when the file cannot be opened, matching the old
+ * open-for-size-and-close helper. */
+static intfstream_t *cue_track_stream_open(const char *path,
+      int64_t *file_size)
 {
-   int64_t rv;
    intfstream_t *fd = intfstream_open_file(path,
          RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
    if (!fd)
-      return -1;
-   rv = intfstream_get_size(fd);
+   {
+      *file_size = -1;
+      return NULL;
+   }
+   *file_size = intfstream_get_size(fd);
+   return fd;
+}
+
+static void cue_track_stream_close(intfstream_t *fd)
+{
+   if (!fd)
+      return;
    intfstream_close(fd);
    free(fd);
-   return rv;
+}
+
+/* The candidate data track just became last_file; move last_file's
+ * stream (if one is held) into the candidate slot so the caller's
+ * serial/CRC probe can run on it without a fresh open.
+ *
+ * Three states are possible at an adoption point:
+ *   - *cur_fd holds last_file's stream: hand it over.
+ *   - *cur_fd is NULL and *cur_transferred is set: an earlier
+ *     adoption already moved this same file's stream into *cand_fd;
+ *     nothing to do.
+ *   - *cur_fd is NULL and *cur_transferred is clear: last_file never
+ *     opened.  Whatever *cand_fd holds belongs to some earlier file,
+ *     so drop it rather than pair the wrong stream with the path. */
+static void cue_cand_adopt_stream(intfstream_t **cand_fd,
+      int64_t *cand_fsize, intfstream_t **cur_fd, int64_t cur_fsize,
+      bool *cur_transferred)
+{
+   if (*cur_fd)
+   {
+      cue_track_stream_close(*cand_fd);
+      *cand_fd         = *cur_fd;
+      *cand_fsize      = cur_fsize;
+      *cur_fd          = NULL;
+      *cur_transferred = true;
+   }
+   else if (!*cur_transferred)
+   {
+      cue_track_stream_close(*cand_fd);
+      *cand_fd    = NULL;
+      *cand_fsize = -1;
+   }
 }
 
 static bool update_cand(int64_t *cand_index, int64_t *last_index,
@@ -1238,7 +1373,16 @@ static bool update_cand(int64_t *cand_index, int64_t *last_index,
 {
    if (*cand_index != -1)
    {
-      if ((uint64_t)(*last_index - *cand_index) > *largest)
+      /* A well-formed sheet lists indices in ascending order, so the
+       * track span is last_index - cand_index.  A malformed or
+       * truncated sheet - e.g. one missing its final newline, which
+       * makes the tokenizer drop the last INDEX token - can leave
+       * last_index behind cand_index.  Signed subtraction then yields
+       * a negative span that would wrap to a huge size_t and drive a
+       * multi-exabyte staging malloc downstream, so treat any track
+       * whose index runs backwards as having no span. */
+      if (   *last_index >= *cand_index
+          && (uint64_t)(*last_index - *cand_index) > *largest)
       {
          size_t _len;
          *largest    = *last_index - *cand_index;
@@ -1253,15 +1397,26 @@ static bool update_cand(int64_t *cand_index, int64_t *last_index,
    return 0;
 }
 
-int cue_find_track(const char *cue_path, bool first,
-      uint64_t *offset, size_t *size, char *s, size_t len)
+/* When @track_fd is non-NULL, a successful return additionally hands
+ * back an open stream on the winning data track (or NULL if that file
+ * could not be opened during the parse) together with its size, so
+ * the caller's serial/CRC probe does not pay a second open of a file
+ * this parse already opened to learn its size. */
+static int cue_find_track_internal(const char *cue_path, bool first,
+      uint64_t *offset, size_t *size, char *s, size_t len,
+      intfstream_t **track_fd, int64_t *track_fsize)
 {
    int rv;
    intfstream_info_t info;
+   cue_tok_stream_t tok;
    char tmp_token[MAX_TOKEN_LEN];
    char last_file[PATH_MAX_LENGTH];
    char cue_dir[DIR_MAX_LENGTH];
    intfstream_t *fd           = NULL;
+   intfstream_t *cur_fd       = NULL; /* stream of last_file          */
+   intfstream_t *cand_fd      = NULL; /* stream of current candidate  */
+   int64_t cand_fsize         = -1;
+   bool cur_transferred       = false;
    int64_t last_index         = -1;
    int64_t cand_index         = -1;
    int32_t cand_track         = -1;
@@ -1291,11 +1446,13 @@ int cue_find_track(const char *cue_path, bool first,
    RARCH_LOG("[Scanner] Parsing CUE file \"%s\"...\n", cue_path);
 #endif
 
+   cue_tok_init(&tok, fd);
+
    tmp_token[0] = '\0';
 
    rv = -1;
 
-   while (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) > 0)
+   while (task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token)) > 0)
    {
       if (string_is_equal_noncase(tmp_token, "FILE"))
       {
@@ -1308,64 +1465,69 @@ int cue_find_track(const char *cue_path, bool first,
                   &largest, last_file, offset,
                   size, s, len))
          {
+            cue_cand_adopt_stream(&cand_fd, &cand_fsize,
+                  &cur_fd, file_size, &cur_transferred);
             rv = 0;
             if (first)
                goto clean;
          }
 
-         task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
+         task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token));
          fill_pathname_join_special(last_file, cue_dir,
                tmp_token, sizeof(last_file));
 
-         file_size = intfstream_get_file_size(last_file);
+         /* One open serves the size here, the CD-i magic probe below,
+          * and - if this file wins - the caller's serial/CRC pass. */
+         cue_track_stream_close(cur_fd);
+         {
+            int64_t sz      = -1;
+            cur_fd          = cue_track_stream_open(last_file, &sz);
+            file_size       = sz;
+         }
+         cur_transferred = false;
 
-         task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
+         task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token));
 
       }
       else if (string_is_equal_noncase(tmp_token, "TRACK"))
       {
-         task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
-         task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
+         task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token));
+         task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token));
          is_data = !string_is_equal_noncase(tmp_token, "AUDIO");
          ++track;
 
          /* Special case: CD-i stores data in AUDIO-labeled tracks */
-         /* Check if track 1 is AUDIO but contains CD-i magic bytes */
+         /* Check if track 1 is AUDIO but contains CD-i magic bytes.
+          * The FILE line above already opened this track; probe the
+          * magic through whichever slot currently holds that stream
+          * instead of opening the file again.  Later consumers seek
+          * before reading, so disturbing the position is fine. */
          if (!is_data && track == 1 && last_file[0] != '\0')
          {
             uint8_t magic_buf[12];
-            intfstream_info_t track_info;
-            intfstream_t *track_fd    = NULL;
             const uint8_t cdi_magic[] = {0x00, 0xff, 0xff, 0xff, 0xff,
             0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00};
+            intfstream_t *probe       = cur_fd
+                  ? cur_fd : (cur_transferred ? cand_fd : NULL);
 
-            track_info.type = INTFSTREAM_FILE;
-            if ((track_fd = (intfstream_t*)intfstream_init(&track_info)))
+            if (   probe
+                && intfstream_seek(probe, 0, SEEK_SET) >= 0
+                && intfstream_read(probe, magic_buf,
+                      sizeof(magic_buf)) == sizeof(magic_buf)
+                && memcmp(magic_buf, cdi_magic, sizeof(cdi_magic)) == 0)
             {
-               if (intfstream_open(track_fd, last_file,
-                     RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE))
-               {
-                  if (intfstream_read(track_fd, magic_buf, sizeof(magic_buf)) == sizeof(magic_buf))
-                  {
-                     if (memcmp(magic_buf, cdi_magic, sizeof(cdi_magic)) == 0)
-                     {
-                        is_data = true;  /* CD-i AUDIO track contains data */
+               is_data = true;  /* CD-i AUDIO track contains data */
 #ifdef DEBUG
-                        RARCH_LOG("[Scanner] Detected CD-i data in AUDIO track 1\n");
+               RARCH_LOG("[Scanner] Detected CD-i data in AUDIO track 1\n");
 #endif
-                     }
-                  }
-                  intfstream_close(track_fd);
-               }
-               free(track_fd);
             }
          }
       }
       else if (string_is_equal_noncase(tmp_token, "INDEX"))
       {
          int _m, _s, _f;
-         task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
-         task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
+         task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token));
+         task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token));
 
          {
             const char *ptr = tmp_token;
@@ -1409,6 +1571,8 @@ int cue_find_track(const char *cue_path, bool first,
                   last_file, offset,
                   size, s, len))
          {
+            cue_cand_adopt_stream(&cand_fd, &cand_fsize,
+                  &cur_fd, file_size, &cur_transferred);
             rv = 0;
             if (first)
                goto clean;
@@ -1429,11 +1593,23 @@ int cue_find_track(const char *cue_path, bool first,
    if (update_cand(&cand_index, &last_index,
             &largest, last_file, offset,
             size, s, len))
+   {
+      cue_cand_adopt_stream(&cand_fd, &cand_fsize,
+            &cur_fd, file_size, &cur_transferred);
       rv = 0;
+   }
 
 clean:
    intfstream_close(fd);
    free(fd);
+   cue_track_stream_close(cur_fd);
+   if (rv == 0 && track_fd)
+   {
+      *track_fd    = cand_fd;
+      *track_fsize = cand_fsize;
+   }
+   else
+      cue_track_stream_close(cand_fd);
    return rv;
 
 error:
@@ -1442,40 +1618,62 @@ error:
       intfstream_close(fd);
       free(fd);
    }
+   cue_track_stream_close(cur_fd);
+   cue_track_stream_close(cand_fd);
    return -1;
+}
+
+int cue_find_track(const char *cue_path, bool first,
+      uint64_t *offset, size_t *size, char *s, size_t len)
+{
+   return cue_find_track_internal(cue_path, first, offset, size,
+         s, len, NULL, NULL);
 }
 
 bool cue_next_file(intfstream_t *fd,
       const char *cue_path, char *s, uint64_t len)
 {
+   cue_tok_stream_t tok;
    char tmp_token[MAX_TOKEN_LEN];
 
    tmp_token[0] = '\0';
 
-   while (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) > 0)
+   cue_tok_init(&tok, fd);
+
+   while (task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token)) > 0)
    {
       if (string_is_equal_noncase(tmp_token, "FILE"))
       {
          char cue_dir[DIR_MAX_LENGTH];
          fill_pathname_basedir(cue_dir, cue_path, sizeof(cue_dir));
-         task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
+         task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token));
          fill_pathname_join_special(s, cue_dir, tmp_token, (size_t)len);
+         /* The caller re-enters with this stream; put it where the
+          * tokenizer logically stopped, not where the window read to. */
+         cue_tok_detach(&tok);
          return 1;
       }
    }
+   cue_tok_detach(&tok);
    return 0;
 }
 
-int gdi_find_track(const char *gdi_path, bool first, char *s, size_t len)
+/* As cue_find_track_internal(): a non-NULL @track_fd receives an open
+ * stream on the winning track plus its size on success. */
+static int gdi_find_track_internal(const char *gdi_path, bool first,
+      char *s, size_t len, intfstream_t **track_fd, int64_t *track_fsize)
 {
    intfstream_info_t info;
+   cue_tok_stream_t tok;
    char tmp_token[MAX_TOKEN_LEN];
-   intfstream_t *fd  = NULL;
-   uint64_t largest  = 0;
-   int rv            = -1;
-   int size          = -1;
-   int mode          = -1;
-   int64_t file_size = -1;
+   intfstream_t *fd      = NULL;
+   intfstream_t *cand_fd = NULL;
+   int64_t cand_fsize    = -1;
+   uint64_t largest      = 0;
+   int rv                = -1;
+   int size              = -1;
+   int mode              = -1;
+   int64_t file_size     = -1;
 
    info.type         = INTFSTREAM_FILE;
 
@@ -1495,32 +1693,34 @@ int gdi_find_track(const char *gdi_path, bool first, char *s, size_t len)
    RARCH_LOG("[Scanner] Parsing GDI file \"%s\"...\n", gdi_path);
 #endif
 
+   cue_tok_init(&tok, fd);
+
    tmp_token[0] = '\0';
 
    /* Skip track count */
-   task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
+   task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token));
 
    /* Track number */
-   while (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) > 0)
+   while (task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token)) > 0)
    {
       /* Offset */
-      if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
+      if (task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token)) <= 0)
          goto error;
 
       /* Mode */
-      if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
+      if (task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token)) <= 0)
          goto error;
 
       mode = atoi(tmp_token);
 
       /* Sector size */
-      if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
+      if (task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token)) <= 0)
          goto error;
 
       size = atoi(tmp_token);
 
       /* File name */
-      if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
+      if (task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token)) <= 0)
          goto error;
 
       /* Check for data track */
@@ -1528,12 +1728,15 @@ int gdi_find_track(const char *gdi_path, bool first, char *s, size_t len)
       {
          char last_file[PATH_MAX_LENGTH];
          char gdi_dir[DIR_MAX_LENGTH];
+         intfstream_t *this_fd = NULL;
 
          fill_pathname_basedir(gdi_dir, gdi_path, sizeof(gdi_dir));
          fill_pathname_join_special(last_file,
                gdi_dir, tmp_token, sizeof(last_file));
 
-         if ((file_size = intfstream_get_file_size(last_file)) < 0)
+         /* One open learns the size and, if this track wins, goes on
+          * to serve the caller's serial/CRC probe. */
+         if (!(this_fd = cue_track_stream_open(last_file, &file_size)))
             goto error;
 
          if ((uint64_t)file_size > largest)
@@ -1543,19 +1746,32 @@ int gdi_find_track(const char *gdi_path, bool first, char *s, size_t len)
             rv      = 0;
             largest = file_size;
 
+            cue_track_stream_close(cand_fd);
+            cand_fd    = this_fd;
+            cand_fsize = file_size;
+
             if (first)
                goto clean;
          }
+         else
+            cue_track_stream_close(this_fd);
       }
 
       /* Disc offset (not used?) */
-      if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) <= 0)
+      if (task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token)) <= 0)
          goto error;
    }
 
 clean:
    intfstream_close(fd);
    free(fd);
+   if (rv == 0 && track_fd)
+   {
+      *track_fd    = cand_fd;
+      *track_fsize = cand_fsize;
+   }
+   else
+      cue_track_stream_close(cand_fd);
    return rv;
 
 error:
@@ -1564,27 +1780,36 @@ error:
       intfstream_close(fd);
       free(fd);
    }
+   cue_track_stream_close(cand_fd);
    return -1;
+}
+
+int gdi_find_track(const char *gdi_path, bool first, char *s, size_t len)
+{
+   return gdi_find_track_internal(gdi_path, first, s, len, NULL, NULL);
 }
 
 size_t gdi_next_file(intfstream_t *fd, const char *gdi_path,
       char *s, size_t len)
 {
+   cue_tok_stream_t tok;
    char tmp_token[MAX_TOKEN_LEN];
 
    tmp_token[0]    = '\0';
 
+   cue_tok_init(&tok, fd);
+
    /* Skip initial track count */
    if (intfstream_tell(fd) == 0)
-      task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
+      task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token));
 
-   task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)); /* Track number */
-   task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)); /* Offset       */
-   task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)); /* Mode         */
-   task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)); /* Sector size  */
+   task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token)); /* Track number */
+   task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token)); /* Offset       */
+   task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token)); /* Mode         */
+   task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token)); /* Sector size  */
 
    /* File name */
-   if (task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token)) > 0)
+   if (task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token)) > 0)
    {
       size_t _len;
       char gdi_dir[DIR_MAX_LENGTH];
@@ -1592,9 +1817,13 @@ size_t gdi_next_file(intfstream_t *fd, const char *gdi_path,
       _len = fill_pathname_join_special(s, gdi_dir, tmp_token, len);
 
       /* Disc offset */
-      task_database_cue_get_token(fd, tmp_token, sizeof(tmp_token));
+      task_database_cue_get_token(&tok, tmp_token, sizeof(tmp_token));
+      /* Caller re-enters with this stream and keys the header skip
+       * off intfstream_tell(); rewind the window's lookahead. */
+      cue_tok_detach(&tok);
       return _len;
    }
+   cue_tok_detach(&tok);
    return 0;
 }
 
@@ -1668,81 +1897,111 @@ int intfstream_get_serial(intfstream_t *fd, char *s, size_t len,
    return 0;
 }
 
-bool intfstream_file_get_serial(const char *name,
-      uint64_t offset, int64_t size, char *s, size_t len, uint64_t *fsize)
+/* Serial probe over an already-open stream.  @file_size may be passed
+ * in when the caller learned it at open time (the cue/GDI parse
+ * does); -1 means measure it here.  The stream is left open for the
+ * caller and its position is unspecified on return. */
+static bool intfstream_file_get_serial_fd(intfstream_t *fd,
+      int64_t file_size, uint64_t offset, int64_t size,
+      char *s, size_t len, const char *name, uint64_t *fsize)
 {
    int rv;
-   uint8_t *data     = NULL;
-   int64_t file_size = -1;
-   intfstream_t *fd  = intfstream_open_file(name,
-         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-   if (!fd)
-      return 0;
-
-   if (intfstream_seek(fd, 0, SEEK_END) == -1)
-      goto error;
-
-   file_size = intfstream_tell(fd);
-   *fsize = file_size;
-
-   if (intfstream_seek(fd, 0, SEEK_SET) == -1)
-      goto error;
+   uint8_t *data = NULL;
 
    if (file_size < 0)
-      goto error;
+   {
+      if (intfstream_seek(fd, 0, SEEK_END) == -1)
+         return false;
+      file_size = intfstream_tell(fd);
+   }
+
+   if (fsize)
+      *fsize = (uint64_t)file_size;
+
+   if (file_size < 0)
+      return false;
+
+   if (intfstream_seek(fd, 0, SEEK_SET) == -1)
+      return false;
 
    if (offset != 0 || size < file_size)
    {
+      /* A bounded span is a data track inside a larger image.  Every
+       * serial/system detector resolves within the first 600000
+       * bytes of the track (DISC_DATA_SIZE_PS2 is the largest probe,
+       * 0x9320 the deepest magic-number offset), so stage at most
+       * that much.  Tracks shorter than the cap stage what exists; a
+       * detector seeking or reading past the window's end sees a
+       * short read, the same as on a short track. */
+      intfstream_t *mem = NULL;
+
+      if (size > SERIAL_PROBE_SPAN)
+         size = SERIAL_PROBE_SPAN;
+
       if (intfstream_seek(fd, (int64_t)offset, SEEK_SET) == -1)
-         goto error;
+         return false;
 
       data = (uint8_t*)malloc(size);
       /* NULL-check: intfstream_read below would NULL-deref on
        * OOM via filestream_read's fread. */
       if (!data)
-         goto error;
+         return false;
 
       if (intfstream_read(fd, data, size) != (int64_t) size)
       {
          free(data);
-         goto error;
+         return false;
       }
 
-      intfstream_close(fd);
-      free(fd);
-      if (!(fd = intfstream_open_memory(data, RETRO_VFS_FILE_ACCESS_READ,
+      if (!(mem = intfstream_open_memory(data, RETRO_VFS_FILE_ACCESS_READ,
             RETRO_VFS_FILE_ACCESS_HINT_NONE,
             size)))
       {
          free(data);
-         return 0;
+         return false;
       }
+
+      rv = intfstream_get_serial(mem, s, len, name);
+      intfstream_close(mem);
+      free(mem);
+      free(data);
+      return rv != 0;
    }
 
    rv = intfstream_get_serial(fd, s, len, name);
-   intfstream_close(fd);
-   free(fd);
-   free(data);
-   return rv;
+   return rv != 0;
+}
 
-error:
+bool intfstream_file_get_serial(const char *name,
+      uint64_t offset, int64_t size, char *s, size_t len, uint64_t *fsize)
+{
+   bool rv;
+   intfstream_t *fd = intfstream_open_file(name,
+         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   if (!fd)
+      return false;
+
+   rv = intfstream_file_get_serial_fd(fd, -1, offset, size,
+         s, len, name, fsize);
    intfstream_close(fd);
    free(fd);
-   return 0;
+   return rv;
 }
 
 int task_database_cue_get_serial(const char *name, char *s, size_t len,
    uint64_t *filesize)
 {
    char track_path[PATH_MAX_LENGTH];
-   uint64_t offset  = 0;
-   size_t _len      = 0;
+   uint64_t offset     = 0;
+   size_t _len         = 0;
+   intfstream_t *track = NULL;
+   int64_t track_fsize = -1;
 
-   track_path[0]    = '\0';
+   track_path[0]       = '\0';
 
-   if (cue_find_track(name, true, &offset, &_len,
-         track_path, sizeof(track_path)) < 0)
+   if (cue_find_track_internal(name, true, &offset, &_len,
+         track_path, sizeof(track_path), &track, &track_fsize) < 0)
    {
 #ifdef DEBUG
       RARCH_LOG("[Scanner] %s\n",
@@ -1751,6 +2010,16 @@ int task_database_cue_get_serial(const char *name, char *s, size_t len,
       return 0;
    }
 
+   if (track)
+   {
+      int rv = intfstream_file_get_serial_fd(track, track_fsize,
+            offset, _len, s, len, track_path, filesize);
+      cue_track_stream_close(track);
+      return rv;
+   }
+
+   /* The parse could not open the winning track, so no stream was
+    * retained; the by-path probe fails the same way it always has. */
    return intfstream_file_get_serial(track_path, offset, _len, s, len,
    filesize);
 }
@@ -1759,17 +2028,27 @@ int task_database_gdi_get_serial(const char *name, char *s, size_t len,
    uint64_t *filesize)
 {
    char track_path[PATH_MAX_LENGTH];
+   intfstream_t *track = NULL;
+   int64_t track_fsize = -1;
 
-   track_path[0] = '\0';
+   track_path[0]       = '\0';
 
-   if (gdi_find_track(name, true,
-               track_path, sizeof(track_path)) < 0)
+   if (gdi_find_track_internal(name, true,
+               track_path, sizeof(track_path), &track, &track_fsize) < 0)
    {
 #ifdef DEBUG
       RARCH_LOG("[Scanner] %s\n",
             msg_hash_to_str(MSG_COULD_NOT_FIND_VALID_DATA_TRACK));
 #endif
       return 0;
+   }
+
+   if (track)
+   {
+      int rv = intfstream_file_get_serial_fd(track, track_fsize,
+            0, INT64_MAX, s, len, track_path, filesize);
+      cue_track_stream_close(track);
+      return rv;
    }
 
    return intfstream_file_get_serial(track_path, 0, INT64_MAX, s, len,
@@ -1857,29 +2136,31 @@ int task_database_chd_get_serial(const char *name, char *serial,
    return result;
 }
 
-bool intfstream_file_get_crc_and_size(const char *name,
-      uint64_t offset, int64_t len, uint32_t *crc, uint64_t *size)
+/* CRC over an already-open stream; @file_size as in
+ * intfstream_file_get_serial_fd().  The stream is left open for the
+ * caller and its position is unspecified on return. */
+static bool intfstream_file_get_crc_and_size_fd(intfstream_t *fd,
+      int64_t file_size, uint64_t offset, int64_t len,
+      uint32_t *crc, uint64_t *size)
 {
    bool rv;
-   intfstream_t *fd  = intfstream_open_file(name,
-         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
-   uint8_t *data     = NULL;
-   int64_t file_size = -1;
-
-   if (!fd)
-      return 0;
-
-   if (intfstream_seek(fd, 0, SEEK_END) == -1)
-      goto error;
-
-   file_size = intfstream_tell(fd);
-   *size = file_size;
-
-   if (intfstream_seek(fd, 0, SEEK_SET) == -1)
-      goto error;
+   uint8_t *data = NULL;
 
    if (file_size < 0)
-      goto error;
+   {
+      if (intfstream_seek(fd, 0, SEEK_END) == -1)
+         return false;
+      file_size = intfstream_tell(fd);
+   }
+
+   if (size)
+      *size = (uint64_t)file_size;
+
+   if (file_size < 0)
+      return false;
+
+   if (intfstream_seek(fd, 0, SEEK_SET) == -1)
+      return false;
 
    if (offset != 0 || len < file_size)
    {
@@ -1895,10 +2176,10 @@ bool intfstream_file_get_crc_and_size(const char *name,
       size_t   buffer_len  = 256 * 1024;
 
       if (intfstream_seek(fd, (int64_t)offset, SEEK_SET) == -1)
-         goto error;
+         return false;
 
       if (!(data = (uint8_t*)malloc(buffer_len)))
-         goto error;
+         return false;
 
       while (remaining > 0)
       {
@@ -1906,45 +2187,54 @@ bool intfstream_file_get_crc_and_size(const char *name,
                ? remaining : (int64_t)buffer_len;
 
          if (intfstream_read(fd, data, want) != want)
-            goto error;
+         {
+            free(data);
+            return false;
+         }
 
          accumulator = encoding_crc32(accumulator, data, (size_t)want);
          remaining  -= want;
       }
 
+      free(data);
       *crc = accumulator;
-      rv   = true;
+      return true;
    }
-   else
-      rv = intfstream_get_crc(fd, crc);
 
+   rv = intfstream_get_crc(fd, crc);
+   return rv;
+}
+
+bool intfstream_file_get_crc_and_size(const char *name,
+      uint64_t offset, int64_t len, uint32_t *crc, uint64_t *size)
+{
+   bool rv;
+   intfstream_t *fd = intfstream_open_file(name,
+         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+   if (!fd)
+      return false;
+
+   rv = intfstream_file_get_crc_and_size_fd(fd, -1, offset, len,
+         crc, size);
    intfstream_close(fd);
    free(fd);
-   free(data);
    return rv;
-
-error:
-   if (fd)
-   {
-      intfstream_close(fd);
-      free(fd);
-   }
-   if (data)
-      free(data);
-   return 0;
 }
 
 int task_database_cue_get_crc_and_size(const char *name, uint32_t *crc,
    uint64_t *size)
 {
    char track_path[PATH_MAX_LENGTH];
-   uint64_t offset  = 0;
-   size_t _len      = 0;
+   uint64_t offset     = 0;
+   size_t _len         = 0;
+   intfstream_t *track = NULL;
+   int64_t track_fsize = -1;
 
-   track_path[0]    = '\0';
+   track_path[0]       = '\0';
 
-   if (cue_find_track(name, false, &offset, &_len,
-         track_path, sizeof(track_path)) < 0)
+   if (cue_find_track_internal(name, false, &offset, &_len,
+         track_path, sizeof(track_path), &track, &track_fsize) < 0)
    {
 #ifdef DEBUG
       RARCH_LOG("[Scanner] %s\n",
@@ -1952,6 +2242,15 @@ int task_database_cue_get_crc_and_size(const char *name, uint32_t *crc,
 #endif
       return 0;
    }
+
+   if (track)
+   {
+      int rv = intfstream_file_get_crc_and_size_fd(track, track_fsize,
+            offset, _len, crc, size);
+      cue_track_stream_close(track);
+      return rv;
+   }
+
    return intfstream_file_get_crc_and_size(track_path, offset,
    _len, crc, size);
 }
@@ -1960,11 +2259,13 @@ int task_database_gdi_get_crc_and_size(const char *name, uint32_t *crc,
    uint64_t *size)
 {
    char track_path[PATH_MAX_LENGTH];
+   intfstream_t *track = NULL;
+   int64_t track_fsize = -1;
 
-   track_path[0] = '\0';
+   track_path[0]       = '\0';
 
-   if (gdi_find_track(name, false,
-       track_path, sizeof(track_path)) < 0)
+   if (gdi_find_track_internal(name, false,
+       track_path, sizeof(track_path), &track, &track_fsize) < 0)
    {
 #ifdef DEBUG
       RARCH_LOG("[Scanner] %s\n",
@@ -1972,6 +2273,15 @@ int task_database_gdi_get_crc_and_size(const char *name, uint32_t *crc,
 #endif
       return 0;
    }
+
+   if (track)
+   {
+      int rv = intfstream_file_get_crc_and_size_fd(track, track_fsize,
+            0, INT64_MAX, crc, size);
+      cue_track_stream_close(track);
+      return rv;
+   }
+
    return intfstream_file_get_crc_and_size(track_path, 0, INT64_MAX, crc, size);
 }
 

@@ -176,7 +176,19 @@ static void frontend_gx_get_env(int *argc, char *argv[],
 #endif
 
 #ifdef HW_DOL
-   chdir("carda:/retroarch");
+   /* If the loader provided a usable argv[0] (e.g. Swiss),
+    * fatInitDefault() has already chdir()'d to the directory
+    * RetroArch was launched from, and the defaults derived from
+    * getcwd() below must be rooted there. Only fall back to a
+    * fixed location when no launch path is available, preferring
+    * the Serial Port 2 SD adapter mount ("sd": SD2SP2 and
+    * similar devices) over an SD Gecko in slot A, mirroring
+    * libfat's own device priority. */
+   if (*argc < 1 || !argv || !argv[0] || !strstr(argv[0], ":/"))
+   {
+      if (chdir("sd:/retroarch") != 0)
+         chdir("carda:/retroarch");
+   }
 #endif
 
    getcwd(g_defaults.dirs[DEFAULT_DIR_CORE],
@@ -219,7 +231,7 @@ static void frontend_gx_get_env(int *argc, char *argv[],
          if (     string_starts_with_size(argv[0], "usb1", STRLEN_CONST("usb1"))
                || string_starts_with_size(argv[0], "usb2", STRLEN_CONST("usb2")))
          {
-            size_t _len = strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE], "usb",
+            size_t _len = strlcpy_lit(g_defaults.dirs[DEFAULT_DIR_CORE], "usb",
                   sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
             strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE]       + _len,
                   argv[0] + 4,
@@ -538,6 +550,16 @@ static int frontend_gx_parse_drive_list(void *data, bool load_content)
          msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
          enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0, NULL);
+#elif defined(EXTERNAL_LIBOGC)
+   /* Modern libfat mounts a Serial Port 2 SD adapter
+    * (SD2SP2 and similar devices) as "sd" on GameCube.
+    * The internal (vendored) libogc has no SP2 driver,
+    * hence the EXTERNAL_LIBOGC guard. */
+   menu_entries_append(list,
+         "sd:/",
+         msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
+         enum_idx,
+         FILE_TYPE_DIRECTORY, 0, 0, NULL);
 #endif
    menu_entries_append(list,
          "carda:/",
@@ -588,8 +610,6 @@ frontend_ctx_driver_t frontend_ctx_gx = {
    NULL,                            /* detach_console */
    NULL,                            /* get_lakka_version */
    NULL,                            /* set_screen_brightness */
-   NULL,                            /* watch_path_for_changes */
-   NULL,                            /* check_for_path_changes */
    NULL,                            /* set_sustained_performance_mode */
    NULL,                            /* get_cpu_model_name  */
    NULL,                            /* get_user_language   */

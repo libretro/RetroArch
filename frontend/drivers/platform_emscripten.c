@@ -72,6 +72,7 @@
 #endif
 
 #include "platform_emscripten.h"
+#include <compat/strl.h>
 
 void emscripten_mainloop(void);
 
@@ -618,32 +619,32 @@ static void frontend_emscripten_get_env(int *argc, char *argv[],
    if (home)
    {
       size_t _len = strlcpy(base_path, home, sizeof(base_path));
-      strlcpy(base_path + _len, "/retroarch", sizeof(base_path) - _len);
+      strlcpy_lit(base_path + _len, "/retroarch", sizeof(base_path) - _len);
 #ifndef HAVE_EXTRA_WASMFS
       /* can be removed when the new web player replaces the old one */
       _len = strlcpy(user_path, home, sizeof(user_path));
-      strlcpy(user_path + _len,
+      strlcpy_lit(user_path + _len,
          "/retroarch/userdata", sizeof(user_path) - _len);
       _len = strlcpy(bundle_path, home, sizeof(bundle_path));
-      strlcpy(bundle_path + _len,
+      strlcpy_lit(bundle_path + _len,
          "/retroarch/bundle", sizeof(bundle_path) - _len);
 #else
       _len = strlcpy(user_path, home, sizeof(user_path));
-      strlcpy(user_path + _len, "/retroarch", sizeof(user_path) - _len);
+      strlcpy_lit(user_path + _len, "/retroarch", sizeof(user_path) - _len);
       _len = strlcpy(bundle_path, home, sizeof(bundle_path));
-      strlcpy(bundle_path + _len, "/retroarch", sizeof(bundle_path) - _len);
+      strlcpy_lit(bundle_path + _len, "/retroarch", sizeof(bundle_path) - _len);
 #endif
    }
    else
    {
-      strlcpy(base_path, "retroarch", sizeof(base_path));
+      strlcpy_lit(base_path, "retroarch", sizeof(base_path));
 #ifndef HAVE_EXTRA_WASMFS
       /* can be removed when the new web player replaces the old one */
-      strlcpy(user_path, "retroarch/userdata", sizeof(user_path));
-      strlcpy(bundle_path, "retroarch/bundle", sizeof(bundle_path));
+      strlcpy_lit(user_path, "retroarch/userdata", sizeof(user_path));
+      strlcpy_lit(bundle_path, "retroarch/bundle", sizeof(bundle_path));
 #else
-      strlcpy(user_path, "retroarch", sizeof(user_path));
-      strlcpy(bundle_path, "retroarch", sizeof(bundle_path));
+      strlcpy_lit(user_path, "retroarch", sizeof(user_path));
+      strlcpy_lit(bundle_path, "retroarch", sizeof(bundle_path));
 #endif
    }
 
@@ -1125,8 +1126,6 @@ frontend_ctx_driver_t frontend_ctx_emscripten = {
    NULL,                                /* detach_console */
    NULL,                                /* get_lakka_version */
    NULL,                                /* set_screen_brightness */
-   NULL,                                /* watch_path_for_changes */
-   NULL,                                /* check_for_path_changes */
    NULL,                                /* set_sustained_performance_mode */
    NULL,                                /* get_cpu_model_name */
    NULL,                                /* get_user_language */

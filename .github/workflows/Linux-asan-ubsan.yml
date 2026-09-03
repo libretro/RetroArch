@@ -21,8 +21,10 @@ name: CI Linux ASan + UBSan [No Menu]
 #      surfaced in step output for triage.
 #
 # The per-sample tests under .github/workflows/Linux-samples-gfx.yml,
-# Linux-samples-tasks.yml, and Linux-libretro-{db,common}-samples.yml
-# regression-test specific predicates that previously had bugs.  This
+# Linux-samples-tasks.yml, Linux-samples-audio.yml,
+# Linux-samples-network.yml, Linux-samples-settings.yml, and
+# Linux-libretro-{db,common}-samples.yml regression-test specific
+# predicates that previously had bugs.  This
 # job is complementary -- it covers everything those harnesses can't
 # reach because the code only runs from main(), and catches future
 # heap-corruption / UB regressions across the whole code base for
@@ -66,17 +68,22 @@ jobs:
         # comment for why SDL2 over xvideo.  No sanitizer-specific
         # packages required; libasan / libubsan ship with the gcc
         # that ubuntu-latest has installed by default.
+        timeout-minutes: 5
         run: |
-          sudo apt-get update -y
+          pkgs="build-essential libxkbcommon-dev libx11-xcb-dev xvfb x11-utils zlib1g-dev libfreetype6-dev libegl1-mesa-dev libgles2-mesa-dev libgbm-dev nvidia-cg-toolkit nvidia-cg-dev libavcodec-dev libsdl2-dev libsdl-image1.2-dev libxml2-dev yasm"
+          if dpkg -s $pkgs >/dev/null 2>&1; then
+            echo "All packages already present on runner image; skipping apt."
+            exit 0
+          fi
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
           sudo apt-get install -y \
-            build-essential \
-            libxkbcommon-dev libx11-xcb-dev \
-            xvfb x11-utils \
-            zlib1g-dev libfreetype6-dev \
-            libegl1-mesa-dev libgles2-mesa-dev libgbm-dev \
-            nvidia-cg-toolkit nvidia-cg-dev \
-            libavcodec-dev libsdl2-dev libsdl-image1.2-dev \
-            libxml2-dev yasm
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
 
       - name: Checkout
         uses: actions/checkout@v3

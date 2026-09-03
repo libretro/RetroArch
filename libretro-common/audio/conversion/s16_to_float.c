@@ -29,7 +29,7 @@
 #include <features/features_cpu.h>
 #include <audio/conversion/s16_to_float.h>
 
-#if (defined(__ARM_NEON__) || defined(HAVE_NEON))
+#if (defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(HAVE_NEON))
 static bool s16_to_float_neon_enabled = false;
 
 #ifdef HAVE_ARM_NEON_ASM_OPTIMIZATIONS

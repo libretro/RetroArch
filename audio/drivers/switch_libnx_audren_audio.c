@@ -82,9 +82,23 @@ static void *libnx_audren_audio_init(
    RARCH_LOG("[Audren] real_latency is %u.\n", real_latency);
 
    aud->nonblock     = !block_frames;
-   aud->buffer_size  = (real_latency * sample_rate / 1000);
+   /* The latency setting is split across the BUFFER_COUNT wave buffers
+    * the renderer plays in turn, so that the buffers together hold the
+    * setting and rate control - which sees the total, below - holds it
+    * half full. Each buffer is sized in bytes of int16 stereo, a whole
+    * number of frames. It used to be sized in frames of the whole
+    * setting used as bytes: a quarter of the setting per buffer, five
+    * of them in flight, and one of them reported. */
+   aud->buffer_size  = ((size_t)real_latency * sample_rate / 1000)
+         * num_channels * sizeof(int16_t) / BUFFER_COUNT;
+   aud->buffer_size -= aud->buffer_size % (num_channels * sizeof(int16_t));
+   if (aud->buffer_size < 64 * num_channels * sizeof(int16_t))
+      aud->buffer_size = 64 * num_channels * sizeof(int16_t);
    aud->samples      = (aud->buffer_size / num_channels / sizeof(int16_t));
    aud->current_size = 0;
+   RARCH_LOG("[Audren] %u ms as %u wave buffers of %u frames (%u ms each).\n",
+         real_latency, (unsigned)BUFFER_COUNT, (unsigned)aud->samples,
+         (unsigned)(aud->samples * 1000 / sample_rate));
    *new_rate         = sample_rate;
 
    mempool_size      = (aud->buffer_size * BUFFER_COUNT + (AUDREN_MEMPOOL_ALIGNMENT-1)) &~ (AUDREN_MEMPOOL_ALIGNMENT-1);
@@ -160,6 +174,36 @@ fail:
    return NULL;
 }
 
+/* Free wave buffers, in bytes, plus what is left of the one being
+ * filled: the room the driver has across all its stages. States are
+ * brought up to date first, as the renderer only reports a finished
+ * buffer on an update. */
+static size_t libnx_audren_audio_room(libnx_audren_t *aud)
+{
+   size_t   free_bufs = 0;
+   unsigned i;
+
+   mutexLock(&aud->update_lock);
+   audrvUpdate(&aud->drv);
+   mutexUnlock(&aud->update_lock);
+
+   for (i = 0; i < BUFFER_COUNT; i++)
+      if (     aud->wavebufs[i].state == AudioDriverWaveBufState_Free
+            || aud->wavebufs[i].state == AudioDriverWaveBufState_Done)
+         free_bufs++;
+
+   /* The one being filled is still in the free state; it is counted
+    * by what is left of it, not as a whole. */
+   if (aud->current_wavebuf)
+   {
+      if (free_bufs)
+         free_bufs--;
+      return free_bufs * aud->buffer_size
+            + (aud->buffer_size - aud->current_size);
+   }
+   return free_bufs * aud->buffer_size;
+}
+
 static size_t libnx_audren_audio_buffer_size(void *data)
 {
    libnx_audren_t *aud = (libnx_audren_t*)data;
@@ -167,7 +211,9 @@ static size_t libnx_audren_audio_buffer_size(void *data)
    if (!aud)
       return 0;
 
-   return aud->buffer_size;
+   /* All the buffers: the most the driver holds between write() and
+    * the renderer consuming it. */
+   return aud->buffer_size * BUFFER_COUNT;
 }
 
 static ssize_t libnx_audren_audio_get_free_wavebuf_idx(libnx_audren_t* aud)
@@ -328,17 +374,38 @@ static bool libnx_audren_audio_use_float(void *data)
    return false; /* force S16 */
 }
 
+/* Waits, a renderer frame at a time, until the wave buffer being
+ * filled has room or a free wave buffer exists for the next append to
+ * take. Returns the room then, or 0 on error. A whole wave buffer is
+ * at least a frame of audio, so progress does not depend on len. */
+static size_t libnx_audren_audio_wait_writable(void *data, size_t len)
+{
+   libnx_audren_t *aud = (libnx_audren_t*)data;
+
+   if (!aud)
+      return 0;
+   /* Capped at half the buffers, so the wait always has an end within
+    * a playing renderer's reach. */
+   if (len > aud->buffer_size * BUFFER_COUNT / 2)
+      len = aud->buffer_size * BUFFER_COUNT / 2;
+
+   for (;;)
+   {
+      size_t room = libnx_audren_audio_room(aud);
+      if (room >= len)
+         return room;
+      audrenWaitFrame();
+   }
+}
+
 static size_t libnx_audren_audio_write_avail(void *data)
 {
    libnx_audren_t *aud = (libnx_audren_t*)data;
-   size_t avail;
 
-   if (!aud || !aud->current_wavebuf)
+   if (!aud)
       return 0;
 
-   avail = aud->buffer_size - aud->current_size;
-
-   return avail;
+   return libnx_audren_audio_room(aud);
 }
 
 static void libnx_audren_audio_set_nonblock_state(void *data, bool state)
@@ -365,5 +432,6 @@ audio_driver_t audio_switch_libnx_audren = {
    NULL, /* device_list_free */
    libnx_audren_audio_write_avail,
    libnx_audren_audio_buffer_size,
-   NULL  /* write_raw */
+   NULL, /* write_raw */
+   libnx_audren_audio_wait_writable
 };

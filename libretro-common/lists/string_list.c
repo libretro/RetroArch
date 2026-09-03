@@ -195,11 +195,35 @@ void string_list_join_concat(char *s, size_t len,
    if (_len < len)
    {
       size_t i;
+      size_t dlen = strlen(delim);
+
       for (i = 0; i < list->size; i++)
       {
+         /* strlcpy() reports the length it was handed rather than the
+          * length it wrote, so an append that truncates would carry
+          * _len past len and leave every later len - _len wrapping to
+          * a very large size_t with s + _len already past the end.
+          * Fill what is left and stop instead. */
+         size_t elen = strlen(list->elems[i].data);
+
+         if (_len + elen >= len)
+         {
+            strlcpy(s + _len, list->elems[i].data, len - _len);
+            break;
+         }
+
          _len += strlcpy(s + _len, list->elems[i].data, len - _len);
+
          if ((i + 1) < list->size)
+         {
+            if (_len + dlen >= len)
+            {
+               strlcpy(s + _len, delim, len - _len);
+               break;
+            }
+
             _len += strlcpy(s + _len, delim, len - _len);
+         }
       }
    }
 }
@@ -207,13 +231,39 @@ void string_list_join_concat(char *s, size_t len,
 void string_list_join_concat_special(char *s, size_t len,
       const struct string_list *list, const char *delim)
 {
-   size_t i;
    size_t _len = strlen(s);
-   for (i = 0; i < list->size; i++)
+
+   /* As in string_list_join_concat() above: @s already being full
+    * leaves nothing to add, and an append is made only once it is
+    * known to fit. */
+   if (_len < len)
    {
-      _len += strlcpy(s + _len, list->elems[i].data, len - _len);
-      if ((i + 1) < list->size)
-         _len += strlcpy(s + _len, delim, len - _len);
+      size_t i;
+      size_t dlen = strlen(delim);
+
+      for (i = 0; i < list->size; i++)
+      {
+         size_t elen = strlen(list->elems[i].data);
+
+         if (_len + elen >= len)
+         {
+            strlcpy(s + _len, list->elems[i].data, len - _len);
+            break;
+         }
+
+         _len += strlcpy(s + _len, list->elems[i].data, len - _len);
+
+         if ((i + 1) < list->size)
+         {
+            if (_len + dlen >= len)
+            {
+               strlcpy(s + _len, delim, len - _len);
+               break;
+            }
+
+            _len += strlcpy(s + _len, delim, len - _len);
+         }
+      }
    }
 }
 

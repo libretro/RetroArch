@@ -597,3 +597,37 @@ long long int be64toh(long long int x)
   return val;
 }
 #endif /* NEED_BE64TOH */
+
+/* Winsock scatter/gather shims. These used to be defined inline in
+ * compat.h, which meant every translation unit that pulled the header in
+ * got its own unused copy. Only socket.c calls them, so the definitions
+ * live here and the header just declares them.
+ */
+#if defined(_XBOX) || defined(_WINDOWS) || defined(__MINGW32__)
+#ifndef __USE_WINSOCK__
+
+int writev(t_socket sock, struct iovec *iov, int nvecs)
+{
+        DWORD ret;
+        int res = WSASend(sock, (LPWSABUF)iov, nvecs, &ret, 0, NULL, NULL);
+
+        if (res == 0) {
+                return (int)ret;
+        }
+        return -1;
+}
+
+int readv(t_socket sock, struct iovec *iov, int nvecs)
+{
+        DWORD ret;
+        DWORD flags = 0;
+        int res = WSARecv(sock, (LPWSABUF)iov, nvecs, &ret, &flags, NULL, NULL);
+
+        if (res == 0) {
+                return (int)ret;
+        }
+        return -1;
+}
+
+#endif /* !__USE_WINSOCK__ */
+#endif /* _XBOX || _WINDOWS || __MINGW32__ */

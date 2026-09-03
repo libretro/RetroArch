@@ -23,21 +23,10 @@
 #define _GNU_SOURCE
 #endif
 
-#ifdef HAVE_STDINT_H
 #include <stdint.h>
-#endif
-
-#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#endif
-
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif
-
-#ifdef STDC_HEADERS
 #include <stddef.h>
-#endif
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -47,7 +36,9 @@
 #include <sys/stat.h>
 #endif
 
-#ifdef HAVE_UNISTD_H
+#ifdef _WIN32
+#include <direct.h>
+#else
 #include <unistd.h>
 #endif
 
@@ -67,9 +58,12 @@
 #include "libsmb2-raw.h"
 #include "libsmb2-private.h"
 
-#define container_of(ptr, type, member) ({                      \
-        const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
-        (type *)(void *)( (char *)__mptr - offsetof(type,member) );})
+/* Statement expressions and typeof are GNU extensions; the plain
+ * pointer arithmetic below is what the _MSC_VER path already did
+ * by hand and is valid C89 everywhere.
+ */
+#define container_of(ptr, type, member) \
+        ((type *)(void *)((char *)(ptr) - offsetof(type, member)))
 
 struct dcerpc_deferred_pointer {
         dcerpc_coder coder;
@@ -130,11 +124,11 @@ struct dcerpc_bind_pdu {
 
         /* presentation context list */
         uint8_t          n_context_elem;      /* number of items */
-        //u_int8          reserved;            /* alignment pad, m.b.z. */
-        //u_short         reserved2;           /* alignment pad, m.b.z. */
+        /*u_int8          reserved;            / * alignment pad, m.b.z. * / */
+        /*u_short         reserved2;           / * alignment pad, m.b.z. * / */
         struct p_cont_elem_t *p_cont_elem;
-        //p_cont_elem_t [size_is(n_cont_elem)] p_cont_elem[];
-        //p_syntax_id_t *abstract_syntax;
+        /*p_cont_elem_t [size_is(n_cont_elem)] p_cont_elem[]; */
+        /*p_syntax_id_t *abstract_syntax; */
 };
 
 #define ACK_RESULT_ACCEPTANCE         0
@@ -238,7 +232,7 @@ struct dcerpc_pdu {
                 struct dcerpc_bind_ack_pdu bind_ack;
                 struct dcerpc_request_pdu req;
                 struct dcerpc_response_pdu rsp;
-        };
+        } u;
 
         /* optional authentication verifier */
         /* following fields present iff auth_length != 0 */
@@ -1234,35 +1228,35 @@ dcerpc_bind_coder(struct dcerpc_context *ctx,
         }
         *offset += 3;
 
-        //qqq TODO allocate p_cont_elem on decode
+        /*qqq TODO allocate p_cont_elem on decode */
         for (i = 0; i < bind->n_context_elem; i++) {
-                if (dcerpc_uint16_coder(ctx, pdu, iov, offset, &pdu->bind.p_cont_elem[i].p_cont_id)) {
+                if (dcerpc_uint16_coder(ctx, pdu, iov, offset, &pdu->u.bind.p_cont_elem[i].p_cont_id)) {
                         return -1;
                 }
-                if (dcerpc_uint8_coder(ctx, pdu, iov, offset, &pdu->bind.p_cont_elem[i].n_transfer_syn)) {
+                if (dcerpc_uint8_coder(ctx, pdu, iov, offset, &pdu->u.bind.p_cont_elem[i].n_transfer_syn)) {
                         return -1;
                 }
                 *offset += 1;
                 /* Abstract Syntax */
-                //qqq TODO allocate abstract_syntax on decode
-                if (dcerpc_uuid_coder(ctx, pdu, iov, offset, &pdu->bind.p_cont_elem[i].abstract_syntax->uuid)) {
+                /*qqq TODO allocate abstract_syntax on decode */
+                if (dcerpc_uuid_coder(ctx, pdu, iov, offset, &pdu->u.bind.p_cont_elem[i].abstract_syntax->uuid)) {
                         return -1;
                 }
-                if (dcerpc_uint16_coder(ctx, pdu, iov, offset, &pdu->bind.p_cont_elem[i].abstract_syntax->vers)) {
+                if (dcerpc_uint16_coder(ctx, pdu, iov, offset, &pdu->u.bind.p_cont_elem[i].abstract_syntax->vers)) {
                         return -1;
                 }
-                if (dcerpc_uint16_coder(ctx, pdu, iov, offset, &pdu->bind.p_cont_elem[i].abstract_syntax->vers_minor)) {
+                if (dcerpc_uint16_coder(ctx, pdu, iov, offset, &pdu->u.bind.p_cont_elem[i].abstract_syntax->vers_minor)) {
                         return -1;
                 }
-                //qqq TODO allocate transfer_syntaxes on decode
-                for (j = 0; j < pdu->bind.p_cont_elem[i].n_transfer_syn; j++) {
-                        if (dcerpc_uuid_coder(ctx, pdu, iov, offset, &pdu->bind.p_cont_elem[i].transfer_syntaxes[j]->uuid)) {
+                /*qqq TODO allocate transfer_syntaxes on decode */
+                for (j = 0; j < pdu->u.bind.p_cont_elem[i].n_transfer_syn; j++) {
+                        if (dcerpc_uuid_coder(ctx, pdu, iov, offset, &pdu->u.bind.p_cont_elem[i].transfer_syntaxes[j]->uuid)) {
                                 return -1;
                         }
-                        if (dcerpc_uint16_coder(ctx, pdu, iov, offset, &pdu->bind.p_cont_elem[i].transfer_syntaxes[j]->vers)) {
+                        if (dcerpc_uint16_coder(ctx, pdu, iov, offset, &pdu->u.bind.p_cont_elem[i].transfer_syntaxes[j]->vers)) {
                                 return -1;
                         }
-                        if (dcerpc_uint16_coder(ctx, pdu, iov, offset, &pdu->bind.p_cont_elem[i].transfer_syntaxes[j]->vers_minor)) {
+                        if (dcerpc_uint16_coder(ctx, pdu, iov, offset, &pdu->u.bind.p_cont_elem[i].transfer_syntaxes[j]->vers_minor)) {
                                 return -1;
                         }
                 }
@@ -1370,12 +1364,7 @@ dcerpc_response_coder(struct dcerpc_context *ctx,
                       struct dcerpc_response_pdu *rsp,
                       struct smb2_iovec *iov, int *offset)
 {
-#ifndef _MSC_VER
-        struct dcerpc_pdu *pdu = container_of(rsp, struct dcerpc_pdu, rsp);
-#else
-        const char* __mptr = (const char*)rsp;
-        struct dcerpc_pdu *pdu = (struct dcerpc_pdu*)((char *)__mptr - offsetof(struct dcerpc_pdu, rsp));
-#endif /* !_MSC_VER */
+        struct dcerpc_pdu *pdu = container_of(rsp, struct dcerpc_pdu, u.rsp);
     
         if (*offset < 0) {
                 return -1;
@@ -1425,22 +1414,22 @@ dcerpc_pdu_coder(struct dcerpc_context *ctx, struct dcerpc_pdu *pdu,
 
         switch (pdu->hdr.PTYPE) {
         case PDU_TYPE_BIND:
-                if (dcerpc_bind_coder(ctx, pdu, &pdu->bind, iov, offset)) {
+                if (dcerpc_bind_coder(ctx, pdu, &pdu->u.bind, iov, offset)) {
                         return -1;
                 }
                 break;
         case PDU_TYPE_BIND_ACK:
-                if (dcerpc_bind_ack_coder(ctx, pdu, &pdu->bind_ack, iov, offset)) {
+                if (dcerpc_bind_ack_coder(ctx, pdu, &pdu->u.bind_ack, iov, offset)) {
                         return -1;
                 }
                 break;
         case PDU_TYPE_REQUEST:
-                if (dcerpc_request_coder(ctx, pdu, &pdu->req, iov, offset)) {
+                if (dcerpc_request_coder(ctx, pdu, &pdu->u.req, iov, offset)) {
                         return -1;
                 }
                 break;
         case PDU_TYPE_RESPONSE:
-                if (dcerpc_response_coder(ctx, &pdu->rsp, iov, offset)) {
+                if (dcerpc_response_coder(ctx, &pdu->u.rsp, iov, offset)) {
                         return -1;
                 }
                 break;
@@ -1598,9 +1587,9 @@ dcerpc_call_async(struct dcerpc_context *dce,
         pdu->hdr.packed_drep[0] = dce->packed_drep[0];
         pdu->hdr.frag_length = 0;
         pdu->hdr.auth_length = 0;
-        pdu->req.alloc_hint = 0;
-        pdu->req.context_id = dce->tctx_id;
-        pdu->req.opnum = opnum;
+        pdu->u.req.alloc_hint = 0;
+        pdu->u.req.context_id = dce->tctx_id;
+        pdu->u.req.opnum = opnum;
 
         pdu->coder = rep_coder;
         pdu->decode_size = decode_size;
@@ -1701,13 +1690,13 @@ smb2_bind_cb(struct smb2_context *smb2, int status,
                 return;
         }
 
-        if (pdu->bind_ack.num_results < 1) {
+        if (pdu->u.bind_ack.num_results < 1) {
                 smb2_set_error(smb2, "No results in BIND ACK");
                 dcerpc_send_pdu_cb_and_free(dce, pdu, -EINVAL, NULL);
                 return;
         }
-        for (i = 0; i < pdu->bind_ack.num_results; i++) {
-                if (pdu->bind_ack.results[i].ack_result !=
+        for (i = 0; i < pdu->u.bind_ack.num_results; i++) {
+                if (pdu->u.bind_ack.results[i].ack_result !=
                     ACK_RESULT_ACCEPTANCE) {
                         continue;
                 }
@@ -1725,7 +1714,7 @@ smb2_bind_cb(struct smb2_context *smb2, int status,
                 }
                 break;
         }
-        if (i == pdu->bind_ack.num_results) {
+        if (i == pdu->u.bind_ack.num_results) {
                 smb2_set_error(smb2, "Bind rejected all contexts");
                 dcerpc_send_pdu_cb_and_free(dce, pdu, -EINVAL, NULL);
                 return;
@@ -1757,18 +1746,18 @@ dcerpc_bind_async(struct dcerpc_context *dce, dcerpc_cb cb,
         pdu->hdr.packed_drep[0] = dce->packed_drep[0];
         pdu->hdr.frag_length = 0;
         pdu->hdr.auth_length = 0;
-        pdu->bind.max_xmit_frag = 32768;
-        pdu->bind.max_recv_frag = 32768;
-        pdu->bind.assoc_group_id = 0;
-        pdu->bind.n_context_elem = dce->smb2->ndr ? 1 : 2;
-        pdu->bind.p_cont_elem = smb2_alloc_data(dce->smb2, pdu->payload,
-                     pdu->bind.n_context_elem * sizeof(struct p_cont_elem_t));
-        if (pdu->bind.p_cont_elem == NULL) {
+        pdu->u.bind.max_xmit_frag = 32768;
+        pdu->u.bind.max_recv_frag = 32768;
+        pdu->u.bind.assoc_group_id = 0;
+        pdu->u.bind.n_context_elem = dce->smb2->ndr ? 1 : 2;
+        pdu->u.bind.p_cont_elem = smb2_alloc_data(dce->smb2, pdu->payload,
+                     pdu->u.bind.n_context_elem * sizeof(struct p_cont_elem_t));
+        if (pdu->u.bind.p_cont_elem == NULL) {
                 smb2_set_error(dce->smb2, "Failed to allocate p_cont_elem");
                 dcerpc_free_pdu(dce, pdu);
                 return -ENOMEM;
         }
-        pce = pdu->bind.p_cont_elem;
+        pce = pdu->u.bind.p_cont_elem;
         if (dce->smb2->ndr == 0 || dce->smb2->ndr == 1) {
                 pce->p_cont_id = 0;
                 pce->n_transfer_syn = 1;

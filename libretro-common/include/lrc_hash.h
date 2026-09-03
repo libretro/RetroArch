@@ -35,9 +35,7 @@
 
 #include <retro_common_api.h>
 
-#ifdef __APPLE__
-#include <CommonCrypto/CommonDigest.h>
-#endif
+#include <boolean.h>
 
 RETRO_BEGIN_DECLS
 
@@ -49,6 +47,52 @@ RETRO_BEGIN_DECLS
  *
  * Hashes SHA256 and outputs a human readable string.
  **/
+/**
+ * Streaming SHA-256 / SHA-224.
+ *
+ * The one-shot sha256_hash() above stays the short way to a hex
+ * string; these are for a caller that feeds a digest in pieces, or
+ * that has to copy a digest mid-stream. Members are laid out for the
+ * implementation to work on, not to be read by a caller.
+ */
+struct sha256_state
+{
+   uint64_t len;
+   union
+   {
+      uint8_t  u8[64];
+      uint32_t u32[16];
+   } in;
+   uint32_t w[64];
+   uint32_t h[8];
+   unsigned inlen;
+   unsigned is224;
+};
+
+/**
+ * sha256_stream_init:
+ * @p                 : State to start.
+ * @is224             : Non-zero selects SHA-224 rather than SHA-256.
+ **/
+void sha256_stream_init(struct sha256_state *p, unsigned is224);
+
+void sha256_stream_update(struct sha256_state *p,
+      const uint8_t *data, size_t len);
+
+/**
+ * sha256_stream_final:
+ * @digest            : 32 octets for SHA-256, 28 for SHA-224.
+ **/
+void sha256_stream_final(struct sha256_state *p, uint8_t *digest);
+
+/**
+ * sha256_stream_block:
+ *
+ * Compresses one 64-octet block straight into the state, leaving the
+ * length count alone. For a caller driving the padding itself.
+ **/
+void sha256_stream_block(struct sha256_state *p, const uint8_t *data);
+
 void sha256_hash(char *s, const uint8_t *in, size_t len);
 
 /**
@@ -61,17 +105,50 @@ void sha256_hash(char *s, const uint8_t *in, size_t len);
  **/
 void SHA1Digest(const uint8_t* data, size_t len, uint8_t digest[20]);
 
+/**
+ * Streaming SHA-1, alongside the one-shot SHA1Digest() above.
+ */
+struct sha1_state
+{
+   uint32_t      digest[5];
+   uint32_t      length_low;
+   uint32_t      length_high;
+   unsigned char block[64];
+   int           block_index;
+   int           computed;
+   int           corrupted;
+};
+
+void sha1_stream_init(struct sha1_state *p);
+
+void sha1_stream_update(struct sha1_state *p,
+      const uint8_t *data, size_t len);
+
+/**
+ * sha1_stream_final:
+ * @digest            : 20 octets.
+ *
+ * Returns: true on success, false where the stream was marked bad.
+ **/
+bool sha1_stream_final(struct sha1_state *p, uint8_t *digest);
+
+/**
+ * sha1_stream_block:
+ *
+ * Compresses one 64-octet block straight into the state, leaving the
+ * length count alone.
+ **/
+void sha1_stream_block(struct sha1_state *p, const uint8_t *data);
+
 int sha1_calculate(const char *path, char *result);
 
 uint32_t djb2_calculate(const char *str);
 
-#ifdef __APPLE__
-typedef CC_MD5_CTX MD5_CTX;
-#define MD5_Init CC_MD5_Init
-#define MD5_Update CC_MD5_Update
-#define MD5_Final CC_MD5_Final
-#else
-
+/* One portable MD5 for every platform. This used to alias the CC_MD5_*
+ * family from CommonCrypto on Apple, but those have been deprecated
+ * since macOS 10.15, and the first code to actually call the aliases
+ * (libsmb2's hmac-md5) promptly failed the Apple builds on it. The
+ * implementation in utils/md5.c has no platform dependencies at all. */
 typedef struct {
 	uint32_t lo, hi;
 	uint32_t a, b, c, d;
@@ -107,8 +184,6 @@ typedef struct {
 void MD5_Init(MD5_CTX *ctx);
 void MD5_Update(MD5_CTX *ctx, const void *data, unsigned long size);
 void MD5_Final(unsigned char *result, MD5_CTX *ctx);
-
-#endif
 
 RETRO_END_DECLS
 

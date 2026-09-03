@@ -90,6 +90,7 @@ extern "C" {
 
 #ifdef HAVE_WAYLAND
 #include "../../gfx/common/wayland_common.h"
+#include <compat/strl.h>
 #endif
 
 #ifndef CXX_BUILD
@@ -1118,7 +1119,7 @@ static void qt_core_info_append_kv(
 {
    char key[256];
    size_t _len = strlcpy(key, msg_hash_to_str(label_enum), sizeof(key));
-   strlcpy(key + _len, ":", sizeof(key) - _len);
+   strlcpy_lit(key + _len, ":", sizeof(key) - _len);
    qt_core_info_append_row(keys, values, key, value,
          QT_CORE_INFO_ROW_NORMAL);
 }
@@ -1137,7 +1138,7 @@ static void qt_core_info_append_joined(
    {
       _len += strlcpy(buf + _len, src->elems[i].data, sizeof(buf) - _len);
       if (i < src->size - 1)
-         _len += strlcpy(buf + _len, ", ", sizeof(buf) - _len);
+         _len += strlcpy_lit(buf + _len, ", ", sizeof(buf) - _len);
    }
    qt_core_info_append_kv(keys, values, label_enum, buf);
 }
@@ -1244,7 +1245,7 @@ static bool qt_core_info_collect(
          size_t _len = strlcpy(firmware_label,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE),
                sizeof(firmware_label));
-         strlcpy(firmware_label + _len, ":",
+         strlcpy_lit(firmware_label + _len, ":",
                sizeof(firmware_label) - _len);
 
          qt_core_info_append_row(keys, values,
@@ -1272,7 +1273,7 @@ static bool qt_core_info_collect(
             if (!core_info->firmware[i].desc)
                continue;
 
-            lbl_len = strlcpy(lbl_txt, "(!) ", sizeof(lbl_txt));
+            lbl_len = strlcpy_lit(lbl_txt, "(!) ", sizeof(lbl_txt));
 
             if (core_info->firmware[i].missing)
             {
@@ -3515,7 +3516,7 @@ void MainWindow::renamePlaylistItem(QListWidgetItem *item, QString newName)
             sizeof(new_path) - _len);
       if (ext && *ext)
       {
-         _len += strlcpy(new_path + _len, ".", sizeof(new_path) - _len);
+         _len += strlcpy_lit(new_path + _len, ".", sizeof(new_path) - _len);
          strlcpy(new_path + _len, ext, sizeof(new_path) - _len);
       }
    }
@@ -5386,9 +5387,9 @@ void LoadCoreWindow::onLoadCustomCoreClicked()
    const char *pathData          = NULL;
    settings_t *settings          = config_get_ptr();
    const char *path_dir_libretro = settings->paths.directory_libretro;
-   size_t _len  = strlcpy(filters, "Cores (*.", sizeof(filters));
+   size_t _len  = strlcpy_lit(filters, "Cores (*.", sizeof(filters));
    _len += frontend_driver_get_core_extension(filters + _len, sizeof(filters) - _len);
-   strlcpy(filters + _len, ");;All Files (*.*)", sizeof(filters) - _len);
+   strlcpy_lit(filters + _len, ");;All Files (*.*)", sizeof(filters) - _len);
 
    path                          = QFileDialog::getOpenFileName(
          this, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE),

@@ -11,6 +11,14 @@ PC_DEVELOPMENT_UDP_PORT    = 3490
 RARCH_CONSOLE              = 0
 USBGECKO                   = 0
 HAVE_STATIC_DUMMY ?= 0
+# GameCube has no salamander / exec support, so in-menu core
+# switching is impossible: each core dol is launched directly
+# from the loader. If core info matching fails (missing or
+# mismatched info files, stale core_info.cache), a strict
+# core-info gate would leave content loading with no options at
+# all. Default to offering the statically linked, currently
+# running core as a fallback in that case.
+LOAD_WITHOUT_CORE_INFO    ?= 1
 
 SPACE      :=
 SPACE      := $(SPACE) $(SPACE)
@@ -59,7 +67,6 @@ libogc_platform    := 1
 
 EXTERNAL_LIBOGC   ?= 0
 HAVE_OGG_OGC      ?= 0
-GX_PTHREAD_LEGACY ?= 1
 CC                 = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
 CXX                = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
 LD                 = $(DEVKITPPC)/bin/powerpc-eabi-ld$(EXE_EXT)
@@ -87,10 +94,6 @@ else
    INCLUDE += -Iwii/libogc/include
 endif
 
-ifeq ($(GX_PTHREAD_LEGACY), 1)
-   CFLAGS   += -DGX_PTHREAD_LEGACY
-   CXXFLAGS += -DGX_PTHREAD_LEGACY
-endif
 
 MACHDEP := -DHW_DOL -mogc
 
@@ -231,6 +234,10 @@ ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g -DDEBUG
 else
    CFLAGS += -O3
+endif
+
+ifeq ($(LOAD_WITHOUT_CORE_INFO),1)
+   CFLAGS += -DLOAD_WITHOUT_CORE_INFO
 endif
 
 ifneq ($(V),1)

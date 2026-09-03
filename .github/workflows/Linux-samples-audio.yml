@@ -1,0 +1,280 @@
+name: CI Linux samples/audio
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+jobs:
+  samples-audio:
+    name: Build and run samples/audio
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 5
+        run: |
+          pkgs="build-essential libasound2-dev libsdl2-dev libopenal-dev"
+          if dpkg -s $pkgs >/dev/null 2>&1; then
+            echo "All packages already present on runner image; skipping apt."
+            exit 0
+          fi
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Build and run mixer_lock_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/audio/mixer_lock
+        run: |
+          set -eu
+          # Includes audio/audio_driver.c and drives the mixer's public
+          # entry points with a real state lock in place. The lock is a
+          # plain mutex, so any path that reaches a locking entry point
+          # while already holding it parks the thread against itself;
+          # loading the first menu sound did exactly that
+          # (libretro/RetroArch#19485). Every case runs on a watchdog:
+          # a reintroduced recursive acquisition aborts with a stack
+          # instead of hanging the job. Also covers the lock being
+          # released on out-of-range slots and a NULL stream name
+          # surviving removal.
+          make clean all SANITIZER=address,undefined
+          test -x mixer_lock_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 120 \
+             ./mixer_lock_test
+          echo "[pass] mixer_lock_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 300 ./mixer_lock_test
+          echo "[pass] mixer_lock_test (TSan)"
+
+      - name: Build and run thread_handshake_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/audio/thread_handshake
+        run: |
+          set -eu
+          # Links audio/audio_thread_wrapper.c against a scripted
+          # driver. The wrapped thread parks in one of two waits and
+          # the main thread's block() needs stopped_ack from either; a
+          # stop() landing between start()'s signal and the thread's
+          # re-check used to leave it in the one wait that never
+          # acknowledged. Two thousand start/stop round-trips hit that
+          # window on the previous wrapper on every run. The scripted
+          # device can also stop returning from a call: a stop must
+          # then still complete once the call does, and must be
+          # reported exactly once meanwhile - prompt handshakes are
+          # asserted not to be reported.
+          make clean all SANITIZER=address,undefined
+          test -x thread_handshake_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 300 \
+             ./thread_handshake_test
+          echo "[pass] thread_handshake_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 600 ./thread_handshake_test
+          echo "[pass] thread_handshake_test (TSan)"
+
+      - name: Build and run alsa_wait_writable_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/audio/alsa_wait_writable
+        run: |
+          set -eu
+          # Links the shipping audio/drivers/alsa.c and interposes the
+          # five libasound calls alsa_wait_writable() makes via
+          # -Wl,--wrap, so the devices no stock PCM can produce on
+          # demand are scripted: a running stream whose poll never
+          # signals, a prepared stream reporting no space, a start that
+          # lands in an underrun storm, and wakes that never deliver
+          # space. Each must return 0 within a bounded lap and wall-time
+          # budget rather than parking the audio thread; the previous
+          # wait was an unbounded snd_pcm_wait(-1). The conforming path
+          # runs end-to-end on the null PCM, and the harness skips
+          # cleanly if no ALSA configuration is available at all.
+          make clean all SANITIZER=address,undefined
+          test -x alsa_wait_writable_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 120 \
+             ./alsa_wait_writable_test
+          echo "[pass] alsa_wait_writable_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 300 ./alsa_wait_writable_test
+          echo "[pass] alsa_wait_writable_test (TSan)"
+
+      - name: Build and run tinyalsa_write_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/audio/tinyalsa_write
+        run: |
+          set -eu
+          # Includes audio/drivers/tinyalsa.c and scripts the kernel at
+          # ioctl()/poll() via -Wl,--wrap, so the write and wait loops run
+          # against a device that is full, unstarted, stalled, signal-
+          # interrupted or gone. The previous non-blocking loop added a
+          # refused write's -1 to its count, shifted a negative to walk
+          # its source pointer backwards past the caller's buffer, grew
+          # its remaining size and never returned (UBSan reports the
+          # shift, the watchdog the loop); the first write reported zero
+          # frames after taking them all, so callers wrote the opening
+          # chunk twice; and both the blocking write and wait_writable()
+          # polled with no timeout. Each case asserts a bounded return
+          # and the right count.
+          make clean all SANITIZER=address,undefined
+          test -x tinyalsa_write_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 120 \
+             ./tinyalsa_write_test
+          echo "[pass] tinyalsa_write_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 300 ./tinyalsa_write_test
+          echo "[pass] tinyalsa_write_test (TSan)"
+
+      - name: Build and run pipeline_stall_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/audio/pipeline_stall
+        run: |
+          set -eu
+          # Includes audio/audio_driver.c and runs the threaded pipeline's
+          # shipping producer and consumer against a scripted driver whose
+          # write_raw() path reaches the device without the resampler or
+          # the arenas. The device is then made to stop taking audio. The
+          # consumer must take nothing from the ring it cannot deliver and
+          # report no progress it did not make; the producer must record
+          # the stall after one bounded wait and drop at once thereafter;
+          # and both must recover when the device returns. The previous
+          # consumer took the chunk first, threw it away on finding no
+          # room, and cleared the stall - the frontend paced at one frame
+          # per failed pass for as long as the device was stuck.
+          make clean all SANITIZER=address,undefined
+          test -x pipeline_stall_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 180 \
+             ./pipeline_stall_test
+          echo "[pass] pipeline_stall_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 400 ./pipeline_stall_test
+          echo "[pass] pipeline_stall_test (TSan)"
+
+      - name: Build and run device_list_driver_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/audio/device_list_driver
+        run: |
+          set -eu
+          # Includes audio/audio_driver.c with the alsa and null drivers in
+          # the table. Picking a driver in the menu writes the setting but
+          # does not reinitialise audio, and the Device list - rebuilt on
+          # each open - was asked of the running driver, so it showed the
+          # old driver's devices under the new driver's name until a
+          # restart. The list now comes from the configured driver, and
+          # is freed by the driver that built it. Cases: configured and
+          # running agree; configured differs from running; back again;
+          # nothing running; and release by the builder, once.
+          make clean all SANITIZER=address,undefined
+          test -x device_list_driver_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 120 \
+             ./device_list_driver_test
+          echo "[pass] device_list_driver_test (ASan)"
+
+      - name: Build and run rate_control_bounds_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/audio/rate_control_bounds
+        run: |
+          set -eu
+          # Includes audio/audio_driver.c and runs the rate control's
+          # shipping computation against a scripted driver. At the
+          # setpoint, empty and full it must give 1.0 and the band's two
+          # edges; with write_avail() reporting five times buffer_size()
+          # it must give the upper edge and no more. Before the clamp an
+          # over-reporting driver drove it nine times past the band.
+          make clean all SANITIZER=address,undefined
+          test -x rate_control_bounds_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
+             ./rate_control_bounds_test
+          echo "[pass] rate_control_bounds_test (ASan)"
+
+      - name: Build and run latency_contract_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/audio/latency_contract
+        run: |
+          set -eu
+          # Real drivers on backends that need no hardware - the ALSA null
+          # PCM, SDL's dummy audio, OpenAL Soft's null device - opened at
+          # 64 and 32 ms and checked against audio_driver.h's contract:
+          # buffer_size() is the setting in bytes of the output format,
+          # write_avail() never exceeds it, a buffer's worth offered takes
+          # room, and the room comes back as the device plays. The sdl
+          # driver before fdda5f7 reports 42.7 ms against 64 here.
+          make clean all SANITIZER=address,undefined
+          test -x latency_contract_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 120 \
+             ./latency_contract_test
+          echo "[pass] latency_contract_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1:suppressions=$PWD/tsan.supp \
+             timeout 300 ./latency_contract_test
+          echo "[pass] latency_contract_test (TSan)"
+
+      - name: Build and run asio_convert_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/audio/asio_convert
+        run: |
+          set -eu
+          # audio/drivers/asio_convert.h is the ASIO driver's sample
+          # conversion, pure C, so it runs here without Windows. Every
+          # ASIOSampleType the specification defines is converted for full
+          # scale, zero, half and one 16-bit step in both signs and checked
+          # byte for byte against the layout the specification gives - the
+          # Int32LSB16..24 family as low-aligned, sign-extended words, the
+          # MSB types big-endian. Saturation and the silence fill past the
+          # supplied frames are checked too. The converter this replaced
+          # wrote five types and memset the rest to silence.
+          make clean all SANITIZER=address,undefined
+          test -x asio_convert_test
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
+             ./asio_convert_test
+          echo "[pass] asio_convert_test (ASan)"
+
+      - name: Build and run wasapi_exclusive_pacing_test (ASan + UBSan, then TSan)
+        shell: bash
+        working-directory: samples/audio/wasapi_exclusive_pacing
+        run: |
+          set -eu
+          # audio/drivers/wasapi.c, unmodified but for its Windows include
+          # lines, against a fake device on a real-time clock: exclusive
+          # and event-driven, one period per endpoint buffer, every period
+          # taken or counted unanswered. The writer is a frontend with audio
+          # sync off: one frame of core audio per non-blocking write, no rate
+          # control. Passes when no period goes unanswered in either mode and
+          # nothing is dropped once the buffer holds a frame. Before the pump
+          # thread and the drain-first shared write this run gave 3-10% of
+          # periods unanswered; the first smaller-period attempt without the
+          # pump gave 75%.
+          make clean all SANITIZER=address,undefined
+          test -x wasapi_exclusive_pacing_test
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 timeout 120 \
+             ./wasapi_exclusive_pacing_test 3
+          echo "[pass] wasapi_exclusive_pacing_test (ASan)"
+          make clean all SANITIZER=thread
+          timeout 180 ./wasapi_exclusive_pacing_test 3
+          echo "[pass] wasapi_exclusive_pacing_test (TSan)"

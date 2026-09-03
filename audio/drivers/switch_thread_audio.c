@@ -337,6 +337,12 @@ static void switch_thread_audio_free(void *data)
    swa = NULL;
 }
 
+/* Bound on a wait for the output thread to take from the fifo: one
+ * wait, in nanoseconds, and how many before the caller gets the pass
+ * back. */
+#define SWITCH_AUDIO_WAIT_NS   100000000ULL
+#define SWITCH_AUDIO_WAIT_LAPS 8
+
 static ssize_t switch_thread_audio_write(void *data, const void *s, size_t len)
 {
    size_t avail, _len;
@@ -356,6 +362,8 @@ static ssize_t switch_thread_audio_write(void *data, const void *s, size_t len)
    }
    else
    {
+      int laps = SWITCH_AUDIO_WAIT_LAPS;
+
       _len = 0;
       while (_len < len && swa->running)
       {
@@ -363,11 +371,18 @@ static ssize_t switch_thread_audio_write(void *data, const void *s, size_t len)
          avail = FIFO_WRITE_AVAIL(swa->fifo);
          if (avail == 0)
          {
+            /* The output thread signals each time it takes from the
+             * fifo. One that has stopped taking - the output closed,
+             * the thread stalled - signals nothing; the wait is timed
+             * and capped, and the write returns what went. */
             compat_mutex_unlock(&swa->fifoLock);
             compat_mutex_lock(&swa->condLock);
             if (swa->running)
-               compat_condvar_wait(&swa->cond, &swa->condLock);
+               compat_condvar_wait_timeout(&swa->cond, &swa->condLock,
+                     SWITCH_AUDIO_WAIT_NS);
             compat_mutex_unlock(&swa->condLock);
+            if (--laps < 0)
+               break;
          }
          else
          {
@@ -406,6 +421,42 @@ static bool switch_thread_audio_use_float(void *data)
    return false;
 }
 
+/* Sleep on the condition the output thread signals after every buffer
+ * it consumes until at least len bytes fit in the fifo, capped at half
+ * of it so the wait always ends. Returns the free space then, or 0 when
+ * the thread is not running. */
+static size_t switch_thread_audio_wait_writable(void *data, size_t len)
+{
+   size_t avail;
+   switch_thread_audio_t *swa = (switch_thread_audio_t *)data;
+   int laps                   = SWITCH_AUDIO_WAIT_LAPS;
+
+   if (!swa)
+      return 0;
+   if (len > swa->fifoSize / 2)
+      len = swa->fifoSize / 2;
+
+   for (;;)
+   {
+      if (!swa->running)
+         return 0;
+      compat_mutex_lock(&swa->fifoLock);
+      avail = FIFO_WRITE_AVAIL(swa->fifo);
+      compat_mutex_unlock(&swa->fifoLock);
+      if (avail >= len)
+         return avail;
+      /* Timed and capped: an output thread that has stopped hands the
+       * pass back as no space coming from this call. */
+      compat_mutex_lock(&swa->condLock);
+      if (swa->running)
+         compat_condvar_wait_timeout(&swa->cond, &swa->condLock,
+               SWITCH_AUDIO_WAIT_NS);
+      compat_mutex_unlock(&swa->condLock);
+      if (--laps < 0)
+         return 0;
+   }
+}
+
 static size_t switch_thread_audio_write_avail(void *data)
 {
    size_t val;
@@ -442,7 +493,8 @@ audio_driver_t audio_switch_thread = {
       NULL, /* device_list_free */
       switch_thread_audio_write_avail,
       switch_thread_audio_buffer_size,
-      NULL  /* write_raw */
+      NULL, /* write_raw */
+      switch_thread_audio_wait_writable
 };
 
 /* vim: set ts=3 sw=3 */

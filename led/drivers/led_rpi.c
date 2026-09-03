@@ -79,7 +79,7 @@ static int setup_gpio(int gpio)
    
    if (!(fp = fopen(buf, "w")))
    {
-      strlcpy(buf, "/sys/class/gpio/export", sizeof(buf));
+      strlcpy_lit(buf, "/sys/class/gpio/export", sizeof(buf));
 
       /* Failed to export GPIO? */
       if (!(fp = fopen(buf, "w")))

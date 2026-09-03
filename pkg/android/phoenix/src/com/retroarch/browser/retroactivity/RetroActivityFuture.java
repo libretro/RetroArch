@@ -1,7 +1,9 @@
 package com.retroarch.browser.retroactivity;
 
+import android.content.res.Configuration;
 import android.graphics.Rect;
 import android.util.Log;
+import android.view.Display;
 import android.view.DisplayCutout;
 import android.view.Gravity;
 import android.view.PointerIcon;
@@ -17,14 +19,14 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import com.retroarch.browser.preferences.util.ConfigFile;
 import com.retroarch.browser.preferences.util.UserPreferences;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 public final class RetroActivityFuture extends RetroActivityCamera {
 
-  // Tracks activity lifecycle state for MainMenuActivity resume detection
+  // Tracks whether the native activity is already running, so a
+  // relaunch reorders it to the front instead of restarting it.
   public static volatile boolean isRunning = false;
 
   // If set to true then RetroArch will completely exit when it loses focus
@@ -109,8 +111,16 @@ public final class RetroActivityFuture extends RetroActivityCamera {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       String refresh = getIntent().getStringExtra("REFRESH");
 
-      // If REFRESH parameter is provided then try to set refreshrate accordingly
-      if (refresh != null) {
+      /* If REFRESH parameter is provided then try to set refreshrate
+       * accordingly - unless a display mode has been chosen
+       * explicitly, in which case that mode names the rate already.
+       *
+       * The two are competing requests: a rate preference makes the
+       * framework vote APP_REQUEST_REFRESH_RATE_RANGE [r, r] with
+       * refresh rate switching disabled, which pins the display
+       * there whatever mode id was asked for.  Re-applying it here
+       * would undo a chosen mode every time the app came forward. */
+      if (refresh != null && !hasExplicitDisplayMode()) {
         WindowManager.LayoutParams params = getWindow().getAttributes();
         params.preferredRefreshRate = Integer.parseInt(refresh);
         getWindow().setAttributes(params);
@@ -118,20 +128,27 @@ public final class RetroActivityFuture extends RetroActivityCamera {
     }
 
     updateDisplayCutoutMode();
+
+    /* The window is new after a trip to the background, and a chosen
+     * display mode does not come back with it. */
+    reapplyDisplayMode();
+  }
+
+  @Override
+  protected void onNotchSettingChanged() {
+    runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        updateDisplayCutoutMode();
+      }
+    });
   }
 
   private void updateDisplayCutoutMode() {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P)
       return;
 
-    boolean writeOverNotch = false;
-    ConfigFile configFile = new ConfigFile(UserPreferences.getDefaultConfigPath(this));
-
-    try {
-      writeOverNotch = configFile.getBoolean("video_notch_write_over_enable");
-    } catch (Exception e) {
-      Log.w("RetroActivityFuture", "Key doesn't exist yet: " + e.getMessage());
-    }
+    boolean writeOverNotch = notchWriteOver;
 
     WindowManager.LayoutParams params = getWindow().getAttributes();
     params.layoutInDisplayCutoutMode = writeOverNotch
@@ -148,35 +165,32 @@ public final class RetroActivityFuture extends RetroActivityCamera {
       updateDisplayCutoutSafeWindow(!writeOverNotch);
   }
 
+  @SuppressWarnings("deprecation")
   private void updateDisplayCutoutSafeWindow(boolean avoidDisplayCutout) {
     if (!avoidDisplayCutout) {
-      mDecorView.setOnApplyWindowInsetsListener(null);
       setDisplayCutoutSafeWindow(0, 0, 0, 0);
       return;
     }
 
-    mDecorView.setOnApplyWindowInsetsListener(
-        new View.OnApplyWindowInsetsListener() {
-          @Override
-          public WindowInsets onApplyWindowInsets(View view, WindowInsets insets) {
-            DisplayCutout cutout = insets.getDisplayCutout();
+    Display display = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+        ? getDisplay()
+        : getWindowManager().getDefaultDisplay();
 
-            if (cutout != null)
-              setDisplayCutoutSafeWindow(
-                  cutout.getSafeInsetLeft(),
-                  cutout.getSafeInsetTop(),
-                  cutout.getSafeInsetRight(),
-                  cutout.getSafeInsetBottom());
+    DisplayCutout cutout = (display != null) ? display.getCutout() : null;
 
-            return insets;
-          }
-        });
-    mDecorView.requestApplyInsets();
+    if (cutout != null)
+      setDisplayCutoutSafeWindow(
+          cutout.getSafeInsetLeft(),
+          cutout.getSafeInsetTop(),
+          cutout.getSafeInsetRight(),
+          cutout.getSafeInsetBottom());
+    else
+      setDisplayCutoutSafeWindow(0, 0, 0, 0);
   }
 
   private void setDisplayCutoutSafeWindow(
       int left, int top, int right, int bottom) {
-    WindowMetrics metrics = getWindowManager().getMaximumWindowMetrics();
+    WindowMetrics metrics = getWindowManager().getCurrentWindowMetrics();
     Rect bounds = metrics.getBounds();
     boolean fullDisplay =
         left == 0 && top == 0 && right == 0 && bottom == 0;
@@ -207,6 +221,17 @@ public final class RetroActivityFuture extends RetroActivityCamera {
   }
 
   @Override
+  public void onConfigurationChanged(Configuration newConfig) {
+    super.onConfigurationChanged(newConfig);
+    runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        updateDisplayCutoutMode();
+      }
+    });
+  }
+
+  @Override
   public void onStop() {
     super.onStop();
 
@@ -226,14 +251,8 @@ public final class RetroActivityFuture extends RetroActivityCamera {
 
     mHandlerSendUiMessage(HANDLER_WHAT_TOGGLE_IMMERSIVE, hasFocus);
 
-    try {
-      ConfigFile configFile = new ConfigFile(UserPreferences.getDefaultConfigPath(this));
-      if (configFile.getBoolean("input_auto_mouse_grab")) {
-        inputGrabMouse(hasFocus);
-      }
-    } catch (Exception e) {
-      Log.w("RetroActivityFuture", "[onWindowFocusChanged] exception thrown: " + e.getMessage());
-    }
+    if (autoMouseGrab)
+      inputGrabMouse(hasFocus);
   }
 
   private void mHandlerSendUiMessage(int what, boolean state) {

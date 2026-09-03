@@ -93,6 +93,25 @@ typedef struct
 #endif
 #endif
 
+/* Descriptor-backed I/O for one-shot writers as well: a stream opened
+ * for writing with RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK hands its
+ * bytes straight to the descriptor, so a whole-file write is one open,
+ * one write and one close.  Same listing discipline as above: a
+ * platform joins once its descriptor write path has been exercised.
+ *
+ * On Vita the descriptor path is sceIo* itself rather than newlib's
+ * open()/write(), which sit on top of those calls and add a realpath
+ * allocation, a directory stat, a strdup of the path into the fd
+ * table and a mutex round-trip per call; stdio adds a FILE, a buffer
+ * and an fstat on top of that.  On an SD card every extra stat is a
+ * directory lookup, so a bulk extraction pays for all of it per
+ * member. */
+#ifndef VFS_HAVE_DESCRIPTOR_WRITE
+#if defined(VITA)
+#define VFS_HAVE_DESCRIPTOR_WRITE 1
+#endif
+#endif
+
 enum vfs_scheme
 {
    VFS_SCHEME_NONE = 0,

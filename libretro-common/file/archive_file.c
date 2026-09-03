@@ -692,7 +692,12 @@ int file_archive_compressed_read(
       return 1;
    }
 
-   str_list       = file_archive_filename_split(path);
+   if (!(str_list = file_archive_filename_split(path)))
+   {
+      *len = 0;
+      return 0;
+   }
+
    /* We assure that there is something after the '#' symbol.
     *
     * This error condition happens for example, when
@@ -707,7 +712,20 @@ int file_archive_compressed_read(
       return 0;
    }
 
-   backend = file_archive_get_file_backend(str_list->elems[0].data);
+   /* path_get_archive_delim() accepts every archive extension the
+    * tree knows about, while a backend is only present when the
+    * matching codec is compiled in, so a path that carries a
+    * delimiter can still arrive here with no backend to serve it -
+    * a '.zst' entry from a playlist on a build without a Zstandard
+    * codec, for instance.  Report that as a read failure, which is
+    * what every caller already handles. */
+   if (!(backend = file_archive_get_file_backend(str_list->elems[0].data)))
+   {
+      string_list_free(str_list);
+      *len = 0;
+      return 0;
+   }
+
    *len    = backend->compressed_file_read(str_list->elems[0].data,
          str_list->elems[1].data, buf, optional_filename);
 

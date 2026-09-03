@@ -38,49 +38,8 @@
 #include <queues/task_queue.h>
 #include <retro_timers.h>
 
-#ifndef __DINPUT_JOYPAD_H
-#define __DINPUT_JOYPAD_H
+#include "dinput_joypad.h"
 
-#include <stdint.h>
-#include <boolean.h>
-#include <retro_common_api.h>
-
-#define WIN32_LEAN_AND_MEAN
-#include <dinput.h>
-
-/* For DIJOYSTATE2 struct, rgbButtons will always have 128 elements */
-#define ARRAY_SIZE_RGB_BUTTONS 128
-
-/* DirectInput POV value indicating the hat is centred (no direction pressed).
- * rgdwPOV[] returns this sentinel when the hat is released. */
-#define DINPUT_POV_CENTERED 0xFFFFFFFFu
-
-RETRO_BEGIN_DECLS
-
-struct dinput_joypad_data
-{
-   LPDIRECTINPUTDEVICE8 joypad;
-   DIJOYSTATE2          joy_state;
-   char                *joy_name;
-   char                *joy_friendly_name;
-   int32_t              vid;
-   int32_t              pid;
-   LPDIRECTINPUTEFFECT  rumble_iface[2];
-   DIEFFECT             rumble_props;
-   /* Persistent storage for fields referenced by rumble_props pointers.
-    * Previously these lived on the stack in dinput_create_rumble_effects(),
-    * causing rumble_props to hold dangling pointers after that call returned. */
-   DWORD                rumble_axis;
-   LONG                 rumble_direction;
-   DIENVELOPE           rumble_envelope;
-   DICONSTANTFORCE      rumble_force;
-};
-
-RETRO_END_DECLS
-
-#endif
-
-/* TODO/FIXME - globals referenced outside; candidate for context-struct refactor */
 struct dinput_joypad_data g_pads[MAX_USERS];
 unsigned g_joypad_cnt;
 
@@ -460,7 +419,15 @@ static void dinput_joypad_destroy(void)
       free(g_pads[i].joy_friendly_name);
       g_pads[i].joy_friendly_name = NULL;
 
-      input_config_clear_device_name(i);
+      /* No input_config_clear_device_name() here. Disconnects are
+       * announced from poll() - joypad_driver_reinit() runs it once
+       * more before destroy() for exactly that - and
+       * input_autoconfigure_disconnect() clears the whole port record.
+       * Clearing just the name here left vid, pid and the
+       * autoconfigured flag behind, and blanked the field that
+       * input_autoconfigure_connect_ex() compares against to suppress
+       * a repeat 'configured in port' notification. No other joypad
+       * driver does this. */
    }
 
    g_joypad_cnt = 0;

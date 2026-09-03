@@ -210,6 +210,19 @@ void deinit_netplay(void);
 
 bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data);
 
+/**
+ * netplay_mitm_query_prefetch:
+ *
+ * Start the relay tunnel query early, when the user commits to
+ * hosting, rather than when host setup needs the address.  The round
+ * trip then overlaps work that was going to happen anyway, so the
+ * wait for it usually costs nothing.
+ *
+ * Best effort: if it is skipped or fails, host setup issues the
+ * query exactly as it did before.
+ */
+void netplay_mitm_query_prefetch(void);
+
 bool netplay_reinit_serialization(void);
 bool netplay_is_spectating(void);
 void netplay_force_send_savestate(void);

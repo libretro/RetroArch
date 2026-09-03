@@ -21,6 +21,7 @@
  * pre-rewrite implementation that uses RetroArch's portable slock/scond
  * primitives and a fifo_buffer_t.                                     */
 #include <AvailabilityMacros.h>
+#include <lists/string_list.h>
 #if !defined(MAC_OS_X_VERSION_10_7) || \
     (defined(MAC_OS_X_VERSION_MIN_REQUIRED) && \
      MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_7)
@@ -358,17 +359,16 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t len)
          break;
       }
 
-#if TARGET_OS_IOS
+      /* Timed on every platform, as it already was on iOS: the render
+       * callback is what signals this, and a unit that has stopped
+       * rendering - device removed, default output changed while
+       * stopped - signals nothing. The write returns what went. */
       if (write_avail == 0 && !scond_wait_timeout(
                dev->cond, dev->lock, 300000))
       {
          slock_unlock(dev->lock);
          break;
       }
-#else
-      if (write_avail == 0)
-         scond_wait(dev->cond, dev->lock);
-#endif
       slock_unlock(dev->lock);
    }
 
@@ -434,9 +434,119 @@ static size_t coreaudio_buffer_size(void *data)
    return dev->buffer_size;
 }
 
-/* TODO/FIXME - implement */
-static void *coreaudio_device_list_new(void *data) { return NULL; }
-static void coreaudio_device_list_free(void *data, void *array_list_data) { }
+/* Sleep on the condition the render callback signals after every pull
+ * until at least len bytes fit in the fifo, capped at half of it so the
+ * wait always ends. Returns the free space then, or 0 while paused. */
+static size_t coreaudio_wait_writable(void *data, size_t len)
+{
+   coreaudio_t *dev = (coreaudio_t*)data;
+   size_t write_avail;
+
+   int laps = 8;
+
+   if (len > dev->buffer_size / 2)
+      len = dev->buffer_size / 2;
+
+   slock_lock(dev->lock);
+   for (;;)
+   {
+      if (dev->is_paused)
+      {
+         write_avail = 0;
+         break;
+      }
+      write_avail = FIFO_WRITE_AVAIL(dev->buffer);
+      if (write_avail >= len)
+         break;
+      /* Timed on every platform, as on iOS, and capped: a callback
+       * that keeps firing but never frees enough ends the wait too,
+       * and the pass is handed back as no space coming from this
+       * call. */
+      if (!scond_wait_timeout(dev->cond, dev->lock, 300000) || --laps < 0)
+      {
+         write_avail = 0;
+         break;
+      }
+   }
+   slock_unlock(dev->lock);
+   return write_avail;
+}
+
+/* Enumerates output devices from the HAL. Needs no driver instance:
+ * kAudioObjectSystemObject is always there. Same query as
+ * coreaudio_choose_output_device() above, collected instead of
+ * matched. iOS has no HAL device enumeration for output; NULL there. */
+static void *coreaudio_device_list_new(void *data)
+{
+#if TARGET_OS_IPHONE
+   (void)data;
+   return NULL;
+#else
+   int i;
+   UInt32 device_count;
+   AudioObjectPropertyAddress propaddr;
+   AudioDeviceID *devices = NULL;
+   UInt32 size            = 0;
+   union string_list_elem_attr attr;
+   struct string_list *sl = string_list_new();
+
+   (void)data;
+   attr.i = 0;
+   if (!sl)
+      return NULL;
+
+   propaddr.mSelector = kAudioHardwarePropertyDevices;
+#if HAS_MACOSX_10_12
+   propaddr.mScope    = kAudioObjectPropertyScopeOutput;
+#else
+   propaddr.mScope    = kAudioObjectPropertyScopeGlobal;
+#endif
+   propaddr.mElement  = kAudioObjectPropertyElementMaster;
+
+   if (AudioObjectGetPropertyDataSize(kAudioObjectSystemObject,
+            &propaddr, 0, 0, &size) != noErr)
+   {
+      string_list_free(sl);
+      return NULL;
+   }
+
+   device_count = size / sizeof(AudioDeviceID);
+   devices      = (AudioDeviceID*)malloc(size);
+
+   if (devices && AudioObjectGetPropertyData(kAudioObjectSystemObject,
+            &propaddr, 0, 0, &size, devices) == noErr)
+   {
+#if HAS_MACOSX_10_12
+#else
+      propaddr.mScope    = kAudioDevicePropertyScopeOutput;
+#endif
+      propaddr.mSelector = kAudioDevicePropertyDeviceName;
+
+      for (i = 0; i < (int)device_count; i++)
+      {
+         char device_name[1024];
+         device_name[0] = 0;
+         size           = 1024;
+
+         if (AudioObjectGetPropertyData(devices[i],
+                  &propaddr, 0, 0, &size, device_name) == noErr
+               && device_name[0])
+            string_list_append(sl, device_name, attr);
+      }
+   }
+
+   free(devices);
+   return sl;
+#endif
+}
+
+static void coreaudio_device_list_free(void *data, void *array_list_data)
+{
+   struct string_list *sl = (struct string_list*)array_list_data;
+   (void)data;
+   if (sl)
+      string_list_free(sl);
+}
 
 audio_driver_t audio_coreaudio = {
    coreaudio_init,
@@ -452,7 +562,8 @@ audio_driver_t audio_coreaudio = {
    coreaudio_device_list_free,
    coreaudio_write_avail,
    coreaudio_buffer_size,
-   NULL /* write_raw — legacy path uses the frontend's software resampler */
+   NULL, /* write_raw — legacy path uses the frontend's software resampler */
+   coreaudio_wait_writable
 };
 
 #else
@@ -1013,6 +1124,9 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t len)
    const float *buf   = (const float *)buf_;
    size_t samples     = len / sizeof(float);
    size_t written     = 0;
+   /* Each wait below is bounded; this bounds the loop, for a unit that
+    * reports running but never renders. */
+   int laps           = 8;
 
    while (!dev->is_paused && samples > 0)
    {
@@ -1040,6 +1154,8 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t len)
                   kAudioOutputUnitProperty_IsRunning,
                   kAudioUnitScope_Global, 0,
                   &running, &size) == noErr && !running)
+            break;
+         if (--laps < 0)
             break;
          /* Brief timeout as safety net for the race where the unit
           * stops during the wait; we'll re-check on the next iteration. */
@@ -1122,6 +1238,7 @@ static ssize_t coreaudio_write_raw(void *data, const int16_t *samples,
       {
          float *out_ptr     = dev->conv_buffer;
          size_t out_samples = output_frames * 2; /* stereo */
+         int    laps        = 8;
 
          while (!dev->is_paused && out_samples > 0)
          {
@@ -1147,6 +1264,8 @@ static ssize_t coreaudio_write_raw(void *data, const int16_t *samples,
                         kAudioOutputUnitProperty_IsRunning,
                         kAudioUnitScope_Global, 0,
                         &running, &sz) == noErr && !running)
+                  break;
+               if (--laps < 0)
                   break;
                dispatch_semaphore_wait(dev->sema,
                      dispatch_time(DISPATCH_TIME_NOW, 100 * NSEC_PER_MSEC));
@@ -1215,9 +1334,121 @@ static size_t coreaudio_buffer_size(void *data)
    return dev->capacity * sizeof(float);
 }
 
-/* TODO/FIXME - implement */
-static void *coreaudio_device_list_new(void *data) { return NULL; }
-static void coreaudio_device_list_free(void *data, void *array_list_data) { }
+/* Sleep on the semaphore the render callback signals after every pull
+ * until at least len bytes fit in the ring, capped at half of it so the
+ * wait always ends. Returns the free space then, or 0 once the unit has
+ * stopped (paused, or interrupted, which the running check catches as
+ * coreaudio_write() does). */
+static size_t coreaudio_wait_writable(void *data, size_t len)
+{
+   coreaudio_t *dev = (coreaudio_t*)data;
+   size_t want      = len / sizeof(float);
+   size_t half      = dev->capacity / 2;
+   int    laps      = 8;
+
+   if (want > half)
+      want = half;
+
+   for (;;)
+   {
+      size_t avail;
+      UInt32 running = 0;
+      UInt32 size    = sizeof(running);
+
+      if (dev->is_paused)
+         return 0;
+      avail = rb_write_avail(dev);
+      if (avail >= want)
+         return avail * sizeof(float);
+      if (AudioUnitGetProperty(dev->dev,
+               kAudioOutputUnitProperty_IsRunning,
+               kAudioUnitScope_Global, 0,
+               &running, &size) == noErr && !running)
+         return 0;
+      /* Each wait is bounded; this bounds the loop, for a unit that
+       * reports running but never renders. */
+      if (--laps < 0)
+         return 0;
+      dispatch_semaphore_wait(dev->sema,
+            dispatch_time(DISPATCH_TIME_NOW, 100 * NSEC_PER_MSEC));
+   }
+}
+
+/* Enumerates output devices from the HAL. Needs no driver instance:
+ * kAudioObjectSystemObject is always there. Same query as
+ * coreaudio_choose_output_device() above, collected instead of
+ * matched. iOS has no HAL device enumeration for output; NULL there. */
+static void *coreaudio_device_list_new(void *data)
+{
+#if TARGET_OS_IPHONE
+   (void)data;
+   return NULL;
+#else
+   int i;
+   UInt32 device_count;
+   AudioObjectPropertyAddress propaddr;
+   AudioDeviceID *devices = NULL;
+   UInt32 size            = 0;
+   union string_list_elem_attr attr;
+   struct string_list *sl = string_list_new();
+
+   (void)data;
+   attr.i = 0;
+   if (!sl)
+      return NULL;
+
+   propaddr.mSelector = kAudioHardwarePropertyDevices;
+#if HAS_MACOSX_10_12
+   propaddr.mScope    = kAudioObjectPropertyScopeOutput;
+#else
+   propaddr.mScope    = kAudioObjectPropertyScopeGlobal;
+#endif
+   propaddr.mElement  = kAudioObjectPropertyElementMaster;
+
+   if (AudioObjectGetPropertyDataSize(kAudioObjectSystemObject,
+            &propaddr, 0, 0, &size) != noErr)
+   {
+      string_list_free(sl);
+      return NULL;
+   }
+
+   device_count = size / sizeof(AudioDeviceID);
+   devices      = (AudioDeviceID*)malloc(size);
+
+   if (devices && AudioObjectGetPropertyData(kAudioObjectSystemObject,
+            &propaddr, 0, 0, &size, devices) == noErr)
+   {
+#if HAS_MACOSX_10_12
+#else
+      propaddr.mScope    = kAudioDevicePropertyScopeOutput;
+#endif
+      propaddr.mSelector = kAudioDevicePropertyDeviceName;
+
+      for (i = 0; i < (int)device_count; i++)
+      {
+         char device_name[1024];
+         device_name[0] = 0;
+         size           = 1024;
+
+         if (AudioObjectGetPropertyData(devices[i],
+                  &propaddr, 0, 0, &size, device_name) == noErr
+               && device_name[0])
+            string_list_append(sl, device_name, attr);
+      }
+   }
+
+   free(devices);
+   return sl;
+#endif
+}
+
+static void coreaudio_device_list_free(void *data, void *array_list_data)
+{
+   struct string_list *sl = (struct string_list*)array_list_data;
+   (void)data;
+   if (sl)
+      string_list_free(sl);
+}
 
 audio_driver_t audio_coreaudio = {
    coreaudio_init,
@@ -1233,7 +1464,8 @@ audio_driver_t audio_coreaudio = {
    coreaudio_device_list_free,
    coreaudio_write_avail,
    coreaudio_buffer_size,
-   coreaudio_write_raw
+   coreaudio_write_raw,
+   coreaudio_wait_writable
 };
 
 #endif /* RARCH_COREAUDIO_LEGACY */

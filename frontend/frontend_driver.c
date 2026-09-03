@@ -62,8 +62,6 @@ static frontend_ctx_driver_t frontend_ctx_null = {
    NULL,                         /* detach_console */
    NULL,                         /* get_lakka_version */
    NULL,                         /* set_screen_brightness */
-   NULL,                         /* watch_path_for_changes */
-   NULL,                         /* check_for_path_changes */
    NULL,                         /* set_sustained_performance_mode */
    NULL,                         /* get_cpu_model_name */
    NULL,                         /* get_user_language */
@@ -178,42 +176,42 @@ size_t frontend_driver_get_core_extension(char *s, size_t len)
 {
 #ifdef HAVE_DYNAMIC
 #ifdef _WIN32
-   return strlcpy(s, "dll", len);
+   return strlcpy_lit(s, "dll", len);
 #elif (defined(IOS) && defined(HAVE_FRAMEWORKS)) || (defined(OSX) && defined(HAVE_APPLE_STORE))
-   return strlcpy(s, "framework", len);
+   return strlcpy_lit(s, "framework", len);
 #elif defined(__APPLE__) || defined(__MACH__)
-   return strlcpy(s, "dylib" ,len);
+   return strlcpy_lit(s, "dylib" ,len);
 #else
-   return strlcpy(s, "so", len);
+   return strlcpy_lit(s, "so", len);
 #endif
 #else
 #if defined(PSP)
-   return strlcpy(s, "pbp", len);
+   return strlcpy_lit(s, "pbp", len);
 #elif defined(ORBIS) || defined(VITA) || defined(__PS3__)
-   return strlcpy(s, "self|bin", len);
+   return strlcpy_lit(s, "self|bin", len);
 #elif defined(PS2)
-   return strlcpy(s, "elf", len);
+   return strlcpy_lit(s, "elf", len);
 #elif defined(_XBOX1)
-   return strlcpy(s, "xbe", len);
+   return strlcpy_lit(s, "xbe", len);
 #elif defined(_XBOX360)
-   return strlcpy(s, "xex", len);
+   return strlcpy_lit(s, "xex", len);
 #elif defined(GEKKO)
-   return strlcpy(s, "dol", len);
+   return strlcpy_lit(s, "dol", len);
 #elif defined(HW_WUP)
-   return strlcpy(s, "rpx|elf", len);
+   return strlcpy_lit(s, "rpx|elf", len);
 #elif defined(__linux__)
-   return strlcpy(s, "elf", len);
+   return strlcpy_lit(s, "elf", len);
 #elif defined(HAVE_LIBNX)
-   return strlcpy(s, "nro", len);
+   return strlcpy_lit(s, "nro", len);
 #elif defined(DJGPP)
-   return strlcpy(s, "exe", len);
+   return strlcpy_lit(s, "exe", len);
 #elif defined(_3DS)
    if (envIsHomebrew())
-      return strlcpy(s, "3dsx", len);
-   return strlcpy(s, "cia", len);
+      return strlcpy_lit(s, "3dsx", len);
+   return strlcpy_lit(s, "cia", len);
 #elif defined(__EMSCRIPTEN__)
    /* may not contain the core */
-   return strlcpy(s, "core", len);
+   return strlcpy_lit(s, "core", len);
 #else
    return 0;
 #endif
@@ -227,40 +225,40 @@ bool frontend_driver_get_salamander_basename(char *s, size_t len)
 #else
 
 #if defined(PSP)
-   strlcpy(s, "EBOOT.PBP", len);
+   strlcpy_lit(s, "EBOOT.PBP", len);
    return true;
 #elif defined(ORBIS)
-   strlcpy(s, "eboot.bin", len);
+   strlcpy_lit(s, "eboot.bin", len);
    return true;
 #elif defined(VITA)
-   strlcpy(s, "eboot.bin", len);
+   strlcpy_lit(s, "eboot.bin", len);
    return true;
 #elif defined(PS2)
-   strlcpy(s, "raboot.elf", len);
+   strlcpy_lit(s, "raboot.elf", len);
    return true;
 #elif defined(__PSL1GHT__) || defined(__PS3__)
-   strlcpy(s, "EBOOT.BIN", len);
+   strlcpy_lit(s, "EBOOT.BIN", len);
    return true;
 #elif defined(_XBOX1)
-   strlcpy(s, "default.xbe", len);
+   strlcpy_lit(s, "default.xbe", len);
    return true;
 #elif defined(_XBOX360)
-   strlcpy(s, "default.xex", len);
+   strlcpy_lit(s, "default.xex", len);
    return true;
 #elif defined(HW_RVL)
-   strlcpy(s, "boot.dol", len);
+   strlcpy_lit(s, "boot.dol", len);
    return true;
 #elif defined(HW_WUP)
-   strlcpy(s, "retroarch.rpx", len);
+   strlcpy_lit(s, "retroarch.rpx", len);
    return true;
 #elif defined(_3DS)
-   strlcpy(s, "retroarch.core", len);
+   strlcpy_lit(s, "retroarch.core", len);
    return true;
 #elif defined(DJGPP)
-   strlcpy(s, "retrodos.exe", len);
+   strlcpy_lit(s, "retrodos.exe", len);
    return true;
 #elif defined(SWITCH)
-   strlcpy(s, "retroarch_switch.nro", len);
+   strlcpy_lit(s, "retroarch_switch.nro", len);
    return true;
 #else
    return false;
@@ -539,32 +537,6 @@ void frontend_driver_destroy_signal_handler_state(void)
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
    if (frontend && frontend->destroy_signal_handler_state)
       frontend->destroy_signal_handler_state();
-}
-
-bool frontend_driver_can_watch_for_changes(void)
-{
-   frontend_state_t *frontend_st   = &frontend_driver_st;
-   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   return frontend && frontend->watch_path_for_changes;
-}
-
-void frontend_driver_watch_path_for_changes(
-      struct string_list *list, int flags,
-      path_change_data_t **change_data)
-{
-   frontend_state_t *frontend_st   = &frontend_driver_st;
-   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   if (frontend && frontend->watch_path_for_changes)
-      frontend->watch_path_for_changes(list, flags, change_data);
-}
-
-bool frontend_driver_check_for_path_changes(path_change_data_t *change_data)
-{
-   frontend_state_t *frontend_st   = &frontend_driver_st;
-   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   if (frontend && frontend->check_for_path_changes)
-      return frontend->check_for_path_changes(change_data);
-   return false;
 }
 
 void frontend_driver_set_sustained_performance_mode(bool on)

@@ -244,21 +244,21 @@ static unsigned input_autoconfigure_get_config_file_affinity(
                   "_alt%d",i);
 
       /* Parse config file */
-      _len  = strlcpy(config_key, "input_vendor_id",
+      _len  = strlcpy_lit(config_key, "input_vendor_id",
                sizeof(config_key));
       strlcpy(config_key  + _len, config_key_postfix,
             sizeof(config_key) - _len);
       if (config_get_int(config, config_key, &tmp_int))
          config_vid = (uint16_t)tmp_int;
 
-      _len  = strlcpy(config_key, "input_product_id",
+      _len  = strlcpy_lit(config_key, "input_product_id",
                sizeof(config_key));
       strlcpy(config_key  + _len, config_key_postfix,
                sizeof(config_key) - _len);
       if (config_get_int(config, config_key, &tmp_int))
          config_pid = (uint16_t)tmp_int;
 
-      _len  = strlcpy(config_key, "input_device",
+      _len  = strlcpy_lit(config_key, "input_device",
                sizeof(config_key));
       strlcpy(config_key  + _len, config_key_postfix,
             sizeof(config_key) - _len);
@@ -266,7 +266,7 @@ static unsigned input_autoconfigure_get_config_file_affinity(
             && (entry->value))
          config_device = entry->value;
 
-      _len  = strlcpy(config_key, "input_phys",
+      _len  = strlcpy_lit(config_key, "input_phys",
                sizeof(config_key));
       _len += strlcpy(config_key + _len, config_key_postfix,
                sizeof(config_key) - _len);
@@ -309,7 +309,7 @@ static void input_autoconfigure_set_config_file(
    }
 
    /* Parse config file */
-   _len  = strlcpy(config_key, "input_device_display_name",
+   _len  = strlcpy_lit(config_key, "input_device_display_name",
             sizeof(config_key));
    /* Read device display name */
    if (alternative > 0)
@@ -452,21 +452,21 @@ static void input_autoconfigure_index_collect(
          snprintf(config_key_postfix, sizeof(config_key_postfix),
                   "_alt%d", i);
 
-      _len  = strlcpy(config_key, "input_vendor_id",
+      _len  = strlcpy_lit(config_key, "input_vendor_id",
                sizeof(config_key));
       strlcpy(config_key + _len, config_key_postfix,
             sizeof(config_key) - _len);
       if (config_get_int(config, config_key, &tmp_int))
          config_vid = (uint16_t)tmp_int;
 
-      _len  = strlcpy(config_key, "input_product_id",
+      _len  = strlcpy_lit(config_key, "input_product_id",
                sizeof(config_key));
       strlcpy(config_key + _len, config_key_postfix,
             sizeof(config_key) - _len);
       if (config_get_int(config, config_key, &tmp_int))
          config_pid = (uint16_t)tmp_int;
 
-      _len  = strlcpy(config_key, "input_device",
+      _len  = strlcpy_lit(config_key, "input_device",
                sizeof(config_key));
       strlcpy(config_key + _len, config_key_postfix,
             sizeof(config_key) - _len);
@@ -474,7 +474,7 @@ static void input_autoconfigure_index_collect(
             && (entry->value))
          config_device = entry->value;
 
-      _len  = strlcpy(config_key, "input_phys",
+      _len  = strlcpy_lit(config_key, "input_phys",
                sizeof(config_key));
       strlcpy(config_key + _len, config_key_postfix,
             sizeof(config_key) - _len);
@@ -1233,6 +1233,12 @@ static void cb_input_autoconfigure_connect(
    else
       input_config_clear_device_joypad_driver(port);
 
+   /* > Physical location
+    * Retained so that a later reconnect can offer it to the profile
+    * scan again; drivers that report none clear it. */
+   input_config_set_device_phys(port,
+         autoconfig_handle->device_info.phys);
+
    /* > VID/PID */
    input_config_set_device_vid(port, autoconfig_handle->device_info.vid);
    input_config_set_device_pid(port, autoconfig_handle->device_info.pid);
@@ -1643,6 +1649,41 @@ bool input_autoconfigure_connect_ex(
    return true;
 }
 
+/**
+ * Re-runs autoconfiguration for a port that already holds a device,
+ * using the identity retained for it by the last connect.
+ *
+ * Profiles are consumed at connect time, so this is what makes a
+ * changed profile directory take effect on devices that are already
+ * present, without disturbing any driver.
+ *
+ * The display name is deliberately not carried over: the retained one
+ * may have come from the profile that is being replaced, and the
+ * hotplug path does not supply one either, so the newly matched
+ * profile gets to name the device.
+ *
+ * @param port Input port to reconfigure (0 .. MAX_INPUT_DEVICES-1).
+ *
+ * @return true if an autoconfigure task was queued, false otherwise.
+ * @see input_autoconfigure_connect()
+ */
+bool input_autoconfigure_reconnect(unsigned port)
+{
+   const char *name = input_config_get_device_name(port);
+
+   if (!name || !*name)
+      return false;
+
+   return input_autoconfigure_connect(
+         name,
+         NULL,
+         input_config_get_device_phys(port),
+         input_config_get_device_joypad_driver(port),
+         port,
+         input_config_get_device_vid(port),
+         input_config_get_device_pid(port));
+}
+
 /****************************/
 /* Autoconfigure Disconnect */
 /****************************/
@@ -1669,6 +1710,7 @@ static void cb_input_autoconfigure_disconnect(
    input_config_clear_device_display_name(port);
    input_config_clear_device_config_name(port);
    input_config_clear_device_joypad_driver(port);
+   input_config_set_device_phys(port, NULL);
    input_config_set_device_vid(port, 0);
    input_config_set_device_pid(port, 0);
    input_config_set_device_autoconfigured(port, false);

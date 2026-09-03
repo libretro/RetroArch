@@ -80,6 +80,10 @@ enum runloop_state_enum
 {
    RUNLOOP_STATE_ITERATE = 0,
    RUNLOOP_STATE_POLLED_AND_SLEEP,
+   /* A one-shot menu action was performed and the next iteration should
+    * start clean. Not idle: returns to the caller immediately, without
+    * the idle sleep POLLED_AND_SLEEP takes. */
+   RUNLOOP_STATE_POLLED_AND_CONTINUE,
    RUNLOOP_STATE_PAUSE,
    RUNLOOP_STATE_MENU,
    RUNLOOP_STATE_QUIT
@@ -181,6 +185,8 @@ struct runloop
    retro_time_t core_run_time;
    retro_time_t frame_limit_minimum_time;
    retro_time_t frame_limit_last_time;
+   unsigned     pace;                           /* enum runloop_pace_source bits */
+   bool         audio_yielded_to_scanline;      /* audio set non-blocking because Scanline Sync holds the loop */
    retro_usec_t frame_time_last;                /* int64_t alignment */
 
    /* Per-frame scalar state. Kept adjacent to the timing block above so the
@@ -323,6 +329,53 @@ struct runloop
 
    bool perfcnt_enable;
    bool paused_hotkey;
+
+   /* True from the moment closing content starts tearing the core
+    * down until the teardown is finished.
+    *
+    * Set and cleared around the existing synchronous teardown, so at
+    * present nothing can observe it as true: the main thread is
+    * inside that teardown for its whole duration and no frame runs.
+    * It is introduced separately, and deliberately inert, because
+    * the work that makes it observable - returning to the frame loop
+    * instead of blocking - is a lifecycle change, and this is the
+    * piece everything else will key off.
+    *
+    * A plain bool rather than a RUNLOOP_FLAG bit: bits 0-30 of that
+    * word are taken and bit 31 was deliberately vacated to avoid a
+    * cross-thread race, so reusing it would undo that reasoning for
+    * no gain. This is main-thread only. */
+   bool content_closing;
+};
+
+/* Frame pacing sources.
+ *
+ * The loop is held to a rate by whichever of these block on a given
+ * frame. They are not exclusive and they are not prioritised: VSync
+ * blocks in the video driver's present, audio backpressure blocks in
+ * audio_driver_write(), Scanline Sync waits in
+ * video_driver_scanline_after_frame(), and the frame-limit timer sleeps
+ * at the end of runloop_iterate(). Any combination can be live on the
+ * same frame, which is why VSync together with audio_sync stutters -
+ * two hardware clocks holding the same loop - and why the comment at
+ * the RUNLOOP_STATE_MENU throttle special-cases audio backpressure
+ * against the timer.
+ *
+ * runloop_state_t::pace records the composition for the current
+ * frame, computed once in runloop_pace_compute() from the same
+ * conditions each mechanism already tests. It does not yet choose
+ * between them: this is the composition made explicit, so that a
+ * priority can be decided in one place later rather than by adding a
+ * fourth special case in a third file. A bitmask rather than an enum
+ * for exactly that reason - a single value would assert a choice the
+ * loop does not currently make. */
+enum runloop_pace_source
+{
+   RUNLOOP_PACE_NONE     = 0,
+   RUNLOOP_PACE_VSYNC    = (1 << 0), /* display: present blocks          */
+   RUNLOOP_PACE_AUDIO    = (1 << 1), /* audio crystal: write blocks      */
+   RUNLOOP_PACE_SCANLINE = (1 << 2), /* display: vblank-locked wait      */
+   RUNLOOP_PACE_TIMER    = (1 << 3)  /* CPU counter: frame-limit sleep   */
 };
 
 typedef struct runloop runloop_state_t;
@@ -488,6 +541,15 @@ bool runloop_init_libretro_symbols(
       void *_lib_handle_p);
 
 runloop_state_t *runloop_state_get_ptr(void);
+
+/**
+ * runloop_is_content_closing:
+ *
+ * True while content is being closed, i.e. while the core is being
+ * torn down.  Currently only ever true inside the synchronous
+ * teardown, where nothing else runs to ask.
+ */
+bool runloop_is_content_closing(void);
 
 RETRO_END_DECLS
 

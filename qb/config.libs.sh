@@ -804,12 +804,11 @@ check_enabled GLSLANG BUILTINGLSLANG 'builtin glslang' 'glslang is' true
 check_enabled SPIRV_CROSS BUILTINSPIRV_CROSS 'builtin spirv-cross' 'spirv-cross is' true
 
 if [ "$HAVE_SPIRV_CROSS" != no ] && [ "$HAVE_BUILTINSPIRV_CROSS" = no ]; then
+   # The slang stack uses the SPIRV-Cross C API, so only the
+   # spirv-cross-c-shared package can satisfy an external build; the
+   # C++ libraries carry no spvc_* symbols.  When it is absent we fall
+   # through to the builtin sources below.
    check_pkgconf SPIRV_CROSS spirv-cross-c-shared
-
-   if [ "$HAVE_SPIRV_CROSS" = no ]; then
-      check_header cxx SPIRV_CROSS spirv_cross/spirv_cross.hpp
-      check_lib cxx SPIRV_CROSS -lspirv-cross-core '' '-lspirv-cross-glsl'
-   fi
 
    if [ "$HAVE_SPIRV_CROSS" = no ]; then
       die : 'Notice: System SPIRV-Cross not found, enabling builtin SPIRV-Cross.'

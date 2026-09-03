@@ -1004,8 +1004,17 @@ bool video_driver_has_windowed(void);
 
 #ifdef HAVE_THREADS
 bool video_driver_is_threaded(void);
+
+/* Whether the threaded video wrapper is installed right now.
+ *
+ * Distinct from video_driver_is_threaded(), which reports whether this
+ * session should be using threaded video. The two disagree between a
+ * core setting SET_HW_RENDER and the video driver reinit that follows,
+ * and it is this one that decides who owns driver resources. */
+bool video_driver_thread_wrapper_active(void);
 #else
 #define video_driver_is_threaded() (false)
+#define video_driver_thread_wrapper_active() (false)
 #endif
 
 bool video_driver_has_focus(void);

@@ -31,6 +31,7 @@
 #include <string.h>
 
 #include <formats/rxml.h>
+#include <formats/rxml_stream.h>
 
 static uint64_t hash;
 
@@ -73,7 +74,7 @@ int main(int argc, char **argv)
 
    for (i = 1; i < argc; i++)
    {
-      rxml_document_t *doc = rxml_load_document(argv[i]);
+      rxml_document_t *doc = rxml_load_document_filestream(argv[i]);
 
       if (!doc)
       {

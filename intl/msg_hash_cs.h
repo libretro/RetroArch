@@ -1337,7 +1337,6 @@ static const struct
    char s_012938fb[27];
    char s_a747cdc9[48];
    char s_2f169651[23];
-   char s_73674a86[22];
    char s_705eee28[46];
    char s_62af62ac[41];
    char s_97379d00[20];
@@ -5395,7 +5394,6 @@ static const struct
    "Faktor m\304\233\305\231\303\255tka miniatur",
    "Zkracov\303\241n\303\255 n\303\241zv\305\257 Playlistu (nutn\303\275 restart)",
    "Pou\305\276\303\255t re\305\276im PAL60r",
-   "Nad\305\231azen\303\275 adres\303\241\305\231",
    "Pozastaven\303\255 obsahu kdy\305\276 je aktivovan\303\251 menu",
    "Pozastaven\303\255 obsahu kdy\305\276 nen\303\255 aktivn\303\255",
    "Po\304\215\303\255tadla v\303\275konu",
@@ -8813,7 +8811,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cs_blob_check[
-      (sizeof(msg_hash_cs_blob) == (163270u
+      (sizeof(msg_hash_cs_blob) == (163248u
 #ifdef ANDROID
        + 390u
 #endif
@@ -10500,7 +10498,6 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,

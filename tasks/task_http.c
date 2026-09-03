@@ -13,7 +13,9 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <net/net_http.h>
 #include <string/stdstring.h>
@@ -71,6 +73,29 @@ struct http_handle
 };
 
 typedef struct http_handle http_handle_t;
+
+/* "Download failed." plus, when the transport never got as far as a
+ * status, the stage that failed and the library's code for it, so a
+ * log line reads "ssl_connect_failed (-0x7780)" instead of "HTTP -1". */
+static char *task_http_failure_string(struct http_t *handle)
+{
+   char buf[128];
+   int code                 = 0;
+   const char *stage        = handle ? net_http_failure(handle, &code) : NULL;
+   size_t _len              = strlcpy_lit(buf, "Download failed", sizeof(buf));
+
+   if (stage)
+   {
+      _len += strlcpy_lit(buf + _len, ": ", sizeof(buf) - _len);
+      _len += strlcpy(buf + _len, stage, sizeof(buf) - _len);
+      if (code < 0)
+         _len += snprintf(buf + _len, sizeof(buf) - _len, " (-0x%04x)", -code);
+      else if (code > 0)
+         _len += snprintf(buf + _len, sizeof(buf) - _len, " (%d)", code);
+   }
+   strlcpy_lit(buf + _len, ".", sizeof(buf) - _len);
+   return strdup(buf);
+}
 
 /* Sink callback: append the run of decoded body bytes to the output
  * file.  Returning false aborts the transfer, which is how a full
@@ -235,8 +260,7 @@ task_finished:
              && ((flg & RETRO_TASK_FLG_CANCELLED) == 0);
       task_http_sink_close(http, ok);
       if (!ok && !task_get_error(task))
-         task_set_error(task, strldup("Download failed.",
-               sizeof("Download failed.")));
+         task_set_error(task, task_http_failure_string(http->handle));
    }
 
    if (http->handle)
@@ -290,8 +314,7 @@ task_finished:
              * failed DNS lookup satisfied, so an unreachable host
              * looked like a successfully downloaded empty core list. */
             if (net_http_error(http->handle))
-               task_set_error(task, strldup("Download failed.",
-                  sizeof("Download failed.")));
+               task_set_error(task, task_http_failure_string(http->handle));
          }
       }
       net_http_delete(http->handle);
@@ -546,7 +569,7 @@ void* task_push_webdav_put(const char *url,
    if (!(conn = net_http_connection_new(url, "PUT", NULL)))
       return NULL;
 
-   _len = strlcpy(expect, "Expect: 100-continue\r\n", sizeof(expect));
+   _len = strlcpy_lit(expect, "Expect: 100-continue\r\n", sizeof(expect));
    if (headers)
    {
       strlcpy(expect + _len, headers, sizeof(expect) - _len);
@@ -591,9 +614,9 @@ void *task_push_webdav_move(const char *url,
    if (!(conn = net_http_connection_new(url, "MOVE", NULL)))
       return NULL;
 
-   _len  = strlcpy(dest_header, "Destination: ", sizeof(dest_header));
+   _len  = strlcpy_lit(dest_header, "Destination: ", sizeof(dest_header));
    _len += strlcpy(dest_header + _len, dest,   sizeof(dest_header) - _len);
-   _len += strlcpy(dest_header + _len, "\r\n", sizeof(dest_header) - _len);
+   _len += strlcpy_lit(dest_header + _len, "\r\n", sizeof(dest_header) - _len);
 
    if (headers)
       strlcpy(dest_header + _len, headers, sizeof(dest_header) - _len);

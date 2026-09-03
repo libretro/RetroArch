@@ -1451,7 +1451,6 @@ static const struct
    char s_012938fb[21];
    char s_a747cdc9[51];
    char s_2f169651[19];
-   char s_73674a86[16];
    char s_705eee28[39];
    char s_62af62ac[30];
    char s_12b25a4b[40];
@@ -3377,11 +3376,9 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    char s_3e1e294b[49];
    char s_69c0e487[57];
-   char s_706ff4dc[180];
    char s_a0d1a85c[51];
    char s_907ef7cc[39];
    char s_b0a46506[47];
-   char s_04624c88[44];
    char s_f6492edc[45];
 #endif
    char s_f3bfa8b9[97];
@@ -5802,7 +5799,6 @@ static const struct
    "Bildeta skal-faktoro",
    "Distran\304\211i ludlsitajn nomojn (bezonas restartigon)",
    "Uzi re\304\235imon PAL60",
-   "Patra dosierujo",
    "Pa\305\255zi enhavon kiam menuo estas aktiva",
    "Pa\305\255zi enhavon kiam ne aktiva",
    "Pa\305\255zi enhavon pro malkonekto de regilo",
@@ -8126,13 +8122,9 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    "Elekti la a\305\255tentokontrolon uzotan en via medio.",
    "Foliumi dosierojn en la konfigurita kunhaviga\304\265o de SMB.",
-   "Ebligi aliron al kunhaviga\304\265o de reto SMB. Oni tre rekomendas eterreton anta\305\255 ol Wi"
-   "-Fi por pli fidinda konekto. Noto: \305\235an\304\235i \304\211i tiujn agordojn bezonas restarti"
-   "gon de RetroArch.",
    "Elekti la maksimumaj konektoj uzotaj en via medio.",
    "Adreso IP a\305\255 gastiga nomo de servilo.",
    "Konfiguri agordojn pri kunhava\304\265o de reto SMB.",
-   "Nomo de la reta kunhaviga\304\265o, al kiu aliri.",
    "Elekti la defa\305\255ltan tempolimon je sekundoj.",
 #endif
    "Ordigi konservdosieroj en dosierujojn nomitaj la\305\255 la dosierujoj, en kiu la enhavo estas l"
@@ -9070,7 +9062,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
-      (sizeof(msg_hash_eo_blob) == (172867u
+      (sizeof(msg_hash_eo_blob) == (172851u
 #ifdef ANDROID
        + 312u
 #endif
@@ -9389,11 +9381,9 @@ typedef char msg_hash_eo_blob_check[
        + 35u
        + 49u
        + 57u
-       + 180u
        + 51u
        + 39u
        + 47u
-       + 44u
        + 45u
 #endif
 #ifdef HAVE_LAKKA
@@ -10913,7 +10903,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
@@ -12838,11 +12827,9 @@ static const uint32_t msg_hash_eo_ids[] =
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,

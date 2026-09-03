@@ -215,6 +215,41 @@ static void ctr_dsp_thread_audio_free(void *data)
    ctr = NULL;
 }
 
+/* Sleep on the condition the DSP thread signals after every block it
+ * takes until at least len bytes fit in the fifo, capped at half of it
+ * so the wait always ends. Returns the free space then, or 0 when the
+ * thread is not running or has gone quiet for a frame. */
+static size_t ctr_dsp_thread_audio_wait_writable(void *data, size_t len)
+{
+   size_t avail;
+   ctr_dsp_thread_audio_t * ctr = (ctr_dsp_thread_audio_t*)data;
+
+   if (!ctr)
+      return 0;
+   if (len > ctr->fifo_size / 2)
+      len = ctr->fifo_size / 2;
+
+   slock_lock(ctr->fifo_lock);
+   for (;;)
+   {
+      if (!ctr->running)
+      {
+         slock_unlock(ctr->fifo_lock);
+         return 0;
+      }
+      avail = FIFO_WRITE_AVAIL(ctr->fifo);
+      if (avail >= len)
+         break;
+      if (!scond_wait_timeout(ctr->fifo_done, ctr->fifo_lock, ctr->frame_time))
+      {
+         slock_unlock(ctr->fifo_lock);
+         return 0;
+      }
+   }
+   slock_unlock(ctr->fifo_lock);
+   return avail;
+}
+
 static ssize_t ctr_dsp_thread_audio_write(void *data, const void *buf, size_t len)
 {
    size_t avail, _len;
@@ -351,5 +386,6 @@ audio_driver_t audio_ctr_dsp_thread = {
    NULL,
    ctr_dsp_thread_audio_write_avail,
    ctr_dsp_thread_audio_buffer_size,
-   NULL  /* write_raw */
+   NULL, /* write_raw */
+   ctr_dsp_thread_audio_wait_writable
 };

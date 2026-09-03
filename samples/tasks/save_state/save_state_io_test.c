@@ -988,6 +988,56 @@ static void test_undo_allocates_nothing(void)
    content_reset_savestate_backups();
 }
 
+/* -----------------------------------------------------------------
+ * Closing content while a save is in flight.
+ *
+ * runloop_event_deinit_core() unloads the core's dylib, and the save
+ * and load handlers call into it - retro_serialize via
+ * content_get_serialized_data, retro_unserialize via
+ * core_unserialize.  A worker still inside one of those when the
+ * library goes away dispatches into freed code.  That is why closing
+ * content calls content_wait_for_save_state_task(), and why that
+ * wait cannot simply be deleted the way the other blocking waits in
+ * this series were.
+ *
+ * What this pins is the property the unload depends on: the wait
+ * does not return until the save has actually finished.  If it ever
+ * returned early - on a budget boundary, say - the unload would land
+ * while a worker was still inside the core.
+ *
+ * The file is checked incomplete before the wait and complete after,
+ * so a wait that silently became a no-op fails here rather than
+ * turning into a crash on a device.
+ * ----------------------------------------------------------------- */
+static void test_close_waits_for_save(void)
+{
+   const char *path = "sst_close_wait.state";
+   size_t sz        = 64 * TEST_SAVE_STATE_CHUNK;   /* 6.25 MB */
+   long   before;
+
+   frontend_reset();
+   core_fill(sz);
+   filestream_delete(path);
+   /* One quantum per tick: the slow-storage case, where a close is
+    * long enough for the user to feel it. */
+   clock_step = TEST_TICK_BUDGET_US;
+
+   content_save_state(path, true);
+
+   before = file_size(path);
+   okf(before != (long)content_get_serialized_size(),
+       "the save is genuinely unfinished when the close begins");
+
+   /* Exactly what closing content does. */
+   content_wait_for_save_state_task();
+
+   okf(file_size(path) == (long)content_get_serialized_size(),
+       "closing content waits for the save to finish before "
+       "the core could be unloaded");
+
+   filestream_delete(path);
+}
+
 static int run_default_lane(void)
 {
    printf("== task_save.c I/O regression oracle ==\n");
@@ -1001,6 +1051,7 @@ static int run_default_lane(void)
    test_roundtrip(0, "round-trip is byte-exact with an unexpired budget");
    test_roundtrip(TEST_TICK_BUDGET_US,
          "round-trip is byte-exact at one quantum per tick");
+   test_close_waits_for_save();
    test_serialize_failure();
    test_open_failure();
    test_truncated_state();

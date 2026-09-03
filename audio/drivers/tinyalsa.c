@@ -50,6 +50,8 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
+#include <compat/strl.h>
+#include <lists/string_list.h>
 #include <poll.h>
 
 #include <sys/ioctl.h>
@@ -1356,7 +1358,10 @@ restart:
          return -1;
       }
       pcm->running = 1;
-      return 0;
+      /* The frames the kernel took, as on every other write: the
+       * callers advance by the return, and a zero here made them
+       * write the opening chunk a second time. */
+      return x.result;
    }
 
    if (ioctl(pcm->fd, SNDRV_PCM_IOCTL_WRITEI_FRAMES, &x))
@@ -1954,15 +1959,16 @@ static int pcm_wait(struct pcm *pcm, int timeout)
       /* let's wait for avail or timeout */
       int err = poll(&pfd, 1, timeout);
       if (err < 0)
+      {
+         /* A signal interrupting the poll is not a device error. */
+         if (errno == EINTR)
+            continue;
          return -errno;
+      }
 
       /* timeout ? */
       if (err == 0)
          return 0;
-
-      /* have we been interrupted ? */
-      if (errno == -EINTR)
-         continue;
 
       /* check for any errors */
       if (pfd.revents & (POLLERR | POLLNVAL))
@@ -2290,6 +2296,28 @@ error:
    return NULL;
 }
 
+/* Iteration cap for tinyalsa_wait_writable(): bounds wakes that
+ * deliver no space, so one call costs at most this many bounded
+ * waits before it hands the pass back. */
+#define TINYALSA_WAIT_WRITABLE_LAPS 8
+
+/* Two periods' worth of time, clamped, as the bound on any wait for
+ * the device: a device that is draining signals well inside it. */
+static int tinyalsa_wait_timeout_ms(tinyalsa_t *tinyalsa)
+{
+   const struct pcm_config *cfg = &tinyalsa->pcm->config;
+   int timeout_ms = 100;
+
+   if (cfg->rate)
+      timeout_ms = (int)(((unsigned long)cfg->period_size * 2000ul)
+            / cfg->rate);
+   if (timeout_ms < 20)
+      timeout_ms = 20;
+   if (timeout_ms > 200)
+      timeout_ms = 200;
+   return timeout_ms;
+}
+
 static ssize_t
 tinyalsa_write(void *data, const void *buf_, size_t len)
 {
@@ -2305,8 +2333,13 @@ tinyalsa_write(void *data, const void *buf_, size_t len)
       {
          snd_pcm_sframes_t frames   = pcm_writei(tinyalsa->pcm, buf, size);
 
-         if (frames < 0)
-            pcm_stop(tinyalsa->pcm);
+         /* A full device refuses with -1 here (EAGAIN on the
+          * non-blocking fd), and that is the normal state of a
+          * device being fed faster than it drains: nothing more goes
+          * in this call, and the write returns what did. Nothing
+          * else is done to the device over it. */
+         if (frames <= 0)
+            break;
 
          _len    += frames;
          buf     += (frames << 1) * frames_size;
@@ -2315,15 +2348,28 @@ tinyalsa_write(void *data, const void *buf_, size_t len)
    }
    else
    {
+      int timeout_ms = tinyalsa_wait_timeout_ms(tinyalsa);
+
       while (size)
       {
          snd_pcm_sframes_t frames;
-         pcm_wait(tinyalsa->pcm, -1);
+         int rc   = pcm_wait(tinyalsa->pcm, timeout_ms);
+
+         /* Nothing ready within the bound: the device has stopped
+          * draining, and the frames not yet written are given up
+          * rather than the thread. An xrun or a suspend is left for
+          * pcm_writei() to recover. */
+         if (rc == 0)
+            break;
+         if (rc < 0 && rc != -EPIPE && rc != -ESTRPIPE)
+            return -1;
 
          frames   = pcm_writei(tinyalsa->pcm, buf, size);
 
          if (frames < 0)
             return -1;
+         if (!frames)
+            break;
 
          _len    += frames;
          buf     += (frames << 1) * frames_size;
@@ -2429,6 +2475,40 @@ static void tinyalsa_free(void *data)
    }
 }
 
+/* Sleep in pcm_wait() (poll on the pcm fd) until at least len bytes
+ * fit, capped at half the buffer. Every wait is bounded to two
+ * periods' worth of time and the loop to TINYALSA_WAIT_WRITABLE_LAPS,
+ * so on a device that stalls, vanishes, or wakes without delivering
+ * space this returns 0 - skip the pass, retry on a later wake - and
+ * the audio thread keeps servicing its messages. Returns the free
+ * space otherwise. */
+static size_t tinyalsa_wait_writable(void *data, size_t len)
+{
+   tinyalsa_t *alsa       = (tinyalsa_t*)data;
+   snd_pcm_sframes_t want = BYTES_TO_FRAMES(len, alsa->frame_bits);
+   snd_pcm_sframes_t half = BYTES_TO_FRAMES(alsa->buffer_size / 2, alsa->frame_bits);
+   int laps               = TINYALSA_WAIT_WRITABLE_LAPS;
+   int timeout_ms         = tinyalsa_wait_timeout_ms(alsa);
+
+   if (want > half)
+      want = half;
+
+   for (;;)
+   {
+      int rc;
+      snd_pcm_sframes_t avail = pcm_avail_update(alsa->pcm);
+      if (avail < 0)
+         return 0;
+      if (avail >= want)
+         return FRAMES_TO_BYTES(avail, alsa->frame_bits);
+      rc = pcm_wait(alsa->pcm, timeout_ms);
+      if (rc <= 0 && rc != -EPIPE && rc != -ESTRPIPE)
+         return 0;
+      if (--laps < 0)
+         return 0;
+   }
+}
+
 static size_t tinyalsa_write_avail(void *data)
 {
    tinyalsa_t *alsa        = (tinyalsa_t*)data;
@@ -2447,6 +2527,76 @@ static size_t tinyalsa_buffer_size(void *data)
 	return tinyalsa->buffer_size;
 }
 
+/* The device string is "<card>,<device>". Enumerate the playback PCM
+ * nodes the kernel exposes, /dev/snd/pcmC<card>D<device>p, and label
+ * each with the card's name from its mixer where one opens. */
+static void *tinyalsa_device_list_new(void *data)
+{
+   unsigned card, dev;
+   union string_list_elem_attr attr;
+   struct string_list *sl = string_list_new();
+
+   (void)data;
+   attr.i = 0;
+   if (!sl)
+      return NULL;
+
+   for (card = 0; card < 32; card++)
+   {
+      char cname[64];
+      int have_name = 0;
+
+      for (dev = 0; dev < 32; dev++)
+      {
+         char node[64];
+         char value[16];
+         char label[192];
+         snprintf(node, sizeof(node), "/dev/snd/pcmC%uD%up", card, dev);
+         if (access(node, F_OK) != 0)
+            continue;
+         if (!have_name)
+         {
+            /* /proc/asound/cardN/id is the ALSA card id; no library
+             * needed, and this file carries only the PCM half of
+             * tinyalsa. */
+            FILE *f;
+            char path[48];
+            cname[0]  = '\0';
+            have_name = 1;
+            snprintf(path, sizeof(path), "/proc/asound/card%u/id", card);
+            f = fopen(path, "r");
+            if (f)
+            {
+               if (fgets(cname, sizeof(cname), f))
+               {
+                  size_t n = strlen(cname);
+                  while (n && (cname[n - 1] == '\n' || cname[n - 1] == '\r'))
+                     cname[--n] = '\0';
+               }
+               fclose(f);
+            }
+         }
+         snprintf(value, sizeof(value), "%u,%u", card, dev);
+         if (cname[0])
+            snprintf(label, sizeof(label), "%s (%s)", value, cname);
+         else
+            strlcpy(label, value, sizeof(label));
+         attr.i = (int)((card << 8) | dev);
+         string_list_append(sl, label, attr);
+      }
+   }
+
+   return sl;
+}
+
+static void tinyalsa_device_list_free(void *data, void *array_list_data)
+{
+   struct string_list *sl = (struct string_list*)array_list_data;
+   (void)data;
+   if (sl)
+      string_list_free(sl);
+}
+
 audio_driver_t audio_tinyalsa = {
 	tinyalsa_init,               /* AUDIO_init              */
 	tinyalsa_write,              /* AUDIO_write             */
@@ -2457,9 +2607,10 @@ audio_driver_t audio_tinyalsa = {
 	tinyalsa_free,               /* AUDIO_free              */
 	tinyalsa_use_float,          /* AUDIO_use_float         */
 	"tinyalsa",                  /* "AUDIO"                 */
-	NULL,                        /* AUDIO_device_list_new   */ /*TODO*/
-	NULL,                        /* AUDIO_device_list_free  */ /*TODO*/
+	tinyalsa_device_list_new,    /* AUDIO_device_list_new   */
+	tinyalsa_device_list_free,   /* AUDIO_device_list_free  */
 	tinyalsa_write_avail,        /* AUDIO_write_avail       */ /*TODO*/
 	tinyalsa_buffer_size,        /* AUDIO_buffer_size       */ /*TODO*/
-	NULL                         /* write_raw               */
+	NULL,                        /* write_raw               */
+	tinyalsa_wait_writable
 };

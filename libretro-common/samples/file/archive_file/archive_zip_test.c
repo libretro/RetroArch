@@ -650,6 +650,52 @@ static void test_missing_member_terminates(void)
       printf("ok    missing member returns nothing rather than hanging\n");
 }
 
+/* path_get_archive_delim() recognises every archive extension the tree
+ * knows, but a backend exists only for the codecs compiled in.  This
+ * build carries HAVE_COMPRESSION alone, so '.7z' and '.zst' members
+ * reach file_archive_compressed_read() with no backend behind them and
+ * must be reported as read failures. */
+static void test_missing_backend_reports_failure(void)
+{
+   static const char *cases[] = { "backendless.7z", "backendless.zst" };
+   char tmp_path[1024];
+   char member[1088];
+   uint8_t buf[512];
+   size_t len;
+   size_t i;
+
+   for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++)
+   {
+      void *read_buf  = NULL;
+      int64_t read_len = -1;
+      int ret;
+
+      /* Contents are irrelevant: the lookup fails before any read. */
+      len = 0;
+      len += write_minimal_lfh(buf + len, "member.bin");
+      len += write_eocd(buf + len, 1, 0, (uint32_t)len);
+
+      snprintf(tmp_path, sizeof(tmp_path), "%s", cases[i]);
+      write_file(tmp_path, buf, len);
+
+      snprintf(member, sizeof(member), "%s#member.bin", tmp_path);
+      ret = file_archive_compressed_read(member, &read_buf, NULL, &read_len);
+      remove(tmp_path);
+      free(read_buf);
+
+      if (ret != 0 || read_len != 0)
+      {
+         printf("FAIL  \"%s\" without a backend returned ret=%d len=%lld, "
+                "expected a clean failure\n", cases[i], ret,
+                (long long)read_len);
+         failures++;
+      }
+      else
+         printf("ok    \"%s\" without a backend fails instead of "
+                "dereferencing NULL\n", cases[i]);
+   }
+}
+
 int main(void)
 {
    test_truncated_entry();
@@ -660,6 +706,7 @@ int main(void)
    test_appledouble_exact_member_selection();
    test_init_failure_cleanup();
    test_missing_member_terminates();
+   test_missing_backend_reports_failure();
 
    if (failures)
    {

@@ -157,6 +157,7 @@ typedef struct settings
 
 #ifdef HAVE_WASAPI
       unsigned audio_wasapi_sh_buffer_length;
+      unsigned audio_asio_output_channel;
 #endif
 
 #ifdef HAVE_MICROPHONE
@@ -239,6 +240,7 @@ typedef struct settings
       unsigned video_viwidth;
       unsigned video_aspect_ratio_idx;
       unsigned video_rotation;
+      unsigned video_fse_negotiation;
       unsigned screen_orientation;
       unsigned video_msg_bgcolor_red;
       unsigned video_msg_bgcolor_green;
@@ -408,6 +410,7 @@ typedef struct settings
       int crt_switch_porch_adjust;
       int crt_switch_vertical_adjust;
       int video_max_frame_latency;
+      int video_scanline_sync_offset;
 #ifdef HAVE_VULKAN
       int vulkan_gpu_index;
 #endif
@@ -597,6 +600,8 @@ typedef struct settings
       bool audio_enable_menu_bgm;
       bool audio_enable_menu_scroll;
       bool audio_sync;
+      bool audio_threaded_pipeline;
+      bool audio_thread_priority;
       bool audio_rate_control;
       bool audio_fastforward_mute;
       bool audio_fastforward_speedup;
@@ -699,6 +704,7 @@ typedef struct settings
       bool menu_battery_level_enable;
       bool menu_core_enable;
       bool menu_show_sublabels;
+      bool menu_show_sublabels_current_selection_only;
       bool menu_show_confirm;
       bool menu_dynamic_wallpaper_enable;
       bool menu_mouse_enable;
@@ -932,6 +938,7 @@ typedef struct settings
       /* Misc. */
       bool discord_enable;
       bool threaded_data_runloop_enable;
+      bool thread_prefer_fast_cores;
       bool set_supports_no_game_enable;
       bool auto_screenshot_filename;
       bool history_list_enable;

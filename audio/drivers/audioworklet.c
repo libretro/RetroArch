@@ -227,6 +227,14 @@ static bool audioworklet_resume_ctx(void *data)
    return audioworklet->context_running;
 }
 
+/* Bounds. The write retries its wait this many times before dropping
+ * the rest; the busy-wait build spins at most this many resume attempts
+ * per retry; init waits this long for the worklet module. */
+#define AUDIOWORKLET_WAIT_LAPS       8
+#define AUDIOWORKLET_BUSYWAIT_SPINS  100000
+#define AUDIOWORKLET_INIT_WAIT_MS    30000
+#define AUDIOWORKLET_BLOCK_WAIT_MS   2000
+
 static void *audioworklet_init(const char *device, unsigned rate,
    unsigned latency, unsigned block_frames, unsigned *new_rate)
 {
@@ -271,8 +279,24 @@ static void *audioworklet_init(const char *device, unsigned rate,
 
 #ifndef EMSCRIPTEN_AUDIO_EXTERNAL_BLOCK
    /* TODO: can MIN_ASYNCIFY block here too? */
-   while (!audioworklet->init_done)
-      retro_sleep(1);
+   {
+      /* The worklet reports done or error once its module has loaded.
+       * Generous, since that is a fetch, but not unbounded: a module
+       * that never loads and never errors is an init failure, not a
+       * frontend that never starts. */
+      unsigned waited_ms = 0;
+      while (!audioworklet->init_done)
+      {
+         retro_sleep(1);
+         if (++waited_ms >= AUDIOWORKLET_INIT_WAIT_MS)
+         {
+            RARCH_ERR("[AudioWorklet] The worklet did not initialize within %u ms.\n",
+                  AUDIOWORKLET_INIT_WAIT_MS);
+            audioworklet->init_error = true;
+            break;
+         }
+      }
+   }
    audioworklet->initing = false;
    if (audioworklet->init_error)
    {
@@ -299,6 +323,7 @@ static ssize_t audioworklet_write(void *data, const void *s, size_t ss)
    audioworklet_data_t *audioworklet = (audioworklet_data_t*)data;
    const float *samples = (const float*)s;
    size_t num_frames    = ss / 2 / sizeof(float);
+   int laps             = AUDIOWORKLET_WAIT_LAPS;
 
    /* too early! might happen with external blocking */
    if (!audioworklet->driver_running)
@@ -361,13 +386,30 @@ static ssize_t audioworklet_write(void *data, const void *s, size_t ss)
 #endif
       if (audioworklet->nonblock || !num_frames)
          break;
+      /* Bounded overall, whichever way the wait below is made: a
+       * context that will not run - suspended by the autoplay policy
+       * until the page is clicked, or by the browser for a background
+       * tab - frees nothing, and this returns what went rather than
+       * holding the thread. On the busy-wait build that thread is the
+       * page's, and holding it froze the tab. */
+      if (--laps < 0)
+      {
+         RARCH_WARN("[AudioWorklet] Dropping %lu frames: the context is not taking audio.\n",
+               (unsigned long)num_frames);
+         break;
+      }
 #if defined(PROXY_TO_PTHREAD)
       emscripten_condvar_wait(&audioworklet->trywrite_cond, &audioworklet->trywrite_lock, 3000000);
 #elif defined(EMSCRIPTEN_FULL_ASYNCIFY)
       retro_sleep(1);
 #else /* equivalent to defined(EMSCRIPTEN_AUDIO_BUSYWAIT) */
-      while (emscripten_atomic_load_u32(&audioworklet->write_avail_bytes) < 2 * sizeof(float))
-         audioworklet_resume_ctx(audioworklet);
+      {
+         /* The spin cannot sleep on this thread; it can at least end. */
+         unsigned spins = AUDIOWORKLET_BUSYWAIT_SPINS;
+         while (   emscripten_atomic_load_u32(&audioworklet->write_avail_bytes) < 2 * sizeof(float)
+                && spins--)
+            audioworklet_resume_ctx(audioworklet);
+      }
 #endif
       /* try resuming, on the off chance that the context was interrupted while blocking */
       audioworklet_resume_ctx(audioworklet);
@@ -389,10 +431,24 @@ bool audioworklet_external_block(void)
          return false;
 #endif
 
-      while (audioworklet->initing && !audioworklet->init_done)
 #ifdef EMSCRIPTEN_AUDIO_ASYNC_BLOCK
-         retro_sleep(1);
+      {
+         unsigned waited_ms = 0;
+         while (audioworklet->initing && !audioworklet->init_done)
+         {
+            retro_sleep(1);
+            if (++waited_ms >= AUDIOWORKLET_INIT_WAIT_MS)
+            {
+               RARCH_ERR("[AudioWorklet] The worklet did not initialize within %u ms.\n",
+                     AUDIOWORKLET_INIT_WAIT_MS);
+               audioworklet->init_error = true;
+               audioworklet->init_done  = true;
+               break;
+            }
+         }
+      }
 #else
+      while (audioworklet->initing && !audioworklet->init_done)
          return true;
 #endif
       if (audioworklet->init_done && !audioworklet->driver_running)
@@ -410,15 +466,26 @@ bool audioworklet_external_block(void)
       if (!audioworklet->driver_running)
          return false;
 
+#ifdef EMSCRIPTEN_AUDIO_ASYNC_BLOCK
+      {
+         /* Bounded: a context that will not run frees nothing, and the
+          * block ends with the audio dropped rather than never. */
+         unsigned waited_ms = 0;
+         while (emscripten_atomic_load_u32(&audioworklet->write_avail_bytes) < audioworklet->write_avail_diff)
+         {
+            audioworklet_resume_ctx(audioworklet);
+            retro_sleep(1);
+            if (++waited_ms >= AUDIOWORKLET_BLOCK_WAIT_MS)
+               break;
+         }
+      }
+#else
       while (emscripten_atomic_load_u32(&audioworklet->write_avail_bytes) < audioworklet->write_avail_diff)
       {
          audioworklet_resume_ctx(audioworklet);
-#ifdef EMSCRIPTEN_AUDIO_ASYNC_BLOCK
-         retro_sleep(1);
-#else
          return true;
-#endif
       }
+#endif
 #endif
 
 #ifdef EMSCRIPTEN_AUDIO_FAKE_BLOCK

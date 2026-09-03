@@ -589,7 +589,6 @@ static const struct
    char s_7206ddda[13];
    char s_0f381893[23];
    char s_2f169651[40];
-   char s_73674a86[42];
    char s_97379d00[36];
    char s_0f1d488a[15];
    char s_b3cc8a43[38];
@@ -2690,8 +2689,6 @@ static const struct
    "\316\246\317\205\317\203\316\271\316\277\316\273\316\277\316\263\316\271\316\272\316\254",
    "\316\247\317\201\316\256\317\203\316\267 \316\233\316\265\316\271\317\204\316\277\317\205\317"
    "\201\316\263\316\257\316\261\317\202 PAL60",
-   "\316\240\317\201\316\277\316\267\316\263\316\277\317\215\316\274\316\265\316\275\316\277 \316"
-   "\265\317\205\317\201\316\265\317\204\316\256\317\201\316\271\316\277",
    "\316\234\316\265\317\204\317\201\316\267\317\204\316\255\317\202 \316\225\317\200\316\271\316"
    "\264\317\214\317\203\316\265\317\211\316\275",
    "\316\225\317\200\316\257\316\264\316\277\317\203\316\267",
@@ -4757,7 +4754,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_el_blob_check[
-      (sizeof(msg_hash_el_blob) == (69090u
+      (sizeof(msg_hash_el_blob) == (69048u
 #ifdef HAVE_LAKKA
        + 35u
 #endif
@@ -5433,7 +5430,6 @@ static const uint32_t msg_hash_el_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NORMAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,

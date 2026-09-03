@@ -876,7 +876,7 @@ static struct buffer query_parse_table(
    {
       if (argi >= QUERY_MAX_ARGS)
       {
-         strlcpy(s, "Too many arguments in function call.", len);
+         strlcpy_lit(s, "Too many arguments in function call.", len);
          *err = s;
          goto clean;
       }
@@ -892,7 +892,7 @@ static struct buffer query_parse_table(
                   _len + 1, sizeof(char));
             if (!args[argi].a.value.val.string.buff)
             {
-               strlcpy(s, "OOM", len);
+               strlcpy_lit(s, "OOM", len);
                *err = s;
                goto clean;
             }
@@ -919,7 +919,7 @@ static struct buffer query_parse_table(
       buff = query_chomp(buff);
       if (argi >= QUERY_MAX_ARGS)
       {
-         strlcpy(s, "Too many arguments in function call.", len);
+         strlcpy_lit(s, "Too many arguments in function call.", len);
          *err = s;
          goto clean;
       }
@@ -945,7 +945,7 @@ static struct buffer query_parse_table(
       malloc(sizeof(struct argument) * argi);
    if (!invocation->argv)
    {
-      strlcpy(s, "Out of memory.", len);
+      strlcpy_lit(s, "Out of memory.", len);
       *err = s;
       goto clean;
    }
@@ -1002,7 +1002,7 @@ static struct buffer query_parse_method_call(
    {
       if (argi >= QUERY_MAX_ARGS)
       {
-         strlcpy(s, "Too many arguments in function call.", len);
+         strlcpy_lit(s, "Too many arguments in function call.", len);
          *err = s;
          goto clean;
       }

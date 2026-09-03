@@ -658,6 +658,113 @@ typedef struct rchd_av_frame
  */
 int rchd_av_parse(const uint8_t *data, size_t len, rchd_av_frame_t *out);
 
+/* ---------------------------------------------------------------------
+ * Writing
+ *
+ * A minimal version 5 writer, storing every hunk uncompressed. It exists
+ * so that CHD readers can be tested without a full MAME toolchain: the
+ * output is a real .chd that any v5 reader accepts, and comparing a title
+ * read from it against the same title read from the source image checks
+ * the whole open/map/read path.
+ *
+ * Like the reader, it does no I/O of its own. The reader is fed bytes the
+ * caller fetched; the writer hands the caller bytes to store, through a
+ * positioned-write callback. Nothing here opens, seeks or closes a file,
+ * so this stays usable where the destination is not a file at all.
+ *
+ * Positioned rather than sequential because the header and the hunk map
+ * are only complete once every hunk has been written -- the map records
+ * where each hunk landed -- so they are emitted last, at offset zero. A
+ * caller writing to a stream that cannot seek should buffer the first
+ * rchd_write_prefix_size(w) bytes and fill them in at the end.
+ *
+ * What this does NOT do is compress. The four compressor slots are
+ * written as zero, which is what the format calls an uncompressed file,
+ * so the codec paths (LZMA, zlib, FLAC, Huffman) are not exercised by
+ * anything it produces. It is a fixture generator, not an archiver.
+ *
+ * Usage:
+ *
+ *    rchd_writer_t *w = rchd_write_new(total_bytes, hunk_bytes,
+ *                                      unit_bytes, sink, ctx);
+ *    for (each hunk)
+ *       rchd_write_hunk(w, buf, len);      // len <= hunk_bytes
+ *    rchd_write_finish(w);                 // emits header and map
+ *    rchd_write_free(w);
+ *
+ * A hunk written as all zeros is stored as a hole rather than as data,
+ * which is both what real encoders do and what exercises the reader's
+ * hole handling.
+ * --------------------------------------------------------------------- */
+
+typedef struct rchd_writer rchd_writer_t;
+
+/**
+ * rchd_write_fn:
+ * @ctx   : caller's cookie, passed through untouched.
+ * @offset: absolute byte offset to write at.
+ * @data  : bytes to store.
+ * @len   : number of bytes.
+ *
+ * Returns: nonzero on success, zero on failure. A failure is reported
+ * back through the rchd_write_* call that triggered it.
+ */
+typedef int (*rchd_write_fn)(void *ctx, uint64_t offset,
+      const void *data, size_t len);
+
+/**
+ * rchd_write_new:
+ * @logical_bytes: total size of the uncompressed image.
+ * @hunk_bytes   : bytes per hunk; must be a nonzero multiple of
+ *                 @unit_bytes.
+ * @unit_bytes   : sector size, typically 2048 for a disc image.
+ * @sink         : positioned-write callback; must not be NULL.
+ * @ctx          : passed to @sink untouched.
+ *
+ * Returns: a writer, or NULL on bad arguments or allocation failure.
+ * Free with rchd_write_free whether or not finish succeeds.
+ */
+rchd_writer_t *rchd_write_new(uint64_t logical_bytes, uint32_t hunk_bytes,
+      uint32_t unit_bytes, rchd_write_fn sink, void *ctx);
+
+/**
+ * rchd_write_prefix_size:
+ * @w: writer.
+ *
+ * Returns: the number of bytes at offset zero that rchd_write_finish
+ * will write (header plus map, rounded up to a hunk boundary), or zero
+ * if @w is NULL. No hunk data is placed below this offset.
+ */
+uint64_t rchd_write_prefix_size(const rchd_writer_t *w);
+
+/**
+ * rchd_write_hunk:
+ * @w   : writer.
+ * @data: hunk contents; short buffers are zero-padded to a full hunk.
+ * @len : bytes in @data, at most hunk_bytes.
+ *
+ * Hunks must be written in order. Returns: RCHD_OK, RCHD_ERROR_DATA for
+ * a long write or more hunks than the logical size allows, or
+ * RCHD_ERROR_STATE if the sink reported failure.
+ */
+int rchd_write_hunk(rchd_writer_t *w, const uint8_t *data, uint32_t len);
+
+/**
+ * rchd_write_finish:
+ * @w: writer.
+ *
+ * Emits the header and the hunk map at offset zero. Returns: RCHD_OK,
+ * RCHD_ERROR_DATA if fewer hunks were written than the logical size
+ * needs, or RCHD_ERROR_STATE if the sink reported failure.
+ */
+int rchd_write_finish(rchd_writer_t *w);
+
+/**
+ * rchd_write_free:
+ * @w: writer, may be NULL.
+ */
+void rchd_write_free(rchd_writer_t *w);
+
 RETRO_END_DECLS
 
 #endif

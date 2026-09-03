@@ -339,8 +339,22 @@ static uint64_t xgetbv_x86(uint32_t idx)
 }
 #endif
 
-#if defined(__ARM_NEON__)
-#if defined(__arm__)
+/* RunFast mode is a 32-bit VFP control, and this writes FPSCR - so it
+ * needs both an ARM32 target and an FPU worth configuring.  NEON
+ * implies VFP, which is why its presence is the proxy used here; a
+ * VFP-less core such as the armv5te arm926ej-s would fault on the
+ * write.
+ *
+ * CPU_ARM_RUNFAST is the single condition for the definition AND
+ * every call.  They were separate conditions and drifted: the calls
+ * ended up reachable where the definition was not, which is a link
+ * error on exactly the targets with no NEON - Miyoo armv5te and
+ * armv7 builds without an FPU selected. */
+#if (defined(__ARM_NEON) || defined(__ARM_NEON__)) && defined(__arm__)
+#define CPU_ARM_RUNFAST 1
+#endif
+
+#ifdef CPU_ARM_RUNFAST
 static void arm_enable_runfast_mode(void)
 {
    /* RunFast mode. Enables flush-to-zero and some
@@ -357,8 +371,7 @@ static void arm_enable_runfast_mode(void)
          : "r"(x), "r"(y)
         );
 }
-#endif
-#endif
+#endif /* CPU_ARM_RUNFAST */
 
 #if defined(__linux__) && !defined(CPU_X86)
 static unsigned char check_arm_cpu_feature(const char* feature)
@@ -372,11 +385,30 @@ static unsigned char check_arm_cpu_feature(const char* feature)
 
    while (fgets(line, sizeof(line), fp))
    {
+      const char *list;
+      const char *p;
+      size_t flen;
+
       if (strncmp(line, "Features\t: ", 11))
          continue;
 
-      if (strstr(line + 11, feature))
-         status = 1;
+      /* Feature names are space separated and several are prefixes of
+       * others - 'aes' sits inside 'sveaes', 'sha3' inside 'svesha3',
+       * 'asimd' inside 'asimddp' - so compare whole tokens. */
+      flen = strlen(feature);
+      list = line + 11;
+
+      for (p = list; (p = strstr(p, feature)); p += flen)
+      {
+         char after  = p[flen];
+         char before = (p == list) ? ' ' : p[-1];
+         if (     (before == ' ')
+               && (after == ' ' || after == '\n' || after == '\0'))
+         {
+            status = 1;
+            break;
+         }
+      }
 
       break;
    }
@@ -507,12 +539,346 @@ static void cpulist_read_from(CpuList* list, const char* filename)
 
 #endif
 
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+/* GetLogicalProcessorInformation arrived in XP SP3 and Server 2003, so
+ * it is resolved rather than linked: on Win9x, NT 4 and 2000 the export
+ * is absent, GetProcAddress reports so, and the caller falls back to
+ * the plain processor count. The Ex form carrying EfficiencyClass is
+ * Windows 7 and later and would rank efficiency cores, which this does
+ * not attempt. */
+typedef BOOL (WINAPI *cpu_glpi_t)(
+      PSYSTEM_LOGICAL_PROCESSOR_INFORMATION, PDWORD);
+
+/* Caller frees. Returns NULL, leaving *count untouched, wherever the
+ * export or the query is unavailable. */
+static SYSTEM_LOGICAL_PROCESSOR_INFORMATION *cpu_win32_slpi(DWORD *count)
+{
+   SYSTEM_LOGICAL_PROCESSOR_INFORMATION *buf = NULL;
+   DWORD       _len = 0;
+   HMODULE     k32  = GetModuleHandleA("kernel32.dll");
+   cpu_glpi_t  glpi = k32 ? (cpu_glpi_t)(void (*)(void))
+      GetProcAddress(k32, "GetLogicalProcessorInformation") : NULL;
+
+   if (!glpi)
+      return NULL;
+
+   /* The first call is expected to fail, and reports the size wanted. */
+   if (glpi(NULL, &_len))
+      return NULL;
+   if (GetLastError() != ERROR_INSUFFICIENT_BUFFER || _len == 0)
+      return NULL;
+   if (_len % sizeof(*buf))
+      return NULL;
+
+   if (!(buf = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION *)malloc(_len)))
+      return NULL;
+
+   if (!glpi(buf, &_len))
+   {
+      free(buf);
+      return NULL;
+   }
+
+   *count = _len / (DWORD)sizeof(*buf);
+   return buf;
+}
+#endif
+
+#if defined(__linux__)
+/* Number of distinct SMT sibling groups under
+ * /sys/devices/system/cpu, which is one per physical core. The list a
+ * sibling file holds names every processor sharing that core, so the
+ * lowest id in it identifies the group and counting distinct ones
+ * counts cores. */
+static unsigned linux_core_amount_physical(unsigned logical)
+{
+   char     path[64];
+   char     line[64];
+   unsigned seen[128];
+   unsigned n_seen = 0;
+   unsigned found  = 0;
+   unsigned i;
+
+   /* One entry per core, so a machine wider than the table is left to
+    * the logical count rather than answered wrongly. */
+   if (logical > (unsigned)(sizeof(seen) / sizeof(seen[0])))
+      return logical;
+
+   for (i = 0; i < 256 && found < logical; i++)
+   {
+      FILE    *fp;
+      unsigned first;
+      unsigned j;
+
+      snprintf(path, sizeof(path),
+            "/sys/devices/system/cpu/cpu%u/topology/thread_siblings_list", i);
+
+      if (!(fp = fopen(path, "r")))
+         continue;
+
+      line[0] = '\0';
+      if (!fgets(line, sizeof(line), fp))
+      {
+         fclose(fp);
+         continue;
+      }
+      fclose(fp);
+
+      found++;
+
+      if (sscanf(line, "%u", &first) != 1)
+         continue;
+
+      for (j = 0; j < n_seen; j++)
+         if (seen[j] == first)
+            break;
+
+      if (j == n_seen && n_seen < (unsigned)(sizeof(seen) / sizeof(seen[0])))
+         seen[n_seen++] = first;
+   }
+
+   /* Nothing readable, so the kernel is not publishing topology here. */
+   if (n_seen == 0)
+      return logical;
+
+   return n_seen;
+}
+#endif
+
+#if defined(__linux__)
+/* First unsigned in a one-line sysfs file, or @fallback where the file
+ * is missing or unreadable. */
+static unsigned sysfs_read_uint(const char *path, unsigned fallback)
+{
+   char     line[64];
+   unsigned val;
+   FILE    *fp = fopen(path, "r");
+
+   if (!fp)
+      return fallback;
+
+   line[0] = '\0';
+   if (!fgets(line, sizeof(line), fp))
+   {
+      fclose(fp);
+      return fallback;
+   }
+   fclose(fp);
+
+   if (sscanf(line, "%u", &val) != 1)
+      return fallback;
+   return val;
+}
+#endif
+
+#if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) || defined(__linux__)
+struct cpu_proc_rank
+{
+   unsigned freq; /* kHz, higher is a stronger core */
+   unsigned id;   /* OS processor identifier */
+   unsigned smt;  /* 0 for the first processor on its core, else 1 */
+};
+
+/* Strongest core first, a core ahead of its own SMT siblings, and the
+ * identifier as the tie-break so the result does not depend on the
+ * order the entries were gathered in. */
+static int cpu_proc_rank_cmp(const void *a, const void *b)
+{
+   const struct cpu_proc_rank *l = (const struct cpu_proc_rank *)a;
+   const struct cpu_proc_rank *r = (const struct cpu_proc_rank *)b;
+
+   if (l->freq != r->freq)
+      return (l->freq > r->freq) ? -1 : 1;
+   if (l->smt  != r->smt)
+      return (l->smt  < r->smt)  ? -1 : 1;
+   if (l->id   != r->id)
+      return (l->id   < r->id)   ? -1 : 1;
+   return 0;
+}
+#endif
+
+size_t cpu_features_get_processor_order(unsigned *s, size_t len)
+{
+   size_t n = 0;
+
+   if (!s || !len)
+      return 0;
+
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   {
+      DWORD count = 0;
+      SYSTEM_LOGICAL_PROCESSOR_INFORMATION *buf = cpu_win32_slpi(&count);
+
+      if (buf)
+      {
+         struct cpu_proc_rank *rank;
+         size_t cap = (size_t)cpu_features_get_core_amount();
+
+         if (cap < 1)
+            cap = 1;
+         if (cap > 1024)
+            cap = 1024;
+
+         if ((rank = (struct cpu_proc_rank *)
+                  malloc(cap * sizeof(struct cpu_proc_rank))))
+         {
+            DWORD i;
+            for (i = 0; i < count && n < cap; i++)
+            {
+               unsigned  bit;
+               unsigned  seen = 0;
+               ULONG_PTR mask = buf[i].ProcessorMask;
+
+               if (buf[i].Relationship != RelationProcessorCore)
+                  continue;
+
+               /* One mask bit per processor on this core, the lowest
+                * of them being the one an SMT sibling shares with. */
+               for (bit = 0; bit < sizeof(ULONG_PTR) * 8 && n < cap; bit++)
+               {
+                  if (!(mask & (((ULONG_PTR)1) << bit)))
+                     continue;
+                  rank[n].freq = 0;
+                  rank[n].id   = bit;
+                  rank[n].smt  = seen ? 1 : 0;
+                  seen++;
+                  n++;
+               }
+            }
+
+            if (n)
+            {
+               qsort(rank, n, sizeof(struct cpu_proc_rank),
+                     cpu_proc_rank_cmp);
+               if (n > len)
+                  n = len;
+               for (i = 0; i < (DWORD)n; i++)
+                  s[i] = rank[i].id;
+            }
+            free(rank);
+         }
+         free(buf);
+
+         if (n)
+            return n;
+      }
+   }
+#endif
+
+#if defined(__linux__)
+   {
+      struct cpu_proc_rank *rank;
+      char     path[96];
+      unsigned i;
+      /* Every processor is ranked before any is handed back: gathering
+       * only the first @len of them would sort a set chosen by
+       * identifier and hand back the weakest cores on a layout that
+       * numbers the little cluster first. */
+      size_t   cap = (size_t)cpu_features_get_core_amount();
+
+      if (cap < 1)
+         cap = 1;
+      if (cap > 1024)
+         cap = 1024;
+
+      if (!(rank = (struct cpu_proc_rank *)
+               malloc(cap * sizeof(struct cpu_proc_rank))))
+         return 0;
+
+      for (i = 0; i < 1024 && n < cap; i++)
+      {
+         unsigned first;
+
+         snprintf(path, sizeof(path),
+               "/sys/devices/system/cpu/cpu%u/topology/thread_siblings_list", i);
+         /* A processor with no sibling list is one the kernel is not
+          * publishing, rather than one that shares no core. */
+         first = sysfs_read_uint(path, (unsigned)-1);
+         if (first == (unsigned)-1)
+            continue;
+
+         snprintf(path, sizeof(path),
+               "/sys/devices/system/cpu/cpu%u/cpufreq/cpuinfo_max_freq", i);
+
+         rank[n].freq = sysfs_read_uint(path, 0);
+         rank[n].id   = i;
+         rank[n].smt  = (i == first) ? 0 : 1;
+         n++;
+      }
+
+      if (n)
+      {
+         qsort(rank, n, sizeof(struct cpu_proc_rank), cpu_proc_rank_cmp);
+         if (n > len)
+            n = len;
+         for (i = 0; i < (unsigned)n; i++)
+            s[i] = rank[i].id;
+      }
+
+      free(rank);
+
+      if (n)
+         return n;
+   }
+#endif
+
+   /* No topology to rank by, so name each processor once in order. */
+   {
+      unsigned amount = cpu_features_get_core_amount();
+      for (n = 0; n < len && n < (size_t)amount; n++)
+         s[n] = (unsigned)n;
+   }
+
+   return n;
+}
+
+unsigned cpu_features_get_core_amount_physical(void)
+{
+   unsigned logical = cpu_features_get_core_amount();
+
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   {
+      DWORD count = 0;
+      SYSTEM_LOGICAL_PROCESSOR_INFORMATION *buf = cpu_win32_slpi(&count);
+
+      if (buf)
+      {
+         DWORD    i;
+         unsigned cores = 0;
+         for (i = 0; i < count; i++)
+            if (buf[i].Relationship == RelationProcessorCore)
+               cores++;
+         free(buf);
+         if (cores > 0)
+            return cores;
+      }
+   }
+#elif defined(__APPLE__)
+   {
+      /* Darwin publishes both counts, so the physical one is a read
+       * rather than a derivation. */
+      int    val  = 0;
+      size_t _len = sizeof(val);
+      if (   sysctlbyname("hw.physicalcpu", &val, &_len, NULL, 0) == 0
+          && val > 0)
+         return (unsigned)val;
+   }
+#elif defined(__linux__)
+   return linux_core_amount_physical(logical);
+#endif
+
+   /* Every other target either has no SMT to discount or publishes no
+    * way to tell, and the thread count is the safe answer in both
+    * cases. */
+   return logical;
+}
+
 unsigned cpu_features_get_core_amount(void)
 {
 #if defined(_WIN32) && !defined(_XBOX)
    /* Win32 */
    SYSTEM_INFO sysinfo;
-#if defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP
+#if defined(__WINRT__) || (defined(WINAPI_FAMILY) && defined(WINAPI_FAMILY_PHONE_APP) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
    GetNativeSystemInfo(&sysinfo);
 #else
    GetSystemInfo(&sysinfo);
@@ -607,9 +973,9 @@ unsigned cpu_features_get_core_amount(void)
 #define VENDOR_INTEL_d  0x49656e69
 
 #if defined(__MACH__) && defined(CPU_X86)
-/* Whole-token search of machdep.cpu.features, which is a space
- * separated list of CPUID leaf-1 feature names. */
-static bool darwin_cpu_feature_present(const char *want)
+/* Whole-token search of one of the machdep.cpu.*features sysctls, each
+ * of which is a space separated list of CPUID feature names. */
+static bool darwin_cpu_feature_present(const char *key, const char *want)
 {
    char   buf[1024];
    size_t len  = sizeof(buf);
@@ -617,7 +983,7 @@ static bool darwin_cpu_feature_present(const char *want)
    const char *p;
 
    buf[0] = '\0';
-   if (sysctlbyname("machdep.cpu.features", buf, &len, NULL, 0) != 0)
+   if (sysctlbyname(key, buf, &len, NULL, 0) != 0)
       return false;
    buf[sizeof(buf) - 1] = '\0';
 
@@ -637,6 +1003,9 @@ static uint64_t cpu_features_probe(void)
    uint64_t cpu        = 0;
 #if defined(CPU_X86) && !defined(__MACH__)
    int vendor_is_intel = 0;
+   /* Set once the OS is known to preserve YMM state, which AVX, FMA3
+    * and FMA4 all depend on. */
+   int ymm_state       = 0;
    const int avx_flags = (1 << 27) | (1 << 28);
 #endif
 #if defined(__MACH__)
@@ -690,6 +1059,10 @@ static uint64_t cpu_features_probe(void)
       cpu |= RETRO_SIMD_AVX;
    _val = 0;
    _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.fma", &_val, &_len, NULL, 0) == 0 && _val)
+      cpu |= RETRO_SIMD_FMA3;
+   _val = 0;
+   _len = sizeof(_val);
    if (sysctlbyname("hw.optional.avx2_0", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_AVX2;
    _val = 0;
@@ -704,8 +1077,11 @@ static uint64_t cpu_features_probe(void)
     * CPUID leaf-1 feature-name list instead.  Matching is on whole
     * space-separated tokens: a plain strstr() would also fire on a
     * hypothetical future "PCLMULQDQ2". */
-   if (darwin_cpu_feature_present("PCLMULQDQ"))
+   if (darwin_cpu_feature_present("machdep.cpu.features", "PCLMULQDQ"))
       cpu |= RETRO_SIMD_PCLMUL;
+   /* SHA-NI lives in the leaf-7 list rather than the leaf-1 one. */
+   if (darwin_cpu_feature_present("machdep.cpu.leaf7_features", "SHA"))
+      cpu |= RETRO_SIMD_SHA1 | RETRO_SIMD_SHA256;
 #else
    _val = 0;
    _len = sizeof(_val);
@@ -716,6 +1092,26 @@ static uint64_t cpu_features_probe(void)
            sysctlbyname("hw.optional.arm.FEAT_CRC32", &_val, &_len, NULL, 0) == 0
            && _val))
       cpu |= RETRO_SIMD_CRC32;
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.arm.FEAT_AES", &_val, &_len, NULL, 0) == 0
+         && _val)
+      cpu |= RETRO_SIMD_AES;
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.arm.FEAT_SHA512", &_val, &_len, NULL, 0) == 0
+         && _val)
+      cpu |= RETRO_SIMD_SHA512;
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.arm.FEAT_SHA1", &_val, &_len, NULL, 0) == 0
+         && _val)
+      cpu |= RETRO_SIMD_SHA1;
+   _val = 0;
+   _len = sizeof(_val);
+   if (sysctlbyname("hw.optional.arm.FEAT_SHA256", &_val, &_len, NULL, 0) == 0
+         && _val)
+      cpu |= RETRO_SIMD_SHA256;
    _val = 0;
    _len = sizeof(_val);
    if (sysctlbyname("hw.optional.neon", &_val, &_len, NULL, 0) == 0 && _val)
@@ -802,7 +1198,16 @@ static uint64_t cpu_features_probe(void)
     * AVX CPU support (guaranteed to have at least i686). */
    if (((flags[2] & avx_flags) == avx_flags)
          && ((xgetbv_x86(0) & 0x6) == 0x6))
-      cpu |= RETRO_SIMD_AVX;
+   {
+      ymm_state = 1;
+      cpu      |= RETRO_SIMD_AVX;
+   }
+
+   /* FMA3 accumulates in YMM, so it answers only where the OS keeps
+    * that state. Leaf 1 ECX is still in flags here; the extended leaf
+    * carrying FMA4 is read further down. */
+   if (ymm_state && (flags[2] & (1 << 12)))
+      cpu |= RETRO_SIMD_FMA3;
 
    if (max_flag >= 7)
    {
@@ -841,6 +1246,10 @@ static uint64_t cpu_features_probe(void)
       if (flags7[1] & (1 << 5))
          cpu |= RETRO_SIMD_AVX2;
 
+      /* SHA-NI is one bit covering both digests. */
+      if (flags7[1] & (1 << 29))
+         cpu |= RETRO_SIMD_SHA1 | RETRO_SIMD_SHA256;
+
       /* AVX-512 Foundation detection.
        * Requires CPUID leaf 7 sub-leaf 0 EBX bit 16 (AVX-512F),
        * and OS support for saving ZMM state:
@@ -848,6 +1257,46 @@ static uint64_t cpu_features_probe(void)
       if ((flags7[1] & (1 << 16))
             && ((xgetbv_x86(0) & 0xe6) == 0xe6))
          cpu |= RETRO_SIMD_AVX512;
+
+      /* Leaf 7 EAX carries the highest sub-leaf the CPU implements, so
+       * consult it before asking for sub-leaf 1: an out of range
+       * sub-leaf returns zeroes on current parts but is not documented
+       * to. */
+      if (flags7[0] >= 1)
+      {
+         int32_t flags71[4];
+#if defined(__GNUC__)
+         __asm__ volatile (
+               "mov %%" REG_b ", %%" REG_S "\n"
+               "cpuid\n"
+               "xchg %%" REG_b ", %%" REG_S "\n"
+               : "=a"(flags71[0]), "=S"(flags71[1]), "=c"(flags71[2]), "=d"(flags71[3])
+               : "a"(7), "c"(1));
+#elif defined(_MSC_VER) && INT_MAX == 2147483647
+#if _MSC_VER >= 1600
+         __cpuidex((int*)flags71, 7, 1);
+#else
+         {
+            int *p = (int*)flags71;
+            __asm {
+               mov eax, 7
+               mov ecx, 1
+               cpuid
+               mov esi, p
+               mov [esi],      eax
+               mov [esi + 4],  ebx
+               mov [esi + 8],  ecx
+               mov [esi + 12], edx
+            }
+         }
+#endif
+#else
+         memset(flags71, 0, sizeof(flags71));
+#endif
+
+         if (flags71[0] & (1 << 0))
+            cpu |= RETRO_SIMD_SHA512;
+      }
    }
 
    x86_cpuid(0x80000000, flags);
@@ -863,12 +1312,16 @@ static uint64_t cpu_features_probe(void)
        * does not report this bit; consumers there fall back accordingly. */
       if (flags[2] & (1 << 5))
          cpu |= RETRO_SIMD_LZCNT;
+      /* FMA4, an AMD encoding that no Zen part implements, under the
+       * same OS state as FMA3. */
+      if (ymm_state && (flags[2] & (1 << 16)))
+         cpu |= RETRO_SIMD_FMA4;
    }
 #elif defined(__linux__)
    if (check_arm_cpu_feature("neon"))
    {
       cpu |= RETRO_SIMD_NEON;
-#if defined(__ARM_NEON__) && defined(__arm__)
+#ifdef CPU_ARM_RUNFAST
       arm_enable_runfast_mode();
 #endif
    }
@@ -879,23 +1332,52 @@ static uint64_t cpu_features_probe(void)
    if (check_arm_cpu_feature("vfpv4"))
       cpu |= RETRO_SIMD_VFPV4;
 
+   /* Part of the optional Cryptographic Extension, which an
+    * implementation may leave out or hold in reset, so a 64-bit ARM
+    * CPU does not imply it. */
+   if (check_arm_cpu_feature("aes"))
+      cpu |= RETRO_SIMD_AES;
+
    /* aarch64 lists it as "crc32" in the Features: line. */
    if (check_arm_cpu_feature("crc32"))
       cpu |= RETRO_SIMD_CRC32;
 
+   if (check_arm_cpu_feature("sha512"))
+      cpu |= RETRO_SIMD_SHA512;
+
+   if (check_arm_cpu_feature("sha1"))
+      cpu |= RETRO_SIMD_SHA1;
+
+   if (check_arm_cpu_feature("sha2"))
+      cpu |= RETRO_SIMD_SHA256;
+
    if (check_arm_cpu_feature("asimd"))
    {
       cpu |= RETRO_SIMD_ASIMD;
-#ifdef __ARM_NEON__
+
+      /* ASIMD *is* NEON: Advanced SIMD is what aarch64 kernels call
+       * it in the Features: line, where 32-bit ARM says "neon".  It
+       * is architecturally mandatory in ARMv8-A, so a CPU reporting
+       * asimd has NEON by definition and callers testing
+       * RETRO_SIMD_NEON must see it.
+       *
+       * This used to be gated on __ARM_NEON__, which is the LEGACY
+       * 32-bit spelling.  aarch64 toolchains define __ARM_NEON (no
+       * trailing underscores) instead - verified against the NDK's
+       * own compiler, which reports __ARM_NEON 1 and no __ARM_NEON__
+       * for aarch64-linux-android - so the guard was false on every
+       * 64-bit build and NEON was never reported there.  That is why
+       * System Information listed ASIMD alone on a device whose CPU
+       * has had NEON since it was designed. */
       cpu |= RETRO_SIMD_NEON;
-#if defined(__arm__)
+
+#ifdef CPU_ARM_RUNFAST
       arm_enable_runfast_mode();
 #endif
-#endif
    }
-#elif defined(__ARM_NEON__)
+#elif defined(__ARM_NEON) || defined(__ARM_NEON__)
    cpu |= RETRO_SIMD_NEON;
-#if defined(__arm__)
+#ifdef CPU_ARM_RUNFAST
    arm_enable_runfast_mode();
 #endif
 #elif defined(__ALTIVEC__)

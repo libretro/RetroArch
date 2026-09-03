@@ -170,7 +170,7 @@ static bool crt_sr2_init(videocrt_switch_t *p_switch,
    if (monitor_index+1 >= 0 && monitor_index+1 < 10)
       snprintf(index, sizeof(index), "%d", monitor_index);
    else
-      strlcpy(index, "0", sizeof(index));
+      strlcpy_lit(index, "0", sizeof(index));
 
    video_context_driver_get_ident(&gfxctx);
 

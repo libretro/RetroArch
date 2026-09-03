@@ -194,6 +194,7 @@ typedef ID3D11InfoQueue*                D3D11InfoQueue;
 
 #if defined(HAVE_DYLIB) && !defined(__WINRT__)
 #include <dynamic/dylib.h>
+#include <compat/strl.h>
 
 HRESULT WINAPI D3D11CreateDevice(
       IDXGIAdapter*   pAdapter,
@@ -2389,12 +2390,12 @@ static bool d3d11_shader_load_step(void *data,
                ds->shader_preset->pass[i].source.string.fragment;
             size_t _len = strlcpy(_path, slang_path, sizeof(_path));
 
-            strlcpy(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
+            strlcpy_lit(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
             d3d11_init_shader(d3d11->device, vs_src, 0,
                   _path, "main", NULL, NULL, desc, countof(desc),
                   &ds->passes[i].shader, ds->feat_level_hint);
 
-            strlcpy(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
+            strlcpy_lit(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
             d3d11_init_shader(d3d11->device, ps_src, 0, _path,
                   NULL, "main", NULL, NULL, 0,
                   &ds->passes[i].shader, ds->feat_level_hint);
@@ -2722,13 +2723,13 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
          const char *vs_src     = d3d11->shader_preset->pass[i].source.string.vertex;
          const char *ps_src     = d3d11->shader_preset->pass[i].source.string.fragment;
          size_t _len            = strlcpy(_path, slang_path, sizeof(_path));
-         strlcpy(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
+         strlcpy_lit(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
 
          d3d11_init_shader(d3d11->device, vs_src, 0,
                _path, "main", NULL, NULL, desc, countof(desc),
                &d3d11->pass[i].shader, feat_level_hint);
 
-         strlcpy(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
+         strlcpy_lit(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
 
          d3d11_init_shader(d3d11->device, ps_src, 0, _path,
                NULL, "main", NULL, NULL, 0,
@@ -5064,17 +5065,16 @@ static bool d3d11_gfx_frame(
             d3d11->hdr.ubo_values.hdr10            = 0.0f;
             d3d11->hdr.ubo_values.hdr_mode         = 2;
          }
-         else if (d3d11->flags & D3D11_ST_FLAG_SOURCE_HDR10)
-         {
-            /* Core supplies PQ frames: the back buffer already holds
-             * PQ-encoded HDR10, so pass it through unchanged. Encoding it a
-             * second time drives the menu background to black. The menu
-             * glyphs are drawn separately as SDR sprites. */
-            d3d11->hdr.ubo_values.inverse_tonemap  = 0.0f;
-            d3d11->hdr.ubo_values.hdr10            = 0.0f;
-            d3d11->hdr.ubo_values.hdr_mode         = 0;
-         }
-         else /* HDR10 */
+         else /* HDR10: the back buffer was cleared to transparent black
+               * before the UI drew into it, so by this pass it holds only
+               * the SDR UI -- regardless of whether the core supplies PQ
+               * frames.  The game reached the swapchain through the
+               * back-buffer pass above and this pass alpha-blends the UI
+               * over it, so encode the UI at menu_nits unconditionally.
+               * Branching to passthrough on D3D11_ST_FLAG_SOURCE_HDR10
+               * here treated the source as game content, which it is not:
+               * that landed the UI's SDR code values raw in the PQ
+               * swapchain, where code 1.0 means 10000 nits. */
          {
             d3d11->hdr.ubo_values.inverse_tonemap  = 1.0f;
             d3d11->hdr.ubo_values.hdr10            = 1.0f;

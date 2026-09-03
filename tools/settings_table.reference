@@ -82,6 +82,7 @@ bool	menu_timedate_enable	1	1
 bool	menu_battery_level_enable	1	1
 bool	menu_core_enable	1	1
 bool	menu_show_sublabels	1	1
+bool	menu_show_sublabels_current_selection_only	1	0
 bool	menu_show_confirm	1	1
 bool	menu_rgui_shadows	1	0
 bool	rgui_particle_effect_screensaver	1	1
@@ -239,6 +240,7 @@ bool	menu_thumbnail_background_enable	1	0
 bool	menu_thumbnail_preview_audio	1	0
 bool	content_show_settings	1	1
 bool	threaded_data_runloop_enable	1	1
+bool	thread_prefer_fast_cores	1	0
 bool	menu_navigation_wraparound_enable	1	1
 bool	menu_horizontal_animation	1	1
 bool	menu_show_full_paths	1	1
@@ -248,6 +250,8 @@ bool	run_ahead_hide_warnings	1	0
 bool	input_auto_mouse_grab	1	1
 bool	microphone_enable	1	1
 bool	audio_sync	1	1
+bool	audio_threaded_pipeline	1	0
+bool	audio_thread_priority	1	0
 bool	audio_enable	1	1
 bool	ui_menubar_enable	1	1
 bool	video_window_show_decorations	1	1
@@ -350,7 +354,7 @@ bool	menu_ignore_missing_assets	1	0
 bool	menu_show_latency	1	1
 bool	menu_show_rewind	1	1
 bool	menu_show_overlays	1	1
-bool	menu_show_quit_retroarch	1	1
+bool	menu_show_quit_retroarch	1	0
 bool	filter_by_current_core	1	0
 bool	rgui_background_filler_thickness_enable	1	1
 bool	rgui_border_filler_thickness_enable	1	1
@@ -394,6 +398,7 @@ int	crt_switch_vertical_adjust	0	0
 int	state_slot	0	0
 int	replay_slot	0	0
 int	video_max_frame_latency	1	1
+int	video_scanline_sync_offset	1	0
 int	netplay_check_frames	1	600
 int	content_favorites_size	1	200
 int	input_overlay_lightgun_port	1	-1
@@ -424,6 +429,7 @@ uint	video_windowed_position_x	1	0
 uint	video_windowed_position_y	1	0
 uint	video_windowed_position_width	1	1280
 uint	video_windowed_position_height	1	720
+uint	video_fse_negotiation	1	VIDEO_FSE_RELAXED
 uint	video_fullscreen_x	1	0
 uint	video_fullscreen_y	1	0
 uint	video_swap_interval	1	1
@@ -436,7 +442,7 @@ uint	input_bind_hold	1	1
 uint	netplay_chat_color_name	1	0x008000
 uint	netplay_chat_color_msg	1	0xFFFFFF
 uint	playlist_entry_remove_enable	1	PLAYLIST_ENTRY_REMOVE_ENABLE_ALL
-uint	menu_timedate_style	1	MENU_TIMEDATE_STYLE_DDMM_HM
+uint	menu_timedate_style	1	MENU_TIMEDATE_STYLE_YMD_HM
 uint	menu_timedate_date_separator	1	MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN
 uint	rgui_particle_effect	1	RGUI_PARTICLE_EFFECT_NONE
 uint	cloud_sync_sync_mode	1	CLOUD_SYNC_MODE_AUTOMATIC
@@ -576,7 +582,6 @@ uint	netplay_input_latency_frames_range	1	0
 uint	network_cmd_port	1	55355
 uint	network_remote_base_port	1	55400
 uint	user_language	1	frontend_driver_get_user_language()
-uint	bundle_assets_extract_version_current	1	0
 uint	bundle_assets_extract_last_version	1	0
 uint	cheevos_appearance_anchor	1	0
 float	video_aspect_ratio	1	1.3333f
@@ -726,6 +731,7 @@ bool	menu_timedate_enable	1	1
 bool	menu_battery_level_enable	1	1
 bool	menu_core_enable	1	1
 bool	menu_show_sublabels	1	1
+bool	menu_show_sublabels_current_selection_only	1	0
 bool	menu_show_confirm	1	1
 bool	menu_rgui_shadows	1	0
 bool	rgui_particle_effect_screensaver	1	1
@@ -883,6 +889,7 @@ bool	menu_thumbnail_background_enable	1	0
 bool	menu_thumbnail_preview_audio	1	0
 bool	content_show_settings	1	1
 bool	threaded_data_runloop_enable	1	1
+bool	thread_prefer_fast_cores	1	0
 bool	menu_navigation_wraparound_enable	1	1
 bool	menu_horizontal_animation	1	1
 bool	menu_show_full_paths	1	1
@@ -892,6 +899,8 @@ bool	run_ahead_hide_warnings	1	0
 bool	input_auto_mouse_grab	1	0
 bool	microphone_enable	1	1
 bool	audio_sync	1	1
+bool	audio_threaded_pipeline	1	0
+bool	audio_thread_priority	1	0
 bool	audio_enable	1	1
 bool	ui_menubar_enable	1	1
 bool	video_window_show_decorations	1	1
@@ -1037,6 +1046,7 @@ int	crt_switch_vertical_adjust	0	0
 int	state_slot	0	0
 int	replay_slot	0	0
 int	video_max_frame_latency	1	1
+int	video_scanline_sync_offset	1	0
 int	netplay_check_frames	1	600
 int	content_favorites_size	1	200
 int	input_overlay_lightgun_port	1	-1
@@ -1066,6 +1076,7 @@ uint	video_windowed_position_x	1	0
 uint	video_windowed_position_y	1	0
 uint	video_windowed_position_width	1	1280
 uint	video_windowed_position_height	1	720
+uint	video_fse_negotiation	1	VIDEO_FSE_RELAXED
 uint	video_fullscreen_x	1	0
 uint	video_fullscreen_y	1	0
 uint	video_swap_interval	1	1
@@ -1078,7 +1089,7 @@ uint	input_bind_hold	1	0
 uint	netplay_chat_color_name	1	0x008000
 uint	netplay_chat_color_msg	1	0xFFFFFF
 uint	playlist_entry_remove_enable	1	PLAYLIST_ENTRY_REMOVE_ENABLE_ALL
-uint	menu_timedate_style	1	MENU_TIMEDATE_STYLE_DDMM_HM
+uint	menu_timedate_style	1	MENU_TIMEDATE_STYLE_YMD_HM
 uint	menu_timedate_date_separator	1	MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN
 uint	rgui_particle_effect	1	RGUI_PARTICLE_EFFECT_NONE
 uint	cloud_sync_sync_mode	1	CLOUD_SYNC_MODE_AUTOMATIC
@@ -1365,6 +1376,7 @@ bool	menu_timedate_enable	1	1
 bool	menu_battery_level_enable	1	1
 bool	menu_core_enable	1	1
 bool	menu_show_sublabels	1	1
+bool	menu_show_sublabels_current_selection_only	1	0
 bool	menu_show_confirm	1	1
 bool	menu_rgui_shadows	1	0
 bool	rgui_particle_effect_screensaver	1	1
@@ -1526,6 +1538,7 @@ bool	menu_thumbnail_background_enable	1	0
 bool	menu_thumbnail_preview_audio	1	0
 bool	content_show_settings	1	1
 bool	threaded_data_runloop_enable	1	1
+bool	thread_prefer_fast_cores	1	0
 bool	menu_navigation_wraparound_enable	1	1
 bool	menu_horizontal_animation	1	1
 bool	menu_show_full_paths	1	1
@@ -1535,6 +1548,8 @@ bool	run_ahead_hide_warnings	1	0
 bool	input_auto_mouse_grab	1	0
 bool	microphone_enable	1	1
 bool	audio_sync	1	1
+bool	audio_threaded_pipeline	1	0
+bool	audio_thread_priority	1	0
 bool	audio_enable	1	1
 bool	ui_menubar_enable	1	1
 bool	video_window_show_decorations	1	1
@@ -1680,6 +1695,7 @@ int	crt_switch_vertical_adjust	0	0
 int	state_slot	0	0
 int	replay_slot	0	0
 int	video_max_frame_latency	1	1
+int	video_scanline_sync_offset	1	0
 int	netplay_check_frames	1	600
 int	content_favorites_size	1	200
 int	input_overlay_lightgun_port	1	-1
@@ -1710,6 +1726,7 @@ uint	video_windowed_position_x	1	0
 uint	video_windowed_position_y	1	0
 uint	video_windowed_position_width	1	1280
 uint	video_windowed_position_height	1	720
+uint	video_fse_negotiation	1	VIDEO_FSE_RELAXED
 uint	video_fullscreen_x	1	0
 uint	video_fullscreen_y	1	0
 uint	video_swap_interval	1	1
@@ -1722,7 +1739,7 @@ uint	input_bind_hold	1	0
 uint	netplay_chat_color_name	1	0x008000
 uint	netplay_chat_color_msg	1	0xFFFFFF
 uint	playlist_entry_remove_enable	1	PLAYLIST_ENTRY_REMOVE_ENABLE_ALL
-uint	menu_timedate_style	1	MENU_TIMEDATE_STYLE_DDMM_HM
+uint	menu_timedate_style	1	MENU_TIMEDATE_STYLE_YMD_HM
 uint	menu_timedate_date_separator	1	MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN
 uint	rgui_particle_effect	1	RGUI_PARTICLE_EFFECT_NONE
 uint	cloud_sync_sync_mode	1	CLOUD_SYNC_MODE_AUTOMATIC

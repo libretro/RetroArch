@@ -460,10 +460,14 @@ static bool menu_screensaver_update_state(
    {
       menu_screensaver_set_dimensions(screensaver, width, height);
 
-      /* Free any existing font */
+      /* Retire any existing font. This runs from
+       * menu_screensaver_iterate(), before the video driver's frame
+       * function, and the font is rebuilt below, so releasing it
+       * outright can pull the atlas out from under a command list
+       * that still references it. */
       if (screensaver->font_data.font)
       {
-         font_driver_free(screensaver->font_data.font);
+         font_driver_free_deferred(screensaver->font_data.font);
          video_coord_array_free(&screensaver->font_data.raster_block.carr);
          screensaver->font_data.font = NULL;
       }

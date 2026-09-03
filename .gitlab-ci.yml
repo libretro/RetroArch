@@ -991,7 +991,7 @@ build-static-retroarch-ctr-legacy:
   needs: []
   script:
     # Allow failure since we don't have a core
-    - "make -f Makefile.ctr -j$NUMPROC ||:"
+    - "make -f Makefile.ctr -j$NUMPROC USE_CTRULIB_2=0 ||:"
     - "mkdir .retroarch-precompiled"
     - "cp -r ./* .retroarch-precompiled/"
     - "mv .retroarch-precompiled/ retroarch-precompiled/"

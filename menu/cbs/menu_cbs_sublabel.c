@@ -23,6 +23,7 @@
 #include <string.h>
 #include <string/stdstring.h>
 #include <file/file_path.h>
+#include <lists/string_list.h>
 
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
@@ -76,27 +77,27 @@
 static int menu_action_sublabel_file_browser_core(file_list_t *list, unsigned type, unsigned i, const char *label, const char *path, char *s, size_t len)
 {
    core_info_t *core_info = NULL;
-   size_t _len =
-      strlcpy(s,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES), len);
-   s[  _len]   = ':';
-   s[++_len]   = ' ';
-   s[++_len]   = '\0';
+   /* strlcpy() reports the length of its source, so ask for the length
+    * that landed before indexing past it. */
+   size_t _len            = strlcpy(s,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES), len);
+
+   if (_len >= len)
+      _len = len ? len - 1 : 0;
+
+   if (_len + 2 < len)
+   {
+      s[_len++] = ':';
+      s[_len++] = ' ';
+      s[_len]   = '\0';
+   }
 
    /* Search for specified core */
    if (
          core_info_find(path, &core_info)
       && core_info->licenses_list)
-   {
-      unsigned i;
-      /* Add license text */
-      for (i = 0; i < core_info->licenses_list->size; i++)
-      {
-         _len += strlcpy(s + _len, core_info->licenses_list->elems[i].data, len - _len);
-         if ((i + 1) < core_info->licenses_list->size)
-            _len += strlcpy(s + _len, ", ", len - _len);
-      }
-   }
+      string_list_join_concat_special(s + _len, len - _len,
+            core_info->licenses_list, ", ");
    else /* No license found - set to N/A */
       strlcpy(s + _len, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len - _len);
 
@@ -851,9 +852,23 @@ static int action_bind_sublabel_subsystem_load(
    buf[0] = '\0';
    for (j = 0; j < content_get_subsystem_rom_id(); j++)
    {
-      _len += strlcpy(buf + _len, path_basename(content_get_subsystem_rom(j)), sizeof(buf) - _len);
+      const char *name = path_basename(content_get_subsystem_rom(j));
+      size_t      nlen = strlen(name);
+
+      if (_len + nlen >= sizeof(buf))
+      {
+         strlcpy(buf + _len, name, sizeof(buf) - _len);
+         break;
+      }
+
+      _len += strlcpy(buf + _len, name, sizeof(buf) - _len);
+
       if (j != content_get_subsystem_rom_id() - 1)
-         _len += strlcpy(buf + _len, "\n", sizeof(buf) - _len);
+      {
+         if (_len + 1 >= sizeof(buf))
+            break;
+         _len += strlcpy_lit(buf + _len, "\n", sizeof(buf) - _len);
+      }
    }
    if (*buf)
       strlcpy(s, buf, len);
@@ -1046,9 +1061,9 @@ static int action_bind_sublabel_netplay_room(file_list_t *list,
             (unsigned long)(unsigned)room->gamecrc);
    else
    {
-      _len += strlcpy(s + _len, "(", len - _len);
+      _len += strlcpy_lit(s + _len, "(", len - _len);
       _len += strlcpy(s + _len, room->subsystem_name, len - _len);
-      _len += strlcpy(s + _len, ")\n", len - _len);
+      _len += strlcpy_lit(s + _len, ")\n", len - _len);
    }
 
    if (room->spectator_count > 0)
@@ -1376,7 +1391,7 @@ static int action_bind_sublabel_core_updater_entry(
       {
          _len += strlcpy(s + _len, entry->licenses_list->elems[i].data, len - _len);
          if ((i + 1) < entry->licenses_list->size)
-            _len += strlcpy(s + _len, ", ", len - _len);
+            _len += strlcpy_lit(s + _len, ", ", len - _len);
       }
    }
    else /* No license found - set to N/A */
@@ -2071,6 +2086,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       { MENU_ENUM_LABEL_NAVIGATION_WRAPAROUND, MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND },
       { MENU_ENUM_LABEL_BATTERY_LEVEL_ENABLE, MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE },
       { MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS, MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS },
+      { MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY, MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY },
       { MENU_ENUM_LABEL_MENU_SHOW_CONFIRM, MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM },
       { MENU_ENUM_LABEL_TIMEDATE_ENABLE, MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE },
       { MENU_ENUM_LABEL_TIMEDATE_STYLE, MENU_ENUM_SUBLABEL_TIMEDATE_STYLE },
@@ -2321,6 +2337,8 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       { MENU_ENUM_LABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY, MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY },
       { MENU_ENUM_LABEL_INPUT_TOUCH_SCALE, MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE },
       { MENU_ENUM_LABEL_AUDIO_SYNC, MENU_ENUM_SUBLABEL_AUDIO_SYNC },
+      { MENU_ENUM_LABEL_AUDIO_THREADED_PIPELINE, MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE },
+      { MENU_ENUM_LABEL_AUDIO_THREAD_PRIORITY, MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY },
       { MENU_ENUM_LABEL_AUDIO_VOLUME, MENU_ENUM_SUBLABEL_AUDIO_VOLUME },
       { MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR, MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR },
       { MENU_ENUM_LABEL_INPUT_MAX_USERS, MENU_ENUM_SUBLABEL_INPUT_MAX_USERS },

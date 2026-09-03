@@ -670,6 +670,26 @@ bool task_queue_push(retro_task_t *task);
 void task_queue_wait(retro_task_condition_fn_t cond, void* data);
 
 /**
+ * task_queue_wait_timeout:
+ * @cond              : Condition to keep waiting on; waiting ends when
+ *                      it returns false, as with task_queue_wait().
+ * @data              : Userdata passed to @cond.
+ * @timeout_usec      : Upper bound on the wait, in microseconds.
+ *
+ * As task_queue_wait(), but gives up after @timeout_usec rather than
+ * waiting indefinitely.  For waits that depend on something outside
+ * the machine - a network round trip, say - where "never" is a
+ * reachable outcome and hanging the frontend is not an acceptable
+ * response to it.
+ *
+ * @return true when @cond is no longer satisfied, i.e. the thing
+ * being waited for finished; false when the timeout was reached with
+ * @cond still true, so the caller must handle not having it.
+ */
+bool task_queue_wait_timeout(retro_task_condition_fn_t cond, void *data,
+      retro_time_t timeout_usec);
+
+/**
  * Marks all tasks in the queue as cancelled.
  *
  * The tasks won't immediately be terminated;
@@ -719,6 +739,37 @@ void task_queue_deinit(void);
  * @see retro_task_queue_msg_t
  */
 void task_queue_init(bool threaded, retro_task_queue_msg_t msg_push);
+
+/**
+ * Called when a task handler occupies the calling thread for longer
+ * than the configured budget.
+ *
+ * @param task The task whose handler ran long.
+ * @param usec How long the handler call took, in microseconds.
+ * @see task_queue_set_slow_handler_cb
+ */
+typedef void (*retro_task_slow_handler_t)(retro_task_t *task,
+      retro_time_t usec);
+
+/**
+ * Report task handlers that occupy the calling thread too long.
+ *
+ * This measures the UNTHREADED queue only, which is the
+ * configuration where task handlers run on the thread that also
+ * drives the frame loop: there, a handler that does not return
+ * within a frame's worth of time is a visible stall, and the
+ * queue is the only place that can attribute one to a specific
+ * task.  On the threaded queue handlers run on a worker, where
+ * taking a long time is the point, so nothing is measured.
+ *
+ * @param cb Called for each handler invocation exceeding
+ * \c budget_usec, or \c NULL to disable the check (the default -
+ * with no callback registered, no clock is read).
+ * @param budget_usec Threshold in microseconds; values below 1
+ * are treated as 1.
+ */
+void task_queue_set_slow_handler_cb(retro_task_slow_handler_t cb,
+      retro_time_t budget_usec);
 
 /**
  * Allocates and initializes a new task.

@@ -28,6 +28,7 @@
 #include <lists/file_list.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
+#include <string/rstrtod.h>
 #include <lists/string_list.h>
 #include <streams/file_stream.h>
 #include <audio/audio_resampler.h>
@@ -100,6 +101,13 @@
 #include "../bluetooth/bluetooth_driver.h"
 #endif
 #include "../midi_driver.h"
+#ifdef ANDROID
+/* Defined in frontend/drivers/platform_unix.c; declared here rather
+ * than via platform_unix.h, whose JNI includes host-side tooling
+ * cannot preprocess. */
+void android_app_set_window_settings(bool notch_write_over,
+      bool auto_mouse_grab);
+#endif
 #include "../location_driver.h"
 #include "../network/cloud_sync_driver.h"
 #include "../record/record_driver.h"
@@ -513,8 +521,7 @@ static int setting_set_with_string_representation(rarch_setting_t* setting,
          {
             char *ptr;
             uint32_t flags = setting->flags;
-            /* strtof() is C99/POSIX. Just use the more portable kind. */
-            *setting->value.target.fraction = (float)strtod(value, &ptr);
+            *setting->value.target.fraction = rstrtof(value, &ptr);
             if (flags & SD_FLAG_HAS_RANGE)
             {
                float min   = setting->min;
@@ -541,9 +548,9 @@ static int setting_set_with_string_representation(rarch_setting_t* setting,
             strlcpy(setting->value.target.string, value, setting->size);
          break;
       case ST_BOOL:
-         if (memcmp(value, "true", 5) == 0)
+         if (string_is_equal(value, "true"))
             *setting->value.target.boolean = true;
-         else if (memcmp(value, "false", 6) == 0)
+         else if (string_is_equal(value, "false"))
             *setting->value.target.boolean = false;
          break;
       default:
@@ -621,7 +628,7 @@ static void menu_input_st_float_cb(void *userdata, const char *str)
    if (str && *str)
    {
       char *end = NULL;
-      (void)strtod(str, &end);
+      (void)rstrtod(str, &end);
       if (end != str && *end == '\0')
       {
          struct menu_state *menu_st  = menu_state_get_ptr();
@@ -1123,7 +1130,7 @@ static size_t setting_get_string_representation_int_gpu_index(
             && list->elems[*setting->value.target.integer].data
             && *list->elems[*setting->value.target.integer].data)
       {
-         _len += strlcpy(s + _len, " - ", len - _len);
+         _len += strlcpy_lit(s + _len, " - ", len - _len);
          _len += strlcpy(s + _len, list->elems[*setting->value.target.integer].data, len - _len);
       }
    }
@@ -1598,8 +1605,11 @@ static rarch_setting_t setting_uint_setting(const char* name,
 
    result.size                      = sizeof(unsigned int);
 
-   result.name                      = dont_use_enum_idx ? strdup(name) : name;
-   result.short_description         = dont_use_enum_idx ? strdup(short_description) : short_description;
+   /* Callers that build a runtime name hand over their own copies
+    * and tag the entry with SD_FREE_FLAG_NAME | SD_FREE_FLAG_SHORT, so
+    * the strings are owned here as given; the rest are literals. */
+   result.name                      = name;
+   result.short_description         = short_description;
    result.values                    = NULL;
 
    result.index                     = 0;
@@ -1867,8 +1877,11 @@ static rarch_setting_t setting_string_setting(enum setting_type type,
 
    result.size                      = size;
 
-   result.name                      = dont_use_enum_idx ? strdup(name) : name;
-   result.short_description         = dont_use_enum_idx ? strdup(short_description) : short_description;
+   /* Callers that build a runtime name hand over their own copies
+    * and tag the entry with SD_FREE_FLAG_NAME | SD_FREE_FLAG_SHORT, so
+    * the strings are owned here as given; the rest are literals. */
+   result.name                      = name;
+   result.short_description         = short_description;
    result.values                    = NULL;
 
    result.index                     = 0;
@@ -3083,7 +3096,7 @@ static int setting_string_action_start_audio_device(rarch_setting_t *setting)
    if (!setting)
       return -1;
 
-   strlcpy(setting->value.target.string, "", setting->size);
+   strlcpy_lit(setting->value.target.string, "", setting->size);
 
    command_event(CMD_EVENT_AUDIO_REINIT, NULL);
    return 0;
@@ -3122,7 +3135,7 @@ static int setting_string_action_start_microphone_device(rarch_setting_t *settin
    if (!setting)
       return -1;
 
-   strlcpy(setting->value.target.string, "", setting->size);
+   strlcpy_lit(setting->value.target.string, "", setting->size);
 
    command_event(CMD_EVENT_MICROPHONE_REINIT, NULL);
    return 0;
@@ -3352,7 +3365,7 @@ static size_t setting_get_string_representation_state_slot(
    if (!setting)
       return 0;
    if (*setting->value.target.integer == -1)
-      return strlcpy(s, "Auto", len);
+      return strlcpy_lit(s, "Auto", len);
    return snprintf(s, len, "%d", *setting->value.target.integer);
 }
 
@@ -3388,9 +3401,9 @@ static size_t setting_get_string_representation_password(
    {
       if (   setting->value.target.string
           && setting->value.target.string[0] != '\0')
-         return strlcpy(s, "********", len);
+         return strlcpy_lit(s, "********", len);
       if (config_get_ptr()->arrays.cheevos_token[0])
-         return strlcpy(s, "********", len);
+         return strlcpy_lit(s, "********", len);
       *setting->value.target.string = '\0';
    }
    return 0;
@@ -3408,11 +3421,11 @@ static size_t setting_get_string_representation_uint_keyboard_gamepad_mapping_ty
          case 0:
             return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
          case 1:
-            return strlcpy(s, "iPega PG-9017", len);
+            return strlcpy_lit(s, "iPega PG-9017", len);
          case 2:
-            return strlcpy(s, "8-bitty", len);
+            return strlcpy_lit(s, "8-bitty", len);
          case 3:
-            return strlcpy(s, "SNES30 8bitdo", len);
+            return strlcpy_lit(s, "SNES30 8bitdo", len);
       }
    }
    return 0;
@@ -3883,11 +3896,11 @@ static size_t setting_get_string_representation_uint_menu_timedate_date_separato
       switch (*setting->value.target.unsigned_integer)
       {
          case MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN:
-            return strlcpy(s, "'-'", len);
+            return strlcpy_lit(s, "'-'", len);
          case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
-            return strlcpy(s, "'/'", len);
+            return strlcpy_lit(s, "'/'", len);
          case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
-            return strlcpy(s, "'.'", len);
+            return strlcpy_lit(s, "'.'", len);
       }
    }
    return 0;
@@ -4453,9 +4466,9 @@ static size_t setting_get_string_representation_uint_menu_xmb_animation_move_up_
       switch (*setting->value.target.unsigned_integer)
       {
          case 0:
-            return strlcpy(s, "Easing Out Quad", len);
+            return strlcpy_lit(s, "Easing Out Quad", len);
          case 1:
-            return strlcpy(s, "Easing Out Expo", len);
+            return strlcpy_lit(s, "Easing Out Expo", len);
          case 2:
             return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
       }
@@ -4471,13 +4484,13 @@ static size_t setting_get_string_representation_uint_menu_xmb_animation_opening_
       switch (*setting->value.target.unsigned_integer)
       {
          case 0:
-            return strlcpy(s, "Easing Out Quad", len);
+            return strlcpy_lit(s, "Easing Out Quad", len);
          case 1:
-            return strlcpy(s, "Easing Out Circ", len);
+            return strlcpy_lit(s, "Easing Out Circ", len);
          case 2:
-            return strlcpy(s, "Easing Out Expo", len);
+            return strlcpy_lit(s, "Easing Out Expo", len);
          case 3:
-            return strlcpy(s, "Easing Out Bounce", len);
+            return strlcpy_lit(s, "Easing Out Bounce", len);
       }
    }
    return 0;
@@ -4491,11 +4504,11 @@ static size_t setting_get_string_representation_uint_menu_xmb_animation_horizont
       switch (*setting->value.target.unsigned_integer)
       {
          case 0:
-            return strlcpy(s, "Easing Out Quad", len);
+            return strlcpy_lit(s, "Easing Out Quad", len);
          case 1:
-            return strlcpy(s, "Easing In Sine", len);
+            return strlcpy_lit(s, "Easing In Sine", len);
          case 2:
-            return strlcpy(s, "Easing Out Bounce", len);
+            return strlcpy_lit(s, "Easing Out Bounce", len);
       }
    }
    return 0;
@@ -4559,11 +4572,11 @@ static size_t setting_get_string_representation_uint_xmb_layout(
       switch (*setting->value.target.unsigned_integer)
       {
          case 0:
-            return strlcpy(s, "Auto", len);
+            return strlcpy_lit(s, "Auto", len);
          case 1:
-            return strlcpy(s, "Console", len);
+            return strlcpy_lit(s, "Console", len);
          case 2:
-            return strlcpy(s, "Handheld", len);
+            return strlcpy_lit(s, "Handheld", len);
       }
    }
    return 0;
@@ -5218,7 +5231,7 @@ static size_t setting_get_string_representation_uint_video_monitor_index(
    if (setting && *setting->value.target.unsigned_integer)
       return snprintf(s, len, "%u",
             *setting->value.target.unsigned_integer);
-   return strlcpy(s, "0 (Auto)", len);
+   return strlcpy_lit(s, "0 (Auto)", len);
 }
 
 static size_t setting_get_string_representation_uint_custom_vp_width(
@@ -5271,12 +5284,36 @@ static size_t setting_get_string_representation_uint_custom_vp_height(
 static int setting_action_asio_control_panel(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-   audio_asio_open_control_panel();
+   if (!audio_asio_open_control_panel())
+   {
+      const char *_msg = msg_hash_to_str(MSG_AUDIO_ASIO_NOT_RUNNING);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+   }
    return 0;
 }
 #endif
 
+#ifdef HAVE_ASIO
+/* The pair as the device numbers it for people - 1-2, 3-4 - with the
+ * device's own names for the two when the driver is up to be asked. */
+static size_t setting_get_string_representation_uint_audio_asio_output_channel(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   unsigned left;
+   char lname[32], rname[32];
+   if (!setting)
+      return 0;
+   left = *setting->value.target.unsigned_integer;
+   if (     audio_asio_output_channel_name(left, lname, sizeof(lname))
+         && audio_asio_output_channel_name(left + 1, rname, sizeof(rname)))
+      return snprintf(s, len, "%u-%u (%s / %s)", left + 1, left + 2, lname, rname);
+   return snprintf(s, len, "%u-%u", left + 1, left + 2);
+}
+#endif
+
 #ifdef HAVE_WASAPI
+
 static size_t setting_get_string_representation_uint_audio_wasapi_sh_buffer_length(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -5289,22 +5326,22 @@ static size_t setting_get_string_representation_uint_audio_wasapi_sh_buffer_leng
    {
       case WASAPI_SH_BUFFER_AUDIO_LATENCY:
          /* TODO/FIXME - localize */
-         _len += strlcpy(s + _len, "Audio Latency", len - _len);
+         _len += strlcpy_lit(s + _len, "Audio Latency", len - _len);
          break;
       case WASAPI_SH_BUFFER_DEVICE_PERIOD:
          /* TODO/FIXME - localize */
-         _len += strlcpy(s + _len, "Device Period", len - _len);
+         _len += strlcpy_lit(s + _len, "Device Period", len - _len);
          break;
       case WASAPI_SH_BUFFER_CLIENT_BUFFER:
          /* TODO/FIXME - localize */
-         _len += strlcpy(s + _len, "Client Buffer", len - _len);
+         _len += strlcpy_lit(s + _len, "Client Buffer", len - _len);
          break;
       default:
          _len += snprintf(s + _len, len - _len, "%.1f ms",
                (float)*setting->value.target.integer * 1000 / settings->uints.audio_output_sample_rate);
          break;
    }
-   _len += strlcpy(s + _len, ")", len - _len);
+   _len += strlcpy_lit(s + _len, ")", len - _len);
    return _len;
 }
 
@@ -5319,7 +5356,7 @@ static size_t setting_get_string_representation_uint_microphone_wasapi_sh_buffer
       return snprintf(s, len, "%u (%.1f ms)",
             *setting->value.target.integer,
             (float)*setting->value.target.integer * 1000 / settings->uints.audio_output_sample_rate);
-   return strlcpy(s, "Auto", len);
+   return strlcpy_lit(s, "Auto", len);
 }
 #endif
 #endif
@@ -5342,9 +5379,9 @@ static size_t setting_get_string_representation_crt_switch_resolution_super(
    if (!setting)
       return 0;
    if (*setting->value.target.unsigned_integer == 0)
-      return strlcpy(s, "NATIVE", len);
+      return strlcpy_lit(s, "NATIVE", len);
    else if (*setting->value.target.unsigned_integer == 1)
-      return strlcpy(s, "DYNAMIC", len);
+      return strlcpy_lit(s, "DYNAMIC", len);
    return snprintf(s, len, "%d", *setting->value.target.unsigned_integer);
 }
 
@@ -6250,7 +6287,7 @@ static int setting_string_action_left_audio_device(
       audio_device_index = (int)(ptr->size - 1);
 
    if (audio_device_index < 0)
-      strlcpy(setting->value.target.string,
+      strlcpy_lit(setting->value.target.string,
             "", setting->size);
    else
       strlcpy(setting->value.target.string,
@@ -6283,7 +6320,7 @@ static int setting_string_action_left_microphone_device(
       mic_device_index = (int)(ptr->size - 1);
 
    if (mic_device_index < 0)
-      strlcpy(setting->value.target.string,
+      strlcpy_lit(setting->value.target.string,
             "", setting->size);
    else
       strlcpy(setting->value.target.string,
@@ -6568,7 +6605,7 @@ static int setting_string_action_right_audio_device(
       audio_device_index = -1;
 
    if (audio_device_index < 0)
-      strlcpy(setting->value.target.string,
+      strlcpy_lit(setting->value.target.string,
             "", setting->size);
    else
       strlcpy(setting->value.target.string,
@@ -6600,7 +6637,7 @@ static int setting_string_action_right_microphone_device(
       mic_device_index = -1;
 
    if (mic_device_index < 0)
-      strlcpy(setting->value.target.string,
+      strlcpy_lit(setting->value.target.string,
             "", setting->size);
    else
       strlcpy(setting->value.target.string,
@@ -6968,6 +7005,26 @@ static size_t setting_get_string_representation_video_frame_delay(
    return _len;
 }
 
+static size_t setting_get_string_representation_uint_video_fse_negotiation(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case VIDEO_FSE_RELAXED:
+            return strlcpy(s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FSE_RELAXED),
+                  len);
+         case VIDEO_FSE_FORCED:
+            return strlcpy(s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FSE_FORCED),
+                  len);
+      }
+   }
+   return 0;
+}
+
 static size_t setting_get_string_representation_uint_video_rotation(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -7040,13 +7097,13 @@ static size_t setting_get_string_representation_uint_crt_switch_resolutions(
          case CRT_SWITCH_NONE:
             return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
          case CRT_SWITCH_15KHZ:
-            return strlcpy(s, "15 KHz", len);
+            return strlcpy_lit(s, "15 KHz", len);
          case CRT_SWITCH_31KHZ:
-            return strlcpy(s, "31 KHz, Standard", len);
+            return strlcpy_lit(s, "31 KHz, Standard", len);
          case CRT_SWITCH_32_120:
-            return strlcpy(s, "31 KHz, 120Hz", len);
+            return strlcpy_lit(s, "31 KHz, 120Hz", len);
          case CRT_SWITCH_INI:
-            return strlcpy(s, "INI", len);
+            return strlcpy_lit(s, "INI", len);
       }
    }
    return 0;
@@ -7586,7 +7643,7 @@ static size_t setting_get_string_representation_uint_quit_on_close_content(
          case QUIT_ON_CLOSE_CONTENT_ENABLED:
             return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
          case QUIT_ON_CLOSE_CONTENT_CLI:
-            return strlcpy(s, "CLI", len);
+            return strlcpy_lit(s, "CLI", len);
       }
    }
    return 0;
@@ -7600,18 +7657,18 @@ static size_t setting_get_string_representation_uint_video_scale_integer_axis(
       switch (*setting->value.target.unsigned_integer)
       {
          case VIDEO_SCALE_INTEGER_AXIS_Y_X:
-            return strlcpy(s, "Y + X", len);
+            return strlcpy_lit(s, "Y + X", len);
          case VIDEO_SCALE_INTEGER_AXIS_Y_XHALF:
-            return strlcpy(s, "Y + X.5", len);
+            return strlcpy_lit(s, "Y + X.5", len);
          case VIDEO_SCALE_INTEGER_AXIS_YHALF_XHALF:
-            return strlcpy(s, "Y.5 + X.5", len);
+            return strlcpy_lit(s, "Y.5 + X.5", len);
          case VIDEO_SCALE_INTEGER_AXIS_X:
-            return strlcpy(s, "X", len);
+            return strlcpy_lit(s, "X", len);
          case VIDEO_SCALE_INTEGER_AXIS_XHALF:
-            return strlcpy(s, "X.5", len);
+            return strlcpy_lit(s, "X.5", len);
          case VIDEO_SCALE_INTEGER_AXIS_Y:
          default:
-            return strlcpy(s, "Y", len);
+            return strlcpy_lit(s, "Y", len);
       }
    }
    return 0;
@@ -8617,11 +8674,11 @@ static size_t setting_get_string_representation_smb_auth(
    switch (val)
    {
       case RETRO_SMB2_SEC_NTLMSSP: /* SMB2_SEC_NTLMSSP */
-         return strlcpy(s, "NTLMSSP", len);
+         return strlcpy_lit(s, "NTLMSSP", len);
       case RETRO_SMB2_SEC_KRB5: /* SMB2_SEC_KRB5 */
-         return strlcpy(s, "Kerberos", len);
+         return strlcpy_lit(s, "Kerberos", len);
       default:
-         return strlcpy(s, "KRB if available, NTLM if not", len);
+         return strlcpy_lit(s, "KRB if available, NTLM if not", len);
    }
 }
 
@@ -8933,6 +8990,24 @@ static void general_write_handler(rarch_setting_t *setting)
 #endif /*HAVE_LAKKA*/
      case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
          core_set_poll_type(*setting->value.target.integer);
+         break;
+      case MENU_ENUM_LABEL_VIDEO_FONT_PATH:
+      case MENU_ENUM_LABEL_VIDEO_FONT_SIZE:
+         /* The OSD font is rebuilt where it stands: the font_data_t
+          * keeps its address, so nothing holding one has to be told,
+          * and the generation bump recomputes the derived metrics on
+          * the next frame.
+          *
+          * Widget fonts are left to gfx_widgets_iterate(), which
+          * watches the same path and re-runs its layout with the
+          * driver up. Size does not reach them at all - it applies to
+          * the statistics display once widgets are in use.
+          *
+          * The fallback covers the drivers that keep a private font
+          * and need a reinit for the change to land. */
+         if (!font_driver_reinit_osd(settings->paths.path_font,
+                  settings->floats.video_font_size))
+            command_event(CMD_EVENT_REINIT, NULL);
          break;
       case MENU_ENUM_LABEL_USER_LANGUAGE:
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && defined(HAVE_MENU)
@@ -9428,6 +9503,9 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE:
       case MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH:
 #endif
+#ifdef HAVE_ASIO
+      case MENU_ENUM_LABEL_AUDIO_ASIO_OUTPUT_CHANNEL:
+#endif
          rarch_cmd = CMD_EVENT_AUDIO_REINIT;
          break;
       case MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW:
@@ -9525,6 +9603,14 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_SUSTAINED_PERFORMANCE_MODE:
          frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
          break;
+#ifdef ANDROID
+      case MENU_ENUM_LABEL_VIDEO_NOTCH_WRITE_OVER:
+      case MENU_ENUM_LABEL_INPUT_AUTO_MOUSE_GRAB:
+         android_app_set_window_settings(
+               settings->bools.video_notch_write_over_enable,
+               settings->bools.input_auto_mouse_grab);
+         break;
+#endif
       case MENU_ENUM_LABEL_REWIND_BUFFER_SIZE_STEP:
          {
             rarch_setting_t *buffer_size_setting = menu_setting_find_enum(MENU_ENUM_LABEL_REWIND_BUFFER_SIZE);
@@ -14761,13 +14847,18 @@ ADD_DESC(audio_skew_desc);
 
             ADD_DESC(audio_dsp_desc);
 
+            /* Built whatever driver is running or configured. The
+             * settings list is built once per session, and the audio
+             * output page gates each driver's items on the configured
+             * driver when it lists them; building only the running
+             * driver's rows here left the other driver's items out of
+             * the table for the whole session, so switching driver in
+             * the menu could never show them. */
 #ifdef HAVE_WASAPI
-      if (string_is_equal(audio_driver_get_ident(), "wasapi"))
             ADD_DESC(audio_wasapi_desc);
 #endif
 
 #ifdef HAVE_ASIO
-      if (string_is_equal(audio_driver_get_ident(), "asio"))
             ADD_DESC(audio_asio_desc);
 #endif
 
@@ -14822,8 +14913,9 @@ static void settings_build_microphone(
 
             ADD_DESC(mic_misc_desc);
 
+            /* As above: built whatever driver is configured, and gated
+             * by the microphone page when it lists them. */
 #ifdef HAVE_WASAPI
-      if (string_is_equal(settings->arrays.microphone_driver, "wasapi"))
             ADD_DESC(mic_wasapi_desc);
 #endif
 

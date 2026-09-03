@@ -37,6 +37,7 @@ SOURCES := save_state_io_test.c \
            $(LIBRETRO_COMM_DIR)/queues/task_queue.c \
            $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
            $(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+           $(LIBRETRO_COMM_DIR)/string/rstrtod.c \
            $(LIBRETRO_COMM_DIR)/streams/interface_stream.c \
            $(LIBRETRO_COMM_DIR)/streams/memory_stream.c \
            $(LIBRETRO_COMM_DIR)/string/stdstring.c \

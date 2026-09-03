@@ -70,6 +70,7 @@ OBJ = frontend/frontend_salamander.o \
 		libretro-common/file/file_path.o \
 		libretro-common/file/file_path_io.o \
 		libretro-common/hash/lrc_hash.o \
+		libretro-common/string/rstrtod.o \
 		libretro-common/string/stdstring.o \
 		libretro-common/lists/string_list.o \
 		libretro-common/lists/dir_list.o \

@@ -297,6 +297,8 @@ static const struct
    char s_8c7495e3[17];
    char s_ad7c73f6[16];
    char s_30acd6fb[16];
+   char s_35dcde4f[24];
+   char s_ce7da552[37];
    char s_04b30c51[25];
    char s_e5aeacf9[22];
    char s_24976a5b[32];
@@ -1176,6 +1178,7 @@ static const struct
    char s_b4c3612a[28];
    char s_f638f238[15];
    char s_f3358a59[31];
+   char s_f8098721[62];
    char s_0d7d9688[45];
    char s_b00815b8[18];
    char s_1ef8917a[17];
@@ -2040,6 +2043,7 @@ static const struct
    char s_0a008a9d[8];
    char s_9c6ed9ca[18];
    char s_68664e16[17];
+   char s_9ad2e88b[40];
    char s_d4aabe7f[20];
    char s_4674fab3[11];
    char s_904219cb[20];
@@ -2187,6 +2191,9 @@ static const struct
    char s_aa9bc75d[12];
    char s_57047267[9];
    char s_6665b7fc[63];
+   char s_2e6ad26e[7];
+   char s_43e9897c[44];
+   char s_7fbf0860[9];
    char s_f417f6f1[28];
    char s_020e2bc5[18];
    char s_59f183c8[27];
@@ -2262,6 +2269,7 @@ static const struct
    char s_f57f6158[15];
    char s_69b801ef[9];
    char s_a40653a7[35];
+   char s_e67b672d[63];
    char s_52e3d6ea[52];
    char s_580e244f[7];
    char s_a9c8430e[18];
@@ -2429,6 +2437,7 @@ static const struct
    char s_f7cc6630[35];
    char s_310ec7bd[74];
    char s_5832a2c2[106];
+   char s_f47e544f[283];
    char s_20cc6597[99];
    char s_21b0bad3[79];
    char s_66e9521c[75];
@@ -2458,6 +2467,8 @@ static const struct
    char s_5977d6d8[49];
    char s_cb67f2a4[43];
    char s_3c3598a9[48];
+   char s_3bac47bd[444];
+   char s_90e7db40[499];
    char s_4b78ee7f[87];
    char s_aed11d67[145];
    char s_dbe6e749[106];
@@ -2993,6 +3004,7 @@ static const struct
    char s_7de5d198[66];
    char s_3b573ee6[31];
    char s_dc1d6cc7[62];
+   char s_28543dcf[74];
    char s_aebcb136[171];
    char s_8b636a26[40];
    char s_8f707459[59];
@@ -3372,12 +3384,12 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    char s_3e1e294b[56];
    char s_69c0e487[75];
-   char s_706ff4dc[243];
+   char s_706ff4dc[343];
    char s_a0d1a85c[70];
    char s_b5966528[236];
    char s_907ef7cc[51];
    char s_b0a46506[48];
-   char s_04624c88[64];
+   char s_04624c88[184];
    char s_91976dbe[60];
    char s_f6492edc[61];
    char s_9bb85635[247];
@@ -3421,6 +3433,7 @@ static const struct
    char s_ffd591e0[50];
    char s_a51ab538[35];
    char s_55d6cc44[47];
+   char s_5a8f7fb9[223];
    char s_f2963d2d[30];
    char s_4c592ae1[123];
    char s_52ac4fb9[116];
@@ -3492,6 +3505,7 @@ static const struct
    char s_43946ee5[95];
    char s_5492b73d[57];
    char s_01e5fbea[380];
+   char s_0653bf6a[479];
    char s_123f401f[143];
    char s_0d96ed73[50];
    char s_9f0fd076[145];
@@ -3539,6 +3553,7 @@ static const struct
    char s_f4e4e921[243];
    char s_7968f59d[43];
    char s_8cee3615[214];
+   char s_87ba81db[356];
    char s_58c80718[411];
    char s_67d549fd[40];
    char s_afac733c[40];
@@ -4691,6 +4706,8 @@ static const struct
    "Estado: detenida",
    "Sincronizaci\303\263n",
    "Sincronizaci\303\263n",
+   "Canalizaci\303\263n multihilo",
+   "Aumentar prioridad del hilo de audio",
    "Ganancia de volumen (dB)",
    "Modo WASAPI exclusivo",
    "Formato WASAPI de coma flotante",
@@ -5572,6 +5589,7 @@ static const struct
    "Mostrar Reiniciar RetroArch",
    "Mostrar Apagar",
    "Mostrar subetiquetas de men\303\272s",
+   "Mostrar subetiquetas de men\303\272s solo para la selecci\303\263n actual",
    "Ejecutar listas de reproducci\303\263n con un clic",
    "Sonidos del men\303\272",
    "M\303\272sica de fondo",
@@ -5846,7 +5864,7 @@ static const struct
    "Factor de escala de miniaturas",
    "Partir nombres de lista de reproducci\303\263n (es necesario reiniciar)",
    "Usar modo PAL60",
-   "Directorio superior",
+   "<Carpeta principal>",
    "Pausar contenido al activar el men\303\272",
    "Pausar contenido cuando no est\303\251 activo",
    "Pausar el contenido cuando se desconecte un mando",
@@ -6444,6 +6462,7 @@ static const struct
    "Sistema",
    "Capturar pantalla",
    "Tareas multihilo",
+   "Preferir n\303\272cleos con mayor rendimiento",
    "Miniatura principal",
    "Miniaturas",
    "Miniatura principal",
@@ -6592,6 +6611,9 @@ static const struct
    "Autom\303\241tico",
    "real(es)",
    "Muestrear duraci\303\263n de fotogramas solo en situaciones estables",
+   "Forzar",
+   "Negociaci\303\263n de pantalla completa exclusiva",
+   "Relajada",
    "Mostrar a pantalla completa",
    "Pantalla completa",
    "Ancho en pantalla completa",
@@ -6668,6 +6690,7 @@ static const struct
    "Reducir escala",
    "Escalado",
    "Sincronizar con l\303\255neas de barrido",
+   "Desplazamiento de la sincronizaci\303\263n de las l\303\255neas de barrido",
    "Simulaci\303\263n de escalonamiento de l\303\255neas de barrido",
    "V\303\255deo",
    "Shaders de v\303\255deo",
@@ -6855,6 +6878,10 @@ static const struct
    "En este directorio se guardar\303\241n los recursos de los men\303\272s de RetroArch.",
    "Abre el panel de control del controlador ASIO para configurar el enrutado de dispositivos y los "
    "b\303\272feres.",
+   "Indica la cantidad de fotogramas que mover\303\241 el controlador de audio por bloque. Un valor "
+   "de 0 pedir\303\241 al controlador el valor del dispositivo, que es lo que esperan la mayor\303"
+   "\255a de configuraciones; un valor m\303\241s grande compensa la resistencia contra p\303\251rdi"
+   "das de audio con latencia.",
    "Fuerza el dispositivo que utilizar\303\241 el controlador de audio. Este ajuste depende del cont"
    "rolador.",
    "Selecciona el controlador de audio que se utilizar\303\241 (es necesario reiniciar).",
@@ -6905,6 +6932,17 @@ static const struct
    "Cambia los ajustes de entrada y salida de audio.",
    "Sincroniza el audio. Se recomienda su uso.",
    "Cambia los ajustes de sincronizaci\303\263n de audio.",
+   "Remuestrea, filtra y mezcla el audio en el hilo de audio en vez de hacerlo en cada fotograma. Ma"
+   "ntiene la misma latencia de la ruta sincronizada a fotogramas en cualquier ajuste de latencia de"
+   " audio, midiendo el control de frecuencias seg\303\272n el valor del dispositivos y ejecutando e"
+   "l remuestreo dentro de los l\303\255mites del fotograma. Los controladores de audio que no pueda"
+   "n activar el dispositivo mantendr\303\241n la ruta sincronizada a fotogramas.",
+   "Solicita al sistema operativo que programe el hilo de audio con m\303\241s prioridad que el rest"
+   "o del front-end, de esta forma, un fotograma que cargue m\303\241s a la CPU tendr\303\241 menos "
+   "probabilidad de privar al dispositivo de audio. Baja la latencia de audio en aquellos sistemas q"
+   "ue lo permitan, si un sistema lo rechaza, la prioridad sigue siendo la predeterminada sin m\303"
+   "\241s cambios. Esta opci\303\263n se aplica al hilo de audio en el que se ejecutan la canalizaci"
+   "\303\263n multihilo y las llamadas al n\303\272cleo de audio.",
    "Amplifica el volumen de audio (en dB). 0 dB es el volumen normal, sin ganancia alguna.",
    "Permite que el controlador WASAPI tome el control exclusivo del dispositivo de audio. Si se desa"
    "ctiva esta opci\303\263n se usar\303\241 el modo compartido.",
@@ -7734,6 +7772,7 @@ static const struct
    "Muestra la opci\303\263n \302\253Reiniciar RetroArch\302\273 en el men\303\272 principal.",
    "Muestra la opci\303\263n \302\253Apagar\302\273.",
    "Muestra informaci\303\263n adicional sobre los elementos del men\303\272.",
+   "Muestra una subetiqueta solo en el elemento de men\303\272 que est\303\251 resaltado.",
    "Omite el men\303\272 Iniciar al ejecutar un elemento de una lista de reproducci\303\263n. Pulsa "
    "la cruceta mientras mantienes pulsado el bot\303\263n Aceptar para acceder al men\303\272 Inicia"
    "r.",
@@ -8341,15 +8380,18 @@ static const struct
    "Selecciona el modo de autenticaci\303\263n de tu entorno SMB.",
    "Accede a los archivos del recurso compartido de SMB que hayas configurado.",
    "Activa el acceso a la red compartida SMB. Se recomienda encarecidamente utilizar un cable Ethern"
-   "et en vez de una se\303\261al wifi para tener una conexi\303\263n m\303\241s fiable. Nota: si ca"
-   "mbias cualquiera de estos ajustes, es necesario reiniciar RetroArch.",
+   "et en vez de una se\303\261al wifi para tener una conexi\303\263n m\303\241s fiable. Nota: los c"
+   "ambios se aplicar\303\241n la pr\303\263xima vez que navegues por un recurso compartido, el cont"
+   "enido que ya est\303\251 siendo ejecutado desde un recurso compartido no se desconectar\303\241.",
    "Selecciona el n\303\272mero m\303\241ximo de conexiones permitidas en tu entorno.",
    "La contrase\303\261a para la autenticaci\303\263n. Opcional si el acceso de invitado est\303\241"
    " activado en el servidor. Para Windows 10 en adelante: el acceso de invitado est\303\241 desacti"
    "vado por defecto, as\303\255 que es necesario introducir una contrase\303\261a.",
    "La direcci\303\263n IP o el nombre de host del servidor.",
    "Configura los ajustes de la red compartida SMB.",
-   "El nombre del recurso compartido de red al que quieres acceder.",
+   "El nombre del recurso compartido de red al que quieres acceder. Deja esta opci\303\263n en blanc"
+   "o para mostrar todos los recursos que exporte el servidor y as\303\255 poder elegir uno al naveg"
+   "ar.",
    "La ruta del subdirectorio del recurso compartido. Opcional.",
    "Selecciona el tiempo de espera predeterminado (en segundos).",
    "El nombre de usuario para la autenticaci\303\263n. Opcional si el acceso de invitado est\303\241"
@@ -8402,6 +8444,9 @@ static const struct
    "Muestra informaci\303\263n espec\303\255fica del dispositivo.",
    "Captura una imagen de la pantalla.",
    "Ejecuta otras tareas en un hilo independiente.",
+   "Mantiene los hilos principal y de audio en los n\303\272cleos m\303\241s r\303\241pidos de la CP"
+   "U cuando esta sea un procesador de n\303\272cleos mixtos. No afectar\303\241 a aquellos procesad"
+   "ores cuyos n\303\272cleos sean id\303\251nticos. Es necesario reiniciar.",
    "Tipo de miniaturas a mostrar.",
    "En este directorio se guardar\303\241n las car\303\241tulas, capturas de pantalla de ejemplo y m"
    "iniaturas de las pantallas de t\303\255tulo.",
@@ -8527,6 +8572,12 @@ static const struct
    "in estar pausado, sin usar el avance r\303\241pido... Una duraci\303\263n en una situaci\303\263"
    "n normal). La lectura del diagn\303\263stico ser\303\241 m\303\241s precisa a costa de una conve"
    "rgencia m\303\241s lenta nada m\303\241s cargar un contenido.",
+   "Establece la forma de solicitar el modo de pantalla completa exclusiva al controlador cuando el "
+   "modo de pantalla completa en ventana est\303\251 desactivado. Relajada solo lo permite y el cont"
+   "rolador puede rechazarlo, en el controlador de Vulkan, esto es una sugerencia que el controlador"
+   " ha llegado a ignorar, dejando que el swap chain siga utilizando la ruta independiente del compo"
+   "sitor. Forzar toma el modo exclusivo y lo mantiene. Es necesario tener VK_EXT_full_screen_exclus"
+   "ive.",
    "Muestra RetroArch en pantalla completa. Esta opci\303\263n puede ser cambiada en cualquier momen"
    "to o anulada por un argumento de l\303\255nea de comandos.",
    "Cambia los ajustes del modo en pantalla completa.",
@@ -8628,6 +8679,11 @@ static const struct
    "Sincroniza la presentaci\303\263n de la imagen con la posici\303\263n de las l\303\255neas de ba"
    "rrido. Reduce la latencia a costa de aumentar las fragmentaciones en la imagen. Es necesario des"
    "activar la sincron\303\255a vertical (Vsync).",
+   "Desplaza el objetivo de sincronizaci\303\263n de las l\303\255neas de barrido un n\303\272mero c"
+   "oncreto de l\303\255neas. La sincronizaci\303\263n no sabe en qu\303\251 momento termina la GPU "
+   "de renderizar un fotograma o cu\303\241ndo llega el cambio a la pantalla, as\303\255 que debes a"
+   "justar este valor hasta que la l\303\255nea de la fragmentaci\303\263n salga de la pantalla. Un "
+   "valor negativo empezar\303\241 antes.",
    "ADVERTENCIA: los parpadeos r\303\241pidos pueden provocar persistencia de la imagen (\302\253im"
    "\303\241genes fantasma\302\273) en algunas pantallas. Utiliza esta opci\303\263n bajo tu propia "
    "responsabilidad. // Simula de forma b\303\241sica el escalonamiento de las l\303\255neas de barr"
@@ -9367,7 +9423,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (208252u
+      (sizeof(msg_hash_es_blob) == (210896u
 #ifdef ANDROID
        + 329u
 #endif
@@ -9693,12 +9749,12 @@ typedef char msg_hash_es_blob_check[
        + 37u
        + 56u
        + 75u
-       + 243u
+       + 343u
        + 70u
        + 236u
        + 51u
        + 48u
-       + 64u
+       + 184u
        + 60u
        + 61u
        + 247u
@@ -10066,6 +10122,8 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_THREADED_PIPELINE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
@@ -10945,6 +11003,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
@@ -11808,6 +11867,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI,
@@ -11955,6 +12015,9 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_FORCED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_NEGOTIATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_RELAXED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
@@ -12030,6 +12093,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC_OFFSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
@@ -12197,6 +12261,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
@@ -12224,6 +12289,8 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
@@ -12759,6 +12826,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
@@ -13187,6 +13255,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
@@ -13258,6 +13327,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FSE_NEGOTIATION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
@@ -13305,6 +13375,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC_OFFSET,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,

@@ -21,6 +21,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>  /* uintptr_t, for the query generation token */
 #include <sys/types.h>
 #include <file/archive_file.h>
 #include <streams/interface_stream.h>
@@ -150,6 +151,7 @@
 /* Activate this to enable assertions on code sections
  * that should be exclusive to one modus */
 #include <assert.h>
+#include <compat/strl.h>
 #define NETPLAY_ASSERT_MODUS(m) assert(networking_driver_st.data->modus==(m));
 #else
 #define NETPLAY_ASSERT_MODUS(m)
@@ -777,7 +779,7 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
          }
       }
       else
-         strlcpy(ad_packet_buffer.frontend, "N/A",
+         strlcpy_lit(ad_packet_buffer.frontend, "N/A",
             sizeof(ad_packet_buffer.frontend));
 
       strlcpy(ad_packet_buffer.core, sysinfo->library_name,
@@ -826,7 +828,7 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
          strlcpy(ad_packet_buffer.content,
             (basename && *basename) ? basename : "N/A",
             sizeof(ad_packet_buffer.content));
-         strlcpy(ad_packet_buffer.subsystem_name, "N/A",
+         strlcpy_lit(ad_packet_buffer.subsystem_name, "N/A",
             sizeof(ad_packet_buffer.subsystem_name));
 
          ad_packet_buffer.content_crc = (int32_t)htonl(netplay_content_crc());
@@ -1407,9 +1409,9 @@ static bool netplay_handshake_info(netplay_t *netplay,
    }
    else
    {
-      strlcpy(info_buf.core_name,
+      strlcpy_lit(info_buf.core_name,
             "UNKNOWN", sizeof(info_buf.core_name));
-      strlcpy(info_buf.core_version,
+      strlcpy_lit(info_buf.core_version,
             "UNKNOWN", sizeof(info_buf.core_version));
    }
 
@@ -7766,6 +7768,19 @@ static void netplay_frontend_paused(netplay_t *netplay, bool paused)
    if (netplay->modus == NETPLAY_MODUS_CORE_PACKET_INTERFACE)
       return;
 
+   /* A server that disables pausing answers NETPLAY_CMD_PAUSE from a
+    * client with a NAK and hangs the connection up, so a client whose
+    * server disallows it must not announce a pause at all. The
+    * frontend reaches here for transient states as well as for a
+    * deliberate pause - pushing the Quick Menu parks the runloop for
+    * a single frame, which is how opening the menu or the chat prompt
+    * arrives - and announcing those cost the connection over
+    * something the user never asked for. Leaving local_paused unset
+    * keeps the pair symmetric: the resume that netplay_pre_frame
+    * sends off the back of it is suppressed with it. */
+   if (paused && !netplay->is_server && !netplay->allow_pausing)
+      return;
+
    netplay->local_paused = paused;
 
    /* Communicating this is a bit odd: If exactly one other connection is
@@ -9009,6 +9024,38 @@ static void netplay_announce(netplay_t *netplay)
    free(mitm_custom_addr);
 }
 
+/* Cleared by netplay_mitm_query_cb on every path it can take, so
+ * the wait below ends as soon as THIS query is answered.  The task
+ * queue runs the callback of every task it retires, successful or
+ * not, so there is no completion that leaves this set. */
+static bool netplay_mitm_query_pending = false;
+
+/* Incremented for every query issued, and again when one is
+ * abandoned.  The callback carries the value it was issued with and
+ * does nothing if it no longer matches.
+ *
+ * Without this a timed-out query is still in flight, and its
+ * callback - which writes host_room->mitm_address and mitm_port
+ * unconditionally - would land after the caller had already fallen
+ * back to direct mode, publishing a tunnel address for a session
+ * that is not tunnelled.  Bounding the wait without this guard would
+ * trade a hang for silent corruption. */
+static unsigned netplay_mitm_query_generation = 0;
+
+/* The handle the outstanding query was issued for.
+ *
+ * A query can now be started before host setup runs, so by the time
+ * netplay_mitm_query() is reached the answer may already be in hand
+ * or on its way.  This is what lets it tell "already asked for this"
+ * from "asked for something else", so a user who changes the relay
+ * setting between the two points still gets the server they picked. */
+static char netplay_mitm_query_handle[NAME_MAX_LENGTH] = {0};
+
+static bool netplay_mitm_query_is_pending(void *data)
+{
+   return netplay_mitm_query_pending;
+}
+
 static void netplay_mitm_query_cb(retro_task_t *task, void *task_data,
       void *user_data, const char *err)
 {
@@ -9017,6 +9064,11 @@ static void netplay_mitm_query_cb(retro_task_t *task, void *task_data,
    http_transfer_data_t *data     = (http_transfer_data_t*)task_data;
    net_driver_state_t  *net_st    = &networking_driver_st;
    struct netplay_room *host_room = &net_st->host_room;
+
+   if ((unsigned)(uintptr_t)user_data != netplay_mitm_query_generation)
+      return;   /* superseded or abandoned; not ours to answer */
+
+   netplay_mitm_query_pending     = false;
 
    if (err || !data || !data->data || !data->len || data->status != 200)
    {
@@ -9064,12 +9116,35 @@ static void netplay_mitm_query_cb(retro_task_t *task, void *task_data,
    free(buf);
 }
 
-static bool netplay_mitm_query(const char *handle)
+/* Upper bound on the wait for tunnel information from the lobby
+ * server, in microseconds.  Generous on purpose: timing out a query
+ * that would have succeeded costs the user their hosted session,
+ * while waiting a few seconds longer costs only patience. */
+#define NETPLAY_MITM_QUERY_TIMEOUT (10 * 1000 * 1000)
+
+/* The tunnel query, split into begin / is_ready / result.
+ *
+ * Split rather than moved: netplay_mitm_query() below still calls all
+ * three back to back, so behaviour is exactly what it was.  The point
+ * is that "ask" and "wait for the answer" are no longer welded
+ * together, which is what a later change needs in order to start the
+ * query when the user opens the host UI and have the answer waiting
+ * by the time host setup runs.
+ *
+ * Returns false if the query could not be issued at all.  A custom
+ * relay needs no query, so it fills the address in directly and
+ * reports ready immediately. */
+static bool netplay_mitm_query_begin(const char *handle)
 {
    net_driver_state_t  *net_st    = &networking_driver_st;
    struct netplay_room *host_room = &net_st->host_room;
+
    if (!handle || !*handle)
       return false;
+
+   strlcpy(netplay_mitm_query_handle, handle,
+         sizeof(netplay_mitm_query_handle));
+
    /* We don't need to query,
       if we are using a custom relay server. */
    if (string_is_equal(handle, "custom"))
@@ -9088,21 +9163,145 @@ static bool netplay_mitm_query(const char *handle)
 
       strlcpy(host_room->mitm_address, addr, sizeof(host_room->mitm_address));
       host_room->mitm_port = (int)port;
+
+      /* Supersede anything still in flight.  A custom relay answers
+       * synchronously, and the old code returned here without ever
+       * consulting the pending flag - so an earlier query left
+       * outstanding must not make this one wait, and its callback
+       * must not later overwrite the address just set. */
+      ++netplay_mitm_query_generation;
+      netplay_mitm_query_pending = false;
+
+      return true;
    }
-   else
+
    {
       char query[256];
       size_t _len = strlcpy(query, FILE_PATH_LOBBY_LIBRETRO_URL "tunnel?name=",
             sizeof(query));
       strlcpy(query + _len, handle, sizeof(query) - _len);
+      netplay_mitm_query_pending = true;
+      ++netplay_mitm_query_generation;
+
       if (!task_push_http_transfer(query, true, NULL,
-            netplay_mitm_query_cb, NULL))
+            netplay_mitm_query_cb,
+            (void*)(uintptr_t)netplay_mitm_query_generation))
+      {
+         netplay_mitm_query_pending = false;
          return false;
-      /* Make sure we've the tunnel address before continuing. */
-      task_queue_wait(NULL, NULL);
+      }
    }
 
+   return true;
+}
+
+/* Whether the answer has arrived.  A custom relay was answered
+ * synchronously in begin(), so this is true straight away there. */
+static bool netplay_mitm_query_ready(void)
+{
+   return !netplay_mitm_query_pending;
+}
+
+/* Blocks until the answer arrives or the bound expires.
+ *
+ * The bound matters because this is a round trip to a machine we do
+ * not control.  A lobby server that is down, blackholed or simply
+ * slow left the frontend hung with no way out but killing it.  On
+ * timeout this reports failure like any other query and the caller
+ * falls back to direct mode with a warning - an outcome the user can
+ * see and act on, which an indefinite hang is not.
+ *
+ * Generous on purpose: a false timeout breaks hosting that would have
+ * worked, which is worse than the wait it prevents. */
+static bool netplay_mitm_query_await(void)
+{
+   if (netplay_mitm_query_ready())
+      return true;
+
+   if (!task_queue_wait_timeout(netplay_mitm_query_is_pending, NULL,
+         NETPLAY_MITM_QUERY_TIMEOUT))
+   {
+      RARCH_WARN("[Netplay] Timed out waiting for tunnel information"
+            " from the lobby server.\n");
+      /* Bump the generation so the in-flight callback, which may
+       * still arrive, does not write an address for a session that
+       * has already fallen back to direct mode. */
+      ++netplay_mitm_query_generation;
+      netplay_mitm_query_pending = false;
+      return false;
+    }
+
+   return true;
+}
+
+/* What the query produced: an address and port, or nothing. */
+static bool netplay_mitm_query_result(void)
+{
+   net_driver_state_t  *net_st    = &networking_driver_st;
+   struct netplay_room *host_room = &net_st->host_room;
+
    return *host_room->mitm_address && host_room->mitm_port;
+}
+
+/* Whether an answer for @handle is already in hand or on its way,
+ * so asking again would be a second round trip for the same thing.
+ *
+ * A prefetched query that came back EMPTY is deliberately not
+ * reused: a transient lobby failure at prefetch time would otherwise
+ * doom a hosted session that asking again would have got, which is a
+ * worse trade than one extra request. */
+static bool netplay_mitm_query_have(const char *handle)
+{
+   if (!handle || !*handle)
+      return false;
+   if (!string_is_equal(handle, netplay_mitm_query_handle))
+      return false;
+
+   return !netplay_mitm_query_ready() || netplay_mitm_query_result();
+}
+
+static bool netplay_mitm_query(const char *handle)
+{
+   if (!netplay_mitm_query_have(handle))
+      if (!netplay_mitm_query_begin(handle))
+         return false;
+
+   if (!netplay_mitm_query_await())
+      return false;
+
+   return netplay_mitm_query_result();
+}
+
+/* Start the tunnel query early.
+ *
+ * Called when the user commits to hosting, which is well before host
+ * setup needs the address - and on the content-reload path, before
+ * the content has even loaded.  The query runs during that time, so
+ * by the time netplay_mitm_query() is reached the answer is usually
+ * already there and its wait costs nothing.
+ *
+ * Best effort in the strictest sense: it changes nothing except when
+ * the round trip happens.  If it fails, is skipped, or the user
+ * changes relay servers afterwards, host setup issues the query
+ * exactly as it did before. */
+void netplay_mitm_query_prefetch(void)
+{
+   settings_t *settings = config_get_ptr();
+   const char *handle;
+
+   if (!settings || !settings->bools.netplay_use_mitm_server)
+      return;
+
+   handle = settings->arrays.netplay_mitm_server;
+
+   if (!handle || !*handle)
+      return;
+
+   /* Already asked, and the answer is here or coming. */
+   if (netplay_mitm_query_have(handle))
+      return;
+
+   netplay_mitm_query_begin(handle);
 }
 
 int16_t input_state_net(unsigned port, unsigned device,

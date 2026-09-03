@@ -1392,7 +1392,6 @@ static const struct
    char s_012938fb[30];
    char s_a747cdc9[57];
    char s_2f169651[18];
-   char s_73674a86[10];
    char s_705eee28[35];
    char s_62af62ac[36];
    char s_97379d00[23];
@@ -5629,7 +5628,6 @@ static const struct
    "K\303\274\303\247\303\274k Resim \303\226l\303\247ek Etkeni",
    "Oynatma Listesi Adlar\304\261n\304\261 Kes (Yeniden ba\305\237lat\304\261lmal\304\261)",
    "PAL60 Kipi Kullan",
-   "Ana Dizin",
    "Men\303\274 Etkinken \304\260\303\247eri\304\237i Duraklat",
    "Etkin De\304\237ilken \304\260\303\247eri\304\237i Duraklat",
    "Performans Saya\303\247lar\304\261",
@@ -9183,7 +9181,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tr_blob_check[
-      (sizeof(msg_hash_tr_blob) == (171054u
+      (sizeof(msg_hash_tr_blob) == (171044u
 #ifdef ANDROID
        + 340u
 #endif
@@ -10934,7 +10932,6 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,

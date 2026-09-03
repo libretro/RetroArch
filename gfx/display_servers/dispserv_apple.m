@@ -694,5 +694,7 @@ const video_display_server_t dispserv_apple = {
    NULL, /* get_video_output_next */
    cocoa_get_metrics,
    NULL, /* get_flags */
+   NULL, /* get_scanline */
+   NULL, /* wait_vblank */
    "apple"
 };

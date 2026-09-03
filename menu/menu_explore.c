@@ -21,6 +21,7 @@
 #include <array/rbuf.h>
 #include <array/rhmap.h>
 #include <formats/rjson.h>
+#include <formats/rjson_stream.h>
 #include <formats/rjson_helpers.h>
 #include <retro_endianness.h>
 #include <streams/file_stream.h>
@@ -462,7 +463,7 @@ static void explore_load_icons(explore_state_t *state)
       __len       += strlcpy(path + _len,
                  state->by[EXPLORE_BY_SYSTEM][i]->str,
                  sizeof(path)     - _len);
-      strlcpy(path + __len, ".png", sizeof(path) - __len);
+      strlcpy_lit(path + __len, ".png", sizeof(path) - __len);
       if (!path_is_valid(path))
          continue;
 
@@ -1103,7 +1104,7 @@ static void explore_action_saveview_complete(void *userdata, const char *name)
    settings               = config_get_ptr();
    _len                   = fill_pathname_join_special(lvwpath,
          settings->paths.directory_playlist, name, sizeof(lvwpath));
-   strlcpy(lvwpath + _len, ".lvw", sizeof(lvwpath) - _len);
+   strlcpy_lit(lvwpath + _len, ".lvw", sizeof(lvwpath) - _len);
 
    if (filestream_exists(lvwpath))
    {
@@ -1120,7 +1121,7 @@ static void explore_action_saveview_complete(void *userdata, const char *name)
       return;
    }
 
-   if (!(w = rjsonwriter_open_stream(file)))
+   if (!(w = rjsonwriter_open_intfstream(file)))
    {
       /* Every rjsonwriter_* call below dereferences this without a
        * check of its own. */
@@ -1244,7 +1245,7 @@ static void explore_load_view(explore_state_t *state, const char* path)
          RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE)))
       return;
 
-   json = rjson_open_stream(file);
+   json = rjson_open_intfstream(file);
 
    /* Configure parser */
    rjson_set_options(json,

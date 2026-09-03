@@ -11,6 +11,7 @@ COMMON_SOURCES := \
 	$(LIBRETRODB_DIR)/query.c \
 	$(LIBRETRO_COMM_DIR)/streams/interface_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+	$(LIBRETRO_COMM_DIR)/string/rstrtod.c \
 	$(LIBRETRO_COMM_DIR)/streams/memory_stream.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_fnmatch.c \

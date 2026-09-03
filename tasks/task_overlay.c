@@ -35,6 +35,7 @@
 #include "../input/input_overlay.h"
 #include "../input/input_remapping.h"
 #include "../verbosity.h"
+#include <string/rstrtod.h>
 
 typedef struct overlay_loader overlay_loader_t;
 
@@ -55,7 +56,6 @@ struct overlay_loader
    size_t resolve_pos;
    unsigned size;
    unsigned pos;
-   unsigned pos_increment;
 
    enum overlay_status state;
    enum overlay_image_transfer_status loading_status;
@@ -274,12 +274,28 @@ static void task_overlay_conf_free_file(char *buf, void *ud)
 }
 #endif
 
+/* Per-frame I/O window, consulted between work items.
+ *
+ * The loader used to chunk by a fixed count derived from the
+ * workload itself - half the descriptors, a quarter of the overlays
+ * - which is not pacing at all: a bigger overlay simply means a
+ * bigger chunk, so the work always landed in the same two or four
+ * handler invocations no matter how long each one took.  With
+ * Threaded Tasks off those invocations run on the thread driving
+ * the frame loop, and every item in them is a PNG decode off disk.
+ *
+ * Consulting the shared window instead is what the budgeted
+ * directory walks, playlist parse and scanner do: small overlays
+ * still finish in one invocation, large ones spread over as many as
+ * they need, and neither case is decided by the size of the job. */
+static bool task_overlay_within_budget(void *ud)
+{
+   return task_nbio_slice_within_budget(ud, 0, 0);
+}
+
 static void task_overlay_image_done(struct overlay *overlay)
 {
    overlay->pos           = 0;
-   /* Divide iteration steps by half of total descs if size is even,
-    * otherwise default to 8 (arbitrary value for now to speed things up). */
-   overlay->pos_increment = (overlay->size / 2) ? ((unsigned)(overlay->size / 2)) : 8;
 }
 
 static bool task_overlay_load_image_texture(
@@ -454,28 +470,28 @@ static void task_overlay_desc_populate_eightway_config(
 
    /* Redefine eightway vals if specified in conf
     */
-   strlcpy(conf_key + _len, "_up", sizeof(conf_key) - _len);
+   strlcpy_lit(conf_key + _len, "_up", sizeof(conf_key) - _len);
    if (config_get_string(loader->conf, conf_key, &str))
    {
       task_overlay_redefine_eightway_direction(str, &eightway->up);
       free(str);
    }
 
-   strlcpy(conf_key + _len, "_down", sizeof(conf_key) - _len);
+   strlcpy_lit(conf_key + _len, "_down", sizeof(conf_key) - _len);
    if (config_get_string(loader->conf, conf_key, &str))
    {
       task_overlay_redefine_eightway_direction(str, &eightway->down);
       free(str);
    }
 
-   strlcpy(conf_key + _len, "_left", sizeof(conf_key) - _len);
+   strlcpy_lit(conf_key + _len, "_left", sizeof(conf_key) - _len);
    if (config_get_string(loader->conf, conf_key, &str))
    {
       task_overlay_redefine_eightway_direction(str, &eightway->left);
       free(str);
    }
 
-   strlcpy(conf_key + _len, "_right", sizeof(conf_key) - _len);
+   strlcpy_lit(conf_key + _len, "_right", sizeof(conf_key) - _len);
    if (config_get_string(loader->conf, conf_key, &str))
    {
       task_overlay_redefine_eightway_direction(str, &eightway->right);
@@ -536,7 +552,7 @@ static bool task_overlay_load_desc(
          "overlay%u_desc%u", ol_idx, desc_idx);
 
    _len = strlcpy(overlay_key, overlay_desc_key, sizeof(overlay_key));
-   strlcpy(overlay_key + _len, "_normalized", sizeof(overlay_key) - _len);
+   strlcpy_lit(overlay_key + _len, "_normalized", sizeof(overlay_key) - _len);
    if (config_get_bool(conf, overlay_key, &tmp_bool))
       normalized = tmp_bool;
 
@@ -638,7 +654,7 @@ static bool task_overlay_load_desc(
 
       if (BIT256_GET(desc->button_mask, RARCH_OVERLAY_NEXT))
       {
-         strlcpy(overlay_key + _len, "_next_target",
+         strlcpy_lit(overlay_key + _len, "_next_target",
                sizeof(overlay_key) - _len);
          config_get_array(conf, overlay_key,
                desc->next_index_name, sizeof(desc->next_index_name));
@@ -658,8 +674,8 @@ static bool task_overlay_load_desc(
       height_mod /= height;
    }
 
-   desc->x       = (float)strtod(elems[1], NULL) * width_mod;
-   desc->y       = (float)strtod(elems[2], NULL) * height_mod;
+   desc->x       = (float)rstrtod(elems[1], NULL) * width_mod;
+   desc->y       = (float)rstrtod(elems[2], NULL) * height_mod;
    desc->x_shift = desc->x;
    desc->y_shift = desc->y;
 
@@ -683,7 +699,7 @@ static bool task_overlay_load_desc(
             return false;
          }
 
-         strlcpy(overlay_key + _len, "_saturate_pct",
+         strlcpy_lit(overlay_key + _len, "_saturate_pct",
                sizeof(overlay_key) - _len);
          if (config_get_float(conf, overlay_key,
                   &tmp_float))
@@ -700,12 +716,12 @@ static bool task_overlay_load_desc(
          break;
    }
 
-   desc->range_x = (float)strtod(elems[4], NULL) * width_mod;
-   desc->range_y = (float)strtod(elems[5], NULL) * height_mod;
+   desc->range_x = (float)rstrtod(elems[4], NULL) * width_mod;
+   desc->range_y = (float)rstrtod(elems[5], NULL) * height_mod;
 
    _len = strlcpy(conf_key, overlay_desc_key, sizeof(conf_key));
 
-   strlcpy(conf_key + _len, "_reach_x",   sizeof(conf_key) - _len);
+   strlcpy_lit(conf_key + _len, "_reach_x",   sizeof(conf_key) - _len);
    desc->reach_right = 1.0f;
    desc->reach_left  = 1.0f;
    if (config_get_float(conf, conf_key, &tmp_float))
@@ -714,7 +730,7 @@ static bool task_overlay_load_desc(
       desc->reach_left  = tmp_float;
    }
 
-   strlcpy(conf_key + _len, "_reach_y",   sizeof(conf_key) - _len);
+   strlcpy_lit(conf_key + _len, "_reach_y",   sizeof(conf_key) - _len);
    desc->reach_up   = 1.0f;
    desc->reach_down = 1.0f;
    if (config_get_float(conf, conf_key, &tmp_float))
@@ -723,7 +739,7 @@ static bool task_overlay_load_desc(
       desc->reach_down = tmp_float;
    }
 
-   strlcpy(conf_key + _len, "_movable",   sizeof(conf_key) - _len);
+   strlcpy_lit(conf_key + _len, "_movable",   sizeof(conf_key) - _len);
    desc->flags    &= ~OVERLAY_DESC_MOVABLE;
    desc->delta_x   = 0.0f;
    desc->delta_y   = 0.0f;
@@ -731,39 +747,39 @@ static bool task_overlay_load_desc(
          && tmp_bool)
       desc->flags |= OVERLAY_DESC_MOVABLE;
 
-   strlcpy(conf_key + _len, "_reach_up", sizeof(conf_key) - _len);
+   strlcpy_lit(conf_key + _len, "_reach_up", sizeof(conf_key) - _len);
    if (config_get_float(conf, conf_key, &tmp_float))
       desc->reach_up = tmp_float;
 
-   strlcpy(conf_key + _len, "_alpha_mod",   sizeof(conf_key) - _len);
+   strlcpy_lit(conf_key + _len, "_alpha_mod",   sizeof(conf_key) - _len);
    desc->alpha_mod = alpha_mod;
    if (config_get_float(conf, conf_key, &tmp_float))
          desc->alpha_mod = tmp_float;
 
-   strlcpy(conf_key + _len, "_range_mod",   sizeof(conf_key) - _len);
+   strlcpy_lit(conf_key + _len, "_range_mod",   sizeof(conf_key) - _len);
    desc->range_mod = range_mod;
    if (config_get_float(conf, conf_key, &tmp_float))
       desc->range_mod = tmp_float;
 
-   strlcpy(conf_key + _len, "_exclusive",   sizeof(conf_key) - _len);
+   strlcpy_lit(conf_key + _len, "_exclusive",   sizeof(conf_key) - _len);
    desc->flags &= ~OVERLAY_DESC_EXCLUSIVE;
    if (config_get_bool(conf, conf_key, &tmp_bool)
          && tmp_bool)
       desc->flags |= OVERLAY_DESC_EXCLUSIVE;
 
-   strlcpy(conf_key + _len, "_reach_down",   sizeof(conf_key) - _len);
+   strlcpy_lit(conf_key + _len, "_reach_down",   sizeof(conf_key) - _len);
    if (config_get_float(conf, conf_key, &tmp_float))
       desc->reach_down = tmp_float;
 
-   strlcpy(conf_key + _len, "_reach_left",   sizeof(conf_key) - _len);
+   strlcpy_lit(conf_key + _len, "_reach_left",   sizeof(conf_key) - _len);
    if (config_get_float(conf, conf_key, &tmp_float))
       desc->reach_left = tmp_float;
 
-   strlcpy(conf_key + _len, "_reach_right",   sizeof(conf_key) - _len);
+   strlcpy_lit(conf_key + _len, "_reach_right",   sizeof(conf_key) - _len);
    if (config_get_float(conf, conf_key, &tmp_float))
       desc->reach_right = tmp_float;
 
-   strlcpy(conf_key + _len, "_range_mod_exclusive", sizeof(conf_key) - _len);
+   strlcpy_lit(conf_key + _len, "_range_mod_exclusive", sizeof(conf_key) - _len);
    desc->flags &= ~OVERLAY_DESC_RANGE_MOD_EXCLUSIVE;
    if (config_get_bool(conf, conf_key, &tmp_bool)
          && tmp_bool)
@@ -853,9 +869,8 @@ static void task_overlay_resolve_iterate(retro_task_t *task)
    loader->resolve_pos += 1;
 }
 
-static void task_overlay_deferred_loading(retro_task_t *task)
+static void task_overlay_deferred_loading(retro_task_t *task, void *budget)
 {
-   size_t i                  = 0;
    overlay_loader_t *loader  = (overlay_loader_t*)task->state;
    struct overlay *overlay   = &loader->overlays[loader->pos];
    bool not_done             = loader->pos < loader->size;
@@ -878,25 +893,27 @@ static void task_overlay_deferred_loading(retro_task_t *task)
          loader->overlays[loader->pos].pos = 0;
          break;
       case OVERLAY_IMAGE_TRANSFER_DESC_IMAGE_ITERATE:
-         for (i = 0; i < overlay->pos_increment; i++)
+         for (;;)
          {
-            if (overlay->pos < overlay->size)
+            if (overlay->pos >= overlay->size)
             {
-               task_overlay_load_desc_image(loader,
-                     &overlay->descs[overlay->pos], overlay,
-                     loader->pos, (unsigned)overlay->pos);
-            }
-            else
-            {
-               overlay->pos       = 0;
+               overlay->pos           = 0;
                loader->loading_status = OVERLAY_IMAGE_TRANSFER_DESC_ITERATE;
                break;
             }
 
+            task_overlay_load_desc_image(loader,
+                  &overlay->descs[overlay->pos], overlay,
+                  loader->pos, (unsigned)overlay->pos);
+
+            /* One item is always made, so the loader cannot stall on
+             * a window that is already exhausted. */
+            if (!task_overlay_within_budget(budget))
+               break;
          }
          break;
       case OVERLAY_IMAGE_TRANSFER_DESC_ITERATE:
-         for (i = 0; i < overlay->pos_increment; i++)
+         for (;;)
          {
             if (overlay->pos < overlay->size)
             {
@@ -920,6 +937,11 @@ static void task_overlay_deferred_loading(retro_task_t *task)
                loader->loading_status = OVERLAY_IMAGE_TRANSFER_DESC_DONE;
                break;
             }
+
+            /* One item is always made, so the loader cannot stall on
+             * a window that is already exhausted. */
+            if (!task_overlay_within_budget(budget))
+               break;
          }
          break;
       case OVERLAY_IMAGE_TRANSFER_DESC_DONE:
@@ -936,13 +958,12 @@ static void task_overlay_deferred_loading(retro_task_t *task)
    }
 }
 
-static void task_overlay_deferred_load(retro_task_t *task)
+static void task_overlay_deferred_load(retro_task_t *task, void *budget)
 {
-   unsigned i;
    overlay_loader_t *loader  = (overlay_loader_t*)task->state;
    config_file_t       *conf = loader->conf;
 
-   for (i = 0; i < loader->pos_increment; i++, loader->pos++)
+   for (;; loader->pos++)
    {
       size_t _len;
       char conf_key[32];
@@ -967,19 +988,19 @@ static void task_overlay_deferred_load(retro_task_t *task)
 
       _len = snprintf(conf_key, sizeof(conf_key), "overlay%u", loader->pos);
 
-      strlcpy(conf_key + _len, "_rect", sizeof(conf_key) - _len);
+      strlcpy_lit(conf_key + _len, "_rect", sizeof(conf_key) - _len);
       strlcpy(overlay->config.rect.key, conf_key,
             sizeof(overlay->config.rect.key));
 
-      strlcpy(conf_key + _len, "_name", sizeof(conf_key) - _len);
+      strlcpy_lit(conf_key + _len, "_name", sizeof(conf_key) - _len);
       strlcpy(overlay->config.names.key, conf_key,
             sizeof(overlay->config.names.key));
 
-      strlcpy(conf_key + _len, "_descs", sizeof(conf_key) - _len);
+      strlcpy_lit(conf_key + _len, "_descs", sizeof(conf_key) - _len);
       strlcpy(overlay->config.descs.key, conf_key,
             sizeof(overlay->config.descs.key));
 
-      strlcpy(conf_key + _len, "_overlay", sizeof(conf_key) - _len);
+      strlcpy_lit(conf_key + _len, "_overlay", sizeof(conf_key) - _len);
       strlcpy(overlay->config.paths.key, conf_key,
             sizeof(overlay->config.paths.key));
 
@@ -1003,26 +1024,26 @@ static void task_overlay_deferred_load(retro_task_t *task)
       overlay->descs = overlay_desc;
       overlay->size  = overlay->config.descs.size;
 
-      strlcpy(conf_key + _len, "_alpha_mod", sizeof(conf_key) - _len);
+      strlcpy_lit(conf_key + _len, "_alpha_mod", sizeof(conf_key) - _len);
       if (config_get_float(conf, conf_key, &tmp_float))
          overlay->config.alpha_mod = tmp_float;
       else
          overlay->config.alpha_mod = 1.0f;
 
-      strlcpy(conf_key + _len, "_range_mod", sizeof(conf_key) - _len);
+      strlcpy_lit(conf_key + _len, "_range_mod", sizeof(conf_key) - _len);
       if (config_get_float(conf, conf_key, &tmp_float))
          overlay->config.range_mod = tmp_float;
       else
          overlay->config.range_mod = 1.0f;
 
-      strlcpy(conf_key + _len, "_normalized", sizeof(conf_key) - _len);
+      strlcpy_lit(conf_key + _len, "_normalized", sizeof(conf_key) - _len);
       if (config_get_bool(conf, conf_key, &tmp_bool)
             && tmp_bool)
          overlay->config.normalized = tmp_bool;
       else
          overlay->config.normalized = false;
 
-      strlcpy(conf_key + _len, "_full_screen", sizeof(conf_key) - _len);
+      strlcpy_lit(conf_key + _len, "_full_screen", sizeof(conf_key) - _len);
       if (config_get_bool(conf, conf_key, &tmp_bool)
             && tmp_bool)
          overlay->flags |=  OVERLAY_FULL_SCREEN;
@@ -1070,7 +1091,7 @@ static void task_overlay_deferred_load(retro_task_t *task)
             overlay->name, sizeof(overlay->name));
 
       /* Attempt to determine native aspect ratio */
-      strlcpy(conf_key + _len, "_aspect_ratio", sizeof(conf_key) - _len);
+      strlcpy_lit(conf_key + _len, "_aspect_ratio", sizeof(conf_key) - _len);
       if (config_get_float(conf, conf_key, &tmp_float))
          overlay->aspect_ratio = tmp_float;
       else
@@ -1128,10 +1149,10 @@ static void task_overlay_deferred_load(retro_task_t *task)
             goto error;
          }
 
-         overlay->x = (float)strtod(elems[0], NULL);
-         overlay->y = (float)strtod(elems[1], NULL);
-         overlay->w = (float)strtod(elems[2], NULL);
-         overlay->h = (float)strtod(elems[3], NULL);
+         overlay->x = (float)rstrtod(elems[0], NULL);
+         overlay->y = (float)rstrtod(elems[1], NULL);
+         overlay->w = (float)rstrtod(elems[2], NULL);
+         overlay->h = (float)rstrtod(elems[3], NULL);
       }
 
       /* Assume for now that scaling center is in the middle.
@@ -1141,7 +1162,7 @@ static void task_overlay_deferred_load(retro_task_t *task)
       overlay->center_y    = overlay->y + 0.5f * overlay->h;
 
       /* Parse viewport override (optional) */
-      strlcpy(conf_key + _len, "_viewport", sizeof(conf_key) - _len);
+      strlcpy_lit(conf_key + _len, "_viewport", sizeof(conf_key) - _len);
 
       if (config_get_array(conf, conf_key, tmp_str, sizeof(tmp_str)))
       {
@@ -1170,10 +1191,10 @@ static void task_overlay_deferred_load(retro_task_t *task)
 
          if (list_size >= 4)
          {
-            overlay->viewport.x  = (float)strtod(elems[0], NULL);
-            overlay->viewport.y  = (float)strtod(elems[1], NULL);
-            overlay->viewport.w  = (float)strtod(elems[2], NULL);
-            overlay->viewport.h  = (float)strtod(elems[3], NULL);
+            overlay->viewport.x  = (float)rstrtod(elems[0], NULL);
+            overlay->viewport.y  = (float)rstrtod(elems[1], NULL);
+            overlay->viewport.w  = (float)rstrtod(elems[2], NULL);
+            overlay->viewport.h  = (float)rstrtod(elems[3], NULL);
             overlay->flags      |= OVERLAY_HAS_VIEWPORT;
             RARCH_DBG("[Overlay] Parsed viewport: x=%.3f y=%.3f w=%.3f h=%.3f\n",
                   overlay->viewport.x, overlay->viewport.y,
@@ -1184,7 +1205,7 @@ static void task_overlay_deferred_load(retro_task_t *task)
       }
 
       /* Parse viewport_fill option (optional, default false) */
-      strlcpy(conf_key + _len, "_viewport_fill", sizeof(conf_key) - _len);
+      strlcpy_lit(conf_key + _len, "_viewport_fill", sizeof(conf_key) - _len);
       if (config_get_bool(conf, conf_key, &tmp_bool) && tmp_bool)
          overlay->flags |= OVERLAY_VIEWPORT_FILL;
       else
@@ -1192,14 +1213,14 @@ static void task_overlay_deferred_load(retro_task_t *task)
 
       /* Check whether x/y separation are force disabled
        * for this overlay */
-      strlcpy(conf_key + _len, "_block_x_separation", sizeof(conf_key) - _len);
+      strlcpy_lit(conf_key + _len, "_block_x_separation", sizeof(conf_key) - _len);
       if (config_get_bool(conf, conf_key, &tmp_bool)
             && tmp_bool)
          overlay->flags |=  OVERLAY_BLOCK_X_SEPARATION;
       else
          overlay->flags &= ~OVERLAY_BLOCK_X_SEPARATION;
 
-      strlcpy(conf_key + _len, "_block_y_separation", sizeof(conf_key) - _len);
+      strlcpy_lit(conf_key + _len, "_block_y_separation", sizeof(conf_key) - _len);
       if (config_get_bool(conf, conf_key, &tmp_bool)
             && tmp_bool)
          overlay->flags |=  OVERLAY_BLOCK_Y_SEPARATION;
@@ -1208,7 +1229,7 @@ static void task_overlay_deferred_load(retro_task_t *task)
 
       /* Check whether x/y separation are enabled
        * for this overlay in auto-scale mode */
-      strlcpy(conf_key + _len, "_auto_x_separation", sizeof(conf_key) - _len);
+      strlcpy_lit(conf_key + _len, "_auto_x_separation", sizeof(conf_key) - _len);
       overlay->flags    |=  OVERLAY_AUTO_X_SEPARATION;
       if (config_get_bool(conf, conf_key, &tmp_bool))
       {
@@ -1222,12 +1243,20 @@ static void task_overlay_deferred_load(retro_task_t *task)
             overlay->flags &= ~OVERLAY_AUTO_X_SEPARATION;
       }
 
-      strlcpy(conf_key + _len, "_auto_y_separation", sizeof(conf_key) - _len);
+      strlcpy_lit(conf_key + _len, "_auto_y_separation", sizeof(conf_key) - _len);
       if (config_get_bool(conf, conf_key, &tmp_bool)
             && tmp_bool)
          overlay->flags |=  OVERLAY_AUTO_Y_SEPARATION;
       else
          overlay->flags &= ~OVERLAY_AUTO_Y_SEPARATION;
+
+      /* One overlay is always parsed, so the loader cannot stall on
+       * a window that is already exhausted. */
+      if (!task_overlay_within_budget(budget))
+      {
+         loader->pos++;
+         return;
+      }
    }
 
    return;
@@ -1243,22 +1272,40 @@ static void task_overlay_free(retro_task_t *task)
 {
    unsigned i;
    overlay_loader_t *loader  = (overlay_loader_t*)task->state;
-   uint8_t flg               = task_get_flags(task);
 
-   if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
+   /* Release what the loader still owns.
+    *
+    * A successful load hands the overlays, the path and the image
+    * list to the consumer and clears them (see the hand-off at the
+    * end of task_overlay_handler), so a pointer that is still set
+    * here is one nobody else took - because the load was cancelled,
+    * or because it finished but the hand-off never happened.
+    *
+    * Keying this on the pointers rather than on
+    * RETRO_TASK_FLG_CANCELLED is what keeps it from releasing what
+    * the consumer already released, and it also covers the case the
+    * flag missed: a load that completes but cannot allocate its
+    * payload used to leak the lot. */
+   if (loader->image_list)
    {
-      if (loader->overlay_path)
-         free(loader->overlay_path);
-
+      /* The list is a dedup index - its elements point at
+       * texture_images owned by the overlays, and string_list_free()
+       * does not follow .attr.p, so the textures go first. */
       for (i = 0; i < loader->image_list->size; i++)
          image_texture_free((struct texture_image*)loader->image_list->elems[i].attr.p);
-      string_list_free(loader->image_list);
 
+      string_list_free(loader->image_list);
+   }
+
+   if (loader->overlays)
+   {
       for (i = 0; i < loader->size; i++)
          input_overlay_free_overlay(&loader->overlays[i]);
 
       free(loader->overlays);
    }
+
+   free(loader->overlay_path);
 
    if (loader->conf)
       config_file_free(loader->conf);
@@ -1271,15 +1318,20 @@ static void task_overlay_free(retro_task_t *task)
 static void task_overlay_handler(retro_task_t *task)
 {
    uint8_t flg;
+   nbio_budget_t budget;
    overlay_loader_t *loader  = (overlay_loader_t*)task->state;
+
+   /* Claim this invocation's share of the shared per-frame I/O
+    * window; the loading phases consult it between items. */
+   task_nbio_slice_open(&budget);
 
    switch (loader->state)
    {
       case OVERLAY_STATUS_DEFERRED_LOADING:
-         task_overlay_deferred_loading(task);
+         task_overlay_deferred_loading(task, &budget);
          break;
       case OVERLAY_STATUS_DEFERRED_LOAD:
-         task_overlay_deferred_load(task);
+         task_overlay_deferred_load(task, &budget);
          break;
       case OVERLAY_STATUS_DEFERRED_LOADING_RESOLVE:
          task_overlay_resolve_iterate(task);
@@ -1293,6 +1345,8 @@ static void task_overlay_handler(retro_task_t *task)
          task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
          break;
    }
+
+   task_nbio_slice_close(&budget);
 
    flg = task_get_flags(task);
 
@@ -1319,6 +1373,20 @@ static void task_overlay_handler(retro_task_t *task)
       data->overlay_types               = loader->overlay_types;
       data->overlay_path                = loader->overlay_path;
       data->image_list                  = loader->image_list;
+
+      /* Ownership moves with the pointers, so drop the loader's
+       * references to them.  task_overlay_free() below releases
+       * whatever the loader still holds, and the task queue retires
+       * a task by running its callback and then its cleanup - so by
+       * the time the cleanup looks, the consumer
+       * (input_overlay_loaded in input/input_driver.c) has already
+       * taken the overlays and the path and released the image
+       * list.  Leaving the references set is a second release of
+       * each of them. */
+      loader->overlays                  = NULL;
+      loader->active                    = NULL;
+      loader->overlay_path              = NULL;
+      loader->image_list                = NULL;
 
       task_set_data(task, data);
    }
@@ -1387,7 +1455,7 @@ bool task_push_overlay_load_default(
       {
          RARCH_ERR("[Overlay] Failed to read config from archive.\n");
          free(loader);
-         free(image_list);
+         string_list_free(image_list);
          return false;
       }
       RARCH_DBG("[Overlay] Read %lld bytes from archive.\n",
@@ -1398,7 +1466,7 @@ bool task_push_overlay_load_default(
          {
             free(buf);
             free(loader);
-            free(image_list);
+            string_list_free(image_list);
             return false;
          }
          str[buf_len] = '\0';
@@ -1413,7 +1481,7 @@ bool task_push_overlay_load_default(
             {
                free(str);
                free(loader);
-               free(image_list);
+               string_list_free(image_list);
                return false;
             }
             memcpy(loader->conf_archive, overlay_path, archive_len);
@@ -1440,7 +1508,7 @@ bool task_push_overlay_load_default(
    {
       free(loader->conf_archive);
       free(loader);
-      free(image_list);
+      string_list_free(image_list);
       return false;
    }
 
@@ -1450,7 +1518,7 @@ bool task_push_overlay_load_default(
       config_file_free(conf);
       free(loader->conf_archive);
       free(loader);
-      free(image_list);
+      string_list_free(image_list);
       return false;
    }
 
@@ -1462,14 +1530,13 @@ bool task_push_overlay_load_default(
       config_file_free(conf);
       free(loader->conf_archive);
       free(loader);
-      free(image_list);
+      string_list_free(image_list);
       return false;
    }
 
    loader->conf             = conf;
    loader->image_list       = image_list;
    loader->state            = OVERLAY_STATUS_DEFERRED_LOAD;
-   loader->pos_increment    = (loader->size / 4) ? (loader->size / 4) : 4;
 
    if (is_osk)
       loader->flags        |= OVERLAY_LOADER_IS_OSK;
@@ -1486,7 +1553,7 @@ bool task_push_overlay_load_default(
       free(loader->overlays);
       free(loader->conf_archive);
       free(loader);
-      free(image_list);
+      string_list_free(image_list);
       return false;
    }
 

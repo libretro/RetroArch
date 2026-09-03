@@ -19,9 +19,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Dependencies
+        timeout-minutes: 5
         run: |
-          sudo apt-get update -y
-          sudo apt-get install build-essential libxkbcommon-dev libx11-xcb-dev zlib1g-dev libfreetype6-dev libegl1-mesa-dev libgles2-mesa-dev libgbm-dev nvidia-cg-toolkit nvidia-cg-dev libavcodec-dev libsdl2-dev libsdl-image1.2-dev libxml2-dev yasm
+          pkgs="build-essential libxkbcommon-dev libx11-xcb-dev zlib1g-dev libfreetype6-dev libegl1-mesa-dev libgles2-mesa-dev libgbm-dev nvidia-cg-toolkit nvidia-cg-dev libavcodec-dev libsdl2-dev libsdl-image1.2-dev libxml2-dev yasm"
+          if dpkg -s $pkgs >/dev/null 2>&1; then
+            echo "All packages already present on runner image; skipping apt."
+            exit 0
+          fi
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
       - name: Checkout
         uses: actions/checkout@v3
       - name: Configure

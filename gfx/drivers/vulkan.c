@@ -371,6 +371,21 @@ typedef struct vk
       unsigned num_quads;            /* max quads this IBO can index */
    } quad_ibo;
 
+   /* Static vertex buffer for the menu ribbon pipelines. Their vertex
+    * array (dispca) is a fixed 64x64 grid that never changes after
+    * the menu driver builds it, yet it was re-interleaved into the
+    * per-frame VBO chain on every frame: 8064 vertices, 258 KiB of
+    * write-combined traffic a frame. Baked once here and rebuilt
+    * only when the source array or its size changes. */
+   struct
+   {
+      VkBuffer buffer;               /* ptr alignment */
+      VkDeviceMemory memory;         /* ptr alignment */
+      const float *src;              /* dispca vertex array it was baked from */
+      unsigned vertices;
+      float head[4], tail[4];        /* first/last floats, to catch a rebuilt array at the same address */
+   } ribbon_vbo;
+
 #ifdef VULKAN_HDR_SWAPCHAIN
    struct
    {
@@ -424,6 +439,12 @@ typedef struct vk
       uint32_t src_queue_family;
 
    } hw;
+
+   /* Textures released through vulkan_unload_texture, kept alive
+    * until enough frames have been submitted that neither the GPU
+    * nor a concurrently recorded or observed reference can still
+    * touch them. See vulkan_deferred_textures_tick(). */
+   struct vk_deferred_texture *deferred_textures;
 
    struct
    {
@@ -1083,6 +1104,93 @@ static void vulkan_destroy_texture(
    tex->layout                        = VK_IMAGE_LAYOUT_UNDEFINED;
 }
 
+/* Textures released through vulkan_unload_texture are parked here
+ * instead of being destroyed immediately. Immediate destruction is
+ * unsafe on two fronts: vkQueueWaitIdle only covers submitted work,
+ * not command buffers still being recorded, and menu code running on
+ * another thread can observe a texture handle for a short window
+ * after the unload (the handle is zeroed by the caller only after
+ * the unload returns). Keeping the texture alive for a full
+ * swapchain cycle of subsequent submissions closes both windows.
+ *
+ * List discipline: mutations are serialised with queue_lock. The
+ * enqueue normally runs on the thread that records frames (the
+ * threaded wrapper marshals unloads there), but driver-reinit
+ * fallbacks can enqueue from the main thread while a frame ticks the
+ * list, so the lock is not optional. */
+struct vk_deferred_texture
+{
+   struct vk_deferred_texture *next;
+   struct vk_texture *texture;
+   unsigned frames_left;
+};
+
+/* Retire textures whose deferral window has elapsed. Called once per
+ * submitted frame. Nodes are detached under the lock and destroyed
+ * outside it. */
+static void vulkan_deferred_textures_tick(vk_t *vk)
+{
+   struct vk_deferred_texture **cur;
+   struct vk_deferred_texture *expired = NULL;
+
+#ifdef HAVE_THREADS
+   slock_lock(vk->context->queue_lock);
+#endif
+   cur = &vk->deferred_textures;
+   while (*cur)
+   {
+      struct vk_deferred_texture *node = *cur;
+      if (node->frames_left > 1)
+      {
+         node->frames_left--;
+         cur           = &node->next;
+      }
+      else
+      {
+         *cur          = node->next;
+         node->next    = expired;
+         expired       = node;
+      }
+   }
+#ifdef HAVE_THREADS
+   slock_unlock(vk->context->queue_lock);
+#endif
+
+   while (expired)
+   {
+      struct vk_deferred_texture *next = expired->next;
+      vulkan_destroy_texture(vk->context->device, expired->texture);
+      free(expired->texture);
+      free(expired);
+      expired = next;
+   }
+}
+
+/* Destroy every deferred texture immediately. Callers must guarantee
+ * the graphics queue is idle and no other thread is recording. */
+static void vulkan_deferred_textures_flush(vk_t *vk)
+{
+   struct vk_deferred_texture *node;
+
+#ifdef HAVE_THREADS
+   slock_lock(vk->context->queue_lock);
+#endif
+   node                  = vk->deferred_textures;
+   vk->deferred_textures = NULL;
+#ifdef HAVE_THREADS
+   slock_unlock(vk->context->queue_lock);
+#endif
+
+   while (node)
+   {
+      struct vk_deferred_texture *next = node->next;
+      vulkan_destroy_texture(vk->context->device, node->texture);
+      free(node->texture);
+      free(node);
+      node = next;
+   }
+}
+
 static struct vk_texture vulkan_create_texture(vk_t *vk,
       struct vk_texture *old,
       unsigned width, unsigned height,
@@ -1684,12 +1792,16 @@ static void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
 
    if (compute_upload)
    {
-      const uint32_t ubo[3] = { dynamic->width, dynamic->height, (uint32_t)(staging->stride / 4) /* in terms of u32 words */ };
+      uint32_t ubo[3];
       VkWriteDescriptorSet write;
       VkDescriptorBufferInfo buffer_info;
       VkDescriptorImageInfo image_info;
       struct vk_buffer_range range;
       VkDescriptorSet set;
+
+      ubo[0] = dynamic->width;
+      ubo[1] = dynamic->height;
+      ubo[2] = (uint32_t)(staging->stride / 4); /* in terms of u32 words */
 
       VULKAN_IMAGE_LAYOUT_TRANSITION(
             cmd,
@@ -1985,17 +2097,167 @@ static void gfx_display_vk_draw_pipeline(
 }
 #endif
 
+/* Interleave one draw's streams into the vk_vertex layout. The static
+ * fallback arrays vk_tex_coords and vk_colors only hold data for four
+ * vertices, so past those the affected pipelines (which never read the
+ * attributes) get constant defaults. */
+static void gfx_display_vk_bake_vertices(struct vk_vertex *pv,
+      const float *vertex, const float *tex_coord, const float *color,
+      unsigned vertices, int use_default_tc, int use_default_color)
+{
+   unsigned i;
+   for (i = 0; i < vertices; i++, pv++)
+   {
+      pv->x       = *vertex++;
+      /* Y-flip. Vulkan is top-left clip space */
+      pv->y       = 1.0f - (*vertex++);
+
+      if (use_default_tc && i >= 4)
+      {
+         pv->tex_x = 0.0f;
+         pv->tex_y = 0.0f;
+      }
+      else
+      {
+         pv->tex_x = *tex_coord++;
+         pv->tex_y = *tex_coord++;
+      }
+
+      if (use_default_color && i >= 4)
+      {
+         pv->color.r = 1.0f;
+         pv->color.g = 1.0f;
+         pv->color.b = 1.0f;
+         pv->color.a = 1.0f;
+      }
+      else
+      {
+         pv->color.r = *color++;
+         pv->color.g = *color++;
+         pv->color.b = *color++;
+         pv->color.a = *color++;
+      }
+   }
+}
+
+static void vulkan_deinit_ribbon_vbo(vk_t *vk)
+{
+   VkDevice device = vk->context->device;
+   if (vk->ribbon_vbo.buffer != VK_NULL_HANDLE)
+      vkDestroyBuffer(device, vk->ribbon_vbo.buffer, NULL);
+   if (vk->ribbon_vbo.memory != VK_NULL_HANDLE)
+      vkFreeMemory(device, vk->ribbon_vbo.memory, NULL);
+   vk->ribbon_vbo.buffer   = VK_NULL_HANDLE;
+   vk->ribbon_vbo.memory   = VK_NULL_HANDLE;
+   vk->ribbon_vbo.src      = NULL;
+   vk->ribbon_vbo.vertices = 0;
+}
+
+/* True when the static ribbon VBO holds this exact vertex array. */
+static bool vulkan_ribbon_vbo_matches(const vk_t *vk,
+      const float *vertex, unsigned vertices)
+{
+   if (vk->ribbon_vbo.buffer == VK_NULL_HANDLE
+         || vk->ribbon_vbo.src != vertex
+         || vk->ribbon_vbo.vertices != vertices
+         || vertices < 4)
+      return false;
+   return    !memcmp(vk->ribbon_vbo.head, vertex, sizeof(vk->ribbon_vbo.head))
+          && !memcmp(vk->ribbon_vbo.tail, vertex + 2 * vertices - 4,
+                sizeof(vk->ribbon_vbo.tail));
+}
+
+/* Bake the ribbon's interleaved vertices into a buffer of their own,
+ * host-visible like the quad IBO, so the per-frame draw only binds it.
+ * On any failure the buffer is left absent and the draw falls back to
+ * the per-frame chain bake. */
+static void vulkan_init_ribbon_vbo(vk_t *vk,
+      const float *vertex, const float *tex_coord, const float *color,
+      unsigned vertices, int use_default_tc, int use_default_color)
+{
+   VkResult res;
+   void *mapped                            = NULL;
+   VkDevice device                         = vk->context->device;
+   VkDeviceSize vbo_size                   = (VkDeviceSize)vertices * sizeof(struct vk_vertex);
+   VkBufferCreateInfo buffer_info;
+   VkMemoryRequirements mem_reqs;
+   VkMemoryAllocateInfo alloc;
+
+   /* A submitted frame may still read the old buffer; retiring it is
+    * only safe once the device has drained, which a rebuild forces. */
+   if (vk->ribbon_vbo.buffer != VK_NULL_HANDLE)
+   {
+      vkDeviceWaitIdle(device);
+      vulkan_deinit_ribbon_vbo(vk);
+   }
+   if (vertices < 4)
+      return;
+
+   buffer_info.sType                       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+   buffer_info.pNext                       = NULL;
+   buffer_info.flags                       = 0;
+   buffer_info.size                        = vbo_size;
+   buffer_info.usage                       = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+   buffer_info.sharingMode                 = VK_SHARING_MODE_EXCLUSIVE;
+   buffer_info.queueFamilyIndexCount       = 0;
+   buffer_info.pQueueFamilyIndices         = NULL;
+
+   res = vkCreateBuffer(device, &buffer_info, NULL, &vk->ribbon_vbo.buffer);
+   if (res != VK_SUCCESS)
+   {
+      vk->ribbon_vbo.buffer = VK_NULL_HANDLE;
+      return;
+   }
+   vkGetBufferMemoryRequirements(device, vk->ribbon_vbo.buffer, &mem_reqs);
+
+   alloc.sType                             = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+   alloc.pNext                             = NULL;
+   alloc.allocationSize                    = mem_reqs.size;
+   alloc.memoryTypeIndex                   = vulkan_find_memory_type_fallback(
+         &vk->context->memory_properties,
+         mem_reqs.memoryTypeBits,
+           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+         | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+
+   res = vkAllocateMemory(device, &alloc, NULL, &vk->ribbon_vbo.memory);
+   if (res != VK_SUCCESS)
+   {
+      vkDestroyBuffer(device, vk->ribbon_vbo.buffer, NULL);
+      vk->ribbon_vbo.buffer = VK_NULL_HANDLE;
+      vk->ribbon_vbo.memory = VK_NULL_HANDLE;
+      return;
+   }
+   vkBindBufferMemory(device, vk->ribbon_vbo.buffer, vk->ribbon_vbo.memory, 0);
+
+   res = vkMapMemory(device, vk->ribbon_vbo.memory, 0, vbo_size, 0, &mapped);
+   if (res != VK_SUCCESS || !mapped)
+   {
+      vulkan_deinit_ribbon_vbo(vk);
+      return;
+   }
+   gfx_display_vk_bake_vertices((struct vk_vertex*)mapped,
+         vertex, tex_coord, color, vertices,
+         use_default_tc, use_default_color);
+   vkUnmapMemory(device, vk->ribbon_vbo.memory);
+
+   vk->ribbon_vbo.src      = vertex;
+   vk->ribbon_vbo.vertices = vertices;
+   memcpy(vk->ribbon_vbo.head, vertex, sizeof(vk->ribbon_vbo.head));
+   memcpy(vk->ribbon_vbo.tail, vertex + 2 * vertices - 4,
+         sizeof(vk->ribbon_vbo.tail));
+}
+
 static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_width, unsigned video_height)
 {
-   unsigned i;
    int use_default_tc, use_default_color;
+   bool is_ribbon;
    struct vk_buffer_range range;
    struct vk_texture *texture    = NULL;
    const float *vertex           = NULL;
    const float *tex_coord        = NULL;
    const float *color            = NULL;
-   struct vk_vertex *pv          = NULL;
    vk_t *vk                      = (vk_t*)data;
 
    if (!vk || !draw)
@@ -2033,44 +2295,51 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
 
    vk->tracker.dirty             |= VULKAN_DIRTY_DYNAMIC_BIT;
 
-   /* Bake interleaved VBO. Kinda ugly, we should probably try to move to
-    * an interleaved model to begin with ... */
-   if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo,
-            draw->coords->vertices * sizeof(struct vk_vertex), &range))
-      return;
-
-   pv = (struct vk_vertex*)range.data;
-   for (i = 0; i < draw->coords->vertices; i++, pv++)
+   /* The ribbon pipelines draw one immutable vertex array every
+    * frame; that one lives in a static buffer baked on first sight
+    * (see ribbon_vbo). Everything else is interleaved into this
+    * frame's chain. */
+   is_ribbon = false;
+#ifdef HAVE_SHADERPIPELINE
+   switch (draw->pipeline_id)
    {
-      pv->x       = *vertex++;
-      /* Y-flip. Vulkan is top-left clip space */
-      pv->y       = 1.0f - (*vertex++);
-
-      if (use_default_tc && i >= 4)
+      case VIDEO_SHADER_MENU:
+      case VIDEO_SHADER_MENU_2:
+      case VIDEO_SHADER_MENU_3:
+      case VIDEO_SHADER_MENU_4:
+      case VIDEO_SHADER_MENU_5:
+      case VIDEO_SHADER_MENU_6:
+         is_ribbon = true;
+         break;
+      default:
+         break;
+   }
+#endif
+   if (is_ribbon)
+   {
+      if (!vulkan_ribbon_vbo_matches(vk, vertex, draw->coords->vertices))
+         vulkan_init_ribbon_vbo(vk, vertex, tex_coord, color,
+               draw->coords->vertices, use_default_tc, use_default_color);
+      if (vk->ribbon_vbo.buffer != VK_NULL_HANDLE)
       {
-         pv->tex_x = 0.0f;
-         pv->tex_y = 0.0f;
+         range.buffer = vk->ribbon_vbo.buffer;
+         range.offset = 0;
+         range.data   = NULL;
+         is_ribbon    = true;
       }
       else
-      {
-         pv->tex_x = *tex_coord++;
-         pv->tex_y = *tex_coord++;
-      }
-
-      if (use_default_color && i >= 4)
-      {
-         pv->color.r = 1.0f;
-         pv->color.g = 1.0f;
-         pv->color.b = 1.0f;
-         pv->color.a = 1.0f;
-      }
-      else
-      {
-         pv->color.r = *color++;
-         pv->color.g = *color++;
-         pv->color.b = *color++;
-         pv->color.a = *color++;
-      }
+         is_ribbon    = false;
+   }
+   if (!is_ribbon)
+   {
+      /* Bake interleaved VBO. Kinda ugly, we should probably try to move to
+       * an interleaved model to begin with ... */
+      if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo,
+               draw->coords->vertices * sizeof(struct vk_vertex), &range))
+         return;
+      gfx_display_vk_bake_vertices((struct vk_vertex*)range.data,
+            vertex, tex_coord, color, draw->coords->vertices,
+            use_default_tc, use_default_color);
    }
 
    switch (draw->pipeline_id)
@@ -2245,24 +2514,36 @@ static void *vulkan_font_init(void *data,
       const char *font_path, float font_size,
       bool is_threaded)
 {
-   vulkan_raster_t *font          =
-      (vulkan_raster_t*)calloc(1, sizeof(*font));
+   vulkan_raster_t *font;
+   vk_t *vk                       = (vk_t*)data;
 
-   if (!font)
+   /* This initialiser runs from the menu layer on a layout change
+    * (a DPI or dimension change), which on Android can land in the
+    * middle of a surface loss / driver bring-up: the video driver
+    * data or its Vulkan context can be absent, or the device gone.
+    * Creating GPU objects through a dead device faults inside the
+    * ICD (seen in the field as a SIGSEGV in the Adreno driver's
+    * vkCreateBuffer, reached from materialui_layout()), so refuse
+    * here instead. Callers treat a NULL font as "keep the previous
+    * one / draw no text", and the next layout pass rebuilds it.
+    * vulkan_font_free() already guards on exactly this triple. */
+   if (!vk || !vk->context || vk->context->device == VK_NULL_HANDLE)
       return NULL;
 
-   font->vk = (vk_t*)data;
+   if (!(font = (vulkan_raster_t*)calloc(1, sizeof(*font))))
+      return NULL;
+
+   font->vk = vk;
 
    {
       enum font_atlas_format fmt = FONT_ATLAS_FORMAT_A8;
 #ifdef VULKAN_HDR_SWAPCHAIN
       /* When the swapchain is HDR, ask for a higher-precision
        * coverage atlas (same policy as the d3d12 driver). */
-      if (     font->vk && font->vk->context
-            && (  font->vk->context->swapchain_format
-                     == VK_FORMAT_R16G16B16A16_SFLOAT
-               || font->vk->context->swapchain_format
-                     == VK_FORMAT_A2B10G10R10_UNORM_PACK32))
+      if (     font->vk->context->swapchain_format
+                  == VK_FORMAT_R16G16B16A16_SFLOAT
+            || font->vk->context->swapchain_format
+                  == VK_FORMAT_A2B10G10R10_UNORM_PACK32)
          fmt = FONT_ATLAS_FORMAT_A16;
 #endif
       if (!font_renderer_create_default(
@@ -2284,14 +2565,35 @@ static void *vulkan_font_init(void *data,
             font->atlas->width, font->atlas->height, tex_fmt, font->atlas->buffer,
             NULL, VULKAN_TEXTURE_STAGING);
 
-   {
-      struct vk_texture *texture = &font->texture;
-      vkMapMemory(font->vk->context->device, texture->memory, texture->offset, texture->size, 0, &texture->mapped);
-   }
+      /* vulkan_create_texture() fails soft (it returns a zeroed
+       * texture) on creation or allocation failure, which is a real
+       * outcome right after an Android wake: the first allocations
+       * against a recovering device can return errors before
+       * anything else notices. The glyph upload path writes through
+       * texture.mapped unconditionally, so a failure has to be
+       * turned into a failed font init here, not discovered as a
+       * NULL/garbage dereference later. */
+      if (font->texture.memory == VK_NULL_HANDLE)
+         goto error;
+
+      {
+         struct vk_texture *texture = &font->texture;
+         if (vkMapMemory(font->vk->context->device, texture->memory,
+                  texture->offset, texture->size, 0, &texture->mapped)
+               != VK_SUCCESS)
+         {
+            /* pData is only written on success. */
+            texture->mapped = NULL;
+            goto error;
+         }
+      }
 
       font->texture_optimal = vulkan_create_texture(font->vk, NULL,
             font->atlas->width, font->atlas->height, tex_fmt, NULL,
             NULL, VULKAN_TEXTURE_DYNAMIC);
+
+      if (font->texture_optimal.memory == VK_NULL_HANDLE)
+         goto error;
    }
 
    /* Initial upload is full atlas. */
@@ -2302,6 +2604,18 @@ static void *vulkan_font_init(void *data,
    font->needs_update = true;
 
    return font;
+
+error:
+   /* Nothing has been submitted to a queue on behalf of this font
+    * yet, so the partially built objects can be destroyed
+    * immediately; vulkan_destroy_texture() unmaps before freeing and
+    * is a no-op on handles that were never created. */
+   vulkan_destroy_texture(vk->context->device, &font->texture);
+   vulkan_destroy_texture(vk->context->device, &font->texture_optimal);
+   if (font->font_driver && font->font_data)
+      font->font_driver->free(font->font_data);
+   free(font);
+   return NULL;
 }
 
 static int vulkan_font_get_message_width(void *data, const char *msg,
@@ -4803,6 +5117,7 @@ static void vulkan_deinit_static_resources(vk_t *vk)
 
    /* Destroy shared quad index buffer. */
    vulkan_deinit_quad_ibo(vk);
+   vulkan_deinit_ribbon_vbo(vk);
 
    vkDestroyCommandPool(vk->context->device,
          vk->staging_pool, NULL);
@@ -4889,6 +5204,7 @@ static void vulkan_free(void *data)
 #ifdef HAVE_THREADS
       slock_unlock(vk->context->queue_lock);
 #endif
+      vulkan_deferred_textures_flush(vk);
       vulkan_deinit_pipelines(vk);
       vulkan_deinit_framebuffers(vk);
       vulkan_deinit_descriptor_pool(vk);
@@ -5474,12 +5790,15 @@ static void *vulkan_init(const video_info_t *video,
       goto error;
    }
 
+   RARCH_DBG("[Vulkan] Filter chain ready.\n");
+
    if (vk->ctx_driver->input_driver)
    {
       const char *joypad_name = settings->arrays.input_joypad_driver;
       vk->ctx_driver->input_driver(
             vk->ctx_data, joypad_name,
             input, input_data);
+      RARCH_DBG("[Vulkan] Context input driver ready.\n");
    }
 
    /* The MoltenVK driver needs this, particularly after driver reinit
@@ -5526,6 +5845,9 @@ static void vulkan_check_swapchain(vk_t *vk)
 #ifdef HAVE_THREADS
    slock_unlock(vk->context->queue_lock);
 #endif
+   /* Queue is idle and this thread owns recording: safe point to
+    * destroy everything on the deferred list. */
+   vulkan_deferred_textures_flush(vk);
    vulkan_deinit_pipelines(vk);
    vulkan_deinit_framebuffers(vk);
    vulkan_deinit_descriptor_pool(vk);
@@ -6004,10 +6326,7 @@ static void vulkan_set_projection(vk_t *vk,
       {  1.0f,     0.0f,    0.0f,    0.0f ,
          0.0f,     1.0f,    0.0f,    0.0f ,
          0.0f,     0.0f,    1.0f,    0.0f ,
-         vk->translate_x/(float)vk->vp.width,
-         vk->translate_y/(float)vk->vp.height,
-         0.0f,
-         1.0f }
+         0.0f,     0.0f,    0.0f,    1.0f }
    };
    math_matrix_4x4 tmp     = {
       {  1.0f,     0.0f,    0.0f,    0.0f ,
@@ -6015,6 +6334,9 @@ static void vulkan_set_projection(vk_t *vk,
          0.0f,     0.0f,    1.0f,    0.0f ,
          0.0f,     0.0f,    0.0f,    1.0f }
    };
+
+   MAT_ELEM_4X4(trn, 0, 3) = vk->translate_x / (float)vk->vp.width;
+   MAT_ELEM_4X4(trn, 1, 3) = vk->translate_y / (float)vk->vp.height;
 
    /* Calculate projection. */
    matrix_4x4_ortho(vk->mvp_no_rot, ortho->left, ortho->right,
@@ -6506,19 +6828,20 @@ static void vulkan_init_render_target(struct vk_image* image, uint32_t width, ui
    vkCreateFramebuffer(ctx->device, &info, NULL, &image->framebuffer);
 }
 
-/* Pick the HDR composition mode from what the source image actually holds.
+/* Pick the HDR composition mode from what the game content holds.
  *
- * The offscreen buffer contains PQ Rec.2020 when the core supplies
+ * The game frame contains PQ Rec.2020 when the core supplies
  * RETRO_PIXEL_FORMAT_HDR10_2101010, or when a shader preset's final pass
  * emits HDR10; linear FP16 when a preset emits HDR16; and ordinary SDR
  * otherwise.  Getting this wrong is not subtle: treating PQ code values as
  * sRGB applies a spurious 2.4 power to them, which lifts shadows and crushes
  * highlights across the whole image.
  *
- * Both the game pass and the menu/overlay composite need the same answer,
- * so derive it in one place rather than duplicating -- the composite used to
- * assume SDR unconditionally, which was correct only while cores could not
- * produce HDR frames themselves. */
+ * This answers for the *game* pass only.  The menu/overlay composite must
+ * not use it: its source is the offscreen buffer after the UI pass, which
+ * begins sdr_render_pass (loadOp CLEAR) on it, so by composite time it
+ * holds nothing but the SDR UI regardless of what the core or the shader
+ * preset produce. */
 static unsigned vulkan_hdr_source_mode(vk_t *vk,
       const struct video_shader *filter_chain_preset, void *filter_chain)
 {
@@ -7428,15 +7751,26 @@ static bool vulkan_frame(void *data, const void *frame,
                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
          {
-            /* This pass replaces the game pass whenever the OSD, a menu, an
-             * overlay, a message or widgets are up, so it composites the game
-             * frame too -- it cannot assume the source is SDR.  When the core
-             * supplies HDR10 the offscreen buffer holds PQ, and treating that
-             * as sRGB applies a spurious 2.4 power to PQ code values: shadows
-             * lift, highlights crush, and the effect only appears while the
-             * OSD happens to be visible. */
-            unsigned composite_hdr_mode = vulkan_hdr_source_mode(vk, NULL,
-                  filter_chain);
+            /* The source of this pass is the offscreen buffer, and by this
+             * point that holds only the SDR UI: the UI pass above began
+             * sdr_render_pass on it, whose loadOp is CLEAR, so anything the
+             * filter chain wrote there earlier is gone.  The game reached
+             * the swapchain separately -- through the game pass when
+             * use_offscreen_buffer is set, directly from the filter chain
+             * when it is not -- and this pass alpha-blends the UI over it.
+             *
+             * Deriving the mode from the game source here is therefore
+             * wrong: with a core supplying PQ, or a preset whose last pass
+             * emits HDR10, vulkan_hdr_source_mode returns passthrough, the
+             * menu-nits PQ encode never runs, and the UI's SDR code values
+             * land raw in the PQ swapchain -- where code 1.0 means
+             * 10000 nits.  That is the reported symptom: menu brightness
+             * pinned at maximum, and the (HDR) Menu Brightness setting
+             * doing nothing, as soon as an HDR shader preset is loaded.
+             * The buffer is B8G8R8A8_UNORM and cleared every frame; its
+             * content is SDR by construction, so encode it as SDR. */
+            unsigned composite_hdr_mode =
+                  (vk->context->flags & VK_CTX_FLAG_HDR_SCRGB) ? 2 : 1;
             vulkan_hdr_log_mode(vk, composite_hdr_mode, "composite");
             vulkan_run_hdr_pipeline(vk->pipelines.hdr, vk->keep_render_pass, &vk->offscreen_buffer, backbuffer, vk, &vk->hdr.ubo_menu, composite_hdr_mode, true);
          }
@@ -7669,6 +8003,9 @@ static bool vulkan_frame(void *data, const void *frame,
 
    if (vk->ctx_driver->swap_buffers)
       vk->ctx_driver->swap_buffers(vk->ctx_data);
+
+   /* Retire unloaded textures whose deferral window has elapsed. */
+   vulkan_deferred_textures_tick(vk);
 
    if (!(vk->context->flags & VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK))
    {
@@ -8123,11 +8460,10 @@ static void vulkan_set_texture_enable(void *data, bool state, bool fullscreen)
 #define VK_T0 0xff000000u
 #define VK_T1 0xffffffffu
 
-static uintptr_t vulkan_load_texture(void *video_data, void *data,
-      bool threaded, enum texture_filter_type filter_type)
+static uintptr_t vulkan_load_texture_internal(vk_t *vk, void *data,
+      enum texture_filter_type filter_type)
 {
    struct vk_texture *texture  = NULL;
-   vk_t *vk                    = (vk_t*)video_data;
    struct texture_image *image = (struct texture_image*)data;
    if (!image)
       return 0;
@@ -8191,23 +8527,48 @@ static uintptr_t vulkan_load_texture(void *video_data, void *data,
 #ifdef HAVE_THREADS
 typedef struct
 {
-   vk_t       *vk;
-   uintptr_t   handle;
+   vk_t                            *vk;
+   void                            *image;
+   const struct texture_compressed *tc;
+   uintptr_t                        handle;
+   enum texture_filter_type         filter_type;
 } vulkan_texture_cmd_t;
 #endif
 
-/* Inner unload function -- performs the queue wait and texture
- * destruction.  Must run on the same thread that owns the
- * Vulkan queue submissions (the video thread when threaded
- * video is active, otherwise the main thread). */
+/* Inner unload function.  Parks the texture on the deferred list;
+ * actual destruction happens on the frame-recording thread once a
+ * full swapchain cycle of submissions has passed, or at the next
+ * queue-idle flush point (swapchain recreation, driver teardown). */
 static void vulkan_unload_texture_internal(vk_t *vk, uintptr_t handle)
 {
+   struct vk_deferred_texture *node;
    struct vk_texture *texture = (struct vk_texture*)handle;
    if (!texture || !vk || !vk->context)
       return;
 
-   /* TODO: We really want to defer this deletion instead,
-    * but this will do for now. */
+   if (vk->context->device)
+   {
+      node = (struct vk_deferred_texture*)malloc(sizeof(*node));
+      if (node)
+      {
+         node->texture     = texture;
+         node->frames_left = vk->context->num_swapchain_images + 1;
+#ifdef HAVE_THREADS
+         if (vk->context->queue_lock)
+            slock_lock(vk->context->queue_lock);
+#endif
+         node->next            = vk->deferred_textures;
+         vk->deferred_textures = node;
+#ifdef HAVE_THREADS
+         if (vk->context->queue_lock)
+            slock_unlock(vk->context->queue_lock);
+#endif
+         return;
+      }
+   }
+
+   /* Out of memory (or no device): fall back to synchronous
+    * destruction behind a queue drain. */
 #ifdef HAVE_THREADS
    if (vk->context->queue_lock)
       slock_lock(vk->context->queue_lock);
@@ -8341,11 +8702,10 @@ static bool vulkan_supports_texture_format(void *data,
          & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) != 0;
 }
 
-static uintptr_t vulkan_load_texture_compressed(void *video_data,
-      const struct texture_compressed *tc, bool threaded,
+static uintptr_t vulkan_load_texture_compressed_internal(vk_t *vk,
+      const struct texture_compressed *tc,
       enum texture_filter_type filter_type)
 {
-   vk_t                       *vk = (vk_t*)video_data;
    struct vk_texture     *texture = NULL;
    VkDevice                device;
    VkFormat                vkfmt;
@@ -8367,7 +8727,6 @@ static uintptr_t vulkan_load_texture_compressed(void *video_data,
    uint8_t                *dst;
    unsigned                i;
 
-   (void)threaded;
    if (!vk || !vk->context || !tc || tc->num_mips == 0)
       return 0;
    if (!vulkan_gpu_format_to_vk(tc->format, &vkfmt))
@@ -8529,6 +8888,80 @@ static uintptr_t vulkan_load_texture_compressed(void *video_data,
    if (filter_type == TEXTURE_FILTER_MIPMAP_LINEAR)
       texture->flags |= VK_TEX_FLAG_MIPMAP;
    return (uintptr_t)texture;
+}
+
+#ifdef HAVE_THREADS
+/* Both load wraps stash their result in cmd->handle;
+ * video_thread_texture_handle() is synchronous, so the caller reads it
+ * back once the video thread has run this. */
+static uintptr_t vulkan_texture_load_wrap(void *data)
+{
+   vulkan_texture_cmd_t *cmd = (vulkan_texture_cmd_t*)data;
+   cmd->handle               = vulkan_load_texture_internal(
+         cmd->vk, cmd->image, cmd->filter_type);
+   return 0;
+}
+
+static uintptr_t vulkan_texture_load_compressed_wrap(void *data)
+{
+   vulkan_texture_cmd_t *cmd = (vulkan_texture_cmd_t*)data;
+   cmd->handle               = vulkan_load_texture_compressed_internal(
+         cmd->vk, cmd->tc, cmd->filter_type);
+   return 0;
+}
+#endif
+
+/* Uploading a texture allocates, records and frees a command buffer on
+ * vk->staging_pool.  VkCommandPool is externally synchronised, and the
+ * video thread uses the same pool from vulkan_font_render_msg() for its
+ * glyph atlas uploads -- the queue_lock around the submit does not cover
+ * either end of that.  Dispatch to the video thread so all use of the
+ * pool stays on one thread, as the other drivers do. */
+static uintptr_t vulkan_load_texture(void *video_data, void *data,
+      bool threaded, enum texture_filter_type filter_type)
+{
+   vk_t *vk = (vk_t*)video_data;
+
+#ifdef HAVE_THREADS
+   if (threaded)
+   {
+      vulkan_texture_cmd_t cmd;
+      cmd.vk          = vk;
+      cmd.image       = data;
+      cmd.tc          = NULL;
+      cmd.handle      = 0;
+      cmd.filter_type = filter_type;
+      video_thread_texture_handle(&cmd, vulkan_texture_load_wrap);
+      return cmd.handle;
+   }
+#endif
+
+   return vulkan_load_texture_internal(vk, data, filter_type);
+}
+
+static uintptr_t vulkan_load_texture_compressed(void *video_data,
+      const struct texture_compressed *tc, bool threaded,
+      enum texture_filter_type filter_type)
+{
+   vk_t *vk = (vk_t*)video_data;
+
+#ifdef HAVE_THREADS
+   /* Same reasoning as vulkan_load_texture(). */
+   if (threaded)
+   {
+      vulkan_texture_cmd_t cmd;
+      cmd.vk          = vk;
+      cmd.image       = NULL;
+      cmd.tc          = tc;
+      cmd.handle      = 0;
+      cmd.filter_type = filter_type;
+      video_thread_texture_handle(&cmd,
+            vulkan_texture_load_compressed_wrap);
+      return cmd.handle;
+   }
+#endif
+
+   return vulkan_load_texture_compressed_internal(vk, tc, filter_type);
 }
 
 static const video_poke_interface_t vulkan_poke_interface = {

@@ -26,6 +26,13 @@
 #include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
 
+/* Bound on a wait for the render thread to take from the fifo: one
+ * wait, in nanoseconds (condvarWaitTimeout's unit), and how many before
+ * the caller gets the pass back. */
+#define LIBNX_AUDREN_WAIT_NS   100000000ULL
+#define LIBNX_AUDREN_WAIT_LAPS 8
+
+
 #define BUFFER_COUNT 5
 
 static const int sample_rate           = 48000;
@@ -50,6 +57,7 @@ typedef struct
    void* mempool;
    AudioDriverWaveBuf wavebufs[BUFFER_COUNT];
    size_t buffer_size;
+   size_t fifo_size;
    size_t samples;
    bool nonblock;
 
@@ -163,8 +171,38 @@ static void *libnx_audren_thread_audio_init(const char *device, unsigned rate, u
    aud->running     = true;
    aud->paused      = false;
    aud->nonblock    = !block_frames;
-   aud->buffer_size = (real_latency * sample_rate / 1000);
+   /* Two stages: the fifo the writer fills, which is what rate control
+    * measures and holds half full, and the wave buffers the render
+    * thread keeps full behind it. The fifo holds the setting, in bytes
+    * of int16 stereo; the wave buffers together take what is left of
+    * the setting after half the fifo - half of it - floored at 16 ms,
+    * or the setting when lower, so the two add up to the setting. It
+    * used to be the setting in frames used as bytes for both: a
+    * quarter of the setting in the fifo, five quarters queued behind
+    * it, and the fifo alone reported. */
+   {
+      size_t frame_bytes  = num_channels * sizeof(int16_t);
+      size_t setting      = ((size_t)real_latency * sample_rate / 1000) * frame_bytes;
+      size_t floor_bytes  = ((size_t)16 * sample_rate / 1000) * frame_bytes;
+      size_t device_total = setting / 2;
+      if (floor_bytes > setting)
+         floor_bytes      = setting;
+      if (device_total < floor_bytes)
+         device_total     = floor_bytes;
+      aud->fifo_size      = setting;
+      aud->buffer_size    = device_total / BUFFER_COUNT;
+      aud->buffer_size   -= aud->buffer_size % frame_bytes;
+      if (aud->buffer_size < 64 * frame_bytes)
+         aud->buffer_size = 64 * frame_bytes;
+   }
    aud->samples     = (aud->buffer_size / num_channels / sizeof(int16_t));
+   RARCH_LOG("[Audren] %u ms setting: a %u-frame fifo (%u ms, rate control holds it about half full) in front of %u wave buffers of %u frames (%u ms); about %u ms from write to the renderer.\n",
+         real_latency, (unsigned)(aud->fifo_size / (num_channels * sizeof(int16_t))),
+         (unsigned)(aud->fifo_size / (num_channels * sizeof(int16_t)) * 1000 / sample_rate),
+         (unsigned)BUFFER_COUNT, (unsigned)aud->samples,
+         (unsigned)(aud->samples * BUFFER_COUNT * 1000 / sample_rate),
+         (unsigned)(aud->fifo_size / (num_channels * sizeof(int16_t)) * 1000 / sample_rate / 2
+            + aud->samples * BUFFER_COUNT * 1000 / sample_rate));
 
    mempool_size     = (aud->buffer_size * BUFFER_COUNT +
          (AUDREN_MEMPOOL_ALIGNMENT-1)) &~ (AUDREN_MEMPOOL_ALIGNMENT-1);
@@ -220,7 +258,7 @@ static void *libnx_audren_thread_audio_init(const char *device, unsigned rate, u
       }
    }
 
-   aud->fifo = fifo_new(aud->buffer_size);
+   aud->fifo = fifo_new(aud->fifo_size);
    if (!aud->fifo)
    {
       RARCH_ERR("[Audren] fifo alloc failed.\n");
@@ -271,6 +309,41 @@ fail:
    return NULL;
 }
 
+/* Sleep on the condition the mixer thread wakes after every buffer it
+ * consumes until at least len bytes fit in the fifo, capped at half of
+ * it so the wait always ends. Returns the free space then, or 0 when
+ * the thread is not running or the driver is paused. */
+static size_t libnx_audren_thread_audio_wait_writable(void *data, size_t len)
+{
+   size_t available;
+   libnx_audren_thread_t *aud = (libnx_audren_thread_t*)data;
+   int laps                   = LIBNX_AUDREN_WAIT_LAPS;
+
+   if (!aud)
+      return 0;
+   if (len > aud->fifo_size / 2)
+      len = aud->fifo_size / 2;
+
+   for (;;)
+   {
+      if (!aud->running || aud->paused)
+         return 0;
+      mutexLock(&aud->fifo_lock);
+      available = FIFO_WRITE_AVAIL(aud->fifo);
+      mutexUnlock(&aud->fifo_lock);
+      if (available >= len)
+         return available;
+      /* Timed and capped: a renderer that has stopped hands the pass
+       * back as no space coming from this call. */
+      mutexLock(&aud->fifo_condlock);
+      condvarWaitTimeout(&aud->fifo_condvar, &aud->fifo_condlock,
+            LIBNX_AUDREN_WAIT_NS);
+      mutexUnlock(&aud->fifo_condlock);
+      if (--laps < 0)
+         return 0;
+   }
+}
+
 static size_t libnx_audren_thread_audio_buffer_size(void *data)
 {
    libnx_audren_thread_t *aud = (libnx_audren_thread_t*)data;
@@ -278,7 +351,10 @@ static size_t libnx_audren_thread_audio_buffer_size(void *data)
    if (!aud)
       return 0;
 
-   return aud->buffer_size;
+   /* The fifo: the stage the writer fills and write_avail() measures.
+    * The wave buffers behind it are the render thread's, kept full, and
+    * add on top. */
+   return aud->fifo_size;
 }
 
 static ssize_t libnx_audren_thread_audio_write(void *data,
@@ -304,6 +380,8 @@ static ssize_t libnx_audren_thread_audio_write(void *data,
    }
    else
    {
+      int laps = LIBNX_AUDREN_WAIT_LAPS;
+
       _len = 0;
       while (_len < len && aud->running)
       {
@@ -318,10 +396,19 @@ static ssize_t libnx_audren_thread_audio_write(void *data,
          }
          else
          {
+            /* The render thread signals each time it takes from the
+             * fifo. Paused it takes nothing, and a renderer that has
+             * stopped takes nothing either; the wait is timed and
+             * capped, and the write returns what went. */
             mutexUnlock(&aud->fifo_lock);
+            if (aud->paused)
+               break;
             mutexLock(&aud->fifo_condlock);
-            condvarWait(&aud->fifo_condvar, &aud->fifo_condlock);
+            condvarWaitTimeout(&aud->fifo_condvar, &aud->fifo_condlock,
+                  LIBNX_AUDREN_WAIT_NS);
             mutexUnlock(&aud->fifo_condlock);
+            if (--laps < 0)
+               break;
          }
       }
    }
@@ -438,5 +525,6 @@ audio_driver_t audio_switch_libnx_audren_thread = {
    NULL, /* device_list_free */
    libnx_audren_thread_audio_write_avail,
    libnx_audren_thread_audio_buffer_size,
-   NULL  /* write_raw */
+   NULL, /* write_raw */
+   libnx_audren_thread_audio_wait_writable
 };

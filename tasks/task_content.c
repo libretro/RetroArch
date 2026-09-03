@@ -158,6 +158,16 @@ struct content_information_ctx
    uint16_t flags;
 };
 
+#if defined(HAVE_GFX_WIDGETS)
+/* True while the deferred load path has a launch notification on
+ * screen that it started BEFORE the read, so it could carry the read
+ * percentage.  Only one deferral runs at a time
+ * (CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING), so one flag covers it.
+ * Consumed by content_load(), which must not restart the card the
+ * user has been watching. */
+static bool content_load_animation_showing = false;
+#endif
+
 /*************************************/
 /* Content file info functions START */
 /*************************************/
@@ -1194,7 +1204,10 @@ static bool content_file_extract_from_archive(
       char **err_string)
 {
    const char *tmp_path_ptr = NULL;
+   size_t _len;
+   unsigned i;
    char tmp_path[PATH_MAX_LENGTH];
+   char tmp_dir[DIR_MAX_LENGTH];
 
    tmp_path[0]  = '\0';
 
@@ -1202,19 +1215,52 @@ static bool content_file_extract_from_archive(
    RARCH_LOG("[Content] Core requires uncompressed content - "
          "extracting archive to temporary directory...\n");
 
+   /* The member is written under a directory of our own rather than
+    * straight into the cache or content directory.  Extraction keeps
+    * the member's own basename - savefile and savestate paths are
+    * derived from it, so a uniquified file name would silently move
+    * a user's saves - and a name that is already taken beside the
+    * archive would otherwise be overwritten here and deleted again
+    * on teardown, taking an unrelated file with it.  A directory of
+    * our own makes the collision impossible instead of detecting it.
+    *
+    * The cache directory is the parent when one is configured;
+    * otherwise the archive's own directory is, which is the only
+    * location known to exist and be writable at this point. */
+   if (content_ctx->directory_cache && *content_ctx->directory_cache)
+   {
+      strlcpy(tmp_dir, content_ctx->directory_cache, sizeof(tmp_dir));
+      fill_pathname_slash(tmp_dir, sizeof(tmp_dir));
+   }
+   else
+      fill_pathname_basedir(tmp_dir, *content_path, sizeof(tmp_dir));
+
+   _len = strlen(tmp_dir);
+
+   /* First name not already on disk wins.  A stale directory from a
+    * previous run - a crash between extraction and teardown - is
+    * therefore stepped over rather than reused, so its contents can
+    * never be mistaken for this load's content. */
+   for (i = 0; i < 1024; i++)
+   {
+      snprintf(tmp_dir + _len, sizeof(tmp_dir) - _len,
+            ".extract-%u", i);
+      if (!path_is_valid(tmp_dir))
+         break;
+   }
+
+   if (i == 1024 || !path_mkdir(tmp_dir))
+      goto error;
+
    /* Attempt to extract file  */
    if (!file_archive_extract_file(
-         *content_path, valid_exts,
-         (!content_ctx->directory_cache || !*content_ctx->directory_cache) ?
-               NULL : content_ctx->directory_cache,
+         *content_path, valid_exts, tmp_dir,
          tmp_path, sizeof(tmp_path)))
    {
-      char msg[PATH_MAX_LENGTH];
-      snprintf(msg, sizeof(msg), "%s: \"%s\".\n",
-            msg_hash_to_str(MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
-            *content_path);
-      *err_string = strdup(msg);
-      return false;
+      /* Only ever removes the directory created just above, and it
+       * is empty on this path, so nothing else can be caught by it. */
+      filestream_delete(tmp_dir);
+      goto error;
    }
 
    /* Add path of extracted file to temporary content
@@ -1224,6 +1270,10 @@ static bool content_file_extract_from_archive(
          p_content->content_list, tmp_path)))
       return false;
 
+   /* The directory follows its own file in the list, so teardown
+    * empties it before removing it. */
+   content_file_list_append_temporary(p_content->content_list, tmp_dir);
+
    /* Update content path pointer */
    *content_path = tmp_path_ptr;
 
@@ -1232,6 +1282,16 @@ static bool content_file_extract_from_archive(
          tmp_path);
 
    return true;
+
+error:
+   /* tmp_path is spent on this path - whatever the extraction left in
+    * it is unused - so it carries the message rather than a second
+    * buffer of its size sitting in the frame for the error case. */
+   snprintf(tmp_path, sizeof(tmp_path), "%s: \"%s\".\n",
+         msg_hash_to_str(MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
+         *content_path);
+   *err_string = strdup(tmp_path);
+   return false;
 }
 #endif
 
@@ -1497,7 +1557,7 @@ static bool content_file_load(
                         "but cache directory was not set or found. "
                         "Setting cache directory to root of writable app directory...\n");
                      _len = strlcpy(new_basedir, uwp_dir_data, sizeof(new_basedir));
-                     strlcpy(new_basedir + _len,
+                     strlcpy_lit(new_basedir + _len,
                            "VFSCACHE\\",
                            sizeof(new_basedir) - _len);
                      basedir_attribs = GetFileAttributes(new_basedir);
@@ -1906,16 +1966,29 @@ static bool content_load(content_ctx_info_t *info,
 #ifdef HAVE_GFX_WIDGETS
 #ifdef HAVE_CONFIGFILE
    /* If retroarch_main_init() returned true, we
-    * can safely trigger a load content animation */
+    * can safely trigger a load content animation.
+    *
+    * Unless the deferred path already started one before the read,
+    * so it could carry the read percentage: restarting it here would
+    * replay the card the user has been watching.  Clear the
+    * percentage instead - the read is over - and leave it be. */
    if (gfx_widgets_ready())
    {
-      /* Note: Have to read settings value here
-       * (It will be invalid if we try to read
-       *  it earlier...) */
-      settings_t *settings              = config_get_ptr();
-      bool show_load_content_animation  = settings && settings->bools.menu_show_load_content_animation;
-      if (show_load_content_animation)
-         gfx_widget_start_load_content_animation();
+      if (content_load_animation_showing)
+      {
+         gfx_widget_set_load_content_progress(-1);
+         content_load_animation_showing = false;
+      }
+      else
+      {
+         /* Note: Have to read settings value here
+          * (It will be invalid if we try to read
+          *  it earlier...) */
+         settings_t *settings              = config_get_ptr();
+         bool show_load_content_animation  = settings && settings->bools.menu_show_load_content_animation;
+         if (show_load_content_animation)
+            gfx_widget_start_load_content_animation();
+      }
    }
 #endif
 #endif
@@ -2603,8 +2676,10 @@ end:
 struct content_deferred_menu_load
 {
    char *fullpath;
+   char *core_path;              /* the world this belongs to      */
    enum rarch_core_type type;
    content_ctx_info_t info;      /* argv-free by the deferral gate */
+   bool showed_animation;        /* launch card already on screen */
 };
 
 /* The continuation parked by the prefetch's done callback, consumed
@@ -2659,6 +2734,22 @@ void task_content_deferred_load_check(void)
    p_content                 = content_state_get_ptr();
    p_content->flags         &= ~CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING;
 
+   /* A competing load may have replaced the world this continuation
+    * was parked for; the stamps say which one it belongs to.  On a
+    * mismatch, stand down: drop the cache and the continuation, and
+    * leave the current content alone. */
+   if (   !string_is_equal(path_get(RARCH_PATH_CONTENT), d->fullpath)
+       || !string_is_equal(path_get(RARCH_PATH_CORE),    d->core_path))
+   {
+      RARCH_LOG("[Content] Dropping a deferred load superseded by "
+            "another: \"%s\".\n", d->fullpath);
+      content_file_prefetch_free(p_content);
+      free(d->core_path);
+      free(d->fullpath);
+      free(d);
+      return;
+   }
+
    if (!content_load(&d->info, p_content))
    {
       content_file_prefetch_free(p_content);
@@ -2671,9 +2762,20 @@ void task_content_deferred_load_check(void)
          menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
    }
    content_file_prefetch_free(p_content);   /* leftovers, if any */
+   free(d->core_path);
    free(d->fullpath);
    free(d);
 }
+
+#if defined(HAVE_GFX_WIDGETS)
+/* Feeds the read percentage to the "Load Content" startup
+ * notification.  Delivered on the thread that pumps the queue -
+ * the thread that drives the frame and owns widget state. */
+static void content_file_prefetch_progress(void *ud, int8_t progress)
+{
+   gfx_widget_set_load_content_progress(progress);
+}
+#endif
 
 /* Deposit callback for task_push_content_prefetch.  ud carries the
  * deferred-load continuation for the done callback, not the content
@@ -2703,6 +2805,7 @@ static void content_file_prefetch_deposit(void *ud, const char *path,
 
 /* Returns true when the load was taken over by the deferred path. */
 static bool task_content_defer_menu_load(content_state_t *p_content,
+      runloop_state_t *runloop_st,
       const char *fullpath, enum rarch_core_type type,
       content_ctx_info_t *content_info)
 {
@@ -2717,6 +2820,23 @@ static bool task_content_defer_menu_load(content_state_t *p_content,
       return false;                /* only the plain menu shape     */
    if (p_content->flags & CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING)
       return false;                /* one deferral at a time        */
+   /* The cache's only consumer is content_file_load_into_memory(),
+    * reached only for a file the load reads into memory.  A
+    * need_fullpath core is handed the path instead, so a prefetch
+    * would fill an allocation nothing takes.  Mirror the load's own
+    * BLCK_NEED_FULLPATH decision from the live system info and the
+    * per-extension override - both current here, LOAD_CORE has run.
+    * (The caller's content_ctx is built before LOAD_CORE and without
+    * sys info; it cannot answer this.) */
+   {
+      const content_file_override_t *override = NULL;
+      bool need_fullpath = runloop_st->system.info.need_fullpath;
+      if (content_file_override_get_ext(p_content,
+            path_get_extension(fullpath), &override))
+         need_fullpath = override->need_fullpath;
+      if (need_fullpath)
+         return false;             /* the load hands the core a path */
+   }
    /* The prefetch keys on this exact path, but the load rewrites
     * some paths before reading them: a content:// SAF URI becomes a
     * VFS path, and a bare archive ("foo.zip") becomes an explicit
@@ -2738,14 +2858,53 @@ static bool task_content_defer_menu_load(content_state_t *p_content,
       free(d);
       return false;
    }
+   /* Stamp the world this continuation belongs to: in-flight tasks
+    * survive a competing load's queue reinit, so the continuation
+    * can fire after the user has loaded something else. */
+   if (!(d->core_path = strdup(path_get(RARCH_PATH_CORE))))
+   {
+      free(d->fullpath);
+      free(d);
+      return false;
+   }
    d->type = type;
    d->info = *content_info;        /* argv-free: shallow is whole   */
 
    paths[0] = d->fullpath;
-   if (!task_push_content_prefetch(paths, 1,
-         content_file_prefetch_deposit,
-         task_content_deferred_menu_load_done, d))
+
+#if defined(HAVE_GFX_WIDGETS)
+   /* Start the launch notification here rather than after the load,
+    * so it can carry the read percentage while the content streams
+    * in.  Gated on the same setting as before: with the notification
+    * off, nothing is shown and no progress is reported.
+    *
+    * Widgets persist across the driver reinit the load performs
+    * (DISPGFX_WIDGET_FLAG_PERSISTING), so the card started here
+    * survives into the loaded core. */
    {
+      settings_t *settings = config_get_ptr();
+      if (     settings
+            && settings->bools.menu_show_load_content_animation
+            && gfx_widgets_ready())
+      {
+         gfx_widget_set_load_content_progress(-1);
+         if (gfx_widget_start_load_content_animation())
+            d->showed_animation = true;
+      }
+   }
+#endif
+
+   if (!task_push_content_prefetch_progress(paths, 1,
+         content_file_prefetch_deposit,
+         task_content_deferred_menu_load_done,
+#if defined(HAVE_GFX_WIDGETS)
+         d->showed_animation ? content_file_prefetch_progress : NULL,
+#else
+         NULL,
+#endif
+         d))
+   {
+      free(d->core_path);
       free(d->fullpath);
       free(d);
       return false;
@@ -2803,8 +2962,8 @@ bool task_push_load_content_with_new_core_from_menu(
     * synchronous path below, and if the prefetch cannot even be
     * pushed, so does everything.  The continuation performs the
     * identical remainder of this function. */
-   if (task_content_defer_menu_load(p_content, fullpath, type,
-         content_info))
+   if (task_content_defer_menu_load(p_content, runloop_st,
+         fullpath, type, content_info))
    {
       content_information_ctx_free(&content_ctx);
       return true;

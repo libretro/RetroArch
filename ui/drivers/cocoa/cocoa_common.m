@@ -68,6 +68,7 @@
 
 #ifdef HAVE_MIST
 #include "../../steam/steam.h"
+#include <compat/strl.h>
 #endif
 
 #if IOS
@@ -1267,11 +1268,11 @@ void cocoa_get_video_output_size(unsigned *width, unsigned *height,
        * back to UIScreen.scale when nativeScale is unavailable. */
       float s = cocoa_screen_get_native_scale();
       if (s >= 3.0f)
-         strlcpy(desc, "Super Retina", desc_len);
+         strlcpy_lit(desc, "Super Retina", desc_len);
       else if (s >= 2.0f)
-         strlcpy(desc, "Retina", desc_len);
+         strlcpy_lit(desc, "Retina", desc_len);
       else
-         strlcpy(desc, "Standard", desc_len);
+         strlcpy_lit(desc, "Standard", desc_len);
    }
 #else
    /* macOS: CGDisplayPixelsWide/High is 10.0+, safe back to 10.5. */
@@ -1285,9 +1286,9 @@ void cocoa_get_video_output_size(unsigned *width, unsigned *height,
        * pre-10.7 branch returns 1.0f unconditionally. */
       float s = cocoa_screen_get_backing_scale_factor();
       if (s >= 2.0f)
-         strlcpy(desc, "Retina", desc_len);
+         strlcpy_lit(desc, "Retina", desc_len);
       else
-         strlcpy(desc, "Standard", desc_len);
+         strlcpy_lit(desc, "Standard", desc_len);
    }
 #endif
 }

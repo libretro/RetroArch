@@ -24,6 +24,7 @@
 #include <limits.h>
 
 #include <string/stdstring.h>
+#include <memalign.h>
 #include <lists/file_list.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
@@ -298,6 +299,13 @@ typedef struct
       bitmapfont_lut_t *rus_10x10;
 #endif
    } fonts;
+
+   /* Backing storage for frame_buf, background_buf, fs_thumbnail,
+    * mini_thumbnail and mini_left_thumbnail. Their data pointers are
+    * 64-byte aligned views into this block; rgui_buffers_free() releases
+    * all five at once. upscale_buf is separate: it is sized on demand
+    * from the display, not from the menu geometry. */
+   uint16_t *fb_arena;
 
    frame_buf_t frame_buf;
    frame_buf_t background_buf;
@@ -5151,6 +5159,35 @@ static void rgui_render_messagebox(
    }
 }
 
+static bool rgui_osk_pointer_over_textbox(
+      void *data,
+      int x,
+      int y,
+      unsigned width,
+      unsigned height)
+{
+   rgui_t *rgui                = (rgui_t*)data;
+
+   if (!rgui)
+      return false;
+
+   {
+      gfx_display_t *p_disp      = disp_get_ptr();
+      unsigned key_width         = rgui->font_width  + 16;
+      unsigned key_height        = rgui->font_height + 12;
+      unsigned keyboard_offset_y = 10 + 15 + (2 * rgui->font_height_stride);
+      unsigned osk_width         = (key_width * OSK_CHARS_PER_LINE) + 20;
+      unsigned osk_height        = keyboard_offset_y + (key_height * 4) + 10;
+      unsigned osk_x             = (p_disp->framebuf_width  - osk_width)  / 2;
+      unsigned osk_y             = (p_disp->framebuf_height - osk_height) / 2;
+
+      return (unsigned)x > osk_x + 5
+          && (unsigned)x < osk_x + osk_width - 5
+          && (unsigned)y > osk_y + 5
+          && (unsigned)y < osk_y + keyboard_offset_y - 10;
+   }
+}
+
 static int rgui_osk_ptr_at_pos(
       void *data,
       int x,
@@ -5185,6 +5222,24 @@ static int rgui_osk_ptr_at_pos(
       unsigned fb_height                = p_disp->framebuf_height;
       unsigned osk_x                    = (fb_width  - osk_width)  / 2;
       unsigned osk_y                    = (fb_height - osk_height) / 2;
+
+      if (     (unsigned)x > osk_x + 5
+            && (unsigned)x < osk_x + osk_width - 5
+            && (unsigned)y > osk_y + keyboard_offset_y - 10
+            && (unsigned)y < osk_y + osk_height - 5)
+      {
+         unsigned key_row    = ((unsigned)y > osk_y + keyboard_offset_y)
+               ? ((unsigned)y - osk_y - keyboard_offset_y) / key_height : 0;
+         unsigned key_column = ((unsigned)x > osk_x + keyboard_offset_x)
+               ? ((unsigned)x - osk_x - keyboard_offset_x) / key_width : 0;
+
+         if (key_row > 3)
+            key_row = 3;
+         if (key_column > OSK_CHARS_PER_LINE - 1)
+            key_column = OSK_CHARS_PER_LINE - 1;
+
+         return (int)(key_row * OSK_CHARS_PER_LINE + key_column);
+      }
 
       for (key_index = 0; key_index < 44; key_index++)
       {
@@ -5428,6 +5483,44 @@ RGUI_NOINLINE static void rgui_render_osk(
          last_cursor_time   = current_time;
       }
 
+      if (input_st->osk_textbox_focus)
+      {
+         unsigned input_ptr_x      = osk_x + 5;
+         unsigned input_ptr_y      = osk_y + 5;
+         unsigned input_ptr_width  = osk_width - 10;
+         unsigned input_ptr_height = keyboard_offset_y - 15;
+         unsigned j;
+
+         for (j = 0; j < 4; j++)
+         {
+            unsigned rect_x = (j == 3) ? input_ptr_x + input_ptr_width - 1 : input_ptr_x;
+            unsigned rect_y = (j == 1) ? input_ptr_y + input_ptr_height - 1 : input_ptr_y;
+            unsigned rect_w = (j < 2) ? input_ptr_width : 1;
+            unsigned rect_h = (j < 2) ? 1 : input_ptr_height;
+
+            if (rgui->flags & RGUI_FLAG_SHADOW_ENABLE)
+               rgui_color_rect(
+                  frame_buf_data,
+                  fb_width,
+                  fb_height,
+                  rect_x + 1,
+                  rect_y + 1,
+                  rect_w,
+                  rect_h,
+                  rgui->colors.shadow_color);
+
+            rgui_color_rect(
+               frame_buf_data,
+               fb_width,
+               fb_height,
+               rect_x,
+               rect_y,
+               rect_w,
+               rect_h,
+               rgui->colors.hover_color);
+         }
+      }
+
       if (!(((current_time - last_cursor_time) / 500000) & 1))
          rgui_blit_symbol(rgui, fb_width, text_cursor_x, input_str_y, RGUI_SYMBOL_TEXT_CURSOR,
                rgui->colors.normal_color, rgui->colors.shadow_color);
@@ -5486,7 +5579,7 @@ RGUI_NOINLINE static void rgui_render_osk(
                rgui->colors.normal_color, rgui->colors.shadow_color);
 
       /* Draw selection pointer */
-      if (key_index == osk_ptr)
+      if (!input_st->osk_textbox_focus && (key_index == osk_ptr))
       {
          unsigned osk_ptr_x = osk_x + keyboard_offset_x + ptr_offset_x + (key_column * key_width);
          unsigned osk_ptr_y = osk_y + keyboard_offset_y + ptr_offset_y + (key_row    * key_height);
@@ -6463,34 +6556,54 @@ static void rgui_render(void *data, unsigned width, unsigned height,
    }
 }
 
-static void rgui_framebuffer_free(frame_buf_t *framebuffer)
-{
-   if (!framebuffer)
-      return;
+/* Region spacing inside the menu buffer arena, in uint16_t elements:
+ * 64 bytes, so every buffer starts on a cache line and consecutive
+ * buffers are never a multiple of 4 KiB apart. */
+#define RGUI_ARENA_ALIGN 32
+#define RGUI_ARENA_NEXT(cur, n) \
+   ((((cur) + (n) + RGUI_ARENA_ALIGN - 1) / RGUI_ARENA_ALIGN) \
+    * RGUI_ARENA_ALIGN + RGUI_ARENA_ALIGN)
 
+/* Only resets the descriptor; the storage belongs to rgui->fb_arena. */
+static void rgui_framebuffer_reset(frame_buf_t *framebuffer)
+{
    framebuffer->width  = 0;
    framebuffer->height = 0;
-
-   if (framebuffer->data)
-      free(framebuffer->data);
    framebuffer->data   = NULL;
 }
 
-static void rgui_thumbnail_free(thumbnail_t *thumbnail)
+static void rgui_thumbnail_reset(thumbnail_t *thumbnail)
 {
-   if (!thumbnail)
-      return;
-
    thumbnail->max_width  = 0;
    thumbnail->max_height = 0;
    thumbnail->width      = 0;
    thumbnail->height     = 0;
    thumbnail->is_valid   = false;
    thumbnail->path[0]    = '\0';
-
-   if (thumbnail->data)
-      free(thumbnail->data);
    thumbnail->data       = NULL;
+}
+
+/* upscale_buf is not part of the arena and is freed by its own user. */
+static void rgui_upscale_buf_free(frame_buf_t *framebuffer)
+{
+   framebuffer->width  = 0;
+   framebuffer->height = 0;
+   if (framebuffer->data)
+      free(framebuffer->data);
+   framebuffer->data   = NULL;
+}
+
+static void rgui_buffers_free(rgui_t *rgui)
+{
+   rgui_framebuffer_reset(&rgui->frame_buf);
+   rgui_framebuffer_reset(&rgui->background_buf);
+   rgui_thumbnail_reset(&rgui->fs_thumbnail);
+   rgui_thumbnail_reset(&rgui->mini_thumbnail);
+   rgui_thumbnail_reset(&rgui->mini_left_thumbnail);
+
+   if (rgui->fb_arena)
+      memalign_free(rgui->fb_arena);
+   rgui->fb_arena = NULL;
 }
 
 bool rgui_is_video_config_equal(
@@ -6699,11 +6812,7 @@ static bool rgui_set_aspect_ratio(
    unsigned aspect_ratio_lock   = settings->uints.menu_rgui_aspect_ratio_lock;
 #endif
 
-   rgui_framebuffer_free(&rgui->frame_buf);
-   rgui_framebuffer_free(&rgui->background_buf);
-   rgui_thumbnail_free(&rgui->fs_thumbnail);
-   rgui_thumbnail_free(&rgui->mini_thumbnail);
-   rgui_thumbnail_free(&rgui->mini_left_thumbnail);
+   rgui_buffers_free(rgui);
 
    /* Cache new aspect ratio */
    rgui->menu_aspect_ratio = aspect_ratio;
@@ -6991,13 +7100,6 @@ static bool rgui_set_aspect_ratio(
    }
 #endif
 
-   /* Allocate frame buffer */
-   rgui->frame_buf.data = (uint16_t*)calloc(
-         rgui->frame_buf.width * rgui->frame_buf.height, sizeof(uint16_t));
-
-   if (!rgui->frame_buf.data)
-      return false;
-
    /* Configure 'menu display' settings */
    p_disp->framebuf_width  = rgui->frame_buf.width;
    p_disp->framebuf_height = rgui->frame_buf.height;
@@ -7014,25 +7116,15 @@ static bool rgui_set_aspect_ratio(
    rgui->term_layout.start_x      = (rgui->frame_buf.width - (rgui->term_layout.width * rgui->font_width_stride)) / 2;
    rgui->term_layout.start_y      = (rgui->frame_buf.height - (rgui->term_layout.height * rgui->font_height_stride)) / 2;
 
-   /* Allocate background buffer */
+   /* Background buffer matches the frame buffer */
    rgui->background_buf.width     = rgui->frame_buf.width;
    rgui->background_buf.height    = rgui->frame_buf.height;
-   rgui->background_buf.data      = (uint16_t*)calloc(
-         rgui->background_buf.width * rgui->background_buf.height, sizeof(uint16_t));
 
-   if (!rgui->background_buf.data)
-      return false;
-
-   /* Allocate thumbnail buffer */
+   /* Fullscreen thumbnail */
    rgui->fs_thumbnail.max_width   = rgui->frame_buf.width;
    rgui->fs_thumbnail.max_height  = rgui->frame_buf.height - (unsigned)(rgui->font_height_stride * 2.0f) + 2;
-   rgui->fs_thumbnail.data        = (uint16_t*)calloc(
-         rgui->fs_thumbnail.max_width * rgui->fs_thumbnail.max_height, sizeof(uint16_t));
 
-   if (!rgui->fs_thumbnail.data)
-      return false;
-
-   /* Allocate mini thumbnail buffers */
+   /* Mini thumbnails */
    mini_thumbnail_term_width            = (unsigned)((float)rgui->term_layout.width * (2.0f / 5.0f));
    if (mini_thumbnail_term_width > 19)
       mini_thumbnail_term_width         = 19;
@@ -7041,19 +7133,36 @@ static bool rgui_set_aspect_ratio(
 
    rgui->mini_thumbnail.max_width       = rgui->mini_thumbnail_max_width;
    rgui->mini_thumbnail.max_height      = rgui->mini_thumbnail_max_height;
-   rgui->mini_thumbnail.data            = (uint16_t*)calloc(
-         rgui->mini_thumbnail.max_width * rgui->mini_thumbnail.max_height, sizeof(uint16_t));
-
-   if (!rgui->mini_thumbnail.data)
-      return false;
-
    rgui->mini_left_thumbnail.max_width  = rgui->mini_thumbnail_max_width;
    rgui->mini_left_thumbnail.max_height = rgui->mini_thumbnail_max_height;
-   rgui->mini_left_thumbnail.data       = (uint16_t*)calloc(
-         rgui->mini_left_thumbnail.max_width * rgui->mini_left_thumbnail.max_height, sizeof(uint16_t));
 
-   if (!rgui->mini_left_thumbnail.data)
-      return false;
+   /* One block for all five buffers, in the order above. Cursors are
+    * in uint16_t elements. */
+   {
+      size_t n_frame  = (size_t)rgui->frame_buf.width      * rgui->frame_buf.height;
+      size_t n_bg     = (size_t)rgui->background_buf.width * rgui->background_buf.height;
+      size_t n_fs     = (size_t)rgui->fs_thumbnail.max_width   * rgui->fs_thumbnail.max_height;
+      size_t n_mini   = (size_t)rgui->mini_thumbnail.max_width * rgui->mini_thumbnail.max_height;
+      size_t off_frame = 0;
+      size_t off_bg    = RGUI_ARENA_NEXT(off_frame, n_frame);
+      size_t off_fs    = RGUI_ARENA_NEXT(off_bg,    n_bg);
+      size_t off_mini  = RGUI_ARENA_NEXT(off_fs,    n_fs);
+      size_t off_minil = RGUI_ARENA_NEXT(off_mini,  n_mini);
+      size_t total     = off_minil + n_mini;
+      uint16_t *arena  = (uint16_t*)memalign_alloc(64, total * sizeof(uint16_t));
+
+      if (!arena)
+         return false;
+
+      memset(arena, 0, total * sizeof(uint16_t));
+
+      rgui->fb_arena                 = arena;
+      rgui->frame_buf.data           = arena + off_frame;
+      rgui->background_buf.data      = arena + off_bg;
+      rgui->fs_thumbnail.data        = arena + off_fs;
+      rgui->mini_thumbnail.data      = arena + off_mini;
+      rgui->mini_left_thumbnail.data = arena + off_minil;
+   }
 
    /* Trigger background/display update */
    rgui->theme_preset_path[0]       = '\0';
@@ -7239,13 +7348,7 @@ error:
    if (rgui)
    {
       rgui_fonts_free(rgui);
-
-      rgui_framebuffer_free(&rgui->frame_buf);
-      rgui_framebuffer_free(&rgui->background_buf);
-
-      rgui_thumbnail_free(&rgui->fs_thumbnail);
-      rgui_thumbnail_free(&rgui->mini_thumbnail);
-      rgui_thumbnail_free(&rgui->mini_left_thumbnail);
+      rgui_buffers_free(rgui);
    }
 
    if (menu)
@@ -7266,14 +7369,8 @@ static void rgui_free(void *data)
 #endif
 
    rgui_fonts_free(rgui);
-
-   rgui_framebuffer_free(&rgui->frame_buf);
-   rgui_framebuffer_free(&rgui->background_buf);
-   rgui_framebuffer_free(&rgui->upscale_buf);
-
-   rgui_thumbnail_free(&rgui->fs_thumbnail);
-   rgui_thumbnail_free(&rgui->mini_thumbnail);
-   rgui_thumbnail_free(&rgui->mini_left_thumbnail);
+   rgui_buffers_free(rgui);
+   rgui_upscale_buf_free(&rgui->upscale_buf);
 }
 
 static void rgui_set_texture_frame(video_driver_state_t *video_st,
@@ -8978,6 +9075,7 @@ menu_ctx_driver_t menu_ctx_rgui = {
    rgui_refresh_thumbnail_image,
    NULL,                               /* set_thumbnail_content */
    rgui_osk_ptr_at_pos,
+   rgui_osk_pointer_over_textbox,
    rgui_update_savestate_thumbnail_path,
    rgui_update_savestate_thumbnail_image,
    NULL,                               /* pointer_down */

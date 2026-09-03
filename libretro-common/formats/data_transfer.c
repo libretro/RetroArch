@@ -229,6 +229,16 @@
 #define DT_NO_POOL
 #endif
 #endif
+
+/* The console targets have no native TLS: GCC lowers __thread there
+ * through emutls, which is a per-access table lookup plus a gthread
+ * mutex on the control path - on Vita that mutex is the toolchain's
+ * pthread port, the only thing left asking for it.  That costs more
+ * than the pool miss the cache exists to avoid, so the pool is
+ * compiled out and every load takes the fresh-reservation path. */
+#if defined(VITA) || defined(PSP) || defined(_3DS) || defined(GEKKO)
+#define DT_NO_POOL
+#endif
 #endif
 
 #if !defined(DT_NO_POOL)
@@ -741,9 +751,14 @@ void data_transfer_window_punch(data_transfer_t *dt, size_t from,
 #endif
 }
 
-bool data_transfer_window_feed(data_transfer_t *dt, size_t tell,
-      size_t lookahead, size_t margin)
+bool data_transfer_window_feed_budget(data_transfer_t *dt, size_t tell,
+      size_t lookahead, size_t margin, size_t budget,
+      size_t *resident_hi)
 {
+   bool ok;
+   size_t hi;
+   if (resident_hi)
+      *resident_hi = 0;
    if (!dt || !dt->window || dt->failed)
       return false;
    if (tell < dt->wtell)
@@ -751,7 +766,31 @@ bool data_transfer_window_feed(data_transfer_t *dt, size_t tell,
    dt->wtell = tell;
    if (tell > margin && tell - margin > dt->wlo)
       data_transfer_window_advance(dt, tell - margin);
-   return data_transfer_window_extend(dt, tell + lookahead);
+   hi = tell + lookahead;
+   /* The ceiling applies only while the frontier covers the consumer.
+    * A frontier behind tell means the consumer's next read lands on
+    * unresident pages, and pacing THAT read over ticks is not a
+    * smaller burst, it is a fault: close the gap in one extend, as
+    * the unbudgeted feed always has. */
+   if (budget && dt->whi >= tell)
+   {
+      size_t cap = dt->whi + budget;
+      if (cap < dt->whi)                 /* wrapped: no ceiling */
+         cap = (size_t)-1;
+      if (hi > cap)
+         hi = cap;
+   }
+   ok = data_transfer_window_extend(dt, hi);
+   if (resident_hi)
+      *resident_hi = dt->map_len ? dt->whi : dt->len;
+   return ok;
+}
+
+bool data_transfer_window_feed(data_transfer_t *dt, size_t tell,
+      size_t lookahead, size_t margin)
+{
+   return data_transfer_window_feed_budget(dt, tell, lookahead,
+         margin, 0, NULL);
 }
 
 static data_transfer_t *data_transfer_open_prefix_ex(const char *path,

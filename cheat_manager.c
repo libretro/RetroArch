@@ -185,7 +185,7 @@ bool cheat_manager_save(
    {
       size_t _len = fill_pathname_join_special(cheats_file, cheat_database,
              path, sizeof(cheats_file));
-      strlcpy(cheats_file + _len, ".cht", sizeof(cheats_file) - _len);
+      strlcpy_lit(cheats_file + _len, ".cht", sizeof(cheats_file) - _len);
    }
 
    if (!overwrite)
@@ -206,22 +206,22 @@ bool cheat_manager_save(
       char var_key[128];
       size_t _len = snprintf(var_key, sizeof(var_key), "cheat%u_", i);
 
-      strlcpy(var_key + _len, "desc", sizeof(var_key) - _len);
+      strlcpy_lit(var_key + _len, "desc", sizeof(var_key) - _len);
       if (cheat_st->cheats[i].desc && *cheat_st->cheats[i].desc)
          config_set_string(conf, var_key, cheat_st->cheats[i].desc);
       else
          config_set_string(conf, var_key, cheat_st->cheats[i].code);
 
-      strlcpy(var_key + _len, "code", sizeof(var_key) - _len);
+      strlcpy_lit(var_key + _len, "code", sizeof(var_key) - _len);
       config_set_string(conf, var_key, cheat_st->cheats[i].code);
 
-      strlcpy(var_key + _len, "enable", sizeof(var_key) - _len);
+      strlcpy_lit(var_key + _len, "enable", sizeof(var_key) - _len);
       config_set_string(conf, var_key,
                cheat_st->cheats[i].state
             ? "true"
             : "false");
 
-      strlcpy(var_key + _len, "big_endian", sizeof(var_key) - _len);
+      strlcpy_lit(var_key + _len, "big_endian", sizeof(var_key) - _len);
       config_set_string(conf, var_key,
                cheat_st->cheats[i].big_endian
             ? "true"

@@ -23,28 +23,14 @@
 #define _GNU_SOURCE
 #endif
 
-#ifdef HAVE_STDINT_H
 #include <stdint.h>
-#endif
-
-#ifdef HAVE_STDLIB_H
+#include <stddef.h>
 #include <stdlib.h>
-#endif
-
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif
-
-#ifdef HAVE_TIME_H
 #include <time.h>
-#endif
 
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
-#endif
-
-#ifdef STDC_HEADERS
-#include <stddef.h>
 #endif
 
 #include "compat.h"
@@ -56,8 +42,7 @@
 #include "libsmb2-private.h"
 
 /* Count number of leading 1 bits in the char */
-static int
-l1(char c)
+static int l1(char c)
 {
         int i = 0;
         while (c & 0x80) {
@@ -248,15 +233,17 @@ const char *
 smb2_utf16_to_utf8(const uint16_t *utf16, size_t utf16_len)
 {
         int utf8_len = 1;
-        char *str, *tmp;
+        char *str;
+        unsigned char *tmp;
         const uint16_t *utf16_end;
         
         /* How many bytes do we need for utf8 ? */
         utf8_len += utf16_size(utf16, utf16_len);
-        str = tmp = (char*)malloc(utf8_len);
+        str = (char *)malloc(utf8_len);
         if (str == NULL) {
                 return NULL;
         }
+        tmp = (unsigned char *)str;
         str[utf8_len - 1] = 0;
 
         utf16_end = utf16 + utf16_len;

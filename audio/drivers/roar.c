@@ -74,9 +74,22 @@ static ssize_t ra_write(void *data, const void *buf, size_t len)
                   (const char*)buf + _len, write_amt, &err)) < (ssize_t)write_amt)
       {
          if (roar->nonblocking)
-            return rc;
+         {
+            /* A full stream refuses with -1 in non-blocking mode, as
+             * with OSS's EAGAIN: that is the normal state of a stream
+             * fed faster than it drains, and the write returns what
+             * went rather than reporting the device gone. A stream
+             * that has failed says so on the next blocking write. */
+            if (rc < 0)
+               return _len;
+            return _len + rc;
+         }
          else if (rc < 0)
             return -1;
+         else if (rc == 0)
+            /* Blocking, yet nothing taken and no error: the loop has
+             * nothing to wait on and would spin. */
+            break;
       }
       _len += rc;
    }
@@ -126,7 +139,9 @@ static void ra_free(void *data)
    free(data);
 }
 
-/* TODO/FIXME - implement? */
+/* The stream is opened as ROAR_CODEC_PCM_S at 16 bits. libroar has no
+ * float PCM codec in the versions this driver has been built against;
+ * revisit only if one appears. */
 static bool ra_use_float(void *data) { return false; }
 static size_t ra_write_avail(void *data) { return 0; }
 

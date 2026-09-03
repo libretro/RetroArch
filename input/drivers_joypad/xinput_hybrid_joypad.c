@@ -52,40 +52,7 @@
 #include <queues/task_queue.h>
 #include <retro_timers.h>
 
-#ifndef __DINPUT_JOYPAD_H
-#define __DINPUT_JOYPAD_H
-
-#include <stdint.h>
-#include <boolean.h>
-#include <retro_common_api.h>
-
-#define WIN32_LEAN_AND_MEAN
-#include <dinput.h>
-
-/* For DIJOYSTATE2 struct, rgbButtons will always have 128 elements */
-#define ARRAY_SIZE_RGB_BUTTONS 128
-
-/* DirectInput POV value indicating the hat is centred (no direction pressed).
- * rgdwPOV[] returns this sentinel when the hat is released. */
-#define DINPUT_POV_CENTERED 0xFFFFFFFFu
-
-RETRO_BEGIN_DECLS
-
-struct dinput_joypad_data
-{
-   LPDIRECTINPUTDEVICE8 joypad;
-   DIJOYSTATE2          joy_state;
-   char                *joy_name;
-   char                *joy_friendly_name;
-   int32_t              vid;
-   int32_t              pid;
-   LPDIRECTINPUTEFFECT  rumble_iface[2];
-   DIEFFECT             rumble_props;
-};
-
-RETRO_END_DECLS
-
-#endif
+#include "dinput_joypad.h"
 
 #ifndef __XINPUT_JOYPAD_H
 #define __XINPUT_JOYPAD_H
@@ -226,12 +193,9 @@ static const uint16_t button_index_to_bitmap_code[] =  {
 #include <dinput.h>
 #include <mmsystem.h>
 
-/* Forward declarations */
-extern struct dinput_joypad_data g_pads[MAX_USERS];
-extern unsigned g_joypad_cnt;
+/* Forward declarations. g_pads, g_joypad_cnt, g_dinput_joypad_ctx and
+ * g_dinput_enum_inflight come from dinput_joypad.h. */
 extern LPDIRECTINPUT8 g_dinput_ctx;
-extern LPDIRECTINPUT8 g_dinput_joypad_ctx;
-extern volatile bool g_dinput_enum_inflight;
 
 void dinput_destroy_context(void);
 bool dinput_init_context(void);
@@ -558,7 +522,15 @@ static void dinput_joypad_destroy(void)
       free(g_pads[i].joy_friendly_name);
       g_pads[i].joy_friendly_name = NULL;
 
-      input_config_clear_device_name(i);
+      /* No input_config_clear_device_name() here. Disconnects are
+       * announced from poll() - joypad_driver_reinit() runs it once
+       * more before destroy() for exactly that - and
+       * input_autoconfigure_disconnect() clears the whole port record.
+       * Clearing just the name here left vid, pid and the
+       * autoconfigured flag behind, and blanked the field that
+       * input_autoconfigure_connect_ex() compares against to suppress
+       * a repeat 'configured in port' notification. No other joypad
+       * driver does this. */
    }
 
    g_joypad_cnt = 0;
@@ -1273,9 +1245,41 @@ static void xinput_joypad_poll(void)
          DWORD result = g_XInputGetStateEx(xinput_hotplug_index, &tmp_state);
          if (result == ERROR_SUCCESS)
          {
-            const char *name = xinput_joypad_name(xinput_hotplug_index);
-            int32_t vid = 0;
-            int32_t pid = 0;
+            /* Recover the identity from the DirectInput cross-reference
+             * the way dinput_enum_hybrid_autoconf_flush() does, rather
+             * than reporting 0/0.
+             *
+             * g_pads[] is indexed by enumeration order and
+             * g_xinput_pad_indexes[] maps that to the XInput user
+             * index, so the two are only interchangeable when every
+             * enumerated pad is an XInput pad. Search for the entry
+             * that maps to this user rather than indexing g_pads[] by
+             * it, which would pull another device's name as soon as a
+             * DirectInput-only pad is enumerated alongside. */
+            const char *name = NULL;
+            int32_t vid      = 0;
+            int32_t pid      = 0;
+            unsigned p;
+
+            for (p = 0; p < g_joypad_cnt; p++)
+            {
+               if (     g_pads[p].joypad
+                     && g_xinput_pad_indexes[p]
+                           == (int)xinput_hotplug_index)
+               {
+                  name = g_pads[p].joy_name;
+                  vid  = g_pads[p].vid;
+                  pid  = g_pads[p].pid;
+                  break;
+               }
+            }
+
+            /* No entry: the pad appeared after the last enumeration and
+             * DirectInput has not seen it, so there is nothing to
+             * recover. Fall back to what XInput alone can report. */
+            if (!name)
+               name = xinput_joypad_name(xinput_hotplug_index);
+
             input_autoconfigure_connect(
                name,
                NULL, NULL,

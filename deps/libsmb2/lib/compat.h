@@ -36,7 +36,10 @@ extern "C" {
 #include <xtl.h>
 #include <winsockx.h>
 #endif
+#ifndef T_SOCKET_DEFINED
+#define T_SOCKET_DEFINED
 typedef SOCKET t_socket;
+#endif
 #ifndef INVALID_SOCKET
 #define INVALID_SOCKET  (t_socket)(~0)
 #endif
@@ -64,23 +67,7 @@ typedef int t_socket;
 #define WIN32_LEAN_AND_MEAN
 #endif /* !WIN32_LEAN_AND_MEAN */
 
-#ifdef XBOX_PLATFORM /* Xbox XDK Doesn´t have stdint.h header */
-typedef char int8_t;
-typedef short int16_t;
-typedef short int_least16_t;
-typedef int int32_t;
-typedef long long int64_t;
-typedef int intptr_t;
-
-typedef unsigned char uint8_t;
-typedef unsigned short uint16_t;
-typedef unsigned int uint32_t;
-typedef unsigned long long uint64_t;
-typedef unsigned int uint_t;
-typedef unsigned int uintptr_t;
-#else
 #include <stdint.h>	
-#endif
 
 #ifndef ENETRESET
 #define ENETRESET WSAENETRESET
@@ -245,30 +232,8 @@ ssize_t readv(t_socket fd, const struct iovec* vector, int count);
 
 #else
 
-inline int writev(t_socket sock, struct iovec *iov, int nvecs)
-{
-  DWORD ret;
-
-  int res = WSASend(sock, (LPWSABUF)iov, nvecs, &ret, 0, NULL, NULL);
-
-  if (res == 0) {
-    return (int)ret;
-  }
-  return -1;
-}
-
-inline int readv(t_socket sock, struct iovec *iov, int nvecs)
-{
-  DWORD ret;
-  DWORD flags = 0;
-
-  int res = WSARecv(sock, (LPWSABUF)iov, nvecs, &ret, &flags, NULL, NULL);
-
-  if (res == 0) {
-    return (int)ret;
-  }
-  return -1;
-}
+int writev(t_socket sock, struct iovec *iov, int nvecs);
+int readv(t_socket sock, struct iovec *iov, int nvecs);
 #endif
 
 #ifdef __USE_WINSOCK__
@@ -284,7 +249,9 @@ int getlogin_r(char *buf, size_t size);
 
 int getpid();
 
-#pragma warning( disable : 4090 ) 
+#ifdef _MSC_VER
+#pragma warning( disable : 4090 )
+#endif
 
 #define strdup _strdup
 

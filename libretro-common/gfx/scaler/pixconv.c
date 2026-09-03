@@ -823,7 +823,7 @@ void conv_bgr24_rgb565(void *output_, const void *input_,
    const uint8_t *input = (const uint8_t*)input_;
    uint16_t *output     = (uint16_t*)output_;
    for (h = 0; h < height;
-         h++, output += out_stride, input += in_stride)
+         h++, output += out_stride >> 1, input += in_stride)
    {
       const uint8_t *inp = input;
       for (w = 0; w < width; w++)

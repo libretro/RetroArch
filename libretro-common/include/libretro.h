@@ -4598,6 +4598,52 @@ struct retro_log_callback
  */
 #define RETRO_SIMD_CRC32    (1 << 25)
 
+/**
+ * Indicates CPU support for hardware SHA-512 acceleration.
+ *
+ * On AArch64 this is FEAT_SHA512, optional from Armv8.1 and A64-only.
+ * On x86 it is the SHA512 instruction group enumerated by
+ * CPUID.(EAX=07H,ECX=1):EAX[0], which is separate from the SHA-NI
+ * instructions covering SHA-1 and SHA-256.
+ */
+#define RETRO_SIMD_SHA512   (1 << 26)
+
+/**
+ * Indicates CPU support for hardware SHA-1 acceleration.
+ *
+ * On AArch64 this is FEAT_SHA1; on x86 it is part of SHA-NI, which
+ * covers SHA-1 and SHA-256 in one CPUID bit and therefore always
+ * reports alongside \c RETRO_SIMD_SHA256 there.
+ */
+#define RETRO_SIMD_SHA1     (1 << 27)
+
+/**
+ * Indicates CPU support for hardware SHA-256 acceleration.
+ *
+ * On AArch64 this is FEAT_SHA256; on x86 it is the other half of
+ * SHA-NI. Separate from \c RETRO_SIMD_SHA1 because AArch64 enumerates
+ * the two independently.
+ */
+#define RETRO_SIMD_SHA256   (1 << 28)
+
+/**
+ * Indicates CPU support for the FMA3 fused multiply-add instructions.
+ *
+ * CPUID.(EAX=01H):ECX[12]. They operate on YMM state, so this reports
+ * only where the operating system preserves it, as \c RETRO_SIMD_AVX
+ * does.
+ */
+#define RETRO_SIMD_FMA3     (1 << 29)
+
+/**
+ * Indicates CPU support for the FMA4 fused multiply-add instructions.
+ *
+ * CPUID.(EAX=80000001H):ECX[16], an AMD extension dropped from Zen, and
+ * a different encoding from \c RETRO_SIMD_FMA3 rather than a superset
+ * of it. Gated on the same operating system state.
+ */
+#define RETRO_SIMD_FMA4     (1 << 30)
+
 /** @} */
 
 /**

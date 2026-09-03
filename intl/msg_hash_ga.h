@@ -300,6 +300,8 @@ static const struct
    char s_8c7495e3[15];
    char s_ad7c73f6[12];
    char s_30acd6fb[12];
+   char s_35dcde4f[22];
+   char s_ce7da552[35];
    char s_04b30c51[24];
    char s_e5aeacf9[20];
    char s_24976a5b[23];
@@ -1175,6 +1177,7 @@ static const struct
    char s_b4c3612a[32];
    char s_f638f238[22];
    char s_f3358a59[37];
+   char s_f8098721[61];
    char s_0d7d9688[28];
    char s_b00815b8[23];
    char s_1ef8917a[22];
@@ -1449,7 +1452,7 @@ static const struct
    char s_012938fb[29];
    char s_a747cdc9[53];
    char s_2f169651[19];
-   char s_73674a86[27];
+   char s_73674a86[23];
    char s_705eee28[65];
    char s_62af62ac[52];
    char s_12b25a4b[62];
@@ -2443,6 +2446,7 @@ static const struct
    char s_f7cc6630[28];
    char s_310ec7bd[83];
    char s_5832a2c2[103];
+   char s_f47e544f[266];
    char s_20cc6597[116];
    char s_21b0bad3[53];
    char s_66e9521c[81];
@@ -2472,6 +2476,8 @@ static const struct
    char s_5977d6d8[44];
    char s_cb67f2a4[28];
    char s_3c3598a9[42];
+   char s_3bac47bd[393];
+   char s_90e7db40[492];
    char s_4b78ee7f[95];
    char s_aed11d67[146];
    char s_dbe6e749[106];
@@ -3008,6 +3014,7 @@ static const struct
    char s_7de5d198[65];
    char s_3b573ee6[32];
    char s_dc1d6cc7[64];
+   char s_28543dcf[80];
    char s_aebcb136[173];
    char s_8b636a26[42];
    char s_8f707459[50];
@@ -3387,12 +3394,12 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    char s_3e1e294b[63];
    char s_69c0e487[52];
-   char s_706ff4dc[196];
+   char s_706ff4dc[271];
    char s_a0d1a85c[65];
    char s_b5966528[252];
    char s_907ef7cc[45];
    char s_b0a46506[44];
-   char s_04624c88[55];
+   char s_04624c88[182];
    char s_91976dbe[47];
    char s_f6492edc[54];
    char s_9bb85635[266];
@@ -4803,6 +4810,8 @@ static const struct
    "St\303\241t: Stoptha",
    "Sioncr\303\263n\303\272",
    "Sioncr\303\263n\303\272",
+   "P\303\255bl\303\255ne Sn\303\241ithithe",
+   "Ardaigh Tosa\303\255ocht Sn\303\241ithe Fuaime",
    "Gn\303\263thachan Toirte (dB)",
    "M\303\263d Eisiach WASAPI",
    "Form\303\241id Sn\303\241mh WASAPI",
@@ -5683,6 +5692,7 @@ static const struct
    "Taispe\303\241in 'Atosaigh RetroArch'",
    "Taispe\303\241in 'M\303\272chadh'",
    "Taispe\303\241in Fo-lip\303\251id an Roghchl\303\241ir",
+   "Taispe\303\241in Fo-Lip\303\251id Roghchl\303\241ir don Roghn\303\272 Reatha amh\303\241in",
    "Seinmliosta\303\255 Aon-Clice\303\241il",
    "Fuaimeanna Roghchl\303\241ir",
    "Cumasaigh Fuaim 'BGM'",
@@ -5961,7 +5971,7 @@ static const struct
    "Facht\303\263ir Sc\303\241la Mionsamhail",
    "Gearr Ainmneacha Seinmliosta\303\255 (Atos\303\272 ag teast\303\241il)",
    "\303\232s\303\241id M\303\263d PAL60",
-   "Eolaire na dTuismitheoir\303\255",
+   "<Eolaire Tuismitheora>",
    "Cuir an t-\303\241bhar ar sos nuair a bh\303\255onn an roghchl\303\241r gn\303\255omhach",
    "Cuir \303\201bhar ar Sos Nuair nach bhfuil s\303\251 Gn\303\255omhach",
    "Cuir \303\201bhar ar Sos nuair a Dh\303\255cheangla\303\255tear an Rialaitheoir",
@@ -7005,6 +7015,10 @@ static const struct
    "etroArch sa chomhadlann seo.",
    "Oscail pain\303\251al rialaithe tiom\303\241na\303\255 ASIO chun socruithe r\303\263daithe agus "
    "maol\303\241in gl\303\251asanna a chumr\303\272.",
+   "L\303\255on na bhfr\303\241ma\303\255 a bhogann an tiom\303\241na\303\255 fuaime in aghaidh an b"
+   "hloic. Iarrann 0 luach an fheiste f\303\251in ar an tiom\303\241na\303\255, agus is \303\251 sin"
+   " at\303\241 uathu i bhformh\303\263r na socruithe; d\303\251anann bloc n\303\255os m\303\263 moi"
+   "ll a thr\303\241d\303\241il ar son athl\303\251imneachta i gcoinne titim amach.",
    "S\303\241raigh an gl\303\251as fuaime r\303\251amhshocraithe a \303\272s\303\241ideann an tiom"
    "\303\241na\303\255 fuaime. Braitheann s\303\251 seo ar an tiom\303\241na\303\255.",
    "Tiom\303\241na\303\255 fuaime le h\303\272s\303\241id. (Atos\303\272 ag teast\303\241il)",
@@ -7065,6 +7079,20 @@ static const struct
    "Athraigh socruithe ionchuir/aschuir fuaime.",
    "Sioncr\303\263naigh fuaim. Molta.",
    "Athraigh socruithe sioncr\303\263naithe fuaime.",
+   "Athshampl\303\241il, scag agus measc fuaim ar an sn\303\241ithe fuaime seachas taobh istigh de g"
+   "ach fr\303\241ma. An moill ch\303\251anna leis an gcos\303\241n fr\303\241ma-shioncr\303\263nach"
+   " ag aon socr\303\272 Moill Fuaime, le rial\303\272 r\303\241ta \303\241 thomhas ag luas an fheis"
+   "te f\303\251in agus an t-athshampl\303\241la\303\255 lasmuigh den bhuis\303\251ad fr\303\241ma. "
+   "Coinn\303\255onn tiom\303\241naithe fuaime nach f\303\251idir leo m\303\272scailt ar an bhfeiste"
+   " an cos\303\241n fr\303\241ma-shioncr\303\263nach.",
+   "Iarr ar an gc\303\263ras oibri\303\272ch\303\241in an sn\303\241ithe fuaime a sceideal\303\272 r"
+   "oimh an gcuid eile den tosaigh, ionas go mbeidh fr\303\241ma gn\303\263thach n\303\255os l\303"
+   "\272 seans ann go gcuirfidh s\303\251 isteach ar an ngl\303\251as fuaime. Ligeann s\303\251 don "
+   "Mhoill Fuaime dul n\303\255os \303\255sle ar ch\303\263rais a dheona\303\255onn \303\251; coinn"
+   "\303\255onn c\303\263ras a dhi\303\272lta\303\255onn an tosa\303\255ocht r\303\251amhshocraithe "
+   "agus n\303\255 athra\303\255onn aon rud eile. Baineann s\303\251 seo leis an sn\303\241ithe fuai"
+   "me a ritheann an P\303\255bl\303\255ne Sn\303\241ithithe agus na glaonna ais fuaime l\303\241rna"
+   "cha air.",
    "Toirt fuaime (i dB). Is gn\303\241th-thoirt \303\251 0 dB, agus n\303\255 chuirtear aon ghn\303"
    "\263thachan i bhfeidhm.",
    "Lig don tiom\303\241na\303\255 WASAPI smacht eisiach a ghlacadh ar an ngl\303\251as fuaime. M"
@@ -8033,6 +8061,8 @@ static const struct
    "Taispe\303\241in an rogha 'Atosaigh RetroArch' sa Phr\303\255omh-Roghchl\303\241r.",
    "Taispe\303\241in an rogha 'M\303\272chadh'.",
    "Taispe\303\241in faisn\303\251is bhreise le haghaidh m\303\255reanna roghchl\303\241ir.",
+   "N\303\241 taispe\303\241in ach folip\303\251ad don iontr\303\241il roghchl\303\241ir aibhsithe f"
+   "aoi l\303\241thair.",
    "Scipe\303\241il ar an roghchl\303\241r 'Rith' agus iontr\303\241lacha seinmliosta \303\241 seola"
    "dh. Br\303\272igh an D-Pad agus t\303\272 ag coinne\303\241il s\303\255os OK chun rochtain a fh"
    "\303\241il ar an roghchl\303\241r 'Rith'.",
@@ -8737,9 +8767,10 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    "Roghnaigh an f\303\255ordheimhni\303\272 a \303\272s\303\241idtear i do thimpeallacht.",
    "Brabhs\303\241il comhaid ar an gcomhroinnt SMB cumraithe.",
-   "Cumasaigh rochtain chomhroinnte l\303\255onra SMB. Moltar go l\303\241idir Ethernet thar Wi-Fi l"
-   "e haghaidh nasc n\303\255os iontaofa. Tabhair faoi deara: n\303\255 m\303\263r RetroArch a atos"
-   "\303\272 chun na socruithe seo a athr\303\272.",
+   "Cumasaigh rochtain scaireanna l\303\255onra SMB. Moltar go l\303\241idir Ethernet thar Wi-Fi le "
+   "haghaidh nasc n\303\255os iontaofa. Tabhair faoi deara: tagann athruithe i bhfeidhm an ch\303"
+   "\251ad uair eile a bhrabhs\303\241iltear sciar, agus coinn\303\255onn \303\241bhar at\303\241 ag"
+   " rith cheana f\303\251in a nasc reatha.",
    "Roghnaigh an l\303\255on uasta naisc a \303\272s\303\241idtear i do thimpeallacht.",
    "Pasfhocal le haghaidh f\303\255ordheimhnithe. T\303\241 s\303\251 seo roghnach nuair a bh\303"
    "\255onn rochtain aoi cumasaithe ar an bhfreastala\303\255. Windows 10 agus n\303\255os airde: t"
@@ -8747,7 +8778,9 @@ static const struct
    "\241 pasfhocal ag teast\303\241il anseo.",
    "Seoladh IP n\303\263 ainm \303\263stach an fhreastala\303\255.",
    "Cumraigh socruithe comhroinnte l\303\255onra SMB.",
-   "Ainm an chomhroinnte l\303\255onra le rochtain a fh\303\241il air.",
+   "Ainm an sciar l\303\255onra le rochtain a fh\303\241il air. F\303\241g folamh chun liosta a dh"
+   "\303\251anamh de gach sciar a onnmhair\303\255onn an freastala\303\255 agus roghnaigh ceann amh"
+   "\303\241in agus t\303\272 ag brabhs\303\241il.",
    "Cos\303\241n fo-eolaire ar an gcomhroinnt. Roghnach.",
    "Roghnaigh an t-am scoir r\303\251amhshocraithe i soicind\303\255.",
    "Ainm \303\272s\303\241ideora le haghaidh f\303\255ordheimhnithe. T\303\241 s\303\251 seo roghnac"
@@ -9866,7 +9899,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (204124u
+      (sizeof(msg_hash_ga_blob) == (205469u
 #ifdef ANDROID
        + 390u
 #endif
@@ -10189,12 +10222,12 @@ typedef char msg_hash_ga_blob_check[
        + 35u
        + 63u
        + 52u
-       + 196u
+       + 271u
        + 65u
        + 252u
        + 45u
        + 44u
-       + 55u
+       + 182u
        + 47u
        + 54u
        + 266u
@@ -10564,6 +10597,8 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_THREADED_PIPELINE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
@@ -11439,6 +11474,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
@@ -12706,6 +12742,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
@@ -12733,6 +12770,8 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
@@ -13269,6 +13308,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,

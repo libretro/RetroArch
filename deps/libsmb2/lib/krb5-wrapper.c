@@ -25,21 +25,10 @@
 #define _GNU_SOURCE
 #endif
 
-#ifdef HAVE_STDINT_H
 #include <stdint.h>
-#endif
-
-#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#endif
-
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif
-
-#ifdef STDC_HEADERS
 #include <stddef.h>
-#endif
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -49,7 +38,9 @@
 #include <sys/stat.h>
 #endif
 
-#ifdef HAVE_UNISTD_H
+#ifdef _WIN32
+#include <direct.h>
+#else
 #include <unistd.h>
 #endif
 
@@ -890,7 +881,7 @@ krb5_init_server_credentials(struct smb2_server *server, const char *keytab_path
                 return 0;
         }
 
-        do { // try
+        do { /* try */
                 auth_data = calloc(1, sizeof(struct private_auth_data));
                 if (auth_data == NULL) {
                         snprintf(server->error, sizeof(server->error), "Can't alloc auth_data");
@@ -1070,3 +1061,8 @@ krb5_can_do_ntlmssp(void)
 }
 
 #endif /* HAVE_LIBKRB5 */
+
+/* ISO C forbids an empty translation unit, and everything above is
+ * compiled out when Kerberos support is not enabled.
+ */
+typedef int smb2_krb5_wrapper_c89_dummy;

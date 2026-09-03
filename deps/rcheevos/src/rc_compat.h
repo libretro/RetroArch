@@ -102,9 +102,29 @@ RC_BEGIN_C_DECLS
   typedef struct rc_mutex_t {
     mutex_t handle;
   } rc_mutex_t;
+ #elif defined(WIIU)
+  /* RetroArch-local: rthreads drives Cafe OS threads natively here, so
+   * rcheevos cannot use the pthread backend -- devkitPPC ships
+   * <pthread.h> but leaves pthread_mutex_t undefined without
+   * _POSIX_THREADS. OSMutex is the recursive primitive (OSFastMutex is
+   * not), which is what rcheevos' recursive usage needs. */
+  #if defined(__has_include) && __has_include(<wiiu/os/mutex.h>)
+   #include <wiiu/os/mutex.h>
+  #else
+   #include <coreinit/mutex.h>
+  #endif
+  typedef OSMutex rc_mutex_t;
  #elif defined(_3DS)
   #include <3ds/synchronization.h>
   typedef RecursiveLock rc_mutex_t;
+ #elif defined(VITA)
+  #include <psp2/kernel/threadmgr.h>
+  typedef struct rc_mutex_t {
+    int handle;
+  } rc_mutex_t;
+ #elif defined(__SWITCH__)
+  #include <switch.h>
+  typedef RMutex rc_mutex_t;
  #else
   #include <pthread.h>
   typedef pthread_mutex_t rc_mutex_t;

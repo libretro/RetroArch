@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <string/rstrtod.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -27,6 +28,7 @@
 #include <compat/msvc.h>
 #include <compat/strl.h>
 #include <file/file_path.h>
+#include <file/file_watch.h>
 #include <lrc_hash.h>
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
@@ -90,7 +92,7 @@ struct wildcard_token
 };
 
 /* TODO/FIXME - global state - perhaps move outside this file */
-static path_change_data_t *file_change_data = NULL;
+static file_watch_t *file_change_data       = NULL;
 
 /**
  * fill_pathname_expanded_and_absolute:
@@ -234,7 +236,7 @@ static void video_shader_replace_wildcards_impl(
                _len = strlcpy(replace_text, settings->arrays.video_driver, sizeof(replace_text));
                break;
             case RARCH_WILDCARD_CORE_REQUESTED_ROTATION:
-               _len  = strlcpy(replace_text, "CORE-REQ-ROT-", sizeof(replace_text));
+               _len  = strlcpy_lit(replace_text, "CORE-REQ-ROT-", sizeof(replace_text));
                _len += snprintf(
                      replace_text         + _len,
                      sizeof(replace_text) - _len,
@@ -242,15 +244,15 @@ static void video_shader_replace_wildcards_impl(
                      core_requested_rotation * 90);
                break;
             case RARCH_WILDCARD_VIDEO_ALLOW_CORE_ROTATION:
-               _len = strlcpy(replace_text, "VID-ALLOW-CORE-ROT-O",
+               _len = strlcpy_lit(replace_text, "VID-ALLOW-CORE-ROT-O",
                         sizeof(replace_text));
                if (settings->bools.video_allow_rotate)
-                  _len += strlcpy(replace_text + _len, "N", sizeof(replace_text) - _len);
+                  _len += strlcpy_lit(replace_text + _len, "N", sizeof(replace_text) - _len);
                else
-                  _len += strlcpy(replace_text + _len, "FF", sizeof(replace_text) - _len);
+                  _len += strlcpy_lit(replace_text + _len, "FF", sizeof(replace_text) - _len);
                break;
             case RARCH_WILDCARD_VIDEO_USER_ROTATION:
-               _len  = strlcpy(replace_text, "VID-USER-ROT-", sizeof(replace_text));
+               _len  = strlcpy_lit(replace_text, "VID-USER-ROT-", sizeof(replace_text));
                _len += snprintf(
                      replace_text         + _len,
                      sizeof(replace_text) - _len,
@@ -258,7 +260,7 @@ static void video_shader_replace_wildcards_impl(
                      settings->uints.video_rotation * 90);
                break;
             case RARCH_WILDCARD_VIDEO_FINAL_ROTATION:
-               _len  = strlcpy(replace_text, "VID-FINAL-ROT-", sizeof(replace_text));
+               _len  = strlcpy_lit(replace_text, "VID-FINAL-ROT-", sizeof(replace_text));
                _len += snprintf(
                      replace_text         + _len,
                      sizeof(replace_text) - _len,
@@ -266,7 +268,7 @@ static void video_shader_replace_wildcards_impl(
                      retroarch_get_rotation() * 90);
                break;
             case RARCH_WILDCARD_SCREEN_ORIENTATION:
-               _len  = strlcpy(replace_text, "SCREEN-ORIENT-", sizeof(replace_text));
+               _len  = strlcpy_lit(replace_text, "SCREEN-ORIENT-", sizeof(replace_text));
                _len += snprintf(
                      replace_text         + _len,
                      sizeof(replace_text) - _len,
@@ -323,20 +325,20 @@ static void video_shader_replace_wildcards_impl(
             case RARCH_WILDCARD_VIDEO_DRIVER_SHADER_EXT:
                /* Uses pre-fetched ctx_flags (#2) */
                if (BIT32_GET(ctx_flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
-                  _len = strlcpy(replace_text, "cg", sizeof(replace_text));
+                  _len = strlcpy_lit(replace_text, "cg", sizeof(replace_text));
                else if (BIT32_GET(ctx_flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
-                  _len = strlcpy(replace_text, "glsl", sizeof(replace_text));
+                  _len = strlcpy_lit(replace_text, "glsl", sizeof(replace_text));
                else if (BIT32_GET(ctx_flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG))
-                  _len = strlcpy(replace_text, "slang", sizeof(replace_text));
+                  _len = strlcpy_lit(replace_text, "slang", sizeof(replace_text));
                break;
             case RARCH_WILDCARD_VIDEO_DRIVER_PRESET_EXT:
                /* Uses pre-fetched ctx_flags (#2) */
                if (BIT32_GET(ctx_flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
-                  _len = strlcpy(replace_text, "cgp", sizeof(replace_text));
+                  _len = strlcpy_lit(replace_text, "cgp", sizeof(replace_text));
                else if (BIT32_GET(ctx_flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
-                  _len = strlcpy(replace_text, "glslp", sizeof(replace_text));
+                  _len = strlcpy_lit(replace_text, "glslp", sizeof(replace_text));
                else if (BIT32_GET(ctx_flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG))
-                  _len = strlcpy(replace_text, "slangp", sizeof(replace_text));
+                  _len = strlcpy_lit(replace_text, "slangp", sizeof(replace_text));
                break;
             default:
                break;
@@ -670,7 +672,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
    snprintf(formatted_num, sizeof(formatted_num), "%u", i);
 
    /* Source */
-   _len  = strlcpy(shader_var, "shader", sizeof(shader_var));
+   _len  = strlcpy_lit(shader_var, "shader", sizeof(shader_var));
    strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
 
    if (config_get_path(conf, shader_var, tmp_path, sizeof(tmp_path)) == 0)
@@ -687,7 +689,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
          PATH_MAX_LENGTH, conf->path);
 
    /* Smooth */
-   _len  = strlcpy(shader_var, "filter_linear", sizeof(shader_var));
+   _len  = strlcpy_lit(shader_var, "filter_linear", sizeof(shader_var));
    strlcpy(shader_var + _len, formatted_num,   sizeof(shader_var) - _len);
 
    if (config_get_bool(conf, shader_var, &tmp_bool))
@@ -696,21 +698,21 @@ static bool video_shader_parse_pass(config_file_t *conf,
       pass->filter = RARCH_FILTER_UNSPEC;
 
    /* Wrapping mode */
-   _len  = strlcpy(shader_var, "wrap_mode", sizeof(shader_var));
+   _len  = strlcpy_lit(shader_var, "wrap_mode", sizeof(shader_var));
    strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
    if ((entry = config_get_entry(conf, shader_var))
          && (entry->value && *entry->value))
       pass->wrap = video_shader_wrap_str_to_mode(entry->value);
 
    /* Frame count mod */
-   _len  = strlcpy(shader_var, "frame_count_mod", sizeof(shader_var));
+   _len  = strlcpy_lit(shader_var, "frame_count_mod", sizeof(shader_var));
    strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
    if ((entry = config_get_entry(conf, shader_var))
          && (entry->value && *entry->value))
       pass->frame_count_mod = (unsigned)strtoul(entry->value, NULL, 0);
 
    /* FBO types and mipmapping */
-   _len  = strlcpy(shader_var, "srgb_framebuffer", sizeof(shader_var));
+   _len  = strlcpy_lit(shader_var, "srgb_framebuffer", sizeof(shader_var));
    strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
    if (config_get_bool(conf, shader_var, &tmp_bool))
    {
@@ -720,7 +722,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
          pass->fbo.flags &= ~FBO_SCALE_FLAG_SRGB_FBO;
    }
 
-   _len  = strlcpy(shader_var, "float_framebuffer", sizeof(shader_var));
+   _len  = strlcpy_lit(shader_var, "float_framebuffer", sizeof(shader_var));
    strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
    if (config_get_bool(conf, shader_var, &tmp_bool))
    {
@@ -730,7 +732,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
          pass->fbo.flags &= ~FBO_SCALE_FLAG_FP_FBO;
    }
 
-   _len  = strlcpy(shader_var, "rgb10_framebuffer", sizeof(shader_var));
+   _len  = strlcpy_lit(shader_var, "rgb10_framebuffer", sizeof(shader_var));
    strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
    if (config_get_bool(conf, shader_var, &tmp_bool))
    {
@@ -749,27 +751,27 @@ static bool video_shader_parse_pass(config_file_t *conf,
          pass->fbo.flags &= ~FBO_SCALE_FLAG_RGB10_FBO;
    }
 
-   _len  = strlcpy(shader_var, "mipmap_input", sizeof(shader_var));
+   _len  = strlcpy_lit(shader_var, "mipmap_input", sizeof(shader_var));
    strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
    if (config_get_bool(conf, shader_var, &tmp_bool))
       pass->mipmap = tmp_bool;
 
-   _len  = strlcpy(shader_var, "alias", sizeof(shader_var));
+   _len  = strlcpy_lit(shader_var, "alias", sizeof(shader_var));
    strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
    if (!config_get_array(conf, shader_var, pass->alias, sizeof(pass->alias)))
       *pass->alias = '\0';
 
    /* Scale */
    scale = &pass->fbo;
-   _len  = strlcpy(shader_var, "scale_type", sizeof(shader_var));
+   _len  = strlcpy_lit(shader_var, "scale_type", sizeof(shader_var));
    strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
    config_get_array(conf, shader_var, scale_type, sizeof(scale_type));
 
-   _len  = strlcpy(shader_var, "scale_type_x", sizeof(shader_var));
+   _len  = strlcpy_lit(shader_var, "scale_type_x", sizeof(shader_var));
    strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
    config_get_array(conf, shader_var, scale_type_x, sizeof(scale_type_x));
 
-   _len  = strlcpy(shader_var, "scale_type_y", sizeof(shader_var));
+   _len  = strlcpy_lit(shader_var, "scale_type_y", sizeof(shader_var));
    strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
    config_get_array(conf, shader_var, scale_type_y, sizeof(scale_type_y));
 
@@ -817,7 +819,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
       }
    }
 
-   _len = strlcpy(shader_var, "scale", sizeof(shader_var));
+   _len = strlcpy_lit(shader_var, "scale", sizeof(shader_var));
    strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
 
    if (scale->type_x == RARCH_SCALE_ABSOLUTE)
@@ -830,7 +832,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
          scale->abs_x    = (unsigned)roundf(fattr);
       else
       {
-         _len = strlcpy(shader_var, "scale_x", sizeof(shader_var));
+         _len = strlcpy_lit(shader_var, "scale_x", sizeof(shader_var));
          strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
          if (config_get_int(conf, shader_var, &iattr))
             scale->abs_x = iattr;
@@ -845,14 +847,14 @@ static bool video_shader_parse_pass(config_file_t *conf,
          scale->scale_x    = fattr;
       else
       {
-         _len = strlcpy(shader_var, "scale_x", sizeof(shader_var));
+         _len = strlcpy_lit(shader_var, "scale_x", sizeof(shader_var));
          strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
          if (config_get_float(conf, shader_var, &fattr))
             scale->scale_x = fattr;
       }
    }
 
-   _len = strlcpy(shader_var, "scale", sizeof(shader_var));
+   _len = strlcpy_lit(shader_var, "scale", sizeof(shader_var));
    strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
 
    if (scale->type_y == RARCH_SCALE_ABSOLUTE)
@@ -865,7 +867,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
          scale->abs_y    = (unsigned)roundf(fattr);
       else
       {
-         _len = strlcpy(shader_var, "scale_y", sizeof(shader_var));
+         _len = strlcpy_lit(shader_var, "scale_y", sizeof(shader_var));
          strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
          if (config_get_int(conf, shader_var, &iattr))
             scale->abs_y = iattr;
@@ -880,7 +882,7 @@ static bool video_shader_parse_pass(config_file_t *conf,
          scale->scale_y    = fattr;
       else
       {
-         _len = strlcpy(shader_var, "scale_y", sizeof(shader_var));
+         _len = strlcpy_lit(shader_var, "scale_y", sizeof(shader_var));
          strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
          if (config_get_float(conf, shader_var, &fattr))
             scale->scale_y = fattr;
@@ -965,7 +967,7 @@ static bool video_shader_parse_textures(config_file_t *conf,
 
       strlcpy(idx, id_buf, sizeof(idx));
 
-      strlcpy(idx + id_len, "_linear", sizeof(idx) - id_len);
+      strlcpy_lit(idx + id_len, "_linear", sizeof(idx) - id_len);
       if (config_get_bool(conf, idx, &smooth))
          shader->lut[shader->luts].filter = smooth
             ? RARCH_FILTER_LINEAR
@@ -973,13 +975,13 @@ static bool video_shader_parse_textures(config_file_t *conf,
       else
          shader->lut[shader->luts].filter = RARCH_FILTER_UNSPEC;
 
-      strlcpy(idx + id_len, "_mipmap", sizeof(idx) - id_len);
+      strlcpy_lit(idx + id_len, "_mipmap", sizeof(idx) - id_len);
       if (config_get_bool(conf, idx, &mipmap))
          shader->lut[shader->luts].mipmap = mipmap;
       else
          shader->lut[shader->luts].mipmap = false;
 
-      strlcpy(idx + id_len, "_wrap_mode", sizeof(idx) - id_len);
+      strlcpy_lit(idx + id_len, "_wrap_mode", sizeof(idx) - id_len);
       entry = NULL;
       if (  (entry = config_get_entry(conf, idx))
           && (entry->value && *entry->value))
@@ -1160,28 +1162,28 @@ void video_shader_resolve_parameters(struct video_shader *shader)
                p = end + 1; /* skip closing quote */
 
                /* Parse initial value */
-               param->initial = (float)strtod(p, &endptr);
+               param->initial = (float)rstrtod(p, &endptr);
                if (endptr == p)
                   continue;
                p = endptr;
                n_parsed = 1;
 
                /* Parse minimum */
-               param->minimum = (float)strtod(p, &endptr);
+               param->minimum = (float)rstrtod(p, &endptr);
                if (endptr == p)
                   continue;
                p = endptr;
                n_parsed = 2;
 
                /* Parse maximum */
-               param->maximum = (float)strtod(p, &endptr);
+               param->maximum = (float)rstrtod(p, &endptr);
                if (endptr == p)
                   continue;
                p = endptr;
                n_parsed = 3;
 
                /* Parse optional step */
-               param->step = (float)strtod(p, &endptr);
+               param->step = (float)rstrtod(p, &endptr);
                if (endptr != p)
                   n_parsed = 4;
 
@@ -1283,11 +1285,11 @@ static void video_shader_write_scale_dim(config_file_t *conf,
    size_t _len = strlcpy(dim_str, dim, sizeof(dim_str));
    strlcpy(dim_str + _len, formatted_num, sizeof(dim_str) - _len);
 
-   _len        = strlcpy(key, "scale_type_", sizeof(key));
+   _len        = strlcpy_lit(key, "scale_type_", sizeof(key));
    strlcpy(key + _len, dim_str, sizeof(key) - _len);
    config_set_string(conf, key, video_shader_scale_type_to_str(type));
 
-   _len        = strlcpy(key, "scale_", sizeof(key));
+   _len        = strlcpy_lit(key, "scale_", sizeof(key));
    strlcpy(key + _len, dim_str,  sizeof(key) - _len);
    if (type == RARCH_SCALE_ABSOLUTE)
       config_set_int(conf, key, absolute);
@@ -1300,17 +1302,17 @@ static void video_shader_write_fbo(config_file_t *conf,
       const struct gfx_fbo_scale *fbo)
 {
    char key[64];
-   size_t _len = strlcpy(key, "float_framebuffer", sizeof(key));
+   size_t _len = strlcpy_lit(key, "float_framebuffer", sizeof(key));
    strlcpy(key + _len, formatted_num, sizeof(key) - _len);
    config_set_string(conf, key, (fbo->flags & FBO_SCALE_FLAG_FP_FBO) ? "true" : "false");
-   _len = strlcpy(key, "srgb_framebuffer", sizeof(key));
+   _len = strlcpy_lit(key, "srgb_framebuffer", sizeof(key));
    strlcpy(key + _len, formatted_num, sizeof(key) - _len);
    config_set_string(conf, key, (fbo->flags & FBO_SCALE_FLAG_SRGB_FBO) ? "true" : "false");
    /* Only emitted when set, so presets that do not use it stay
     * byte-identical to what older builds wrote. */
    if (fbo->flags & FBO_SCALE_FLAG_RGB10_FBO)
    {
-      _len = strlcpy(key, "rgb10_framebuffer", sizeof(key));
+      _len = strlcpy_lit(key, "rgb10_framebuffer", sizeof(key));
       strlcpy(key + _len, formatted_num, sizeof(key) - _len);
       config_set_string(conf, key, "true");
    }
@@ -1377,7 +1379,7 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
 
       snprintf(formatted_num, sizeof(formatted_num), "%u", (unsigned)i);
 
-      _len = strlcpy(key, "shader", sizeof(key));
+      _len = strlcpy_lit(key, "shader", sizeof(key));
       strlcpy(key + _len, formatted_num, sizeof(key) - _len);
 
       strlcpy(tmp, pass->source.path, PATH_MAX_LENGTH);
@@ -1387,21 +1389,21 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
 
       config_set_path(conf, key, tmp_rel);
 
-      _len = strlcpy(key, "alias", sizeof(key));
+      _len = strlcpy_lit(key, "alias", sizeof(key));
       strlcpy(key + _len, formatted_num, sizeof(key) - _len);
       config_set_string(conf, key, pass->alias);
 
-      _len = strlcpy(key, "wrap_mode",   sizeof(key));
+      _len = strlcpy_lit(key, "wrap_mode",   sizeof(key));
       strlcpy(key + _len, formatted_num, sizeof(key) - _len);
       config_set_string(conf, key, video_shader_wrap_mode_to_str(pass->wrap));
 
-      _len = strlcpy(key, "mipmap_input", sizeof(key));
+      _len = strlcpy_lit(key, "mipmap_input", sizeof(key));
       strlcpy(key + _len, formatted_num, sizeof(key) - _len);
       config_set_string(conf, key, pass->mipmap ? "true" : "false");
 
       if (pass->filter != RARCH_FILTER_UNSPEC)
       {
-         _len = strlcpy(key, "filter_linear", sizeof(key));
+         _len = strlcpy_lit(key, "filter_linear", sizeof(key));
          strlcpy(key + _len, formatted_num, sizeof(key) - _len);
          config_set_string(conf, key,
                (pass->filter == RARCH_FILTER_LINEAR)
@@ -1411,7 +1413,7 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
 
       if (pass->frame_count_mod)
       {
-         _len = strlcpy(key, "frame_count_mod", sizeof(key));
+         _len = strlcpy_lit(key, "frame_count_mod", sizeof(key));
          strlcpy(key + _len, formatted_num, sizeof(key) - _len);
          config_set_int(conf, key, pass->frame_count_mod);
       }
@@ -1431,10 +1433,19 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
       /* Names of the textures */
       size_t _len = strlcpy(textures, shader->lut[0].id, sizeof(textures));
 
+      /* strlcpy() reports the length of its source, so the running
+       * offset is only usable while every name has fit. */
+      if (_len >= sizeof(textures))
+         _len = sizeof(textures) - 1;
+
       for (i = 1; i < shader->luts; i++)
       {
-         /* O(n^2), but number of textures is very limited. */
-         _len += strlcpy(textures + _len, ";",               sizeof(textures) - _len);
+         size_t nlen = strlen(shader->lut[i].id);
+
+         if (_len + 1 + nlen >= sizeof(textures))
+            break;
+
+         _len += strlcpy_lit(textures + _len, ";",               sizeof(textures) - _len);
          _len += strlcpy(textures + _len, shader->lut[i].id, sizeof(textures) - _len);
       }
 
@@ -1453,7 +1464,7 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
          _len = strlcpy(k, shader->lut[i].id, sizeof(k));
 
          /* Mipmap On or Off */
-         strlcpy(k + _len, "_mipmap", sizeof(k) - _len);
+         strlcpy_lit(k + _len, "_mipmap", sizeof(k) - _len);
          config_set_string(conf, k, shader->lut[i].mipmap
                ? "true"
                : "false");
@@ -1461,7 +1472,7 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
          /* Linear filter ON or OFF */
          if (shader->lut[i].filter != RARCH_FILTER_UNSPEC)
          {
-            strlcpy(k + _len, "_linear", sizeof(k) - _len);
+            strlcpy_lit(k + _len, "_linear", sizeof(k) - _len);
             config_set_string(conf, k,
                   (shader->lut[i].filter == RARCH_FILTER_LINEAR)
                   ? "true"
@@ -1469,7 +1480,7 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
          }
 
          /* Wrap Mode */
-         strlcpy(k + _len, "_wrap_mode", sizeof(k) - _len);
+         strlcpy_lit(k + _len, "_wrap_mode", sizeof(k) - _len);
          config_set_string(conf, k,
                video_shader_wrap_mode_to_str(shader->lut[i].wrap));
       }
@@ -2033,6 +2044,58 @@ end:
 }
 
 /**
+ * video_shader_watch_preset_files:
+ * @param shader
+ * Parsed shader whose root preset and pass sources should be watched.
+ * @param original_path
+ * The preset path the user loaded, when it differs from the root
+ * (i.e. it went through a #reference chain); NULL otherwise.
+ * @param chain
+ * Every preset in the reference chains, as gathered by
+ * video_shader_gather_reference_path_list; NULL when there are none.
+ *
+ * (Re)creates the file watcher over everything whose edit should
+ * trigger a live reload: the root preset, every pass source, the
+ * originally loaded preset and each intermediate reference.
+ **/
+static void video_shader_watch_preset_files(struct video_shader *shader,
+      const char *original_path, struct path_linked_list *chain)
+{
+   union string_list_elem_attr attr;
+   int event_mask                   =
+        FILE_WATCH_EVENT_MODIFIED
+      | FILE_WATCH_EVENT_WRITE_FILE_CLOSED
+      | FILE_WATCH_EVENT_FILE_MOVED
+      | FILE_WATCH_EVENT_FILE_DELETED;
+   struct string_list file_list     = {0};
+   size_t i;
+
+   attr.i = 0;
+
+   file_watch_free(file_change_data);
+   file_change_data = NULL;
+
+   string_list_initialize(&file_list);
+   string_list_append(&file_list, shader->path, attr);
+
+   if (original_path && !string_is_equal(original_path, shader->path))
+      string_list_append(&file_list, original_path, attr);
+
+   while (chain)
+   {
+      if (!string_is_empty(chain->path))
+         string_list_append(&file_list, chain->path, attr);
+      chain = chain->next;
+   }
+
+   for (i = 0; i < shader->passes; i++)
+      string_list_append(&file_list, shader->pass[i].source.path, attr);
+
+   file_change_data = file_watch_new(&file_list, event_mask);
+   string_list_deinitialize(&file_list);
+}
+
+/**
  * video_shader_load_root_config_into_shader:
  * @param conf
  * Preset file to read from.
@@ -2046,7 +2109,6 @@ end:
  **/
 static bool video_shader_load_root_config_into_shader(
       config_file_t *conf,
-      bool video_shader_watch_files,
       struct video_shader *shader)
 {
    size_t i;
@@ -2077,50 +2139,10 @@ static bool video_shader_load_root_config_into_shader(
    strlcpy(shader->loaded_preset_path, conf->path,
          sizeof(shader->loaded_preset_path));
 
-   if (video_shader_watch_files)
+   for (i = 0; i < shader->passes; i++)
    {
-      union string_list_elem_attr attr;
-      int flags                        =
-           PATH_CHANGE_TYPE_MODIFIED
-         | PATH_CHANGE_TYPE_WRITE_FILE_CLOSED
-         | PATH_CHANGE_TYPE_FILE_MOVED
-         | PATH_CHANGE_TYPE_FILE_DELETED;
-      struct string_list file_list     = {0};
-
-      attr.i         = 0;
-
-      if (file_change_data)
-         frontend_driver_watch_path_for_changes(NULL, 0, &file_change_data);
-
-      file_change_data = NULL;
-      string_list_initialize(&file_list);
-      string_list_append(&file_list, conf->path, attr);
-
-      /* TODO We aren't currently watching the originally loaded preset
-       * We should probably watch it for changes too */
-
-      for (i = 0; i < shader->passes; i++)
-      {
-         if (!video_shader_parse_pass(conf, &shader->pass[i], (unsigned)i))
-         {
-            string_list_deinitialize(&file_list);
-            return false;
-         }
-
-         string_list_append(&file_list, shader->pass[i].source.path, attr);
-      }
-
-      frontend_driver_watch_path_for_changes(&file_list, flags,
-            &file_change_data);
-      string_list_deinitialize(&file_list);
-   }
-   else
-   {
-      for (i = 0; i < shader->passes; i++)
-      {
-         if (!video_shader_parse_pass(conf, &shader->pass[i], (unsigned)i))
-            return false;
-      }
+      if (!video_shader_parse_pass(conf, &shader->pass[i], (unsigned)i))
+         return false;
    }
 
    if (!video_shader_parse_textures(conf, shader))
@@ -2414,8 +2436,9 @@ bool video_shader_load_preset_into_shader(const char *path,
    if (string_is_equal(root_conf->path, path))
    {
       /* Load the config from the shader chain from the first reference into the shader */
-      video_shader_load_root_config_into_shader(root_conf,
-            config_get_ptr()->bools.video_shader_watch_files, shader);
+      video_shader_load_root_config_into_shader(root_conf, shader);
+      if (config_get_ptr()->bools.video_shader_watch_files)
+         video_shader_watch_preset_files(shader, NULL, NULL);
       goto end;
    }
 
@@ -2474,8 +2497,7 @@ bool video_shader_load_preset_into_shader(const char *path,
    }
 
    /* Load the config from the shader chain from the first reference into the shader */
-   video_shader_load_root_config_into_shader(root_conf,
-         config_get_ptr()->bools.video_shader_watch_files, shader);
+   video_shader_load_root_config_into_shader(root_conf, shader);
 
    /* Set Path for originally loaded preset because it is different than the root preset path */
    strlcpy(shader->loaded_preset_path, path, sizeof(shader->loaded_preset_path));
@@ -2487,6 +2509,11 @@ bool video_shader_load_preset_into_shader(const char *path,
    /* Gather all the paths of all of the presets in all reference chains */
    override_paths_list = path_linked_list_new();
    video_shader_gather_reference_path_list(override_paths_list, conf->path, 0);
+
+   /* Watch the whole chain: the originally loaded preset and every
+    * intermediate reference, so editing any of them live-reloads. */
+   if (config_get_ptr()->bools.video_shader_watch_files)
+      video_shader_watch_preset_files(shader, path, override_paths_list);
 
    /* Step through the references and apply overrides for each one
     * Start on the second item since the first is empty */
@@ -2616,7 +2643,7 @@ bool video_shader_check_for_changes(void)
    if (!file_change_data)
       return false;
 
-   return frontend_driver_check_for_path_changes(file_change_data);
+   return file_watch_poll(file_change_data);
 }
 
 void video_shader_dir_free_shader(
@@ -3143,7 +3170,7 @@ bool video_shader_combine_preset_and_apply(
       return false;
    }
 
-   _len = strlcpy(combined_preset_name, "retroarch", sizeof(combined_preset_name));
+   _len = strlcpy_lit(combined_preset_name, "retroarch", sizeof(combined_preset_name));
    strlcpy(combined_preset_name + _len, preset_ext, sizeof(combined_preset_name) - _len);
    fill_pathname_join(combined_preset_path, temp_dir, combined_preset_name, PATH_MAX_LENGTH);
 
@@ -3246,7 +3273,7 @@ bool video_shader_apply_shader(
 
          if (message)
          {
-            size_t _len = strlcpy(msg, "Loading shader...", sizeof(msg));
+            size_t _len = strlcpy_lit(msg, "Loading shader...", sizeof(msg));
 #ifdef HAVE_GFX_WIDGETS
             if (dispwidget_get_ptr()->active)
                gfx_widget_set_generic_message(msg, 2000);

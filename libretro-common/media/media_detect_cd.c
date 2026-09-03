@@ -25,6 +25,7 @@
 #include <string/stdstring.h>
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
+#include <compat/strl.h>
 
 /*#define MEDIA_CUE_PARSE_DEBUG*/
 
@@ -355,7 +356,7 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
           * but I have not seen any real examples of them. */
          info->system_id = MEDIA_CD_SYSTEM_MEGA_CD;
 
-         strlcpy(info->system, "Sega CD / Mega CD", sizeof(info->system));
+         strlcpy_lit(info->system, "Sega CD / Mega CD", sizeof(info->system));
 
          title_pos = buf + offset + 0x150;
 
@@ -365,7 +366,7 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
             media_zero_trailing_spaces(info->title, sizeof(info->title));
          }
          else
-            strlcpy(info->title, "N/A", sizeof(info->title));
+            strlcpy_lit(info->title, "N/A", sizeof(info->title));
 
          serial_pos = buf + offset + 0x183;
 
@@ -392,7 +393,7 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
 
          info->system_id = MEDIA_CD_SYSTEM_SATURN;
 
-         strlcpy(info->system, "Sega Saturn", sizeof(info->system));
+         strlcpy_lit(info->system, "Sega Saturn", sizeof(info->system));
 
          title_pos = buf + offset + 0x60;
 
@@ -402,7 +403,7 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
             media_zero_trailing_spaces(info->title, sizeof(info->title));
          }
          else
-            strlcpy(info->title, "N/A", sizeof(info->title));
+            strlcpy_lit(info->title, "N/A", sizeof(info->title));
 
          serial_pos = buf + offset + 0x20;
 
@@ -458,7 +459,7 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
 
          info->system_id = MEDIA_CD_SYSTEM_DREAMCAST;
 
-         strlcpy(info->system, "Sega Dreamcast", sizeof(info->system));
+         strlcpy_lit(info->system, "Sega Dreamcast", sizeof(info->system));
 
          title_pos = buf + offset + 0x80;
 
@@ -468,7 +469,7 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
             media_zero_trailing_spaces(info->title, sizeof(info->title));
          }
          else
-            strlcpy(info->title, "N/A", sizeof(info->title));
+            strlcpy_lit(info->title, "N/A", sizeof(info->title));
 
          serial_pos = buf + offset + 0x40;
 
@@ -522,7 +523,7 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
 
          info->system_id = MEDIA_CD_SYSTEM_PSX;
 
-         strlcpy(info->system, "Sony PlayStation", sizeof(info->system));
+         strlcpy_lit(info->system, "Sony PlayStation", sizeof(info->system));
 
          title_pos = buf + offset + (16 * sector_size) + 40;
 
@@ -532,17 +533,17 @@ bool media_detect_cd_info(const char *path, uint64_t pregap_bytes, media_detect_
             media_zero_trailing_spaces(info->title, sizeof(info->title));
          }
          else
-            strlcpy(info->title, "N/A", sizeof(info->title));
+            strlcpy_lit(info->title, "N/A", sizeof(info->title));
       }
       else if (!memcmp(buf + offset, "\x01\x5a\x5a\x5a\x5a\x5a\x01\x00\x00\x00\x00\x00", 12))
       {
          info->system_id = MEDIA_CD_SYSTEM_3DO;
-         strlcpy(info->system, "3DO", sizeof(info->system));
+         strlcpy_lit(info->system, "3DO", sizeof(info->system));
       }
       else if (!memcmp(buf + offset + 0x950, "PC Engine CD-ROM SYSTEM", 23))
       {
          info->system_id = MEDIA_CD_SYSTEM_PC_ENGINE_CD;
-         strlcpy(info->system, "TurboGrafx-CD / PC-Engine CD", sizeof(info->system));
+         strlcpy_lit(info->system, "TurboGrafx-CD / PC-Engine CD", sizeof(info->system));
       }
 
       free(buf);

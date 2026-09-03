@@ -26,6 +26,12 @@
 #define AUDIO_BLOCKS 8
 #define AUDIO_CHANNELS 2
 
+/* Bound on any wait for the audio thread to consume, in microseconds
+ * (sysLwCondWait's unit; 0 there means no timeout at all), and how many
+ * of them before the caller gets the pass back. */
+#define PS3_AUDIO_WAIT_US   100000
+#define PS3_AUDIO_WAIT_LAPS 8
+
 typedef struct
 {
    fifo_buffer_t *buffer;
@@ -152,8 +158,22 @@ static ssize_t ps3_audio_write(void *data, const void *s, size_t len)
          return 0;
    }
 
-   while (FIFO_WRITE_AVAIL(aud->buffer) < len)
-      sysLwCondWait(&aud->cond, 0);
+   {
+      /* The audio thread signals each time it consumes a block. One
+       * that has stopped - the port closed, the thread quitting -
+       * signals nothing; the wait is timed and capped, and the write
+       * then returns having written nothing rather than holding the
+       * caller. */
+      int laps = PS3_AUDIO_WAIT_LAPS;
+      while (FIFO_WRITE_AVAIL(aud->buffer) < len)
+      {
+         if (!aud->started || aud->quit_thread)
+            return 0;
+         sysLwCondWait(&aud->cond, PS3_AUDIO_WAIT_US);
+         if (--laps < 0)
+            return 0;
+      }
+   }
 
    sysLwMutexLock(&aud->lock, PS3_SYS_NO_TIMEOUT);
    fifo_write(aud->buffer, s, len);
@@ -223,8 +243,48 @@ static bool ps3_audio_use_float(void *data) { return true; }
 
 static size_t ps3_audio_write_avail(void *data)
 {
-   /* TODO/FIXME - implement? */
-   return 0;
+   size_t avail;
+   ps3_audio_t *aud = data;
+   sysLwMutexLock(&aud->lock, PS3_SYS_NO_TIMEOUT);
+   avail = FIFO_WRITE_AVAIL(aud->buffer);
+   sysLwMutexUnlock(&aud->lock);
+   return avail;
+}
+
+static size_t ps3_audio_buffer_size(void *data)
+{
+   ps3_audio_t *aud = data;
+   /* The fifo's capacity, one less than its slot count. */
+   return aud->buffer->size - 1;
+}
+
+/* Sleep on the condition the output thread signals after every block
+ * it takes from the fifo, until at least len bytes fit, len capped at
+ * half the fifo so the wait always ends. Returns the free space then,
+ * or 0 once the port has been stopped. */
+static size_t ps3_audio_wait_writable(void *data, size_t len)
+{
+   ps3_audio_t *aud = data;
+   size_t avail;
+   int laps         = PS3_AUDIO_WAIT_LAPS;
+
+   if (len > (aud->buffer->size - 1) / 2)
+      len = (aud->buffer->size - 1) / 2;
+
+   for (;;)
+   {
+      if (!aud->started || aud->quit_thread)
+         return 0;
+      avail = ps3_audio_write_avail(aud);
+      if (avail >= len)
+         return avail;
+      /* Timed and capped, as in the write: no room after this many
+       * waits is a thread that has stopped consuming, and the pass is
+       * handed back as no space coming from this call. */
+      sysLwCondWait(&aud->cond, PS3_AUDIO_WAIT_US);
+      if (--laps < 0)
+         return 0;
+   }
 }
 
 audio_driver_t audio_ps3 = {
@@ -240,6 +300,7 @@ audio_driver_t audio_ps3 = {
    NULL,
    NULL,
    ps3_audio_write_avail,
-   NULL, /* buffer_size */
-   NULL  /* write_raw */
+   ps3_audio_buffer_size,
+   NULL, /* write_raw */
+   ps3_audio_wait_writable
 };

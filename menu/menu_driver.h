@@ -406,6 +406,7 @@ typedef struct menu_ctx_driver
    void (*refresh_thumbnail_image)(void *data, size_t i);
    void (*set_thumbnail_content)(void *data, const char *s);
    int  (*osk_ptr_at_pos)(void *data, int x, int y, unsigned width, unsigned height);
+   bool (*osk_pointer_over_textbox)(void *data, int x, int y, unsigned width, unsigned height);
    void (*update_savestate_thumbnail_path)(void *data, unsigned i);
    void (*update_savestate_thumbnail_image)(void *data);
    int (*pointer_down)(void *data, unsigned x, unsigned y, unsigned ptr,
@@ -476,6 +477,9 @@ typedef struct
    char db_playlist_file[PATH_MAX_LENGTH];
    char filebrowser_label[NAME_MAX_LENGTH];
    char detect_content_path[PATH_MAX_LENGTH];
+
+   /* The Content Downloader directory the user last stepped into. */
+   char core_content_dir[NAME_MAX_LENGTH];
 } menu_handle_t;
 
 struct menu_state

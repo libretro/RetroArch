@@ -29,6 +29,9 @@
 #include <encodings/utf.h>
 #include <streams/file_stream.h>
 #include <time/rtime.h>
+#include <memory/mempool.h>
+
+#include "menu_str.h"
 
 #ifdef WIIU
 #include <wiiu/os/energy.h>
@@ -45,6 +48,7 @@
 #include "../audio/audio_driver.h"
 
 #include "menu_driver.h"
+#include "menu_dirwalk.h"
 #include "menu_cbs.h"
 #include "../driver.h"
 #include "../list_special.h"
@@ -85,6 +89,7 @@
 
 #ifdef HAVE_COCOATOUCH
 #include "../ui/drivers/cocoa/apple_platform.h"
+#include <compat/strl.h>
 #endif
 
 typedef struct menu_input_ctx_bind
@@ -335,6 +340,7 @@ static menu_ctx_driver_t menu_ctx_null = {
   NULL,  /* refresh_thumbnail_image */
   NULL,  /* set_thumbnail_content */
   NULL,  /* osk_ptr_at_pos */
+  NULL,  /* osk_pointer_over_textbox */
   NULL,  /* update_savestate_thumbnail_path */
   NULL,  /* update_savestate_thumbnail_image */
   NULL,  /* pointer_down */
@@ -361,6 +367,41 @@ const menu_ctx_driver_t *menu_ctx_drivers[] = {
 };
 
 static struct menu_state menu_driver_state = { 0 };
+
+/* menu_file_list_cbs_t is fixed-size and allocated once per appended
+ * entry, so a playlist of any size used to cost one malloc() and one
+ * free() per row on top of the two strdup()s file_list_append() already
+ * does.  A pool turns that into a free-list pop, and turns a rebuild of
+ * a list of the same size into no calls into libc at all.
+ *
+ * One pool serves every menu list.  It is lazily grown, so a build
+ * without HAVE_MENU reaching this file costs nothing, and it is torn
+ * down in RARCH_MENU_CTL_DEINIT after menu_list_free() has released
+ * every entry back to it. */
+static mempool_t menu_cbs_pool;
+static bool      menu_cbs_pool_ready = false;
+
+static menu_file_list_cbs_t *menu_cbs_alloc(void)
+{
+   if (!menu_cbs_pool_ready)
+   {
+      /* 256 blocks is ~34 KiB for the first chunk, which covers an
+       * ordinary settings page outright; chunks double from there, so
+       * a 100k-row playlist still reaches libc a couple of dozen
+       * times rather than 100k. */
+      mempool_init(&menu_cbs_pool, sizeof(menu_file_list_cbs_t), 256);
+      menu_cbs_pool_ready = true;
+   }
+   return (menu_file_list_cbs_t*)mempool_alloc(&menu_cbs_pool);
+}
+
+static void menu_cbs_pool_deinit(void)
+{
+   if (!menu_cbs_pool_ready)
+      return;
+   mempool_deinit(&menu_cbs_pool);
+   menu_cbs_pool_ready = false;
+}
 
 struct menu_state *menu_state_get_ptr(void)
 {
@@ -585,7 +626,7 @@ void menu_entries_cbs_free(void *actiondata)
       free(cbs->search);
    cbs->search = NULL;
 
-   free(cbs);
+   mempool_free(&menu_cbs_pool, cbs);
 }
 
 /* Searches current menu list for specified 'needle'
@@ -1486,9 +1527,15 @@ static menu_list_t *menu_list_new(const menu_ctx_driver_t *menu_driver_ctx)
        * unallocated slots past 'i' are already NULL. */
       if (!list->menu_stack[i])
          goto error;
-      list->menu_stack[i]->list     = NULL;
-      list->menu_stack[i]->capacity = 0;
-      list->menu_stack[i]->size     = 0;
+      /* Every field, named.  file_list_t gains one now and again --
+       * userdata_free was the last -- and anything left out here holds
+       * whatever malloc() returned, which for a destructor hook is an
+       * uninitialised function pointer called on the first teardown
+       * that reaches it.  Add new fields to both loops. */
+      list->menu_stack[i]->list           = NULL;
+      list->menu_stack[i]->capacity       = 0;
+      list->menu_stack[i]->size           = 0;
+      list->menu_stack[i]->userdata_free  = NULL;
       list->menu_stack[i]->actiondata_free = menu_entries_cbs_free;
    }
 
@@ -1499,9 +1546,15 @@ static menu_list_t *menu_list_new(const menu_ctx_driver_t *menu_driver_ctx)
       /* Same pattern as the menu_stack loop above. */
       if (!list->selection_buf[i])
          goto error;
-      list->selection_buf[i]->list     = NULL;
-      list->selection_buf[i]->capacity = 0;
-      list->selection_buf[i]->size     = 0;
+      /* Every field, named.  file_list_t gains one now and again --
+       * userdata_free was the last -- and anything left out here holds
+       * whatever malloc() returned, which for a destructor hook is an
+       * uninitialised function pointer called on the first teardown
+       * that reaches it.  Add new fields to both loops. */
+      list->selection_buf[i]->list           = NULL;
+      list->selection_buf[i]->capacity       = 0;
+      list->selection_buf[i]->size           = 0;
+      list->selection_buf[i]->userdata_free  = NULL;
       list->selection_buf[i]->actiondata_free = menu_entries_cbs_free;
    }
 
@@ -2471,6 +2524,11 @@ static bool menu_driver_displaylist_push_internal(
    return false;
 }
 
+static bool menu_playlist_within_budget(void *ud)
+{
+   return task_nbio_slice_within_budget(ud, 0, 0);
+}
+
 static bool menu_driver_displaylist_push(
       struct menu_state *menu_st,
       settings_t *settings,
@@ -2483,7 +2541,9 @@ static bool menu_driver_displaylist_push(
    unsigned type                  = 0;
    bool ret                       = false;
    enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
-   file_list_t *list              = MENU_LIST_GET(menu_st->entries.list, 0);
+   menu_list_t *menu_list         = menu_st->entries.list;
+   file_list_t *list              = menu_list
+      ? MENU_LIST_GET(menu_list, 0) : NULL;
    menu_file_list_cbs_t *cbs      = NULL;
 
    menu_displaylist_info_init(&info);
@@ -2518,6 +2578,16 @@ static bool menu_driver_displaylist_push(
       ret = menu_displaylist_process(&info);
       goto end;
    }
+
+   /* push_internal is free to tear the menu down and build it again:
+    * a driver switch, a language change or a video reinit all reach
+    * RARCH_MENU_CTL_DEINIT, which menu_list_free()s every
+    * menu_stack[i] before menu_list_new() allocates replacements. The
+    * stack captured on entry is dangling in that case, so re-derive it
+    * before reading an entry back out. Matches the re-fetch in
+    * generic_menu_entry_action(). */
+   menu_list = menu_st->entries.list;
+   list      = menu_list ? MENU_LIST_GET(menu_list, 0) : NULL;
 
    cbs = (list && list->size)
       ? (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata
@@ -3057,7 +3127,7 @@ static bool menu_shader_manager_save_preset_internal(
    if (basename && *basename)
       _len = strlcpy(fullname, basename, sizeof(fullname));
    else
-      _len = strlcpy(fullname, "retroarch", sizeof(fullname));
+      _len = strlcpy_lit(fullname, "retroarch", sizeof(fullname));
    strlcpy(fullname + _len,
          video_shader_get_preset_extension(type),
          sizeof(fullname) - _len);
@@ -3215,7 +3285,7 @@ static bool menu_shader_manager_operate_auto_preset(
    switch (type)
    {
       case SHADER_PRESET_GLOBAL:
-         strlcpy(file, "global", sizeof(file));
+         strlcpy_lit(file, "global", sizeof(file));
          break;
       case SHADER_PRESET_CORE:
          fill_pathname_join_special(file, core_name, core_name, sizeof(file));
@@ -4011,7 +4081,24 @@ void menu_entries_search_append_terms_string(char *s, size_t len)
 
       for (i = 0; i < search->size; i++)
       {
-         _len += strlcpy(s + _len, " > ", len - _len);
+         /* strlcpy() reports the length it was handed rather than the
+          * length it wrote, so an append that truncates would carry
+          * _len past len and leave the next len - _len wrapping to a
+          * very large size_t. Eight terms of MENU_SEARCH_FILTER_MAX_LENGTH
+          * do not fit a title, so this is reached by typing. */
+         size_t tlen = strlen(search->terms[i]);
+
+         if (_len + 3 >= len)
+            break;
+
+         _len += strlcpy_lit(s + _len, " > ", len - _len);
+
+         if (_len + tlen >= len)
+         {
+            strlcpy(s + _len, search->terms[i], len - _len);
+            break;
+         }
+
          _len += strlcpy(s + _len, search->terms[i], len - _len);
       }
    }
@@ -4255,8 +4342,16 @@ bool menu_entries_append(
 
    file_list_free_actiondata(list, idx);
 
-   if (!(cbs = (menu_file_list_cbs_t*)
-      malloc(sizeof(menu_file_list_cbs_t))))
+   /* The cbs comes from a pool, so it cannot be released with the bare
+    * free() that file_list_free_actiondata() falls back to.  Installing
+    * the destructor here rather than at each list's construction is
+    * what makes that impossible to get wrong: any list that receives a
+    * cbs learns how to release one in the same statement, including a
+    * stack-local file_list_t that menu_displaylist_build_list() is
+    * handed directly. */
+   list->actiondata_free           = menu_entries_cbs_free;
+
+   if (!(cbs = menu_cbs_alloc()))
       return false;
 
    cbs->enum_idx                   = enum_idx;
@@ -4339,8 +4434,10 @@ void menu_entries_prepend(file_list_t *list,
             list_info.entry_type);
 
    file_list_free_actiondata(list, idx);
-   cbs                             = (menu_file_list_cbs_t*)
-      malloc(sizeof(menu_file_list_cbs_t));
+
+   /* See the matching comment in menu_entries_append(). */
+   list->actiondata_free           = menu_entries_cbs_free;
+   cbs                             = menu_cbs_alloc();
 
    if (!cbs)
       return;
@@ -4590,13 +4687,13 @@ void menu_entries_get_core_title(char *s, size_t len)
 #if defined(_MSC_VER)
    _len += strlcpy(s + _len, msvc_vercode_to_str(_MSC_VER), len - _len);
 #endif
-   _len += strlcpy(s + _len, " - ",     len - _len);
+   _len += strlcpy_lit(s + _len, " - ",     len - _len);
    _len += strlcpy(s + _len, core_name, len - _len);
    if (core_version && *core_version)
    {
-      _len += strlcpy(s + _len, " (", len - _len);
+      _len += strlcpy_lit(s + _len, " (", len - _len);
       _len += strlcpy(s + _len, core_version, len - _len);
-      strlcpy(s + _len, ")", len - _len);
+      strlcpy_lit(s + _len, ")", len - _len);
    }
 }
 
@@ -6257,20 +6354,33 @@ MENU_NOINLINE static int menu_input_post_iterate(
             if (     !menu_input_native_kb_active()
                   && !(menu_input->pointer.flags & MENU_INP_PTR_FLG_DRAGGED))
             {
-               menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
-               if (point.retcode > -1)
+               if (     menu_st->driver_ctx
+                     && menu_st->driver_ctx->osk_pointer_over_textbox
+                     && menu_st->driver_ctx->osk_pointer_over_textbox(
+                        menu_st->userdata, x, y, video_st->width, video_st->height))
+                  input_st->osk_textbox_focus = true;
+               else
                {
-                  bool show_osk_symbols = input_event_osk_show_symbol_pages(menu_st->driver_data);
-                  input_st->osk_ptr     = point.retcode;
-                  input_event_osk_append(
-                        &input_st->keyboard_line,
-                        &input_st->osk_idx,
-                        &input_st->osk_last_codepoint,
-                        &input_st->osk_last_codepoint_len,
-                        point.retcode,
-                        show_osk_symbols,
-                        input_st->osk_grid[input_st->osk_ptr],
-                        strlen(input_st->osk_grid[input_st->osk_ptr]));
+                  menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
+                  if (point.retcode > -1)
+                  {
+                     bool textbox_focus    = input_st->osk_textbox_focus;
+                     input_st->osk_ptr     = point.retcode;
+                     input_st->osk_textbox_focus = false;
+                     if (!textbox_focus)
+                     {
+                        bool show_osk_symbols = input_event_osk_show_symbol_pages(menu_st->driver_data);
+                        input_event_osk_append(
+                              &input_st->keyboard_line,
+                              &input_st->osk_idx,
+                              &input_st->osk_last_codepoint,
+                              &input_st->osk_last_codepoint_len,
+                              point.retcode,
+                              show_osk_symbols,
+                              input_st->osk_grid[input_st->osk_ptr],
+                              strlen(input_st->osk_grid[input_st->osk_ptr]));
+                     }
+                  }
                }
             }
          }
@@ -6526,8 +6636,9 @@ void menu_driver_toggle(
     * struct is NULL
     */
    video_driver_t *current_video      = (video_driver_t*)curr_video_data;
+#ifdef HAVE_MICROPHONE
    bool menu_pause_libretro           = false;
-   bool audio_enable_menu             = false;
+#endif
    runloop_state_t *runloop_st        = runloop_state_get_ptr();
    struct menu_state *menu_st         = &menu_driver_state;
    bool runloop_shutdown_initiated    = (runloop_st->flags &
@@ -6543,14 +6654,13 @@ void menu_driver_toggle(
 
    if (settings)
    {
+#ifdef HAVE_MICROPHONE
 #ifdef HAVE_NETWORKING
       menu_pause_libretro             = settings->bools.menu_pause_libretro
             && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
 #else
       menu_pause_libretro             = settings->bools.menu_pause_libretro;
 #endif
-#ifdef HAVE_AUDIOMIXER
-      audio_enable_menu               = settings->bools.audio_enable_menu;
 #endif
 #ifdef HAVE_OVERLAY
       input_overlay_hide_in_menu      = settings->bools.input_overlay_hide_in_menu;
@@ -6608,9 +6718,13 @@ void menu_driver_toggle(
 
       menu_st->flags               |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
 
-      /* Menu should always run with swap interval 1 if vsync is on. */
+      /* Menu should always run with swap interval 1 if vsync is on.
+       * current_video can be NULL when the toggle runs while video is
+       * torn down or failed to initialize (shutdown paths - see the
+       * settings workaround above - and display loss on TV boxes). */
       if (     video_vsync
             && !video_scanline_sync
+            && current_video
             && current_video->set_nonblock_state)
          current_video->set_nonblock_state(
                video_driver_data,
@@ -6621,14 +6735,14 @@ void menu_driver_toggle(
       /* Stop all rumbling before entering the menu. */
       command_event(CMD_EVENT_RUMBLE_STOP, NULL);
 
-      if (menu_pause_libretro)
-      {
-         if (!audio_enable_menu)
-            command_event(CMD_EVENT_AUDIO_STOP, NULL);
+      /* Audio keeps running behind the menu: the runloop feeds the
+       * device silence while the core is paused, and menu sounds, the
+       * mixer and thumbnail video playback all mix into that stream.
+       * Only the microphone is stopped. */
 #ifdef HAVE_MICROPHONE
+      if (menu_pause_libretro)
          command_event(CMD_EVENT_MICROPHONE_STOP, NULL);
 #endif
-      }
 
       /* Override keyboard callback to redirect to menu instead.
        * We'll use this later for something ... */
@@ -6653,14 +6767,10 @@ void menu_driver_toggle(
       if (!runloop_shutdown_initiated)
          driver_set_nonblock_state();
 
-      if (menu_pause_libretro)
-      {
-         if (!audio_enable_menu)
-            command_event(CMD_EVENT_AUDIO_START, NULL);
 #ifdef HAVE_MICROPHONE
+      if (menu_pause_libretro)
          command_event(CMD_EVENT_MICROPHONE_START, NULL);
 #endif
-      }
 
       /* Restore libretro keyboard callback. */
       if (key_event && frontend_key_event)
@@ -6875,7 +6985,14 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
          if (menu_st->flags & MENU_ST_FLAG_DATA_OWN)
             return true;
 
+         /* Abandon a pending deferred playlist parse before the
+          * cache it would install goes away. */
+         playlist_init_cached_defer_abort();
          playlist_free_cached();
+
+         /* End any in-flight background directory walk and drop an
+          * unconsumed listing; late completions become no-ops. */
+         menu_dirwalk_cancel();
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
          menu_shader_manager_free();
 #endif
@@ -6884,15 +7001,20 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
 #endif
 #if defined(HAVE_MENU)
 #if defined(HAVE_LIBRETRODB)
-         /* Before freeing the explore menu, we
-          * must wait for any explore menu initialisation
-          * tasks to complete */
-         menu_explore_wait_for_init_task();
+         /* Abandon any in-flight explore menu initialisation and
+          * database info scan rather than blocking teardown until
+          * they finish - a full-file database scan is seconds of
+          * frozen UI on slow storage, and this path runs while the
+          * user is looking at the menu.  Both tasks build into
+          * their own handles and install only from their main-thread
+          * callbacks, so the state freed just below is not something
+          * a worker can still be writing to; the cancels bump a
+          * generation that makes any completion already in flight
+          * install nothing. */
+         menu_explore_cancel_init_task();
          menu_explore_free();
 
-         /* Likewise for any in-flight database info
-          * scan, then drop its result cache */
-         menu_dbinfo_wait_for_task();
+         menu_dbinfo_cancel_task();
          menu_dbinfo_cache_free();
 #endif
          menu_contentless_cores_free();
@@ -6934,13 +7056,32 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                memset(&sys_info->info, 0, sizeof(struct retro_system_info));
             }
 
-            gfx_animation_deinit();
-            gfx_display_free();
-
             menu_entries_settings_deinit(menu_st);
             if (menu_st->entries.list)
                menu_list_free(menu_st->driver_ctx, menu_st->entries.list);
             menu_st->entries.list           = NULL;
+
+            /* Every list is gone, so every cbs has come back to the
+             * pool; the chunks behind them go back to libc here. */
+            menu_cbs_pool_deinit();
+            /* Same point in teardown: every node has been released, so
+             * nothing is still sharing a fullpath. */
+            menu_str_cache_flush();
+
+            /* After the lists, not before them.  menu_list_free()
+             * dispatches each driver's list_free hook, and those reach
+             * gfx_animation_kill_by_tag() -- directly in
+             * xmb_list_clear(), and again through gfx_thumbnail_reset()
+             * when a node owns an icon.  Freeing the animation state
+             * first left those calls reading a list that had already
+             * gone; they did no damage only because RBUF_FREE() leaves
+             * the pointer NULL and RBUF_LEN() reads NULL as zero, so
+             * the scan found nothing to kill.  That is the tween
+             * surviving by accident rather than by having been
+             * cancelled.  The same ordering puts gfx_display_free()
+             * after the texture unloads those hooks perform. */
+            gfx_animation_deinit();
+            gfx_display_free();
 
             if (menu_st->thumbnail_path_data)
                free(menu_st->thumbnail_path_data);
@@ -7679,6 +7820,18 @@ static int generic_menu_iterate(
                   selection, (enum menu_action)action)))
                return -1;
 
+            /* menu_entry_action() can tear down and recreate the menu
+             * (a menu driver change, or any CMD_EVENT_REINIT dispatched
+             * from an entry's action handler): the handle and the
+             * entries list cached above are stale once it returns.
+             * Re-fetch both before writing through them - on 64-bit
+             * heaps the stale menu->state write lands in freed memory
+             * silently instead of faulting, so this corrupts quietly
+             * everywhere the fault does not reproduce. */
+            if (!(menu = menu_st->driver_data))
+               return 0;
+            menu_list = menu_st->entries.list;
+
             BIT64_SET(menu->state, MENU_STATE_POST_ITERATE);
 
             /* Have to defer it so we let settings refresh. */
@@ -8119,7 +8272,8 @@ int generic_menu_entry_action(
             break;
          case MENU_ACTION_START:
             /* if equal to '..' we break, else we fall-through */
-            if (memcmp(current_value, "...", 3) == 0)
+            if (string_starts_with_size(current_value, "...",
+                     STRLEN_CONST("...")))
                break;
             /* fall-through */
          case MENU_ACTION_ACCESSIBILITY_SPEAK_TITLE_LABEL:
@@ -8153,7 +8307,7 @@ int generic_menu_entry_action(
                menu_st,
                speak_string + _len,
                sizeof(speak_string) - _len);
-         if (memcmp(current_value, "...", 4) != 0)
+         if (!string_is_equal(current_value, "..."))
          {
             speak_string[  _len] = ' ';
             speak_string[++_len] = '\0';
@@ -8168,7 +8322,7 @@ int generic_menu_entry_action(
                menu_st,
                speak_string,
                sizeof(speak_string));
-         if (memcmp(current_value, "...", 4) != 0)
+         if (!string_is_equal(current_value, "..."))
          {
             speak_string[  _len] = ' ';
             speak_string[++_len] = '\0';
@@ -8189,6 +8343,57 @@ int generic_menu_entry_action(
 }
 
 /* Iterate the menu driver for one frame. */
+/* Advance work a displaylist left unfinished, and rebuild the list
+ * when it completes.
+ *
+ * ENTRIES_NEED_REFRESH is otherwise consumed only in
+ * generic_menu_entry_action(), i.e. when the user presses something.
+ * Anything that yields mid-build therefore sat unfinished until the
+ * next keypress: a playlist read that did not fit its first slice
+ * showed an empty list, and populated only after backing out and
+ * re-entering.  This is the pump that was missing - it runs every
+ * frame, with no input required.
+ *
+ * Only a genuinely pending parse does any work here, so a menu with
+ * nothing outstanding costs one predictable branch. */
+static void menu_driver_pump_pending(struct menu_state *menu_st,
+      settings_t *settings)
+{
+   nbio_budget_t b;
+   menu_list_t *menu_list;
+   file_list_t *selection_buf;
+   file_list_t *menu_stack;
+   int r;
+
+   if (!playlist_init_cached_pending())
+      return;
+
+   /* One slice of the shared per-frame I/O window, the same budget
+    * the directory walks and the scanner draw from. */
+   task_nbio_slice_open(&b);
+   r = playlist_init_cached_continue(menu_playlist_within_budget, &b);
+   task_nbio_slice_close(&b);
+
+   if (r == 0)
+      return;   /* still reading; come back next frame */
+
+   if (r > 0)
+      playlist_init_cached_finish();
+
+   /* Ready (or failed): rebuild the list now rather than waiting for
+    * the user to press something. */
+   if (!(menu_list = menu_st->entries.list))
+      return;
+   selection_buf = MENU_LIST_GET_SELECTION(menu_list, 0);
+   menu_stack    = MENU_LIST_GET(menu_list, 0);
+
+   if (selection_buf && menu_stack)
+      menu_driver_displaylist_push(menu_st, settings,
+            selection_buf, menu_stack);
+
+   menu_st->flags &= ~MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+}
+
 bool menu_driver_iterate(
       struct menu_state *menu_st,
       gfx_display_t *p_disp,
@@ -8197,6 +8402,8 @@ bool menu_driver_iterate(
       enum menu_action action,
       retro_time_t current_time)
 {
+   menu_driver_pump_pending(menu_st, settings);
+
    return ( menu_st->driver_data
          && generic_menu_iterate(
             menu_st,
@@ -8425,8 +8632,10 @@ bool menu_is_running_quick_menu(void)
    entry.flags |= MENU_ENTRY_FLAG_LABEL_ENABLED
                 | MENU_ENTRY_FLAG_RICH_LABEL_ENABLED;
    menu_entry_get(&entry, 0, 0, NULL, true);
-   return    memcmp(entry.label, "resume_content", sizeof("resume_content")) == 0
-          || memcmp(entry.label, "state_slot", sizeof("state_slot")) == 0;
+   /* memcmp() reads its full count whatever the label's length is, so
+    * a label shorter than the literal is read past its end. */
+   return    string_is_equal(entry.label, "resume_content")
+          || string_is_equal(entry.label, "state_slot");
 }
 
 #ifdef HAVE_RUNAHEAD

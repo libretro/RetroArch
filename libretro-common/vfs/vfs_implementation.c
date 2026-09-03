@@ -62,6 +62,9 @@
 #endif
 
 #include <fcntl.h>
+#if defined(__linux__)
+#include <linux/falloc.h>
+#endif
 
 /* TODO: Some things are duplicated but I'm really afraid of breaking other platforms by touching this */
 #if defined(VITA)
@@ -212,13 +215,19 @@
 #include "vfs_implementation_smb.h"
 #endif
 
-#if (defined(_POSIX_C_SOURCE) && (_POSIX_C_SOURCE - 0) >= 200112) || (defined(__POSIX_VISIBLE) && __POSIX_VISIBLE >= 200112) || (defined(_POSIX_VERSION) && _POSIX_VERSION >= 200112) || __USE_LARGEFILE || (defined(_FILE_OFFSET_BITS) && _FILE_OFFSET_BITS == 64)
+#if (defined(_POSIX_C_SOURCE) && (_POSIX_C_SOURCE - 0) >= 200112) || (defined(__POSIX_VISIBLE) && __POSIX_VISIBLE >= 200112) || (defined(_POSIX_VERSION) && _POSIX_VERSION >= 200112) || (defined(__USE_LARGEFILE) && __USE_LARGEFILE) || (defined(_FILE_OFFSET_BITS) && _FILE_OFFSET_BITS == 64)
 #ifndef HAVE_64BIT_OFFSETS
 #define HAVE_64BIT_OFFSETS
 #endif
 #endif
 
 #define RFILE_HINT_UNBUFFERED (1 << 8)
+
+/* Largest count handed to one fread/fwrite/read/write call.  bionic's
+ * stdio routes counts through an int-typed callback (aborting via
+ * FORTIFY above INT_MAX) and one Linux read()/write() syscall moves at
+ * most MAX_RW_COUNT; both fit comfortably under 1 GiB. */
+#define VFS_STDIO_IO_CHUNK_MAX (1024 * 1024 * 1024)
 
 /* 64-bit seek on the descriptor path.
  *
@@ -445,6 +454,12 @@ static int64_t retro_vfs_fd_seek64(int fd, int64_t offset, int whence)
    return (int64_t)_lseeki64(fd, (__int64)offset, whence);
 #elif defined(__ANDROID__)
    return (int64_t)lseek64(fd, (off64_t)offset, whence);
+#elif defined(VITA)
+   /* SCE_SEEK_SET/CUR/END are 0/1/2, the same values as SEEK_*. */
+   {
+      SceOff pos = sceIoLseek(fd, (SceOff)offset, whence);
+      return (pos < 0) ? -1 : (int64_t)pos;
+   }
 #else
    /* Compile-time: the cast is lossless exactly when off_t is wide
     * enough, and the guard costs nothing when it is (the comparison
@@ -664,6 +679,16 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
          && mode == RETRO_VFS_FILE_ACCESS_READ
          && stream->scheme == VFS_SCHEME_NONE)
       stream->hints |= RFILE_HINT_UNBUFFERED;
+#ifdef VFS_HAVE_DESCRIPTOR_WRITE
+   /* A write-once stream is the same shape: every byte it will ever
+    * write arrives in one call, so a stdio buffer only adds a copy
+    * and a flush. */
+   if (     (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK)
+         && (     mode == RETRO_VFS_FILE_ACCESS_WRITE
+               || mode == RETRO_VFS_FILE_ACCESS_READ_WRITE)
+         && stream->scheme == VFS_SCHEME_NONE)
+      stream->hints |= RFILE_HINT_UNBUFFERED;
+#endif
 #endif
 
    switch (mode)
@@ -917,6 +942,35 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
                if (path_wide)
                   free(path_wide);
 #endif
+#elif defined(VITA)
+               {
+                  int sce_flags = 0;
+                  SceUID uid;
+
+                  /* The POSIX flags above are for the open() targets. */
+                  (void)flags;
+
+                  switch (mode)
+                  {
+                     case RETRO_VFS_FILE_ACCESS_READ:
+                        sce_flags = SCE_O_RDONLY;
+                        break;
+                     case RETRO_VFS_FILE_ACCESS_WRITE:
+                        sce_flags = SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC;
+                        break;
+                     case RETRO_VFS_FILE_ACCESS_READ_WRITE:
+                        sce_flags = SCE_O_RDWR | SCE_O_CREAT | SCE_O_TRUNC;
+                        break;
+                     default:
+                        sce_flags = SCE_O_RDWR;
+                        break;
+                  }
+
+                  /* SceUID error codes are negative; the descriptor
+                   * path only ever tests for -1. */
+                  uid        = sceIoOpen(path, sce_flags, 0777);
+                  stream->fd = (uid < 0) ? -1 : (int)uid;
+               }
 #else
                stream->fd          = open(path, flags, S_IRUSR | S_IWUSR);
 #endif
@@ -1002,6 +1056,11 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
    }
    else
 #endif
+   /* A truncating open leaves a zero-length file positioned at 0,
+    * so the probe below - a seek to the end, a tell and a seek back,
+    * each a system call - would only ever confirm that. */
+   if (     mode != RETRO_VFS_FILE_ACCESS_WRITE
+         && mode != RETRO_VFS_FILE_ACCESS_READ_WRITE)
    {
       retro_vfs_file_seek_internal(stream, 0, SEEK_END);
 
@@ -1062,7 +1121,13 @@ int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
    }
 
    if (stream->fd >= 0)
+   {
+#if defined(VITA)
+      sceIoClose((SceUID)stream->fd);
+#else
       close(stream->fd);
+#endif
+   }
 #ifdef HAVE_CDROM
 end:
    /* Reached both by the goto above and by fall-through from the
@@ -1112,6 +1177,292 @@ int64_t retro_vfs_file_size_impl(libretro_vfs_implementation_file *stream)
    if (stream)
       return stream->size;
    return 0;
+}
+
+/* Deallocate a range without changing the file's length. See
+ * filestream_punch_hole for why this is a capability rather than a
+ * guarantee: most backends cannot do it, and callers fall back to writing
+ * zeroes. Returns 0 on success, -1 otherwise. */
+#if defined(_WIN32) && !defined(_XBOX)
+/* The pieces of winioctl.h that retro_vfs_file_punch_hole_impl needs,
+ * declared here rather than by including that header.
+ *
+ * winioctl.h defines the storage class GUIDs, and in a unity build --
+ * griffin.c, where this file is compiled alongside the D3D headers that
+ * set INITGUID -- those definitions collide with the ones already emitted
+ * in the same translation unit, which is twenty-odd C2374 "redefinition;
+ * multiple initialization" errors on MSVC. Nothing here needs a GUID.
+ *
+ * The two control codes are the documented CTL_CODE expansions:
+ *   FSCTL_SET_SPARSE    = CTL_CODE(FILE_DEVICE_FILE_SYSTEM, 49, METHOD_BUFFERED, FILE_SPECIAL_ACCESS)
+ *   FSCTL_SET_ZERO_DATA = CTL_CODE(FILE_DEVICE_FILE_SYSTEM, 50, METHOD_BUFFERED, FILE_WRITE_DATA)
+ * Each is guarded, so a translation unit that has already seen
+ * winioctl.h through some other path keeps that header's definitions. */
+#ifndef FSCTL_SET_SPARSE
+#define FSCTL_SET_SPARSE 0x000900c4
+#endif
+#ifndef FSCTL_SET_ZERO_DATA
+#define FSCTL_SET_ZERO_DATA 0x000980c8
+#endif
+#ifndef FILE_ZERO_DATA_INFORMATION_DEFINED
+#define FILE_ZERO_DATA_INFORMATION_DEFINED
+typedef struct _RETRO_FILE_ZERO_DATA_INFORMATION
+{
+   LARGE_INTEGER FileOffset;
+   LARGE_INTEGER BeyondFinalZero;
+} RETRO_FILE_ZERO_DATA_INFORMATION;
+#endif
+#endif
+
+#if defined(_WIN32) && !defined(_XBOX)
+/* FILE_NAME_NORMALIZED came in with the Vista SDK, the same generation as
+ * GetFinalPathNameByHandleW itself.  The function is resolved by name at
+ * run time below precisely so that older toolchains still build this
+ * file; the flag has to clear the same bar, so supply the documented
+ * value when the SDK does not. */
+#ifndef FILE_NAME_NORMALIZED
+#define FILE_NAME_NORMALIZED 0x0
+#endif
+#endif
+
+/* Allocation unit of the filesystem holding this file: the smallest span
+ * retro_vfs_file_punch_hole_impl can actually free. 0 when unknown.
+ *
+ * This exists so a caller never has to reach for the descriptor itself.
+ * On NTFS this is the compression unit rather than the cluster, because
+ * that is what the filesystem actually deallocates in.
+ *
+ * PCSX2's ATA backend derived both the cluster size and the filesystem
+ * name by calling
+ * GetFinalPathNameByHandle on a HANDLE it pulled out of a FILE*, which is
+ * the one thing that kept it off the VFS -- the question is about the
+ * filesystem, not the file, and the backend that owns the handle is the
+ * right place to answer it. */
+int64_t retro_vfs_file_get_sparse_granularity_impl(
+      libretro_vfs_implementation_file *stream)
+{
+   if (!stream)
+      return 0;
+
+/* Excludes __WINRT__ for the same reason features_cpu.c does: the probe
+ * below reaches kernel32 through GetModuleHandle, and that entry point is
+ * not in the Windows Store API partition -- dylib_proc() says as much and
+ * refuses to call it there.  A UWP build reports "unknown" and skips
+ * sparse handling, which is already the documented behaviour for any
+ * system that cannot resolve these names. */
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   {
+      /* GetFinalPathNameByHandleW and GetVolumeInformationByHandleW are
+       * Vista and later. Importing them statically costs more than the
+       * feature is worth: the loader resolves imports before main, so a
+       * binary that names them will not start at all on 9x or XP, and
+       * mingw does not even declare them below _WIN32_WINNT 0x0600, which
+       * is what the i686 MXE build targets. Resolved by name instead, so
+       * older systems simply report "unknown" and skip sparse handling. */
+      typedef DWORD (WINAPI *final_path_t)(HANDLE, LPWSTR, DWORD, DWORD);
+      typedef BOOL  (WINAPI *vol_info_t)(HANDLE, LPWSTR, DWORD, LPDWORD,
+            LPDWORD, LPDWORD, LPWSTR, DWORD);
+      typedef BOOL  (WINAPI *vol_path_t)(LPCWSTR, LPWSTR, DWORD);
+      typedef BOOL  (WINAPI *disk_free_t)(LPCWSTR, LPDWORD, LPDWORD,
+            LPDWORD, LPDWORD);
+
+      static final_path_t p_final_path = NULL;
+      static vol_info_t   p_vol_info   = NULL;
+      static vol_path_t   p_vol_path   = NULL;
+      static disk_free_t  p_disk_free  = NULL;
+      static int          resolved     = 0;
+
+      DWORD    sectors_per_cluster = 0;
+      DWORD    bytes_per_sector    = 0;
+      DWORD    tmp1                = 0;
+      DWORD    tmp2                = 0;
+      DWORD    len;
+      HANDLE   handle              = stream->fh;
+      wchar_t *final_path;
+      wchar_t  root[MAX_PATH + 1];
+      wchar_t  fs_name[MAX_PATH + 1];
+      int64_t  cluster;
+
+      if (!resolved)
+      {
+         HMODULE k32 = GetModuleHandleA("kernel32.dll");
+
+         resolved = 1;
+         if (k32)
+         {
+            p_final_path = (final_path_t)GetProcAddress(k32,
+                  "GetFinalPathNameByHandleW");
+            p_vol_info   = (vol_info_t)GetProcAddress(k32,
+                  "GetVolumeInformationByHandleW");
+            /* Wide GetVolumePathName is 2000 and later, and 9x does not
+             * export it at all -- a static import would stop the binary
+             * loading there, so every one of these is resolved by name. */
+            p_vol_path   = (vol_path_t)GetProcAddress(k32,
+                  "GetVolumePathNameW");
+            p_disk_free  = (disk_free_t)GetProcAddress(k32,
+                  "GetDiskFreeSpaceW");
+         }
+      }
+
+      if (!p_final_path || !p_vol_path || !p_disk_free)
+         return 0;
+
+      if (!handle || handle == INVALID_HANDLE_VALUE)
+      {
+         if (!stream->fp)
+            return 0;
+         handle = (HANDLE)_get_osfhandle(_fileno(stream->fp));
+         if (handle == INVALID_HANDLE_VALUE)
+            return 0;
+      }
+
+      /* The volume that matters is the one the file really lives on, so
+       * the path has to be resolved through any junctions first. */
+      len = p_final_path(handle, NULL, 0, FILE_NAME_NORMALIZED);
+      if (len == 0)
+         return 0;
+
+      final_path = (wchar_t*)calloc(len + 1, sizeof(wchar_t));
+      if (!final_path)
+         return 0;
+
+      if (p_final_path(handle, final_path, len, FILE_NAME_NORMALIZED) == 0)
+      {
+         free(final_path);
+         return 0;
+      }
+
+      /* GetVolumePathNameW gives the mount point, which is what
+       * GetDiskFreeSpaceW wants, and unlike splitting the string by hand
+       * it copes with a path mounted on a folder rather than a letter. */
+      if (!p_vol_path(final_path, root, MAX_PATH))
+      {
+         free(final_path);
+         return 0;
+      }
+      free(final_path);
+
+      if (!p_disk_free(root, &sectors_per_cluster, &bytes_per_sector,
+               &tmp1, &tmp2))
+         return 0;
+
+      cluster = (int64_t)sectors_per_cluster * (int64_t)bytes_per_sector;
+
+      /* On NTFS the cluster size is not the answer. A sparse file is
+       * deallocated in compression units, which are 16 clusters, capped
+       * at 64K -- so a 4K-cluster volume, the common case, frees in 64K
+       * chunks and punching a single 4K cluster frees nothing at all.
+       * Other filesystems deallocate by cluster, so the cluster size
+       * stands. Without the volume query, assume the conservative case. */
+      if (!p_vol_info)
+         return cluster;
+
+      if (p_vol_info(handle, NULL, 0, NULL, NULL, NULL, fs_name, MAX_PATH)
+            && !wcscmp(fs_name, L"NTFS"))
+      {
+         const int64_t unit = cluster * 16;
+         return (unit > 65536) ? 65536 : unit;
+      }
+
+      return cluster;
+   }
+#elif !defined(_WIN32) && !defined(VITA) && !defined(PSP) && !defined(PS2) && !defined(ORBIS) && !defined(GEKKO) && !defined(_3DS)
+   {
+      struct stat st;
+      int         fd = stream->fd;
+
+      if (fd < 0)
+      {
+         if (!stream->fp)
+            return 0;
+         fd = fileno(stream->fp);
+         if (fd < 0)
+            return 0;
+      }
+
+      if (fstat(fd, &st) != 0)
+         return 0;
+      if (st.st_blksize <= 0)
+         return 0;
+
+      return (int64_t)st.st_blksize;
+   }
+#else
+   return 0;
+#endif
+}
+
+int retro_vfs_file_punch_hole_impl(libretro_vfs_implementation_file *stream,
+      int64_t offset, int64_t len)
+{
+   if (!stream || offset < 0 || len <= 0)
+      return -1;
+
+#if defined(_WIN32) && !defined(_XBOX)
+   {
+      RETRO_FILE_ZERO_DATA_INFORMATION zero_info;
+      DWORD                      returned = 0;
+      HANDLE                     handle   = stream->fh;
+
+      if (!handle || handle == INVALID_HANDLE_VALUE)
+      {
+         if (!stream->fp)
+            return -1;
+         handle = (HANDLE)_get_osfhandle(_fileno(stream->fp));
+         if (handle == INVALID_HANDLE_VALUE)
+            return -1;
+      }
+
+      /* The file has to be marked sparse before a zero-data range does
+       * anything; on a non-sparse file the call succeeds and writes real
+       * zeroes, which is correct but saves nothing. Marking is idempotent. */
+      {
+         DWORD tmp = 0;
+         DeviceIoControl(handle, FSCTL_SET_SPARSE, NULL, 0, NULL, 0, &tmp, NULL);
+      }
+
+      zero_info.FileOffset.QuadPart      = offset;
+      zero_info.BeyondFinalZero.QuadPart = offset + len;
+
+      if (!DeviceIoControl(handle, FSCTL_SET_ZERO_DATA, &zero_info,
+               sizeof(zero_info), NULL, 0, &returned, NULL))
+         return -1;
+      return 0;
+   }
+/* fallocate() sits behind _GNU_SOURCE in glibc (it is gated on __USE_GNU),
+ * so whether it is *declared* depends on the consumer's feature-test
+ * macros rather than on anything this file controls.  <linux/falloc.h>
+ * supplies FALLOC_FL_PUNCH_HOLE either way, so testing the flag alone
+ * leaves a consumer that does not define _GNU_SOURCE calling an
+ * undeclared function -- a warning today, an error on stricter
+ * compilers, and wrong argument passing for the off_t pair on 32-bit.
+ * Require the declaration too, and fall through to the unsupported
+ * path when it is absent. */
+#elif defined(__linux__) && defined(FALLOC_FL_PUNCH_HOLE) \
+      && (defined(_GNU_SOURCE) || defined(__USE_GNU))
+   {
+      int fd = stream->fd;
+
+      if (fd < 0)
+      {
+         if (!stream->fp)
+            return -1;
+         fd = fileno(stream->fp);
+         if (fd < 0)
+            return -1;
+      }
+
+      if (fallocate(fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE,
+               (off_t)offset, (off_t)len) != 0)
+         return -1;
+      return 0;
+   }
+#else
+   /* No hole punching on this platform. */
+   (void)offset;
+   (void)len;
+   return -1;
+#endif
 }
 
 int64_t retro_vfs_file_truncate_impl(libretro_vfs_implementation_file *stream, int64_t len)
@@ -1188,6 +1539,15 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream,
    if (!stream || !s)
       return -1;
 
+   /* A length with the top bit set is a negative int64 that arrived
+    * through the unsigned parameter - no legitimate caller reads 8EiB.
+    * The stdio path below hands len to fread() unclamped, where bionic
+    * FORTIFY turns it into a process abort (observed in the field);
+    * fail the read instead, like the mapped path's clamp below already
+    * does for its overflow case. */
+   if (len > (uint64_t)INT64_MAX)
+      return -1;
+
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
 #ifdef HAVE_CDROM
@@ -1198,7 +1558,28 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream,
       if (stream->scheme == VFS_SCHEME_SMB)
          return retro_vfs_file_read_smb(stream, s, len);
 #endif
-      return fread(s, 1, (size_t)len, stream->fp);
+      /* bionic's stdio dispatches fread through the FILE's int-typed
+       * read callback: a single count above INT_MAX truncates to a
+       * negative int inside libc, __sread sign-extends it back into
+       * read(), and FORTIFY aborts the process ("read: count ... >
+       * SSIZE_MAX").  Chunk the transfer so no single libc call sees
+       * a count any stdio cannot take. */
+      {
+         uint8_t *p     = (uint8_t*)s;
+         uint64_t total = 0;
+         while (len != 0)
+         {
+            size_t _chunk = (len > VFS_STDIO_IO_CHUNK_MAX)
+                  ? (size_t)VFS_STDIO_IO_CHUNK_MAX : (size_t)len;
+            size_t _got   = fread(p, 1, _chunk, stream->fp);
+            total        += _got;
+            if (_got < _chunk)
+               break;
+            p            += _got;
+            len          -= _got;
+         }
+         return (int64_t)total;
+      }
    }
 #ifdef VFS_HAVE_FILE_MAPPING
    if (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)
@@ -1231,7 +1612,31 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream,
    }
 #endif
 
-   return read(stream->fd, s, (size_t)len);
+   /* One read() moves at most MAX_RW_COUNT (INT_MAX & PAGE_MASK) on
+    * Linux and returns short past it, so a large request needs the
+    * same chunk loop as the stdio path to honor the full count. */
+   {
+      uint8_t *p     = (uint8_t*)s;
+      uint64_t total = 0;
+      while (len != 0)
+      {
+         size_t  _chunk = (len > VFS_STDIO_IO_CHUNK_MAX)
+               ? (size_t)VFS_STDIO_IO_CHUNK_MAX : (size_t)len;
+#if defined(VITA)
+         ssize_t _got   = (ssize_t)sceIoRead((SceUID)stream->fd, p, (SceSize)_chunk);
+#else
+         ssize_t _got   = read(stream->fd, p, _chunk);
+#endif
+         if (_got < 0)
+            return (total != 0) ? (int64_t)total : -1;
+         total += (uint64_t)_got;
+         if ((size_t)_got < _chunk)
+            break;
+         p     += _got;
+         len   -= (uint64_t)_got;
+      }
+      return (int64_t)total;
+   }
 }
 
 int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file *stream, const void *s, uint64_t len)
@@ -1255,7 +1660,24 @@ int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file *stream, cons
       }
 #endif
       pos = retro_vfs_file_tell_impl(stream);
-      ret = fwrite(s, 1, (size_t)len, stream->fp);
+      /* Same int-typed stdio callback contract as the read side:
+       * chunk so no single fwrite count exceeds what bionic takes. */
+      {
+         const uint8_t *p = (const uint8_t*)s;
+         uint64_t total   = 0;
+         while (len != 0)
+         {
+            size_t _chunk = (len > VFS_STDIO_IO_CHUNK_MAX)
+                  ? (size_t)VFS_STDIO_IO_CHUNK_MAX : (size_t)len;
+            size_t _put   = fwrite(p, 1, _chunk, stream->fp);
+            total        += _put;
+            if (_put < _chunk)
+               break;
+            p            += _put;
+            len          -= _put;
+         }
+         ret = (ssize_t)total;
+      }
 
       if (ret > 0 && pos + ret > stream->size)
          stream->size = pos + ret;
@@ -1268,7 +1690,34 @@ int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file *stream, cons
 #endif
 
    pos = retro_vfs_file_tell_impl(stream);
-   ret = write(stream->fd, s, (size_t)len);
+   /* write() shares read()'s MAX_RW_COUNT clamp; loop for the full
+    * count. */
+   {
+      const uint8_t *p = (const uint8_t*)s;
+      uint64_t total   = 0;
+      while (len != 0)
+      {
+         size_t  _chunk = (len > VFS_STDIO_IO_CHUNK_MAX)
+               ? (size_t)VFS_STDIO_IO_CHUNK_MAX : (size_t)len;
+#if defined(VITA)
+         ssize_t _put   = (ssize_t)sceIoWrite((SceUID)stream->fd, p, (SceSize)_chunk);
+#else
+         ssize_t _put   = write(stream->fd, p, _chunk);
+#endif
+         if (_put < 0)
+         {
+            if (total == 0)
+               return -1;
+            break;
+         }
+         total += (uint64_t)_put;
+         if ((size_t)_put < _chunk)
+            break;
+         p     += _put;
+         len   -= (uint64_t)_put;
+      }
+      ret = (ssize_t)total;
+   }
 
    if (ret != -1 && pos + ret > stream->size)
       stream->size = pos + ret;
@@ -1494,6 +1943,60 @@ int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
 #endif
    return ret;
 
+#elif defined(VITA)
+   /* rename() here means "replace": the Win32 branch above says so
+    * with MOVEFILE_REPLACE_EXISTING and POSIX says so by definition,
+    * and the write-to-temporary-then-rename pattern - playlists, the
+    * config file, core info - is built on it.  The kernel's own
+    * sceIoRename() refuses an existing destination, and newlib's
+    * rename() bridges that gap by sceIoRemove()ing the destination
+    * first and renaming after.  Between those two calls nothing is
+    * on disk, and if the rename then fails the caller's temporary
+    * is discarded on top: the file that was being replaced is
+    * simply gone.
+    *
+    * So call the kernel directly and, when the destination is in the
+    * way, move it aside rather than delete it.  The old file is only
+    * removed once its replacement is in place, and is put back if
+    * the replacement cannot be. */
+   {
+      SceIoStat st;
+      size_t _len;
+      char *aside;
+      int ret;
+
+      if (!old_path || !*old_path || !new_path || !*new_path)
+         return -1;
+
+      if (sceIoRename(old_path, new_path) >= 0)
+         return 0;
+
+      /* Only worth trying when there is a destination to move aside. */
+      if (sceIoGetstat(new_path, &st) < 0)
+         return -1;
+
+      _len  = strlen(new_path);
+      if (!(aside = (char*)malloc(_len + sizeof(".old"))))
+         return -1;
+      memcpy(aside, new_path, _len);
+      memcpy(aside + _len, ".old", sizeof(".old"));
+
+      ret = -1;
+      sceIoRemove(aside);              /* a leftover from an earlier run */
+      if (sceIoRename(new_path, aside) >= 0)
+      {
+         if (sceIoRename(old_path, new_path) >= 0)
+         {
+            sceIoRemove(aside);
+            ret = 0;
+         }
+         else
+            sceIoRename(aside, new_path);
+      }
+
+      free(aside);
+      return ret;
+   }
 #else
    /* Every other platform */
    if (!old_path || !*old_path || !new_path || !*new_path)
@@ -2099,7 +2602,7 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(
 bool retro_vfs_readdir_impl(libretro_vfs_implementation_dir *rdir)
 {
 #ifdef HAVE_SMBCLIENT
-   if (rdir->smb_handle && rdir->smb_handle->dir)
+   if (rdir->smb_handle)
    {
       struct smbc_dirent *de = retro_vfs_readdir_smb(rdir->smb_handle);
       if (!de)
@@ -2198,7 +2701,7 @@ static const char *vfs_win32_name_utf16(
 const char *retro_vfs_dirent_get_name_impl(libretro_vfs_implementation_dir *rdir)
 {
 #ifdef HAVE_SMBCLIENT
-   if (rdir->smb_handle && rdir->smb_handle->dir)
+   if (rdir->smb_handle)
       return rdir->smb_path;
 #endif
 #if defined(ANDROID) && defined(HAVE_SAF)
@@ -2252,7 +2755,7 @@ static VFS_NOINLINE bool retro_vfs_dirent_is_dir_stat(
 bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir *rdir)
 {
 #ifdef HAVE_SMBCLIENT
-   if (rdir->smb_handle && rdir->smb_handle->dir)
+   if (rdir->smb_handle)
       return rdir->smb_is_dir;
 #endif
 #if defined(ANDROID) && defined(HAVE_SAF)
@@ -2293,7 +2796,7 @@ int retro_vfs_closedir_impl(libretro_vfs_implementation_dir *rdir)
       return -1;
 
 #ifdef HAVE_SMBCLIENT
-   if (rdir->smb_handle && rdir->smb_handle->dir)
+   if (rdir->smb_handle)
    {
       retro_vfs_closedir_smb(rdir->smb_handle);
       rdir->smb_handle = NULL;

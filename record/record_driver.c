@@ -235,7 +235,7 @@ bool recording_init(void)
          else
          {
             /* Fallback, stream locally to 127.0.0.1 */
-            size_t _len = strlcpy(output, "udp://127.0.0.1:", sizeof(output));
+            size_t _len = strlcpy_lit(output, "udp://127.0.0.1:", sizeof(output));
             snprintf(output + _len, sizeof(output) - _len, "%u",
                   video_stream_port);
          }
@@ -467,7 +467,7 @@ void recording_driver_update_streaming_url(void)
       case STREAMING_MODE_LOCAL:
          {
             /* TODO: figure out default interface and bind to that instead */
-            size_t _len = strlcpy(settings->paths.path_stream_url, "udp://127.0.0.1:",
+            size_t _len = strlcpy_lit(settings->paths.path_stream_url, "udp://127.0.0.1:",
                   sizeof(settings->paths.path_stream_url));
             snprintf(settings->paths.path_stream_url      + _len,
                   sizeof(settings->paths.path_stream_url) - _len,

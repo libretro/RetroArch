@@ -8,6 +8,7 @@ SALAMANDER_BUILD           = 0
 HAVE_STATIC_DUMMY ?= 0
 WHOLE_ARCHIVE_LINK         = 0
 WIIU_HID                   = 1
+HAVE_THREADS               = 1
 HAVE_HID                   = 1
 HAVE_RUNAHEAD              = 1
 WIIU_LOG_RPX               = 0
@@ -61,6 +62,7 @@ ifeq ($(SALAMANDER_BUILD),1)
    OBJ += libretro-common/compat/fopen_utf8.o
    OBJ += libretro-common/file/file_path.o
    OBJ += libretro-common/file/file_path_io.o
+   OBJ += libretro-common/string/rstrtod.o
    OBJ += libretro-common/string/stdstring.o
    OBJ += libretro-common/lists/string_list.o
    OBJ += libretro-common/lists/dir_list.o

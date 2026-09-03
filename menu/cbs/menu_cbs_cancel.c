@@ -121,9 +121,14 @@ static int action_cancel_cheat_details(const char *path,
 static int action_cancel_core_content(const char *path,
       const char *label, unsigned type, size_t idx)
 {
+   const char *menu_path               = NULL;
    const char *menu_label              = NULL;
+   menu_handle_t *menu                 = menu_state_get_ptr()->driver_data;
 
-   menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
+   menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL, NULL);
+
+   if (menu)
+      menu->core_content_dir[0] = '\0';
 
    if (string_is_equal(menu_label, MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST_STR))
    {
@@ -154,6 +159,13 @@ static int action_cancel_core_content(const char *path,
       menu_entries_flush_stack(MENU_ENUM_LABEL_ONLINE_UPDATER_STR, 0);
    else if (string_is_equal(menu_label, MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST_STR))
    {
+      /* Remember which directory is being left so that when the user
+       * goes back to the parent, it selects the core content directory
+       * the user was just in. */
+      if (menu && menu_path && *menu_path)
+         strlcpy(menu->core_content_dir, path_basename(menu_path),
+               sizeof(menu->core_content_dir));
+
       menu_entries_flush_stack(MENU_ENUM_LABEL_ONLINE_UPDATER_STR, 0);
 #ifdef HAVE_NETWORKING
       /* Allow going back from sub-categories within the Content Downloader. */

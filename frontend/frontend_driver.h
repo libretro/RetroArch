@@ -59,20 +59,6 @@ enum frontend_architecture
    FRONTEND_ARCH_TILE
 };
 
-/* different platforms may only support some of these types */
-enum path_change_type
-{
-   PATH_CHANGE_TYPE_MODIFIED = (1 << 0),
-   PATH_CHANGE_TYPE_WRITE_FILE_CLOSED = (1 << 1),
-   PATH_CHANGE_TYPE_FILE_MOVED = (1 << 2),
-   PATH_CHANGE_TYPE_FILE_DELETED = (1 << 3)
-};
-
-typedef struct path_change_data
-{
-   void *data;
-} path_change_data_t;
-
 typedef void (*environment_get_t)(int *argc, char *argv[], void *args,
    void *params_data);
 typedef void (*process_args_t)(int *argc, char *argv[]);
@@ -103,8 +89,6 @@ typedef struct frontend_ctx_driver
    void (*get_lakka_version)(char *, size_t);
    /* TODO/FIXME: Need to implement some sort of startup brightness setting. */
    void (*set_screen_brightness)(int);
-   void (*watch_path_for_changes)(struct string_list *list, int flags, path_change_data_t **change_data);
-   bool (*check_for_path_changes)(path_change_data_t *change_data);
    void (*set_sustained_performance_mode)(bool on);
    const char* (*get_cpu_model_name)(void);
    enum retro_language (*get_user_language)(void);
@@ -198,11 +182,8 @@ void frontend_driver_set_screen_brightness(int value);
 
 bool frontend_driver_can_set_screen_brightness(void);
 
-bool frontend_driver_can_watch_for_changes(void);
 
-void frontend_driver_watch_path_for_changes(struct string_list *list, int flags, path_change_data_t **change_data);
 
-bool frontend_driver_check_for_path_changes(path_change_data_t *change_data);
 
 void frontend_driver_set_sustained_performance_mode(bool on);
 

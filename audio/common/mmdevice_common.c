@@ -113,7 +113,7 @@ HRESULT STDMETHODCALLTYPE IMM_QueryInterface(IMMNotificationClient *This,
 #endif
    {
       *ppvObject = This;
-      InterlockedIncrement(&((MyNotificationClient*)This)->refCount);
+      retro_atomic_inc_int(&((MyNotificationClient*)This)->refCount);
       return S_OK;
    }
    *ppvObject = NULL;
@@ -122,15 +122,20 @@ HRESULT STDMETHODCALLTYPE IMM_QueryInterface(IMMNotificationClient *This,
 
 ULONG STDMETHODCALLTYPE IMM_AddRef(IMMNotificationClient *This)
 {
-   return InterlockedIncrement(&((MyNotificationClient*)This)->refCount);
+   return (ULONG)(retro_atomic_fetch_add_int(
+            &((MyNotificationClient*)This)->refCount, 1) + 1);
 }
 
 ULONG STDMETHODCALLTYPE IMM_Release(IMMNotificationClient *This)
 {
-   LONG ref = InterlockedDecrement(&((MyNotificationClient*)This)->refCount);
+   /* Release-decrement: the object's last use by another thread must
+    * be ordered before the free() here. Plain InterlockedDecrement is
+    * a full barrier on x86/x64 but not on ARM. */
+   LONG ref = (LONG)(retro_atomic_fetch_sub_int(
+            &((MyNotificationClient*)This)->refCount, 1) - 1);
    if (ref == 0)
       free(This);
-   return ref;
+   return (ULONG)ref;
 }
 
 /* IMMNotificationClient methods */
@@ -241,7 +246,7 @@ DWORD CALLBACK mmdevice_thread(PVOID data)
       goto cleanup;
 
    client->lpVtbl   = &notificationVtbl;
-   client->refCount = 1;
+   retro_atomic_int_init(&client->refCount, 1);
 
    _IMMDeviceEnumerator_RegisterEndpointNotificationCallback(enumerator,
          (IMMNotificationClient*)client);

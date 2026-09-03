@@ -249,6 +249,10 @@ typedef struct thread_video
       uint64_t count;
       slock_t *lock;
       uint8_t *buffer;
+      /* Bytes allocated for 'buffer' at thread_init, from the core's
+       * declared maximum geometry. A core that then hands over a larger
+       * frame than it declared would otherwise be copied past the end. */
+      size_t   buffer_size;
       unsigned width;
       unsigned height;
       unsigned pitch;

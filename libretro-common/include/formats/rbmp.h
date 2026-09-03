@@ -23,9 +23,13 @@
 #ifndef __LIBRETRO_SDK_FORMAT_RBMP_H__
 #define __LIBRETRO_SDK_FORMAT_RBMP_H__
 
+#include <stdint.h>
+#include <stddef.h>
+
 #include <retro_common_api.h>
 
 #include <boolean.h>
+#include <streams/interface_stream.h>
 
 RETRO_BEGIN_DECLS
 
@@ -40,6 +44,57 @@ enum rbmp_source_type
 
 typedef struct rbmp rbmp_t;
 
+/* Pure encode: returns a heap buffer holding the complete BMP file and
+ * stores its exact size in *out_len.  BMP output size is fixed
+ * (54 + ((width * bpp + 3) & ~3) * height) so the buffer is allocated
+ * exactly once and never trimmed.  Caller frees.  Returns NULL on
+ * allocation failure or invalid arguments.  No file I/O is performed;
+ * pair with e.g. filestream_write_file() to save to disk with a single
+ * bulk write. */
+uint8_t *rbmp_save_image_string(
+      const void *frame,
+      unsigned width,
+      unsigned height,
+      unsigned pitch,
+      enum rbmp_source_type type,
+      size_t *out_len);
+
+/* Row primitives, implemented (like rbmp_save_image_string) in the
+ * pure encoder TU formats/bmp/rbmp_encode.c, which has no stream or
+ * VFS dependency of any kind.
+ *
+ * rbmp_row_size(): padded on-disk size of one BMP row for the given
+ * source type ((width * bpp + 3) & ~3).
+ *
+ * rbmp_encode_row(): produce one padded output row from @row.  @line
+ * must hold at least rbmp_row_size() bytes of scratch.  Returns @line
+ * when the row was converted/padded into the scratch, or @row itself
+ * when the source bytes can be emitted as-is (letting callers skip a
+ * copy); NULL on invalid arguments.  @pitch follows the historical
+ * unsigned-carrying-a-signed convention of the other entry points and
+ * is only consulted for BGR24 payload bounding. */
+size_t rbmp_row_size(unsigned width, enum rbmp_source_type type);
+
+const uint8_t *rbmp_encode_row(uint8_t *line, const void *row,
+      unsigned width, unsigned pitch, enum rbmp_source_type type);
+
+/* Encode into an already-open intfstream (file, memory, or custom).
+ * Writes the 54-byte header followed by one padded row per line; peak
+ * extra memory is one row.  Returns false on short writes.
+ * Implemented in file/rbmp_file.c over the row primitives above, so
+ * the encoder TU itself stays stream-free. */
+bool rbmp_save_image_stream(
+      intfstream_t *intf_s,
+      const void *frame,
+      unsigned width,
+      unsigned height,
+      unsigned pitch,
+      enum rbmp_source_type type);
+
+/* Deprecated path-based convenience wrapper (open + stream encode +
+ * close), implemented in file/rbmp_file.c so the pure encoder TU carries no
+ * filesystem dependency.  Prefer rbmp_save_image_string() +
+ * filestream_write_file(), or rbmp_save_image_stream(). */
 bool rbmp_save_image(
       const char *filename,
       const void *frame,

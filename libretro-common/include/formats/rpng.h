@@ -29,6 +29,7 @@
 #include <retro_common_api.h>
 
 #include <boolean.h>
+#include <streams/interface_stream.h>
 
 RETRO_BEGIN_DECLS
 
@@ -103,6 +104,54 @@ int rpng_process_image(rpng_t *rpng,
 
 bool rpng_start(rpng_t *rpng);
 
+/* Source pixel format for the encoder.  Bytes-per-pixel alone cannot
+ * select the 32-bit path: ARGB32 and RGBA32 are both four bytes per
+ * pixel and differ only in channel order, so the format is carried
+ * explicitly and the PNG depth/colour type derived from it. */
+enum rpng_pixfmt
+{
+   RPNG_PIXFMT_BGR24 = 0,
+   RPNG_PIXFMT_ARGB32,
+   RPNG_PIXFMT_RGBA32,
+   RPNG_PIXFMT_RGB48,
+   /* 32-bit X8R8G8B8 (RETRO_PIXEL_FORMAT_XRGB8888) and 16-bit R5G6B5
+    * (RETRO_PIXEL_FORMAT_RGB565) sources, encoded as 8-bit RGB
+    * (colour type 2).  The per-row conversion happens inside the
+    * encoder, so callers can feed core framebuffers directly instead
+    * of allocating a whole-frame BGR24 conversion buffer first.
+    * RGB565 expands channels as (c << 3) | (c >> 2) (and the 6-bit
+    * green as (g << 2) | (g >> 4)), matching conv_rgb565_bgr24 in the
+    * scaler, so the emitted pixels are identical to the historical
+    * convert-then-encode path. */
+   RPNG_PIXFMT_XRGB8888,
+   RPNG_PIXFMT_RGB565
+};
+
+struct rpng_hdr_metadata;
+
+/* Pure encode into an already-open intfstream (file, memory, or
+ * custom).  This is the core entry point: everything else - the
+ * *_string buffer encoders here and the deprecated path wrappers in
+ * file/rpng_file.c - is built on top of it.  `pitch` is the row stride in
+ * bytes and may be negative to walk a bottom-up source top-down.
+ * Peak scratch memory is a handful of rows regardless of image size;
+ * output is produced in ~16 KiB IDAT chunks as compression proceeds. */
+bool rpng_save_image_stream_fmt(const uint8_t *data,
+      intfstream_t *intf_s, unsigned width, unsigned height, signed pitch,
+      enum rpng_pixfmt fmt, const struct rpng_hdr_metadata *hdr);
+
+/* Bytes-per-pixel variant of rpng_save_image_stream_fmt, kept for
+ * callers that predate the format enum: 3 = BGR24, 4 = ARGB32,
+ * 6 = RGB48.  RGBA32 is only reachable through the fmt entry point. */
+bool rpng_save_image_stream(const uint8_t *data, intfstream_t *intf_s,
+      unsigned width, unsigned height, signed pitch, unsigned bpp,
+      const struct rpng_hdr_metadata *hdr);
+
+/* Deprecated path-based convenience wrappers (open + stream encode +
+ * close), implemented in file/rpng_file.c so the pure encoder TU carries no
+ * filesystem dependency.  Prefer the *_string entry points plus a
+ * single filestream_write_file() at the edge, or the stream entry
+ * points above. */
 bool rpng_save_image_argb(const char *path, const uint32_t *data,
       unsigned width, unsigned height, unsigned pitch);
 bool rpng_save_image_bgr24(const char *path, const uint8_t *data,
@@ -117,6 +166,9 @@ bool rpng_save_image_bgr24(const char *path, const uint8_t *data,
 bool rpng_save_image_rgba(const char *path, const uint8_t *data,
       unsigned width, unsigned height, unsigned pitch);
 
+/* Pure encode: returns a heap buffer holding the complete PNG file and
+ * stores its size in *bytes.  Caller frees.  Pair with e.g.
+ * filestream_write_file() to save to disk with a single bulk write. */
 uint8_t* rpng_save_image_bgr24_string(const uint8_t *data,
       unsigned width, unsigned height, signed pitch, uint64_t *bytes);
 

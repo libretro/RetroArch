@@ -18,6 +18,7 @@ SOURCES := \
 	core_crc_slice_test.c \
 	$(LIBRETRO_COMM_DIR)/streams/interface_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+	$(LIBRETRO_COMM_DIR)/string/rstrtod.c \
 	$(LIBRETRO_COMM_DIR)/streams/memory_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/rzip_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream.c \

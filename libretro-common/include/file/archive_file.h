@@ -107,6 +107,12 @@ typedef struct
    char *valid_ext;
    char *callback_error;
    struct archive_extract_userdata *userdata;
+   /* Directory the previous member was extracted into, already known
+    * to exist.  Archive members are grouped by directory, so this
+    * lets the next member skip the stat that path_mkdir() would do
+    * to find that out again - which on a FAT card is a directory
+    * scan, per file. */
+   char last_dir[PATH_MAX_LENGTH];
 } decompress_state_t;
 
 struct archive_extract_userdata

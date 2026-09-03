@@ -86,6 +86,23 @@ WINGDIAPI_UWP BOOL APIENTRY wglShareLists(
 }
 #endif
 
+#else
+
+/* mingw-w64's wingdi.h declares every other wgl entry point this file
+ * uses - wglCreateContext, wglMakeCurrent, wglShareLists,
+ * wglGetProcAddress - but omits wglSwapBuffers. The Windows SDK does
+ * declare it, so this is a duplicate of an identical declaration
+ * there rather than a conflicting one. */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+WINGDIAPI BOOL WINAPI wglSwapBuffers(HDC);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif
 
 #if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
@@ -517,11 +534,9 @@ static void gfx_ctx_wgl_swap_buffers(void *data)
    switch (win32_api)
    {
       case GFX_CTX_OPENGL_API:
-#ifdef __WINRT__
+         /* gdi32's SwapBuffers only locates and forwards to this, and
+          * re-resolves it on every call. See the commit message. */
          wglSwapBuffers(win32_hdc);
-#else
-         SwapBuffers(win32_hdc);
-#endif
          break;
       case GFX_CTX_OPENGL_ES_API:
 #if defined(HAVE_EGL)

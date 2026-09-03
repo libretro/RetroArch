@@ -238,7 +238,7 @@ static void *parport_joypad_init(void *data)
    char buf[PARPORT_NUM_BUTTONS * 3 + 1] = {0};
    char pin[3 + 1]                       = {0};
    size_t _len                           =
-      strlcpy(path, "/dev/parport", sizeof(path));
+      strlcpy_lit(path, "/dev/parport", sizeof(path));
 
    memset(buf, 0, PARPORT_NUM_BUTTONS * 3 + 1);
 

@@ -162,6 +162,10 @@ static void ctr_csnd_audio_free(void *data)
    free(ctr);
 }
 
+/* How many 1 ms polls a blocking write waits for the play position to
+ * advance before giving up on it. */
+#define CTR_CSND_AUDIO_WAIT_LAPS 2000
+
 static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t len)
 {
    unsigned int i;
@@ -180,11 +184,17 @@ static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t len)
          ctr->pos = (ctr->playpos + (CTR_CSND_AUDIO_COUNT >> 1)) & CTR_CSND_AUDIO_COUNT_MASK;
       else
       {
+         /* Poll the play position while CSND plays this out, capped: a
+          * position that has stopped advancing never satisfies the test
+          * below, and the write then returns having written nothing. */
+         int laps = CTR_CSND_AUDIO_WAIT_LAPS;
          do
          {
             /* todo: compute the correct sleep period */
             retro_sleep(1);
             ctr_csnd_audio_update_playpos(ctr);
+            if (--laps < 0)
+               return 0;
          } while  (((ctr->playpos - ctr->pos) & CTR_CSND_AUDIO_COUNT_MASK) < (CTR_CSND_AUDIO_COUNT >> 1)
                || (((ctr->pos - ctr->playpos) & CTR_CSND_AUDIO_COUNT_MASK) < (CTR_CSND_AUDIO_COUNT >> 4)));
       }

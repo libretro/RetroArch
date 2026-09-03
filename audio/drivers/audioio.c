@@ -188,7 +188,8 @@ static size_t audioio_write_avail(void *data)
    return audioio_buffer_size(data);
 }
 
-/* TODO/FIXME - implement? */
+/* The device is opened with AUDIO_ENCODING_SLINEAR at 16 bits; the
+ * audio(4) encodings are integer PCM, mu-law and A-law, none float. */
 static bool audioio_use_float(void *data) { return false; }
 
 audio_driver_t audio_audioio = {

@@ -21,6 +21,7 @@
  */
 
 #include <stdlib.h>
+#include <stdint.h>
 #include <math.h>
 
 #include <retro_miscellaneous.h>
@@ -41,23 +42,29 @@ struct echo_channel
 
 struct echo_data
 {
+   /* The channel descriptors and every channel's float delay line and
+    * int64 mirror are carved out of this one block; channels points at
+    * its start. */
+   uint8_t *arena;
    struct echo_channel *channels;
    unsigned num_channels;
    float amp;
    int32_t amp_q;   /* Q16 mirror of amp */
 };
 
+/* Region spacing inside the arena, in bytes: each delay line starts on
+ * a 64-byte boundary so no two channels share a cache line. */
+#define ECHO_ARENA_ALIGN 64
+#define ECHO_ARENA_NEXT(cur, bytes) \
+   ((((cur) + (bytes) + ECHO_ARENA_ALIGN - 1) / ECHO_ARENA_ALIGN) \
+    * ECHO_ARENA_ALIGN)
+
 static void echo_free(void *data)
 {
-   unsigned i;
    struct echo_data *echo = (struct echo_data*)data;
-
-   for (i = 0; i < echo->num_channels; i++)
-   {
-      free(echo->channels[i].buffer);
-      free(echo->channels[i].buffer_i);
-   }
-   free(echo->channels);
+   if (!echo)
+      return;
+   free(echo->arena);
    free(echo);
 }
 
@@ -182,7 +189,7 @@ static void *echo_init(const struct dspfilter_info *info,
       const struct dspfilter_config *config, void *userdata)
 {
    unsigned i, channels;
-   struct echo_channel *echo_channels    = NULL;
+   size_t arena_len;
    float *delay                          = NULL;
    float *feedback                       = NULL;
    unsigned num_delay                    = 0;
@@ -205,24 +212,33 @@ static void *echo_init(const struct dspfilter_info *info,
 
    channels            = num_feedback = num_delay = MIN(num_delay, num_feedback);
 
-   if (!(echo_channels = (struct echo_channel*)calloc(channels,
-         sizeof(*echo_channels))))
-      goto error;
-
-   echo->channels      = echo_channels;
-   echo->num_channels  = channels;
-
+   /* Measure: the channel descriptors, then per channel a stereo float
+    * delay line and its stereo int64 mirror. */
+   arena_len           = ECHO_ARENA_NEXT(0, channels * sizeof(struct echo_channel));
    for (i = 0; i < channels; i++)
    {
       unsigned frames  = (unsigned)(delay[i] * info->input_rate / 1000.0f + 0.5f);
       if (!frames)
          goto error;
+      arena_len        = ECHO_ARENA_NEXT(arena_len, frames * 2 * sizeof(float));
+      arena_len        = ECHO_ARENA_NEXT(arena_len, frames * 2 * sizeof(int64_t));
+   }
 
-      if (!(echo->channels[i].buffer = (float*)calloc(frames, 2 * sizeof(float))))
-         goto error;
+   if (!(echo->arena = (uint8_t*)calloc(1, arena_len)))
+      goto error;
 
-      if (!(echo->channels[i].buffer_i = (int64_t*)calloc(frames, 2 * sizeof(int64_t))))
-         goto error;
+   echo->channels      = (struct echo_channel*)echo->arena;
+   echo->num_channels  = channels;
+   arena_len           = ECHO_ARENA_NEXT(0, channels * sizeof(struct echo_channel));
+
+   for (i = 0; i < channels; i++)
+   {
+      unsigned frames  = (unsigned)(delay[i] * info->input_rate / 1000.0f + 0.5f);
+
+      echo->channels[i].buffer     = (float*)(echo->arena + arena_len);
+      arena_len        = ECHO_ARENA_NEXT(arena_len, frames * 2 * sizeof(float));
+      echo->channels[i].buffer_i   = (int64_t*)(echo->arena + arena_len);
+      arena_len        = ECHO_ARENA_NEXT(arena_len, frames * 2 * sizeof(int64_t));
 
       echo->channels[i].frames     = frames;
       echo->channels[i].feedback   = feedback[i];

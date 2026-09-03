@@ -25,7 +25,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include <utils/md5.h>
+#include <lrc_hash.h>
 #include <encodings/crc32.h>
 #include <streams/file_stream.h>
 

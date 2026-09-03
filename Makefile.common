@@ -265,6 +265,7 @@ OBJ += \
        tasks/task_save.o \
        tasks/task_movie.o \
        tasks/task_file_transfer.o \
+       tasks/task_nbio_slice.o \
        tasks/task_content_prefetch.o \
        tasks/task_image.o \
        tasks/task_playlist_manager.o \
@@ -283,6 +284,7 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/lists/file_list.o \
        $(LIBRETRO_COMM_DIR)/lists/dir_list.o \
        $(LIBRETRO_COMM_DIR)/file/retro_dirent.o \
+       $(LIBRETRO_COMM_DIR)/file/file_watch.o \
        $(LIBRETRO_COMM_DIR)/streams/stdin_stream.o \
        $(LIBRETRO_COMM_DIR)/streams/file_stream.o \
        $(LIBRETRO_COMM_DIR)/streams/file_stream_transforms.o \
@@ -298,6 +300,7 @@ endif
 
 OBJ += \
        $(LIBRETRO_COMM_DIR)/lists/string_list.o \
+       $(LIBRETRO_COMM_DIR)/string/rstrtod.o \
        $(LIBRETRO_COMM_DIR)/string/stdstring.o \
        $(LIBRETRO_COMM_DIR)/memmap/memalign.o \
        $(LIBRETRO_COMM_DIR)/memmap/memcpy_nt.o
@@ -406,6 +409,7 @@ OBJ += \
        playlist.o \
        $(LIBRETRO_COMM_DIR)/features/features_cpu.o \
        $(LIBRETRO_COMM_DIR)/memory/mem_stats.o \
+       $(LIBRETRO_COMM_DIR)/memory/mempool.o \
        verbosity.o \
        $(LIBRETRO_COMM_DIR)/playlists/label_sanitization.o \
        $(LIBRETRO_COMM_DIR)/time/rtime.o \
@@ -432,6 +436,14 @@ endif
 ifeq ($(HAVE_BSV_MOVIE), 1)
    DEFINES += -DHAVE_BSV_MOVIE
    OBJ += input/bsv/bsvmovie.o
+endif
+
+# The MessagePack encoder is shared: the database stores its records
+# with it and the BSV movie format writes its frames with it, so it is
+# linked when either is built rather than only with the database.
+ifneq ($(filter 1,$(HAVE_LIBRETRODB) $(HAVE_BSV_MOVIE)),)
+   OBJ += libretro-db/rmsgpack.o \
+          libretro-db/rmsgpack_dom.o
 endif
 
 ifeq ($(HAVE_STATESTREAM), 1)
@@ -545,8 +557,6 @@ ifeq ($(HAVE_LIBRETRODB), 1)
    OBJ += libretro-db/bintree.o \
           libretro-db/libretrodb.o \
           libretro-db/query.o \
-          libretro-db/rmsgpack.o \
-          libretro-db/rmsgpack_dom.o \
           database_info.o \
           tasks/task_database_cue.o
 
@@ -713,6 +723,7 @@ else ifeq ($(HAVE_BUILTINMBEDTLS), 1)
                      deps/mbedtls/ripemd160.o \
                      deps/mbedtls/rsa.o \
                      deps/mbedtls/sha1.o \
+                     deps/mbedtls/sha_alt.o \
                      deps/mbedtls/sha256.o \
                      deps/mbedtls/sha512.o \
                      deps/mbedtls/threading.o \
@@ -1115,6 +1126,7 @@ endif
 ifeq ($(HAVE_MENU_COMMON), 1)
    OBJ += menu/menu_setting.o \
           menu/menu_driver.o \
+          menu/menu_str.o \
           menu/cbs/menu_cbs_ok.o \
           menu/cbs/menu_cbs_cancel.o \
           menu/cbs/menu_cbs_select.o \
@@ -1129,6 +1141,7 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/cbs/menu_cbs_sublabel.o \
           menu/cbs/menu_cbs_title.o \
           menu/menu_displaylist.o \
+          menu/menu_dirwalk.o \
           menu/menu_contentless_cores.o
 endif
 
@@ -1844,7 +1857,6 @@ ifeq ($(HAVE_D3D12), 1)
    HAVE_D3D_COMMON = 1
    OBJ += gfx/drivers/d3d12.o
    DEFINES += -DHAVE_D3D12
-   DEFINES += -DHAVE_D3DKMT
 endif
 
 ifneq ($(findstring 1, $(HAVE_D3D10) $(HAVE_D3D11) $(HAVE_D3D12)),)
@@ -1974,7 +1986,17 @@ ifneq ($(HAVE_BUILTINSPIRV_CROSS), 0)
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_msl.o
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_parser.o
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_cross_parsed_ir.o
+   OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_cross_c.o
+   # The C API translation unit compiles its backend wrappers only
+   # when these are defined truthy.
+   DEFINES += -DSPIRV_CROSS_C_API_GLSL=1
+   DEFINES += -DSPIRV_CROSS_C_API_HLSL=1
+   DEFINES += -DSPIRV_CROSS_C_API_MSL=1
+   DEFINES += -DSPIRV_CROSS_C_API_CPP=0
+   DEFINES += -DSPIRV_CROSS_C_API_REFLECT=0
 else
+   # slang_process.c is C: the header path must reach the C compiler too.
+   CFLAGS   += $(SPIRV_CROSS_CFLAGS)
    CXXFLAGS += $(SPIRV_CROSS_CFLAGS)
    LIBS     += $(SPIRV_CROSS_LIBS)
 endif
@@ -2275,7 +2297,8 @@ ifeq ($(HAVE_RPNG), 1)
    DEFINES += -DHAVE_RPNG
    OBJ += $(LIBRETRO_COMM_DIR)/formats/png/rpng.o \
           $(LIBRETRO_COMM_DIR)/formats/png/rpng_apng.o \
-          $(LIBRETRO_COMM_DIR)/formats/png/rpng_encode.o
+          $(LIBRETRO_COMM_DIR)/formats/png/rpng_encode.o \
+          $(LIBRETRO_COMM_DIR)/file/rpng_file.o
 endif
 
 ifeq ($(HAVE_RJPEG), 1)
@@ -2347,12 +2370,13 @@ ifeq ($(HAVE_WEBMPLAYER), 1)
 endif
 
 OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_encode.o \
+       $(LIBRETRO_COMM_DIR)/file/rbmp_file.o \
        $(LIBRETRO_COMM_DIR)/formats/json/rjson.o \
        $(LIBRETRO_COMM_DIR)/formats/image_transfer.o \
        $(LIBRETRO_COMM_DIR)/formats/audio_transfer.o \
        $(LIBRETRO_COMM_DIR)/formats/data_transfer.o \
        $(LIBRETRO_COMM_DIR)/memmap/memmap.o \
-       $(LIBRETRO_COMM_DIR)/formats/m3u/m3u_file.o
+       $(LIBRETRO_COMM_DIR)/formats/m3u/rm3u.o
 
 # Video4Linux 2
 
@@ -2533,12 +2557,10 @@ ifeq ($(HAVE_NETWORKING), 1)
       DEFINES += -DHAVE_CHEEVOS -DRC_CLIENT_SUPPORTS_HASH
       INCLUDE_DIRS += -Ideps/rcheevos/include
 
+      # rc_compat carries native recursive mutexes for the consoles
+      # that build threaded (GEKKO, 3DS, WiiU, Vita), so only a
+      # thread-less build compiles the locks out.
       ifneq ($(HAVE_THREADS), 1)
-         DEFINES += -DRC_NO_THREADS
-      else ifneq (,$(filter GEKKO,$(CFLAGS)))
-         # Gekko (Wii) and 3DS use custom pthread wrappers (see rthreads.c)
-         DEFINES += -DRC_NO_THREADS
-      else ifneq (,$(filter _3DS,$(CFLAGS)))
          DEFINES += -DRC_NO_THREADS
       endif
 
@@ -2651,6 +2673,19 @@ ifneq ($(findstring Win32,$(OS)),)
           frontend/drivers/platform_win32.o \
           gfx/display_servers/dispserv_win32.o \
           gfx/common/dx_guids.o
+
+   # Scanline Sync. Despite the name, D3DKMT is the kernel-mode thunk
+   # into dxgkrnl.sys rather than Direct3D: gdi32 forwards
+   # D3DKMTGetScanLine to ext-ms-win-dx-d3dkmt-dxcore, the adapter is
+   # opened from a plain GDI HDC via EnumDisplayDevices()/CreateDC(),
+   # and d3dkmt_init() runs from win32_window_init(), which every win32
+   # video driver calls - w_vk_ctx, wgl_ctx, gdi and sdl2 as much as
+   # the d3d ones. It lives in win32_common.c, so gate it the same way
+   # that object is gated. It used to be defined only as a side effect
+   # of HAVE_D3D12, which silently dropped the feature from a
+   # Vulkan-or-GL-only Windows build.
+   DEFINES += -DHAVE_D3DKMT
+   INCLUDE_DIRS += -isystemgfx/include/dxsdk
 
    # Legacy pre-DXGI GUID storage in their own TUs to avoid clashes
    # between system <d3d8types.h> / <d3d9types.h> and the bundled
@@ -2932,7 +2967,6 @@ endif
          deps/libsmb2/lib/krb5-wrapper.o \
          deps/libsmb2/lib/libsmb2.o \
          deps/libsmb2/lib/md4c.o \
-         deps/libsmb2/lib/md5.o \
          deps/libsmb2/lib/ntlmssp.o \
          deps/libsmb2/lib/pdu.o \
          deps/libsmb2/lib/sha1.o \

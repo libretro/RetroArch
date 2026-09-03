@@ -264,6 +264,10 @@
 #define DEFAULT_WINDOWED_FULLSCREEN true
 #endif
 
+/* Not platform-specific: how hard to push for exclusive fullscreen
+ * where the platform lets the application decide. */
+#define DEFAULT_VIDEO_FSE_NEGOTIATION VIDEO_FSE_RELAXED
+
 /* Enable automatic switching of the screen refresh rate when using the specified screen mode(s),
  * based on running core/content */
 #define DEFAULT_AUTOSWITCH_REFRESH_RATE AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN
@@ -400,6 +404,15 @@
 #define DEFAULT_MAX_FRAME_LATENCY 1
 #define MAXIMUM_MAX_FRAME_LATENCY 4
 
+/* Scanline Sync aims the flip at the middle of the blanking interval
+ * using what it can measure from the CPU. It cannot see when the GPU
+ * finishes or when the flip actually reaches the panel, so a residual
+ * offset remains that depends on the driver, resolution and shader
+ * chain. This is dialled by hand until the tear sits in blanking, the
+ * same way RTSS's scanline sync exposes its offset. Signed scanlines. */
+#define DEFAULT_SCANLINE_SYNC_OFFSET 0
+#define MAXIMUM_SCANLINE_SYNC_OFFSET 3000
+
 /* GL specific */
 #define DEFAULT_ADAPTIVE_VSYNC false
 
@@ -507,6 +520,11 @@
 #else
 #define DEFAULT_THREADED_DATA_RUNLOOP_ENABLE false
 #endif
+
+/* Off everywhere: pinning the main and audio threads to the fast
+ * cores of a mixed-core part trades battery for latency, so it is
+ * the user's call. */
+#define DEFAULT_THREAD_PREFER_FAST_CORES false
 
 /* Set to true if HW render cores should get their private context. */
 #define DEFAULT_VIDEO_SHARED_CONTEXT false
@@ -828,7 +846,18 @@
 #define DEFAULT_MENU_SHOW_INFORMATION true
 #define DEFAULT_MENU_SHOW_CONFIGURATIONS true
 #define DEFAULT_MENU_SHOW_HELP true
+#if defined(ANDROID)
+/* Android's navigation model expects the user to leave via Home or the
+ * task switcher rather than an in-app control, and the Android TV
+ * guidelines state outright that an exit item should not appear in the
+ * menu. Default the entry off; the toggle stays available under
+ * Settings -> User Interface -> Menu Item Visibility for anyone who
+ * wants it back, and existing configs that already set the key are
+ * left untouched. */
+#define DEFAULT_MENU_SHOW_QUIT false
+#else
 #define DEFAULT_MENU_SHOW_QUIT true
+#endif
 #define DEFAULT_MENU_SHOW_RESTART true
 #define DEFAULT_MENU_SHOW_REBOOT true
 #define DEFAULT_MENU_SHOW_SHUTDOWN true
@@ -836,6 +865,7 @@
 #define DEFAULT_MENU_SHOW_CORE_MANAGER_STEAM true
 #endif
 #define DEFAULT_MENU_SHOW_SUBLABELS true
+#define DEFAULT_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY false
 #define DEFAULT_MENU_SHOW_CONFIRM true
 #define DEFAULT_MENU_DYNAMIC_WALLPAPER_ENABLE true
 #define DEFAULT_MENU_SCROLL_FAST false
@@ -1079,7 +1109,7 @@
 
 /* Color of the message.
  * RGB hex value. */
-#define DEFAULT_MESSAGE_COLOR 0xffff00
+#define DEFAULT_MESSAGE_COLOR 0xffffff
 
 #define DEFAULT_MESSAGE_BGCOLOR_ENABLE false
 #define DEFAULT_MESSAGE_BGCOLOR_RED 0
@@ -1281,6 +1311,14 @@
 
 /* Will sync audio. (recommended) */
 #define DEFAULT_AUDIO_SYNC true
+
+/* Run the audio pipeline (convert, DSP, resample, volume) on the audio
+ * thread instead of inside the frame. Off by default. */
+#define DEFAULT_AUDIO_THREADED_PIPELINE false
+
+/* Ask the OS to schedule the audio thread ahead of the rest of the
+ * frontend. Best effort. Off by default. */
+#define DEFAULT_AUDIO_THREAD_PRIORITY false
 
 /* Audio rate control. */
 #if !defined(RARCH_CONSOLE)
@@ -1777,7 +1815,7 @@
 #else
 #define DEFAULT_MENU_TIMEDATE_ENABLE true
 #endif
-#define DEFAULT_MENU_TIMEDATE_STYLE          MENU_TIMEDATE_STYLE_DDMM_HM
+#define DEFAULT_MENU_TIMEDATE_STYLE          MENU_TIMEDATE_STYLE_YMD_HM
 #define DEFAULT_MENU_TIMEDATE_DATE_SEPARATOR MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN
 #define DEFAULT_MENU_REMEMBER_SELECTION      MENU_REMEMBER_SELECTION_ALWAYS
 #define DEFAULT_MENU_STARTUP_PAGE            MENU_STARTUP_PAGE_MAIN_MENU
@@ -1816,7 +1854,7 @@
 
 #define DEFAULT_UI_MENUBAR_ENABLE true
 
-#if defined(__QNX__) || defined(_XBOX1) || defined(_XBOX360) || (defined(__MACH__) && defined(IOS)) || defined(ANDROID) || defined(WIIU) || defined(HAVE_NEON) || defined(GEKKO) || defined(__ARM_NEON__) || defined(__PS3__)
+#if defined(__QNX__) || defined(_XBOX1) || defined(_XBOX360) || (defined(__MACH__) && defined(IOS)) || defined(ANDROID) || defined(WIIU) || defined(HAVE_NEON) || defined(GEKKO) || defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(__PS3__)
 #define DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL RESAMPLER_QUALITY_LOWER
 #elif defined(PSP) || defined(_3DS) || defined(VITA) || defined(PS2) || defined(DINGUX)
 #define DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL RESAMPLER_QUALITY_LOWEST

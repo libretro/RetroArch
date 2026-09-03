@@ -26,6 +26,7 @@
 #include <psp2/display.h>
 #include "patches.h"
 #include "hooks.h"
+#include "sha1.h"
 #include "debug.h"
 
 static int swap_interval = 1;
@@ -105,18 +106,21 @@ int eglCreateWindowSurface_resolutionPatch(int dpy, int config, int win, int *at
 
 void *eglGetProcAddress_functionNamePatch(const char *procname)
 {
-
+    char digest[21];
+    uint32_t nid;
+    void *function;
     void *ret = TAI_CONTINUE(void*, hookRef[4], procname);
 
+    /* Got an Extension function address. No need to do anything else. */
     if(ret)
-        return ret; // Got an Extension function address. No need to do anything else.
+        return ret;
 
-    char digest[21];
-    SHA1(digest, procname, strlen(procname)); // This may be slow. Look into different solutions
-    
-    void *function;
-    
-    if(taiGetModuleExportFunc("libScePiglet", 0xB4FE1ABB, *(uint32_t*)(&digest), (uintptr_t *)&function) < 0)
+    /* This may be slow. Look into different solutions */
+    SHA1(digest, procname, strlen(procname));
+
+    memcpy(&nid, digest, sizeof(nid));
+
+    if(taiGetModuleExportFunc("libScePiglet", 0xB4FE1ABB, nid, (uintptr_t *)&function) < 0)
         return NULL;
 
     return function;

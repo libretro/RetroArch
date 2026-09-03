@@ -109,6 +109,13 @@ struct scaler_ctx
    void (*in_pixconv)(void*, const void*, int, int, int, int);
    void (*out_pixconv)(void*, const void*, int, int, int, int);
    void (*direct_pixconv)(void*, const void*, int, int, int, int);
+   /* Backing storage for the frame buffers (scaled, input, output) and
+    * for the filter tables (horiz/vert filter and filter_pos). The
+    * typed pointers below are 64-byte aligned views into these two
+    * blocks and are never freed individually; scaler_ctx_gen_reset()
+    * releases both. */
+   void *frame_arena;                  /* ptr alignment */
+   void *filter_arena;                 /* ptr alignment */
    struct scaler_filter horiz, vert;   /* ptr alignment */
 
    struct

@@ -255,7 +255,7 @@ bool core_info_get_core_lock(const char *core_path, bool validate_path)
  * silently while the suite still reported PASSED. */
 bool frontend_driver_get_core_extension(char *s, size_t len)
 {
-   strlcpy(s, "so", len);
+   strlcpy_lit(s, "so", len);
    return true;
 }
 
@@ -312,7 +312,7 @@ static uint8_t *read_file_bytes(const char *path, size_t *out_len)
 
 static int setup_tmpdir(void)
 {
-   strlcpy(g_tmpdir, "/tmp/ra_core_backup_XXXXXX", sizeof(g_tmpdir));
+   strlcpy_lit(g_tmpdir, "/tmp/ra_core_backup_XXXXXX", sizeof(g_tmpdir));
    if (!mkdtemp(g_tmpdir))
       return 0;
    snprintf(g_core_path, sizeof(g_core_path), "%s/testcore_libretro.so",

@@ -21,6 +21,7 @@
 
 #include <compat/strl.h>
 #include <features/features_cpu.h>
+#include <memalign.h>
 
 #ifdef _3DS
 #include <3ds/types.h>
@@ -530,6 +531,8 @@ static void video_thread_loop(void *data)
    bool updated;
    thread_video_t *thr = (thread_video_t*)data;
 
+   sthread_setname("ra-video");
+
    for (;;)
    {
       slock_lock(thr->lock);
@@ -757,6 +760,18 @@ static bool video_thread_frame(void *data, const void *frame_,
       uint8_t       *dst   = thr->frame.buffer;
       unsigned copy_stride = width *
          (thr->info.rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
+      /* The buffer holds the maximum geometry the core declared at init.
+       * A core is free to hand over a bigger frame than that, so publish
+       * only the rows that fit: the worker renders thr->frame.height out
+       * of this same buffer, so an unclamped height would be read past
+       * the end of the allocation whether or not anything was copied
+       * into it. A stride too wide for a single row yields zero. */
+      unsigned rows        = copy_stride
+         ? (unsigned)(thr->frame.buffer_size / copy_stride)
+         : 0;
+
+      if (height > rows)
+         height            = rows;
 
       if (src)
       {
@@ -849,13 +864,18 @@ static bool video_thread_init(thread_video_t *thr,
       max_size              *= info.rgb32 ?
          sizeof(uint32_t) : sizeof(uint16_t);
 
+      /* The main thread copies every core frame in here and the video
+       * thread reads it back for upload; a cache-line start keeps both
+       * copies on aligned rows for the usual pitches. */
 #ifdef _3DS
       thr->frame.buffer      = linearMemAlign(max_size, 0x80);
 #else
-      thr->frame.buffer      = (uint8_t*)malloc(max_size);
+      thr->frame.buffer      = (uint8_t*)memalign_alloc(64, max_size);
 #endif
       if (!thr->frame.buffer)
          return false;
+
+      thr->frame.buffer_size = max_size;
 
       memset(thr->frame.buffer, 0x80, max_size);
    }
@@ -994,7 +1014,7 @@ static void video_thread_free(void *data)
 #ifdef _3DS
       linearFree(thr->frame.buffer);
 #else
-      free(thr->frame.buffer);
+      memalign_free(thr->frame.buffer);
 #endif
       free(thr->alpha_mod);
 
@@ -1007,6 +1027,14 @@ static void video_thread_free(void *data)
       RARCH_LOG(
          "Threaded video stats: Frames pushed: %u, Frames dropped: %u.\n",
          thr->hit_count, thr->miss_count);
+
+      /* video_init_thread() pointed the video state at the vtable
+       * embedded in this struct. Point it back at the wrapped driver's
+       * static vtable before the struct goes away, so a later
+       * video_driver_free_internal() reading current_video sees a live
+       * driver, as it does without threading. */
+      if (video_state_get_ptr()->current_video == &thr->video_thread)
+         video_state_get_ptr()->current_video = (video_driver_t*)thr->driver;
 
       free(thr);
    }

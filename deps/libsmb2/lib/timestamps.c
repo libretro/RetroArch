@@ -23,17 +23,9 @@
 #define _GNU_SOURCE
 #endif
 
-#ifdef HAVE_STDINT_H
 #include <stdint.h>
-#endif
-
-#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#endif
-
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif
 
 #ifdef HAVE_TIME_H
 #include <time.h>
@@ -43,9 +35,7 @@
 #include <sys/time.h>
 #endif
 
-#ifdef STDC_HEADERS
 #include <stddef.h>
-#endif
 
 #include "compat.h"
 

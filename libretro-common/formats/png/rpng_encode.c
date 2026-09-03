@@ -211,17 +211,9 @@ static bool png_write_iend_string(intfstream_t* intf_s)
          sizeof(data) - sizeof(uint32_t));
 }
 
-/* Source pixel format.  Bytes-per-pixel alone cannot select the 32-bit
- * path: ARGB32 and RGBA32 are both four bytes per pixel and differ only
- * in channel order, so the format is carried separately and the depth
- * derived from it. */
-enum rpng_pixfmt
-{
-   RPNG_PIXFMT_BGR24 = 0,
-   RPNG_PIXFMT_ARGB32,
-   RPNG_PIXFMT_RGBA32,
-   RPNG_PIXFMT_RGB48
-};
+/* enum rpng_pixfmt lives in rpng.h so that the path-based convenience
+ * adapters in file/rpng_file.c (and any external stream caller) can select
+ * the format without this TU exposing anything path-related. */
 
 static unsigned rpng_pixfmt_bpp(enum rpng_pixfmt fmt)
 {
@@ -232,6 +224,9 @@ static unsigned rpng_pixfmt_bpp(enum rpng_pixfmt fmt)
          return 4;
       case RPNG_PIXFMT_RGB48:
          return 6;
+      case RPNG_PIXFMT_XRGB8888:
+      case RPNG_PIXFMT_RGB565:
+         /* 32/16-bit sources, but the PNG side is 8-bit RGB. */
       case RPNG_PIXFMT_BGR24:
       default:
          break;
@@ -273,6 +268,39 @@ static void copy_bgr24_line(uint8_t *dst, const uint8_t *src, unsigned width)
       dst[2] = src[0];
       dst[1] = src[1];
       dst[0] = src[2];
+   }
+}
+
+/* X8R8G8B8 -> PNG RGB.  The X byte is ignored. */
+static void copy_xrgb8888_line(uint8_t *dst, const uint32_t *src,
+      unsigned width)
+{
+   unsigned i;
+   for (i = 0; i < width; i++)
+   {
+      uint32_t px = src[i];
+      *dst++      = (uint8_t)(px >> 16); /* R */
+      *dst++      = (uint8_t)(px >>  8); /* G */
+      *dst++      = (uint8_t)(px >>  0); /* B */
+   }
+}
+
+/* R5G6B5 -> PNG RGB, expanding channels exactly as the scaler's
+ * conv_rgb565_bgr24 does so this path is pixel-identical to the
+ * historical convert-then-encode path. */
+static void copy_rgb565_line(uint8_t *dst, const uint16_t *src,
+      unsigned width)
+{
+   unsigned i;
+   for (i = 0; i < width; i++)
+   {
+      uint16_t px = src[i];
+      uint8_t r   = (px >> 11) & 0x1f;
+      uint8_t g   = (px >>  5) & 0x3f;
+      uint8_t b   = (px >>  0) & 0x1f;
+      *dst++      = (uint8_t)((r << 3) | (r >> 2));
+      *dst++      = (uint8_t)((g << 2) | (g >> 4));
+      *dst++      = (uint8_t)((b << 3) | (b >> 2));
    }
 }
 
@@ -617,6 +645,11 @@ static unsigned filter_paeth(uint8_t *target,
  * overhead (12 bytes per IDAT). */
 #define IDAT_CHUNK_SIZE 16384
 
+/* Region spacing inside the row arena: round a cursor past a region of
+ * the given size up to the next 64-byte boundary. */
+#define ROW_ARENA_NEXT(cur, bytes) \
+   ((((cur) + (bytes) + 63) / 64) * 64)
+
 /* Emit one IDAT chunk.  `chunk_buf` is laid out as:
  *     bytes [0..4): length field (filled in here, big-endian)
  *     bytes [4..8): literal "IDAT"
@@ -633,7 +666,7 @@ static bool flush_idat_chunk(intfstream_t *intf_s,
    return png_write_idat_string(intf_s, chunk_buf, payload_len + 8);
 }
 
-static bool rpng_save_image_stream_fmt(const uint8_t *data,
+bool rpng_save_image_stream_fmt(const uint8_t *data,
       intfstream_t* intf_s, unsigned width, unsigned height, signed pitch,
       enum rpng_pixfmt fmt, const struct rpng_hdr_metadata *hdr)
 {
@@ -643,6 +676,8 @@ static bool rpng_save_image_stream_fmt(const uint8_t *data,
    bool ret = true;
    const struct trans_stream_backend *stream_backend = NULL;
    uint8_t *rgba_line        = NULL;
+   uint8_t *row_arena        = NULL;
+   size_t   row_stride       = 0;
    uint8_t *prev_base        = NULL;
    uint8_t *rgba_base        = NULL;
    uint8_t *up_base          = NULL;
@@ -695,16 +730,23 @@ static bool rpng_save_image_stream_fmt(const uint8_t *data,
     * whole thing handed to deflate as one span.  The old shape copied
     * the winning row into a separate tag+data buffer, a full extra pass
     * over the row for nothing. */
-   prev_base      = (uint8_t*)calloc(1, line_len + 1);
-   rgba_base      = (uint8_t*)malloc(line_len + 1);
-   up_base        = (uint8_t*)malloc(line_len + 1);
-   sub_base       = (uint8_t*)malloc(line_len + 1);
-   avg_base       = (uint8_t*)malloc(line_len + 1);
-   paeth_base     = (uint8_t*)malloc(line_len + 1);
-   chunk_buf      = (uint8_t*)malloc(IDAT_CHUNK_SIZE + 8);
-   if (!prev_base || !rgba_base || !up_base || !sub_base
-         || !avg_base || !paeth_base || !chunk_buf)
+   /* The six row buffers and the IDAT staging buffer come out of one
+    * block. Each row's data (the byte after its tag slot) starts on a
+    * 64-byte boundary, so the filter passes that read the current and
+    * previous rows together stream from aligned lines. The previous-row
+    * buffer is the only one read before it is written and is zeroed. */
+   row_stride     = ROW_ARENA_NEXT(64, line_len + 1);
+   row_arena      = (uint8_t*)malloc(6 * row_stride + IDAT_CHUNK_SIZE + 8);
+   if (!row_arena)
       GOTO_END_ERROR();
+   prev_base      = row_arena + 0 * row_stride + 63;
+   rgba_base      = row_arena + 1 * row_stride + 63;
+   up_base        = row_arena + 2 * row_stride + 63;
+   sub_base       = row_arena + 3 * row_stride + 63;
+   avg_base       = row_arena + 4 * row_stride + 63;
+   paeth_base     = row_arena + 5 * row_stride + 63;
+   chunk_buf      = row_arena + 6 * row_stride;
+   memset(prev_base, 0, line_len + 1);
 
    prev_encoded   = prev_base  + 1;
    rgba_line      = rgba_base  + 1;
@@ -801,6 +843,12 @@ static bool rpng_save_image_stream_fmt(const uint8_t *data,
             break;
          case RPNG_PIXFMT_RGB48:
             copy_rgb48_line(rgba_line, (const uint16_t*)data, width);
+            break;
+         case RPNG_PIXFMT_XRGB8888:
+            copy_xrgb8888_line(rgba_line, (const uint32_t*)(const void*)data, width);
+            break;
+         case RPNG_PIXFMT_RGB565:
+            copy_rgb565_line(rgba_line, (const uint16_t*)(const void*)data, width);
             break;
          case RPNG_PIXFMT_BGR24:
          default:
@@ -929,13 +977,7 @@ static bool rpng_save_image_stream_fmt(const uint8_t *data,
       GOTO_END_ERROR();
 
 end:
-   free(rgba_base);
-   free(prev_base);
-   free(up_base);
-   free(sub_base);
-   free(avg_base);
-   free(paeth_base);
-   free(chunk_buf);
+   free(row_arena);
 
    if (stream_backend)
    {
@@ -977,79 +1019,10 @@ bool rpng_save_image_stream(const uint8_t *data, intfstream_t* intf_s,
          pitch, fmt, hdr);
 }
 
-/* Straight RGBA byte order - R,G,B,A ascending in memory, which on a
- * little-endian host is the uint32_t 0xAABBGGRR, the mirror of what
- * rpng_save_image_argb() takes.  Callers holding GL_RGBA / VK_FORMAT_
- * R8G8B8A8 surfaces would otherwise have to swizzle a whole frame into a
- * scratch buffer just to have the encoder swizzle it back. */
-bool rpng_save_image_rgba(const char *path, const uint8_t *data,
-      unsigned width, unsigned height, unsigned pitch)
-{
-   bool ret                      = false;
-   intfstream_t* intf_s          = NULL;
-
-   intf_s = intfstream_open_file(path,
-         RETRO_VFS_FILE_ACCESS_WRITE,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-   ret = rpng_save_image_stream_fmt(data, intf_s,
-                                width, height,
-                                (signed) pitch, RPNG_PIXFMT_RGBA32, NULL);
-   intfstream_close(intf_s);
-   free(intf_s);
-   return ret;
-}
-
-bool rpng_save_image_argb(const char *path, const uint32_t *data,
-      unsigned width, unsigned height, unsigned pitch)
-{
-   bool ret                      = false;
-   intfstream_t* intf_s          = NULL;
-
-   intf_s = intfstream_open_file(path,
-         RETRO_VFS_FILE_ACCESS_WRITE,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-   ret = rpng_save_image_stream_fmt((const uint8_t*) data, intf_s,
-                                width, height,
-                                (signed) pitch, RPNG_PIXFMT_ARGB32, NULL);
-   intfstream_close(intf_s);
-   free(intf_s);
-   return ret;
-}
-
-bool rpng_save_image_bgr24(const char *path, const uint8_t *data,
-      unsigned width, unsigned height, unsigned pitch)
-{
-   bool ret                      = false;
-   intfstream_t* intf_s          = NULL;
-
-   intf_s = intfstream_open_file(path,
-         RETRO_VFS_FILE_ACCESS_WRITE,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-   ret = rpng_save_image_stream_fmt(data, intf_s, width, height,
-                                (signed) pitch, RPNG_PIXFMT_BGR24, NULL);
-   intfstream_close(intf_s);
-   free(intf_s);
-   return ret;
-}
-
-bool rpng_save_image_rgb48_hdr(const char *path, const uint16_t *data,
-      unsigned width, unsigned height, unsigned pitch,
-      const struct rpng_hdr_metadata *hdr)
-{
-   bool ret                      = false;
-   intfstream_t* intf_s          = NULL;
-
-   intf_s = intfstream_open_file(path,
-         RETRO_VFS_FILE_ACCESS_WRITE,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-   ret = rpng_save_image_stream_fmt((const uint8_t*)data, intf_s, width, height,
-                                (signed) pitch, RPNG_PIXFMT_RGB48, hdr);
-   intfstream_close(intf_s);
-   free(intf_s);
-   return ret;
-}
+/* The path-based convenience wrappers (rpng_save_image_argb / bgr24 /
+ * rgba / rgb48_hdr) live in file/rpng_file.c: this TU is a pure encoder and
+ * never opens a path.  Memory-backed intfstreams (used by the *_string
+ * entry points below) are the only streams it creates itself. */
 
 
 uint8_t* rpng_save_image_bgr24_hdr_string(const uint8_t *data,

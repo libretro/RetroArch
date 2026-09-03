@@ -139,10 +139,13 @@ static void task_queue_push_progress(retro_task_t *task)
          else
             task_queue_msg_push(task, 1, 60, false, "%s...", task->title);
       }
-
-      if (task->progress_cb)
-         task->progress_cb(task);
    }
+
+   /* Messages are gated on the title above; the callback is for
+    * code, so it needs only the mute opt-out. */
+   if (     task->progress_cb
+         && (!((task->flags & RETRO_TASK_FLG_MUTE) > 0)))
+      task->progress_cb(task);
 
 #ifdef HAVE_THREADS
    slock_unlock(property_lock);
@@ -262,6 +265,19 @@ static void retro_task_regular_cancel(void *task)
    t->flags       |= RETRO_TASK_FLG_CANCELLED;
 }
 
+/* Slow-handler watchdog.  Both are read and written on the thread
+ * that drives the untheaded queue - the same thread that registers
+ * them - so they need no locking. */
+static retro_task_slow_handler_t task_slow_handler_cb;
+static retro_time_t              task_slow_handler_budget;
+
+void task_queue_set_slow_handler_cb(retro_task_slow_handler_t cb,
+      retro_time_t budget_usec)
+{
+   task_slow_handler_cb     = cb;
+   task_slow_handler_budget = (budget_usec < 1) ? 1 : budget_usec;
+}
+
 static void retro_task_regular_gather(void)
 {
    retro_task_t *task  = NULL;
@@ -280,7 +296,21 @@ static void retro_task_regular_gather(void)
 
       if (!task->when || task->when < cpu_features_get_time_usec())
       {
-         task->handler(task);
+         /* Time the handler only when someone is listening: with no
+          * callback registered this costs nothing at all. */
+         if (task_slow_handler_cb)
+         {
+            retro_time_t started = cpu_features_get_time_usec();
+            retro_time_t took;
+
+            task->handler(task);
+
+            took = cpu_features_get_time_usec() - started;
+            if (took > task_slow_handler_budget)
+               task_slow_handler_cb(task, took);
+         }
+         else
+            task->handler(task);
 
          task_queue_push_progress(task);
       }
@@ -565,8 +595,19 @@ static void retro_task_threaded_reset(void)
    retro_task_t *task = NULL;
 
    slock_lock(running_lock);
+   /* task->flags is guarded by property_lock, not running_lock: the
+    * worker reads it there to decide whether a task has finished.
+    * Setting it under running_lock alone left the two using
+    * different locks for the same field, which is a data race - one
+    * TSan reports when a reset lands while the worker is mid-task.
+    *
+    * Nesting is safe here: property_lock is never held while any
+    * other lock is taken anywhere in this file, so it can only ever
+    * be an inner lock and no cycle is possible. */
+   slock_lock(property_lock);
    for (task = tasks_running.front; task; task = task->next)
       task->flags |= RETRO_TASK_FLG_CANCELLED;
+   slock_unlock(property_lock);
    slock_unlock(running_lock);
 }
 
@@ -649,6 +690,8 @@ static void retro_task_threaded_retrieve(task_retriever_data_t *data)
 
 static void threaded_worker(void *userdata)
 {
+   sthread_setname("ra-task");
+
    for (;;)
    {
       retro_task_t *task  = NULL;
@@ -1061,6 +1104,48 @@ bool task_queue_push(retro_task_t *task)
 void task_queue_wait(retro_task_condition_fn_t cond, void* data)
 {
    impl_current->wait(cond, data);
+}
+
+struct task_wait_deadline
+{
+   retro_task_condition_fn_t cond;
+   void *data;
+   retro_time_t deadline;
+};
+
+/* Wraps the caller's condition so that it also goes false once the
+ * deadline passes.  Doing it this way rather than adding a wait
+ * variant to the implementation vtable means every implementation -
+ * regular, threaded and GCD - keeps its own waiting behaviour, and
+ * no platform-specific code has to be touched to gain a bound. */
+static bool task_queue_deadline_cond(void *data)
+{
+   struct task_wait_deadline *d = (struct task_wait_deadline*)data;
+
+   if (cpu_features_get_time_usec() >= d->deadline)
+      return false;
+
+   return d->cond ? d->cond(d->data) : true;
+}
+
+bool task_queue_wait_timeout(retro_task_condition_fn_t cond, void *data,
+      retro_time_t timeout_usec)
+{
+   struct task_wait_deadline d;
+
+   d.cond     = cond;
+   d.data     = data;
+   d.deadline = cpu_features_get_time_usec() + timeout_usec;
+
+   task_queue_wait(task_queue_deadline_cond, &d);
+
+   /* The wait also ends when the queue drains, so "did the deadline
+    * pass" is not the same question as "is the caller still waiting
+    * for something".  Ask the caller's own condition. */
+   if (cond && cond(data))
+      return false;
+
+   return true;
 }
 
 void task_queue_reset(void)

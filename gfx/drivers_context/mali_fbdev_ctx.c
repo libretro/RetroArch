@@ -39,6 +39,7 @@
 #include "../../configuration.h"
 
 #include <streams/file_stream.h>
+#include <string/rstrtod.h>
 
 typedef struct
 {
@@ -123,7 +124,7 @@ static int gfx_ctx_mali_fbdev_get_vinfo(void *data)
                else if (*(tmp + i) == 'h')
                   *(tmp + i) = '\0';
             }
-            k = j ? atof(tmp + j + 1) : k;
+            k = j ? rstrtod(tmp + j + 1, NULL) : k;
          }
          filestream_close(fr);
       }

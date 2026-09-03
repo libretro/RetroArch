@@ -142,7 +142,7 @@ static const struct
    char s_f39c636f[376];
    char s_4c991c18[403];
    char s_4b299805[166];
-   char s_1bd35af2[30];
+   char s_1bd35af2[29];
    char s_24e40f00[269];
    char s_1382c258[250];
    char s_4caab10c[253];
@@ -266,7 +266,7 @@ static const struct
    char s_d9a51d02[21];
    char s_12e77e8f[9];
    char s_98760b94[30];
-   char s_af6007a1[17];
+   char s_af6007a1[18];
    char s_da068369[12];
    char s_daead8a5[7];
    char s_48c208ee[21];
@@ -297,6 +297,8 @@ static const struct
    char s_8c7495e3[15];
    char s_ad7c73f6[16];
    char s_30acd6fb[16];
+   char s_35dcde4f[21];
+   char s_ce7da552[40];
    char s_04b30c51[12];
    char s_e5aeacf9[22];
    char s_24976a5b[34];
@@ -1153,6 +1155,7 @@ static const struct
    char s_b4c3612a[32];
    char s_f638f238[19];
    char s_f3358a59[29];
+   char s_f8098721[49];
    char s_0d7d9688[41];
    char s_b00815b8[13];
    char s_1ef8917a[26];
@@ -1423,7 +1426,7 @@ static const struct
    char s_012938fb[30];
    char s_a747cdc9[54];
    char s_2f169651[20];
-   char s_73674a86[20];
+   char s_73674a86[17];
    char s_705eee28[31];
    char s_62af62ac[39];
    char s_12b25a4b[41];
@@ -1922,7 +1925,7 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    char s_3839f91d[32];
    char s_86b07599[36];
-   char s_8d5f85ee[19];
+   char s_8d5f85ee[21];
    char s_9b023eee[27];
    char s_ccae82ba[13];
    char s_ad6e88de[13];
@@ -2011,6 +2014,7 @@ static const struct
    char s_0a008a9d[8];
    char s_9c6ed9ca[14];
    char s_68664e16[23];
+   char s_9ad2e88b[32];
    char s_d4aabe7f[20];
    char s_4674fab3[11];
    char s_904219cb[20];
@@ -2230,6 +2234,7 @@ static const struct
    char s_f57f6158[15];
    char s_69b801ef[7];
    char s_a40653a7[28];
+   char s_e67b672d[47];
    char s_52e3d6ea[47];
    char s_580e244f[7];
    char s_a9c8430e[23];
@@ -2393,6 +2398,7 @@ static const struct
    char s_f7cc6630[30];
    char s_310ec7bd[75];
    char s_5832a2c2[118];
+   char s_f47e544f[244];
    char s_20cc6597[99];
    char s_21b0bad3[57];
    char s_66e9521c[79];
@@ -2421,6 +2427,8 @@ static const struct
    char s_5977d6d8[55];
    char s_cb67f2a4[34];
    char s_3c3598a9[56];
+   char s_3bac47bd[397];
+   char s_90e7db40[405];
    char s_4b78ee7f[52];
    char s_aed11d67[129];
    char s_dbe6e749[98];
@@ -2956,6 +2964,7 @@ static const struct
    char s_7de5d198[60];
    char s_3b573ee6[29];
    char s_dc1d6cc7[58];
+   char s_28543dcf[60];
    char s_aebcb136[144];
    char s_8b636a26[42];
    char s_8f707459[44];
@@ -3335,12 +3344,12 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    char s_3e1e294b[49];
    char s_69c0e487[59];
-   char s_706ff4dc[226];
+   char s_706ff4dc[309];
    char s_a0d1a85c[62];
    char s_b5966528[194];
    char s_907ef7cc[53];
    char s_b0a46506[62];
-   char s_04624c88[47];
+   char s_04624c88[147];
    char s_91976dbe[58];
    char s_f6492edc[43];
    char s_9bb85635[215];
@@ -3384,6 +3393,7 @@ static const struct
    char s_ffd591e0[53];
    char s_a51ab538[26];
    char s_55d6cc44[55];
+   char s_5a8f7fb9[150];
    char s_f2963d2d[33];
    char s_4c592ae1[89];
    char s_52ac4fb9[107];
@@ -3502,6 +3512,7 @@ static const struct
    char s_f4e4e921[245];
    char s_7968f59d[47];
    char s_8cee3615[172];
+   char s_87ba81db[293];
    char s_58c80718[269];
    char s_67d549fd[47];
    char s_afac733c[30];
@@ -4371,7 +4382,7 @@ static const struct
    "Define se o netplay ser\303\241 iniciado no modo espectador. Se definido como verdadeiro, o netp"
    "lay come\303\247ar\303\241 no modo espectador. Sempre \303\251 poss\303\255vel mudar o modo depo"
    "is.",
-   "Voltar para o diret\303\263rio pai.",
+   "Volta para o diret\303\263rio pai.",
    "Sair do RetroArch. Matar o programa de qualquer maneira dif\303\255cil (SIGKILL, etc.) encerrar"
    "\303\241 o RetroArch sem salvar a configura\303\247\303\243o. Em sistemas baseados em Unix, SIGI"
    "NT/SIGTERM permite uma 'desinicializa\303\247\303\243o' limpa que inclui salvamento de configura"
@@ -4614,7 +4625,7 @@ static const struct
    "\303\215cone do aplicativo",
    "Recursos",
    "Abrir Painel de Controle ASIO",
-   "Bloquear quadros",
+   "Quadros por bloco",
    "Dispositivo",
    "\303\201udio",
    "Plugin DSP de \303\241udio",
@@ -4645,6 +4656,8 @@ static const struct
    "Estado: Parado",
    "Sincroniza\303\247\303\243o",
    "Sincroniza\303\247\303\243o",
+   "Pipeline multithread",
+   "Aumentar prioridade da thread de \303\241udio",
    "Volume (dB)",
    "Modo WASAPI exclusivo",
    "Formato WASAPI de ponto flutuante",
@@ -5504,6 +5517,7 @@ static const struct
    "Mostrar \"Reiniciar o RetroArch\"",
    "Mostrar \"Desligar\"",
    "Mostrar Sub-r\303\263tulos do Menu",
+   "Apenas mostrar sub-etiquetas no item selecionado",
    "Listas de Reprodu\303\247\303\243o com Clique \303\232nico",
    "Sons do menu",
    "Ativar \"M\303\272sica de fundo\"",
@@ -5777,7 +5791,7 @@ static const struct
    "Fator de escala de miniaturas",
    "Encurtar Nomes da Playlist (Requer reinicializa\303\247\303\243o)",
    "Utilizar modo PAL60",
-   "Diret\303\263rio superior",
+   "<Diret\303\263rio pai>",
    "Pausar conte\303\272do ao abrir menu",
    "Pausar conte\303\272do ao focar outra janela",
    "Pausar conte\303\272do ao desconectar controle",
@@ -6285,12 +6299,12 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    "Modo de autentifica\303\247\303\243o do SMB",
    "Navegador pelo Compartilhamento SMB",
-   "Ativar Cliente SMB",
+   "Permitir cliente SMB",
    "Limite de conex\303\265es do SMB",
    "Senha do SMB",
    "Servidor SMB",
    "Configura\303\247\303\265es de rede do SMB",
-   "Nome do Compartilhamento SMB",
+   "Nome do compartilhamento SMB",
    "Compartilhamento SMB",
    "Subdiret\303\263rio do SMB",
    "Tempo limite do SMB",
@@ -6374,6 +6388,7 @@ static const struct
    "Sistema",
    "Capturar tela",
    "Paralelismo de tarefas",
+   "Priorizar n\303\272cleo de desempenho",
    "Miniatura principal",
    "Miniaturas",
    "Miniatura principal",
@@ -6595,6 +6610,7 @@ static const struct
    "Reduzir escala",
    "Escala",
    "Sincroniza\303\247\303\243o de Scanline",
+   "Deslocar sincroniza\303\247\303\243o da linha de varredura",
    "Simula\303\247\303\243o do rolamento da linha de varredura",
    "V\303\255deo",
    "Sombreadores de v\303\255deo",
@@ -6777,6 +6793,10 @@ static const struct
    "Os ativos do menu usados pelo RetroArch s\303\243o armazenados neste diret\303\263rio.",
    "Abra o painel de controle do driver ASIO para configurar o roteamento de dispositivos e as confi"
    "gura\303\247\303\265es de buffer.",
+   "Define a quantidade de quadros que o driver de \303\241udio percorre por bloco. \"0\" pergunta a"
+   "o driver pelo valor do pr\303\263prio dispositivo, que \303\251 o que a maioria das configura"
+   "\303\247\303\265es quer; um bloco maior troca lat\303\252ncia pela prote\303\247\303\243o contra"
+   " falhas.",
    "Substitui o dispositivo de \303\241udio padr\303\243o utilizado pelo driver de \303\241udio. Ist"
    "o depende do driver.",
    "Driver de \303\241udio a ser usado. (Requer reinicializa\303\247\303\243o)",
@@ -6826,6 +6846,16 @@ static const struct
    "Altera as configura\303\247\303\265es da entrada/sa\303\255da de \303\241udio.",
    "Sincroniza o \303\241udio. Recomendado.",
    "Altera as configura\303\247\303\265es de sincroniza\303\247\303\243o de \303\241udio.",
+   "Reamostra, filtra e combina o \303\241udio na thread de \303\241udio em vez de quadro a quadro. "
+   "Mesma lat\303\252ncia do caminho de quadro s\303\255ncrono em qualquer configura\303\247\303\243"
+   "o da \"Lat\303\252ncia de \303\201udio\", com o controle de taxa calculado no ritmo do pr\303"
+   "\263prio dispositivo e a reamostragem fora do recurso de quadro. Os drivers de \303\241udio que "
+   "n\303\243o podem ser ativados no dispositivo mant\303\252m o caminho de quadro s\303\255ncrono.",
+   "Pede para o sistema operacional processar a thread de \303\241udio na frente das outras, ent\303"
+   "\243o um quadro pesado tem menos probabilidade de frustrar o dispositivo de \303\241udio. Permit"
+   "e que a \"Lat\303\252ncia de \303\201udio\" seja mais baixa em sistemas que aprovam; um sistema "
+   "que recusa mant\303\251m a prioridade padr\303\243o. Aplica-se na thread de \303\241udio da \"Pi"
+   "peline multithread\" e nas chamadas de retorno do n\303\272cleo em execu\303\247\303\243o.",
    "Volume do \303\241udio (em dB). O volume padr\303\243o \303\251 0 dB.",
    "Permite ao driver WASAPI obter controle exclusivo do dispositivo de \303\241udio. Se desativado,"
    " o modo compartilhado ser\303\241 utilizado.",
@@ -7634,6 +7664,7 @@ static const struct
    "Mostre a op\303\247\303\243o \"Reiniciar o RetroArch\" no menu principal.",
    "Mostra a op\303\247\303\243o \"Desligar\".",
    "Mostre as informa\303\247\303\265es adicionais para os itens do menu.",
+   "Exibe apenas a sub-etiqueta do item atualmente selecionado.",
    "Pular o menu 'Executar' ao iniciar entradas da lista de reprodu\303\247\303\243o. Pressione o Di"
    "recional enquanto segura OK para acessar o menu 'Executar'.",
    "Altera as configura\303\247\303\265es de som do menu.",
@@ -8234,16 +8265,18 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    "Define a autentifica\303\247\303\243o usada no seu ambiente.",
    "Navega pelos arquivos no compartilhamento SMB configurado.",
-   "Ativa o acesso a compartilhamento de rede via SMB. Recomenda-se fortemente o uso de Ethernet em "
-   "vez de Wi-Fi para uma conex\303\243o mais est\303\241vel. Nota: a altera\303\247\303\243o destas"
-   " configura\303\247\303\265es requer a reinicializa\303\247\303\243o do RetroArch.",
+   "Permite o acesso ao compartilhamento de rede SMB. A Ethernet \303\251 extremamente recomendada e"
+   "m vez do Wi-Fi para uma conex\303\243o mais confi\303\241vel. Observa\303\247\303\243o: as mudan"
+   "\303\247as ser\303\243o aplicadas na pr\303\263xima pesquisa de compartilhamento, e o conte\303"
+   "\272do em execu\303\247\303\243o de um compartilhamento continua em sua conex\303\243o atual.",
    "Define o n\303\272mero m\303\241ximo de conex\303\265es usadas no seu ambiente.",
    "Senha para autentifica\303\247\303\243o. Opcional ao habilitar o acesso de convidade no servidor"
    ". Windows 10 e posterior: o acesso de convidade \303\251 desabilitado por padr\303\243o, ent\303"
    "\243o uma senha \303\251 necess\303\241ria.",
    "Endere\303\247o IP do Servidor ou nome do host (hostname).",
    "Define as configura\303\247\303\265es do compartilhamento de rede do SMB.",
-   "Nome do compartilhamento de rede para acessar.",
+   "Nome do compartilhamento de rede. Ao deixar em branco, lista todos os compartilhamentos que o se"
+   "rvidor exporta e permite escolher enquanto navega.",
    "Endere\303\247o do subdiret\303\263rio no compartilhamento. Opcional.",
    "Define o tempo limite padr\303\243o em segundos.",
    "Nome de usu\303\241rio para autentifica\303\247\303\243o. Opcional ao habilitar o acesso de conv"
@@ -8296,6 +8329,8 @@ static const struct
    "Mostra as informa\303\247\303\265es espec\303\255ficas do dispositivo.",
    "Salva uma imagem da tela.",
    "Executar tarefas em linhas de processamento paralelas.",
+   "Mant\303\251m as threads de \303\241udio e as principais nos n\303\272cleos mais r\303\241pidos "
+   "da CPU. N\303\243o funciona em processadores com n\303\272cleos iguais. Requer rein\303\255cio.",
    "Tipo de miniatura a ser exibida.",
    "Arte das caixas, captura de tela e miniaturas de tela s\303\243o armazenadas neste diret\303\263"
    "rio.",
@@ -8513,6 +8548,10 @@ static const struct
    "Sincronize a apresenta\303\247\303\243o de v\303\255deo com a posi\303\247\303\243o da scanline."
    " Reduz a lat\303\252ncia ao custo de um risco maior de tearing (rasgos na tela). O VSync deve es"
    "tar desativado.",
+   "Desloca o alvo da sincroniza\303\247\303\243o da linha de varredura por uma quantidade de linhas"
+   ". A sicroniza\303\247\303\243o n\303\243o sabe quando a GPU termina um quadro ou quando a virada"
+   " chega na tela, ent\303\243o o deslocamento pode mover a linha de ruptura para fora da tela. Os "
+   "valores negativos disparam mais r\303\241pido.",
    "AVISO: Tremula\303\247\303\243o r\303\241pida pode causar persist\303\252ncia de imagem em algum"
    "as telas. Use por sua conta em risco // Simula uma varredura b\303\241sica sobre v\303\241rios s"
    "ubquadros dividindo a tela verticalmente e renderizando cada parte da tela de acordo com quantos"
@@ -9254,7 +9293,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_br_blob_check[
-      (sizeof(msg_hash_pt_br_blob) == (193713u
+      (sizeof(msg_hash_pt_br_blob) == (195448u
 #ifdef ANDROID
        + 352u
 #endif
@@ -9388,7 +9427,7 @@ typedef char msg_hash_pt_br_blob_check[
        + 22u
        + 32u
        + 36u
-       + 19u
+       + 21u
        + 27u
        + 13u
        + 13u
@@ -9583,12 +9622,12 @@ typedef char msg_hash_pt_br_blob_check[
        + 44u
        + 49u
        + 59u
-       + 226u
+       + 309u
        + 62u
        + 194u
        + 53u
        + 62u
-       + 47u
+       + 147u
        + 58u
        + 43u
        + 215u
@@ -9957,6 +9996,8 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_THREADED_PIPELINE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
@@ -10813,6 +10854,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
@@ -11670,6 +11712,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI,
@@ -11889,6 +11932,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC_OFFSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
@@ -12052,6 +12096,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
@@ -12079,6 +12124,8 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
@@ -12614,6 +12661,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
@@ -13042,6 +13090,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
@@ -13160,6 +13209,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC_OFFSET,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,

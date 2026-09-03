@@ -1365,7 +1365,6 @@ static const struct
    char s_012938fb[23];
    char s_a747cdc9[55];
    char s_2f169651[21];
-   char s_73674a86[18];
    char s_705eee28[42];
    char s_62af62ac[32];
    char s_12b25a4b[66];
@@ -3202,11 +3201,9 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    char s_3e1e294b[52];
    char s_69c0e487[55];
-   char s_706ff4dc[202];
    char s_a0d1a85c[78];
    char s_907ef7cc[29];
    char s_b0a46506[52];
-   char s_04624c88[64];
    char s_f6492edc[41];
 #endif
    char s_f3bfa8b9[90];
@@ -5500,7 +5497,6 @@ static const struct
    "Miniatuur-schaalfactor",
    "Afspeellijstnamen afkappen (opnieuw opstarten vereist)",
    "PAL60 Mode Activeren",
-   "Bovenliggende map",
    "Pauzeer inhoud wanneer het menu actief is",
    "Pauzeer Inhoud op inactiviteit ",
    "Inhoud pauzeren wanneer de verbinding met de controller verbreekt",
@@ -7690,13 +7686,9 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    "Selecteer de authenticatie gebruikt in je omgeving.",
    "Blader door bestanden op de geconfigureerde SMB share.",
-   "Schakel toegang tot SMB-netwerkshares in. Ethernet wordt sterk aanbevolen boven Wi-Fi voor een b"
-   "etrouwbaardere verbinding. Let op: het wijzigen van deze instellingen vereist een herstart van R"
-   "etroArch.",
    "Selecteer het maximale aantal verbindingen dat in he omgeving wordt gebruikt.",
    "Server IP-adres of hostnaam.",
    "Configureer de instellingen voor SMB-netwerkshares.",
-   "Naam van de netwerkshare waartoe toegang moet worden verkregen.",
    "Selecteer standaard timeout in seconden.",
 #endif
    "Sorteer de slaag-bestanden in folders vernoemd naar de map waarin de inhoud zich bevindt.",
@@ -8585,7 +8577,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_nl_blob_check[
-      (sizeof(msg_hash_nl_blob) == (174538u
+      (sizeof(msg_hash_nl_blob) == (174520u
 #ifdef ANDROID
        + 375u
 #endif
@@ -8905,11 +8897,9 @@ typedef char msg_hash_nl_blob_check[
        + 32u
        + 52u
        + 55u
-       + 202u
        + 78u
        + 29u
        + 52u
-       + 64u
        + 41u
 #endif
 #ifdef HAVE_LAKKA
@@ -10345,7 +10335,6 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
@@ -12181,11 +12170,9 @@ static const uint32_t msg_hash_nl_ids[] =
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,

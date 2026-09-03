@@ -349,6 +349,24 @@ size_t retro_spsc_read_begin(retro_spsc_t *q, const void **ptr);
  */
 void retro_spsc_read_end(retro_spsc_t *q, size_t bytes);
 
+/**
+ * retro_spsc_skip:
+ * @q     : The queue.
+ * @bytes : Number of bytes to discard.
+ *
+ * Consumer-side discard: frees up to @bytes back to the producer
+ * without copying them anywhere, clamped to what is actually
+ * buffered.  This is what a consumer that has already inspected a
+ * record through retro_spsc_peek or retro_spsc_read_begin needs in
+ * order to commit the read later, without re-deriving a span it
+ * has already seen.
+ *
+ * Returns: number of bytes actually discarded.
+ *
+ * SAFETY: consumer thread only.
+ */
+size_t retro_spsc_skip(retro_spsc_t *q, size_t bytes);
+
 RETRO_END_DECLS
 
 #endif /* __LIBRETRO_SDK_SPSC_H */

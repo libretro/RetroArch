@@ -113,10 +113,6 @@ CONSOLE EXTENSIONS
 ============================================================ */
 #ifdef RARCH_CONSOLE
 
-#ifdef HW_DOL
-#include "../memory/ngc/ssaram.c"
-#endif
-
 #ifdef INTERNAL_LIBOGC
 #include "../wii/libogc/libfat/cache.c"
 #include "../wii/libogc/libfat/directory.c"
@@ -213,11 +209,10 @@ ACHIEVEMENTS
 #endif
 
 /* rcheevos doesn't actually spawn and manage threads, RC_NO_THREADS
- * simply disables the mutexes that provide thread safety. */
+ * simply disables the mutexes that provide thread safety. rc_compat
+ * carries its own native mutexes for GEKKO (recursive LWP) and 3DS
+ * (RecursiveLock), so threaded builds keep their locks there too. */
 #if !defined(HAVE_THREADS)
-#define RC_NO_THREADS 1
-#elif defined(GEKKO) || defined(_3DS)
- /* Gekko (Wii) and 3DS use custom pthread wrappers (see rthreads.c) */
 #define RC_NO_THREADS 1
 #endif
 #define RC_CLIENT_SUPPORTS_HASH 1
@@ -268,9 +263,7 @@ ACHIEVEMENTS
 /*============================================================
 MD5
 ============================================================ */
-#ifndef __APPLE__
 #include "../libretro-common/utils/md5.c"
-#endif
 
 /*============================================================
 CHEATS
@@ -410,12 +403,32 @@ VIDEO SHADERS
 
 #ifdef HAVE_SLANG
 #include "../gfx/drivers_shader/glslang_util.c"
+#include "../gfx/drivers_shader/slang_cache.c"
+#include "../gfx/drivers_shader/slang_process.c"
 #endif
 
-/* Must mirror the guard on shader_gl3.cpp in griffin_cpp.cpp exactly:
+/* Must mirror the guard this file carried in griffin_cpp.cpp exactly:
+ * shader_vulkan.c calls vulkan_common.c and the Vulkan symbol wrapper,
+ * neither of which is in the build unless HAVE_VULKAN is set.  HAVE_SLANG
+ * alone is a real configuration (MSVC lanes ship D3D + slang without
+ * Vulkan) and compiling this file there produces unresolved externals at
+ * link time, not a compile error. */
+#if defined(HAVE_VULKAN) && defined(HAVE_SLANG)
+#include "../gfx/drivers_shader/shader_vulkan.c"
+#endif
+
+/* Must mirror the guard on shader_gl3.c in griffin_cpp.cpp exactly:
  * that is the only consumer of spirv_opengl_lower(). */
 #if defined(HAVE_OPENGL_CORE) && defined(HAVE_SLANG)
 #include "../gfx/drivers_shader/spirv_opengl.c"
+#endif
+
+/* Guard copied verbatim from the one this file carried in
+ * griffin_cpp.cpp; shader_gl3.c calls the gl3 driver's helpers and
+ * spirv_opengl_lower(), both of which are inside the same pair of
+ * defines. */
+#if defined(HAVE_OPENGL_CORE) && defined(HAVE_SLANG)
+#include "../gfx/drivers_shader/shader_gl3.c"
 #endif
 
 #ifdef HAVE_CG
@@ -468,6 +481,7 @@ VIDEO IMAGE
 #include "../libretro-common/formats/png/rpng.c"
 #include "../libretro-common/formats/png/rpng_apng.c"
 #include "../libretro-common/formats/png/rpng_encode.c"
+#include "../libretro-common/file/rpng_file.c"
 #endif
 #ifdef HAVE_RJPEG
 #include "../libretro-common/formats/jpeg/rjpeg.c"
@@ -514,6 +528,7 @@ VIDEO IMAGE
 #endif
 
 #include "../libretro-common/formats/bmp/rbmp_encode.c"
+#include "../libretro-common/file/rbmp_file.c"
 
 #ifdef HAVE_RWAV
 #include "../libretro-common/formats/wav/rwav.c"
@@ -1184,8 +1199,10 @@ FILE
 #include "../libretro-common/lists/dir_list.c"
 #include "../libretro-common/lists/string_list.c"
 #include "../libretro-common/lists/nested_list.c"
+#include "../libretro-common/memory/mempool.c"
 #include "../libretro-common/lists/file_list.c"
 #include "../libretro-common/file/retro_dirent.c"
+#include "../libretro-common/file/file_watch.c"
 #include "../libretro-common/streams/file_stream.c"
 #include "../libretro-common/streams/file_stream_transforms.c"
 #include "../libretro-common/streams/interface_stream.c"
@@ -1206,6 +1223,7 @@ FILE
 #include "../libretro-common/vfs/vfs_implementation_saf.c"
 #endif
 
+#include "../libretro-common/string/rstrtod.c"
 #include "../libretro-common/string/stdstring.c"
 #if defined(__linux__)
 #endif
@@ -1418,6 +1436,7 @@ DATA RUNLOOP
 #include "../tasks/task_content_prefetch.c"
 #include "../tasks/task_image.c"
 #include "../tasks/task_file_transfer.c"
+#include "../tasks/task_nbio_slice.c"
 #include "../tasks/task_playlist_manager.c"
 #include "../tasks/task_core_backup.c"
 #ifdef HAVE_TRANSLATE
@@ -1466,6 +1485,7 @@ MENU
 #endif
 
 #ifdef HAVE_MENU
+#include "../menu/menu_str.c"
 #include "../menu/menu_driver.c"
 #include "../menu/menu_setting.c"
 #if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
@@ -1486,6 +1506,7 @@ MENU
 #include "../menu/cbs/menu_cbs_label.c"
 #include "../menu/cbs/menu_cbs_sublabel.c"
 #include "../menu/menu_displaylist.c"
+#include "../menu/menu_dirwalk.c"
 #include "../menu/menu_contentless_cores.c"
 #ifdef HAVE_LIBRETRODB
 #include "../menu/menu_explore.c"
@@ -1694,6 +1715,7 @@ SSL
 #include "../deps/mbedtls/ripemd160.c"
 #include "../deps/mbedtls/rsa.c"
 #include "../deps/mbedtls/sha1.c"
+#include "../deps/mbedtls/sha_alt.c"
 #include "../deps/mbedtls/sha256.c"
 #include "../deps/mbedtls/sha512.c"
 #include "../deps/mbedtls/threading.c"
@@ -1742,7 +1764,7 @@ DISK CONTROL INTERFACE
 /*============================================================
 MISC FILE FORMATS
 ============================================================ */
-#include "../libretro-common/formats/m3u/m3u_file.c"
+#include "../libretro-common/formats/m3u/rm3u.c"
 
 /*============================================================
 TIME
@@ -1828,7 +1850,6 @@ SMB CLIENT
 #include "../deps/libsmb2/lib/krb5-wrapper.c"
 #include "../deps/libsmb2/lib/libsmb2.c"
 #include "../deps/libsmb2/lib/md4c.c"
-#include "../deps/libsmb2/lib/md5.c"
 #include "../deps/libsmb2/lib/ntlmssp.c"
 #include "../deps/libsmb2/lib/pdu.c"
 #include "../deps/libsmb2/lib/sha1.c"

@@ -23,12 +23,13 @@
 #include <ppl.h>
 #include <ppltasks.h>
 #include <stdio.h>
+#include <string.h>
 #include <wrl.h>
 #include <wrl/implements.h>
 #include <robuffer.h>
 #include <functional>
 #include <fileapifromapp.h>
-#include <AclAPI.h>
+#include <aclapi.h>
 #include <sddl.h>
 #include <io.h>
 #include <fcntl.h>
@@ -555,7 +556,10 @@ static int uwp_move_path(
                               && targetfileinfo.dwFileAttributes != 0
                               && (!(targetfileinfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)))
                         {
-                            if (DeleteFileFromAppW(new_path.wstring().c_str()))
+                            /* DeleteFileFromAppW returns nonzero on
+                             * success; MoveFileFromAppW cannot replace
+                             * an existing destination. */
+                            if (!DeleteFileFromAppW(new_path.wstring().c_str()))
                                 return -1;
                         }
                     }
@@ -567,7 +571,11 @@ static int uwp_move_path(
                     uwp_set_acl(new_path.wstring().c_str(), L"S-1-15-2-1");
                 }
             }
+            else
+                return -1; /* source attributes unusable */
         }
+        else
+            return -1; /* source does not exist */
 
     }
     else
@@ -617,7 +625,8 @@ static int uwp_move_path(
                             && (!(targetfileinfo.dwFileAttributes
                                   & FILE_ATTRIBUTE_DIRECTORY)))
                       {
-                         if (DeleteFileFromAppW(temp_new.wstring().c_str()))
+                         /* Nonzero is success. */
+                         if (!DeleteFileFromAppW(temp_new.wstring().c_str()))
                             fail = true;
                       }
                    }
@@ -647,8 +656,12 @@ static int uwp_move_path(
  * Default arguments mean that we can do better recursion */
 int retro_vfs_file_rename_impl(const char* old_path, const char* new_path)
 {
+    /* A self-rename is a no-op; it must not reach the replace logic,
+     * which would delete the destination - and the source with it. */
+    if (old_path && new_path && strcmp(old_path, new_path) == 0)
+        return 0;
     return uwp_move_path(std::filesystem::path(old_path),
-          std::filesystem::path(old_path), true);
+          std::filesystem::path(new_path), true);
 }
 
 const char *retro_vfs_file_get_path_impl(libretro_vfs_implementation_file *stream)
@@ -657,6 +670,39 @@ const char *retro_vfs_file_get_path_impl(libretro_vfs_implementation_file *strea
    if (!stream)
       abort();
    return stream->orig_path;
+}
+
+int64_t retro_vfs_file_get_sparse_granularity_impl(
+      libretro_vfs_implementation_file *stream)
+{
+   /* No sparse support here, so no granularity to report; see
+    * retro_vfs_file_punch_hole_impl below. 0 is the documented "unknown"
+    * answer and callers must not read it as "no alignment needed".
+    *
+    * Defined rather than omitted because this backend REPLACES
+    * vfs_implementation.c on UWP: a missing definition is a link error at
+    * the end of a long MSVC build, not a fallback. */
+   (void)stream;
+   return 0;
+}
+
+int retro_vfs_file_punch_hole_impl(libretro_vfs_implementation_file *stream,
+      int64_t offset, int64_t len)
+{
+   /* UWP cannot punch holes. FSCTL_SET_ZERO_DATA is issued through
+    * DeviceIoControl, which is not in the app container's API surface,
+    * and this backend's handle comes from a StorageFile rather than
+    * being one a filesystem control code can be sent to.
+    *
+    * -1 is the documented "not available" answer: filestream_punch_hole
+    * is a capability, so callers write zeroes instead and lose the space
+    * saving and nothing else. Defined here rather than omitted because
+    * this backend REPLACES vfs_implementation.c on UWP, so a missing
+    * definition is a link error at the end of a long MSVC build. */
+   (void)stream;
+   (void)offset;
+   (void)len;
+   return -1;
 }
 
 const uint8_t *retro_vfs_file_get_mapped_ptr_impl(

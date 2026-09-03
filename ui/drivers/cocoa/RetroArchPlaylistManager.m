@@ -16,6 +16,7 @@
 #include "../../../libretro-common/include/lists/dir_list.h"
 #include "../../../libretro-common/include/file/file_path.h"
 #include "../../../libretro-common/include/string/stdstring.h"
+#include <compat/strl.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -120,7 +121,7 @@ typedef void (^PlaylistEntryBlock)(const struct playlist_entry *entry, playlist_
         config.fuzzy_archive_match = false;
         config.autofix_paths = false;
         strlcpy(config.path, playlist_path, sizeof(config.path));
-        strlcpy(config.base_content_directory, "", sizeof(config.base_content_directory));
+        strlcpy_lit(config.base_content_directory, "", sizeof(config.base_content_directory));
 
         playlist_t *playlist = playlist_init(&config);
         if (!playlist)

@@ -1,7 +1,6 @@
 <!-- <!DOCTYPE manifest [ <!ENTITY % versionDTD SYSTEM "../../../version.dtd"> %versionDTD; ]> !-->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           xmlns:tools="http://schemas.android.com/tools"
-    package="com.retroarch"
     android:versionCode="1597175272"
     android:versionName="1.22.2"
     android:installLocation="internalOnly">
@@ -30,18 +29,28 @@
         android:requestLegacyExternalStorage="true"
         android:enableOnBackInvokedCallback="false"
         tools:ignore="UnusedAttribute">
-        <activity android:name="com.retroarch.browser.mainmenu.MainMenuActivity" android:exported="true" android:launchMode="singleInstance">
+        <activity android:name="com.retroarch.browser.retroactivity.RetroActivityFuture" android:exported="true" android:configChanges="mcc|mnc|locale|touchscreen|keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize|fontScale" android:theme="@android:style/Theme.NoTitleBar.Fullscreen" android:launchMode="singleInstance">
+            <meta-data android:name="android.app.lib_name" android:value="retroarch-activity" />
+            <meta-data android:name="android.app.func_name" android:value="ANativeActivity_onCreate" />
+        </activity>
+        <!-- Launcher identity: same component name as the retired Java
+             launcher, so pinned shortcuts and launcher rows keep
+             resolving while starting the native activity directly. -->
+        <activity-alias android:name="com.retroarch.browser.mainmenu.MainMenuActivity"
+            android:targetActivity="com.retroarch.browser.retroactivity.RetroActivityFuture"
+            android:exported="true">
+                <!-- NativeActivity resolves its library from the launched
+                     component's own meta-data; an alias does not inherit
+                     these from its target, so they are repeated here. -->
+                <meta-data android:name="android.app.lib_name" android:value="retroarch-activity" />
+                <meta-data android:name="android.app.func_name" android:value="ANativeActivity_onCreate" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
                 <category android:name="tv.ouya.intent.category.GAME" />
             </intent-filter>
-        </activity>
-        <activity android:name="com.retroarch.browser.retroactivity.RetroActivityFuture" android:exported="true" android:configChanges="mcc|mnc|locale|touchscreen|keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize|fontScale" android:theme="@android:style/Theme.NoTitleBar.Fullscreen" android:launchMode="singleInstance">
-            <meta-data android:name="android.app.lib_name" android:value="retroarch-activity" />
-            <meta-data android:name="android.app.func_name" android:value="ANativeActivity_onCreate" />
-        </activity>
+        </activity-alias>
         <activity android:name="com.retroarch.browser.debug.CoreSideloadActivity" android:exported="true"/>
         <receiver android:name="com.retroarch.browser.receiver.InstalledCoresReceiver" android:exported="true">
             <intent-filter>

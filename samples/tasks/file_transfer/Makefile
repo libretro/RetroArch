@@ -11,6 +11,7 @@ LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 
 SOURCES := task_file_transfer_test.c \
            $(REPO_ROOT)/tasks/task_file_transfer.c \
+           $(REPO_ROOT)/tasks/task_nbio_slice.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strldup.c \
@@ -33,6 +34,7 @@ SOURCES := task_file_transfer_test.c \
            $(LIBRETRO_COMM_DIR)/queues/task_queue.c \
            $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
            $(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+           $(LIBRETRO_COMM_DIR)/string/rstrtod.c \
            $(LIBRETRO_COMM_DIR)/string/stdstring.c \
            $(LIBRETRO_COMM_DIR)/time/rtime.c \
            $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c

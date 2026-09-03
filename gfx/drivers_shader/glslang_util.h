@@ -20,6 +20,7 @@
 #include <retro_common_api.h>
 #include <retro_inline.h>
 
+#include "glslang_compile.h"
 #include "../video_shader_parse.h"
 
 typedef enum glslang_format
@@ -155,6 +156,7 @@ struct shader_line_buf
 };
 
 RETRO_BEGIN_DECLS
+
 
 static INLINE enum glslang_filter_chain_address rarch_wrap_to_address(
       enum gfx_wrap_type type)

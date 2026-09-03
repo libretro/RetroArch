@@ -127,6 +127,9 @@ typedef struct font_data
    char *lang_pkg_dir;
    char *lang_default_path;
    bool is_threaded;
+   /* The threading_hint font_driver_init_first() was called with, so
+    * a rebuild reaches the backend on the same thread as creation. */
+   bool threading_hint;
    /* Line metrics, read from the renderer once when the font is
     * created. Renderers fill these at init and never change them, so
     * callers can use them directly instead of asking again - which
@@ -176,13 +179,62 @@ void font_driver_render_msg(void *data,
 
 int font_driver_get_message_width(void *font_data, const char *msg, size_t len, float scale);
 
+/* Would rebuilding this font at this path and size produce the font
+ * that is already there? Lets a caller skip a rebuild that would
+ * rasterise an identical atlas and re-upload an identical texture,
+ * which is most of what a layout pass asks for: the things that
+ * trigger one — padding, thumbnail scale, a nav bar toggle — mostly
+ * do not move any font size.
+ *
+ * False for a NULL handle, and for one that is no longer live, so a
+ * context reset that cleared or released its fonts always rebuilds.
+ * Conservative in both directions: it answers no whenever it cannot
+ * be sure, and a wrong no only costs the work that would have been
+ * done anyway. Callers must pass the same size they would pass to the
+ * font builder, after any clamping of their own. */
+bool font_driver_matches(const font_data_t *font,
+      const char *path, float size);
+
 void font_driver_free(font_data_t *font);
+
+/* Release a font whose replacement has already been built, once the
+ * frames that could still be reading its atlas have gone out.
+ *
+ * For callers that rebuild a font from a render path, which runs
+ * before the video driver's frame function in the same iteration: a
+ * plain font_driver_free() there can release an atlas a command list
+ * still references, which drivers with deferred submission do not
+ * survive. Build the replacement first, retire the old handle with
+ * this, and keep drawing.
+ *
+ * The handle must not be used again after this call. */
+void font_driver_free_deferred(font_data_t *font);
+
+/* Age the deferred queue by one frame, releasing whatever has come
+ * due. Called once per frame from video_driver_frame() after the
+ * frame has been handed to the driver. With flush set, everything is
+ * released immediately, for teardown paths where there is no later
+ * frame to wait for. */
+void font_driver_free_pending(bool flush);
 
 /* Rebuild every live font from its current path, in place. Used when
  * the menu language changes and the fonts must follow, without tearing
  * down the video driver to do it. Fonts whose path is unchanged are
  * left alone. Returns the number rebuilt. */
 unsigned font_driver_reload_fonts(void);
+
+/* Rebuild the shared OSD font in place against a path and a size. An
+ * empty or NULL font_path means "let the renderer choose", as at
+ * creation.
+ *
+ * Returns false only where there is no shared OSD font to rebuild:
+ * video is not up, or the driver keeps its font privately (sdl, sdl2,
+ * xvideo, vg, omap, oga, exynos) and needs a driver reinit to pick
+ * the change up. That is for the caller to handle, not an error.
+ *
+ * A rebuild that fails returns true and keeps the working font: the
+ * setting does not take, but the text survives. */
+bool font_driver_reinit_osd(const char *font_path, float font_size);
 
 /* The font file the current menu language needs, relative to the
  * assets pkg directory, or NULL when it has no special requirement

@@ -2917,10 +2917,8 @@ static void gl2_free_overlay(gl2_t *gl)
 {
    glDeleteTextures(gl->overlays, gl->overlay_tex);
 
+   /* The three coordinate arrays are views into the overlay_tex block. */
    free(gl->overlay_tex);
-   free(gl->overlay_vertex_coord);
-   free(gl->overlay_tex_coord);
-   free(gl->overlay_color_coord);
    gl->overlay_tex          = NULL;
    gl->overlay_vertex_coord = NULL;
    gl->overlay_tex_coord    = NULL;
@@ -3241,24 +3239,71 @@ static void gl2_update_input_size(gl2_t *gl, unsigned width,
    if ((width != gl->last_width[gl->tex_index] ||
             height != gl->last_height[gl->tex_index]) && gl->empty_buf)
    {
-      /* Resolution change. Need to clear out texture. */
+      /* Resolution change.
+       *
+       * Both rectangles are clamped to the texture before anything is
+       * derived from them: a core is free to hand over a frame wider
+       * or taller than the geometry it declared, nothing above tex_w
+       * or tex_h ever reached the texture, and such a width must not
+       * end up describing a read out of empty_buf. */
+      unsigned old_w                 = MIN(gl->last_width[gl->tex_index],
+            gl->tex_w);
+      unsigned old_h                 = MIN(gl->last_height[gl->tex_index],
+            gl->tex_h);
+      unsigned new_w                 = MIN(width,  gl->tex_w);
+      unsigned new_h                 = MIN(height, gl->tex_h);
 
       gl->last_width[gl->tex_index]  = width;
       gl->last_height[gl->tex_index] = height;
 
-      if (clear)
+      /* Whatever sits outside the rectangle the core last wrote is
+       * already blank - the textures come up that way and every
+       * shrink blanks them again - so only a shrink can leave pixels
+       * of the old frame close enough for the edge filtering and the
+       * clamp to reach them. A larger frame covers the difference in
+       * the copy that follows this call. */
+      if (clear && (new_w < old_w || new_h < old_h))
       {
-         glPixelStorei(GL_UNPACK_ALIGNMENT,
-               gl2_get_alignment(width * sizeof(uint32_t)));
 #if defined(HAVE_PSGL)
+         glPixelStorei(GL_UNPACK_ALIGNMENT,
+               gl2_get_alignment(gl->tex_w * gl->base_size));
          glBufferSubData(GL_TEXTURE_REFERENCE_BUFFER_SCE,
                gl->tex_w * gl->tex_h * gl->tex_index * gl->base_size,
                gl->tex_w * gl->tex_h * gl->base_size,
                gl->empty_buf);
 #else
-         glTexSubImage2D(GL_TEXTURE_2D,
-               0, 0, 0, gl->tex_w, gl->tex_h, gl->texture_type,
-               gl->texture_fmt, gl->empty_buf);
+         /* Only the part of the old rectangle the new one stops
+          * covering can be holding a stale pixel, so a strip down the
+          * right and a strip along the bottom leave the same texture
+          * behind as blanking all of it, for a fraction of the bytes.
+          * The rows are packed tight and the alignment describes the
+          * strip, so each upload reads exactly as much of empty_buf
+          * as its own width and height ask for and no row of it is
+          * ever wider than tex_w. */
+         if (gl->flags & GL2_FLAG_HAVE_UNPACK_ROW_LENGTH)
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+
+         if (new_w < old_w)
+         {
+            glPixelStorei(GL_UNPACK_ALIGNMENT,
+                  gl2_get_alignment((old_w - new_w) * gl->base_size));
+            glTexSubImage2D(GL_TEXTURE_2D, 0,
+                  new_w, 0, old_w - new_w, old_h,
+                  gl->texture_type, gl->texture_fmt, gl->empty_buf);
+         }
+
+         if (new_h < old_h)
+         {
+            unsigned span = MIN(new_w, old_w);
+            if (span > 0)
+            {
+               glPixelStorei(GL_UNPACK_ALIGNMENT,
+                     gl2_get_alignment(span * gl->base_size));
+               glTexSubImage2D(GL_TEXTURE_2D, 0,
+                     0, new_h, span, old_h - new_h,
+                     gl->texture_type, gl->texture_fmt, gl->empty_buf);
+            }
+         }
 #endif
       }
    }
@@ -3281,8 +3326,11 @@ static void gl2_init_textures_data(gl2_t *gl)
    size_t i;
    for (i = 0; i < gl->textures; i++)
    {
-      gl->last_width[i]  = gl->tex_w;
-      gl->last_height[i] = gl->tex_h;
+      /* Nothing has been written into these yet - gl2_init_textures
+       * has just blanked them - so the first frame to land in each
+       * one grows into empty space and needs no clear of its own. */
+      gl->last_width[i]  = 0;
+      gl->last_height[i] = 0;
    }
 
    for (i = 0; i < gl->textures; i++)
@@ -3892,9 +3940,9 @@ static bool gl2_frame(void *data, const void *frame,
    video_shader_ctx_params_t params;
    struct video_tex_info feedback_info;
    gl2_t                            *gl = (gl2_t*)data;
-   gl2_renderchain_data_t       *chain = (gl2_renderchain_data_t*)gl->renderchain_data;
-   unsigned width                      = gl->video_width;
-   unsigned height                     = gl->video_height;
+   gl2_renderchain_data_t       *chain = NULL;
+   unsigned width                      = 0;
+   unsigned height                     = 0;
    bool use_rgba                       = (video_info->video_st_flags & VIDEO_FLAG_USE_RGBA) ? true : false;
    bool statistics_show                = video_info->statistics_show;
    bool msg_bgcolor_enable             = video_info->msg_bgcolor_enable;
@@ -3915,6 +3963,16 @@ static bool gl2_frame(void *data, const void *frame,
 
    if (!gl)
       return false;
+
+   /* Resolved only after the guard above: initialising these at
+    * declaration dereferenced 'data' before the NULL check ever ran,
+    * so a frame call issued with no driver instance (e.g. the
+    * cached-frame replay in command_event_reinit) faulted at
+    * function entry instead of returning false. gl3_frame already
+    * orders it this way. */
+   chain  = (gl2_renderchain_data_t*)gl->renderchain_data;
+   width  = gl->video_width;
+   height = gl->video_height;
 
    if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
@@ -4288,7 +4346,7 @@ static bool gl2_frame(void *data, const void *frame,
        *
        * The glcore driver has the same shape here but is unaffected:
        * its filter chain re-runs glViewport on the final pass every
-       * frame (shader_gl3.cpp), so the leak never survives to a draw.
+       * frame (shader_gl3.c), so the leak never survives to a draw.
        * The gl2 GLSL path has no equivalent choke point. */
       glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
    }
@@ -4747,7 +4805,7 @@ static const gfx_ctx_driver_t *gl2_get_context(gl2_t *gl)
          minor = 0;
          break;
       case RETRO_HW_CONTEXT_OPENGLES_VERSION:
-         // passthrough version_major / version_minor unchanged
+         /* Passthrough version_major / version_minor unchanged. */
          break;
       default:
          major = 2;
@@ -5293,8 +5351,15 @@ static void *gl2_init(const video_info_t *video,
    gl->coords.vertices       = 4;
 
    /* Empty buffer that we use to clear out
-    * the texture with on res change. */
-   gl->empty_buf             = calloc(gl->tex_w * gl->tex_h, sizeof(uint32_t));
+    * the texture with on res change.
+    *
+    * That clear reads the full tex_w * tex_h rectangle, which at 32bpp
+    * is every byte of the allocation, so a driver copying the source
+    * in blocks has nothing to spare past the final row. Large mappings
+    * are guarded on modern allocators, so those few bytes are a fault
+    * rather than a harmless read. Carry an extra row. */
+   gl->empty_buf             = calloc(gl->tex_w * (gl->tex_h + 1),
+         sizeof(uint32_t));
 
    gl->conv_buffer           = calloc(gl->tex_w * gl->tex_h, sizeof(uint32_t));
 
@@ -5662,6 +5727,7 @@ unsigned *height_p, size_t *pitch_p)
 static bool gl2_overlay_load(void *data,
       const void *image_data, unsigned num_images)
 {
+   size_t o_vertex, o_tex, o_color;
    unsigned i, j;
    gl2_t *gl = (gl2_t*)data;
    const struct texture_image *images =
@@ -5674,8 +5740,14 @@ static bool gl2_overlay_load(void *data,
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
 
    gl2_free_overlay(gl);
+   /* The texture names and the vertex, texture and colour coordinate
+    * arrays of all overlay images come out of one zeroed block, each
+    * region starting on a 64-byte boundary; overlay_tex owns it. */
+   o_vertex = ((num_images * sizeof(GLuint)) + 63) & ~(size_t)63;
+   o_tex    = o_vertex + ((2 * 4 * num_images * sizeof(GLfloat) + 63) & ~(size_t)63);
+   o_color  = o_tex    + ((2 * 4 * num_images * sizeof(GLfloat) + 63) & ~(size_t)63);
    gl->overlay_tex = (GLuint*)
-      calloc(num_images, sizeof(*gl->overlay_tex));
+      calloc(1, o_color + 4 * 4 * num_images * sizeof(GLfloat));
 
    if (!gl->overlay_tex)
    {
@@ -5684,17 +5756,9 @@ static bool gl2_overlay_load(void *data,
       return false;
    }
 
-   gl->overlay_vertex_coord = (GLfloat*)
-      calloc(2 * 4 * num_images, sizeof(GLfloat));
-   gl->overlay_tex_coord    = (GLfloat*)
-      calloc(2 * 4 * num_images, sizeof(GLfloat));
-   gl->overlay_color_coord  = (GLfloat*)
-      calloc(4 * 4 * num_images, sizeof(GLfloat));
-
-   if (     !gl->overlay_vertex_coord
-         || !gl->overlay_tex_coord
-         || !gl->overlay_color_coord)
-      return false;
+   gl->overlay_vertex_coord = (GLfloat*)((uint8_t*)gl->overlay_tex + o_vertex);
+   gl->overlay_tex_coord    = (GLfloat*)((uint8_t*)gl->overlay_tex + o_tex);
+   gl->overlay_color_coord  = (GLfloat*)((uint8_t*)gl->overlay_tex + o_color);
 
    gl->overlays = num_images;
    glGenTextures(num_images, gl->overlay_tex);

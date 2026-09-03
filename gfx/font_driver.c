@@ -332,9 +332,50 @@ static uint32_t font_driver_generation = 0;
  * should change. Singly linked through font_data_t::next. */
 static font_data_t *font_live = NULL;
 
+/* Fonts whose replacement has already been built, waiting out the
+ * frames in which the GPU may still be reading their atlas.
+ *
+ * A caller that rebuilds a font from the menu render path runs before
+ * the video driver's frame function in the same runloop iteration, so
+ * a handle released there can still be referenced by a command list
+ * that has not been submitted, let alone completed. On a driver with
+ * deferred submission that is a crash: D3D12 hit it for years on an
+ * XMB font scale change. Retiring instead of freeing lets the caller
+ * swap in the new font immediately and hands the release to
+ * font_driver_free_pending(), which runs after frames are submitted.
+ *
+ * Two frames is the interval the old XMB open-coded countdown used and
+ * is what the D3D12 report was tested against: by the time two frames
+ * have gone out, the one that could have referenced the atlas has been
+ * submitted and waited on. The queue is global because only one menu
+ * driver is live at a time and the widget and screensaver fonts share
+ * the same frame clock; sizing is per handle in flight, not per
+ * caller.
+ *
+ * Unlocked, like font_live and unlike the font file cache above: every
+ * caller is on the main thread. The retires come from menu and widget
+ * render paths, and the ageing from video_driver_frame(), which the
+ * runloop calls on the main thread and which the threaded wrapper
+ * forwards from rather than runs on the video thread. That invariant
+ * is not new here — video_driver_frame() already keeps its frame
+ * timing in function statics, which would race far more visibly. */
+#define FONT_FREE_DEFERRED_MAX 16
+#define FONT_FREE_DEFERRED_FRAMES 2
+
+static struct
+{
+   font_data_t *font;
+   unsigned     frames;
+} font_free_deferred[FONT_FREE_DEFERRED_MAX];
+
 static void font_driver_release_renderer_state(
       const font_renderer_t *renderer, void *renderer_data,
       bool is_threaded);
+
+static bool font_init_first(
+      const void **font_driver, void **font_handle,
+      void *video_data, const char *font_path, float font_size,
+      const font_renderer_t *backend, bool is_threaded);
 
 /* Read the renderer's line metrics into the font, or approximate them
  * from the width of 'a' when it has none. Done at creation and again
@@ -414,6 +455,62 @@ static const char *font_driver_resolve_path(font_data_t *font,
    return s;
 }
 
+/* Rebuild one font in place against a path and a size. The
+ * font_data_t address does not change, so every holder of the pointer
+ * stays valid; only the renderer state behind it is replaced.
+ *
+ * Goes through font_init_first(), so the rebuild takes the thread
+ * route its creation took and a font belonging to the video thread
+ * has its texture work done there.
+ *
+ * The new state is built before the old is released: on failure the
+ * caller keeps a working font rather than losing its text. */
+static bool font_driver_rebuild(font_data_t *font,
+      const char *path, float size)
+{
+   const void *drv    = NULL;
+   void       *handle = NULL;
+   bool        ok     = false;
+
+   if (!font || !font->renderer)
+      return false;
+
+   /* font->renderer is the backend font_init_first() was handed, so
+    * this is the call that made the font, against a different file. */
+#ifdef HAVE_THREADS
+   if (     font->threading_hint
+         && video_driver_thread_wrapper_active())
+      ok = video_thread_font_init(&drv, &handle, font->video_data,
+            path, size, font->renderer, font_init_first,
+            font->is_threaded);
+   else
+#endif
+   ok = font_init_first(&drv, &handle, font->video_data, path, size,
+         font->renderer, font->is_threaded);
+
+   if (!ok)
+      return false;
+
+   font_driver_release_renderer_state(font->renderer,
+         font->renderer_data, font->is_threaded);
+
+   font->renderer      = (const font_renderer_t*)drv;
+   font->renderer_data = handle;
+   font->size          = size;
+
+   /* Remember what it is built from now. The guard matters: path can
+    * be font->path itself, where font_driver_resolve_path() hands
+    * back the font's own string. */
+   if (path != font->path)
+   {
+      free(font->path);
+      font->path = (path && *path) ? strdup(path) : NULL;
+   }
+
+   font_driver_cache_metrics(font);
+   return true;
+}
+
 unsigned font_driver_reload_fonts(void)
 {
    font_data_t *font;
@@ -421,53 +518,29 @@ unsigned font_driver_reload_fonts(void)
 
    for (font = font_live; font; font = font->next)
    {
-      const font_renderer_t *renderer = font->renderer;
-      void                  *fresh    = NULL;
+      char resolved[PATH_MAX_LENGTH];
+      const char *want;
 
       /* Only a font created from an explicit path can be re-resolved;
        * one the renderer chose for itself has nothing to re-read. */
-      if (!font->path || !renderer || !renderer->init)
+      if (!font->path || !font->renderer || !font->renderer->init)
          continue;
 
-      /* The backend's own init does the resolving and the reading, so
-       * this is the same call that created the font in the first
-       * place - just against whatever the path now points at. */
-      {
-         char resolved[PATH_MAX_LENGTH];
-         const char *want = font_driver_resolve_path(font,
-               resolved, sizeof(resolved));
+      want = font_driver_resolve_path(font, resolved, sizeof(resolved));
 
-         /* Most language changes do not change the file. Only Arabic
-          * and Persian, Chinese, Korean and Thai have a face of their
-          * own; everything else shares the menu font, so English to
-          * French, or either to Japanese, resolves to what is already
-          * loaded. Rebuilding then would throw away the atlas and the
-          * GPU texture behind every font, read the same TTF back, and
-          * bump the generation so every derived metric was recomputed
-          * too - all to arrive where it started. */
-         if (font->path && string_is_equal(want, font->path))
-            continue;
+      /* Most language changes do not change the file. Only Arabic
+       * and Persian, Chinese, Korean and Thai have a face of their
+       * own; everything else shares the menu font, so English to
+       * French, or either to Japanese, resolves to what is already
+       * loaded. Rebuilding then would throw away the atlas and the
+       * GPU texture behind every font, read the same TTF back, and
+       * bump the generation so every derived metric was recomputed
+       * too - all to arrive where it started. */
+      if (string_is_equal(want, font->path))
+         continue;
 
-         if (!(fresh = renderer->init(font->video_data, want,
-                     font->size, font->is_threaded)))
-            continue;   /* keep the old font rather than lose text */
-
-         /* Remember what it is actually built from now. */
-         if (want != font->path)
-         {
-            free(font->path);
-            font->path = strdup(want);
-         }
-      }
-
-      /* Swap in place: the font_data_t address does not change, so
-       * every holder of the pointer stays valid. Only the renderer
-       * state behind it is replaced. */
-      font_driver_release_renderer_state(renderer, font->renderer_data,
-            font->is_threaded);
-      font->renderer_data = fresh;
-      font_driver_cache_metrics(font);
-      n++;
+      if (font_driver_rebuild(font, want, font->size))
+         n++;   /* on failure, keep the old font rather than lose text */
    }
 
    if (n)
@@ -1214,7 +1287,10 @@ static void font_driver_release_renderer_state(
       return;
 
 #ifdef HAVE_THREADS
-   if (is_threaded)
+   /* Same reasoning as the init side: the free has to reach whichever
+    * thread owns the context, and the font's recorded is_threaded can
+    * be stale by the time it is released. */
+   if (is_threaded || video_driver_thread_wrapper_active())
    {
       font_free_cmd_t cmd;
       cmd.renderer      = renderer;
@@ -1272,6 +1348,85 @@ void font_driver_free(font_data_t *font)
    }
 }
 
+bool font_driver_matches(const font_data_t *font,
+      const char *path, float size)
+{
+   const font_data_t *live;
+
+   if (!font)
+      return false;
+
+   /* Confirm the handle is still one of ours before reading through
+    * it. A caller that freed a font without clearing its pointer
+    * would otherwise turn this into a use-after-free, and "no" is the
+    * answer it needs in that case anyway. The list holds one entry
+    * per live font, so this is a walk of a handful of pointers. */
+   for (live = font_live; live; live = live->next)
+      if (live == font)
+         break;
+   if (!live)
+      return false;
+
+   if (font->size != size)
+      return false;
+
+   /* A font whose face the renderer chose carries no path, and can
+    * only match a request that likewise names none. */
+   if (!font->path)
+      return (!path || !*path);
+   if (!path || !*path)
+      return false;
+
+   return string_is_equal(font->path, path);
+}
+
+void font_driver_free_deferred(font_data_t *font)
+{
+   unsigned i;
+
+   if (!font)
+      return;
+
+   for (i = 0; i < FONT_FREE_DEFERRED_MAX; i++)
+   {
+      if (!font_free_deferred[i].font)
+      {
+         font_free_deferred[i].font   = font;
+         font_free_deferred[i].frames = FONT_FREE_DEFERRED_FRAMES;
+         return;
+      }
+   }
+
+   /* Queue full. Only reachable if a caller retires faster than
+    * frames go out, which would mean it is rebuilding more than
+    * FONT_FREE_DEFERRED_MAX/2 fonts between two frames. Freeing here
+    * is the behaviour this function exists to avoid, so say so rather
+    * than leak the handle silently. */
+   RARCH_WARN("[Font] Deferred free queue full; releasing immediately.\n");
+   font_driver_free(font);
+}
+
+void font_driver_free_pending(bool flush)
+{
+   unsigned i;
+
+   for (i = 0; i < FONT_FREE_DEFERRED_MAX; i++)
+   {
+      if (!font_free_deferred[i].font)
+         continue;
+
+      if (flush || --font_free_deferred[i].frames == 0)
+      {
+         font_data_t *font          = font_free_deferred[i].font;
+         /* Cleared before the free: font_driver_free() can marshal to
+          * the video thread, and this slot must not look occupied to
+          * anything that runs in the meantime. */
+         font_free_deferred[i].font = NULL;
+         font_driver_free(font);
+      }
+   }
+}
+
 font_data_t *font_driver_init_first(
       void *video_data, const char *font_path, float font_size,
       bool threading_hint, bool is_threaded,
@@ -1281,9 +1436,14 @@ font_data_t *font_driver_init_first(
    void *font_handle       = NULL;
    bool ok                 = false;
 #ifdef HAVE_THREADS
+   /* Dispatch on the wrapper's presence, not on is_threaded: font
+    * resources belong to whichever thread drives the driver, and
+    * between SET_HW_RENDER and the video reinit that follows,
+    * is_threaded already reads false while the wrapper still owns
+    * the context. video_thread_font_init() re-checks and refuses if
+    * the wrapper is gone. */
    if (     threading_hint
-         && is_threaded
-         && !video_driver_is_hw_context())
+         && video_driver_thread_wrapper_active())
       ok = video_thread_font_init(&font_driver, &font_handle,
             video_data, font_path, font_size, backend, font_init_first,
             is_threaded);
@@ -1308,6 +1468,7 @@ font_data_t *font_driver_init_first(
          font->lang_pkg_dir      = NULL;
          font->lang_default_path = NULL;
          font->is_threaded   = is_threaded;
+         font->threading_hint= threading_hint;
 
          font_driver_cache_metrics(font);
 
@@ -1381,6 +1542,44 @@ void font_driver_init_osd(
 
    if (video_st->osd_font)
       video_st->osd_font_owner = video_data;
+}
+
+bool font_driver_reinit_osd(const char *font_path, float font_size)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   font_data_t          *font     = (font_data_t*)video_st->osd_font;
+
+   /* No shared OSD font: video is not up, or the driver keeps its own
+    * and never registered one here. Let the caller fall back. */
+   if (!font)
+      return false;
+
+   /* Normalised the way font_driver_init_osd() passes it, so both the
+    * comparison below and the rebuild see the same thing it would. */
+   if (font_path && !*font_path)
+      font_path = NULL;
+
+   /* Nothing to do. Shares the predicate with the menu and widget
+    * layout paths rather than repeating it: the empty-path and exact
+    * size rules are fiddly enough that a second copy would drift, and
+    * this one additionally declines to read through a handle that is
+    * no longer live. The exact size compare is deliberate — both
+    * sides come from the same settings float, and excess x87
+    * precision can only cost a redundant rebuild, never merge two
+    * sizes. */
+   if (font_driver_matches(font, font_path, font_size))
+      return true;
+
+   if (!font_driver_rebuild(font, font_path, font_size))
+   {
+      RARCH_WARN("[Font] Could not rebuild the OSD font; keeping the current one.\n");
+      return true;
+   }
+
+   /* Derived data cached outside this file - the widgets' line
+    * metrics, gfx_animation's ticker widths - is now stale. */
+   font_driver_generation++;
+   return true;
 }
 
 void font_driver_free_osd_for(void *video_data)

@@ -180,6 +180,14 @@ static bool sdl3_ctx_set_video_mode(void *data,
    /* GL attributes must be set before the window is created. */
    if (!sdl->win)
    {
+#ifdef GL_DEBUG
+      SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
+#else
+      struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
+      if (hwr && hwr->debug_context)
+         SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
+#endif
+
       if (sdl3_gl_api == GFX_CTX_OPENGL_ES_API)
          SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
       else if (sdl3_gl_core_profile(sdl))

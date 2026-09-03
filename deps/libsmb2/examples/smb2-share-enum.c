@@ -65,32 +65,32 @@ void se_cb(struct smb2_context *smb2, int status,
         /* We always only use Level1 for netshare enum */
         switch (level) {
         case SHARE_INFO_0:
-                printf("Number of shares:%d\n", rep->ses.ShareInfo.Level0.EntriesRead);
-                for (i = 0; i < rep->ses.ShareInfo.Level0.EntriesRead; i++) {
-                        printf("%-20s\n", rep->ses.ShareInfo.Level0.Buffer->share_info_0[i].netname.utf8);
+                printf("Number of shares:%d\n", rep->ses.ShareInfo.u.Level0.EntriesRead);
+                for (i = 0; i < rep->ses.ShareInfo.u.Level0.EntriesRead; i++) {
+                        printf("%-20s\n", rep->ses.ShareInfo.u.Level0.Buffer->share_info_0[i].netname.utf8);
                 }
                 break;
         case SHARE_INFO_1:
-                printf("Number of shares:%d\n", rep->ses.ShareInfo.Level1.EntriesRead);
-                for (i = 0; i < rep->ses.ShareInfo.Level1.EntriesRead; i++) {
-                        printf("%-20s %-20s", rep->ses.ShareInfo.Level1.Buffer->share_info_1[i].netname.utf8,
-                               rep->ses.ShareInfo.Level1.Buffer->share_info_1[i].remark.utf8);
-                        if ((rep->ses.ShareInfo.Level1.Buffer->share_info_1[i].type & 3) == SHARE_TYPE_DISKTREE) {
+                printf("Number of shares:%d\n", rep->ses.ShareInfo.u.Level1.EntriesRead);
+                for (i = 0; i < rep->ses.ShareInfo.u.Level1.EntriesRead; i++) {
+                        printf("%-20s %-20s", rep->ses.ShareInfo.u.Level1.Buffer->share_info_1[i].netname.utf8,
+                               rep->ses.ShareInfo.u.Level1.Buffer->share_info_1[i].remark.utf8);
+                        if ((rep->ses.ShareInfo.u.Level1.Buffer->share_info_1[i].type & 3) == SHARE_TYPE_DISKTREE) {
                                 printf(" DISKTREE");
                         }
-                        if ((rep->ses.ShareInfo.Level1.Buffer->share_info_1[i].type & 3) == SHARE_TYPE_PRINTQ) {
+                        if ((rep->ses.ShareInfo.u.Level1.Buffer->share_info_1[i].type & 3) == SHARE_TYPE_PRINTQ) {
                                 printf(" PRINTQ");
                         }
-                        if ((rep->ses.ShareInfo.Level1.Buffer->share_info_1[i].type & 3) == SHARE_TYPE_DEVICE) {
+                        if ((rep->ses.ShareInfo.u.Level1.Buffer->share_info_1[i].type & 3) == SHARE_TYPE_DEVICE) {
                                 printf(" DEVICE");
                         }
-                        if ((rep->ses.ShareInfo.Level1.Buffer->share_info_1[i].type & 3) == SHARE_TYPE_IPC) {
+                        if ((rep->ses.ShareInfo.u.Level1.Buffer->share_info_1[i].type & 3) == SHARE_TYPE_IPC) {
                                 printf(" IPC");
                         }
-                        if (rep->ses.ShareInfo.Level1.Buffer->share_info_1[i].type & SHARE_TYPE_TEMPORARY) {
+                        if (rep->ses.ShareInfo.u.Level1.Buffer->share_info_1[i].type & SHARE_TYPE_TEMPORARY) {
                                 printf(" TEMPORARY");
                         }
-                        if (rep->ses.ShareInfo.Level1.Buffer->share_info_1[i].type & SHARE_TYPE_HIDDEN) {
+                        if (rep->ses.ShareInfo.u.Level1.Buffer->share_info_1[i].type & SHARE_TYPE_HIDDEN) {
                                 printf(" HIDDEN");
                         }
                         printf("\n");

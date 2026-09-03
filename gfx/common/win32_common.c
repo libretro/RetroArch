@@ -35,6 +35,7 @@
 
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
+#include <retro_atomic.h>
 #ifdef HAVE_DYLIB
 #include <dynamic/dylib.h>
 #endif
@@ -187,6 +188,28 @@ static void d3dkmt_init(void)
             GetProcAddress(GetModuleHandle("gdi32.dll"), "D3DKMTOpenAdapterFromHdc");
       pD3DKMTGetScanLine = (D3DKMTGETSCANLINE)
             GetProcAddress(GetModuleHandle("gdi32.dll"), "D3DKMTGetScanLine");
+      /* Optional: only the phase anchor depends on it, and
+       * d3dkmt_wait_vblank() reports its absence so the caller can
+       * fall back. Not part of the guard below for that reason. */
+      pD3DKMTWaitForVerticalBlankEvent = (D3DKMTWAITFORVERTICALBLANKEVENT)
+            GetProcAddress(GetModuleHandle("gdi32.dll"),
+                  "D3DKMTWaitForVerticalBlankEvent");
+
+      /* Both exports are WDDM, so they are absent under XDDM - there
+       * are no D3DKMT entry points in gdi32 before Vista at all.
+       * pD3DKMTGetScanLine is null-checked at its two use sites;
+       * pD3DKMTOpenAdapterFromHdc was not, and it is called inside the
+       * loop below, so a missing export was a call through NULL on the
+       * first display device. Leave the scanline state zeroed and let
+       * d3dkmt_scanline_get() report -1, which
+       * video_driver_scanline_before_frame() already treats as
+       * unsupported. */
+      if (!pD3DKMTOpenAdapterFromHdc || !pD3DKMTGetScanLine)
+      {
+         memset(&d3dkmt_adapter, 0, sizeof(d3dkmt_adapter_t));
+         video_driver_scanline_init();
+         return;
+      }
 
       while (EnumDisplayDevices(NULL, adapter_index, &add, 0))
       {
@@ -217,9 +240,26 @@ static void d3dkmt_init(void)
          sl.VidPnSourceId      = d3dkmt_adapter_VidPnSourceId;
          d3dkmt_adapter.sl     = sl;
       }
+
+      {
+         D3DKMT_WAITFORVERTICALBLANKEVENT vb = {0};
+         vb.hAdapter           = d3dkmt_adapter_hAdapter;
+         vb.VidPnSourceId      = d3dkmt_adapter_VidPnSourceId;
+         /* hDevice is documented optional and is not needed to wait on
+          * a VidPn source. */
+         d3dkmt_adapter.vb     = vb;
+      }
    }
 
    video_driver_scanline_init();
+}
+
+bool d3dkmt_wait_vblank(void)
+{
+   if (!pD3DKMTWaitForVerticalBlankEvent || !d3dkmt_adapter.vb.hAdapter)
+      return false;
+   return (pD3DKMTWaitForVerticalBlankEvent(&d3dkmt_adapter.vb)
+         == STATUS_SUCCESS);
 }
 
 int d3dkmt_scanline_get(void)
@@ -504,6 +544,74 @@ static void win32_get_av_info_geometry(unsigned *width, unsigned *height)
    *height                        = video_st->av_info.geometry.base_height;
 }
 
+/* Published RETROKMOD_* mask, written only by
+ * win32_update_keyboard_mods() from the thread that owns the main
+ * window's message queue, read from anywhere. */
+static retro_atomic_int_t win32_kb_mods;
+
+/* GetKeyState and GetKeyboardState read the same per-thread
+ * synchronous key table, but only GetKeyboardState exposes it in its
+ * documented form: a 256-byte array with 0x80 for down and 0x01 for
+ * toggled. GetKeyState repacks those bits into a SHORT in which only
+ * bit 15 is contractual.
+ *
+ * Every implementation happens to also set bit 7 on the down value,
+ * so the 0x80 mask this code used to apply did work - user.exe
+ * 4.10.2222 (Windows 98 SE, 16-bit) builds it with mov bx,0xff80,
+ * user32 5.1.2600.2180 (XP SP2, x86) with or edi,0xff80, and user32
+ * 10.0.26100.7462 (24H2, x64) with or ax,0xff80. Three unrelated
+ * implementations, twenty-six years, no shared code, same constant.
+ * It is still undocumented, and GetAsyncKeyState in those same three
+ * binaries returns 0x8000 with bit 7 clear, so the mask is not even
+ * consistent between the two calls. Use the documented byte form.
+ *
+ * One call is also cheaper, and more so the older the target. On NT
+ * the GetKeyState cache covers virtual-key codes below 0x20 only, so
+ * VK_NUMLOCK, VK_SCROLL, VK_LWIN and VK_RWIN each took an
+ * unconditional kernel transition per key. On 9x user32 does not
+ * implement either function: both are four-byte stubs that select a
+ * thunk ordinal and jump into 16-bit user.exe through FT_Thunk, so
+ * every query was a 32->16 transition. There GetKeyboardState is a
+ * flat 256-byte copy of the table in its native layout while
+ * GetKeyState is the call doing extra work to repack it.
+ *
+ * The table is per-thread and is only advanced as that thread
+ * dispatches keyboard messages, so this must run on the thread owning
+ * the main window. Every caller below is a window procedure for that
+ * window, or window creation on the same thread. Everyone else reads
+ * the published value through win32_get_keyboard_mods(). */
+uint16_t win32_update_keyboard_mods(void)
+{
+   BYTE ks[256];
+   uint16_t mod = 0;
+
+   if (!GetKeyboardState(ks))
+      return (uint16_t)retro_atomic_load_acquire_int(&win32_kb_mods);
+
+   if (ks[VK_SHIFT]   & 0x80)
+      mod |= RETROKMOD_SHIFT;
+   if (ks[VK_CONTROL] & 0x80)
+      mod |= RETROKMOD_CTRL;
+   if (ks[VK_MENU]    & 0x80)
+      mod |= RETROKMOD_ALT;
+   if (ks[VK_CAPITAL] & 0x01)
+      mod |= RETROKMOD_CAPSLOCK;
+   if (ks[VK_SCROLL]  & 0x01)
+      mod |= RETROKMOD_SCROLLOCK;
+   if (ks[VK_NUMLOCK] & 0x01)
+      mod |= RETROKMOD_NUMLOCK;
+   if ((ks[VK_LWIN] | ks[VK_RWIN]) & 0x80)
+      mod |= RETROKMOD_META;
+
+   retro_atomic_store_release_int(&win32_kb_mods, (int)mod);
+   return mod;
+}
+
+uint16_t win32_get_keyboard_mods(void)
+{
+   return (uint16_t)retro_atomic_load_acquire_int(&win32_kb_mods);
+}
+
 static LRESULT CALLBACK wnd_proc_common(
       bool *quit, HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
@@ -537,20 +645,7 @@ static LRESULT CALLBACK wnd_proc_common(
          {
             uint16_t mod          = 0;
 
-            if (GetKeyState(VK_SHIFT)   & 0x80)
-               mod |= RETROKMOD_SHIFT;
-            if (GetKeyState(VK_CONTROL) & 0x80)
-               mod |= RETROKMOD_CTRL;
-            if (GetKeyState(VK_MENU)    & 0x80)
-               mod |= RETROKMOD_ALT;
-            if (GetKeyState(VK_CAPITAL) & 0x81)
-               mod |= RETROKMOD_CAPSLOCK;
-            if (GetKeyState(VK_SCROLL)  & 0x81)
-               mod |= RETROKMOD_SCROLLOCK;
-            if (GetKeyState(VK_NUMLOCK) & 0x81)
-               mod |= RETROKMOD_NUMLOCK;
-            if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
-               mod |= RETROKMOD_META;
+            mod = win32_update_keyboard_mods();
 
             /* Seems to be hard to synchronize
              * WM_CHAR and WM_KEYDOWN properly.
@@ -749,20 +844,7 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
 
             keycode = input_keymaps_translate_keysym_to_rk(keysym);
 
-            if (GetKeyState(VK_SHIFT)   & 0x80)
-               mod |= RETROKMOD_SHIFT;
-            if (GetKeyState(VK_CONTROL) & 0x80)
-               mod |= RETROKMOD_CTRL;
-            if (GetKeyState(VK_MENU)    & 0x80)
-               mod |= RETROKMOD_ALT;
-            if (GetKeyState(VK_CAPITAL) & 0x81)
-               mod |= RETROKMOD_CAPSLOCK;
-            if (GetKeyState(VK_SCROLL)  & 0x81)
-               mod |= RETROKMOD_SCROLLOCK;
-            if (GetKeyState(VK_NUMLOCK) & 0x81)
-               mod |= RETROKMOD_NUMLOCK;
-            if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
-               mod |= RETROKMOD_META;
+            mod = win32_update_keyboard_mods();
 
             input_keyboard_event(keydown, keycode,
                   0, mod, RETRO_DEVICE_KEYBOARD);
@@ -1050,20 +1132,7 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
 
             keycode = input_keymaps_translate_keysym_to_rk(keysym);
 
-            if (GetKeyState(VK_SHIFT)   & 0x80)
-               mod |= RETROKMOD_SHIFT;
-            if (GetKeyState(VK_CONTROL) & 0x80)
-               mod |= RETROKMOD_CTRL;
-            if (GetKeyState(VK_MENU)    & 0x80)
-               mod |= RETROKMOD_ALT;
-            if (GetKeyState(VK_CAPITAL) & 0x81)
-               mod |= RETROKMOD_CAPSLOCK;
-            if (GetKeyState(VK_SCROLL)  & 0x81)
-               mod |= RETROKMOD_SCROLLOCK;
-            if (GetKeyState(VK_NUMLOCK) & 0x81)
-               mod |= RETROKMOD_NUMLOCK;
-            if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
-               mod |= RETROKMOD_META;
+            mod = win32_update_keyboard_mods();
 
             input_keyboard_event(keydown, keycode,
                   0, mod, RETRO_DEVICE_KEYBOARD);
@@ -1966,6 +2035,11 @@ bool win32_set_video_mode(void *data,
 
    if (g_win32_flags & WIN32_CMN_FLAG_QUIT)
       return false;
+
+   /* Seed the published mask so the lock states are not reported as
+    * clear until the first key event reaches the window procedure. */
+   win32_update_keyboard_mods();
+
    return true;
 }
 #endif
@@ -1991,6 +2065,13 @@ void win32_destroy_window(void)
 #endif
 #endif
    main_window.hwnd = NULL;
+   /* video_st->window is a copy of this handle taken by
+    * win32_window_create(). Nothing else clears it - video_driver.c
+    * only resets it at the top of the next
+    * video_driver_init_internal() - so without this the two disagree
+    * from here until the next video driver init, and
+    * video_driver_window_get() hands out a destroyed HWND in between. */
+   video_driver_window_set(0);
 }
 
 /* --- HDR (scRGB) pixel format support -------------------------------

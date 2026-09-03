@@ -1421,7 +1421,6 @@ static const struct
    char s_012938fb[31];
    char s_a747cdc9[67];
    char s_2f169651[17];
-   char s_73674a86[21];
    char s_705eee28[43];
    char s_62af62ac[39];
    char s_12b25a4b[38];
@@ -3309,11 +3308,9 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    char s_3e1e294b[51];
    char s_69c0e487[58];
-   char s_706ff4dc[199];
    char s_a0d1a85c[67];
    char s_907ef7cc[33];
    char s_b0a46506[56];
-   char s_04624c88[40];
    char s_f6492edc[57];
 #endif
    char s_f3bfa8b9[92];
@@ -5739,7 +5736,6 @@ static const struct
    "Factor de escala de miniaturas",
    "Truncar os nomes das listas de reproduci\303\263n (requ\303\255rese reiniciar)",
    "Use o modo PAL60",
-   "Directorio principal",
    "Pausa o contido cando o men\303\272 estea activo",
    "Pausa o contido cando non est\303\241 activo",
    "Pausar contido ao desconectar o mando",
@@ -8128,13 +8124,9 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    "Selecciona a autenticaci\303\263n usada no teu contorno.",
    "Explorar ficheiros no recurso compartido SMB configurado.",
-   "Activar o acceso a compartici\303\263ns de rede SMB. Recom\303\251ndase encarecidamente usar Eth"
-   "ernet en lugar de Wi-Fi para unha conexi\303\263n m\303\241is fiable. Nota: cambiar estes axuste"
-   "s require reiniciar RetroArch.",
    "Selecciona o n\303\272mero m\303\241ximo de conexi\303\263ns usadas no teu contorno.",
    "Enderezo IP ou nome do servidor.",
    "Configura os axustes da carpeta compartida en rede SMB.",
-   "Nome do recurso de rede ao que acceder.",
    "Selecciona o tempo de espera predeterminado en segundos.",
 #endif
    "Ordena os ficheiros gardados en cartafoles co nome do directorio no que se atopa o contido.",
@@ -9105,7 +9097,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_gl_blob_check[
-      (sizeof(msg_hash_gl_blob) == (194252u
+      (sizeof(msg_hash_gl_blob) == (194231u
 #ifdef ANDROID
        + 365u
 #endif
@@ -9413,11 +9405,9 @@ typedef char msg_hash_gl_blob_check[
        + 44u
        + 51u
        + 58u
-       + 199u
        + 67u
        + 33u
        + 56u
-       + 40u
        + 57u
 #endif
 #ifdef HAVE_LAKKA
@@ -10907,7 +10897,6 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
@@ -12793,11 +12782,9 @@ static const uint32_t msg_hash_gl_ids[] =
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,

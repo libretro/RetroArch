@@ -47,17 +47,9 @@
 #include <poll.h>
 #endif
 
-#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#endif
-
-#ifdef HAVE_STDIO_H
 #include <stdio.h>
-#endif
-
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif
 
 #ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
@@ -75,7 +67,9 @@
 #include <sys/_iovec.h>
 #endif
 
-#ifdef HAVE_UNISTD_H
+#ifdef _WIN32
+#include <direct.h>
+#else
 #include <unistd.h>
 #endif
 
@@ -83,9 +77,7 @@
 #include <sys/unistd.h>
 #endif
 
-#ifdef HAVE_STDINT_H
 #include <stdint.h>
-#endif
 
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
@@ -345,7 +337,7 @@ static int smb2_read_data(struct smb2_context *smb2, read_func func,
         int i, niov, is_chained;
         size_t num_done;
         size_t iov_offset = 0;
-        static char smb3tfrm[4] = {0xFD, 'S', 'M', 'B'};
+        static uint8_t smb3tfrm[4] = {0xFD, 'S', 'M', 'B'};
         struct smb2_pdu *pdu = smb2->pdu;
         ssize_t count;
         int len;
@@ -536,7 +528,7 @@ read_more_data:
                         */
                         pdu->header.message_id = smb2->hdr.message_id;
                         if (!(smb2->hdr.flags & SMB2_FLAGS_ASYNC_COMMAND)) {
-                                pdu->header.sync.tree_id = smb2->hdr.sync.tree_id;
+                                pdu->header.u.sync.tree_id = smb2->hdr.u.sync.tree_id;
                         }
                         /* if the session is properly opened then we could get
                          * any request from the client, so use the header's command
@@ -744,16 +736,18 @@ read_more_data:
                 if (len > 0) {
                         /* Add padding before the next PDU */
                         smb2->recv_state = SMB2_RECV_PAD;
-                        uint8_t * tmp = malloc(len);
-                        if (tmp == NULL) {
-                            smb2_set_error(smb2, "malloc failed while adding PAD");
-                            return -1;
-                        }
-                        if (smb2_add_iovector(smb2, &smb2->in,
-                                              tmp,
-                                              len, free) == NULL) {
-                                smb2_set_error(smb2, "Failed to add iovector for PAD");
-                                return -1;
+                        {
+                                uint8_t *tmp = malloc(len);
+                                if (tmp == NULL) {
+                                        smb2_set_error(smb2, "malloc failed while adding PAD");
+                                        return -1;
+                                }
+                                if (smb2_add_iovector(smb2, &smb2->in,
+                                                      tmp,
+                                                      len, free) == NULL) {
+                                        smb2_set_error(smb2, "Failed to add iovector for PAD");
+                                        return -1;
+                                }
                         }
                         goto read_more_data;
                 }

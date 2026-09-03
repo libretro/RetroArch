@@ -1262,8 +1262,11 @@ void rmp4_video_set_avail(rmp4_video_t *mp4, size_t avail)
    mp4->partial = 1;
    if (avail > mp4->len)
       avail = mp4->len;
-   if (avail > mp4->avail)   /* monotonic */
-      mp4->avail = avail;
+   /* An exact store: see rmp4_set_avail.  The bound is "readable
+    * right now"; a windowed feeder lowers it after a loop's rewind,
+    * and a raise-only mirror here would keep handing the stream its
+    * stale high-water mark - reads of decommitted pages one lap in. */
+   mp4->avail = avail;
    if (mp4->stream)
       rmp4_video_stream_set_avail(mp4->stream, mp4->avail);
 }

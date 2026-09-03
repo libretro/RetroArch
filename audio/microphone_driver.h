@@ -439,6 +439,16 @@ typedef struct microphone_driver
 typedef struct microphone_driver_state
 {
    /**
+    * Backing storage for every int16 and every float staging buffer the
+    * mic pipeline uses. The named buffer pointers below are views into
+    * one of these two blocks and are never freed individually; see
+    * mic_driver_allocate_frames() for the layout. Allocated on first
+    * microphone open, freed by microphone_driver_deinit().
+    */
+   int16_t *arena_int16;
+   float   *arena_float;
+
+   /**
     * The buffer that receives samples from the microphone backend,
     * before they're processed.
     */
@@ -529,6 +539,10 @@ typedef struct microphone_driver_state
    const microphone_driver_t *driver;
 
    struct string_list *devices_list;
+   /* The driver whose device_list_new built devices_list, so its
+    * device_list_free releases it, whatever driver is configured or
+    * running when the list is next rebuilt. */
+   const microphone_driver_t *devices_list_driver;
 
    /**
     * Opaque handle to the driver-specific context.
@@ -696,5 +710,13 @@ bool microphone_driver_find_driver(
       bool verbosity_enabled);
 
 bool microphone_driver_get_devices_list(void **ptr);
+
+/* Rebuilds the microphone device list from the configured driver:
+ * through the running instance when that is the driver configured,
+ * from the configured driver with no context otherwise - a driver the
+ * user has picked in the menu, or one that failed to open. Called
+ * after init whether or not it succeeded, and each time the Device
+ * screen opens. */
+void microphone_driver_refresh_devices_list(void);
 
 #endif /* RETROARCH_MICROPHONE_DRIVER_H */

@@ -1168,6 +1168,7 @@ static const struct
    char s_b4c3612a[36];
    char s_f638f238[17];
    char s_f3358a59[32];
+   char s_f8098721[53];
    char s_0d7d9688[41];
    char s_b00815b8[15];
    char s_1ef8917a[23];
@@ -1441,7 +1442,7 @@ static const struct
    char s_012938fb[30];
    char s_a747cdc9[45];
    char s_2f169651[18];
-   char s_73674a86[19];
+   char s_73674a86[21];
    char s_705eee28[45];
    char s_62af62ac[37];
    char s_12b25a4b[46];
@@ -1946,6 +1947,7 @@ static const struct
    char s_c7bc8298[21];
    char s_e63b035a[17];
    char s_d21d875b[11];
+   char s_ae86fed0[15];
    char s_b12ae22e[16];
    char s_b2d073c7[23];
    char s_1cbc2657[18];
@@ -2419,6 +2421,7 @@ static const struct
    char s_f7cc6630[25];
    char s_310ec7bd[71];
    char s_5832a2c2[103];
+   char s_f47e544f[242];
    char s_20cc6597[86];
    char s_21b0bad3[47];
    char s_66e9521c[82];
@@ -2983,6 +2986,7 @@ static const struct
    char s_7de5d198[61];
    char s_3b573ee6[29];
    char s_dc1d6cc7[49];
+   char s_28543dcf[76];
    char s_aebcb136[141];
    char s_8b636a26[34];
    char s_8f707459[41];
@@ -3362,12 +3366,16 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    char s_3e1e294b[55];
    char s_69c0e487[50];
-   char s_706ff4dc[216];
+   char s_706ff4dc[270];
    char s_a0d1a85c[72];
+   char s_b5966528[209];
    char s_907ef7cc[34];
    char s_b0a46506[45];
-   char s_04624c88[54];
+   char s_04624c88[156];
+   char s_91976dbe[46];
    char s_f6492edc[43];
+   char s_9bb85635[227];
+   char s_22a05685[74];
 #endif
    char s_f3bfa8b9[93];
    char s_5fe2cee5[78];
@@ -5576,6 +5584,7 @@ static const struct
    "Poka\305\274 'Uruchom ponownie RetroArch'",
    "Poka\305\274 'Zamknij'",
    "Poka\305\274 etykiety podrz\304\231dne menu",
+   "Poka\305\274 podedtykiety menu tylko dla aktualnego wyboru",
    "Playlisty odtwarzane jednym klikni\304\231ciem",
    "D\305\272wi\304\231ki menu",
    "W\305\202\304\205cz d\305\272wi\304\231k 'BGM'",
@@ -5851,7 +5860,7 @@ static const struct
    "Wsp\303\263\305\202czynnik skali miniatur",
    "Przycinanie nazw playlist (wymagany restart)",
    "U\305\274yj trybu PAL60",
-   "Nadrz\304\231dny katalog",
+   "<Katalog nadrz\304\231dny>",
    "Wstrzymaj zawarto\305\233\304\207, gdy Menu jest aktywne",
    "Wstrzymaj zawarto\305\233\304\207 gdy nieaktywny",
    "Wstrzymaj tre\305\233\304\207 po roz\305\202\304\205czeniu kontrolera",
@@ -6366,6 +6375,7 @@ static const struct
    "Ustawienia sieci SMB",
    "Nazwa zasobu SMB",
    "Zas\303\263b SMB",
+   "Podkatalog SMB",
    "Limit czasu SMB",
    "Nazwa u\305\274ytkownika SMB",
    "Grupa robocza SMB",
@@ -6707,7 +6717,7 @@ static const struct
    "Lokalny",
    "Jako\305\233\304\207 przesy\305\202ania strumieniowego",
    "G\305\202\304\231bia bitowa wyj\305\233cia",
-   "10-bitowe",
+   "10-bitowa",
    "8-bitowa",
    "Automatyczny",
    "Interwa\305\202 wymiany VSync",
@@ -6869,6 +6879,10 @@ static const struct
    "Zasoby menu u\305\274ywane przez RetroArch s\304\205 przechowywane w tym katalogu.",
    "Otw\303\263rz panel sterowania sterownika ASIO, aby skonfigurowa\304\207 ustawienia routingu i b"
    "uforu urz\304\205dzenia.",
+   "Liczba klatek, kt\303\263r\304\205 przesuwa sterownik audio na blok. 0 pyta sterownik o w\305"
+   "\202asn\304\205 warto\305\233\304\207 urz\304\205dzenia, co jest chciane w wi\304\231kszo\305"
+   "\233ci konfiguracji; wi\304\231kszy blok ma wi\304\231ksze op\303\263\305\272nienie, ale ma wi"
+   "\304\231ksz\304\205 odporno\305\233\304\207 na braki d\305\272wi\304\231ku.",
    "Zast\304\205p domy\305\233lne urz\304\205dzenie audio u\305\274ywane przez sterownik. Zale\305"
    "\274ne od sterownika.",
    "Sterownik audio do u\305\274ycia. (Wymagany restart)",
@@ -7782,6 +7796,7 @@ static const struct
    "Poka\305\274 opcj\304\231 'Uruchom ponownie RetroArch' w menu g\305\202\303\263wnym.",
    "Poka\305\274 opcj\304\231 \"Zamkni\304\231cie\".",
    "Poka\305\274 dodatkowe informacje dla element\303\263w menu.",
+   "Wy\305\233wietlaj podetykiet\304\231 tylko dla aktualnego pod\305\233wietlonego wpisu w menu.",
    "Pomi\305\204 menu 'Uruchom' przy uruchamianiu wpis\303\263w na playli\305\233cie. Wci\305\233nij"
    " D-Pad podczas trzymania OK, aby uzyska\304\207 dost\304\231p do menu 'Uruchom'.",
    "Zmie\305\204 ustawienia d\305\272wi\304\231ku menu.",
@@ -8416,15 +8431,27 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    "Wybierz uwierzytelnianie u\305\274ywane w twoim \305\233rodowisku.",
    "Przegl\304\205daj pliki na skonfigurowanym zasobie SMB.",
-   "W\305\202\304\205cz dost\304\231p do zasob\303\263w sieciowych SMB. Zaleca si\304\231 korzystani"
-   "e z Ethernet zamiast Wi-Fi w celu uzyskania bardziej niezawodnego po\305\202\304\205czenia. Uwag"
-   "a: zmiana tych ustawie\305\204 wymaga ponownego uruchomienia RetroArch.",
+   "W\305\202\304\205cz dost\304\231p do zasob\303\263w sieciowych SMB. Ethernet jest bardzo zalecan"
+   "y zamiast Wi-Fi, aby uzyska\304\207 niezawodne po\305\202\304\205czenie. Uwaga: przynosi efekt p"
+   "rzy nast\304\231pnym przegl\304\205daniu zasobu, i tre\305\233\304\207, kt\303\263ra ju\305\274 "
+   "dzia\305\202a z zasobu zostaje przy swoim aktualnym po\305\202\304\205czeniu.",
    "Wybierz maksymaln\304\205 liczb\304\231 po\305\202\304\205cze\305\204 u\305\274ywanych w twoim "
    "\305\233rodowisku.",
+   "Nazwa u\305\274ytkownika do uwierzytelniania. Jest to opcjonalne, gdy dost\304\231p dla go\305"
+   "\233ci jest w\305\202\304\205czony na serwerze. Windows 10 i nowsze: dost\304\231p dla go\305"
+   "\233ci jest domy\305\233lnie wy\305\202\304\205czony, wi\304\231c has\305\202o jest wymagane.",
    "Adres IP serwera lub nazwa hosta.",
    "Konfiguruj ustawienia sieciowego zasobu SMB.",
-   "Nazwa zasobu sieciowego do kt\303\263rego uzyska\304\207 dost\304\231p.",
+   "Nazwa zasobu sieciowego, do kt\303\263rego chcesz uzyska\304\207 dost\304\231p. Pozostaw pusty, "
+   "aby pokaza\304\207 ka\305\274dy zas\303\263b na serwerze i wybra\304\207 jeden podczas przegl"
+   "\304\205dania.",
+   "\305\232cie\305\274ka podkatalogu na zasobie. Opcjonalna.",
    "Wybierz domy\305\233lny limit czasu w sekundach.",
+   "Nazwa u\305\274ytkownika do uwierzytelniania. Jest to opcjonalne, gdy dost\304\231p dla go\305"
+   "\233ci jest w\305\202\304\205czony na serwerze. Windows 10 i nowsze: dost\304\231p dla go\305"
+   "\233ci jest domy\305\233lnie wy\305\202\304\205czony, wi\304\231c nazwa u\305\274ytkownika jest "
+   "tutaj wymagana.",
+   "Grupa robocza lub nazwa domeny. Opcjonalnie w niekt\303\263rych konfiguracjach.",
 #endif
    "Sortuj pliki zapisu do folder\303\263w nazwanych po katalogu, w kt\303\263rym znajduje si\304"
    "\231 zawarto\305\233\304\207.",
@@ -9473,7 +9500,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (188449u
+      (sizeof(msg_hash_pl_blob) == (188822u
 #ifdef ANDROID
        + 385u
 #endif
@@ -9614,6 +9641,7 @@ typedef char msg_hash_pl_blob_check[
        + 21u
        + 17u
        + 11u
+       + 15u
        + 16u
        + 23u
        + 18u
@@ -9804,12 +9832,16 @@ typedef char msg_hash_pl_blob_check[
        + 33u
        + 55u
        + 50u
-       + 216u
+       + 270u
        + 72u
+       + 209u
        + 34u
        + 45u
-       + 54u
+       + 156u
+       + 46u
        + 43u
+       + 227u
+       + 74u
 #endif
 #ifdef HAVE_LAKKA
        + 57u
@@ -11044,6 +11076,7 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
@@ -11821,6 +11854,7 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
@@ -12294,6 +12328,7 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
@@ -12856,6 +12891,7 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
@@ -13237,10 +13273,14 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,

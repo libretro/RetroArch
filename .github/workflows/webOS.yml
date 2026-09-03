@@ -41,11 +41,20 @@ jobs:
           out-file-path: "temp"
 
       - name: Update packages
-        run: sudo apt-get -yq update
+        timeout-minutes: 5
+        run: |
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get -yq update \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
 
       - name: Install webOS CLI
+        timeout-minutes: 5
         run: |
           sudo apt-get -yq install \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
             ./temp/ares-package_*_amd64.deb \
             ./temp/webosbrew-toolbox-gen-manifest_*.deb
 
