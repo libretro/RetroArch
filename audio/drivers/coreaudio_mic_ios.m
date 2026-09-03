@@ -11,7 +11,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
-#include <stdatomic.h>
 
 #include <boolean.h>
 #include <rthreads/rthreads.h>

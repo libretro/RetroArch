@@ -24,7 +24,7 @@
 #include <queues/fifo_queue.h>   /* For fifo_buffer_t and fifo_read/write etc. */
 #include <compat/strl.h>
 #include <memory.h>
-#include <stdatomic.h>
+#include <retro_atomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -40,8 +40,8 @@ typedef struct coreaudio_macos_microphone
    AudioUnit audio_unit;
    fifo_buffer_t *fifo;
    AudioStreamBasicDescription format;
-   atomic_bool is_running;
-   atomic_bool is_initialized;
+   retro_atomic_int_t is_running;
+   retro_atomic_int_t is_initialized;
    bool nonblock;
    int sample_rate;
    bool use_float;
@@ -53,7 +53,7 @@ typedef struct coreaudio_macos_microphone
    size_t callback_buffer_size;
    unsigned drop_count;
    bool using_default_device;
-   atomic_bool device_changed;
+   retro_atomic_int_t device_changed;
 } coreaudio_macos_microphone_t;
 
 /* Forward declarations */
@@ -96,7 +96,7 @@ static OSStatus coreaudio_macos_default_device_listener(
    (void)inNumberAddresses;
    (void)inAddresses;
    if (mic)
-      atomic_store_explicit(&mic->device_changed, true, memory_order_release);
+      retro_atomic_store_release_int(&mic->device_changed, 1);
    return noErr;
 }
 
@@ -125,16 +125,16 @@ static void coreaudio_macos_handle_device_change(
    RARCH_LOG("[CoreAudio macOS Mic] Default input device changed to %u, reconnecting\n",
              (unsigned)new_device);
 
-   was_running = atomic_load(&mic->is_running);
+   was_running = retro_atomic_load_acquire_int(&mic->is_running);
 
    if (was_running)
       AudioOutputUnitStop(mic->audio_unit);
-   atomic_store(&mic->is_running, false);
+   retro_atomic_store_release_int(&mic->is_running, 0);
 
-   if (atomic_load(&mic->is_initialized))
+   if (retro_atomic_load_acquire_int(&mic->is_initialized))
    {
       AudioUnitUninitialize(mic->audio_unit);
-      atomic_store(&mic->is_initialized, false);
+      retro_atomic_store_release_int(&mic->is_initialized, 0);
    }
 
    mic->selected_device_id = new_device;
@@ -162,7 +162,7 @@ static void coreaudio_macos_handle_device_change(
                 (int)status);
       return;
    }
-   atomic_store(&mic->is_initialized, true);
+   retro_atomic_store_release_int(&mic->is_initialized, 1);
 
    slock_lock(mic->fifo_lock);
    fifo_clear(mic->fifo);
@@ -172,7 +172,7 @@ static void coreaudio_macos_handle_device_change(
    {
       status = AudioOutputUnitStart(mic->audio_unit);
       if (status == noErr)
-         atomic_store(&mic->is_running, true);
+         retro_atomic_store_release_int(&mic->is_running, 1);
       else
          RARCH_ERR("[CoreAudio macOS Mic] Failed to restart: %d\n",
                    (int)status);
@@ -193,7 +193,7 @@ static OSStatus coreaudio_macos_input_callback(void *inRefCon,
     size_t bytes_needed;
     size_t actual_bytes;
 
-    if (!mic || !atomic_load_explicit(&mic->is_running, memory_order_relaxed))
+    if (!mic || !retro_atomic_load_acquire_int(&mic->is_running))
         return noErr;
 
     bytes_needed = inNumberFrames * mic->format.mBytesPerFrame;
@@ -260,10 +260,9 @@ static int coreaudio_macos_microphone_read(void *driver_data, void *mic_data, vo
    }
 
    /* Handle pending device change before taking the FIFO lock. */
-   if (atomic_load_explicit(&microphone->device_changed, memory_order_acquire))
+   if (retro_atomic_load_acquire_int(&microphone->device_changed))
    {
-      atomic_store_explicit(&microphone->device_changed, false,
-            memory_order_relaxed);
+      retro_atomic_store_release_int(&microphone->device_changed, 0);
       coreaudio_macos_handle_device_change(microphone);
    }
 
@@ -486,9 +485,9 @@ static void *coreaudio_macos_microphone_open_mic(void *data, const char *device,
    if (!mic)
       return NULL;
 
-   atomic_init(&mic->is_running, false);
-   atomic_init(&mic->is_initialized, false);
-   atomic_init(&mic->device_changed, false);
+   retro_atomic_int_init(&mic->is_running, 0);
+   retro_atomic_int_init(&mic->is_initialized, 0);
+   retro_atomic_int_init(&mic->device_changed, 0);
    mic->fifo_lock = slock_new();
    mic->fifo_cond = scond_new();
    mic->sample_rate = rate;
@@ -665,7 +664,7 @@ static void *coreaudio_macos_microphone_open_mic(void *data, const char *device,
       RARCH_ERR("[CoreAudio macOS Mic] Failed to initialize AudioUnit: %d\n", (int)status);
       goto error;
    }
-   atomic_store(&mic->is_initialized, true);
+   retro_atomic_store_release_int(&mic->is_initialized, 1);
 
    /* Allocate callback buffer based on max frames per slice */
    {
@@ -723,7 +722,7 @@ static void *coreaudio_macos_microphone_open_mic(void *data, const char *device,
 error:
    if (mic->audio_unit)
    {
-      if (atomic_load(&mic->is_initialized))
+      if (retro_atomic_load_acquire_int(&mic->is_initialized))
          AudioUnitUninitialize(mic->audio_unit);
       AudioComponentInstanceDispose(mic->audio_unit);
    }
@@ -761,10 +760,10 @@ static void coreaudio_macos_microphone_close_mic(void *data, void *mic_data)
 
    if (mic->audio_unit)
    {
-      if (atomic_load(&mic->is_initialized))
+      if (retro_atomic_load_acquire_int(&mic->is_initialized))
       {
          AudioUnitUninitialize(mic->audio_unit);
-         atomic_store(&mic->is_initialized, false);
+         retro_atomic_store_release_int(&mic->is_initialized, 0);
       }
       AudioComponentInstanceDispose(mic->audio_unit);
       mic->audio_unit = NULL;
@@ -798,19 +797,19 @@ static void coreaudio_macos_microphone_close_mic(void *data, void *mic_data)
 static bool coreaudio_macos_microphone_mic_alive(const void *data, const void *mic_data)
 {
    const coreaudio_macos_microphone_t *mic = (const coreaudio_macos_microphone_t *)mic_data;
-   return mic && atomic_load(&mic->is_running);
+   return mic && retro_atomic_load_acquire_int(&mic->is_running);
 }
 
 static bool coreaudio_macos_microphone_start_mic(void *data, void *mic_data)
 {
    coreaudio_macos_microphone_t *mic = (coreaudio_macos_microphone_t *)mic_data;
-   if (!mic || !mic->audio_unit || !atomic_load(&mic->is_initialized))
+   if (!mic || !mic->audio_unit || !retro_atomic_load_acquire_int(&mic->is_initialized))
    {
       RARCH_ERR("[CoreAudio macOS Mic] Cannot start - mic not opened or AudioUnit not initialized.\n");
       return false;
    }
 
-   if (atomic_load(&mic->is_running))
+   if (retro_atomic_load_acquire_int(&mic->is_running))
       return true;
 
    /* Check microphone permission on macOS */
@@ -849,13 +848,13 @@ static bool coreaudio_macos_microphone_start_mic(void *data, void *mic_data)
    OSStatus status = AudioOutputUnitStart(mic->audio_unit);
    if (status == noErr)
    {
-      atomic_store(&mic->is_running, true);
+      retro_atomic_store_release_int(&mic->is_running, 1);
       RARCH_LOG("[CoreAudio macOS Mic] Microphone started successfully\n");
       return true;
    }
 
    RARCH_ERR("[CoreAudio macOS Mic] Failed to start AudioUnit: %d (0x%x)\n", (int)status, (unsigned)status);
-   atomic_store(&mic->is_running, false);
+   retro_atomic_store_release_int(&mic->is_running, 0);
    return false;
 }
 
@@ -865,13 +864,13 @@ static bool coreaudio_macos_microphone_stop_mic(void *data, void *mic_data)
    if (!mic || !mic->audio_unit)
       return true; /* Considered stopped if not valid */
 
-   if (!atomic_load(&mic->is_running))
+   if (!retro_atomic_load_acquire_int(&mic->is_running))
       return true;
 
    OSStatus status = AudioOutputUnitStop(mic->audio_unit);
    if (status == noErr)
    {
-      atomic_store(&mic->is_running, false);
+      retro_atomic_store_release_int(&mic->is_running, 0);
       if (mic->fifo)
       {
          slock_lock(mic->fifo_lock);
@@ -883,7 +882,7 @@ static bool coreaudio_macos_microphone_stop_mic(void *data, void *mic_data)
 
    RARCH_ERR("[CoreAudio macOS Mic] Failed to stop AudioUnit: %d\n", (int)status);
    /* Even if stop fails, we mark as not running from our perspective */
-   atomic_store(&mic->is_running, false);
+   retro_atomic_store_release_int(&mic->is_running, 0);
    return false;
 }
 

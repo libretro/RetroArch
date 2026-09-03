@@ -14,7 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* The current coreaudio implementation uses C11 <stdatomic.h> and Grand
+/* The current coreaudio implementation uses retro_atomic and Grand
  * Central Dispatch (<dispatch/dispatch.h>), both of which require
  * Mac OS X 10.6/10.7-era toolchains or newer.  On older SDKs (Xcode 3.1
  * / 10.4-10.5 / PowerPC) neither header exists, so fall back to the
@@ -568,13 +568,14 @@ audio_driver_t audio_coreaudio = {
 
 #else
 /* =====================================================================
- * Modern implementation (10.7+): C11 atomics + GCD semaphore +
+ * Modern implementation (10.7+): retro_atomic + GCD semaphore +
  * Accelerate.framework resampler.
  * ===================================================================== */
 
 #include <stdlib.h>
-#include <stdatomic.h>
 #include <math.h>
+
+#include <retro_atomic.h>
 
 #include <dispatch/dispatch.h>
 
@@ -615,7 +616,7 @@ typedef struct coreaudio
    size_t capacity;           /* Power of 2 for fast masking */
    size_t write_ptr;          /* Only touched by main thread */
    size_t read_ptr;           /* Only touched by audio callback */
-   atomic_size_t filled;      /* Samples currently in buffer */
+   retro_atomic_size_t filled; /* Samples currently in buffer */
 
 #if !HAS_MACOSX_10_12
    ComponentInstance dev;
@@ -649,12 +650,12 @@ typedef struct
 
 static inline size_t rb_write_avail(coreaudio_t *dev)
 {
-   return dev->capacity - atomic_load_explicit(&dev->filled, memory_order_acquire);
+   return dev->capacity - retro_atomic_load_acquire_size(&dev->filled);
 }
 
 static inline size_t rb_read_avail(coreaudio_t *dev)
 {
-   return atomic_load_explicit(&dev->filled, memory_order_acquire);
+   return retro_atomic_load_acquire_size(&dev->filled);
 }
 
 static void rb_write(coreaudio_t *dev, const float *data, size_t count)
@@ -667,7 +668,7 @@ static void rb_write(coreaudio_t *dev, const float *data, size_t count)
    memcpy(dev->buffer, data + first, (count - first) * sizeof(float));
 
    dev->write_ptr = (dev->write_ptr + count) & (dev->capacity - 1);
-   atomic_fetch_add_explicit(&dev->filled, count, memory_order_release);
+   retro_atomic_fetch_add_size(&dev->filled, count);
 }
 
 static void rb_read(coreaudio_t *dev, float *data, size_t count)
@@ -680,7 +681,7 @@ static void rb_read(coreaudio_t *dev, float *data, size_t count)
    memcpy(data + first, dev->buffer, (count - first) * sizeof(float));
 
    dev->read_ptr = (dev->read_ptr + count) & (dev->capacity - 1);
-   atomic_fetch_sub_explicit(&dev->filled, count, memory_order_release);
+   retro_atomic_fetch_sub_size(&dev->filled, count);
 }
 
 /* AudioConverter input callback - provides int16 samples */
@@ -1098,7 +1099,7 @@ static void *coreaudio_init(const char *device,
    if (!dev->buffer)
       goto error;
 
-   atomic_init(&dev->filled, 0);
+   retro_atomic_size_init(&dev->filled, 0);
    dev->write_ptr = 0;
    dev->read_ptr  = 0;
 
