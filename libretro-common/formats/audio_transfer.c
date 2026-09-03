@@ -2267,7 +2267,7 @@ static uint32_t audio_transfer_flac_seek_to(struct audio_transfer_flac *fl,
  * rvorbis whole; anything else has to be filtered. */
 static int audio_transfer_ogg_survey(const uint8_t *b, size_t size,
       uint32_t *serial, int *nstreams, int *chained, int64_t *total,
-      int *mismatch)
+      int *mismatch, int64_t *first_total)
 {
    uint32_t seen[16];
    uint32_t vser[16];
@@ -2363,6 +2363,10 @@ static int audio_transfer_ogg_survey(const uint8_t *b, size_t size,
       for (i = 0; i < nv; i++)
          *total += vgran[i];
    }
+   /* The first link's length on its own, which is what plays when the
+    * links disagree and only it can be played. */
+   if (first_total)
+      *first_total = nv ? vgran[0] : 0;
    return found;
 }
 
@@ -2730,11 +2734,12 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
             int      nstreams = 0, chained = 0;
             int64_t  gtotal = 0;
             int      isvorbis, mismatch = 0;
+            int64_t  gfirst = 0;
             if (!v->data)
                return false;
             isvorbis = audio_transfer_ogg_survey((const uint8_t*)v->data,
                   v->size, &ser, &nstreams, &chained, &gtotal,
-                  &mismatch);
+                  &mismatch, &gfirst);
             /* One logical bitstream is an ordinary .ogg and goes to
              * rvorbis whole, which is the path every such file has
              * always taken.  More than one and it cannot: rvorbis has
@@ -2816,12 +2821,13 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
              * stop rather than run the rest at the wrong speed.  The
              * length becomes the first link's granule, which is what
              * comes out. */
-            if (mismatch)
-            {
-               int64_t first = rvorbis_stream_length_in_samples(v->handle);
-               if (first > 0)
-                  v->limit = first;
-            }
+            /* From the survey, not from rvorbis: the handle here is
+             * packet-fed and has no buffer of Ogg pages to walk, so
+             * asking it for a length answered zero and left the bound
+             * at the sum over every link - a length no chained file
+             * with disagreeing links ever reached. */
+            if (mismatch && gfirst > 0)
+               v->limit = gfirst;
          }
          v->channels = rvorbis_get_info(v->handle).channels;
          /* A caller's packet blob is resident by definition, so the
