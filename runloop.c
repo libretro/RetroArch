@@ -8348,41 +8348,6 @@ end:
          runloop_st->pace |= RUNLOOP_PACE_TIMER;
    }
 
-   /* One display clock at a time: Scanline Sync and audio backpressure.
-    *
-    * With both blocking, each frame waits for the audio buffer to drain
-    * and then for the beam to reach the target, in series - 25 ms per
-    * frame measured on a 120 Hz panel with 60 fps content, and at
-    * matched refresh the two clocks still drift against each other with
-    * no arbiter. When the scanline wait is live it is the pace; audio
-    * goes non-blocking and Dynamic Audio Rate Control tracks the
-    * display through the resampler, which is exactly what it is for.
-    * Restored when the scanline wait stops holding the loop.
-    *
-    * Deliberately not applied to VSync + audio_sync, which is the same
-    * conflict with a far larger installed base; that one is a separate
-    * decision. */
-   if (runloop_st->pace & RUNLOOP_PACE_SCANLINE)
-   {
-      if (     (runloop_st->pace & RUNLOOP_PACE_AUDIO)
-            && !runloop_st->audio_yielded_to_scanline)
-      {
-         audio_driver_set_nonblock_state(true);
-         runloop_st->audio_yielded_to_scanline = true;
-      }
-      runloop_st->pace &= ~RUNLOOP_PACE_AUDIO;
-   }
-   else if (runloop_st->audio_yielded_to_scanline)
-   {
-      /* Back to whatever audio_sync asks for, via the same call every
-       * other transition uses. */
-      audio_driver_set_nonblock_state(
-            settings->bools.audio_sync
-               ? (input_st->flags & INP_FLAG_NONBLOCKING ? true : false)
-               : true);
-      runloop_st->audio_yielded_to_scanline = false;
-   }
-
    /* if there's a fast forward limit, inject sleeps to keep from going too fast. */
    {
       retro_time_t frame_limit_min = runloop_st->frame_limit_minimum_time;

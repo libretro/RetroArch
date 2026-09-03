@@ -1636,7 +1636,6 @@
 #define MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER_AXIS_STR "video_scale_integer_axis"
 #define MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER_SCALING_STR "video_scale_integer_scaling"
 #define MENU_ENUM_LABEL_VIDEO_SCALING_SETTINGS_STR "video_scaling_settings"
-#define MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC_OFFSET_STR "video_scanline_sync_offset"
 #define MENU_ENUM_LABEL_VIDEO_SCAN_SUBFRAMES_STR "video_scan_subframes"
 #define MENU_ENUM_LABEL_VIDEO_SETTINGS_STR "video_settings"
 #define MENU_ENUM_LABEL_VIDEO_SHADERS_ENABLE_STR "video_shader_enable"

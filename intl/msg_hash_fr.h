@@ -2260,7 +2260,6 @@ static const struct
    char s_f57f6158[18];
    char s_69b801ef[19];
    char s_a40653a7[40];
-   char s_e67b672d[53];
    char s_52e3d6ea[41];
    char s_580e244f[7];
    char s_a9c8430e[15];
@@ -3549,7 +3548,6 @@ static const struct
    char s_f4e4e921[212];
    char s_7968f59d[53];
    char s_8cee3615[211];
-   char s_87ba81db[377];
    char s_58c80718[347];
    char s_67d549fd[41];
    char s_afac733c[38];
@@ -6714,7 +6712,6 @@ static const struct
    "Sous-dimensionner",
    "Mise \303\240 l'\303\251chelle",
    "Synchronisation \303\240 la ligne de balayage",
-   "D\303\251calage de synchronisation de la ligne de balayage",
    "Simulation de ligne de balayage roulante",
    "Vid\303\251o",
    "Shaders vid\303\251o",
@@ -8793,11 +8790,6 @@ static const struct
    "Synchronisation de la pr\303\251sentation vid\303\251o \303\240 la position de la ligne de balay"
    "age. R\303\251duit la latence au prix d'un risque plus \303\251lev\303\251 de saccades. La synch"
    "ronisation verticale (V-Sync) doit \303\252tre d\303\251sactiv\303\251e.",
-   "D\303\251cale la cible de synchronisation de la ligne de balayage de ce nombre de lignes. La syn"
-   "chronisation ne d\303\251tecte pas la fin du traitement d'une image par le processeur graphique "
-   "ni l'apparition de la ligne de d\303\251chirure \303\240 l'\303\251cran, vous devez donc ajuster"
-   " cette valeur jusqu'\303\240 ce que la ligne disparaisse de l'\303\251cran. Vous pouvez viser pl"
-   "us t\303\264t avec une valeur n\303\251gative.",
    "AVERTISSEMENT : Un scintillement rapide peut causer une persistance de l'image sur certains \303"
    "\251crans. \303\200 utiliser \303\240 vos risques et p\303\251rils // Simule une ligne de balaya"
    "ge roulante basique au cours de plusieurs sous-images en divisant l'\303\251cran verticalement e"
@@ -9562,7 +9554,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (218828u
+      (sizeof(msg_hash_fr_blob) == (218398u
 #ifdef ANDROID
        + 373u
 #endif
@@ -12216,7 +12208,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC_OFFSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
@@ -13498,7 +13489,6 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC_OFFSET,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,

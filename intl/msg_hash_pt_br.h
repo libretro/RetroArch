@@ -2234,7 +2234,6 @@ static const struct
    char s_f57f6158[15];
    char s_69b801ef[7];
    char s_a40653a7[28];
-   char s_e67b672d[47];
    char s_52e3d6ea[47];
    char s_580e244f[7];
    char s_a9c8430e[23];
@@ -3512,7 +3511,6 @@ static const struct
    char s_f4e4e921[245];
    char s_7968f59d[47];
    char s_8cee3615[172];
-   char s_87ba81db[293];
    char s_58c80718[269];
    char s_67d549fd[47];
    char s_afac733c[30];
@@ -6610,7 +6608,6 @@ static const struct
    "Reduzir escala",
    "Escala",
    "Sincroniza\303\247\303\243o de Scanline",
-   "Deslocar sincroniza\303\247\303\243o da linha de varredura",
    "Simula\303\247\303\243o do rolamento da linha de varredura",
    "V\303\255deo",
    "Sombreadores de v\303\255deo",
@@ -8548,10 +8545,6 @@ static const struct
    "Sincronize a apresenta\303\247\303\243o de v\303\255deo com a posi\303\247\303\243o da scanline."
    " Reduz a lat\303\252ncia ao custo de um risco maior de tearing (rasgos na tela). O VSync deve es"
    "tar desativado.",
-   "Desloca o alvo da sincroniza\303\247\303\243o da linha de varredura por uma quantidade de linhas"
-   ". A sicroniza\303\247\303\243o n\303\243o sabe quando a GPU termina um quadro ou quando a virada"
-   " chega na tela, ent\303\243o o deslocamento pode mover a linha de ruptura para fora da tela. Os "
-   "valores negativos disparam mais r\303\241pido.",
    "AVISO: Tremula\303\247\303\243o r\303\241pida pode causar persist\303\252ncia de imagem em algum"
    "as telas. Use por sua conta em risco // Simula uma varredura b\303\241sica sobre v\303\241rios s"
    "ubquadros dividindo a tela verticalmente e renderizando cada parte da tela de acordo com quantos"
@@ -9293,7 +9286,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_br_blob_check[
-      (sizeof(msg_hash_pt_br_blob) == (195448u
+      (sizeof(msg_hash_pt_br_blob) == (195108u
 #ifdef ANDROID
        + 352u
 #endif
@@ -11932,7 +11925,6 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC_OFFSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
@@ -13209,7 +13201,6 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC_OFFSET,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,

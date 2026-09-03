@@ -2193,7 +2193,6 @@ static const struct
    char s_f57f6158[15];
    char s_69b801ef[11];
    char s_a40653a7[25];
-   char s_e67b672d[21];
    char s_52e3d6ea[29];
    char s_a9c8430e[13];
    char s_f5911f43[25];
@@ -3471,7 +3470,6 @@ static const struct
    char s_f4e4e921[255];
    char s_7968f59d[39];
    char s_8cee3615[164];
-   char s_87ba81db[358];
    char s_58c80718[336];
    char s_67d549fd[36];
    char s_afac733c[34];
@@ -6511,7 +6509,6 @@ static const struct
    "Unterskalieren",
    "Skalierung",
    "Scanline-Synchronisation",
-   "Scanline-Sync-Offset",
    "Rollende Scanline-Simulation",
    "Video-Shader",
    "Auto-Shader-Verz\303\266gerung",
@@ -8385,10 +8382,6 @@ static const struct
    "Videoskalierungseinstellungen \303\244ndern.",
    "Die Videodarstellung wird mit der Scanline-Position synchronisiert. Dies verringert die Latenz, "
    "erh\303\266ht jedoch das Risiko von Tearing. VSync muss deaktiviert sein.",
-   "Verschiebt das Scanline-Sync-Ziel um diese Anzahl an Scanlines. Die Synchronisation kann nicht e"
-   "rkennen, wann die GPU einen Frame fertigstellt oder wann der Bildwechsel den Bildschirm erreicht"
-   ". Daher muss dieser Wert so lange angepasst werden, bis die Tear-Linie aus dem Bildschirmbereich"
-   " verschwindet. Ein negativer Wert bewirkt eine fr\303\274here Verschiebung.",
    "WARNUNG: Schnelles Flackern kann auf manchen Bildschirmen zu einem Nachleuchten des Bildes f\303"
    "\274hren. Verwendung auf eigene Gefahr // Simuliert eine einfache rollende Scanline \303\274ber "
    "mehrere Unterbilder, indem der Bildschirm vertikal aufgeteilt wird und jeder Teil des Bildschirm"
@@ -9101,7 +9094,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (194822u
+      (sizeof(msg_hash_de_blob) == (194443u
 #ifdef ANDROID
        + 358u
 #endif
@@ -11699,7 +11692,6 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC_OFFSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -12973,7 +12965,6 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC_OFFSET,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,

@@ -2269,7 +2269,6 @@ static const struct
    char s_f57f6158[15];
    char s_69b801ef[9];
    char s_a40653a7[35];
-   char s_e67b672d[63];
    char s_52e3d6ea[52];
    char s_580e244f[7];
    char s_a9c8430e[18];
@@ -3553,7 +3552,6 @@ static const struct
    char s_f4e4e921[243];
    char s_7968f59d[43];
    char s_8cee3615[214];
-   char s_87ba81db[356];
    char s_58c80718[411];
    char s_67d549fd[40];
    char s_afac733c[40];
@@ -6690,7 +6688,6 @@ static const struct
    "Reducir escala",
    "Escalado",
    "Sincronizar con l\303\255neas de barrido",
-   "Desplazamiento de la sincronizaci\303\263n de las l\303\255neas de barrido",
    "Simulaci\303\263n de escalonamiento de l\303\255neas de barrido",
    "V\303\255deo",
    "Shaders de v\303\255deo",
@@ -8679,11 +8676,6 @@ static const struct
    "Sincroniza la presentaci\303\263n de la imagen con la posici\303\263n de las l\303\255neas de ba"
    "rrido. Reduce la latencia a costa de aumentar las fragmentaciones en la imagen. Es necesario des"
    "activar la sincron\303\255a vertical (Vsync).",
-   "Desplaza el objetivo de sincronizaci\303\263n de las l\303\255neas de barrido un n\303\272mero c"
-   "oncreto de l\303\255neas. La sincronizaci\303\263n no sabe en qu\303\251 momento termina la GPU "
-   "de renderizar un fotograma o cu\303\241ndo llega el cambio a la pantalla, as\303\255 que debes a"
-   "justar este valor hasta que la l\303\255nea de la fragmentaci\303\263n salga de la pantalla. Un "
-   "valor negativo empezar\303\241 antes.",
    "ADVERTENCIA: los parpadeos r\303\241pidos pueden provocar persistencia de la imagen (\302\253im"
    "\303\241genes fantasma\302\273) en algunas pantallas. Utiliza esta opci\303\263n bajo tu propia "
    "responsabilidad. // Simula de forma b\303\241sica el escalonamiento de las l\303\255neas de barr"
@@ -9423,7 +9415,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (210896u
+      (sizeof(msg_hash_es_blob) == (210477u
 #ifdef ANDROID
        + 329u
 #endif
@@ -12093,7 +12085,6 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC_OFFSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
@@ -13375,7 +13366,6 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC_OFFSET,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,

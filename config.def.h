@@ -404,15 +404,6 @@
 #define DEFAULT_MAX_FRAME_LATENCY 1
 #define MAXIMUM_MAX_FRAME_LATENCY 4
 
-/* Scanline Sync aims the flip at the middle of the blanking interval
- * using what it can measure from the CPU. It cannot see when the GPU
- * finishes or when the flip actually reaches the panel, so a residual
- * offset remains that depends on the driver, resolution and shader
- * chain. This is dialled by hand until the tear sits in blanking, the
- * same way RTSS's scanline sync exposes its offset. Signed scanlines. */
-#define DEFAULT_SCANLINE_SYNC_OFFSET 0
-#define MAXIMUM_SCANLINE_SYNC_OFFSET 3000
-
 /* GL specific */
 #define DEFAULT_ADAPTIVE_VSYNC false
 

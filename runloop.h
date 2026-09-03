@@ -186,7 +186,6 @@ struct runloop
    retro_time_t frame_limit_minimum_time;
    retro_time_t frame_limit_last_time;
    unsigned     pace;                           /* enum runloop_pace_source bits */
-   bool         audio_yielded_to_scanline;      /* audio set non-blocking because Scanline Sync holds the loop */
    retro_usec_t frame_time_last;                /* int64_t alignment */
 
    /* Per-frame scalar state. Kept adjacent to the timing block above so the

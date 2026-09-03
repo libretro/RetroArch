@@ -410,7 +410,6 @@ typedef struct settings
       int crt_switch_porch_adjust;
       int crt_switch_vertical_adjust;
       int video_max_frame_latency;
-      int video_scanline_sync_offset;
 #ifdef HAVE_VULKAN
       int vulkan_gpu_index;
 #endif

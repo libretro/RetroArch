@@ -2295,7 +2295,6 @@ static const struct
    char s_f57f6158[16];
    char s_69b801ef[32];
    char s_a40653a7[30];
-   char s_e67b672d[43];
    char s_52e3d6ea[33];
    char s_a9c8430e[23];
    char s_f5911f43[36];
@@ -3591,7 +3590,6 @@ static const struct
    char s_f4e4e921[280];
    char s_7968f59d[28];
    char s_8cee3615[143];
-   char s_87ba81db[416];
    char s_58c80718[372];
    char s_67d549fd[51];
    char s_afac733c[52];
@@ -7467,8 +7465,6 @@ static const struct
    "Thu nh\341\273\217 h\303\254nh",
    "Ph\303\263ng to/Thu nh\341\273\217 h\303\254nh \341\272\243nh",
    "\304\220\341\273\223ng b\341\273\231 theo d\303\262ng qu\303\251t",
-   "\304\220\341\273\231 l\341\273\207ch \304\221\341\273\223ng b\341\273\231 theo d\303\262ng qu"
-   "\303\251t",
    "M\303\264 ph\341\273\217ng \304\221\306\260\341\273\235ng qu\303\251t l\304\203n",
    "B\341\273\231 \304\221\341\273\225 b\303\263ng Video",
    "T\341\273\261 \304\221\341\273\231ng ho\303\243n b\341\273\231 \304\221\341\273\225 b\303\263ng",
@@ -11029,16 +11025,6 @@ static const struct
    "\341\273\213 tr\303\255 d\303\262ng qu\303\251t. Gi\341\272\243m \304\221\341\273\231 tr\341\273"
    "\205 nh\306\260ng t\304\203ng nguy c\306\241 b\341\273\213 x\303\251 h\303\254nh. C\341\272\247n"
    " t\341\272\257t VSync.",
-   "D\341\273\213ch chuy\341\273\203n m\341\273\245c ti\303\252u \304\221\341\273\223ng b\341\273"
-   "\231 d\303\262ng qu\303\251t theo s\341\273\221 d\303\262ng qu\303\251t n\303\240y. T\303\255nh "
-   "n\304\203ng \304\221\341\273\223ng b\341\273\231 kh\303\264ng th\341\273\203 bi\341\272\277t ch"
-   "\303\255nh x\303\241c khi GPU ho\303\240n t\341\272\245t m\341\273\231t khung h\303\254nh ho\341"
-   "\272\267c khi khung h\303\254nh \304\221\306\260\341\273\243c \304\221\306\260a l\303\252n m\303"
-   "\240n h\303\254nh, v\303\254 v\341\272\255y h\303\243y \304\221i\341\273\201u ch\341\273\211nh g"
-   "i\303\241 tr\341\273\213 n\303\240y cho \304\221\341\272\277n khi \304\221\306\260\341\273\235ng"
-   " x\303\251 h\303\254nh di chuy\341\273\203n ra kh\341\273\217i m\303\240n h\303\254nh. Gi\303"
-   "\241 tr\341\273\213 \303\242m s\341\272\275 h\306\260\341\273\233ng th\341\273\235i \304\221i"
-   "\341\273\203m \304\221\341\273\223ng b\341\273\231 s\341\273\233m h\306\241n.",
    "C\341\272\242NH B\303\201O: Hi\341\273\207n t\306\260\341\273\243ng nh\341\272\245p nh\303\241y "
    "nhanh c\303\263 th\341\273\203 g\303\242y ra hi\341\273\207n t\306\260\341\273\243ng l\306\260u "
    "\341\272\243nh tr\303\252n m\341\273\231t s\341\273\221 m\303\240n h\303\254nh. T\341\273\261 ch"
@@ -12191,7 +12177,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (231491u
+      (sizeof(msg_hash_vn_blob) == (231032u
 #ifdef ANDROID
        + 373u
 #endif
@@ -14883,7 +14869,6 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC_OFFSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -16169,7 +16154,6 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC_OFFSET,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
