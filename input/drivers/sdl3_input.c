@@ -657,10 +657,6 @@ static void sdl3_poll_pen(sdl3_input_t *sdl)
             break;
          case SDL_EVENT_PEN_DOWN:
          case SDL_EVENT_PEN_UP:
-            /* Any pen event implies a pen in range; PROXIMITY_IN
-             * alone can be missed (flushed by a previous driver
-             * instance on a runtime driver switch, or a second pen
-             * leaving range clearing the shared flag). */
             sdl->pen_in_proximity = true;
             sdl->pen_raw_x = event.ptouch.x;
             sdl->pen_raw_y = event.ptouch.y;
