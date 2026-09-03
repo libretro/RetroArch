@@ -149,6 +149,8 @@ static const GUID mmdevice_IID_IAudioClient3 =
    ( (This)->GetSharedModeEnginePeriod(pFormat,pDefault,pFundamental,pMin,pMax) )
 #define _IAudioClient3_InitializeSharedAudioStream(This,StreamFlags,PeriodInFrames,pFormat,AudioSessionGuid) \
    ( (This)->InitializeSharedAudioStream(StreamFlags,PeriodInFrames,pFormat,AudioSessionGuid) )
+#define _IAudioClient3_GetCurrentSharedModeEnginePeriod(This,ppFormat,pCurrentPeriodInFrames) \
+   ( (This)->GetCurrentSharedModeEnginePeriod(ppFormat,pCurrentPeriodInFrames) )
 #define _IAudioClient3_Release(This) ( (This)->Release() )
 #endif
 #define _IAudioClient_IsFormatSupported(This,ShareMode,pFormat,ppClosestMatch) \
@@ -191,6 +193,8 @@ static const GUID mmdevice_IID_IAudioClient3 =
    ( (This)->lpVtbl->GetSharedModeEnginePeriod(This,pFormat,pDefault,pFundamental,pMin,pMax) )
 #define _IAudioClient3_InitializeSharedAudioStream(This,StreamFlags,PeriodInFrames,pFormat,AudioSessionGuid) \
    ( (This)->lpVtbl->InitializeSharedAudioStream(This,StreamFlags,PeriodInFrames,pFormat,AudioSessionGuid))
+#define _IAudioClient3_GetCurrentSharedModeEnginePeriod(This,ppFormat,pCurrentPeriodInFrames) \
+   ( (This)->lpVtbl->GetCurrentSharedModeEnginePeriod(This,ppFormat,pCurrentPeriodInFrames) )
 #define _IAudioClient3_Release(This) ( (This)->lpVtbl->Release(This) )
 #endif
 #define _IAudioClient_IsFormatSupported(This,ShareMode,pFormat,ppClosestMatch) \

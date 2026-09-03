@@ -54,6 +54,13 @@
 
 #define WASAPI_TIMEOUT 256
 
+#ifndef AUDCLNT_E_ENGINE_PERIODICITY_LOCKED
+#define AUDCLNT_E_ENGINE_PERIODICITY_LOCKED AUDCLNT_ERR(0x028)
+#endif
+#ifndef AUDCLNT_E_ENGINE_FORMAT_LOCKED
+#define AUDCLNT_E_ENGINE_FORMAT_LOCKED AUDCLNT_ERR(0x029)
+#endif
+
 enum wasapi_flags
 {
    WASAPI_FLG_EXCLUSIVE = (1 << 0),
@@ -550,33 +557,58 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
          UINT32 p_default = 0, p_fundamental = 0, p_min = 0, p_max = 0;
          hr = _IAudioClient3_GetSharedModeEnginePeriod(client3,
                (WAVEFORMATEX*)&wf, &p_default, &p_fundamental, &p_min, &p_max);
+         /* Every way out of this path is said at INFO: a user comparing
+          * the engine buffer in the statistics overlay against what the
+          * device can do needs to know why it is 10 ms and not 3. */
          if (FAILED(hr))
-            RARCH_DBG("[WASAPI] IAudioClient3::GetSharedModeEnginePeriod failed: %s; using default period.\n",
+            RARCH_LOG("[WASAPI] IAudioClient3::GetSharedModeEnginePeriod failed: %s; using the engine's default period.\n",
                   mmdevice_hresult_name(hr));
          else if (!(p_min > 0 && p_min < p_default))
-            RARCH_DBG("[WASAPI] Engine period min %u frames is not below default %u; using default period.\n",
-                  p_min, p_default);
+            RARCH_LOG("[WASAPI] Engine periods: default %u, fundamental %u, min %u, max %u frames; the minimum is not below the default, so the default period it is.\n",
+                  p_default, p_fundamental, p_min, p_max);
          else
          {
+            UINT32 period = p_min;
+            RARCH_LOG("[WASAPI] Engine periods: default %u, fundamental %u, min %u, max %u frames; asking for %u.\n",
+                  p_default, p_fundamental, p_min, p_max, period);
             hr = _IAudioClient3_InitializeSharedAudioStream(client3,
-                  AUDCLNT_STREAMFLAGS_EVENTCALLBACK, p_min,
+                  AUDCLNT_STREAMFLAGS_EVENTCALLBACK, period,
                   (WAVEFORMATEX*)&wf, NULL);
+            if (hr == AUDCLNT_E_ENGINE_PERIODICITY_LOCKED)
+            {
+               /* Another stream holds the engine at its period: join it.
+                * It is whatever it is - often the 10 ms default - but a
+                * stream on the engine's actual cadence beats the legacy
+                * path's assumption of one. */
+               WAVEFORMATEX *cur_fmt = NULL;
+               UINT32        cur     = 0;
+               if (SUCCEEDED(_IAudioClient3_GetCurrentSharedModeEnginePeriod(client3, &cur_fmt, &cur)) && cur > 0)
+               {
+                  RARCH_LOG("[WASAPI] Engine period is locked by another stream at %u frames; joining it.\n", cur);
+                  period = cur;
+                  hr = _IAudioClient3_InitializeSharedAudioStream(client3,
+                        AUDCLNT_STREAMFLAGS_EVENTCALLBACK, period,
+                        (WAVEFORMATEX*)&wf, NULL);
+               }
+               if (cur_fmt)
+                  CoTaskMemFree(cur_fmt);
+            }
             if (SUCCEEDED(hr))
             {
                if (low_latency)
                   *low_latency = true;
                RARCH_LOG("[WASAPI] Shared client at engine period %u frames (%.2f ms; default %u).\n",
-                     p_min, (double)p_min * 1000.0 / (double)wf.Format.nSamplesPerSec,
+                     period, (double)period * 1000.0 / (double)wf.Format.nSamplesPerSec,
                      p_default);
             }
             else
-               RARCH_DBG("[WASAPI] IAudioClient3::InitializeSharedAudioStream at %u frames failed: %s; using default period.\n",
-                     p_min, mmdevice_hresult_name(hr));
+               RARCH_LOG("[WASAPI] IAudioClient3::InitializeSharedAudioStream at %u frames failed: %s; using the engine's default period.\n",
+                     period, mmdevice_hresult_name(hr));
          }
          _IAudioClient3_Release(client3);
       }
       else
-         RARCH_DBG("[WASAPI] IAudioClient3 not available (%s); using default period.\n",
+         RARCH_LOG("[WASAPI] IAudioClient3 not offered by this endpoint (%s); using the engine's default period.\n",
                mmdevice_hresult_name(hr));
 
       if (low_latency && *low_latency)
@@ -594,6 +626,8 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
          return NULL;
       }
    }
+#else
+   RARCH_LOG("[WASAPI] Built without IAudioClient3 (the SDK's audioclient.h predates it); shared mode uses the engine's default period.\n");
 #endif
 
    hr = _IAudioClient_Initialize(client, AUDCLNT_SHAREMODE_SHARED,
@@ -1324,12 +1358,6 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
          fifo_bytes     = (size_t)w->engine_buffer_size * 2;
       if (!(w->buffer = fifo_new(fifo_bytes)))
          goto error;
-#ifdef HAVE_THREADS
-      w->fifo_lock = slock_new();
-      w->room_cond = scond_new();
-      if (!w->fifo_lock || !w->room_cond)
-         goto error;
-#endif
       RARCH_LOG("[WASAPI] Exclusive: %u ms setting as a %u-frame fifo (%u ms, rate control holds it about half full) in front of a %u-frame device period (%.1f ms); about %u ms from write to the device.\n",
             latency,
             (unsigned)(fifo_bytes / w->frame_size),
@@ -1379,6 +1407,15 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
       if (!(w->buffer = fifo_new(sh_buffer_length * w->frame_size)))
          goto error;
    }
+
+#ifdef HAVE_THREADS
+   /* The fifo is shared between the writer and the pump, in both
+    * modes. */
+   w->fifo_lock = slock_new();
+   w->room_cond = scond_new();
+   if (!w->fifo_lock || !w->room_cond)
+      goto error;
+#endif
 
    if (!(w->write_event = CreateEventA(NULL, FALSE, FALSE, NULL)))
       goto error;
@@ -1449,6 +1486,8 @@ error:
  * all, and between its calls nothing answered. This thread answers
  * every one: a period from the fifo when one is there, silence and an
  * underrun counted when not. */
+static bool wasapi_push_sh(wasapi_t *w);
+
 static void wasapi_pump_thread(void *data)
 {
    wasapi_t *w = (wasapi_t*)data;
@@ -1457,33 +1496,49 @@ static void wasapi_pump_thread(void *data)
    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
    while (retro_atomic_load_acquire_int(&w->pump_run))
    {
-      BYTE *dest         = NULL;
-      UINT32 frame_count = (UINT32)(w->engine_buffer_size >> w->frame_shift);
-      DWORD  flags       = 0;
       if (WaitForSingleObject(w->write_event, WASAPI_TIMEOUT) != WAIT_OBJECT_0)
          continue;
       if (!retro_atomic_load_acquire_int(&w->pump_run))
          break;
-      if (FAILED(_IAudioRenderClient_GetBuffer(w->renderer, frame_count, &dest)))
-         continue;
-      slock_lock(w->fifo_lock);
-      if (FIFO_READ_AVAIL(w->buffer) >= w->engine_buffer_size)
-         fifo_read(w->buffer, dest, w->engine_buffer_size);
+      if (w->flags & WASAPI_FLG_EXCLUSIVE)
+      {
+         BYTE *dest         = NULL;
+         UINT32 frame_count = (UINT32)(w->engine_buffer_size >> w->frame_shift);
+         DWORD  flags       = 0;
+         if (FAILED(_IAudioRenderClient_GetBuffer(w->renderer, frame_count, &dest)))
+            continue;
+         slock_lock(w->fifo_lock);
+         if (FIFO_READ_AVAIL(w->buffer) >= w->engine_buffer_size)
+            fifo_read(w->buffer, dest, w->engine_buffer_size);
+         else
+         {
+            memset(dest, 0, w->engine_buffer_size);
+            flags = AUDCLNT_BUFFERFLAGS_SILENT;
+            w->underruns++;
+         }
+         scond_signal(w->room_cond);
+         slock_unlock(w->fifo_lock);
+         _IAudioRenderClient_ReleaseBuffer(w->renderer, frame_count, flags);
+      }
       else
       {
-         memset(dest, 0, w->engine_buffer_size);
-         flags = AUDCLNT_BUFFERFLAGS_SILENT;
-         w->underruns++;
+         /* Shared: the engine signals each period; move what it has
+          * room for. Under the legacy 10 ms engine with a buffer the
+          * size of the setting the writer alone kept it fed; under the
+          * IAudioClient3 engine at 3 ms the buffer is three periods and
+          * the writer's frame-sized cadence starved it - 46% of periods,
+          * in the harness - so the pump feeds it here too. */
+         slock_lock(w->fifo_lock);
+         wasapi_push_sh(w);
+         scond_signal(w->room_cond);
+         slock_unlock(w->fifo_lock);
       }
-      scond_signal(w->room_cond);
-      slock_unlock(w->fifo_lock);
-      _IAudioRenderClient_ReleaseBuffer(w->renderer, frame_count, flags);
    }
 }
 
 static bool wasapi_pump_start(wasapi_t *w)
 {
-   if (w->pump || !(w->flags & WASAPI_FLG_EXCLUSIVE))
+   if (w->pump)
       return true;
    retro_atomic_store_release_int(&w->pump_run, 1);
    w->pump     = sthread_create(wasapi_pump_thread, w);
@@ -1548,12 +1603,11 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
    if (!(flg & WASAPI_FLG_RUNNING))
       return -1;
 
-   if (flg & WASAPI_FLG_EXCLUSIVE)
-   {
 #ifdef HAVE_THREADS
-      /* The fifo only; the pump feeds the device. Non-blocking: what
-       * fits. Blocking: wait for the pump to free room, bounded as
-       * every wait here is. */
+   {
+      /* Both modes: the fifo only; the pump feeds the device.
+       * Non-blocking: what fits. Blocking: wait for the pump to free
+       * room, bounded as every wait here is. */
       int laps = 0;
       slock_lock(w->fifo_lock);
       while (_len < len)
@@ -1575,7 +1629,10 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
          _len += ir;
       }
       slock_unlock(w->fifo_lock);
+   }
 #else
+   if (flg & WASAPI_FLG_EXCLUSIVE)
+   {
       /* Without threads there is no pump: the old, writer-paced path. */
       while (_len < len)
       {
@@ -1600,7 +1657,6 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
          fifo_write(w->buffer, (const char*)data + _len, ir);
          _len += ir;
       }
-#endif
    }
    else
    {
@@ -1645,6 +1701,7 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
          }
       }
    }
+#endif
    return _len;
 }
 
@@ -1777,6 +1834,19 @@ static size_t wasapi_write_avail(void *wh)
 #endif
       return room;
    }
+#ifdef HAVE_THREADS
+   {
+      /* Shared, with the pump: the fifo's room under its lock, plus
+       * the engine's, which only the pump fills. */
+      size_t room;
+      slock_lock(w->fifo_lock);
+      room = FIFO_WRITE_AVAIL(w->buffer);
+      slock_unlock(w->fifo_lock);
+      if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
+         return room;
+      return room + (w->engine_buffer_size - padding * w->frame_size);
+   }
+#endif
    if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
       return 0;
    /* Free space across the whole pipeline the writer can fill:
@@ -1824,10 +1894,10 @@ static size_t wasapi_wait_writable(void *wh, size_t len)
       return 0;
 
 #ifdef HAVE_THREADS
-   if (w->flags & WASAPI_FLG_EXCLUSIVE)
    {
-      /* Room comes from the pump; wait for it, capped at half the fifo
-       * so the wait always ends, bounded in time as every wait here. */
+      /* Room comes from the pump, in either mode; wait for it, capped
+       * at half the fifo so the wait always ends, bounded in time as
+       * every wait here. */
       size_t room;
       int laps = 0;
       if (len > (w->buffer->size - 1) / 2)
