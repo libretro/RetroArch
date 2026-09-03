@@ -301,6 +301,20 @@ typedef struct audio_driver
     * keep the inline path.
     */
    size_t (*wait_writable)(void *data, size_t len);
+
+   /**
+    * Optional. Frames the device has consumed since start(), in output
+    * frames, monotonic and free-running on the device's own clock: a
+    * driver with a callback counts what each callback took, one with a
+    * queue counts what it released less what the device still holds.
+    * Compared over time with the frames the frontend wrote, it gives
+    * the device's real sample rate against the host's clock, and the
+    * frontend trims its resampling ratio by that - slowly, by parts per
+    * million - so a buffer no longer drifts to an underrun or overrun
+    * on the difference between two crystals. NULL leaves the frontend
+    * without the estimate, as before.
+    */
+   size_t (*frames_consumed)(void *data);
 } audio_driver_t;
 
 typedef struct
@@ -530,6 +544,36 @@ typedef struct
     * keeps the "one frame's worth" target accurate at any output sample
     * rate (48 kHz, 96 kHz, 192 kHz, ...) and any content fps. */
    double   cached_rate_adjust;        /* last computed factor; default 1.0 */
+
+   /* Sink rate estimation: see audio_driver_sink_update(). Counted
+    * where the driver's write() is called, on the thread that flushes;
+    * the estimate runs there too. */
+   double   sink_offered;              /* output frames offered to the driver, each
+                                          divided by the bias in force when it was, so
+                                          the sum is what would have been offered
+                                          unbiased: the source's rate on the host clock */
+   uint64_t sink_accepted;             /* output frames the driver took */
+   uint64_t sink_offered_raw;          /* output frames offered, as offered */
+   double   sink_offered_at;           /* the three at the baseline's start */
+   uint64_t sink_accepted_at;
+   uint64_t sink_offered_raw_at;
+   uint64_t sink_consumed_at;          /* frames_consumed() at the baseline's start */
+   int64_t  sink_baseline_start;       /* usec; 0 = not started */
+   int64_t  sink_check_at;             /* usec; the next plausibility check */
+   int64_t  sink_apply_at;             /* usec; the next setting of the bias */
+   double   sink_check_offered;        /* offered and consumed at the last check */
+   uint64_t sink_check_consumed;
+   int64_t  sink_sum_usec;             /* the windows kept: time, offered, consumed */
+   double   sink_sum_offered;
+   double   sink_sum_consumed;
+   double   sink_bias;                 /* multiplied into the ratio; 1.0 = none */
+   double   sink_rate_hz;              /* the device's rate as measured; 0 = unknown */
+   double   sink_source_hz;            /* the source's rate at the nominal ratio, as measured */
+   double   sink_adjust_sum;           /* DRC adjusts over the baseline, for the mean */
+   unsigned sink_adjust_n;
+   unsigned sink_applied;              /* times the bias has been set from a baseline */
+   unsigned sink_discarded;            /* windows discarded in a row */
+   bool     sink_drop_warned;
    size_t   samples_since_drc;         /* int16 samples submitted since last update */
    size_t   drc_threshold_int16s;      /* one frame's worth of stereo int16 at the current rate */
    /* Set by audio_driver_frame_end() so the next flush recomputes the
@@ -866,6 +910,11 @@ void audio_driver_update_drc_threshold(audio_driver_state_t *audio_st);
 const char *audio_driver_get_ident(void);
 
 double audio_driver_get_buffer_latency_ms(void);
+
+/* The device's sample rate as measured against the host clock, in Hz,
+ * and the ratio bias applied for it; 0 when no driver reports
+ * frames_consumed() or no window has completed yet. */
+double audio_driver_get_sink_rate_hz(double *bias, double *source_hz);
 
 extern audio_driver_t *audio_drivers[];
 

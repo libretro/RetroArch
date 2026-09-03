@@ -769,10 +769,219 @@ static double audio_driver_compute_rate_adjust(audio_driver_state_t *audio_st)
          : audio_st->rate_control_delta;
    rate_adjust            = 1.0 + effective_delta * direction;
 
+   /* The sink estimate sees rate control's own corrections, so that a
+    * constant one migrates into the bias and the fill re-centres. */
+   audio_st->sink_adjust_sum += rate_adjust;
+   audio_st->sink_adjust_n++;
+   if (audio_st->sink_bias > 0.0)
+      rate_adjust *= audio_st->sink_bias;
+
    audio_st->free_samples_buf[write_idx] = avail;
    audio_st->cached_rate_adjust          = rate_adjust;
    audio_st->samples_since_drc           = 0;
    return rate_adjust;
+}
+
+/* Limits on the sink bias: a crystal is off by tens of parts per
+ * million, a bad one by a few hundred; two tenths of a percent - three
+ * and a half cents - covers any, and is inaudible. The baseline is long
+ * because a driver counts what the device took in whole periods - 480
+ * frames on a shared WASAPI engine - and a count that steps by 480
+ * frames is only known to 480 frames: over four seconds that is 2500
+ * parts per million of noise, over thirty it is 330, over five minutes
+ * 33. The bias is set from the baseline every thirty seconds, so the
+ * first correction has that much behind it and each later one more.
+ * The plausibility check runs every four seconds regardless. */
+#define AUDIO_SINK_BIAS_MAX         0.002
+#define AUDIO_SINK_BASELINE_USEC    30000000
+#define AUDIO_SINK_CHECK_USEC       4000000
+
+static void audio_driver_sink_restart(audio_driver_state_t *audio_st,
+      int64_t now_usec, uint64_t consumed)
+{
+   audio_st->sink_baseline_start = now_usec;
+   audio_st->sink_apply_at       = now_usec + AUDIO_SINK_BASELINE_USEC;
+   audio_st->sink_check_at       = now_usec + AUDIO_SINK_CHECK_USEC;
+   audio_st->sink_offered_at     = audio_st->sink_offered;
+   audio_st->sink_offered_raw_at = audio_st->sink_offered_raw;
+   audio_st->sink_accepted_at    = audio_st->sink_accepted;
+   audio_st->sink_consumed_at    = consumed;
+   audio_st->sink_check_offered  = audio_st->sink_offered;
+   audio_st->sink_check_consumed = consumed;
+   audio_st->sink_sum_usec       = 0;
+   audio_st->sink_sum_offered    = 0.0;
+   audio_st->sink_sum_consumed   = 0.0;
+   audio_st->sink_adjust_sum     = 0.0;
+   audio_st->sink_adjust_n       = 0;
+}
+
+/**
+ * audio_driver_sink_update:
+ *
+ * Runs on the thread that flushes, after each write. Every four seconds
+ * it closes a window and reads two counts over it against the host
+ * clock: frames the device consumed, and frames the frontend offered -
+ * each offered frame divided by the resampling ratio in force when it
+ * was, rate control's adjustment and the bias both, so the sum is what
+ * the source produces at the nominal rate. A window in which either
+ * side ran more than two percent off the nominal rate is excluded, not
+ * averaged in: a pause, a save state loading, a menu, a core stalling
+ * are all shorter than a stall gate would catch and every one of them
+ * put the device ahead of the source and read as a fast clock. The
+ * windows kept are summed, and every thirty seconds of kept time the
+ * bias is set to their ratio - the slow, integral term beside rate
+ * control's fast, proportional one, and one path for both modes, since
+ * rate control's adjustment is divided out of the offered count rather
+ * than absorbed. With rate control on and a non-blocking writer the
+ * fill sits pinned full and rate control's mean says "slow" forever;
+ * that is the buffer, not the clock, and it is no longer consulted.
+ *
+ * Offered, not accepted: frames a small buffer refuses do not enter the
+ * ratio; they are counted apart and warned about once.
+ *
+ * now_usec is a parameter so the harness can drive the clock.
+ */
+static void audio_driver_sink_update(audio_driver_state_t *audio_st,
+      int64_t now_usec)
+{
+   const audio_driver_t *audio = audio_st->current_audio;
+   uint64_t consumed;
+   unsigned rate = config_get_ptr()->uints.audio_output_sample_rate;
+
+   if (     !audio || !audio->frames_consumed || !rate
+         || !config_get_ptr()->bools.audio_sink_rate_estimation)
+      return;
+
+   consumed = audio->frames_consumed(audio_st->context_audio_data);
+
+   if (!audio_st->sink_baseline_start)
+   {
+      audio_driver_sink_restart(audio_st, now_usec, consumed);
+      return;
+   }
+
+   if (now_usec < audio_st->sink_check_at)
+      return;
+
+   /* Close the window. */
+   {
+      int64_t  wdt   = now_usec - (audio_st->sink_check_at - AUDIO_SINK_CHECK_USEC);
+      double   dofr  = audio_st->sink_offered - audio_st->sink_check_offered;
+      uint64_t dc    = consumed >= audio_st->sink_check_consumed
+            ? consumed - audio_st->sink_check_consumed : 0;
+      double   nominal = (double)rate * (double)wdt / 1e6;
+      audio_st->sink_check_at       = now_usec + AUDIO_SINK_CHECK_USEC;
+      audio_st->sink_check_offered  = audio_st->sink_offered;
+      audio_st->sink_check_consumed = consumed;
+
+      /* Both sides at rate, within two percent, or the window is not a
+       * measurement of the clocks and is left out. */
+      if (     nominal <= 0.0
+            || dofr < nominal * 0.98 || dofr > nominal * 1.02
+            || (double)dc < nominal * 0.98 || (double)dc > nominal * 1.02)
+      {
+         audio_st->sink_discarded++;
+         return;
+      }
+      audio_st->sink_discarded     = 0;
+      audio_st->sink_sum_usec     += wdt;
+      audio_st->sink_sum_offered  += dofr;
+      audio_st->sink_sum_consumed += (double)dc;
+   }
+
+   if (audio_st->sink_sum_usec > 0)
+   {
+      audio_st->sink_rate_hz   = audio_st->sink_sum_consumed * 1e6
+            / (double)audio_st->sink_sum_usec;
+      audio_st->sink_source_hz = audio_st->sink_sum_offered * 1e6
+            / (double)audio_st->sink_sum_usec;
+   }
+
+   /* Refused frames: the driver took less than was offered. Said once. */
+   {
+      uint64_t offered  = audio_st->sink_offered_raw - audio_st->sink_offered_raw_at;
+      uint64_t accepted = audio_st->sink_accepted - audio_st->sink_accepted_at;
+      if (     !audio_st->sink_drop_warned && offered > 0
+            && accepted < offered && (offered - accepted) * 1000 > offered)
+      {
+         audio_st->sink_drop_warned = true;
+         RARCH_WARN("[Audio] The driver refused %.2f%% of the audio offered over %.0f s: it is being dropped, most likely a buffer smaller than what the core delivers per frame with audio sync off.\n",
+               100.0 * (double)(offered - accepted) / (double)offered,
+               (double)(now_usec - audio_st->sink_baseline_start) / 1e6);
+      }
+   }
+
+   if (audio_st->sink_sum_usec < AUDIO_SINK_BASELINE_USEC || now_usec < audio_st->sink_apply_at)
+      return;
+
+   /* A blocking writer is the pace: with audio sync on the frame limiter
+    * stands down and the core runs exactly as fast as the resampler
+    * drains into the device, so the source's rate is not its own - it
+    * is the device's, divided by whatever ratio is in force. A bias set
+    * from that ratio slows the ratio, which speeds the core, which reads
+    * as a faster source, which slows the ratio again: measured in the
+    * field as the source climbing +2300 to +3450 ppm with the bias at
+    * the clamp and the game running a third of a percent fast. There is
+    * no clock drift to correct in that mode; blocking already locks the
+    * core to the device. The rate is still measured and shown; the bias
+    * is applied only when the writer does not block and the source has
+    * a clock of its own - the frame timer or the display. */
+   if (!(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK))
+   {
+      if (!audio_st->sink_applied)
+      {
+         audio_st->sink_applied++;
+         RARCH_LOG("[Audio] Sink rate: the device takes %.1f Hz against the host clock (%+.0f ppm of %u); the writer blocks, so the source follows the device and resampling is not biased.\n",
+               audio_st->sink_rate_hz,
+               (audio_st->sink_rate_hz / (double)rate - 1.0) * 1e6, rate);
+      }
+      audio_st->sink_apply_at = now_usec + AUDIO_SINK_BASELINE_USEC;
+      return;
+   }
+
+   /* Thirty seconds of kept windows: set the bias from their ratio. */
+   {
+      double r = audio_st->sink_sum_offered > 0.0
+            ? audio_st->sink_sum_consumed / audio_st->sink_sum_offered
+            : audio_st->sink_bias;
+      if (r > 1.0 + AUDIO_SINK_BIAS_MAX)
+         r = 1.0 + AUDIO_SINK_BIAS_MAX;
+      if (r < 1.0 - AUDIO_SINK_BIAS_MAX)
+         r = 1.0 - AUDIO_SINK_BIAS_MAX;
+      audio_st->sink_bias = r;
+      audio_st->sink_applied++;
+      audio_st->sink_apply_at = now_usec + AUDIO_SINK_BASELINE_USEC;
+
+      /* Without rate control nothing else sets the ratio: the bias is
+       * applied here. With it, compute_rate_adjust() applies it. */
+      if (!(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_CONTROL))
+         audio_st->src_ratio_curr = audio_st->src_ratio_orig * audio_st->sink_bias;
+
+      /* The source's rate too: what the core produced, at the nominal
+       * ratio, per host second. The bias is the ratio of the two, so
+       * when it disagrees with the device's ppm this line says which
+       * side moved. */
+      audio_st->sink_source_hz = audio_st->sink_sum_offered * 1e6
+            / (double)audio_st->sink_sum_usec;
+      RARCH_LOG("[Audio] Sink rate: the device takes %.1f Hz against the host clock (%+.0f ppm of %u) and the source produces %.1f Hz (%+.0f ppm) over %.0f s kept of %.0f; resampling biased by %+.0f ppm.\n",
+            audio_st->sink_rate_hz,
+            (audio_st->sink_rate_hz / (double)rate - 1.0) * 1e6, rate,
+            audio_st->sink_source_hz,
+            (audio_st->sink_source_hz / (double)rate - 1.0) * 1e6,
+            (double)audio_st->sink_sum_usec / 1e6,
+            (double)(now_usec - audio_st->sink_baseline_start) / 1e6,
+            (audio_st->sink_bias - 1.0) * 1e6);
+   }
+}
+
+double audio_driver_get_sink_rate_hz(double *bias, double *source_hz)
+{
+   audio_driver_state_t *audio_st = &audio_driver_st;
+   if (bias)
+      *bias = audio_st->sink_bias > 0.0 ? audio_st->sink_bias : 1.0;
+   if (source_hz)
+      *source_hz = audio_st->sink_source_hz;
+   return audio_st->sink_rate_hz;
 }
 
 /**
@@ -1351,9 +1560,16 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
             }
 #endif
             AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_WROTE);
-            audio->write(audio_st->context_audio_data,
-                  audio_st->output_samples_buf,
-                  out_frames * 2 * sizeof(float));
+            {
+               ssize_t w = audio->write(audio_st->context_audio_data,
+                     audio_st->output_samples_buf,
+                     out_frames * 2 * sizeof(float));
+               audio_st->sink_offered_raw += out_frames;
+               audio_st->sink_offered     += (double)out_frames * audio_st->src_ratio_orig / audio_st->src_ratio_curr;
+               if (w > 0)
+                  audio_st->sink_accepted += (uint64_t)w / (2 * sizeof(float));
+            }
+            audio_driver_sink_update(audio_st, cpu_features_get_time_usec());
          }
          else
          {
@@ -1425,9 +1641,16 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
             }
 #endif
             AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_WROTE);
-            audio->write(audio_st->context_audio_data,
-                  audio_st->output_samples_int16,
-                  out_frames * 2 * sizeof(int16_t));
+            {
+               ssize_t w = audio->write(audio_st->context_audio_data,
+                     audio_st->output_samples_int16,
+                     out_frames * 2 * sizeof(int16_t));
+               audio_st->sink_offered_raw += out_frames;
+               audio_st->sink_offered     += (double)out_frames * audio_st->src_ratio_orig / audio_st->src_ratio_curr;
+               if (w > 0)
+                  audio_st->sink_accepted += (uint64_t)w / (2 * sizeof(int16_t));
+            }
+            audio_driver_sink_update(audio_st, cpu_features_get_time_usec());
          }
          return;
       }
@@ -1843,8 +2066,17 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       }
 
       AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_WROTE);
-      audio->write(audio_st->context_audio_data,
-            output_data, output_frames * 2);
+      {
+         size_t  fb = (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
+               ? 2 * sizeof(float) : 2 * sizeof(int16_t);
+         ssize_t w  = audio->write(audio_st->context_audio_data,
+               output_data, output_frames * 2);
+         audio_st->sink_offered_raw += (uint64_t)(output_frames * 2 / fb);
+         audio_st->sink_offered     += (double)(output_frames * 2 / fb) * audio_st->src_ratio_orig / audio_st->src_ratio_curr;
+         if (w > 0)
+            audio_st->sink_accepted += (uint64_t)w / fb;
+      }
+      audio_driver_sink_update(audio_st, cpu_features_get_time_usec());
    }
 }
 
@@ -2214,6 +2446,19 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
       audio_driver_st.input_data_int16 = arena_int16 + i16_in_scratch;
 
    AUDIO_FLAGS_CLEAR(&audio_driver_st, AUDIO_FLAG_CONTROL);
+
+   /* The sink estimate starts over with the driver. */
+   audio_driver_st.sink_bias           = 1.0;
+   audio_driver_st.sink_baseline_start = 0;
+   audio_driver_st.sink_offered        = 0.0;
+   audio_driver_st.sink_offered_raw    = 0;
+   audio_driver_st.sink_accepted       = 0;
+   audio_driver_st.sink_applied        = 0;
+   audio_driver_st.sink_rate_hz        = 0.0;
+   audio_driver_st.sink_adjust_sum     = 0.0;
+   audio_driver_st.sink_adjust_n       = 0;
+   audio_driver_st.sink_discarded      = 0;
+   audio_driver_st.sink_drop_warned    = false;
 
    /* The driver's buffer, whether or not rate control will use it: it
     * is what the latency setting became, shown in the statistics

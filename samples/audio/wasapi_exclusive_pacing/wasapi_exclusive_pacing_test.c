@@ -109,6 +109,17 @@ static bool run(const scenario_t *sc, result_t *r)
       sleep_until(&t, write_interval);
    }
    fake_device_stats(&r->dev);
+   /* The driver's own count of what the device took, against the
+    * device thread's real-time clock: the sink rate estimate rests on
+    * it, so it must advance at the device's rate. */
+   if (audio_wasapi.frames_consumed)
+   {
+      double sec = (double)writes * write_interval / 1e9;
+      double hz  = (double)audio_wasapi.frames_consumed(ctx) / sec;
+      printf("   frames_consumed: %.0f Hz against wall time (%+.1f%%)\n", hz, (hz / 48000.0 - 1.0) * 100.0);
+      CHECK(hz > 48000.0 * 0.97 && hz < 48000.0 * 1.03,
+            "%s: frames_consumed advances at %.0f Hz, not the device's 48000", sc->name, hz);
+   }
    audio_wasapi.stop(ctx);
    audio_wasapi.free(ctx);
    free(buf);

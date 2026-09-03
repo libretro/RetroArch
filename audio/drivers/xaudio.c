@@ -24,6 +24,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 #include <boolean.h>
 
 #include <compat/msvc.h>
@@ -728,6 +729,15 @@ static size_t xa_write_avail(void *data)
    xa_t *xa = (xa_t*)data;
    return xaudio2_write_available(xa->xa);
 }
+
+/* No frames_consumed(): XAudio2 exposes no device clock. SamplesPlayed
+ * counts our samples rendered and pauses whenever the voice runs dry -
+ * for a stretch with a non-blocking writer, for a moment between bursts
+ * even with a blocking one - while the device runs on. On a pin that
+ * reads +11 ppm through asio, WASAPI exclusive and WASAPI shared it read
+ * -1569 non-blocking and -1480 climbing to -754 blocking: a count
+ * diluting over a growing baseline, not a clock. The sink rate estimate
+ * leaves xaudio alone; dsound and wasapi report on the same devices. */
 
 static size_t xa_buffer_size(void *data)
 {

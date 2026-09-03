@@ -21,3 +21,9 @@ S_BOOL(audio_thread_priority, AUDIO_THREAD_PRIORITY,
       DEFAULT_AUDIO_THREAD_PRIORITY, SD_FLAG_NONE, 0, CMD_EVENT_AUDIO_REINIT,
       "Elevate Audio Thread Priority",
       "Ask the operating system to schedule the audio thread ahead of the rest of the frontend, so a busy frame is less likely to starve the audio device. Lets Audio Latency go lower on systems that grant it; a system that refuses keeps the default priority and nothing else changes. Applies to the audio thread the Threaded Pipeline and core audio callbacks run on.")
+
+S_BOOL(audio_sink_rate_estimation, AUDIO_SINK_RATE_ESTIMATION,
+      "audio_sink_rate_estimation",
+      true, SD_FLAG_ADVANCED, 0, CMD_EVENT_NONE,
+      "Sink Rate Estimation",
+      "Measure how fast the audio device really consumes samples against the system clock, and trim the resampler by that amount. Every sound card runs on its own crystal, a few parts per million off the nominal rate; with Synchronization off nothing else corrects for that, and the audio buffer slowly drifts until it underruns or overruns - an audible glitch every few minutes that no buffer size cures. The correction is tiny and inaudible. With Synchronization on the core already follows the device and no correction is applied; the rate is still measured and shown in the Statistics overlay as 'Sink'. Only drivers that report what the device has consumed take part.")

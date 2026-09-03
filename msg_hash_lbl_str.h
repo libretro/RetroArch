@@ -968,6 +968,7 @@
 #define MENU_ENUM_LABEL_AUDIO_RESPECT_SILENT_MODE_STR "audio_respect_silent_mode"
 #define MENU_ENUM_LABEL_AUDIO_REWIND_MUTE_STR "audio_rewind_mute"
 #define MENU_ENUM_LABEL_AUDIO_SETTINGS_STR "audio_settings"
+#define MENU_ENUM_LABEL_AUDIO_SINK_RATE_ESTIMATION_STR "audio_sink_rate_estimation"
 #define MENU_ENUM_LABEL_AUDIO_SYNC_STR "audio_sync"
 #define MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS_STR "audio_synchronization_settings"
 #define MENU_ENUM_LABEL_AUDIO_THREADED_PIPELINE_STR "audio_threaded_pipeline"

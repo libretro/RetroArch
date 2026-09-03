@@ -278,3 +278,20 @@ jobs:
           make clean all SANITIZER=thread
           timeout 180 ./wasapi_exclusive_pacing_test 3
           echo "[pass] wasapi_exclusive_pacing_test (TSan)"
+
+      - name: Build and run sink_rate_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/audio/sink_rate
+        run: |
+          set -eu
+          # The frontend's sink rate estimator against a scripted driver
+          # on a synthetic clock: a device 120 ppm fast and 80 ppm slow are
+          # measured and the resampling bias converges onto them; 5000 ppm
+          # stops at the clamp; with rate control on the bias absorbs rate
+          # control's mean adjustment; a paused window, a count that went
+          # backwards, and a stalled window move nothing; disabled, nothing
+          # moves at all.
+          make clean all SANITIZER=address,undefined
+          test -x sink_rate_test
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 timeout 60 ./sink_rate_test
+          echo "[pass] sink_rate_test (ASan)"

@@ -105,6 +105,15 @@ typedef struct dsound
     * /volatile:iso, which is what ARM64 builds get, so state it like
     * the ring buffer beside it already does. */
    retro_atomic_int_t thread_alive;
+
+   /* The play cursor unwrapped, in frames, for the sink rate estimate:
+    * the mixer thread reads the cursor every pass, well within a
+    * buffer's length, and adds each advance here. Kept in a 32-bit
+    * atomic so the reader on another thread sees whole values; at
+    * 48 kHz it holds twelve hours, and the estimate treats a wrap as a
+    * restart. */
+   retro_atomic_int_t frames_played;
+   DWORD              last_read_ptr;
 } dsound_t;
 
 struct audio_lock
@@ -258,7 +267,7 @@ static DWORD CALLBACK dsound_thread(PVOID data)
 
    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
 
-   IDirectSoundBuffer_GetCurrentPosition(ds->dsb, NULL, &write_ptr);
+   IDirectSoundBuffer_GetCurrentPosition(ds->dsb, &ds->last_read_ptr, &write_ptr);
    write_ptr += ds->buffer_size / 2;
    if (write_ptr >= ds->buffer_size)
       write_ptr -= ds->buffer_size;
@@ -272,6 +281,17 @@ static DWORD CALLBACK dsound_thread(PVOID data)
 
       IDirectSoundBuffer_GetCurrentPosition(ds->dsb, &read_ptr, NULL);
       avail = _dsound_write_avail(read_ptr, write_ptr, ds->buffer_size);
+
+      /* The cursor's advance since the last pass, unwrapped: the
+       * device's consumption, silence included. */
+      {
+         DWORD adv = read_ptr + ds->buffer_size - ds->last_read_ptr;
+         if (adv >= ds->buffer_size)
+            adv -= ds->buffer_size;
+         ds->last_read_ptr = read_ptr;
+         retro_atomic_fetch_add_int(&ds->frames_played,
+               (int)(adv / (ds->use_float ? 8 : 4)));
+      }
 
       /* Consumer-side query; only this thread advances the read
        * cursor, so the value cannot shrink under us between here and
@@ -796,6 +816,14 @@ static size_t dsound_write_avail(void *data)
    return avail;
 }
 
+static size_t dsound_frames_consumed(void *data)
+{
+   dsound_t *ds = (dsound_t*)data;
+   if (!ds)
+      return 0;
+   return (size_t)(unsigned)retro_atomic_load_acquire_int(&ds->frames_played);
+}
+
 static size_t dsound_buffer_size(void *data)
 {
    dsound_t *ds = (dsound_t*)data;
@@ -831,5 +859,6 @@ audio_driver_t audio_dsound = {
    dsound_write_avail,
    dsound_buffer_size,
    NULL, /* write_raw */
-   dsound_wait_writable
+   dsound_wait_writable,
+   dsound_frames_consumed
 };

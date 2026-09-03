@@ -5563,6 +5563,21 @@ void video_driver_frame(const void *data, unsigned width,
             else
                __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
                      " Buffer:      n/a (asked %u ms)\n", setting_ms);
+            {
+               /* The device's real rate against the host clock, and
+                * the bias the resampler carries for it, once a window
+                * has measured. */
+               double sink_bias = 1.0, source_hz = 0.0;
+               double sink_hz   = audio_driver_get_sink_rate_hz(&sink_bias, &source_hz);
+               if (sink_hz > 0.0)
+                  __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+                        " Sink:    %8.1f Hz (%+.0f ppm, bias %+.0f)\n Source:  %8.1f Hz (%+.0f ppm)\n",
+                        sink_hz,
+                        (sink_hz / (double)settings->uints.audio_output_sample_rate - 1.0) * 1e6,
+                        (sink_bias - 1.0) * 1e6,
+                        source_hz,
+                        (source_hz / (double)settings->uints.audio_output_sample_rate - 1.0) * 1e6);
+            }
          }
 
          if (audio_st->rate_control_delta)

@@ -684,6 +684,10 @@ typedef struct ra_asio
    /* Whether the last period ended in silence for want of audio, so
     * the next audio is faded in. Callback thread only. */
    bool               last_underran;
+   /* Frames the device has taken: a period per callback, silence
+    * included. Written by the callback thread, read by the writer; a
+    * single aligned word, and a count only ever compared with itself. */
+   size_t             consumed;
    /* Set by the message callback on kAsioResetRequest or
     * kAsioBufferSizeChange: the buffers are to be disposed and created
     * anew - the driver's preferred size may have changed - when the
@@ -849,6 +853,7 @@ static void asio_deinterleave_to_buffers(ra_asio_t *ad,
    asio_convert_frames(ad->sample_type, ad->scratch, have, frames,
          buf_l, buf_r, ad->last_underran);
    ad->last_underran = (have < frames);
+   ad->consumed     += (size_t)frames;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -1758,6 +1763,12 @@ static size_t ra_asio_wait_writable(void *data, size_t len)
    }
 }
 
+static size_t ra_asio_frames_consumed(void *data)
+{
+   ra_asio_t *ad = (ra_asio_t *)data;
+   return ad ? ad->consumed : 0;
+}
+
 static size_t ra_asio_write_avail(void *data)
 {
    ra_asio_t *ad = (ra_asio_t *)data;
@@ -1823,7 +1834,8 @@ audio_driver_t audio_asio = {
    ra_asio_buffer_size,
    NULL, /* write_raw — ASIO cannot dynamically adjust sample rate
          * for A/V sync rate control.  Software resampler handles it. */
-   ra_asio_wait_writable
+   ra_asio_wait_writable,
+   ra_asio_frames_consumed
 };
 
 /* Called from the menu to open the ASIO driver's control panel.

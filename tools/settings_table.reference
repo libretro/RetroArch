@@ -252,6 +252,7 @@ bool	microphone_enable	1	1
 bool	audio_sync	1	1
 bool	audio_threaded_pipeline	1	0
 bool	audio_thread_priority	1	0
+bool	audio_sink_rate_estimation	1	1
 bool	audio_enable	1	1
 bool	ui_menubar_enable	1	1
 bool	video_window_show_decorations	1	1
@@ -901,6 +902,7 @@ bool	microphone_enable	1	1
 bool	audio_sync	1	1
 bool	audio_threaded_pipeline	1	0
 bool	audio_thread_priority	1	0
+bool	audio_sink_rate_estimation	1	1
 bool	audio_enable	1	1
 bool	ui_menubar_enable	1	1
 bool	video_window_show_decorations	1	1
@@ -1550,6 +1552,7 @@ bool	microphone_enable	1	1
 bool	audio_sync	1	1
 bool	audio_threaded_pipeline	1	0
 bool	audio_thread_priority	1	0
+bool	audio_sink_rate_estimation	1	1
 bool	audio_enable	1	1
 bool	ui_menubar_enable	1	1
 bool	video_window_show_decorations	1	1

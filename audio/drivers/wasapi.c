@@ -96,6 +96,13 @@ typedef struct
    scond_t            *room_cond;
    retro_atomic_int_t  pump_run;
    unsigned            underruns;
+   /* Frames the device has consumed, kept by the pump under fifo_lock:
+    * exclusive, the periods it released, each taken by the device a
+    * period after; shared, the frames released less the engine's
+    * padding. For the frontend's sink rate estimate. */
+   uint64_t            consumed;
+   uint64_t            released;   /* shared: frames given to the engine */
+   unsigned            sh_period_frames; /* shared: frames the engine takes per event */
 #endif
    unsigned char frame_size;          /* 4 or 8 only */
    /* log2(frame_size), i.e. 2 or 3.  Invariant: the two are set
@@ -488,10 +495,17 @@ error:
    return NULL;
 }
 
+/* The engine period the shared stream was opened at by the
+ * IAudioClient3 path, in frames; 0 when the legacy path was taken and
+ * the engine runs at its default period. Read by wasapi_init() for the
+ * pump's count of what the device consumes per event. */
+static unsigned wasapi_sh_engine_period = 0;
+
 static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
       bool *float_fmt, unsigned *rate, unsigned latency, unsigned channels,
       bool *low_latency)
 {
+   wasapi_sh_engine_period = 0;
    WAVEFORMATEXTENSIBLE wf;
    IAudioClient *client           = NULL;
    settings_t *settings           = config_get_ptr();
@@ -598,6 +612,7 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
             {
                if (low_latency)
                   *low_latency = true;
+               wasapi_sh_engine_period = period;
                RARCH_LOG("[WASAPI] Shared client at engine period %u frames (%.2f ms; default %u).\n",
                      period, (double)period * 1000.0 / (double)wf.Format.nSamplesPerSec,
                      p_default);
@@ -1338,6 +1353,19 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    if (low_latency)
       w->flags              |= WASAPI_FLG_LOWLAT;
 
+   /* Shared: frames the engine takes per event, for the pump's count of
+    * what the device consumed - the IAudioClient3 period when that path
+    * opened the stream, the default period otherwise. */
+   if (!(w->flags & WASAPI_FLG_EXCLUSIVE))
+   {
+      REFERENCE_TIME def_period = 0;
+      w->sh_period_frames = wasapi_sh_engine_period;
+      if (!w->sh_period_frames
+            && SUCCEEDED(_IAudioClient_GetDevicePeriod(w->client, &def_period, NULL))
+            && def_period > 0)
+         w->sh_period_frames = (unsigned)(def_period * rate / 10000000);
+   }
+
    hr = _IAudioClient_GetBufferSize(w->client, &frame_count);
    if (FAILED(hr))
       goto error;
@@ -1406,6 +1434,9 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
                hr = _IAudioClient_GetDevicePeriod(w->client, &dev_period, NULL);
                if (SUCCEEDED(hr) && dev_period > 0)
                   period_frames = (unsigned)(dev_period * rate / 10000000);
+               /* The period the engine actually runs at - the one its
+                * events follow - is what the pump counts consumed by.
+                * Under IAudioClient3 that may be below the default. */
                if (floor_frames < period_frames * 2)
                   floor_frames = period_frames * 2;
                sh_buffer_length = (unsigned)(((uint64_t)latency * rate) / 1000);
@@ -1544,6 +1575,9 @@ static void wasapi_pump_thread(void *data)
             flags = AUDCLNT_BUFFERFLAGS_SILENT;
             w->underruns++;
          }
+         /* Each period released is one the device takes; silence
+          * counts too, the device's clock does not stop for it. */
+         w->consumed += frame_count;
          scond_signal(w->room_cond);
          slock_unlock(w->fifo_lock);
          _IAudioRenderClient_ReleaseBuffer(w->renderer, frame_count, flags);
@@ -1558,6 +1592,13 @@ static void wasapi_pump_thread(void *data)
           * in the harness - so the pump feeds it here too. */
          slock_lock(w->fifo_lock);
          wasapi_push_sh(w);
+         /* The engine signals once per period and takes one period per
+          * signal, our audio or its own silence: the event is the
+          * device's clock. Released less padding stopped counting
+          * during an underrun, when the engine plays silence of its
+          * own, and read the same pin 400 to 1000 ppm slow that
+          * exclusive read at +11. */
+         w->consumed += w->sh_period_frames;
          scond_signal(w->room_cond);
          slock_unlock(w->fifo_lock);
       }
@@ -1618,6 +1659,9 @@ static bool wasapi_push_sh(wasapi_t *w)
       fifo_read(w->buffer, dest, n);
       if (FAILED(_IAudioRenderClient_ReleaseBuffer(w->renderer, frame_count, 0)))
          return false;
+#ifdef HAVE_THREADS
+      w->released += frame_count;
+#endif
    }
    return true;
 }
@@ -1983,6 +2027,23 @@ static size_t wasapi_wait_writable(void *wh, size_t len)
    return wasapi_write_avail(w);
 }
 
+static size_t wasapi_frames_consumed(void *wh)
+{
+#ifdef HAVE_THREADS
+   wasapi_t *w = (wasapi_t*)wh;
+   size_t n;
+   if (!w || !w->fifo_lock)
+      return 0;
+   slock_lock(w->fifo_lock);
+   n = (size_t)w->consumed;
+   slock_unlock(w->fifo_lock);
+   return n;
+#else
+   (void)wh;
+   return 0;
+#endif
+}
+
 audio_driver_t audio_wasapi = {
    wasapi_init,
    wasapi_write,
@@ -1998,5 +2059,6 @@ audio_driver_t audio_wasapi = {
    wasapi_write_avail,
    wasapi_buffer_size,
    NULL, /* write_raw */
-   wasapi_wait_writable
+   wasapi_wait_writable,
+   wasapi_frames_consumed
 };

@@ -296,6 +296,9 @@ typedef struct alsa
 {
    snd_pcm_t *pcm;
    alsa_stream_info_t stream_info;
+   /* Frames snd_pcm_writei() accepted since open; less what the device
+    * still holds, it is what the device has consumed. */
+   uint64_t frames_written;
    bool nonblock;
    bool is_paused;
 } alsa_t;
@@ -393,6 +396,7 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t len)
             return -1;
 
          _len  += FRAMES_TO_BYTES(frames, alsa->stream_info.frame_bits);
+         alsa->frames_written += (uint64_t)frames;
          buf   += (frames << 1) * frames_size;
          size  -= frames;
       }
@@ -436,6 +440,7 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t len)
             return -1;
 
          _len += FRAMES_TO_BYTES(frames, alsa->stream_info.frame_bits);
+         alsa->frames_written += (uint64_t)frames;
          buf  += (frames << 1) * frames_size;
          size -= frames;
       }
@@ -601,6 +606,23 @@ void alsa_device_list_free(void *data, void *array_list_data)
       string_list_free(s);
 }
 
+/* What the device has consumed: frames accepted, less the frames still
+ * queued in front of it. snd_pcm_delay() is that queue when the stream
+ * runs; while it does not - paused, or recovering from an underrun -
+ * the count holds. */
+static size_t alsa_frames_consumed(void *data)
+{
+   alsa_t *alsa            = (alsa_t*)data;
+   snd_pcm_sframes_t delay = 0;
+   if (!alsa || !alsa->pcm)
+      return 0;
+   if (snd_pcm_delay(alsa->pcm, &delay) < 0 || delay < 0)
+      delay = 0;
+   if ((uint64_t)delay > alsa->frames_written)
+      return 0;
+   return (size_t)(alsa->frames_written - (uint64_t)delay);
+}
+
 audio_driver_t audio_alsa = {
    alsa_init,
    alsa_write,
@@ -616,7 +638,8 @@ audio_driver_t audio_alsa = {
    alsa_write_avail,
    alsa_buffer_size,
    NULL, /* write_raw */
-   alsa_wait_writable
+   alsa_wait_writable,
+   alsa_frames_consumed
 };
 
 /* ===========================================================================
