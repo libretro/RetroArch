@@ -210,12 +210,17 @@ static HRESULT c_initialize(IAudioClient *t, AUDCLNT_SHAREMODE mode, DWORD flags
        * least two periods. */
       c->buffer_frames = (unsigned)((dur * g_cfg.rate + 5000000) / 10000000);
       if (c->buffer_frames < c->period_frames * 2) c->buffer_frames = c->period_frames * 2;
+      /* Windows rounds the legacy shared buffer up to a multiple of 32
+       * frames, and a little beyond: a 20 ms request came back 1056
+       * frames (22 ms) on an NVIDIA HDMI endpoint. */
+      c->buffer_frames = ((c->buffer_frames + 96) / 32) * 32;
    }
    c->mode        = mode;
    c->frame_bytes = fmt->nBlockAlign;
    c->buffer      = (BYTE*)calloc(c->buffer_frames, c->frame_bytes);
    c->initialised = true;
    c->stats.period_frames = c->period_frames;
+   c->stats.buffer_frames = c->buffer_frames;
    c->stats.share_mode    = mode == AUDCLNT_SHAREMODE_EXCLUSIVE;
    c->stats.period_hns    = c->period_hns;
    return S_OK;
@@ -316,6 +321,7 @@ static HRESULT c3_init(IAudioClient3 *t, DWORD flags, UINT32 period, const WAVEF
    c->buffer        = (BYTE*)calloc(c->buffer_frames, c->frame_bytes);
    c->initialised   = true;
    c->stats.period_frames = c->period_frames;
+   c->stats.buffer_frames = c->buffer_frames;
    c->stats.share_mode    = 0;
    c->stats.period_hns    = c->period_hns;
    return S_OK;

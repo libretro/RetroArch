@@ -140,6 +140,8 @@ int main(int argc, char **argv)
       { 64, seconds, true,  0,   0,   0,   "exclusive"                    },
       { 64, seconds, false, 800, 0,   0,   "shared, 800-frame fifo"       }, /* the reporter's working setup */
       { 64, seconds, false, 0,   0,   0,   "shared, fifo at the setting"  },
+      { 32, seconds, false, 0,   0,   0,   "shared, fifo at the setting"  },
+      { 24, seconds, false, 0,   0,   0,   "shared, fifo at the setting"  },
       /* IAudioClient3: the engine offers a 3 ms period; the driver
        * takes it, the fifo keeps the setting, and the drain-first write
        * must keep a 432-frame engine buffer fed. */
@@ -162,6 +164,22 @@ int main(int argc, char **argv)
          continue;
       }
       report(sc[i].name, &sc[i], &r);
+      /* What the driver reports is the setting, within the engine's
+       * rounding, once the setting exceeds the floor the writer's burst
+       * needs: a 20 ms floor and a 10 ms engine period leave 32 ms and
+       * up reporting as themselves. It reported 66 ms at every setting
+       * on the reporter's endpoint, the floor having been written as two
+       * engine buffers rather than two periods. */
+      if (!sc[i].exclusive && sc[i].sh_buffer_length == 0)
+      {
+         unsigned reported_ms = (unsigned)(r.reported_buffer / r.frame_bytes * 1000 / 48000);
+         unsigned engine_ms   = r.dev.buffer_frames * 1000 / 48000;
+         /* The floor is a 20 ms fifo before whatever engine buffer the
+          * endpoint handed back; above it, the setting. */
+         unsigned expect_ms   = sc[i].latency_ms > 20 + engine_ms ? sc[i].latency_ms : 20 + engine_ms;
+         CHECK(reported_ms <= expect_ms + 4,
+               "scenario %u: reports %u ms against a %u ms setting (floor %u)", i, reported_ms, sc[i].latency_ms, expect_ms);
+      }
       if (sc[i].engine_min_frames)
       {
          unsigned want = sc[i].locked_period_frames ? sc[i].locked_period_frames : sc[i].engine_min_frames;

@@ -180,6 +180,7 @@ typedef struct
    unsigned buffers_released;   /* ReleaseBuffer calls */
    unsigned frames_consumed;    /* frames the device took from released buffers */
    unsigned period_frames;      /* the exclusive period, frames */
+   unsigned buffer_frames;      /* the endpoint buffer, frames */
    unsigned share_mode;         /* 0 shared, 1 exclusive */
    REFERENCE_TIME period_hns;   /* as initialised */
 } fake_device_stats_t;
