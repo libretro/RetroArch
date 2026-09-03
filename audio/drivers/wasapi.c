@@ -38,6 +38,7 @@
 
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
+#include <retro_atomic.h>
 #endif
 
 #include "../common/mmdevice_common.h"
@@ -77,6 +78,18 @@ typedef struct
    IAudioRenderClient *renderer;
    fifo_buffer_t      *buffer;
    size_t engine_buffer_size;
+#ifdef HAVE_THREADS
+   /* Exclusive mode: the thread that owns the device's event. Each
+    * period it takes one from the fifo and releases it, or releases
+    * silence and counts an underrun. The writer touches only the fifo,
+    * under fifo_lock; room_cond is signalled each time the pump frees
+    * a period. See wasapi_pump_thread(). */
+   sthread_t          *pump;
+   slock_t            *fifo_lock;
+   scond_t            *room_cond;
+   retro_atomic_int_t  pump_run;
+   unsigned            underruns;
+#endif
    unsigned char frame_size;          /* 4 or 8 only */
    /* log2(frame_size), i.e. 2 or 3.  Invariant: the two are set
     * together in wasapi_init and frame_size == 1u << frame_shift.
@@ -342,8 +355,19 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
       RARCH_ERR("[WASAPI] Failed to get minimum device period of exclusive client: %s.\n",
             mmdevice_hresult_name(hr));
 
-   /* Buffer_duration is in 100ns units. */
-   buffer_duration = latency * 10000.0;
+   /* The exclusive period, in 100 ns units. In exclusive event mode the
+    * duration and the periodicity given to Initialize are one figure:
+    * the WaveRT period, the device stage. It was the whole latency
+    * setting - a 64 ms setting made a 64 ms hardware period, with a
+    * period-sized fifo in front of it. As the ASIO driver picks its
+    * period: a quarter of the setting, never above it, floored at the
+    * device's minimum period as it always was. The fifo, sized in
+    * wasapi_init(), holds the setting; the pump thread feeds the
+    * device from it. A device that refuses the smaller period gets the
+    * whole setting again, below. */
+   buffer_duration = latency * 10000.0 / 4.0;
+   if (buffer_duration > latency * 10000.0)
+      buffer_duration = latency * 10000.0;
    if (buffer_duration < minimum_period)
       buffer_duration = minimum_period;
 
@@ -416,6 +440,30 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
    if (     hr == AUDCLNT_E_DEVICE_IN_USE
          || hr == AUDCLNT_E_EXCLUSIVE_MODE_NOT_ALLOWED)
       goto error;
+
+   /* A period the device will not take - some pins reject anything
+    * under their own idea of a minimum, alignment aside - is retried
+    * as the whole setting, which is what every device took before. */
+   if (FAILED(hr) && buffer_duration < (REFERENCE_TIME)(latency * 10000.0)
+         && (REFERENCE_TIME)(latency * 10000.0) >= minimum_period)
+   {
+      RARCH_WARN("[WASAPI] Exclusive period of %.1f ms refused (%s); retrying with the whole %u ms setting.\n",
+            (float)buffer_duration / 10000.0f, mmdevice_hresult_name(hr), latency);
+      RELEASE(client);
+      hr = _IMMDevice_Activate(device, IID_IAudioClient, CLSCTX_ALL, NULL, (void**)&client);
+      if (FAILED(hr))
+      {
+         RARCH_ERR("[WASAPI] IMMDevice::Activate failed: %s.\n",
+               mmdevice_hresult_name(hr));
+         return NULL;
+      }
+      buffer_duration = latency * 10000.0;
+      hr = _IAudioClient_Initialize(client, AUDCLNT_SHAREMODE_EXCLUSIVE,
+            AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_NOPERSIST,
+            buffer_duration, buffer_duration, (WAVEFORMATEX*)&wf, NULL);
+      if (hr == AUDCLNT_E_DEVICE_IN_USE || hr == AUDCLNT_E_EXCLUSIVE_MODE_NOT_ALLOWED)
+         goto error;
+   }
 
    if (FAILED(hr))
    {
@@ -1265,8 +1313,39 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
 
    if (w->flags & WASAPI_FLG_EXCLUSIVE)
    {
-      if (!(w->buffer = fifo_new(w->engine_buffer_size)))
+      /* The fifo holds the latency setting, as the other drivers'
+       * buffers do, and never less than two engine buffers. It was one
+       * engine buffer, when the engine buffer was the whole setting;
+       * now the period is a quarter of it, this is where the setting
+       * lives, what buffer_size() reports, and what the pump thread
+       * feeds the device from. */
+      size_t fifo_bytes = ((size_t)rate * latency / 1000) * w->frame_size;
+      if (fifo_bytes < (size_t)w->engine_buffer_size * 2)
+         fifo_bytes     = (size_t)w->engine_buffer_size * 2;
+      if (!(w->buffer = fifo_new(fifo_bytes)))
          goto error;
+#ifdef HAVE_THREADS
+      w->fifo_lock = slock_new();
+      w->room_cond = scond_new();
+      if (!w->fifo_lock || !w->room_cond)
+         goto error;
+#endif
+      RARCH_LOG("[WASAPI] Exclusive: %u ms setting as a %u-frame fifo (%u ms, rate control holds it about half full) in front of a %u-frame device period (%.1f ms); about %u ms from write to the device.\n",
+            latency,
+            (unsigned)(fifo_bytes / w->frame_size),
+            (unsigned)(fifo_bytes / w->frame_size * 1000 / rate),
+            frame_count,
+            (float)frame_count * 1000.0f / rate,
+            (unsigned)(fifo_bytes / w->frame_size * 1000 / rate / 2
+               + frame_count * 1000 / rate));
+      /* With audio sync off the writer does not wait: the fifo must
+       * take a whole frame of core audio at once - 16.7 ms at 60 fps -
+       * or the remainder is dropped, every frame. No driver can hold
+       * more than its buffer; the setting is what decides. */
+      if (     !config_get_ptr()->bools.audio_sync
+            && fifo_bytes / w->frame_size * 1000 / rate < 20)
+         RARCH_WARN("[WASAPI] Audio sync is off and the %u ms buffer holds less than one frame of audio at 60 fps; a latency setting of 20 ms or more avoids dropping the remainder each frame.\n",
+               (unsigned)(fifo_bytes / w->frame_size * 1000 / rate));
    }
    else
    {
@@ -1350,8 +1429,114 @@ error:
       CloseHandle(w->write_event);
    if (w->buffer)
       fifo_free(w->buffer);
+#ifdef HAVE_THREADS
+   if (w->room_cond)
+      scond_free(w->room_cond);
+   if (w->fifo_lock)
+      slock_free(w->fifo_lock);
+#endif
    free(w);
    return NULL;
+}
+
+#ifdef HAVE_THREADS
+/* Exclusive mode, event-driven: the endpoint buffer is one period, the
+ * device raises write_event when it wants the next, and an event
+ * nobody answers is a period of silence. The write path used to
+ * answer it, and only when the fifo was full - which was every period
+ * while the fifo was one engine buffer, and one period in four once
+ * it held the setting; with audio sync off the writer does not wait at
+ * all, and between its calls nothing answered. This thread answers
+ * every one: a period from the fifo when one is there, silence and an
+ * underrun counted when not. */
+static void wasapi_pump_thread(void *data)
+{
+   wasapi_t *w = (wasapi_t*)data;
+   /* A period late is a period of silence; above normal priority, as
+    * the wrapper's audio thread runs. */
+   SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
+   while (retro_atomic_load_acquire_int(&w->pump_run))
+   {
+      BYTE *dest         = NULL;
+      UINT32 frame_count = (UINT32)(w->engine_buffer_size >> w->frame_shift);
+      DWORD  flags       = 0;
+      if (WaitForSingleObject(w->write_event, WASAPI_TIMEOUT) != WAIT_OBJECT_0)
+         continue;
+      if (!retro_atomic_load_acquire_int(&w->pump_run))
+         break;
+      if (FAILED(_IAudioRenderClient_GetBuffer(w->renderer, frame_count, &dest)))
+         continue;
+      slock_lock(w->fifo_lock);
+      if (FIFO_READ_AVAIL(w->buffer) >= w->engine_buffer_size)
+         fifo_read(w->buffer, dest, w->engine_buffer_size);
+      else
+      {
+         memset(dest, 0, w->engine_buffer_size);
+         flags = AUDCLNT_BUFFERFLAGS_SILENT;
+         w->underruns++;
+      }
+      scond_signal(w->room_cond);
+      slock_unlock(w->fifo_lock);
+      _IAudioRenderClient_ReleaseBuffer(w->renderer, frame_count, flags);
+   }
+}
+
+static bool wasapi_pump_start(wasapi_t *w)
+{
+   if (w->pump || !(w->flags & WASAPI_FLG_EXCLUSIVE))
+      return true;
+   retro_atomic_store_release_int(&w->pump_run, 1);
+   w->pump     = sthread_create(wasapi_pump_thread, w);
+   if (!w->pump)
+   {
+      retro_atomic_store_release_int(&w->pump_run, 0);
+      return false;
+   }
+   return true;
+}
+
+static void wasapi_pump_stop(wasapi_t *w)
+{
+   if (!w->pump)
+      return;
+   retro_atomic_store_release_int(&w->pump_run, 0);
+   /* The pump waits on the device's event with a timeout, so it sees
+    * the flag within WASAPI_TIMEOUT even if the device has gone quiet;
+    * a raised event ends the wait sooner. */
+   SetEvent(w->write_event);
+   sthread_join(w->pump);
+   w->pump = NULL;
+}
+#endif
+
+/* Shared mode: move what the engine has room for from the fifo into
+ * it. The writer used to do this only when the fifo was full, so a
+ * fifo bigger than the writer's burst - the latency setting, against
+ * a frame of core audio - filled for several frames while the engine
+ * ran dry; a fifo of exactly one frame was the only size that worked
+ * with audio sync off, which is what a reporter found by hand. Now on
+ * every write. Returns false on a render-client failure. */
+static bool wasapi_push_sh(wasapi_t *w)
+{
+   UINT32 padding    = 0;
+   size_t read_avail, engine_free, n;
+   if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
+      return false;
+   read_avail  = FIFO_READ_AVAIL(w->buffer);
+   engine_free = w->engine_buffer_size - padding * w->frame_size;
+   n           = read_avail < engine_free ? read_avail : engine_free;
+   n           = (n >> w->frame_shift) << w->frame_shift;
+   if (n)
+   {
+      BYTE *dest         = NULL;
+      UINT32 frame_count = (UINT32)(n >> w->frame_shift);
+      if (FAILED(_IAudioRenderClient_GetBuffer(w->renderer, frame_count, &dest)))
+         return false;
+      fifo_read(w->buffer, dest, n);
+      if (FAILED(_IAudioRenderClient_ReleaseBuffer(w->renderer, frame_count, 0)))
+         return false;
+   }
+   return true;
 }
 
 static ssize_t wasapi_write(void *wh, const void *data, size_t len)
@@ -1365,94 +1550,73 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
 
    if (flg & WASAPI_FLG_EXCLUSIVE)
    {
-      if (flg & WASAPI_FLG_NONBLOCK)
+#ifdef HAVE_THREADS
+      /* The fifo only; the pump feeds the device. Non-blocking: what
+       * fits. Blocking: wait for the pump to free room, bounded as
+       * every wait here is. */
+      int laps = 0;
+      slock_lock(w->fifo_lock);
+      while (_len < len)
       {
+         size_t room = FIFO_WRITE_AVAIL(w->buffer);
+         size_t ir   = len - _len;
+         if (!room)
+         {
+            if (flg & WASAPI_FLG_NONBLOCK)
+               break;
+            if (!retro_atomic_load_acquire_int(&w->pump_run) || ++laps > WASAPI_TIMEOUT)
+               break;
+            scond_wait_timeout(w->room_cond, w->fifo_lock, 1000);
+            continue;
+         }
+         if (ir > room)
+            ir = room;
+         fifo_write(w->buffer, (const char*)data + _len, ir);
+         _len += ir;
+      }
+      slock_unlock(w->fifo_lock);
+#else
+      /* Without threads there is no pump: the old, writer-paced path. */
+      while (_len < len)
+      {
+         size_t ir;
          size_t write_avail = FIFO_WRITE_AVAIL(w->buffer);
          if (!write_avail)
          {
-            UINT32 frame_count;
             BYTE *dest         = NULL;
+            UINT32 frame_count = w->engine_buffer_size >> w->frame_shift;
+            if (flg & WASAPI_FLG_NONBLOCK)
+               break;
             if (WaitForSingleObject(w->write_event, WASAPI_TIMEOUT) != WAIT_OBJECT_0)
-               return 0;
-            frame_count        = w->engine_buffer_size >> w->frame_shift;
-            if (FAILED(_IAudioRenderClient_GetBuffer(
-                        w->renderer, frame_count, &dest)))
+               break;
+            if (FAILED(_IAudioRenderClient_GetBuffer(w->renderer, frame_count, &dest)))
                return -1;
             fifo_read(w->buffer, dest, w->engine_buffer_size);
-            if (FAILED(_IAudioRenderClient_ReleaseBuffer(
-                        w->renderer, frame_count, 0)))
+            if (FAILED(_IAudioRenderClient_ReleaseBuffer(w->renderer, frame_count, 0)))
                return -1;
             write_avail = w->engine_buffer_size;
          }
-         _len = (len < write_avail) ? len : write_avail;
-         fifo_write(w->buffer, data, _len);
+         ir = (len - _len < write_avail) ? len - _len : write_avail;
+         fifo_write(w->buffer, (const char*)data + _len, ir);
+         _len += ir;
       }
-      else
-      {
-         while (_len < len)
-         {
-            size_t ir;
-            const void *_data  = (char*)data + _len;
-            size_t __len       = len - _len;
-            size_t write_avail = FIFO_WRITE_AVAIL(w->buffer);
-            if (!write_avail)
-            {
-               /* The engine signals every period. One that has stopped
-                * - the device removed, or held through a power event -
-                * signals nothing, and the write returns what went rather
-                * than waiting a period at a time with no end. */
-               if (WaitForSingleObject(w->write_event, WASAPI_TIMEOUT) != WAIT_OBJECT_0)
-                  break;
-               {
-                  BYTE *dest = NULL;
-                  UINT32 frame_count = w->engine_buffer_size >> w->frame_shift;
-                  if (FAILED(_IAudioRenderClient_GetBuffer(
-                              w->renderer, frame_count, &dest)))
-                     return -1;
-                  fifo_read(w->buffer, dest, w->engine_buffer_size);
-                  if (FAILED(_IAudioRenderClient_ReleaseBuffer(
-                              w->renderer, frame_count, 0)))
-                     return -1;
-                  write_avail = w->engine_buffer_size;
-               }
-            }
-            ir = (__len < write_avail) ? __len : write_avail;
-            fifo_write(w->buffer, _data, ir);
-            _len += ir;
-         }
-      }
+#endif
    }
    else
    {
       if (flg & WASAPI_FLG_NONBLOCK)
       {
-         size_t write_avail = FIFO_WRITE_AVAIL(w->buffer);
-         UINT32 padding     = 0;
-         if (!write_avail)
-         {
-            size_t read_avail = 0;
-            if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
-               return -1;
-            read_avail  = FIFO_READ_AVAIL(w->buffer);
-            write_avail = w->engine_buffer_size - padding * w->frame_size;
-            _len        = read_avail < write_avail ? read_avail : write_avail;
-            if (_len)
-            {
-               BYTE *dest         = NULL;
-               UINT32 frame_count = _len >> w->frame_shift;
-               if (FAILED(_IAudioRenderClient_GetBuffer(
-                           w->renderer, frame_count, &dest)))
-                  return -1;
-               fifo_read(w->buffer, dest, _len);
-               if (FAILED(_IAudioRenderClient_ReleaseBuffer(
-                           w->renderer, frame_count, 0)))
-                  return -1;
-            }
-            write_avail = FIFO_WRITE_AVAIL(w->buffer);
-         }
+         size_t write_avail;
+         if (!wasapi_push_sh(w))
+            return -1;
+         write_avail = FIFO_WRITE_AVAIL(w->buffer);
          _len = len < write_avail ? len : write_avail;
          if (_len)
             fifo_write(w->buffer, data, _len);
+         /* The room the write made use of may let more reach the
+          * engine now, so it does not wait for the next call. */
+         if (!wasapi_push_sh(w))
+            return -1;
       }
       else
       {
@@ -1460,39 +1624,19 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
          {
             size_t ir;
             size_t __len       = len - _len;
-            size_t write_avail = FIFO_WRITE_AVAIL(w->buffer);
-            UINT32 padding     = 0;
+            size_t write_avail;
+            if (!wasapi_push_sh(w))
+               return -1;
+            write_avail        = FIFO_WRITE_AVAIL(w->buffer);
             if (!write_avail)
             {
-               size_t read_avail = 0;
-               /* A period with no signal is a stalled engine, not a gone
-                * device: return what went, and let the next write find
-                * out which. The device going away shows up as a failed
-                * padding query or buffer call below, which is what -1
-                * is for. */
+               /* The fifo and the engine are both full: wait a period
+                * for the engine to take some. */
                if (!(WaitForSingleObject(w->write_event, WASAPI_TIMEOUT) == WAIT_OBJECT_0))
                   break;
-               if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
-                  return -1;
-               read_avail  = FIFO_READ_AVAIL(w->buffer);
-               write_avail = w->engine_buffer_size - padding * w->frame_size;
-               ir          = read_avail < write_avail ? read_avail : write_avail;
-               if (ir)
-               {
-                  BYTE *dest         = NULL;
-                  UINT32 frame_count = ir >> w->frame_shift;
-                  if (FAILED(_IAudioRenderClient_GetBuffer(
-                              w->renderer, frame_count, &dest)))
-                     return -1;
-                  fifo_read(w->buffer, dest, ir);
-                  if (FAILED(_IAudioRenderClient_ReleaseBuffer(
-                              w->renderer, frame_count, 0)))
-                     return -1;
-               }
-               write_avail = FIFO_WRITE_AVAIL(w->buffer);
+               continue;
             }
             ir = (__len < write_avail) ? __len : write_avail;
-            if (ir)
             {
                const void *_data = (char*)data + _len;
                fifo_write(w->buffer, _data, ir);
@@ -1508,6 +1652,9 @@ static bool wasapi_stop(void *wh)
 {
    wasapi_t *w = (wasapi_t*)wh;
 
+#ifdef HAVE_THREADS
+   wasapi_pump_stop(w);
+#endif
    if (FAILED(_IAudioClient_Stop(w->client)))
       return (!(w->flags & WASAPI_FLG_RUNNING));
 
@@ -1518,11 +1665,27 @@ static bool wasapi_stop(void *wh)
 static bool wasapi_start(void *wh, bool u)
 {
    wasapi_t *w = (wasapi_t*)wh;
-   HRESULT  hr = _IAudioClient_Start(w->client);
+   HRESULT  hr;
+#ifdef HAVE_THREADS
+   /* The pump first, so it is waiting on the event before the device
+    * raises the first one; the other way round, the first periods
+    * went unanswered while the thread came up. */
+   if (!wasapi_pump_start(w))
+   {
+      RARCH_ERR("[WASAPI] Failed to start the exclusive-mode pump thread.\n");
+      return false;
+   }
+#endif
+   hr = _IAudioClient_Start(w->client);
    if (hr != AUDCLNT_E_NOT_STOPPED)
    {
       if (FAILED(hr))
+      {
+#ifdef HAVE_THREADS
+         wasapi_pump_stop(w);
+#endif
          return (w->flags & WASAPI_FLG_RUNNING) != 0;
+      }
       w->flags  |= WASAPI_FLG_RUNNING;
    }
    return true;
@@ -1546,13 +1709,14 @@ static void wasapi_set_nonblock_state(void *wh, bool nonblock)
 
 static void wasapi_free(void *wh)
 {
-   DWORD ir;
    wasapi_t *w        = (wasapi_t*)wh;
    HANDLE write_event = w->write_event;
 
    if (w)
       wasapi_imm_stop_thread(w);
-
+#ifdef HAVE_THREADS
+   wasapi_pump_stop(w);
+#endif
    if (w->client)
       _IAudioClient_Stop(w->client);
 
@@ -1562,13 +1726,18 @@ static void wasapi_free(void *wh)
 
    if (w->buffer)
       fifo_free(w->buffer);
+#ifdef HAVE_THREADS
+   if (w->room_cond)
+      scond_free(w->room_cond);
+   if (w->fifo_lock)
+      slock_free(w->fifo_lock);
+#endif
    free(w);
 
-   ir = WaitForSingleObject(write_event, WASAPI_TIMEOUT);
-   if (ir == WAIT_FAILED)
-      RARCH_ERR("[WASAPI] WaitForSingleObject failed with error %d.\n", GetLastError());
-
-   if (ir == WAIT_OBJECT_0)
+   /* Nothing waits on the event once the pump is joined and the client
+    * stopped: it closes unconditionally. It used to close only when a
+    * wait found it signalled, and leaked otherwise. */
+   if (write_event)
       CloseHandle(write_event);
 }
 
@@ -1597,7 +1766,17 @@ static size_t wasapi_write_avail(void *wh)
    UINT32 padding = 0;
 
    if (w->flags & WASAPI_FLG_EXCLUSIVE)
-      return FIFO_WRITE_AVAIL(w->buffer);
+   {
+      size_t room;
+#ifdef HAVE_THREADS
+      slock_lock(w->fifo_lock);
+      room = FIFO_WRITE_AVAIL(w->buffer);
+      slock_unlock(w->fifo_lock);
+#else
+      room = FIFO_WRITE_AVAIL(w->buffer);
+#endif
+      return room;
+   }
    if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
       return 0;
    /* Free space across the whole pipeline the writer can fill:
@@ -1643,6 +1822,24 @@ static size_t wasapi_wait_writable(void *wh, size_t len)
 
    if (!(w->flags & WASAPI_FLG_RUNNING))
       return 0;
+
+#ifdef HAVE_THREADS
+   if (w->flags & WASAPI_FLG_EXCLUSIVE)
+   {
+      /* Room comes from the pump; wait for it, capped at half the fifo
+       * so the wait always ends, bounded in time as every wait here. */
+      size_t room;
+      int laps = 0;
+      if (len > (w->buffer->size - 1) / 2)
+         len = (w->buffer->size - 1) / 2;
+      slock_lock(w->fifo_lock);
+      while ((room = FIFO_WRITE_AVAIL(w->buffer)) < len
+            && retro_atomic_load_acquire_int(&w->pump_run) && ++laps <= WASAPI_TIMEOUT)
+         scond_wait_timeout(w->room_cond, w->fifo_lock, 1000);
+      slock_unlock(w->fifo_lock);
+      return room;
+   }
+#endif
 
    while (FIFO_WRITE_AVAIL(w->buffer) == 0)
    {
