@@ -14,12 +14,11 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* The current coreaudio implementation uses retro_atomic and Grand
- * Central Dispatch (<dispatch/dispatch.h>), both of which require
- * Mac OS X 10.6/10.7-era toolchains or newer.  On older SDKs (Xcode 3.1
- * / 10.4-10.5 / PowerPC) neither header exists, so fall back to the
- * pre-rewrite implementation that uses RetroArch's portable slock/scond
- * primitives and a fifo_buffer_t.                                     */
+/* The current coreaudio implementation uses Grand Central Dispatch 
+ * (<dispatch/dispatch.h>), which requires Mac OS X 10.6/10.7-era 
+ * toolchains or newer.  On older SDKs (Xcode 3.1 / 10.4-10.5 / PowerPC),
+ * neither header exists, so fall back to the pre-rewrite implementation 
+ * that uses RetroArch's portable slock/scond primitives and a fifo_buffer_t.    */
 #include <AvailabilityMacros.h>
 #include <lists/string_list.h>
 #if !defined(MAC_OS_X_VERSION_10_7) || \
@@ -28,28 +27,21 @@
 #define RARCH_COREAUDIO_LEGACY 1
 #endif
 
-#ifdef RARCH_COREAUDIO_LEGACY
-/* =====================================================================
- * Legacy implementation (pre-10.7): slock_t + scond_t + fifo_buffer_t.
- * Restored from 5b9763b3 ("coreaudio: prevent null buffer by forcing
- * min latency") for use with Xcode 3.1 and similar older toolchains.
- * ===================================================================== */
-
 #include <stdlib.h>
+#include <math.h>
+
+#include <boolean.h>
+#include <retro_atomic.h>
 
 #if TARGET_OS_IPHONE
 #include <AudioToolbox/AudioToolbox.h>
 #else
 #include <CoreAudio/CoreAudio.h>
 #endif
-
 #include <CoreAudio/CoreAudioTypes.h>
 #include <AudioUnit/AudioUnit.h>
 #include <AudioUnit/AUComponent.h>
 
-#include <boolean.h>
-#include <queues/fifo_queue.h>
-#include <rthreads/rthreads.h>
 #include <retro_endianness.h>
 #include <string/stdstring.h>
 
@@ -57,6 +49,15 @@
 
 #include "../audio_driver.h"
 #include "../../verbosity.h"
+
+#ifdef RARCH_COREAUDIO_LEGACY
+/* =====================================================================
+ * Legacy implementation (pre-10.7): slock_t + scond_t + fifo_buffer_t.
+ * Restored from 5b9763b3 ("coreaudio: prevent null buffer by forcing
+ * min latency") for use with Xcode 3.1 and similar older toolchains.
+ * ===================================================================== */
+#include <queues/fifo_queue.h>
+#include <rthreads/rthreads.h>
 
 typedef struct coreaudio
 {
@@ -484,10 +485,10 @@ static void *coreaudio_device_list_new(void *data)
 #else
    int i;
    UInt32 device_count;
+   union string_list_elem_attr attr;
    AudioObjectPropertyAddress propaddr;
    AudioDeviceID *devices = NULL;
    UInt32 size            = 0;
-   union string_list_elem_attr attr;
    struct string_list *sl = string_list_new();
 
    (void)data;
@@ -568,41 +569,15 @@ audio_driver_t audio_coreaudio = {
 
 #else
 /* =====================================================================
- * Modern implementation (10.7+): retro_atomic + GCD semaphore +
- * Accelerate.framework resampler.
+ * Modern implementation (10.7+):
+ * GCD semaphore + Accelerate.framework resampler.
  * ===================================================================== */
-
-#include <stdlib.h>
-#include <math.h>
-
-#include <retro_atomic.h>
-
 #include <dispatch/dispatch.h>
-
-#if TARGET_OS_IPHONE
-#include <AudioToolbox/AudioToolbox.h>
-#else
-#include <CoreAudio/CoreAudio.h>
-#endif
-
-#include <CoreAudio/CoreAudioTypes.h>
-#include <AudioToolbox/AudioToolbox.h>
-#include <AudioUnit/AudioUnit.h>
-#include <AudioUnit/AUComponent.h>
 
 /* Nb is defined by AES code included earlier in griffin.c amalgamation.
  * It conflicts with Sparse BLAS headers in Accelerate, so undefine it. */
 #undef Nb
 #include <Accelerate/Accelerate.h>
-
-#include <boolean.h>
-#include <retro_endianness.h>
-#include <string/stdstring.h>
-
-#include <defines/cocoa_defines.h>
-
-#include "../audio_driver.h"
-#include "../../verbosity.h"
 
 /* Threshold for recreating AudioConverter (0.5% change) */
 #define RATE_CHANGE_THRESHOLD 0.005
@@ -626,8 +601,8 @@ typedef struct coreaudio
 
    /* AudioConverter for hardware-accelerated resampling */
    AudioConverterRef converter;
-   unsigned output_rate;       /* Hardware output rate */
-   double current_ratio;       /* Current resampling ratio (adjusted input rate) */
+   unsigned output_rate; /* Hardware output rate */
+   double current_ratio; /* Current resampling ratio (adjusted input rate) */
 
    /* Temporary buffer for converter output */
    float *conv_buffer;
@@ -651,11 +626,6 @@ typedef struct
 static inline size_t rb_write_avail(coreaudio_t *dev)
 {
    return dev->capacity - retro_atomic_load_acquire_size(&dev->filled);
-}
-
-static inline size_t rb_read_avail(coreaudio_t *dev)
-{
-   return retro_atomic_load_acquire_size(&dev->filled);
 }
 
 static void rb_write(coreaudio_t *dev, const float *data, size_t count)
@@ -692,6 +662,7 @@ static OSStatus converter_input_cb(
       AudioStreamPacketDescription **outDataPacketDescription,
       void *inUserData)
 {
+   UInt32 frames_to_provide;
    converter_callback_ctx_t *ctx = (converter_callback_ctx_t *)inUserData;
 
    if (ctx->frames_left == 0)
@@ -700,7 +671,7 @@ static OSStatus converter_input_cb(
       return noErr;
    }
 
-   UInt32 frames_to_provide = *ioNumberDataPackets;
+   frames_to_provide = *ioNumberDataPackets;
    if (frames_to_provide > ctx->frames_left)
       frames_to_provide = (UInt32)ctx->frames_left;
 
@@ -811,10 +782,10 @@ static OSStatus coreaudio_audio_write_cb(void *userdata,
       const AudioTimeStamp *time_stamp, UInt32 bus_number,
       UInt32 number_frames, AudioBufferList *io_data)
 {
-   coreaudio_t *dev = (coreaudio_t*)userdata;
+   size_t avail;
    float *outbuf;
    size_t frames_needed;
-   size_t avail;
+   coreaudio_t *dev = (coreaudio_t*)userdata;
 
    (void)time_stamp;
    (void)bus_number;
@@ -825,7 +796,7 @@ static OSStatus coreaudio_audio_write_cb(void *userdata,
 
    outbuf        = (float *)io_data->mBuffers[0].mData;
    frames_needed = io_data->mBuffers[0].mDataByteSize / sizeof(float);
-   avail         = rb_read_avail(dev);
+   avail         = retro_atomic_load_acquire_size(&dev->filled);
 
    if (avail < frames_needed)
    {
@@ -954,19 +925,16 @@ static void *coreaudio_init(const char *device,
    size_t buffer_samples;
    UInt32 i_size;
    AudioStreamBasicDescription real_desc;
-#if !HAS_MACOSX_10_12
-   Component comp;
-#else
-   AudioComponent comp;
-#endif
 #ifndef TARGET_OS_IPHONE
    AudioChannelLayout layout               = {0};
 #endif
    AURenderCallbackStruct cb               = {0};
    AudioStreamBasicDescription stream_desc = {0};
 #if !HAS_MACOSX_10_12
+   Component comp;
    ComponentDescription desc               = {0};
 #else
+   AudioComponent comp;
    AudioComponentDescription desc          = {0};
 #endif
    coreaudio_t *dev                        = (coreaudio_t*)
@@ -988,15 +956,11 @@ static void *coreaudio_init(const char *device,
 #if !HAS_MACOSX_10_12
    if (!(comp = FindNextComponent(NULL, &desc)))
       goto error;
-#else
-   if (!(comp = AudioComponentFindNext(NULL, &desc)))
-      goto error;
-#endif
-
-#if !HAS_MACOSX_10_12
    if ((OpenAComponent(comp, &dev->dev) != noErr))
       goto error;
 #else
+   if (!(comp = AudioComponentFindNext(NULL, &desc)))
+      goto error;
    if ((AudioComponentInstanceNew(comp, &dev->dev) != noErr))
       goto error;
 #endif
@@ -1357,7 +1321,7 @@ static size_t coreaudio_wait_writable(void *data, size_t len)
       UInt32 size    = sizeof(running);
 
       if (dev->is_paused)
-         return 0;
+         break;
       avail = rb_write_avail(dev);
       if (avail >= want)
          return avail * sizeof(float);
@@ -1365,14 +1329,15 @@ static size_t coreaudio_wait_writable(void *data, size_t len)
                kAudioOutputUnitProperty_IsRunning,
                kAudioUnitScope_Global, 0,
                &running, &size) == noErr && !running)
-         return 0;
+         break;
       /* Each wait is bounded; this bounds the loop, for a unit that
        * reports running but never renders. */
       if (--laps < 0)
-         return 0;
+         break;
       dispatch_semaphore_wait(dev->sema,
             dispatch_time(DISPATCH_TIME_NOW, 100 * NSEC_PER_MSEC));
    }
+   return 0;
 }
 
 /* Enumerates output devices from the HAL. Needs no driver instance:
