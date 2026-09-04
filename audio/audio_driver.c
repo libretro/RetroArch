@@ -976,9 +976,19 @@ static void audio_driver_sink_update(audio_driver_state_t *audio_st,
          if (!audio_st->sink_implausible_warned)
          {
             audio_st->sink_implausible_warned = true;
-            RARCH_WARN("[Audio] Sink rate: the device appears to take %.1f Hz against a nominal %u (%+.0f ppm), which is too far off to be a crystal - driver \"%s\" is most likely counting something other than what the frontend offers it. Not biasing resampling; the rate is still shown.\n",
-                  audio_st->sink_rate_hz, rate,
-                  (audio_st->sink_rate_hz / (double)rate - 1.0) * 1e6,
+            /* Print the figure that was judged - the ratio between the
+             * two counts - and both sides of it, so the line explains
+             * itself. Printing only the device against nominal read as
+             * a contradiction: a device at +94 ppm described as too far
+             * off to be a crystal, when what was out of range was the
+             * ratio against a source running -400. */
+            RARCH_WARN("[Audio] Sink rate: the device takes %.1f Hz (%+.0f ppm of %u) but the source produces %.1f Hz (%+.0f ppm), a ratio of %+.0f ppm. That is too far apart to be two crystals, so it is not clock drift to correct - driver \"%s\" and the frontend are most likely not counting the same thing. Not biasing resampling; the rates are still shown.\n",
+                  audio_st->sink_rate_hz,
+                  (audio_st->sink_rate_hz / (double)rate - 1.0) * 1e6, rate,
+                  audio_st->sink_sum_offered * 1e6 / (double)audio_st->sink_sum_usec,
+                  (audio_st->sink_sum_offered * 1e6
+                     / (double)audio_st->sink_sum_usec / (double)rate - 1.0) * 1e6,
+                  (r - 1.0) * 1e6,
                   audio->ident ? audio->ident : "?");
          }
          audio_st->sink_apply_at = now_usec + AUDIO_SINK_BASELINE_USEC;
