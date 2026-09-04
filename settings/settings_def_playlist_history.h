@@ -13,8 +13,3 @@ S_UINT_EX(playlist_show_history_icons, PLAYLIST_SHOW_HISTORY_ICONS,
       "Show Content Specific Icons in History and Favorites",
       "Show specific icons for each history and favorites playlist entry. Has a variable performance impact.")
 #endif
-S_BOOL(playlist_show_entry_idx, PLAYLIST_SHOW_ENTRY_IDX,
-      "playlist_show_entry_idx",
-      DEFAULT_PLAYLIST_SHOW_ENTRY_IDX, SD_FLAG_NONE, 0, 0,
-      "Show Playlist Entry Index",
-      "Show entry numbers when viewing playlists. Display format is dependent upon the currently selected menu driver.")

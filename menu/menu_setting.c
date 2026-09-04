@@ -16050,14 +16050,13 @@ static void settings_build_playlist(
        * sub group. */
                      ADD_DESC(pl_desc_1);
 
-      /* Playlist entry index display and content specific history icon
-       * are currently supported only by Ozone & XMB */
+#if defined(HAVE_OZONE) || defined(HAVE_XMB)
       if (   string_is_equal(settings->arrays.menu_driver, "xmb")
           || string_is_equal(settings->arrays.menu_driver, "ozone"))
       {
                         ADD_DESC(pl_desc_2);
       }
-
+#endif
                      ADD_DESC(pl_desc_3);
 
 #if defined(HAVE_OZONE) || defined(HAVE_XMB)
