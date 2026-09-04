@@ -7279,6 +7279,34 @@ static size_t setting_get_string_representation_uint_audio_fastforward_mode(
    return 0;
 }
 
+#ifdef HAVE_AUDIO_LOWPASS
+/* The cutoff list reads high-to-low, so "right" moves toward more filtering. */
+static int setting_uint_action_left_audio_fastforward_lowpass(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   return setting_uint_action_right_default(setting, idx, wraparound);
+}
+
+static int setting_uint_action_right_audio_fastforward_lowpass(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   return setting_uint_action_left_default(setting, idx, wraparound);
+}
+
+static size_t setting_get_string_representation_uint_audio_fastforward_lowpass(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      unsigned hz = *setting->value.target.unsigned_integer;
+      if (hz > 0 && hz < AUDIO_FASTFORWARD_LOWPASS_OFF)
+         return snprintf(s, len, "%u Hz", hz);
+      return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+   }
+   return 0;
+}
+#endif
+
 static size_t setting_get_string_representation_uint_audio_format_negotiation(
       rarch_setting_t *setting, char *s, size_t len)
 {

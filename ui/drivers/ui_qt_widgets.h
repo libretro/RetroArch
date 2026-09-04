@@ -132,6 +132,7 @@ public:
             this->addUIntSpinBox(setting);
             break;
          case ST_UI_TYPE_UINT_COMBOBOX:
+         case ST_UI_TYPE_UINT_COMBOBOX_DESC:
             this->addUIntComboBox(setting);
             break;
          case ST_UI_TYPE_UINT_RADIO_BUTTONS:
@@ -209,6 +210,7 @@ public:
             this->addUIntSpinBox(setting);
             break;
          case ST_UI_TYPE_UINT_COMBOBOX:
+         case ST_UI_TYPE_UINT_COMBOBOX_DESC:
             this->addUIntComboBox(setting);
             break;
          case ST_UI_TYPE_UINT_RADIO_BUTTONS:

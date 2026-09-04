@@ -189,6 +189,7 @@ typedef struct settings
 
       unsigned audio_resampler_quality;
       unsigned audio_fastforward_mode;
+      unsigned audio_fastforward_lowpass;
 
       unsigned input_turbo_period;
       unsigned input_turbo_duty_cycle;

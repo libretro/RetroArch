@@ -543,10 +543,14 @@ void UIntComboBox::populate(double min, double max)
    float          step = m_setting->step;
    bool  checked_found = false;
    unsigned      count = 0;
+   /* A descending combobox walks the same range the other way up. */
+   bool           desc = (m_setting->ui_type == ST_UI_TYPE_UINT_COMBOBOX_DESC);
 
    if (m_setting->actions->repr)
    {
-      for (i = min; i <= max; i += step)
+      for (i = desc ? max : min;
+           desc ? (i >= min) : (i <= max);
+           i += desc ? -step : step)
       {
          char val_s[NAME_MAX_LENGTH];
          unsigned val = (unsigned)i;
@@ -5437,6 +5441,7 @@ QWidget *AudioPage::widget()
    volumeGroup->addRow(volumeLayout);
 
    volumeGroup->add(MENU_ENUM_LABEL_AUDIO_FASTFORWARD_MODE);
+   volumeGroup->add(MENU_ENUM_LABEL_AUDIO_FASTFORWARD_LOWPASS);
    volumeGroup->add(MENU_ENUM_LABEL_AUDIO_REWIND_MUTE);
 
    layout->addWidget(outputGroup);

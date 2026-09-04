@@ -965,6 +965,7 @@
 #define MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN_STR "audio_dsp_plugin"
 #define MENU_ENUM_LABEL_AUDIO_ENABLE_STR "audio_enable"
 #define MENU_ENUM_LABEL_AUDIO_ENABLE_MENU_STR "audio_enable_menu"
+#define MENU_ENUM_LABEL_AUDIO_FASTFORWARD_LOWPASS_STR "audio_fastforward_lowpass"
 #define MENU_ENUM_LABEL_AUDIO_FASTFORWARD_MODE_STR "audio_fastforward_mode"
 #define MENU_ENUM_LABEL_AUDIO_FASTPATH_S16_STR "audio_fastpath_s16"
 #define MENU_ENUM_LABEL_AUDIO_FILTER_DIR_STR "audio_filter_dir"

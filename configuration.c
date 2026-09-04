@@ -7252,6 +7252,11 @@ static bool config_load_file(global_t *global,
       }
    }
 
+   /* Zero from an older configuration means off; see
+    * AUDIO_FASTFORWARD_LOWPASS_OFF. */
+   if (settings->uints.audio_fastforward_lowpass == 0)
+      settings->uints.audio_fastforward_lowpass = AUDIO_FASTFORWARD_LOWPASS_OFF;
+
    /* Migrate the pre-enum fast-forward audio bools. Only applied when the
     * new key is absent, so an explicit audio_fastforward_mode always wins. */
    if (!config_get_entry(conf, "audio_fastforward_mode"))

@@ -51,6 +51,9 @@ typedef struct scond scond_t;
 #ifdef HAVE_AUDIO_TIMESTRETCH
 #include <audio/audio_time_stretch.h>
 #endif
+#ifdef HAVE_AUDIO_LOWPASS
+#include <audio/audio_low_pass.h>
+#endif
 
 #include "audio_defines.h"
 #include "audio_upmix.h"
@@ -495,6 +498,18 @@ typedef struct
     * the current flush's value to reset on either edge, so synthesis
     * never splices across a gap where it went unfed. */
    bool                  stretch_was_engaged;
+#endif
+#ifdef HAVE_AUDIO_LOWPASS
+   /* Fast-forward low-pass filter (audio_fastforward_lowpass).  Lazily
+    * allocated by audio_driver_flush() on first use, same as time_stretch
+    * above; freed in audio_driver_deinit_internal(). */
+   audio_low_pass_t     *lowpass;
+   /* Whether the previous flush applied the low-pass filter; compared
+    * against the current flush's value to reset the filter on either edge,
+    * same reasoning as stretch_was_engaged above - its own flag since the
+    * low-pass also applies under FASTFORWARD_AUDIO_SPEEDUP, which
+    * stretch_was_engaged does not track, and is its own build option. */
+   bool                  lowpass_was_engaged;
 #endif
 
    /**

@@ -196,6 +196,15 @@ typedef struct audio_statistics
    float close_to_blocking;
 } audio_statistics_t;
 
+/* Reference cutoff meaning "do not filter". A sentinel at the top of the
+ * range rather than zero, so the menu's high-to-low list shows OFF first.
+ *
+ * The range runs well past any core's Nyquist on purpose: the reference is
+ * divided by the emulation speed, so reaching the mild end needs headroom -
+ * a 32768Hz core wide-opens at 14746Hz, which at 3x wants a reference near
+ * 44000. */
+#define AUDIO_FASTFORWARD_LOWPASS_OFF 49000
+
 /**
  * What to do with core audio while the frontend runs off real time.
  *
@@ -203,10 +212,9 @@ typedef struct audio_statistics
  */
 enum fastforward_audio_mode
 {
-   /* Resample only what the device can accept and drop the rest.  The
-    * device buffer is pinned near full during fast-forward, so most of a
-    * chunk would be dropped by the write anyway; this moves the discard
-    * ahead of the resampler instead of after it. */
+   /* Resample only what the device can accept and drop the rest. The device
+    * buffer is pinned near full during fast-forward, so this only moves the
+    * discard ahead of the resampler instead of after it. */
    FASTFORWARD_AUDIO_DISCARD = 0,
    /* Silence. */
    FASTFORWARD_AUDIO_MUTE,

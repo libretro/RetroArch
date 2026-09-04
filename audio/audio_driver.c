@@ -884,6 +884,13 @@ static bool audio_driver_deinit_internal(bool audio_enable)
       audio_st->time_stretch = NULL;
    }
 #endif
+#ifdef HAVE_AUDIO_LOWPASS
+   if (audio_st->lowpass)
+   {
+      free(audio_st->lowpass);
+      audio_st->lowpass = NULL;
+   }
+#endif
 
    if (!audio_enable)
    {
@@ -1883,23 +1890,23 @@ static size_t audio_driver_ff_discard_bound(audio_driver_state_t *audio_st,
 
 /**
  * audio_driver_time_stretch:
+ * @mult : audio_driver_ff_mult()'s return for this flush, passed in
+ *         because that call has side effects and must run once.
  *
  * Runs @in_frames of interleaved s16 through the WSOLA stretcher, emitting
- * only as much as the device can accept.  Lazily allocates the ~290KB
- * rings on first use.  @out may alias @in - audio_time_stretch_write()
- * copies its source into the ring before audio_time_stretch_read() ever
- * touches @out.
+ * only as much as the device can accept. @out may alias @in.
  *
- * Returns: frames written to @out, which may be 0 while filling.  Returns
- * -1 if the driver has no write_avail() or on allocation failure; the
- * caller should fall back to the discard/speedup path.
+ * Returns: frames written to @out, 0 while filling, or -1 on allocation
+ * failure, when the caller falls back to the discard/speedup path.
  **/
 static int audio_driver_time_stretch(audio_driver_state_t *audio_st,
-      const int16_t *in, size_t in_frames, int16_t *out, size_t out_capacity)
+      const int16_t *in, size_t in_frames, double mult,
+      int16_t *out, size_t out_capacity)
 {
    double ratio;
    size_t want;
    int    target;
+   int    consumed;
    const audio_driver_t *audio = audio_st->current_audio;
 
    /* Without write_avail(), audio_driver_ff_discard_bound() cannot learn how
@@ -1935,18 +1942,77 @@ static int audio_driver_time_stretch(audio_driver_state_t *audio_st,
     * two flushes plus the search window. */
    audio_time_stretch_write(audio_st->time_stretch, in, (int)in_frames);
 
-   /* Passing src_ratio_curr (not 1.0) converts the device's output-rate
-    * write budget into an input-rate frame count; 1.0 would ask for
-    * src_ratio_curr times too much every flush. */
+   /* How many frames to hand the device now.  Passing src_ratio_curr (not
+    * 1.0) converts its output-rate write budget into an input-rate count. */
    want = audio_driver_ff_discard_bound(audio_st,
          audio_st->src_ratio_curr, out_capacity);
 
+   /* The ratio's denominator is what the device consumes over one flush
+    * interval, derived from measured wall-clock flush spacing - NOT from
+    * write_avail().  write_avail() is quantised to the driver's chunk size:
+    * PulseAudio reports zero or one full chunk and nothing in between, so
+    * feeding it to the ratio makes a bang-bang controller.  Measured on
+    * pulse at a constant 3x, that swung the ratio between 0.68 and 13.8
+    * flush to flush, splicing windows across time scales that differ by a
+    * factor of twenty - which is audible as crunch.  @mult is the inverse
+    * speed (see the parameter doc above), so in_frames * mult is the
+    * device's appetite for this interval and the quotient is the emulation
+    * speed. */
+   consumed = (int)((double)in_frames * mult);
+   if (consumed < 1)
+      consumed = 1;
+
    target = audio_time_stretch_target_input_fill(audio_st->stretch_arrival_avg);
-   ratio  = audio_time_stretch_ratio(audio_st->stretch_arrival_avg, (int)want,
+   ratio  = audio_time_stretch_ratio(audio_st->stretch_arrival_avg, consumed,
          audio_time_stretch_input_fill(audio_st->time_stretch), target);
 
    return audio_time_stretch_read(audio_st->time_stretch, out,
          (int)want, ratio);
+}
+
+#endif
+
+#ifdef HAVE_AUDIO_LOWPASS
+/* Off is the sentinel above the range, or a zero; see
+ * AUDIO_FASTFORWARD_LOWPASS_OFF. */
+static bool audio_driver_lowpass_enabled(void)
+{
+   unsigned hz = config_get_ptr()->uints.audio_fastforward_lowpass;
+   return (hz > 0) && (hz < AUDIO_FASTFORWARD_LOWPASS_OFF);
+}
+
+/**
+ * audio_driver_lowpass_flush:
+ * @frames : interleaved stereo s16, filtered in place; a buffer this driver
+ *           owns, never the core's.
+ * @speed  : emulation speed multiplier for this flush, from the caller's
+ *           single audio_driver_ff_mult() call.
+ *
+ * Applies audio_fastforward_lowpass in place, if configured. Allocated on
+ * first use and freed with the stretcher in audio_driver_deinit_internal().
+ **/
+static void audio_driver_lowpass_flush(audio_driver_state_t *audio_st,
+      int16_t *frames, size_t num_frames, double speed)
+{
+   unsigned reference_hz = config_get_ptr()->uints.audio_fastforward_lowpass;
+   double   target_hz;
+
+   if (!audio_driver_lowpass_enabled() || num_frames == 0)
+      return;
+
+   if (!audio_st->lowpass)
+   {
+      audio_st->lowpass = (audio_low_pass_t*)calloc(1, sizeof(*audio_st->lowpass));
+      if (!audio_st->lowpass)
+         return;
+      audio_low_pass_init(audio_st->lowpass, audio_st->input);
+   }
+
+   target_hz = audio_low_pass_target_hz((double)reference_hz, speed,
+         audio_low_pass_wide_open(audio_st->lowpass));
+
+   audio_low_pass_process(audio_st->lowpass, frames, (int)num_frames,
+         target_hz, (double)num_frames / audio_st->input);
 }
 #endif
 
@@ -2294,20 +2360,63 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          (audio_st->mute_enable || AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_MUTED)
                ? 0.0f
                : audio_st->volume_gain;
+   /* Whether the stretcher and the low-pass are in the signal path for this
+    * flush. Declared unconditionally so the sites that read them need no
+    * guard; false is what a build without them means. */
+   bool stretch_engaged           = false;
+   bool lowpass_engaged           = false;
 #ifdef HAVE_AUDIO_TIMESTRETCH
    /* Engaging/disengaging time-stretch is a discontinuity, so both edges
     * need a reset below; computed here, at function scope, because the
     * write_raw fast path's gate reads it too. */
-   bool stretch_engaged            = (is_slowmotion || is_fastforward)
+   stretch_engaged                = (is_slowmotion || is_fastforward)
          && (config_get_ptr()->uints.audio_fastforward_mode
                == FASTFORWARD_AUDIO_TIMESTRETCH);
 #endif
+#ifdef HAVE_AUDIO_LOWPASS
+   /* Whether the fast-forward low-pass filter applies to this flush: only
+    * while actually fast-forwarding - the cutoff mapping is transparent
+    * during slow-motion anyway (speed <= 1.0), so there is no need to route
+    * slow-motion through the write_raw exclusion below for it - and only
+    * under the two fast-forward audio modes that produce continuous game
+    * audio for it to smooth; Discard and Mute do not.  A distinct flag from
+    * stretch_engaged because the low-pass filter also applies under
+    * FASTFORWARD_AUDIO_SPEEDUP, which stretch_engaged does not track. */
+   lowpass_engaged                = is_fastforward
+         && audio_driver_lowpass_enabled()
+         && (   config_get_ptr()->uints.audio_fastforward_mode
+                     == FASTFORWARD_AUDIO_TIMESTRETCH
+             || config_get_ptr()->uints.audio_fastforward_mode
+                     == FASTFORWARD_AUDIO_SPEEDUP);
+#endif
 
 #ifdef HAVE_AUDIO_TIMESTRETCH
-   if (audio_st->time_stretch
-         && (stretch_engaged != audio_st->stretch_was_engaged))
-      audio_time_stretch_reset(audio_st->time_stretch);
+   if (stretch_engaged != audio_st->stretch_was_engaged)
+   {
+      if (audio_st->time_stretch)
+         audio_time_stretch_reset(audio_st->time_stretch);
+      /* The ratio is derived from the flush-interval average, so drop the
+       * interval that spans the transition - it measures the gap since
+       * whenever this last ran, not the emulation speed. */
+      audio_st->last_flush_time = 0;
+      audio_st->avg_flush_delta = 0;
+   }
    audio_st->stretch_was_engaged = stretch_engaged;
+#endif
+
+#ifdef HAVE_AUDIO_LOWPASS
+   /* Same edge-triggered reset as the stretcher above, on lowpass_engaged's
+    * own transition: snaps the filter back to wide-open and clears its
+    * biquad memory so re-engaging always smooths down from "transparent"
+    * rather than splicing stale filtered memory against a freshly
+    * discontinuous signal (e.g. the stretcher's own reset just above, on a
+    * flush where both toggle together). */
+   if (lowpass_engaged != audio_st->lowpass_was_engaged)
+   {
+      if (audio_st->lowpass)
+         audio_low_pass_reset(audio_st->lowpass);
+   }
+   audio_st->lowpass_was_engaged = lowpass_engaged;
 #endif
 
    /* Record the core's delivered sample format for the statistics overlay. */
@@ -2321,19 +2430,14 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
     * only available when the core delivered int16; float-native cores
     * fall through to the float resampler path below (which is exactly
     * where the redundant int16<->float round-trip is avoided). */
-#ifdef HAVE_AUDIO_TIMESTRETCH
-   /* write_raw has no hook for the stretcher, so a stretch-engaged flush
-    * must be excluded here too or Time-Stretch silently does nothing on
-    * coreaudio/sdl3_audio; both also implement a normal write(), and the
-    * resamplers this path falls through to are allocated at init
-    * regardless of driver write_raw capability, so falling through here
-    * is safe. */
-#endif
+   /* write_raw has no hook for the stretcher or the low-pass, so a flush
+    * with either engaged must skip this path. Falling through is safe: the
+    * write_raw drivers also implement a normal write(), and the resamplers
+    * are allocated at init regardless. */
    if (audio->write_raw
          && !is_float
-#ifdef HAVE_AUDIO_TIMESTRETCH
          && !stretch_engaged
-#endif
+         && !lowpass_engaged
          /* The raw path hands the driver stereo int16 as it is: no
           * upmix, no headphone render. Only when the output is plain
           * stereo. */
@@ -2558,17 +2662,28 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          {
             unsigned ff_mode   = config_get_ptr()->uints.audio_fastforward_mode;
             int      stretched = -1;
+            /* audio_driver_ff_mult() has side effects and must run at
+             * most once per flush; computed here and shared by the
+             * stretcher, the speedup ratio and the low-pass below. */
+#ifdef HAVE_AUDIO_TIMESTRETCH
+            bool     need_mult = (ff_mode == FASTFORWARD_AUDIO_TIMESTRETCH)
+                  || (is_fastforward && ff_mode == FASTFORWARD_AUDIO_SPEEDUP);
+#else
+            bool     need_mult = is_fastforward
+                  && ff_mode == FASTFORWARD_AUDIO_SPEEDUP;
+#endif
+            double   ff_mult   = need_mult
+                  ? audio_driver_ff_mult(audio_st, rs_frames)
+                  : 1.0;
 
 #ifdef HAVE_AUDIO_TIMESTRETCH
             if (ff_mode == FASTFORWARD_AUDIO_TIMESTRETCH)
             {
                /* input_data_int16 has the same frame capacity as input_data
-                * (int16 units, half the float byte count) - see the arena
-                * comment above audio_driver_init_internal(). Safe to write
-                * back into it even if rs_in already points there - see
-                * audio_driver_time_stretch(). */
+                * - see the arena comment above audio_driver_init_internal().
+                * Safe even if rs_in already points there. */
                stretched = audio_driver_time_stretch(audio_st, rs_in,
-                     rs_frames, audio_st->input_data_int16,
+                     rs_frames, ff_mult, audio_st->input_data_int16,
                      audio_st->input_data_length / (2 * sizeof(float)));
                if (stretched >= 0)
                {
@@ -2586,7 +2701,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                      is_slowmotion, slowmotion_ratio,
                      (   is_fastforward
                       && ff_mode == FASTFORWARD_AUDIO_SPEEDUP)
-                        ? audio_driver_ff_mult(audio_st, rs_frames) : 1.0);
+                        ? ff_mult : 1.0);
                /* Without speedup the device is pinned near full and the
                 * write below drops most of the output; resample only what
                 * it can accept.  See audio_driver_ff_discard_bound. */
@@ -2595,6 +2710,33 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                   rs_frames = (unsigned)audio_driver_ff_discard_bound(
                         audio_st, i16_ratio, rs_frames);
             }
+
+#ifdef HAVE_AUDIO_LOWPASS
+            /* Low-pass the fast-forward audio, after the stretcher (if one
+             * ran) and after the ratio/discard fallback above, so it always
+             * sees whatever will actually reach the resampler.  Only under
+             * the two modes that produce continuous game audio for it to
+             * smooth - see audio_fastforward_lowpass's description. */
+            if (is_fastforward
+                  && (ff_mode == FASTFORWARD_AUDIO_TIMESTRETCH
+                      || ff_mode == FASTFORWARD_AUDIO_SPEEDUP)
+                  && config_get_ptr()->uints.audio_fastforward_lowpass > 0)
+            {
+               /* The filter writes in place; rs_in may still be a core-owned
+                * buffer (or foreign DSP output) at this point, neither of
+                * which this driver may mutate - copy to its own scratch
+                * first unless it is that scratch already. */
+               if (rs_in != audio_st->input_data_int16)
+               {
+                  memcpy(audio_st->input_data_int16, rs_in,
+                        (size_t)rs_frames * 2 * sizeof(int16_t));
+                  rs_in = audio_st->input_data_int16;
+               }
+               audio_driver_lowpass_flush(audio_st,
+                     (int16_t*)rs_in, rs_frames,
+                     (ff_mult > 0.0) ? (1.0 / ff_mult) : 1.0);
+            }
+#endif
          }
 
          /* The int16 resampler writes to output_samples_int16 with no
@@ -2919,6 +3061,17 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
    {
       unsigned ff_mode   = config_get_ptr()->uints.audio_fastforward_mode;
       int      stretched = -1;
+      /* Shared once-per-flush mult, same as the int16 arm above. */
+#ifdef HAVE_AUDIO_TIMESTRETCH
+      bool     need_mult = (ff_mode == FASTFORWARD_AUDIO_TIMESTRETCH)
+            || (is_fastforward && ff_mode == FASTFORWARD_AUDIO_SPEEDUP);
+#else
+      bool     need_mult = is_fastforward
+            && ff_mode == FASTFORWARD_AUDIO_SPEEDUP;
+#endif
+      double   ff_mult   = need_mult
+            ? audio_driver_ff_mult(audio_st, src_data.input_frames)
+            : 1.0;
 
 #ifdef HAVE_AUDIO_TIMESTRETCH
       if (ff_mode == FASTFORWARD_AUDIO_TIMESTRETCH)
@@ -2933,10 +3086,10 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
 
          convert_float_to_s16(audio_st->output_samples_int16,
                src_data.data_in, src_data.input_frames * 2);
-         /* Same buffer as both source and destination: safe, see
+         /* Same buffer as source and destination: safe, see
           * audio_driver_time_stretch(). */
          stretched = audio_driver_time_stretch(audio_st,
-               audio_st->output_samples_int16, src_data.input_frames,
+               audio_st->output_samples_int16, src_data.input_frames, ff_mult,
                audio_st->output_samples_int16, cap);
          if (stretched >= 0)
          {
@@ -2957,8 +3110,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                is_slowmotion, slowmotion_ratio,
                (   is_fastforward
                 && ff_mode == FASTFORWARD_AUDIO_SPEEDUP)
-                  ? audio_driver_ff_mult(audio_st, src_data.input_frames)
-                  : 1.0);
+                  ? ff_mult : 1.0);
          /* Without speedup the device is pinned near full and the write
           * below drops most of the output; resample only what it can
           * accept.  See audio_driver_ff_discard_bound. */
@@ -2967,6 +3119,37 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
             src_data.input_frames = audio_driver_ff_discard_bound(
                   audio_st, src_data.ratio, src_data.input_frames);
       }
+
+#ifdef HAVE_AUDIO_LOWPASS
+      /* Low-pass the fast-forward audio, after the stretcher (if one ran).
+       * The filter is s16 in-place, matching how the stretcher above is
+       * called, so this is its own float -> s16 -> float round-trip via the
+       * same scratch the stretcher uses - free here regardless of whether
+       * the stretcher's own round-trip ran this flush, since that one
+       * always finishes by converting back to float before this point. */
+      if (is_fastforward
+            && (ff_mode == FASTFORWARD_AUDIO_TIMESTRETCH
+                || ff_mode == FASTFORWARD_AUDIO_SPEEDUP)
+            && config_get_ptr()->uints.audio_fastforward_lowpass > 0)
+      {
+         size_t cap_i = audio_st->output_samples_int16_length
+               / (2 * sizeof(int16_t));
+         size_t cap_f = audio_st->input_data_length / (2 * sizeof(float));
+         size_t cap   = (cap_i < cap_f) ? cap_i : cap_f;
+         size_t n     = src_data.input_frames;
+         if (n > cap)
+            n = cap;
+
+         convert_float_to_s16(audio_st->output_samples_int16,
+               src_data.data_in, n * 2);
+         audio_driver_lowpass_flush(audio_st, audio_st->output_samples_int16,
+               n, (ff_mult > 0.0) ? (1.0 / ff_mult) : 1.0);
+         convert_s16_to_float(audio_st->input_data,
+               audio_st->output_samples_int16, n * 2, 1.0f);
+         src_data.data_in      = audio_st->input_data;
+         src_data.input_frames = n;
+      }
+#endif
    }
 
    /* Bound the ratio to what the output scratch holds.  The float result is
