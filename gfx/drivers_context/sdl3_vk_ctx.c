@@ -139,6 +139,12 @@ static bool sdl3_vk_ctx_presentable(void *data)
    gfx_ctx_sdl3_vk_data_t *sdl = (gfx_ctx_sdl3_vk_data_t*)data;
    if (!sdl)
       return false;
+   /* Minimised or hidden is asked of SDL directly; the swapchain check
+    * covers the moment before it has been torn down or rebuilt. */
+   if (     sdl->win
+         && (SDL_GetWindowFlags(sdl->win)
+            & (SDL_WINDOW_MINIMIZED | SDL_WINDOW_HIDDEN)))
+      return false;
    return sdl->vk.swapchain != VK_NULL_HANDLE;
 }
 
