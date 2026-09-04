@@ -1004,7 +1004,10 @@ const char *config_get_default_audio(void)
          return "dsp";
       case AUDIO_SWITCH:
 #if defined(HAVE_LIBNX)
-         return "switch_audren_thread";
+         /* Was "switch_audren_thread". That driver is gone and this one
+          * reaches the same decoupling through the threaded pipeline,
+          * which also takes the resampler off the frame. */
+         return "switch_audren";
 #else
          return "switch";
 #endif

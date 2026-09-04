@@ -475,9 +475,6 @@ static void frontend_ctr_init(void* data)
    if (ndspInit() != 0)
    {
       audio_ctr_dsp = audio_null;
-#ifdef HAVE_THREADS
-      audio_ctr_dsp_thread = audio_null;
-#endif
    }
    cfguInit();
    ptmuInit();

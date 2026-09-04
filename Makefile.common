@@ -837,9 +837,6 @@ endif
 ifeq ($(TARGET), retroarch_3ds)
    OBJ += audio/drivers/ctr_csnd_audio.o \
           audio/drivers/ctr_dsp_audio.o
-ifeq ($(HAVE_THREADS), 1)
-   OBJ += audio/drivers/ctr_dsp_thread_audio.o
-endif
 endif
 
 ifeq ($(HAVE_ALSA), 1)
@@ -1242,14 +1239,12 @@ endif
 ifeq ($(TARGET), retroarch_switch)
    ifeq ($(HAVE_LIBNX), 1)
       OBJ += gfx/drivers/switch_nx_gfx.o \
-             audio/drivers/switch_libnx_audren_audio.o \
-             audio/drivers/switch_libnx_audren_thread_audio.o
+             audio/drivers/switch_libnx_audren_audio.o
       ifeq ($(HAVE_OPENGL), 1)
          OBJ += gfx/drivers_context/switch_ctx.o
       endif
    endif
    OBJ += audio/drivers/switch_audio.o \
-          audio/drivers/switch_thread_audio.o \
           input/drivers/switch_input.o \
           input/drivers_joypad/switch_joypad.o \
           frontend/drivers/platform_switch.o

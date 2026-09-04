@@ -52,7 +52,7 @@
 #define MENU_ENUM_LABEL_AUDIO_DRIVER_PS2_STR "ps2"
 #define MENU_ENUM_LABEL_AUDIO_DRIVER_CTR_STR "dsp"
 #if defined(HAVE_LIBNX)
-#define MENU_ENUM_LABEL_AUDIO_DRIVER_SWITCH_STR "switch_audren_thread"
+#define MENU_ENUM_LABEL_AUDIO_DRIVER_SWITCH_STR "switch_audren"
 #else
 #define MENU_ENUM_LABEL_AUDIO_DRIVER_SWITCH_STR "switch"
 #endif
