@@ -936,6 +936,16 @@ uint8_t win32_get_flags(void) { return g_win32_flags; }
 void win32_setup_pixel_format(HDC hdc, bool supports_gl) { }
 #endif
 
+/* A minimised window has no client area to present to: SwapBuffers()
+ * returns at once rather than blocking to vblank, so with vsync as the
+ * only pacing the loop would spin. IsIconic() is the direct question
+ * and needs no state of our own. */
+static bool gfx_ctx_wgl_presentable(void *data)
+{
+   (void)data;
+   return !IsIconic(win32_get_window());
+}
+
 const gfx_ctx_driver_t gfx_ctx_wgl = {
    gfx_ctx_wgl_init,
    gfx_ctx_wgl_destroy,
@@ -969,5 +979,6 @@ const gfx_ctx_driver_t gfx_ctx_wgl = {
    NULL,
    NULL,
    gfx_ctx_wgl_create_surface,
-   gfx_ctx_wgl_destroy_surface
+   gfx_ctx_wgl_destroy_surface,
+   gfx_ctx_wgl_presentable
 };

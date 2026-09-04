@@ -109,6 +109,10 @@ static void gfx_ctx_w_vk_check_window(void *data, bool *quit,
 static bool gfx_ctx_w_vk_presentable(void *data)
 {
    (void)data;
+   /* Minimised is asked of the window directly; the swapchain check
+    * covers the moment before it has been rebuilt. */
+   if (IsIconic(win32_get_window()))
+      return false;
    return win32_vk.swapchain != VK_NULL_HANDLE;
 }
 

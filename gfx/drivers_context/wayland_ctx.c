@@ -664,6 +664,19 @@ static bool gfx_ctx_wl_destroy_surface(void *data)
 #endif
 }
 
+/* The compositor tells us when the surface is not being scanned out -
+ * occluded, minimised, screen locked - and the swap path above already
+ * skips the frame callback and the presentation feedback in that
+ * state, for the same reason. Reported here so the runloop can pace
+ * the loop rather than the swap spinning through it. Compositors older
+ * than xdg_wm_base v6 never send the state, wl->suspended stays false,
+ * and this is always true, as before. */
+static bool gfx_ctx_wl_presentable(void *data)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   return wl && !wl->suspended;
+}
+
 const gfx_ctx_driver_t gfx_ctx_wayland = {
    gfx_ctx_wl_init,
    gfx_ctx_wl_destroy,
@@ -701,5 +714,6 @@ const gfx_ctx_driver_t gfx_ctx_wayland = {
    NULL,
    NULL,
    gfx_ctx_wl_create_surface,
-   gfx_ctx_wl_destroy_surface
+   gfx_ctx_wl_destroy_surface,
+   gfx_ctx_wl_presentable
 };
