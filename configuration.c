@@ -183,7 +183,6 @@ enum audio_driver_enum
 enum microphone_driver_enum
 {
    MICROPHONE_ALSA = AUDIO_NULL + 1,
-   MICROPHONE_ALSATHREAD,
    MICROPHONE_SDL2,
    MICROPHONE_SDL3,
    MICROPHONE_WASAPI,
@@ -597,10 +596,11 @@ static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_NULL;
 #if defined(HAVE_WASAPI)
 /* The default mic driver on Windows is WASAPI if it's available. */
 static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_WASAPI;
-#elif defined(HAVE_ALSA) && defined(HAVE_THREADS)
-/* The default mic driver on Linux is the threaded ALSA driver, if available. */
-static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_ALSATHREAD;
 #elif defined(HAVE_ALSA)
+/* Was MICROPHONE_ALSATHREAD when built with threads. That driver is
+ * gone: the frontend's threaded capture, on by default, does what its
+ * worker did - and for every microphone driver that can wait on its
+ * device, not just this one. */
 static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_ALSA;
 #elif defined(HAVE_PIPEWIRE)
 static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_PIPEWIRE;
@@ -1037,8 +1037,6 @@ const char *config_get_default_microphone(void)
    {
       case MICROPHONE_ALSA:
          return "alsa";
-      case MICROPHONE_ALSATHREAD:
-         return "alsathread";
       case MICROPHONE_PIPEWIRE:
          return "pipewire";
       case MICROPHONE_WASAPI:

@@ -720,7 +720,6 @@ extern microphone_driver_t microphone_alsa;
 /**
  * The multithreaded ALSA-backed microphone driver.
  */
-extern microphone_driver_t microphone_alsathread;
 
 /**
  * The SDL-backed microphone driver.

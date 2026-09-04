@@ -317,7 +317,6 @@ microphone_driver_t *microphone_drivers[] = {
 #ifdef HAVE_ALSA
       &microphone_alsa,
 #if !defined(__QNX__) && !defined(MIYOO) && defined(HAVE_THREADS)
-   &microphone_alsathread,
 #endif
 #endif
 #ifdef HAVE_WASAPI
@@ -4730,6 +4729,18 @@ const char *config_get_microphone_driver_options(void)
 bool microphone_driver_find_driver(void *settings_data, const char *prefix,
       bool verbosity_enabled)
 {
+#ifdef HAVE_ALSA
+   /* "alsathread" was a second ALSA capture driver, removed once the
+    * frontend's threaded capture covered what it did; a config that
+    * still names it means ALSA, not the first entry in the table.
+    * Aliased for a release, then to go. */
+   {
+      settings_t *_settings = (settings_t*)settings_data;
+      if (string_is_equal(_settings->arrays.microphone_driver, "alsathread"))
+         strlcpy(_settings->arrays.microphone_driver, "alsa",
+               sizeof(_settings->arrays.microphone_driver));
+   }
+#endif
    settings_t *settings = (settings_t*)settings_data;
    int i                 = (int)driver_find_index(
          "microphone_driver",
