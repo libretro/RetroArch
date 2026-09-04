@@ -4634,8 +4634,14 @@ static bool gl2_alive(void *data)
    bool quit            = false;
    bool resize          = false;
    gl2_t         *gl    = (gl2_t*)data;
-   unsigned temp_width  = gl->video_width;
-   unsigned temp_height = gl->video_height;
+   unsigned temp_width;
+   unsigned temp_height;
+
+   if (!gl)
+      return false;
+
+   temp_width           = gl->video_width;
+   temp_height          = gl->video_height;
 
    gl->ctx_driver->check_window(gl->ctx_data,
          &quit, &resize, &temp_width, &temp_height);
