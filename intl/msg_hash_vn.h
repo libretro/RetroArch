@@ -275,6 +275,7 @@ static const struct
    char s_d9a51d02[29];
    char s_12e77e8f[13];
    char s_98760b94[33];
+   char s_b81eb68d[21];
    char s_af6007a1[24];
    char s_da068369[13];
    char s_daead8a5[10];
@@ -2466,6 +2467,8 @@ static const struct
    char s_f7cc6630[42];
    char s_310ec7bd[91];
    char s_5832a2c2[123];
+   char s_6f6e337b_0[500];
+   char s_6f6e337b_1[11];
    char s_f47e544f[364];
    char s_20cc6597[152];
    char s_21b0bad3[80];
@@ -5152,6 +5155,7 @@ static const struct
    "Bi\341\273\203u t\306\260\341\273\243ng \341\273\251ng d\341\273\245ng",
    "T\303\240i nguy\303\252n",
    "M\341\273\237 b\341\272\243ng \304\221i\341\273\201u khi\341\273\203n ASIO",
+   "K\303\252nh \304\221\341\272\247u ra ASIO",
    "Khung h\303\254nh b\341\273\213 ch\341\272\267n",
    "Thi\341\272\277t b\341\273\213",
    "\303\202m thanh",
@@ -7725,6 +7729,19 @@ static const struct
    "\273\203 c\341\272\245u h\303\254nh \304\221\341\273\213nh tuy\341\272\277n thi\341\272\277t b"
    "\341\273\213 v\303\240 c\303\241c thi\341\272\277t l\341\272\255p b\341\273\231 \304\221\341\273"
    "\207m.",
+   "Thi\341\272\277t l\341\272\255p hai \304\221\341\272\247u ra tr\303\252n thi\341\272\277t b\341"
+   "\273\213 \303\242m thanh m\303\240 RetroArch s\341\273\255 d\341\273\245ng. Thi\341\272\277t b"
+   "\341\273\213 ASIO li\341\273\207t k\303\252 c\303\241c \304\221\341\272\247u ra theo t\341\273"
+   "\253ng c\341\272\267p \304\221\306\260\341\273\243c \304\221\303\241nh s\341\273\221; tr\303\252"
+   "n thi\341\272\277t b\341\273\213 c\303\263 nhi\341\273\201u h\306\241n hai \304\221\341\272\247u"
+   " ra, c\341\272\267p \304\221\341\272\247u ti\303\252n kh\303\264ng ph\341\272\243i l\303\272c n"
+   "\303\240o c\305\251ng l\303\240 c\341\272\267p k\341\272\277t n\341\273\221i v\341\273\233i loa "
+   "ho\341\272\267c tai nghe c\341\273\247a b\341\272\241n. H\303\243y ch\341\273\215n c\341\272\267"
+   "p t\306\260\306\241ng \341\273\251ng v\341\273\233i c\341\273\225ng \303\242m thanh b\341\272"
+   "\241n \304\221ang nghe, theo t\303\252n \304\221\306\260\341\273\243c thi\341\272\277t b\341\273"
+   "\213 \304\221\341\272\267t cho ch\303\272ng. Thi\341\272\277t b\341\273\213 ch\341\273\211 c\303"
+   "\263 hai \304\221\341\272\247u ra ch\341\273\211 c\303\263 ",
+   "c\341\272\267p 1-2.",
    "S\341\273\221 khung h\303\254nh \303\242m thanh m\303\240 tr\303\254nh \304\221i\341\273\201u kh"
    "i\341\273\203n \303\242m thanh x\341\273\255 l\303\275 trong m\341\273\227i kh\341\273\221i. 0 y"
    "\303\252u c\341\272\247u tr\303\254nh \304\221i\341\273\201u khi\341\273\203n s\341\273\255 d"
@@ -12177,7 +12194,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (231032u
+      (sizeof(msg_hash_vn_blob) == (231564u
 #ifdef ANDROID
        + 373u
 #endif
@@ -12850,6 +12867,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_OUTPUT_CHANNEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
@@ -15040,6 +15058,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ASIO_OUTPUT_CHANNEL,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DRIVER,

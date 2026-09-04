@@ -268,6 +268,7 @@ static const struct
    char s_d9a51d02[18];
    char s_12e77e8f[12];
    char s_98760b94[40];
+   char s_b81eb68d[22];
    char s_af6007a1[17];
    char s_da068369[16];
    char s_daead8a5[7];
@@ -2426,6 +2427,7 @@ static const struct
    char s_f7cc6630[35];
    char s_310ec7bd[80];
    char s_5832a2c2[132];
+   char s_6f6e337b[468];
    char s_f47e544f[288];
    char s_20cc6597[108];
    char s_21b0bad3[48];
@@ -4699,6 +4701,7 @@ static const struct
    "Ic\303\264ne de l\342\200\231app",
    "Ressources ",
    "Ouvrir le panneau de configuration ASIO",
+   "Canaux de sortie ASIO",
    "Taille des blocs",
    "P\303\251riph\303\251rique ",
    "Audio ",
@@ -6897,6 +6900,13 @@ static const struct
    "Les ressources de menu utilis\303\251s par RetroArch sont conserv\303\251s dans ce dossier.",
    "Ouvrir le panneau de configuration du pilote ASIO pour configurer les r\303\251glages de routage"
    " et de m\303\251moire tampon du p\303\251riph\303\251rique.",
+   "Quelles deux sorties RetroArch utilise sur le p\303\251riph\303\251rique audio. Un p\303\251riph"
+   "\303\251rique ASIO liste ses sorties par paires num\303\251rot\303\251es\302\240; sur un p\303"
+   "\251riph\303\251rique poss\303\251dant plus de deux sorties, la premi\303\250re paire ne corresp"
+   "ond pas toujours \303\240 celle de vos enceintes ou de votre casque. Choisir la paire correspond"
+   "ant aux prises utilis\303\251es pour l'\303\251coute, telles qu'indiqu\303\251es par le p\303"
+   "\251riph\303\251rique. Les p\303\251riph\303\251riques \303\240 deux sorties n'affichent que les"
+   " sorties 1 et 2.",
    "Nombre d'images que le pilote audio traite par bloc. 0 demande au pilote d'utiliser la valeur pr"
    "opre au p\303\251riph\303\251rique, ce qui convient \303\240 la plupart des configurations ; une"
    " taille de bloc plus importante privil\303\251gie la stabilit\303\251 (en \303\251vitant les cou"
@@ -9554,7 +9564,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (218398u
+      (sizeof(msg_hash_fr_blob) == (218888u
 #ifdef ANDROID
        + 373u
 #endif
@@ -10217,6 +10227,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_OUTPUT_CHANNEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
@@ -12374,6 +12385,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ASIO_OUTPUT_CHANNEL,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DRIVER,

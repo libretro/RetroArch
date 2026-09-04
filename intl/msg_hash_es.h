@@ -266,6 +266,7 @@ static const struct
    char s_d9a51d02[24];
    char s_12e77e8f[9];
    char s_98760b94[31];
+   char s_b81eb68d[26];
    char s_af6007a1[30];
    char s_da068369[12];
    char s_48c208ee[11];
@@ -2436,6 +2437,7 @@ static const struct
    char s_f7cc6630[35];
    char s_310ec7bd[74];
    char s_5832a2c2[106];
+   char s_6f6e337b[484];
    char s_f47e544f[283];
    char s_20cc6597[99];
    char s_21b0bad3[79];
@@ -3653,6 +3655,7 @@ static const struct
    char s_25e53d33[33];
    char s_26cce51e[21];
    char s_07dd4745[17];
+   char s_72293658[110];
    char s_aaaaf898[38];
    char s_4173591b[18];
    char s_c2b63d3e[18];
@@ -4673,6 +4676,7 @@ static const struct
    "Icono de la aplicaci\303\263n",
    "Recursos",
    "Abrir panel de control de ASIO",
+   "Canales de salida de ASIO",
    "Fotogramas por trama de audio",
    "Dispositivo",
    "Plugin DSP",
@@ -6875,6 +6879,12 @@ static const struct
    "En este directorio se guardar\303\241n los recursos de los men\303\272s de RetroArch.",
    "Abre el panel de control del controlador ASIO para configurar el enrutado de dispositivos y los "
    "b\303\272feres.",
+   "Establece las dos salidas del dispositivo de audio por las que se reproducir\303\241 RetroArch. "
+   "Un dispositivo ASIO enumera sus salidas por parejas numeradas, en el caso de los dispositivos co"
+   "n m\303\241s de dos, la primera pareja no es siempre aquella en la que est\303\241n conectados t"
+   "us altavoces o auriculares. Selecciona la pareja que coincida con las clavijas que est\303\251s "
+   "escuchando seg\303\272n est\303\251n nombradas por el dispositivo. Los dispositivos con solo dos"
+   " salidas solo tendr\303\241n las salidas 1-2.",
    "Indica la cantidad de fotogramas que mover\303\241 el controlador de audio por bloque. Un valor "
    "de 0 pedir\303\241 al controlador el valor del dispositivo, que es lo que esperan la mayor\303"
    "\255a de configuraciones; un valor m\303\241s grande compensa la resistencia contra p\303\251rdi"
@@ -8845,6 +8855,8 @@ static const struct
    "Aplicando cambios de los trucos.",
    "Aplicando parche: %s",
    "Aplicando shader",
+   "ASIO todav\303\255a no es el controlador de audio en ejecuci\303\263n. Reinicia RetroArch para a"
+   "brir su panel de control.",
    "Volumen del mezclador de audio global",
    "Audio silenciado.",
    "Audio habilitado.",
@@ -9415,7 +9427,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (210477u
+      (sizeof(msg_hash_es_blob) == (211097u
 #ifdef ANDROID
        + 329u
 #endif
@@ -10083,6 +10095,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_OUTPUT_CHANNEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
@@ -12252,6 +12265,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ASIO_OUTPUT_CHANNEL,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
@@ -13467,6 +13481,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MSG_APPLYING_CHEAT,
    (uint32_t)MSG_APPLYING_PATCH,
    (uint32_t)MSG_APPLYING_SHADER,
+   (uint32_t)MSG_AUDIO_ASIO_NOT_RUNNING,
    (uint32_t)MSG_AUDIO_MIXER_VOLUME,
    (uint32_t)MSG_AUDIO_MUTED,
    (uint32_t)MSG_AUDIO_UNMUTED,

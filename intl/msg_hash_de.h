@@ -262,6 +262,7 @@ static const struct
    char s_4e447c6c[53];
    char s_d9a51d02[10];
    char s_98760b94[27];
+   char s_b81eb68d[20];
    char s_af6007a1[23];
    char s_da068369[12];
    char s_daead8a5[13];
@@ -2352,6 +2353,7 @@ static const struct
    char s_f7cc6630[19];
    char s_310ec7bd[80];
    char s_5832a2c2[108];
+   char s_6f6e337b[441];
    char s_f47e544f[294];
    char s_20cc6597[110];
    char s_21b0bad3[54];
@@ -3571,6 +3573,7 @@ static const struct
    char s_25e53d33[42];
    char s_26cce51e[20];
    char s_07dd4745[16];
+   char s_72293658[108];
    char s_aaaaf898[37];
    char s_4173591b[11];
    char s_c2b63d3e[10];
@@ -4568,6 +4571,7 @@ static const struct
    "Problemumgehung f\303\274r Verbindungstrennung auf Android",
    "Appsymbol",
    "ASIO Control Panel \303\266ffnen",
+   "ASIO-Ausgabekan\303\244le",
    "Warte auf Audio-Frames",
    "Audioger\303\244t",
    "Audiotreiber",
@@ -6684,6 +6688,12 @@ static const struct
    "Von RetroArch verwendete Men\303\274-Assets werden in diesem Verzeichnis gespeichert.",
    "Die ASIO-Treiber-Systemsteuerung \303\266ffnen, um die Ger\303\244te-Routing- und Puffereinstell"
    "ungen zu konfigurieren.",
+   "Welche beiden Ausg\303\244nge des Audioger\303\244ts von RetroArch zur Wiedergabe verwendet werd"
+   "en. Ein ASIO-Ger\303\244t listet seine Ausg\303\244nge in nummerierten Paaren auf; bei einem Ger"
+   "\303\244t mit mehr als zwei Ausg\303\244ngen ist das erste Paar nicht immer dasjenige, an dem di"
+   "e Lautsprecher oder Kopfh\303\266rer angeschlossen sind. Bitte das Paar ausw\303\244hlen, \303"
+   "\274ber das geh\303\266rt wird \342\200\223 so wie vom Ger\303\244t benannt. Ger\303\244te mit z"
+   "wei Ausg\303\244ngen haben nur die Paare 1 und 2.",
    "Anzahl der Frames, die der Audiotreiber pro Block verschiebt. Bei 0 wird der Treiber nach dem ge"
    "r\303\244tespezifischen Wert gefragt, was in den meisten Konfigurationen gew\303\274nscht ist; e"
    "in gr\303\266\303\237erer Block geht zu Lasten der Latenz, bietet daf\303\274r aber eine h\303"
@@ -8536,6 +8546,8 @@ static const struct
    "\303\204nderungen an Cheats werden \303\274bernommen.",
    "Patch angewandt: %s",
    "Shader anwenden",
+   "ASIO ist noch nicht der aktive Audiotreiber. Bitte RetroArch neu starten, um sein Kontrollpanel "
+   "zu \303\266ffnen.",
    "Globale Lautst\303\244rke des Audio-Mixers",
    "Audio aus.",
    "Audio an.",
@@ -9094,7 +9106,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (194443u
+      (sizeof(msg_hash_de_blob) == (195012u
 #ifdef ANDROID
        + 358u
 #endif
@@ -9762,6 +9774,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_OUTPUT_CHANNEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
@@ -11851,6 +11864,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ASIO_OUTPUT_CHANNEL,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
@@ -13066,6 +13080,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MSG_APPLYING_CHEAT,
    (uint32_t)MSG_APPLYING_PATCH,
    (uint32_t)MSG_APPLYING_SHADER,
+   (uint32_t)MSG_AUDIO_ASIO_NOT_RUNNING,
    (uint32_t)MSG_AUDIO_MIXER_VOLUME,
    (uint32_t)MSG_AUDIO_MUTED,
    (uint32_t)MSG_AUDIO_UNMUTED,
