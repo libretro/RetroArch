@@ -5470,6 +5470,9 @@ void runloop_pause_checks(void)
          video_driver_cached_frame();
 
       midi_driver_set_all_sounds_off();
+      /* Same idea as the MIDI silence above, for the audio stream: end it on
+       * a ramp rather than wherever the waveform happened to be. */
+      audio_driver_pause_fade(true);
 
 #ifdef HAVE_PRESENCE
       userdata.status = PRESENCE_GAME_PAUSED;
@@ -5498,6 +5501,9 @@ void runloop_pause_checks(void)
 
       /* Restore frame limit. */
       runloop_set_frame_limit(&video_st->av_info, fastforward_ratio);
+
+      /* Ramp back up rather than restarting mid-waveform. */
+      audio_driver_pause_fade(false);
    }
 
 #if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)

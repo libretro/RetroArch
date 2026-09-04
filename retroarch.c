@@ -5318,9 +5318,7 @@ bool command_event(enum event_command cmd, void *data)
          runloop_pause_checks();
          break;
       case CMD_EVENT_MENU_PAUSE_LIBRETRO:
-         /* Audio is not stopped or started around the menu any more;
-          * see the menu toggle. Only the microphone follows the pause. */
-#if defined(HAVE_MENU) && defined(HAVE_MICROPHONE)
+#ifdef HAVE_MENU
          {
 #ifdef HAVE_NETWORKING
             bool menu_pause_libretro = settings->bools.menu_pause_libretro
@@ -5328,10 +5326,18 @@ bool command_event(enum event_command cmd, void *data)
 #else
             bool menu_pause_libretro = settings->bools.menu_pause_libretro;
 #endif
+            /* Changed from inside the menu: the core stops or resumes
+             * behind it on the next iteration, so the audio ramp follows
+             * the new state here rather than at the menu toggle. Either
+             * direction is a no-op when nothing changes. */
+            if (menu_st->flags & MENU_ST_FLAG_ALIVE)
+               audio_driver_pause_fade(menu_pause_libretro);
+#ifdef HAVE_MICROPHONE
             if (menu_pause_libretro)
                command_event(CMD_EVENT_MICROPHONE_STOP, NULL);
             else
                command_event(CMD_EVENT_MICROPHONE_START, NULL);
+#endif
          }
 #endif
          break;

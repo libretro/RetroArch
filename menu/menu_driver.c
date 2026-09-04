@@ -6843,6 +6843,19 @@ void retroarch_menu_running(void)
 
    if (menu)
    {
+#ifdef HAVE_NETWORKING
+      bool menu_pause_libretro = settings->bools.menu_pause_libretro
+            && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL);
+#else
+      bool menu_pause_libretro = settings->bools.menu_pause_libretro;
+#endif
+      /* Ramp core audio down before the driver toggle, which can take long
+       * enough to matter; here because the hotkey path does not go through
+       * CMD_EVENT_MENU_TOGGLE. Only when the runloop will in fact stop the
+       * core: under netplay it keeps running behind the menu. */
+      if (menu_pause_libretro)
+         audio_driver_pause_fade(true);
+
       if (menu->driver_ctx && menu->driver_ctx->toggle)
          menu->driver_ctx->toggle(menu->userdata, true);
 
@@ -6920,6 +6933,12 @@ void retroarch_menu_running_finished(bool quit)
          menu->driver_ctx->toggle(menu->userdata, false);
 
       menu_st->flags &= ~MENU_ST_FLAG_ALIVE;
+      /* Ramp the core's first frames back up. Not when quitting - nothing
+       * is coming back. Not gated on menu_pause_libretro: the setting can be
+       * turned off from inside the menu it paused, and a resume with no
+       * pause behind it does nothing. */
+      if (!quit)
+         audio_driver_pause_fade(false);
       menu_driver_toggle(
             video_st->current_video,
             video_st->data,
