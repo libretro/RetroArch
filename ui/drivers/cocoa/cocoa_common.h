@@ -110,6 +110,9 @@ void get_ios_version(int *major, int *minor);
 @interface CocoaView : NSView
 
 + (CocoaView*)get;
+/* Sets the title of the window this view is in; the target of a
+ * performSelectorOnMainThread: from ui_window_cocoa_set_title(). */
+- (void)setWindowTitle:(NSString *)title;
 #if !defined(HAVE_COCOA) && !defined(HAVE_COCOA_METAL)
 - (void)display;
 #endif

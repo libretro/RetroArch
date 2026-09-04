@@ -281,6 +281,14 @@ void rarch_stop_draw_observer(void)
    return view;
 }
 
+#if defined(OSX)
+/* The main-thread half of ui_window_cocoa_set_title(). */
+- (void)setWindowTitle:(NSString *)title
+{
+   [[self window] setTitle:title];
+}
+#endif
+
 - (id)init
 {
    self = [super init];

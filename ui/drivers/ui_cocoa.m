@@ -152,29 +152,22 @@ static void ui_window_cocoa_set_title(void *data, char *buf)
 
    /* AppKit is main-thread-only. Under threaded video this is reached
     * from the video thread (gl3_frame -> video_driver_update_title), so
-    * -setTitle: is marshalled onto the main queue; dispatch_async, not
-    * sync, so the video thread's lock is never held while waiting on
-    * main. The -window lookup is inside the block too: the view's
-    * window is AppKit state and belongs on that thread. GCD is 10.6+,
-    * the gate this file keys off elsewhere; earlier SDKs call directly,
-    * as they always did. The block copy retains title and the view; the
-    * release inside it balances the alloc under MRC and is a no-op
-    * under ARC. */
-#if defined(MAC_OS_X_VERSION_10_6)
+    * the set is marshalled onto the main thread without waiting - the
+    * video thread's lock must never be held while waiting on main.
+    * performSelectorOnMainThread: is the Foundation way, on every OS X
+    * back to 10.0, so there is no SDK gate and no GCD; it costs one
+    * run-loop source signal, the same as a dispatch to the main queue,
+    * for a title that changes a few times a session. The target is the
+    * view, whose -setWindowTitle: does the -window lookup on main where
+    * that AppKit state belongs. The perform retains title until it has
+    * run, so the alloc above is released here under MRC either way; a
+    * no-op under ARC. */
    if ([NSThread isMainThread])
-   {
-      [[cocoa_view window] setTitle:title];
-      RARCH_RELEASE(title);
-   }
+      [cocoa_view setWindowTitle:title];
    else
-      dispatch_async(dispatch_get_main_queue(), ^{
-         [[cocoa_view window] setTitle:title];
-         RARCH_RELEASE(title);
-      });
-#else
-   [[cocoa_view window] setTitle:title];
+      [cocoa_view performSelectorOnMainThread:@selector(setWindowTitle:)
+            withObject:title waitUntilDone:NO];
    RARCH_RELEASE(title);
-#endif
 }
 
 static void ui_window_cocoa_set_droppable(void *data, bool droppable)
