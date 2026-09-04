@@ -1946,6 +1946,20 @@ static bool content_load(content_ctx_info_t *info,
       rarch_argc_ptr = (int*)&rarch_argc;
    }
 
+#ifdef WEBOS
+   /* Everything below is synchronous and draws no frames, while the
+    * kept webOS surface still shows the last one. Put the loading
+    * notification up there first, so the frame left on screen says
+    * so. The dummy core comes through here too, on startup and on
+    * close content; task_push_start_dummy_core() clears the content
+    * path first, which is what tells the two apart. */
+   if (!string_is_empty(path_get(RARCH_PATH_CONTENT)))
+   {
+      const char *msg = msg_hash_to_str(MSG_LOADING);
+      runloop_present_blocking_msg(msg, strlen(msg));
+   }
+#endif
+
    retroarch_ctl(RARCH_CTL_MAIN_DEINIT, NULL);
 
    wrap_args->argc = *rarch_argc_ptr;

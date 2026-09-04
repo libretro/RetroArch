@@ -451,6 +451,13 @@ void runloop_msg_queue_push(const char *msg, size_t len,
       enum message_queue_icon icon,
       enum message_queue_category category);
 
+#ifdef WEBOS
+/* Push a notification and redraw until it has animated into view, for
+ * callers about to block the runloop. The webOS surface survives the
+ * video reinit a content load performs, so these frames stay up. */
+void runloop_present_blocking_msg(const char *msg, size_t len);
+#endif
+
 void runloop_set_current_core_type(
       enum rarch_core_type type, bool explicitly_set);
 

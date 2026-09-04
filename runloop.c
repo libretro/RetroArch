@@ -5951,6 +5951,73 @@ void runloop_msg_queue_push(
    RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
 }
 
+#ifdef WEBOS
+void runloop_present_blocking_msg(const char *msg, size_t len)
+{
+   settings_t *settings           = config_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   runloop_state_t *runloop_st    = &runloop_state;
+   unsigned output_width          = 0;
+   unsigned output_height         = 0;
+   retro_time_t deadline;
+#if defined(HAVE_GFX_WIDGETS)
+   gfx_display_t *p_disp          = disp_get_ptr();
+   bool widgets_active            = dispwidget_get_ptr()->active;
+   bool video_is_fullscreen       = settings->bools.video_fullscreen
+      || (video_st->flags & VIDEO_FLAG_FORCE_FULLSCREEN);
+#endif
+
+   if (!msg || !*msg)
+      return;
+
+   /* Kept short: nothing expires it while the caller blocks, so this
+    * is how long it lingers once frames start being drawn again. */
+   runloop_msg_queue_push(msg, len, 1, 60, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+
+   /* A pending delay would hide the notification for exactly the frames
+    * drawn below, which are the only ones that will be drawn. */
+   runloop_st->msg_queue_delay = 0;
+
+   video_driver_get_output_size(&output_width, &output_height);
+
+   /* Notifications animate in from off-screen, so a single frame shows
+    * nothing. Redraw for slightly longer than that animation, then let
+    * the caller block: the message stays up on the retained surface. */
+   deadline = cpu_features_get_time_usec()
+      + ((MSG_QUEUE_ANIMATION_DURATION + 80) * 1000);
+
+   while (cpu_features_get_time_usec() < deadline)
+   {
+      gfx_animation_update(cpu_features_get_time_usec(),
+            settings->bools.menu_timedate_enable,
+            settings->floats.menu_ticker_speed,
+            output_width,
+            output_height);
+
+#if defined(HAVE_GFX_WIDGETS)
+      if (widgets_active)
+      {
+         RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
+         gfx_widgets_iterate(
+               p_disp,
+               settings,
+               output_width,
+               output_height,
+               video_is_fullscreen,
+               settings->paths.directory_assets,
+               settings->paths.path_font,
+               VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st));
+         RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
+      }
+#endif
+
+      video_driver_cached_frame();
+      retro_sleep(8);
+   }
+}
+#endif
+
 #ifdef HAVE_MENU
 /* Display the libretro core's framebuffer onscreen. */
 static bool display_menu_libretro(
