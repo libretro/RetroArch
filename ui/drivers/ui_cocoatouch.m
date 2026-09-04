@@ -156,15 +156,34 @@ static void ui_companion_cocoatouch_set_app_icon(const char *iconName)
    [[UIApplication sharedApplication] setAlternateIconName:str completionHandler:nil];
 }
 
+/* Main thread only: the sole caller is materialui's icon draw, which
+ * runs from the menu's frame.
+ *
+ * The cache used to be created under dispatch_once, which read as a
+ * thread-safety guarantee the rest of the function does not make - the
+ * very next lines mutate the dictionary with no synchronisation at
+ * all, so were this ever reached from two threads the once would be
+ * the one part that was safe. A plain lazy create says what is true:
+ * one thread, so neither the create nor the mutation needs guarding.
+ *
+ * +dictionaryWithCapacity: hands back an autoreleased object, which is
+ * wrong for something a static holds across calls: this file is built
+ * MRC by the Makefile - it is not in the -fobjc-arc list at Makefile:275
+ * - so the pool drains at the end of the run loop pass that created it
+ * and every later call messages freed memory. Under Xcode, where
+ * griffin_objc.m is ARC, the strong static retains it and the same
+ * code is fine, which is why this has sat here. -initWithCapacity: is
+ * +1 owned and correct in both: the object is kept for the process
+ * lifetime deliberately, as the dock indicator in dispserv_apple.m is. */
 static uintptr_t ui_companion_cocoatouch_get_app_icon_texture(const char *icon)
 {
    static NSMutableDictionary<NSString *, NSNumber *> *textures = nil;
-   static dispatch_once_t once;
-   dispatch_once(&once, ^{
-      textures = [NSMutableDictionary dictionaryWithCapacity:6];
-   });
+   NSString *iconName;
 
-   NSString *iconName = [NSString stringWithUTF8String:icon];
+   if (!textures)
+      textures = [[NSMutableDictionary alloc] initWithCapacity:6];
+
+   iconName = [NSString stringWithUTF8String:icon];
    if (!textures[iconName])
    {
       UIImage *img = [UIImage imageNamed:iconName];
