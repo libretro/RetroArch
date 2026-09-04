@@ -148,6 +148,10 @@ static void gfx_ctx_x_vk_swap_interval(void *data, int interval)
 static bool gfx_ctx_x_vk_presentable(void *data)
 {
    gfx_ctx_x_vk_data_t *x = (gfx_ctx_x_vk_data_t*)data;
+   /* Unmapped is asked of X directly; the swapchain check covers the
+    * moment before it has been torn down or rebuilt. */
+   if (!x11_presentable(data))
+      return false;
    return x && x->vk.swapchain != VK_NULL_HANDLE;
 }
 
