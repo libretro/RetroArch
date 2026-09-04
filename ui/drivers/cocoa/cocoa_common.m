@@ -410,36 +410,44 @@ void rarch_stop_draw_observer(void)
     return !nonSiriPress;
 }
 
+/* The remote's buttons, as a keyboard event.
+ *
+ * This built an NSDictionary of NSNumber keys to NSArrays of NSNumbers
+ * inside dispatch_once, and then hashed a boxed press type against it
+ * on every press. The mapping is seven compile-time constant pairs; a
+ * switch is the whole of it, with no dictionary to build, nothing to
+ * box per press, no once and no block.
+ *
+ * The two page keys were added under if (@available(tvOS 14.3, *)),
+ * which was guarding the wrong thing: the constants have to exist at
+ * compile time either way - they did, unconditionally, in the block -
+ * and a press type the running system never sends simply never
+ * arrives, so a case for it costs nothing. */
 - (void)sendKeyForPress:(UIPressType)type down:(bool)down
 {
-    static NSDictionary<NSNumber *,NSArray<NSNumber*>*> *map;
-    static dispatch_once_t once;
-    dispatch_once(&once, ^{
-        NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithDictionary:@{
-            @(UIPressTypeUpArrow):    @[ @(RETROK_UP),       @( 0 ) ],
-            @(UIPressTypeDownArrow):  @[ @(RETROK_DOWN),     @( 0 ) ],
-            @(UIPressTypeLeftArrow):  @[ @(RETROK_LEFT),     @( 0 ) ],
-            @(UIPressTypeRightArrow): @[ @(RETROK_RIGHT),    @( 0 ) ],
+    unsigned keycode  = 0;
+    unsigned character = 0;
 
-            @(UIPressTypeSelect):     @[ @(RETROK_z),        @('z') ],
-            @(UIPressTypeMenu)     :  @[ @(RETROK_x),        @('x') ],
-            @(UIPressTypePlayPause):  @[ @(RETROK_s),        @('s') ],
-        }];
+    switch (type)
+    {
+        case UIPressTypeUpArrow:    keycode = RETROK_UP;    break;
+        case UIPressTypeDownArrow:  keycode = RETROK_DOWN;  break;
+        case UIPressTypeLeftArrow:  keycode = RETROK_LEFT;  break;
+        case UIPressTypeRightArrow: keycode = RETROK_RIGHT; break;
 
-        if (@available(tvOS 14.3, *))
-        {
-            [dict addEntriesFromDictionary:@{
-                @(UIPressTypePageUp):     @[ @(RETROK_PAGEUP),   @( 0 ) ],
-                @(UIPressTypePageDown):   @[ @(RETROK_PAGEDOWN), @( 0 ) ],
-            }];
-        }
-        map = dict;
-    });
-    NSArray<NSNumber*>* keyvals = map[@(type)];
-    if (!keyvals)
-        return;
-    apple_direct_input_keyboard_event(down, keyvals[0].intValue,
-                                      keyvals[1].intValue, 0, RETRO_DEVICE_KEYBOARD);
+        case UIPressTypeSelect:     keycode = RETROK_z; character = 'z'; break;
+        case UIPressTypeMenu:       keycode = RETROK_x; character = 'x'; break;
+        case UIPressTypePlayPause:  keycode = RETROK_s; character = 's'; break;
+
+        case UIPressTypePageUp:     keycode = RETROK_PAGEUP;   break;
+        case UIPressTypePageDown:   keycode = RETROK_PAGEDOWN; break;
+
+        default:
+            return;
+    }
+
+    apple_direct_input_keyboard_event(down, keycode, character, 0,
+                                      RETRO_DEVICE_KEYBOARD);
 }
 
 - (void)pressesBegan:(NSSet<UIPress *> *)presses
@@ -853,8 +861,14 @@ void rarch_stop_draw_observer(void)
     if (!settings->bools.gcdwebserver_alert)
         return;
 
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
+    /* Once per run. dispatch_once is the wrong shape for that even
+     * where it works: it is a barrier for publishing an initialisation
+     * to other threads, and this is UIKit on the main thread showing an
+     * alert. A flag says what is meant. The blocks below stay - they
+     * are UIAlertAction handlers, which the API requires, not GCD. */
+    static bool shown;
+    if (!shown)
+    {
         UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Welcome to RetroArch" message:[NSString stringWithFormat:@"To transfer files from your computer, go to one of these addresses on your web browser:\n\n%@",servers] preferredStyle:UIAlertControllerStyleAlert];
         [alert addAction:[UIAlertAction actionWithTitle:@"OK"
             style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
@@ -880,7 +894,8 @@ void rarch_stop_draw_observer(void)
             struct menu_state *menu_st = menu_state_get_ptr();
             menu_st->flags |= MENU_ST_FLAG_BLOCK_ALL_INPUT;
         }];
-    });
+        shown = true;
+    }
 #endif
 }
 
