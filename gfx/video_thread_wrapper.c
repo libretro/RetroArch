@@ -556,6 +556,9 @@ static void video_thread_loop(void *data)
          bool               alive = false;
          bool               focus = false;
          bool        has_windowed = false;
+         /* True unless the context says otherwise, so a driver without
+          * the hook keeps pacing exactly as it did. */
+         bool         presentable = true;
 
          vp.x                     = 0;
          vp.y                     = 0;
@@ -605,6 +608,10 @@ static void video_thread_loop(void *data)
                      focus = thr->driver->focus(thr->driver_data);
                   if (thr->driver->has_windowed)
                      has_windowed = thr->driver->has_windowed(thr->driver_data);
+                  /* Direct: this is the video thread, which owns the
+                   * context, and the dispatching call would read back
+                   * the value published here on the previous frame. */
+                  presentable = video_context_driver_presentable_direct();
                }
             }
             else
@@ -619,6 +626,7 @@ static void video_thread_loop(void *data)
          slock_lock(thr->lock);
          thr->alive         = alive;
          thr->focus         = focus;
+         thr->presentable   = presentable;
          thr->has_windowed  = has_windowed;
          thr->vp            = vp;
          /* Statistics. The viewport maths ran on this thread during
@@ -1747,6 +1755,20 @@ uintptr_t video_thread_texture_handle(void *data, custom_command_method_t func)
  * Must be called from the main thread.  No-op if the video
  * thread is not running or if called from the video thread
  * itself (would deadlock). */
+bool video_thread_presentable(void)
+{
+   bool ret;
+   thread_video_t *thr;
+   if (!video_driver_thread_wrapper_active())
+      return true;
+   if (!(thr = (thread_video_t*)video_driver_get_ptr()))
+      return true;
+   slock_lock(thr->lock);
+   ret = thr->presentable;
+   slock_unlock(thr->lock);
+   return ret;
+}
+
 void video_thread_wait_idle(void)
 {
    video_driver_state_t *video_st = video_state_get_ptr();

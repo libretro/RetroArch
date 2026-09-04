@@ -1456,6 +1456,10 @@ bool video_context_driver_get_metrics(gfx_ctx_metrics_t *metrics);
  * presentable member of gfx_ctx_driver_t. */
 bool video_context_driver_presentable(void);
 
+/* The same question asked of the context itself; only for callers
+ * running on the thread that owns it. */
+bool video_context_driver_presentable_direct(void);
+
 void video_context_driver_destroy(gfx_ctx_driver_t *ctx_driver);
 
 enum gfx_ctx_api video_context_driver_get_api(void);

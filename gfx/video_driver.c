@@ -4044,17 +4044,37 @@ void video_context_driver_free(void)
    video_st->context_data    = NULL;
 }
 
-/* False only while the context has told us it has nothing to present
- * to - a minimised or zero-sized window, a suspended surface, a
- * swapchain that could not be created. Drivers that do not implement
- * the hook are always presentable, which is how it was before. */
-bool video_context_driver_presentable(void)
+/* Asks the context itself. MUST be called on the thread that owns it -
+ * the video thread when the threaded wrapper is active, the main
+ * thread otherwise - because a context answers by reading its own
+ * state, a Vulkan swapchain handle among it. Callers that are not sure
+ * which thread they are on want video_context_driver_presentable(). */
+bool video_context_driver_presentable_direct(void)
 {
    video_driver_state_t *video_st  = &video_driver_st;
    const gfx_ctx_driver_t *ctx     = &video_st->current_video_context;
    if (ctx && ctx->presentable)
       return ctx->presentable((void*)video_st->context_data);
    return true;
+}
+
+/* False only while the context has told us it has nothing to present
+ * to - a minimised or zero-sized window, a suspended surface, a
+ * swapchain that could not be created. Drivers that do not implement
+ * the hook are always presentable, which is how it was before.
+ *
+ * With threaded video the context belongs to the video thread, which
+ * polls it after each frame beside alive and focus and publishes the
+ * answer under the wrapper's lock; that published value is what the
+ * runloop gets. Asking the context from the runloop thread would read
+ * its state while the video thread rebuilds it. */
+bool video_context_driver_presentable(void)
+{
+#ifdef HAVE_THREADS
+   if (video_driver_thread_wrapper_active())
+      return video_thread_presentable();
+#endif
+   return video_context_driver_presentable_direct();
 }
 
 bool video_context_driver_get_metrics(gfx_ctx_metrics_t *metrics)
