@@ -28,7 +28,7 @@
 /* For NSWindowStyleMaskTitled polyfill on pre-10.12 SDKs */
 #include <defines/cocoa_defines.h>
 
-#ifdef OSX
+#if TARGET_OS_OSX
 #import <AppKit/AppKit.h>
 /* <CoreGraphics/CoreGraphics.h> is a 10.8+ umbrella header.
  * On earlier SDKs (including the 10.5 Leopard SDK used by Xcode 3.1
@@ -51,7 +51,7 @@
  * pre-10.6 targets rather than port to both. */
 #endif
 
-#ifdef OSX
+#if TARGET_OS_OSX
 static bool apple_display_server_set_window_opacity(void *data, unsigned opacity)
 {
    settings_t *settings      = config_get_ptr();
@@ -136,7 +136,7 @@ static bool apple_display_server_set_window_decorations(void *data, bool on)
 }
 #endif
 
-#if defined(OSX) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
+#if TARGET_OS_OSX && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
 static bool apple_display_server_set_resolution(void *data,
       unsigned width, unsigned height, int int_hz, float hz,
       int center, int monitor_index, int xoffset, int padjust)
@@ -280,7 +280,7 @@ static void *apple_display_server_get_resolution_list(
    struct video_display_config *conf = NULL;
    double currentRate;
 
-#ifdef OSX
+#if TARGET_OS_OSX
 #ifdef RARCH_HAS_CGDISPLAYMODE_API
    CGDirectDisplayID mainDisplayID = CGMainDisplayID();
    CGDisplayModeRef currentMode = CGDisplayCopyDisplayMode(mainDisplayID);
@@ -553,7 +553,7 @@ static enum rotation apple_display_server_get_screen_orientation(void *data)
 
 typedef struct
 {
-#if defined(OSX) && defined(RARCH_HAS_CGDISPLAYMODE_API)
+#if TARGET_OS_OSX && defined(RARCH_HAS_CGDISPLAYMODE_API)
    CGDisplayModeRef original_mode;
    CGDirectDisplayID display_id;
 #endif
@@ -565,7 +565,7 @@ static void *apple_display_server_init(void)
    if (!apple)
       return NULL;
 
-#if defined(OSX) && defined(RARCH_HAS_CGDISPLAYMODE_API)
+#if TARGET_OS_OSX && defined(RARCH_HAS_CGDISPLAYMODE_API)
    /* Store original display mode for restoration */
    apple->display_id = CGMainDisplayID();
    if ((apple->original_mode = CGDisplayCopyDisplayMode(apple->display_id)))
@@ -598,7 +598,7 @@ static void *apple_display_server_init(void)
 #endif
                view.displayLink.preferredFramesPerSecond = hz;
          }
-#elif defined(OSX) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
+#elif TARGET_OS_OSX && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
          float hz        = settings->floats.video_refresh_rate;
          CocoaView *view = [CocoaView get];
          if (view)
@@ -623,7 +623,7 @@ static void apple_display_server_destroy(void *data)
    if (!apple)
       return;
 
-#if defined(OSX) && defined(RARCH_HAS_CGDISPLAYMODE_API)
+#if TARGET_OS_OSX && defined(RARCH_HAS_CGDISPLAYMODE_API)
    /* Restore original display mode */
    if (apple->original_mode)
    {
@@ -661,7 +661,7 @@ static void apple_display_server_get_video_output_size(void *data,
 const video_display_server_t dispserv_apple = {
    apple_display_server_init,
    apple_display_server_destroy,
-#ifdef OSX
+#if TARGET_OS_OSX
    apple_display_server_set_window_opacity,
 #ifdef RARCH_HAS_CGDISPLAYMODE_API
    apple_display_server_set_window_progress,
@@ -674,7 +674,7 @@ const video_display_server_t dispserv_apple = {
    NULL, /* set_window_progress */
    NULL, /* set_window_decorations */
 #endif
-#if !defined(OSX) || __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
+#if !TARGET_OS_OSX || __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
    apple_display_server_set_resolution,
 #else
    NULL,

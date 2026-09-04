@@ -25,7 +25,7 @@
 #else
 #include <ApplicationServices/ApplicationServices.h>
 #endif
-#ifdef OSX
+#if TARGET_OS_OSX
 #include <OpenGL/CGLTypes.h>
 #include <OpenGL/OpenGL.h>
 #include <AppKit/NSScreen.h>
@@ -64,7 +64,7 @@ enum cocoa_ctx_flags
 
 typedef struct cocoa_ctx_data
 {
-#ifndef OSX
+#if !TARGET_OS_OSX
    int fast_forward_skips;
 #endif
    unsigned width;
@@ -146,7 +146,7 @@ static void cocoa_gl_gfx_ctx_set_flags(void *data, uint32_t flags)
       cocoa_ctx->flags |= COCOA_CTX_FLAG_CORE_HW_CTX_ENABLE;
 }
 
-#if defined(OSX)
+#if TARGET_OS_OSX
 void cocoa_gl_gfx_ctx_update(void)
 {
    [g_ctx    update];
@@ -189,7 +189,7 @@ void glkitview_bind_fbo(void)
 #endif
 
 
-#ifdef OSX
+#if TARGET_OS_OSX
 static void cocoa_gl_gfx_ctx_destroy_mainthread(void *userdata)
 {
    [g_ctx clearDrawable];
@@ -204,7 +204,7 @@ static void cocoa_gl_gfx_ctx_destroy(void *data)
 
    if (!cocoa_ctx)
       return;
-#ifdef OSX
+#if TARGET_OS_OSX
    /* clearCurrentContext operates on the CALLING thread's current-
     * context slot and must stay here (the render thread); clearDrawable
     * detaches the NSView and is AppKit, so it is marshaled to the main
@@ -258,7 +258,7 @@ static void cocoa_gl_gfx_ctx_input_driver(void *data,
    *input_data = NULL;
 }
 
-#if defined(OSX)
+#if TARGET_OS_OSX
 /* The view's frame is in points; a Retina backing store has more
  * pixels than points. -convertRectToBacking: is 10.7, so the view is
  * asked once - the answer cannot change while the process runs - and
@@ -356,7 +356,7 @@ static void cocoa_gl_gfx_ctx_bind_hw_render(void *data, bool enable)
 
    cocoa_ctx->flags           |= COCOA_CTX_FLAG_USE_HW_CTX;
 
-#ifdef OSX
+#if TARGET_OS_OSX
    if (enable)
       [g_hw_ctx makeCurrentContext];
    else
@@ -390,7 +390,7 @@ static void cocoa_gl_gfx_ctx_check_window(void *data, bool *quit,
 static void cocoa_gl_gfx_ctx_swap_interval(void *data, int i)
 {
    unsigned interval             = (unsigned)i;
-#ifdef OSX
+#if TARGET_OS_OSX
    GLint value                   = interval ? 1 : 0;
    [g_ctx setValues:&value forParameter:NSOpenGLCPSwapInterval];
 #else
@@ -407,7 +407,7 @@ static void cocoa_gl_gfx_ctx_swap_interval(void *data, int i)
 
 static void cocoa_gl_gfx_ctx_swap_buffers(void *data)
 {
-#ifdef OSX
+#if TARGET_OS_OSX
    [g_ctx flushBuffer];
    [g_hw_ctx  flushBuffer];
 #else
@@ -436,7 +436,7 @@ static bool cocoa_gl_gfx_ctx_bind_api(void *data, enum gfx_ctx_api api,
    return true;
 }
 
-#ifdef OSX
+#if TARGET_OS_OSX
 #if defined(HAVE_COCOA_METAL)
 static void cocoa_gl_gfx_ctx_init_mainthread(void *userdata)
 {
@@ -740,7 +740,7 @@ static void *cocoa_gl_gfx_ctx_init(void *video_driver)
    if (!cocoa_ctx)
       return NULL;
 
-#ifndef OSX
+#if !TARGET_OS_OSX
    cocoa_ctx->flags |= COCOA_CTX_FLAG_IS_SYNCING;
 #endif
 
@@ -823,7 +823,7 @@ static void *cocoa_gl_gfx_ctx_init(void *video_driver)
    if (!cocoa_ctx)
       return NULL;
 
-#ifndef OSX
+#if !TARGET_OS_OSX
    cocoa_ctx->flags |= COCOA_CTX_FLAG_IS_SYNCING;
 #endif
 
@@ -878,7 +878,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    NULL, /* get_video_output_next */
    cocoa_get_metrics,
    NULL, /* translate_aspect */
-#ifdef OSX
+#if TARGET_OS_OSX
    video_driver_update_title,
 #else
    NULL, /* update_title */

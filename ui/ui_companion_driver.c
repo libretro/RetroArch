@@ -50,7 +50,7 @@ static const ui_companion_driver_t *ui_companion_drivers[] = {
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    &ui_companion_win32,
 #endif
-#if defined(OSX)
+#if TARGET_OS_OSX
    &ui_companion_cocoa,
 #endif
 #if defined(IOS)

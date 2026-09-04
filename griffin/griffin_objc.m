@@ -46,7 +46,7 @@
 #include "../gfx/drivers_context/cocoa_vk_ctx.m"
 #endif
 
-#if defined(OSX)
+#if TARGET_OS_OSX
 #include "../ui/drivers/ui_cocoa.m"
 #else
 #include "../ui/drivers/ui_cocoatouch.m"

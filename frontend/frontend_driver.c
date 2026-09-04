@@ -177,7 +177,7 @@ size_t frontend_driver_get_core_extension(char *s, size_t len)
 #ifdef HAVE_DYNAMIC
 #ifdef _WIN32
    return strlcpy_lit(s, "dll", len);
-#elif (defined(IOS) && defined(HAVE_FRAMEWORKS)) || (defined(OSX) && defined(HAVE_APPLE_STORE))
+#elif (defined(IOS) && defined(HAVE_FRAMEWORKS)) || (TARGET_OS_OSX && defined(HAVE_APPLE_STORE))
    return strlcpy_lit(s, "framework", len);
 #elif defined(__APPLE__) || defined(__MACH__)
    return strlcpy_lit(s, "dylib" ,len);

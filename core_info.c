@@ -1672,7 +1672,7 @@ static size_t core_info_get_file_id(const char *core_filename,
     * or platform-specific suffix */
    /* > Remove extension */
    _len = fill_pathname(s, core_filename, "", len);
-#if defined(IOS) || defined(OSX)
+#if defined(IOS) || TARGET_OS_OSX
    /* iOS framework names, to quote Apple:
     * "must contain only alphanumerics, dots, hyphens and must not end with a dot."
     *

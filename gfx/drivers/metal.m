@@ -498,7 +498,7 @@ typedef NS_ENUM(NSInteger, ViewDrawState)
 #include <TargetConditionals.h>
 #if defined(TARGET_OS_TV) && TARGET_OS_TV
 #  define METAL_HDR_AVAILABLE 0
-#elif defined(OSX) && defined(__MAC_11_0)
+#elif TARGET_OS_OSX && defined(__MAC_11_0)
 #  define METAL_HDR_AVAILABLE 1
 #elif defined(HAVE_COCOATOUCH) && defined(__IPHONE_16_0)
 #  define METAL_HDR_AVAILABLE 1
@@ -581,7 +581,7 @@ static MTLPixelFormat metal_apply_hdr_layer_config(CAMetalLayer *layer,
  * so HDR support flags won't be announced on older OSes. */
 static bool metal_display_supports_edr(void)
 {
-#ifdef OSX
+#if TARGET_OS_OSX
    if (@available(macOS 10.15, *))
    {
       NSScreen *screen = [NSScreen mainScreen];
@@ -815,7 +815,7 @@ static matrix_float4x4 matrix_proj_ortho(float left, float right, float top, flo
       _inflightSemaphore         = dispatch_semaphore_create(MAX_INFLIGHT);
       _device                    = d;
       _layer                     = layer;
-#ifdef OSX
+#if TARGET_OS_OSX
       _layer.framebufferOnly     = NO;
       _layer.displaySyncEnabled  = YES;
 #endif
@@ -1073,14 +1073,14 @@ static matrix_float4x4 matrix_proj_ortho(float left, float right, float top, flo
 
 - (void)setDisplaySyncEnabled:(bool)displaySyncEnabled
 {
-#ifdef OSX
+#if TARGET_OS_OSX
    _layer.displaySyncEnabled = displaySyncEnabled;
 #endif
 }
 
 - (bool)displaySyncEnabled
 {
-#ifdef OSX
+#if TARGET_OS_OSX
    return _layer.displaySyncEnabled;
 #else
    return NO;
@@ -1481,7 +1481,7 @@ static matrix_float4x4 matrix_proj_ortho(float left, float right, float top, flo
                                                                 width:w
                                                                height:h
                                                             mipmapped:NO];
-#ifdef OSX
+#if TARGET_OS_OSX
       td.storageMode = MTLStorageModeManaged;
 #else
       td.storageMode = MTLStorageModeShared;
@@ -1831,7 +1831,7 @@ static matrix_float4x4 matrix_proj_ortho(float left, float right, float top, flo
    [cre drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
    [cre endEncoding];
 
-#ifdef OSX
+#if TARGET_OS_OSX
    /* Force a CPU-visible copy for Managed storage so getBytes works. */
    id<MTLBlitCommandEncoder> bce = [cb blitCommandEncoder];
    [bce synchronizeResource:dst];
@@ -2478,7 +2478,7 @@ static float metal_hdr_pq_to_nits(float pq)
 
    if (_blitCommandBuffer)
    {
-#ifdef OSX
+#if TARGET_OS_OSX
       if (_captureEnabled)
       {
          id<MTLBlitCommandEncoder> bce = [_blitCommandBuffer blitCommandEncoder];
@@ -2589,7 +2589,7 @@ static const NSUInteger kConstantAlignment = 4;
 
 - (void)commitRanges
 {
-#ifdef OSX
+#if TARGET_OS_OSX
    BufferNode *n;
    for (n = _head; n != nil; n = n.next)
    {

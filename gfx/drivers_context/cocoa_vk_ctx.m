@@ -25,7 +25,7 @@
 #else
 #include <ApplicationServices/ApplicationServices.h>
 #endif
-#ifdef OSX
+#if TARGET_OS_OSX
 #include <AppKit/NSScreen.h>
 #endif
 
@@ -127,7 +127,7 @@ static void cocoa_vk_gfx_ctx_input_driver(void *data,
    *input_data = NULL;
 }
 
-#if defined(OSX)
+#if TARGET_OS_OSX
 /* The view's frame is in points; a Retina backing store has more
  * pixels than points. -convertRectToBacking: is 10.7, so the view is
  * asked once - the answer cannot change while the process runs - and
@@ -281,7 +281,7 @@ static void *cocoa_vk_gfx_ctx_get_context_data(void *data)
    return &cocoa_ctx->vk.context;
 }
 
-#ifdef OSX
+#if TARGET_OS_OSX
 typedef struct
 {
    void    *data;
@@ -565,7 +565,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoavk = {
    NULL, /* get_video_output_next */
    cocoa_get_metrics,
    NULL, /* translate_aspect */
-#ifdef OSX
+#if TARGET_OS_OSX
    video_driver_update_title,
 #else
    NULL, /* update_title */

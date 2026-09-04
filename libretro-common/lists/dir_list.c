@@ -270,7 +270,7 @@ static int dir_list_read_ctx(size_t dir_len, struct dir_list_ctx *ctx)
          if (!ctx->include_hidden && strcmp(name, "System Volume Information") == 0)
             continue;
 
-#if defined(IOS) || defined(OSX)
+#if defined(IOS) || TARGET_OS_OSX
          {
             size_t name_len = strlen(name);
             if (name_len >= 10
@@ -535,7 +535,7 @@ int dir_list_iter_step(dir_list_iter_t *iter,
          if (!iter->include_hidden && strcmp(name, "System Volume Information") == 0)
             continue;
 
-#if defined(IOS) || defined(OSX)
+#if defined(IOS) || TARGET_OS_OSX
          {
             size_t name_len = strlen(name);
             if (name_len >= 10

@@ -116,7 +116,7 @@ OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_MATERIALUI
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_OPENGL_CORE
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_PRESENCE
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_STDIN_CMD
-OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DOSX
+OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DTARGET_OS_OSX=1
 
 OTHER_CFLAGS_IOS_TVOS_SHARE = $(inherited) -DGLES_SILENCE_DEPRECATION
 OTHER_CFLAGS_IOS_TVOS_SHARE = $(inherited) -DHAVE_BTSTACK

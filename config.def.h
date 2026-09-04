@@ -1434,7 +1434,7 @@
 
 /* Saves non-volatile SRAM at a regular interval.
  * It is measured in seconds. A value of 0 disables autosave. */
-#if defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(__x86_64__) || defined(_M_X64) || defined(_WIN32) || defined(OSX) || defined(ANDROID) || defined(IOS) || defined(DINGUX)
+#if defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(__x86_64__) || defined(_M_X64) || defined(_WIN32) || TARGET_OS_OSX || defined(ANDROID) || defined(IOS) || defined(DINGUX)
 /* Flush to file every 10 seconds on modern platforms by default */
 #define DEFAULT_AUTOSAVE_INTERVAL 10
 #else
@@ -1537,7 +1537,7 @@
 
 /* Automatically saves a savestate at a regular interval.
  * It is measured in seconds. A value of 0 disables automatic savestate saving. */
-#if defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(__x86_64__) || defined(_M_X64) || defined(_WIN32) || defined(OSX) || defined(ANDROID) || defined(IOS) || defined(DINGUX)
+#if defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(__x86_64__) || defined(_M_X64) || defined(_WIN32) || TARGET_OS_OSX || defined(ANDROID) || defined(IOS) || defined(DINGUX)
 /* Disabled by default but can be enabled by user */
 #define DEFAULT_SAVESTATE_AUTOMATIC_INTERVAL 0
 #else
@@ -1599,7 +1599,7 @@
  * updated via the online updater
  * > Enable by default on all modern platforms with
  *   online updater support */
-#if defined(HAVE_ONLINE_UPDATER) && (defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(__x86_64__) || defined(_M_X64) || defined(_WIN32) || defined(OSX) || defined(ANDROID) || defined(IOS))
+#if defined(HAVE_ONLINE_UPDATER) && (defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(__x86_64__) || defined(_M_X64) || defined(_WIN32) || TARGET_OS_OSX || defined(ANDROID) || defined(IOS))
 #define DEFAULT_CORE_UPDATER_AUTO_BACKUP true
 #else
 #define DEFAULT_CORE_UPDATER_AUTO_BACKUP false
@@ -1936,7 +1936,7 @@
 #define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/blackberry/latest/"
 #elif defined(IOS)
 #define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/apple/ios/latest/"
-#elif defined(OSX)
+#elif TARGET_OS_OSX
 #if defined(__x86_64__)
 #if defined(HAVE_SSL)
 #define DEFAULT_BUILDBOT_SERVER_URL "https://buildbot.libretro.com/nightly/apple/osx/x86_64/latest/"

@@ -6092,7 +6092,7 @@ static config_file_t *open_default_config_file(void)
 
       RARCH_LOG("[Config] Created new config file in: \"%s\".\n", conf_path);
    }
-#elif defined(OSX)
+#elif TARGET_OS_OSX
    if (!fill_pathname_application_data(application_data,
             sizeof(application_data)))
    {
@@ -6826,7 +6826,7 @@ static bool config_load_file(global_t *global,
       }
    }
 
-#if defined(__APPLE__) && defined(OSX)
+#if defined(__APPLE__) && TARGET_OS_OSX
    if (     ((frontend_driver_get_cpu_architecture() == FRONTEND_ARCH_X86_64) &&
             string_ends_with(settings->paths.network_buildbot_url, "/arm64/latest/"))
          || ((frontend_driver_get_cpu_architecture() == FRONTEND_ARCH_ARMV8) &&

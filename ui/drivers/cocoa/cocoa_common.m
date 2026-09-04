@@ -77,7 +77,7 @@ extern bool RAIsVoiceOverRunning(void)
 {
    return UIAccessibilityIsVoiceOverRunning();
 }
-#elif OSX
+#elif TARGET_OS_OSX
 #import <AppKit/AppKit.h>
 extern bool RAIsVoiceOverRunning(void)
 {
@@ -93,7 +93,7 @@ extern bool RAIsVoiceOverRunning(void)
 }
 #endif
 
-#ifdef OSX
+#if TARGET_OS_OSX
 /* <CoreGraphics/CoreGraphics.h> is a 10.8+ umbrella header.  On the
  * 10.5 Leopard SDK the CGDirectDisplay + kCGDisplayRefreshRate
  * symbols come in through <ApplicationServices/ApplicationServices.h>.
@@ -152,7 +152,7 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
    steam_poll();
 #endif
 
-#if !TARGET_OS_TV && !defined(OSX)
+#if !TARGET_OS_TV && !TARGET_OS_OSX
    if (runloop_get_flags() & RUNLOOP_FLAG_FASTMOTION)
 #endif
       CFRunLoopWakeUp(CFRunLoopGetMain());
@@ -187,14 +187,14 @@ void rarch_stop_draw_observer(void)
 
 @implementation CocoaView
 
-#if defined(OSX)
+#if TARGET_OS_OSX
 #ifdef HAVE_COCOA_METAL
 - (BOOL)layer:(CALayer *)layer shouldInheritContentsScale:(CGFloat)newScale fromWindow:(NSWindow *)window { return YES; }
 #endif
 - (void)scrollWheel:(NSEvent *)theEvent { }
 #endif
 
-#if !defined(OSX) || __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
+#if !TARGET_OS_OSX || __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
 -(void)step:(CADisplayLink*)target API_AVAILABLE(macos(14.0), ios(3.1), tvos(3.1))
 {
 #if defined(IOS)
@@ -263,7 +263,7 @@ void rarch_stop_draw_observer(void)
 #endif
       }
       [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
-#elif defined(OSX) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
+#elif TARGET_OS_OSX && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
       if (@available(macOS 14.0, *))
       {
          CGDirectDisplayID did = CGMainDisplayID();
@@ -281,7 +281,7 @@ void rarch_stop_draw_observer(void)
    return view;
 }
 
-#if defined(OSX)
+#if TARGET_OS_OSX
 /* The main-thread half of ui_window_cocoa_set_title(). */
 - (void)setWindowTitle:(NSString *)title
 {
@@ -293,7 +293,7 @@ void rarch_stop_draw_observer(void)
 {
    self = [super init];
 
-#if defined(OSX)
+#if TARGET_OS_OSX
    [self setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
    NSArray *array = [NSArray arrayWithObjects:NSColorPboardType, NSFilenamesPboardType, nil];
    [self registerForDraggedTypes:array];
@@ -552,7 +552,7 @@ void rarch_stop_draw_observer(void)
 
 #endif
 
-#if defined(OSX)
+#if TARGET_OS_OSX
 - (void)setFrame:(NSRect)frameRect
 {
    [super setFrame:frameRect];
@@ -1014,7 +1014,7 @@ bool cocoa_main_thread_cond_wait_pump(scond_t *cond, slock_t *lock)
    return true;
 }
 
-#ifdef OSX
+#if TARGET_OS_OSX
 static void cocoa_show_mouse_mainthread_show(void *userdata)
 {
    [NSCursor unhide];
@@ -1056,7 +1056,7 @@ bool cocoa_has_focus(void *data)
 
 void cocoa_show_mouse(void *data, bool state)
 {
-#ifdef OSX
+#if TARGET_OS_OSX
     /* NSCursor is AppKit and must be driven from the main thread; with
      * threaded video this can be reached from the video worker thread,
      * so route it through the trampoline (direct call when already on
@@ -1068,7 +1068,7 @@ void cocoa_show_mouse(void *data, bool state)
 #endif
 }
 
-#ifdef OSX
+#if TARGET_OS_OSX
 #if MAC_OS_X_VERSION_10_7
 /* NOTE: backingScaleFactor only available on MacOS X 10.7 and up. */
 float cocoa_screen_get_backing_scale_factor(void)
@@ -1150,7 +1150,7 @@ float cocoa_screen_get_native_scale(void)
 
 float cocoa_get_refresh_rate(void)
 {
-#ifdef OSX
+#if TARGET_OS_OSX
 #ifdef RARCH_HAS_CGDISPLAYMODE_API
    /* macOS 10.6+: CGDisplayMode API. */
    CGDirectDisplayID main_id = CGMainDisplayID();
@@ -1303,7 +1303,7 @@ void cocoa_get_video_output_size(unsigned *width, unsigned *height,
 
 void *nsview_get_ptr(void)
 {
-#if defined(OSX)
+#if TARGET_OS_OSX
     video_driver_display_type_set(RARCH_DISPLAY_OSX);
     video_driver_display_set(0);
     video_driver_display_userdata_set((uintptr_t)g_instance);
@@ -1348,7 +1348,7 @@ CocoaView *cocoaview_get(void)
 #endif
 }
 
-#ifdef OSX
+#if TARGET_OS_OSX
 bool cocoa_get_metrics(
       void *data, enum display_metric_types type,
       float *value)

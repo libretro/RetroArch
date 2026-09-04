@@ -37,7 +37,7 @@
  * dispserv_apple.m's resolution-switching code) branch on this
  * macro.  Defined here so every translation unit sees the same
  * answer. */
-#if defined(OSX) && defined(MAC_OS_X_VERSION_10_6) && \
+#if TARGET_OS_OSX && defined(MAC_OS_X_VERSION_10_6) && \
     (!defined(MAC_OS_X_VERSION_MIN_REQUIRED) || \
      MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_6)
 #define RARCH_HAS_CGDISPLAYMODE_API 1

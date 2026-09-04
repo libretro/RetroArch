@@ -7079,7 +7079,7 @@ static int action_ok_open_picker(const char *path,
 #if TARGET_OS_IOS
    ios_show_file_sheet();
    return 0;
-#elif defined(OSX) && defined(HAVE_APPLE_STORE)
+#elif TARGET_OS_OSX && defined(HAVE_APPLE_STORE)
    osx_show_file_sheet();
    return 0;
 #elif defined(ANDROID) && defined(HAVE_SAF)

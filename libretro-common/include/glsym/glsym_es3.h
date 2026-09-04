@@ -22,7 +22,7 @@ typedef void *GLeglImageOES;
 #if !defined(GL_OES_fixed_point) && !defined(HAVE_OPENGLES2)
 typedef GLint GLfixed;
 #endif
-#if defined(OSX) && !defined(MAC_OS_X_VERSION_10_7)
+#if TARGET_OS_OSX && !defined(MAC_OS_X_VERSION_10_7)
 typedef long long int GLint64;
 typedef unsigned long long int GLuint64;
 typedef unsigned long long int GLuint64EXT;

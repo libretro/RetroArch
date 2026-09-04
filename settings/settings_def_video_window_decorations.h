@@ -6,7 +6,7 @@
 
 /* Everywhere but macOS, toggling decorations needs a video reinit;
  * two row variants keep that in the row instead of builder code. */
-#if defined(OSX) && !defined(SETTINGS_DEF_STRINGS_PASS)
+#if TARGET_OS_OSX && !defined(SETTINGS_DEF_STRINGS_PASS)
 S_BOOL(video_window_show_decorations, VIDEO_WINDOW_SHOW_DECORATIONS,
       "video_window_show_decorations",
       DEFAULT_WINDOW_DECORATIONS, SD_FLAG_NONE, 0, 0,

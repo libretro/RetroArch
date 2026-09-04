@@ -27,7 +27,7 @@
 
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreFoundation/CFArray.h>
-#if !defined(OSX) || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
+#if !TARGET_OS_OSX || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
 #import <AVFoundation/AVFoundation.h>
 #endif
 
@@ -40,7 +40,7 @@
 #include <objc/message.h>
 #endif
 
-#if defined(OSX)
+#if TARGET_OS_OSX
 #include <Carbon/Carbon.h>
 #include <IOKit/ps/IOPowerSources.h>
 #include <IOKit/ps/IOPSKeys.h>
@@ -123,7 +123,7 @@ typedef enum
    CFAllDomainsMask     = 0x0ffff  /* All domains: all of the above and future items */
 } CFDomainMask;
 
-#if defined(OSX)
+#if TARGET_OS_OSX
 static int speak_pid                            = 0;
 #endif
 
@@ -167,7 +167,7 @@ void CFTemporaryDirectory(char *s, size_t len)
 void get_ios_version(int *major, int *minor);
 #endif
 
-#if defined(OSX)
+#if TARGET_OS_OSX
 
 #define PMGMT_STRMATCH(a,b) (CFStringCompare(a, b, 0) == kCFCompareEqualTo)
 #define PMGMT_GETVAL(k,v)   CFDictionaryGetValueIfPresent(dict, CFSTR(k), (const void **) v)
@@ -284,7 +284,7 @@ static void frontend_darwin_get_name(char *s, size_t len)
    struct utsname buffer;
    if (uname(&buffer) == 0)
       strlcpy(s, buffer.machine, len);
-#elif defined(OSX)
+#elif TARGET_OS_OSX
    size_t _len = 0;
    sysctlbyname("hw.model", NULL, &_len, NULL, 0);
     if (_len)
@@ -302,7 +302,7 @@ static size_t frontend_darwin_get_os(char *s, size_t len, int *major, int *minor
 #else
    _len = strlcpy_lit(s, "iOS", len);
 #endif
-#elif defined(OSX)
+#elif TARGET_OS_OSX
 #if MAC_OS_X_VERSION_MIN_REQUIRED >= 101300 /* MAC_OS_X_VERSION_10_13 */
    NSOperatingSystemVersion version = NSProcessInfo.processInfo.operatingSystemVersion;
    *major = (int)version.majorVersion;
@@ -360,7 +360,7 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    CFRelease(bundle_url);
    path_resolve_realpath(bundle_path_buf, sizeof(bundle_path_buf), true);
 
-#if defined(OSX)
+#if TARGET_OS_OSX
    fill_pathname_application_data(application_data, sizeof(application_data));
 
    BOOL portable; /* steam || RAPortableInstall || portable.txt */
@@ -414,7 +414,7 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
 #if defined(HAVE_UPDATE_CORES) || defined(HAVE_STEAM)
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], application_data, "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
-#elif defined(OSX) && defined(HAVE_APPLE_STORE)
+#elif TARGET_OS_OSX && defined(HAVE_APPLE_STORE)
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], bundle_path_buf, "Contents/Frameworks", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
 #elif defined(IOS) && defined(HAVE_FRAMEWORKS)
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], bundle_path_buf, "Frameworks", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
@@ -507,7 +507,7 @@ static enum frontend_powerstate frontend_darwin_get_powerstate(
       int *seconds, int *percent)
 {
    enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
-#if defined(OSX)
+#if TARGET_OS_OSX
    CFIndex i, total;
    CFArrayRef list;
    bool have_ac, have_battery, charging;
@@ -583,7 +583,7 @@ static enum frontend_powerstate frontend_darwin_get_powerstate(
    return ret;
 }
 
-#ifndef OSX
+#if !TARGET_OS_OSX
 #ifndef CPU_ARCH_ABI64
 #define CPU_ARCH_ABI64          0x01000000
 #endif
@@ -595,7 +595,7 @@ static enum frontend_powerstate frontend_darwin_get_powerstate(
 
 static enum frontend_architecture frontend_darwin_get_arch(void)
 {
-#ifdef OSX
+#if TARGET_OS_OSX
     struct utsname buffer;
 
     if (uname(&buffer) != 0)
@@ -693,7 +693,7 @@ static enum retro_language frontend_darwin_get_user_language(void)
    return retroarch_get_language_from_iso(s);
 }
 
-#if defined(OSX)
+#if TARGET_OS_OSX
 static char* accessibility_mac_language_code(const char* language)
 {
    if (string_is_equal(language,"en"))
@@ -828,11 +828,11 @@ static bool accessibility_speak_macos(int speed,
 
 static bool frontend_darwin_is_narrator_running(void)
 {
-#if !defined(OSX) || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
+#if !TARGET_OS_OSX || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
    if (@available(macOS 10.14, iOS 7, tvOS 9, *))
       return true;
 #endif
-#if OSX
+#if TARGET_OS_OSX
    return is_narrator_running_macos();
 #else
    return false;
@@ -847,7 +847,7 @@ static bool frontend_darwin_accessibility_speak(int speed,
    else if (speed > 10)
       speed               = 10;
 
-#if !defined(OSX) || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
+#if !TARGET_OS_OSX || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
    if (@available(macOS 10.14, iOS 7, tvOS 9, *))
    {
       static dispatch_once_t once;
@@ -874,7 +874,7 @@ static bool frontend_darwin_accessibility_speak(int speed,
    }
 #endif
 
-#if defined(OSX)
+#if TARGET_OS_OSX
    return accessibility_speak_macos(speed, speak_text, priority);
 #else
    return false;

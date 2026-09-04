@@ -597,7 +597,7 @@ static int filebrowser_parse(
             MENU_ENUM_LABEL_NO_ITEMS,
             MENU_SETTING_NO_ITEM, 0, 0, NULL);
 
-#if defined(IOS) || (defined(OSX) && defined(HAVE_APPLE_STORE))
+#if defined(IOS) || (TARGET_OS_OSX && defined(HAVE_APPLE_STORE))
    {
       struct string_list *sandbox_list = string_list_new();
       dir_list_append(sandbox_list, "/private/var", NULL, true, false, false, false);
@@ -10485,7 +10485,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MENU_SCREENSAVER_TIMEOUT,                              PARSE_ONLY_UINT,   false},
                {MENU_ENUM_LABEL_MENU_SCREENSAVER_ANIMATION,                            PARSE_ONLY_UINT,   false},
                {MENU_ENUM_LABEL_MENU_SCREENSAVER_ANIMATION_SPEED,                      PARSE_ONLY_FLOAT,  false},
-#if !defined(OSX)
+#if !TARGET_OS_OSX
                {MENU_ENUM_LABEL_VIDEO_DISABLE_COMPOSITION,                             PARSE_ONLY_BOOL,   true},
 #endif
 #if defined(HAVE_QT) || defined(HAVE_COCOA)
