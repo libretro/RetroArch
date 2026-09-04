@@ -1,5 +1,8 @@
 #ifndef RGLGEN_DECL_H__
 #define RGLGEN_DECL_H__
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 #ifdef __cplusplus
 extern "C" {
 #endif

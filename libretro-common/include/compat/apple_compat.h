@@ -22,6 +22,9 @@
 
 #ifndef __APPLE_COMPAT_H
 #define __APPLE_COMPAT_H
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #ifdef __APPLE__
 #include <AvailabilityMacros.h>
@@ -79,9 +82,6 @@ NS_INLINE CF_RETURNS_RETAINED CFTypeRef CFBridgingRetainCompat(id X)
 
 #ifdef __OBJC__
 #include <objc/objc-runtime.h>
-#ifdef __MACH__
-#include <TargetConditionals.h>
-#endif
 #endif
 #endif
 

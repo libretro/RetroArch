@@ -9,9 +9,6 @@
 #ifndef SETTINGS_DEF_ENUM_PASS
 #ifndef S_BOOL_H
 #define S_BOOL_H S_BOOL
-#ifdef __MACH__
-#include <TargetConditionals.h>
-#endif
 #endif
 #endif
 /* Descriptor and configuration rows are #if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (TARGET_OS_IPHONE && TARGET_OS_TV); the string

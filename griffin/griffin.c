@@ -30,6 +30,9 @@
 
 #define VFS_FRONTEND
 #include <retro_environment.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #define CINTERFACE
 

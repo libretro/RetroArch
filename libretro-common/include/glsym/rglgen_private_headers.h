@@ -22,6 +22,9 @@
 
 #ifndef RGLGEN_PRIVATE_HEADERS_H__
 #define RGLGEN_PRIVATE_HEADERS_H__
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #if TARGET_OS_IPHONE
 
@@ -70,9 +73,6 @@
 /* We need to avoid including <GL/gl.h> on this platform */
 #include "switch/nx_gl.h"
 #include <GL/glext.h>
-#ifdef __MACH__
-#include <TargetConditionals.h>
-#endif
 #endif /* SWITCH */
 #endif
 

@@ -9,9 +9,6 @@
 #ifndef SETTINGS_DEF_ENUM_PASS
 #ifndef S_ACTION_H
 #define S_ACTION_H S_ACTION
-#ifdef __MACH__
-#include <TargetConditionals.h>
-#endif
 #endif
 #ifndef S_ACTION_EX_H
 #define S_ACTION_EX_H S_ACTION_EX
