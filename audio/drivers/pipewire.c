@@ -21,6 +21,7 @@
 
 #include <boolean.h>
 #include <retro_miscellaneous.h>
+#include <retro_atomic.h>
 #include <retro_endianness.h>
 
 #include "../common/pipewire.h"
@@ -47,6 +48,13 @@ typedef struct pipewire_audio
    uint32_t frame_size;
    struct spa_ringbuffer ring;
    uint8_t buffer[RINGBUFFER_SIZE];
+   /* Frames handed to the graph since the stream started, for the sink
+    * rate estimate. The process callback is the graph asking for a
+    * quantum, so what it takes is the device's own clock; silence
+    * during an underrun counts, because the quantum elapsed either
+    * way. Written only by the callback, read by the frontend through
+    * pwire_frames_consumed(). */
+   retro_atomic_size_t consumed;
 } pipewire_audio_t;
 
 static size_t pwire_calc_frame_size(enum spa_audio_format fmt, uint32_t nchannels)
@@ -592,8 +600,24 @@ static void pwire_playback_process_cb(void *data)
    buf->datas[0].chunk->stride = audio->frame_size;
    buf->datas[0].chunk->size   = n_bytes;
 
+   if (audio->frame_size)
+      retro_atomic_fetch_add_size(&audio->consumed,
+            (size_t)(n_bytes / audio->frame_size));
+
    pw_stream_queue_buffer(audio->stream, b);
    pw_thread_loop_signal(audio->pw->thread_loop, false);
+}
+
+/* Frames the graph has taken since the stream started. The process
+ * callback is the graph asking for a quantum, so counting what it takes
+ * counts device time - JACK's shape rather than ALSA's, with no queue
+ * to subtract. */
+static size_t pwire_frames_consumed(void *data)
+{
+   pipewire_audio_t *audio = (pipewire_audio_t*)data;
+   if (!audio)
+      return 0;
+   return retro_atomic_load_acquire_size(&audio->consumed);
 }
 
 static void pwire_free(void *data);
@@ -1074,5 +1098,6 @@ audio_driver_t audio_pipewire = {
       pwire_write_avail,
       pwire_buffer_size,
       NULL, /* write_raw */
-      pwire_wait_writable
+      pwire_wait_writable,
+      pwire_frames_consumed
 };

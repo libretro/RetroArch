@@ -45,6 +45,12 @@ typedef struct
    bool is_ready;
    /* Set by the timeout event pulse_wait_ms() arms. */
    bool timed_out;
+   /* Frames handed to the server since the stream opened, for the sink
+    * rate estimate; the device's own count is this less whatever is
+    * still queued. Written and read on the frontend's thread, under
+    * the mainloop lock where the writes happen. */
+   uint64_t frames_written;
+   unsigned rate;
 } pa_t;
 
 /* Bounds on the waits below. A server that is answering signals in
@@ -278,6 +284,7 @@ static void *pulse_init(const char *device, unsigned rate,
    spec.format   = is_little_endian() ? PA_SAMPLE_FLOAT32LE : PA_SAMPLE_FLOAT32BE;
    spec.channels = 2;
    spec.rate     = rate;
+   pa->rate      = rate;
 
    pa->stream    = pa_stream_new(pa->context, "audio", &spec, NULL);
    if (!pa->stream)
@@ -397,6 +404,8 @@ static ssize_t pulse_write(void *data, const void *s, size_t len)
          buf     += writable;
          len     -= writable;
          _len    += writable;
+         /* Stereo float32, fixed at stream setup. */
+         pa->frames_written += writable / (2 * sizeof(float));
       }
       else if (!pa->nonblock)
       {
@@ -485,6 +494,46 @@ static size_t pulse_buffer_size(void *data)
 {
    pa_t *pa = (pa_t*)data;
    return pa->buffer_size;
+}
+
+/* Frames the device has taken since the stream opened.
+ *
+ * PulseAudio has no callback per period to count, so this is ALSA's
+ * shape rather than JACK's: everything handed to the server, less what
+ * has not been played yet. pa_stream_get_latency() reports that
+ * remainder in microseconds - the server's queue plus the sink's own,
+ * which is what should be subtracted - and it is only meaningful once
+ * timing data has arrived, so a stream that has not got any yet
+ * reports nothing rather than a count that would read as a stall.
+ *
+ * The negative case is real: on a monitor source or right after a
+ * flush the latency can come back negative, meaning the server is
+ * ahead of the write pointer. Subtracting it would inflate the count. */
+static size_t pulse_frames_consumed(void *data)
+{
+   pa_t     *pa = (pa_t*)data;
+   pa_usec_t lat_usec;
+   int       negative = 0;
+   uint64_t  queued;
+
+   if (!pa || !pa->is_ready || !pa->rate)
+      return 0;
+
+   pa_threaded_mainloop_lock(pa->mainloop);
+   if (pa_stream_get_latency(pa->stream, &lat_usec, &negative) < 0)
+   {
+      pa_threaded_mainloop_unlock(pa->mainloop);
+      return 0;
+   }
+   queued = negative ? 0
+         : (uint64_t)((double)lat_usec * (double)pa->rate / 1000000.0);
+   if (queued > pa->frames_written)
+      queued = pa->frames_written;
+   {
+      size_t out = (size_t)(pa->frames_written - queued);
+      pa_threaded_mainloop_unlock(pa->mainloop);
+      return out;
+   }
 }
 
 /* Sleep on the mainloop until at least len bytes are writable. The
@@ -662,5 +711,6 @@ audio_driver_t audio_pulse = {
    pulse_write_avail,
    pulse_buffer_size,
    NULL, /* write_raw */
-   pulse_wait_writable
+   pulse_wait_writable,
+   pulse_frames_consumed
 };

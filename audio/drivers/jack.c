@@ -18,6 +18,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <retro_atomic.h>
+
 #include <jack/jack.h>
 #include <lists/string_list.h>
 #include <jack/types.h>
@@ -47,6 +49,13 @@ typedef struct jack
     * See the note there. */
    int64_t wait_us;
 #endif
+   /* Frames the server has asked for since the client started, for the
+    * sink rate estimate. ja_process_cb() is called once per period with
+    * the period's length, so this counts the device's own clock -
+    * silence during an underrun included, because the period elapsed
+    * either way. Written only by the process callback, read by the
+    * frontend through ja_frames_consumed(). */
+   retro_atomic_size_t consumed;
    volatile bool shutdown;
    bool nonblock;
    bool is_paused;
@@ -72,12 +81,26 @@ static size_t ja_read_deinterleaved(float *dst[2], jack_nframes_t dst_offset,
    return nframes;
 }
 
+/* Frames the server has taken since the client started. JACK calls the
+ * process callback once per period and says how long the period is, so
+ * counting what it asks for counts device time; there is no queue to
+ * subtract, unlike ALSA, because the callback is the device consuming
+ * the audio rather than a queue being filled. */
+static size_t ja_frames_consumed(void *data)
+{
+   jack_t *jd = (jack_t*)data;
+   if (!jd)
+      return 0;
+   return retro_atomic_load_acquire_size(&jd->consumed);
+}
+
 static int ja_process_cb(jack_nframes_t nframes, void *data)
 {
    jack_t *jd = (jack_t*)data;
 
    if (nframes > 0)
    {
+      retro_atomic_fetch_add_size(&jd->consumed, (size_t)nframes);
       int i;
       float *dst[2];
       jack_ringbuffer_data_t buf[2];
@@ -183,6 +206,8 @@ static void *ja_init(const char *device,
 
    if (!jd)
       return NULL;
+
+   retro_atomic_size_init(&jd->consumed, 0);
 
 #ifdef HAVE_THREADS
    jd->cond      = scond_new();
@@ -521,5 +546,6 @@ audio_driver_t audio_jack = {
    ja_write_avail,
    ja_buffer_size,
    NULL, /* write_raw */
-   ja_wait_writable
+   ja_wait_writable,
+   ja_frames_consumed
 };
