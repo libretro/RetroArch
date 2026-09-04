@@ -143,6 +143,10 @@ typedef struct coreaudio
    size_t write_ptr;          /* Only touched by main thread */
    size_t read_ptr;           /* Only touched by audio callback */
    retro_atomic_size_t filled; /* Samples currently in buffer */
+   /* Samples the device has asked the render callback for, since the
+    * unit started. Written only by the callback, read by the frontend
+    * through coreaudio_frames_consumed(). */
+   retro_atomic_size_t consumed;
 
    /* The output unit: ComponentInstance or AudioComponentInstance,
     * both of which are this type on every SDK. */
@@ -421,6 +425,10 @@ static OSStatus coreaudio_audio_write_cb(void *userdata,
    else
       rb_read(dev, outbuf, frames_needed);
 
+   /* What the device took, silence included: an underrun still consumes
+    * a period of device time, and it is device time this measures. */
+   retro_atomic_fetch_add_size(&dev->consumed, frames_needed);
+
    /* Wake writer if it might be waiting */
    coreaudio_signal(dev);
 
@@ -690,6 +698,7 @@ static void *coreaudio_init(const char *device,
       goto error;
 
    retro_atomic_size_init(&dev->filled, 0);
+   retro_atomic_size_init(&dev->consumed, 0);
    dev->write_ptr = 0;
    dev->read_ptr  = 0;
 
@@ -1027,6 +1036,25 @@ static void coreaudio_device_list_free(void *data, void *array_list_data)
       string_list_free(sl);
 }
 
+/* Frames the device has taken since the unit started.
+ *
+ * The render callback is the device asking for exactly one period, so
+ * counting what it asks for counts device time - the same way the
+ * WASAPI pump and the ASIO callback do it, and unlike ALSA, which has a
+ * queue to subtract. Silence during an underrun counts: the period
+ * elapsed whether or not there was audio for it, and this measures
+ * elapsed device time rather than delivered audio.
+ *
+ * The ring is counted in samples, so the interleaved stereo the output
+ * bus is fixed to makes a frame two of them. */
+static size_t coreaudio_frames_consumed(void *data)
+{
+   coreaudio_t *dev = (coreaudio_t*)data;
+   if (!dev)
+      return 0;
+   return retro_atomic_load_acquire_size(&dev->consumed) / 2;
+}
+
 audio_driver_t audio_coreaudio = {
    coreaudio_init,
    coreaudio_write,
@@ -1042,7 +1070,8 @@ audio_driver_t audio_coreaudio = {
    coreaudio_write_avail,
    coreaudio_buffer_size,
    coreaudio_write_raw,
-   coreaudio_wait_writable
+   coreaudio_wait_writable,
+   coreaudio_frames_consumed
 };
 
 
