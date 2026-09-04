@@ -134,6 +134,14 @@ static void sdl3_vk_ctx_swap_interval(void *data, int interval)
    }
 }
 
+static bool sdl3_vk_ctx_presentable(void *data)
+{
+   gfx_ctx_sdl3_vk_data_t *sdl = (gfx_ctx_sdl3_vk_data_t*)data;
+   if (!sdl)
+      return false;
+   return sdl->vk.swapchain != VK_NULL_HANDLE;
+}
+
 static void sdl3_vk_ctx_swap_buffers(void *data)
 {
    gfx_ctx_sdl3_vk_data_t *sdl = (gfx_ctx_sdl3_vk_data_t*)data;
@@ -302,5 +310,6 @@ const gfx_ctx_driver_t gfx_ctx_sdl3_vk = {
     * do the same. */
    NULL,
    NULL, /* create_surface */
-   NULL  /* destroy_surface */
+   NULL  /* destroy_surface */,
+   sdl3_vk_ctx_presentable
 };

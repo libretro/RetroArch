@@ -239,6 +239,18 @@ static void *gfx_ctx_wl_get_context_data(void *data)
    return &wl->vk.context;
 }
 
+static bool gfx_ctx_wl_vk_presentable(void *data)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   if (!wl)
+      return false;
+   /* Also false while the compositor says the surface is suspended:
+    * it is not being scanned out, so a presented frame goes nowhere. */
+   if (wl->suspended)
+      return false;
+   return wl->vk.swapchain != VK_NULL_HANDLE;
+}
+
 static void gfx_ctx_wl_swap_buffers(void *data)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
@@ -336,5 +348,6 @@ const gfx_ctx_driver_t gfx_ctx_vk_wayland = {
    gfx_ctx_wl_get_context_data,
    NULL,
    NULL, /* create_surface */
-   NULL  /* destroy_surface */
+   NULL  /* destroy_surface */,
+   gfx_ctx_wl_vk_presentable
 };

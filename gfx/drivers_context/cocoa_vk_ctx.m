@@ -249,6 +249,14 @@ static void cocoa_vk_gfx_ctx_swap_interval(void *data, int i)
    }
 }
 
+static bool cocoa_vk_gfx_ctx_presentable(void *data)
+{
+   cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
+   if (!cocoa_ctx)
+      return false;
+   return cocoa_ctx->vk.swapchain != VK_NULL_HANDLE;
+}
+
 static void cocoa_vk_gfx_ctx_swap_buffers(void *data)
 {
    cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
@@ -596,5 +604,6 @@ const gfx_ctx_driver_t gfx_ctx_cocoavk = {
    cocoa_vk_gfx_ctx_get_context_data,
    NULL, /* make_current */
    NULL, /* create_surface */
-   NULL  /* destroy_surface */
+   NULL  /* destroy_surface */,
+   cocoa_vk_gfx_ctx_presentable
 };

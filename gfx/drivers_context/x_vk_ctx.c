@@ -145,6 +145,12 @@ static void gfx_ctx_x_vk_swap_interval(void *data, int interval)
    }
 }
 
+static bool gfx_ctx_x_vk_presentable(void *data)
+{
+   gfx_ctx_x_vk_data_t *x = (gfx_ctx_x_vk_data_t*)data;
+   return x && x->vk.swapchain != VK_NULL_HANDLE;
+}
+
 static void gfx_ctx_x_vk_swap_buffers(void *data)
 {
    gfx_ctx_x_vk_data_t *x = (gfx_ctx_x_vk_data_t*)data;
@@ -610,5 +616,6 @@ const gfx_ctx_driver_t gfx_ctx_vk_x = {
    gfx_ctx_x_vk_get_context_data,
    NULL, /* make_current */
    NULL, /* create_surface */
-   NULL  /* destroy_surface */
+   NULL  /* destroy_surface */,
+   gfx_ctx_x_vk_presentable
 };

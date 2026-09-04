@@ -8351,6 +8351,40 @@ end:
          runloop_st->pace |= RUNLOOP_PACE_TIMER;
    }
 
+   /* Nothing to present to - a minimised or zero-sized window, a
+    * surface the compositor has suspended, a swapchain that could not
+    * be created. The video path still runs and still costs nothing
+    * much, but the frame goes nowhere, and none of the display-side
+    * pacing above can hold the loop: there is no vblank to block on
+    * and no scanout to lock to. Left alone, the loop spins.
+    *
+    * The context drivers used to sleep inside swap_buffers() for this,
+    * where the frontend could not see it and it stacked with whatever
+    * else was pacing. The wait belongs here, with the rest of the
+    * pacing, and only when nothing else is already holding the loop -
+    * audio still blocks with the window hidden, and fast-forward is
+    * meant to run unthrottled. */
+   if (     !(runloop_st->pace & (RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_AUDIO
+                                | RUNLOOP_PACE_SCANLINE | RUNLOOP_PACE_TIMER))
+         && !(input_st->flags & INP_FLAG_NONBLOCKING)
+         && !video_context_driver_presentable())
+      runloop_st->pace |= RUNLOOP_PACE_NOWINDOW;
+
+   if (runloop_st->pace & RUNLOOP_PACE_NOWINDOW)
+   {
+      /* One frame of content time, so a window that comes back is
+       * noticed within a frame and the core keeps its own rate while
+       * hidden. Bounded either way for a core that reports nonsense. */
+      retro_time_t period = (video_st->core_hz > 0.0f)
+            ? (retro_time_t)(1000000.0f / video_st->core_hz) : 16667;
+      if (period < 1000)
+         period = 1000;
+      else if (period > 100000)
+         period = 100000;
+      retro_sleep_us((unsigned)period);
+      return 1;
+   }
+
    /* if there's a fast forward limit, inject sleeps to keep from going too fast. */
    {
       retro_time_t frame_limit_min = runloop_st->frame_limit_minimum_time;

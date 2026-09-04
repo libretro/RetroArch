@@ -251,6 +251,14 @@ static bool android_gfx_ctx_vk_bind_api(void *data,
 
 static bool android_gfx_ctx_vk_suppress_screensaver(void *data, bool enable) { return false; }
 
+static bool android_gfx_ctx_vk_presentable(void *data)
+{
+   android_ctx_data_t *and = (android_ctx_data_t*)data;
+   if (!and)
+      return false;
+   return and->vk.swapchain != VK_NULL_HANDLE;
+}
+
 static void android_gfx_ctx_vk_swap_buffers(void *data)
 {
    android_ctx_data_vk_t *and  = (android_ctx_data_vk_t*)data;
@@ -340,5 +348,6 @@ const gfx_ctx_driver_t gfx_ctx_vk_android = {
    android_gfx_ctx_vk_get_context_data,
    NULL,                                     /* make_current */
    android_gfx_ctx_vk_create_surface,
-   android_gfx_ctx_vk_destroy_surface
+   android_gfx_ctx_vk_destroy_surface,
+   android_gfx_ctx_vk_presentable
 };

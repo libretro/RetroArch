@@ -106,6 +106,12 @@ static void gfx_ctx_w_vk_check_window(void *data, bool *quit,
    }
 }
 
+static bool gfx_ctx_w_vk_presentable(void *data)
+{
+   (void)data;
+   return win32_vk.swapchain != VK_NULL_HANDLE;
+}
+
 static void gfx_ctx_w_vk_swap_buffers(void *data)
 {
    if (win32_vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
@@ -335,5 +341,6 @@ const gfx_ctx_driver_t gfx_ctx_w_vk = {
    gfx_ctx_w_vk_get_context_data,
    NULL,                            /* make_current */
    NULL,                            /* create_surface */
-   NULL                             /* destroy_surface */
+   NULL                             /* destroy_surface */,
+   gfx_ctx_w_vk_presentable
 };

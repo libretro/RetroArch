@@ -613,6 +613,21 @@ typedef struct gfx_ctx_driver
     * underlying graphics context/device. Returns true on success, or if no
     * window surface is bound, and false on error. */
    bool (*destroy_surface)(void *data);
+
+   /* Optional. False while the context has nothing to present to - a
+    * minimised or zero-sized window, a surface the compositor has
+    * suspended, a swapchain that could not be created. swap_buffers()
+    * still has to be called and still does the right thing; this only
+    * tells the layer above that the frame went nowhere, so that it can
+    * pace the loop itself instead of the context sleeping inside the
+    * frame path where the frontend's own pacing cannot see it.
+    *
+    * A NULL entry means "always presentable", which is what every
+    * driver that does not implement it did before.
+    *
+    * Placed last so drivers using positional initializers leave it
+    * NULL without shifting any other vtable slot. */
+   bool (*presentable)(void *data);
 } gfx_ctx_driver_t;
 
 typedef struct gfx_ctx_mode
@@ -1436,6 +1451,10 @@ bool video_context_driver_get_refresh_rate(float *refresh_rate);
 bool video_context_driver_set_flags(gfx_ctx_flags_t *flags);
 
 bool video_context_driver_get_metrics(gfx_ctx_metrics_t *metrics);
+
+/* False while the context has nothing to present to; see the
+ * presentable member of gfx_ctx_driver_t. */
+bool video_context_driver_presentable(void);
 
 void video_context_driver_destroy(gfx_ctx_driver_t *ctx_driver);
 

@@ -374,7 +374,8 @@ enum runloop_pace_source
    RUNLOOP_PACE_VSYNC    = (1 << 0), /* display: present blocks          */
    RUNLOOP_PACE_AUDIO    = (1 << 1), /* audio crystal: write blocks      */
    RUNLOOP_PACE_SCANLINE = (1 << 2), /* display: vblank-locked wait      */
-   RUNLOOP_PACE_TIMER    = (1 << 3)  /* CPU counter: frame-limit sleep   */
+   RUNLOOP_PACE_TIMER    = (1 << 3), /* CPU counter: frame-limit sleep   */
+   RUNLOOP_PACE_NOWINDOW = (1 << 4)  /* nothing to present to: wait      */
 };
 
 typedef struct runloop runloop_state_t;

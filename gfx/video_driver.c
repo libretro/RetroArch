@@ -4044,6 +4044,19 @@ void video_context_driver_free(void)
    video_st->context_data    = NULL;
 }
 
+/* False only while the context has told us it has nothing to present
+ * to - a minimised or zero-sized window, a suspended surface, a
+ * swapchain that could not be created. Drivers that do not implement
+ * the hook are always presentable, which is how it was before. */
+bool video_context_driver_presentable(void)
+{
+   video_driver_state_t *video_st  = &video_driver_st;
+   const gfx_ctx_driver_t *ctx     = &video_st->current_video_context;
+   if (ctx && ctx->presentable)
+      return ctx->presentable((void*)video_st->context_data);
+   return true;
+}
+
 bool video_context_driver_get_metrics(gfx_ctx_metrics_t *metrics)
 {
    video_driver_state_t *video_st  = &video_driver_st;
@@ -5625,6 +5638,8 @@ void video_driver_frame(const void *data, unsigned width,
                plen += strlcpy(pbuf + plen, plen ? "+Scanline" : "Scanline", sizeof(pbuf) - plen);
             if (pace & RUNLOOP_PACE_TIMER)
                plen += strlcpy(pbuf + plen, plen ? "+Timer" : "Timer", sizeof(pbuf) - plen);
+            if (pace & RUNLOOP_PACE_NOWINDOW)
+               plen += strlcpy(pbuf + plen, plen ? "+NoWindow" : "NoWindow", sizeof(pbuf) - plen);
             if (!plen)
                strlcpy(pbuf, "None", sizeof(pbuf));
             __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
