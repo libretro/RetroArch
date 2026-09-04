@@ -43,23 +43,9 @@ typedef struct ringbuffer
 
 typedef ringbuffer_t * ringbuffer_h;
 
-/* len is the only word shared between the writer (the audio thread)
- * and the reader (the render callback); the pointers each belong to
- * one side. The reader's load is an acquire: the writer publishes
- * samples with a release-add, and a relaxed load - what stood here -
- * does not order the buffer reads that follow it after the length on
- * ARM64, so the callback could see the new length and stale samples at
- * the wrap. x86 gave the acquire for free; Apple silicon does not. On
- * both the read-modify-writes compile to the same instruction as
- * before - lock add, ldaddal. */
-static inline size_t rb_len(ringbuffer_h r)
-{
-   return (size_t)retro_atomic_load_acquire_int(&r->len);
-}
-
 static inline size_t rb_avail(ringbuffer_h r)
 {
-   return r->cap - rb_len(r);
+   return r->cap - (size_t)retro_atomic_load_acquire_int(&r->len);
 }
 
 /* No modulo. cap is latency * rate / 1000, not a power of two, and
@@ -80,16 +66,6 @@ static inline void rb_advance_read(ringbuffer_h r)
    if (p == r->cap)
       p = 0;
    r->read_ptr = p;
-}
-
-static inline void rb_len_add(ringbuffer_h r, int n)
-{
-   retro_atomic_fetch_add_int(&r->len, n);
-}
-
-static inline void rb_len_sub(ringbuffer_h r, int n)
-{
-   retro_atomic_fetch_sub_int(&r->len, n);
 }
 
 static void rb_init(ringbuffer_h r, size_t cap)
@@ -124,7 +100,7 @@ static void rb_write_data(ringbuffer_h r, const float *data, size_t len)
    memcpy(r->buffer, data + first_write, rest_write * sizeof(float));
 
    rb_advance_write_n(r, n);
-   rb_len_add(r, (int)n);
+   retro_atomic_fetch_add_int(&r->len, (int)n);
 }
 
 /* Read non-interleaved: separate L and R buffers */
@@ -132,7 +108,7 @@ static void rb_read_data_noninterleaved(ringbuffer_h r,
       float *d0, float *d1, size_t len)
 {
    size_t need = len * 2;
-   size_t have = rb_len(r);
+   size_t have = (size_t)retro_atomic_load_acquire_int(&r->len);
    size_t n    = MIN(have, need);
    size_t i    = 0;
 
@@ -144,7 +120,7 @@ static void rb_read_data_noninterleaved(ringbuffer_h r,
       rb_advance_read(r);
    }
 
-   rb_len_sub(r, (int)n);
+   retro_atomic_fetch_sub_int(&r->len, (int)n);
 
    /* Fill remainder with silence on underflow */
    for (; i < len; i++)
@@ -159,7 +135,7 @@ static void rb_read_data_interleaved(ringbuffer_h r,
       float *out, size_t frames)
 {
    size_t need    = frames * 2; /* samples needed */
-   size_t have    = rb_len(r);
+   size_t have    = (size_t)retro_atomic_load_acquire_int(&r->len);
    size_t n       = MIN(have, need);
    size_t samples = 0;
 
@@ -169,7 +145,7 @@ static void rb_read_data_interleaved(ringbuffer_h r,
       rb_advance_read(r);
    }
 
-   rb_len_sub(r, (int)n);
+   retro_atomic_fetch_sub_int(&r->len, (int)n);
 
    /* Fill remainder with silence on underflow */
    for (; samples < need; samples++)
@@ -394,7 +370,8 @@ static void rb_read_data_interleaved(ringbuffer_h r,
 }
 
 /* Context for AudioConverter callback */
-typedef struct {
+typedef struct
+{
    const int16_t *data;
    size_t frames_left;
 } coreaudio3_converter_ctx_t;
