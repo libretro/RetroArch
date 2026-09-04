@@ -7915,8 +7915,25 @@ end:
  * button input in order to wake up the loop,
  * -1 if we forcibly quit out of the RetroArch iteration loop.
  **/
+/* One frame of the content's own time, in microseconds, for the pacing
+ * paths that need a period rather than a deadline. Bounded either way:
+ * a core is free to report a nonsense rate, and neither a busy loop
+ * nor a ten-second stall is an acceptable reading of one. */
+static retro_time_t runloop_content_frame_time(
+      const video_driver_state_t *video_st)
+{
+   retro_time_t period = (video_st->core_hz > 0.0f)
+         ? (retro_time_t)(1000000.0f / video_st->core_hz) : 16667;
+   if (period < 1000)
+      return 1000;
+   if (period > 100000)
+      return 100000;
+   return period;
+}
+
 int runloop_iterate(void)
 {
+   retro_time_t pace_limit_min;
    input_driver_state_t         *input_st = input_state_get_ptr();
    audio_driver_state_t         *audio_st = audio_state_get_ptr();
    video_driver_state_t         *video_st = video_state_get_ptr();
@@ -8306,6 +8323,10 @@ end:
     * reset there made it read NONE on every frame. Paths that return
     * before this block set it themselves. */
    runloop_st->pace = RUNLOOP_PACE_NONE;
+   /* What the frame limiter below will pace to. Normally the
+    * fast-forward limit; replaced by the content frame time when
+    * nothing else is pacing at all (see below). */
+   pace_limit_min   = runloop_st->frame_limit_minimum_time;
    /* The vsync bit reads the driver's blocking state, not the setting:
     * fast-forward (INP_FLAG_NONBLOCKING) and RUNLOOP_FLAG_FORCE_NONBLOCK
     * both put the driver into non-blocking presentation while the
@@ -8374,20 +8395,39 @@ end:
    {
       /* One frame of content time, so a window that comes back is
        * noticed within a frame and the core keeps its own rate while
-       * hidden. Bounded either way for a core that reports nonsense. */
-      retro_time_t period = (video_st->core_hz > 0.0f)
-            ? (retro_time_t)(1000000.0f / video_st->core_hz) : 16667;
-      if (period < 1000)
-         period = 1000;
-      else if (period > 100000)
-         period = 100000;
-      retro_sleep_us((unsigned)period);
+       * hidden. */
+      retro_sleep_us((unsigned)runloop_content_frame_time(video_st));
       return 1;
+   }
+
+   /* Nothing at all is holding the loop: vsync off, audio sync off or
+    * not writing, no scanline lock, and no fast-forward limit to fall
+    * back on - frame_limit_minimum_time is zero whenever the ratio is
+    * "unlimited", which is the default, so the branch above cannot
+    * engage however slowly the core is running. The loop then spins as
+    * fast as the machine allows: a core with a light frame runs at
+    * hundreds of frames a second, burning a core and drowning the
+    * display in frames nobody asked for. It is not fast-forward - the
+    * user did not ask for it - it is the absence of anyone saying when
+    * the next frame is due.
+    *
+    * So the timer takes it, at the content's own rate: 1.0x, the speed
+    * the core is meant to run at, which is what every other pacing
+    * source would have produced. Only when the record is empty, so it
+    * never competes with one that is doing the job, and never under
+    * fast-forward, which is the case where running unthrottled is the
+    * point. */
+   if (     runloop_st->pace == RUNLOOP_PACE_NONE
+         && !(input_st->flags & INP_FLAG_NONBLOCKING)
+         && !(runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
+   {
+      runloop_st->pace         |= RUNLOOP_PACE_TIMER;
+      pace_limit_min            = runloop_content_frame_time(video_st);
    }
 
    /* if there's a fast forward limit, inject sleeps to keep from going too fast. */
    {
-      retro_time_t frame_limit_min = runloop_st->frame_limit_minimum_time;
+      retro_time_t frame_limit_min = pace_limit_min;
       if (runloop_st->pace & RUNLOOP_PACE_TIMER)
       {
          const retro_time_t end_frame_time  = cpu_features_get_time_usec();
