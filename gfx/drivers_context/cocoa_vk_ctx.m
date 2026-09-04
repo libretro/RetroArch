@@ -254,6 +254,15 @@ static bool cocoa_vk_gfx_ctx_presentable(void *data)
    cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
    if (!cocoa_ctx)
       return false;
+#if TARGET_OS_OSX
+   /* Miniaturised is asked of the window directly; the swapchain check
+    * covers the moment before it has been torn down or rebuilt. */
+   {
+      CocoaView *g_view = cocoaview_get();
+      if (g_view && [[g_view window] isMiniaturized])
+         return false;
+   }
+#endif
    return cocoa_ctx->vk.swapchain != VK_NULL_HANDLE;
 }
 

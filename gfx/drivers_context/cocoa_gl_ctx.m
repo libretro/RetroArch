@@ -864,6 +864,28 @@ static void cocoa_gl_gfx_ctx_get_video_output_size(void *data,
    cocoa_get_video_output_size(width, height, desc, desc_len);
 }
 
+/* A miniaturised window has nothing behind it to present to:
+ * -flushBuffer returns at once rather than blocking to the display's
+ * refresh, so with vsync as the only pacing the loop would spin.
+ * AppKit keeps the state, so there is none of ours to keep, and it is
+ * asked of the window rather than tracked through notifications.
+ *
+ * macOS only: on iOS and tvOS the system stops the CADisplayLink when
+ * the app leaves the foreground, so there is no loop to pace, and
+ * UIWindow has no equivalent of -isMiniaturized. */
+static bool cocoa_gl_gfx_ctx_presentable(void *data)
+{
+#if TARGET_OS_OSX
+   CocoaView *g_view = cocoaview_get();
+   (void)data;
+   if (g_view)
+      return ![[g_view window] isMiniaturized];
+#else
+   (void)data;
+#endif
+   return true;
+}
+
 const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    cocoa_gl_gfx_ctx_init,
    cocoa_gl_gfx_ctx_destroy,
@@ -909,5 +931,6 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    NULL, /* get_context_data */
    NULL, /* make_current */
    NULL, /* create_surface */
-   NULL  /* destroy_surface */
+   NULL, /* destroy_surface */
+   cocoa_gl_gfx_ctx_presentable
 };

@@ -253,8 +253,8 @@ static bool android_gfx_ctx_vk_suppress_screensaver(void *data, bool enable) { r
 
 static bool android_gfx_ctx_vk_presentable(void *data)
 {
-   android_ctx_data_t *and = (android_ctx_data_t*)data;
-   if (!and)
+   android_ctx_data_vk_t *and = (android_ctx_data_vk_t*)data;
+   if (!and || and->surface_lost)
       return false;
    return and->vk.swapchain != VK_NULL_HANDLE;
 }
