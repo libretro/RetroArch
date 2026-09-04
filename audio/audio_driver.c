@@ -875,6 +875,21 @@ static void audio_driver_sink_update(audio_driver_state_t *audio_st,
          || !config_get_ptr()->bools.audio_sink_rate_estimation)
       return;
 
+   /* The window gate first, then the driver.
+    *
+    * This runs after every write, so at the core's frame rate, while
+    * the count it fetches is used once per four-second window - two
+    * hundred and forty calls at 60 fps to serve one. frames_consumed()
+    * is not always a cheap read either: it is an atomic load on WASAPI
+    * and CoreAudio, but snd_pcm_delay() on ALSA and an unwrapped play
+    * cursor on dsound. Asking only when the answer will be used is the
+    * same measurement for a fraction of the calls.
+    *
+    * The baseline case still has to ask, since it is the call that
+    * establishes the starting count. */
+   if (audio_st->sink_baseline_start && now_usec < audio_st->sink_check_at)
+      return;
+
    consumed = audio->frames_consumed(audio_st->context_audio_data);
 
    if (!audio_st->sink_baseline_start)
@@ -882,9 +897,6 @@ static void audio_driver_sink_update(audio_driver_state_t *audio_st,
       audio_driver_sink_restart(audio_st, now_usec, consumed);
       return;
    }
-
-   if (now_usec < audio_st->sink_check_at)
-      return;
 
    /* Close the window. */
    {
@@ -999,6 +1011,47 @@ static void audio_driver_sink_update(audio_driver_state_t *audio_st,
          r = 1.0 + AUDIO_SINK_BIAS_MAX;
       if (r < 1.0 - AUDIO_SINK_BIAS_MAX)
          r = 1.0 - AUDIO_SINK_BIAS_MAX;
+      /* A correction every thirty seconds is only useful if the buffer
+       * survives thirty seconds of the mismatch it is correcting.
+       *
+       * Rate control works on the fill every frame; this works on the
+       * clock every thirty seconds, and the interval is not arbitrary -
+       * a device that counts in whole periods is only known to a period,
+       * which is 2500 ppm of noise over four seconds and 330 over thirty,
+       * so applying sooner would apply noise. That makes the cadence a
+       * floor, and a buffer small enough to empty inside it cannot be
+       * held by this mechanism at all: by the time the first correction
+       * exists the audio has already broken up, and the correction then
+       * stops further drift without refilling what has gone.
+       *
+       * Reported once rather than worked around, because the two things
+       * that do fix it are the user's to choose - rate control, which
+       * acts every frame, or more latency. Modelled in
+       * samples/audio/sink_rate against a field report: a 10.7 ms buffer
+       * with a 490 ppm mismatch first underran at eleven seconds, with
+       * the estimator on and off alike. */
+      if (!audio_st->sink_too_slow_warned && audio_st->buffer_size > 0)
+      {
+         size_t frame_bytes = (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
+               ? 2 * sizeof(float) : 2 * sizeof(int16_t);
+         double buffer_sec  = (double)audio_st->buffer_size
+               / (double)frame_bytes / (double)rate;
+         double mismatch    = fabs(r - 1.0);
+         /* Half the buffer: rate control's setpoint, and the room a
+          * drift has in either direction from a settled fill. */
+         double drain_sec   = mismatch > 0.0
+               ? (buffer_sec * 0.5) / mismatch : 0.0;
+
+         if (drain_sec > 0.0
+               && drain_sec < (double)AUDIO_SINK_BASELINE_USEC / 1e6)
+         {
+            audio_st->sink_too_slow_warned = true;
+            RARCH_WARN("[Audio] Sink rate: the device and the source differ by %+.0f ppm, which empties half of this driver's %.1f ms buffer in %.0f s - sooner than the %.0f s it takes to measure and apply a correction. The correction cannot hold a buffer this small: turn on Audio Rate Control, which works every frame, or raise Audio Latency.\n",
+                  (r - 1.0) * 1e6, buffer_sec * 1000.0, drain_sec,
+                  (double)AUDIO_SINK_BASELINE_USEC / 1e6);
+         }
+      }
+
       audio_st->sink_bias = r;
       audio_st->sink_applied++;
       audio_st->sink_apply_at = now_usec + AUDIO_SINK_BASELINE_USEC;
@@ -2542,6 +2595,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    audio_driver_st.sink_discarded      = 0;
    audio_driver_st.sink_drop_warned    = false;
    audio_driver_st.sink_implausible_warned = false;
+   audio_driver_st.sink_too_slow_warned = false;
 
    /* The driver's buffer, whether or not rate control will use it: it
     * is what the latency setting became, shown in the statistics

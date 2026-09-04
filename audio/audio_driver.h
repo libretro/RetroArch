@@ -576,6 +576,8 @@ typedef struct
    bool     sink_drop_warned;
    /* Said once when a measured ratio is too far off to be a crystal. */
    bool     sink_implausible_warned;
+   /* Said once when the buffer empties faster than corrections arrive. */
+   bool     sink_too_slow_warned;
    size_t   samples_since_drc;         /* int16 samples submitted since last update */
    size_t   drc_threshold_int16s;      /* one frame's worth of stereo int16 at the current rate */
    /* Set by audio_driver_frame_end() so the next flush recomputes the

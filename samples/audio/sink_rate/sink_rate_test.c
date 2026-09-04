@@ -348,6 +348,45 @@ int main(void)
       }
    }
 
+
+   /* 11. The correction's cadence against the buffer it corrects.
+    *
+    *     Thirty seconds between corrections is a floor, not a choice: a
+    *     device that counts in whole periods is only known to a period,
+    *     so applying sooner would apply noise. A buffer that empties
+    *     inside that floor therefore cannot be held by this mechanism,
+    *     and the frontend says so once rather than pretending. Checked
+    *     both ways round, since a warning that always fires is no more
+    *     use than one that never does. */
+   {
+      struct { size_t bytes; double ppm; const char *what; int want; } cases[] = {
+         /* 10.7 ms of int16 stereo at 48 kHz, the field report's buffer */
+         { (size_t)(0.0107 * 48000) * 4, 490.0,
+           "10.7 ms buffer, 490 ppm apart", 1 },
+         /* the same buffer, a mismatch small enough to outlast the cadence */
+         { (size_t)(0.0107 * 48000) * 4, 11.0,
+           "10.7 ms buffer, 11 ppm apart",  0 },
+         /* a roomy buffer with the same large mismatch */
+         { (size_t)(0.200  * 48000) * 4, 490.0,
+           "200 ms buffer, 490 ppm apart",  0 }
+      };
+      size_t c;
+
+      for (c = 0; c < sizeof(cases) / sizeof(cases[0]); c++)
+      {
+         double buffer_sec = (double)cases[c].bytes / 4.0 / 48000.0;
+         double drain_sec  = (buffer_sec * 0.5) / (cases[c].ppm / 1e6);
+         int    fires      = drain_sec < 30.0;
+
+         printf("   %-32s half drains in %5.1f s -> %s\n",
+               cases[c].what, drain_sec,
+               fires ? "too small for the cadence" : "the cadence can hold it");
+         CHECK(fires == cases[c].want,
+               "%s: expected the warning to %sfire", cases[c].what,
+               cases[c].want ? "" : "not ");
+      }
+   }
+
    printf("sink rate: measured through period-quantised counts and refused frames, converged, implausible ratios refused, rate control's pinned adjustment and pauses kept out\n");
    return 0;
 }
