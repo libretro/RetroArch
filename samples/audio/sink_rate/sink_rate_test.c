@@ -58,10 +58,18 @@ static audio_driver_t scripted = {
  * but the drop fraction; then the estimator runs. The write sites do
  * this accounting in the frontend; here it is done as they do. */
 static double core_pause_sec = 0.0;  /* per second: time the core produced nothing */
+/* The source's own rate against the host clock, apart from the
+ * resampler's ratio. Zero is a source that produces exactly nominal;
+ * a real one need not - a core that misses frames, or is paced by a
+ * display that is not quite its nominal rate, produces measurably
+ * less or more per host second, and the estimator sees that as part
+ * of the ratio it corrects. */
+static double src_ppm = 0.0;
 static void run_second(audio_driver_state_t *st)
 {
    double ratio   = st->src_ratio_curr / st->src_ratio_orig;
-   double offered = 48000.0 * ratio * (1.0 - core_pause_sec);
+   double offered = 48000.0 * ratio * (1.0 + src_ppm / 1e6)
+         * (1.0 - core_pause_sec);
    clock_usec           += 1000000;
    st->sink_offered_raw += (uint64_t)offered;
    st->sink_offered     += offered / ratio;
@@ -72,6 +80,7 @@ static void run_second(audio_driver_state_t *st)
 static void reset(audio_driver_state_t *st, bool control)
 {
    memset(st, 0, sizeof(*st));
+   src_ppm               = 0.0;
    st->current_audio     = &scripted;
    st->src_ratio_orig    = 1.0;
    st->src_ratio_curr    = 1.0;
@@ -256,6 +265,89 @@ int main(void)
       printf("%u failure(s)\n", failures);
       return 1;
    }
+
+   /* 10. Does the bias cause pops, or prevent them?
+    *
+    *     From a field report on CoreAudio: an 8 ms latency setting
+    *     giving a 10.7 ms device buffer, the device measured at +47 ppm
+    *     - an ordinary crystal - and the source at -442 ppm. Audio
+    *     broke up about a minute in, which is also about when the first
+    *     bias lands, so the bias was the obvious suspect.
+    *
+    *     The buffer is modelled here rather than the estimator alone:
+    *     each second the source delivers at its rate times the
+    *     resampler's ratio and the device takes at its own, and the
+    *     level moves by the difference. An underrun is a pop. The point
+    *     is to separate "the correction broke it" from "it was already
+    *     draining and the correction is what stops it".  */
+   {
+      const double cap  = 0.0107 * 48000.0;   /* the reported 10.7 ms */
+      int sink_on;
+
+      for (sink_on = 0; sink_on < 2; sink_on++)
+      {
+         double level    = cap * 0.5;
+         int    unders   = 0;
+         int    first    = -1;
+
+         reset(st, false);
+         dev_ppm = 47.0;
+         src_ppm = -442.0;
+         if (!sink_on)
+         {
+            /* Estimation off: nothing ever moves the ratio. */
+            st->sink_bias = 1.0;
+         }
+
+         for (i = 0; i < 180; i++)
+         {
+            double ratio, delivered, consumed;
+            if (sink_on)
+               run_second(st);
+            else
+               clock_usec += 1000000;
+
+            ratio     = st->src_ratio_curr / st->src_ratio_orig;
+            delivered = 48000.0 * ratio * (1.0 + src_ppm / 1e6);
+            consumed  = 48000.0 * (1.0 + dev_ppm / 1e6);
+            level    += delivered - consumed;
+
+            if (level < 0.0)
+            {
+               unders++;
+               if (first < 0)
+                  first = i + 1;
+               level = 0.0;
+            }
+            else if (level > cap)
+               level = cap;
+         }
+
+         if (first < 0)
+            printf("   %-20s no underruns in 180 s, bias %+.0f ppm\n",
+                  sink_on ? "estimation on:" : "estimation off:", bias_ppm(st));
+         else
+            printf("   %-20s first underrun at %d s, %d underrunning second(s), bias %+.0f ppm\n",
+                  sink_on ? "estimation on:" : "estimation off:",
+                  first, unders, bias_ppm(st));
+
+         /* The finding, asserted so it cannot quietly stop being true:
+          * the buffer is empty long before the first correction exists.
+          * A 490 ppm mismatch drains 10.7 ms from half full in about
+          * eleven seconds, and the earliest a bias can be applied is
+          * thirty. Whatever breaks up the audio here, it is not the
+          * correction - it has not happened yet. */
+         CHECK(first > 0 && first < 30,
+               "%s: expected the buffer to drain before any bias could be "
+               "applied, first underrun at %d s",
+               sink_on ? "estimation on" : "estimation off", first);
+         if (sink_on)
+            CHECK(bias_ppm(st) > 300.0,
+                  "the correction should have found the mismatch, got %+.0f ppm",
+                  bias_ppm(st));
+      }
+   }
+
    printf("sink rate: measured through period-quantised counts and refused frames, converged, implausible ratios refused, rate control's pinned adjustment and pauses kept out\n");
    return 0;
 }
