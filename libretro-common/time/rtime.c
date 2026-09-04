@@ -246,7 +246,13 @@ static void rtime_sleep_init(void)
 
 /* The timer object must not be shared between threads: SetWaitableTimer()
  * on a handle that another thread is already waiting on reschedules that
- * thread's wait. One handle per thread, created on first use. */
+ * thread's wait. One handle per thread, created on first use.
+ *
+ * Handles are process objects, so a thread that exits leaves its timer
+ * open until the process does. That is one kernel object per thread
+ * that ever slept, which is nothing for a fixed set of worker threads
+ * and something to be aware of for a thread created per event: sleep
+ * from a persistent thread instead. */
 static HANDLE rtime_sleep_timer_get(void)
 {
    HANDLE timer = (HANDLE)TlsGetValue(rtime_sleep_tls);
@@ -336,8 +342,9 @@ void retro_sleep(unsigned msec)
 
 /* Called from rtime_deinit(), i.e. main thread only, at program or
  * core termination - by which point no other thread may still be
- * calling retro_sleep(). Timer handles belonging to threads that have
- * already exited are reclaimed by the OS. */
+ * calling retro_sleep(). Only the calling thread's own timer can be
+ * closed here: the TLS slot is per thread, so other threads' handles
+ * cannot be reached, and they stay open until the process exits. */
 static void rtime_sleep_deinit(void)
 {
    HANDLE timer;
