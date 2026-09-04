@@ -8323,6 +8323,34 @@ end:
     * reset there made it read NONE on every frame. Paths that return
     * before this block set it themselves. */
    runloop_st->pace = RUNLOOP_PACE_NONE;
+   /* How long the last iteration actually took, smoothed. One clock
+    * read on a path that already takes several, and the only way to
+    * tell a source that is holding the loop from one that merely says
+    * it is - headless SDL2 with no vblank sets the vsync bit and
+    * blocks on nothing. */
+   {
+      retro_time_t now = cpu_features_get_time_usec();
+      if (runloop_st->pace_iter_last)
+      {
+         retro_time_t delta = now - runloop_st->pace_iter_last;
+         /* Samples longer than a quarter second are not pacing, they
+          * are a stall - a state load, a shader rebuild, a menu that
+          * blocked - and one of them dragged an eight-sample average
+          * from 60 fps to 8 in testing, taking several frames to
+          * recover. Nothing that is really holding the loop runs
+          * slower than 4 fps, so they are dropped rather than
+          * smoothed. */
+         if (delta > 0 && delta < 250000)
+         {
+            if (runloop_st->pace_period_usec)
+               runloop_st->pace_period_usec +=
+                     (delta - runloop_st->pace_period_usec) / 8;
+            else
+               runloop_st->pace_period_usec = delta;
+         }
+      }
+      runloop_st->pace_iter_last = now;
+   }
    /* What the frame limiter below will pace to. Normally the
     * fast-forward limit; replaced by the content frame time when
     * nothing else is pacing at all (see below). */

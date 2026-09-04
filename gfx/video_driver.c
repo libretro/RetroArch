@@ -5699,8 +5699,18 @@ void video_driver_frame(const void *data, unsigned width,
                plen += strlcpy(pbuf + plen, plen ? "+NoWindow" : "NoWindow", sizeof(pbuf) - plen);
             if (!plen)
                strlcpy(pbuf, "None", sizeof(pbuf));
-            __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
-                  " Pacing:     %s\n", pbuf);
+            /* The measured loop rate beside the claim. They agree when
+             * the named source is really holding the loop; a claim
+             * next to a rate well above the content's is a source that
+             * is not blocking on anything, which is the failure this
+             * line exists to make visible. */
+            if (runloop_st->pace_period_usec > 0)
+               __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+                     " Pacing:     %s (%.1f fps)\n", pbuf,
+                     1000000.0 / (double)runloop_st->pace_period_usec);
+            else
+               __len += snprintf(video_info.stat_text + __len, sizeof(video_info.stat_text) - __len,
+                     " Pacing:     %s\n", pbuf);
          }
 
          if (video_st->frame_delay_target > 0)

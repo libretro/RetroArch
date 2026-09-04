@@ -185,6 +185,14 @@ struct runloop
    retro_time_t core_run_time;
    retro_time_t frame_limit_minimum_time;
    retro_time_t frame_limit_last_time;
+   /* When the previous iteration reached the pacing block, and the
+    * smoothed interval between iterations. The pace bits say who
+    * claims to be holding the loop; this says how fast it is actually
+    * going, which is the other half of the same question - a source
+    * that claims the loop while the loop runs at three times the
+    * content rate is not holding anything. */
+   retro_time_t pace_iter_last;
+   retro_time_t pace_period_usec;
    unsigned     pace;                           /* enum runloop_pace_source bits */
    retro_usec_t frame_time_last;                /* int64_t alignment */
 
