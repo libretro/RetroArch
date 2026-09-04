@@ -110,9 +110,13 @@ static bool gfx_ctx_w_vk_presentable(void *data)
 {
    (void)data;
    /* Minimised is asked of the window directly; the swapchain check
-    * covers the moment before it has been rebuilt. */
+    * covers the moment before it has been rebuilt. Not on WinRT, which
+    * has neither IsIconic nor an HWND - see the wgl context for the
+    * detail; the swapchain check below still applies there. */
+#ifndef __WINRT__
    if (IsIconic(win32_get_window()))
       return false;
+#endif
    return win32_vk.swapchain != VK_NULL_HANDLE;
 }
 

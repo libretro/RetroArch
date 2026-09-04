@@ -939,11 +939,21 @@ void win32_setup_pixel_format(HDC hdc, bool supports_gl) { }
 /* A minimised window has no client area to present to: SwapBuffers()
  * returns at once rather than blocking to vblank, so with vsync as the
  * only pacing the loop would spin. IsIconic() is the direct question
- * and needs no state of our own. */
+ * and needs no state of our own.
+ *
+ * Not on WinRT: IsIconic is in neither the app nor the games API
+ * partition, so a UWP build fails to link it, and there is no HWND
+ * there to ask about either - win32_get_window() returns NULL. A UWP
+ * app's visibility arrives as CoreWindow events instead, which this
+ * context does not see; always presentable, as it was before. */
 static bool gfx_ctx_wgl_presentable(void *data)
 {
    (void)data;
+#ifdef __WINRT__
+   return true;
+#else
    return !IsIconic(win32_get_window());
+#endif
 }
 
 const gfx_ctx_driver_t gfx_ctx_wgl = {
