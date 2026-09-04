@@ -148,9 +148,14 @@ static struct string_list *ui_companion_cocoatouch_get_app_icons(void)
    return list;
 }
 
+/* nil restores the primary icon, which is what "Default" means here, so
+ * the nil is deliberate - but it has to be written down. ARC
+ * zero-initialises a strong local; MRC, which is how the Makefile
+ * builds this file, leaves it indeterminate, so asking for "Default"
+ * passed whatever was on the stack to setAlternateIconName:. */
 static void ui_companion_cocoatouch_set_app_icon(const char *iconName)
 {
-   NSString *str;
+   NSString *str = nil;
    if (!string_is_equal(iconName, "Default"))
       str = [NSString stringWithCString:iconName encoding:NSUTF8StringEncoding];
    [[UIApplication sharedApplication] setAlternateIconName:str completionHandler:nil];
