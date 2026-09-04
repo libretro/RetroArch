@@ -29,6 +29,9 @@
 #include "../../verbosity.h"
 #include "../../input/input_driver.h"
 #include "../../tasks/tasks_internal.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #ifndef MAX_MFI_CONTROLLERS
 #define MAX_MFI_CONTROLLERS 4
@@ -67,7 +70,7 @@ static bool mfi_inited;
 
 static bool apple_gamecontroller_available(void)
 {
-#if defined(IOS)
+#if TARGET_OS_IPHONE
     int major, minor;
     get_ios_version(&major, &minor);
 

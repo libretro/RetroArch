@@ -86,6 +86,9 @@
 #include <retro_miscellaneous.h>
 #include <queues/message_queue.h>
 #include <lists/dir_list.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #ifdef __EMSCRIPTEN__
 #include "frontend/drivers/platform_emscripten.h"

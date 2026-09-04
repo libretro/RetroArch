@@ -23,7 +23,7 @@
 #ifndef RGLGEN_PRIVATE_HEADERS_H__
 #define RGLGEN_PRIVATE_HEADERS_H__
 
-#if defined(IOS)
+#if TARGET_OS_IPHONE
 
 #if defined(HAVE_OPENGLES3)
 #include <OpenGLES/ES3/gl.h>
@@ -70,6 +70,9 @@
 /* We need to avoid including <GL/gl.h> on this platform */
 #include "switch/nx_gl.h"
 #include <GL/glext.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 #endif /* SWITCH */
 #endif
 

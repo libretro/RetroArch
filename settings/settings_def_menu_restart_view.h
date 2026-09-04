@@ -4,9 +4,9 @@
  * matches SDESC_<kind>_ROW; row order is menu display order;
  * h2json.py parses these rows for the Crowdin source upload. */
 
-/* Descriptor and configuration rows are #if !(defined(HAVE_LAKKA) || defined(HAVE_ODROIDGO2)) #if !defined(IOS); the string
+/* Descriptor and configuration rows are #if !(defined(HAVE_LAKKA) || defined(HAVE_ODROIDGO2)) #if !TARGET_OS_IPHONE; the string
  * tables always carry this row via the strings pass. */
-#if (!(defined(HAVE_LAKKA) || defined(HAVE_ODROIDGO2))) && !defined(IOS) || defined(SETTINGS_DEF_STRINGS_PASS)
+#if (!(defined(HAVE_LAKKA) || defined(HAVE_ODROIDGO2))) && !TARGET_OS_IPHONE || defined(SETTINGS_DEF_STRINGS_PASS)
 S_BOOL(menu_show_restart_retroarch, MENU_SHOW_RESTART_RETROARCH,
       "menu_show_restart_retroarch",
       DEFAULT_MENU_SHOW_RESTART, SD_FLAG_NONE, 0, 0,

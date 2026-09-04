@@ -75,7 +75,7 @@
 #include "../play_feature_delivery/play_feature_delivery.h"
 #endif
 
-#ifdef IOS
+#if TARGET_OS_IPHONE
 #include "JITSupport.h"
 #endif
 
@@ -88,6 +88,9 @@
 #include "../midi_driver.h"
 #include "../record/record_driver.h"
 #include "../msg_hash_lbl_str.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 #include "menu_cbs.h"
 #include "menu_driver.h"
 #include "menu_dirwalk.h"
@@ -286,7 +289,7 @@ static int filebrowser_parse(
    bool path_is_compressed                      = path && *path
          && path_is_compressed_file(path);
    menu_search_terms_t *search_terms            = menu_entries_search_get_terms();
-#ifdef IOS
+#if TARGET_OS_IPHONE
    char full_path[PATH_MAX_LENGTH];
    fill_pathname_expand_special(full_path, path, sizeof(full_path));
 #else
@@ -334,7 +337,7 @@ static int filebrowser_parse(
          filter_ext = false;
 
       if (   !strcmp(label, "database_manager_list")
-#ifdef IOS
+#if TARGET_OS_IPHONE
             || !strcmp(label, "video_filter")
             || !strcmp(label, "audio_dsp_plugin")
 #endif
@@ -597,7 +600,7 @@ static int filebrowser_parse(
             MENU_ENUM_LABEL_NO_ITEMS,
             MENU_SETTING_NO_ITEM, 0, 0, NULL);
 
-#if defined(IOS) || (TARGET_OS_OSX && defined(HAVE_APPLE_STORE))
+#if TARGET_OS_IPHONE || (TARGET_OS_OSX && defined(HAVE_APPLE_STORE))
    {
       struct string_list *sandbox_list = string_list_new();
       dir_list_append(sandbox_list, "/private/var", NULL, true, false, false, false);
@@ -677,7 +680,7 @@ static int menu_displaylist_parse_core_info(
       settings_t *settings)
 {
    char tmp[NAME_MAX_LENGTH];
-#if IOS
+#if TARGET_OS_IPHONE
    char shortened_path[NAME_MAX_LENGTH] = {0};
 #endif
    unsigned i, count             = 0;
@@ -927,7 +930,7 @@ static int menu_displaylist_parse_core_info(
 
       _len += strlcpy_lit(tmp + _len, ": ", sizeof(tmp) - _len);
 
-#if IOS
+#if TARGET_OS_IPHONE
       shortened_path[0] = '\0';
       fill_pathname_abbreviate_special(shortened_path,
             core_path, sizeof(shortened_path));
@@ -1004,7 +1007,7 @@ static int menu_displaylist_parse_core_info(
          /* Show the path that was checked */
          {
             int _snprintf_ret;
-#ifdef IOS
+#if TARGET_OS_IPHONE
             shortened_path[0] = '\0';
             fill_pathname_abbreviate_special(shortened_path,
                   firmware_info.directory.system,
@@ -1166,7 +1169,7 @@ end:
       }
 #endif
 
-#if !defined(IOS) || !IOS /* should this be allowed on jailbroken iOS devices? */
+#if !TARGET_OS_IPHONE /* should this be allowed on jailbroken iOS devices? */
       if (core_path && *core_path)
       {
          /* Check whether core is currently locked */
@@ -1433,7 +1436,7 @@ static unsigned menu_displaylist_parse_core_manager_list(file_list_t *list,
       }
    }
 
-#ifndef IOS
+#if !TARGET_OS_IPHONE
    /* Add 'sideload core' entry */
    if (!kiosk_mode_enable)
       if (menu_entries_append(list,
@@ -2188,7 +2191,7 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
          count++;
    }
 
-#ifdef IOS
+#if TARGET_OS_IPHONE
    {
       const char *val_yes_str = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_YES);
       const char *val_no_str  = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO);
@@ -4838,7 +4841,7 @@ static unsigned menu_displaylist_parse_cores(menu_handle_t *menu,
       }
 #endif
 
-#ifdef IOS
+#if TARGET_OS_IPHONE
       /* For various reasons on iOS/tvOS, MoltenVK shows up
        * in the cores directory; exclude it here */
       if (string_starts_with(path, "MoltenVK"))
@@ -6735,7 +6738,7 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
                MENU_ENUM_LABEL_CORE_UPDATER_LIST,
                MENU_SETTING_ACTION, 0, 0, NULL);
 #endif
-#ifndef IOS
+#if !TARGET_OS_IPHONE
          menu_entries_append(info_list,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST),
                MENU_ENUM_LABEL_SIDELOAD_CORE_LIST_STR,
@@ -11098,7 +11101,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MENU_SHOW_CONFIGURATIONS,                              PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_HELP,                                        PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_SHOW_WIMP,                                             PARSE_ONLY_UINT, true  },
-#if !defined(IOS)
+#if !TARGET_OS_IPHONE
                {MENU_ENUM_LABEL_MENU_SHOW_QUIT_RETROARCH,                              PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_RESTART_RETROARCH,                           PARSE_ONLY_BOOL, true  },
 #endif
@@ -16148,7 +16151,7 @@ static bool menu_displaylist_ctl_internal(
                      PARSE_ACTION, false) == 0)
                   count++;
 
-#if !defined(IOS)
+#if !TARGET_OS_IPHONE
                if (settings->bools.menu_show_restart_retroarch)
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
                         info->list,

@@ -88,6 +88,9 @@
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 #include <lists/dir_list.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
@@ -7387,7 +7390,7 @@ static void retroarch_parse_input_libretro_path(
    /* Check if path is a directory */
    if (
        ((path_stats & RETRO_VFS_STAT_IS_DIRECTORY) != 0)
-#if defined(IOS) || TARGET_OS_OSX
+#if TARGET_OS_IPHONE || TARGET_OS_OSX
        && !string_ends_with(path, ".framework")
 #endif
        )

@@ -41,6 +41,9 @@
 #if defined(ANDROID)
 #include "play_feature_delivery/play_feature_delivery.h"
 #include <compat/strl.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 #endif
 
 #ifndef PLAYLIST_ENTRIES
@@ -177,7 +180,7 @@ size_t playlist_config_set_base_content_directory(
    {
       config->autofix_paths = path && *path;
       if (config->autofix_paths)
-#if IOS
+#if TARGET_OS_IPHONE
          return fill_pathname_abbreviate_special(
                config->base_content_directory, path,
                sizeof(config->base_content_directory));
@@ -1470,7 +1473,7 @@ void playlist_resolve_path(enum playlist_file_mode mode,
 {
    bool resolve_symlinks = true;
 
-#if IOS
+#if TARGET_OS_IPHONE
    char tmp[PATH_MAX_LENGTH];
 
    fill_pathname_expand_special(tmp, s, sizeof(tmp));
@@ -1521,13 +1524,13 @@ void playlist_resolve_path(enum playlist_file_mode mode,
  **/
 bool playlist_content_path_is_valid(const char *path)
 {
-#ifdef IOS
+#if TARGET_OS_IPHONE
    char expanded_path[PATH_MAX_LENGTH];
 #endif
    /* Sanity check */
    if (!path || !*path)
       return false;
-#ifdef IOS
+#if TARGET_OS_IPHONE
    fill_pathname_expand_special(expanded_path, path, sizeof(expanded_path));
    path = expanded_path;
 #endif
@@ -4586,7 +4589,7 @@ void playlist_set_scan_content_dir(playlist_t *playlist, const char *content_dir
 {
    bool current_string_empty;
    bool new_string_empty;
-#if IOS
+#if TARGET_OS_IPHONE
    char _tmpbuf[PATH_MAX_LENGTH];
    fill_pathname_abbreviate_special(_tmpbuf, content_dir, sizeof(_tmpbuf));
    content_dir = _tmpbuf;
@@ -4653,7 +4656,7 @@ void playlist_set_scan_dat_file_path(playlist_t *playlist, const char *dat_file_
 {
    bool current_string_empty;
    bool new_string_empty;
-#if IOS
+#if TARGET_OS_IPHONE
    char _tmpbuf[PATH_MAX_LENGTH];
    fill_pathname_abbreviate_special(_tmpbuf, dat_file_path, sizeof(_tmpbuf));
    dat_file_path = _tmpbuf;

@@ -13,7 +13,7 @@
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifdef IOS
+#if TARGET_OS_IPHONE
 #include <Availability.h>
 #else
 #include <AvailabilityMacros.h>
@@ -87,4 +87,7 @@
 
 #if defined(HAVE_CLOUDSYNC) && defined(HAVE_ICLOUD_DRIVE)
 #include "../network/cloud_sync/icloud_drive.m"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 #endif

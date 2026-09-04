@@ -63,6 +63,9 @@
 #endif
 #ifdef HAVE_GFX_WIDGETS
 #include "../gfx_widgets.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 #endif
 
 #define GL3_SET_TEXTURE_COORDS(coords, xamt, yamt) \
@@ -4650,7 +4653,7 @@ static bool gl3_frame(void *data, const void *frame,
    if (gl->chain.active)
       gl->chain.shader->use(gl, gl->chain.shader_data, 1, true);
 
-#ifdef IOS
+#if TARGET_OS_IPHONE
    /* Apparently the viewport is lost each frame, thanks Apple. */
    gl3_set_viewport(gl, width, height, false, true);
 #endif

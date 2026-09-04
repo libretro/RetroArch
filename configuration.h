@@ -38,6 +38,9 @@
 #endif
 
 #include "msg_hash.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #define configuration_set_float(settings, var, newvar) \
 { \
@@ -607,7 +610,7 @@ typedef struct settings
       bool audio_fastforward_speedup;
       bool audio_fastpath_s16;
       bool audio_rewind_mute;
-#ifdef IOS
+#if TARGET_OS_IPHONE
       bool audio_respect_silent_mode;
 #endif
 

@@ -36,6 +36,9 @@
 #include "../../manual_content_scan.h"
 #include "../../verbosity.h"
 #include "../../msg_hash_lbl_str.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 enum
 {
@@ -339,7 +342,7 @@ static int general_push(menu_displaylist_info_t *info,
        * join that onto the parent directory. */
       if (path_is_absolute(menu->scratch_buf))
       {
-#if IOS
+#if TARGET_OS_IPHONE
          fill_pathname_expand_special(tmp_str, menu->scratch_buf,
                PATH_MAX_LENGTH);
 #else
@@ -348,7 +351,7 @@ static int general_push(menu_displaylist_info_t *info,
       }
       else
       {
-#if IOS
+#if TARGET_OS_IPHONE
          char *tmp_path = gb->tmp_path;
          fill_pathname_expand_special(tmp_path,
                menu->scratch2_buf, PATH_MAX_LENGTH);

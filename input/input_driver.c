@@ -79,6 +79,9 @@
 
 #include "../ai/game_ai.h"
 #include <compat/strl.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 /* Force a helper out of line even though it has a single call site.
  * Follows the RXML_NOINLINE precedent in
@@ -4471,7 +4474,7 @@ INPUT_NOINLINE static void input_poll_overlay(
 
    /* Block other touchscreen input as needed. */
    if (     button_pressed
-#ifdef IOS
+#if TARGET_OS_IPHONE
          || (ptr_state->device_mask & (1 << RETRO_DEVICE_LIGHTGUN))
          || (ol->flags & INPUT_OVERLAY_BLOCKED))
 #else

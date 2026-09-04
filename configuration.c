@@ -85,6 +85,9 @@ void android_app_set_window_settings(bool notch_write_over,
 
 #ifdef HAVE_LAKKA
 #include <time.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 #endif
 
 /* Compile-time upper bounds for setting array sizes.
@@ -795,7 +798,7 @@ static const enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_NULL;
 
 #if (defined(_3DS) || defined(DINGUX)) && defined(HAVE_RGUI)
 static const enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_RGUI;
-#elif defined(IOS) && !TARGET_OS_TV
+#elif TARGET_OS_IPHONE && !TARGET_OS_TV
 #define MENU_DEFAULT_DRIVER (ios_running_on_ipad() ? MENU_OZONE : MENU_MATERIALUI)
 #elif defined(HAVE_MATERIALUI) && defined(RARCH_MOBILE)
 static const enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_MATERIALUI;
@@ -6622,7 +6625,7 @@ static bool config_load_file(global_t *global,
          strlcpy(path_settings[i].ptr, tmp_str, PATH_MAX_LENGTH);
    }
 
-#if !IOS
+#if !TARGET_OS_IPHONE
    if (config_get_path(conf, "libretro_directory", tmp_str, sizeof(tmp_str)))
       configuration_set_string(settings,
             settings->paths.directory_libretro, tmp_str);
@@ -9363,7 +9366,7 @@ int8_t config_save_overrides(enum override_type type,
 
          if (!string_is_equal(base, cur))
          {
-#if IOS
+#if TARGET_OS_IPHONE
             if (string_is_equal(path_settings[i].ident, "libretro_directory"))
                continue;
 #endif

@@ -67,6 +67,9 @@
 
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay_private.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 #endif
 
 #import <AVFoundation/AVFoundation.h>

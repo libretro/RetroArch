@@ -24,6 +24,9 @@
 #include "../verbosity.h"
 
 #include "ui_companion_driver.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 static ui_companion_driver_t ui_companion_null = {
    NULL, /* init */
@@ -53,7 +56,7 @@ static const ui_companion_driver_t *ui_companion_drivers[] = {
 #if TARGET_OS_OSX
    &ui_companion_cocoa,
 #endif
-#if defined(IOS)
+#if TARGET_OS_IPHONE
    &ui_companion_cocoatouch,
 #endif
    &ui_companion_null,

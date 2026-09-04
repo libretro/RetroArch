@@ -69,9 +69,12 @@
 #ifdef HAVE_MIST
 #include "../../steam/steam.h"
 #include <compat/strl.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 #endif
 
-#if IOS
+#if TARGET_OS_IPHONE
 #import <UIKit/UIAccessibility.h>
 extern bool RAIsVoiceOverRunning(void)
 {
@@ -197,7 +200,7 @@ void rarch_stop_draw_observer(void)
 #if !TARGET_OS_OSX || __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
 -(void)step:(CADisplayLink*)target API_AVAILABLE(macos(14.0), ios(3.1), tvos(3.1))
 {
-#if defined(IOS)
+#if TARGET_OS_IPHONE
    if ([[UIApplication sharedApplication] applicationState] != UIApplicationStateActive)
       return;
 
@@ -248,7 +251,7 @@ void rarch_stop_draw_observer(void)
       view = [CocoaView new];
       RARCH_AUTORELEASE(view);
       nsview_set_ptr(view);
-#if defined(IOS)
+#if TARGET_OS_IPHONE
       view.displayLink = [CADisplayLink displayLinkWithTarget:view selector:@selector(step:)];
       {
          float hz = (float)[UIScreen mainScreen].maximumFramesPerSecond;

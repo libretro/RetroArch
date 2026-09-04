@@ -25,7 +25,7 @@
 #include "../../config.h"
 #endif
 
-#ifdef IOS
+#if TARGET_OS_IPHONE
 #include <CoreText/CoreText.h>
 #include <CoreGraphics/CoreGraphics.h>
 #else
@@ -34,6 +34,9 @@
 
 
 #include "../font_driver.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #define CT_ATLAS_ROWS 16
 #define CT_ATLAS_COLS 16

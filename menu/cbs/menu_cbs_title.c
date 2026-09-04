@@ -33,6 +33,9 @@
 #endif
 
 #include "../../audio/audio_driver.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #ifndef BIND_ACTION_GET_TITLE
 #define BIND_ACTION_GET_TITLE(cbs, name) (cbs)->action_get_title = (name)
@@ -948,7 +951,7 @@ static int action_get_title_default(const char *path, const char *label,
          _len       += 2;
          s[_len]     = '\0';
       }
-#if IOS
+#if TARGET_OS_IPHONE
       fill_pathname_abbreviate_special(s + _len, path, len - _len);
 #else
       strlcpy(s + _len, path, len - _len);

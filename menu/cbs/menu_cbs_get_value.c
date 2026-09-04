@@ -60,6 +60,9 @@
 
 #ifdef HAVE_MIST
 #include "../../steam/steam.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 #endif
 
 #ifndef BIND_ACTION_GET_VALUE
@@ -1243,7 +1246,7 @@ static size_t menu_action_setting_disp_set_label_menu_file_directory(
       char *s2, size_t len2)
 {
    size_t _len = 0;
-#if IOS
+#if TARGET_OS_IPHONE
    char tmp[256];
    fill_pathname_abbreviate_special(tmp, path, sizeof(tmp));
    MENU_ACTION_SETTING_GENERIC_DISP_SET_LABEL_2(w, s, len,

@@ -46,6 +46,9 @@
 
 #if defined(ANDROID)
 #include "play_feature_delivery/play_feature_delivery.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 #endif
 
 /*************************/
@@ -1672,7 +1675,7 @@ static size_t core_info_get_file_id(const char *core_filename,
     * or platform-specific suffix */
    /* > Remove extension */
    _len = fill_pathname(s, core_filename, "", len);
-#if defined(IOS) || TARGET_OS_OSX
+#if TARGET_OS_IPHONE || TARGET_OS_OSX
    /* iOS framework names, to quote Apple:
     * "must contain only alphanumerics, dots, hyphens and must not end with a dot."
     *

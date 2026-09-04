@@ -13,7 +13,7 @@
  */
 
 #import <TargetConditionals.h>
-#ifdef IOS
+#if TARGET_OS_IPHONE
 #import <UIKit/UIKit.h>
 #else
 #import <AppKit/AppKit.h>
@@ -249,7 +249,7 @@ static bool apple_display_server_set_resolution(void *data,
       view.displayLink.preferredFrameRateRange = CAFrameRateRangeMake(hz * 0.9, hz * 1.2, hz);
    return true;
 }
-#elif defined(IOS)
+#elif TARGET_OS_IPHONE
 static bool apple_display_server_set_resolution(void *data,
       unsigned width, unsigned height, int int_hz, float hz,
       int center, int monitor_index, int xoffset, int padjust)
@@ -584,7 +584,7 @@ static void *apple_display_server_init(void)
          && settings->floats.video_refresh_rate >= 10.0f
          && settings->floats.video_refresh_rate <= 250.0f)
       {
-#if defined(IOS)
+#if TARGET_OS_IPHONE
          float hz        = settings->floats.video_refresh_rate;
          CocoaView *view = [CocoaView get];
          if (view && view.displayLink)

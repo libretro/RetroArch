@@ -64,7 +64,7 @@ NS_INLINE CF_RETURNS_RETAINED CFTypeRef CFBridgingRetainCompat(id X)
 
 #endif
 
-#ifdef IOS
+#if TARGET_OS_IPHONE
 #ifndef __IPHONE_5_0
 #warning "This project uses features only available in iOS SDK 5.0 and later."
 #endif
@@ -79,6 +79,9 @@ NS_INLINE CF_RETURNS_RETAINED CFTypeRef CFBridgingRetainCompat(id X)
 
 #ifdef __OBJC__
 #include <objc/objc-runtime.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 #endif
 #endif
 

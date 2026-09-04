@@ -49,8 +49,11 @@
 #include <compat/msvc.h>
 #endif
 
-#ifdef IOS
+#if TARGET_OS_IPHONE
 #include <sys/param.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 #endif
 
 /**

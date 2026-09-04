@@ -88,6 +88,9 @@
 #include "../configuration.h"
 #include "../msg_hash.h"
 #include "../defaults.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 #include "../driver.h"
 #include "../paths.h"
 #include "../dynamic.h"
@@ -1323,7 +1326,7 @@ static size_t setting_get_string_representation_st_path(rarch_setting_t *setting
       const char *path = setting->value.target.string;
       if ((setting->type == ST_DIR) && (config_get_ptr()->bools.menu_show_full_paths))
          return strlcpy(s, path, len);
-#if IOS
+#if TARGET_OS_IPHONE
       return fill_pathname_abbreviate_special(s,
             path_basename(path), len);
 #else
@@ -11404,7 +11407,7 @@ static const setting_desc_t mm_desc_6[] = {
 #include "../settings/settings_def_menu_main_actions_6.h"
 };
 
-#if !defined(IOS) && !defined(HAVE_LAKKA)
+#if !TARGET_OS_IPHONE && !defined(HAVE_LAKKA)
 static const setting_desc_t mm_desc_7[] = {
 /* GENERATED: rows come from settings_def_menu_main_actions_10.h in order. */
 #include "../settings/settings_def_menu_main_actions_10.h"
@@ -11416,7 +11419,7 @@ static const setting_desc_t mm_desc_8[] = {
 #include "../settings/settings_def_menu_main_lists_2.h"
 };
 
-#if !defined(IOS)
+#if !TARGET_OS_IPHONE
 #ifdef HAVE_LAKKA
 static const setting_desc_t quit_lakka_desc[] = {
 /* GENERATED: rows come from settings_def_quit_restart.h in order. */
@@ -11425,7 +11428,7 @@ static const setting_desc_t quit_lakka_desc[] = {
 #endif
 #endif
 
-#if !defined(IOS)
+#if !TARGET_OS_IPHONE
 #if !defined(HAVE_LAKKA)
 static const setting_desc_t mm_desc_9[] = {
 /* GENERATED: rows come from settings_def_menu_main_actions_7.h in order. */
@@ -11550,7 +11553,7 @@ static const setting_desc_t metal_argbuf_desc[] = {
 };
 #endif
 
-#if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (defined(IOS) && TARGET_OS_TV)
+#if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (TARGET_OS_IPHONE && TARGET_OS_TV)
 static const setting_desc_t vid_desc_0[] = {
 /* GENERATED: rows come from settings_def_video_suspend_screensaver.h in order. */
 #include "../settings/settings_def_video_suspend_screensaver.h"
@@ -12410,7 +12413,7 @@ static const setting_desc_t menu_quit_lakka_desc[] = {
 };
 #endif
 
-#if !defined(HAVE_LAKKA) && !defined(IOS)
+#if !defined(HAVE_LAKKA) && !TARGET_OS_IPHONE
 static const setting_desc_t menu_desc_25[] = {
 /* GENERATED: rows come from settings_def_quit_visibility.h in order. */
 #include "../settings/settings_def_quit_visibility.h"
@@ -12425,7 +12428,7 @@ static const setting_desc_t menu_desc_26[] = {
 #endif
 
 #if !(defined(HAVE_LAKKA) || defined(HAVE_ODROIDGO2))
-#if !defined(IOS)
+#if !TARGET_OS_IPHONE
 static const setting_desc_t menu_desc_27[] = {
 /* GENERATED: rows come from settings_def_menu_restart_view.h in order. */
 #include "../settings/settings_def_menu_restart_view.h"
@@ -12840,7 +12843,7 @@ static const setting_desc_t user_accounts_desc_0_s0[] = {
 #endif
 
 #ifdef HAVE_NETWORKING
-#if !IOS
+#if !TARGET_OS_IPHONE
 static const setting_desc_t user_accounts_desc_0_s1[] = {
 /* GENERATED: rows come from settings_def_accounts_streaming.h in order. */
 #include "../settings/settings_def_accounts_streaming.h"
@@ -13013,7 +13016,7 @@ static void settings_build_main_menu(
 
             ADD_DESC(mm_desc_6);
 
-#if !defined(IOS) && !defined(HAVE_LAKKA)
+#if !TARGET_OS_IPHONE && !defined(HAVE_LAKKA)
       if (frontend_driver_has_fork())
       {
             ADD_DESC(mm_desc_7);
@@ -13021,7 +13024,7 @@ static void settings_build_main_menu(
 #endif
 
             ADD_DESC(mm_desc_8);
-#if !defined(IOS)
+#if !TARGET_OS_IPHONE
       /* Apple rejects iOS apps that let you forcibly quit them. */
 #ifdef HAVE_LAKKA
             ADD_DESC(quit_lakka_desc);
@@ -14371,7 +14374,7 @@ static void settings_build_video(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-#if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (defined(IOS) && TARGET_OS_TV)
+#if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (TARGET_OS_IPHONE && TARGET_OS_TV)
             ADD_DESC(vid_desc_0);
 #endif
          END_SUB_GROUP(list, list_info, parent_group);
@@ -15619,14 +15622,14 @@ static void settings_build_menu(
 
 #ifdef HAVE_LAKKA
             ADD_DESC(menu_quit_lakka_desc);
-#elif !defined(IOS)
+#elif !TARGET_OS_IPHONE
             ADD_DESC(menu_desc_25);
 #endif
 
 #if defined(HAVE_LAKKA) || defined(HAVE_ODROIDGO2)
             ADD_DESC(menu_desc_26);
 #else
-#if !defined(IOS)
+#if !TARGET_OS_IPHONE
          if (frontend_driver_has_fork())
             ADD_DESC(menu_desc_27);
 #endif
@@ -16836,7 +16839,7 @@ static void settings_build_user_accounts(
             ADD_DESC(user_accounts_desc_0_s0);
 #endif
 #ifdef HAVE_NETWORKING
-#if !IOS
+#if !TARGET_OS_IPHONE
             ADD_DESC(user_accounts_desc_0_s1);
 #endif
 #endif
@@ -17761,16 +17764,16 @@ static const settings_desc_table_t settings_desc_registry[] = {
 #endif
    { mm_desc_5, (uint16_t)ARRAY_SIZE(mm_desc_5) },
    { mm_desc_6, (uint16_t)ARRAY_SIZE(mm_desc_6) },
-#if !defined(IOS) && !defined(HAVE_LAKKA)
+#if !TARGET_OS_IPHONE && !defined(HAVE_LAKKA)
    { mm_desc_7, (uint16_t)ARRAY_SIZE(mm_desc_7) },
 #endif
    { mm_desc_8, (uint16_t)ARRAY_SIZE(mm_desc_8) },
-#if !defined(IOS)
+#if !TARGET_OS_IPHONE
 #ifdef HAVE_LAKKA
    { quit_lakka_desc, (uint16_t)ARRAY_SIZE(quit_lakka_desc) },
 #endif
 #endif
-#if !defined(IOS)
+#if !TARGET_OS_IPHONE
 #ifndef HAVE_LAKKA
    { mm_desc_9, (uint16_t)ARRAY_SIZE(mm_desc_9) },
 #endif
@@ -17808,7 +17811,7 @@ static const settings_desc_table_t settings_desc_registry[] = {
 #if defined(__APPLE__) && defined(HAVE_VULKAN)
    { metal_argbuf_desc, (uint16_t)ARRAY_SIZE(metal_argbuf_desc) },
 #endif
-#if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (defined(IOS) && TARGET_OS_TV)
+#if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (TARGET_OS_IPHONE && TARGET_OS_TV)
    { vid_desc_0, (uint16_t)ARRAY_SIZE(vid_desc_0) },
 #endif
    { vid_desc_1, (uint16_t)ARRAY_SIZE(vid_desc_1) },
@@ -18082,14 +18085,14 @@ static const settings_desc_table_t settings_desc_registry[] = {
 #ifdef HAVE_LAKKA
    { menu_quit_lakka_desc, (uint16_t)ARRAY_SIZE(menu_quit_lakka_desc) },
 #endif
-#if !defined(HAVE_LAKKA) && !defined(IOS)
+#if !defined(HAVE_LAKKA) && !TARGET_OS_IPHONE
    { menu_desc_25, (uint16_t)ARRAY_SIZE(menu_desc_25) },
 #endif
 #if defined(HAVE_LAKKA) || defined(HAVE_ODROIDGO2)
    { menu_desc_26, (uint16_t)ARRAY_SIZE(menu_desc_26) },
 #endif
 #if !(defined(HAVE_LAKKA) || defined(HAVE_ODROIDGO2))
-#if !defined(IOS)
+#if !TARGET_OS_IPHONE
    { menu_desc_27, (uint16_t)ARRAY_SIZE(menu_desc_27) },
 #endif
 #endif
@@ -18245,7 +18248,7 @@ static const settings_desc_table_t settings_desc_registry[] = {
    { user_accounts_desc_0_s0, (uint16_t)ARRAY_SIZE(user_accounts_desc_0_s0) },
 #endif
 #ifdef HAVE_NETWORKING
-#if !IOS
+#if !TARGET_OS_IPHONE
    { user_accounts_desc_0_s1, (uint16_t)ARRAY_SIZE(user_accounts_desc_0_s1) },
 #endif
 #endif

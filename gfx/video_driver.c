@@ -74,6 +74,9 @@
 #include "../configuration.h"
 #include "video_shader_parse.h"
 #include <compat/strl.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #define TIME_TO_FPS(last_time, new_time, frames) ((1000000.0f * (frames)) / ((new_time) - (last_time)))
 
@@ -3304,7 +3307,7 @@ bool video_driver_is_hw_context(void)
 
 bool video_driver_render_context_is_main_thread_only(void)
 {
-#ifdef IOS
+#if TARGET_OS_IPHONE
    /* The iOS Cocoa GL/GLES backends ("gl", "glcore") render through a
     * GLKView, whose drawable and backing CAEAGLLayer may only be touched
     * on the main thread.  With threaded video, swap_buffers and the
@@ -3336,7 +3339,7 @@ bool video_driver_render_context_is_main_thread_only(void)
    if (ident && (string_is_equal(ident, "gl")
               || string_is_equal(ident, "glcore")))
       return true;
-#endif /* IOS */
+#endif /* TARGET_OS_IPHONE */
    return false;
 }
 

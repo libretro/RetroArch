@@ -46,7 +46,7 @@
 #include <IOKit/ps/IOPSKeys.h>
 
 #include <sys/sysctl.h>
-#elif defined(IOS)
+#elif TARGET_OS_IPHONE
 #include <UIKit/UIDevice.h>
 #include <sys/sysctl.h>
 #endif
@@ -82,6 +82,9 @@
 #include "../../ui/ui_companion_driver.h"
 #include "../../paths.h"
 #include <compat/strl.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 typedef enum
 {
@@ -163,7 +166,7 @@ void CFTemporaryDirectory(char *s, size_t len)
    CFStringGetCString(path, s, len, kCFStringEncodingUTF8);
 }
 
-#if defined(IOS)
+#if TARGET_OS_IPHONE
 void get_ios_version(int *major, int *minor);
 #endif
 
@@ -280,7 +283,7 @@ static void darwin_check_power_source(
 
 static void frontend_darwin_get_name(char *s, size_t len)
 {
-#if defined(IOS)
+#if TARGET_OS_IPHONE
    struct utsname buffer;
    if (uname(&buffer) == 0)
       strlcpy(s, buffer.machine, len);
@@ -295,7 +298,7 @@ static void frontend_darwin_get_name(char *s, size_t len)
 static size_t frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
 {
    size_t _len;
-#if defined(IOS)
+#if TARGET_OS_IPHONE
    get_ios_version(major, minor);
 #if TARGET_OS_TV
    _len = strlcpy_lit(s, "tvOS", len);
@@ -416,7 +419,7 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], application_data, "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
 #elif TARGET_OS_OSX && defined(HAVE_APPLE_STORE)
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], bundle_path_buf, "Contents/Frameworks", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
-#elif defined(IOS) && defined(HAVE_FRAMEWORKS)
+#elif TARGET_OS_IPHONE && defined(HAVE_FRAMEWORKS)
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], bundle_path_buf, "Frameworks", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
 #else
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], bundle_path_buf, "modules", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));

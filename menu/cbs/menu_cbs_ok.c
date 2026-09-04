@@ -88,6 +88,9 @@
 #endif
 #include "../../gfx/video_display_server.h"
 #include "../../manual_content_scan.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
@@ -99,7 +102,7 @@
 #ifdef __WINRT__
 #include "../../uwp/uwp_func.h"
 #endif
-#ifdef IOS
+#if TARGET_OS_IPHONE
 #include "../../ui/drivers/cocoa/apple_platform.h"
 #endif
 
@@ -1025,7 +1028,7 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE:
          if (menu)
          {
-#if IOS
+#if TARGET_OS_IPHONE
             fill_pathname_expand_special(tmp, menu->scratch2_buf, sizeof(tmp));
             menu_path    = tmp;
 #else
@@ -1573,7 +1576,7 @@ int generic_action_ok_displaylist_push(
 
          if (path && menu_path)
          {
-#if IOS
+#if TARGET_OS_IPHONE
             fill_pathname_expand_special(parent_dir, menu_path, sizeof(parent_dir));
             fill_pathname_join_special(tmp,
                   parent_dir, path, sizeof(tmp));
@@ -1589,7 +1592,7 @@ int generic_action_ok_displaylist_push(
          fill_pathname_parent_dir(parent_dir,
                parent_dir, sizeof(parent_dir));
 
-#if IOS
+#if TARGET_OS_IPHONE
          fill_pathname_abbreviate_special(tmp, parent_dir, sizeof(tmp));
          strlcpy(parent_dir, tmp, sizeof(parent_dir));
 #endif
@@ -2146,7 +2149,7 @@ static int file_load_with_detect_core_wrapper(
 
    {
       menu_content_ctx_defer_info_t def_info;
-#if IOS
+#if TARGET_OS_IPHONE
       char tmp_path[PATH_MAX_LENGTH];
 #endif
       char menu_path_new[PATH_MAX_LENGTH];
@@ -2158,7 +2161,7 @@ static int file_load_with_detect_core_wrapper(
 
       menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL, NULL);
 
-#if IOS
+#if TARGET_OS_IPHONE
       if (menu_path)
       {
          fill_pathname_expand_special(tmp_path, menu_path, sizeof(tmp_path));
@@ -2176,7 +2179,7 @@ static int file_load_with_detect_core_wrapper(
             strlcpy(menu_path_new, menu->scratch_buf, sizeof(menu_path_new));
          else
          {
-#if IOS
+#if TARGET_OS_IPHONE
             fill_pathname_join_special(tmp_path,
                   menu->scratch2_buf, menu->scratch_buf, sizeof(tmp_path));
             fill_pathname_expand_special(menu_path_new, tmp_path, sizeof(menu_path_new));
@@ -2358,7 +2361,7 @@ static int generic_action_ok(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned id, enum msg_hash_enums flush_id)
 {
-#if IOS
+#if TARGET_OS_IPHONE
    char tmp_path[PATH_MAX_LENGTH];
 #endif
    char action_path[PATH_MAX_LENGTH];
@@ -2384,7 +2387,7 @@ static int generic_action_ok(const char *path,
    menu_entries_get_last_stack(&menu_path,
          &menu_label, NULL, &enum_idx, NULL);
 
-#if IOS
+#if TARGET_OS_IPHONE
    fill_pathname_expand_special(tmp_path, menu_path, sizeof(tmp_path));
    menu_path = tmp_path;
 #endif
@@ -4436,7 +4439,7 @@ static int action_ok_path_scan_directory(const char *path,
 static int action_ok_path_manual_scan_directory(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-#if IOS
+#if TARGET_OS_IPHONE
    char dir_path[DIR_MAX_LENGTH];
 #endif
    char content_dir[DIR_MAX_LENGTH];
@@ -4449,7 +4452,7 @@ static int action_ok_path_manual_scan_directory(const char *path,
    {
       menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
 
-#if IOS
+#if TARGET_OS_IPHONE
       fill_pathname_expand_special(dir_path, menu_path, sizeof(dir_path));
       menu_path = dir_path;
 #endif
@@ -7401,7 +7404,7 @@ int action_ok_push_filebrowser_list_dir_select(const char *path,
 {
    menu_entry_t entry;
    char current_value[PATH_MAX_LENGTH];
-#if IOS
+#if TARGET_OS_IPHONE
    char tmp[PATH_MAX_LENGTH];
 #endif
    struct menu_state *menu_st = menu_state_get_ptr();
@@ -7422,7 +7425,7 @@ int action_ok_push_filebrowser_list_dir_select(const char *path,
       menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
       strlcpy(current_value, entry.value, sizeof(current_value));
    }
-#if IOS
+#if TARGET_OS_IPHONE
    fill_pathname_expand_special(tmp, current_value, sizeof(tmp));
    if (!path_is_directory(tmp))
       current_value[0] = '\0';
@@ -8445,7 +8448,7 @@ static int action_ok_load_archive_detect_core(const char *path,
    menu_path           = menu->scratch2_buf;
    content_path        = menu->scratch_buf;
 
-#if IOS
+#if TARGET_OS_IPHONE
    char tmp_path[PATH_MAX_LENGTH];
    fill_pathname_expand_special(tmp_path, menu_path, sizeof(tmp_path));
    menu_path = tmp_path;

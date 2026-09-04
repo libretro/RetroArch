@@ -207,7 +207,7 @@
 #define DEFAULT_BLUETOOTH_ERTM false
 #endif
 
-#if (defined(_WIN32) && !defined(_XBOX)) || (defined(__linux) && !defined(ANDROID) && !defined(HAVE_LAKKA)) || (defined(__MACH__) && !defined(IOS)) || defined(__EMSCRIPTEN__)
+#if (defined(_WIN32) && !defined(_XBOX)) || (defined(__linux) && !defined(ANDROID) && !defined(HAVE_LAKKA)) || (defined(__MACH__) && !TARGET_OS_IPHONE) || defined(__EMSCRIPTEN__)
 #define DEFAULT_MOUSE_ENABLE true
 #else
 #define DEFAULT_MOUSE_ENABLE false
@@ -1044,7 +1044,7 @@
 #define DEFAULT_INPUT_BACKTOUCH_TOGGLE false
 #endif
 
-#if defined(ANDROID) || defined(IOS)
+#if defined(ANDROID) || TARGET_OS_IPHONE
 #define DEFAULT_OVERLAY_ENABLE_AUTOPREFERRED true
 #else
 #define DEFAULT_OVERLAY_ENABLE_AUTOPREFERRED false
@@ -1434,7 +1434,7 @@
 
 /* Saves non-volatile SRAM at a regular interval.
  * It is measured in seconds. A value of 0 disables autosave. */
-#if defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(__x86_64__) || defined(_M_X64) || defined(_WIN32) || TARGET_OS_OSX || defined(ANDROID) || defined(IOS) || defined(DINGUX)
+#if defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(__x86_64__) || defined(_M_X64) || defined(_WIN32) || TARGET_OS_OSX || defined(ANDROID) || TARGET_OS_IPHONE || defined(DINGUX)
 /* Flush to file every 10 seconds on modern platforms by default */
 #define DEFAULT_AUTOSAVE_INTERVAL 10
 #else
@@ -1537,7 +1537,7 @@
 
 /* Automatically saves a savestate at a regular interval.
  * It is measured in seconds. A value of 0 disables automatic savestate saving. */
-#if defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(__x86_64__) || defined(_M_X64) || defined(_WIN32) || TARGET_OS_OSX || defined(ANDROID) || defined(IOS) || defined(DINGUX)
+#if defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(__x86_64__) || defined(_M_X64) || defined(_WIN32) || TARGET_OS_OSX || defined(ANDROID) || TARGET_OS_IPHONE || defined(DINGUX)
 /* Disabled by default but can be enabled by user */
 #define DEFAULT_SAVESTATE_AUTOMATIC_INTERVAL 0
 #else
@@ -1599,7 +1599,7 @@
  * updated via the online updater
  * > Enable by default on all modern platforms with
  *   online updater support */
-#if defined(HAVE_ONLINE_UPDATER) && (defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(__x86_64__) || defined(_M_X64) || defined(_WIN32) || TARGET_OS_OSX || defined(ANDROID) || defined(IOS))
+#if defined(HAVE_ONLINE_UPDATER) && (defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(__x86_64__) || defined(_M_X64) || defined(_WIN32) || TARGET_OS_OSX || defined(ANDROID) || TARGET_OS_IPHONE)
 #define DEFAULT_CORE_UPDATER_AUTO_BACKUP true
 #else
 #define DEFAULT_CORE_UPDATER_AUTO_BACKUP false
@@ -1816,7 +1816,7 @@
 
 #define DEFAULT_XMB_THUMBNAIL_SCALE_FACTOR 100
 
-#ifdef IOS
+#if TARGET_OS_IPHONE
 #define DEFAULT_UI_COMPANION_START_ON_BOOT false
 #else
 #define DEFAULT_UI_COMPANION_START_ON_BOOT true
@@ -1845,7 +1845,7 @@
 
 #define DEFAULT_UI_MENUBAR_ENABLE true
 
-#if defined(__QNX__) || defined(_XBOX1) || defined(_XBOX360) || (defined(__MACH__) && defined(IOS)) || defined(ANDROID) || defined(WIIU) || defined(HAVE_NEON) || defined(GEKKO) || defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(__PS3__)
+#if defined(__QNX__) || defined(_XBOX1) || defined(_XBOX360) || (defined(__MACH__) && TARGET_OS_IPHONE) || defined(ANDROID) || defined(WIIU) || defined(HAVE_NEON) || defined(GEKKO) || defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(__PS3__)
 #define DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL RESAMPLER_QUALITY_LOWER
 #elif defined(PSP) || defined(_3DS) || defined(VITA) || defined(PS2) || defined(DINGUX)
 #define DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL RESAMPLER_QUALITY_LOWEST
@@ -1870,13 +1870,13 @@
 /* Only applies to Android 7.0 (API 24) and up */
 #define DEFAULT_SUSTAINED_PERFORMANCE_MODE false
 
-#if defined(ANDROID) || defined(IOS)
+#if defined(ANDROID) || TARGET_OS_IPHONE
 #define DEFAULT_VIBRATE_ON_KEYPRESS true
 #else
 #define DEFAULT_VIBRATE_ON_KEYPRESS false
 #endif
 
-#if defined(IOS)
+#if TARGET_OS_IPHONE
 #define DEFAULT_ENABLE_DEVICE_VIBRATION true
 #else
 #define DEFAULT_ENABLE_DEVICE_VIBRATION false
@@ -1934,7 +1934,7 @@
 #endif
 #elif defined(__QNX__)
 #define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/blackberry/latest/"
-#elif defined(IOS)
+#elif TARGET_OS_IPHONE
 #define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/apple/ios/latest/"
 #elif TARGET_OS_OSX
 #if defined(__x86_64__)

@@ -85,6 +85,9 @@
 
 #ifdef VITA
 #include <defines/psp_defines.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #define GL_RGBA8                    GL_RGBA
 #define GL_RGB8                     GL_RGB
@@ -1346,7 +1349,7 @@ static void *gl1_init(const video_info_t *video,
       gl1->ctx_driver->get_video_size(gl1->ctx_data,
                &mode_width, &mode_height);
 
-#if defined(__APPLE__) && !defined(IOS)
+#if defined(__APPLE__) && !TARGET_OS_IPHONE
    /* This is a hack for now to work around a very annoying
     * issue that currently eludes us. */
    if (     !gl1->ctx_driver->set_video_mode

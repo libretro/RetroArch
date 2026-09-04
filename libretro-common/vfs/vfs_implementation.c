@@ -87,6 +87,9 @@
 
 #ifdef __APPLE__
 #include <CoreFoundation/CoreFoundation.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 #endif
 #ifdef __HAIKU__
 #include <kernel/image.h>
@@ -786,7 +789,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
          default:
             if (!(fp = (FILE*)fopen_utf8(path, mode_str)))
             {
-#ifdef IOS
+#if TARGET_OS_IPHONE
                if (errno == EEXIST)
                {
                   retro_vfs_file_remove_impl(path);
@@ -2329,7 +2332,7 @@ int retro_vfs_mkdir_impl(const char *dir)
          free(dir_w);
       }
 #endif
-#elif defined(IOS)
+#elif TARGET_OS_IPHONE
       int ret = mkdir(dir, 0755);
 #elif defined(VITA)
       int ret = sceIoMkdir(dir, 0777);

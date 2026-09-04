@@ -69,6 +69,9 @@
 #include "version_git.h"
 #include "tasks/task_content.h"
 #include <compat/strl.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #define CMD_BUF_SIZE 4096
 
@@ -1087,7 +1090,7 @@ bool command_load_core(command_t *cmd, const char* arg)
    if (!arg || !*arg)
       return false;
 
-#ifdef IOS
+#if TARGET_OS_IPHONE
    {
       char exp[PATH_MAX_LENGTH];
       fill_pathname_expand_special(exp, arg, sizeof(exp));
@@ -1143,7 +1146,7 @@ bool command_load_content(command_t *cmd, const char* arg)
    memcpy(core_path, arg, _len);
    core_path[_len] = '\0';
 
-#ifdef IOS
+#if TARGET_OS_IPHONE
    {
       char exp[PATH_MAX_LENGTH];
       fill_pathname_expand_special(exp, sep + 1, sizeof(exp));
@@ -1626,7 +1629,7 @@ static size_t command_event_save_config(const char *config_path,
 #endif
    if (path_exists && config_save_file(config_path))
    {
-#if IOS
+#if TARGET_OS_IPHONE
       char tmp[PATH_MAX_LENGTH] = {0};
       fill_pathname_abbreviate_special(tmp, config_path, sizeof(tmp));
       _len = snprintf(s, len, "%s \"%s\".",

@@ -59,6 +59,9 @@
 #endif
 
 #include "../../../retroarch.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #if TARGET_OS_IPHONE && defined(HAVE_COCOATOUCH)
 #define RAScreen UIScreen

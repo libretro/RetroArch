@@ -86,6 +86,9 @@
 #endif
 #ifdef HAVE_GFX_WIDGETS
 #include "../gfx_widgets.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 #endif
 
 #ifndef GL_UNSIGNED_INT_8_8_8_8_REV
@@ -183,7 +186,7 @@
 #ifndef GL_BGRA8_EXT
 #define GL_BGRA8_EXT 0x93A1
 #endif
-#ifdef IOS
+#if TARGET_OS_IPHONE
 /* Stupid Apple */
 #define RARCH_GL_INTERNAL_FORMAT32 GL_RGBA
 #else
@@ -462,7 +465,7 @@ static void gl2_set_viewport(gl2_t *gl,
       unsigned vp_width, unsigned vp_height,
       bool force_full, bool allow_rotate);
 
-#ifdef IOS
+#if TARGET_OS_IPHONE
 /* There is no default frame buffer on iOS. */
 void glkitview_bind_fbo(void);
 #define gl2_renderchain_bind_backbuffer() glkitview_bind_fbo()
@@ -1353,7 +1356,7 @@ static void gl2_size_format(GLint* internalFormat)
 #endif
 }
 
-#if !defined(HAVE_PSGL) && !defined(ORBIS) && !defined(VITA) && !defined(IOS)
+#if !defined(HAVE_PSGL) && !defined(ORBIS) && !defined(VITA) && !TARGET_OS_IPHONE
 static bool gl2_tex_storage_allowed(void)
 {
    static int allowed = -1;
@@ -1405,7 +1408,7 @@ static void gl2_load_texture_image(GLenum target,
       GLenum type,
       const GLvoid * data)
 {
-#if !defined(HAVE_PSGL) && !defined(ORBIS) && !defined(VITA) && !defined(IOS)
+#if !defined(HAVE_PSGL) && !defined(ORBIS) && !defined(VITA) && !TARGET_OS_IPHONE
 #ifdef HAVE_OPENGLES2
    enum gl_capability_enum cap = GL_CAPS_TEX_STORAGE_EXT;
 #else
@@ -3984,7 +3987,7 @@ static bool gl2_frame(void *data, const void *frame,
 
    gl->shader->use(gl, gl->shader_data, 1, true);
 
-#ifdef IOS
+#if TARGET_OS_IPHONE
    /* Apparently the viewport is lost each frame, thanks Apple. */
    gl2_set_viewport(gl, width, height, false, true);
 #endif
@@ -5062,7 +5065,7 @@ static void *gl2_init(const video_info_t *video,
          || !gl->ctx_driver->set_video_mode(gl->ctx_data,
             win_width, win_height, (video->fullscreen || force_fullscreen)))
       goto error;
-#if defined(__APPLE__) && !defined(IOS) && !defined(HAVE_COCOA_METAL)
+#if defined(__APPLE__) && !TARGET_OS_IPHONE && !defined(HAVE_COCOA_METAL)
    /* This is a hack for now to work around a very annoying
     * issue that currently eludes us. */
    if (     !gl->ctx_driver->set_video_mode
