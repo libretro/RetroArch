@@ -15,6 +15,8 @@
 
 #include <3ds.h>
 #include <string.h>
+
+#include <retro_atomic.h>
 #include <malloc.h>
 
 #include "../audio_driver.h"
@@ -30,19 +32,48 @@ typedef struct
    /* Signalled from the DSP frame callback so a waiter wakes once per
     * DSP frame instead of sleeping and polling the sample position. */
    LightEvent frame_event;
+   /* The channel's sample position last time the frame callback looked,
+    * and the frames it has played since the channel started, for the
+    * sink rate estimate. ndspChnGetSamplePos() wraps at
+    * CTR_DSP_AUDIO_COUNT - 2048 samples, about 43 ms at 48 kHz - so it
+    * has to be unwrapped more often than that. The DSP frame callback
+    * fires every few milliseconds, which is where this is done; doing
+    * it in frames_consumed() would not work, since the estimator reads
+    * that once every four seconds and would miss ninety wraps. */
+   uint32_t last_pos;
+   retro_atomic_size_t consumed;
    bool nonblock;
    bool playing;
 } ctr_dsp_audio_t;
 
-static void ctr_dsp_audio_frame_cb(void *data)
-{
-   ctr_dsp_audio_t *ctr = (ctr_dsp_audio_t*)data;
-   LightEvent_Signal(&ctr->frame_event);
-}
-
 #define CTR_DSP_AUDIO_COUNT       (1u << 11u)
 #define CTR_DSP_AUDIO_COUNT_MASK  (CTR_DSP_AUDIO_COUNT - 1u)
 #define CTR_DSP_AUDIO_SIZE        (CTR_DSP_AUDIO_COUNT * sizeof(int16_t) * 2)
+
+static void ctr_dsp_audio_frame_cb(void *data)
+{
+   ctr_dsp_audio_t *ctr = (ctr_dsp_audio_t*)data;
+   uint32_t pos         = ndspChnGetSamplePos(ctr->channel);
+
+   /* Unsigned subtraction and the mask do the unwrap: the difference is
+    * right across the wrap without a comparison. Only this callback
+    * writes either field. */
+   retro_atomic_fetch_add_size(&ctr->consumed,
+         (size_t)((pos - ctr->last_pos) & CTR_DSP_AUDIO_COUNT_MASK));
+   ctr->last_pos = pos;
+
+   LightEvent_Signal(&ctr->frame_event);
+}
+
+/* Frames the channel has played since it started; see the note on
+ * last_pos above for why the unwrap lives in the callback. */
+static size_t ctr_dsp_audio_frames_consumed(void *data)
+{
+   ctr_dsp_audio_t *ctr = (ctr_dsp_audio_t*)data;
+   if (!ctr)
+      return 0;
+   return retro_atomic_load_acquire_size(&ctr->consumed);
+}
 #define CTR_DSP_AUDIO_SIZE_MASK   (CTR_DSP_AUDIO_SIZE  - 1u)
 
 static void *ctr_dsp_audio_init(const char *device, unsigned rate, unsigned latency,
@@ -276,5 +307,6 @@ audio_driver_t audio_ctr_dsp = {
    ctr_dsp_audio_write_avail,
    ctr_dsp_audio_buffer_size,
    NULL, /* write_raw */
-   ctr_dsp_audio_wait_writable
+   ctr_dsp_audio_wait_writable,
+   ctr_dsp_audio_frames_consumed
 };

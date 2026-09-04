@@ -47,6 +47,14 @@ typedef struct
     * waiter sleeps a chunk at a time instead of spinning. Same pattern
     * the video driver uses for the retrace callback. */
    OSCond dma_cond;
+   /* Frames the DMA has played since it started, for the sink rate
+    * estimate. Written only by the DMA callback and read by the
+    * frontend; volatile rather than atomic because this is a
+    * single-core CPU with no store buffer to reorder around, which is
+    * the same reason dma_busy and dma_next above are declared this
+    * way. 32-bit so the read cannot tear: at 48 kHz it wraps in about
+    * a day, which the estimator's differences handle. */
+   volatile uint32_t consumed;
    bool nonblock;
    bool is_paused;
 } gx_audio_t;
@@ -75,7 +83,21 @@ static void gx_audio_dma_callback(void)
    DCFlushRange(wa->data[wa->dma_next], CHUNK_SIZE);
 
    AIInitDMA((uint32_t)wa->data[wa->dma_next], CHUNK_SIZE);
+   /* A chunk the DMA has finished with: device time. */
+   wa->consumed += CHUNK_FRAMES;
    OSSignalCond(wa->dma_cond);
+}
+
+/* Frames the DMA has played since it started. The callback fires once
+ * per chunk, so counting chunks counts device time; there is no queue
+ * to subtract, because the callback is the hardware finishing with a
+ * chunk rather than a queue being filled. */
+static size_t gx_audio_frames_consumed(void *data)
+{
+   gx_audio_t *wa = (gx_audio_t*)data;
+   if (!wa)
+      return 0;
+   return (size_t)wa->consumed;
 }
 
 static void *gx_audio_init(const char *device,
@@ -296,5 +318,6 @@ audio_driver_t audio_gx = {
    gx_audio_write_avail,
    gx_audio_buffer_size,
    NULL, /* write_raw */
-   gx_audio_wait_writable
+   gx_audio_wait_writable,
+   gx_audio_frames_consumed
 };
