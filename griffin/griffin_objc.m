@@ -64,8 +64,6 @@
 #include "../frontend/drivers/platform_darwin.m"
 #endif
 
-#endif
-
 #ifdef HAVE_CORELOCATION
 #include "../location/drivers/corelocation.m"
 #endif
