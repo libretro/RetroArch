@@ -228,25 +228,45 @@ static bool ui_browser_window_cocoa_open(ui_browser_window_state_t *state)
 #endif
    }
 
-#if defined(MAC_OS_X_VERSION_10_5) && !defined(MAC_OS_X_VERSION_10_6)
-   [panel setMessage:BOXSTRING(state->title)];
-   if ([panel runModalForDirectory:BOXSTRING(state->startdir) file:nil] != 1)
-      return false;
-#else
-   panel.title                           = NSLocalizedString(BOXSTRING(state->title), BOXSTRING("open panel"));
-   panel.directoryURL                    = [NSURL fileURLWithPath:BOXSTRING(state->startdir)];
-   panel.canChooseDirectories            = NO;
-   panel.canChooseFiles                  = YES;
-   panel.allowsMultipleSelection         = NO;
-   panel.treatsFilePackagesAsDirectories = NO;
+   /* The panel's directory and result moved from paths to URLs in 10.6
+    * (-setDirectoryURL: / -URL for -runModalForDirectory:file: /
+    * -filename). Which generation this system has is asked at runtime,
+    * not decided by the build SDK, and each generation's calls are sent
+    * in a form the compiler accepts whether or not the SDK declares
+    * them: performSelector: for an object argument or result,
+    * objc_msgSend for an integer result. Everything else the panel is
+    * told is 10.0 API. */
+   {
+      NSString *startdir = BOXSTRING(state->startdir);
+      NSString *path     = nil;
+      NSInteger response;
 
-   if ([panel runModal] != 1)
-       return false;
-#endif
+      [panel setTitle:NSLocalizedString(BOXSTRING(state->title), BOXSTRING("open panel"))];
+      [panel setCanChooseDirectories:NO];
+      [panel setCanChooseFiles:YES];
+      [panel setAllowsMultipleSelection:NO];
+      [panel setTreatsFilePackagesAsDirectories:NO];
 
-   NSURL *url           = (NSURL*)panel.URL;
-   const char *res_path = [url.path UTF8String];
-   state->result        = strdup(res_path);
+      if ([panel respondsToSelector:@selector(setDirectoryURL:)])
+      {
+         [panel performSelector:@selector(setDirectoryURL:)
+               withObject:[NSURL fileURLWithPath:startdir]];
+         response = [panel runModal];
+         if (response == 1)
+            path = [[panel performSelector:@selector(URL)] path];
+      }
+      else
+      {
+         response = ((NSInteger (*)(id, SEL, id, id))objc_msgSend)(panel,
+               @selector(runModalForDirectory:file:), startdir, nil);
+         if (response == 1)
+            path = ((id (*)(id, SEL))objc_msgSend)(panel, @selector(filename));
+      }
+
+      if (response != 1 || !path)
+         return false;
+      state->result = strdup([path UTF8String]);
+   }
 
    return true;
 }
@@ -727,9 +747,16 @@ static ui_application_t ui_application_cocoa = {
    apple_platform   = self;
    [self.window setAcceptsMouseMovedEvents: YES];
 
-#if MAC_OS_X_VERSION_10_7
-   self.window.collectionBehavior = NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY;
-#endif
+   /* Full-screen-primary is 10.7; the property is on NSWindow from
+    * 10.5, so ask whether this system knows the behaviour rather than
+    * whether the build SDK declared the constant, which is spelled out
+    * above. Setting it on 10.5 or 10.6 would leave a window the system
+    * cannot full-screen anyway; there the bit is left alone. */
+   /* NSAppKitVersionNumber10_6 is 1038; 10.7 is 1138. */
+   if (     [self.window respondsToSelector:@selector(setCollectionBehavior:)]
+         && NSAppKitVersionNumber >= 1138.0)
+      [self.window setCollectionBehavior:
+            NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY];
 
 #ifdef HAVE_COCOA_METAL
    _listener = [WindowListener new];
