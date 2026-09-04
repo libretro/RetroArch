@@ -92,6 +92,10 @@
 #include <compat/strl.h>
 #endif
 
+#ifdef HAVE_SDL3
+#include "../gfx/common/sdl3_common.h"
+#endif
+
 typedef struct menu_input_ctx_bind
 {
    char *s;
@@ -4609,6 +4613,7 @@ void menu_input_dialog_end(void)
    struct menu_state *menu_st                 = &menu_driver_state;
    menu_st->input_dialog_kb_type              = 0;
    menu_st->input_dialog_kb_idx               = 0;
+   menu_st->input_dialog_kb_text_type         = MENU_INPUT_DIALOG_KB_TYPE_TEXT;
    menu_st->flags                            &= ~MENU_ST_FLAG_INP_DLG_KB_DISPLAY;
    menu_st->input_dialog_kb_label[0]          = '\0';
    menu_st->input_dialog_kb_label_setting[0]  = '\0';
@@ -5188,7 +5193,7 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
  * and input_event_osk_append() calls input_keyboard_line_append(),
  * which can realloc the buffer out from under state the native path
  * is holding.  Steam's OSK already had this guard open-coded at the
- * two call sites; the iOS native keyboard needs the same. */
+ * two call sites; the iOS native keyboard and SDL3 need the same. */
 static bool menu_input_native_kb_active(void)
 {
 #ifdef HAVE_MIST
@@ -5199,7 +5204,16 @@ static bool menu_input_native_kb_active(void)
    if (ios_keyboard_active())
       return true;
 #endif
+#ifdef HAVE_SDL3
+   if (sdl3_screen_keyboard_shown())
+      return true;
+#endif
    return false;
+}
+
+enum menu_input_dialog_kb_text_type menu_input_dialog_get_kb_text_type(void)
+{
+   return menu_driver_state.input_dialog_kb_text_type;
 }
 
 bool menu_input_dialog_get_display_kb(void)
@@ -8524,8 +8538,9 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
             line->label_setting,
             sizeof(menu_st->input_dialog_kb_label_setting));
 
-   menu_st->input_dialog_kb_type   = line->type;
-   menu_st->input_dialog_kb_idx    = line->idx;
+   menu_st->input_dialog_kb_type      = line->type;
+   menu_st->input_dialog_kb_idx       = line->idx;
+   menu_st->input_dialog_kb_text_type = line->text_type;
 
    input_keyboard_line_free(input_st);
 

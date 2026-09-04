@@ -1014,6 +1014,7 @@ static int explore_action_ok_find(const char *path, const char *label,
    line.label_setting         = NULL;
    line.type                  = 0;
    line.idx                   = 0;
+   line.text_type             = MENU_INPUT_DIALOG_KB_TYPE_TEXT;
    line.cb                    = explore_action_find_complete;
    menu_input_dialog_start(&line);
    return 0;
@@ -1225,6 +1226,7 @@ static int explore_action_ok_saveview(const char *path, const char *label,
    line.label_setting         = NULL;
    line.type                  = 0;
    line.idx                   = 0;
+   line.text_type             = MENU_INPUT_DIALOG_KB_TYPE_TEXT;
    line.cb                    = explore_action_saveview_complete;
    menu_input_dialog_start(&line);
    return 0;

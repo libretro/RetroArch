@@ -1322,6 +1322,7 @@ bool netplay_handshake_init(netplay_t *netplay,
          retroarch_menu_running();
          line.label         = msg_hash_to_str(MSG_NETPLAY_ENTER_PASSWORD);
          line.label_setting = "no_setting";
+         line.text_type     = MENU_INPUT_DIALOG_KB_TYPE_PASSWORD;
          line.cb            = handshake_password;
          if (!menu_input_dialog_start(&line))
             return false;
