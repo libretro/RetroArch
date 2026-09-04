@@ -512,9 +512,8 @@ static void dinput_joypad_enum_wait(void)
    {
       retro_time_t waited;
       /* Pump first: on the frame the task finished, its callback runs
-       * here and the loop leaves without sleeping at all. This matters
-       * on Windows, where retro_sleep(1) is SleepEx(1) and rounds up
-       * to the timer period - 15.6 ms by default. */
+       * here and the loop leaves without sleeping at all, so the common
+       * case costs nothing beyond the pump itself. */
       task_queue_check();
       if (!g_dinput_enum_inflight)
          break;

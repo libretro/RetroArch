@@ -8150,11 +8150,11 @@ int runloop_iterate(void)
          /* When content is actively running behind the menu (menu_pause_libretro
           * is off), core_run() -> audio_driver_write() already paces the iterate
           * loop at the audio buffer's drain rate -- i.e. the core's natural fps.
-          * Layering the refresh-rate retro_sleep() throttle below on top of that
-          * is redundant double-pacing, and retro_sleep() resolves to OS Sleep()
-          * whose granularity is ~15 ms on Windows by default -- coarser than
-          * typical audio low-water marks, so the sleep overshoots and stutters
-          * audio.  Defer pacing to the audio backpressure path. */
+          * Layering the refresh-rate timer throttle below on top of that is
+          * redundant double-pacing: two clocks holding one loop drift
+          * against each other and the slower one wins, so the sleep lands
+          * after the audio low-water mark and stutters audio.  Defer
+          * pacing to the audio backpressure path. */
          else if (   audio_sync
                   && runloop_is_libretro_running(runloop_st, menu_pause_libretro))
          {
