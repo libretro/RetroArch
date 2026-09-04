@@ -386,6 +386,46 @@ enum runloop_pace_source
    RUNLOOP_PACE_NOWINDOW = (1 << 4)  /* nothing to present to: wait      */
 };
 
+/* The three pacing decisions the runloop makes every iteration, here
+ * rather than in runloop.c so samples/runloop/pacing can run the
+ * shipping versions instead of a copy that drifts from them. Each is
+ * pure: no state, no clock, nothing to mock. */
+
+/* One frame of the content's own time, in microseconds. Bounded either
+ * way: a core is free to report a nonsense rate, and neither a busy
+ * loop nor a ten-second stall is a reasonable reading of one frame.
+ * A rate of zero means "unknown", which is taken as 60 Hz. */
+static INLINE retro_time_t runloop_content_frame_time_us(float core_hz)
+{
+   retro_time_t period = (core_hz > 0.0f)
+         ? (retro_time_t)(1000000.0f / core_hz) : 16667;
+   if (period < 1000)
+      return 1000;
+   if (period > 100000)
+      return 100000;
+   return period;
+}
+
+/* Whether the frame limiter should hold the loop at 1.0x because
+ * nothing else is: an empty pace record means no vsync, no audio, no
+ * scanline lock, and no fast-forward limit to fall back on. Never
+ * under fast-forward, where running unthrottled is the point. */
+static INLINE bool runloop_pace_gap_engages(unsigned pace,
+      bool nonblocking, bool fastmotion)
+{
+   return (pace == RUNLOOP_PACE_NONE) && !nonblocking && !fastmotion;
+}
+
+/* Whether an interval between iterations is worth averaging into the
+ * measured loop rate. Anything past a quarter second is a stall - a
+ * state load, a shader rebuild - not pacing, and one of them drags an
+ * eight-sample average far enough to misreport for several frames.
+ * Nothing that genuinely holds the loop runs slower than 4 Hz. */
+static INLINE bool runloop_pace_sample_usable(retro_time_t delta_us)
+{
+   return delta_us > 0 && delta_us < 250000;
+}
+
 typedef struct runloop runloop_state_t;
 
 RETRO_BEGIN_DECLS

@@ -7915,22 +7915,6 @@ end:
  * button input in order to wake up the loop,
  * -1 if we forcibly quit out of the RetroArch iteration loop.
  **/
-/* One frame of the content's own time, in microseconds, for the pacing
- * paths that need a period rather than a deadline. Bounded either way:
- * a core is free to report a nonsense rate, and neither a busy loop
- * nor a ten-second stall is an acceptable reading of one. */
-static retro_time_t runloop_content_frame_time(
-      const video_driver_state_t *video_st)
-{
-   retro_time_t period = (video_st->core_hz > 0.0f)
-         ? (retro_time_t)(1000000.0f / video_st->core_hz) : 16667;
-   if (period < 1000)
-      return 1000;
-   if (period > 100000)
-      return 100000;
-   return period;
-}
-
 int runloop_iterate(void)
 {
    retro_time_t pace_limit_min;
@@ -8340,7 +8324,7 @@ end:
           * recover. Nothing that is really holding the loop runs
           * slower than 4 fps, so they are dropped rather than
           * smoothed. */
-         if (delta > 0 && delta < 250000)
+         if (runloop_pace_sample_usable(delta))
          {
             if (runloop_st->pace_period_usec)
                runloop_st->pace_period_usec +=
@@ -8424,7 +8408,7 @@ end:
       /* One frame of content time, so a window that comes back is
        * noticed within a frame and the core keeps its own rate while
        * hidden. */
-      retro_sleep_us((unsigned)runloop_content_frame_time(video_st));
+      retro_sleep_us((unsigned)runloop_content_frame_time_us(video_st->core_hz));
       return 1;
    }
 
@@ -8445,12 +8429,12 @@ end:
     * never competes with one that is doing the job, and never under
     * fast-forward, which is the case where running unthrottled is the
     * point. */
-   if (     runloop_st->pace == RUNLOOP_PACE_NONE
-         && !(input_st->flags & INP_FLAG_NONBLOCKING)
-         && !(runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
+   if (runloop_pace_gap_engages(runloop_st->pace,
+            (input_st->flags & INP_FLAG_NONBLOCKING) != 0,
+            (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION) != 0))
    {
       runloop_st->pace         |= RUNLOOP_PACE_TIMER;
-      pace_limit_min            = runloop_content_frame_time(video_st);
+      pace_limit_min            = runloop_content_frame_time_us(video_st->core_hz);
    }
 
    /* if there's a fast forward limit, inject sleeps to keep from going too fast. */
