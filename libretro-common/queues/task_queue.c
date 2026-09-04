@@ -483,7 +483,16 @@ static void retro_task_threaded_cancel(void *task)
    {
       if (t == task)
       {
+        /* Same rule as retro_task_threaded_reset below: task->flags
+         * is guarded by property_lock - the worker's handler reads
+         * it through task_get_flags mid-task - and |= is a
+         * read-modify-write, so setting it under running_lock alone
+         * both races the read and can lose a concurrent
+         * task_set_flags update.  The nesting argument there covers
+         * this site too. */
+        slock_lock(property_lock);
         t->flags |= RETRO_TASK_FLG_CANCELLED;
+        slock_unlock(property_lock);
         break;
       }
    }
