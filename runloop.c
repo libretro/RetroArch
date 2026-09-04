@@ -3147,6 +3147,11 @@ bool runloop_environment_cb(unsigned cmd, void *data)
       }
 
       case RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS:
+#if RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS != 44
+      /* Older libretro-common headers assigned 44 to this environment
+       * before it was moved to make room for SET_HW_SHARED_CONTEXT. */
+      case 44:
+#endif
       {
          uint64_t *quirks = (uint64_t *) data;
 
@@ -4398,6 +4403,13 @@ static bool core_unload_game(void)
    return true;
 }
 
+static void runloop_reset_auto_state_load(runloop_state_t *runloop_st)
+{
+   runloop_st->auto_state_load_pending   = false;
+   runloop_st->auto_state_load_attempted = false;
+   runloop_st->auto_state_load_ready     = false;
+}
+
 static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st,
       bool frame_time_counter_auto_reset,
       float fastforward_ratio_default,
@@ -4481,6 +4493,8 @@ void runloop_event_deinit_core(void)
       *video_st                = video_state_get_ptr();
    runloop_state_t *runloop_st = &runloop_state;
    settings_t        *settings = config_get_ptr();
+
+   runloop_reset_auto_state_load(runloop_st);
 
 #ifdef HAVE_THREADS
    /* Defensive: ensure the autosave worker thread is joined
@@ -4708,6 +4722,8 @@ static bool event_init_content(
    const enum rarch_core_type current_core_type = runloop_st->current_core_type;
    uint8_t flags                                = content_get_flags();
    bool entry_state_load                        = runloop_st->entry_state_slot > -1;
+
+   runloop_reset_auto_state_load(runloop_st);
 
    if (current_core_type == CORE_TYPE_PLAIN)
       runloop_st->flags |=  RUNLOOP_FLAG_USE_SRAM;
@@ -5304,7 +5320,10 @@ bool runloop_event_init_core(
          show_set_initial_disk_msg, initial_disk_change_enable);
 
    if (!runloop_event_load_core(runloop_st, poll_type_behavior))
+   {
+      runloop_reset_auto_state_load(runloop_st);
       return false;
+   }
 
    runloop_set_frame_limit(&video_st->av_info, fastforward_ratio);
    runloop_st->frame_limit_last_time    = cpu_features_get_time_usec();
@@ -5951,6 +5970,8 @@ void runloop_msg_queue_push(
    RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
 }
 
+static void runloop_load_deferred_auto_state(void);
+
 #ifdef HAVE_MENU
 /* Display the libretro core's framebuffer onscreen. */
 static bool display_menu_libretro(
@@ -5973,6 +5994,7 @@ static bool display_menu_libretro(
          input_st->flags |= INP_FLAG_BLOCK_LIBRETRO_INPUT;
 
       core_run();
+      runloop_load_deferred_auto_state();
       runloop_st->core_runtime_usec       +=
          runloop_core_runtime_tick(runloop_st, slowmotion_ratio, current_time);
       input_st->flags                     &= ~INP_FLAG_BLOCK_LIBRETRO_INPUT;
@@ -8227,6 +8249,8 @@ int runloop_iterate(void)
          core_run();
    }
 
+   runloop_load_deferred_auto_state();
+
    /* Increment runtime tick counter after each call to
     * core_run() or run_ahead() */
    runloop_st->core_runtime_usec += runloop_core_runtime_tick(
@@ -8943,6 +8967,39 @@ void core_reset(void)
 
    video_driver_cached_frame_invalidate();
    runloop_st->current_core.retro_reset();
+}
+
+static void runloop_load_deferred_auto_state(void)
+{
+   runloop_state_t *runloop_st = &runloop_state;
+   settings_t *settings        = config_get_ptr();
+
+   if (!runloop_st->auto_state_load_pending)
+      return;
+
+   runloop_st->auto_state_load_pending = false;
+
+   if (!settings->bools.savestate_auto_load)
+   {
+      runloop_st->auto_state_load_attempted = true;
+      RARCH_LOG("[State] Deferred auto-load canceled because Auto Load State is disabled.\n");
+      return;
+   }
+
+   if (     runloop_st->content_closing
+         || !(runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED))
+   {
+      runloop_st->auto_state_load_attempted = true;
+      return;
+   }
+
+   /* The command handler defers this core's initial auto-load. Mark this
+    * dispatch as ready so the call below uses the existing state task path
+    * exactly once. */
+   runloop_st->auto_state_load_attempted = true;
+   runloop_st->auto_state_load_ready     = true;
+   command_event_load_auto_state();
+   runloop_st->auto_state_load_ready     = false;
 }
 
 void core_run(void)

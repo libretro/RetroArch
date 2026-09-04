@@ -345,6 +345,12 @@ struct runloop
     * cross-thread race, so reusing it would undo that reasoning for
     * no gain. This is main-thread only. */
    bool content_closing;
+
+   /* Main-thread state for cores that cannot deserialize before their
+    * first retro_run(). */
+   bool auto_state_load_pending;
+   bool auto_state_load_attempted;
+   bool auto_state_load_ready;
 };
 
 /* Frame pacing sources.
