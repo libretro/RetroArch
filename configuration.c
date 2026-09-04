@@ -152,7 +152,6 @@ enum audio_driver_enum
    AUDIO_AUDIOIO,
    AUDIO_OSS,
    AUDIO_ALSA,
-   AUDIO_ALSATHREAD,
    AUDIO_TINYALSA,
    AUDIO_ROAR,
    AUDIO_AL,
@@ -549,9 +548,10 @@ static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_AL;
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PULSE;
 #elif defined(HAVE_PIPEWIRE)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PIPEWIRE;
-#elif defined(HAVE_ALSA) && defined(HAVE_THREADS)
-static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_ALSATHREAD;
 #elif defined(HAVE_ALSA)
+/* Was AUDIO_ALSATHREAD when built with threads. That driver is gone and
+ * the threaded pipeline, on by default, does what it did from the audio
+ * thread - and more, since the resampler moves off the frame too. */
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_ALSA;
 #elif defined(HAVE_TINYALSA)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_TINYALSA;
@@ -954,8 +954,6 @@ const char *config_get_default_audio(void)
          return "oss";
       case AUDIO_ALSA:
          return "alsa";
-      case AUDIO_ALSATHREAD:
-         return "alsathread";
       case AUDIO_TINYALSA:
          return "tinyalsa";
       case AUDIO_ROAR:

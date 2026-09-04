@@ -855,7 +855,6 @@ extern audio_driver_t audio_rsound;
 extern audio_driver_t audio_audioio;
 extern audio_driver_t audio_oss;
 extern audio_driver_t audio_alsa;
-extern audio_driver_t audio_alsathread;
 extern audio_driver_t audio_tinyalsa;
 extern audio_driver_t audio_roar;
 extern audio_driver_t audio_openal;

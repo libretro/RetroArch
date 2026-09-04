@@ -202,7 +202,6 @@ audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_ALSA
    &audio_alsa,
 #if !defined(__QNX__) && !defined(MIYOO) && defined(HAVE_THREADS)
-   &audio_alsathread,
 #endif
 #endif
 #ifdef HAVE_TINYALSA
@@ -637,6 +636,21 @@ bool audio_driver_find_driver(const char *audio_drv,
 {
    int i;
 
+#ifdef HAVE_ALSA
+   /* "alsathread" was a second ALSA playback driver, removed once the
+    * threaded pipeline covered what it did; a config that still names it
+    * means ALSA, not the first entry in the table. Aliased for a
+    * release, then to go. The microphone driver of the same name is
+    * unaffected - it is a separate list. */
+   if (string_is_equal(audio_drv, "alsathread"))
+      audio_drv = "alsa";
+   /* The menu label and its help text stay in msg_hash: fifteen packed
+    * translation headers carry the entry with byte counts and a
+    * contiguity check, and rewriting those to delete a string nothing
+    * can now reach is a larger and riskier change than removing the
+    * driver was. The driver is not in the list, so the label is never
+    * shown and the help lookup never matches. */
+#endif
 #ifdef HAVE_COREAUDIO
    /* "coreaudio3" was a second Apple driver, merged into "coreaudio";
     * a config that still names it means the driver, not the first
