@@ -262,16 +262,19 @@ static void gfx_ctx_wl_swap_buffers(void *data)
     * minimized, screen locked), skip presentation-time pacing,
     * feedback, and present/acquire: the surface is not being scanned
     * out, so there are no vblank events to track and no frame to
-    * present.  Throttle only when vsync pacing is active; with
-    * swap_interval == 0 (fast-forward) the loop stays unthrottled,
-    * matching pre-suspend behavior.  Keep the event queue moving so
-    * the resume configure is seen.  Compositors older than
-    * xdg_wm_base v6 never send the state; wl->suspended then stays
-    * false and this block never runs. */
+    * present.  Keep the event queue moving so the resume configure is
+    * seen.  Compositors older than xdg_wm_base v6 never send the
+    * state; wl->suspended then stays false and this block never runs.
+    *
+    * No wait here.  gfx_ctx_wl_vk_presentable() reports the same
+    * suspended flag, and the runloop waits a frame on it - once, where
+    * it can see whether audio or the frame limiter is already holding
+    * the loop, and without throttling a fast-forward that is meant to
+    * run free.  The sleep this used to do was conditional on
+    * swap_interval for that last reason; the runloop's check covers it
+    * properly. */
    if (wl->suspended)
    {
-      if (wl->swap_interval != 0)
-         retro_sleep(10);
       flush_wayland_fd(&wl->input);
       return;
    }
