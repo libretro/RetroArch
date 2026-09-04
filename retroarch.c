@@ -1885,7 +1885,7 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
     * No-op when threaded video is not active. */
    if (     (flags & DRIVER_VIDEO_AND_INPUT_MASK)
          && VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
-         && (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE))
+         && video_st->thread_wrapper_active)
       video_thread_wait_idle();
 #endif
 
@@ -4198,7 +4198,7 @@ bool command_event(enum event_command cmd, void *data)
                /* Same barrier as driver_uninit(): never free widget GPU
                 * resources while the video thread may still reference them. */
                if (     VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
-                     && (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE))
+                     && video_st->thread_wrapper_active)
                   video_thread_wait_idle();
 #endif
                /* Full teardown (not persisting): a real user toggle-off
@@ -6337,7 +6337,21 @@ void main_exit(void *args)
    video_driver_restore_cached(settings);
 
 #if defined(HAVE_GFX_WIDGETS)
-   /* Do not want display widgets to live any more. */
+   /* Do not want display widgets to live any more.
+    *
+    * The widget flags are read by gfx_widgets_frame(), which runs on
+    * the video thread under threaded video, so the thread is brought
+    * to a stop first - clearing the bit under it is a write racing
+    * those reads, which ThreadSanitizer catches on the exit path about
+    * one run in three. No-op when the wrapper is not active. */
+#ifdef HAVE_THREADS
+   {
+      video_driver_state_t *video_st_exit = video_state_get_ptr();
+      if (     VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st_exit)
+            && video_st_exit->thread_wrapper_active)
+         video_thread_wait_idle();
+   }
+#endif
    dispwidget_get_ptr()->flags &= ~DISPGFX_WIDGET_FLAG_PERSISTING;
 #endif
 #ifdef HAVE_MENU
@@ -8728,7 +8742,7 @@ bool retroarch_main_init(int argc, char *argv[])
           * No-op when threaded video is not active. */
          video_driver_state_t *video_st = video_state_get_ptr();
          if (     VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
-               && (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE))
+               && video_st->thread_wrapper_active)
             video_thread_wait_idle();
 #endif
          menu_st->flags        &= ~MENU_ST_FLAG_DATA_OWN;

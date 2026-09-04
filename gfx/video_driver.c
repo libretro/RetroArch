@@ -717,7 +717,7 @@ void video_driver_shader_deferred_tick(void)
 static void *video_thread_get_ptr(video_driver_state_t *video_st)
 {
    const thread_video_t *thr;
-   if (!(video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE))
+   if (!video_st->thread_wrapper_active)
       return video_st->data;
    thr = (const thread_video_t*)video_st->data;
    if (thr)
@@ -1801,7 +1801,7 @@ bool video_driver_is_threaded(void)
 bool video_driver_thread_wrapper_active(void)
 {
    video_driver_state_t *video_st                 = &video_driver_st;
-   return (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE) != 0;
+   return video_st->thread_wrapper_active;
 }
 #endif
 
@@ -1824,7 +1824,7 @@ const char *video_driver_get_ident(void)
    if (!vid)
       return NULL;
 #ifdef HAVE_THREADS
-   if (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE)
+   if (video_st->thread_wrapper_active)
    {
       const thread_video_t *thr   = (const thread_video_t*)video_st->data;
       if (!thr || !thr->driver)
@@ -3324,11 +3324,11 @@ bool video_driver_render_context_is_main_thread_only(void)
    if (!vid)
       return false;
    /* Read the underlying driver ident directly.  Mirror
-    * video_driver_get_ident() but key off VIDEO_FLAG_THREAD_WRAPPER_ACTIVE
+    * video_driver_get_ident() but key off thread_wrapper_active
     * rather than VIDEO_DRIVER_IS_THREADED_INTERNAL, since that macro calls
     * back into this predicate and would recurse. */
 #ifdef HAVE_THREADS
-   if (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE)
+   if (video_st->thread_wrapper_active)
    {
       const thread_video_t *thr = (const thread_video_t*)video_st->data;
       ident = (thr && thr->driver) ? thr->driver->ident : NULL;

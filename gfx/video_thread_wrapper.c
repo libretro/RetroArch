@@ -586,7 +586,7 @@ static void video_thread_loop(void *data)
 
                /* video_driver_build_info() resolves userdata from
                 * video_driver_st, and video_thread_free() clears
-                * VIDEO_FLAG_THREAD_WRAPPER_ACTIVE before this thread
+                * thread_wrapper_active before this thread
                 * stops, so a frame built inside that window would carry
                 * the thread_video_t wrapper instead of the real driver
                 * data.  This thread knows its own. */
@@ -997,8 +997,6 @@ static void video_thread_free(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
 
-   video_state_get_ptr()->flags &= ~VIDEO_FLAG_THREAD_WRAPPER_ACTIVE;
-
    if (thr)
    {
       if (thr->thread)
@@ -1017,6 +1015,13 @@ static void video_thread_free(void *data)
          if (thr->driver_data && thr->driver && thr->driver->free)
             thr->driver->free(thr->driver_data);
       }
+
+      /* After the join, not before it: the video thread reads this
+       * from inside driver frame callbacks, so clearing it while that
+       * thread still runs is a write racing those reads - and it
+       * briefly tells the rest of the frontend the wrapper is gone
+       * while its thread is still presenting. */
+      video_state_get_ptr()->thread_wrapper_active = false;
 
       free(thr->texture.frame);
 #ifdef _3DS
@@ -1651,7 +1656,7 @@ bool video_init_thread(const video_driver_t **out_driver, void **out_data,
     * thread wrapper here, so without the flag set get_ident() would
     * resolve to "Thread wrapper" instead of the wrapped driver ("glcore"),
     * causing shader-backend detection to fail. */
-   video_state_get_ptr()->flags |= VIDEO_FLAG_THREAD_WRAPPER_ACTIVE;
+   video_state_get_ptr()->thread_wrapper_active = true;
    if (!video_thread_init(thr, info, input, input_data))
    {
       /* video_thread is a member of thr, not a static vtable, so leaving
@@ -1682,7 +1687,7 @@ bool video_thread_font_init(const void **font_driver, void **font_handle,
     * driver reinit, is_threaded may already reflect the new
     * configuration while video_st->data still points to the
     * previous (possibly non-threaded) driver's private state. */
-   if (!(video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE))
+   if (!video_st->thread_wrapper_active)
       return false;
 
    thr = (thread_video_t*)video_st->data;
@@ -1718,7 +1723,7 @@ uintptr_t video_thread_texture_handle(void *data, custom_command_method_t func)
     * the previous driver's private state.  Fall back to calling
     * func directly (same contract as the "already on video
     * thread" branch below). */
-   if (!(video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE))
+   if (!video_st->thread_wrapper_active)
       return func(data);
 
    thr = (thread_video_t*)video_st->data;
@@ -1778,7 +1783,7 @@ void video_thread_wait_idle(void)
     * when the threaded video wrapper is actually active.  With
     * non-threaded video, video_st->data points to the raw
     * driver's private state. */
-   if (!(video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE))
+   if (!video_st->thread_wrapper_active)
       return;
 
    thr = (thread_video_t*)video_st->data;

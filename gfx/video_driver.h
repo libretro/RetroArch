@@ -125,7 +125,14 @@ enum video_driver_state_flags
    VIDEO_FLAG_HDR10_SUPPORT                       = (1 << 19),
    VIDEO_FLAG_SCRGB_SUPPORT                       = (1 << 20),
    VIDEO_FLAG_GPU_DEVICE_LOST                     = (1 << 21),
-   VIDEO_FLAG_THREAD_WRAPPER_ACTIVE               = (1 << 22)
+   /* Free. The wrapper-active state lives in
+    * video_driver_state_t::thread_wrapper_active, not in this word:
+    * the video thread reads it (through
+    * video_driver_thread_wrapper_active(), from inside driver frame
+    * callbacks) while the main thread read-modify-writes this word for
+    * unrelated bits, and a bit in a shared word cannot be read from
+    * another thread without the lock the write side takes. */
+   VIDEO_FLAG_THREAD_WRAPPER_ACTIVE_UNUSED        = (1 << 22)
 };
 
 enum video_driver_scanline
@@ -895,6 +902,13 @@ typedef struct
    struct retro_hw_render_callback hw_render;            /* ptr alignment */
    struct rarch_dir_shader_list dir_shader_list;         /* ptr alignment */
 #ifdef HAVE_THREADS
+   /* Whether the threaded video wrapper is installed. Its own storage
+    * rather than a bit in ::flags, because the video thread reads it
+    * while the main thread writes other bits of that word; see the
+    * comment on VIDEO_FLAG_THREAD_WRAPPER_ACTIVE_UNUSED. Written by
+    * the main thread only, once the wrapper is built and once it has
+    * been torn down and the thread joined. */
+   bool thread_wrapper_active;
    slock_t *display_lock;
    slock_t *context_lock;
 #endif

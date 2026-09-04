@@ -1275,7 +1275,7 @@ static uintptr_t font_driver_free_wrap(void *data)
  * pattern used by texture load/unload.
  *
  * video_thread_texture_handle is self-safe: if the wrapper
- * is not active (VIDEO_FLAG_THREAD_WRAPPER_ACTIVE not set),
+ * is not active (the wrapper is not active),
  * it falls back to calling func(data) on the current thread.
  * If called from the video thread itself, it calls func
  * directly (no deadlock). */
