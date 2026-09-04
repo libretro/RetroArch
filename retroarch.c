@@ -3849,7 +3849,14 @@ bool command_event(enum event_command cmd, void *data)
             runloop_msg_queue_push(_msg, strlen(_msg), 1, 120, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
-            core_reset();
+            /* A reset throws the game's audio away mid-waveform, and
+             * re-initialising the machine is long enough to empty the device
+             * on the way. See audio_driver_jump_fade_begin(). */
+            {
+               bool ramped = audio_driver_jump_fade_begin();
+               core_reset();
+               audio_driver_jump_fade_end(ramped);
+            }
 #ifdef HAVE_CHEEVOS
 #ifdef HAVE_GFX_WIDGETS
             rcheevos_reset_game(dispwidget_get_ptr()->active);

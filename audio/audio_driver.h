@@ -1014,6 +1014,23 @@ void audio_driver_pause_fade(bool paused);
 bool audio_driver_core_silenced(void);
 
 /**
+ * audio_driver_jump_fade_begin:
+ * audio_driver_jump_fade_end:
+ * @ramped : what _begin returned.
+ *
+ * Bracket a jump the frontend makes in the game's state - a state load, an
+ * undo, a core reset - with the pause tail and the resume ramp, so both the
+ * splice and whatever gap the work leaves behind land in silence.
+ *
+ * A stream already down - the jump was made from the menu, or while paused -
+ * is left alone: _begin returns false and _end then does nothing, so the ramp
+ * back up stays with whatever took the stream down.
+ **/
+bool audio_driver_jump_fade_begin(void);
+
+void audio_driver_jump_fade_end(bool ramped);
+
+/**
  * audio_driver_pipeline_consumer_exit:
  *
  * Called by the audio thread wrapper as its thread leaves the loop, so

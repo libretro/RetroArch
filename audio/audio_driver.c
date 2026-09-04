@@ -4879,6 +4879,20 @@ void audio_driver_pause_fade(bool paused)
    audio_driver_state_unlock();
 }
 
+bool audio_driver_jump_fade_begin(void)
+{
+   if (audio_driver_core_silenced())
+      return false;
+   audio_driver_pause_fade(true);
+   return true;
+}
+
+void audio_driver_jump_fade_end(bool ramped)
+{
+   if (ramped)
+      audio_driver_pause_fade(false);
+}
+
 void audio_driver_set_nonblock_state(bool nonblock)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;
