@@ -1408,8 +1408,39 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
        * gain (0.0 when muted) to its output - a driver that drops it
        * silently disables the volume and mute settings. */
       audio_st->stat_frontend_is_float = false;
-      audio->write_raw(audio_st->context_audio_data,
-            data, frames, input_rate, rate_adjust, audio_volume_gain);
+      {
+         ssize_t  w    = audio->write_raw(audio_st->context_audio_data,
+               data, frames, input_rate, rate_adjust, audio_volume_gain);
+         /* The sink estimate, which this path was not feeding at all:
+          * offered went uncounted and sink_update() was never called,
+          * so on any driver taking the fast path the estimator sat
+          * inert - no Sink row, no measurement, and no sign that it was
+          * doing nothing.
+          *
+          * The driver does the resampling here, so what it will hand
+          * the device is the frames given scaled by the rate ratio and
+          * by rate control's adjustment. sink_offered wants that with
+          * the adjustment divided out, as the other write sites do, so
+          * the bias measures the clocks and not rate control's own
+          * corrections. write_raw returns device frames accepted, so it
+          * goes straight into sink_accepted with no byte conversion.
+          *
+          * The bias reaches the driver only through the rate_adjust
+          * above, which compute_rate_adjust() multiplies it into - so
+          * with rate control off it is measured and shown but not
+          * applied, exactly as it is for a blocking writer. */
+         unsigned out_rate = config_get_ptr()->uints.audio_output_sample_rate;
+         if (out_rate && input_rate)
+         {
+            double nominal = (double)frames * (double)out_rate
+                  / (double)input_rate;
+            audio_st->sink_offered_raw += (uint64_t)(nominal * rate_adjust);
+            audio_st->sink_offered     += nominal;
+            if (w > 0)
+               audio_st->sink_accepted += (uint64_t)w;
+         }
+      }
+      audio_driver_sink_update(audio_st, cpu_features_get_time_usec());
       return;
    }
 
