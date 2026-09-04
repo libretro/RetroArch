@@ -20,7 +20,7 @@
  * on retro_atomic, which has a backend for each of those (C11,
  * clang/GCC builtins, or OSAtomic on the oldest); the resampler is an
  * AudioConverter and the volume a vDSP multiply, in frameworks every
- * one of those SDKs ships and the Makefile links. The writer sleeps
+ * one of those SDKs ships and the Makefile links. The writer waits
  * between callbacks on a Mach semaphore, in the kernel since 10.0:
  * signal is lock-free and safe from the real-time render thread, and
  * the wait is timed. dispatch_semaphore, which needed a 10.7 SDK and
@@ -72,10 +72,13 @@
 
 typedef struct coreaudio
 {
-   /* What the writer sleeps on between render callbacks; see
-    * coreaudio_signal() and coreaudio_wait_ms(). */
+   /* What the writer waits on between render callbacks; see
+    * coreaudio_signal() and coreaudio_wait(). */
    semaphore_t sema;
    bool        sema_alive;
+   /* Writers currently inside coreaudio_wait(); the callback signals
+    * only while this is non-zero. */
+   retro_atomic_int_t waiters;
 
    /* Lock-free ring buffer */
    float *buffer;
@@ -112,32 +115,13 @@ typedef struct
    size_t frames_left;
 } converter_callback_ctx_t;
 
-/* The wait between callbacks. The callback signals after every pull;
- * the writer sleeps until then or until the timeout, whichever first,
- * so a unit that has stopped rendering cannot hold a writer. A Mach
- * semaphore: semaphore_signal takes no lock and is safe from the
- * real-time thread, semaphore_timedwait is the timed sleep. Signals
- * that arrive with no waiter accumulate and the next wait returns at
- * once, which is what the writer wants after a burst of callbacks. */
-static void coreaudio_signal(coreaudio_t *dev)
-{
-   semaphore_signal(dev->sema);
-}
-
-static void coreaudio_wait_ms(coreaudio_t *dev, unsigned ms)
-{
-   mach_timespec_t ts;
-   ts.tv_sec  = ms / 1000;
-   ts.tv_nsec = (ms % 1000) * 1000000;
-   semaphore_timedwait(dev->sema, ts);
-}
-
 static bool coreaudio_wait_init(coreaudio_t *dev)
 {
    if (semaphore_create(mach_task_self(), &dev->sema,
             SYNC_POLICY_FIFO, 0) != KERN_SUCCESS)
       return false;
    dev->sema_alive = true;
+   retro_atomic_int_init(&dev->waiters, 0);
    return true;
 }
 
@@ -178,6 +162,46 @@ static void rb_read(coreaudio_t *dev, float *data, size_t count)
 
    dev->read_ptr = (dev->read_ptr + count) & (dev->capacity - 1);
    retro_atomic_fetch_sub_size(&dev->filled, count);
+}
+
+/* The wait between callbacks, on a Mach semaphore: semaphore_signal
+ * takes no lock and is safe from the real-time render thread, and
+ * semaphore_timedwait is the wait. The timeout is a ceiling for a
+ * unit that has stopped rendering and will never signal; in play the
+ * writer wakes when the callback frees space, after the kernel's wake
+ * latency, which is the floor on Darwin - pthread_cond, dispatch and
+ * os_unfair_lock's waiters all bottom out on this same wait.
+ *
+ * The waiter count is what dispatch_semaphore keeps in userspace and
+ * what a bare Mach semaphore lacks: without it every callback signals
+ * whether anyone waits or not, and the signals accumulate while the
+ * writer is non-blocking - by one per callback, without bound - so
+ * that the next real wait returns at once, again and again, until the
+ * lap cap trips and the frontend drops audio it could have delivered.
+ * The writer raises the count, then rechecks the ring: a callback that
+ * ran before the raise saw no waiter and did not signal, and the
+ * recheck sees the space it freed instead. A callback that ran after
+ * the raise signals, and if the writer had already left, at most one
+ * stale count remains, which the loop around this absorbs. Both sides
+ * pair an acq_rel read-modify-write with an acquire load, which no
+ * backend reorders. */
+static void coreaudio_signal(coreaudio_t *dev)
+{
+   if (retro_atomic_load_acquire_int(&dev->waiters))
+      semaphore_signal(dev->sema);
+}
+
+static void coreaudio_wait(coreaudio_t *dev, size_t want_samples, unsigned ms)
+{
+   retro_atomic_fetch_add_int(&dev->waiters, 1);
+   if (rb_write_avail(dev) < want_samples)
+   {
+      mach_timespec_t ts;
+      ts.tv_sec  = ms / 1000;
+      ts.tv_nsec = (ms % 1000) * 1000000;
+      semaphore_timedwait(dev->sema, ts);
+   }
+   retro_atomic_fetch_sub_int(&dev->waiters, 1);
 }
 
 /* AudioConverter input callback - provides int16 samples */
@@ -650,7 +674,7 @@ static ssize_t coreaudio_write(void *data, const void *buf_, size_t len)
             break;
          /* Brief timeout as safety net for the race where the unit
           * stops during the wait; we'll re-check on the next iteration. */
-         coreaudio_wait_ms(dev, 100);
+         coreaudio_wait(dev, 1, 100);
       }
    }
 
@@ -757,7 +781,7 @@ static ssize_t coreaudio_write_raw(void *data, const int16_t *samples,
                   break;
                if (--laps < 0)
                   break;
-               coreaudio_wait_ms(dev, 100);
+               coreaudio_wait(dev, 1, 100);
             }
          }
       }
@@ -823,7 +847,7 @@ static size_t coreaudio_buffer_size(void *data)
    return dev->capacity * sizeof(float);
 }
 
-/* Sleep on the wait the render callback signals after every pull
+/* Wait on what the render callback signals after every pull
  * until at least len bytes fit in the ring, capped at half of it so the
  * wait always ends. Returns the free space then, or 0 once the unit has
  * stopped (paused, or interrupted, which the running check catches as
@@ -858,7 +882,7 @@ static size_t coreaudio_wait_writable(void *data, size_t len)
        * reports running but never renders. */
       if (--laps < 0)
          break;
-      coreaudio_wait_ms(dev, 100);
+      coreaudio_wait(dev, want, 100);
    }
    return 0;
 }
