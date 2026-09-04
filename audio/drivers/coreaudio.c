@@ -19,8 +19,8 @@
  * The ring between the writer and the render callback is lock-free
  * on retro_atomic, which has a backend for each of those (C11,
  * clang/GCC builtins, or OSAtomic on the oldest); the resampler is an
- * AudioConverter and the volume a vDSP multiply, in frameworks every
- * one of those SDKs ships and the Makefile links. The writer waits
+ * AudioConverter, in AudioToolbox, which every one of those SDKs ships
+ * and the Makefile links. The writer waits
  * between callbacks on a Mach semaphore, in the kernel since 10.0:
  * signal is lock-free and safe from the real-time render thread, and
  * the wait is timed. dispatch_semaphore, which needed a 10.7 SDK and
@@ -123,10 +123,6 @@ static bool ca_cm_resolve(void)
  * declare it. */
 #include <AudioToolbox/AudioToolbox.h>
 
-/* Nb is defined by AES code included earlier in griffin.c amalgamation.
- * It conflicts with Sparse BLAS headers in Accelerate, so undefine it. */
-#undef Nb
-#include <Accelerate/Accelerate.h>
 
 /* Threshold for recreating AudioConverter (0.5% change) */
 #define RATE_CHANGE_THRESHOLD 0.005
@@ -823,10 +819,17 @@ static ssize_t coreaudio_write_raw(void *data, const int16_t *samples,
 
       dev->converter_needs_reset = false;
 
-      /* Apply volume to converted samples */
+      /* Apply volume to converted samples. A plain loop: a few thousand
+       * multiplies per frame, which the compiler vectorises, and not
+       * worth the Accelerate umbrella that used to be pulled in for it. */
       if (volume != 1.0f)
-         vDSP_vsmul(dev->conv_buffer, 1, &volume,
-               dev->conv_buffer, 1, (vDSP_Length)(output_frames * 2));
+      {
+         float *v = dev->conv_buffer;
+         size_t n = output_frames * 2;
+         size_t k;
+         for (k = 0; k < n; k++)
+            v[k] *= volume;
+      }
 
       /* Write converted samples to ring buffer */
       {

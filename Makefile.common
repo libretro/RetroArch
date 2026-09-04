@@ -815,7 +815,7 @@ ifeq ($(HAVE_MICROPHONE), 1)
    LIBS += -framework AVFoundation
 endif
    HAVE_COREAUDIO_LIBS = 1
-   LIBS += -framework AudioToolbox -framework Accelerate
+   LIBS += -framework AudioToolbox
 endif
 
 ifeq ($(HAVE_COREAUDIO_LIBS), 1)
