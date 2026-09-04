@@ -1464,24 +1464,36 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
              * is a 44 ms fifo and reads as 64; under IAudioClient3 the
              * engine is a few ms and the fifo is nearly the setting. */
             {
-               /* The floor: two engine periods, and never under 20 ms -
-                * the writer's burst is a frame of core audio, 16.7 ms
-                * at 60 fps, with audio sync off. Periods, not engine
+               /* The floor: one frame of core audio at 50 fps plus one
+                * engine period, and never under the engine buffer.
+                *
+                * The writer hands the fifo a whole frame at a time,
+                * and the pump only frees room once per period. A fifo
+                * of exactly one frame cannot take the next one until
+                * the pump has run - fifo_new() keeps a byte, and rate
+                * control resamples the chunk a little long when the
+                * device runs ahead - so with a blocking writer every
+                * write waited a period, inside retro_run(). At 48 kHz
+                * that was 960 frames offered to 959 of room: PAL
+                * stuttered at the minimum setting and 60 fps did not.
+                * The period of headroom is what the pump frees while
+                * the frame is being written. Periods, not engine
                 * buffers: the engine buffer is itself two periods on
-                * the legacy path, and a floor of two of those - 44 ms
-                * on an endpoint whose 20 ms request came back as 22 -
-                * swallowed every setting, 66 ms reported at 16, 24,
-                * 32 and 64 alike. */
+                * the legacy path, and a floor of two of those swallowed
+                * every setting below 44 ms. */
                unsigned period_frames = 0;
-               unsigned floor_frames  = rate / 50;
+               unsigned floor_frames;
                hr = _IAudioClient_GetDevicePeriod(w->client, &dev_period, NULL);
                if (SUCCEEDED(hr) && dev_period > 0)
                   period_frames = (unsigned)(dev_period * rate / 10000000);
                /* The period the engine actually runs at - the one its
                 * events follow - is what the pump counts consumed by.
                 * Under IAudioClient3 that may be below the default. */
+               floor_frames = rate / 50 + period_frames;
                if (floor_frames < period_frames * 2)
                   floor_frames = period_frames * 2;
+               if (floor_frames < frame_count)
+                  floor_frames = frame_count;
                sh_buffer_length = (unsigned)(((uint64_t)latency * rate) / 1000);
                if (sh_buffer_length > frame_count + floor_frames)
                   sh_buffer_length -= frame_count;
