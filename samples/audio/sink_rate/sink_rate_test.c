@@ -144,13 +144,42 @@ int main(void)
    printf("   -80 ppm device: bias %+.0f ppm\n", bias_ppm(st));
    CHECK(fabs(bias_ppm(st) + 80.0) < 40.0, "bias %+.0f ppm, expected -80", bias_ppm(st));
 
-   /* 4. A device 5000 ppm off: the clamp. */
+   /* 4. A ratio too far off to be a crystal: refused, not clamped.
+    *
+    *    This used to assert the clamp, and the clamp is what made
+    *    CoreAudio crackle about a minute in: a bias of 2000 ppm empties
+    *    a 64 ms buffer in thirty-two seconds, and the first application
+    *    lands at sixty. No crystal is 5000 ppm out - a ratio like this
+    *    means the two counts are not measuring the same thing - so the
+    *    only safe reading is to leave the resampler alone. The rate is
+    *    still measured and still reported, which is what a mismeasuring
+    *    driver needs in order to be found. */
    reset(st, false);
    dev_ppm = 5000.0;
    for (i = 0; i < 120; i++)
       run_second(st);
-   printf("   +5000 ppm device: bias %+.0f ppm (clamped)\n", bias_ppm(st));
-   CHECK(fabs(st->sink_bias - (1.0 + AUDIO_SINK_BIAS_MAX)) < 1e-9, "bias %.6f, expected the clamp", st->sink_bias);
+   printf("   +5000 ppm device: bias %+.0f ppm (refused as implausible)\n", bias_ppm(st));
+   CHECK(fabs(st->sink_bias - 1.0) < 1e-9,
+         "bias %.6f, expected no bias at all", st->sink_bias);
+   CHECK(st->sink_rate_hz > 48000.0,
+         "the rate must still be measured and reported, got %.1f", st->sink_rate_hz);
+
+   /* 4b. Either side of the plausibility line, so the line itself is
+    *     covered rather than just the far side of it. */
+   reset(st, false);
+   dev_ppm = 400.0;
+   for (i = 0; i < 300; i++)
+      run_second(st);
+   printf("   +400 ppm device: bias %+.0f ppm (inside the plausible range)\n", bias_ppm(st));
+   CHECK(bias_ppm(st) > 200.0, "a 400 ppm device must still be corrected, got %+.0f", bias_ppm(st));
+
+   reset(st, false);
+   dev_ppm = 900.0;
+   for (i = 0; i < 300; i++)
+      run_second(st);
+   printf("   +900 ppm device: bias %+.0f ppm (outside it)\n", bias_ppm(st));
+   CHECK(fabs(st->sink_bias - 1.0) < 1e-9,
+         "a 900 ppm ratio is not a crystal; expected no bias, got %.6f", st->sink_bias);
 
    /* 5. Rate control on, with a non-blocking writer: the fill sits
     *    pinned full and rate control says "slow" by its whole delta
@@ -227,6 +256,6 @@ int main(void)
       printf("%u failure(s)\n", failures);
       return 1;
    }
-   printf("sink rate: measured through period-quantised counts and refused frames, converged, clamped, rate control's pinned adjustment and pauses kept out\n");
+   printf("sink rate: measured through period-quantised counts and refused frames, converged, implausible ratios refused, rate control's pinned adjustment and pauses kept out\n");
    return 0;
 }

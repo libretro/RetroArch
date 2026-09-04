@@ -800,6 +800,22 @@ static double audio_driver_compute_rate_adjust(audio_driver_state_t *audio_st)
  * first correction has that much behind it and each later one more.
  * The plausibility check runs every four seconds regardless. */
 #define AUDIO_SINK_BIAS_MAX         0.002
+/* Past this, the measurement is wrong rather than the crystal.
+ *
+ * Audio crystals are specified in tens of parts per million and the
+ * worst are around a hundred; the devices measured for this feature
+ * came in at eleven. Five hundred is five times the worst plausible
+ * part, so a ratio outside it is not a clock to correct - it is two
+ * counts that are not measuring the same thing, and applying it is
+ * strictly harmful. At the 2000 ppm clamp a 64 ms buffer empties in
+ * thirty-two seconds, so the first application lands about a minute
+ * in and the audio starts to break up: the exact shape of the bug
+ * this check exists to stop, seen on CoreAudio.
+ *
+ * Refusing to apply is the whole of it. The rate is still measured and
+ * still shown, so the overlay and the log keep saying what was seen,
+ * which is what a mismeasuring driver needs in order to be fixed. */
+#define AUDIO_SINK_BIAS_PLAUSIBLE   0.0005
 #define AUDIO_SINK_BASELINE_USEC    30000000
 #define AUDIO_SINK_CHECK_USEC       4000000
 
@@ -951,6 +967,24 @@ static void audio_driver_sink_update(audio_driver_state_t *audio_st,
       double r = audio_st->sink_sum_offered > 0.0
             ? audio_st->sink_sum_consumed / audio_st->sink_sum_offered
             : audio_st->sink_bias;
+
+      /* Too far off to be a crystal: the two counts are not measuring
+       * the same thing. Leave the bias where it is - 1.0 if nothing has
+       * ever been applied - and keep measuring. */
+      if (fabs(r - 1.0) > AUDIO_SINK_BIAS_PLAUSIBLE)
+      {
+         if (!audio_st->sink_implausible_warned)
+         {
+            audio_st->sink_implausible_warned = true;
+            RARCH_WARN("[Audio] Sink rate: the device appears to take %.1f Hz against a nominal %u (%+.0f ppm), which is too far off to be a crystal - driver \"%s\" is most likely counting something other than what the frontend offers it. Not biasing resampling; the rate is still shown.\n",
+                  audio_st->sink_rate_hz, rate,
+                  (audio_st->sink_rate_hz / (double)rate - 1.0) * 1e6,
+                  audio->ident ? audio->ident : "?");
+         }
+         audio_st->sink_apply_at = now_usec + AUDIO_SINK_BASELINE_USEC;
+         return;
+      }
+
       if (r > 1.0 + AUDIO_SINK_BIAS_MAX)
          r = 1.0 + AUDIO_SINK_BIAS_MAX;
       if (r < 1.0 - AUDIO_SINK_BIAS_MAX)
@@ -2466,6 +2500,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    audio_driver_st.sink_adjust_n       = 0;
    audio_driver_st.sink_discarded      = 0;
    audio_driver_st.sink_drop_warned    = false;
+   audio_driver_st.sink_implausible_warned = false;
 
    /* The driver's buffer, whether or not rate control will use it: it
     * is what the latency setting became, shown in the statistics
