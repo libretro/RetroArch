@@ -214,6 +214,7 @@ typedef struct DISPLAYCONFIG_PATH_INFO_CUSTOM
 
 typedef LONG (WINAPI *QUERYDISPLAYCONFIG)(UINT32, UINT32*, DISPLAYCONFIG_PATH_INFO_CUSTOM*, UINT32*, DISPLAYCONFIG_MODE_INFO_CUSTOM*, UINT32*);
 typedef LONG (WINAPI *GETDISPLAYCONFIGBUFFERSIZES)(UINT32, UINT32*, UINT32*);
+typedef HRESULT (WINAPI *GETSCALEFACTOR)(HMONITOR, int*);
 
 static void *win32_display_server_init(void)
 {
@@ -897,13 +898,34 @@ static bool win32_display_server_get_metrics(void *data,
          *value = (float)GetDeviceCaps(monitor, VERTSIZE);
          break;
       case DISPLAY_METRIC_DPI:
-         /* 25.4 mm in an inch. */
          {
-            int pixels_x       = GetDeviceCaps(monitor, HORZRES);
-            int physical_width = GetDeviceCaps(monitor, HORZSIZE);
-            *value = (physical_width > 0)
-               ? (float)(254 * pixels_x) / (float)(physical_width * 10)
-               : 0.0f;
+            static float dpi;
+
+            if (dpi == 0.0f)
+            {
+               HMODULE shcore = LoadLibraryA("shcore.dll");
+               GETSCALEFACTOR get_scale_factor = NULL;
+               int scale;
+
+               if (shcore)
+                  get_scale_factor = (GETSCALEFACTOR)GetProcAddress(
+                        shcore, "GetScaleFactorForMonitor");
+
+               if (  get_scale_factor
+                  && get_scale_factor(MonitorFromWindow(
+                        win32_get_window(), MONITOR_DEFAULTTONEAREST), &scale) == S_OK)
+                  dpi = 96.0f * scale / 100.0f;
+               else
+               {
+                  /* 25.4 mm in an inch. */
+                  int pixels_x       = GetDeviceCaps(monitor, HORZRES);
+                  int physical_width = GetDeviceCaps(monitor, HORZSIZE);
+                  dpi = (physical_width > 0)
+                     ? (float)(254 * pixels_x) / (float)(physical_width * 10)
+                     : 0.0f;
+               }
+            }
+            *value = dpi;
          }
          break;
       default:
