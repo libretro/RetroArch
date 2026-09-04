@@ -3734,18 +3734,48 @@ bool video_driver_has_focus(void)
    return VIDEO_HAS_FOCUS(video_st);
 }
 
+/* window_title and the VIDEO_FLAG_WINDOW_TITLE_UPDATE bit are written
+ * on the main thread and read on the video thread, so both sides use
+ * display_lock - the same lock video_driver_modify_disp_flags() takes.
+ * No-ops in a build without threads, where there is no second reader. */
+#ifdef HAVE_THREADS
+#define VIDEO_TITLE_LOCK(st)   do { if ((st)->display_lock) slock_lock((st)->display_lock); } while (0)
+#define VIDEO_TITLE_UNLOCK(st) do { if ((st)->display_lock) slock_unlock((st)->display_lock); } while (0)
+#else
+#define VIDEO_TITLE_LOCK(st)   ((void)0)
+#define VIDEO_TITLE_UNLOCK(st) ((void)0)
+#endif
+
+/* Hands the pending window title to the caller and clears the pending
+ * bit, so the next caller gets nothing until a new title is built.
+ *
+ * Under threaded video this runs on the video thread - every driver
+ * that sets a title does so from inside its frame() - while the title
+ * itself is built and the bit set on the main thread by
+ * video_driver_frame()'s fps block. Test, copy and clear therefore
+ * happen together under display_lock, the lock
+ * video_driver_modify_disp_flags() already takes for the write side.
+ * The flag is cleared inline rather than through that function because
+ * slock is not recursive. */
 size_t video_driver_get_window_title(char *s, size_t len)
 {
+   size_t n                       = 0;
    video_driver_state_t *video_st = &video_driver_st;
-   if (s && (video_st->flags & VIDEO_FLAG_WINDOW_TITLE_UPDATE))
+
+   if (!s)
+      return 0;
+
+   VIDEO_TITLE_LOCK(video_st);
+   if (video_st->flags & VIDEO_FLAG_WINDOW_TITLE_UPDATE)
    {
-      size_t n = strlcpy(s, video_st->window_title, len);
-      video_driver_modify_disp_flags(0, VIDEO_FLAG_WINDOW_TITLE_UPDATE);
-      if (n >= len)
-         return len ? len - 1 : 0;
-      return n;
+      n               = strlcpy(s, video_st->window_title, len);
+      video_st->flags &= ~VIDEO_FLAG_WINDOW_TITLE_UPDATE;
    }
-   return 0;
+   VIDEO_TITLE_UNLOCK(video_st);
+
+   if (!n)
+      return 0;
+   return (n >= len) ? (len ? len - 1 : 0) : n;
 }
 
 void video_driver_update_title(void *data)
@@ -5230,6 +5260,10 @@ void video_driver_frame(const void *data, unsigned width,
          last_fps = TIME_TO_FPS(curr_time, new_time,
                fps_update_interval);
 
+         /* Built under display_lock, and the pending bit set inside
+          * it, so the video thread's video_driver_get_window_title()
+          * cannot copy a title halfway through being assembled. */
+         VIDEO_TITLE_LOCK(video_st);
          __len = strlcpy(video_st->window_title, video_st->title_buf,
                sizeof(video_st->window_title));
 
@@ -5246,23 +5280,26 @@ void video_driver_frame(const void *data, unsigned width,
                   sizeof(video_st->window_title) - __len);
          }
 
-         curr_time                  = new_time;
          video_st->window_title_len = __len;
-         video_driver_modify_disp_flags(VIDEO_FLAG_WINDOW_TITLE_UPDATE, 0);
+         video_st->flags           |= VIDEO_FLAG_WINDOW_TITLE_UPDATE;
+         VIDEO_TITLE_UNLOCK(video_st);
+
+         curr_time                  = new_time;
       }
    }
    else
    {
       curr_time = fps_time = new_time;
 
+      VIDEO_TITLE_LOCK(video_st);
       video_st->window_title_len = strlcpy(
             video_st->window_title,
             video_st->title_buf,
             sizeof(video_st->window_title));
+      video_st->flags           |= VIDEO_FLAG_WINDOW_TITLE_UPDATE;
+      VIDEO_TITLE_UNLOCK(video_st);
 
       status_text[0] = '\0';
-
-      video_driver_modify_disp_flags(VIDEO_FLAG_WINDOW_TITLE_UPDATE, 0);
    }
 
    /* Add core status message to status text */
