@@ -29,7 +29,7 @@
 /* Minimal portable atomic operations for SPSC patterns.
  *
  * This header consolidates the ad-hoc atomic shims previously duplicated
- * in audio/drivers/{coreaudio,coreaudio3,xaudio,opensl}.c, audio/common/
+ * in audio/drivers/{coreaudio,xaudio,opensl}.c, audio/common/
  * mmdevice_common.c and gfx/gfx_thumbnail.c.  The surface is intentionally
  * narrow: load, store, fetch_add, fetch_sub, fetch_or, fetch_and, plus
  * inc/dec convenience wrappers.  Everything is on plain machine words

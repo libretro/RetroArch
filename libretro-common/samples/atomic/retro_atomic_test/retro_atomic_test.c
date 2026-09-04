@@ -3,7 +3,7 @@
  * Background
  * ----------
  * retro_atomic.h consolidates the ad-hoc atomic shims that were
- * previously duplicated in audio/drivers/{coreaudio,coreaudio3,xaudio,
+ * previously duplicated in audio/drivers/{coreaudio,xaudio,
  * opensl}.c, audio/common/mmdevice_common.c and gfx/gfx_thumbnail.c.
  * It exposes a narrow surface (load/store with acquire/release
  * ordering, fetch_add, fetch_sub, plus inc/dec wrappers) on int and

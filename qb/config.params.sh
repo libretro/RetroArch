@@ -124,7 +124,6 @@ HAVE_ROAR=auto             # RoarAudio support
 HAVE_AL=no                 # OpenAL support
 HAVE_JACK=auto             # JACK support
 HAVE_COREAUDIO=auto        # CoreAudio support
-HAVE_COREAUDIO3=no         # CoreAudio3 support
 HAVE_PIPEWIRE=auto         # PipeWire support
 HAVE_PULSE=auto            # PulseAudio support
 C89_PULSE=no

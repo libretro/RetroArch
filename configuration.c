@@ -164,7 +164,6 @@ enum audio_driver_enum
    AUDIO_DSOUND,
    AUDIO_WASAPI,
    AUDIO_COREAUDIO,
-   AUDIO_COREAUDIO3,
    AUDIO_PS3,
    AUDIO_XENON360,
    AUDIO_WII,
@@ -559,8 +558,6 @@ static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_AUDIOIO;
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_OSS;
 #elif defined(HAVE_JACK)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_JACK;
-#elif defined(HAVE_COREAUDIO3)
-static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_COREAUDIO3;
 #elif defined(HAVE_COREAUDIO)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_COREAUDIO;
 #elif defined(HAVE_WASAPI)
@@ -962,8 +959,6 @@ const char *config_get_default_audio(void)
          return "roar";
       case AUDIO_COREAUDIO:
          return "coreaudio";
-      case AUDIO_COREAUDIO3:
-         return "coreaudio3";
       case AUDIO_AL:
          return "openal";
       case AUDIO_SL:

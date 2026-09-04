@@ -818,13 +818,6 @@ endif
    LIBS += -framework AudioToolbox -framework Accelerate
 endif
 
-ifeq ($(HAVE_COREAUDIO3), 1)
-   DEFINES += -DHAVE_COREAUDIO3
-   OBJ += audio/drivers/coreaudio3.o
-   HAVE_COREAUDIO_LIBS = 1
-   LIBS += -framework AudioToolbox -framework AVFoundation
-endif
-
 ifeq ($(HAVE_COREAUDIO_LIBS), 1)
    LIBS += -framework CoreServices -framework CoreAudio -framework AudioUnit
 endif
@@ -2393,9 +2386,9 @@ endif
 # AVFoundation camera + recording (Apple, macOS 10.7+ / iOS).  The
 # 10.7 gate is enforced in qb/config.libs.sh (see the HAVE_AVF block
 # there); this section just wires the object files and frameworks in
-# when HAVE_AVF is on.  Note that HAVE_MICROPHONE and HAVE_COREAUDIO3
-# above also add -framework AVFoundation for their own reasons; make
-# tolerates the repeat and the linker de-duplicates.
+# when HAVE_AVF is on.  Note that HAVE_MICROPHONE above also adds
+# -framework AVFoundation for its own reasons; make tolerates the
+# repeat and the linker de-duplicates.
 ifeq ($(HAVE_AVF), 1)
    DEFINES += -DHAVE_AVF
    OBJ     += camera/drivers/avfoundation.o \

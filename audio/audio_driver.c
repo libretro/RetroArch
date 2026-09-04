@@ -220,9 +220,6 @@ audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_COREAUDIO
    &audio_coreaudio,
 #endif
-#ifdef HAVE_COREAUDIO3
-   &audio_coreaudio3,
-#endif
 #ifdef HAVE_AL
    &audio_openal,
 #endif
@@ -638,7 +635,17 @@ bool audio_driver_deinit(void)
 bool audio_driver_find_driver(const char *audio_drv,
       const char *prefix, bool verbosity_enabled)
 {
-   int i = (int)driver_find_index("audio_driver", audio_drv);
+   int i;
+
+#ifdef HAVE_COREAUDIO
+   /* "coreaudio3" was a second Apple driver, merged into "coreaudio";
+    * a config that still names it means the driver, not the first
+    * entry in the table. Aliased for a release, then to go. */
+   if (string_is_equal(audio_drv, "coreaudio3"))
+      audio_drv = "coreaudio";
+#endif
+
+   i = (int)driver_find_index("audio_driver", audio_drv);
 
    if (i >= 0)
       audio_driver_st.current_audio = (const audio_driver_t*)

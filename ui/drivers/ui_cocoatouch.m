@@ -706,7 +706,23 @@ enum
    }
    else if ([type unsignedIntegerValue] == AVAudioSessionInterruptionTypeEnded)
    {
+      /* The system deactivated the session when the interruption
+       * began - a call, Siri, another app's playback - and does not
+       * reactivate it for us; the units must not be restarted into a
+       * dead session. Resume only when the system says to, and make
+       * the session active first. */
+      NSNumber *opts = notification.userInfo[AVAudioSessionInterruptionOptionKey];
+      NSError  *error = nil;
       RARCH_DBG("[Cocoa] AudioSession Interruption Ended.\n");
+      if (     [opts isKindOfClass:[NSNumber class]]
+            && !([opts unsignedIntegerValue] & AVAudioSessionInterruptionOptionShouldResume))
+      {
+         RARCH_DBG("[Cocoa] AudioSession Interruption Ended without ShouldResume; leaving audio stopped.\n");
+         return;
+      }
+      if (![[AVAudioSession sharedInstance] setActive:YES error:&error])
+         RARCH_ERR("[Cocoa] AVAudioSession setActive:YES after interruption: %s\n",
+               [[error localizedDescription] UTF8String]);
       audio_driver_start(false);
 #ifdef HAVE_MICROPHONE
       microphone_driver_start();

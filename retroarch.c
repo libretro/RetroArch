@@ -6983,9 +6983,6 @@ static void retroarch_print_features(void)
 #ifdef HAVE_COREAUDIO
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_COREAUDIO,       "CoreAudio",       "Audio driver");
 #endif
-#ifdef HAVE_COREAUDIO3
-   _len += _PSUPP_BUF(buf, _len, SUPPORTS_COREAUDIO3,      "CoreAudioV3",     "Audio driver");
-#endif
 #ifdef HAVE_JACK
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_JACK,            "JACK",            "Audio driver");
 #endif

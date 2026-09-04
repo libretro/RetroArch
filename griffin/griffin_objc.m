@@ -64,10 +64,6 @@
 #include "../frontend/drivers/platform_darwin.m"
 #endif
 
-#ifdef HAVE_COREAUDIO3
-#include "../audio/drivers/coreaudio3.m"
-#endif
-
 #if defined(HAVE_COREAUDIO) && defined(HAVE_MICROPHONE)
 #if defined(OSX)
 #include "../audio/drivers/coreaudio_mic_macos.m"

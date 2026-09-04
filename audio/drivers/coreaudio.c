@@ -48,14 +48,70 @@
 #include <retro_endianness.h>
 #include <string/stdstring.h>
 
-#include <defines/cocoa_defines.h>
-
 #include "../audio_driver.h"
 #include "../../verbosity.h"
 
 #include <mach/mach.h>
 #include <mach/semaphore.h>
 #include <mach/task.h>
+#include <dlfcn.h>
+
+/* --- Runtime resolution of the component API ------------------------
+ *
+ * The output unit is opened through AudioComponentFindNext /
+ * AudioComponentInstanceNew / AudioComponentInstanceDispose on 10.6
+ * and later, and through the Component Manager's FindNextComponent /
+ * OpenAComponent / CloseComponent before that. Which one a binary
+ * uses was a compile-time choice on the build SDK, which baked the
+ * build machine into what the binary could do. Both triples are
+ * resolved once at runtime instead: the modern one if the process
+ * has it, the old one otherwise, and no header from either side is
+ * needed since the description structs share a layout of five 32-bit
+ * words and every handle is a pointer. dlsym is in 10.4. */
+typedef struct
+{
+   UInt32 type, subtype, manufacturer, flags, mask;
+} ca_component_desc_t;
+
+typedef void *(*ca_find_next_t)(void *after, const ca_component_desc_t *desc);
+typedef OSStatus (*ca_open_t)(void *component, AudioUnit *unit);
+typedef OSStatus (*ca_close_t)(AudioUnit unit);
+
+static struct
+{
+   ca_find_next_t find_next;
+   ca_open_t      open;
+   ca_close_t     close;
+   bool           resolved;
+   bool           modern;
+} ca_cm;
+
+static bool ca_cm_resolve(void)
+{
+   if (ca_cm.resolved)
+      return ca_cm.find_next != NULL;
+   ca_cm.resolved  = true;
+   ca_cm.find_next = (ca_find_next_t)dlsym(RTLD_DEFAULT, "AudioComponentFindNext");
+   ca_cm.open      = (ca_open_t)dlsym(RTLD_DEFAULT, "AudioComponentInstanceNew");
+   ca_cm.close     = (ca_close_t)dlsym(RTLD_DEFAULT, "AudioComponentInstanceDispose");
+   ca_cm.modern    = ca_cm.find_next && ca_cm.open && ca_cm.close;
+   if (!ca_cm.modern)
+   {
+      ca_cm.find_next = (ca_find_next_t)dlsym(RTLD_DEFAULT, "FindNextComponent");
+      ca_cm.open      = (ca_open_t)dlsym(RTLD_DEFAULT, "OpenAComponent");
+      ca_cm.close     = (ca_close_t)dlsym(RTLD_DEFAULT, "CloseComponent");
+   }
+   if (!(ca_cm.find_next && ca_cm.open && ca_cm.close))
+   {
+      ca_cm.find_next = NULL;
+      return false;
+   }
+   return true;
+}
+
+/* kAudioObjectPropertyElementMaster was renamed ElementMain in 12.0;
+ * both are 0, and the number is what the HAL sees. */
+#define CA_ELEMENT_MAIN 0
 
 /* AudioConverter lives in AudioToolbox, which the common includes above
  * pull in only on iOS; on macOS they pull in CoreAudio, which does not
@@ -87,16 +143,16 @@ typedef struct coreaudio
    size_t read_ptr;           /* Only touched by audio callback */
    retro_atomic_size_t filled; /* Samples currently in buffer */
 
-#if !HAS_MACOSX_10_12
-   ComponentInstance dev;
-#else
-   AudioComponentInstance dev;
-#endif
+   /* The output unit: ComponentInstance or AudioComponentInstance,
+    * both of which are this type on every SDK. */
+   AudioUnit dev;
 
    /* AudioConverter for hardware-accelerated resampling */
    AudioConverterRef converter;
-   unsigned output_rate; /* Hardware output rate */
-   double current_ratio; /* Current resampling ratio (adjusted input rate) */
+   unsigned output_rate;  /* Hardware output rate */
+   double current_ratio;  /* Effective input rate the converter was built for */
+   unsigned last_input_rate; /* The two keys write_raw() last built it from */
+   double last_rate_adjust;
 
    /* Temporary buffer for converter output */
    float *conv_buffer;
@@ -237,19 +293,27 @@ static OSStatus converter_input_cb(
 }
 
 /* Create or update AudioConverter for the given effective input rate */
-static bool coreaudio_update_converter(coreaudio_t *dev, double effective_input_rate)
+static bool coreaudio_update_converter(coreaudio_t *dev,
+      unsigned input_rate, double rate_adjust, double effective_input_rate)
 {
    AudioStreamBasicDescription input_desc  = {0};
    AudioStreamBasicDescription output_desc = {0};
    UInt32 quality                          = kAudioConverterQuality_High;
    OSStatus err;
 
-   /* Check if we need to recreate the converter */
+   /* Rebuild when the source rate changes at all - a core switching
+    * its output rate is a new stream - or when rate control has moved
+    * the adjustment by more than half a percent, or when the effective
+    * rate has moved that far from what the converter was built for.
+    * Under that, keep it: rate control's ordinary jitter must not
+    * recreate a converter every frame. */
    if (dev->converter)
    {
       double ratio_change = fabs(effective_input_rate - dev->current_ratio) / dev->current_ratio;
-      if (ratio_change < RATE_CHANGE_THRESHOLD)
-         return true; /* No significant change, keep existing converter */
+      if (     input_rate == dev->last_input_rate
+            && fabs(rate_adjust - dev->last_rate_adjust) <= RATE_CHANGE_THRESHOLD
+            && ratio_change < RATE_CHANGE_THRESHOLD)
+         return true;
 
       AudioConverterDispose(dev->converter);
       dev->converter = NULL;
@@ -284,7 +348,9 @@ static bool coreaudio_update_converter(coreaudio_t *dev, double effective_input_
       return false;
    }
 
-   dev->current_ratio = effective_input_rate;
+   dev->current_ratio         = effective_input_rate;
+   dev->last_input_rate       = input_rate;
+   dev->last_rate_adjust      = rate_adjust;
    dev->converter_needs_reset = false;
 
    /* Set high quality resampling */
@@ -305,11 +371,7 @@ static void coreaudio_free(void *data)
    if (dev->dev_alive)
    {
       AudioOutputUnitStop(dev->dev);
-#if !HAS_MACOSX_10_12
-      CloseComponent(dev->dev);
-#else
-      AudioComponentInstanceDispose(dev->dev);
-#endif
+      ca_cm.close(dev->dev);
    }
 
    if (dev->converter)
@@ -365,52 +427,65 @@ static OSStatus coreaudio_audio_write_cb(void *userdata,
 }
 
 #if !TARGET_OS_IPHONE
-static void coreaudio_choose_output_device(coreaudio_t *dev, const char* device)
+/* The HAL's output devices. kAudioHardwarePropertyDevices answers on
+ * the output scope from 10.6 and only on the global scope before;
+ * asked at runtime rather than decided by the build SDK. Returns a
+ * malloc'd array the caller frees, or NULL. */
+static AudioDeviceID *coreaudio_hal_devices(UInt32 *count)
 {
-   int i;
-   UInt32 device_count;
    AudioObjectPropertyAddress propaddr;
    AudioDeviceID *devices = NULL;
-   UInt32 size = 0;
+   UInt32 size            = 0;
 
    propaddr.mSelector = kAudioHardwarePropertyDevices;
-#if HAS_MACOSX_10_12
-   propaddr.mScope    = kAudioObjectPropertyScopeOutput;
-#else
-   propaddr.mScope    = kAudioObjectPropertyScopeGlobal;
-#endif
-   propaddr.mElement  = kAudioObjectPropertyElementMaster;
+   propaddr.mScope    = kAudioDevicePropertyScopeOutput;
+   propaddr.mElement  = CA_ELEMENT_MAIN;
+   if (!AudioObjectHasProperty(kAudioObjectSystemObject, &propaddr))
+      propaddr.mScope = kAudioObjectPropertyScopeGlobal;
 
    if (AudioObjectGetPropertyDataSize(kAudioObjectSystemObject,
-            &propaddr, 0, 0, &size) != noErr)
+            &propaddr, 0, 0, &size) != noErr || !size)
+      return NULL;
+   if (!(devices = (AudioDeviceID*)malloc(size)))
+      return NULL;
+   if (AudioObjectGetPropertyData(kAudioObjectSystemObject,
+            &propaddr, 0, 0, &size, devices) != noErr)
+   {
+      free(devices);
+      return NULL;
+   }
+   *count = size / sizeof(AudioDeviceID);
+   return devices;
+}
+
+static bool coreaudio_hal_device_name(AudioDeviceID id, char *s, size_t len)
+{
+   AudioObjectPropertyAddress propaddr;
+   UInt32 size        = (UInt32)len;
+   propaddr.mSelector = kAudioDevicePropertyDeviceName;
+   propaddr.mScope    = kAudioDevicePropertyScopeOutput;
+   propaddr.mElement  = CA_ELEMENT_MAIN;
+   s[0]               = 0;
+   return AudioObjectGetPropertyData(id, &propaddr, 0, 0, &size, s) == noErr
+         && s[0];
+}
+
+static void coreaudio_choose_output_device(coreaudio_t *dev, const char* device)
+{
+   UInt32 i, device_count = 0;
+   AudioDeviceID *devices = coreaudio_hal_devices(&device_count);
+   if (!devices)
       return;
 
-   device_count = size / sizeof(AudioDeviceID);
-   devices      = (AudioDeviceID*)malloc(size);
-
-   if (devices && AudioObjectGetPropertyData(kAudioObjectSystemObject,
-            &propaddr, 0, 0, &size, devices) == noErr)
+   for (i = 0; i < device_count; i++)
    {
-#if HAS_MACOSX_10_12
-#else
-      propaddr.mScope    = kAudioDevicePropertyScopeOutput;
-#endif
-      propaddr.mSelector = kAudioDevicePropertyDeviceName;
-
-      for (i = 0; i < (int)device_count; i ++)
+      char device_name[1024];
+      if (     coreaudio_hal_device_name(devices[i], device_name, sizeof(device_name))
+            && string_is_equal(device_name, device))
       {
-         char device_name[1024];
-         device_name[0] = 0;
-         size           = 1024;
-
-         if (AudioObjectGetPropertyData(devices[i],
-                  &propaddr, 0, 0, &size, device_name) == noErr
-               && string_is_equal(device_name, device))
-         {
-            AudioUnitSetProperty(dev->dev, kAudioOutputUnitProperty_CurrentDevice,
-                  kAudioUnitScope_Global, 0, &devices[i], sizeof(AudioDeviceID));
-            break;
-         }
+         AudioUnitSetProperty(dev->dev, kAudioOutputUnitProperty_CurrentDevice,
+               kAudioUnitScope_Global, 0, &devices[i], sizeof(AudioDeviceID));
+         break;
       }
    }
 
@@ -419,13 +494,7 @@ static void coreaudio_choose_output_device(coreaudio_t *dev, const char* device)
 #endif
 
 /* Query the actual hardware sample rate */
-static unsigned coreaudio_get_hardware_sample_rate(
-#if !HAS_MACOSX_10_12
-      ComponentInstance dev
-#else
-      AudioComponentInstance dev
-#endif
-      )
+static unsigned coreaudio_get_hardware_sample_rate(AudioUnit dev)
 {
    AudioStreamBasicDescription hw_desc;
    UInt32 size = sizeof(hw_desc);
@@ -453,7 +522,7 @@ static unsigned coreaudio_get_hardware_sample_rate(
       {
          prop.mSelector = kAudioDevicePropertyNominalSampleRate;
          prop.mScope    = kAudioObjectPropertyScopeGlobal;
-         prop.mElement  = kAudioObjectPropertyElementMaster;
+         prop.mElement  = CA_ELEMENT_MAIN;
          size = sizeof(nominal_rate);
 
          if (AudioObjectGetPropertyData(device_id, &prop, 0, NULL,
@@ -479,41 +548,37 @@ static void *coreaudio_init(const char *device,
 #endif
    AURenderCallbackStruct cb               = {0};
    AudioStreamBasicDescription stream_desc = {0};
-#if !HAS_MACOSX_10_12
-   Component comp;
-   ComponentDescription desc               = {0};
-#else
-   AudioComponent comp;
-   AudioComponentDescription desc          = {0};
-#endif
-   coreaudio_t *dev                        = (coreaudio_t*)
-      calloc(1, sizeof(*dev));
-   if (!dev)
+   ca_component_desc_t desc                = {0};
+   void *comp;
+   coreaudio_t *dev;
+
+   if (!ca_cm_resolve())
+   {
+      RARCH_ERR("[CoreAudio] Neither the AudioComponent API nor the Component Manager is available.\n");
+      return NULL;
+   }
+   RARCH_DBG("[CoreAudio] Output unit through %s.\n",
+         ca_cm.modern ? "AudioComponent" : "the Component Manager");
+
+   if (!(dev = (coreaudio_t*)calloc(1, sizeof(*dev))))
       return NULL;
 
    if (!coreaudio_wait_init(dev))
       goto error;
 
-   /* Create AudioComponent */
-   desc.componentType         = kAudioUnitType_Output;
+   /* Open the output unit */
+   desc.type         = kAudioUnitType_Output;
 #if TARGET_OS_IPHONE
-   desc.componentSubType      = kAudioUnitSubType_RemoteIO;
+   desc.subtype      = kAudioUnitSubType_RemoteIO;
 #else
-   desc.componentSubType      = kAudioUnitSubType_HALOutput;
+   desc.subtype      = kAudioUnitSubType_HALOutput;
 #endif
-   desc.componentManufacturer = kAudioUnitManufacturer_Apple;
+   desc.manufacturer = kAudioUnitManufacturer_Apple;
 
-#if !HAS_MACOSX_10_12
-   if (!(comp = FindNextComponent(NULL, &desc)))
+   if (!(comp = ca_cm.find_next(NULL, &desc)))
       goto error;
-   if ((OpenAComponent(comp, &dev->dev) != noErr))
+   if (ca_cm.open(comp, &dev->dev) != noErr)
       goto error;
-#else
-   if (!(comp = AudioComponentFindNext(NULL, &desc)))
-      goto error;
-   if ((AudioComponentInstanceNew(comp, &dev->dev) != noErr))
-      goto error;
-#endif
 
 #if !TARGET_OS_IPHONE
    if (device)
@@ -547,8 +612,13 @@ static void *coreaudio_init(const char *device,
    if (!is_little_endian())
       stream_desc.mFormatFlags  |= kAudioFormatFlagIsBigEndian;
 
-   if (AudioUnitSetProperty(dev->dev, kAudioUnitProperty_StreamFormat,
-         kAudioUnitScope_Input, 0, &stream_desc, sizeof(stream_desc)) != noErr)
+   /* Interleaved float stereo on the input bus; the unit mixes or
+    * downmixes to whatever the hardware has. RemoteIO has been seen to
+    * refuse the first set and take the second, so one retry. */
+   if (     AudioUnitSetProperty(dev->dev, kAudioUnitProperty_StreamFormat,
+            kAudioUnitScope_Input, 0, &stream_desc, sizeof(stream_desc)) != noErr
+         && AudioUnitSetProperty(dev->dev, kAudioUnitProperty_StreamFormat,
+            kAudioUnitScope_Input, 0, &stream_desc, sizeof(stream_desc)) != noErr)
       goto error;
 
    /* Check returned audio format. */
@@ -701,7 +771,7 @@ static ssize_t coreaudio_write_raw(void *data, const int16_t *samples,
    effective_rate = (double)input_rate / rate_adjust;
 
    /* Update converter if needed */
-   if (!coreaudio_update_converter(dev, effective_rate))
+   if (!coreaudio_update_converter(dev, input_rate, rate_adjust, effective_rate))
       return -1;
 
    /* Set up callback context */
@@ -821,11 +891,22 @@ static bool coreaudio_stop(void *data)
    return false;
 }
 
+/* Also the far end of an audio session interruption on iOS and tvOS:
+ * the Cocoa side observes AVAudioSessionInterruptionNotification and
+ * calls audio_driver_stop() at Began and audio_driver_start() at Ended,
+ * which arrive here. A converter that was mid-stream when the system
+ * stopped the unit can come back stuck at end-of-stream - the tvOS
+ * 13/14 symptom - so it is reset on every start. */
 static bool coreaudio_start(void *data, bool is_shutdown)
 {
    coreaudio_t *dev = (coreaudio_t*)data;
    if (dev)
    {
+      if (dev->converter)
+      {
+         AudioConverterReset(dev->converter);
+         dev->converter_needs_reset = false;
+      }
       dev->is_paused = (AudioOutputUnitStart(dev->dev) == noErr) ? false : true;
       if (!dev->is_paused)
          return true;
@@ -897,11 +978,8 @@ static void *coreaudio_device_list_new(void *data)
    (void)data;
    return NULL;
 #else
-   int i;
-   UInt32 device_count;
-   AudioObjectPropertyAddress propaddr;
-   AudioDeviceID *devices = NULL;
-   UInt32 size            = 0;
+   UInt32 i, device_count = 0;
+   AudioDeviceID *devices;
    union string_list_elem_attr attr;
    struct string_list *sl = string_list_new();
 
@@ -910,44 +988,17 @@ static void *coreaudio_device_list_new(void *data)
    if (!sl)
       return NULL;
 
-   propaddr.mSelector = kAudioHardwarePropertyDevices;
-#if HAS_MACOSX_10_12
-   propaddr.mScope    = kAudioObjectPropertyScopeOutput;
-#else
-   propaddr.mScope    = kAudioObjectPropertyScopeGlobal;
-#endif
-   propaddr.mElement  = kAudioObjectPropertyElementMaster;
-
-   if (AudioObjectGetPropertyDataSize(kAudioObjectSystemObject,
-            &propaddr, 0, 0, &size) != noErr)
+   if (!(devices = coreaudio_hal_devices(&device_count)))
    {
       string_list_free(sl);
       return NULL;
    }
 
-   device_count = size / sizeof(AudioDeviceID);
-   devices      = (AudioDeviceID*)malloc(size);
-
-   if (devices && AudioObjectGetPropertyData(kAudioObjectSystemObject,
-            &propaddr, 0, 0, &size, devices) == noErr)
+   for (i = 0; i < device_count; i++)
    {
-#if HAS_MACOSX_10_12
-#else
-      propaddr.mScope    = kAudioDevicePropertyScopeOutput;
-#endif
-      propaddr.mSelector = kAudioDevicePropertyDeviceName;
-
-      for (i = 0; i < (int)device_count; i++)
-      {
-         char device_name[1024];
-         device_name[0] = 0;
-         size           = 1024;
-
-         if (AudioObjectGetPropertyData(devices[i],
-                  &propaddr, 0, 0, &size, device_name) == noErr
-               && device_name[0])
-            string_list_append(sl, device_name, attr);
-      }
+      char device_name[1024];
+      if (coreaudio_hal_device_name(devices[i], device_name, sizeof(device_name)))
+         string_list_append(sl, device_name, attr);
    }
 
    free(devices);

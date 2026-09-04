@@ -2618,9 +2618,6 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 #ifdef HAVE_COREAUDIO
          {SUPPORTS_COREAUDIO, "CoreAudio"},
 #endif
-#ifdef HAVE_COREAUDIO3
-         {SUPPORTS_COREAUDIO3, "CoreAudio V3"},
-#endif
 #ifdef HAVE_JACK
          {SUPPORTS_JACK, "JACK"},
 #endif
