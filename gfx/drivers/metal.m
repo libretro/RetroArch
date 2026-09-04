@@ -621,8 +621,6 @@ static bool metal_display_supports_edr(void)
  * COMMON
  */
 
-static NSString *RPixelStrings[RPixelFormatCount];
-
 static NSUInteger RPixelFormatToBPP(RPixelFormat format)
 {
    if (   format == RPixelFormatB5G6R5Unorm
@@ -631,25 +629,42 @@ static NSUInteger RPixelFormatToBPP(RPixelFormat format)
    return 4;
 }
 
+/* For -debugDescription, i.e. for a human with a debugger.
+ *
+ * This filled a file-scope array on first call, under dispatch_once
+ * with a block. There was nothing to initialise: every value is a
+ * compile-time constant, and an NSString literal is a constant object
+ * the compiler puts in __DATA - it is not allocated, not refcounted,
+ * and needs no first call to bring it into being. So the once was
+ * guarding the assignment of constants into a mutable global that only
+ * existed to hold them.
+ *
+ * Nor was it about speed. dispatch_once's fast path is an acquire load
+ * and a compare, which is what a plain flag costs too, and the only
+ * caller is a debug description - a human in a debugger, or a log line
+ * - never a frame. A switch is free of all of it: no global, no token,
+ * no block, no bounds check separate from the default, and thread-safe
+ * by construction rather than by a barrier. */
 static NSString *NSStringFromRPixelFormat(RPixelFormat format)
 {
-   static dispatch_once_t onceToken;
-   dispatch_once(&onceToken, ^{
-
-#define STRING(literal) RPixelStrings[literal] = @#literal
-      STRING(RPixelFormatInvalid);
-      STRING(RPixelFormatB5G6R5Unorm);
-      STRING(RPixelFormatBGRA4Unorm);
-      STRING(RPixelFormatBGRA8Unorm);
-      STRING(RPixelFormatBGRX8Unorm);
-      STRING(RPixelFormatBGR10A2Unorm);
-#undef STRING
-
-   });
-
-   if (format >= RPixelFormatCount)
-      format = RPixelFormatInvalid;
-   return RPixelStrings[format];
+   switch (format)
+   {
+      case RPixelFormatBGRA4Unorm:
+         return @"RPixelFormatBGRA4Unorm";
+      case RPixelFormatB5G6R5Unorm:
+         return @"RPixelFormatB5G6R5Unorm";
+      case RPixelFormatBGRA8Unorm:
+         return @"RPixelFormatBGRA8Unorm";
+      case RPixelFormatBGRX8Unorm:
+         return @"RPixelFormatBGRX8Unorm";
+      case RPixelFormatBGR10A2Unorm:
+         return @"RPixelFormatBGR10A2Unorm";
+      case RPixelFormatInvalid:
+      case RPixelFormatCount:
+      default:
+         break;
+   }
+   return @"RPixelFormatInvalid";
 }
 
 static matrix_float4x4 make_matrix_float4x4(const float *v)
@@ -725,7 +740,6 @@ static matrix_float4x4 matrix_proj_ortho(float left, float right, float top, flo
 
 @implementation Context
 {
-   dispatch_semaphore_t _inflightSemaphore;
    id<MTLCommandQueue> _commandQueue;
    CAMetalLayer *_layer;
    id<CAMetalDrawable> _drawable;
@@ -812,7 +826,6 @@ static matrix_float4x4 matrix_proj_ortho(float left, float right, float top, flo
    {
       int i;
 
-      _inflightSemaphore         = dispatch_semaphore_create(MAX_INFLIGHT);
       _device                    = d;
       _layer                     = layer;
 #if TARGET_OS_OSX
