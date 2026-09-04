@@ -26,6 +26,12 @@
 
 #include <boolean.h>
 
+#if defined(__APPLE__)
+/* Every TARGET_OS_* macro is defined to 0 or 1 here; test the value,
+ * never the definition. */
+#include <TargetConditionals.h>
+#endif
+
 #include <glsym/glsym.h>
 
 #include <gfx/gl_capabilities.h>
@@ -336,7 +342,7 @@ bool gl_check_capability(enum gl_capability_enum enum_idx)
 #endif
          break;
       case GL_CAPS_TEX_STORAGE_EXT:
-#ifdef TARGET_OS_IPHONE
+#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
            /* Not working on iOS */
            return false;
 #else

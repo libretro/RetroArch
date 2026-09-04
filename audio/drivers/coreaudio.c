@@ -28,6 +28,11 @@
  * userspace counter over exactly this primitive; at one signal per
  * callback the counter saves nothing worth a gate. */
 #include <AvailabilityMacros.h>
+/* TargetConditionals defines every TARGET_OS_* macro to 0 or 1, so the
+ * platform split is always #if TARGET_OS_IPHONE / #if !TARGET_OS_IPHONE
+ * and never #ifdef, which on a macOS SDK sees the macro defined as 0
+ * and takes the iOS branch. */
+#include <TargetConditionals.h>
 #include <lists/string_list.h>
 
 #include <stdlib.h>
@@ -543,7 +548,7 @@ static void *coreaudio_init(const char *device,
    size_t buffer_samples;
    UInt32 i_size;
    AudioStreamBasicDescription real_desc;
-#ifndef TARGET_OS_IPHONE
+#if !TARGET_OS_IPHONE
    AudioChannelLayout layout               = {0};
 #endif
    AURenderCallbackStruct cb               = {0};
@@ -647,12 +652,17 @@ static void *coreaudio_init(const char *device,
    if (!dev->conv_buffer)
       goto error;
 
-   /* Set channel layout (fails on iOS). */
-#ifndef TARGET_OS_IPHONE
+   /* Tell the HAL unit the two channels are a stereo pair. RemoteIO
+    * refuses the property, hence macOS only; and it is advisory - the
+    * stream format above already fixed two channels - so a HAL that
+    * refuses it too is logged and not treated as a failed open. This
+    * had been under #ifndef, which a macOS SDK defining the macro as
+    * 0 turned into "never", so the layout was not being set at all. */
+#if !TARGET_OS_IPHONE
    layout.mChannelLayoutTag = kAudioChannelLayoutTag_Stereo;
    if (AudioUnitSetProperty(dev->dev, kAudioUnitProperty_AudioChannelLayout,
          kAudioUnitScope_Input, 0, &layout, sizeof(layout)) != noErr)
-      goto error;
+      RARCH_WARN("[CoreAudio] The output unit declined a stereo channel layout; continuing with the two-channel stream format.\n");
 #endif
 
    /* Set callbacks and finish up. */
