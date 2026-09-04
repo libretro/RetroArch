@@ -258,34 +258,33 @@ static void cocoa_gl_gfx_ctx_input_driver(void *data,
    *input_data = NULL;
 }
 
-#if MAC_OS_X_VERSION_10_7 && defined(OSX)
-/* NOTE: convertRectToBacking only available on MacOS X 10.7 and up.
- * Therefore, make specialized version of this function instead of
- * going through a selector for every call. */
-static void cocoa_gl_gfx_ctx_get_video_size_osx10_7_and_up(void *data,
-      unsigned* width, unsigned* height)
-{
-   CocoaView *g_view               = cocoaview_get();
-   CGRect _cgrect                  = NSRectToCGRect(g_view.frame);
-   CGRect bounds                   = CGRectMake(0, 0, CGRectGetWidth(_cgrect), CGRectGetHeight(_cgrect));
-   CGRect cgrect                   = NSRectToCGRect([g_view convertRectToBacking:bounds]);
-   GLsizei backingPixelWidth       = CGRectGetWidth(cgrect);
-   GLsizei backingPixelHeight      = CGRectGetHeight(cgrect);
-   CGRect size                     = CGRectMake(0, 0, backingPixelWidth, backingPixelHeight);
-   *width                          = CGRectGetWidth(size);
-   *height                         = CGRectGetHeight(size);
-}
-#elif defined(OSX)
+#if defined(OSX)
+/* The view's frame is in points; a Retina backing store has more
+ * pixels than points. -convertRectToBacking: is 10.7, so the view is
+ * asked once - the answer cannot change while the process runs - and
+ * the answer kept, rather than probed per call or decided by the build
+ * SDK, which left a binary built on an old SDK blurry on every Retina
+ * Mac and one built on a new SDK unable to run anywhere older. */
 static void cocoa_gl_gfx_ctx_get_video_size(void *data,
       unsigned* width, unsigned* height)
 {
+   static int backing              = -1;
    CocoaView *g_view               = cocoaview_get();
    CGRect cgrect                   = NSRectToCGRect([g_view frame]);
-   GLsizei backingPixelWidth       = CGRectGetWidth(cgrect);
-   GLsizei backingPixelHeight      = CGRectGetHeight(cgrect);
-   CGRect size                     = CGRectMake(0, 0, backingPixelWidth, backingPixelHeight);
-   *width                          = CGRectGetWidth(size);
-   *height                         = CGRectGetHeight(size);
+
+   if (backing < 0)
+      backing = [g_view respondsToSelector:@selector(convertRectToBacking:)];
+
+   if (backing)
+   {
+      CGRect bounds                = CGRectMake(0, 0,
+            CGRectGetWidth(cgrect), CGRectGetHeight(cgrect));
+      cgrect                       = NSRectToCGRect(
+            [g_view convertRectToBacking:bounds]);
+   }
+
+   *width                          = CGRectGetWidth(cgrect);
+   *height                         = CGRectGetHeight(cgrect);
 }
 #else
 /* iOS */
@@ -304,11 +303,7 @@ static void cocoa_gl_gfx_ctx_get_video_size(void *data,
  * exposed directly. */
 static void cocoa_gl_live_video_size(unsigned *width, unsigned *height)
 {
-#if MAC_OS_X_VERSION_10_7 && defined(OSX)
-   cocoa_gl_gfx_ctx_get_video_size_osx10_7_and_up(NULL, width, height);
-#else
    cocoa_gl_gfx_ctx_get_video_size(NULL, width, height);
-#endif
 }
 
 /* Publish the current backing size for cross-thread readers.
@@ -485,12 +480,11 @@ static void cocoa_gl_gfx_ctx_set_video_mode_mainthread(void *userdata)
    cocoa_ctx->width            = width;
    cocoa_ctx->height           = height;
 
-   /* NOTE: setWantsBestResolutionOpenGLSurface only
-    * available on MacOS X 10.7 and up.
-    * Deprecated as of MacOS X 10.14. */
-#if MAC_OS_X_VERSION_10_7
-   [g_view setWantsBestResolutionOpenGLSurface:YES];
-#endif
+   /* Render at the backing store's resolution rather than at point
+    * size. 10.7, deprecated in 10.14 and still honoured; asked of the
+    * view rather than of the build SDK. */
+   if ([g_view respondsToSelector:@selector(setWantsBestResolutionOpenGLSurface:)])
+      [g_view setWantsBestResolutionOpenGLSurface:YES];
 
    {
       NSOpenGLPixelFormat *fmt;
@@ -506,35 +500,44 @@ static void cocoa_gl_gfx_ctx_set_video_mode_mainthread(void *userdata)
          (NSOpenGLPixelFormatAttribute)0
       };
 
+      /* NSOpenGLPFAOpenGLProfile is 10.7 and the 4.1 core profile
+       * 10.10, but all three are plain integers in the attribute
+       * array - 99, 0x3200, 0x4100 - so the request is spelled out
+       * and made unconditionally. A system that does not know the
+       * attribute, or cannot give that profile, fails the pixel
+       * format; the retry below drops the request and takes the
+       * legacy profile, which is what the build-SDK gates used to
+       * decide in advance and get wrong in both directions. */
       switch (g_gl_major)
       {
          case 3:
-#if MAC_OS_X_VERSION_10_7
-            attributes[6] = NSOpenGLPFAOpenGLProfile;
-            attributes[7] = NSOpenGLProfileVersion3_2Core;
-#endif
+            attributes[6] = (NSOpenGLPixelFormatAttribute)99;
+            attributes[7] = (NSOpenGLPixelFormatAttribute)0x3200;
             break;
          case 4:
-#if MAC_OS_X_VERSION_10_10
-            attributes[6] = NSOpenGLPFAOpenGLProfile;
-            attributes[7] = NSOpenGLProfileVersion4_1Core;
-#endif
+            attributes[6] = (NSOpenGLPixelFormatAttribute)99;
+            attributes[7] = (NSOpenGLPixelFormatAttribute)0x4100;
             break;
       }
 
       fmt = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
 
-      /* If pixel-format creation failed with NSOpenGLPFAAllowOfflineRenderers
-       * (added in 10.5 - some drivers on early 10.5 builds could reject it
-       * even though the SDK exposed the constant), retry without it.  The
-       * previous guard here was #if MAC_OS_X_VERSION_MIN_REQUIRED < 1050,
-       * which meant "compile this fallback only when targeting pre-10.5" -
-       * the opposite of what was intended and unreachable in practice since
-       * the static `attributes` array above already references
-       * NSOpenGLPFAAllowOfflineRenderers unconditionally, so the file
-       * demands a 10.5+ SDK (MAC_OS_X_VERSION_MAX_ALLOWED >= 1050) just
-       * to compile.  The fallback is now always available at runtime and
-       * only exercised when the first -initWithAttributes: returns nil. */
+      /* Two things the system in front of us may refuse. The core
+       * profile asked for above is one: a 10.5 or 10.6 system has no
+       * NSOpenGLPFAOpenGLProfile at all, and a 10.7 to 10.9 one has
+       * no 4.1 core, so the pixel format comes back nil and the
+       * request is dropped for a legacy context. The other is
+       * NSOpenGLPFAAllowOfflineRenderers, which some early 10.5
+       * drivers rejected even though the SDK had the constant.
+       * Dropped in that order, since a caller that asked for GL 3 or
+       * 4 would rather lose offline renderers than the profile. */
+      if (fmt == nil && attributes[6])
+      {
+         attributes[6]  = (NSOpenGLPixelFormatAttribute)0;
+         attributes[7]  = (NSOpenGLPixelFormatAttribute)0;
+         fmt            = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
+      }
+
       if (fmt == nil)
       {
          attributes[3]  = (NSOpenGLPixelFormatAttribute)0;

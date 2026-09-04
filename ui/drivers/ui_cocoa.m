@@ -712,17 +712,15 @@ static ui_application_t ui_application_cocoa = {
     * suspended would leak both the activity assertion (leaving
     * display-sleep disabled system-wide until reboot) and the
     * retained token itself. */
-#if defined(MAC_OS_X_VERSION_MAX_ALLOWED) && MAC_OS_X_VERSION_MAX_ALLOWED >= 1090
    if (_sleepActivity)
    {
       NSProcessInfo *pi = [NSProcessInfo processInfo];
       id token          = _sleepActivity;
       _sleepActivity    = nil;
       if ([pi respondsToSelector:@selector(endActivity:)])
-         [pi endActivity:token];
+         [pi performSelector:@selector(endActivity:) withObject:token];
       RARCH_RELEASE(token);
    }
-#endif
    /* _renderView is kept at +1 by setViewType:; release the balance
     * here so the last view-type's render view does not leak at
     * shutdown.  Safe when nil. */
@@ -958,8 +956,12 @@ static ui_application_t ui_application_cocoa = {
     * Nap and ARC) still compile, and guard at runtime so a binary
     * built against a 10.9+ SDK but deployed onto 10.5-10.8 gracefully
     * no-ops instead of crashing on an unrecognized selector. */
-#if defined(MAC_OS_X_VERSION_MAX_ALLOWED) && MAC_OS_X_VERSION_MAX_ALLOWED >= 1090
    NSProcessInfo *pi = [NSProcessInfo processInfo];
+   /* beginActivityWithOptions:reason: and endActivity: are 10.9. The
+    * system is asked whether it has them; the options constant is an
+    * integer (NSActivityIdleDisplaySleepDisabled is 1 << 40) and the
+    * calls go through objc_msgSend and performSelector:, so no SDK
+    * needs to declare either for this to compile. */
    if (![pi respondsToSelector:@selector(beginActivityWithOptions:reason:)])
       return NO;
 
@@ -967,17 +969,16 @@ static ui_application_t ui_application_cocoa = {
    {
       if (_sleepActivity == nil)
       {
-         /* The token returned by beginActivityWithOptions:reason: is
-          * autoreleased and owned by the system.  We MUST retain it
-          * or, under MRR, it is deallocated as soon as the current
-          * autorelease pool drains - leaving _sleepActivity as a
-          * dangling pointer.  The next call to endActivity: then
-          * sends isKindOfClass: to freed memory and crashes in
-          * objc_opt_isKindOfClass.  Under ARC a plain `id` ivar is
-          * implicitly __strong so RARCH_RETAIN is a no-op; under MRR
-          * it expands to an explicit -retain. */
-         id token = [pi beginActivityWithOptions:NSActivityIdleDisplaySleepDisabled
-                                          reason:@"disable screen saver"];
+         /* The token comes back autoreleased and owned by the system.
+          * It MUST be retained or, under MRC, it is deallocated when
+          * the current pool drains, leaving _sleepActivity dangling;
+          * the next endActivity: then messages freed memory. Under
+          * ARC a plain id ivar is __strong and RARCH_RETAIN is a
+          * no-op. */
+         id token = ((id (*)(id, SEL, unsigned long long, id))objc_msgSend)(
+               pi, @selector(beginActivityWithOptions:reason:),
+               (unsigned long long)(1ULL << 40),
+               @"disable screen saver");
          _sleepActivity = RARCH_RETAIN(token);
       }
    }
@@ -985,21 +986,16 @@ static ui_application_t ui_application_cocoa = {
    {
       if (_sleepActivity)
       {
-         /* Capture and nil-out BEFORE calling endActivity: so that a
-          * re-entrant call (for example from a menu write handler
-          * triggered while AppKit is dispatching) cannot observe a
-          * stale pointer and double-end the same activity. */
+         /* Captured and nil'd BEFORE ending it, so a re-entrant call -
+          * from a menu write handler while AppKit is dispatching, say -
+          * cannot see a stale pointer and end the same activity twice. */
          id token       = _sleepActivity;
          _sleepActivity = nil;
-         [pi endActivity:token];
+         [pi performSelector:@selector(endActivity:) withObject:token];
          RARCH_RELEASE(token);
       }
    }
    return YES;
-#else
-   (void)disable;
-   return NO;
-#endif
 }
 #endif
 

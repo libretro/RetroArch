@@ -127,34 +127,33 @@ static void cocoa_vk_gfx_ctx_input_driver(void *data,
    *input_data = NULL;
 }
 
-#if MAC_OS_X_VERSION_10_7 && defined(OSX)
-/* NOTE: convertRectToBacking only available on MacOS X 10.7 and up.
- * Therefore, make specialized version of this function instead of
- * going through a selector for every call. */
-static void cocoa_vk_gfx_ctx_get_video_size_osx10_7_and_up(void *data,
-      unsigned* width, unsigned* height)
-{
-   CocoaView *g_view               = cocoaview_get();
-   CGRect _cgrect                  = NSRectToCGRect(g_view.frame);
-   CGRect bounds                   = CGRectMake(0, 0, CGRectGetWidth(_cgrect), CGRectGetHeight(_cgrect));
-   CGRect cgrect                   = NSRectToCGRect([g_view convertRectToBacking:bounds]);
-   GLsizei backingPixelWidth       = CGRectGetWidth(cgrect);
-   GLsizei backingPixelHeight      = CGRectGetHeight(cgrect);
-   CGRect size                     = CGRectMake(0, 0, backingPixelWidth, backingPixelHeight);
-   *width                          = CGRectGetWidth(size);
-   *height                         = CGRectGetHeight(size);
-}
-#elif defined(OSX)
+#if defined(OSX)
+/* The view's frame is in points; a Retina backing store has more
+ * pixels than points. -convertRectToBacking: is 10.7, so the view is
+ * asked once - the answer cannot change while the process runs - and
+ * the answer kept, rather than probed per call or decided by the build
+ * SDK, which left a binary built on an old SDK blurry on every Retina
+ * Mac and one built on a new SDK unable to run anywhere older. */
 static void cocoa_vk_gfx_ctx_get_video_size(void *data,
       unsigned* width, unsigned* height)
 {
+   static int backing              = -1;
    CocoaView *g_view               = cocoaview_get();
    CGRect cgrect                   = NSRectToCGRect([g_view frame]);
-   GLsizei backingPixelWidth       = CGRectGetWidth(cgrect);
-   GLsizei backingPixelHeight      = CGRectGetHeight(cgrect);
-   CGRect size                     = CGRectMake(0, 0, backingPixelWidth, backingPixelHeight);
-   *width                          = CGRectGetWidth(size);
-   *height                         = CGRectGetHeight(size);
+
+   if (backing < 0)
+      backing = [g_view respondsToSelector:@selector(convertRectToBacking:)];
+
+   if (backing)
+   {
+      CGRect bounds                = CGRectMake(0, 0,
+            CGRectGetWidth(cgrect), CGRectGetHeight(cgrect));
+      cgrect                       = NSRectToCGRect(
+            [g_view convertRectToBacking:bounds]);
+   }
+
+   *width                          = CGRectGetWidth(cgrect);
+   *height                         = CGRectGetHeight(cgrect);
 }
 #else
 static void cocoa_vk_gfx_ctx_get_video_size(void *data,
@@ -173,11 +172,7 @@ static void cocoa_vk_gfx_ctx_get_video_size(void *data,
  * exposed directly. */
 static void cocoa_vk_live_video_size(unsigned *width, unsigned *height)
 {
-#if MAC_OS_X_VERSION_10_7 && defined(OSX)
-   cocoa_vk_gfx_ctx_get_video_size_osx10_7_and_up(NULL, width, height);
-#else
    cocoa_vk_gfx_ctx_get_video_size(NULL, width, height);
-#endif
 }
 
 /* Publish the current backing size for cross-thread readers.
