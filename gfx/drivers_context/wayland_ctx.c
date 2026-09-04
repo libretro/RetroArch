@@ -504,6 +504,8 @@ static void wl_surface_frame_done(void *data, struct wl_callback *cb, uint32_t t
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
    wl->swap_complete = true;
+   if (wl->frame_cb == cb)
+      wl->frame_cb   = NULL;
 
    /* Destroy this callback */
    wl_callback_destroy(cb);
@@ -540,6 +542,7 @@ static void gfx_ctx_wl_swap_buffers(void *data)
       /* Set Wayland frame callback. */
       cb = wl_surface_frame(wl->surface);
       wl_callback_add_listener(cb, &wl_surface_frame_listener, wl);
+      wl->frame_cb = cb;
    }
 
    if (wl->present_clock)
@@ -579,6 +582,7 @@ static void gfx_ctx_wl_swap_buffers(void *data)
          {
             /* Deadline met. */
             wl_callback_destroy(cb);
+            wl->frame_cb = NULL;
             return;
          }
          uint64_t remaining_time = deadline - current_time;
@@ -595,6 +599,7 @@ static void gfx_ctx_wl_swap_buffers(void *data)
                /* Timeout met, or polling error. */
                wl_display_cancel_read(wl->input.dpy);
                wl_callback_destroy(cb);
+               wl->frame_cb = NULL;
                return;
             }
             wl_display_read_events(wl->input.dpy);
