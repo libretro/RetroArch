@@ -1045,3 +1045,672 @@ audio_driver_t audio_coreaudio = {
    coreaudio_wait_writable
 };
 
+
+#ifdef HAVE_MICROPHONE
+/* =====================================================================
+ * Microphone. One driver for macOS, iOS and tvOS, C like the rest of
+ * the file: an input-enabled output unit - HALOutput or RemoteIO - whose
+ * input callback pulls each slice with AudioUnitRender into a fifo the
+ * frontend reads. macOS adds device selection by UID or name, an input
+ * device list, and following the default input device when none was
+ * named; iOS and tvOS add nothing but the session category, which is
+ * Objective-C and lives in the Cocoa layer behind
+ * cocoa_audio_session_begin_record().
+ *
+ * The fifo is guarded by a lock the callback only try-locks: a slice
+ * that finds the lock held is dropped rather than making the real-time
+ * thread wait. The reader blocks on the condition the callback signals,
+ * timed, in blocking mode.
+ * ===================================================================== */
+#include <queues/fifo_queue.h>
+#include <rthreads/rthreads.h>
+#include <string.h>
+#include "../microphone_driver.h"
+#if TARGET_OS_IPHONE
+#include "../../ui/drivers/cocoa/cocoa_audio_session.h"
+#endif
+
+typedef struct coreaudio_mic
+{
+   AudioUnit unit;
+   fifo_buffer_t *fifo;
+   slock_t *lock;
+   scond_t *cond;
+   AudioStreamBasicDescription format;
+   retro_atomic_int_t running;
+   retro_atomic_int_t initialized;
+   void *cb_buf;
+   size_t cb_buf_size;
+   unsigned sample_rate;
+   bool nonblock;
+   bool use_float;
+#if !TARGET_OS_IPHONE
+   AudioDeviceID device;
+   bool follow_default;
+   retro_atomic_int_t device_changed;
+#endif
+} coreaudio_mic_t;
+
+/* Driver-wide context: created by init(), destroyed by free(). The
+ * frontend holds it for as long as the driver is selected, longer than
+ * any microphone opened through it, so it is never the same allocation
+ * as one. It latches the non-blocking state so a mic opened later
+ * inherits it. */
+typedef struct coreaudio_mic_driver
+{
+   coreaudio_mic_t *mic;
+   bool nonblock;
+} coreaudio_mic_driver_t;
+
+static void coreaudio_mic_close(void *driver_context, void *mic_context);
+static bool coreaudio_mic_stop(void *driver_context, void *mic_context);
+
+static void coreaudio_mic_set_format(coreaudio_mic_t *mic, bool use_float)
+{
+   AudioStreamBasicDescription *f = &mic->format;
+   mic->use_float      = use_float;
+   memset(f, 0, sizeof(*f));
+   f->mSampleRate      = mic->sample_rate;
+   f->mFormatID        = kAudioFormatLinearPCM;
+   f->mFormatFlags     = use_float
+      ? (kAudioFormatFlagIsFloat | kAudioFormatFlagIsPacked)
+      : (kLinearPCMFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked);
+   f->mFramesPerPacket = 1;
+   f->mChannelsPerFrame = 1; /* mono */
+   f->mBitsPerChannel  = use_float ? 32 : 16;
+   f->mBytesPerFrame   = f->mChannelsPerFrame * f->mBitsPerChannel / 8;
+   f->mBytesPerPacket  = f->mBytesPerFrame * f->mFramesPerPacket;
+}
+
+/* The input callback, on the real-time thread. */
+static OSStatus coreaudio_mic_input_cb(void *ref,
+      AudioUnitRenderActionFlags *flags, const AudioTimeStamp *ts,
+      UInt32 bus, UInt32 frames, AudioBufferList *io_data)
+{
+   coreaudio_mic_t *mic = (coreaudio_mic_t*)ref;
+   AudioBufferList list;
+   size_t bytes;
+
+   (void)bus;
+   (void)io_data;
+
+   if (!mic || !retro_atomic_load_acquire_int(&mic->running))
+      return noErr;
+
+   bytes = (size_t)frames * mic->format.mBytesPerFrame;
+   /* A slice larger than the buffer sized from MaximumFramesPerSlice
+    * is dropped rather than allocated for on this thread. */
+   if (!bytes || bytes > mic->cb_buf_size)
+      return noErr;
+
+   list.mNumberBuffers              = 1;
+   list.mBuffers[0].mNumberChannels = mic->format.mChannelsPerFrame;
+   list.mBuffers[0].mDataByteSize   = (UInt32)bytes;
+   list.mBuffers[0].mData           = mic->cb_buf;
+
+   if (AudioUnitRender(mic->unit, flags, ts, 1, frames, &list) == noErr
+         && list.mBuffers[0].mData && list.mBuffers[0].mDataByteSize)
+   {
+      size_t got = list.mBuffers[0].mDataByteSize;
+      if (got > bytes)
+         got = bytes;
+      /* Never wait here: a reader holding the lock costs one slice. */
+      if (slock_try_lock(mic->lock))
+      {
+         if (FIFO_WRITE_AVAIL(mic->fifo) >= got)
+            fifo_write(mic->fifo, list.mBuffers[0].mData, got);
+         scond_signal(mic->cond);
+         slock_unlock(mic->lock);
+      }
+   }
+   /* Always noErr: an error return can stop the callbacks for good. */
+   return noErr;
+}
+
+#if !TARGET_OS_IPHONE
+/* --- macOS: HAL input devices ------------------------------------- */
+
+static bool coreaudio_mic_device_has_input(AudioDeviceID id)
+{
+   AudioObjectPropertyAddress prop;
+   UInt32 size        = 0;
+   prop.mSelector     = kAudioDevicePropertyStreams;
+   prop.mScope        = kAudioDevicePropertyScopeInput;
+   prop.mElement      = CA_ELEMENT_MAIN;
+   return AudioObjectGetPropertyDataSize(id, &prop, 0, NULL, &size) == noErr
+         && size > 0;
+}
+
+/* A CFString property of a device as UTF-8; false if absent. */
+static bool coreaudio_mic_device_string(AudioDeviceID id,
+      UInt32 selector, char *s, size_t len)
+{
+   AudioObjectPropertyAddress prop;
+   CFStringRef cf = NULL;
+   UInt32 size    = sizeof(cf);
+   bool ok;
+   prop.mSelector = selector;
+   prop.mScope    = kAudioObjectPropertyScopeGlobal;
+   prop.mElement  = CA_ELEMENT_MAIN;
+   s[0]           = 0;
+   if (AudioObjectGetPropertyData(id, &prop, 0, NULL, &size, &cf) != noErr || !cf)
+      return false;
+   ok = CFStringGetCString(cf, s, (CFIndex)len, kCFStringEncodingUTF8) && s[0];
+   CFRelease(cf);
+   return ok;
+}
+
+static AudioDeviceID coreaudio_mic_default_device(void)
+{
+   AudioObjectPropertyAddress prop;
+   AudioDeviceID id = kAudioObjectUnknown;
+   UInt32 size      = sizeof(id);
+   prop.mSelector   = kAudioHardwarePropertyDefaultInputDevice;
+   prop.mScope      = kAudioObjectPropertyScopeGlobal;
+   prop.mElement    = CA_ELEMENT_MAIN;
+   if (AudioObjectGetPropertyData(kAudioObjectSystemObject, &prop,
+            0, NULL, &size, &id) != noErr)
+      return kAudioObjectUnknown;
+   return id;
+}
+
+/* The device list stores the UID beside each name so a chosen entry
+ * survives renaming; a saved setting may carry either, so the lookup
+ * tries the UID first and the name second. */
+static AudioDeviceID coreaudio_mic_find_device(const char *uid_or_name)
+{
+   UInt32 i, count = 0, pass;
+   AudioDeviceID found = kAudioObjectUnknown;
+   AudioDeviceID *devices;
+
+   if (string_is_empty(uid_or_name) || string_is_equal(uid_or_name, "default"))
+      return kAudioObjectUnknown;
+   if (!(devices = coreaudio_hal_devices(&count)))
+      return kAudioObjectUnknown;
+
+   for (pass = 0; pass < 2 && found == kAudioObjectUnknown; pass++)
+   {
+      for (i = 0; i < count; i++)
+      {
+         char s[256];
+         if (!coreaudio_mic_device_has_input(devices[i]))
+            continue;
+         if (     coreaudio_mic_device_string(devices[i],
+                  pass == 0 ? kAudioDevicePropertyDeviceUID
+                            : kAudioDevicePropertyDeviceNameCFString,
+                  s, sizeof(s))
+               && string_is_equal(s, uid_or_name))
+         {
+            found = devices[i];
+            break;
+         }
+      }
+   }
+
+   free(devices);
+   if (found == kAudioObjectUnknown)
+      RARCH_WARN("[CoreAudio] Input device \"%s\" not found; using the default.\n",
+            uid_or_name);
+   return found;
+}
+
+/* Called by the HAL on a thread of its own when the default input
+ * device changes; the reconnect happens on the reader's thread. */
+static OSStatus coreaudio_mic_default_listener(AudioObjectID obj,
+      UInt32 n, const AudioObjectPropertyAddress addrs[], void *data)
+{
+   coreaudio_mic_t *mic = (coreaudio_mic_t*)data;
+   (void)obj;
+   (void)n;
+   (void)addrs;
+   if (mic)
+      retro_atomic_store_release_int(&mic->device_changed, 1);
+   return noErr;
+}
+
+static void coreaudio_mic_listen_default(coreaudio_mic_t *mic, bool on)
+{
+   AudioObjectPropertyAddress prop;
+   prop.mSelector = kAudioHardwarePropertyDefaultInputDevice;
+   prop.mScope    = kAudioObjectPropertyScopeGlobal;
+   prop.mElement  = CA_ELEMENT_MAIN;
+   if (on)
+      AudioObjectAddPropertyListener(kAudioObjectSystemObject, &prop,
+            coreaudio_mic_default_listener, mic);
+   else
+      AudioObjectRemovePropertyListener(kAudioObjectSystemObject, &prop,
+            coreaudio_mic_default_listener, mic);
+}
+
+/* Move a mic that follows the default onto the new default, keeping
+ * the format - and so the rate reported to the core - it opened with;
+ * the unit's own converter covers any difference to the new hardware. */
+static void coreaudio_mic_reconnect(coreaudio_mic_t *mic)
+{
+   AudioDeviceID dev = coreaudio_mic_default_device();
+   bool was_running;
+
+   if (dev == kAudioObjectUnknown || dev == mic->device)
+      return;
+   RARCH_LOG("[CoreAudio] Default input device changed; reconnecting.\n");
+
+   was_running = retro_atomic_load_acquire_int(&mic->running) != 0;
+   if (was_running)
+      AudioOutputUnitStop(mic->unit);
+   retro_atomic_store_release_int(&mic->running, 0);
+   if (retro_atomic_load_acquire_int(&mic->initialized))
+   {
+      AudioUnitUninitialize(mic->unit);
+      retro_atomic_store_release_int(&mic->initialized, 0);
+   }
+
+   mic->device = dev;
+   if (AudioUnitSetProperty(mic->unit, kAudioOutputUnitProperty_CurrentDevice,
+            kAudioUnitScope_Global, 0, &dev, sizeof(dev)) != noErr)
+      return;
+   AudioUnitSetProperty(mic->unit, kAudioUnitProperty_StreamFormat,
+         kAudioUnitScope_Output, 1, &mic->format, sizeof(mic->format));
+   if (AudioUnitInitialize(mic->unit) != noErr)
+      return;
+   retro_atomic_store_release_int(&mic->initialized, 1);
+
+   slock_lock(mic->lock);
+   fifo_clear(mic->fifo);
+   slock_unlock(mic->lock);
+
+   if (was_running && AudioOutputUnitStart(mic->unit) == noErr)
+      retro_atomic_store_release_int(&mic->running, 1);
+}
+#endif /* !TARGET_OS_IPHONE */
+
+/* --- The driver ------------------------------------------------------ */
+
+static void *coreaudio_mic_init(void)
+{
+   return calloc(1, sizeof(coreaudio_mic_driver_t));
+}
+
+static void coreaudio_mic_free(void *driver_context)
+{
+   coreaudio_mic_driver_t *drv = (coreaudio_mic_driver_t*)driver_context;
+   if (!drv)
+      return;
+   /* The frontend closes every microphone first; do not leak one
+    * should that ever stop being true. */
+   if (drv->mic)
+      coreaudio_mic_close(drv, drv->mic);
+   free(drv);
+}
+
+static int coreaudio_mic_read(void *driver_context, void *mic_context,
+      void *buf, size_t len)
+{
+   coreaudio_mic_t *mic = (coreaudio_mic_t*)mic_context;
+   size_t avail, n;
+
+   (void)driver_context;
+   if (!mic || !mic->fifo || !buf)
+      return -1;
+
+#if !TARGET_OS_IPHONE
+   /* A pending default-device change, before the lock is taken. */
+   if (retro_atomic_load_acquire_int(&mic->device_changed))
+   {
+      retro_atomic_store_release_int(&mic->device_changed, 0);
+      coreaudio_mic_reconnect(mic);
+   }
+#endif
+
+   slock_lock(mic->lock);
+   avail = FIFO_READ_AVAIL(mic->fifo);
+   n     = avail < len ? avail : len;
+   if (!n && !mic->nonblock)
+   {
+      /* Blocking: one slice's worth of wait for the callback, timed. */
+      scond_wait_timeout(mic->cond, mic->lock, 10000);
+      avail = FIFO_READ_AVAIL(mic->fifo);
+      n     = avail < len ? avail : len;
+   }
+   if (n)
+      fifo_read(mic->fifo, buf, n);
+   slock_unlock(mic->lock);
+   return (int)n;
+}
+
+static void coreaudio_mic_set_nonblock_state(void *driver_context, bool state)
+{
+   coreaudio_mic_driver_t *drv = (coreaudio_mic_driver_t*)driver_context;
+   if (!drv)
+      return;
+   drv->nonblock = state;
+   if (drv->mic)
+      drv->mic->nonblock = state;
+}
+
+static struct string_list *coreaudio_mic_device_list_new(const void *driver_context)
+{
+#if TARGET_OS_IPHONE
+   (void)driver_context;
+   return NULL;
+#else
+   UInt32 i, count = 0;
+   AudioDeviceID *devices;
+   struct string_list *sl;
+   union string_list_elem_attr attr;
+
+   (void)driver_context;
+   if (!(sl = string_list_new()))
+      return NULL;
+   if (!(devices = coreaudio_hal_devices(&count)))
+   {
+      string_list_free(sl);
+      return NULL;
+   }
+
+   for (i = 0; i < count; i++)
+   {
+      char name[256], uid[256];
+      if (!coreaudio_mic_device_has_input(devices[i]))
+         continue;
+      if (     !coreaudio_mic_device_string(devices[i],
+                  kAudioDevicePropertyDeviceNameCFString, name, sizeof(name))
+            || !coreaudio_mic_device_string(devices[i],
+                  kAudioDevicePropertyDeviceUID, uid, sizeof(uid)))
+         continue;
+      /* The UID rides along in attr.p, owned by the list; see the
+       * free below. */
+      if (!(attr.p = strdup(uid)))
+         continue;
+      if (!string_list_append(sl, name, attr))
+         free(attr.p);
+   }
+
+   free(devices);
+   if (!sl->size)
+   {
+      string_list_free(sl);
+      return NULL;
+   }
+   return sl;
+#endif
+}
+
+static void coreaudio_mic_device_list_free(const void *driver_context,
+      struct string_list *sl)
+{
+   size_t i;
+   (void)driver_context;
+   if (!sl)
+      return;
+   for (i = 0; i < sl->size; i++)
+   {
+      if (sl->elems[i].attr.p)
+         free(sl->elems[i].attr.p);
+      sl->elems[i].attr.p = NULL;
+   }
+   string_list_free(sl);
+}
+
+static void *coreaudio_mic_open(void *driver_context, const char *device,
+      unsigned rate, unsigned latency, unsigned *new_rate)
+{
+   coreaudio_mic_driver_t *drv = (coreaudio_mic_driver_t*)driver_context;
+   coreaudio_mic_t *mic;
+   ca_component_desc_t desc = {0};
+   AURenderCallbackStruct cb;
+   void *comp;
+   UInt32 one = 1, zero = 0, max_frames = 4096, max_frames_size = sizeof(max_frames);
+   size_t fifo_size;
+
+   if (!drv)
+      return NULL;
+   if (drv->mic)
+   {
+      RARCH_WARN("[CoreAudio] A microphone is already open; closing it first.\n");
+      coreaudio_mic_close(drv, drv->mic);
+   }
+   if (!ca_cm_resolve())
+      return NULL;
+   if (!(mic = (coreaudio_mic_t*)calloc(1, sizeof(*mic))))
+      return NULL;
+
+   retro_atomic_int_init(&mic->running, 0);
+   retro_atomic_int_init(&mic->initialized, 0);
+   mic->lock        = slock_new();
+   mic->cond        = scond_new();
+   mic->sample_rate = rate;
+   mic->nonblock    = drv->nonblock;
+   if (!mic->lock || !mic->cond)
+      goto error;
+
+#if TARGET_OS_IPHONE
+   /* The session must be in a record category before the unit will
+    * capture, and its rate is the unit's rate. Objective-C, in Cocoa. */
+   {
+      unsigned actual = 0;
+      if (!cocoa_audio_session_begin_record(rate, &actual))
+         goto error;
+      if (actual)
+         mic->sample_rate = actual;
+   }
+#else
+   retro_atomic_int_init(&mic->device_changed, 0);
+   mic->device = coreaudio_mic_find_device(device);
+   if (mic->device == kAudioObjectUnknown)
+   {
+      mic->device         = coreaudio_mic_default_device();
+      mic->follow_default = true;
+   }
+#endif
+
+   /* The unit: input enabled on bus 1, output disabled on bus 0. */
+   desc.type         = kAudioUnitType_Output;
+#if TARGET_OS_IPHONE
+   desc.subtype      = kAudioUnitSubType_RemoteIO;
+#else
+   desc.subtype      = kAudioUnitSubType_HALOutput;
+#endif
+   desc.manufacturer = kAudioUnitManufacturer_Apple;
+   if (!(comp = ca_cm.find_next(NULL, &desc)))
+      goto error;
+   if (ca_cm.open(comp, &mic->unit) != noErr || !mic->unit)
+      goto error;
+   if (AudioUnitSetProperty(mic->unit, kAudioOutputUnitProperty_EnableIO,
+            kAudioUnitScope_Input, 1, &one, sizeof(one)) != noErr)
+      goto error;
+   AudioUnitSetProperty(mic->unit, kAudioOutputUnitProperty_EnableIO,
+         kAudioUnitScope_Output, 0, &zero, sizeof(zero));
+
+#if !TARGET_OS_IPHONE
+   if (mic->device != kAudioObjectUnknown
+         && AudioUnitSetProperty(mic->unit, kAudioOutputUnitProperty_CurrentDevice,
+            kAudioUnitScope_Global, 0, &mic->device, sizeof(mic->device)) != noErr)
+   {
+      RARCH_WARN("[CoreAudio] Input device %u refused; using the default.\n",
+            (unsigned)mic->device);
+      mic->device = kAudioObjectUnknown;
+   }
+   {
+      AudioDeviceID actual = kAudioObjectUnknown;
+      UInt32 size          = sizeof(actual);
+      if (AudioUnitGetProperty(mic->unit, kAudioOutputUnitProperty_CurrentDevice,
+               kAudioUnitScope_Global, 0, &actual, &size) == noErr)
+         mic->device = actual;
+   }
+#endif
+
+   /* The client format on the output side of the input bus: mono int16
+    * at the device's own rate, so the unit converts nothing it need not. */
+   coreaudio_mic_set_format(mic, false);
+#if !TARGET_OS_IPHONE
+   {
+      AudioStreamBasicDescription hw = {0};
+      UInt32 size = sizeof(hw);
+      if (AudioUnitGetProperty(mic->unit, kAudioUnitProperty_StreamFormat,
+               kAudioUnitScope_Input, 1, &hw, &size) == noErr && hw.mSampleRate > 0)
+      {
+         mic->sample_rate         = (unsigned)hw.mSampleRate;
+         mic->format.mSampleRate  = hw.mSampleRate;
+      }
+   }
+#endif
+   if (AudioUnitSetProperty(mic->unit, kAudioUnitProperty_StreamFormat,
+            kAudioUnitScope_Output, 1, &mic->format, sizeof(mic->format)) != noErr)
+      goto error;
+
+   cb.inputProc       = coreaudio_mic_input_cb;
+   cb.inputProcRefCon = mic;
+   if (AudioUnitSetProperty(mic->unit, kAudioOutputUnitProperty_SetInputCallback,
+            kAudioUnitScope_Global, 0, &cb, sizeof(cb)) != noErr)
+      goto error;
+
+#if !TARGET_OS_IPHONE
+   /* A short device period for the capture side. Advisory. */
+   {
+      UInt32 period = 256;
+      AudioUnitSetProperty(mic->unit, kAudioDevicePropertyBufferFrameSize,
+            kAudioUnitScope_Global, 0, &period, sizeof(period));
+   }
+#endif
+
+   if (AudioUnitInitialize(mic->unit) != noErr)
+      goto error;
+   retro_atomic_store_release_int(&mic->initialized, 1);
+
+   /* The render buffer, sized from what the unit may hand over per
+    * slice, so the callback allocates nothing. */
+   AudioUnitGetProperty(mic->unit, kAudioUnitProperty_MaximumFramesPerSlice,
+         kAudioUnitScope_Global, 0, &max_frames, &max_frames_size);
+   mic->cb_buf_size = (size_t)max_frames * mic->format.mBytesPerFrame;
+   if (!(mic->cb_buf = calloc(1, mic->cb_buf_size)))
+      goto error;
+
+   fifo_size = (size_t)latency * mic->sample_rate * mic->format.mBytesPerFrame / 1000;
+   if (!fifo_size)
+      fifo_size = (size_t)mic->sample_rate * mic->format.mBytesPerFrame / 10;
+   if (!(mic->fifo = fifo_new(fifo_size)))
+      goto error;
+
+#if !TARGET_OS_IPHONE
+   if (mic->follow_default)
+      coreaudio_mic_listen_default(mic, true);
+#endif
+
+   RARCH_LOG("[CoreAudio] Microphone open: %u Hz mono %s, %u ms fifo.\n",
+         mic->sample_rate, mic->use_float ? "float" : "int16", latency);
+   if (new_rate)
+      *new_rate = mic->sample_rate;
+   drv->mic = mic;
+   return mic;
+
+error:
+   RARCH_ERR("[CoreAudio] Failed to open the microphone.\n");
+   /* close() takes a handle that was only partly built. */
+   coreaudio_mic_close(drv, mic);
+   return NULL;
+}
+
+static void coreaudio_mic_close(void *driver_context, void *mic_context)
+{
+   coreaudio_mic_driver_t *drv = (coreaudio_mic_driver_t*)driver_context;
+   coreaudio_mic_t *mic        = (coreaudio_mic_t*)mic_context;
+   if (!mic)
+      return;
+
+#if !TARGET_OS_IPHONE
+   if (mic->follow_default)
+      coreaudio_mic_listen_default(mic, false);
+#endif
+   coreaudio_mic_stop(drv, mic);
+
+   /* Stopping does not wait for a callback in flight; disposing does,
+    * so everything the callback touches outlives the dispose. */
+   if (mic->unit)
+   {
+      if (retro_atomic_load_acquire_int(&mic->initialized))
+         AudioUnitUninitialize(mic->unit);
+      ca_cm.close(mic->unit);
+      mic->unit = NULL;
+   }
+   if (mic->cb_buf)
+      free(mic->cb_buf);
+   if (mic->fifo)
+      fifo_free(mic->fifo);
+   if (mic->lock)
+      slock_free(mic->lock);
+   if (mic->cond)
+      scond_free(mic->cond);
+   if (drv && drv->mic == mic)
+      drv->mic = NULL;
+   free(mic);
+}
+
+static bool coreaudio_mic_alive(const void *driver_context, const void *mic_context)
+{
+   const coreaudio_mic_t *mic = (const coreaudio_mic_t*)mic_context;
+   (void)driver_context;
+   return mic && retro_atomic_load_acquire_int(&mic->running);
+}
+
+static bool coreaudio_mic_start(void *driver_context, void *mic_context)
+{
+   coreaudio_mic_t *mic = (coreaudio_mic_t*)mic_context;
+   (void)driver_context;
+   if (!mic || !mic->unit || !retro_atomic_load_acquire_int(&mic->initialized))
+      return false;
+   if (retro_atomic_load_acquire_int(&mic->running))
+      return true;
+   slock_lock(mic->lock);
+   fifo_clear(mic->fifo);
+   slock_unlock(mic->lock);
+   if (AudioOutputUnitStart(mic->unit) != noErr)
+   {
+      RARCH_ERR("[CoreAudio] Failed to start the microphone.\n");
+      return false;
+   }
+   retro_atomic_store_release_int(&mic->running, 1);
+   return true;
+}
+
+static bool coreaudio_mic_stop(void *driver_context, void *mic_context)
+{
+   coreaudio_mic_t *mic = (coreaudio_mic_t*)mic_context;
+   OSStatus status;
+   (void)driver_context;
+   if (!mic || !mic->unit || !retro_atomic_load_acquire_int(&mic->running))
+      return true;
+   status = AudioOutputUnitStop(mic->unit);
+   /* Not running from here on either way. */
+   retro_atomic_store_release_int(&mic->running, 0);
+   if (mic->fifo)
+   {
+      slock_lock(mic->lock);
+      fifo_clear(mic->fifo);
+      slock_unlock(mic->lock);
+   }
+   return status == noErr;
+}
+
+static bool coreaudio_mic_use_float(const void *driver_context, const void *mic_context)
+{
+   const coreaudio_mic_t *mic = (const coreaudio_mic_t*)mic_context;
+   (void)driver_context;
+   return mic && mic->use_float;
+}
+
+microphone_driver_t microphone_coreaudio = {
+   coreaudio_mic_init,
+   coreaudio_mic_free,
+   coreaudio_mic_read,
+   coreaudio_mic_set_nonblock_state,
+   "coreaudio",
+   coreaudio_mic_device_list_new,
+   coreaudio_mic_device_list_free,
+   coreaudio_mic_open,
+   coreaudio_mic_close,
+   coreaudio_mic_alive,
+   coreaudio_mic_start,
+   coreaudio_mic_stop,
+   coreaudio_mic_use_float
+};
+#endif /* HAVE_MICROPHONE */

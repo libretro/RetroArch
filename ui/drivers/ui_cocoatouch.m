@@ -40,6 +40,7 @@
 #include "../../audio/audio_driver.h"
 #ifdef HAVE_MICROPHONE
 #include "../../audio/microphone_driver.h"
+#include "cocoa/cocoa_audio_session.h"
 #endif
 #include "../../gfx/video_display_server.h"
 #include "../../configuration.h"
@@ -686,6 +687,52 @@ enum
       _documentsDirectory = paths.firstObject;
    }
    return _documentsDirectory;
+}
+
+/* The record-category half of the session, for the microphone driver;
+ * see cocoa_audio_session.h. Moved here from the driver, which is C. */
+bool cocoa_audio_session_begin_record(unsigned preferred_rate,
+      unsigned *actual_rate)
+{
+   AVAudioSession *session = [AVAudioSession sharedInstance];
+   NSError *error = nil;
+   AVAudioSessionCategoryOptions options =
+      AVAudioSessionCategoryOptionAllowBluetoothA2DP;
+
+#if TARGET_OS_IOS
+   /* PlayAndRecord routes output to the receiver on iPhone unless
+    * DefaultToSpeaker is set, which would make game audio quiet and thin
+    * the moment a core asks for a microphone. tvOS has no receiver to be
+    * routed to and marks the option unavailable, so it is iOS-only -
+    * TARGET_OS_IPHONE covers tvOS as well and is too broad to gate it. */
+   options |= AVAudioSessionCategoryOptionDefaultToSpeaker;
+#endif
+
+   /* AllowBluetooth (HFP) is deliberately not requested: it would make a
+    * paired headset's microphone available, but only by dragging the whole
+    * route down to narrowband mono. Keeping A2DP alone leaves game audio
+    * at full quality on the headset and takes input from the built-in mic,
+    * which is the better trade for an emulator. It is also the option
+    * deprecated in the iOS 26 SDK in favour of AllowBluetoothHFP. */
+   [session setCategory:AVAudioSessionCategoryPlayAndRecord
+            withOptions:options
+                  error:&error];
+   if (error)
+   {
+      RARCH_ERR("[Cocoa] AVAudioSession record category: %s\n",
+            [[error localizedDescription] UTF8String]);
+      return false;
+   }
+
+   /* Let the system negotiate the rate rather than restricting it. */
+   [session setPreferredSampleRate:preferred_rate error:&error];
+   if (error)
+      RARCH_WARN("[Cocoa] AVAudioSession preferred sample rate %u: %s\n",
+            preferred_rate, [[error localizedDescription] UTF8String]);
+
+   if (actual_rate)
+      *actual_rate = (unsigned)[session sampleRate];
+   return true;
 }
 
 - (void)handleAudioSessionInterruption:(NSNotification *)notification

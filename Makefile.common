@@ -806,14 +806,6 @@ endif
 ifeq ($(HAVE_COREAUDIO), 1)
    DEFINES += -DHAVE_COREAUDIO
    OBJ += audio/drivers/coreaudio.o
-ifeq ($(HAVE_MICROPHONE), 1)
-   OBJ += audio/drivers/coreaudio_mic_macos.o
-   # AVFoundation is 10.7+ and only needed by the microphone driver.
-   # The base coreaudio.c path doesn't use it, so keep it out of the
-   # link line on targets without microphone support (e.g. pre-10.7
-   # / Tiger / Leopard / PowerPC).
-   LIBS += -framework AVFoundation
-endif
    HAVE_COREAUDIO_LIBS = 1
    LIBS += -framework AudioToolbox
 endif
@@ -2386,9 +2378,7 @@ endif
 # AVFoundation camera + recording (Apple, macOS 10.7+ / iOS).  The
 # 10.7 gate is enforced in qb/config.libs.sh (see the HAVE_AVF block
 # there); this section just wires the object files and frameworks in
-# when HAVE_AVF is on.  Note that HAVE_MICROPHONE above also adds
-# -framework AVFoundation for its own reasons; make tolerates the
-# repeat and the linker de-duplicates.
+# when HAVE_AVF is on.
 ifeq ($(HAVE_AVF), 1)
    DEFINES += -DHAVE_AVF
    OBJ     += camera/drivers/avfoundation.o \
