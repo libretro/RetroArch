@@ -1304,8 +1304,23 @@
 #define DEFAULT_AUDIO_SYNC true
 
 /* Run the audio pipeline (convert, DSP, resample, volume) on the audio
- * thread instead of inside the frame. Off by default. */
+ * thread instead of inside the frame.
+ *
+ * On wherever there are threads to run it on. The latency is the same
+ * as the frame-synchronous path at any Audio Latency setting - the
+ * pipeline moves off the frame, it does not add a buffer - while rate
+ * control gets measured at the device's own pace instead of once a
+ * frame, and the resampler leaves the frame budget.
+ *
+ * Nothing here forces it on a driver that cannot take it: audio_driver
+ * requires wait_writable() and no core audio callback, and falls back
+ * to the inline path with a log line otherwise, so this is the default
+ * for the drivers that can and a no-op for the rest. */
+#if defined(HAVE_THREADS)
+#define DEFAULT_AUDIO_THREADED_PIPELINE true
+#else
 #define DEFAULT_AUDIO_THREADED_PIPELINE false
+#endif
 
 /* Ask the OS to schedule the audio thread ahead of the rest of the
  * frontend. Best effort. Off by default. */
