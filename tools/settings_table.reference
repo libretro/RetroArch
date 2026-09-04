@@ -188,6 +188,7 @@ bool	content_show_explore	1	1
 bool	xmb_entry_icons	1	1
 bool	xmb_switch_icons	1	1
 bool	xmb_shadows_enable	1	1
+bool	playlist_show_entry_idx	1	1
 bool	playlist_fuzzy_archive_match	1	0
 bool	scan_without_core_match	1	0
 bool	scan_serial_and_crc	1	0
@@ -212,7 +213,6 @@ bool	ozone_show_sidebar	1	1
 bool	ozone_collapse_sidebar	1	0
 bool	video_hdr_scanlines	1	1
 bool	rewind_enable	1	0
-bool	playlist_show_entry_idx	1	1
 bool	menu_linear_filter	1	0
 bool	xmb_vertical_thumbnails	1	0
 bool	pause_on_disconnect	1	0
@@ -837,6 +837,7 @@ bool	content_show_explore	1	1
 bool	xmb_entry_icons	1	1
 bool	xmb_switch_icons	1	1
 bool	xmb_shadows_enable	1	1
+bool	playlist_show_entry_idx	1	1
 bool	playlist_fuzzy_archive_match	1	0
 bool	scan_without_core_match	1	0
 bool	scan_serial_and_crc	1	0
@@ -861,7 +862,6 @@ bool	ozone_show_sidebar	1	1
 bool	ozone_collapse_sidebar	1	0
 bool	video_hdr_scanlines	1	1
 bool	rewind_enable	1	0
-bool	playlist_show_entry_idx	1	1
 bool	menu_linear_filter	1	0
 bool	xmb_vertical_thumbnails	1	0
 bool	pause_on_disconnect	1	0
@@ -1485,6 +1485,7 @@ bool	content_show_explore	1	1
 bool	xmb_entry_icons	1	1
 bool	xmb_switch_icons	1	1
 bool	xmb_shadows_enable	1	1
+bool	playlist_show_entry_idx	1	1
 bool	playlist_fuzzy_archive_match	1	0
 bool	scan_without_core_match	1	0
 bool	scan_serial_and_crc	1	0
@@ -1509,7 +1510,6 @@ bool	ozone_show_sidebar	1	1
 bool	ozone_collapse_sidebar	1	0
 bool	video_hdr_scanlines	1	1
 bool	rewind_enable	1	0
-bool	playlist_show_entry_idx	1	1
 bool	menu_linear_filter	1	0
 bool	xmb_vertical_thumbnails	1	0
 bool	pause_on_disconnect	1	0
