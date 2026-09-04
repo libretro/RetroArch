@@ -33,6 +33,8 @@
 #include "../../tasks/tasks_internal.h"
 #include "../input_keymaps.h"
 #include "../../retroarch.h"
+#include <features/features_cpu.h>
+
 #include "../../verbosity.h"
 
 #include <queues/task_queue.h>
@@ -379,12 +381,50 @@ static bool dinput_joypad_ctx_create(void)
  * so teardown joins it; the stall this can incur only occurs if the
  * user quits or hotplugs while an enumeration is still running,
  * instead of unconditionally blocking startup as the old
- * synchronous enumeration did. */
+ * synchronous enumeration did.
+ *
+ * The wait is a poll rather than a wait on a primitive because the
+ * flag is cleared by the task's own main-thread callback: nothing
+ * will clear it unless this loop keeps servicing the task queue. It
+ * is also deliberately unbounded. EnumDevices() walks the HID/PnP
+ * tree and a wedged driver stack can hold it for seconds; giving up
+ * and returning would let the caller free the pad state and the
+ * DirectInput context that the enumeration is still walking, trading
+ * a slow exit for a crash. The one thing that was missing is any
+ * sign of it: a user whose Bluetooth stack is stuck saw the frontend
+ * freeze on exit with nothing in the log. Now it says so, once after
+ * a second and then every five, so a report of "hangs on quit" comes
+ * with the reason attached. */
 static void dinput_joypad_enum_wait(void)
 {
+   retro_time_t start;
+   unsigned reported = 0;
+
+   if (!g_dinput_enum_inflight)
+      return;
+
+   start = cpu_features_get_time_usec();
+
    while (g_dinput_enum_inflight)
    {
+      retro_time_t waited;
+      /* Pump first: on the frame the task finished, its callback runs
+       * here and the loop leaves without sleeping at all. This matters
+       * on Windows, where retro_sleep(1) is SleepEx(1) and rounds up
+       * to the timer period - 15.6 ms by default. */
       task_queue_check();
+      if (!g_dinput_enum_inflight)
+         break;
+
+      waited = cpu_features_get_time_usec() - start;
+      if (waited > (retro_time_t)(1000000 + reported * 5000000))
+      {
+         RARCH_WARN("[DInput] Still waiting for pad enumeration to "
+               "finish after %u s; a device driver stack may be "
+               "stalled.\n", (unsigned)(waited / 1000000));
+         reported++;
+      }
+
       retro_sleep(1);
    }
 }
