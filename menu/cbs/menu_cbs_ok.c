@@ -2032,12 +2032,32 @@ static int action_ok_dl_from_map(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    size_t i;
-   /* The ok callback signature carries no enum_idx; the previous
-    * lookup keyed on 'type', but for these entries 'type' is the
-    * menu_settings_type (MENU_SETTING_ACTION), never the label enum,
-    * so every row missed and fell through to the archive/file browser.
-    * Key on the entry's canonical label instead, which is what the
-    * bind path matched on. */
+   /* The ok callback signature carries no enum_idx, so fetch the
+    * entry's cbs and key on the same cbs->enum_idx the bind path
+    * matched on. The entry's label string is not a usable key:
+    * saved Explore views are appended under
+    * MENU_ENUM_LABEL_GOTO_EXPLORE with the .lvw path in the label
+    * slot, so a string compare against the canonical label misses
+    * and falls through to the archive/file browser. */
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list     = menu_st->entries.list;
+   file_list_t *selection_buf = menu_list
+         ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
+   menu_file_list_cbs_t *cbs  = selection_buf
+         ? (menu_file_list_cbs_t*)
+           file_list_get_actiondata_at_offset(selection_buf, idx) : NULL;
+
+   if (cbs && cbs->enum_idx != MSG_UNKNOWN)
+   {
+      for (i = 0; i < ARRAY_SIZE(ok_dl_map); i++)
+         if ((uint32_t)cbs->enum_idx == ok_dl_map[i].enum_idx)
+            return generic_action_ok_displaylist_push(path, NULL,
+                  label, type, idx, entry_idx,
+                  (unsigned)ok_dl_map[i].dl_id);
+   }
+
+   /* Entries reachable without a live selection buffer still
+    * resolve when their label is the canonical one. */
    for (i = 0; i < ARRAY_SIZE(ok_dl_map); i++)
       if (string_is_equal(label,
             msg_hash_to_str((enum msg_hash_enums)ok_dl_map[i].enum_idx)))
