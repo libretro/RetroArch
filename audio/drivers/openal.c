@@ -15,6 +15,7 @@
  */
 
 #include <stdlib.h>
+#include <retro_atomic.h>
 #include <string.h>
 #include <time.h>
 
@@ -87,6 +88,9 @@ typedef struct al
    /* Raised by the DISCONNECTED event: the device is not coming back,
     * so no wait for it has anything to wait for. */
    bool disconnected;
+   /* Frames the source has finished playing, for the sink rate
+    * estimate; see al_frames_consumed(). */
+   retro_atomic_size_t consumed;
 } al_t;
 
 static void al_free(void *data)
@@ -222,6 +226,8 @@ static void *al_init(const char *device, unsigned rate, unsigned latency,
    if (!al)
       return NULL;
 
+   retro_atomic_size_init(&al->consumed, 0);
+
    if (device)
    {
       struct string_list *list = (struct string_list*)al_list_new(NULL);
@@ -356,6 +362,13 @@ static bool al_unqueue_buffers(al_t *al)
    if (alGetError() != AL_NO_ERROR)
       return false;
    al->res_ptr += val;
+   /* Buffers the source has finished with are frames the device has
+    * played. Counted here, where they are collected, rather than from
+    * a callback OpenAL does not offer. */
+   retro_atomic_fetch_add_size(&al->consumed,
+         (size_t)val * (OPENAL_BUFSIZE
+            / (al->format == AL_FORMAT_STEREO16
+               ? 2 * sizeof(int16_t) : 2 * sizeof(float))));
    return true;
 }
 
@@ -534,6 +547,31 @@ static size_t al_wait_writable(void *data, size_t len)
    return al->res_ptr * OPENAL_BUFSIZE;
 }
 
+/* Frames the device has played since the source started.
+ *
+ * OpenAL has no callback per period, so this counts buffers as they
+ * come back processed - the same quantity OpenSL gets from its
+ * callback, collected on the frontend's thread instead. A buffer is
+ * counted once, when it is first seen as processed, so the running
+ * total stays right even though the moment of observation is the
+ * frontend's rather than the device's: a late look moves when a frame
+ * is counted, not how many there are.
+ *
+ * AL_SAMPLE_OFFSET would give the position inside the current buffer
+ * too, but it is per-buffer rather than cumulative and would have to
+ * be stitched to this count to be useful. The buffer quantum here is
+ * 256 frames of int16 stereo, finer than the 480-frame periods the
+ * estimator is already specified to tolerate, so the extra resolution
+ * would buy nothing.
+ */
+static size_t al_frames_consumed(void *data)
+{
+   al_t *al = (al_t*)data;
+   if (!al)
+      return 0;
+   return retro_atomic_load_acquire_size(&al->consumed);
+}
+
 static bool al_use_float(void *data)
 {
    al_t *al = (al_t*)data;
@@ -565,5 +603,6 @@ audio_driver_t audio_openal = {
    al_write_avail,
    al_buffer_size,
    NULL, /* write_raw */
-   al_wait_writable
+   al_wait_writable,
+   al_frames_consumed
 };
