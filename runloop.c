@@ -8307,6 +8307,8 @@ end:
     * reset there made it read NONE on every frame. Paths that return
     * before this block set it themselves. */
    runloop_st->pace = RUNLOOP_PACE_NONE;
+   if (runloop_st->pace_external)
+      runloop_st->pace |= RUNLOOP_PACE_EXTERNAL;
    /* How long the last iteration actually took, smoothed. One clock
     * read on a path that already takes several, and the only way to
     * tell a source that is holding the loop from one that merely says
@@ -8407,8 +8409,10 @@ end:
    {
       /* One frame of content time, so a window that comes back is
        * noticed within a frame and the core keeps its own rate while
-       * hidden. */
-      retro_sleep_us((unsigned)runloop_content_frame_time_us(video_st->core_hz));
+       * hidden. Under an external clock the caller is already back
+       * within a frame. */
+      if (!(runloop_st->pace & RUNLOOP_PACE_EXTERNAL))
+         retro_sleep_us((unsigned)runloop_content_frame_time_us(video_st->core_hz));
       return 1;
    }
 
@@ -8456,7 +8460,11 @@ end:
          const retro_time_t to_sleep        = to_sleep_us;
 #endif
 
-         if (to_sleep > 0)
+         /* Under an external clock the sleep is the caller's; the
+          * schedule is re-anchored below so it does not carry a
+          * backlog into the first frame after the clock lets go. */
+         if (     to_sleep > 0
+               && !(runloop_st->pace & RUNLOOP_PACE_EXTERNAL))
          {
             /* Combat jitter a bit. */
             runloop_st->frame_limit_last_time += frame_limit_min;
@@ -8477,9 +8485,12 @@ end:
       }
    }
 
-   /* Frame delay */
-   if (     !(input_st->flags & INP_FLAG_NONBLOCKING)
-         || (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
+   /* Frame delay. Not under an external clock: it is a sleep before
+    * the core runs, and the caller has to be back before the next
+    * tick. */
+   if (     !(runloop_st->pace & RUNLOOP_PACE_EXTERNAL)
+         && (   !(input_st->flags & INP_FLAG_NONBLOCKING)
+             || (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)))
       video_frame_delay(video_st, settings);
 
    /* Set paused state after x frames */

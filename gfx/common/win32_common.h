@@ -70,7 +70,13 @@ enum win32_common_flags
    WIN32_CMN_FLAG_TASKBAR_CREATED = (1 << 2),
    WIN32_CMN_FLAG_RESTORE_DESKTOP = (1 << 3),
    WIN32_CMN_FLAG_INITED          = (1 << 4),
-   WIN32_CMN_FLAG_SWAP_MOUSE_BTNS = (1 << 5)
+   WIN32_CMN_FLAG_SWAP_MOUSE_BTNS = (1 << 5),
+   /* The window is inside a modal size/move or menu loop owned by
+    * DefWindowProc, and a timer is driving the run loop from within
+    * it. */
+   WIN32_CMN_FLAG_MODAL_TIMER     = (1 << 6),
+   /* A run loop iteration started from that timer is in progress. */
+   WIN32_CMN_FLAG_MODAL_TICK      = (1 << 7)
 };
 
 extern uint8_t g_win32_flags;

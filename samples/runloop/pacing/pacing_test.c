@@ -64,7 +64,7 @@ static void test_gap_predicate(void)
    int nb, fm;
    unsigned engaged = 0;
 
-   for (pace = 0; pace < 32; pace++)
+   for (pace = 0; pace < 64; pace++)
       for (nb = 0; nb < 2; nb++)
          for (fm = 0; fm < 2; fm++)
          {

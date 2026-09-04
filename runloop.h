@@ -353,6 +353,9 @@ struct runloop
     * cross-thread race, so reusing it would undo that reasoning for
     * no gain. This is main-thread only. */
    bool content_closing;
+   /* An external clock is calling runloop_iterate(); see
+    * RUNLOOP_PACE_EXTERNAL. Main-thread only, same reasoning. */
+   bool pace_external;
 };
 
 /* Frame pacing sources.
@@ -383,7 +386,13 @@ enum runloop_pace_source
    RUNLOOP_PACE_AUDIO    = (1 << 1), /* audio crystal: write blocks      */
    RUNLOOP_PACE_SCANLINE = (1 << 2), /* display: vblank-locked wait      */
    RUNLOOP_PACE_TIMER    = (1 << 3), /* CPU counter: frame-limit sleep   */
-   RUNLOOP_PACE_NOWINDOW = (1 << 4)  /* nothing to present to: wait      */
+   RUNLOOP_PACE_NOWINDOW = (1 << 4), /* nothing to present to: wait      */
+   /* The host is calling runloop_iterate() at the content rate from
+    * somewhere it must return quickly to - a Win32 modal size/move
+    * loop, for one. The frame-limit sleep, frame delay, and the
+    * no-window wait yield to that clock rather than stack on it. Set
+    * from runloop_state_t::pace_external. */
+   RUNLOOP_PACE_EXTERNAL = (1 << 5)
 };
 
 /* The three pacing decisions the runloop makes every iteration, here
