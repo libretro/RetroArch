@@ -879,8 +879,25 @@ static void audio_driver_sink_update(audio_driver_state_t *audio_st,
    uint64_t consumed;
    unsigned rate = config_get_ptr()->uints.audio_output_sample_rate;
 
-   if (     !audio || !audio->frames_consumed || !rate
-         || !config_get_ptr()->bools.audio_sink_rate_estimation)
+   if (!config_get_ptr()->bools.audio_sink_rate_estimation)
+   {
+      /* Off means no bias: a bias set while the option was on would
+       * otherwise stay in every rate-control adjustment, and the
+       * ratio itself without rate control, for the rest of the
+       * session. The baseline is dropped with it so that turning the
+       * option back on measures afresh. */
+      if (audio_st->sink_bias != 1.0)
+      {
+         audio_st->sink_bias = 1.0;
+         if (!(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_CONTROL))
+            audio_st->src_ratio_curr = audio_st->src_ratio_orig;
+      }
+      audio_st->sink_baseline_start = 0;
+      audio_st->sink_applied        = 0;
+      return;
+   }
+
+   if (!audio || !audio->frames_consumed || !rate)
       return;
 
    /* The window gate first, then the driver.
