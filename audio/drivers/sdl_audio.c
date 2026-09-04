@@ -367,6 +367,39 @@ static void sdl_microphone_set_nonblock_state(void *driver_context, bool state)
       sdl->nonblock = state;
 }
 
+/* Sleeps until the capture queue holds len bytes, then says how many it
+ * holds. The same bounded wait sdl_microphone_read() does - the SDL
+ * capture callback is the only thing that ever signals this condition,
+ * so an untimed wait never returns once the device stops calling back -
+ * without the copy out. */
+static size_t sdl_microphone_wait_readable(void *driver_context,
+      void *mic_context, size_t len)
+{
+   sdl_microphone_handle_t *mic = (sdl_microphone_handle_t*)mic_context;
+   size_t avail;
+
+   if (!mic || !mic->sample_buffer)
+      return 0;
+
+   SDL_LockAudioDevice(mic->device_id);
+   avail = FIFO_READ_AVAIL(mic->sample_buffer);
+   SDL_UnlockAudioDevice(mic->device_id);
+
+   if (avail >= len)
+      return avail;
+
+#ifdef HAVE_THREADS
+   slock_lock(mic->lock);
+   scond_wait_timeout(mic->cond, mic->lock, SDL_AUDIO_STALL_TIMEOUT_US);
+   slock_unlock(mic->lock);
+#endif
+
+   SDL_LockAudioDevice(mic->device_id);
+   avail = FIFO_READ_AVAIL(mic->sample_buffer);
+   SDL_UnlockAudioDevice(mic->device_id);
+   return avail;
+}
+
 static int sdl_microphone_read(void *driver_context, void *mic_context, void *sv, size_t len)
 {
    int ret    = 0;
@@ -469,6 +502,7 @@ microphone_driver_t microphone_sdl = {
       sdl_microphone_start_mic,
       sdl_microphone_stop_mic,
       sdl_microphone_mic_use_float,
+      sdl_microphone_wait_readable
 };
 #endif
 #else

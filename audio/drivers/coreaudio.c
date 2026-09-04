@@ -1371,6 +1371,31 @@ static void coreaudio_mic_free(void *driver_context)
    free(drv);
 }
 
+/* Sleeps until the capture fifo holds len bytes, then says how many it
+ * holds. The same bounded wait coreaudio_mic_read() does - one slice of
+ * the render callback's period - without the copy, so a unit that has
+ * stopped delivering returns what it has and the caller comes back
+ * later rather than parking here. */
+static size_t coreaudio_mic_wait_readable(void *driver_context,
+      void *mic_context, size_t len)
+{
+   coreaudio_mic_t *mic = (coreaudio_mic_t*)mic_context;
+   size_t avail;
+
+   if (!mic || !mic->fifo)
+      return 0;
+
+   slock_lock(mic->lock);
+   avail = FIFO_READ_AVAIL(mic->fifo);
+   if (avail < len)
+   {
+      scond_wait_timeout(mic->cond, mic->lock, 10000);
+      avail = FIFO_READ_AVAIL(mic->fifo);
+   }
+   slock_unlock(mic->lock);
+   return avail;
+}
+
 static int coreaudio_mic_read(void *driver_context, void *mic_context,
       void *buf, size_t len)
 {
@@ -1740,6 +1765,7 @@ microphone_driver_t microphone_coreaudio = {
    coreaudio_mic_alive,
    coreaudio_mic_start,
    coreaudio_mic_stop,
-   coreaudio_mic_use_float
+   coreaudio_mic_use_float,
+   coreaudio_mic_wait_readable
 };
 #endif /* HAVE_MICROPHONE */

@@ -264,6 +264,45 @@ static void pwire_microphone_close_mic(void *driver_context, void *mic_context)
    }
 }
 
+/* Sleeps until the capture ring holds len bytes, then says how many it
+ * holds. The same wait pwire_microphone_read() does, without the copy:
+ * one PIPEWIRE_STREAM_WAIT_MS bound on the thread loop, so a graph that
+ * has stopped delivering returns what it has - possibly nothing - and
+ * the caller comes back later rather than parking here. */
+static size_t pwire_microphone_wait_readable(void *driver_context,
+      void *mic_context, size_t len)
+{
+   uint32_t idx;
+   int32_t  readable;
+   const char            *error = NULL;
+   pipewire_core_t          *pw = (pipewire_core_t*)driver_context;
+   pipewire_microphone_t   *mic = (pipewire_microphone_t*)mic_context;
+
+   if (!pw || !mic)
+      return 0;
+   if (pw_stream_get_state(mic->stream, &error) != PW_STREAM_STATE_STREAMING)
+      return 0;
+
+   pw_thread_loop_lock(pw->thread_loop);
+
+   for (;;)
+   {
+      readable = spa_ringbuffer_get_read_index(&mic->ring, &idx);
+      if (readable >= (int32_t)len)
+         break;
+      if (!pipewire_loop_wait_ms(pw->thread_loop, PIPEWIRE_STREAM_WAIT_MS))
+         break;
+      if (pw_stream_get_state(mic->stream, &error) != PW_STREAM_STATE_STREAMING)
+      {
+         pw_thread_loop_unlock(pw->thread_loop);
+         return 0;
+      }
+   }
+
+   pw_thread_loop_unlock(pw->thread_loop);
+   return readable > 0 ? (size_t)readable : 0;
+}
+
 static int pwire_microphone_read(void *driver_context, void *mic_context, void *s, size_t len)
 {
    uint32_t idx;
@@ -537,7 +576,8 @@ microphone_driver_t microphone_pipewire = {
       pwire_microphone_mic_alive,
       pwire_microphone_start_mic,
       pwire_microphone_stop_mic,
-      pwire_microphone_mic_use_float
+      pwire_microphone_mic_use_float,
+      pwire_microphone_wait_readable
 };
 #endif
 

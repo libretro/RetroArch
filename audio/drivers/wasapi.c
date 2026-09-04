@@ -1026,6 +1026,37 @@ static int wasapi_microphone_read_buffered(
    return bytes_read;
 }
 
+/* Sleeps until the capture queue holds len bytes, then says how many it
+ * holds.
+ *
+ * The same two steps wasapi_microphone_read() takes - wait on the
+ * device's capture event, then drain what it delivered into the fifo -
+ * without the copy out. Bounded by WASAPI_TIMEOUT for the reason given
+ * below: an unbounded wait parks the caller with no way out if the
+ * device stops signalling, and here the caller is the capture worker.
+ * Exclusive and shared differ only inside fetch_fifo, as they do for
+ * the read. */
+static size_t wasapi_microphone_wait_readable(void *driver_context,
+      void *mic_context, size_t len)
+{
+   wasapi_microphone_handle_t *mic = (wasapi_microphone_handle_t*)mic_context;
+   int avail;
+
+   if (!mic || !mic->buffer)
+      return 0;
+
+   if ((avail = (int)FIFO_READ_AVAIL(mic->buffer)) >= (int)len)
+      return (size_t)avail;
+
+   if (!wasapi_microphone_wait_for_capture_event(mic, WASAPI_TIMEOUT))
+      return (avail > 0) ? (size_t)avail : 0;
+
+   if ((avail = wasapi_microphone_fetch_fifo(mic)) < 0)
+      return 0;
+
+   return (size_t)avail;
+}
+
 static int wasapi_microphone_read(void *driver_context, void *mic_context, void *s, size_t len)
 {
    int read;
@@ -1321,7 +1352,8 @@ microphone_driver_t microphone_wasapi = {
       wasapi_microphone_mic_alive,
       wasapi_microphone_start_mic,
       wasapi_microphone_stop_mic,
-      wasapi_microphone_use_float
+      wasapi_microphone_use_float,
+      wasapi_microphone_wait_readable
 };
 #endif
 

@@ -902,6 +902,34 @@ static void sdl3_microphone_set_nonblock_state(void *driver_context, bool nonblo
       sdl->nonblock = nonblock;
 }
 
+/* Sleeps until the capture stream holds len bytes, then says how many it
+ * holds. SDL3 gives no event to wait on, so this polls its stream with
+ * the same short sleep the read loop uses, bounded so a removed device
+ * returns nothing rather than holding the caller. */
+static size_t sdl3_microphone_wait_readable(void *driver_context,
+      void *mic_context, size_t len)
+{
+   sdl3_audio_t *mic = (sdl3_audio_t*)mic_context;
+   int laps          = 8;
+   int avail;
+
+   if (!mic || !mic->stream)
+      return 0;
+
+   for (;;)
+   {
+      if (SDL_GetAtomicInt(&mic->device_removed))
+         return 0;
+      if ((avail = SDL_GetAudioStreamAvailable(mic->stream)) < 0)
+         return 0;
+      if (avail >= (int)len)
+         return (size_t)avail;
+      if (--laps < 0)
+         return avail > 0 ? (size_t)avail : 0;
+      SDL_Delay(1);
+   }
+}
+
 static int sdl3_microphone_read(void *driver_context, void *mic_context,
       void *s, size_t len)
 {
@@ -983,5 +1011,6 @@ microphone_driver_t microphone_sdl3 = {
    sdl3_microphone_start_mic,
    sdl3_microphone_stop_mic,
    sdl3_microphone_mic_use_float,
+   sdl3_microphone_wait_readable
 };
 #endif /* HAVE_MICROPHONE */
