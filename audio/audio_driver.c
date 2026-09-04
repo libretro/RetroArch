@@ -4651,6 +4651,12 @@ microphone_driver_state_t *microphone_state_get_ptr(void)
 #define mic_driver_get_sample_size(microphone) \
    (((microphone)->flags & MICROPHONE_FLAG_USE_FLOAT) ? sizeof(float) : sizeof(int16_t))
 
+#ifdef HAVE_THREADS
+/* Defined below, next to microphone_driver_read(), which is the other
+ * half of the same split. */
+static void microphone_driver_capture_thread(void *data);
+#endif
+
 static bool mic_driver_open_mic_internal(retro_microphone_t* microphone);
 bool microphone_driver_start(void)
 {
@@ -4791,6 +4797,38 @@ static void mic_driver_microphone_handle_free(retro_microphone_t *microphone, bo
 
    if (!driver_context)
       RARCH_WARN("[Microphone] Attempted to free a microphone without an active driver context.\n");
+
+#ifdef HAVE_THREADS
+   /* First of all, before anything it touches goes away. The worker
+    * holds the microphone context across a bounded wait_readable() and
+    * a read(), and it writes into the fifo - so closing the device or
+    * freeing the fifo underneath it is a use-after-free, which is what
+    * ThreadSanitizer reported here: close_mic() used to run first and
+    * raced the worker's read on the same handle. */
+   if (microphone->capture_thread)
+   {
+      retro_atomic_store_release_int(&microphone->capture_running, 0);
+      if (microphone->fifo_cond)
+      {
+         slock_lock(microphone->fifo_lock);
+         scond_signal(microphone->fifo_cond);
+         slock_unlock(microphone->fifo_lock);
+      }
+      sthread_join(microphone->capture_thread);
+      microphone->capture_thread = NULL;
+      microphone->worker_sample_size = 0;
+   }
+   if (microphone->fifo_cond)
+   {
+      scond_free(microphone->fifo_cond);
+      microphone->fifo_cond = NULL;
+   }
+   if (microphone->fifo_lock)
+   {
+      slock_free(microphone->fifo_lock);
+      microphone->fifo_lock = NULL;
+   }
+#endif
 
    if (microphone->microphone_context)
    {
@@ -4998,6 +5036,7 @@ static bool mic_driver_open_mic_internal(retro_microphone_t* microphone)
 
    microphone_driver_set_mic_state(microphone, microphone->flags & MICROPHONE_FLAG_ENABLED);
 
+
    RARCH_LOG("[Microphone] Requested microphone sample rate of %uHz, got %uHz.\n",
              microphone->requested_params.rate,
              microphone->actual_params.rate
@@ -5071,6 +5110,52 @@ static bool mic_driver_open_mic_internal(retro_microphone_t* microphone)
 
    microphone->flags &= ~MICROPHONE_FLAG_PENDING;
    RARCH_LOG("[Microphone] Initialized microphone.\n");
+#ifdef HAVE_THREADS
+   /* Last, after every field the worker reads has been written: the
+    * flags, orig_ratio and both resamplers above. Starting it earlier
+    * raced all three - ThreadSanitizer caught the worker reading them
+    * while this function was still filling them in. */
+   /* Threaded capture, on the same setting as the playback pipeline and
+    * the same condition: the driver must be able to wait on its device,
+    * or the worker would poll. A driver without wait_readable() keeps
+    * the frame-synchronous path, exactly as a playback driver without
+    * wait_writable() does. */
+   if (     settings->bools.audio_threaded_pipeline
+         && mic_driver->wait_readable)
+   {
+      /* Before the thread exists, so it never reads ::flags itself. */
+      microphone->worker_sample_size = mic_driver_get_sample_size(microphone);
+      microphone->fifo_lock       = slock_new();
+      microphone->fifo_cond       = scond_new();
+      retro_atomic_int_init(&microphone->capture_running, 1);
+
+      if (     microphone->fifo_lock
+            && microphone->fifo_cond
+            && (microphone->capture_thread = sthread_create(
+                  microphone_driver_capture_thread, mic_st)))
+         RARCH_LOG("[Microphone] Threaded capture: the worker owns the read"
+               " and the resampler.\n");
+      else
+      {
+         /* Any part missing and the whole thing is off; the
+          * frame-synchronous path below needs none of it. */
+         retro_atomic_store_release_int(&microphone->capture_running, 0);
+         if (microphone->fifo_cond)
+            scond_free(microphone->fifo_cond);
+         if (microphone->fifo_lock)
+            slock_free(microphone->fifo_lock);
+         microphone->fifo_cond = NULL;
+         microphone->fifo_lock = NULL;
+         microphone->worker_sample_size = 0;
+         RARCH_WARN("[Microphone] Could not start the capture worker;"
+               " reading on the frame instead.\n");
+      }
+   }
+   else if (settings->bools.audio_threaded_pipeline)
+      RARCH_LOG("[Microphone] Threaded capture requested, but driver \"%s\""
+            " has no wait_readable(); reading on the frame.\n",
+            mic_driver->ident);
+#endif
    return true;
 error:
    mic_driver_microphone_handle_free(microphone, false);
@@ -5188,7 +5273,15 @@ static size_t microphone_driver_flush(
       size_t num_frames)
 {
    struct resampler_data resampler_data;
-   unsigned sample_size = mic_driver_get_sample_size(microphone);
+   /* The worker's snapshot when it is running, so the capture path does
+    * not read ::flags on a thread that does not own it; the
+    * frame-synchronous path derives it as before. The sample size and
+    * the USE_FLOAT bit say the same thing - the device's format, fixed
+    * at open - so every test below asks this rather than the flags word
+    * the main thread keeps writing. */
+   unsigned sample_size = microphone->worker_sample_size
+         ? microphone->worker_sample_size
+         : mic_driver_get_sample_size(microphone);
    size_t bytes_to_read = MIN(mic_st->input_frames_length, num_frames * sample_size);
    size_t frames_to_enqueue;
    int bytes_read       = mic_st->driver->read(
@@ -5229,7 +5322,7 @@ static size_t microphone_driver_flush(
       frames_to_enqueue = MIN(FIFO_WRITE_AVAIL(microphone->outgoing_samples) / sizeof(int16_t), resampler_data.input_frames);
 
       /* If this mic provides floating-point samples... */
-      if (microphone->flags & MICROPHONE_FLAG_USE_FLOAT)
+      if (sample_size == sizeof(float))
       {
          convert_float_to_s16(mic_st->final_frames, (const float*)mic_st->input_frames, resampler_data.input_frames);
          fifo_write(microphone->outgoing_samples, mic_st->final_frames, frames_to_enqueue * sizeof(int16_t));
@@ -5247,7 +5340,7 @@ static size_t microphone_driver_flush(
     * duplicate mono into interleaved stereo, resample, take the left
     * channel -- but without the s16->float->s16 round-trip, which is pure
     * requantisation on a signal that starts and ends as int16. */
-   if (     !(microphone->flags & MICROPHONE_FLAG_USE_FLOAT)
+   if (     !(sample_size == sizeof(float))
          &&   microphone->resampler_data_int16
          &&   microphone->resampler_int16_process)
    {
@@ -5291,7 +5384,7 @@ static size_t microphone_driver_flush(
 
    /* First we need to format the input for the resampler. */
    /* If this mic provides floating-point samples... */
-   if (microphone->flags & MICROPHONE_FLAG_USE_FLOAT)
+   if (sample_size == sizeof(float))
       /* Samples are already in floating-point, so we just need to up-channel them. */
       convert_to_dual_mono_float(mic_st->dual_mono_frames,
             (const float*)mic_st->input_frames, resampler_data.input_frames);
@@ -5325,6 +5418,72 @@ static size_t microphone_driver_flush(
    fifo_write(microphone->outgoing_samples, mic_st->final_frames, frames_to_enqueue * sizeof(int16_t));
    return frames_to_enqueue;
 }
+
+#ifdef HAVE_THREADS
+/* The capture worker: block on the device, flush a slice, repeat.
+ *
+ * Everything expensive in the old read path happens here instead - the
+ * blocking read, the dual-mono up-channel and the resampler - so the
+ * core's retro_microphone_read() is left with a fifo read. That is the
+ * same split the threaded playback pipeline makes, in the same place,
+ * for the same reason: none of it belongs inside a frame.
+ *
+ * wait_readable() is bounded by contract, so a device that stops
+ * delivering returns 0 and this loops back to check capture_running
+ * rather than parking. */
+static void microphone_driver_capture_thread(void *data)
+{
+   microphone_driver_state_t *mic_st = (microphone_driver_state_t*)data;
+   retro_microphone_t *microphone    = &mic_st->microphone;
+
+   while (retro_atomic_load_acquire_int(&microphone->capture_running))
+   {
+      size_t slice = AUDIO_CHUNK_SIZE_NONBLOCKING;
+      unsigned sample_size;
+      size_t room;
+
+      if (     !mic_st->driver
+            || !mic_st->driver->wait_readable
+            || !microphone->outgoing_samples)
+         break;
+
+      /* Do not read more than the fifo can take, or the flush would
+       * discard what it could not enqueue and the device would run
+       * ahead of the core. */
+      slock_lock(microphone->fifo_lock);
+      room = FIFO_WRITE_AVAIL(microphone->outgoing_samples);
+      slock_unlock(microphone->fifo_lock);
+
+      sample_size = microphone->worker_sample_size;
+      if (room < slice * sizeof(int16_t))
+      {
+         /* The core is not consuming; wait for it rather than spin. */
+         slock_lock(microphone->fifo_lock);
+         scond_wait_timeout(microphone->fifo_cond, microphone->fifo_lock,
+               20000);
+         slock_unlock(microphone->fifo_lock);
+         continue;
+      }
+
+      if (!mic_st->driver->wait_readable(mic_st->driver_context,
+               microphone->microphone_context, slice * sample_size))
+         continue;
+
+      slock_lock(microphone->fifo_lock);
+      microphone_driver_flush(mic_st, microphone, slice);
+      scond_signal(microphone->fifo_cond);
+      slock_unlock(microphone->fifo_lock);
+   }
+}
+
+/* True when this microphone is being served by the worker. */
+static bool microphone_driver_capture_threaded(
+      const microphone_driver_state_t *mic_st,
+      const retro_microphone_t *microphone)
+{
+   return microphone->capture_thread != NULL;
+}
+#endif
 
 int microphone_driver_read(retro_microphone_t *microphone, int16_t* frames, size_t num_frames)
 {
@@ -5391,6 +5550,35 @@ int microphone_driver_read(retro_microphone_t *microphone, int16_t* frames, size
       return -1;
 
    retro_assert(mic_st->input_frames != NULL);
+
+#ifdef HAVE_THREADS
+   if (microphone_driver_capture_threaded(mic_st, microphone))
+   {
+      /* The worker is doing the reading, the up-channelling and the
+       * resampling; all that is left here is to take what it has, and
+       * to wait a bounded moment if it has not caught up. Silence is
+       * the same answer the synchronous path gives for a device that
+       * will not deliver, arrived at without blocking the frame on it. */
+      size_t want = num_frames * sizeof(int16_t);
+      size_t got;
+
+      slock_lock(microphone->fifo_lock);
+      if (FIFO_READ_AVAIL(microphone->outgoing_samples) < want)
+         scond_wait_timeout(microphone->fifo_cond, microphone->fifo_lock,
+               10000);
+      got = FIFO_READ_AVAIL(microphone->outgoing_samples);
+      if (got > want)
+         got = want;
+      if (got)
+         fifo_read(microphone->outgoing_samples, frames, got);
+      scond_signal(microphone->fifo_cond);
+      slock_unlock(microphone->fifo_lock);
+
+      if (got < want)
+         memset((uint8_t*)frames + got, 0, want - got);
+      return (int)num_frames;
+   }
+#endif
 
    {
       unsigned stall_count = 0;

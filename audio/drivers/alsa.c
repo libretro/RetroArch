@@ -269,6 +269,85 @@ static bool alsa_microphone_stop_mic(void *driver_context, void *mic_context)
    return alsa_stop_pcm(mic->pcm);
 }
 
+/* Bounded like the playback side's, and for the same reason: a stalled
+ * capture must cost a dropped slice rather than a parked worker. */
+#define ALSA_WAIT_READABLE_LAPS 8
+
+/* Sleeps until the microphone has samples, then says how many. The
+ * counterpart of alsa_wait_writable(): snd_pcm_avail() on a capture
+ * stream reports frames ready to read rather than room to write, and
+ * snd_pcm_start() begins capture where it began playback. Bounded by
+ * two periods per wait and ALSA_WAIT_READABLE_LAPS waits, so a device
+ * that has stopped delivering returns 0 and the caller retries later
+ * rather than parking the capture thread. */
+static size_t alsa_microphone_wait_readable(void *driver_context,
+      void *mic_context, size_t len)
+{
+   alsa_microphone_handle_t *mic = (alsa_microphone_handle_t*)mic_context;
+   snd_pcm_sframes_t want;
+   int laps       = ALSA_WAIT_READABLE_LAPS;
+   int timeout_ms;
+
+   if (!mic || !mic->pcm)
+      return 0;
+
+   want       = BYTES_TO_FRAMES(len, mic->stream_info.frame_bits);
+   timeout_ms = (int)(((unsigned long)mic->stream_info.period_frames * 2000ul)
+         / (mic->stream_info.rate ? mic->stream_info.rate : 48000u));
+   if (timeout_ms < 20)
+      timeout_ms = 20;
+   if (timeout_ms > 200)
+      timeout_ms = 200;
+
+   if (want > (snd_pcm_sframes_t)mic->stream_info.period_frames)
+      want = (snd_pcm_sframes_t)mic->stream_info.period_frames;
+
+   for (;;)
+   {
+      int rc;
+      snd_pcm_sframes_t avail = snd_pcm_avail(mic->pcm);
+
+      if (avail == -EPIPE || avail == -ESTRPIPE || avail == -EINTR)
+      {
+         if (snd_pcm_recover(mic->pcm, (int)avail, 1) < 0)
+            return 0;
+         if (--laps < 0)
+            return 0;
+         continue;
+      }
+      if (avail < 0)
+         return 0;
+      if (avail >= want)
+         return FRAMES_TO_BYTES(avail, mic->stream_info.frame_bits);
+
+      if (snd_pcm_state(mic->pcm) == SND_PCM_STATE_PREPARED)
+      {
+         rc = snd_pcm_start(mic->pcm);
+         if (rc == -EPIPE || rc == -ESTRPIPE || rc == -EINTR)
+         {
+            if (snd_pcm_recover(mic->pcm, rc, 1) < 0)
+               return 0;
+         }
+         else if (rc < 0)
+            return 0;
+      }
+
+      rc = snd_pcm_wait(mic->pcm, timeout_ms);
+      if (rc == 0)
+         return 0;
+      if (rc == -EPIPE || rc == -ESTRPIPE || rc == -EINTR)
+      {
+         if (snd_pcm_recover(mic->pcm, rc, 1) < 0)
+            return 0;
+      }
+      else if (rc < 0)
+         return 0;
+
+      if (--laps < 0)
+         return 0;
+   }
+}
+
 static bool alsa_microphone_mic_use_float(const void *driver_context, const void *mic_context)
 {
    alsa_microphone_handle_t *mic = (alsa_microphone_handle_t*)mic_context;
@@ -288,7 +367,8 @@ microphone_driver_t microphone_alsa = {
         alsa_microphone_mic_alive,
         alsa_microphone_start_mic,
         alsa_microphone_stop_mic,
-        alsa_microphone_mic_use_float
+        alsa_microphone_mic_use_float,
+        alsa_microphone_wait_readable
 };
 #endif
 

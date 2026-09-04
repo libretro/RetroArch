@@ -19,6 +19,10 @@
 #include <boolean.h>
 #include <lists/string_list.h>
 #include <retro_common_api.h>
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#include <retro_atomic.h>
+#endif
 #include <libretro.h>
 #include <audio/audio_resampler.h>
 #include <audio/sinc_resampler_int16.h>
@@ -197,6 +201,37 @@ struct retro_microphone
     * If this is (almost) equal to 1, then resampling will be skipped.
     */
    double orig_ratio;
+
+#ifdef HAVE_THREADS
+   /* Threaded capture. When the driver offers wait_readable() and the
+    * Threaded Pipeline setting is on, a worker owns the blocking read,
+    * the dual-mono up-channel and the resampler, and the core's
+    * retro_microphone_read() becomes a fifo read that never touches the
+    * device. Without it, all three happen inside the core's call, on the
+    * frame - which is what the threaded pipeline removed from the
+    * playback path for the same reasons.
+    *
+    * There is exactly one microphone per driver state
+    * (microphone_driver_state_t::microphone is a value, not a list), so
+    * this is one worker, and the scratch buffers in that state which
+    * microphone_driver_flush() uses belong to it while it runs. */
+   sthread_t *capture_thread;
+   slock_t   *fifo_lock;
+   scond_t   *fifo_cond;
+   /* Read by the worker on every pass, cleared by the thread that tears
+    * the microphone down. An atomic rather than a volatile bool: volatile
+    * orders nothing between threads, which ThreadSanitizer reported here
+    * as a race on exactly this field. */
+   retro_atomic_int_t capture_running;
+   /* The device's sample size, settled at open and never changed after.
+    * The worker reads it instead of deriving it from ::flags every
+    * pass: flags is a single word the main thread also writes - the
+    * ENABLED bit through microphone_driver_set_mic_state(), the PENDING
+    * bit at the end of open - and ThreadSanitizer reported the worker
+    * reading it against those writes. Nothing here needs the live value,
+    * only the format, which cannot change while the microphone is open. */
+   unsigned worker_sample_size;
+#endif
 };
 
 /**
@@ -434,6 +469,30 @@ typedef struct microphone_driver
     * @return \c true if this microphone provides floating-point samples.
     */
    bool (*mic_use_float)(const void *driver_context, const void *microphone_context);
+
+   /**
+    * Optional. Sleeps until the microphone has at least \c len bytes to
+    * give, then returns how many it has, as a read() of that size would
+    * find. The counterpart of the playback driver's wait_writable().
+    *
+    * The sleep must be bounded: 0 means no samples are coming from this
+    * call - the device is gone, the stream has failed, or nothing
+    * arrived within the driver's bounded wait - and the caller skips the
+    * pass and retries on a later wake, so a stalled microphone costs a
+    * dropped slice rather than a parked worker thread.
+    *
+    * The threaded capture path calls this before each read, so the read
+    * itself does not block and the frame never waits on the device.
+    * Drivers without it cannot host the threaded capture and keep the
+    * frame-synchronous path, where read() blocks the core's
+    * retro_microphone_read() instead.
+    *
+    * @param driver_context The microphone driver's context.
+    * @param mic_context The microphone's context.
+    * @param len Bytes the caller intends to read.
+    * @return Bytes available now, or 0 if none are coming from this call.
+    */
+   size_t (*wait_readable)(void *driver_context, void *mic_context, size_t len);
 } microphone_driver_t;
 
 typedef struct microphone_driver_state
