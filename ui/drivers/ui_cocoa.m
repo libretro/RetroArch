@@ -34,12 +34,12 @@
 #include "cocoa/cocoa_common.h"
 #include "cocoa/apple_platform.h"
 
-#if !defined(MAC_OS_X_VERSION_10_6)
-/* Pre-10.6: need the Carbon Process Manager's TransformProcessType()
- * to promote a bare-binary process to a foreground GUI app that
- * receives keystrokes.  See the call site below in main() for detail. */
+/* The Carbon Process Manager's TransformProcessType(), the fallback for
+ * promoting a bare-binary process to a foreground GUI app on a system
+ * without -setActivationPolicy:.  See main() below.  Declared in every
+ * SDK, deprecated since 10.9 and still present; the choice between the
+ * two is made at runtime, not here. */
 #include <ApplicationServices/ApplicationServices.h>
-#endif
 
 /* For NX_DEVICE*KEYMASK - the device-specific L/R modifier-key bits that
  * ride in NSEvent.modifierFlags alongside the coalesced high-order bits. */
@@ -1571,28 +1571,29 @@ int main(int argc, char *argv[])
    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
 #endif
       [NSApplication sharedApplication];
-#ifdef MAC_OS_X_VERSION_10_6
-      /* setActivationPolicy: is 10.6+.  On Snow Leopard and later,
-       * this is the official way to promote a bare-binary background
-       * process to a regular GUI app that receives keystrokes. */
-      [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
-#else
-      /* Pre-10.6: setActivationPolicy: doesn't exist.  For bare-
-       * binary builds (no .app bundle wrapping, no Info.plist the
-       * WindowServer can consult), the process starts as a
-       * background-only app and NEVER RECEIVES KEYSTROKES.  Mouse
-       * events still reach the window, but key events go to whatever
-       * app is actually frontmost (Finder or a terminal emulator).
-       *
-       * The pre-10.6 equivalent is the Carbon Process Manager call
-       * TransformProcessType(), available since 10.3 and supporting
-       * plain background-only processes (no LSUIElement / LSBackground-
-       * Only) on 10.5+ per the Leopard HIServices release notes. */
+      /* A bare-binary build - no .app bundle, no Info.plist for the
+       * WindowServer to consult - starts as a background-only process
+       * and NEVER RECEIVES KEYSTROKES: mouse events reach the window,
+       * key events go to whatever is actually frontmost.  It has to be
+       * promoted to a regular GUI app.  -setActivationPolicy: is the
+       * official way from 10.6; before that the Carbon Process Manager
+       * call TransformProcessType() does the same, from 10.3, and
+       * still exists today.  Asked at runtime rather than decided by
+       * the build SDK, so one binary does the right thing on whatever
+       * it lands on.  The message is sent through objc_msgSend with the
+       * enum's value spelled out, so the file does not need the SDK to
+       * declare the method; NSApplicationActivationPolicyRegular is 0. */
+      if ([NSApp respondsToSelector:@selector(setActivationPolicy:)])
+         ((void (*)(id, SEL, NSInteger))objc_msgSend)(NSApp,
+               @selector(setActivationPolicy:), (NSInteger)0);
+      else
       {
          ProcessSerialNumber psn = { 0, kCurrentProcess };
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
          TransformProcessType(&psn, kProcessTransformToForegroundApplication);
+#pragma GCC diagnostic pop
       }
-#endif
 
       delegate = [[RetroArch_OSX alloc] init];
       window = cocoa_create_main_window();
