@@ -50,8 +50,15 @@ typedef struct oss_audio
    int fd;
    /* The rate the device settled on; sizes the wait bound below. */
    int rate;
+   /* Frames handed to the device since it opened, for the sink rate
+    * estimate; the device's own count is this less what is still
+    * queued. The format is fixed at S16 stereo below, so a frame is
+    * four bytes. */
+   uint64_t frames_written;
    bool is_paused;
 } oss_audio_t;
+
+#define OSS_FRAME_BYTES 4
 
 /* Iteration cap for oss_wait_writable(): bounds wakes that deliver no
  * space, so one call costs at most this many bounded waits. */
@@ -125,7 +132,32 @@ static ssize_t oss_write(void *data, const void *s, size_t len)
          return 0;
       return -1;
    }
+   ossaudio->frames_written += (uint64_t)_len / OSS_FRAME_BYTES;
    return _len;
+}
+
+/* Frames the device has played since it opened.
+ *
+ * ALSA's shape: everything written, less what has not been played yet.
+ * SNDCTL_DSP_GETODELAY reports that remainder in bytes - the whole of
+ * the device's queue, which is what should come off - and a driver that
+ * does not implement it fails the ioctl, which reports nothing rather
+ * than a count that would read as a stall. */
+static size_t oss_frames_consumed(void *data)
+{
+   oss_audio_t *ossaudio = (oss_audio_t*)data;
+   int          delay    = 0;
+   uint64_t     queued;
+
+   if (!ossaudio || ossaudio->fd < 0)
+      return 0;
+   if (ioctl(ossaudio->fd, SNDCTL_DSP_GETODELAY, &delay) < 0 || delay < 0)
+      return 0;
+
+   queued = (uint64_t)delay / OSS_FRAME_BYTES;
+   if (queued > ossaudio->frames_written)
+      return 0;
+   return (size_t)(ossaudio->frames_written - queued);
 }
 
 /* Sleep in select() on the device until it is writable, which OSS
@@ -350,5 +382,6 @@ audio_driver_t audio_oss = {
    oss_write_avail,
    oss_buffer_size,
    NULL, /* write_raw */
-   oss_wait_writable
+   oss_wait_writable,
+   oss_frames_consumed
 };

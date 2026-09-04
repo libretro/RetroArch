@@ -2158,6 +2158,11 @@ typedef struct tinyalsa
    bool              can_pause;
    bool              is_paused;
    unsigned int      frame_bits;
+   /* Frames handed to the device since it opened, for the sink rate
+    * estimate; the device's own count is this less what is still
+    * queued. Accumulated in tinyalsa_write() and read on the same
+    * thread by tinyalsa_frames_consumed(). */
+   uint64_t          frames_written;
 } tinyalsa_t;
 
 #define BYTES_TO_FRAMES(bytes, frame_bits)  ((bytes) * 8 / frame_bits)
@@ -2377,7 +2382,36 @@ tinyalsa_write(void *data, const void *buf_, size_t len)
       }
    }
 
+   if (_len > 0)
+      tinyalsa->frames_written += (uint64_t)_len;
    return _len;
+}
+
+/* Frames the device has played since it opened.
+ *
+ * ALSA's shape, from what this API offers: everything written, less
+ * what is still queued, and the queue is the buffer minus the room
+ * pcm_avail_update() reports. A failed query reports nothing rather
+ * than a count that would read as a stall. */
+static size_t tinyalsa_frames_consumed(void *data)
+{
+   tinyalsa_t        *alsa = (tinyalsa_t*)data;
+   snd_pcm_sframes_t  avail;
+   snd_pcm_sframes_t  buffer_frames;
+   uint64_t           queued;
+
+   if (!alsa || !alsa->pcm)
+      return 0;
+   if ((avail = pcm_avail_update(alsa->pcm)) < 0)
+      return 0;
+
+   buffer_frames = BYTES_TO_FRAMES(alsa->buffer_size, alsa->frame_bits);
+   if (avail > buffer_frames)
+      return 0;
+   queued = (uint64_t)(buffer_frames - avail);
+   if (queued > alsa->frames_written)
+      return 0;
+   return (size_t)(alsa->frames_written - queued);
 }
 
 static bool
@@ -2612,5 +2646,6 @@ audio_driver_t audio_tinyalsa = {
 	tinyalsa_write_avail,        /* AUDIO_write_avail       */ /*TODO*/
 	tinyalsa_buffer_size,        /* AUDIO_buffer_size       */ /*TODO*/
 	NULL,                        /* write_raw               */
-	tinyalsa_wait_writable
+	tinyalsa_wait_writable,
+	tinyalsa_frames_consumed
 };
