@@ -1968,7 +1968,19 @@ retry:
 #ifdef VULKAN_DEBUG
          RARCH_ERR("[Vulkan] Failed to create new swapchain.\n");
 #endif
-         retro_sleep(20);
+         /* The one throttle on this path, and the reason the context
+          * drivers no longer carry one of their own: a window that is
+          * minimised or zero-sized cannot have a swapchain, the create
+          * is retried on the next frame, and without a wait here the
+          * loop would retry it as fast as the CPU allows.
+          *
+          * Kept under a frame at any refresh rate the frontend can be
+          * asked to run at, and under the granularity of the sleep on
+          * Windows, where SleepEx() rounds up to the timer period -
+          * 15.6 ms by default, so anything smaller costs the same. A
+          * longer wait would only delay noticing that the window came
+          * back. */
+         retro_sleep(8);
          return;
       }
 

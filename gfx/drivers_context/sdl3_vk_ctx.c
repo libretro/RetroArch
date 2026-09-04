@@ -141,11 +141,11 @@ static void sdl3_vk_ctx_swap_buffers(void *data)
    if (sdl->vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
    {
       sdl->vk.context.flags &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
-      if (sdl->vk.swapchain == VK_NULL_HANDLE)
-      {
-         retro_sleep(10);
-      }
-      else
+      /* No swapchain - the window is minimised or zero-sized, and
+       * the create is retried in vulkan_acquire_next_image() below,
+       * which throttles that path itself. Nothing to present and
+       * nothing to wait for here. */
+      if (sdl->vk.swapchain != VK_NULL_HANDLE)
          vulkan_present(&sdl->vk, sdl->vk.context.current_swapchain_index);
    }
    vulkan_acquire_next_image(&sdl->vk);

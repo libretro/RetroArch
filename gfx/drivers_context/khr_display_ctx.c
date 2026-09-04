@@ -243,11 +243,11 @@ static void gfx_ctx_khr_display_swap_buffers(void *data)
    if (khr->vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
    {
       khr->vk.context.flags &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
-      if (khr->vk.swapchain == VK_NULL_HANDLE)
-      {
-         retro_sleep(10);
-      }
-      else
+      /* No swapchain - the window is minimised or zero-sized, and
+       * the create is retried in vulkan_acquire_next_image() below,
+       * which throttles that path itself. Nothing to present and
+       * nothing to wait for here. */
+      if (khr->vk.swapchain != VK_NULL_HANDLE)
          vulkan_present(&khr->vk, khr->vk.context.current_swapchain_index);
    }
    vulkan_acquire_next_image(&khr->vk);
