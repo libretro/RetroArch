@@ -498,6 +498,18 @@ typedef struct
     * the current flush's value to reset on either edge, so synthesis
     * never splices across a gap where it went unfed. */
    bool                  stretch_was_engaged;
+   /* Output frames the device is owed but has not been given, carried
+    * across flushes.  A read that comes up short must return its deficit
+    * here or the output rate settles below real time and never recovers. */
+   double                stretch_output_credit;
+   /* Previous flush's stretch ratio, for the slew limit.  The measured
+    * speed overshoots hard at a speed change and the ratio must not
+    * follow it there. */
+   double                stretch_ratio_prev;
+   /* Tracks the fast-forward edge so the speed estimate can be anchored to
+    * the configured ratio there, rather than converging to it over some
+    * thirty flushes of audibly wrong playback. */
+   bool                  stretch_was_ff;
 #endif
 #ifdef HAVE_AUDIO_LOWPASS
    /* Fast-forward low-pass filter (audio_fastforward_lowpass).  Lazily
@@ -735,6 +747,14 @@ typedef struct
    retro_time_t last_flush_time;
    /* Exponential moving average */
    retro_time_t avg_flush_delta;
+   /* Flushes since the fast-forward edge.  The interval average widens its
+    * window from there, so it settles in a few flushes instead of thirty.
+    *
+    * Outside the HAVE_AUDIO_TIMESTRETCH block above, unlike the rest of the
+    * stretcher's state: audio_driver_fastforward_ratio_mult() reads it, and
+    * that estimator is shared with FASTFORWARD_AUDIO_SPEEDUP, so it is
+    * compiled on every build. */
+   unsigned     stretch_ff_settle;
 
    /* Rate-limit state for the DRC compute.
     *
