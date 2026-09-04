@@ -121,30 +121,59 @@ static void ui_window_cocoa_set_visible(void *data,
         [[cocoa_view window] orderOut:nil];
 }
 
+/* data is video_st->display_userdata, which cocoa_common.m sets to the
+ * CocoaView itself - the raw object, not a ui_window_cocoa_t around it -
+ * so it is cast straight to the view. The other entry points in this
+ * table expect the wrapper; only Win32 calls them, with its own struct,
+ * and nothing calls them here. */
 static void ui_window_cocoa_set_title(void *data, char *buf)
 {
-   CocoaView *cocoa_view    = (BRIDGE CocoaView*)data;
-   /* buf points into a shared buffer (video_st->window_title) that may be
-    * overwritten by the next frame, so materialise the NSString here on the
-    * calling thread rather than reading the C string inside a deferred block. */
-   NSString  *title         = [NSString stringWithCString:buf encoding:NSUTF8StringEncoding];
+   CocoaView *cocoa_view = (BRIDGE CocoaView*)data;
+   NSString  *title;
 
-   /* AppKit is main-thread-only. Under threaded video this is reached from the
-    * video thread (gl3_frame -> video_driver_update_title), so marshal the
-    * -setTitle: onto the main queue there. dispatch_async (not sync) avoids
-    * deadlocking against the video thread lock. GCD is 10.6+, matching the
-    * MAC_OS_X_VERSION_10_6 gate this file already keys off; pre-10.6 SDKs fall
-    * back to a direct call (the legacy behaviour, and no Main Thread Checker
-    * exists on those releases to care). */
+   if (!cocoa_view || !buf)
+      return;
+
+   /* buf is video_st->window_title, shared and rewritten by the next
+    * frame, so the string is made here, on the calling thread. Owned
+    * rather than autoreleased: under threaded video this runs on the
+    * video thread, which has no autorelease pool, and an autoreleased
+    * object there is simply leaked under MRC. The title is content and
+    * core names, which can carry a filename in whatever encoding a
+    * foreign filesystem wrote it in; a byte sequence that is not UTF-8
+    * yields nil, and -[NSWindow setTitle:] throws on nil, so fall back
+    * to Latin-1, which accepts any bytes. */
+   title = [[NSString alloc] initWithUTF8String:buf];
+   if (!title)
+      title = [[NSString alloc] initWithCString:buf
+            encoding:NSISOLatin1StringEncoding];
+   if (!title)
+      return;
+
+   /* AppKit is main-thread-only. Under threaded video this is reached
+    * from the video thread (gl3_frame -> video_driver_update_title), so
+    * -setTitle: is marshalled onto the main queue; dispatch_async, not
+    * sync, so the video thread's lock is never held while waiting on
+    * main. The -window lookup is inside the block too: the view's
+    * window is AppKit state and belongs on that thread. GCD is 10.6+,
+    * the gate this file keys off elsewhere; earlier SDKs call directly,
+    * as they always did. The block copy retains title and the view; the
+    * release inside it balances the alloc under MRC and is a no-op
+    * under ARC. */
 #if defined(MAC_OS_X_VERSION_10_6)
    if ([NSThread isMainThread])
+   {
       [[cocoa_view window] setTitle:title];
+      RARCH_RELEASE(title);
+   }
    else
       dispatch_async(dispatch_get_main_queue(), ^{
          [[cocoa_view window] setTitle:title];
+         RARCH_RELEASE(title);
       });
 #else
    [[cocoa_view window] setTitle:title];
+   RARCH_RELEASE(title);
 #endif
 }
 
