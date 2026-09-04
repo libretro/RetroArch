@@ -12,6 +12,7 @@ HAVE_VIDEO_FILTER=yes      # Video filter support
 HAVE_WINRAWINPUT=yes       # Windows Raw Input support (XP and higher)
 HAVE_DSP_FILTER=yes        # DSP filter support
 HAVE_AUDIO_TIMESTRETCH=yes # WSOLA time-stretching for fast-forward audio
+HAVE_AUDIO_LOWPASS=yes     # Speed-linked low-pass for fast-forward audio
 HAVE_BLISSBOX=auto         # Blissbox support
 HAVE_ANGLE=no              # ANGLE support (OpenGL wrapper)
 HAVE_CONFIGFILE=yes        # Config file support

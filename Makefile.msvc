@@ -13,6 +13,7 @@ VCINSTALLDIR := C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\$(NOTHING
 
 HAVE_DSP_FILTER          := 1
 HAVE_AUDIO_TIMESTRETCH   := 1
+HAVE_AUDIO_LOWPASS       := 1
 HAVE_VIDEO_FILTER        := 1
 HAVE_SCREENSHOTS         := 1
 HAVE_REWIND              := 1

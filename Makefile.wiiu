@@ -171,8 +171,10 @@ endif
       HAVE_BUILTINSPIRV_CROSS = 1
       HAVE_SLANG = 1
       HAVE_DSP_FILTER = 1
-      # WSOLA rings are ~290KB; not worth it on Wii U.
+      # WSOLA rings are ~290KB; not worth it on Wii U.  The low-pass beside
+      # it is 168 bytes of state, so it stays.
       HAVE_AUDIO_TIMESTRETCH = 0
+      HAVE_AUDIO_LOWPASS = 1
       HAVE_VIDEO_FILTER = 1
       HAVE_STATIC_VIDEO_FILTERS = 1
       HAVE_STATIC_AUDIO_FILTERS = 1

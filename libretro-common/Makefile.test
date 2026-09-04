@@ -79,6 +79,11 @@ TEST_TIME_STRETCH_SRC = audio/test/test_time_stretch.c \
 		audio/audio_time_stretch.c
 TEST_TIME_STRETCH_LIBS = -lm
 
+TEST_LOW_PASS = audio/test/test_low_pass
+TEST_LOW_PASS_SRC = audio/test/test_low_pass.c \
+		audio/audio_low_pass.c
+TEST_LOW_PASS_LIBS = -lm
+
 TEST_RPNG = test/formats/test_rpng
 TEST_RPNG_SRC = test/formats/test_rpng.c formats/png/rpng.c \
 		streams/trans_stream.c streams/trans_stream_deflate.c \
@@ -261,6 +266,9 @@ all:
 	# time-stretch
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_TIME_STRETCH_SRC) $(TEST_TIME_STRETCH_LIBS) $(LIBCHECK_LIBS) -o $(TEST_TIME_STRETCH)
 	$(TEST_TIME_STRETCH)
+	# low-pass
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_LOW_PASS_SRC) $(TEST_LOW_PASS_LIBS) $(LIBCHECK_LIBS) -o $(TEST_LOW_PASS)
+	$(TEST_LOW_PASS)
 	# vfs samples: file size, seek and EOF boundaries, mapped and not
 	$(MAKE) -f Makefile.test vfs-samples
 	# the three Windows A/W configurations, two of which nothing else builds
@@ -285,7 +293,7 @@ clean:
 	      $(TEST_MENU_STR) $(TEST_STRL) \
 	      $(TEST_GENERIC_QUEUE) \
 	      $(TEST_RPNG) $(TEST_RWAV) $(TEST_RJPEG) $(TEST_RWEBM_AUDIO) \
-	      $(TEST_TIME_STRETCH_RATIO) $(TEST_TIME_STRETCH)
+	      $(TEST_TIME_STRETCH_RATIO) $(TEST_TIME_STRETCH) $(TEST_LOW_PASS)
 	rm -f test/*/*.gcda test/*/*.gcno test/*/coverage.info \
 	      test/lists/file_list_coverage.info test/coverage.info
 	rm -rf test/coverage

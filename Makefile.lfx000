@@ -49,8 +49,10 @@ HAVE_AL = 0
 HAVE_ALSA = 1
 HAVE_DSP_FILTER = 1
 # No FPU (armv5te/arm926ej-s): the search's double MACs would be
-# soft-float (__aeabi_dmul) calls.
+# soft-float (__aeabi_dmul) calls.  The low-pass declines for the same
+# reason - it is double throughout, per sample and per biquad stage.
 HAVE_AUDIO_TIMESTRETCH = 0
+HAVE_AUDIO_LOWPASS = 0
 HAVE_VIDEO_FILTER = 1
 HAVE_STATIC_VIDEO_FILTERS = 1
 HAVE_STATIC_AUDIO_FILTERS = 1

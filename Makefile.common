@@ -401,6 +401,11 @@ DEFINES += -DHAVE_AUDIO_TIMESTRETCH
 OBJ     += $(LIBRETRO_COMM_DIR)/audio/audio_time_stretch.o
 endif
 
+ifeq ($(HAVE_AUDIO_LOWPASS), 1)
+DEFINES += -DHAVE_AUDIO_LOWPASS
+OBJ     += $(LIBRETRO_COMM_DIR)/audio/audio_low_pass.o
+endif
+
 ifeq ($(HAVE_DSP_FILTER), 1)
 DEFINES += -DHAVE_DSP_FILTER
 OBJ     += $(LIBRETRO_COMM_DIR)/audio/dsp_filter.o
