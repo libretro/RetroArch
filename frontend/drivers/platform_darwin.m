@@ -24,6 +24,7 @@
 #include <sys/utsname.h>
 
 #include <mach/mach.h>
+#include <dlfcn.h>
 
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreFoundation/CFArray.h>
@@ -306,36 +307,64 @@ static size_t frontend_darwin_get_os(char *s, size_t len, int *major, int *minor
    _len = strlcpy_lit(s, "iOS", len);
 #endif
 #elif TARGET_OS_OSX
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= 101300 /* MAC_OS_X_VERSION_10_13 */
-   NSOperatingSystemVersion version = NSProcessInfo.processInfo.operatingSystemVersion;
-   *major = (int)version.majorVersion;
-   *minor = (int)version.minorVersion;
-#else
-   /* MacOS 10.9 includes the [NSProcessInfo operatingSystemVersion] function, but it's not in the 10.9 SDK. So, call it via NSInvocation */
-   /* Credit: OpenJDK (https://github.com/openjdk/jdk/commit/d4c7db50) */
-   if ([[NSProcessInfo processInfo] respondsToSelector:@selector(operatingSystemVersion)])
+   /* The OS version cannot change while the process runs, so it is
+    * read once and kept; get_os() is called from the menu's system
+    * information list, which is rebuilt every time it is opened. */
+   static int cached_major = 0, cached_minor = 0;
+
+   if (!cached_major)
    {
-      typedef struct
+      NSProcessInfo *pi = [NSProcessInfo processInfo];
+      /* -operatingSystemVersion is 10.10. It returns a struct of three
+       * NSIntegers, which is returned in memory on x86_64 and in
+       * registers on arm64 - objc_msgSend against objc_msgSend_stret -
+       * so it is sent through NSInvocation, which gets that right on
+       * both without this file having to. Once per process, so the
+       * invocation costs nothing that matters.
+       * Credit for the shape: OpenJDK (openjdk/jdk d4c7db50). */
+      if ([pi respondsToSelector:@selector(operatingSystemVersion)])
       {
-         NSInteger majorVersion;
-         NSInteger minorVersion;
-         NSInteger patchVersion;
-      } NSMyOSVersion;
-      NSMyOSVersion version;
-      NSMethodSignature *sig = [[NSProcessInfo processInfo] methodSignatureForSelector:@selector(operatingSystemVersion)];
-      NSInvocation *invoke = [NSInvocation invocationWithMethodSignature:sig];
-      invoke.selector = @selector(operatingSystemVersion);
-      [invoke invokeWithTarget:[NSProcessInfo processInfo]];
-      [invoke getReturnValue:&version];
-      *major = (int)version.majorVersion;
-      *minor = (int)version.minorVersion;
+         typedef struct
+         {
+            NSInteger majorVersion;
+            NSInteger minorVersion;
+            NSInteger patchVersion;
+         } darwin_os_version_t;
+         darwin_os_version_t version = {0, 0, 0};
+         NSMethodSignature *sig      = [pi methodSignatureForSelector:
+               @selector(operatingSystemVersion)];
+         NSInvocation *invoke        = [NSInvocation invocationWithMethodSignature:sig];
+         invoke.selector             = @selector(operatingSystemVersion);
+         [invoke invokeWithTarget:pi];
+         [invoke getReturnValue:&version];
+         cached_major = (int)version.majorVersion;
+         cached_minor = (int)version.minorVersion;
+      }
+      else
+      {
+         /* Before 10.10 there is Gestalt, which is deprecated since
+          * 10.8 and gone from the newest SDKs' headers, so it is
+          * resolved rather than called - the selectors are the
+          * four-character codes 'sys1' and 'sys2'. A system old enough
+          * to need this has it. */
+         typedef int16_t (*darwin_gestalt_t)(uint32_t, int32_t*);
+         darwin_gestalt_t gestalt = (darwin_gestalt_t)dlsym(RTLD_DEFAULT, "Gestalt");
+         int32_t gmajor = 0, gminor = 0;
+         if (gestalt)
+         {
+            gestalt(0x73797331 /* 'sys1' */, &gmajor);
+            gestalt(0x73797332 /* 'sys2' */, &gminor);
+         }
+         cached_major = (int)gmajor;
+         cached_minor = (int)gminor;
+      }
+      /* Never zero again, or the probe repeats every call. */
+      if (!cached_major)
+         cached_major = -1;
    }
-   else
-   {
-      Gestalt(gestaltSystemVersionMinor, (SInt32*)minor);
-      Gestalt(gestaltSystemVersionMajor, (SInt32*)major);
-   }
-#endif
+
+   *major = (cached_major > 0) ? cached_major : 0;
+   *minor = cached_minor;
    _len = strlcpy_lit(s, "OSX", len);
 #endif
    return _len;
