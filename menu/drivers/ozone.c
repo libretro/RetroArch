@@ -670,6 +670,10 @@ struct ozone_handle
    float last_framebuffer_opacity;
 
    int16_t pointer_active_delta;
+   /* Wheel notches waiting to be turned into list movement, so
+    * that the clamping already done for drag scrolling applies
+    * to them too. */
+   int16_t wheel_notches;
    int16_t cursor_x_old;
    int16_t cursor_y_old;
 
@@ -707,6 +711,11 @@ struct ozone_handle
    bool show_playlist_tabs;
    bool sidebar_collapsed;
    bool font_unicode;
+   /* Set when a pending NEED_COMPUTE was raised by something that
+    * changed entry geometry without touching the list. The compute
+    * pass then keeps the view where it is, rather than re-deriving
+    * it from the selection. */
+   bool preserve_scroll_on_compute;
 
    struct
    {
@@ -4399,6 +4408,11 @@ static void ozone_go_to_sidebar(ozone_handle_t *ozone,
    else
       ozone->flags               &= ~OZONE_FLAG_CURSOR_IN_SIDEBAR_OLD;
    ozone->flags                  |=  OZONE_FLAG_CURSOR_IN_SIDEBAR;
+   /* Focus moving here hides the thumbnail bar, which rewraps every
+    * entry and raises a compute. The list itself is unchanged, and
+    * a pointer leaves the selection wherever it was resting, so
+    * re-deriving the scroll from it would drag the list about. */
+   ozone->preserve_scroll_on_compute = true;
 
    /* If sublabels are enabled only for the currently selected entry,
     * recalculate geometry values to keep correct spacing and animation. */
@@ -4682,6 +4696,9 @@ static void ozone_leave_sidebar(ozone_handle_t *ozone,
    else
       ozone->flags                 &= ~OZONE_FLAG_CURSOR_IN_SIDEBAR_OLD;
    ozone->flags                    &= ~OZONE_FLAG_CURSOR_IN_SIDEBAR;
+   /* As above: the thumbnail bar comes back, the list does not
+    * change, and the view should stay where the user left it. */
+   ozone->preserve_scroll_on_compute = true;
    /* If sublabels are enabled only for the currently selected entry,
     * recalculate geometry values to keep correct spacing and animation. */
    if (menu_show_sublabels && menu_current_sel_only)
@@ -5800,6 +5817,8 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone,
    size_t i;
    /* Compute entries height and adjust scrolling if needed */
    settings_t *settings          = config_get_ptr();
+   size_t anchor_idx             = 0;
+   float anchor_offset           = 0.0f;
    unsigned video_info_width     = ozone->last_width;
    struct menu_state *menu_st    = menu_state_get_ptr();
    menu_list_t *menu_list        = menu_st->entries.list;
@@ -5832,6 +5851,31 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone,
 
    if (menu_show_sublabels)
       sublabel_max_width         = ozone_get_sublabel_max_width(ozone, video_info_width, entry_padding);
+
+   /* Note which entry sits at the top of the view, and how far it
+    * is clipped, while the layout that produced it is still
+    * standing. Heights change across the recompute below - the
+    * thumbnail bar coming and going rewraps every sublabel - so a
+    * raw scroll_y would land somewhere else. */
+   if (ozone->preserve_scroll_on_compute)
+   {
+      float view_top = -ozone->animations.scroll_y;
+
+      for (i = 0; (i < entries_end) && (i < selection_buf->size); i++)
+      {
+         ozone_node_t *node = (ozone_node_t*)selection_buf->list[i].userdata;
+
+         if (!node)
+            continue;
+
+         if ((float)(node->position_y + node->height) > view_top)
+         {
+            anchor_idx    = i;
+            anchor_offset = view_top - (float)node->position_y;
+            break;
+         }
+      }
+   }
 
    ozone->entries_height         = 0;
 
@@ -5927,6 +5971,37 @@ compute_sublabel:
     * (issue #18797). size >= 1 is guaranteed by the early return above. */
    if (ozone->selection >= selection_buf->size)
       ozone->selection       = selection_buf->size - 1;
+
+   if (ozone->preserve_scroll_on_compute)
+   {
+      ozone_node_t *node = (anchor_idx < selection_buf->size)
+            ? (ozone_node_t*)selection_buf->list[anchor_idx].userdata
+            : NULL;
+
+      ozone->preserve_scroll_on_compute = false;
+
+      if (node)
+      {
+         uintptr_t tag         = (uintptr_t)selection_buf;
+         float bottom_boundary = (float)ozone->last_height
+               - ozone->dimensions.header_height
+               - ozone->dimensions.spacer_1px
+               - ozone->dimensions.footer_height;
+         float new_scroll      = -((float)node->position_y + anchor_offset);
+
+         if (new_scroll + ozone->entries_height < bottom_boundary)
+            new_scroll = bottom_boundary - ozone->entries_height
+                  - ozone->dimensions.entry_padding_vertical * 2;
+
+         if (new_scroll > 0.0f)
+            new_scroll = 0.0f;
+
+         gfx_animation_kill_by_tag(&tag);
+         ozone->animations.scroll_y = new_scroll;
+         return;
+      }
+   }
+
    if (!menu_show_sublabels || !menu_current_sel_only || !cursor_in_sidebar)
       ozone_update_scroll(ozone, animate_scroll, (ozone_node_t*)selection_buf->list[ozone->selection].userdata);
 }
@@ -10696,6 +10771,36 @@ static void ozone_list_free(file_list_t *list, size_t a, size_t b)
    ozone_list_clear(list);
 }
 
+/* Distance one wheel notch moves a list. Three rows is what
+ * desktops settled on, and it stays legible: a row of context is
+ * left behind on every notch. */
+static float ozone_get_wheel_step(ozone_handle_t *ozone)
+{
+   return 3.0f * (float)(ozone->dimensions.entry_height
+         + ozone->dimensions.spacer_1px);
+}
+
+static bool ozone_wheel_scroll(void *data, int notches)
+{
+   ozone_handle_t *ozone = (ozone_handle_t*)data;
+
+   if (!ozone)
+      return false;
+
+   /* The sidebar is a list too, and drag scrolls it the same way,
+    * but a collapsed one has nowhere to go. */
+   if (     (ozone->flags2 & OZONE_FLAG2_POINTER_IN_SIDEBAR)
+         && (!(ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR)))
+      return false;
+
+   ozone->wheel_notches += notches;
+   /* Turning a wheel moves no pointer, so cursor mode would stay
+    * off and the block that reads wheel_notches would never run.
+    * It is mouse input all the same. */
+   ozone->flags         |= OZONE_FLAG_CURSOR_MODE;
+   return true;
+}
+
 static void ozone_render(void *data,
       unsigned width,
       unsigned height,
@@ -10992,6 +11097,16 @@ static void ozone_render(void *data,
 
          ozone->animations.scroll_y += ozone->pointer.y_accel;
 
+         if (ozone->wheel_notches)
+         {
+            /* A selection made before the wheel was touched may
+             * still be animating the list towards itself. */
+            gfx_animation_kill_by_tag(&animation_tag);
+            ozone->animations.scroll_y -= (float)ozone->wheel_notches
+                  * ozone_get_wheel_step(ozone);
+            ozone->wheel_notches        = 0;
+         }
+
          if (ozone->animations.scroll_y + ozone->entries_height < entry_bottom_boundary)
             ozone->animations.scroll_y = entry_bottom_boundary - ozone->entries_height;
 
@@ -11010,6 +11125,13 @@ static void ozone_render(void *data,
          float sidebar_height          = ozone_get_sidebar_height(ozone);
 
          ozone->animations.scroll_y_sidebar += ozone->pointer.y_accel;
+
+         if (ozone->wheel_notches)
+         {
+            ozone->animations.scroll_y_sidebar -=
+                  (float)ozone->wheel_notches * ozone_get_wheel_step(ozone);
+            ozone->wheel_notches                = 0;
+         }
 
          if (ozone->animations.scroll_y_sidebar + sidebar_height < sidebar_bottom_boundary)
             ozone->animations.scroll_y_sidebar = sidebar_bottom_boundary - sidebar_height;
@@ -13357,6 +13479,9 @@ static void ozone_populate_entries(
 
    ozone->flags               |=  OZONE_FLAG_NEED_COMPUTE;
    ozone->flags               &= ~OZONE_FLAG_SKIP_THUMBNAIL_RESET;
+   /* A different list needs its scroll derived from the selection,
+    * whatever an earlier transition asked for. */
+   ozone->preserve_scroll_on_compute = false;
 
    if (ozone->flags2 & OZONE_FLAG2_IS_QUICK_MENU)
       ozone->flags            |=  OZONE_FLAG_WAS_QUICK_MENU;
@@ -14083,5 +14208,6 @@ menu_ctx_driver_t menu_ctx_ozone = {
    ozone_update_savestate_thumbnail_image,
    NULL,                         /* pointer_down */
    ozone_pointer_up,
-   ozone_menu_entry_action
+   ozone_menu_entry_action,
+   ozone_wheel_scroll
 };

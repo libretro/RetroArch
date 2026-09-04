@@ -5990,6 +5990,27 @@ unsigned menu_event(
    return ret;
 }
 
+/**
+ * menu_input_wheel_scroll:
+ *
+ * Hands a mouse wheel notch to the menu driver as list movement.
+ * A wheel is not a d-pad, and a driver that can move its list
+ * under a resting pointer reads far better doing that than
+ * stepping the selection one entry per notch.
+ *
+ * Returns: true when the driver took it, false to fall back to
+ * MENU_ACTION_UP/MENU_ACTION_DOWN.
+ **/
+static bool menu_input_wheel_scroll(struct menu_state *menu_st,
+      int notches)
+{
+   if (     menu_st->driver_ctx
+         && menu_st->driver_ctx->wheel_scroll)
+      return menu_st->driver_ctx->wheel_scroll(
+            menu_st->userdata, notches);
+   return false;
+}
+
 MENU_NOINLINE static int menu_input_post_iterate(
       gfx_display_t *p_disp,
       struct menu_state *menu_st,
@@ -6556,17 +6577,23 @@ MENU_NOINLINE static int menu_input_post_iterate(
       /* > Up */
       if (pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_UP)
       {
-         size_t selection = menu_st->selection_ptr;
-         ret              = menu_entry_action(
-               &entry, selection, MENU_ACTION_UP);
+         if (!menu_input_wheel_scroll(menu_st, -1))
+         {
+            size_t selection = menu_st->selection_ptr;
+            ret              = menu_entry_action(
+                  &entry, selection, MENU_ACTION_UP);
+         }
       }
 
       /* > Down */
       if (pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_DOWN)
       {
-         size_t selection = menu_st->selection_ptr;
-         ret              = menu_entry_action(
-               &entry, selection, MENU_ACTION_DOWN);
+         if (!menu_input_wheel_scroll(menu_st, 1))
+         {
+            size_t selection = menu_st->selection_ptr;
+            ret              = menu_entry_action(
+                  &entry, selection, MENU_ACTION_DOWN);
+         }
       }
 
       /* Left/Right

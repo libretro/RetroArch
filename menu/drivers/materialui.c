@@ -10046,6 +10046,35 @@ static void materialui_animate_scroll(materialui_handle_t *mui,
    gfx_animation_push(&animation_entry);
 }
 
+static bool materialui_wheel_scroll(void *data, int notches)
+{
+   float scroll_y_max;
+   materialui_handle_t *mui = (materialui_handle_t*)data;
+   gfx_display_t *p_disp    = disp_get_ptr();
+
+   if (!mui)
+      return false;
+
+   /* Fullscreen thumbnails swallow all input, and a scrollbar
+    * drag owns scroll_y until it is released. */
+   if (     (mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS)
+         || (mui->flags & MUI_FLAG_SCROLLBAR_DRAGGED))
+      return false;
+
+   scroll_y_max = materialui_get_scroll_y_max(mui, mui->last_height,
+         p_disp->header_height);
+
+   /* Three rows a notch, a row being about a third of the base
+    * unit. Clamped here because the animation would otherwise
+    * pull towards a target the render loop keeps clamping back. */
+   materialui_animate_scroll(mui,
+         materialui_clamp_scroll(mui->scroll_y
+               + ((float)notches * mui->dip_base_unit_size),
+               scroll_y_max),
+         MUI_ANIM_DURATION_SCROLL);
+   return true;
+}
+
 /* The navigation pointer has been updated (for example by pressing up or down
    on the keyboard) */
 static void materialui_navigation_set(void *data, bool scroll)
@@ -13013,5 +13042,6 @@ menu_ctx_driver_t menu_ctx_mui = {
    materialui_update_savestate_thumbnail_image,
    materialui_pointer_down,
    materialui_pointer_up,
-   materialui_menu_entry_action
+   materialui_menu_entry_action,
+   materialui_wheel_scroll
 };
