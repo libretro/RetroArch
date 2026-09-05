@@ -544,23 +544,29 @@ static void cocoa_gl_gfx_ctx_set_video_mode_mainthread(void *userdata)
          fmt            = [[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
       }
 
+      /* A context must never be released while still attached to the
+       * view (or current on the render thread).  -destroy guarantees
+       * that on the normal reinit path, but on non-Metal macOS
+       * gl2_init() calls -set_video_mode twice back-to-back (see the
+       * "very annoying issue" comment in gl2.c), so g_ctx/g_hw_ctx can
+       * still be live here from the first call.  Detach them before
+       * RELEASE, exactly as -destroy_mainthread does; the caller has
+       * already cleared the render thread's current context.  Under
+       * ARC RELEASE() is an assignment of nil to a strong static, which
+       * still releases, so this applies to both memory models. */
+      [g_ctx clearDrawable];
+      if (g_hw_ctx)
+         [g_hw_ctx clearDrawable];
+      RELEASE(g_ctx);
+      RELEASE(g_hw_ctx);
+
       if (cocoa_ctx->flags & COCOA_CTX_FLAG_USE_HW_CTX)
       {
-         /* In the normal reinit flow -destroy runs before -set_video_mode
-          * and both statics are already nil here; guard defensively so an
-          * MRR build does not leak the previous +1 if that invariant ever
-          * breaks (e.g. a future caller that re-inits without tearing
-          * down first).  Safe when already nil under both ARC and MRR. */
-         RELEASE(g_ctx);
-         RELEASE(g_hw_ctx);
          g_hw_ctx       = [[NSOpenGLContext alloc] initWithFormat:fmt shareContext:nil];
          g_ctx          = [[NSOpenGLContext alloc] initWithFormat:fmt shareContext:g_hw_ctx];
       }
       else
-      {
-         RELEASE(g_ctx);
          g_ctx          = [[NSOpenGLContext alloc] initWithFormat:fmt shareContext:nil];
-      }
 
       RELEASE(fmt);
    }
@@ -722,6 +728,14 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
    args.width      = width;
    args.height     = height;
    args.fullscreen = fullscreen;
+
+   /* Current-context state is per-thread, so this has to happen here
+    * on the render thread and not inside the main-thread body: with
+    * threaded video, +currentContext on the main thread would never
+    * report g_ctx, and the previous context (still live when gl2_init
+    * calls -set_video_mode twice) would be released while current.
+    * Harmless when nothing is current; g_ctx is re-bound below. */
+   [GLContextClass clearCurrentContext];
 
    cocoa_main_thread_sync(cocoa_gl_gfx_ctx_set_video_mode_mainthread, &args);
 
