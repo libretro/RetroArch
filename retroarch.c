@@ -1601,6 +1601,15 @@ void drivers_init(
    location_driver_state_t
       *location_st                = location_state_get_ptr();
    bool video_is_threaded         = VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st);
+   unsigned refresh_rate_auto     = settings->uints.video_autoswitch_refresh_rate;
+   bool refresh_rate_polled_auto  = settings->bools.video_refresh_rate_polled_auto;
+   bool exclusive_fullscreen      = settings->bools.video_fullscreen && !settings->bools.video_windowed_fullscreen;
+   bool windowed_fullscreen       = settings->bools.video_fullscreen &&  settings->bools.video_windowed_fullscreen;
+   bool any_fullscreen            = settings->bools.video_fullscreen ||  settings->bools.video_windowed_fullscreen;
+   bool refresh_rate_autoswitch   =
+         ((refresh_rate_auto == AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN) && exclusive_fullscreen)
+      || ((refresh_rate_auto == AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN)  && windowed_fullscreen)
+      || ((refresh_rate_auto == AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN)       && any_fullscreen);
    gfx_display_t *p_disp          = disp_get_ptr();
 #if defined(HAVE_GFX_WIDGETS)
    bool video_font_enable         = settings->bools.video_font_enable;
@@ -1626,6 +1635,13 @@ void drivers_init(
       struct retro_hw_render_callback *hwr   =
          VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(video_st);
 
+      if (refresh_rate_polled_auto && (!refresh_rate_autoswitch || !runloop_is_inited()))
+      {
+         float refresh_rate = video_driver_get_refresh_rate();
+         if (refresh_rate > 0.0f)
+            video_monitor_set_refresh_rate(refresh_rate);
+      }
+
       video_st->frame_time_count = 0;
 
       video_driver_lock_new();
@@ -1648,23 +1664,16 @@ void drivers_init(
    if (     flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK)
          && !runloop_is_inited())
    {
-      float refresh_rate               = video_st->av_info.timing.fps;
-      unsigned autoswitch_refresh_rate = settings->uints.video_autoswitch_refresh_rate;
-      bool exclusive_fullscreen        = settings->bools.video_fullscreen && !settings->bools.video_windowed_fullscreen;
-      bool windowed_fullscreen         = settings->bools.video_fullscreen &&  settings->bools.video_windowed_fullscreen;
-      bool all_fullscreen              = settings->bools.video_fullscreen ||  settings->bools.video_windowed_fullscreen;
+      float refresh_rate = video_st->av_info.timing.fps;
 
       /* Making a switch from PC standard 60 Hz to NTSC 59.94 is excluded by the last condition. */
       if (     (refresh_rate > 0.0f)
             && !settings->uints.crt_switch_resolution
             && !settings->bools.vrr_runloop_enable
             && video_display_server_has_resolution_list()
-            && (autoswitch_refresh_rate != AUTOSWITCH_REFRESH_RATE_OFF)
             && (fabs(settings->floats.video_refresh_rate - refresh_rate) > 1))
       {
-         if (   ((autoswitch_refresh_rate == AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN) && exclusive_fullscreen)
-             || ((autoswitch_refresh_rate == AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN)  && windowed_fullscreen)
-             || ((autoswitch_refresh_rate == AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN)       && all_fullscreen))
+         if (refresh_rate_autoswitch)
          {
             bool video_switch_refresh_rate = false;
 

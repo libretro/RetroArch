@@ -1148,6 +1148,7 @@
 #else
 #define DEFAULT_REFRESH_RATE (60)
 #endif
+#define DEFAULT_VIDEO_REFRESH_RATE_POLLED_AUTO false
 #define DEFAULT_CRT_REFRESH_RATE (DEFAULT_REFRESH_RATE)
 
 /* Allow games to set rotation. If false, rotation requests are
