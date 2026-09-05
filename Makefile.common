@@ -1665,6 +1665,7 @@ ifeq ($(HAVE_SDL3), 1)
           input/drivers/sdl3_input.o \
           gfx/drivers/sdl3_gfx.o \
           gfx/common/sdl3_common.o \
+          gfx/display_servers/dispserv_sdl3.o \
           audio/drivers/sdl3_audio.o
 
    ifneq ($(filter 1,$(HAVE_OPENGL) $(HAVE_OPENGL1) $(HAVE_OPENGL_CORE) $(HAVE_OPENGLES)),)
@@ -1677,7 +1678,8 @@ ifeq ($(HAVE_SDL3), 1)
 else ifeq ($(HAVE_SDL2), 1)
    HAVE_SDL_COMMON = 1
    OBJ += gfx/drivers/sdl2_gfx.o \
-	  gfx/common/sdl2_common.o
+	  gfx/common/sdl2_common.o \
+	  gfx/display_servers/dispserv_sdl2.o
    DEF_FLAGS += $(SDL2_CFLAGS)
    # See the SDL3 note above: drop SDL's WinMain shim lib, we set
    # SDL_MAIN_HANDLED and provide our own entry point.
@@ -2701,37 +2703,24 @@ ifeq ($(HAVE_FFMPEG), 1)
    INCLUDE_DIRS += -Iffmpeg
 endif
 
-# CRT mode switching
+# Video modeline engine (CRT mode switching is its first consumer)
 ifeq ($(HAVE_CRTSWITCHRES), 1)
-   INCLUDE_DIRS += -I$(DEPS_DIR)/switchres
+   HAVE_MODELINE = 1
+endif
+ifeq ($(HAVE_MODELINE), 1)
+   DEFINES += -DHAVE_MODELINE
    OBJ += gfx/video_crt_switch.o \
-          $(DEPS_DIR)/switchres/monitor.o \
-          $(DEPS_DIR)/switchres/modeline.o \
-          $(DEPS_DIR)/switchres/switchres.o \
-          $(DEPS_DIR)/switchres/display.o \
-          $(DEPS_DIR)/switchres/custom_video.o \
-          $(DEPS_DIR)/switchres/log.o \
-          $(DEPS_DIR)/switchres/switchres_wrapper.o \
-          $(DEPS_DIR)/switchres/edid.o
+          gfx/modeline/modeline_core.o \
+          gfx/modeline/modeline_monitor.o \
+          gfx/modeline/modeline_list.o \
+          gfx/modeline/modeline_ini.o \
+          gfx/modeline/modeline_edid.o
    ifneq ($(findstring Win32,$(OS)),)
-      OBJ += $(DEPS_DIR)/switchres/display_windows.o \
-             $(DEPS_DIR)/switchres/custom_video_ati_family.o \
-             $(DEPS_DIR)/switchres/custom_video_ati.o \
-             $(DEPS_DIR)/switchres/custom_video_adl.o \
-             $(DEPS_DIR)/switchres/custom_video_pstrip.o \
-             $(DEPS_DIR)/switchres/resync_windows.o
+      OBJ += gfx/display_servers/win32_modeline_resync.o \
+             gfx/display_servers/win32_modeline_adl.o \
+             gfx/display_servers/win32_modeline_ati.o \
+             gfx/display_servers/win32_modeline_pstrip.o
    endif
-   ifneq ($(findstring Linux,$(OS)),)
-      OBJ += $(DEPS_DIR)/switchres/display_linux.o
-      ifeq ($(HAVE_X11)$(HAVE_XRANDR), 11)
-         OBJ += $(DEPS_DIR)/switchres/custom_video_xrandr.o
-         DEFINES += -DSR_WITH_XRANDR
-      endif
-   endif
-   ifneq ($(findstring Win32,$(OS)),)
-      DEFINES += -DSR_WIN32_STATIC
-   endif
-   LIBS += -lstdc++
 endif
 
 ifeq ($(HAVE_COMPRESSION), 1)

@@ -126,6 +126,9 @@ void android_app_set_window_settings(bool notch_write_over,
 #endif
 #include "../retroarch.h"
 #include "../gfx/video_display_server.h"
+#ifdef HAVE_MODELINE
+#include "../gfx/video_crt_switch.h"
+#endif
 #ifdef HAVE_CHEATS
 #include "../cheat_manager.h"
 #endif
@@ -5231,9 +5234,18 @@ static size_t setting_get_string_representation_uint_video_autoswitch_refresh_ra
 static size_t setting_get_string_representation_uint_video_monitor_index(
       rarch_setting_t *setting, char *s, size_t len)
 {
+   video_output_info_t outputs[8];
+   int n;
    if (setting && *setting->value.target.unsigned_integer)
-      return snprintf(s, len, "%u",
-            *setting->value.target.unsigned_integer);
+   {
+      unsigned idx = *setting->value.target.unsigned_integer;
+      /* The display server names the head this index lands on */
+      n = video_display_server_list_outputs(outputs, 8);
+      if (n > 0 && idx >= 1 && (int)idx <= n && outputs[idx - 1].name[0])
+         return snprintf(s, len, "%u (%s %ux%u)", idx, outputs[idx - 1].name,
+               outputs[idx - 1].width, outputs[idx - 1].height);
+      return snprintf(s, len, "%u", idx);
+   }
    return strlcpy_lit(s, "0 (Auto)", len);
 }
 
@@ -7107,6 +7119,42 @@ static size_t setting_get_string_representation_uint_crt_switch_resolutions(
             return strlcpy_lit(s, "31 KHz, 120Hz", len);
          case CRT_SWITCH_INI:
             return strlcpy_lit(s, "INI", len);
+      }
+   }
+   return 0;
+}
+
+#ifdef HAVE_MODELINE
+static int setting_action_crt_switch_write_edid(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   char path[PATH_MAX_LENGTH];
+   char msg[PATH_MAX_LENGTH + 64];
+   size_t _len;
+   if (crt_switch_write_edid(path, sizeof(path)))
+      _len = snprintf(msg, sizeof(msg),
+            msg_hash_to_str(MSG_CRT_SWITCH_EDID_WRITTEN), path);
+   else
+      _len = strlcpy(msg, msg_hash_to_str(MSG_CRT_SWITCH_EDID_FAILED), sizeof(msg));
+   runloop_msg_queue_push(msg, _len, 1, 240, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   return 0;
+}
+#endif
+
+static size_t setting_get_string_representation_uint_video_sdl_display_server(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case VIDEO_SDL_DISPLAY_SERVER_OFF:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+         case VIDEO_SDL_DISPLAY_SERVER_AUTO:
+            return strlcpy_lit(s, "Auto", len);
+         case VIDEO_SDL_DISPLAY_SERVER_ALWAYS:
+            return strlcpy_lit(s, "Always", len);
       }
    }
    return 0;
@@ -11845,6 +11893,11 @@ static const setting_desc_t crt_switchres_desc_0[] = {
 #include "../settings/settings_def_crt_switchres.h"
 };
 
+static const setting_desc_t video_sdl_display_server_desc[] = {
+/* GENERATED: rows come from settings_def_video_sdl_display_server.h in order. */
+#include "../settings/settings_def_video_sdl_display_server.h"
+};
+
 static const setting_desc_t menu_sounds_desc_0[] = {
 /* GENERATED: rows come from settings_def_menu_sounds.h in order. */
 #include "../settings/settings_def_menu_sounds.h"
@@ -14585,6 +14638,8 @@ static void settings_build_video(
 #endif
 
                   ADD_DESC(rot_desc);
+
+                  ADD_DESC(video_sdl_display_server_desc);
 
          END_SUB_GROUP(list, list_info, parent_group);
 
@@ -17882,6 +17937,7 @@ static const settings_desc_table_t settings_desc_registry[] = {
    { vid_ctx_desc, (uint16_t)ARRAY_SIZE(vid_ctx_desc) },
 #endif
    { rot_desc, (uint16_t)ARRAY_SIZE(rot_desc) },
+   { video_sdl_display_server_desc, (uint16_t)ARRAY_SIZE(video_sdl_display_server_desc) },
    { vid_desc_18, (uint16_t)ARRAY_SIZE(vid_desc_18) },
    { hdr_desc, (uint16_t)ARRAY_SIZE(hdr_desc) },
    { vid_desc_19, (uint16_t)ARRAY_SIZE(vid_desc_19) },

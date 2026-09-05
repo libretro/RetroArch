@@ -483,6 +483,7 @@ uint	menu_xmb_vertical_fade_factor	1	100
 uint	xmb_current_menu_icon	1	1
 uint	crt_switch_resolution	1	CRT_SWITCH_NONE
 uint	crt_switch_resolution_super	1	2560
+uint	video_sdl_display_server	1	VIDEO_SDL_DISPLAY_SERVER_AUTO
 uint	menu_scroll_delay	1	256
 uint	ai_service_source_lang	1	0
 uint	ai_service_target_lang	1	0
@@ -1130,6 +1131,7 @@ uint	menu_xmb_vertical_fade_factor	1	100
 uint	xmb_current_menu_icon	1	1
 uint	crt_switch_resolution	1	CRT_SWITCH_NONE
 uint	crt_switch_resolution_super	1	2560
+uint	video_sdl_display_server	1	VIDEO_SDL_DISPLAY_SERVER_AUTO
 uint	menu_scroll_delay	1	256
 uint	ai_service_source_lang	1	0
 uint	ai_service_target_lang	1	0
@@ -1780,6 +1782,7 @@ uint	menu_xmb_vertical_fade_factor	1	100
 uint	xmb_current_menu_icon	1	1
 uint	crt_switch_resolution	1	CRT_SWITCH_NONE
 uint	crt_switch_resolution_super	1	2560
+uint	video_sdl_display_server	1	VIDEO_SDL_DISPLAY_SERVER_AUTO
 uint	menu_scroll_delay	1	256
 uint	ai_service_source_lang	1	0
 uint	ai_service_target_lang	1	0

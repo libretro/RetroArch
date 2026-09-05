@@ -42,7 +42,7 @@
 
 #include "video_defines.h"
 
-#ifdef HAVE_CRTSWITCHRES
+#ifdef HAVE_MODELINE
 #include "video_crt_switch.h"
 #endif
 
@@ -882,7 +882,7 @@ typedef struct video_driver
 
 typedef struct
 {
-#ifdef HAVE_CRTSWITCHRES
+#ifdef HAVE_MODELINE
    videocrt_switch_t crt_switch_st;     /* double alignment */
 #endif
    struct retro_system_av_info av_info; /* double alignment */

@@ -8698,7 +8698,7 @@ unsigned menu_displaylist_build_list(
 
             if (video_display_server_get_flags(&flags))
             {
-               if (BIT32_GET(flags.flags, DISPSERV_CTX_CRT_SWITCHRES))
+               if (BIT32_GET(flags.flags, DISPSERV_CTX_MODELINE))
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                            MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS,
                            PARSE_ACTION, false) == 0)
@@ -8712,6 +8712,13 @@ unsigned menu_displaylist_build_list(
                            PARSE_ACTION, false) == 0)
                      count++;
             }
+
+            /* Only an SDL window can hand mode switching to SDL */
+            if (video_display_server_sdl_available())
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_VIDEO_SDL_DISPLAY_SERVER,
+                        PARSE_ONLY_UINT, false) == 0)
+                  count++;
 
             {
                static const menu_displaylist_settings_row_t dl_rows_7[] = {
@@ -11007,6 +11014,9 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_CRT_SWITCH_PORCH_ADJUST,                               PARSE_ONLY_INT },
                {MENU_ENUM_LABEL_CRT_SWITCH_X_AXIS_CENTERING,                           PARSE_ONLY_INT },
                {MENU_ENUM_LABEL_CRT_SWITCH_VERTICAL_ADJUST,                            PARSE_ONLY_INT },
+#ifdef HAVE_MODELINE
+               {MENU_ENUM_LABEL_CRT_SWITCH_WRITE_EDID,                                 PARSE_ACTION   },
+#endif
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)

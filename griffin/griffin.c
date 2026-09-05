@@ -597,6 +597,7 @@ VIDEO DRIVER
 #ifdef HAVE_SDL2
 #include "../gfx/drivers/sdl2_gfx.c"
 #include "../gfx/common/sdl2_common.c"
+#include "../gfx/display_servers/dispserv_sdl2.c"
 #endif
 
 #if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
@@ -998,6 +999,7 @@ AUDIO
 #include "../input/drivers/sdl3_input.c"
 #include "../gfx/drivers/sdl3_gfx.c"
 #include "../gfx/common/sdl3_common.c"
+#include "../gfx/display_servers/dispserv_sdl3.c"
 #include "../audio/drivers/sdl3_audio.c"
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE) || defined(HAVE_OPENGLES)
 #include "../gfx/drivers_context/sdl3_gl_ctx.c"
@@ -1074,8 +1076,19 @@ MIDI
 /*============================================================
 DRIVERS
 ============================================================ */
-#ifdef HAVE_CRTSWITCHRES
+#ifdef HAVE_MODELINE
+#include "../gfx/modeline/modeline_core.c"
+#include "../gfx/modeline/modeline_monitor.c"
+#include "../gfx/modeline/modeline_list.c"
+#include "../gfx/modeline/modeline_ini.c"
+#include "../gfx/modeline/modeline_edid.c"
 #include "../gfx/video_crt_switch.c"
+#ifdef _WIN32
+#include "../gfx/display_servers/win32_modeline_resync.c"
+#include "../gfx/display_servers/win32_modeline_adl.c"
+#include "../gfx/display_servers/win32_modeline_ati.c"
+#include "../gfx/display_servers/win32_modeline_pstrip.c"
+#endif
 #endif
 #include "../gfx/gfx_animation.c"
 #include "../gfx/gfx_display.c"

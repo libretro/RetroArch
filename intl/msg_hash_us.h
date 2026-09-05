@@ -4485,6 +4485,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
 #define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us) \
 MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #include "../settings/settings_def_crt_switchres.h"
+#include "../settings/settings_def_video_sdl_display_server.h"
 #undef S_BOOL
 #undef S_BOOL_NS
 #undef S_BOOL_H
@@ -31451,6 +31452,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_AUDIO_ASIO_NOT_RUNNING,
    "ASIO is not the running audio driver yet. Restart RetroArch to open its control panel."
+   )
+MSG_HASH(
+   MSG_CRT_SWITCH_EDID_WRITTEN,
+   "EDID written to %s. See the log for how to load it."
+   )
+MSG_HASH(
+   MSG_CRT_SWITCH_EDID_FAILED,
+   "Could not write an EDID for the selected CRT preset."
    )
 MSG_HASH(
    MSG_AUDIO_UNMUTED,

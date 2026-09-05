@@ -2025,7 +2025,7 @@ static void retroarch_deinit_drivers(struct retro_callbacks *cbs)
    }
 #endif
 
-#if defined(HAVE_CRTSWITCHRES)
+#if defined(HAVE_MODELINE)
    /* Switchres deinit */
    if (video_st->flags & VIDEO_FLAG_CRT_SWITCHING_ACTIVE)
       crt_destroy_modes(&video_st->crt_switch_st);
