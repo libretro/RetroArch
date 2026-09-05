@@ -105,3 +105,17 @@ S_BOOL(menu_xmb_shadows_enable, XMB_SHADOWS_ENABLE,
       "Draw drop shadows for icons, thumbnails and letters. This will have a minor performance hit.")
 #endif
 #endif
+/* Descriptor and configuration rows are #ifdef HAVE_XMB; the string
+ * tables always carry this row via the strings pass. */
+#if defined(HAVE_XMB) || defined(SETTINGS_DEF_STRINGS_PASS)
+/* The configuration row lives under defined(HAVE_MENU); other passes are
+ * unaffected. */
+#if !defined(SETTINGS_DEF_CONFIG_PASS) || (defined(HAVE_MENU))
+S_BOOL(menu_xmb_intro_animation, XMB_INTRO_ANIMATION,
+      "xmb_intro_animation",
+      DEFAULT_XMB_INTRO_ANIMATION, SD_FLAG_NONE, 0, 0,
+      "Intro Animation",
+      "Play home menu opening intro animation when toggling the menu.")
+#endif
+#endif
+
