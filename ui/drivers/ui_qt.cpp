@@ -1517,8 +1517,7 @@ MainWindow::MainWindow(QWidget *parent) :
 #endif
 #endif
    ,m_coreOptionsDialog(new CoreOptionsDialog(this))
-   ,m_currentHttpTask(NULL)
-   ,m_updateProgressDialog(new QProgressDialog(this))
+   ,m_downloadingPlaylistThumbnails(false)
    ,m_thumbnailDownloadProgressDialog(new QProgressDialog(this))
    ,m_pendingThumbnailDownloadTypes()
    ,m_thumbnailPackDownloadProgressDialog(new QProgressDialog(this))
@@ -1562,7 +1561,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
    /* Cancel all progress dialogs immediately since
     * they show as soon as they're constructed. */
-   m_updateProgressDialog->cancel();
    m_thumbnailDownloadProgressDialog->cancel();
    m_thumbnailPackDownloadProgressDialog->cancel();
    m_playlistThumbnailDownloadProgressDialog->cancel();
@@ -3949,103 +3947,6 @@ void MainWindow::onShowInfoMessage(QString msg)
          Qt::ApplicationModal, false);
 }
 
-int MainWindow::onExtractArchive(QString path, QString extractionDir,
-      QString tempExtension, retro_task_callback_t cb)
-{
-   size_t i;
-   file_archive_transfer_t state;
-   struct archive_extract_userdata userdata;
-   QByteArray pathArray          = path.toUtf8();
-   QByteArray dirArray           = extractionDir.toUtf8();
-   QByteArray tmpExtArray        = tempExtension.toUtf8();
-   const char *file              = pathArray.constData();
-   const char *dir               = dirArray.constData();
-   const char *temp_ext          = tmpExtArray.constData();
-   struct string_list *file_list = file_archive_get_file_list(file, NULL);
-   retro_task_t *decompress_task = NULL;
-
-   if (!file_list || file_list->size == 0)
-   {
-      showMessageBox("Error: Archive is empty.",
-            MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
-      RARCH_ERR("[Qt] Downloaded archive is empty?\n");
-      return -1;
-   }
-
-   for (i = 0; i < file_list->size; i++)
-   {
-      const char *target_file = file_list->elems[i].data;
-
-      if (!filestream_exists(target_file))
-         continue;
-
-      if (filestream_delete(target_file) == 0)
-         continue;
-
-      /* If we cannot delete the existing file to update it,
-       * rename it out of the way for later cleanup. */
-      {
-         char temp_path[PATH_MAX_LENGTH];
-         size_t _len = strlcpy(temp_path, target_file, sizeof(temp_path));
-         strlcpy(temp_path + _len, temp_ext, sizeof(temp_path) - _len);
-
-         if (filestream_exists(temp_path))
-         {
-            if (filestream_delete(temp_path) != 0)
-            {
-               showMessageBox(msg_hash_to_str(
-                        MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE),
-                     MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
-               RARCH_ERR("[Qt] Could not delete file: \"%s\".\n",
-                     target_file);
-               string_list_free(file_list);
-               return -1;
-            }
-         }
-
-         if (filestream_rename(target_file, temp_path) != 0)
-         {
-            showMessageBox(msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE),
-                  MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
-            RARCH_ERR("[Qt] Could not rename file: \"%s\".\n",
-                  target_file);
-            string_list_free(file_list);
-            return -1;
-         }
-      }
-   }
-
-   string_list_free(file_list);
-
-   memset(&state,    0, sizeof(state));
-   memset(&userdata, 0, sizeof(userdata));
-
-   state.type = ARCHIVE_TRANSFER_INIT;
-
-   m_updateProgressDialog->setWindowModality(Qt::NonModal);
-   m_updateProgressDialog->setMinimumDuration(0);
-   m_updateProgressDialog->setRange(0, 0);
-   m_updateProgressDialog->setAutoClose(true);
-   m_updateProgressDialog->setAutoReset(true);
-   m_updateProgressDialog->setValue(0);
-   m_updateProgressDialog->setLabelText(QString(msg_hash_to_str(MSG_EXTRACTING))
-         + QString("..."));
-   m_updateProgressDialog->setCancelButtonText(QString());
-   m_updateProgressDialog->show();
-
-   if (!(decompress_task = (retro_task_t*)task_push_decompress(
-         file, dir,
-         NULL, NULL, NULL,
-         cb, this, NULL, false)))
-   {
-      m_updateProgressDialog->cancel();
-      return -1;
-   }
-
-   return 1;
-}
-
 static void* ui_window_qt_init(void)
 {
    ui_window.qtWindow = new MainWindow();
@@ -4343,13 +4244,40 @@ static void ui_companion_qt_core_on_log_message(void *ud, const char *msg)
       win_handle->qtWindow->appendLogMessage(msg);
 }
 
+static void ui_companion_qt_core_on_thumbnail_downloaded(void *ud,
+      const char *db_name, const char *label, const char *subdir,
+      const char *path, bool success)
+{
+   ui_companion_qt_t *handle  = (ui_companion_qt_t*)ud;
+   ui_window_qt_t *win_handle = NULL;
+   (void)subdir;
+   if (handle && (win_handle = (ui_window_qt_t*)handle->window)
+         && win_handle->qtWindow)
+      win_handle->qtWindow->onCoreThumbnailDownloaded(
+            QString::fromUtf8(db_name ? db_name : ""),
+            QString::fromUtf8(label ? label : ""),
+            QString::fromUtf8(path ? path : ""), success);
+}
+
+static void ui_companion_qt_core_on_thumbnail_pack_finished(void *ud,
+      enum companion_download_result result)
+{
+   ui_companion_qt_t *handle  = (ui_companion_qt_t*)ud;
+   ui_window_qt_t *win_handle = NULL;
+   if (handle && (win_handle = (ui_window_qt_t*)handle->window)
+         && win_handle->qtWindow)
+      win_handle->qtWindow->onCoreThumbnailPackFinished((int)result);
+}
+
 static const companion_callbacks_t ui_companion_qt_core_callbacks = {
    NULL, /* on_playlists_changed */
    ui_companion_qt_core_on_playlist_changed,
    ui_companion_qt_core_on_status_message,
    ui_companion_qt_core_on_log_message,
    NULL, /* on_notify_refresh */
-   ui_companion_qt_core_on_scan_finished
+   ui_companion_qt_core_on_scan_finished,
+   ui_companion_qt_core_on_thumbnail_downloaded,
+   ui_companion_qt_core_on_thumbnail_pack_finished
 };
 
 ThumbnailWidget::ThumbnailWidget(QWidget *parent) { }

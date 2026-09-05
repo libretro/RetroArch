@@ -586,9 +586,11 @@ public slots:
    void onFileDropWidgetContextMenuRequested(const QPoint &pos);
    void showAbout();
    void showDocs();
-   void onThumbnailPackExtractFinished(bool success);
-   void onSingleThumbnailDownloadFinishedInternal(const char *system, const char *title, const char *final_path, bool success);
-   void onPlaylistThumbnailDownloadFinishedInternal(const char *system, const char *title, const char *final_path, bool success);
+   /* companion core download results (see ui_companion_qt_core_callbacks) */
+   void onCoreThumbnailDownloaded(QString system, QString title, QString path, bool success);
+   void onCoreThumbnailPackFinished(int result);
+   void onSingleThumbnailDownloadFinishedInternal(QString system, QString title, QString path, bool success);
+   void onPlaylistThumbnailDownloadFinishedInternal(QString path, bool success);
    void deferReloadShaderParams();
    void downloadThumbnail(QString system, QString title, QUrl url = QUrl());
    void downloadAllThumbnails(QString system, QUrl url = QUrl());
@@ -633,7 +635,6 @@ private slots:
    void onFileBrowserTableDirLoaded(const QString &path);
    void onDownloadScroll(QString path);
    void onDownloadScrollAgain(QString path);
-   int onExtractArchive(QString path, QString extractionDir, QString tempExtension, retro_task_callback_t cb);
 
    void onThumbnailDownloadCanceled();
    void onDownloadThumbnail(QString system, QString title);
@@ -733,9 +734,8 @@ private:
    QElapsedTimer m_statusMessageElapsedTimer;
    QPointer<ShaderParamsDialog> m_shaderParamsDialog;
    QPointer<CoreOptionsDialog> m_coreOptionsDialog;
-   retro_task_t *m_currentHttpTask;
+   bool m_downloadingPlaylistThumbnails;
 
-   QProgressDialog *m_updateProgressDialog;
 
    QProgressDialog *m_thumbnailDownloadProgressDialog;
    QStringList m_pendingThumbnailDownloadTypes;

@@ -82,17 +82,6 @@ extern "C" {
 #endif
 
 /* Replace characters unsafe in URLs / file names with '_' */
-static QString scrub_qstring(QString str)
-{
-   static const char chars[] = "&*/:`\"<>?\\|";
-   QByteArray buf            = str.toUtf8();
-   char *s                   = buf.data();
-   size_t i;
-   for (i = 0; i < sizeof(chars) - 1; i++)
-      string_replace_all_chars(s, chars[i], '_');
-   return QString::fromUtf8(s);
-}
-
 
 #ifdef HAVE_MENU
 static const QRegularExpression decimalsRegex("%.(\\d)f");
@@ -4828,275 +4817,36 @@ void ShaderParamsDialog::onShaderParamDoubleSpinBoxValueChanged(double value)
 #endif
 #endif
 
-
-#undef TEMP_EXTENSION
-#undef USER_AGENT
-#define USER_AGENT "RetroArch-WIMP/" PACKAGE_VERSION
-#define PARTIAL_EXTENSION ".partial"
-#define TEMP_EXTENSION ".tmp"
-#define THUMBNAILPACK_URL_HEADER "http://thumbnailpacks.libretro.com/"
-#define THUMBNAILPACK_EXTENSION ".zip"
-#define THUMBNAIL_URL_HEADER "https://thumbnails.libretro.com/"
-#define THUMBNAIL_IMAGE_EXTENSION ".png"
-
-/* Userdata structs for task callbacks */
-typedef struct qt_download_userdata
-{
-   MainWindow *mainwindow;
-   char system[PATH_MAX_LENGTH];
-   char title[PATH_MAX_LENGTH];
-   char download_type[64];
-   char output_path[PATH_MAX_LENGTH];
-   bool is_playlist_download;
-} qt_download_userdata_t;
-
-
-#ifdef HAVE_NETWORKING
-static void cb_extract_thumbnail_pack(retro_task_t *task,
-      void *task_data, void *user_data, const char *err)
-{
-   decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
-   MainWindow *mainwindow      = (MainWindow*)user_data;
-
-   if (err)
-      RARCH_ERR("[Qt] %s", err);
-
-   if (dec)
-   {
-      if (filestream_exists(dec->source_file))
-         filestream_delete(dec->source_file);
-
-      free(dec->source_file);
-      free(dec);
-   }
-
-   mainwindow->onThumbnailPackExtractFinished(!err || !*err);
-}
-
-static void cb_http_thumbnail_pack(retro_task_t *task,
-      void *task_data, void *user_data, const char *err)
-{
-   http_transfer_data_t *data  = (http_transfer_data_t*)task_data;
-   qt_download_userdata_t *ud  = (qt_download_userdata_t*)user_data;
-
-   if (!ud)
-      return;
-
-   if (!data || !data->data || data->status != 200 || err)
-   {
-      RARCH_ERR("[Qt] Thumbnail pack download failed (HTTP %d).\n",
-            data ? data->status : 0);
-      if (ud->mainwindow)
-         ud->mainwindow->showErrorMessageDeferred(
-               QString(msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR)));
-      free(ud);
-      return;
-   }
-
-   /* Write downloaded data to .partial file */
-   if (!filestream_write_file(ud->output_path, data->data, data->len))
-   {
-      RARCH_ERR("[Qt] Could not write thumbnail pack to \"%s\".\n",
-            ud->output_path);
-      free(ud);
-      return;
-   }
-
-   /* Rename .partial to final name */
-   {
-      char final_path[PATH_MAX_LENGTH];
-      strlcpy(final_path, ud->output_path, sizeof(final_path));
-
-      /* Strip PARTIAL_EXTENSION from end */
-      {
-         char *ext = strstr(final_path, PARTIAL_EXTENSION);
-         if (ext) *ext = '\0';
-      }
-
-      if (path_is_valid(final_path))
-         filestream_delete(final_path);
-
-      if (filestream_rename(ud->output_path, final_path) == 0)
-      {
-         settings_t *settings = config_get_ptr();
-         if (settings)
-         {
-            RARCH_LOG("[Qt] Thumbnail pack download finished successfully.\n");
-            if (ud->mainwindow)
-               QMetaObject::invokeMethod(ud->mainwindow,
-                     "onExtractArchive",
-                     Q_ARG(QString, QString(final_path)),
-                     Q_ARG(QString, QString(settings->paths.directory_thumbnails)),
-                     Q_ARG(QString, QString(TEMP_EXTENSION)),
-                     Q_ARG(retro_task_callback_t, cb_extract_thumbnail_pack));
-         }
-      }
-      else
-      {
-         RARCH_ERR("[Qt] Thumbnail pack download finished, but file could not be renamed.\n");
-         if (ud->mainwindow)
-            ud->mainwindow->showErrorMessageDeferred(
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE));
-      }
-   }
-
-   free(ud);
-}
-
-static void cb_http_thumbnail(retro_task_t *task,
-      void *task_data, void *user_data, const char *err)
-{
-   http_transfer_data_t *data  = (http_transfer_data_t*)task_data;
-   qt_download_userdata_t *ud  = (qt_download_userdata_t*)user_data;
-
-   if (!ud)
-      return;
-
-   if (!data || !data->data || data->status != 200 || err)
-   {
-      if (data && data->status != 200)
-         RARCH_ERR("[Qt] Thumbnail download failed with HTTP status: %d.\n",
-               data->status);
-
-      /* Continue to next type if available */
-      if (ud->mainwindow)
-      {
-         if (ud->is_playlist_download)
-            ud->mainwindow->onPlaylistThumbnailDownloadFinishedInternal(
-                  ud->system, ud->title, NULL, false);
-         else
-            ud->mainwindow->onSingleThumbnailDownloadFinishedInternal(
-                  ud->system, ud->title, NULL, false);
-      }
-      free(ud);
-      return;
-   }
-
-   /* Create output directory */
-   {
-      char output_dir[PATH_MAX_LENGTH];
-      strlcpy(output_dir, ud->output_path, sizeof(output_dir));
-      path_basedir_wrapper(output_dir);
-      path_mkdir(output_dir);
-   }
-
-   /* Write downloaded data to .partial file */
-   if (!filestream_write_file(ud->output_path, data->data, data->len))
-   {
-      RARCH_ERR("[Qt] Could not write thumbnail to \"%s\".\n",
-            ud->output_path);
-      if (ud->mainwindow)
-      {
-         if (ud->is_playlist_download)
-            ud->mainwindow->onPlaylistThumbnailDownloadFinishedInternal(
-                  ud->system, ud->title, NULL, false);
-         else
-            ud->mainwindow->onSingleThumbnailDownloadFinishedInternal(
-                  ud->system, ud->title, NULL, false);
-      }
-      free(ud);
-      return;
-   }
-
-   /* Rename .partial to final name */
-   {
-      char final_path[PATH_MAX_LENGTH];
-      strlcpy(final_path, ud->output_path, sizeof(final_path));
-
-      {
-         char *ext = strstr(final_path, PARTIAL_EXTENSION);
-         if (ext) *ext = '\0';
-      }
-
-      if (path_is_valid(final_path))
-         filestream_delete(final_path);
-
-      if (filestream_rename(ud->output_path, final_path) != 0)
-      {
-         RARCH_ERR("[Qt] Thumbnail download finished, but file could not be renamed.\n");
-      }
-      else
-         RARCH_LOG("[Qt] Thumbnail download finished: \"%s\".\n", final_path);
-
-      if (ud->mainwindow)
-      {
-         if (ud->is_playlist_download)
-            ud->mainwindow->onPlaylistThumbnailDownloadFinishedInternal(
-                  ud->system, ud->title, final_path, true);
-         else
-            ud->mainwindow->onSingleThumbnailDownloadFinishedInternal(
-                  ud->system, ud->title, final_path, true);
-      }
-   }
-
-   free(ud);
-}
-#endif
+/* Thumbnail downloads. URLs, .partial handling, the pack extraction
+ * and the file replacement rules are the companion core's
+ * (companion_core_thumbnail_download / _pack_download); Qt keeps the
+ * queues, counters and progress dialogs. Results arrive through the
+ * driver's callback table as onCoreThumbnailDownloaded /
+ * onCoreThumbnailPackFinished. */
 
 /* ---- Thumbnail Pack Download ---- */
 
 void MainWindow::onThumbnailPackDownloadCanceled()
 {
-   if (m_currentHttpTask)
-   {
-      task_set_flags(m_currentHttpTask,
-            RETRO_TASK_FLG_CANCELLED, true);
-      m_currentHttpTask = NULL;
-   }
+   companion_core_download_cancel(ui_companion_qt_core());
 }
 
 void MainWindow::downloadAllThumbnails(QString system, QUrl url)
 {
-#ifdef HAVE_NETWORKING
-   QString urlString;
-   QByteArray urlArray;
-   QByteArray fileNameArray;
-   settings_t *settings = config_get_ptr();
-   qt_download_userdata_t *ud = NULL;
-   const char *urlData  = NULL;
+   QByteArray systemArray = system.toUtf8();
 
-   if (!settings)
-      return;
+   (void)url; /* the server layout is the core's */
 
-   urlString = QString(THUMBNAILPACK_URL_HEADER)
-      + system
-      + THUMBNAILPACK_EXTENSION;
-
-   if (url.isEmpty())
-      url = urlString;
-
-   urlArray = url.toEncoded();
-   urlData  = urlArray.constData();
-
-   ud = (qt_download_userdata_t*)calloc(1, sizeof(*ud));
-   if (!ud)
-      return;
-
-   ud->mainwindow = this;
-   strlcpy(ud->system, system.toUtf8().constData(), sizeof(ud->system));
-
+   if (!companion_core_thumbnail_pack_download(ui_companion_qt_core(),
+            systemArray.constData()))
    {
-      const char *path_dir_thumbnails = settings->paths.directory_thumbnails;
-      QString fileName = QString(path_dir_thumbnails)
-         + "/" + system + THUMBNAILPACK_EXTENSION + PARTIAL_EXTENSION;
-
-      fileNameArray = fileName.toUtf8();
-
-      /* Ensure directory exists */
-      path_mkdir(path_dir_thumbnails);
-
-      strlcpy(ud->output_path,
-            fileNameArray.constData(),
-            sizeof(ud->output_path));
+      RARCH_ERR("[Qt] Failed to start thumbnail pack download.\n");
+      return;
    }
-
-   RARCH_LOG("[Qt] Starting thumbnail pack download...\n");
-   RARCH_LOG("[Qt] Downloading URL \"%s\"\n", urlData);
 
    m_thumbnailPackDownloadProgressDialog->setWindowModality(Qt::NonModal);
    m_thumbnailPackDownloadProgressDialog->setMinimumDuration(0);
-   m_thumbnailPackDownloadProgressDialog->setRange(0, 100);
+   m_thumbnailPackDownloadProgressDialog->setRange(0, 0);
    m_thumbnailPackDownloadProgressDialog->setAutoClose(true);
    m_thumbnailPackDownloadProgressDialog->setAutoReset(true);
    m_thumbnailPackDownloadProgressDialog->setValue(0);
@@ -5104,56 +4854,49 @@ void MainWindow::downloadAllThumbnails(QString system, QUrl url)
          QString(msg_hash_to_str(MSG_DOWNLOADING)) + "...");
    m_thumbnailPackDownloadProgressDialog->setCancelButtonText(tr("Cancel"));
    m_thumbnailPackDownloadProgressDialog->show();
-
-   m_currentHttpTask = (retro_task_t*)task_push_http_transfer_with_user_agent(
-         urlData, true, NULL, USER_AGENT,
-         cb_http_thumbnail_pack, ud);
-
-   if (!m_currentHttpTask)
-   {
-      free(ud);
-      m_thumbnailPackDownloadProgressDialog->cancel();
-      RARCH_ERR("[Qt] Failed to start HTTP task for thumbnail pack.\n");
-   }
-#else
-   (void)system;
-   (void)url;
-   RARCH_LOG("[Qt] Thumbnail pack download unavailable: built without networking.\n");
-#endif
 }
 
-void MainWindow::onThumbnailPackExtractFinished(bool success)
+void MainWindow::onCoreThumbnailPackFinished(int result)
 {
-   m_updateProgressDialog->cancel();
+   m_thumbnailPackDownloadProgressDialog->cancel();
 
-   if (!success)
+   switch ((enum companion_download_result)result)
    {
-      RARCH_ERR("[Qt] Thumbnail pack extraction failed.\n");
-      emit showErrorMessageDeferred(msg_hash_to_str(MSG_DECOMPRESSION_FAILED));
-      return;
+      case COMPANION_DL_OK:
+         RARCH_LOG("[Qt] Thumbnail pack extracted successfully.\n");
+         emit showInfoMessageDeferred(msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY));
+         updateVisibleItems();
+         emit itemChanged(); /* reload thumbnail image */
+         return;
+      case COMPANION_DL_ERR_NETWORK:
+         emit showErrorMessageDeferred(msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR));
+         return;
+      case COMPANION_DL_ERR_RENAME:
+         emit showErrorMessageDeferred(msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE));
+         return;
+      case COMPANION_DL_ERR_DELETE:
+         emit showErrorMessageDeferred(msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE));
+         return;
+      case COMPANION_DL_ERR_ARCHIVE_EMPTY:
+         emit showErrorMessageDeferred("Error: Archive is empty.");
+         return;
+      case COMPANION_DL_ERR_EXTRACT:
+      case COMPANION_DL_ERR_WRITE:
+      default:
+         emit showErrorMessageDeferred(msg_hash_to_str(MSG_DECOMPRESSION_FAILED));
+         return;
    }
-
-   RARCH_LOG("[Qt] Thumbnail pack extracted successfully.\n");
-
-   emit showInfoMessageDeferred(msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY));
-
-   updateVisibleItems();
-
-   /* Reload thumbnail image */
-   emit itemChanged();
 }
 
 /* ---- Single Thumbnail Download ---- */
 
 void MainWindow::onThumbnailDownloadCanceled()
 {
-   if (m_currentHttpTask)
-   {
-      task_set_flags(m_currentHttpTask,
-            RETRO_TASK_FLG_CANCELLED, true);
-      m_currentHttpTask = NULL;
-   }
+   companion_core_download_cancel(ui_companion_qt_core());
    m_pendingThumbnailDownloadTypes.clear();
 }
 
@@ -5162,15 +4905,20 @@ void MainWindow::onDownloadThumbnail(QString system, QString title)
    downloadThumbnail(system, title);
 }
 
-void MainWindow::onSingleThumbnailDownloadFinishedInternal(
-      const char *system, const char *title, const char *final_path, bool success)
+/* companion core: a thumbnail transfer ended. */
+void MainWindow::onCoreThumbnailDownloaded(QString system, QString title,
+      QString path, bool success)
 {
-   QString systemStr(system ? system : "");
-   QString titleStr(title ? title : "");
+   if (m_downloadingPlaylistThumbnails)
+      onPlaylistThumbnailDownloadFinishedInternal(path, success);
+   else
+      onSingleThumbnailDownloadFinishedInternal(system, title, path, success);
+}
 
-   m_currentHttpTask = NULL;
-
-   if (success && final_path)
+void MainWindow::onSingleThumbnailDownloadFinishedInternal(
+      QString system, QString title, QString path, bool success)
+{
+   if (success && !path.isEmpty())
    {
       /* Force reload of current item's thumbnail */
       QModelIndex index = getCurrentContentIndex();
@@ -5188,67 +4936,39 @@ void MainWindow::onSingleThumbnailDownloadFinishedInternal(
       /* Defer next download to let Qt event loop process */
       QMetaObject::invokeMethod(this, "onDownloadThumbnail",
             Qt::QueuedConnection,
-            Q_ARG(QString, systemStr),
-            Q_ARG(QString, titleStr));
+            Q_ARG(QString, system),
+            Q_ARG(QString, title));
    }
    else
-   {
       m_thumbnailDownloadProgressDialog->cancel();
-   }
 }
 
 void MainWindow::downloadThumbnail(QString system, QString title, QUrl url)
 {
-#ifdef HAVE_NETWORKING
-   QString urlString;
    QString downloadType;
-   QByteArray urlArray;
-   QByteArray fileNameArray;
-   const char *urlData       = NULL;
-   settings_t *settings      = config_get_ptr();
-   qt_download_userdata_t *ud = NULL;
+   QByteArray systemArray, titleArray, typeArray;
 
-   if (!settings || m_pendingThumbnailDownloadTypes.isEmpty())
+   (void)url;
+
+   if (m_pendingThumbnailDownloadTypes.isEmpty())
       return;
 
-   title        = scrub_qstring(title);
    downloadType = m_pendingThumbnailDownloadTypes.takeFirst();
-   urlString    = QString(THUMBNAIL_URL_HEADER)
-      + system + "/" + downloadType + "/" + title + THUMBNAIL_IMAGE_EXTENSION;
+   systemArray  = system.toUtf8();
+   titleArray   = title.toUtf8();
+   typeArray    = downloadType.toUtf8();
 
-   if (url.isEmpty())
-      url = urlString;
+   m_downloadingPlaylistThumbnails = false;
 
-   urlArray = url.toEncoded();
-   urlData  = urlArray.constData();
-
-   ud = (qt_download_userdata_t*)calloc(1, sizeof(*ud));
-   if (!ud)
-      return;
-
-   ud->mainwindow = this;
-   ud->is_playlist_download = false;
-   strlcpy(ud->system, system.toUtf8().constData(), sizeof(ud->system));
-   strlcpy(ud->title, title.toUtf8().constData(), sizeof(ud->title));
-   strlcpy(ud->download_type, downloadType.toUtf8().constData(),
-         sizeof(ud->download_type));
-
+   if (!companion_core_thumbnail_download(ui_companion_qt_core(),
+            systemArray.constData(), titleArray.constData(),
+            typeArray.constData()))
    {
-      const char *path_dir_thumbnails = settings->paths.directory_thumbnails;
-      QString dirString = QString(path_dir_thumbnails) + "/" + system + "/" + downloadType;
-      QString fileName  = dirString + "/" + title + THUMBNAIL_IMAGE_EXTENSION + PARTIAL_EXTENSION;
-
-      fileNameArray = fileName.toUtf8();
-
-      path_mkdir(dirString.toUtf8().constData());
-
-      strlcpy(ud->output_path,
-            fileNameArray.constData(),
-            sizeof(ud->output_path));
+      RARCH_ERR("[Qt] Failed to start thumbnail download.\n");
+      m_pendingThumbnailDownloadTypes.clear();
+      m_thumbnailDownloadProgressDialog->cancel();
+      return;
    }
-
-   RARCH_LOG("[Qt] Starting thumbnail download...\n");
-   RARCH_LOG("[Qt] Downloading URL %s\n", urlData);
 
    m_thumbnailDownloadProgressDialog->setWindowModality(Qt::NonModal);
    m_thumbnailDownloadProgressDialog->setMinimumDuration(0);
@@ -5260,24 +4980,6 @@ void MainWindow::downloadThumbnail(QString system, QString title, QUrl url)
          QString(msg_hash_to_str(MSG_DOWNLOADING)) + "...");
    m_thumbnailDownloadProgressDialog->setCancelButtonText(tr("Cancel"));
    m_thumbnailDownloadProgressDialog->show();
-
-   m_currentHttpTask = (retro_task_t*)task_push_http_transfer_with_user_agent(
-         urlData, true, NULL, USER_AGENT,
-         cb_http_thumbnail, ud);
-
-   if (!m_currentHttpTask)
-   {
-      free(ud);
-      m_thumbnailDownloadProgressDialog->cancel();
-      RARCH_ERR("[Qt] Failed to start HTTP task for thumbnail.\n");
-   }
-#else
-   (void)system;
-   (void)title;
-   (void)url;
-   m_pendingThumbnailDownloadTypes.clear();
-   RARCH_LOG("[Qt] Thumbnail download unavailable: built without networking.\n");
-#endif
 }
 
 /* ---- Playlist Thumbnail Download ---- */
@@ -5285,25 +4987,19 @@ void MainWindow::downloadThumbnail(QString system, QString title, QUrl url)
 void MainWindow::onPlaylistThumbnailDownloadCanceled()
 {
    m_playlistThumbnailDownloadWasCanceled = true;
-   if (m_currentHttpTask)
-   {
-      task_set_flags(m_currentHttpTask,
-            RETRO_TASK_FLG_CANCELLED, true);
-      m_currentHttpTask = NULL;
-   }
+   m_downloadingPlaylistThumbnails        = false;
+   companion_core_download_cancel(ui_companion_qt_core());
    m_pendingPlaylistThumbnails.clear();
 }
 
 void MainWindow::onPlaylistThumbnailDownloadFinishedInternal(
-      const char *system, const char *title, const char *final_path, bool success)
+      QString path, bool success)
 {
-   m_currentHttpTask = NULL;
-
    if (success)
    {
       m_downloadedThumbnails++;
-      if (final_path)
-         m_playlistModel->reloadThumbnailPath(QString(final_path));
+      if (!path.isEmpty())
+         m_playlistModel->reloadThumbnailPath(path);
    }
    else
       m_failedThumbnails++;
@@ -5334,6 +5030,7 @@ void MainWindow::onPlaylistThumbnailDownloadFinishedInternal(
    }
    else
    {
+      m_downloadingPlaylistThumbnails = false;
       m_playlistThumbnailDownloadProgressDialog->cancel();
       /* Force reload of current item's thumbnail */
       QModelIndex index = getCurrentContentIndex();
@@ -5349,105 +5046,42 @@ void MainWindow::onPlaylistThumbnailDownloadFinishedInternal(
 void MainWindow::downloadNextPlaylistThumbnail(
       QString system, QString title, QString type, QUrl url)
 {
-#ifdef HAVE_NETWORKING
-   QString urlString;
-   QByteArray urlArray;
-   QByteArray fileNameArray;
-   const char *urlData       = NULL;
-   settings_t *settings      = config_get_ptr();
-   qt_download_userdata_t *ud = NULL;
+   QByteArray systemArray = system.toUtf8();
+   QByteArray titleArray  = title.toUtf8();
+   QByteArray typeArray   = type.toUtf8();
 
-   if (!settings)
-      return;
-
-   title = scrub_qstring(title);
-
-   urlString = QString(THUMBNAIL_URL_HEADER)
-      + system + "/" + type + "/" + title + THUMBNAIL_IMAGE_EXTENSION;
-
-   if (url.isEmpty())
-      url = urlString;
-
-   urlArray = url.toEncoded();
-   urlData  = urlArray.constData();
-
-   ud = (qt_download_userdata_t*)calloc(1, sizeof(*ud));
-   if (!ud)
-   {
-      m_failedThumbnails++;
-      return;
-   }
-
-   ud->mainwindow = this;
-   ud->is_playlist_download = true;
-   strlcpy(ud->system, system.toUtf8().constData(), sizeof(ud->system));
-   strlcpy(ud->title, title.toUtf8().constData(), sizeof(ud->title));
-   strlcpy(ud->download_type, type.toUtf8().constData(),
-         sizeof(ud->download_type));
-
-   {
-      const char *path_dir_thumbnails = settings->paths.directory_thumbnails;
-      QString dirString = QString(path_dir_thumbnails)
-         + "/" + system + "/" + type;
-
-      QString fileName  = dirString + "/" + title
-         + THUMBNAIL_IMAGE_EXTENSION + PARTIAL_EXTENSION;
-
-      fileNameArray = fileName.toUtf8();
-
-      /* Create all thumbnail type dirs */
-      path_mkdir((QString(path_dir_thumbnails)
-               + "/" + system + "/" + THUMBNAIL_BOXART).toUtf8().constData());
-      path_mkdir((QString(path_dir_thumbnails)
-               + "/" + system + "/" + THUMBNAIL_SCREENSHOT).toUtf8().constData());
-      path_mkdir((QString(path_dir_thumbnails)
-               + "/" + system + "/" + THUMBNAIL_TITLE).toUtf8().constData());
-      path_mkdir((QString(path_dir_thumbnails)
-               + "/" + system + "/" + THUMBNAIL_LOGO).toUtf8().constData());
-
-      strlcpy(ud->output_path,
-            fileNameArray.constData(),
-            sizeof(ud->output_path));
-   }
-
-   m_currentHttpTask = (retro_task_t*)task_push_http_transfer_with_user_agent(
-         urlData, true, NULL, USER_AGENT,
-         cb_http_thumbnail, ud);
-
-   if (!m_currentHttpTask)
-   {
-      free(ud);
-      m_failedThumbnails++;
-
-      if (m_pendingPlaylistThumbnails.count() > 0)
-      {
-         QHash<QString, QString> nextThumbnail = m_pendingPlaylistThumbnails.takeAt(0);
-         downloadNextPlaylistThumbnail(
-               nextThumbnail.value("db_name"),
-               nextThumbnail.value("label_noext"),
-               nextThumbnail.value("type"));
-      }
-      else
-         m_playlistThumbnailDownloadProgressDialog->cancel();
-   }
-#else
-   (void)system;
-   (void)title;
-   (void)type;
    (void)url;
-   m_pendingPlaylistThumbnails.clear();
-   m_playlistThumbnailDownloadProgressDialog->cancel();
-   RARCH_LOG("[Qt] Playlist thumbnail download unavailable: built without networking.\n");
-#endif
+
+   /* Skip transfers that cannot start and move on down the queue; the
+    * core reports every one it does start. */
+   while (!companion_core_thumbnail_download(ui_companion_qt_core(),
+            systemArray.constData(), titleArray.constData(),
+            typeArray.constData()))
+   {
+      m_failedThumbnails++;
+
+      if (m_pendingPlaylistThumbnails.count() == 0)
+      {
+         m_downloadingPlaylistThumbnails = false;
+         m_playlistThumbnailDownloadProgressDialog->cancel();
+         return;
+      }
+
+      {
+         QHash<QString, QString> next = m_pendingPlaylistThumbnails.takeAt(0);
+         systemArray = next.value("db_name").toUtf8();
+         titleArray  = next.value("label_noext").toUtf8();
+         typeArray   = next.value("type").toUtf8();
+      }
+   }
 }
 
 void MainWindow::downloadPlaylistThumbnails(QString playlistPath)
 {
    int i, count;
    QFile playlistFile(playlistPath);
-   settings_t *settings = config_get_ptr();
 
-   if (!settings || !playlistFile.exists())
+   if (!playlistFile.exists())
       return;
 
    m_pendingPlaylistThumbnails.clear();
@@ -5500,6 +5134,7 @@ void MainWindow::downloadPlaylistThumbnails(QString playlistPath)
    m_playlistThumbnailDownloadProgressDialog->setCancelButtonText(tr("Cancel"));
    m_playlistThumbnailDownloadProgressDialog->show();
 
+   m_downloadingPlaylistThumbnails = true;
    {
       QHash<QString, QString> firstThumbnail =
          m_pendingPlaylistThumbnails.takeAt(0);
