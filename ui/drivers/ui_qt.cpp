@@ -3628,6 +3628,7 @@ void MainWindow::onCurrentListItemChanged(
 }
 
 QTableView* MainWindow::fileTableView()       { return m_fileTableView; }
+PlaylistModel* MainWindow::playlistModel()    { return m_playlistModel; }
 QStackedWidget* MainWindow::centralWidget()   { return m_centralWidget; }
 FileDropWidget* MainWindow::playlistViews()   { return m_playlistViews; }
 QWidget* MainWindow::playlistViewsAndFooter() {return m_playlistViewsAndFooter;}
