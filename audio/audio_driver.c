@@ -894,6 +894,10 @@ static void audio_driver_sink_update(audio_driver_state_t *audio_st,
       }
       audio_st->sink_baseline_start = 0;
       audio_st->sink_applied        = 0;
+      /* The statistics overlay prints the Sink and Source lines while
+       * a rate is known; with the option off there is none. */
+      audio_st->sink_rate_hz        = 0.0;
+      audio_st->sink_source_hz      = 0.0;
       return;
    }
 
