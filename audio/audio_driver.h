@@ -499,6 +499,10 @@ typedef struct
     * ratio. Separate from avg_flush_delta, which averages wall-clock
     * intervals rather than frame counts. */
    double                stretch_arrival_avg;
+   /* The same speed estimate as audio_driver_fastforward_ratio_mult()'s
+    * return, but clamped to the range the stretcher can synthesise rather
+    * than to the resampler's buffer-sizing ceiling. */
+   double                stretch_speed_mult;
    /* Output frames the device is owed but has not been given, carried across
     * flushes. A read that comes up short must return its deficit here or the
     * output rate settles below real time and never recovers. */
