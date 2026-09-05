@@ -132,6 +132,10 @@
 #define RGUI_SYMBOL_WIDTH_STRIDE  (RGUI_SYMBOL_WIDTH + 1)
 #define RGUI_SYMBOL_HEIGHT_STRIDE (RGUI_SYMBOL_HEIGHT + 1)
 
+/* When the mouse wheel moves, this is the number of rows that
+ * that will be scrolled. */
+#define RGUI_WHEEL_SCROLL_ROWS 3
+
 enum rgui_playlist_mainmenu_selection
 {
    RGUI_MAINMENU_HISTORY = 0,
@@ -349,6 +353,9 @@ typedef struct
    uint32_t thumbnail_queue_size;
    uint32_t left_thumbnail_queue_size;
    uint32_t flags;
+   /* Pixel offset of the list, term rows * font_height_stride;
+    * int16_t overflows on playlists past a few thousand entries. */
+   int32_t scroll_y;
    int8_t gfx_thumbnails_prev;
 
    rgui_particle_t particles[RGUI_NUM_PARTICLES]; /* float alignment */
@@ -358,7 +365,6 @@ typedef struct
    size_t playlist_selection_ptr;
    size_t playlist_selection[NAME_MAX_LENGTH];
    size_t playlist_mainmenu_selection[RGUI_MAINMENU_LAST]; /* History + Favorites */
-   int16_t scroll_y;
    rgui_colors_t colors;   /* int16_t alignment */
 
    struct scaler_ctx image_scaler;
@@ -5700,6 +5706,43 @@ static bool gfx_thumbnail_get_label(
    return true;
 }
 
+/*
+ * Moves the list by whole rows while keeping the selection the
+ * same.
+ * Returns true whenever the list is what the wheel drives, even
+ * where it has nowhere to go, so that a notch never steps the
+ * selection. False falls back to that step. */
+static bool rgui_wheel_scroll(void *data, int notches)
+{
+   int start;
+   int bottom;
+   size_t entries_end;
+   rgui_t *rgui = (rgui_t*)data;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list = menu_st->entries.list;
+
+   if (!rgui || !menu_list)
+      return false;
+
+   /* A fullscreen thumbnail hides the list, and the wheel is
+    * better spent stepping through the playlist behind it. */
+   if (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
+      return false;
+
+   entries_end = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
+   bottom = (int)entries_end - (int)rgui->term_layout.height;
+   start = (int)menu_st->entries.begin + (notches * RGUI_WHEEL_SCROLL_ROWS);
+   if (start > bottom)
+      start = bottom;
+   if (start < 0)
+      start = 0;
+
+   menu_st->entries.begin = (size_t)start;
+   rgui->scroll_y = start * (int32_t)rgui->font_height_stride;
+   rgui->flags |= RGUI_FLAG_FORCE_REDRAW;
+   return true;
+}
+
 static void rgui_render(void *data, unsigned width, unsigned height,
       bool is_idle)
 {
@@ -5861,7 +5904,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
       if (     (rgui->pointer.flags & MENU_INP_PTR_FLG_DRAGGED)
             && (bottom > 0))
       {
-         int16_t scroll_y_max   = bottom * rgui->font_height_stride;
+         int32_t scroll_y_max   = bottom * (int32_t)rgui->font_height_stride;
          rgui->scroll_y        += -1 * rgui->pointer.dy;
          if (rgui->scroll_y < 0)
             rgui->scroll_y      = 0;
@@ -9195,5 +9238,6 @@ menu_ctx_driver_t menu_ctx_rgui = {
    rgui_update_savestate_thumbnail_image,
    NULL,                               /* pointer_down */
    rgui_pointer_up,
-   rgui_menu_entry_action
+   rgui_menu_entry_action,
+   rgui_wheel_scroll
 };
