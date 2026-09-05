@@ -513,6 +513,14 @@ jobs:
              && make clean all \
              && WINEDEBUG=-all timeout 300 wine ./display_servers_win32_live_test.exe)
           echo "[pass] display_servers_win32_live_test (Wine)"
+          # The vendor timing paths against stand-ins: a mock
+          # atiadlxx.dll that re-plugs the monitor after a forced set,
+          # a scratch HKLM key for the ATI legacy registry layout, a
+          # TPShidden window answering PowerStrip's messages.
+          (cd samples/gfx/display_servers_win32_vendor \
+             && make clean all \
+             && WINEDEBUG=-all timeout 300 wine ./display_servers_win32_vendor_test.exe)
+          echo "[pass] display_servers_win32_vendor_test (Wine)"
           # The server must be back on its desktop mode with nothing
           # generated left behind.
           xrandr | head -3

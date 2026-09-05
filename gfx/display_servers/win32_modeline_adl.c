@@ -529,7 +529,10 @@ static bool adl_flush(void *ctx)
 
    if (c->refresh_required && c->have_last)
    {
-      /* Re-issue the last override with the list refresh bit */
+      /* Re-issue the last override with the list refresh bit; the
+       * driver re-plugs the monitor in response, so the resync is
+       * armed before the call and waited for after it */
+      win32_modeline_resync_arm(c->resync);
       if (c->ADL2_Display_ModeTimingOverride_Set(c->m_adl, c->m_adapter_index,
                c->m_display_index, &c->last_override, 1) != ADL_OK)
          ok = false;

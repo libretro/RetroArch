@@ -135,6 +135,8 @@ static void resync_thread(void *data)
 
    r->hwnd = CreateWindowExA(0, "ra_modeline_resync", NULL, WS_POPUP,
          CW_USEDEFAULT, CW_USEDEFAULT, 640, 480, NULL, NULL, hinst, NULL);
+   if (!r->hwnd)
+      RARCH_ERR("[Resync] Could not create the notification window\n");
 
    memset(&filter, 0, sizeof(filter));
    filter.dbcc_size       = sizeof(filter);
@@ -213,6 +215,20 @@ void win32_modeline_resync_free(win32_modeline_resync_t *r)
    free(r);
 }
 
+void win32_modeline_resync_arm(win32_modeline_resync_t *r)
+{
+#ifdef HAVE_THREADS
+   if (!r || !r->thread)
+      return;
+   slock_lock(r->lock);
+   r->notified_arrival = false;
+   r->notified_nodes   = false;
+   slock_unlock(r->lock);
+#else
+   (void)r;
+#endif
+}
+
 void win32_modeline_resync_wait(win32_modeline_resync_t *r)
 {
 #ifdef HAVE_THREADS
@@ -225,8 +241,6 @@ void win32_modeline_resync_wait(win32_modeline_resync_t *r)
    start = cpu_features_get_time_usec();
    now   = start;
    slock_lock(r->lock);
-   r->notified_arrival = false;
-   r->notified_nodes   = false;
    while (!(r->notified_arrival && r->notified_nodes))
    {
       int64_t left = limit_us - (now - start);
@@ -239,6 +253,9 @@ void win32_modeline_resync_wait(win32_modeline_resync_t *r)
       scond_wait_timeout(r->cond, r->lock, left);
       now = cpu_features_get_time_usec();
    }
+   /* Consumed; the next arm/wait pair starts clean */
+   r->notified_arrival = false;
+   r->notified_nodes   = false;
    slock_unlock(r->lock);
    RARCH_DBG("[Resync] Resync time elapsed %d ms\n",
          (int)((now - start) / 1000));

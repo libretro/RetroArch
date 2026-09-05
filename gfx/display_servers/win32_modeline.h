@@ -68,10 +68,13 @@ bool win32_modeline_ati_is_legacy(int vendor, int device);
 
 /* Monitor resync: after a timing-table refresh the display driver
  * re-plugs the monitor; the ADL path waits for the device
- * notifications before touching the mode again. */
+ * notifications before touching the mode again. arm() before the
+ * call that triggers the re-plug, wait() after it: a notification
+ * that lands between the two is kept, not lost. */
 typedef struct win32_modeline_resync win32_modeline_resync_t;
 win32_modeline_resync_t *win32_modeline_resync_new(void);
 void win32_modeline_resync_free(win32_modeline_resync_t *r);
+void win32_modeline_resync_arm(win32_modeline_resync_t *r);
 void win32_modeline_resync_wait(win32_modeline_resync_t *r);
 
 RETRO_END_DECLS
