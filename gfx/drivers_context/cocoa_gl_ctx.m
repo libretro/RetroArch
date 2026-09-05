@@ -550,7 +550,24 @@ static void cocoa_gl_gfx_ctx_set_video_mode_mainthread(void *userdata)
           * and both statics are already nil here; guard defensively so an
           * MRR build does not leak the previous +1 if that invariant ever
           * breaks (e.g. a future caller that re-inits without tearing
-          * down first).  Safe when already nil under both ARC and MRR. */
+          * down first).  Safe when already nil under both ARC and MRR.
+          *
+          * On macOS this guard is NOT always a no-op: gl2_init() calls
+          * -set_video_mode twice back-to-back as a deliberate workaround
+          * for a separate, poorly-understood issue (see the "very
+          * annoying issue" comment in gl2.c), so this can genuinely run
+          * with a live g_ctx/g_hw_ctx from the first call - one that was
+          * just -setView:'d onto the real, on-screen window and made the
+          * current context a moment ago. Releasing it with only a plain
+          * RELEASE (no -clearCurrentContext / -clearDrawable first, the
+          * teardown -destroy itself always does) can drop the last
+          * reference while WindowServer's surface bookkeeping for that
+          * view still considers it live, corrupting state the next
+          * context's first real frame then crashes on
+          * (EXC_BAD_ACCESS in SLSFlushSurfaceWithOptionsAndIndex). */
+         if ([NSOpenGLContext currentContext] == g_ctx)
+            [GLContextClass clearCurrentContext];
+         [g_ctx clearDrawable];
          RELEASE(g_ctx);
          RELEASE(g_hw_ctx);
          g_hw_ctx       = [[NSOpenGLContext alloc] initWithFormat:fmt shareContext:nil];
@@ -558,6 +575,9 @@ static void cocoa_gl_gfx_ctx_set_video_mode_mainthread(void *userdata)
       }
       else
       {
+         if ([NSOpenGLContext currentContext] == g_ctx)
+            [GLContextClass clearCurrentContext];
+         [g_ctx clearDrawable];
          RELEASE(g_ctx);
          g_ctx          = [[NSOpenGLContext alloc] initWithFormat:fmt shareContext:nil];
       }
