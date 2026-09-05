@@ -55,7 +55,8 @@ static size_t logShaccCg(const SceShaccCgCompileOutput *output, char *shaderLog)
     return strlen(shaderLog);
 }
 
-static SceShaccCgSourceFile *openFile_callback(const char *filename, const SceShaccCgSourceLocation *includedFrom, const SceShaccCgCompileOptions *compileOptions, ScePVoid userData, const char **errorString)
+static SceShaccCgSourceFile *openFile_callback(const char *filename, const SceShaccCgSourceLocation *includedFrom,
+    const SceShaccCgCompileOptions *compileOptions, const char **errorString)
 {
     return &source;
 }
