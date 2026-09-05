@@ -849,13 +849,11 @@ if [ "$HAVE_GLSLANG" != no ]; then
    fi
 fi
 
-# The modeline engine is C89 and needs no extra libraries; the old
-# CRTSWITCHRES switch still turns it off.
+# The modeline engine is C89 with no libraries of its own, so it is on
+# unless turned off; --disable-crtswitchres, the old name, still turns
+# it off, and the alias follows the real switch either way.
 if [ "$HAVE_CRTSWITCHRES" = no ]; then
    HAVE_MODELINE=no
-fi
-if [ "$HAVE_MODELINE" != no ]; then
-   HAVE_MODELINE=yes
 fi
 HAVE_CRTSWITCHRES="$HAVE_MODELINE"
 
