@@ -132,6 +132,10 @@
 #define RGUI_SYMBOL_WIDTH_STRIDE  (RGUI_SYMBOL_WIDTH + 1)
 #define RGUI_SYMBOL_HEIGHT_STRIDE (RGUI_SYMBOL_HEIGHT + 1)
 
+/* When the mouse wheel moves, this is the number of rows that
+ * that will be scrolled. */
+#define RGUI_WHEEL_SCROLL_ROWS 3
+
 enum rgui_playlist_mainmenu_selection
 {
    RGUI_MAINMENU_HISTORY = 0,
@@ -5700,6 +5704,49 @@ static bool gfx_thumbnail_get_label(
    return true;
 }
 
+/*
+ * Moves the list by whole rows while keeping the selection the
+ * same.
+ * Returns true when the list was moved, false to let the notch
+ * fall back to stepping the selection. */
+static bool rgui_wheel_scroll(void *data, int notches)
+{
+   int start;
+   int bottom;
+   size_t entries_end;
+   rgui_t *rgui = (rgui_t*)data;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list = menu_st->entries.list;
+
+   if (!rgui || !menu_list)
+      return false;
+
+   /* A fullscreen thumbnail hides the list, and the wheel is
+    * better spent stepping through the playlist behind it. */
+   if (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
+      return false;
+
+   entries_end = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
+   bottom = (int)entries_end - (int)rgui->term_layout.height;
+
+   /* Everything is on screen already, so there is nothing to
+    * move. Switch the selection instead. */
+   if (bottom <= 0)
+      return false;
+
+   start = (int)menu_st->entries.begin + (notches * RGUI_WHEEL_SCROLL_ROWS);
+
+   if (start > bottom)
+      start = bottom;
+   if (start < 0)
+      start = 0;
+
+   menu_st->entries.begin = (size_t)start;
+   rgui->scroll_y = (int16_t)(start * (int)rgui->font_height_stride);
+   rgui->flags |= RGUI_FLAG_FORCE_REDRAW;
+   return true;
+}
+
 static void rgui_render(void *data, unsigned width, unsigned height,
       bool is_idle)
 {
@@ -9195,5 +9242,6 @@ menu_ctx_driver_t menu_ctx_rgui = {
    rgui_update_savestate_thumbnail_image,
    NULL,                               /* pointer_down */
    rgui_pointer_up,
-   rgui_menu_entry_action
+   rgui_menu_entry_action,
+   rgui_wheel_scroll
 };
