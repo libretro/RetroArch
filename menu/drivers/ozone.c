@@ -4408,11 +4408,6 @@ static void ozone_go_to_sidebar(ozone_handle_t *ozone,
    else
       ozone->flags               &= ~OZONE_FLAG_CURSOR_IN_SIDEBAR_OLD;
    ozone->flags                  |=  OZONE_FLAG_CURSOR_IN_SIDEBAR;
-   /* Focus moving here hides the thumbnail bar, which rewraps every
-    * entry and raises a compute. The list itself is unchanged, and
-    * a pointer leaves the selection wherever it was resting, so
-    * re-deriving the scroll from it would drag the list about. */
-   ozone->preserve_scroll_on_compute = true;
 
    /* If sublabels are enabled only for the currently selected entry,
     * recalculate geometry values to keep correct spacing and animation. */
@@ -4696,9 +4691,6 @@ static void ozone_leave_sidebar(ozone_handle_t *ozone,
    else
       ozone->flags                 &= ~OZONE_FLAG_CURSOR_IN_SIDEBAR_OLD;
    ozone->flags                    &= ~OZONE_FLAG_CURSOR_IN_SIDEBAR;
-   /* As above: the thumbnail bar comes back, the list does not
-    * change, and the view should stay where the user left it. */
-   ozone->preserve_scroll_on_compute = true;
    /* If sublabels are enabled only for the currently selected entry,
     * recalculate geometry values to keep correct spacing and animation. */
    if (menu_show_sublabels && menu_current_sel_only)
@@ -5983,15 +5975,16 @@ compute_sublabel:
       if (node)
       {
          uintptr_t tag         = (uintptr_t)selection_buf;
+         /* Same boundary ozone_render clamps drag and wheel to. */
          float bottom_boundary = (float)ozone->last_height
                - ozone->dimensions.header_height
                - ozone->dimensions.spacer_1px
-               - ozone->dimensions.footer_height;
+               - ozone->dimensions.footer_height
+               - ozone->dimensions.entry_padding_vertical * 2;
          float new_scroll      = -((float)node->position_y + anchor_offset);
 
          if (new_scroll + ozone->entries_height < bottom_boundary)
-            new_scroll = bottom_boundary - ozone->entries_height
-                  - ozone->dimensions.entry_padding_vertical * 2;
+            new_scroll = bottom_boundary - ozone->entries_height;
 
          if (new_scroll > 0.0f)
             new_scroll = 0.0f;
@@ -9792,6 +9785,10 @@ static int ozone_menu_entry_action(
     * (due to automatic on screen entry selection...) */
    size_t new_selection        = menu_st->selection_ptr;
 
+   /* An explicit action is about the selection again; a compute it
+    * raises must place the selection, not keep an old view. */
+   ozone->preserve_scroll_on_compute = false;
+
    if (new_selection != selection)
    {
       /* Selection has changed - must update
@@ -10774,8 +10771,11 @@ static void ozone_list_free(file_list_t *list, size_t a, size_t b)
 /* Distance one wheel notch moves a list. Three rows is what
  * desktops settled on, and it stays legible: a row of context is
  * left behind on every notch. */
-static float ozone_get_wheel_step(ozone_handle_t *ozone)
+static float ozone_get_wheel_step(ozone_handle_t *ozone, bool sidebar)
 {
+   if (sidebar)
+      return 3.0f * (float)(ozone->dimensions.sidebar_entry_height
+            + ozone->dimensions.sidebar_entry_padding_vertical);
    return 3.0f * (float)(ozone->dimensions.entry_height
          + ozone->dimensions.spacer_1px);
 }
@@ -10785,6 +10785,12 @@ static bool ozone_wheel_scroll(void *data, int notches)
    ozone_handle_t *ozone = (ozone_handle_t*)data;
 
    if (!ozone)
+      return false;
+
+   /* With a fullscreen thumbnail up, the wheel flips between
+    * entries behind it; that still wants MENU_ACTION_UP/DOWN. */
+   if (     (ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
+         || (ozone->flags2 & OZONE_FLAG2_WANT_FULLSCREEN_THUMBNAILS))
       return false;
 
    /* The sidebar is a list too, and drag scrolls it the same way,
@@ -10903,6 +10909,11 @@ static void ozone_render(void *data,
       ozone->selection_old = ozone->selection;
       ozone->flags        |= OZONE_FLAG_NEED_COMPUTE;
       ozone->flags        &= ~OZONE_FLAG_CURSOR_IN_SIDEBAR_OLD;
+      /* A hover changed the selection. Only the hovered entry grows a
+       * sublabel; re-deriving the scroll from it would move the list
+       * under a pointer that did not move, and undo a wheel notch. */
+      if (ozone->flags & OZONE_FLAG_CURSOR_MODE)
+         ozone->preserve_scroll_on_compute = true;
    }
 
    if (ozone->flags & OZONE_FLAG_NEED_COMPUTE)
@@ -11066,16 +11077,29 @@ static void ozone_render(void *data,
        * mouse focus from entries to sidebar (and vice versa) */
       if (ozone->pointer.type == MENU_POINTER_MOUSE)
       {
+         /* Following the pointer moves focus, not the list: the
+          * thumbnail bar comes and goes and rewraps every entry, but
+          * the selection is wherever the pointer left it, so the
+          * compute keeps the view instead of re-deriving it from the
+          * selection. Pad/keyboard transitions still re-derive. */
          if (       (pointer_in_sidebar)
                && (!(last_pointer_in_sidebar))
                && (!(ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR)))
+         {
             ozone_go_to_sidebar(ozone, ozone_collapse_sidebar, animation_tag);
+            ozone->preserve_scroll_on_compute = true;
+         }
          else if (   (!pointer_in_sidebar)
                   && (last_pointer_in_sidebar)
                   && (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR))
+         {
             if (!(ozone->flags & OZONE_FLAG_EMPTY_PLAYLIST))
+            {
                ozone_leave_sidebar(ozone, ozone_collapse_sidebar, animation_tag,
                      settings->uints.menu_remember_selection);
+               ozone->preserve_scroll_on_compute = true;
+            }
+         }
       }
       else if (ozone->pointer.type == MENU_POINTER_TOUCHSCREEN)
       {
@@ -11103,7 +11127,7 @@ static void ozone_render(void *data,
              * still be animating the list towards itself. */
             gfx_animation_kill_by_tag(&animation_tag);
             ozone->animations.scroll_y -= (float)ozone->wheel_notches
-                  * ozone_get_wheel_step(ozone);
+                  * ozone_get_wheel_step(ozone, false);
             ozone->wheel_notches        = 0;
          }
 
@@ -11129,7 +11153,7 @@ static void ozone_render(void *data,
          if (ozone->wheel_notches)
          {
             ozone->animations.scroll_y_sidebar -=
-                  (float)ozone->wheel_notches * ozone_get_wheel_step(ozone);
+                  (float)ozone->wheel_notches * ozone_get_wheel_step(ozone, true);
             ozone->wheel_notches                = 0;
          }
 
@@ -11257,8 +11281,11 @@ static void ozone_render(void *data,
                   if (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR)
                   {
                      if (!(ozone->flags & OZONE_FLAG_EMPTY_PLAYLIST))
+                     {
                         ozone_leave_sidebar(ozone, ozone_collapse_sidebar, animation_tag,
                               settings->uints.menu_remember_selection);
+                        ozone->preserve_scroll_on_compute = true;
+                     }
                   }
                   /* If this is a playlist, must update thumbnails */
                   else if (ozone->flags & OZONE_FLAG_IS_PLAYLIST)
