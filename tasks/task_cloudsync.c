@@ -27,6 +27,7 @@
 #include <time/rtime.h>
 #include <retro_atomic.h>
 #include <retro_inline.h>
+#include <retro_timers.h>
 
 #include "../configuration.h"
 #include "../file_path_special.h"
@@ -1566,6 +1567,18 @@ static bool task_cloud_sync_task_finder(retro_task_t *task, void *user_data)
 
    /* there can be only one */
    return task->handler == task_cloud_sync_task_handler;
+}
+
+void task_wait_for_cloud_sync(void)
+{
+   task_finder_data_t find_data;
+
+   find_data.func = task_cloud_sync_task_finder;
+   while (task_queue_find(&find_data))
+   {
+      task_queue_check();
+      retro_sleep(1);
+   }
 }
 
 static void task_push_cloud_sync_with_mode(int conflict_resolution)
