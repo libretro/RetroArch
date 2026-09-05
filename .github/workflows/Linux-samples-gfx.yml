@@ -58,18 +58,21 @@ jobs:
           C89="$C89 -Werror=declaration-after-statement -Wno-variadic-macros"
           C89="$C89 -D_GNU_SOURCE"
           INC="-Ilibretro-common/include -I. -Ideps"
+          # Binaries and outputs go to a scratch dir, never the tree.
+          T=$(mktemp -d)
           gcc $C89 $INC tools/modeline_gold.c \
-             libretro-common/compat/compat_strl.c -lm -o modeline_gold
-          ./modeline_gold > modeline_gold.out
-          diff -u tools/modeline_gold.ref modeline_gold.out
+             libretro-common/compat/compat_strl.c -lm -o "$T/modeline_gold"
+          "$T/modeline_gold" > "$T/modeline_gold.out"
+          diff -u tools/modeline_gold.ref "$T/modeline_gold.out"
           echo "[pass] modeline goldens (C89)"
           gcc -g -O1 -fsanitize=address,undefined -fno-sanitize-recover=all \
              -std=gnu89 -D_GNU_SOURCE $INC tools/modeline_gold.c \
-             libretro-common/compat/compat_strl.c -lm -o modeline_gold_san
+             libretro-common/compat/compat_strl.c -lm -o "$T/modeline_gold_san"
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
-             ./modeline_gold_san > modeline_gold_san.out
-          diff -u tools/modeline_gold.ref modeline_gold_san.out
+             "$T/modeline_gold_san" > "$T/modeline_gold_san.out"
+          diff -u tools/modeline_gold.ref "$T/modeline_gold_san.out"
           echo "[pass] modeline goldens (ASan/UBSan)"
+          rm -rf "$T"
           # The consumer and the X11 apply path are C89 too; the
           # full C89_BUILD covers them only after a complete build.
           DEF="-DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_MENU -DHAVE_MODELINE"
