@@ -1969,6 +1969,8 @@ void MainWindow::setupSignalConnections()
    connect(m_fileTableView, SIGNAL(doubleClicked(const QModelIndex&)), this,
          SLOT(onFileDoubleClicked(const QModelIndex&)));
 
+   connect(m_playlistModel, SIGNAL(playlistsLoaded()),
+         this, SLOT(onPlaylistModelLoaded()));
    connect(m_playlistModel, SIGNAL(dataChanged(const QModelIndex&,
                const QModelIndex&, const QVector<int>&)), this,
          SLOT(onCurrentTableItemDataChanged(const QModelIndex&,
@@ -3883,7 +3885,16 @@ void MainWindow::initContentTableWidget()
    else
       m_playlistModel->addPlaylistItems(QStringList() << path);
 
-   if (item != m_historyPlaylistsItem)
+   /* The model fills asynchronously (the companion core parses under a
+    * time budget from the runloop); sorting, counts and the initial
+    * selection happen in onPlaylistModelLoaded(). */
+}
+
+void MainWindow::onPlaylistModelLoaded()
+{
+   QListWidgetItem *item = m_listWidget->currentItem();
+
+   if (item && item != m_historyPlaylistsItem)
       m_tableView->sortByColumn(0, Qt::AscendingOrder);
    else
       m_proxyModel->sort(-1);
@@ -3892,6 +3903,10 @@ void MainWindow::initContentTableWidget()
 
    m_gridView->scrollToTop();
    m_gridView->setCurrentIndex(m_proxyModel->index(0, 0));
+
+   /* The launch-with actions depend on the current entry, which did
+    * not exist when the playlist was selected. */
+   setCoreActions();
 }
 
 void MainWindow::updateItemsCount()
@@ -4436,6 +4451,15 @@ static void ui_companion_qt_core_on_status_message(void *ud,
       win_handle->qtWindow->showStatusMessage(msg, prio, duration, flush);
 }
 
+static void ui_companion_qt_core_on_playlist_changed(void *ud)
+{
+   ui_companion_qt_t *handle  = (ui_companion_qt_t*)ud;
+   ui_window_qt_t *win_handle = NULL;
+   if (handle && (win_handle = (ui_window_qt_t*)handle->window)
+         && win_handle->qtWindow && win_handle->qtWindow->playlistModel())
+      win_handle->qtWindow->playlistModel()->onCorePlaylistChanged();
+}
+
 static void ui_companion_qt_core_on_log_message(void *ud, const char *msg)
 {
    ui_companion_qt_t *handle  = (ui_companion_qt_t*)ud;
@@ -4446,7 +4470,7 @@ static void ui_companion_qt_core_on_log_message(void *ud, const char *msg)
 
 static const companion_callbacks_t ui_companion_qt_core_callbacks = {
    NULL, /* on_playlists_changed */
-   NULL, /* on_playlist_changed */
+   ui_companion_qt_core_on_playlist_changed,
    ui_companion_qt_core_on_status_message,
    ui_companion_qt_core_on_log_message,
    NULL  /* on_notify_refresh */
@@ -5151,6 +5175,15 @@ static void ui_companion_qt_toggle(void *data, bool force)
    }
 }
 
+/* Per-frame: advance the companion core's budgeted work (playlist
+ * parses). QApplication itself is pumped via application->process_events. */
+static void ui_companion_qt_iterate(void *data)
+{
+   ui_companion_qt_t *handle = (ui_companion_qt_t*)data;
+   if (handle)
+      companion_core_iterate(handle->core, 2000);
+}
+
 static void ui_companion_qt_event_command(void *data, enum event_command cmd)
 {
    ui_companion_qt_t *handle  = (ui_companion_qt_t*)data;
@@ -5213,7 +5246,7 @@ ui_companion_driver_t ui_companion_qt = {
    ui_companion_qt_init,
    ui_companion_qt_deinit,
    ui_companion_qt_toggle,
-   NULL, /* iterate: QApplication is pumped via application->process_events */
+   ui_companion_qt_iterate,
    ui_companion_qt_event_command,
    ui_companion_qt_notify_refresh,
    ui_companion_qt_msg_queue_push,

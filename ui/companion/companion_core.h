@@ -89,8 +89,15 @@ const char *companion_core_playlist_path(companion_core_t *core, size_t i);
  * entries are available. Selecting while a load is pending aborts the
  * pending load. Returns false if @i is out of range. */
 bool companion_core_select_playlist(companion_core_t *core, size_t i);
+/* Same as companion_core_select_playlist() for an arbitrary playlist
+ * file @path (it need not be in the playlist directory). The selected
+ * index becomes the matching entry of the file list, or (size_t)-1. */
+bool companion_core_select_playlist_path(companion_core_t *core,
+      const char *path);
 /* Index of the selected playlist, or (size_t)-1 if none. */
 size_t companion_core_selected_playlist(companion_core_t *core);
+/* Path of the playlist currently selected / loading ("" if none). */
+const char *companion_core_selected_playlist_path(companion_core_t *core);
 bool companion_core_playlist_loading(companion_core_t *core);
 size_t companion_core_entry_count(companion_core_t *core);
 const struct playlist_entry *companion_core_entry(companion_core_t *core,

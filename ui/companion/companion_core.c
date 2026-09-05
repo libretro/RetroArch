@@ -58,6 +58,10 @@ struct companion_core
    playlist_parse_t *pending_parse;
    size_t selected;
 
+   /* File the selected playlist was loaded from (select_playlist_path
+    * may name a file outside the playlist directory). */
+   char selected_path[PATH_MAX_LENGTH];
+
    /* Budget for the parse step currently running. */
    retro_time_t budget_end;
 };
@@ -235,16 +239,14 @@ const char *companion_core_playlist_path(companion_core_t *core, size_t i)
 
 /* --- Selected playlist ----------------------------------------------- */
 
-bool companion_core_select_playlist(companion_core_t *core, size_t i)
+static bool companion_core_begin_playlist(companion_core_t *core,
+      const char *path, size_t index)
 {
    playlist_config_t cfg;
-   const char *path = companion_core_playlist_path(core, i);
-
-   if (!path)
-      return false;
 
    companion_core_clear_playlist(core);
-   core->selected = i;
+   core->selected = index;
+   strlcpy(core->selected_path, path, sizeof(core->selected_path));
 
    companion_core_playlist_config_init(&cfg, path);
    core->pending_parse = playlist_parse_begin(&cfg);
@@ -257,11 +259,43 @@ bool companion_core_select_playlist(companion_core_t *core, size_t i)
    return true;
 }
 
+bool companion_core_select_playlist(companion_core_t *core, size_t i)
+{
+   const char *path = companion_core_playlist_path(core, i);
+   if (!path)
+      return false;
+   return companion_core_begin_playlist(core, path, i);
+}
+
+bool companion_core_select_playlist_path(companion_core_t *core,
+      const char *path)
+{
+   size_t i, n;
+
+   if (!core || string_is_empty(path))
+      return false;
+
+   n = companion_core_playlist_count(core);
+   for (i = 0; i < n; i++)
+   {
+      if (string_is_equal(path, core->playlist_files->elems[i].data))
+         return companion_core_begin_playlist(core, path, i);
+   }
+   return companion_core_begin_playlist(core, path, COMPANION_NO_SELECTION);
+}
+
 size_t companion_core_selected_playlist(companion_core_t *core)
 {
    if (!core)
       return COMPANION_NO_SELECTION;
    return core->selected;
+}
+
+const char *companion_core_selected_playlist_path(companion_core_t *core)
+{
+   if (!core || (!core->playlist && !core->pending_parse))
+      return "";
+   return core->selected_path;
 }
 
 bool companion_core_playlist_loading(companion_core_t *core)

@@ -228,6 +228,12 @@ public:
    int rowCount(const QModelIndex &parent = QModelIndex()) const;
    int columnCount(const QModelIndex &parent = QModelIndex()) const;
    void addPlaylistItems(const QStringList &paths, bool add = false);
+   /* True while addPlaylistItems() is still waiting on the companion
+    * core's budgeted parse of one or more playlists. */
+   bool isLoadingPlaylists() const;
+   /* Companion core notification: the requested playlist finished
+    * parsing. Appends its entries and starts the next pending one. */
+   void onCorePlaylistChanged();
    void addDir(QString path, QFlags<QDir::Filter> showHidden);
    void setThumbnailType(const ThumbnailType type);
    void loadThumbnail(const QModelIndex &index);
@@ -241,12 +247,21 @@ public:
 
 signals:
    void imageLoaded(const QImage image, const QModelIndex &index, const QString &path);
+   /* Emitted once addPlaylistItems() has populated the model. */
+   void playlistsLoaded();
 
 private slots:
    void onImageLoaded(const QImage image, const QPersistentModelIndex &index, const QString &path);
 
 private:
    QVector<PlaylistEntry> m_contents;
+   /* addPlaylistItems() state: playlists still to load, and the
+    * entries collected so far (committed to m_contents in one reset). */
+   QStringList m_pendingPaths;
+   QVector<PlaylistEntry> m_pendingContents;
+   bool m_loadingPlaylists = false;
+   void appendEntriesFromCore();
+   void startNextPendingPlaylist();
    QCache<QString, QPixmap> m_cache;
    QSet<QString> m_pendingImages;
    QRegularExpression m_fileSanitizerRegex;
@@ -255,7 +270,6 @@ private:
    QString getThumbnailPath(const QModelIndex &index, QString type) const;
    QString getThumbnailPath(const PlaylistEntry &entry, QString type) const;
    QString getCurrentTypeThumbnailPath(const QModelIndex &index) const;
-   void getPlaylistItems(QString path);
 };
 
 class ThumbnailWidget : public QStackedWidget
@@ -589,6 +603,7 @@ private slots:
    void onCoreLoaded();
    void onCurrentTableItemDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
    void onCurrentListItemChanged(QListWidgetItem *current, QListWidgetItem *previous);
+   void onPlaylistModelLoaded();
    void onCurrentListItemDataChanged(QListWidgetItem *item);
    void onCurrentItemChanged(const QModelIndex &index);
    void onCurrentItemChanged(const PlaylistEntry &entry);

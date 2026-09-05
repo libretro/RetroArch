@@ -8553,50 +8553,26 @@ void MainWindow::getPlaylistFiles()
          QDir::NoDotAndDotDot | QDir::Readable | QDir::Files, QDir::Name);
 }
 
-void PlaylistModel::getPlaylistItems(QString path)
+/* Copy the companion core's currently loaded playlist into the pending
+ * contents. Everything is deep-copied into QStrings, so nothing here
+ * outlives the core's playlist object. */
+void PlaylistModel::appendEntriesFromCore()
 {
-   QByteArray pathArray;
-   const char *pathData                = NULL;
-   const char *playlistName            = NULL;
-   playlist_t *playlist                = NULL;
-   bool playlistOwned                  = false;
-   unsigned playlistSize               = 0;
-   unsigned            i               = 0;
+   companion_core_t *core   = ui_companion_qt_core();
+   const char *path         = companion_core_selected_playlist_path(core);
+   const char *playlistName = NULL;
+   size_t playlistSize      = companion_core_entry_count(core);
+   size_t i;
 
-   pathArray.append(path.toUtf8());
-   pathData              = pathArray.constData();
-   if (pathData && *pathData)
-      playlistName       = path_basename(pathData);
-
-   {
-      /* First touch of a large playlist is the grid view's hitch:
-       * the whole file parses on the UI thread.  Borrow the menu's
-       * cached playlist when it is the same file - the loop below
-       * deep-copies every field into QStrings, so nothing outlives
-       * the borrow - and parse only otherwise.
-       *
-       * The cold path stays blocking deliberately: this function
-       * must return a fully populated model to its callers, so the
-       * budgeted playlist_init_cached_deferred() the menu uses
-       * would need Qt-side continuation (a timer driving the parse
-       * plus a model reset on completion) rather than a drop-in
-       * swap.  The cache borrow (companion_core_playlist_open) already
-       * removes the common case of that cost. */
-      playlist = companion_core_playlist_open(ui_companion_qt_core(),
-            pathData, &playlistOwned);
-   }
-   if (!playlist)
-      return;
-   playlistSize          = playlist_get_size(playlist);
+   if (path && *path)
+      playlistName = path_basename(path);
 
    for (i = 0; i < playlistSize; i++)
    {
       PlaylistEntry rowEntry;
-      const struct playlist_entry *pl_row = NULL;
+      const struct playlist_entry *pl_row = companion_core_entry(core, i);
 
-      playlist_get_index(playlist, i, &pl_row);
-
-      if (!pl_row->path || !*pl_row->path)
+      if (!pl_row || !pl_row->path || !*pl_row->path)
          continue;
 
       rowEntry.path     = pl_row->path;
@@ -8634,29 +8610,61 @@ void PlaylistModel::getPlaylistItems(QString path)
          rowEntry.plName.remove(".lpl");
       }
 
-      m_contents.append(rowEntry);
+      m_pendingContents.append(rowEntry);
+   }
+}
+
+void PlaylistModel::startNextPendingPlaylist()
+{
+   while (!m_pendingPaths.isEmpty())
+   {
+      QByteArray pathArray = m_pendingPaths.takeFirst().toUtf8();
+
+      /* The parse is driven from the runloop by companion_core_iterate()
+       * under a time budget; onCorePlaylistChanged() fires when it is
+       * done. Nothing blocks here, however large the playlist. */
+      if (companion_core_select_playlist_path(ui_companion_qt_core(),
+               pathArray.constData()))
+         return;
+      /* Unreadable path: skip it and try the next one. */
    }
 
-   companion_core_playlist_release(ui_companion_qt_core(), playlist,
-         playlistOwned, false);
-   playlist = NULL;
+   /* All done: commit in a single model reset. */
+   beginResetModel();
+   m_contents          = m_pendingContents;
+   m_pendingContents.clear();
+   m_loadingPlaylists  = false;
+   endResetModel();
+
+   emit playlistsLoaded();
+}
+
+void PlaylistModel::onCorePlaylistChanged()
+{
+   if (!m_loadingPlaylists)
+      return;
+   appendEntriesFromCore();
+   startNextPendingPlaylist();
+}
+
+bool PlaylistModel::isLoadingPlaylists() const
+{
+   return m_loadingPlaylists;
 }
 
 void PlaylistModel::addPlaylistItems(const QStringList &paths, bool add)
 {
-   int i;
-
    if (paths.isEmpty())
       return;
 
-   beginResetModel();
+   /* Restarting supersedes any load still in flight: the core aborts
+    * the pending parse when a new playlist is selected, and the
+    * partially collected entries are dropped. */
+   m_pendingPaths     = paths;
+   m_pendingContents.clear();
+   m_loadingPlaylists = true;
 
-   m_contents.clear();
-
-   for (i = 0; i < paths.size(); i++)
-      getPlaylistItems(paths.at(i));
-
-   endResetModel();
+   startNextPendingPlaylist();
 }
 
 void PlaylistModel::addDir(QString path, QFlags<QDir::Filter> showHidden)
