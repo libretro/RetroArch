@@ -22,7 +22,11 @@ CFLAGS  += -Wall -std=gnu99 -g -O0 \
 
 LDLIBS  += $(SDL_LIBS) -lm
 
-OBJS := $(SOURCES:.c=.o)
+# Objects live under obj/ here, never next to the sources: the other
+# display server samples compile some of the same files with other
+# flags, and a stale object in the tree would be picked up.
+OBJS := $(addprefix obj/,$(notdir $(SOURCES:.c=.o)))
+VPATH := $(sort $(dir $(SOURCES)))
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
@@ -31,13 +35,14 @@ endif
 
 all: $(TARGET)
 
-%.o: %.c
+obj/%.o: %.c
+	@mkdir -p obj
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 clean:
-	rm -f $(TARGET) $(OBJS)
+	rm -rf $(TARGET) obj
 
 .PHONY: clean

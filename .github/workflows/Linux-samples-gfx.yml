@@ -27,6 +27,7 @@ jobs:
         run: |
           pkgs="build-essential libx11-dev libxrandr-dev libdrm-dev"
           pkgs="$pkgs xserver-xorg-core xserver-xorg-video-dummy x11-xserver-utils libsdl2-dev"
+          pkgs="$pkgs gcc-mingw-w64-x86-64 wine64"
           if dpkg -s $pkgs >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
             exit 0
@@ -480,6 +481,7 @@ jobs:
           # field, switch again, restore - and the SDL sample switches
           # a real SDL2 window among the listed modes through
           # dispserv_sdl, for the modeline path and the menu picker.
+          # The Win32 build runs after them under Wine.
           sudo Xorg :99 -config samples/gfx/display_servers_x11_live/xorg-dummy.conf \
              -logfile /tmp/xorg-dummy.log -noreset -nolisten tcp -ac \
              > /tmp/xorg-dummy.out 2>&1 &
@@ -501,6 +503,16 @@ jobs:
                 LSAN_OPTIONS=suppressions=lsan.supp \
                 timeout 120 ./display_servers_sdl_live_test)
           echo "[pass] display_servers_sdl_live_test"
+          # The Win32 server, its vendor timing paths and the engine
+          # cross-built with mingw-w64 and run under Wine on the same
+          # display: Wine backs EnumDisplaySettingsExA and
+          # ChangeDisplaySettingsExA with the server's RandR modes, so
+          # the CDS listed-mode switch is real; ADL, ATI legacy and
+          # PowerStrip are linked and must decline.
+          (cd samples/gfx/display_servers_win32_live \
+             && make clean all \
+             && WINEDEBUG=-all timeout 300 wine ./display_servers_win32_live_test.exe)
+          echo "[pass] display_servers_win32_live_test (Wine)"
           # The server must be back on its desktop mode with nothing
           # generated left behind.
           xrandr | head -3

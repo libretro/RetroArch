@@ -27,15 +27,19 @@ CFLAGS  += -Wall -std=gnu99 -g -O0 \
 
 LDLIBS  += -lXrandr -lX11 -lm
 
-OBJS := $(SOURCES:.c=.o)
+# Objects live under obj/ here, never next to the sources: the other
+# display server samples compile some of the same files with other
+# flags, and a stale object in the tree would be picked up.
+OBJS := $(addprefix obj/,$(notdir $(SOURCES:.c=.o)))
+VPATH := $(sort $(dir $(SOURCES)))
 
 # The driver and the test take the verbosity.h functions the test
 # defines, not the standalone macros; -include would rewrite the
 # prototypes. Only the engine objects get live_log.h.
 NO_MACROS := $(filter-out -include live_log.h -DMODELINE_STANDALONE,$(CFLAGS))
-$(REPO_ROOT)/gfx/display_servers/dispserv_x11.o: CFLAGS := $(NO_MACROS)
-display_servers_x11_live_test.o: CFLAGS := $(NO_MACROS)
-$(REPO_ROOT)/libretro-common/compat/compat_strl.o: CFLAGS := $(NO_MACROS)
+obj/dispserv_x11.o: CFLAGS := $(NO_MACROS)
+obj/display_servers_x11_live_test.o: CFLAGS := $(NO_MACROS)
+obj/compat_strl.o: CFLAGS := $(NO_MACROS)
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
@@ -44,13 +48,14 @@ endif
 
 all: $(TARGET)
 
-%.o: %.c
+obj/%.o: %.c
+	@mkdir -p obj
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 clean:
-	rm -f $(TARGET) $(OBJS)
+	rm -rf $(TARGET) obj
 
 .PHONY: clean
