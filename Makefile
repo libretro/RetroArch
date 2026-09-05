@@ -279,6 +279,14 @@ $(OBJDIR)/%.o: %.m
 # per-file CLANG_ENABLE_OBJC_ARC=YES build settings.  ARC is a clang
 # feature; GCC (a PowerPC cross build, Xcode 3) has no such switch and
 # builds these files under MRC through the RARCH_* ownership macros.
+#
+# metal.m compiles correctly under BOTH ARC and MRC (its ownership
+# transfers go through the RARCH_* ownership layer in libretro-common's
+# defines/cocoa_defines.h, keyed on __has_feature(objc_arc)); it has to,
+# because the griffin_objc.m unity TU inherits whatever mode the
+# enclosing Xcode configuration uses. ARC is kept for the standalone
+# object as the preferred mode: it elides the autorelease-pool traffic
+# the MRC expansion pays on the per-frame paths.
 # --version rather than -v: the latter prints the configure line, and a
 # GCC configured with CC=clang would be taken for clang.
 ifeq ($(shell $(CC) --version 2>&1 | head -n 1 | grep -c "clang"),1)

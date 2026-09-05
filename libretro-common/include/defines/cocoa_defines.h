@@ -167,7 +167,51 @@
  *
  * GCC 4.0 (Xcode 3.1) doesn't support __has_feature; polyfill to 0
  * so the MRR branch is selected (which is correct for GCC 4.0 - it
- * predates ARC entirely). */
+ * predates ARC entirely).
+ *
+ * Beyond the statement forms, the value and transfer forms below
+ * cover files whose ownership moves through expressions and plain C
+ * aggregates (the Metal driver compiles both ways: qb/make builds it
+ * ARC through a per-file flag while the griffin unity TU inherits the
+ * enclosing project's mode, and under MRR the bridge casts ARC code
+ * leans on silently compile to ownership-free plain casts):
+ *
+ *  RARCH_RETAIN(x)             +1 the value; identity under ARC.
+ *  RARCH_AUTORELEASE_R(x)      balance a +1 into the active pool and
+ *                              yield the value (identity under ARC).
+ *                              For new-family results that a
+ *                              retaining destination (strong
+ *                              property, container, bridge) is about
+ *                              to take its own reference to.
+ *  RARCH_RELEASE_NIL(x)        release an owned lvalue and nil it.
+ *  RARCH_ASSIGN(dst, src)      strong-setter semantics on an lvalue:
+ *                              retain new, release old, store.  For
+ *                              stores whose source is +0 (method
+ *                              parameters, property reads,
+ *                              autoreleased factory results such as
+ *                              -[CAMetalLayer nextDrawable]).
+ *  RARCH_BRIDGE_RETAINED(x)    object -> +1 void * handle.
+ *  RARCH_BRIDGE_TRANSFER(T, x) +1 void * handle -> object; the
+ *                              reference goes to the pool so the
+ *                              receiver stays valid for the scope.
+ *  RARCH_STRUCT_ASSIGN(x, y)   owned store into an unretained slot
+ *                              (struct members ARC cannot manage):
+ *                              retain new, release what the slot
+ *                              held, store raw.  The slot owns one
+ *                              reference until the next
+ *                              RARCH_STRUCT_ASSIGN(slot, nil).
+ *  RARCH_WEAK                  __weak under ARC; empty under MRR (a
+ *                              zeroing reference needs ARC or
+ *                              -fobjc-weak), so MRR holders must be
+ *                              nil'd manually before the referent
+ *                              dies.
+ *  RARCH_RETURN_INIT_FAILURE() bail out of a failed -init: under MRR
+ *                              the alloc'd self is released by hand
+ *                              or it leaks along with everything init
+ *                              retained before the failure; under ARC
+ *                              returning nil releases it.
+ *
+ * No line continuations in the definitions: CRLF (see above). */
 #ifndef __has_feature
 #define __has_feature(x) 0
 #endif
@@ -188,6 +232,14 @@
  * for both memory models. */
 #define RARCH_AUTORELEASEPOOL_BEGIN @autoreleasepool {
 #define RARCH_AUTORELEASEPOOL_END   }
+#define RARCH_AUTORELEASE_R(x)  (x)
+#define RARCH_RELEASE_NIL(x)    do { (x) = nil; } while (0)
+#define RARCH_ASSIGN(dst, src)  do { (dst) = (src); } while (0)
+#define RARCH_BRIDGE_RETAINED(x)     ((void *)(__bridge_retained void *)(x))
+#define RARCH_BRIDGE_TRANSFER(T, x)  ((__bridge_transfer T)(void *)(x))
+#define RARCH_WEAK              __weak
+#define RARCH_STRUCT_ASSIGN(x, y) do { NSObject *rarch_y_ = (y); if ((x) != nil) { __attribute__((unused)) NSObject *rarch_old_ = (__bridge_transfer NSObject *)(__bridge void *)(x); rarch_old_ = nil; (x) = (__bridge __typeof__(x))nil; } if (rarch_y_ != nil) (x) = (__bridge __typeof__(x))(__bridge_retained void *)rarch_y_; } while (0)
+#define RARCH_RETURN_INIT_FAILURE() do { return nil; } while (0)
 #else
 #define RARCH_UNSAFE_UNRETAINED
 #define RARCH_RETAIN(x)         [(x) retain]
@@ -204,6 +256,14 @@
  * dispatch_release(NULL) is explicitly undefined, unlike
  * [nil release] which is a defined no-op. */
 #define RARCH_DISPATCH_RELEASE(x) do { if (x) dispatch_release(x); } while (0)
+#define RARCH_AUTORELEASE_R(x)  ((__typeof__(x))[(id)(x) autorelease])
+#define RARCH_RELEASE_NIL(x)    do { [(id)(x) release]; (x) = nil; } while (0)
+#define RARCH_ASSIGN(dst, src)  do { id rarch_new_ = [(id)(src) retain]; [(id)(dst) release]; (dst) = (__typeof__(dst))rarch_new_; } while (0)
+#define RARCH_BRIDGE_RETAINED(x)     ((void *)[(id)(x) retain])
+#define RARCH_BRIDGE_TRANSFER(T, x)  ((T)[(id)(void *)(x) autorelease])
+#define RARCH_WEAK
+#define RARCH_STRUCT_ASSIGN(x, y) do { id rarch_y_ = [(id)(y) retain]; [(id)(x) release]; (x) = (__typeof__(x))rarch_y_; } while (0)
+#define RARCH_RETURN_INIT_FAILURE() do { [self release]; return nil; } while (0)
 #endif
 
 #endif

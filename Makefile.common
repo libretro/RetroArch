@@ -1688,9 +1688,11 @@ endif
 ifeq ($(HAVE_METAL), 1)
    DEFINES += -DHAVE_METAL
    LIBS += -framework Metal -framework MetalKit -framework QuartzCore
-   # Metal code (metal.m) relies on ARC. Enabled per-file via an override
-   # in the top-level Makefile, since applying -fobjc-arc globally would
-   # break the MRC-written Cocoa code (ui_cocoa.m et al.).
+   # metal.m builds under both ARC and MRC (see the M_OBJC_* ownership
+   # macros at the top of the file). The top-level Makefile still builds
+   # it with a per-file -fobjc-arc override — ARC is the preferred mode
+   # for the standalone object — but the griffin_objc.m unity TU may
+   # compile it either way depending on the Xcode configuration.
    OBJ += gfx/drivers/metal.o
 endif
 
