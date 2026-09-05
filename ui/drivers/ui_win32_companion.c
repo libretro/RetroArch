@@ -36,6 +36,8 @@
 
 #ifdef _MSC_VER
 #pragma comment( lib, "comctl32" )
+#pragma comment( lib, "shell32" )
+#pragma comment( lib, "ole32" )
 #endif
 
 #ifndef _WIN32_WINNT
@@ -48,6 +50,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <commctrl.h>
+#include <shlobj.h>
 
 #include <compat/strl.h>
 #include <compat/msvc.h>
@@ -101,6 +104,7 @@ enum
    IDM_CW_RUN,
    IDM_CW_DELETE_ENTRY,
    IDM_CW_ASSOC_DETECT,
+   IDM_CW_SCAN_DIR,
    /* IDM_CW_ASSOC_BASE + i selects installed core i as the playlist's
     * default core; keep a wide gap after it. */
    IDM_CW_ASSOC_BASE = 51000,
@@ -239,12 +243,22 @@ static void cw_on_notify_refresh(void *ud)
       companion_core_refresh_playlists(w->core);
 }
 
+static void cw_on_scan_finished(void *ud)
+{
+   ui_companion_win32_wimp_t *w = (ui_companion_win32_wimp_t*)ud;
+   if (!w)
+      return;
+   companion_core_refresh_playlists(w->core);
+   cw_status_set(w, "Scan finished.");
+}
+
 static const companion_callbacks_t cw_callbacks = {
    cw_on_playlists_changed,
    cw_on_playlist_changed,
    cw_on_status_message,
    NULL, /* on_log_message */
-   cw_on_notify_refresh
+   cw_on_notify_refresh,
+   cw_on_scan_finished
 };
 
 /* --- Window procedure ------------------------------------------------- */
@@ -314,6 +328,35 @@ static void cw_associate_core(ui_companion_win32_wimp_t *w, UINT id)
 
    companion_core_playlist_set_default_core(w->core,
          companion_core_playlist_path(w->core, sel), core_path);
+}
+
+/* SHBrowseForFolder is in shell32 on Windows 95 with the desktop update
+ * and in every later release; ANSI entry point, no BIF_NEWDIALOGSTYLE. */
+static void cw_scan_directory(ui_companion_win32_wimp_t *w)
+{
+   BROWSEINFOA bi;
+   LPITEMIDLIST pidl;
+   char dir[MAX_PATH];
+
+   memset(&bi, 0, sizeof(bi));
+   bi.hwndOwner = w->hwnd;
+   bi.lpszTitle = "Select a directory to scan for content";
+   bi.ulFlags   = BIF_RETURNONLYFSDIRS;
+
+   pidl = SHBrowseForFolderA(&bi);
+   if (!pidl)
+      return;
+
+   dir[0] = '\0';
+   if (SHGetPathFromIDListA(pidl, dir) && dir[0])
+   {
+      if (companion_core_request_scan(w->core, dir, true,
+               config_get_ptr()->bools.show_hidden_files))
+         cw_status_set(w, "Scanning...");
+      else
+         cw_status_set(w, "Scanning is not available in this build.");
+   }
+   CoTaskMemFree(pidl);
 }
 
 static void cw_context_menu(ui_companion_win32_wimp_t *w, HWND from,
@@ -436,6 +479,9 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
             case IDM_CW_REFRESH:
                companion_core_refresh_playlists(w->core);
                return 0;
+            case IDM_CW_SCAN_DIR:
+               cw_scan_directory(w);
+               return 0;
             case IDM_CW_CLOSE:
                ShowWindow(hwnd, SW_HIDE);
                return 0;
@@ -495,6 +541,8 @@ static HMENU cw_build_menu(void)
    AppendMenuA(file, MF_STRING, IDM_CW_LOAD_CORE,    "Load &Core...");
    AppendMenuA(file, MF_STRING, IDM_CW_LOAD_CONTENT, "&Load Content...");
    AppendMenuA(file, MF_STRING, IDM_CW_START_CORE,   "&Start Core");
+   AppendMenuA(file, MF_SEPARATOR, 0, NULL);
+   AppendMenuA(file, MF_STRING, IDM_CW_SCAN_DIR,     "Scan &Directory...");
    AppendMenuA(file, MF_SEPARATOR, 0, NULL);
    AppendMenuA(file, MF_STRING, IDM_CW_CLOSE,        "&Close Window");
    AppendMenuA(file, MF_STRING, IDM_CW_QUIT,         "E&xit RetroArch");

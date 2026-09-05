@@ -1056,18 +1056,17 @@ static const QPixmap getInvader(void)
    return pix;
 }
 
-#ifdef HAVE_LIBRETRODB
-static void scan_finished_handler(retro_task_t *task,
-      void *task_data, void *user_data, const char *err)
+/* companion_core on_scan_finished: the menu reset already happened in
+ * the core; only the "scan finished" confirmation is Qt's. */
+static void ui_companion_qt_core_on_scan_finished(void *ud)
 {
-   bool dont_ask              = false;
-   bool answer                = false;
-#ifdef HAVE_MENU
-   struct menu_state *menu_st = menu_state_get_ptr();
-   if (menu_st->driver_ctx->environ_cb)
-      menu_st->driver_ctx->environ_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST,
-            NULL, menu_st->userdata);
-#endif
+   bool dont_ask = false;
+   bool answer   = false;
+
+   (void)ud;
+
+   if (!ui_window.qtWindow)
+      return;
    if (!ui_window.qtWindow->settings()->value(
             "scan_finish_confirm", true).toBool())
       return;
@@ -1079,7 +1078,6 @@ static void scan_finished_handler(retro_task_t *task,
    if (answer && dont_ask)
       ui_window.qtWindow->settings()->setValue("scan_finish_confirm", false);
 }
-#endif
 
 /* https://stackoverflow.com/questions/7246622/how-to-create-a-slider-with-a-non-linear-scale */
 static double exp_scale(double input_val, double mid_val, double max_val)
@@ -2325,9 +2323,6 @@ void MainWindow::onFileBrowserTreeContextMenuRequested(const QPoint&)
    QScopedPointer<QAction> scanAction;
    QString currentDirString      = QDir::toNativeSeparators(
          m_dirModel->filePath(m_dirTree->currentIndex()));
-   settings_t *settings          = config_get_ptr();
-   const char *path_dir_playlist = settings->paths.directory_playlist;
-   const char *path_content_db   = settings->paths.path_content_database;
    QByteArray dirArray;
    const char *fullpath          = NULL;
 
@@ -2349,12 +2344,8 @@ void MainWindow::onFileBrowserTreeContextMenuRequested(const QPoint&)
    if (!(action = QMenu::exec(actions, QCursor::pos(), NULL, m_dirTree)))
       return;
 
-   task_push_dbscan(
-         path_dir_playlist,
-         path_content_db,
-         fullpath, true,
-         m_settings->value("show_hidden_files", true).toBool(),
-         scan_finished_handler);
+   companion_core_request_scan(ui_companion_qt_core(), fullpath, true,
+         m_settings->value("show_hidden_files", true).toBool());
 #endif
 }
 
@@ -4473,7 +4464,8 @@ static const companion_callbacks_t ui_companion_qt_core_callbacks = {
    ui_companion_qt_core_on_playlist_changed,
    ui_companion_qt_core_on_status_message,
    ui_companion_qt_core_on_log_message,
-   NULL  /* on_notify_refresh */
+   NULL, /* on_notify_refresh */
+   ui_companion_qt_core_on_scan_finished
 };
 
 ThumbnailWidget::ThumbnailWidget(QWidget *parent) { }

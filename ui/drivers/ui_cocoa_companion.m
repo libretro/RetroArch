@@ -25,6 +25,7 @@
  * every object stored past the current autorelease pool is created with
  * alloc/init and released with RELEASE(). */
 
+#include <objc/objc-runtime.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -98,6 +99,7 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)loadContent:(id)sender;
 - (void)deleteEntry:(id)sender;
 - (void)associateCore:(id)sender;
+- (void)scanDirectory:(id)sender;
 @end
 
 struct ui_companion_cocoa_wimp
@@ -150,12 +152,23 @@ static void cc_on_notify_refresh(void *ud)
       companion_core_refresh_playlists(w->core);
 }
 
+static void cc_on_scan_finished(void *ud)
+{
+   ui_companion_cocoa_wimp_t *w = (ui_companion_cocoa_wimp_t*)ud;
+   if (!w)
+      return;
+   companion_core_refresh_playlists(w->core);
+   if (w->controller)
+      [CC_CTRL(w) setStatus:"Scan finished."];
+}
+
 static const companion_callbacks_t cc_callbacks = {
    cc_on_playlists_changed,
    cc_on_playlist_changed,
    cc_on_status_message,
    NULL, /* on_log_message */
-   cc_on_notify_refresh
+   cc_on_notify_refresh,
+   cc_on_scan_finished
 };
 
 /* --- Controller ------------------------------------------------------- */
@@ -295,6 +308,10 @@ static const companion_callbacks_t cc_callbacks = {
       keyEquivalent:@""];
    [item setTarget:self];
    item = [menu addItemWithTitle:@"Start Core" action:@selector(startCore:)
+      keyEquivalent:@""];
+   [item setTarget:self];
+   [menu addItem:[NSMenuItem separatorItem]];
+   item = [menu addItemWithTitle:@"Scan Directory..." action:@selector(scanDirectory:)
       keyEquivalent:@""];
    [item setTarget:self];
    [menu addItem:[NSMenuItem separatorItem]];
@@ -545,6 +562,48 @@ static const companion_callbacks_t cc_callbacks = {
 {
    if (wimp)
       companion_core_request_load(wimp->core, NULL, NULL);
+}
+
+/* Same shape as the platform driver's open panel (ui_cocoa.m): the
+ * 10.6+ URL API when present, else the 10.4 selectors through
+ * objc_msgSend so a modern SDK does not see the removed declarations. */
+- (void)scanDirectory:(id)sender
+{
+   NSOpenPanel *panel;
+   NSString *path = nil;
+   NSInteger response;
+
+   if (!wimp)
+      return;
+
+   panel = [NSOpenPanel openPanel];
+   [panel setTitle:@"Select a directory to scan for content"];
+   [panel setCanChooseDirectories:YES];
+   [panel setCanChooseFiles:NO];
+   [panel setAllowsMultipleSelection:NO];
+
+   if ([panel respondsToSelector:@selector(URL)])
+   {
+      response = [panel runModal];
+      if (response == 1)
+         path = [[panel performSelector:@selector(URL)] path];
+   }
+   else
+   {
+      response = ((NSInteger (*)(id, SEL, id, id))objc_msgSend)(panel,
+            @selector(runModalForDirectory:file:), nil, nil);
+      if (response == 1)
+         path = ((id (*)(id, SEL))objc_msgSend)(panel, @selector(filename));
+   }
+
+   if (response != 1 || !path)
+      return;
+
+   if (companion_core_request_scan(wimp->core, [path UTF8String], true,
+            config_get_ptr()->bools.show_hidden_files))
+      [self setStatus:"Scanning..."];
+   else
+      [self setStatus:"Scanning is not available in this build."];
 }
 
 /* Reuse the platform driver's dialog flow via the main-menu actions

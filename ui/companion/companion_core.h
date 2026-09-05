@@ -60,6 +60,9 @@ typedef struct companion_callbacks
    void (*on_log_message)(void *ud, const char *msg);
    /* RetroArch asked the companion to refresh whatever it shows. */
    void (*on_notify_refresh)(void *ud);
+   /* A scan started with companion_core_request_scan() finished; the
+    * playlist files may have changed. */
+   void (*on_scan_finished)(void *ud);
 } companion_callbacks_t;
 
 /* Lifecycle */
@@ -139,6 +142,13 @@ size_t companion_core_playlist_default_core(companion_core_t *core,
       const char *name, char *s, size_t len);
 void companion_core_event_command(companion_core_t *core,
       enum event_command cmd);
+/* Scan @path (a directory when @directory, else a single file) against
+ * the content databases into the playlist directory, on the task
+ * queue. on_scan_finished fires when done, after the menu's horizontal
+ * list has been reset. Returns false when no scan could be started
+ * (no libretrodb in this build, or the task could not be pushed). */
+bool companion_core_request_scan(companion_core_t *core, const char *path,
+      bool directory, bool show_hidden_files);
 
 /* --- Installed cores (for "associate core" style pickers) ---------- */
 

@@ -36,6 +36,7 @@
 #include "../../file_path_special.h"
 #include "../../paths.h"
 #include "../../tasks/task_content.h"
+#include "../../tasks/tasks_internal.h"
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
 #endif
@@ -43,6 +44,12 @@
 #include "companion_core.h"
 
 #define COMPANION_NO_SELECTION ((size_t)-1)
+
+#ifdef HAVE_LIBRETRODB
+/* task_push_dbscan() carries no user data, so the requesting core is
+ * kept here. Only one desktop companion is active at a time. */
+static companion_core_t *companion_core_scan_owner = NULL;
+#endif
 
 struct companion_core
 {
@@ -138,6 +145,10 @@ void companion_core_free(companion_core_t *core)
 {
    if (!core)
       return;
+#ifdef HAVE_LIBRETRODB
+   if (companion_core_scan_owner == core)
+      companion_core_scan_owner = NULL;
+#endif
    companion_core_clear_playlist(core);
    companion_core_free_playlist_names(core);
    if (core->playlist_files)
@@ -450,6 +461,57 @@ size_t companion_core_playlist_default_core(companion_core_t *core,
 
    companion_core_playlist_release(core, playlist, owned, false);
    return strlen(s);
+}
+
+/* --- Scan -------------------------------------------------------------- */
+
+#ifdef HAVE_LIBRETRODB
+static void companion_core_scan_finished(retro_task_t *task,
+      void *task_data, void *user_data, const char *err)
+{
+   companion_core_t *core = companion_core_scan_owner;
+
+   (void)task;
+   (void)task_data;
+   (void)user_data;
+   (void)err;
+
+#ifdef HAVE_MENU
+   {
+      struct menu_state *menu_st = menu_state_get_ptr();
+      if (menu_st->driver_ctx && menu_st->driver_ctx->environ_cb)
+         menu_st->driver_ctx->environ_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST,
+               NULL, menu_st->userdata);
+   }
+#endif
+
+   if (core && core->cb.on_scan_finished)
+      core->cb.on_scan_finished(core->ud);
+}
+#endif
+
+bool companion_core_request_scan(companion_core_t *core, const char *path,
+      bool directory, bool show_hidden_files)
+{
+#ifdef HAVE_LIBRETRODB
+   settings_t *settings = config_get_ptr();
+
+   if (!core || string_is_empty(path))
+      return false;
+
+   companion_core_scan_owner = core;
+   return task_push_dbscan(
+         settings->paths.directory_playlist,
+         settings->paths.path_content_database,
+         path, directory, show_hidden_files,
+         companion_core_scan_finished);
+#else
+   (void)core;
+   (void)path;
+   (void)directory;
+   (void)show_hidden_files;
+   return false;
+#endif
 }
 
 /* --- Installed cores --------------------------------------------------- */
