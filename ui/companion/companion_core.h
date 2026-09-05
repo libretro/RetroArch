@@ -171,6 +171,24 @@ bool companion_core_playlist_delete_entry(companion_core_t *core,
 bool companion_core_playlist_set_default_core(companion_core_t *core,
       const char *path, const char *core_path);
 
+/* Bulk add. Opens playlist @path as a private instance (never the
+ * menu's cached one), so a cancelled add can be discarded unwritten:
+ * commit with companion_core_playlist_release(core, pl, true, true),
+ * abort with companion_core_playlist_release(core, pl, true, false). */
+playlist_t *companion_core_playlist_open_private(companion_core_t *core,
+      const char *path);
+/* Content path a playlist entry should carry for @path: an archive
+ * holding exactly one file resolves to "archive#file" (not to every
+ * member: for MAME/FBA-style content the archive itself is the entry).
+ * Copies into @s; returns its length. */
+size_t companion_core_resolve_content_path(companion_core_t *core,
+      const char *path, char *s, size_t len);
+/* Append an entry. NULL / empty @core_path or @core_name become
+ * "DETECT"; the crc is the unknown marker. */
+bool companion_core_playlist_push(companion_core_t *core,
+      playlist_t *playlist, const char *content_path, const char *label,
+      const char *core_path, const char *core_name, const char *db_name);
+
 /* --- Inbound notifications from RetroArch (called by the driver glue) */
 
 void companion_core_status_message(companion_core_t *core,

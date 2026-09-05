@@ -7602,18 +7602,11 @@ void MainWindow::addFilesToPlaylist(QStringList files)
    QString selectedName;
    QString selectedPath;
    QStringList selectedExtensions;
-   playlist_config_t playlist_config;
    QListWidgetItem        *currentItem = m_listWidget->currentItem();
    PlaylistEntryDialog *playlistDialog = playlistEntryDialog();
    const char *currentPlaylistData     = NULL;
    playlist_t *playlist                = NULL;
-   settings_t *settings                = config_get_ptr();
-
-   playlist_config.capacity            = COLLECTION_SIZE;
-   playlist_config.old_format          = settings->bools.playlist_use_old_format;
-   playlist_config.compress            = settings->bools.playlist_compression;
-   playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
-   playlist_config_set_base_content_directory(&playlist_config, settings->bools.playlist_portable_paths ? settings->paths.directory_menu_content : NULL);
+   companion_core_t *core              = ui_companion_qt_core();
 
    /* Assume a blank list means we will manually enter in all fields. */
    if (files.isEmpty())
@@ -7755,13 +7748,14 @@ void MainWindow::addFilesToPlaylist(QStringList files)
             MENU_ENUM_LABEL_VALUE_QT_ADDING_FILES_TO_PLAYLIST));
    dialog->setMaximum(list.count());
 
-   /* Deliberately not cached-first (unlike the other playlist
+   /* Deliberately a private instance (unlike the other playlist
     * loads here): this is a bulk add whose cancel path discards
     * the half-modified playlist by freeing it unwritten, which a
     * borrowed cached instance cannot offer.  The modal progress
     * dialog pumps events, so this is not a UI-thread freeze. */
-   playlist_config_set_path(&playlist_config, currentPlaylistData);
-   playlist = playlist_init(&playlist_config);
+   playlist = companion_core_playlist_open_private(core, currentPlaylistData);
+   if (!playlist)
+      return;
 
    for (i = 0; i < list.count(); i++)
    {
@@ -7771,6 +7765,7 @@ void MainWindow::addFilesToPlaylist(QStringList files)
       QByteArray corePathArray;
       QByteArray coreNameArray;
       QByteArray databaseArray;
+      char contentPath[PATH_MAX_LENGTH];
       QString fileName            = list.at(i);
       const char *pathData        = NULL;
       const char *fileNameNoExten = NULL;
@@ -7783,7 +7778,7 @@ void MainWindow::addFilesToPlaylist(QStringList files)
        * to the playlist at all. */
       if (dialog->wasCanceled())
       {
-         playlist_free(playlist);
+         companion_core_playlist_release(core, playlist, true, false);
          return;
       }
 
@@ -7819,12 +7814,7 @@ void MainWindow::addFilesToPlaylist(QStringList files)
 
       pathData             = pathArray.constData();
 
-      if (selectedCore.isEmpty())
-      {
-         corePathData = "DETECT";
-         coreNameData = "DETECT";
-      }
-      else
+      if (!selectedCore.isEmpty())
       {
          corePathArray = QDir::toNativeSeparators(
                selectedCore.value("core_path")).toUtf8();
@@ -7832,67 +7822,30 @@ void MainWindow::addFilesToPlaylist(QStringList files)
          corePathData  = corePathArray.constData();
          coreNameData  = coreNameArray.constData();
       }
+      /* else NULL: the core substitutes "DETECT" */
 
       databaseArray = selectedDatabase.toUtf8();
       databaseData = databaseArray.constData();
 
-      if (path_is_compressed_file(pathData))
-      {
-         struct string_list *list = file_archive_get_file_list(pathData, NULL);
+      /* A single-file archive resolves to "archive#file". */
+      companion_core_resolve_content_path(core, pathData,
+            contentPath, sizeof(contentPath));
 
-         if (list)
-         {
-            if (list->size == 1)
-            {
-               /* Assume archives with one file should have that
-                * file loaded directly.
-                * Don't just extend this to add all files in a zip,
-                * because we might hit
-                * something like MAME/FBA where only the archives
-                * themselves are valid content. */
-               pathArray = QDir::toNativeSeparators(QString(pathData)
-                     + QString("#")
-		     + list->elems[0].data).toUtf8();
-               pathData  = pathArray.constData();
+      /* If the user chose to filter extensions inside archives, and
+       * the resolved file inside the archive doesn't have one of the
+       * chosen extensions, skip it. */
+      if (     strcmp(contentPath, pathData) != 0
+            && !selectedExtensions.isEmpty()
+            &&  playlistDialog->filterInArchive()
+            && !selectedExtensions.contains(
+                  QString::fromUtf8(path_get_extension(contentPath))))
+         continue;
 
-               if (     !selectedExtensions.isEmpty()
-                     &&  playlistDialog->filterInArchive())
-               {
-                  /* If the user chose to filter extensions inside archives,
-                   * and this particular file inside the archive
-                   * doesn't have one of the chosen extensions,
-                   * then we skip it. */
-                  if (!selectedExtensions.contains(
-                           QString::fromUtf8(path_get_extension(pathData))))
-                  {
-                     string_list_free(list);
-                     continue;
-                  }
-               }
-            }
-
-            string_list_free(list);
-         }
-      }
-
-      {
-         struct playlist_entry entry = {0};
-
-         /* the push function reads our entry as const,
-          * so these casts are safe */
-         entry.path      = const_cast<char*>(pathData);
-         entry.label     = const_cast<char*>(fileNameNoExten);
-         entry.core_path = const_cast<char*>(corePathData);
-         entry.core_name = const_cast<char*>(coreNameData);
-         entry.crc32     = const_cast<char*>("00000000|crc");
-         entry.db_name   = const_cast<char*>(databaseData);
-
-         playlist_push(playlist, &entry);
-      }
+      companion_core_playlist_push(core, playlist, contentPath,
+            fileNameNoExten, corePathData, coreNameData, databaseData);
    }
 
-   playlist_write_file(playlist);
-   playlist_free(playlist);
+   companion_core_playlist_release(core, playlist, true, true);
 
    reloadPlaylists();
 }
@@ -7907,6 +7860,7 @@ bool MainWindow::updateCurrentPlaylistEntry(
    QByteArray coreNameArray;
    QByteArray dbNameArray;
    QByteArray crc32Array;
+   char contentPath[PATH_MAX_LENGTH];
    QString playlistPath         = getCurrentPlaylistPath();
    const char *playlistPathData = NULL;
    const char *pathData         = NULL;
@@ -7947,24 +7901,10 @@ bool MainWindow::updateCurrentPlaylistEntry(
       crc32Data      = crc32Array.constData();
    }
 
-   if (path_is_compressed_file(pathData))
-   {
-      struct string_list *list = file_archive_get_file_list(pathData, NULL);
-
-      if (list)
-      {
-         if (list->size == 1)
-         {
-            /* assume archives with one file should have that file loaded directly */
-            pathArray = QDir::toNativeSeparators(QString(pathData)
-		      + QString("#")
-		      + list->elems[0].data).toUtf8();
-            pathData  = pathArray.constData();
-         }
-
-         string_list_free(list);
-      }
-   }
+   /* A single-file archive resolves to "archive#file". */
+   companion_core_resolve_content_path(ui_companion_qt_core(), pathData,
+         contentPath, sizeof(contentPath));
+   pathData = contentPath;
 
    {
       struct playlist_entry entry = {0};

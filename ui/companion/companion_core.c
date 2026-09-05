@@ -19,6 +19,7 @@
 
 #include <compat/strl.h>
 #include <features/features_cpu.h>
+#include <file/archive_file.h>
 #include <file/file_path.h>
 #include <lists/dir_list.h>
 #include <lists/string_list.h>
@@ -631,4 +632,64 @@ void companion_core_notify_refresh(companion_core_t *core)
 {
    if (core && core->cb.on_notify_refresh)
       core->cb.on_notify_refresh(core->ud);
+}
+
+playlist_t *companion_core_playlist_open_private(companion_core_t *core,
+      const char *path)
+{
+   playlist_config_t cfg;
+   if (!core || string_is_empty(path))
+      return NULL;
+   companion_core_playlist_config_init(&cfg, path);
+   return playlist_init(&cfg);
+}
+
+size_t companion_core_resolve_content_path(companion_core_t *core,
+      const char *path, char *s, size_t len)
+{
+   size_t _len;
+
+   if (!s || !len)
+      return 0;
+   s[0] = '\0';
+   if (!core || string_is_empty(path))
+      return 0;
+
+   _len = strlcpy(s, path, len);
+
+   if (path_is_compressed_file(path))
+   {
+      struct string_list *list = file_archive_get_file_list(path, NULL);
+      if (list)
+      {
+         if (list->size == 1 && _len + 1 < len)
+         {
+            s[_len++] = '#';
+            _len     += strlcpy(s + _len, list->elems[0].data, len - _len);
+         }
+         string_list_free(list);
+      }
+   }
+   return _len;
+}
+
+bool companion_core_playlist_push(companion_core_t *core,
+      playlist_t *playlist, const char *content_path, const char *label,
+      const char *core_path, const char *core_name, const char *db_name)
+{
+   struct playlist_entry entry;
+
+   if (!core || !playlist || string_is_empty(content_path))
+      return false;
+
+   memset(&entry, 0, sizeof(entry));
+   /* playlist_push() reads the entry as const; the casts are safe. */
+   entry.path      = (char*)content_path;
+   entry.label     = (char*)label;
+   entry.core_path = (char*)(string_is_empty(core_path) ? "DETECT" : core_path);
+   entry.core_name = (char*)(string_is_empty(core_name) ? "DETECT" : core_name);
+   entry.crc32     = (char*)"00000000|crc";
+   entry.db_name   = (char*)db_name;
+
+   return playlist_push(playlist, &entry);
 }
