@@ -5012,75 +5012,74 @@ static size_t setting_get_string_representation_uint_materialui_landscape_layout
 #endif
 
 #ifdef HAVE_OZONE
-static size_t setting_get_string_representation_uint_ozone_menu_color_theme(
+static const struct ozone_color_theme_option
+{
+   const char *value;
+   enum msg_hash_enums label;
+} ozone_color_themes[] = {
+   { "basic_white",        MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE },
+   { "basic_black",        MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK },
+   { "nord",               MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_NORD },
+   { "gruvbox_dark",       MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRUVBOX_DARK },
+   { "boysenberry",        MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BOYSENBERRY },
+   { "hacking_the_kernel", MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_HACKING_THE_KERNEL },
+   { "twilight_zone",      MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_TWILIGHT_ZONE },
+   { "dracula",            MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_DRACULA },
+   { "solarized_dark",     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK },
+   { "solarized_light",    MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_LIGHT },
+   { "gray_dark",          MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_DARK },
+   { "gray_light",         MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_LIGHT },
+   { "purple_rain",        MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_PURPLE_RAIN },
+   { "selenium",           MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SELENIUM },
+   { "evergarden",         MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_EVERGARDEN }
+};
+
+static int setting_string_action_ozone_menu_color_theme(
+      rarch_setting_t *setting, bool right, bool menu_navigation_wraparound_enable)
+{
+   size_t i = 0;
+   size_t size = ARRAY_SIZE(ozone_color_themes);
+
+   menu_navigation_wraparound_enable = config_get_ptr()->bools.menu_navigation_wraparound_enable;
+
+   while (i < size && !string_is_equal(setting->value.target.string, ozone_color_themes[i].value))
+      i++;
+   if (i < size && (menu_navigation_wraparound_enable || (right ? i < size - 1 : i)))
+   {
+      i = right ? (i + 1) % size : (i + size - 1) % size;
+      strlcpy(setting->value.target.string, ozone_color_themes[i].value, setting->size);
+   }
+
+   return 0;
+}
+
+static int setting_string_action_left_ozone_menu_color_theme(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   return setting_string_action_ozone_menu_color_theme(setting, false, wraparound);
+}
+
+static int setting_string_action_right_ozone_menu_color_theme(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   return setting_string_action_ozone_menu_color_theme(setting, true, wraparound);
+}
+
+static size_t setting_get_string_representation_ozone_menu_color_theme(
       rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
    {
-      switch (*setting->value.target.unsigned_integer)
-      {
-         case OZONE_COLOR_THEME_BASIC_BLACK:
+      size_t i;
+
+      for (i = 0; i < ARRAY_SIZE(ozone_color_themes); i++)
+         if (string_is_equal(setting->value.target.string,
+                  ozone_color_themes[i].value))
             return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK), len);
-         case OZONE_COLOR_THEME_NORD:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_NORD), len);
-         case OZONE_COLOR_THEME_GRUVBOX_DARK:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRUVBOX_DARK), len);
-         case OZONE_COLOR_THEME_BOYSENBERRY:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BOYSENBERRY), len);
-         case OZONE_COLOR_THEME_HACKING_THE_KERNEL:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_HACKING_THE_KERNEL), len);
-         case OZONE_COLOR_THEME_TWILIGHT_ZONE:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_TWILIGHT_ZONE), len);
-         case OZONE_COLOR_THEME_DRACULA:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_DRACULA), len);
-         case OZONE_COLOR_THEME_SELENIUM:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SELENIUM), len);
-         case OZONE_COLOR_THEME_SOLARIZED_DARK:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK), len);
-         case OZONE_COLOR_THEME_SOLARIZED_LIGHT:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_LIGHT), len);
-         case OZONE_COLOR_THEME_GRAY_DARK:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_DARK), len);
-         case OZONE_COLOR_THEME_GRAY_LIGHT:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_LIGHT), len);
-         case OZONE_COLOR_THEME_PURPLE_RAIN:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_PURPLE_RAIN), len);
-         case OZONE_COLOR_THEME_BASIC_WHITE:
-         default:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE), len);
-         case OZONE_COLOR_THEME_EVERGARDEN:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_EVERGARDEN), len);
-      }
+                  msg_hash_to_str(ozone_color_themes[i].label), len);
+
+      return strlcpy(s, msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK), len);
    }
    return 0;
 }
@@ -15654,6 +15653,23 @@ static void settings_build_menu(
       if (string_is_equal(settings->arrays.menu_driver, "ozone"))
       {
             ADD_DESC(menu_desc_31);
+            (*list)[list_info->index - ARRAY_SIZE(menu_desc_31)].type   = ST_STRING_OPTIONS;
+            (*list)[list_info->index - ARRAY_SIZE(menu_desc_31)].values =
+                  "basic_white|"
+                  "basic_black|"
+                  "nord|"
+                  "gruvbox_dark|"
+                  "boysenberry|"
+                  "hacking_the_kernel|"
+                  "twilight_zone|"
+                  "dracula|"
+                  "solarized_dark|"
+                  "solarized_light|"
+                  "gray_dark|"
+                  "gray_light|"
+                  "purple_rain|"
+                  "selenium|"
+                  "evergarden";
 
             ADD_DESC(menu2_desc_5);
 

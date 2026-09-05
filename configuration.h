@@ -296,7 +296,6 @@ typedef struct settings
       unsigned menu_materialui_thumbnail_view_portrait;
       unsigned menu_materialui_thumbnail_view_landscape;
       unsigned menu_materialui_landscape_layout_optimization;
-      unsigned menu_ozone_color_theme;
       unsigned menu_ozone_header_icon;
       unsigned menu_ozone_header_separator;
       unsigned menu_ozone_font_scale;
@@ -1100,6 +1099,7 @@ typedef struct settings
       char location_driver[32];
       char cloud_sync_driver[32];
       char menu_driver[32];
+      char menu_ozone_color_theme[32];
       char cheevos_username[32];
       char cheevos_token[32];
       char cheevos_leaderboards_enable[32];

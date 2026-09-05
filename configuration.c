@@ -1630,6 +1630,9 @@ static struct config_array_setting *populate_settings_array(
 
 #ifdef HAVE_MENU
    SETTING_ARRAY("menu_driver",                  settings->arrays.menu_driver, false, NULL, true);
+#ifdef HAVE_OZONE
+   SETTING_ARRAY("ozone_menu_color_theme",        settings->arrays.menu_ozone_color_theme, false, NULL, true);
+#endif
 #endif
 
    SETTING_ARRAY("record_driver",                settings->arrays.record_driver, false, NULL, true);
@@ -5453,6 +5456,9 @@ void config_set_defaults(void *data)
 #endif
 #ifdef HAVE_OZONE
    *settings->paths.path_menu_ozone_font          = '\0';
+   configuration_set_string(settings,
+         settings->arrays.menu_ozone_color_theme,
+         DEFAULT_OZONE_COLOR_THEME);
 #endif
 
    configuration_set_string(settings,
@@ -6944,6 +6950,37 @@ static bool config_load_file(global_t *global,
     * and up (with 0 being skipped) */
    if (settings->floats.fastforward_ratio < 0.0f)
       configuration_set_float(settings, settings->floats.fastforward_ratio, 0.0f);
+
+#ifdef HAVE_OZONE
+   /* Convert legacy numeric values of Ozone color themes to string identifiers.
+    * Necessary to avoid breaking existing configs. */
+   {
+      static const char *legacy_ozone_color_themes[] = {
+         "basic_white",
+         "basic_black",
+         "nord",
+         "gruvbox_dark",
+         "boysenberry",
+         "hacking_the_kernel",
+         "twilight_zone",
+         "dracula",
+         "solarized_dark",
+         "solarized_light",
+         "gray_dark",
+         "gray_light",
+         "purple_rain",
+         "selenium",
+         "evergarden"
+      };
+      unsigned color_theme;
+
+      if (   config_get_uint(conf, MENU_ENUM_LABEL_OZONE_MENU_COLOR_THEME_STR, &color_theme)
+          && color_theme < ARRAY_SIZE(legacy_ozone_color_themes))
+         configuration_set_string(settings,
+               settings->arrays.menu_ozone_color_theme,
+               legacy_ozone_color_themes[color_theme]);
+   }
+#endif
 
 #ifdef HAVE_CHEEVOS
    if (*settings->arrays.cheevos_leaderboards_enable)
