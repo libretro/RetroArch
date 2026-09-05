@@ -90,6 +90,10 @@
 #define COMPANION_WIN32_SPLIT_W    5     /* draggable gap between panes */
 #define COMPANION_WIN32_MIN_W      480
 #define COMPANION_WIN32_MIN_H      320
+#define COMPANION_WIN32_LOG_H      120   /* log pane height when shown */
+/* The log edit is trimmed from the front when it passes this, in one
+ * cut, so appends stay O(line) instead of the control's O(text). */
+#define COMPANION_WIN32_LOG_MAX    (256 * 1024)
 
 /* Pre-Win98 SDKs lack these; the messages themselves date from 95. */
 #ifndef WM_ENTERMENULOOP
@@ -111,6 +115,7 @@ enum
    IDC_CW_PLAYLISTS  = 50001,
    IDC_CW_ENTRIES,
    IDC_CW_STATUS,
+   IDC_CW_LOG,
    IDM_CW_LOAD_CORE  = 50101,
    IDM_CW_LOAD_CONTENT,
    IDM_CW_REFRESH,
@@ -121,6 +126,7 @@ enum
    IDM_CW_DELETE_ENTRY,
    IDM_CW_ASSOC_DETECT,
    IDM_CW_SCAN_DIR,
+   IDM_CW_TOGGLE_LOG,
    /* IDM_CW_ASSOC_BASE + i selects installed core i as the playlist's
     * default core; keep a wide gap after it. */
    IDM_CW_ASSOC_BASE = 51000,
@@ -134,6 +140,8 @@ typedef struct ui_companion_win32_wimp
    HWND playlists;   /* LISTBOX  */
    HWND entries;     /* SysListView32, report view */
    HWND status;      /* msctls_statusbar32 */
+   HWND log;         /* read-only multiline EDIT, hidden by default */
+   bool log_visible;
    /* Playlist a context menu was opened on (a list box does not move
     * its selection on right-click); (size_t)-1 = use the selection. */
    size_t ctx_playlist;
@@ -235,13 +243,65 @@ static void cw_layout(ui_companion_win32_wimp_t *w)
    if (w->pane_w < COMPANION_WIN32_PANE_MIN)
       w->pane_w = COMPANION_WIN32_PANE_MIN;
 
-   if (w->playlists)
-      MoveWindow(w->playlists, 0, 0, w->pane_w,
-            rc.bottom - status_h, TRUE);
-   if (w->entries)
-      MoveWindow(w->entries, w->pane_w + COMPANION_WIN32_SPLIT_W, 0,
-            rc.right - w->pane_w - COMPANION_WIN32_SPLIT_W,
-            rc.bottom - status_h, TRUE);
+   {
+      int log_h  = (w->log_visible && w->log) ? COMPANION_WIN32_LOG_H : 0;
+      int list_h = rc.bottom - status_h - log_h;
+      if (list_h < 0)
+         list_h = 0;
+
+      if (w->playlists)
+         MoveWindow(w->playlists, 0, 0, w->pane_w, list_h, TRUE);
+      if (w->entries)
+         MoveWindow(w->entries, w->pane_w + COMPANION_WIN32_SPLIT_W, 0,
+               rc.right - w->pane_w - COMPANION_WIN32_SPLIT_W, list_h, TRUE);
+      if (w->log)
+         MoveWindow(w->log, 0, list_h, rc.right, log_h, TRUE);
+   }
+}
+
+/* Append one log line to the EDIT: move the caret to the end and
+ * replace the (empty) selection, which is the only O(line) append the
+ * control offers. Newlines become CRLF as the control wants. */
+static void cw_log_append(ui_companion_win32_wimp_t *w, const char *msg)
+{
+   char line[1024 + 2];
+   size_t i, j;
+   LRESULT len;
+
+   if (!w || !w->log || !msg)
+      return;
+
+   for (i = 0, j = 0; msg[i] && j < sizeof(line) - 3; i++)
+   {
+      if (msg[i] == '\n')
+      {
+         line[j++] = '\r';
+         line[j++] = '\n';
+      }
+      else if (msg[i] != '\r')
+         line[j++] = msg[i];
+   }
+   line[j] = '\0';
+
+   len = SendMessageA(w->log, WM_GETTEXTLENGTH, 0, 0);
+   if (len > COMPANION_WIN32_LOG_MAX)
+   {
+      /* Drop the oldest half in one replacement. */
+      SendMessageA(w->log, EM_SETSEL, 0, len / 2);
+      SendMessageA(w->log, EM_REPLACESEL, FALSE, (LPARAM)"");
+      len = SendMessageA(w->log, WM_GETTEXTLENGTH, 0, 0);
+   }
+   SendMessageA(w->log, EM_SETSEL, len, len);
+   SendMessageA(w->log, EM_REPLACESEL, FALSE, (LPARAM)line);
+}
+
+static void cw_log_toggle(ui_companion_win32_wimp_t *w)
+{
+   if (!w || !w->log)
+      return;
+   w->log_visible = !w->log_visible;
+   ShowWindow(w->log, w->log_visible ? SW_SHOW : SW_HIDE);
+   cw_layout(w);
 }
 
 /* The only client area not covered by a child control is the splitter
@@ -598,6 +658,9 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
             case IDM_CW_SCAN_DIR:
                cw_scan_directory(w);
                return 0;
+            case IDM_CW_TOGGLE_LOG:
+               cw_log_toggle(w);
+               return 0;
             case IDM_CW_CLOSE:
                ShowWindow(hwnd, SW_HIDE);
                return 0;
@@ -665,6 +728,8 @@ static HMENU cw_build_menu(void)
 
    AppendMenuA(view, MF_STRING, IDM_CW_RUN,          "&Run Selected\tEnter");
    AppendMenuA(view, MF_STRING, IDM_CW_REFRESH,      "Re&fresh Playlists\tF5");
+   AppendMenuA(view, MF_SEPARATOR, 0, NULL);
+   AppendMenuA(view, MF_STRING, IDM_CW_TOGGLE_LOG,   "&Log");
 
    AppendMenuA(bar, MF_POPUP, (UINT_PTR_COMPAT)file, "&File");
    AppendMenuA(bar, MF_POPUP, (UINT_PTR_COMPAT)view, "&View");
@@ -711,7 +776,14 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
          WS_CHILD | WS_VISIBLE | SBARS_SIZEGRIP,
          0, 0, 0, 0, w->hwnd, (HMENU)IDC_CW_STATUS, inst, NULL);
 
-   if (!w->playlists || !w->entries || !w->status)
+   /* Hidden until View > Log; ES_READONLY keeps the user out, the
+    * companion appends through EM_REPLACESEL regardless. */
+   w->log = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "",
+         WS_CHILD | WS_VSCROLL | ES_MULTILINE | ES_READONLY
+         | ES_AUTOVSCROLL | ES_LEFT,
+         0, 0, 0, 0, w->hwnd, (HMENU)IDC_CW_LOG, inst, NULL);
+
+   if (!w->playlists || !w->entries || !w->status || !w->log)
       return false;
 
    /* Full-row select is an IE3+ extended style; harmless where absent. */
@@ -835,6 +907,11 @@ static void ui_companion_win32_wimp_msg_queue_push(void *data,
       companion_core_status_message(w->core, msg, priority, duration, flush);
 }
 
+static void ui_companion_win32_wimp_log_msg(void *data, const char *msg)
+{
+   cw_log_append((ui_companion_win32_wimp_t*)data, msg);
+}
+
 static void *ui_companion_win32_wimp_get_main_window(void *data)
 {
    ui_companion_win32_wimp_t *w = (ui_companion_win32_wimp_t*)data;
@@ -857,7 +934,7 @@ ui_companion_driver_t ui_companion_wimp_win32 = {
    ui_companion_win32_wimp_msg_queue_push,
    NULL, /* render_messagebox */
    ui_companion_win32_wimp_get_main_window,
-   NULL, /* log_msg */
+   ui_companion_win32_wimp_log_msg,
    ui_companion_win32_wimp_is_active,
    NULL, /* get_app_icons */
    NULL, /* set_app_icon */

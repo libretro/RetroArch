@@ -212,6 +212,11 @@ void ui_companion_driver_toggle(
 
 uico_driver_state_t *uico_state_get_ptr(void);
 
+/* True when a desktop companion with a log view is open. verbosity.c
+ * asks this before formatting a copy of a log line and only then calls
+ * ui_companion_driver_log_msg(), which delivers without re-checking. */
+bool ui_companion_driver_log_active(void);
+
 /* Per-frame hook for the desktop companion driver; call once per
  * runloop iteration from the platform's main loop. */
 void ui_companion_driver_wimp_iterate(void);

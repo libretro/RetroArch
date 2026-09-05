@@ -54,6 +54,7 @@
 /* The 10.4 SDK predates NSInteger (introduced with the 10.5 SDK). */
 #ifndef NSINTEGER_DEFINED
 typedef int NSInteger;
+typedef unsigned int NSUInteger;
 #define NSINTEGER_DEFINED 1
 #endif
 
@@ -84,6 +85,10 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    NSMenu *entriesMenu;    /* right-click on an entry   */
    NSMenu *playlistsMenu;  /* right-click on a playlist */
    NSMenu *assocMenu;      /* "Associate Core" submenu, rebuilt on open */
+   NSSplitView *split;
+   NSScrollView *logScroll; /* log pane, hidden until Companion > Log */
+   NSTextView *logView;
+   BOOL logVisible;
 }
 - (id)initWithWimp:(ui_companion_cocoa_wimp_t*)w;
 - (BOOL)buildWindow;
@@ -100,6 +105,8 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)deleteEntry:(id)sender;
 - (void)associateCore:(id)sender;
 - (void)scanDirectory:(id)sender;
+- (void)toggleLog:(id)sender;
+- (void)appendLog:(const char*)msg;
 @end
 
 struct ui_companion_cocoa_wimp
@@ -258,7 +265,6 @@ static const companion_callbacks_t cc_callbacks = {
    NSRect frame       = NSMakeRect(0, 0, 800, 520);
    NSScrollView *sl   = nil;
    NSScrollView *sr   = nil;
-   NSSplitView *split = nil;
    NSView *content    = nil;
    NSMenu *menu       = nil;
    NSMenuItem *item   = nil;
@@ -285,13 +291,27 @@ static const companion_callbacks_t cc_callbacks = {
    [entries setDoubleAction:@selector(runSelected:)];
    [entries setTarget:self];
 
-   split = [[[NSSplitView alloc] initWithFrame:
-      NSMakeRect(0, 20, frame.size.width, frame.size.height - 20)] autorelease_compat];
+   split = [[NSSplitView alloc] initWithFrame:
+      NSMakeRect(0, 20, frame.size.width, frame.size.height - 20)];
    [split setVertical:YES];
    [split addSubview:sl];
    [split addSubview:sr];
    [split setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
    [content addSubview:split];
+
+   /* Log pane: a read-only NSTextView under the split, added to the
+    * hierarchy only while shown so the split gets the full height
+    * otherwise. Anchored to the bottom edge above the status line. */
+   logScroll = [[NSScrollView alloc] initWithFrame:
+      NSMakeRect(0, 20, frame.size.width, 120)];
+   logView   = [[NSTextView alloc] initWithFrame:
+      [[logScroll contentView] bounds]];
+   [logView setEditable:NO];
+   [logView setRichText:NO];
+   [logView setAutoresizingMask:NSViewWidthSizable];
+   [logScroll setDocumentView:logView];
+   [logScroll setHasVerticalScroller:YES];
+   [logScroll setAutoresizingMask:NSViewWidthSizable | NSViewMaxYMargin];
 
    status = [[NSTextField alloc] initWithFrame:
       NSMakeRect(4, 0, frame.size.width - 8, 18)];
@@ -322,6 +342,10 @@ static const companion_callbacks_t cc_callbacks = {
    [item setTarget:self];
    item = [menu addItemWithTitle:@"Refresh Playlists" action:@selector(refreshPlaylists:)
       keyEquivalent:@"r"];
+   [item setTarget:self];
+   [menu addItem:[NSMenuItem separatorItem]];
+   item = [menu addItemWithTitle:@"Log" action:@selector(toggleLog:)
+      keyEquivalent:@""];
    [item setTarget:self];
 
    menuItem = [[NSMenuItem alloc] initWithTitle:@"Companion" action:NULL
@@ -407,6 +431,9 @@ static const companion_callbacks_t cc_callbacks = {
       RELEASE(entries);
    }
    RELEASE(status);
+   RELEASE(logView);
+   RELEASE(logScroll);
+   RELEASE(split);
    if (assocMenu)
       [assocMenu setDelegate:nil];
    RELEASE(assocMenu);
@@ -564,6 +591,54 @@ static const companion_callbacks_t cc_callbacks = {
 {
    if (wimp)
       companion_core_request_load(wimp->core, NULL, NULL);
+}
+
+- (void)toggleLog:(id)sender
+{
+   NSView *content;
+   NSRect frame;
+   if (!window || !split || !logScroll)
+      return;
+
+   content    = [window contentView];
+   frame      = [content bounds];
+   logVisible = !logVisible;
+
+   if (logVisible)
+   {
+      [logScroll setFrame:NSMakeRect(0, 20, frame.size.width, 120)];
+      [split setFrame:NSMakeRect(0, 140, frame.size.width,
+            frame.size.height - 140)];
+      [content addSubview:logScroll];
+   }
+   else
+   {
+      [logScroll removeFromSuperview];
+      [split setFrame:NSMakeRect(0, 20, frame.size.width,
+            frame.size.height - 20)];
+   }
+}
+
+/* Append a log line; trim the oldest half once the text passes 256 KiB
+ * so appends stay proportional to the line, not to the buffer. */
+- (void)appendLog:(const char*)msg
+{
+   NSTextStorage *storage;
+   NSUInteger len;
+   if (!logView || !msg)
+      return;
+
+   storage = [logView textStorage];
+   len     = [storage length];
+   if (len > 256 * 1024)
+   {
+      [storage deleteCharactersInRange:NSMakeRange(0, len / 2)];
+      len = [storage length];
+   }
+   [logView replaceCharactersInRange:NSMakeRange(len, 0)
+      withString:BOXSTRING(msg)];
+   if (logVisible)
+      [logView scrollRangeToVisible:NSMakeRange([storage length], 0)];
 }
 
 /* Same shape as the platform driver's open panel (ui_cocoa.m): the
@@ -731,6 +806,13 @@ static void ui_companion_cocoa_wimp_msg_queue_push(void *data,
       companion_core_status_message(w->core, msg, priority, duration, flush);
 }
 
+static void ui_companion_cocoa_wimp_log_msg(void *data, const char *msg)
+{
+   ui_companion_cocoa_wimp_t *w = (ui_companion_cocoa_wimp_t*)data;
+   if (w && w->controller)
+      [CC_CTRL(w) appendLog:msg];
+}
+
 static void *ui_companion_cocoa_wimp_get_main_window(void *data)
 {
    ui_companion_cocoa_wimp_t *w = (ui_companion_cocoa_wimp_t*)data;
@@ -755,7 +837,7 @@ ui_companion_driver_t ui_companion_wimp_cocoa = {
    ui_companion_cocoa_wimp_msg_queue_push,
    NULL, /* render_messagebox */
    ui_companion_cocoa_wimp_get_main_window,
-   NULL, /* log_msg */
+   ui_companion_cocoa_wimp_log_msg,
    ui_companion_cocoa_wimp_is_active,
    NULL, /* get_app_icons */
    NULL, /* set_app_icon */

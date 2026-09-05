@@ -358,16 +358,31 @@ const char *ui_companion_driver_get_ident(void)
    return "null";
 }
 
-void ui_companion_driver_log_msg(const char *msg)
+bool ui_companion_driver_log_active(void)
 {
 #ifdef HAVE_COMPANION_WIMP
    uico_driver_state_t *uico_st    = &uico_driver_st;
    const ui_companion_driver_t *ui = uico_st->wimp;
-   bool window_is_active           = ui && uico_st->wimp_data
+   settings_t *settings            = config_get_ptr();
+   if (!settings || !settings->bools.desktop_menu_enable)
+      return false;
+   return ui && ui->log_msg && uico_st->wimp_data
       && (uico_st->flags & UICO_ST_FLAG_WIMP_IS_INITED)
       && ui->is_active && ui->is_active(uico_st->wimp_data);
-   if (config_get_ptr()->bools.desktop_menu_enable)
-      if (window_is_active && ui->log_msg)
-         ui->log_msg(uico_st->wimp_data, msg);
+#else
+   return false;
+#endif
+}
+
+void ui_companion_driver_log_msg(const char *msg)
+{
+#ifdef HAVE_COMPANION_WIMP
+   /* The caller has just asked ui_companion_driver_log_active(); do not
+    * repeat the setting lookup and the is_active() round trip per line.
+    * Only the pointers are re-checked, in case the companion was torn
+    * down between the two calls. */
+   uico_driver_state_t *uico_st = &uico_driver_st;
+   if (uico_st->wimp && uico_st->wimp->log_msg && uico_st->wimp_data)
+      uico_st->wimp->log_msg(uico_st->wimp_data, msg);
 #endif
 }
