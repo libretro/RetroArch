@@ -133,6 +133,14 @@ size_t companion_core_playlist_default_core(companion_core_t *core,
 void companion_core_event_command(companion_core_t *core,
       enum event_command cmd);
 
+/* --- Installed cores (for "associate core" style pickers) ---------- */
+
+size_t companion_core_installed_core_count(companion_core_t *core);
+const char *companion_core_installed_core_path(companion_core_t *core,
+      size_t i);
+const char *companion_core_installed_core_name(companion_core_t *core,
+      size_t i);
+
 /* --- Playlist editing ---------------------------------------------- */
 
 /* Open playlist file @path for reading or editing. When it is the

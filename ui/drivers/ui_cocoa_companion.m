@@ -80,6 +80,9 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    NSTableView *entries;
    NSTextField *status;
    NSMenuItem *menuItem;
+   NSMenu *entriesMenu;    /* right-click on an entry   */
+   NSMenu *playlistsMenu;  /* right-click on a playlist */
+   NSMenu *assocMenu;      /* "Associate Core" submenu, rebuilt on open */
 }
 - (id)initWithWimp:(ui_companion_cocoa_wimp_t*)w;
 - (BOOL)buildWindow;
@@ -93,6 +96,8 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (void)startCore:(id)sender;
 - (void)loadCore:(id)sender;
 - (void)loadContent:(id)sender;
+- (void)deleteEntry:(id)sender;
+- (void)associateCore:(id)sender;
 @end
 
 struct ui_companion_cocoa_wimp
@@ -305,7 +310,61 @@ static const companion_callbacks_t cc_callbacks = {
    [menuItem setSubmenu:menu];
    [[NSApp mainMenu] addItem:menuItem];
 
+   /* Context menus. The table's -menu is shown on right-click; the
+    * actions use -clickedRow so they act on the row under the mouse. */
+   entriesMenu = [[NSMenu alloc] initWithTitle:@""];
+   item = [entriesMenu addItemWithTitle:@"Run" action:@selector(runSelected:)
+      keyEquivalent:@""];
+   [item setTarget:self];
+   [entriesMenu addItem:[NSMenuItem separatorItem]];
+   item = [entriesMenu addItemWithTitle:@"Delete Entry" action:@selector(deleteEntry:)
+      keyEquivalent:@""];
+   [item setTarget:self];
+   [entries setMenu:entriesMenu];
+
+   playlistsMenu = [[NSMenu alloc] initWithTitle:@""];
+   assocMenu     = [[NSMenu alloc] initWithTitle:@"Associate Core"];
+   [assocMenu setDelegate:self]; /* -menuNeedsUpdate: fills it */
+   item = [playlistsMenu addItemWithTitle:@"Associate Core" action:NULL
+      keyEquivalent:@""];
+   [item setSubmenu:assocMenu];
+   item = [playlistsMenu addItemWithTitle:@"Refresh Playlists"
+      action:@selector(refreshPlaylists:) keyEquivalent:@""];
+   [item setTarget:self];
+   [playlists setMenu:playlistsMenu];
+
    return YES;
+}
+
+/* NSMenuDelegate (10.3+): rebuild the core list each time it opens so a
+ * core installed while the window is up shows without a restart. */
+- (void)menuNeedsUpdate:(NSMenu*)menu
+{
+   size_t i, n;
+   NSMenuItem *item;
+
+   if (menu != assocMenu || !wimp)
+      return;
+
+   while ([menu numberOfItems] > 0)
+      [menu removeItemAtIndex:0];
+
+   item = [menu addItemWithTitle:@"<Detect>" action:@selector(associateCore:)
+      keyEquivalent:@""];
+   [item setTarget:self];
+   [item setTag:-1];
+
+   n = companion_core_installed_core_count(wimp->core);
+   if (n)
+      [menu addItem:[NSMenuItem separatorItem]];
+   for (i = 0; i < n; i++)
+   {
+      const char *name = companion_core_installed_core_name(wimp->core, i);
+      item = [menu addItemWithTitle:BOXSTRING(name ? name : "")
+         action:@selector(associateCore:) keyEquivalent:@""];
+      [item setTarget:self];
+      [item setTag:(NSInteger)i];
+   }
 }
 
 - (void)teardown
@@ -329,6 +388,11 @@ static const companion_callbacks_t cc_callbacks = {
       RELEASE(entries);
    }
    RELEASE(status);
+   if (assocMenu)
+      [assocMenu setDelegate:nil];
+   RELEASE(assocMenu);
+   RELEASE(playlistsMenu);
+   RELEASE(entriesMenu);
    if (window)
    {
       [window setDelegate:nil];
@@ -403,16 +467,78 @@ static const companion_callbacks_t cc_callbacks = {
       companion_core_refresh_playlists(wimp->core);
 }
 
+/* Row a menu action applies to: the right-clicked row when the action
+ * came from a context menu, else the selection. */
+- (NSInteger)actionRowIn:(NSTableView*)table
+{
+   NSInteger row = [table clickedRow];
+   if (row < 0)
+      row = [table selectedRow];
+   return row;
+}
+
 - (void)runSelected:(id)sender
 {
-   int row;
+   NSInteger row;
    if (!wimp)
       return;
-   row = (int)[entries selectedRow];
+   row = [self actionRowIn:entries];
    if (row < 0)
       return;
    if (companion_core_request_load_entry(wimp->core, (size_t)row))
       [window orderOut:nil];
+}
+
+- (void)reloadSelectedPlaylist
+{
+   size_t sel = companion_core_selected_playlist(wimp->core);
+   if (sel != (size_t)-1)
+      companion_core_select_playlist(wimp->core, sel);
+}
+
+- (void)deleteEntry:(id)sender
+{
+   NSInteger row;
+   size_t sel;
+   NSAlert *alert;
+
+   if (!wimp)
+      return;
+   row = [self actionRowIn:entries];
+   sel = companion_core_selected_playlist(wimp->core);
+   if (row < 0 || sel == (size_t)-1)
+      return;
+
+   alert = [[NSAlert alloc] init];
+   [alert setMessageText:@"Delete this playlist entry?"];
+   [alert addButtonWithTitle:@"Delete"];
+   [alert addButtonWithTitle:@"Cancel"];
+   if ([alert runModal] == NSAlertFirstButtonReturn)
+   {
+      if (companion_core_playlist_delete_entry(wimp->core,
+               companion_core_playlist_path(wimp->core, sel), (size_t)row))
+         [self reloadSelectedPlaylist];
+   }
+   RELEASE(alert);
+}
+
+- (void)associateCore:(id)sender
+{
+   NSInteger row, tag;
+   const char *core_path = NULL;
+
+   if (!wimp)
+      return;
+   /* The playlist the menu was opened on, not necessarily the loaded one. */
+   row = [self actionRowIn:playlists];
+   if (row < 0)
+      return;
+   tag = [(NSMenuItem*)sender tag];
+   if (tag >= 0)
+      core_path = companion_core_installed_core_path(wimp->core, (size_t)tag);
+
+   companion_core_playlist_set_default_core(wimp->core,
+         companion_core_playlist_path(wimp->core, (size_t)row), core_path);
 }
 
 - (void)startCore:(id)sender

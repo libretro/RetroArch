@@ -98,7 +98,13 @@ enum
    IDM_CW_CLOSE,
    IDM_CW_QUIT,
    IDM_CW_START_CORE,
-   IDM_CW_RUN
+   IDM_CW_RUN,
+   IDM_CW_DELETE_ENTRY,
+   IDM_CW_ASSOC_DETECT,
+   /* IDM_CW_ASSOC_BASE + i selects installed core i as the playlist's
+    * default core; keep a wide gap after it. */
+   IDM_CW_ASSOC_BASE = 51000,
+   IDM_CW_ASSOC_MAX  = 59999
 };
 
 typedef struct ui_companion_win32_wimp
@@ -108,6 +114,9 @@ typedef struct ui_companion_win32_wimp
    HWND playlists;   /* LISTBOX  */
    HWND entries;     /* SysListView32, report view */
    HWND status;      /* msctls_statusbar32 */
+   /* Playlist a context menu was opened on (a list box does not move
+    * its selection on right-click); (size_t)-1 = use the selection. */
+   size_t ctx_playlist;
    bool class_registered;
 } ui_companion_win32_wimp_t;
 
@@ -249,14 +258,126 @@ static void cw_select_playlist(ui_companion_win32_wimp_t *w)
       cw_status_set(w, "Loading playlist...");
 }
 
+static LRESULT cw_selected_entry(ui_companion_win32_wimp_t *w)
+{
+   return SendMessageA(w->entries, LVM_GETNEXTITEM,
+         (WPARAM)-1, MAKELPARAM(LVNI_SELECTED, 0));
+}
+
 static void cw_run_selected(ui_companion_win32_wimp_t *w)
 {
-   LRESULT idx = SendMessageA(w->entries, LVM_GETNEXTITEM,
-         (WPARAM)-1, MAKELPARAM(LVNI_SELECTED, 0));
+   LRESULT idx = cw_selected_entry(w);
    if (idx < 0)
       return;
    if (companion_core_request_load_entry(w->core, (size_t)idx))
       ShowWindow(w->hwnd, SW_HIDE);
+}
+
+/* Reload the selected playlist after an edit (the core keeps its own
+ * parsed copy; the edit went to disk / the menu's cached object). */
+static void cw_reload_selected_playlist(ui_companion_win32_wimp_t *w)
+{
+   size_t sel = companion_core_selected_playlist(w->core);
+   if (sel != (size_t)-1)
+      companion_core_select_playlist(w->core, sel);
+}
+
+static void cw_delete_selected(ui_companion_win32_wimp_t *w)
+{
+   size_t sel  = companion_core_selected_playlist(w->core);
+   LRESULT idx = cw_selected_entry(w);
+   const char *path;
+
+   if (idx < 0 || sel == (size_t)-1)
+      return;
+   if (MessageBoxA(w->hwnd, "Delete this playlist entry?", COMPANION_WIN32_TITLE,
+            MB_YESNO | MB_ICONQUESTION) != IDYES)
+      return;
+
+   path = companion_core_playlist_path(w->core, sel);
+   if (companion_core_playlist_delete_entry(w->core, path, (size_t)idx))
+      cw_reload_selected_playlist(w);
+}
+
+static void cw_associate_core(ui_companion_win32_wimp_t *w, UINT id)
+{
+   size_t sel = w->ctx_playlist;
+   const char *core_path = NULL;
+
+   if (sel == (size_t)-1)
+      sel = companion_core_selected_playlist(w->core);
+   if (sel == (size_t)-1)
+      return;
+   if (id != IDM_CW_ASSOC_DETECT)
+      core_path = companion_core_installed_core_path(w->core,
+            (size_t)(id - IDM_CW_ASSOC_BASE));
+
+   companion_core_playlist_set_default_core(w->core,
+         companion_core_playlist_path(w->core, sel), core_path);
+}
+
+static void cw_context_menu(ui_companion_win32_wimp_t *w, HWND from,
+      int x, int y)
+{
+   HMENU menu = CreatePopupMenu();
+   POINT pt;
+
+   if (!menu)
+      return;
+
+   /* Keyboard-invoked (x,y == -1): anchor at the control. */
+   if (x == -1 && y == -1)
+   {
+      RECT rc;
+      GetWindowRect(from, &rc);
+      x = rc.left + 8;
+      y = rc.top  + 8;
+   }
+   pt.x = x;
+   pt.y = y;
+
+   if (from == w->entries)
+   {
+      AppendMenuA(menu, MF_STRING, IDM_CW_RUN,          "&Run");
+      AppendMenuA(menu, MF_SEPARATOR, 0, NULL);
+      AppendMenuA(menu, MF_STRING, IDM_CW_DELETE_ENTRY, "&Delete Entry");
+   }
+   else if (from == w->playlists)
+   {
+      HMENU assoc = CreatePopupMenu();
+      POINT cl    = pt;
+      LRESULT hit;
+
+      ScreenToClient(w->playlists, &cl);
+      hit = SendMessageA(w->playlists, LB_ITEMFROMPOINT, 0,
+            MAKELPARAM(cl.x, cl.y));
+      /* HIWORD is non-zero when the point is outside any item. */
+      w->ctx_playlist = HIWORD(hit) ? (size_t)-1 : (size_t)LOWORD(hit);
+
+      if (assoc)
+      {
+         size_t i, n = companion_core_installed_core_count(w->core);
+         if (n > (size_t)(IDM_CW_ASSOC_MAX - IDM_CW_ASSOC_BASE))
+            n = (size_t)(IDM_CW_ASSOC_MAX - IDM_CW_ASSOC_BASE);
+
+         AppendMenuA(assoc, MF_STRING, IDM_CW_ASSOC_DETECT, "<Detect>");
+         if (n)
+            AppendMenuA(assoc, MF_SEPARATOR, 0, NULL);
+         for (i = 0; i < n; i++)
+         {
+            const char *name = companion_core_installed_core_name(w->core, i);
+            AppendMenuA(assoc, MF_STRING, IDM_CW_ASSOC_BASE + (UINT)i,
+                  name ? name : "");
+         }
+         AppendMenuA(menu, MF_POPUP, (UINT_PTR_COMPAT)assoc,
+               "&Associate Core");
+      }
+      AppendMenuA(menu, MF_STRING, IDM_CW_REFRESH, "Re&fresh Playlists");
+   }
+
+   TrackPopupMenu(menu, TPM_LEFTALIGN | TPM_TOPALIGN | TPM_RIGHTBUTTON,
+         pt.x, pt.y, 0, w->hwnd, NULL);
+   DestroyMenu(menu); /* destroys the submenu too */
 }
 
 static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
@@ -306,6 +427,12 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
             case IDM_CW_RUN:
                cw_run_selected(w);
                return 0;
+            case IDM_CW_DELETE_ENTRY:
+               cw_delete_selected(w);
+               return 0;
+            case IDM_CW_ASSOC_DETECT:
+               cw_associate_core(w, IDM_CW_ASSOC_DETECT);
+               return 0;
             case IDM_CW_REFRESH:
                companion_core_refresh_playlists(w->core);
                return 0;
@@ -316,7 +443,22 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                command_event(CMD_EVENT_QUIT, NULL);
                return 0;
             default:
+               if (     LOWORD(wparam) >= IDM_CW_ASSOC_BASE
+                     && LOWORD(wparam) <= IDM_CW_ASSOC_MAX)
+               {
+                  cw_associate_core(w, LOWORD(wparam));
+                  return 0;
+               }
                break;
+         }
+         break;
+
+      case WM_CONTEXTMENU:
+         if (w && ((HWND)wparam == w->entries || (HWND)wparam == w->playlists))
+         {
+            cw_context_menu(w, (HWND)wparam,
+                  (int)(short)LOWORD(lparam), (int)(short)HIWORD(lparam));
+            return 0;
          }
          break;
 
@@ -436,8 +578,9 @@ static void *ui_companion_win32_wimp_init(void)
    if (!w)
       return NULL;
 
-   g_win32_wimp = w;
-   w->core      = companion_core_new(&cw_callbacks, w);
+   g_win32_wimp    = w;
+   w->ctx_playlist = (size_t)-1;
+   w->core         = companion_core_new(&cw_callbacks, w);
 
    if (!w->core || !cw_create_window(w))
    {

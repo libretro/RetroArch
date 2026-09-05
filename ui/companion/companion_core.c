@@ -417,6 +417,41 @@ size_t companion_core_playlist_default_core(companion_core_t *core,
    return strlen(s);
 }
 
+/* --- Installed cores --------------------------------------------------- */
+
+static const core_info_t *companion_core_installed_core(size_t i)
+{
+   core_info_list_t *list = NULL;
+   if (!core_info_get_list(&list) || !list || i >= list->count)
+      return NULL;
+   return &list->list[i];
+}
+
+size_t companion_core_installed_core_count(companion_core_t *core)
+{
+   core_info_list_t *list = NULL;
+   if (!core || !core_info_get_list(&list) || !list)
+      return 0;
+   return list->count;
+}
+
+const char *companion_core_installed_core_path(companion_core_t *core,
+      size_t i)
+{
+   const core_info_t *info = core ? companion_core_installed_core(i) : NULL;
+   return info ? info->path : NULL;
+}
+
+const char *companion_core_installed_core_name(companion_core_t *core,
+      size_t i)
+{
+   const core_info_t *info = core ? companion_core_installed_core(i) : NULL;
+   if (!info)
+      return NULL;
+   return !string_is_empty(info->display_name)
+      ? info->display_name : info->core_name;
+}
+
 /* --- Playlist editing -------------------------------------------------- */
 
 playlist_t *companion_core_playlist_open(companion_core_t *core,
