@@ -73,6 +73,16 @@ extern "C" {
 #include "../../command.h"
 #include "../ui_companion_driver.h"
 #include "../companion/companion_core.h"
+
+/* The shared companion core owned by the running Qt companion (see
+ * ui_companion_qt_init); MainWindow and LoadCoreWindow issue their
+ * model operations through it. */
+static companion_core_t *qt_companion_core = NULL;
+
+companion_core_t *ui_companion_qt_core(void)
+{
+   return qt_companion_core;
+}
 #include "../../configuration.h"
 #include "../../frontend/frontend.h"
 #include "../../frontend/frontend_driver.h"
@@ -2875,30 +2885,15 @@ label_noext - The display name of the content that is guaranteed not
 */
 void MainWindow::loadContent(const PlaylistEntry &entry)
 {
-   content_ctx_info_t content_info;
    QByteArray corePathArray;
    QByteArray contentPathArray;
    QByteArray contentLabelArray;
    QByteArray contentDbNameArray;
    QByteArray contentCrc32Array;
-   char content_db_name_full[PATH_MAX_LENGTH];
-   char core_path_cached[PATH_MAX_LENGTH];
-   const char *core_path        = NULL;
-   const char *content_path     = NULL;
-   const char *content_label    = NULL;
-   const char *content_db_name  = NULL;
-   const char *content_crc32    = NULL;
-#ifdef HAVE_MENU
-   struct menu_state *menu_st   = menu_state_get_ptr();
-#endif
    QVariantMap coreMap          = m_launchWithComboBox->currentData(
          Qt::UserRole).value<QVariantMap>();
    core_selection coreSelection = static_cast<core_selection>(
          coreMap.value("core_selection").toInt());
-   core_info_t *coreInfo        = NULL;
-
-   content_db_name_full[0]      = '\0';
-   core_path_cached[0]          = '\0';
 
    if (m_pendingRun)
       coreSelection             = CORE_SELECTION_CURRENT;
@@ -2948,7 +2943,7 @@ void MainWindow::loadContent(const PlaylistEntry &entry)
    switch (coreSelection)
    {
       case CORE_SELECTION_CURRENT:
-         corePathArray     = path_get(RARCH_PATH_CORE);
+         corePathArray     = companion_core_current_core_path(qt_companion_core);
          contentPathArray  = entry.path.toUtf8();
          contentLabelArray = entry.labelNoExt.toUtf8();
          break;
@@ -2980,59 +2975,16 @@ void MainWindow::loadContent(const PlaylistEntry &entry)
    contentDbNameArray         = entry.dbName.toUtf8();
    contentCrc32Array          = entry.crc32.toUtf8();
 
-   core_path                  = corePathArray.constData();
-   content_path               = contentPathArray.constData();
-   content_label              = contentLabelArray.constData();
-   content_db_name            = contentDbNameArray.constData();
-   content_crc32              = contentCrc32Array.constData();
-
-   /* Search for specified core - ensures path
-    * is 'sanitised' */
-   if (    core_info_find(core_path, &coreInfo)
-       && (coreInfo->path && *coreInfo->path))
-      core_path = coreInfo->path;
-
-   /* If a core is currently running, the following
-    * call of 'command_event(CMD_EVENT_UNLOAD_CORE, NULL)'
-    * will free the global core_info struct, which will
-    * in turn free the pointer referenced by coreInfo->path.
-    * This will invalidate core_path, so we have to cache
-    * its current value here. */
-   if (core_path && *core_path)
-      strlcpy(core_path_cached, core_path, sizeof(core_path_cached));
-
-   /* Add lpl extension to db_name, if required */
-   if (content_db_name && *content_db_name)
-      fill_pathname(content_db_name_full, content_db_name,
-            ".lpl", sizeof(content_db_name_full));
-
-   content_info.argc                   = 0;
-   content_info.argv                   = NULL;
-   content_info.args                   = NULL;
-   content_info.environ_get            = NULL;
-
-#ifdef HAVE_MENU
-   menu_st->selection_ptr              = 0;
-#endif
-
-   command_event(CMD_EVENT_UNLOAD_CORE, NULL);
-
-   if (!task_push_load_content_with_new_core_from_companion_ui(
-         core_path_cached,
-         content_path,
-         content_label,
-         content_db_name_full,
-         content_crc32,
-         &content_info, NULL, NULL))
-   {
+   /* Core-path sanitising, .lpl suffixing, unloading the running core
+    * and pushing the load task all live in the shared companion core. */
+   if (!companion_core_request_load_content(qt_companion_core,
+            corePathArray.constData(),
+            contentPathArray.constData(),
+            contentLabelArray.constData(),
+            contentDbNameArray.constData(),
+            contentCrc32Array.constData()))
       QMessageBox::critical(this, msg_hash_to_str(MSG_ERROR),
             msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
-      return;
-   }
-
-#ifdef HAVE_MENU
-   menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
-#endif
 }
 
 void MainWindow::onRunClicked()
@@ -3774,11 +3726,7 @@ void MainWindow::onTimeout()
 
 void MainWindow::onStopClicked()
 {
-#ifdef HAVE_MENU
-   struct menu_state *menu_st = menu_state_get_ptr();
-   menu_st->selection_ptr     = 0;
-#endif
-   command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+   companion_core_unload_core(qt_companion_core);
    setCurrentCoreLabel();
    activateWindow();
    raise();
@@ -3872,13 +3820,8 @@ void MainWindow::onCoreLoaded()
 void MainWindow::onUnloadCoreMenuAction()
 {
    QAction *action            = qobject_cast<QAction*>(sender());
-#ifdef HAVE_MENU
-   struct menu_state *menu_st = menu_state_get_ptr();
-   menu_st->selection_ptr     = 0;
-#endif
 
-   /* TODO */
-   if (!command_event(CMD_EVENT_UNLOAD_CORE, NULL))
+   if (!companion_core_unload_core(qt_companion_core))
       return;
 
    setCurrentCoreLabel();
@@ -4679,6 +4622,8 @@ static void ui_companion_qt_deinit(void *data)
    /* why won't deleteLater() here call the destructor? */
    delete handle->window->qtWindow;
 
+   if (qt_companion_core == handle->core)
+      qt_companion_core = NULL;
    companion_core_free(handle->core);
    free(handle);
 }
@@ -5082,6 +5027,7 @@ static void* ui_companion_qt_init(void)
    handle->window  = static_cast<ui_window_qt_t*>(ui_window_qt.init());
    handle->core    = companion_core_new(&ui_companion_qt_core_callbacks,
          handle);
+   qt_companion_core = handle->core;
 
    screen          = qApp->primaryScreen();
    if (screen)
@@ -5382,14 +5328,7 @@ void LoadCoreWindow::loadCore(const char *path)
    qApp->processEvents();
 
 #ifdef HAVE_DYNAMIC
-   path_set(RARCH_PATH_CORE, path);
-
-   command_event(CMD_EVENT_CORE_INFO_DEINIT, NULL);
-   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
-
-   core_info_init_current_core();
-
-   if (!command_event(CMD_EVENT_LOAD_CORE, NULL))
+   if (!companion_core_load_core(qt_companion_core, path))
    {
       QMessageBox::critical(this, msg_hash_to_str(MSG_ERROR),
             msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE));

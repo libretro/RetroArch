@@ -57,6 +57,11 @@ extern "C" {
 #include <queues/task_queue.h>
 
 #include "../ui_companion_driver.h"
+#include "../companion/companion_core.h"
+
+/* Shared companion core owned by the running Qt companion; NULL when
+ * the Qt companion has not been initialised. */
+companion_core_t *ui_companion_qt_core(void);
 #include "../../retroarch.h"
 #include <formats/image.h>
 

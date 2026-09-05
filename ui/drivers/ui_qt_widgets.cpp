@@ -8653,67 +8653,13 @@ void MainWindow::deleteCurrentPlaylistItem()
 
 QString MainWindow::getPlaylistDefaultCore(QString plName)
 {
-   size_t _len;
-   playlist_config_t playlist_config;
-   char playlist_path[PATH_MAX_LENGTH];
-   QByteArray plNameByteArray          = plName.toUtf8();
-   const char *plNameCString           = plNameByteArray.data();
-   playlist_t *cachedPlaylist          = playlist_get_cached();
-   playlist_t *playlist                = NULL;
-   bool loadPlaylist                   = true;
-   QString corePath                    = QString();
-   settings_t *settings                = config_get_ptr();
+   char core_path[PATH_MAX_LENGTH];
+   QByteArray plNameByteArray = plName.toUtf8();
 
-   playlist_config.capacity            = COLLECTION_SIZE;
-   playlist_config.old_format          = settings->bools.playlist_use_old_format;
-   playlist_config.compress            = settings->bools.playlist_compression;
-   playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
-   playlist_config_set_base_content_directory(&playlist_config,
-		   settings->bools.playlist_portable_paths
-		 ? settings->paths.directory_menu_content : NULL);
-
-   if (!settings || !plNameCString || !*plNameCString)
-      return corePath;
-
-   /* Get playlist path */
-   _len = fill_pathname_join_special(
-         playlist_path,  settings->paths.directory_playlist,
-         plNameCString, sizeof(playlist_path));
-   strlcpy_lit(playlist_path       + _len, ".lpl",
-         sizeof(playlist_path) - _len);
-
-   /* Load playlist, if required */
-   if (cachedPlaylist)
-   {
-      if (string_is_equal(playlist_path,
-               playlist_get_conf_path(cachedPlaylist)))
-      {
-         playlist     = cachedPlaylist;
-         loadPlaylist = false;
-      }
-   }
-
-   if (loadPlaylist)
-   {
-      playlist_config_set_path(&playlist_config, playlist_path);
-      playlist = playlist_init(&playlist_config);
-   }
-
-   if (playlist)
-   {
-      const char *defaultCorePath = playlist_get_default_core_path(playlist);
-
-      /* Get default core path */
-      if (   (defaultCorePath && *defaultCorePath)
-          && !string_is_equal(defaultCorePath, "DETECT"))
-         corePath = QString::fromUtf8(defaultCorePath);
-
-      /* Free playlist, if required */
-      if (loadPlaylist)
-         playlist_free(playlist);
-   }
-
-   return corePath;
+   if (companion_core_playlist_default_core(ui_companion_qt_core(),
+            plNameByteArray.constData(), core_path, sizeof(core_path)))
+      return QString::fromUtf8(core_path);
+   return QString();
 }
 
 void MainWindow::getPlaylistFiles()

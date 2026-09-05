@@ -30,10 +30,14 @@
 
 #include "../../configuration.h"
 #include "../../content.h"
+#include "../../core_info.h"
 #include "../../retroarch_types.h"
 #include "../../file_path_special.h"
 #include "../../paths.h"
 #include "../../tasks/task_content.h"
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
 
 #include "companion_core.h"
 
@@ -286,24 +290,143 @@ const struct playlist_entry *companion_core_entry(companion_core_t *core,
 
 bool companion_core_request_load_entry(companion_core_t *core, size_t i)
 {
-   content_ctx_info_t content_info;
+   const char *core_path;
    const struct playlist_entry *entry = companion_core_entry(core, i);
 
    if (!entry || string_is_empty(entry->path))
       return false;
 
-   memset(&content_info, 0, sizeof(content_info));
-
    /* "DETECT" (or no core) in a playlist means: use whatever core is
     * currently loaded, exactly as the menu does. */
-   if (     !string_is_empty(entry->core_path)
-         && !string_is_equal(entry->core_path, "DETECT"))
-      return task_push_load_content_with_new_core_from_companion_ui(
-            entry->core_path, entry->path, entry->label,
-            entry->db_name, entry->crc32, &content_info, NULL, NULL);
+   core_path = entry->core_path;
+   if (string_is_empty(core_path) || string_is_equal(core_path, "DETECT"))
+      core_path = path_get(RARCH_PATH_CORE);
+   if (string_is_empty(core_path))
+      return false;
 
-   return task_push_load_content_with_current_core_from_companion_ui(
-         entry->path, &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+   return companion_core_request_load_content(core, core_path,
+         entry->path, entry->label, entry->db_name, entry->crc32);
+}
+
+bool companion_core_request_load_content(companion_core_t *core,
+      const char *core_path, const char *content_path,
+      const char *label, const char *db_name, const char *crc32)
+{
+   content_ctx_info_t content_info;
+   char core_path_cached[PATH_MAX_LENGTH];
+   char db_name_full[PATH_MAX_LENGTH];
+   core_info_t *info = NULL;
+
+   if (!core || string_is_empty(core_path) || string_is_empty(content_path))
+      return false;
+
+   /* Search for the specified core - ensures the path is sanitised. */
+   if (core_info_find(core_path, &info) && !string_is_empty(info->path))
+      core_path = info->path;
+
+   /* CMD_EVENT_UNLOAD_CORE below frees the global core_info list, and
+    * with it the string core_path may point into; keep a copy. */
+   strlcpy(core_path_cached, core_path, sizeof(core_path_cached));
+
+   db_name_full[0] = '\0';
+   if (!string_is_empty(db_name))
+      fill_pathname(db_name_full, db_name, ".lpl", sizeof(db_name_full));
+
+   memset(&content_info, 0, sizeof(content_info));
+
+   companion_core_unload_core(core);
+
+   if (!task_push_load_content_with_new_core_from_companion_ui(
+         core_path_cached, content_path, label,
+         db_name_full[0] ? db_name_full : NULL, crc32,
+         &content_info, NULL, NULL))
+      return false;
+
+#ifdef HAVE_MENU
+   menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
+#endif
+   return true;
+}
+
+bool companion_core_load_core(companion_core_t *core, const char *path)
+{
+#ifdef HAVE_DYNAMIC
+   if (!core || string_is_empty(path))
+      return false;
+
+   path_set(RARCH_PATH_CORE, path);
+
+   command_event(CMD_EVENT_CORE_INFO_DEINIT, NULL);
+   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+
+   core_info_init_current_core();
+
+   return command_event(CMD_EVENT_LOAD_CORE, NULL);
+#else
+   (void)core;
+   (void)path;
+   return false;
+#endif
+}
+
+bool companion_core_unload_core(companion_core_t *core)
+{
+   if (!core)
+      return false;
+#ifdef HAVE_MENU
+   menu_state_get_ptr()->selection_ptr = 0;
+#endif
+   return command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+}
+
+const char *companion_core_current_core_path(companion_core_t *core)
+{
+   const char *p = core ? path_get(RARCH_PATH_CORE) : NULL;
+   return p ? p : "";
+}
+
+size_t companion_core_playlist_default_core(companion_core_t *core,
+      const char *name, char *s, size_t len)
+{
+   size_t _len;
+   playlist_config_t cfg;
+   char playlist_path[PATH_MAX_LENGTH];
+   settings_t *settings  = config_get_ptr();
+   playlist_t *cached    = playlist_get_cached();
+   playlist_t *playlist  = NULL;
+   bool owned            = false;
+   const char *def       = NULL;
+
+   if (!s || !len)
+      return 0;
+   s[0] = '\0';
+   if (!core || string_is_empty(name))
+      return 0;
+
+   _len = fill_pathname_join_special(playlist_path,
+         settings->paths.directory_playlist, name, sizeof(playlist_path));
+   strlcpy_lit(playlist_path + _len, ".lpl", sizeof(playlist_path) - _len);
+
+   if (cached && string_is_equal(playlist_path, playlist_get_conf_path(cached)))
+      playlist = cached;
+   else
+   {
+      companion_core_playlist_config_init(&cfg, playlist_path);
+      playlist = playlist_init(&cfg);
+      owned    = true;
+   }
+
+   if (!playlist)
+      return 0;
+
+   def = playlist_get_default_core_path(playlist);
+   if (!string_is_empty(def) && !string_is_equal(def, "DETECT"))
+      strlcpy(s, def, len);
+
+   if (owned)
+      playlist_free(playlist);
+
+   return strlen(s);
 }
 
 bool companion_core_request_load(companion_core_t *core,

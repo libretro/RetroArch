@@ -105,6 +105,31 @@ bool companion_core_request_load_entry(companion_core_t *core, size_t i);
  * core; @content_path may be NULL to start the core without content. */
 bool companion_core_request_load(companion_core_t *core,
       const char *core_path, const char *content_path);
+/* Playlist-style load request, as issued by a companion's Run action:
+ * @core_path is sanitised against core_info, @db_name gets its .lpl
+ * extension, the running core is unloaded and the load is pushed to
+ * the task queue with the menu parked on the quick menu. Any argument
+ * but @core_path and @content_path may be NULL. Returns false when
+ * the task could not be pushed (the caller reports the failure). */
+bool companion_core_request_load_content(companion_core_t *core,
+      const char *core_path, const char *content_path,
+      const char *label, const char *db_name, const char *crc32);
+/* Load a core with no content (HAVE_DYNAMIC): sets the core path,
+ * rebuilds core_info and issues CMD_EVENT_LOAD_CORE. Returns false if
+ * the core could not be loaded (or the build is not HAVE_DYNAMIC). */
+bool companion_core_load_core(companion_core_t *core, const char *path);
+/* Unload the running core (CMD_EVENT_UNLOAD_CORE), resetting the menu
+ * selection as the companions do. */
+bool companion_core_unload_core(companion_core_t *core);
+/* Path of the currently loaded core ("" if none). */
+const char *companion_core_current_core_path(companion_core_t *core);
+/* Copy the default core path of playlist @name (file name without
+ * .lpl) into @s. Empty result when the playlist has none or "DETECT".
+ * Uses the menu's cached playlist when it is the same file; otherwise
+ * parses the file (synchronously - behaviour inherited from the Qt
+ * companion, to be moved to a budgeted parse). */
+size_t companion_core_playlist_default_core(companion_core_t *core,
+      const char *name, char *s, size_t len);
 void companion_core_event_command(companion_core_t *core,
       enum event_command cmd);
 
