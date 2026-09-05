@@ -118,42 +118,45 @@ static int action_cancel_cheat_details(const char *path,
 }
 #endif
 
-static const char* find_core_updater_list_flush_target()
+static const char *find_core_updater_list_flush_target(void)
 {
-   struct menu_state* menu_st = menu_state_get_ptr();
-   menu_list_t* list = menu_st->entries.list;
-   file_list_t const * const menu_list = MENU_LIST_GET(list, 0);
-   const size_t menu_stack_size = MENU_LIST_GET_STACK_SIZE(list, 0);
-   const char *candidate_label;
-   int all_targets_hashes[] = {
-      MENU_ENUM_LABEL_ONLINE_UPDATER,
-      MENU_ENUM_LABEL_CORE_LIST,
-      MENU_ENUM_LABEL_DEFERRED_CORE_LIST,
-      MSG_UNKNOWN,
-   };
+   struct menu_state *menu_st   = menu_state_get_ptr();
+   menu_list_t *list            = menu_st->entries.list;
+   const file_list_t *menu_list = MENU_LIST_GET(list, 0);
+   size_t menu_stack_size       = MENU_LIST_GET_STACK_SIZE(list, 0);
+   const char *targets[3];
+   size_t i, j;
 
-   size_t i;
-   int target_idx;
-   /* Iterate from the top of the stack to the bottom. If we hit zero we hit the bottom of the stack, can choose as last resort. */
-   for(i = menu_stack_size - 1; i > 0; i--)
+   targets[0] = msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER);
+   targets[1] = msg_hash_to_str(MENU_ENUM_LABEL_CORE_LIST);
+   targets[2] = msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CORE_LIST);
+
+   /* Iterate from the top of the stack to the bottom,
+    * excluding the bottom entry itself */
+   for (i = menu_stack_size; i > 1; i--)
    {
-      candidate_label = menu_list->list[i].label;
-      target_idx = 0;
-      while (all_targets_hashes[target_idx] != MSG_UNKNOWN)
+      const char *candidate_label = menu_list->list[i - 1].label;
+      for (j = 0; j < sizeof(targets) / sizeof(targets[0]); j++)
       {
-         if (string_is_equal(candidate_label, msg_hash_to_str(all_targets_hashes[target_idx++]))) return candidate_label;
+         if (string_is_equal(candidate_label, targets[j]))
+            return candidate_label;
       }
    }
-   return msg_hash_to_str(all_targets_hashes[0]);
+   return targets[0];
 }
 
-static int action_cancel_core_list(const char* path,
-   const char* label, unsigned type, size_t idx)
+static int action_cancel_core_list(const char *path,
+      const char *label, unsigned type, size_t idx)
 {
-   /* When we back out of the filtered core list, clear out any filters we used */
-   struct menu_state* menu_st = menu_state_get_ptr();
-   menu_st->driver_data->deferred_path[0] = '\0';
-   menu_st->driver_data->detect_content_path[0] = '\0';
+   /* When we back out of the filtered core list,
+    * clear out any filters we used */
+   menu_handle_t *menu = menu_state_get_ptr()->driver_data;
+
+   if (menu)
+   {
+      menu->deferred_path[0]       = '\0';
+      menu->detect_content_path[0] = '\0';
+   }
    return action_cancel_pop_default(path, label, type, idx);
 }
 
@@ -225,13 +228,13 @@ static int action_cancel_core_content(const char *path,
 static int menu_cbs_init_bind_cancel_compare_label(menu_file_list_cbs_t *cbs,
       const char *label)
 {
-   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST)) ||
-      string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SIDELOAD_CORE_LIST)) ||
-      string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_CORES_AVAILABLE)))
+   if (   string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CORE_UPDATER_LIST))
+       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SIDELOAD_CORE_LIST))
+       || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NO_CORES_AVAILABLE)))
    {
       BIND_ACTION_CANCEL(cbs, action_cancel_core_list);
    }
-      
+
    return -1;
 }
 

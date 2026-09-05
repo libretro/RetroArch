@@ -2973,7 +2973,7 @@ void core_info_free_core_updater_info(core_updater_info_t *info)
    if (info->licenses)
       free(info->licenses);
 
-   if(info->supported_extensions)
+   if (info->supported_extensions)
       free(info->supported_extensions);
 
    free(info);

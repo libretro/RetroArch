@@ -95,7 +95,7 @@ static void core_updater_list_free_entry(core_updater_list_entry_t *entry)
       entry->licenses_list = NULL;
    }
 
-   if(entry->supported_extensions)
+   if (entry->supported_extensions)
    {
       string_list_free(entry->supported_extensions);
       entry->supported_extensions = NULL;
@@ -574,7 +574,7 @@ static bool core_updater_list_set_core_info(
       entry->licenses_list = NULL;
    }
 
-   if(entry->supported_extensions)
+   if (entry->supported_extensions)
    {
       string_list_free(entry->supported_extensions);
       entry->supported_extensions = NULL;
