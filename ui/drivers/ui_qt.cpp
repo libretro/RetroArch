@@ -72,6 +72,7 @@ extern "C" {
 #include "../../core_info.h"
 #include "../../command.h"
 #include "../ui_companion_driver.h"
+#include "../companion/companion_core.h"
 #include "../../configuration.h"
 #include "../../frontend/frontend.h"
 #include "../../frontend/frontend_driver.h"
@@ -4476,7 +4477,37 @@ typedef struct ui_companion_qt
 {
    ui_application_qt_t *app;
    ui_window_qt_t *window;
+   /* Shared, toolkit-agnostic companion core. Model operations and
+    * RetroArch notifications are progressively being routed through it
+    * (see ui/companion/); Qt keeps only presentation. */
+   companion_core_t *core;
 } ui_companion_qt_t;
+
+/* companion_core -> Qt presentation callbacks */
+static void ui_companion_qt_core_on_status_message(void *ud,
+      const char *msg, unsigned prio, unsigned duration, bool flush)
+{
+   ui_companion_qt_t *handle  = (ui_companion_qt_t*)ud;
+   ui_window_qt_t *win_handle = NULL;
+   if (handle && (win_handle = (ui_window_qt_t*)handle->window))
+      win_handle->qtWindow->showStatusMessage(msg, prio, duration, flush);
+}
+
+static void ui_companion_qt_core_on_log_message(void *ud, const char *msg)
+{
+   ui_companion_qt_t *handle  = (ui_companion_qt_t*)ud;
+   ui_window_qt_t *win_handle = NULL;
+   if (handle && (win_handle = (ui_window_qt_t*)handle->window))
+      win_handle->qtWindow->appendLogMessage(msg);
+}
+
+static const companion_callbacks_t ui_companion_qt_core_callbacks = {
+   NULL, /* on_playlists_changed */
+   NULL, /* on_playlist_changed */
+   ui_companion_qt_core_on_status_message,
+   ui_companion_qt_core_on_log_message,
+   NULL  /* on_notify_refresh */
+};
 
 ThumbnailWidget::ThumbnailWidget(QWidget *parent) { }
 
@@ -4648,6 +4679,7 @@ static void ui_companion_qt_deinit(void *data)
    /* why won't deleteLater() here call the destructor? */
    delete handle->window->qtWindow;
 
+   companion_core_free(handle->core);
    free(handle);
 }
 
@@ -5048,6 +5080,8 @@ static void* ui_companion_qt_init(void)
    handle->app     = static_cast<ui_application_qt_t*>
       (ui_application_qt.initialize());
    handle->window  = static_cast<ui_window_qt_t*>(ui_window_qt.init());
+   handle->core    = companion_core_new(&ui_companion_qt_core_callbacks,
+         handle);
 
    screen          = qApp->primaryScreen();
    if (screen)
@@ -5208,9 +5242,8 @@ static void ui_companion_qt_notify_refresh(void *data)
 static void ui_companion_qt_log_msg(void *data, const char *msg)
 {
    ui_companion_qt_t *handle  = (ui_companion_qt_t*)data;
-   ui_window_qt_t *win_handle = (ui_window_qt_t*)handle->window;
-
-   win_handle->qtWindow->appendLogMessage(msg);
+   if (handle)
+      companion_core_log_message(handle->core, msg);
 }
 
 static bool ui_companion_qt_is_active(void *data)
@@ -5225,9 +5258,9 @@ void ui_companion_qt_msg_queue_push(void *data,
       const char *msg, unsigned priority, unsigned duration, bool flush)
 {
    ui_companion_qt_t *handle  = (ui_companion_qt_t*)data;
-   ui_window_qt_t *win_handle = NULL;
-   if (handle && (win_handle = (ui_window_qt_t*)handle->window))
-      win_handle->qtWindow->showStatusMessage(msg, priority, duration, flush);
+   if (handle)
+      companion_core_status_message(handle->core, msg, priority,
+            duration, flush);
 }
 
 ui_companion_driver_t ui_companion_qt = {
