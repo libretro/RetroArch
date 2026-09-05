@@ -2349,6 +2349,27 @@ void MainWindow::onFileBrowserTreeContextMenuRequested(const QPoint&)
 #endif
 }
 
+void MainWindow::onScanDirectoryClicked()
+{
+   QString dir = QFileDialog::getExistingDirectory(this,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
+         QString(), QFileDialog::ShowDirsOnly);
+   QByteArray dirArray;
+
+   if (dir.isEmpty())
+      return;
+
+   dirArray = QDir::toNativeSeparators(dir).toUtf8();
+   companion_core_request_scan(ui_companion_qt_core(),
+         dirArray.constData(), true,
+         m_settings->value("show_hidden_files", true).toBool());
+}
+
+void MainWindow::onQuitRetroArchClicked()
+{
+   companion_core_event_command(ui_companion_qt_core(), CMD_EVENT_QUIT);
+}
+
 void MainWindow::showStatusMessage(QString msg,
       unsigned priority, unsigned duration, bool flush)
 {
@@ -4486,10 +4507,21 @@ static void qt_companion_build_menubar(MainWindow *mainwindow)
    unloadCoreAction->setEnabled(false);
    unloadCoreAction->setShortcut(QKeySequence("Ctrl+U"));
 
+   /* Same entries the native companions carry. */
+   fileMenu->addSeparator();
+   fileMenu->addAction(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY), mainwindow,
+         SLOT(onScanDirectoryClicked()));
+   fileMenu->addSeparator();
+
    exitAction = fileMenu->addAction(msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_EXIT), mainwindow,
          SLOT(close()));
    exitAction->setShortcut(QKeySequence::Quit);
+
+   fileMenu->addAction(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH), mainwindow,
+         SLOT(onQuitRetroArchClicked()));
 
    editMenu = menu->addMenu(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT));
    editSearchAction = editMenu->addAction(msg_hash_to_str(

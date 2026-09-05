@@ -85,9 +85,25 @@
 #define COMPANION_WIN32_CLASS      "RetroArchCompanion"
 #define COMPANION_WIN32_TITLE      "RetroArch"
 #define COMPANION_WIN32_ITER_US    2000
-#define COMPANION_WIN32_PANE_W     200
+#define COMPANION_WIN32_PANE_W     200   /* initial playlist pane width */
+#define COMPANION_WIN32_PANE_MIN   100
+#define COMPANION_WIN32_SPLIT_W    5     /* draggable gap between panes */
 #define COMPANION_WIN32_MIN_W      480
 #define COMPANION_WIN32_MIN_H      320
+
+/* Pre-Win98 SDKs lack these; the messages themselves date from 95. */
+#ifndef WM_ENTERMENULOOP
+#define WM_ENTERMENULOOP 0x0211
+#endif
+#ifndef WM_EXITMENULOOP
+#define WM_EXITMENULOOP 0x0212
+#endif
+#ifndef WM_ENTERSIZEMOVE
+#define WM_ENTERSIZEMOVE 0x0231
+#endif
+#ifndef WM_EXITSIZEMOVE
+#define WM_EXITSIZEMOVE 0x0232
+#endif
 
 /* Control / command IDs. Kept clear of the ID_M_* range in ui_win32.h. */
 enum
@@ -121,6 +137,9 @@ typedef struct ui_companion_win32_wimp
    /* Playlist a context menu was opened on (a list box does not move
     * its selection on right-click); (size_t)-1 = use the selection. */
    size_t ctx_playlist;
+   /* Splitter between the playlist pane and the entries. */
+   int pane_w;
+   bool splitting;
    bool class_registered;
 } ui_companion_win32_wimp_t;
 
@@ -210,12 +229,36 @@ static void cw_layout(ui_companion_win32_wimp_t *w)
       status_h = sb.bottom - sb.top;
    }
 
+   /* Keep the pane inside the window as it is resized. */
+   if (w->pane_w > rc.right - COMPANION_WIN32_PANE_MIN - COMPANION_WIN32_SPLIT_W)
+      w->pane_w = rc.right - COMPANION_WIN32_PANE_MIN - COMPANION_WIN32_SPLIT_W;
+   if (w->pane_w < COMPANION_WIN32_PANE_MIN)
+      w->pane_w = COMPANION_WIN32_PANE_MIN;
+
    if (w->playlists)
-      MoveWindow(w->playlists, 0, 0, COMPANION_WIN32_PANE_W,
+      MoveWindow(w->playlists, 0, 0, w->pane_w,
             rc.bottom - status_h, TRUE);
    if (w->entries)
-      MoveWindow(w->entries, COMPANION_WIN32_PANE_W, 0,
-            rc.right - COMPANION_WIN32_PANE_W, rc.bottom - status_h, TRUE);
+      MoveWindow(w->entries, w->pane_w + COMPANION_WIN32_SPLIT_W, 0,
+            rc.right - w->pane_w - COMPANION_WIN32_SPLIT_W,
+            rc.bottom - status_h, TRUE);
+}
+
+/* The only client area not covered by a child control is the splitter
+ * gap (and the status bar), so a mouse message reaching the frame is on
+ * the splitter. */
+static bool cw_on_splitter(ui_companion_win32_wimp_t *w, int x, int y)
+{
+   RECT rc, sb;
+   int status_h = 0;
+   GetClientRect(w->hwnd, &rc);
+   if (w->status)
+   {
+      GetWindowRect(w->status, &sb);
+      status_h = sb.bottom - sb.top;
+   }
+   return x >= w->pane_w && x < w->pane_w + COMPANION_WIN32_SPLIT_W
+      && y >= 0 && y < rc.bottom - status_h;
 }
 
 /* --- companion_core -> Win32 callbacks -------------------------------- */
@@ -258,7 +301,9 @@ static const companion_callbacks_t cw_callbacks = {
    cw_on_status_message,
    NULL, /* on_log_message */
    cw_on_notify_refresh,
-   cw_on_scan_finished
+   cw_on_scan_finished,
+   NULL, /* on_thumbnail_downloaded */
+   NULL  /* on_thumbnail_pack_finished */
 };
 
 /* --- Window procedure ------------------------------------------------- */
@@ -447,6 +492,77 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
          ShowWindow(hwnd, SW_HIDE);
          return 0;
 
+      case WM_DESTROY:
+         win32_modal_window_destroyed(hwnd);
+         break;
+
+      /* Dragging or sizing this window, or browsing its menu bar, runs a
+       * modal loop inside DefWindowProc on the main thread. Clock the
+       * run loop through it exactly as the main window does, or
+       * RetroArch's video stops for the duration. */
+      case WM_ENTERSIZEMOVE:
+      case WM_ENTERMENULOOP:
+         win32_modal_enter(hwnd);
+         break;
+      case WM_EXITSIZEMOVE:
+      case WM_EXITMENULOOP:
+         win32_modal_exit(hwnd);
+         break;
+      case WM_RA_MODAL_TICK:
+         win32_modal_tick(hwnd);
+         return 0;
+      case WM_TIMER:
+         if (wparam == WIN32_MODAL_TIMER_ID)
+         {
+            win32_modal_tick(hwnd);
+            return 0;
+         }
+         break;
+
+      /* Splitter */
+      case WM_SETCURSOR:
+         if (w && (HWND)wparam == hwnd && LOWORD(lparam) == HTCLIENT)
+         {
+            POINT pt;
+            GetCursorPos(&pt);
+            ScreenToClient(hwnd, &pt);
+            if (w->splitting || cw_on_splitter(w, pt.x, pt.y))
+            {
+               SetCursor(LoadCursorA(NULL, MAKEINTRESOURCEA(32644))); /* IDC_SIZEWE */
+               return TRUE;
+            }
+         }
+         break;
+      case WM_LBUTTONDOWN:
+         if (w && cw_on_splitter(w, (int)(short)LOWORD(lparam),
+                  (int)(short)HIWORD(lparam)))
+         {
+            w->splitting = true;
+            SetCapture(hwnd);
+            return 0;
+         }
+         break;
+      case WM_MOUSEMOVE:
+         if (w && w->splitting)
+         {
+            w->pane_w = (int)(short)LOWORD(lparam) - COMPANION_WIN32_SPLIT_W / 2;
+            cw_layout(w);
+            return 0;
+         }
+         break;
+      case WM_LBUTTONUP:
+         if (w && w->splitting)
+         {
+            w->splitting = false;
+            ReleaseCapture();
+            return 0;
+         }
+         break;
+      case WM_CAPTURECHANGED:
+         if (w)
+            w->splitting = false;
+         break;
+
       case WM_COMMAND:
          if (!w)
             break;
@@ -628,6 +744,7 @@ static void *ui_companion_win32_wimp_init(void)
 
    g_win32_wimp    = w;
    w->ctx_playlist = (size_t)-1;
+   w->pane_w       = COMPANION_WIN32_PANE_W;
    w->core         = companion_core_new(&cw_callbacks, w);
 
    if (!w->core || !cw_create_window(w))

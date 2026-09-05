@@ -607,6 +607,8 @@ private slots:
    void onCurrentTableItemDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
    void onCurrentListItemChanged(QListWidgetItem *current, QListWidgetItem *previous);
    void onPlaylistModelLoaded();
+   void onScanDirectoryClicked();
+   void onQuitRetroArchClicked();
    void onCurrentListItemDataChanged(QListWidgetItem *item);
    void onCurrentItemChanged(const QModelIndex &index);
    void onCurrentItemChanged(const PlaylistEntry &entry);

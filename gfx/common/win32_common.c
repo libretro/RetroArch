@@ -636,14 +636,6 @@ uint16_t win32_get_keyboard_mods(void)
  * Every API here dates from Windows 95; the constants an older SDK
  * lacks are defined below. */
 
-/* Chosen not to collide with anything else that might use timers or
- * WM_APP messages on the main window. */
-#define WIN32_MODAL_TIMER_ID 0x5241
-#define WM_RA_MODAL_TICK     (WM_APP + 0x52)
-
-#ifndef WM_APP
-#define WM_APP 0x8000
-#endif
 #ifndef USER_TIMER_MINIMUM
 #define USER_TIMER_MINIMUM 0x0000000A
 #endif
@@ -740,7 +732,7 @@ static sthread_t *win32_modal_thread_get(win32_modal_t *m)
 }
 #endif
 
-static void win32_modal_enter(HWND hwnd)
+void win32_modal_enter(HWND hwnd)
 {
    win32_modal_t *m = &win32_modal;
 
@@ -797,7 +789,7 @@ static void win32_modal_stop(HWND hwnd)
    runloop_state_get_ptr()->pace_external = false;
 }
 
-static void win32_modal_exit(HWND hwnd)
+void win32_modal_exit(HWND hwnd)
 {
    win32_modal_t *m = &win32_modal;
 
@@ -808,6 +800,15 @@ static void win32_modal_exit(HWND hwnd)
 
 /* The window is going away. Any session is ended and the thread, if
  * one was ever started, is joined. */
+void win32_modal_window_destroyed(HWND hwnd)
+{
+   win32_modal_t *m = &win32_modal;
+   /* Only the window whose loop is being clocked ends the session;
+    * another window closing during a drag is none of our business. */
+   if (m->hwnd == hwnd)
+      win32_modal_stop(hwnd);
+}
+
 static void win32_modal_deinit(HWND hwnd)
 {
    win32_modal_t *m = &win32_modal;
@@ -834,7 +835,7 @@ static void win32_modal_deinit(HWND hwnd)
 #endif
 }
 
-static void win32_modal_tick(HWND hwnd)
+void win32_modal_tick(HWND hwnd)
 {
    win32_modal_t *m = &win32_modal;
    int ret;
