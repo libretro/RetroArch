@@ -389,10 +389,8 @@ size_t companion_core_playlist_default_core(companion_core_t *core,
       const char *name, char *s, size_t len)
 {
    size_t _len;
-   playlist_config_t cfg;
    char playlist_path[PATH_MAX_LENGTH];
    settings_t *settings  = config_get_ptr();
-   playlist_t *cached    = playlist_get_cached();
    playlist_t *playlist  = NULL;
    bool owned            = false;
    const char *def       = NULL;
@@ -407,15 +405,7 @@ size_t companion_core_playlist_default_core(companion_core_t *core,
          settings->paths.directory_playlist, name, sizeof(playlist_path));
    strlcpy_lit(playlist_path + _len, ".lpl", sizeof(playlist_path) - _len);
 
-   if (cached && string_is_equal(playlist_path, playlist_get_conf_path(cached)))
-      playlist = cached;
-   else
-   {
-      companion_core_playlist_config_init(&cfg, playlist_path);
-      playlist = playlist_init(&cfg);
-      owned    = true;
-   }
-
+   playlist = companion_core_playlist_open(core, playlist_path, &owned);
    if (!playlist)
       return 0;
 
@@ -423,10 +413,107 @@ size_t companion_core_playlist_default_core(companion_core_t *core,
    if (!string_is_empty(def) && !string_is_equal(def, "DETECT"))
       strlcpy(s, def, len);
 
+   companion_core_playlist_release(core, playlist, owned, false);
+   return strlen(s);
+}
+
+/* --- Playlist editing -------------------------------------------------- */
+
+playlist_t *companion_core_playlist_open(companion_core_t *core,
+      const char *path, bool *owned)
+{
+   playlist_config_t cfg;
+   playlist_t *cached = playlist_get_cached();
+
+   if (owned)
+      *owned = false;
+   if (!core || string_is_empty(path))
+      return NULL;
+
+   /* Borrow the menu's cached playlist when it is the same file: an
+    * edit then goes through the object the menu reads, and the write
+    * keeps disk coherent with it. */
+   if (cached && string_is_equal(path, playlist_get_conf_path(cached)))
+      return cached;
+
+   companion_core_playlist_config_init(&cfg, path);
+   if (owned)
+      *owned = true;
+   return playlist_init(&cfg);
+}
+
+void companion_core_playlist_release(companion_core_t *core,
+      playlist_t *playlist, bool owned, bool write)
+{
+   if (!core || !playlist)
+      return;
+   if (write)
+      playlist_write_file(playlist);
    if (owned)
       playlist_free(playlist);
+}
 
-   return strlen(s);
+bool companion_core_playlist_update_entry(companion_core_t *core,
+      const char *path, size_t index, const struct playlist_entry *entry)
+{
+   bool owned           = false;
+   playlist_t *playlist = companion_core_playlist_open(core, path, &owned);
+
+   if (!playlist || !entry)
+      return false;
+   if (index >= playlist_size(playlist))
+   {
+      companion_core_playlist_release(core, playlist, owned, false);
+      return false;
+   }
+
+   playlist_update(playlist, index, entry);
+   companion_core_playlist_release(core, playlist, owned, true);
+   return true;
+}
+
+bool companion_core_playlist_delete_entry(companion_core_t *core,
+      const char *path, size_t index)
+{
+   bool owned           = false;
+   playlist_t *playlist = companion_core_playlist_open(core, path, &owned);
+
+   if (!playlist)
+      return false;
+   if (index >= playlist_size(playlist))
+   {
+      companion_core_playlist_release(core, playlist, owned, false);
+      return false;
+   }
+
+   playlist_delete_index(playlist, index);
+   companion_core_playlist_release(core, playlist, owned, true);
+   return true;
+}
+
+bool companion_core_playlist_set_default_core(companion_core_t *core,
+      const char *path, const char *core_path)
+{
+   core_info_t *info    = NULL;
+   bool owned           = false;
+   playlist_t *playlist = companion_core_playlist_open(core, path, &owned);
+
+   if (!playlist)
+      return false;
+
+   if (!string_is_empty(core_path) && core_info_find(core_path, &info))
+   {
+      playlist_set_default_core_path(playlist, info->path);
+      playlist_set_default_core_name(playlist, info->display_name);
+   }
+   else
+   {
+      playlist_set_default_core_path(playlist, "DETECT");
+      playlist_set_default_core_name(playlist, "DETECT");
+   }
+
+   companion_core_playlist_release(core, playlist, owned, true);
+   return true;
 }
 
 bool companion_core_request_load(companion_core_t *core,

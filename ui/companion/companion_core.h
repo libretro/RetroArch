@@ -133,6 +133,29 @@ size_t companion_core_playlist_default_core(companion_core_t *core,
 void companion_core_event_command(companion_core_t *core,
       enum event_command cmd);
 
+/* --- Playlist editing ---------------------------------------------- */
+
+/* Open playlist file @path for reading or editing. When it is the
+ * playlist the menu currently has cached, that object is returned and
+ * *owned is false (edits then go through the object the menu reads);
+ * otherwise the file is parsed (synchronously) and *owned is true.
+ * Release with companion_core_playlist_release(); NULL on failure. */
+playlist_t *companion_core_playlist_open(companion_core_t *core,
+      const char *path, bool *owned);
+/* Write @playlist to disk if @write, then free it if @owned. */
+void companion_core_playlist_release(companion_core_t *core,
+      playlist_t *playlist, bool owned, bool write);
+/* Replace entry @index of playlist file @path with @entry and write. */
+bool companion_core_playlist_update_entry(companion_core_t *core,
+      const char *path, size_t index, const struct playlist_entry *entry);
+/* Delete entry @index of playlist file @path and write. */
+bool companion_core_playlist_delete_entry(companion_core_t *core,
+      const char *path, size_t index);
+/* Associate playlist file @path with @core_path (resolved through
+ * core_info; unknown or NULL -> "DETECT") and write. */
+bool companion_core_playlist_set_default_core(companion_core_t *core,
+      const char *path, const char *core_path);
+
 /* --- Inbound notifications from RetroArch (called by the driver glue) */
 
 void companion_core_status_message(companion_core_t *core,

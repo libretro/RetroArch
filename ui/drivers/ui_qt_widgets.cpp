@@ -7907,7 +7907,6 @@ bool MainWindow::updateCurrentPlaylistEntry(
    QByteArray coreNameArray;
    QByteArray dbNameArray;
    QByteArray crc32Array;
-   playlist_config_t playlist_config;
    QString playlistPath         = getCurrentPlaylistPath();
    const char *playlistPathData = NULL;
    const char *pathData         = NULL;
@@ -7916,16 +7915,6 @@ bool MainWindow::updateCurrentPlaylistEntry(
    const char *coreNameData     = NULL;
    const char *dbNameData       = NULL;
    const char *crc32Data        = NULL;
-   playlist_t *playlist         = NULL;
-   settings_t *settings         = config_get_ptr();
-
-   playlist_config.capacity            = COLLECTION_SIZE;
-   playlist_config.old_format          = settings->bools.playlist_use_old_format;
-   playlist_config.compress            = settings->bools.playlist_compression;
-   playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
-   playlist_config_set_base_content_directory(&playlist_config,
-		    settings->bools.playlist_portable_paths
-		  ? settings->paths.directory_menu_content : NULL);
 
    if (    playlistPath.isEmpty()
         || contentEntry.path.isEmpty()
@@ -7978,44 +7967,20 @@ bool MainWindow::updateCurrentPlaylistEntry(
    }
 
    {
-      /* Reuse the cached playlist when it is the same file (the
-       * update then goes through the object the menu reads, and
-       * the write keeps disk coherent); parse otherwise. */
-      playlist_t *cachedPlaylist = playlist_get_cached();
-      bool loadPlaylist          = true;
+      struct playlist_entry entry = {0};
 
-      if (   cachedPlaylist
-          && string_is_equal(playlistPathData,
-               playlist_get_conf_path(cachedPlaylist)))
-      {
-         playlist     = cachedPlaylist;
-         loadPlaylist = false;
-      }
+      /* The update function reads our entry as const,
+       * so these casts are safe */
+      entry.path      = const_cast<char*>(pathData);
+      entry.label     = const_cast<char*>(labelData);
+      entry.core_path = const_cast<char*>(corePathData);
+      entry.core_name = const_cast<char*>(coreNameData);
+      entry.crc32     = const_cast<char*>(crc32Data);
+      entry.db_name   = const_cast<char*>(dbNameData);
 
-      if (loadPlaylist)
-      {
-         playlist_config_set_path(&playlist_config, playlistPathData);
-         playlist = playlist_init(&playlist_config);
-      }
-
-      {
-         struct playlist_entry entry = {0};
-
-         /* The update function reads our entry as const,
-          * so these casts are safe */
-         entry.path      = const_cast<char*>(pathData);
-         entry.label     = const_cast<char*>(labelData);
-         entry.core_path = const_cast<char*>(corePathData);
-         entry.core_name = const_cast<char*>(coreNameData);
-         entry.crc32     = const_cast<char*>(crc32Data);
-         entry.db_name   = const_cast<char*>(dbNameData);
-
-         playlist_update(playlist, contentEntry.index, &entry);
-      }
-
-      playlist_write_file(playlist);
-      if (loadPlaylist)
-         playlist_free(playlist);
+      if (!companion_core_playlist_update_entry(ui_companion_qt_core(),
+               playlistPathData, contentEntry.index, &entry))
+         return false;
    }
 
    reloadPlaylists();
@@ -8042,7 +8007,6 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
    QScopedPointer<QAction> downloadAllThumbnailsEntireSystemAction;
    QScopedPointer<QAction> downloadAllThumbnailsThisPlaylistAction;
    QPointer<QAction> selectedAction;
-   playlist_config_t playlist_config;
    QPoint cursorPos                    = QCursor::pos();
    settings_t *settings                = config_get_ptr();
    const char *path_dir_playlist       = settings->paths.directory_playlist;
@@ -8055,14 +8019,6 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
    int j                               = 0;
    bool specialPlaylist                = false;
    bool foundHiddenPlaylist            = false;
-
-   playlist_config.capacity            = COLLECTION_SIZE;
-   playlist_config.old_format          = settings->bools.playlist_use_old_format;
-   playlist_config.compress            = settings->bools.playlist_compression;
-   playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
-   playlist_config_set_base_content_directory(&playlist_config,
-		   settings->bools.playlist_portable_paths
-		 ? settings->paths.directory_menu_content : NULL);
 
    if (selectedItem)
    {
@@ -8222,54 +8178,12 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
 
    if (!specialPlaylist && selectedAction->parent() == associateMenu.data())
    {
-      core_info_t *coreInfo                   = NULL;
-      playlist_t *cachedPlaylist              = playlist_get_cached();
-      playlist_t *playlist                    = NULL;
-      bool loadPlaylist                       = true;
       QByteArray currentPlaylistPathByteArray = currentPlaylistPath.toUtf8();
-      const char *currentPlaylistPathCString  = currentPlaylistPathByteArray.data();
       QByteArray corePathByteArray            = selectedAction->property("core_path").toString().toUtf8();
-      const char *corePath                    = corePathByteArray.data();
 
-      /* Load playlist, if required */
-      if (cachedPlaylist)
-      {
-         if (string_is_equal(currentPlaylistPathCString,
-                  playlist_get_conf_path(cachedPlaylist)))
-         {
-            playlist     = cachedPlaylist;
-            loadPlaylist = false;
-         }
-      }
-
-      if (loadPlaylist)
-      {
-         playlist_config_set_path(&playlist_config, currentPlaylistPathCString);
-         playlist = playlist_init(&playlist_config);
-      }
-
-      if (playlist)
-      {
-         /* Get core info */
-         if (core_info_find(corePath, &coreInfo))
-         {
-            /* Set new core association */
-            playlist_set_default_core_path(playlist, coreInfo->path);
-            playlist_set_default_core_name(playlist, coreInfo->display_name);
-         }
-         else
-         {
-            playlist_set_default_core_path(playlist, "DETECT");
-            playlist_set_default_core_name(playlist, "DETECT");
-         }
-
-         /* Write changes to disk */
-         playlist_write_file(playlist);
-
-         /* Free playlist, if required */
-         if (loadPlaylist)
-            playlist_free(playlist);
-      }
+      companion_core_playlist_set_default_core(ui_companion_qt_core(),
+            currentPlaylistPathByteArray.constData(),
+            corePathByteArray.constData());
    }
    else if (selectedItem && selectedAction == deletePlaylistAction.data())
    {
@@ -8593,21 +8507,10 @@ bool MainWindow::currentPlaylistIsAll()
 void MainWindow::deleteCurrentPlaylistItem()
 {
    QByteArray playlistArray;
-   playlist_config_t playlist_config;
    QString playlistPath                = getCurrentPlaylistPath();
    PlaylistEntry contentEntry          = getCurrentContentEntry();
-   playlist_t *playlist                = NULL;
    const char *playlistData            = NULL;
    bool isAllPlaylist                  = currentPlaylistIsAll();
-   settings_t *settings                = config_get_ptr();
-
-   playlist_config.capacity            = COLLECTION_SIZE;
-   playlist_config.old_format          = settings->bools.playlist_use_old_format;
-   playlist_config.compress            = settings->bools.playlist_compression;
-   playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
-   playlist_config_set_base_content_directory(&playlist_config,
-		   settings->bools.playlist_portable_paths
-		 ? settings->paths.directory_menu_content : NULL);
 
    if (isAllPlaylist)
       return;
@@ -8624,29 +8527,8 @@ void MainWindow::deleteCurrentPlaylistItem()
    if (!showMessageBox(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM)).arg(contentEntry.label), MainWindow::MSGBOX_TYPE_QUESTION_YESNO, Qt::ApplicationModal, false))
       return;
 
-   {
-      playlist_t *cachedPlaylist = playlist_get_cached();
-      bool loadPlaylist          = true;
-
-      if (   cachedPlaylist
-          && string_is_equal(playlistData,
-               playlist_get_conf_path(cachedPlaylist)))
-      {
-         playlist     = cachedPlaylist;
-         loadPlaylist = false;
-      }
-
-      if (loadPlaylist)
-      {
-         playlist_config_set_path(&playlist_config, playlistData);
-         playlist = playlist_init(&playlist_config);
-      }
-
-      playlist_delete_index(playlist, contentEntry.index);
-      playlist_write_file(playlist);
-      if (loadPlaylist)
-         playlist_free(playlist);
-   }
+   companion_core_playlist_delete_entry(ui_companion_qt_core(),
+         playlistData, contentEntry.index);
 
    reloadPlaylists();
 }
@@ -8674,22 +8556,12 @@ void MainWindow::getPlaylistFiles()
 void PlaylistModel::getPlaylistItems(QString path)
 {
    QByteArray pathArray;
-   playlist_config_t playlist_config;
    const char *pathData                = NULL;
    const char *playlistName            = NULL;
    playlist_t *playlist                = NULL;
-   bool playlistCached                 = false;
+   bool playlistOwned                  = false;
    unsigned playlistSize               = 0;
    unsigned            i               = 0;
-   settings_t *settings                = config_get_ptr();
-
-   playlist_config.capacity            = COLLECTION_SIZE;
-   playlist_config.old_format          = settings->bools.playlist_use_old_format;
-   playlist_config.compress            = settings->bools.playlist_compression;
-   playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
-   playlist_config_set_base_content_directory(&playlist_config,
-		   settings->bools.playlist_portable_paths
-		 ? settings->paths.directory_menu_content : NULL);
 
    pathArray.append(path.toUtf8());
    pathData              = pathArray.constData();
@@ -8708,23 +8580,13 @@ void PlaylistModel::getPlaylistItems(QString path)
        * budgeted playlist_init_cached_deferred() the menu uses
        * would need Qt-side continuation (a timer driving the parse
        * plus a model reset on completion) rather than a drop-in
-       * swap.  The cache borrow above already removes the common
-       * case of that cost. */
-      playlist_t *cachedPlaylist = playlist_get_cached();
-
-      if (   cachedPlaylist
-          && string_is_equal(pathData,
-               playlist_get_conf_path(cachedPlaylist)))
-      {
-         playlist       = cachedPlaylist;
-         playlistCached = true;
-      }
-      else
-      {
-         playlist_config_set_path(&playlist_config, pathData);
-         playlist = playlist_init(&playlist_config);
-      }
+       * swap.  The cache borrow (companion_core_playlist_open) already
+       * removes the common case of that cost. */
+      playlist = companion_core_playlist_open(ui_companion_qt_core(),
+            pathData, &playlistOwned);
    }
+   if (!playlist)
+      return;
    playlistSize          = playlist_get_size(playlist);
 
    for (i = 0; i < playlistSize; i++)
@@ -8775,8 +8637,8 @@ void PlaylistModel::getPlaylistItems(QString path)
       m_contents.append(rowEntry);
    }
 
-   if (!playlistCached)
-      playlist_free(playlist);
+   companion_core_playlist_release(ui_companion_qt_core(), playlist,
+         playlistOwned, false);
    playlist = NULL;
 }
 
