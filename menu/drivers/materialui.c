@@ -54,6 +54,7 @@
 #include "../../input/input_osk.h"
 #include "../../list_special.h"
 #include "../../tasks/tasks_internal.h"
+#include "../../profile_manager.h"
 
 #ifdef HAVE_AUDIOMIXER
 #include "../../audio/audio_driver.h"
@@ -7078,11 +7079,13 @@ MUI_NOINLINE static void materialui_render_header(
       math_matrix_4x4 *mymat)
 {
    char menu_title_buf[NAME_MAX_LENGTH];
+   char sys_bar_profile_name[128];
    size_t menu_title_margin              = 0;
    int usable_sys_bar_width              = (int)video_width - (int)mui->nav_bar_layout_width;
    int usable_title_bar_width            = usable_sys_bar_width;
    size_t sys_bar_battery_width          = 0;
    size_t sys_bar_clock_width            = 0;
+   size_t sys_bar_profile_width          = 0;
    int sys_bar_text_y                    = (int)(((float)mui->sys_bar_height / 2.0f) + (float)mui->font_data.hint.line_centre_offset);
    int title_x                           = 0;
    bool show_back_icon                   = menu_list ? (MENU_LIST_GET_STACK_SIZE(menu_st->entries.list, 0) > 1) : false;
@@ -7102,7 +7105,18 @@ MUI_NOINLINE static void materialui_render_header(
    unsigned menu_timedate_date_separator = settings->uints.menu_timedate_date_separator;
    bool menu_core_enable                 = settings->bools.menu_core_enable;
 
-   menu_title_buf[0]  = '\0';
+   menu_title_buf[0]       = '\0';
+   sys_bar_profile_name[0] = '\0';
+
+   /* Get active profile name - hide "Default" to keep header clean */
+   {
+      char profile_icon_unused[PATH_MAX_LENGTH];
+      profile_icon_unused[0] = '\0';
+      profile_manager_get_active(sys_bar_profile_name, sizeof(sys_bar_profile_name),
+            profile_icon_unused, sizeof(profile_icon_unused));
+      if (string_is_equal(sys_bar_profile_name, "Default"))
+         sys_bar_profile_name[0] = '\0';
+   }
 
    /* Draw background quads
     * > Title bar is underneath system bar
@@ -7298,6 +7312,35 @@ MUI_NOINLINE static void materialui_render_header(
    usable_sys_bar_width    -= (2 * mui->sys_bar_margin);
    if (usable_sys_bar_width <= 0)
       usable_sys_bar_width  = 0;
+
+   /* > profile name in bar */
+   if (sys_bar_profile_name[0] && mui->font_data.hint.font)
+   {
+      int profile_name_width = font_driver_get_message_width(
+            mui->font_data.hint.font,
+            sys_bar_profile_name,
+            strlen(sys_bar_profile_name),
+            1.0f);
+
+      if (profile_name_width > 0)
+      {
+         /* Small margin between profile name and clock */
+         sys_bar_profile_width = (size_t)profile_name_width + mui->sys_bar_margin;
+
+         gfx_display_draw_text(mui->font_data.hint.font,
+               sys_bar_profile_name,
+               (int)video_width - (
+                    (int)sys_bar_profile_width
+                  + (int)sys_bar_clock_width
+                  + (int)sys_bar_battery_width
+                  + (int)mui->nav_bar_layout_width),
+               sys_bar_text_y,
+               video_width, video_height, mui->colors.sys_bar_text,
+               TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, false);
+
+         usable_sys_bar_width -= sys_bar_profile_width;
+      }
+   }
 
    /* > Draw core name, if required */
    if (menu_core_enable)
