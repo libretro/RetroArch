@@ -8794,9 +8794,6 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_LOAD_CONTENT_LIST:
       case DISPLAYLIST_LOAD_CONTENT_SPECIAL:
       {
-         core_info_list_t *info_list = NULL;
-         core_info_get_list(&info_list);
-
          if (*settings->paths.directory_menu_content)
             if (menu_entries_append(list,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES),
@@ -8805,7 +8802,7 @@ unsigned menu_displaylist_build_list(
                      MENU_SETTING_ACTION_FAVORITES_DIR, 0, 0, NULL))
                count++;
 
-         if (info_list && info_list->info_count > 0)
+         if (*settings->paths.directory_core_assets)
             if (menu_entries_append(list,
                      msg_hash_to_str(
                         MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST),
