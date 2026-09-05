@@ -55,7 +55,7 @@
 #include "../video_thread_wrapper.h"
 #endif
 
-#include "../common/metal/metal_shader_types.h"
+#include "metal.h"
 #include "../gfx_display.h"
 #include "../drivers_shader/slang_process.h"
 
@@ -346,8 +346,6 @@ typedef NS_ENUM(NSInteger, ViewDrawState)
 @end
 
 #pragma mark - Driver Classes
-
-#include "../common/metal_view.h"
 
 @interface FrameView : NSObject
 

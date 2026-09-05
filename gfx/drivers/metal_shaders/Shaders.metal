@@ -19,8 +19,8 @@
 #include <metal_stdlib>
 #include <simd/simd.h>
 
-/* Including header shared between this Metal shader code and Swift/C code executing Metal API commands */
-#import "metal_shader_types.h"
+/* Including header shared between this Metal shader code and the C/ObjC code executing Metal API commands */
+#import "../metal.h"
 
 using namespace metal;
 
@@ -394,10 +394,10 @@ fragment float4 snowflake_fragment(FontFragmentIn        in         [[ stage_in 
 
 namespace hdr
 {
-   /* Matches HDRUniforms in metal_shader_types.h. MSL lays out constant buffers
+   /* Matches HDRUniforms in metal.h. MSL lays out constant buffers
     * with std140-compatible rules here (float4 / matrix aligned to 16 bytes),
     * so the fields line up with the CPU-side struct without manual padding
-    * beyond what metal_shader_types.h already declares. */
+    * beyond what metal.h already declares. */
 
    constant float kMaxNitsFor2084  = 10000.0f;
    constant float kscRGBWhiteNits  = 80.0f;

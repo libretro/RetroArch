@@ -338,9 +338,8 @@
 		05A8C71320DB72F000FF7857 /* video_filter.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = video_filter.h; sourceTree = "<group>"; };
 		05A8C73920DB72F100FF7857 /* font_driver.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = font_driver.c; sourceTree = "<group>"; };
 		05A8C73C20DB72F100FF7857 /* vulkan_common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = vulkan_common.c; sourceTree = "<group>"; };
-		DEAD000000000000DEADBEE1 /* metal_view.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = metal_view.h; sourceTree = "<group>"; };
 		05A8C74E20DB72F100FF7857 /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
-		05A8C75120DB72F100FF7857 /* metal_shader_types.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = metal_shader_types.h; sourceTree = "<group>"; };
+		05A8C75120DB72F100FF7857 /* metal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = metal.h; sourceTree = "<group>"; };
 		05A8C75D20DB72F100FF7857 /* gl_common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = gl_common.c; sourceTree = "<group>"; };
 		05A8C75E20DB72F100FF7857 /* d3d_common.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = d3d_common.c; sourceTree = "<group>"; };
 		05A8C76820DB72F100FF7857 /* vulkan_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = vulkan_common.h; sourceTree = "<group>"; };
@@ -878,8 +877,10 @@
 			children = (
 				05A8C64120DB72F000FF7857 /* d3d_shaders */,
 				05A8C60020DB72F000FF7857 /* gl_shaders */,
+				05A8C74520DB72F100FF7857 /* metal_shaders */,
 				05A8C62220DB72F000FF7857 /* vulkan_shaders */,
 				05A8C63E20DB72F000FF7857 /* d3d10.c */,
+				05A8C75120DB72F100FF7857 /* metal.h */,
 				05A8C5F720DB72F000FF7857 /* metal.m */,
 				05A8C5FF20DB72F000FF7857 /* vulkan.c */,
 			);
@@ -972,27 +973,24 @@
 		05A8C73A20DB72F100FF7857 /* common */ = {
 			isa = PBXGroup;
 			children = (
-				05A8C74520DB72F100FF7857 /* metal */,
 				05A8C75E20DB72F100FF7857 /* d3d_common.c */,
 				05A8C77020DB72F100FF7857 /* d3d_common.h */,
 				0538874D20DDD5C600769232 /* dxgi_common.c */,
 				0538874E20DDD5C600769232 /* dxgi_common.h */,
 				05A8C75D20DB72F100FF7857 /* gl_common.c */,
 				05A8C76F20DB72F100FF7857 /* gl_common.h */,
-				DEAD000000000000DEADBEE1 /* metal_view.h */,
 				05A8C73C20DB72F100FF7857 /* vulkan_common.c */,
 				05A8C76820DB72F100FF7857 /* vulkan_common.h */,
 			);
 			path = common;
 			sourceTree = "<group>";
 		};
-		05A8C74520DB72F100FF7857 /* metal */ = {
+		05A8C74520DB72F100FF7857 /* metal_shaders */ = {
 			isa = PBXGroup;
 			children = (
 				05A8C74E20DB72F100FF7857 /* Shaders.metal */,
-				05A8C75120DB72F100FF7857 /* metal_shader_types.h */,
 			);
-			path = metal;
+			path = metal_shaders;
 			sourceTree = "<group>";
 		};
 		05A8C78E20DB72F100FF7857 /* drivers_shader */ = {

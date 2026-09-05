@@ -15,11 +15,19 @@
  */
 
 /*
- *  Header containing types and enum constants shared between Metal shaders and Swift/ObjC source
+ *  Interface shared by the Metal driver (gfx/drivers/metal.m), the Cocoa
+ *  UI drivers that host its render view, and the shader source in
+ *  metal_shaders/Shaders.metal.
+ *
+ *  The file is compiled three ways: as MSL by the Metal compiler
+ *  (__METAL_VERSION__), as Objective-C by metal.m and ui_cocoa*.m
+ *  (__OBJC__), and as plain C by anything that only needs the struct
+ *  layouts. Objective-C declarations therefore sit behind __OBJC__ so
+ *  the shader build never sees them.
  */
 
-#ifndef METAL_SHADER_TYPES_H
-#define METAL_SHADER_TYPES_H
+#ifndef METAL_H__
+#define METAL_H__
 
 #ifdef __METAL_VERSION__
 #define NS_ENUM(_type, _name) enum _name : _type _name; enum _name : _type
@@ -127,5 +135,17 @@ typedef struct
                                         the no-shader source, since the slang
                                         path pre-rotates via mvp_last_pass */
 } HDRUniforms;
+
+#ifdef __OBJC__
+#import <MetalKit/MetalKit.h>
+
+/* MTKView subclass backing the Metal driver's render surface. metal.m
+ * carries the @implementation; the Cocoa UI drivers instantiate it and
+ * drive its drawable size. Declaring it here keeps a single @interface
+ * in the unity build, where metal.m and ui_cocoa.m / ui_cocoatouch.m
+ * land in one translation unit via griffin/griffin_objc.m. */
+@interface MetalView : MTKView
+@end
+#endif
 
 #endif
