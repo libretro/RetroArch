@@ -1895,6 +1895,10 @@ static void content_load_init_wrap(
       argv[(*argc)++] = strldup("-v", sizeof("-v"));
 }
 
+/* Defined below, and needed by the dummy core fallback in content_load. */
+void menu_content_environment_get(int *argc, char *argv[],
+      void *args, void *params_data);
+
 /**
  * content_load:
  *
@@ -1958,7 +1962,49 @@ static bool content_load(content_ctx_info_t *info,
    free(wrap_args);
 
    if (!ret)
+   {
+      /* RARCH_CTL_MAIN_DEINIT above tore every driver down, and
+       * retroarch_main_init() left through its error path without
+       * building them again: no video, no audio, no input. Callers
+       * answer a false return by running the menu, which has nothing
+       * to run against, so the frontend keeps iterating blind until it
+       * dies. The dummy core is the state this file already treats as
+       * the floor - see the callers testing for it after a load that
+       * "failed and yet returned true" - so fall back to it here and
+       * let the failure end in the menu instead. */
+      static bool recovering      = false;
+      runloop_state_t *runloop_st = runloop_state_get_ptr();
+
+      if (     !recovering
+            && runloop_st->current_core_type != CORE_TYPE_DUMMY)
+      {
+         content_ctx_info_t dummy_info;
+
+         dummy_info.argc             = 0;
+         dummy_info.argv             = NULL;
+         dummy_info.args             = NULL;
+         dummy_info.environ_get      = menu_content_environment_get;
+
+         path_clear(RARCH_PATH_CONTENT);
+         runloop_set_current_core_type(CORE_TYPE_DUMMY, true);
+
+         /* A dummy core that cannot load either has nothing left to
+          * fall back to, so the flag stops the retry rather than
+          * letting it recurse. */
+         recovering = true;
+         if (content_load(&dummy_info, p_content))
+         {
+            /* The reload cleared the queue this failure would have
+             * been announced in, so the menu comes back with nothing
+             * said. Say it again on the far side. */
+            const char *_msg = msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT);
+            runloop_msg_queue_push(_msg, strlen(_msg), 2, 90, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+         }
+         recovering = false;
+      }
       return false;
+   }
 
    if (p_content->flags & CONTENT_ST_FLAG_PENDING_SUBSYSTEM_INIT)
       content_clear_subsystem();

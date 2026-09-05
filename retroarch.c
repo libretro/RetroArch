@@ -8907,6 +8907,21 @@ error:
    runloop_is_inited_clear();
    global->flags &= ~GLOB_FLG_INIT_IN_PROGRESS;
 
+#if defined(HAVE_WAYLAND) && defined(WEBOS)
+   /* A content load deinits the drivers before coming back through
+    * here, and the webOS context driver holds its surface across that
+    * gap so the compositor never sees a surfaceless app.
+    *
+    * Normally the dummy core content_load() falls back to arrives next
+    * and its video init adopts that surface, which is why this does not
+    * fire on an ordinary failed load. Reaching here on the dummy core
+    * means the fallback itself is what failed, so nothing is coming to
+    * claim it, and the TV would sit on a window nothing can draw into.
+    * Hand it back: webOS returns to its dashboard. */
+   if (runloop_st->current_core_type == CORE_TYPE_DUMMY)
+      gfx_ctx_wl_webos_release_kept_surface();
+#endif
+
    return false;
 }
 
