@@ -210,6 +210,28 @@ static void crt_apply_menu_preset(videocrt_switch_t *p_switch,
    }
 }
 
+/* With the SDL display server set to Always the user has chosen
+ * listed-mode switching over the native server, and SDL can neither
+ * add nor rewrite a timing: the listed modes are all there is, so the
+ * engine's default lock on modes without a known timing would leave
+ * it nothing but the desktop. That choice unlocks them; every other
+ * path keeps the ini-controlled default, which protects a 15 kHz CRT
+ * from a stock driver's VESA timings. */
+static void crt_apply_server_policy(videocrt_switch_t *p_switch)
+{
+   settings_t *settings = config_get_ptr();
+   if (!p_switch->gen)
+      return;
+   if (string_is_equal(p_switch->ops.name, "sdl")
+         && settings->uints.video_sdl_display_server == VIDEO_SDL_DISPLAY_SERVER_ALWAYS
+         && p_switch->gen->lock_system_modes)
+   {
+      RARCH_LOG("[CRT] SDL display server: listed modes without known timings are selectable.\n");
+      p_switch->gen->lock_system_modes = false;
+      modeline_parse_options(p_switch->gen);
+   }
+}
+
 /* The base ini next to retroarch.cfg, the one the overlays sit on */
 static bool crt_load_config_ini(videocrt_switch_t *p_switch)
 {
@@ -298,6 +320,7 @@ static bool crt_engine_init(videocrt_switch_t *p_switch,
          content_dir[0] = '\0';
          /* For Lakka, check a switchres.ini next to user's retroarch.cfg */
          crt_load_config_ini(p_switch);
+         crt_apply_server_policy(p_switch);
       }
    }
 
@@ -607,6 +630,7 @@ static void crt_adjust_ini(videocrt_switch_t *p_switch)
       modeline_ini_load(p_switch->gen, "display0.ini");
       modeline_parse_options(p_switch->gen);
       crt_load_config_ini(p_switch);
+      crt_apply_server_policy(p_switch);
       ini_overrides_loaded = false;
    }
 
@@ -623,6 +647,7 @@ static void crt_adjust_ini(videocrt_switch_t *p_switch)
       crt_load_overlay(p_switch, config_directory, core_name, "core");
       crt_load_overlay(p_switch, config_directory, content_dir, "content directory");
       crt_load_overlay(p_switch, config_directory, content_name, "game");
+      crt_apply_server_policy(p_switch);
    }
 #endif
 }
