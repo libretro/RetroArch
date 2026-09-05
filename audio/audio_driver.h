@@ -948,6 +948,17 @@ typedef struct
    bool             virtualize;
    audio_binaural_t binaural;
    float           *virt_buf;      /* frames * 6 floats, the virtual 5.1 */
+
+   /* Fast-forward release carry: interleaved stereo frames at the core's
+    * rate that the device had no room for while the driver is non-blocking,
+    * held for the next flush instead of being dropped. Not part of either
+    * arena - lazily allocated on the first deferral and freed in
+    * audio_driver_deinit_internal().  ff_carry_is_float says which flush arm
+    * stashed them, since the two work in different sample formats. See
+    * audio_driver_ff_carry_append(). */
+   void    *ff_carry;
+   size_t   ff_carry_frames;
+   bool     ff_carry_is_float;
 } audio_driver_state_t;
 
 bool audio_driver_enable_callback(void);

@@ -952,6 +952,14 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    audio_st->synth_buf                = NULL;
    audio_st->output_samples_buf       = NULL;
 
+   /* Same chokepoint, same reason: deferred frames belong to a stream that
+    * is about to be replaced. */
+   if (audio_st->ff_carry)
+      free(audio_st->ff_carry);
+   audio_st->ff_carry                 = NULL;
+   audio_st->ff_carry_frames          = 0;
+   audio_st->ff_carry_is_float        = false;
+
 #ifdef HAVE_AUDIO_TIMESTRETCH
    /* Not part of either arena, so freed here - the chokepoint for
     * audio_driver_deinit() and CMD_EVENT_AUDIO_REINIT alike, both
@@ -1965,17 +1973,6 @@ static double audio_driver_ff_mult(audio_driver_state_t *audio_st,
    return audio_driver_fastforward_ratio_mult(audio_st, input_frames);
 }
 
-/* Frames of headroom deliberately resampled beyond what the device
- * reports writable.  Covers the drain between the write_avail() sample
- * below and the write itself (a fast-forward flush interval is a few
- * hundred microseconds, i.e. some tens of frames at typical output
- * rates), plus any avail rounding inside the driver.  Overfilling by
- * this margin reproduces today's behaviour exactly - the driver's
- * non-blocking write drops the excess - while underfilling would starve
- * the device and open audible gaps, so the margin errs on the side of
- * a little discarded work: at 16 taps the slack costs ~1 us per flush. */
-#define AUDIO_FF_DISCARD_SLACK_FRAMES 64
-
 /**
  * audio_driver_ff_discard_bound:
  *
@@ -1988,8 +1985,11 @@ static double audio_driver_ff_mult(audio_driver_state_t *audio_st,
  * never heard.
  *
  * Bound the resampler's *input* so it only produces what the device
- * can accept (plus slack): frames the write would have dropped from
- * the tail of the chunk are instead never resampled.  The audible
+ * can accept: frames the write would have dropped from the tail of
+ * the chunk are instead never resampled. No headroom beyond what the
+ * device reports: the surplus is not queued anywhere, the non-blocking
+ * write truncates it mid-waveform and the remainder is dropped, which
+ * is heard as a click. The audible
  * result is unchanged - the same head-of-chunk fragments reach the
  * device either way - only the discard moves from after the resampler
  * to before it.
@@ -2004,8 +2004,8 @@ static double audio_driver_ff_mult(audio_driver_state_t *audio_st,
  * path already calls once per DRC interval.  Drivers without
  * write_avail() keep the old behaviour.
  *
- * Returns: capped input frame count (<= in_frames, never 0 while the
- * slack is non-zero, so the resampler ring stays warm).
+ * Returns: capped input frame count (<= in_frames; 0 when the device
+ * has no room at all).
  **/
 static size_t audio_driver_ff_discard_bound(audio_driver_state_t *audio_st,
       double ratio, size_t in_frames)
@@ -2026,11 +2026,119 @@ static size_t audio_driver_ff_discard_bound(audio_driver_state_t *audio_st,
    if (audio_st->buffer_size && avail_bytes > audio_st->buffer_size)
       avail_bytes  = audio_st->buffer_size;
    out_frame_bytes = audio_driver_dev_frame_bytes(audio_st);
-   max_out_frames  = avail_bytes / out_frame_bytes
-         + AUDIO_FF_DISCARD_SLACK_FRAMES;
+   max_out_frames  = avail_bytes / out_frame_bytes;
    max_in_frames   = (size_t)((double)max_out_frames / ratio);
 
    return (in_frames < max_in_frames) ? in_frames : max_in_frames;
+}
+
+/* Cap on the fast-forward release carry, in frames at the core's rate.
+ * The carry holds frames only for the handful of flushes the recovery
+ * window keeps the driver non-blocking, and empties on the first blocking
+ * write after it. At the cap nothing is draining it, and the oldest frames
+ * go.  8192 frames is ~170 ms at 48 kHz, several times the longest window
+ * runloop.c opens. */
+#define AUDIO_FF_CARRY_MAX_FRAMES 8192
+
+static size_t audio_driver_ff_carry_frame_bytes(bool is_float)
+{
+   return is_float ? (2 * sizeof(float)) : (2 * sizeof(int16_t));
+}
+
+/**
+ * audio_driver_ff_carry_append:
+ *
+ * During the fast-forward recovery window runloop.c holds the driver
+ * non-blocking while the core is back at normal speed and the device is
+ * still full from the burst, so a bounded write drops the tail of a
+ * continuous stream. Hold those frames instead and present them once the
+ * device has room; dynamic rate control drains the added latency as it does
+ * for any device above its setpoint. The caller gates on DRC being in
+ * circuit, since without it nothing would shorten the stream again.
+ *
+ * @in_frames of @in go behind whatever is already held, and the head of the
+ * result becomes this flush's input, so frames stay in order behind an
+ * earlier flush's remainder.
+ *
+ * Returns: frames to present this flush, from the front of audio_st->
+ * ff_carry, or 0 if the carry could not be allocated (the caller then
+ * keeps its own buffer and discards).
+ **/
+static size_t audio_driver_ff_carry_append(audio_driver_state_t *audio_st,
+      bool is_float, const void *in, size_t in_frames, size_t max_present)
+{
+   uint8_t *buf;
+   size_t   total;
+   size_t   frame_bytes = audio_driver_ff_carry_frame_bytes(is_float);
+
+   if (!audio_st->ff_carry)
+   {
+      /* Sized for the wider of the two formats, so the same block serves
+       * whichever flush arm is live. */
+      if (!(audio_st->ff_carry = malloc(AUDIO_FF_CARRY_MAX_FRAMES
+                  * 2 * sizeof(float))))
+         return 0;
+      audio_st->ff_carry_frames   = 0;
+      audio_st->ff_carry_is_float = is_float;
+   }
+   /* The live arm changed under a non-empty carry. Only a driver or core
+    * swap does that, and both discard the stream anyway. */
+   if (audio_st->ff_carry_is_float != is_float)
+   {
+      audio_st->ff_carry_frames   = 0;
+      audio_st->ff_carry_is_float = is_float;
+   }
+
+   buf = (uint8_t*)audio_st->ff_carry;
+
+   /* What just arrived is never what gets dropped: if the two together
+    * overrun the cap, the oldest frames go. Reaching this means the
+    * backlog is not draining, and the newest audio is the audio still
+    * worth having. */
+   if (in_frames >= AUDIO_FF_CARRY_MAX_FRAMES)
+   {
+      in                        = (const uint8_t*)in
+            + (in_frames - AUDIO_FF_CARRY_MAX_FRAMES) * frame_bytes;
+      in_frames                 = AUDIO_FF_CARRY_MAX_FRAMES;
+      audio_st->ff_carry_frames = 0;
+   }
+   else if (audio_st->ff_carry_frames + in_frames > AUDIO_FF_CARRY_MAX_FRAMES)
+   {
+      size_t drop                = audio_st->ff_carry_frames + in_frames
+            - AUDIO_FF_CARRY_MAX_FRAMES;
+      memmove(buf, buf + drop * frame_bytes,
+            (audio_st->ff_carry_frames - drop) * frame_bytes);
+      audio_st->ff_carry_frames -= drop;
+   }
+
+   memcpy(buf + audio_st->ff_carry_frames * frame_bytes, in,
+         in_frames * frame_bytes);
+   audio_st->ff_carry_frames += in_frames;
+
+   /* One flush's input still has to fit the scratch buffers downstream of
+    * it - the low-pass round-trip is the tightest of them - so a carry
+    * larger than that is presented over several flushes. */
+   total = audio_st->ff_carry_frames;
+   return (total < max_present) ? total : max_present;
+}
+
+/* Drop @frames from the front of the carry: what the flush consumed of what
+ * audio_driver_ff_carry_append() presented. Anything left is the deferral,
+ * and leads the next flush. */
+static void audio_driver_ff_carry_consume(audio_driver_state_t *audio_st,
+      bool is_float, size_t frames)
+{
+   size_t frame_bytes = audio_driver_ff_carry_frame_bytes(is_float);
+
+   if (frames >= audio_st->ff_carry_frames)
+   {
+      audio_st->ff_carry_frames = 0;
+      return;
+   }
+   memmove(audio_st->ff_carry,
+         (uint8_t*)audio_st->ff_carry + frames * frame_bytes,
+         (audio_st->ff_carry_frames - frames) * frame_bytes);
+   audio_st->ff_carry_frames -= frames;
 }
 
 #ifdef HAVE_AUDIO_TIMESTRETCH
@@ -2826,11 +2934,30 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       bool is_slowmotion, bool is_fastforward)
 {
    struct resampler_data src_data;
+   size_t arrival_frames_f;
    const audio_driver_t *audio    = audio_st->current_audio;
    float audio_volume_gain        =
          (audio_st->mute_enable || AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_MUTED)
                ? 0.0f
                : audio_st->volume_gain;
+   /* Frames this flush drew from the fast-forward release carry, and how
+    * many of them it went on to consume; the difference is what stays
+    * deferred. See audio_driver_ff_carry_append(). */
+   size_t carry_have              = 0;
+   size_t carry_used              = 0;
+   /* Whether audio the device cannot take right now may be held back rather
+    * than discarded: only at normal speed with the driver non-blocking, i.e.
+    * inside the recovery window runloop.c opens after a release, where the
+    * frames are ordinary real-time audio at a full device - during
+    * fast-forward itself discarding is the point - and only with dynamic
+    * rate control in circuit to drain the backlog.  audio_sync goes with
+    * it: with sync off the driver is non-blocking for good, not for a
+    * window. */
+   bool ff_defer                  = !is_fastforward
+         && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK)
+         && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_CONTROL)
+         && (audio_st->rate_control_delta > 0.0f)
+         && config_get_ptr()->bools.audio_sync;
    /* Whether the stretcher and the low-pass are in the signal path for this
     * flush. Declared unconditionally so the sites that read them need no
     * guard; false is what a build without them means. */
@@ -2958,6 +3085,11 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
     * are allocated at init regardless. */
    if (audio->write_raw
          && !is_float
+         /* Deferred frames lead the stream, and write_raw takes the core's
+          * buffer as it stands. Which path a flush takes can change under a
+          * live carry - a menu sound starting is enough - so this is a test,
+          * not an assumption. */
+         && !audio_st->ff_carry_frames
          && !stretch_engaged
          && !lowpass_engaged
          /* The ramps and the pause mute are applied on the last buffer
@@ -3108,6 +3240,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          unsigned rs_frames   = (unsigned)(samples >> 1);
          double   i16_ratio;
          unsigned out_frames;
+         unsigned arrival_frames;
          bool     synth_on    = midi_driver_synth_active()
                && audio_st->synth_buf && audio_st->input_data_int16;
          /* Writable view of the input for the synth sum and the DSP
@@ -3196,11 +3329,47 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          if (!is_fastforward && !audio_st->pipe_threaded)
             audio_driver_ff_mult_reset(audio_st);
 #ifdef HAVE_AUDIO_TIMESTRETCH
-         /* See audio_driver_time_stretch_idle(). */
+         /* See audio_driver_time_stretch_idle(). Before the carry, so the
+          * stretcher's history sees each frame once, as it arrives, rather
+          * than again on the flush that finally plays it. */
          if (stretch_engaged && !is_fastforward && !is_slowmotion)
             audio_driver_time_stretch_idle(audio_st, rs_in, rs_frames);
 #endif
-         if (is_slowmotion || is_fastforward || lowpass_engaged)
+         /* The arrival count, taken before the carry can inflate it. The
+          * speed estimate averages frames against wall-clock intervals, so
+          * it has to count each frame once, when it arrives - the same
+          * reason time_stretch_idle() runs above the carry rather than
+          * below it. A deferred frame re-presented on a later flush is not
+          * new arrival, and counting it again reads as frames outrunning
+          * the clock, i.e. as speed. */
+         arrival_frames = rs_frames;
+         /* Frames an earlier flush held back are the head of the stream.
+          * Append this flush's own behind them and run the join, so both
+          * the ordering and the low-pass state stay continuous across it.
+          * Entered while deferral is merely possible, not only once
+          * something is held: the fresh frames have to go through the carry
+          * for the bound below to be able to leave any of them there. */
+         if (ff_defer || audio_st->ff_carry_frames)
+         {
+            size_t present = audio_driver_ff_carry_append(audio_st, false,
+                  rs_in, rs_frames,
+                  audio_st->input_data_length / (2 * sizeof(float)));
+            if (present)
+            {
+               rs_in      = (const int16_t*)audio_st->ff_carry;
+               rs_frames  = (unsigned)present;
+               carry_have = present;
+               carry_used = present;
+            }
+            else
+               audio_st->ff_carry_frames = 0;
+         }
+         /* Also entered for the non-blocking window after a release, when
+          * neither speed flag is set: the discard bound and the carry live
+          * below, and a flush that skips them hands the driver an unbounded
+          * write that it truncates. */
+         if (     is_slowmotion || is_fastforward || lowpass_engaged
+               || (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK))
          {
             unsigned ff_mode   = config_get_ptr()->uints.audio_fastforward_mode;
             int      stretched = -1;
@@ -3210,7 +3379,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
             bool     need_mult = stretch_engaged
                   || (is_fastforward && ff_mode == FASTFORWARD_AUDIO_SPEEDUP);
             double   ff_mult   = need_mult
-                  ? audio_driver_ff_mult(audio_st, rs_frames)
+                  ? audio_driver_ff_mult(audio_st, arrival_frames)
                   : 1.0;
 
 #ifdef HAVE_AUDIO_TIMESTRETCH
@@ -3240,13 +3409,28 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                      (   is_fastforward
                       && ff_mode == FASTFORWARD_AUDIO_SPEEDUP)
                         ? ff_mult : 1.0);
-               /* Without speedup the device is pinned near full and the
-                * write below drops most of the output; resample only what
-                * it can accept.  See audio_driver_ff_discard_bound. */
-               if (     is_fastforward
-                     && ff_mode != FASTFORWARD_AUDIO_SPEEDUP)
+               /* Without speedup the device is pinned near full and the write
+                * below drops most of the output; resample only what it can
+                * accept. See audio_driver_ff_discard_bound.
+                * Gated on the driver being non-blocking rather than on
+                * fast-forward being held: the flag outlives the release by the
+                * frames runloop.c takes to restore blocking writes, and across
+                * those the device is still full. Bounding only while held
+                * leaves that window unbounded, and the truncated write is
+                * heard as a click on every release. */
+               if (     !(   is_fastforward
+                          && ff_mode == FASTFORWARD_AUDIO_SPEEDUP)
+                     && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK))
+               {
                   rs_frames = (unsigned)audio_driver_ff_discard_bound(
                         audio_st, i16_ratio, rs_frames);
+                  /* What the bound left over is the tail of a continuous
+                   * stream, not a gap in it. Consume only what the device
+                   * takes and the rest stays in the carry, to lead the next
+                   * flush. See audio_driver_ff_carry_append(). */
+                  if (carry_have && ff_defer)
+                     carry_used = rs_frames;
+               }
             }
 
 #ifdef HAVE_AUDIO_LOWPASS
@@ -3268,6 +3452,12 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
             }
 #endif
          }
+
+         /* Everything presented was either resampled or deliberately held.
+          * The stretcher is the exception that takes all of it: it copies
+          * its input into its own ring, so nothing of it is left to defer. */
+         if (carry_have)
+            audio_driver_ff_carry_consume(audio_st, false, carry_used);
 
          /* The int16 resampler writes to output_samples_int16 with no
           * capacity argument; bound the ratio to what that buffer holds. */
@@ -3608,7 +3798,36 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
    }
 #endif
 
-   if (is_slowmotion || is_fastforward || lowpass_engaged)
+   /* The arrival count, taken before the carry can inflate it. The
+    * speed estimate averages frames against wall-clock intervals, so
+    * it has to count each frame once, when it arrives - the same
+    * reason time_stretch_idle() runs above the carry rather than
+    * below it. A deferred frame re-presented on a later flush is not
+    * new arrival, and counting it again reads as frames outrunning
+    * the clock, i.e. as speed. */
+   arrival_frames_f = src_data.input_frames;
+   /* The carry, same as the s16 arm above: what an earlier flush held back
+    * leads this one's own frames. See audio_driver_ff_carry_append(). */
+   if (ff_defer || audio_st->ff_carry_frames)
+   {
+      size_t present = audio_driver_ff_carry_append(audio_st, true,
+            src_data.data_in, src_data.input_frames,
+            audio_st->input_data_length / (2 * sizeof(float)));
+      if (present)
+      {
+         src_data.data_in      = (const float*)audio_st->ff_carry;
+         src_data.input_frames = present;
+         carry_have            = present;
+         carry_used            = present;
+      }
+      else
+         audio_st->ff_carry_frames = 0;
+   }
+
+   /* Also entered for the non-blocking window after a release; see the
+    * s16 arm above. */
+   if (     is_slowmotion || is_fastforward || lowpass_engaged
+         || (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK))
    {
       unsigned ff_mode   = config_get_ptr()->uints.audio_fastforward_mode;
       int      stretched = -1;
@@ -3616,7 +3835,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       bool     need_mult = stretch_engaged
             || (is_fastforward && ff_mode == FASTFORWARD_AUDIO_SPEEDUP);
       double   ff_mult   = need_mult
-            ? audio_driver_ff_mult(audio_st, src_data.input_frames)
+            ? audio_driver_ff_mult(audio_st, arrival_frames_f)
             : 1.0;
 
 #ifdef HAVE_AUDIO_TIMESTRETCH
@@ -3658,13 +3877,18 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                (   is_fastforward
                 && ff_mode == FASTFORWARD_AUDIO_SPEEDUP)
                   ? ff_mult : 1.0);
-         /* Without speedup the device is pinned near full and the write
-          * below drops most of the output; resample only what it can
-          * accept.  See audio_driver_ff_discard_bound. */
-         if (     is_fastforward
-               && ff_mode != FASTFORWARD_AUDIO_SPEEDUP)
+         /* Bounded while non-blocking, not while held; see the s16 arm above. */
+         if (     !(   is_fastforward
+                    && ff_mode == FASTFORWARD_AUDIO_SPEEDUP)
+               && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK))
+         {
             src_data.input_frames = audio_driver_ff_discard_bound(
                   audio_st, src_data.ratio, src_data.input_frames);
+            /* The tail stays in the carry rather than being dropped; see
+             * the s16 arm above. */
+            if (carry_have && ff_defer)
+               carry_used = src_data.input_frames;
+         }
       }
 
 #ifdef HAVE_AUDIO_LOWPASS
@@ -3692,6 +3916,9 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       }
 #endif
    }
+
+   if (carry_have)
+      audio_driver_ff_carry_consume(audio_st, true, carry_used);
 
    /* Bound the ratio to what the output scratch holds.  The float result is
     * later narrowed into output_samples_int16 for s16 drivers, so take the
