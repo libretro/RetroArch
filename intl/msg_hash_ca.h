@@ -292,6 +292,7 @@ static const struct
    char s_d2d4c381[28];
    char s_a95aa0fc[31];
    char s_49b0b12a[7];
+   char s_532d60d5[30];
    char s_13d32d54[21];
    char s_91e41658[18];
    char s_30375dfa[29];
@@ -2438,6 +2439,8 @@ static const struct
    char s_8a24406f[49];
    char s_8c6b0fea[65];
    char s_5977d6d8[52];
+   char s_f46c7b83_0[500];
+   char s_f46c7b83_1[104];
    char s_cb67f2a4[33];
    char s_3c3598a9[51];
    char s_3bac47bd[425];
@@ -4666,6 +4669,7 @@ static const struct
    "Respecta el mode silenci\303\263s",
    "Silencia l'\303\240udio en rebobinar",
    "\303\200udio",
+   "Estimaci\303\263 de la taxa de sink",
    "Estat: no disponible",
    "Estat: reproduint",
    "Estat: Reproduint (en bucle)",
@@ -6877,6 +6881,14 @@ static const struct
    "Silencia l'\303\240udio en fer servir el mode silenci.",
    "Silencia autom\303\240ticament el so quan s\342\200\231usa el rebobinat r\303\240pid.",
    "Canvia les opcions d'entrada i sortida de l'\303\240udio.",
+   "Mesureu la rapidesa amb qu\303\250 el dispositiu d'\303\240udio consumeix mostres realment en re"
+   "laci\303\263 amb el rellotge del sistema i ajusteu el remostrejador en aquesta quantitat. El cri"
+   "stall de totes les targetes de so t\303\251 un error d'unes poques parts per mili\303\263; amb l"
+   "a sincronitzaci\303\263 desactivada, res m\303\251s ho corregeix i el buffer deriva lentament ca"
+   "p a un error que no es corregeix. La correcci\303\263 \303\251s petita i inaudible. Amb la sincr"
+   "onitzaci\303\263 al nucli, ja segueix el dispositiu i no s'aplica res. Nom\303\251s hi",
+   " participen els controladors que informen de consum; la superposici\303\263 mostra la velocitat "
+   "com a \"Sink\".",
    "Sincronitza l'\303\240udio. Recomanat.",
    "Canvia les opcions de sincronitzaci\303\263 de l'\303\240udio.",
    "Remostreja, filtra i mescla l'\303\240udio al fil d'\303\240udio en comptes de dins de cada foto"
@@ -9325,7 +9337,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (202909u
+      (sizeof(msg_hash_ca_blob) == (203543u
 #ifdef ANDROID
        + 281u
 #endif
@@ -10018,6 +10030,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SINK_RATE_ESTIMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
@@ -12161,6 +12174,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SINK_RATE_ESTIMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,

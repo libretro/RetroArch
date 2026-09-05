@@ -294,6 +294,7 @@ static const struct
    char s_d2d4c381[21];
    char s_a95aa0fc[28];
    char s_49b0b12a[6];
+   char s_532d60d5[31];
    char s_13d32d54[11];
    char s_91e41658[16];
    char s_30375dfa[26];
@@ -2480,6 +2481,8 @@ static const struct
    char s_8a24406f[44];
    char s_8c6b0fea[70];
    char s_5977d6d8[44];
+   char s_f46c7b83_0[500];
+   char s_f46c7b83_1[162];
    char s_cb67f2a4[28];
    char s_3c3598a9[42];
    char s_3bac47bd[393];
@@ -4813,6 +4816,7 @@ static const struct
    "Meas ar Mh\303\263d Ci\303\272in",
    "Athchasadh Fuaime Balbhaigh",
    "Fuaim",
+   "Meastach\303\241n ar R\303\241ta Doirteadh",
    "St\303\241t: N/B",
    "St\303\241t: Ag seinm",
    "St\303\241t: Ag seinm (L\303\272btha)",
@@ -7098,6 +7102,17 @@ static const struct
    "Balbhaigh an fhuaim go l\303\251ir i M\303\263d Ci\303\272in.",
    "Balbhaigh an fhuaim go huathoibr\303\255och agus t\303\272 ag \303\272s\303\241id aischasadh.",
    "Athraigh socruithe ionchuir/aschuir fuaime.",
+   "Tomhais c\303\251 chomh tapa agus a \303\255d\303\255onn an gl\303\251as fuaime sampla\303\255 i"
+   " nd\303\241ir\303\255re i gcoinne clog an ch\303\263rais agus bearr an t-athshampl\303\241la\303"
+   "\255 faoin m\303\251id sin. T\303\241 criostal gach c\303\241rta fuaime c\303\272pla cod in agha"
+   "idh an mhilli\303\272in as feidhm; nuair a bh\303\255onn an Sioncr\303\263n\303\272 m\303\272cht"
+   "a n\303\255 chearta\303\255onn aon rud eile \303\251 agus t\303\251ann an maol\303\241n go mall "
+   "isteach i ngliocas gan aon leigheas ar mh\303\251id an mhaol\303\241in. T\303\241 an ceart\303"
+   "\272 beag b\303\255deach agus dochloiste. Le Sioncr\303\263n\303\272 ar an gcro\303\255l\303\241"
+   "r, leanann s\303\251 an gl\303\251as che",
+   "ana f\303\251in agus n\303\255 chuirtear aon rud i bhfeidhm. N\303\255 ghlacann ach tiom\303\241"
+   "naithe a thuairisc\303\255onn \303\255di\303\272 p\303\241irt; taispe\303\241nann an forleagan a"
+   "n r\303\241ta mar 'Doirteal'.",
    "Sioncr\303\263naigh fuaim. Molta.",
    "Athraigh socruithe sioncr\303\263naithe fuaime.",
    "Athshampl\303\241il, scag agus measc fuaim ar an sn\303\241ithe fuaime seachas taobh istigh de g"
@@ -9934,7 +9949,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (206880u
+      (sizeof(msg_hash_ga_blob) == (207573u
 #ifdef ANDROID
        + 390u
 #endif
@@ -10626,6 +10641,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SINK_RATE_ESTIMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
@@ -12809,6 +12825,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SINK_RATE_ESTIMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,

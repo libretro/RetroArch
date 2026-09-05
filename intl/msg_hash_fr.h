@@ -295,6 +295,7 @@ static const struct
    char s_d2d4c381[29];
    char s_a95aa0fc[34];
    char s_49b0b12a[7];
+   char s_532d60d5[42];
    char s_13d32d54[23];
    char s_91e41658[16];
    char s_30375dfa[28];
@@ -2456,6 +2457,8 @@ static const struct
    char s_8a24406f[39];
    char s_8c6b0fea[50];
    char s_5977d6d8[50];
+   char s_f46c7b83_0[500];
+   char s_f46c7b83_1[175];
    char s_cb67f2a4[35];
    char s_3c3598a9[49];
    char s_3bac47bd_0[500];
@@ -4728,6 +4731,7 @@ static const struct
    "Respecter le mode silencieux",
    "Couper le son pour le rembobinage",
    "Audio ",
+   "Estimation du taux de consommation (sink)",
    "\303\211tat : Non disponible",
    "\303\211tat : Lecture",
    "\303\211tat : Lecture (en boucle)",
@@ -6965,6 +6969,16 @@ static const struct
    "Couper tout le son en mode silencieux.",
    "Coupe automatiquement le son lors du rembobinage.",
    "Modifier les r\303\251glages de l'entr\303\251e/sortie audio.",
+   "Mesure \303\240 quelle vitesse le p\303\251riph\303\251rique audio consomme r\303\251ellement de"
+   "s \303\251chantillons par rapport \303\240 l'horloge syst\303\250me et coupe le r\303\251\303"
+   "\251chantillonneur de cette quantit\303\251. Le cristal de chaque carte son est d\303\251cal\303"
+   "\251 de quelques parties par million ; Avec la synchronisation d\303\251sactiv\303\251e, rien d'"
+   "autre ne le corrige et le tampon d\303\251rive lentement dans un probl\303\250me qu'aucune taill"
+   "e de tampon ne gu\303\251rit. La correction est minuscule et inaudible. Avec la synchronisation "
+   "sur le c\305\223ur cela suit d\303\251j\303\240",
+   " le p\303\251riph\303\251rique et rien n'est appliqu\303\251. Seuls les pilotes qui signalent la"
+   " consommation y participent ; La superposition \303\240 l'\303\251cran indique le taux sous la f"
+   "orme 'Sink'.",
    "Synchroniser l'audio. Recommand\303\251.",
    "Modifier les r\303\251glages de synchronisation audio.",
    "Le r\303\251\303\251chantillonnage, le filtrage et le mixage audio sont effectu\303\251s sur le "
@@ -9564,7 +9578,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (218888u
+      (sizeof(msg_hash_fr_blob) == (219605u
 #ifdef ANDROID
        + 373u
 #endif
@@ -10254,6 +10268,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SINK_RATE_ESTIMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
@@ -12412,6 +12427,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SINK_RATE_ESTIMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,

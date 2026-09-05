@@ -304,6 +304,7 @@ static const struct
    char s_d2d4c381[33];
    char s_a95aa0fc[27];
    char s_49b0b12a[10];
+   char s_532d60d5[43];
    char s_13d32d54[35];
    char s_91e41658[27];
    char s_30375dfa[41];
@@ -2497,6 +2498,8 @@ static const struct
    char s_8a24406f[54];
    char s_8c6b0fea[65];
    char s_5977d6d8[45];
+   char s_f46c7b83_0[499];
+   char s_f46c7b83_1[420];
    char s_cb67f2a4[41];
    char s_3c3598a9[53];
    char s_3bac47bd_0[500];
@@ -5187,6 +5190,8 @@ static const struct
    "Tu\303\242n theo ch\341\272\277 \304\221\341\273\231 im l\341\272\267ng",
    "T\341\272\257t ti\341\272\277ng khi tua l\303\271i",
    "\303\202m thanh",
+   "\306\257\341\273\233c t\303\255nh t\341\273\221c \304\221\341\273\231 ti\303\252u th\341\273\245"
+   " m\341\272\253u",
    "Tr\341\272\241ng th\303\241i: Kh\303\264ng kh\341\272\243 d\341\273\245ng",
    "Tr\341\272\241ng th\303\241i: \304\220ang ph\303\241t",
    "Tr\341\272\241ng th\303\241i: \304\220ang ph\303\241t (L\341\272\267p l\341\272\241i)",
@@ -7859,6 +7864,30 @@ static const struct
    "T\341\273\261 \304\221\341\273\231ng t\341\272\257t ti\341\272\277ng khi s\341\273\255 d\341\273"
    "\245ng ch\341\272\277 \304\221\341\273\231 tua l\303\271i.",
    "Thay \304\221\341\273\225i thi\341\272\277t l\341\272\255p \303\242m thanh v\303\240o/ra.",
+   "\304\220o t\341\273\221c \304\221\341\273\231 th\341\273\261c t\341\272\277 m\303\240 thi\341"
+   "\272\277t b\341\273\213 \303\242m thanh ti\303\252u th\341\273\245 m\341\272\253u so v\341\273"
+   "\233i \304\221\341\273\223ng h\341\273\223 h\341\273\207 th\341\273\221ng v\303\240 \304\221i"
+   "\341\273\201u ch\341\273\211nh l\341\272\241i b\341\273\231 chuy\341\273\203n \304\221\341\273"
+   "\225i t\341\273\221c \304\221\341\273\231 l\341\272\245y m\341\272\253u theo m\341\273\251c ch"
+   "\303\252nh l\341\273\207ch \304\221\303\263. Tinh th\341\273\203 dao \304\221\341\273\231ng c"
+   "\341\273\247a m\341\273\227i card \303\242m thanh \304\221\341\273\201u c\303\263 sai l\341\273"
+   "\207ch v\303\240i ph\341\272\247n tri\341\273\207u; khi t\341\272\257t \304\220\341\273\223ng b"
+   "\341\273\231 h\303\263a, kh\303\264ng c\303\263 c\306\241 ch\341\272\277 n\303\240o kh\303\241c "
+   "s\341\273\255a sai l\341\273\207ch n\303\240y, khi\341\272\277n b\341\273\231 \304\221\341\273"
+   "\207m d\341\272\247n l\341\273\207ch nh\341\273\213p v\303\240 cu\341\273\221i c\303\271ng g\303"
+   "\242y ra l\341\273\227i \303\242m thanh m\303\240 vi\341\273\207c thay \304\221\341\273\225i k"
+   "\303\255ch th",
+   "\306\260\341\273\233c b\341\273\231 \304\221\341\273\207m c\305\251ng kh\303\264ng th\341\273"
+   "\203 kh\341\272\257c ph\341\273\245c. M\341\273\251c hi\341\273\207u ch\341\273\211nh r\341\272"
+   "\245t nh\341\273\217 v\303\240 kh\303\264ng th\341\273\203 nghe th\341\272\245y. Khi b\341\272"
+   "\255t \304\220\341\273\223ng b\341\273\231 h\303\263a, l\303\265i gi\341\272\243 l\341\272\255p "
+   "\304\221\303\243 t\341\273\261 theo d\303\265i thi\341\272\277t b\341\273\213 n\303\252n kh\303"
+   "\264ng \303\241p d\341\273\245ng th\303\252m hi\341\273\207u ch\341\273\211nh n\303\240o. Ch\341"
+   "\273\211 nh\341\273\257ng tr\303\254nh \304\221i\341\273\201u khi\341\273\203n c\303\263 b\303"
+   "\241o c\303\241o m\341\273\251c ti\303\252u th\341\273\245 m\341\272\253u m\341\273\233i tham gi"
+   "a; l\341\273\233p hi\341\273\203n th\341\273\213 th\303\264ng tin s\341\272\275 hi\341\273\203n "
+   "th\341\273\213 t\341\273\221c \304\221\341\273\231 n\303\240y v\341\273\233i t\303\252n \"Sink\""
+   ".",
    "\304\220\341\273\223ng b\341\273\231 \303\242m thanh. Khuy\341\272\277n ngh\341\273\213.",
    "Thay \304\221\341\273\225i c\303\240i \304\221\341\272\267t \304\221\341\273\223ng b\341\273\231"
    " h\303\263a \303\242m thanh.",
@@ -12194,7 +12223,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (231564u
+      (sizeof(msg_hash_vn_blob) == (232526u
 #ifdef ANDROID
        + 373u
 #endif
@@ -12896,6 +12925,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SINK_RATE_ESTIMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
@@ -15085,6 +15115,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SINK_RATE_ESTIMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,

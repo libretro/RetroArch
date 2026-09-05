@@ -286,6 +286,7 @@ static const struct
    char s_affd948c[26];
    char s_d2d4c381[27];
    char s_a95aa0fc[27];
+   char s_532d60d5[24];
    char s_13d32d54[15];
    char s_91e41658[19];
    char s_30375dfa[30];
@@ -2382,6 +2383,8 @@ static const struct
    char s_8a24406f[45];
    char s_8c6b0fea[52];
    char s_5977d6d8[50];
+   char s_f46c7b83_0[500];
+   char s_f46c7b83_1[130];
    char s_cb67f2a4[34];
    char s_3c3598a9[44];
    char s_3bac47bd[447];
@@ -4595,6 +4598,7 @@ static const struct
    "Audio-Resampler-Qualit\303\244t",
    "Lautlos-Modus respektieren",
    "Auto-stumm bei R\303\274ckspulen",
+   "Sch\303\244tzung der Sinkrate",
    "Status: k.\302\240A.",
    "Status: Wiedergabe",
    "Status: Wiedergabe (Schleife)",
@@ -6747,6 +6751,14 @@ static const struct
    "Gesamten Ton im Lautlos-Modus stummschalten.",
    "Audio beim Zur\303\274ckspulen automatisch stumm stellen.",
    "Audioeinstellungen f\303\274r Ein- und Ausgabe \303\244ndern.",
+   "Messen, wie schnell das Audioger\303\244t die Samples tats\303\244chlich im Vergleich zur System"
+   "uhr verarbeitet, und den Resamplers um diesen Wert anpassen. Der Quarz jeder Soundkarte schwankt"
+   " um einige Teile pro Million; bei deaktivierter Synchronisation wird dies durch nichts korrigier"
+   "t, und der Puffer driftet langsam in einen Aussetzer ab, den keine Puffergr\303\266\303\237e abf"
+   "edern kann. Die Korrektur ist winzig und nicht h\303\266rbar. Bei aktivierter Synchronisation fo"
+   "lgt der Core bereits dem Ger\303\244t, und es wird nicht",
+   "s korrigiert. Nur Treiber, die den Messwert \303\274bermitteln, k\303\266nnen daran teilnehmen; "
+   "das Overlay zeigt die Rate als \342\200\236Sink\342\200\234 an.",
    "Audio synchronisieren. Empfohlen.",
    "Audiosynchronisationseinstellungen \303\244ndern.",
    "Das Resampling, Filtern und Mischen von Audio erfolgt im Audiothread statt innerhalb jedes einze"
@@ -9106,7 +9118,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (195012u
+      (sizeof(msg_hash_de_blob) == (195666u
 #ifdef ANDROID
        + 358u
 #endif
@@ -9798,6 +9810,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SINK_RATE_ESTIMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
@@ -11891,6 +11904,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SINK_RATE_ESTIMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
