@@ -37,4 +37,8 @@ enum webos_wl_special_keymap
 extern uint8_t webos_wl_special_keymap[webos_wl_key_size];
 extern void shutdown_webos_contexts();
 
+/* Destroy a surface kept across a video reinit that never completed.
+ * Safe to call when nothing is being kept. */
+extern void gfx_ctx_wl_webos_release_kept_surface(void);
+
 #endif
