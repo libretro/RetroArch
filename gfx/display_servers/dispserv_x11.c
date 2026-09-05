@@ -38,6 +38,9 @@
 
 #include "../video_display_server.h"
 #include "../common/x11_common.h"
+#ifdef HAVE_XINERAMA
+#include "../common/xinerama_common.h"
+#endif
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
@@ -747,11 +750,51 @@ static int x11_display_server_modeline_list_outputs(void *data,
    return n;
 }
 
+/* The head a request is for, as a root-relative point: the centre of
+ * the RetroArch window when the screen is "auto", the centre of the
+ * Xinerama screen the window was placed on when the screen is an
+ * index (the context driver maps video_monitor_index to Xinerama
+ * screen index-1, so the same mapping here lands the timing on the
+ * head the window sits on). false when neither is known, in which
+ * case the caller falls back to the output count. */
+static bool x11_ml_target_point(Display *dpy, int screen_pos, int *px, int *py)
+{
+#ifdef HAVE_XINERAMA
+   if (screen_pos >= 0)
+   {
+      int x, y;
+      unsigned w, h;
+      if (xinerama_get_coord(dpy, screen_pos, &x, &y, &w, &h))
+      {
+         *px = x + (int)w / 2;
+         *py = y + (int)h / 2;
+         return true;
+      }
+   }
+#endif
+   if (screen_pos < 0 && g_x11_win)
+   {
+      XWindowAttributes attr;
+      Window child;
+      int rx = 0, ry = 0;
+      if (XGetWindowAttributes(dpy, g_x11_win, &attr)
+            && XTranslateCoordinates(dpy, g_x11_win, attr.root, 0, 0, &rx, &ry, &child))
+      {
+         *px = rx + attr.width / 2;
+         *py = ry + attr.height / 2;
+         return true;
+      }
+   }
+   return false;
+}
+
 static bool x11_display_server_modeline_open(void *data,
       const video_modeline_disp_t *ds)
 {
    int screen, major_version, minor_version;
    int screen_pos = -1;
+   int target_x = 0, target_y = 0;
+   bool have_target;
    bool detected  = false;
    dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
    x11_modeline_t *ml       = &dispserv->ml;
@@ -792,6 +835,8 @@ static bool x11_display_server_modeline_open(void *data,
    if (ScreenCount(ml->dpy) > 1)
       RARCH_WARN("[XRandR] Screen count is %d, unpredictable behavior to be expected\n",
             ScreenCount(ml->dpy));
+
+   have_target = x11_ml_target_point(ml->dpy, screen_pos, &target_x, &target_y);
 
    for (screen = 0; !detected && screen < ScreenCount(ml->dpy); screen++)
    {
@@ -844,8 +889,24 @@ static bool x11_display_server_modeline_open(void *data,
          if (ml->desktop_output == -1 && output_info->connection == RR_Connected
                && output_info->crtc)
          {
-            if (!strcmp(ds->screen, "auto") || !strcmp(ds->screen, output_info->name)
-                  || output_position == screen_pos)
+            bool take = false;
+            if (!strcmp(ds->screen, output_info->name))
+               take = true;
+            else if (have_target)
+            {
+               /* The head under the target point */
+               XRRCrtcInfo *ci = XRRGetCrtcInfo(ml->dpy, resources, output_info->crtc);
+               if (ci)
+               {
+                  take = target_x >= ci->x && target_x < ci->x + (int)ci->width
+                     && target_y >= ci->y && target_y < ci->y + (int)ci->height;
+                  XRRFreeCrtcInfo(ci);
+               }
+            }
+            else if (!strcmp(ds->screen, "auto") || output_position == screen_pos)
+               take = true;
+
+            if (take)
             {
                int m;
                int min_width, max_width, min_height, max_height;
@@ -887,12 +948,19 @@ static bool x11_display_server_modeline_open(void *data,
          }
          RARCH_DBG("[XRandR] Check output connector '%s' active %d crtc %d %s\n",
                output_info->name, output_info->connection == RR_Connected ? 1 : 0,
-               output_info->crtc ? 1 : 0, ml->desktop_output == o ? "[SELECTED]" : "");
+               output_info->crtc ? 1 : 0, ml->desktop_output == o
+               ? (have_target ? "[SELECTED: under the window]" : "[SELECTED]") : "");
          XRRFreeOutputInfo(output_info);
       }
       XRRFreeScreenResources(resources);
 
       detected = ml->desktop_output != -1;
+      if (!detected && have_target)
+      {
+         /* Nothing under the point: the count rule on the same screen */
+         have_target = false;
+         screen--;
+      }
    }
 
    if (!detected)

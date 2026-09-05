@@ -310,6 +310,25 @@ XErrorHandler XSetErrorHandler(XErrorHandler handler)
 
 int XClearWindow(Display *dpy, Window w) { (void)dpy; (void)w; return 0; }
 
+/* The modeline path locates the head under the RetroArch window;
+ * g_x11_win is 0 here, so neither is reached, but the driver links
+ * them. */
+Status XGetWindowAttributes(Display *dpy, Window w, XWindowAttributes *attr)
+{
+   (void)dpy; (void)w;
+   memset(attr, 0, sizeof(*attr));
+   return 0;
+}
+
+Bool XTranslateCoordinates(Display *dpy, Window src, Window dst,
+      int sx, int sy, int *dx, int *dy, Window *child)
+{
+   (void)dpy; (void)src; (void)dst; (void)sx; (void)sy;
+   *dx = *dy = 0;
+   *child = 0;
+   return False;
+}
+
 GC XCreateGC(Display *dpy, Drawable d, unsigned long mask, XGCValues *v)
 {
    (void)dpy; (void)d; (void)mask; (void)v;

@@ -10,6 +10,7 @@ REPO_ROOT := ../../..
 
 SOURCES := display_servers_x11_live_test.c \
            $(REPO_ROOT)/gfx/display_servers/dispserv_x11.c \
+           $(REPO_ROOT)/gfx/common/xinerama_common.c \
            $(REPO_ROOT)/gfx/modeline/modeline_core.c \
            $(REPO_ROOT)/gfx/modeline/modeline_monitor.c \
            $(REPO_ROOT)/gfx/modeline/modeline_list.c \
@@ -20,12 +21,12 @@ SOURCES := display_servers_x11_live_test.c \
 # filestream VFS; the logging macros come from live_log.h so the
 # engine and the driver share one sink.
 CFLAGS  += -Wall -std=gnu99 -g -O0 \
-           -DHAVE_XRANDR -DMODELINE_STANDALONE \
+           -DHAVE_XRANDR -DHAVE_XINERAMA -DMODELINE_STANDALONE \
            -include live_log.h \
            -I$(REPO_ROOT) \
            -I$(REPO_ROOT)/libretro-common/include
 
-LDLIBS  += -lXrandr -lX11 -lm
+LDLIBS  += -lXrandr -lXinerama -lX11 -lm
 
 # Objects live under obj/ here, never next to the sources: the other
 # display server samples compile some of the same files with other
@@ -37,7 +38,7 @@ VPATH := $(sort $(dir $(SOURCES)))
 # defines, not the standalone macros; -include would rewrite the
 # prototypes. Only the engine objects get live_log.h.
 NO_MACROS := $(filter-out -include live_log.h -DMODELINE_STANDALONE,$(CFLAGS))
-obj/dispserv_x11.o: CFLAGS := $(NO_MACROS)
+obj/dispserv_x11.o obj/xinerama_common.o: CFLAGS := $(NO_MACROS)
 obj/display_servers_x11_live_test.o: CFLAGS := $(NO_MACROS)
 obj/compat_strl.o: CFLAGS := $(NO_MACROS)
 

@@ -1080,6 +1080,25 @@ static bool win32_display_server_modeline_open(void *data,
    else
       strlcpy(display, ds->screen, sizeof(display));
 
+   /* "auto" is the head the RetroArch window sits on; without a
+    * window yet it is the primary device */
+   if (!strcmp(display, "auto"))
+   {
+      HWND win = win32_get_window();
+      if (win)
+      {
+         HMONITOR hm = MonitorFromWindow(win, MONITOR_DEFAULTTONEAREST);
+         MONITORINFOEXA info;
+         memset(&info, 0, sizeof(info));
+         info.cbSize = sizeof(info);
+         if (hm && GetMonitorInfoA(hm, (LPMONITORINFO)&info) && info.szDevice[0])
+         {
+            strlcpy(display, info.szDevice, sizeof(display));
+            RARCH_LOG("[Modeline] Window is on %s\n", display);
+         }
+      }
+   }
+
    /* Device by name, or the primary one for "auto" */
    while (idev < WIN32_MODELINE_DISPLAY_MAX)
    {

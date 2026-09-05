@@ -1628,6 +1628,15 @@ bool video_display_server_get_modeline_ops(struct video_modeline_ops *ops)
    return true;
 }
 
+int video_display_server_list_outputs(video_output_info_t *out, int max)
+{
+   void *data;
+   const video_display_server_t *s = video_display_server_modes(&data);
+   if (!s || !s->modeline_list_outputs)
+      return -1;
+   return s->modeline_list_outputs(data, out, max);
+}
+
 bool video_display_server_has_resolution_list(void)
 {
    return (current_display_server

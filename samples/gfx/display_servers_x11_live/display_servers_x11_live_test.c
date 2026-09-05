@@ -46,6 +46,7 @@
 /* RetroArch-side symbols the driver refers to */
 Display *g_x11_dpy = NULL;
 Window   g_x11_win = 0;
+int      g_x11_screen = 0;
 
 static int s_verbose;
 
@@ -88,7 +89,125 @@ void RARCH_ERR(const char *fmt, ...)
    va_end(ap);
 }
 
+void RARCH_LOG(const char *fmt, ...)
+{
+   va_list ap;
+   if (!s_verbose)
+      return;
+   va_start(ap, fmt);
+   vfprintf(stderr, fmt, ap);
+   va_end(ap);
+}
+
 void video_monitor_set_refresh_rate(float hz) { (void)hz; }
+
+/* Which connected output's crtc holds a root-relative point */
+static int output_under(Display *dpy, int x, int y, char *name, size_t len)
+{
+   int o, found = -1;
+   Window root = DefaultRootWindow(dpy);
+   XRRScreenResources *res = XRRGetScreenResourcesCurrent(dpy, root);
+   if (!res)
+      return -1;
+   for (o = 0; o < res->noutput && found < 0; o++)
+   {
+      XRROutputInfo *oi = XRRGetOutputInfo(dpy, res, res->outputs[o]);
+      XRRCrtcInfo *ci;
+      if (!oi)
+         continue;
+      if (oi->connection == RR_Connected && oi->crtc
+            && (ci = XRRGetCrtcInfo(dpy, res, oi->crtc)))
+      {
+         if (x >= ci->x && x < ci->x + (int)ci->width
+               && y >= ci->y && y < ci->y + (int)ci->height)
+         {
+            found = o;
+            strncpy(name, oi->name, len - 1);
+            name[len - 1] = '\0';
+         }
+         XRRFreeCrtcInfo(ci);
+      }
+      XRRFreeOutputInfo(oi);
+   }
+   XRRFreeScreenResources(res);
+   return found;
+}
+
+/* Head selection: with a RetroArch window on the display, "auto"
+ * must bind the output under it, and a monitor index must bind the
+ * output under the Xinerama screen the context driver would place
+ * the window on. Both are checked through what enum then reports as
+ * the desktop mode of the bound head. */
+static int test_head_selection(Display *dpy, video_modeline_ops_t *ops,
+      void *data)
+{
+   video_modeline_disp_t ds;
+   video_modeline_t modes[64];
+   char under[64];
+   int i, n;
+   int wx = 40, wy = 30;
+   Window win = XCreateSimpleWindow(dpy, DefaultRootWindow(dpy), wx, wy,
+         200, 100, 0, 0, 0);
+   XMapWindow(dpy, win);
+   XSync(dpy, False);
+   g_x11_win = win;
+
+   if (output_under(dpy, wx + 100, wy + 50, under, sizeof(under)) < 0)
+   {
+      fprintf(stderr, "FAIL: no output under the test window\n");
+      return 1;
+   }
+
+   memset(&ds, 0, sizeof(ds));
+   strcpy(ds.screen, "auto");
+   if (!ops->open(data, &ds))
+   {
+      fprintf(stderr, "FAIL: open(auto) with a window on the display\n");
+      return 1;
+   }
+   n = ops->enum_modes(data, modes, 64);
+   for (i = 0; i < n; i++)
+      if (modes[i].type & MODELINE_DESKTOP)
+         break;
+   if (n < 1 || i == n)
+   {
+      fprintf(stderr, "FAIL: open(auto) bound a head with no desktop mode\n");
+      return 1;
+   }
+   printf("[pass] open(auto): head under the window (%s), desktop %dx%d\n",
+         under, modes[i].width, modes[i].height);
+   ops->close(data);
+
+   /* Monitor index 1 -> Xinerama screen 0 */
+   strcpy(ds.screen, "0");
+   if (!ops->open(data, &ds))
+   {
+      fprintf(stderr, "FAIL: open(0) through the Xinerama screen\n");
+      return 1;
+   }
+   n = ops->enum_modes(data, modes, 64);
+   if (n < 1)
+   {
+      fprintf(stderr, "FAIL: open(0) bound no head\n");
+      return 1;
+   }
+   printf("[pass] open(0): head under Xinerama screen 0, %d modes\n", n);
+   ops->close(data);
+
+   /* A connector name binds directly */
+   strcpy(ds.screen, under);
+   if (!ops->open(data, &ds))
+   {
+      fprintf(stderr, "FAIL: open(%s) by connector name\n", under);
+      return 1;
+   }
+   printf("[pass] open(%s): head by connector name\n", under);
+   ops->close(data);
+
+   XDestroyWindow(dpy, win);
+   g_x11_win = 0;
+   return 0;
+}
 
 /* What the server is scanning out on the first connected output */
 typedef struct
@@ -262,6 +381,9 @@ int main(void)
    ops.set        = dispserv_x11.modeline_set;
    ops.flush      = dispserv_x11.modeline_flush;
    ops.name       = "x11";
+
+   if (test_head_selection(dpy, &ops, data))
+      return 1;
 
    memset(&ds, 0, sizeof(ds));
    strcpy(ds.screen, "auto");
