@@ -148,6 +148,9 @@
 /* Check whether selected item is already on screen */
 #define OZONE_ENTRY_ONSCREEN(ozone, idx) (((idx) >= (ozone)->first_onscreen_entry) && ((idx) <= (ozone)->last_onscreen_entry))
 
+/* No entry is under the pointer */
+#define OZONE_ENTRY_NONE              ((size_t)-1)
+
 enum ozone_onscreen_entry_position_type
 {
    OZONE_ONSCREEN_ENTRY_FIRST = 0,
@@ -495,7 +498,8 @@ enum ozone_handle_flags2
    OZONE_FLAG2_IS_QUICK_MENU                         = (1 << 10),
    OZONE_FLAG2_IS_PLAYLISTS_TAB                      = (1 << 11),
    OZONE_FLAG2_IGNORE_MISSING_ASSETS                 = (1 << 12),
-   OZONE_FLAG2_BLOCK_ANIMATION                       = (1 << 13)
+   OZONE_FLAG2_BLOCK_ANIMATION                       = (1 << 13),
+   OZONE_FLAG2_POINTER_ON_CATEGORY                   = (1 << 14)
 };
 
 struct ozone_handle
@@ -568,6 +572,7 @@ struct ozone_handle
    size_t fullscreen_thumbnail_selection;
    size_t num_search_terms_old;
    size_t pointer_categories_selection;
+   size_t pointer_entries_selection; /* entry under the pointer, or OZONE_ENTRY_NONE */
    size_t first_onscreen_entry;
    size_t last_onscreen_entry;
    size_t first_onscreen_category;
@@ -3532,7 +3537,10 @@ OZONE_NOINLINE static void ozone_draw_sidebar(
    float scale_factor                = ozone->last_scale_factor;
    unsigned selection_y              = 0;
    unsigned selection_old_y          = 0;
+   unsigned hover_y                  = 0;
    unsigned horizontal_list_size     = 0;
+   bool sidebar_pointer              = false;
+   bool pointer_hover                = false;
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
 
    if (!ozone->show_sidebar)
@@ -3647,13 +3655,37 @@ OZONE_NOINLINE static void ozone_draw_sidebar(
             selection_old_y += ozone->dimensions.sidebar_entry_padding_vertical + ozone->dimensions.spacer_1px;
       }
 
+      if (i == ozone->pointer_categories_selection)
+      {
+         hover_y = (unsigned)y;
+         if (ozone->pointer_categories_selection > ozone->system_tab_end)
+            hover_y += ozone->dimensions.sidebar_entry_padding_vertical + ozone->dimensions.spacer_1px;
+      }
+
       y += ozone->dimensions.sidebar_entry_height + ozone->dimensions.sidebar_entry_padding_vertical;
    }
 
    entry_width = (unsigned)ozone->dimensions_sidebar_width - ozone->dimensions.sidebar_padding_horizontal * 2;
 
-   /* Cursor */
-   if (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR)
+   /* A hovered category is only cached for the next click, unlike
+    * an entry, which the pointer selects outright. Put the cursor
+    * on the hovered row anyway, so the sidebar answers the mouse;
+    * the active tab keeps its highlighted label meanwhile. */
+   sidebar_pointer = (ozone->flags  & OZONE_FLAG_CURSOR_MODE)
+                  && (ozone->flags2 & OZONE_FLAG2_POINTER_IN_SIDEBAR)
+                  && (ozone->pointer.type == MENU_POINTER_MOUSE);
+   pointer_hover   = (sidebar_pointer)
+                  && (ozone->flags2 & OZONE_FLAG2_POINTER_ON_CATEGORY)
+                  && (ozone->pointer_categories_selection
+                        <= ozone->system_tab_end + horizontal_list_size);
+
+   /* Cursor
+    * > While the mouse is in the sidebar the box belongs under it,
+    *   so draw nothing when it rests between rows. Anywhere else -
+    *   the entry list, the header, the footer, the thumbnail bar -
+    *   the box is the keyboard selection and has to stay put. */
+   if (     (ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR)
+         && (pointer_hover || !sidebar_pointer))
       ozone_draw_cursor(
             ozone,
             p_disp,
@@ -3663,7 +3695,8 @@ OZONE_NOINLINE static void ozone_draw_sidebar(
             ozone->sidebar_offset + ozone->dimensions.sidebar_padding_horizontal + ozone->dimensions.spacer_3px,
             entry_width - ozone->dimensions.spacer_5px,
             ozone->dimensions.sidebar_entry_height + ozone->dimensions.spacer_1px,
-            (int)((float)selection_y + ozone->animations.scroll_y_sidebar),
+            (int)((float)(pointer_hover ? hover_y : selection_y)
+                  + ozone->animations.scroll_y_sidebar),
             ozone->animations.cursor_alpha,
             mymat);
 
@@ -4960,6 +4993,13 @@ static void ozone_sidebar_goto(ozone_handle_t *ozone, size_t new_selection)
    uintptr_t tag = (uintptr_t)ozone;
    struct menu_state *menu_st = menu_state_get_ptr();
    menu_input_t *menu_input   = &menu_st->input_state;
+   /* The pointer already put the box on this row, so restarting the
+    * crossfade would blink it out and light up the outgoing tab,
+    * which was never drawn under the pointer in the first place. */
+   bool pointer_led           = (ozone->flags  & OZONE_FLAG_CURSOR_MODE)
+                             && (ozone->flags2 & OZONE_FLAG2_POINTER_ON_CATEGORY)
+                             && (ozone->pointer.type == MENU_POINTER_MOUSE)
+                             && (ozone->pointer_categories_selection == new_selection);
 
    if (ozone->categories_selection_ptr != new_selection)
    {
@@ -4980,17 +5020,22 @@ static void ozone_sidebar_goto(ozone_handle_t *ozone, size_t new_selection)
    menu_input->pointer.y_accel    = 0.0f;
 
    /* Cursor animation */
-   ozone->animations.cursor_alpha = 0.0f;
+   if (pointer_led)
+      ozone->animations.cursor_alpha = 1.0f;
+   else
+   {
+      ozone->animations.cursor_alpha = 0.0f;
 
-   entry.cb             = NULL;
-   entry.duration       = ANIMATION_CURSOR_DURATION;
-   entry.easing_enum    = OZONE_EASING_ALPHA;
-   entry.subject        = &ozone->animations.cursor_alpha;
-   entry.tag            = tag;
-   entry.target_value   = 1.0f;
-   entry.userdata       = NULL;
+      entry.cb             = NULL;
+      entry.duration       = ANIMATION_CURSOR_DURATION;
+      entry.easing_enum    = OZONE_EASING_ALPHA;
+      entry.subject        = &ozone->animations.cursor_alpha;
+      entry.tag            = tag;
+      entry.target_value   = 1.0f;
+      entry.userdata       = NULL;
 
-   gfx_animation_push(&entry);
+      gfx_animation_push(&entry);
+   }
 
    /* Scroll animation */
    entry.cb           = NULL;
@@ -5966,6 +6011,8 @@ static void ozone_draw_entries(
    int x_offset                      = 0;
    size_t selection_y                = 0; /* 0 means no selection (we assume that no entry has y = 0) */
    size_t old_selection_y            = 0;
+   size_t hover_y                    = 0;
+   bool pointer_hover                = false;
    int entry_padding                 = old_list
          ? ozone_get_entries_padding_old_list(ozone)
          : ozone_get_entries_padding(ozone);
@@ -5992,6 +6039,18 @@ static void ozone_draw_entries(
    bottom_boundary                   = video_info_height
          - ozone->dimensions.header_height
          - ozone->dimensions.footer_height;
+
+   /* The pointer selects an entry outright, but ozone->selection only
+    * catches up on the next frame, and not at all while the accel
+    * guard holds it back. Draw the box where the pointer is instead
+    * of a frame behind it; with nothing under the pointer it stays on
+    * the selection, which is still what a button press will act on. */
+   pointer_hover                     = (!old_list)
+         && (ozone->flags & OZONE_FLAG_CURSOR_MODE)
+         && (ozone->pointer.type == MENU_POINTER_MOUSE)
+         && (!(ozone->flags2 & OZONE_FLAG2_POINTER_IN_SIDEBAR))
+         && (ozone->pointer_entries_selection != OZONE_ENTRY_NONE)
+         && (ozone->pointer_entries_selection < entries_end);
 
    if (menu_show_sublabels)
       sublabel_max_width             = ozone_get_sublabel_max_width(ozone, video_info_width, entry_padding);
@@ -6028,6 +6087,10 @@ static void ozone_draw_entries(
 
       if (entry_old_selected && old_selection_y == 0)
          old_selection_y = y;
+
+      if (pointer_hover && (hover_y == 0)
+            && (i == ozone->pointer_entries_selection))
+         hover_y = y;
 
       node                    = old_list
             ? (ozone->entries_old[i].has_node
@@ -6107,7 +6170,7 @@ border_iterate:
             ozone->dimensions_sidebar_width + x_offset + entry_padding + ozone->dimensions.spacer_3px,
             entry_width - ozone->dimensions.spacer_5px,
             button_height + ozone->dimensions.spacer_1px,
-            (int)((float)selection_y + scroll_y),
+            (int)((float)((hover_y > 0) ? hover_y : selection_y) + scroll_y),
             ozone->animations.cursor_alpha * alpha,
             mymat);
 
@@ -9878,6 +9941,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    ozone->last_onscreen_entry                   = 0;
    ozone->first_onscreen_category               = 0;
    ozone->last_onscreen_category                = 0;
+   ozone->pointer_entries_selection             = OZONE_ENTRY_NONE;
 
    /* Assets path */
    fill_pathname_join_special(
@@ -10979,6 +11043,15 @@ static void ozone_render(void *data,
             ozone_go_to_sidebar(ozone, ozone_collapse_sidebar, animation_tag);
       }
 
+      /* Assume the pointer sits between rows until one of the loops
+       * below finds it inside a category or an entry. The gaps, the
+       * header, the footer and the thumbnail bar are all places
+       * where a mouse can rest with nothing under it. Each list
+       * answers for itself; a pointer resting over one of them says
+       * nothing about what the other should be drawing. */
+      ozone->pointer_entries_selection = OZONE_ENTRY_NONE;
+      ozone->flags2                   &= ~OZONE_FLAG2_POINTER_ON_CATEGORY;
+
       /* Update scrolling - must be done first, otherwise
        * cannot determine entry/category positions
        * > Entries */
@@ -11085,6 +11158,8 @@ static void ozone_render(void *data,
             {
                /* Pointer selection is always updated */
                menu_input->ptr = (unsigned)i;
+               if (ozone->pointer.type == MENU_POINTER_MOUSE)
+                  ozone->pointer_entries_selection = i;
 
                /* If pointer is a mouse, then automatically
                 * select entry under cursor */
@@ -11203,12 +11278,22 @@ static void ozone_render(void *data,
              * (for use in next 'pointer up' event) */
             if (     (ozone->pointer.y > category_y)
                   && (ozone->pointer.y < category_y + category_height))
+            {
                ozone->pointer_categories_selection = i;
+               ozone->flags2 |= OZONE_FLAG2_POINTER_ON_CATEGORY;
+            }
          }
 
          if (last_category_found)
             break;
       }
+   }
+   /* Pointer input is not being read, so it drives nothing either -
+    * a keypress clears cursor mode and lands here. */
+   else
+   {
+      ozone->pointer_entries_selection = OZONE_ENTRY_NONE;
+      ozone->flags2                   &= ~OZONE_FLAG2_POINTER_ON_CATEGORY;
    }
 
    /* Handle any pending thumbnail load requests */
